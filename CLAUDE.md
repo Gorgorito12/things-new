@@ -78,6 +78,7 @@ There are no unit tests yet.
 - `docs/binaries.md`: hashes of every `age3y.exe` / `UHC.dll` build in the install, the loader stub layout, and what each mod's exe patches.
 - `docs/uhc-address-map.md`: every upstream patch site, with a verification status per row.
 - `docs/engine-symbols.md`: functions, globals, IAT slots and object offsets named by upstream, with a status per row.
+- `docs/wol-requests.md`: WoL's feature requests in priority order; pick the next item to work on here.
 - `docs/wol-uhc-map.md`: WoL's `uhc.dll`. It covers:
   - identity, libraries and patch mechanisms (upstream fake-instruction caves plus `remod::trackable_memory_patch`);
   - a cross-check of the upstream caves;
