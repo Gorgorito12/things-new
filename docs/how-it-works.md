@@ -4,7 +4,9 @@ The internals of every implemented feature, for modders who want to understand t
 them in their own DLL. Addresses are virtual addresses in the stock Steam `age3y.exe`
 (`b1a1dab7…`, see [binaries.md](binaries.md)); they are only valid for that build. The verified
 patch sites are in [uhc-address-map.md](uhc-address-map.md) and the engine functions and object
-offsets in [engine-symbols.md](engine-symbols.md).
+offsets in [engine-symbols.md](engine-symbols.md). The practical steps for copying a feature
+into another DLL (sites to check, files, build) are in
+[porting-to-another-dll.md](porting-to-another-dll.md).
 
 Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` means bytes.
 
