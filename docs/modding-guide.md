@@ -95,6 +95,10 @@ nothing but your mod.**
     accepted;
   - keys that this DLL does not implement yet are reported and ignored
     ([section 8](#8-keys-from-uhc-110-that-are-not-implemented)).
+- **If your mod ships its own `uhc.dll`** (for example Wars of Liberty): replacing it would lose
+  its features, and the loader loads only one DLL. Rebuild the features you want inside your DLL
+  instead, as described in [porting-to-another-dll.md](porting-to-another-dll.md). The cfg keys
+  and data edits in this guide stay the same.
 
 ## 1. What you need
 

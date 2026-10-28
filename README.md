@@ -62,7 +62,9 @@ No compiler is needed.
 
 The full version, with what each key needs from your mod, is in
 [Adding UHC.dll to your mod](docs/modding-guide.md#adding-uhcdll-to-your-mod). A mod that already
-uses UHC 1.10 can swap in this `UHC.dll`, since its `uhc.cfg` syntax is accepted. To build the DLL
+uses UHC 1.10 can swap in this `UHC.dll`, since its `uhc.cfg` syntax is accepted. A mod with its
+own `uhc.dll`, such as Wars of Liberty, rebuilds the features inside it instead:
+see [porting to another DLL](docs/porting-to-another-dll.md). To build the DLL
 yourself, see the [developer guide](docs/developer-guide.md#1-build).
 
 ## Documentation
@@ -72,6 +74,7 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
 | [docs/modding-guide.md](docs/modding-guide.md) | Using the DLL in a mod: every key, the data and art it needs, how to check it, multiplayer. |
 | [docs/how-it-works.md](docs/how-it-works.md) | How each feature works inside the engine, to understand or reimplement it. |
 | [docs/developer-guide.md](docs/developer-guide.md) | Building, testing safely, adding a feature, the reverse-engineering workflow. |
+| [docs/porting-to-another-dll.md](docs/porting-to-another-dll.md) | Rebuilding the new features inside a mod's own `uhc.dll` (for example Wars of Liberty): sites to check, files to copy, hook contracts. |
 | [tools/README.md](tools/README.md) | Data tools (archives, compiled XML) and the runtime tracers. |
 | [docs/uhc-address-map.md](docs/uhc-address-map.md) | Every UHC 1.10 patch site, verified against the stock exe, and the upstream defects. |
 | [docs/engine-symbols.md](docs/engine-symbols.md) | Engine functions, globals and object layouts found so far. |
