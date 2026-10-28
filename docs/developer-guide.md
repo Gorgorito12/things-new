@@ -54,11 +54,14 @@ Never modify the Steam install. Work on a copy:
    ([modding guide, section 1](modding-guide.md#getting-an-exe-with-the-uhc-loader)).
 3. **Copy `build\Release\UHC.dll`** next to it, and `examples\Startup\uhc.cfg` into its
    `Startup\` folder.
-4. **Start it with the copy as working directory**, for example from PowerShell:
+4. **Start it** any way you like: a double-click, or from PowerShell:
 
    ```powershell
-   Start-Process -FilePath C:\AoE3-UHC-Test\age3y.exe -WorkingDirectory C:\AoE3-UHC-Test
+   Start-Process -FilePath C:\AoE3-UHC-Test\age3y.exe
    ```
+
+   `UHC.dll` makes the exe's folder the working directory, and the log's second line,
+   `UHCMain: working directory …`, confirms it.
 
 5. **Read `UHC.log`** next to the exe. Delete it before each run: it is appended.
 
@@ -269,3 +272,56 @@ The research notes cite their evidence:
 
 Each entry gives the address, the function and the method, so anyone can rerun it with the
 stock exe.
+
+## 6. Making a release
+
+Modders download a zip, so they never need a compiler. The version has a single source,
+`project(UHC VERSION x.y.z)` in `CMakeLists.txt`. CMake writes it into `version.h`, which
+`src/dllmain.cpp` and `src/version.rc` include. It appears as:
+- the first line of `UHC.log`, `UHC.dll x.y.z`;
+- the file's Properties → Details.
+
+1. **Bump the version** in `CMakeLists.txt`:
+   - the third number for fixes;
+   - the second for new features;
+   - the first for changes that break existing `uhc.cfg` files or data.
+2. **Build:** `cmake --build build --config Release`. Then check the DLL:
+   - `dumpbin /exports` lists `_UHCMain@0`;
+   - `(Get-Item build\Release\UHC.dll).VersionInfo` shows the new version.
+3. **Package:** `python -I tools/package_release.py`. Before writing anything, it checks the DLL:
+   - it is 32-bit;
+   - it exports `_UHCMain@0`;
+   - it carries the version in `CMakeLists.txt`;
+   - it is newer than `CMakeLists.txt` and every file in `src/`.
+
+   It then writes `dist\UHC-x.y.z.zip`:
+
+   ```
+   UHC-x.y.z\
+       UHC.dll
+       Startup\uhc.cfg     examples/Startup/uhc.cfg with every key commented out
+       README.txt          the modder's quick start
+       LICENSE.txt
+   ```
+
+   It prints the SHA-256 of the zip and of the DLL, and refuses to replace an existing zip
+   unless given `--force`. The game exe is never included: it is Microsoft's binary, and each
+   modder patches their own copy.
+4. **Test the zip as a modder would:**
+   1. unzip it somewhere, then copy the **contents** of its `UHC-x.y.z\` folder into a test copy
+      that has a patched exe, replacing its `UHC.dll` and `Startup\uhc.cfg` (the zip's top
+      folder is not a game folder);
+   2. delete the old `UHC.log`, since the log is appended;
+   3. enable a few keys;
+   4. start the game, from any folder;
+   5. check the log: its first line shows the new version, the next one is
+      `UHCMain: working directory <the copy>`, and every enabled key says `applied`.
+5. **Publish it by hand** on the repository's GitHub Releases page:
+   - a tag `vx.y.z`;
+   - the zip as the release asset;
+   - notes listing the new and changed keys, with the in-game status column of the README;
+   - the two SHA-256 values.
+
+When a key is added, update the release material too:
+- `examples/Startup/uhc.cfg`: the template in the zip comes from it;
+- the key list in `README.txt`, inside `tools/package_release.py`.

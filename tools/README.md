@@ -6,6 +6,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | Tool | What it does |
 |---|---|
 | [`gen_sites.py`](#gen_sitespy) | Writes `src/generated/sites.h` from the stock exe. |
+| [`package_release.py`](#package_releasepy) | Builds the release zip that modders download. |
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts and edits compiled XML (`.xmb`). |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
@@ -27,6 +28,22 @@ Reads the bytes of every patch site in its `SITES` list from the stock exe and w
 arrays, to `src/generated/sites.h` (or `out.h`). The DLL compares live memory with them before
 patching. It refuses any exe whose SHA-256 is not the stock build's. To add a site, see
 [developer-guide.md, section 3](../docs/developer-guide.md#3-adding-a-feature-step-by-step).
+
+## package_release.py
+
+```
+python -I tools/package_release.py [--force]
+```
+
+Checks `build\Release\UHC.dll` and stops if it fails any check:
+- it must be a 32-bit DLL that exports `_UHCMain@0`;
+- it must carry the version in `CMakeLists.txt`;
+- it must be newer than `CMakeLists.txt` and every file in `src/`.
+
+It then writes `dist\UHC-x.y.z.zip` with `UHC.dll`, `Startup\uhc.cfg` (the example with every key
+commented out), `README.txt` and `LICENSE.txt`, and prints the SHA-256 of the zip and of the DLL.
+An existing zip is kept unless `--force` is given. The procedure around it is in
+[developer-guide.md, section 6](../docs/developer-guide.md#6-making-a-release).
 
 ## bar.py
 

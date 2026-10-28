@@ -1,6 +1,11 @@
 """Sample how a running age3y.exe uses CPU, GPU and memory (docs/performance.md, "Next steps").
 
 Usage: python -I tools/perfprobe.py <out.csv> [seconds (default 120)] [interval (default 1.0)]
+                                   [--wait] [--sample-hz N]
+
+--wait waits for the game to start and records until it exits, ignoring `seconds`.
+--sample-hz N also profiles the main thread N times a second (suspend, read EIP, resume) and
+writes <out.csv>.samples.txt: time per module, and the hottest code blocks of the exe.
 
 Each sample writes one CSV row and one console line:
 - CPU per thread, in % of one core:
@@ -13,16 +18,20 @@ Each sample writes one CSV row and one console line:
   and [0xC692E4] (run by the worker).
 - Frame statistics, when UHC.dll runs with the `perfStats` key: fps, the longest frame of the
   interval, and frames over 50 / 100 ms.
+- Simulation speed: game seconds per real second. In single player it drops below the game
+  speed when frames take longer than 100 ms; that is the late-game "lag".
 
 The game is only read (PROCESS_QUERY_INFORMATION, PROCESS_VM_READ, PROCESS_DUP_HANDLE). The one
 write goes to UHC.dll's own statistics mapping, to reset the per-interval longest frame.
 Stop early with Ctrl+C; a summary is printed at the end.
 """
+import argparse
 import csv
 import ctypes
 import ctypes.wintypes as wt
 import struct
 import sys
+import threading
 import time
 
 EXE = "age3y.exe"
@@ -37,6 +46,8 @@ pdh = ctypes.WinDLL("pdh")
 TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD = 0x2, 0x4
 PROCESS_ACCESS = 0x0400 | 0x0010 | 0x0040  # QUERY_INFORMATION | VM_READ | DUP_HANDLE
 THREAD_QUERY_INFORMATION = 0x0040
+THREAD_SAMPLE_ACCESS = 0x0002 | 0x0008 | 0x0040  # SUSPEND_RESUME | GET_CONTEXT | QUERY_INFORMATION
+WOW64_CONTEXT_SIZE, WOW64_CONTEXT_CONTROL, WOW64_EIP = 0x2CC, 0x00010001, 0xB8
 DUPLICATE_SAME_ACCESS = 0x2
 MEM_FREE = 0x10000
 PDH_FMT_DOUBLE = 0x200
@@ -107,6 +118,9 @@ for name, res, args in [
     ("GetThreadId", wt.DWORD, [wt.HANDLE]),
     ("GetExitCodeProcess", wt.BOOL, [wt.HANDLE, ctypes.POINTER(wt.DWORD)]),
     ("OpenFileMappingW", wt.HANDLE, [wt.DWORD, wt.BOOL, wt.LPCWSTR]),
+    ("SuspendThread", wt.DWORD, [wt.HANDLE]),
+    ("ResumeThread", wt.DWORD, [wt.HANDLE]),
+    ("Wow64GetThreadContext", wt.BOOL, [wt.HANDLE, ctypes.c_void_p]),
     ("MapViewOfFile", ctypes.c_void_p, [wt.HANDLE, wt.DWORD, wt.DWORD, wt.DWORD, ctypes.c_size_t]),
 ]:
     f = getattr(k32, name)
@@ -293,12 +307,80 @@ def read_stats(view):
     return {"frames": fields[2], "max_us": fields[3], "over50": fields[6], "over100": fields[7]}
 
 
-def main():
-    out_path = sys.argv[1]
-    seconds = float(sys.argv[2]) if len(sys.argv) > 2 else 120.0
-    interval = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
+class Sampler(threading.Thread):
+    """Statistical profile of one thread: suspend it, read EIP, resume, `hz` times a second.
+    The thread is stopped for a few microseconds per sample; nothing in the game is written."""
 
-    pid = find_pid()
+    def __init__(self, tid, hz, mods):
+        super().__init__(daemon=True)
+        self.handle = k32.OpenThread(THREAD_SAMPLE_ACCESS, False, tid)
+        self.period, self.mods = 1.0 / hz, mods
+        self.counts, self.total, self.stop = {}, 0, threading.Event()
+
+    def run(self):
+        ctx = (ctypes.c_ubyte * WOW64_CONTEXT_SIZE)()
+        while self.handle and not self.stop.is_set():
+            struct.pack_into("<I", ctx, 0, WOW64_CONTEXT_CONTROL)
+            if k32.SuspendThread(self.handle) == 0xFFFFFFFF:
+                break
+            try:
+                ok = k32.Wow64GetThreadContext(self.handle, ctx)
+            finally:
+                k32.ResumeThread(self.handle)
+            if ok:
+                eip = struct.unpack_from("<I", ctx, WOW64_EIP)[0]
+                key = eip & ~0xFF if 0x400000 <= eip < 0xB84000 else symbolize(eip, self.mods).split("+")[0]
+                self.counts[key] = self.counts.get(key, 0) + 1
+                self.total += 1
+            time.sleep(self.period)
+
+    def report(self, path):
+        modules_share, exe = {}, []
+        for key, n in self.counts.items():
+            if isinstance(key, int):
+                exe.append((n, key))
+                modules_share[EXE] = modules_share.get(EXE, 0) + n
+            else:
+                modules_share[key] = modules_share.get(key, 0) + n
+        lines = [f"main-thread samples: {self.total}", "", "by module:"]
+        lines += [f"  {n / self.total * 100:5.1f}%  {name}" for name, n in
+                  sorted(modules_share.items(), key=lambda kv: -kv[1])]
+        lines += ["", "hottest 256-byte blocks of the exe (resolve to functions with REA):"]
+        lines += [f"  {n / self.total * 100:5.1f}%  {va:#x}" for n, va in sorted(exe, reverse=True)[:60]]
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        print("\n".join(lines[:16]))
+
+
+def wait_for_game():
+    print(f"waiting for {EXE} ...")
+    while (pid := find_pid()) is None:
+        time.sleep(2)
+    time.sleep(5)  # let the loader and UHC.dll finish
+    return pid
+
+
+def sim_clock(process):
+    """Game time in ms ([[0xC66234]+13Ch]+FCh, read by FUN_00455d91), or None outside a game."""
+    raw = read(process, 0xC66234, 4)
+    game = struct.unpack("<I", raw)[0] if raw else 0
+    raw = read(process, game + 0x13C, 4) if game else None
+    world = struct.unpack("<I", raw)[0] if raw else 0
+    raw = read(process, world + 0xFC, 4) if world else None
+    return struct.unpack("<I", raw)[0] if raw else None
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("out_csv")
+    parser.add_argument("seconds", nargs="?", type=float, default=120.0)
+    parser.add_argument("interval", nargs="?", type=float, default=1.0)
+    parser.add_argument("--wait", action="store_true", help="wait for the game to start, record until it exits")
+    parser.add_argument("--sample-hz", type=float, default=0.0, help="also profile the main thread (e.g. 100)")
+    args = parser.parse_args()
+    out_path, seconds, interval = args.out_csv, args.seconds, args.interval
+
+    pid = wait_for_game() if args.wait else find_pid()
     if pid is None:
         sys.exit(f"{EXE} is not running")
     process = k32.OpenProcess(PROCESS_ACCESS, False, pid)
@@ -312,10 +394,12 @@ def main():
           f"UHC frame stats {'on' if stats else 'off (add perfStats to uhc.cfg)'}")
 
     threads = {}  # tid -> {"handle", "created", "start", "last"}
-    last_jobs, last_frames, last_t = None, None, time.perf_counter()
+    last_jobs, last_frames, last_t, last_sim = None, None, time.perf_counter(), None
+    sampler = None
     rows, deadline = [], time.monotonic() + seconds
-    columns = ["t", "fps", "max_frame_ms", "over50", "over100", "process_cpu", "main_cpu", "worker_cpu",
-               "top_other", "gpu3d", "ws_mb", "private_mb", "va_mb", "jobs_main_ps", "jobs_worker_ps"]
+    columns = ["t", "fps", "max_frame_ms", "over50", "over100", "sim_speed", "process_cpu", "main_cpu",
+               "worker_cpu", "top_other", "gpu3d", "ws_mb", "private_mb", "va_mb", "jobs_main_ps",
+               "jobs_worker_ps"]
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
@@ -352,7 +436,12 @@ def main():
                 if not usage:
                     continue
                 main = min(threads, key=lambda t: threads[t]["created"])
+                if args.sample_hz > 0 and sampler is None:
+                    sampler = Sampler(main, args.sample_hz, mods)
+                    sampler.start()
                 worker = worker_tid(process)
+                if stats is None:
+                    stats = open_stats(pid)  # UHC.dll may map it after we attached
                 others = sorted(((u, tid) for tid, u in usage.items() if tid not in (main, worker)), reverse=True)
                 top = "|".join(f"{threads[tid]['start']}:{u:.0f}" for u, tid in others[:3] if u >= 1)
 
@@ -371,6 +460,10 @@ def main():
                        "jobs_main_ps": f"{jobs_ps[0]:.0f}", "jobs_worker_ps": f"{jobs_ps[1]:.0f}"}
                 g = gpu.sample()
                 row["gpu3d"] = f"{g:.1f}" if g is not None else ""
+                sim = sim_clock(process)
+                if sim is not None and last_sim is not None and sim >= last_sim:
+                    row["sim_speed"] = f"{(sim - last_sim) / 1000 / dt:.2f}"  # game seconds per real second
+                last_sim = sim
                 s = read_stats(stats) if stats else None
                 if s:
                     if last_frames is not None:
@@ -379,14 +472,22 @@ def main():
                         row["over100"] = s["over100"] - last_frames["over100"]
                     row["max_frame_ms"] = f"{s['max_us'] / 1000:.1f}"
                     last_frames = s
+                if args.wait and time.monotonic() >= deadline:
+                    deadline = time.monotonic() + interval  # --wait: keep going until the game exits
                 writer.writerow(row)
                 f.flush()
                 rows.append(row)
                 print(f"t={row['t']:>6} fps={row.get('fps', '-'):>6} max={row.get('max_frame_ms', '-'):>6}ms "
-                      f"main={row['main_cpu']:>5}% worker={row['worker_cpu']:>5}% gpu={row['gpu3d']:>5}% "
-                      f"va={row['va_mb']:>5}MB jobs={row['jobs_main_ps']}/{row['jobs_worker_ps']} {top}")
+                      f"sim={row.get('sim_speed', '-'):>5}x main={row['main_cpu']:>5}% "
+                      f"worker={row['worker_cpu']:>5}% gpu={row['gpu3d']:>5}% va={row['va_mb']:>5}MB "
+                      f"jobs={row['jobs_main_ps']}/{row['jobs_worker_ps']} {top}", flush=True)
         except KeyboardInterrupt:
             pass
+    if sampler is not None:
+        sampler.stop.set()
+        sampler.join(2)
+        if sampler.total:
+            sampler.report(out_path + ".samples.txt")
     summarize(rows)
 
 
@@ -399,7 +500,7 @@ def summarize(rows):
         print("no samples")
         return
     print(f"\n{len(rows)} samples (mean / max)")
-    for key in ("fps", "max_frame_ms", "main_cpu", "worker_cpu", "process_cpu", "gpu3d", "va_mb",
+    for key in ("fps", "max_frame_ms", "sim_speed", "main_cpu", "worker_cpu", "process_cpu", "gpu3d", "va_mb",
                 "jobs_main_ps", "jobs_worker_ps"):
         mean, peak = stat(key)
         print(f"  {key:15s} {mean:8.1f} {peak:8.1f}")

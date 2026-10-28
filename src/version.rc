@@ -1,0 +1,34 @@
+// Windows version resource: right-click UHC.dll > Properties > Details shows these values.
+// The numbers come from version.h, generated from project(UHC VERSION ...) in CMakeLists.txt.
+#include <winver.h>
+
+#include "version.h"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION UHC_VERSION_MAJOR, UHC_VERSION_MINOR, UHC_VERSION_PATCH, 0
+ PRODUCTVERSION UHC_VERSION_MAJOR, UHC_VERSION_MINOR, UHC_VERSION_PATCH, 0
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+ FILEFLAGS 0x0L
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_DLL
+ FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "https://github.com/Gorgorito12/Unharcoded-AOE3--NEW"
+            VALUE "FileDescription", "UHC.dll for Age of Empires III: The Asian Dynasties"
+            VALUE "FileVersion", UHC_VERSION
+            VALUE "InternalName", "UHC"
+            VALUE "LegalCopyright", "Copyright (c) 2026 Gorgorito12. MIT License."
+            VALUE "OriginalFilename", "UHC.dll"
+            VALUE "ProductName", "UHC.dll"
+            VALUE "ProductVersion", UHC_VERSION
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

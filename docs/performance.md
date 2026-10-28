@@ -30,6 +30,11 @@ No runtime measurement has been made yet; see "Next steps".
   - It is always created with `D3DCREATE_MULTITHREADED`, and with MIXED or SOFTWARE vertex processing.
   - It always has one back buffer, so with vsync on it is double-buffered.
 - **The GPU is not capped by a quality profile.** An RTX 4090 gets the best stock profile (`geforce fx 6800`, SM3 + FP16).
+- **Measured in a late 8-AI game (§8):** the main thread runs at about 95 % of one core, 77 % of it in the game's own code.
+  The GPU sits at 10–13 % even at 4K.
+  - DXVK lowers FPS by 28 %.
+  - Skinning and Direct3D are too small a share for a UHC feature to win much.
+  - What is left to explain is stutter: about 4 frames per minute over 100 ms.
 
 ## 1. Frame pacing and timers
 
@@ -285,16 +290,130 @@ Reading (inference):
 - The NVIDIA driver spends most of another core on this D3D9 stream. That points at Direct3D
   overhead (device flags, DXVK) as the render-side lever.
 
+**2026-10-28 13:30, main menu with `perfStats`** (test bed, Low shaders, 16-bit, windowed 2560×1600):
+- about 1,270 FPS, frames 0.8 ms (1.4–2.2 ms worst per second);
+- main thread 78 %, worker 5 %, GPU 16 %, 577 MB of address space;
+- device log: `BehaviorFlags 0x84` (MIXED | MULTITHREADED), 1 back buffer, DISCARD, interval ONE at
+  creation, then Reset to IMMEDIATE;
+- right after CreateDevice the main thread has **x87 control word 0x007F** (single precision, all
+  exceptions masked) and MXCSR 0x1FA0. This is the stock FPU state any D3D9 change must keep.
+
+**2026-10-28 ~13:45–14:03, a full 8-player game played by the user** (test bed, `perfStats` on,
+exit summary only; `perfprobe` was not recording):
+- settings: Very High shaders, 16-bit, windowed 3840×2160 (changed in game, so the device was
+  released and recreated); vsync off;
+- `config("AIvsAI")` and `gameSpeedMult(8.0)` had been sent before and during the game for the
+  intended AI-only benchmark;
+- result: **52 frames over 100 ms and 90 over 50 ms** in 1.25 M frames (menus included). Peak working
+  set 644 MB, private 100 MB, so nowhere near the 2 GB limit.
+
+### Late-game A/B: native D3D9 vs DXVK (2026-10-28 14:40–14:48)
+
+**Setup.**
+- Save `uhcbench25`: 8 AI players (Hard), ~25 game minutes. It was made with `AIvsAI` and fast-forwarded
+  with `fixedUpdate`=100 + `RunAsFastAsPossible`.
+- Each run was driven by the user: load the save and click the same spot on the minimap.
+- `bench_watch` unpaused the game through `perfExecFile` and recorded 136–137 s with `perfprobe --sample-hz 100`.
+- Test bed at 3840×2160 windowed, Very High shaders, 16-bit, vsync off.
+- Files: `rea/evidence/age3y-b1a1dab7/bench-nativo.csv`, `bench-dxvk.csv` and their `.samples.txt`.
+
+| | Native d3d9 | DXVK 3.1.1 |
+|---|---|---|
+| FPS (mean / max) | 125.6 / 204.8 | 90.9 / 127.4 |
+| Frames over 50 ms / 100 ms | 19 / 10 | 17 / 8 |
+| Simulation speed | 1.0× | 1.0× |
+| Main thread | 94.7 % (max 101) | 98.3 % (max 101) |
+| Skinning worker | 4.4 % | 3.1 % |
+| GPU 3D engine | 13.4 % | 10.4 % |
+| Address space (max) | 1,024 MB | 1,256 MB |
+| x87 control word after CreateDevice | 0x007F | 0x007F |
+
+Main-thread profile (share of samples):
+
+| Module | Native | DXVK |
+|---|---|---|
+| age3y.exe | 77.1 % | 83.6 % |
+| ntdll.dll | 8.0 % | 3.6 % |
+| granny2.dll (animation) | 6.8 % | 5.8 % |
+| d3d9.dll | 3.2 % | 2.8 % |
+| nvd3dum.dll (NVIDIA) | 1.3 % | — |
+| deformerdlly.dll (skinning) | 1.2 % | 2.6 % |
+| d3dx9_25.dll | 0.5 % | 0.6 % |
+
+Hottest exe functions (native run; `ev_e25829f2…`):
+
+| Share | Function | Role |
+|---|---|---|
+| 5.2 % | FUN_0040d25b | Renderer: shader/material parameters (`blendColor`, `pixelxformColor`) |
+| 3.5 % | FUN_0044d863 / FUN_0044d898 | Small float tests, many callers |
+| 2.4 % | FUN_00407a06 | Vector math |
+| 2.2 % | FUN_00485f10 | Large spatial query with float vectors |
+| 1.3 % | FUN_004bbad9 | — |
+| ~3 % | FUN_00422ba9, FUN_00424e33, FUN_004234d7 | Per-object update math |
+
+Everything else is under 1 % per 256-byte block.
+
+**Conclusions** (single save, two runs, so treat ±10 % as noise):
+- A late game is bound by the main thread running the game's own code, at about 95 % of one core.
+  - The GPU stays at 10–13 % even at 4K.
+  - Direct3D and the driver are about 5 % of the main thread; skinning about 1–3 %.
+- **DXVK makes it worse here: −28 % FPS and +230 MB of address space.**
+  - Stutter is about the same.
+  - It does keep the stock FPU state (0x007F), so it would not desync.
+- Feature ideas are capped by those shares, so neither is worth its risk:
+  - `deformWorkers`: at most about 1–3 %;
+  - `d3dNoMultithreaded`: well under the 3 % that d3d9.dll takes.
+- Large-Address-Aware is not needed with the stock data: 1.0 GB of address space at 25 minutes. It may be with DXVK or heavier mods.
+- **Stutter:** the remaining problem is about 4 frames per minute over 100 ms. Their cause is not known yet. A
+  hitch-triggered profile is the next measurement: the main-thread samples that fall inside frames over 50 ms.
+
+## Benchmark harness
+
+These parts of `src/features/perf.cpp` exist for measurement. The game behaves as stock with them.
+
+| Key | What it does |
+|---|---|
+| `perfStats` | Wraps `Direct3DCreate9` through IAT slot 0xB84164, then CreateDevice/Reset/Present through the d3d9 vtables. It logs the device setup and the FPU state, and publishes frame counters in `Local\UHCPerfStats-<pid>` for `tools/perfprobe.py`. The IAT slot holds a runtime address, so it is checked against `GetProcAddress` instead of `generated/sites.h`. |
+| `perfAutoExec <frame> <command>` | After that many Presents, runs a console command on the main thread. |
+| `perfExecFile <path>` | Every 30 frames, runs the lines of `<path>` as console commands and deletes the file. Lets a script drive the game without keyboard focus. |
+
+Console commands run through 0x433D0D, `thiscall(console = [0xC672E4], const char* command, const char* source)`
+with `ret 8`. The game uses the same call for its own commands, e.g. `uiOpenScenarioBrowser()` with
+source `"console"` at 0x7E279D. The `.con` loader FUN_005bc4c1 runs each line through it.
+
+**Useful commands** (from the exe's own help strings):
+- `startRandomGame2(<filename> <#players> <random seed> <scenarioFilename> <debug> <teamCount> <mapsize> <resources> <random_civs>)`,
+  handler 0x6F10FC. It writes the game settings `GameFilename`, `GameNumPlayers`, `GameRandomSeed`,
+  `GameMapSize`, `GameMapResources`, `GameSpeed` and `GamePlayer<n>*`. The settings table is at
+  0xD840E4 with stride 0x88; each player block is 0x18 entries starting at index 0x3A.
+- `loadGame` / `saveGame(<file>)`, `restart()`.
+- `config` / `configUndef(<name>)`, `gameSpeedMult(<x>)`.
+
+**What was tried for an unattended AI battle (2026-10-28):**
+- The game has to run with no keyboard focus, so the screenshots use `PrintWindow`. Posted keyboard
+  messages do not reach the console.
+- `startRandomGame2` does nothing unless `[[0xC66234]+0xB3A]` is set.
+  - `startRandomGame(true)` (handler 0x6F041C) sets that flag and opens the **scenario editor**.
+  - `startRandomGame2` then generates the random map **in the editor**.
+- `saveScenario` / `leaveGame()` / `loadScenario` play that map, but its players have no AI.
+- `AIvsAI` ("If defined SP RM games will make player1 an AI", read at 0x6AEF6C and 0x987E96) only
+  applies to single-player random-map games started from the setup screen. The setup screen is native
+  UI with no console command behind its Play button, so it needs real clicks.
+- Without `DontPauseWhenLosingFocus` the game pauses whenever another window has focus. A background
+  benchmark must define it.
+- The practical route is therefore one real setup-screen launch (8 AI players, `AIvsAI`), then
+  `gameSpeedMult` and `saveGame` through `perfExecFile`, and later `loadGame` for each run.
+
 ## 9. Levers (multiplayer-safe), status
 
 | Lever | Kind | Status |
 |---|---|---|
-| More skinning workers (`deformWorkers`), plus letting them help during the flush | UHC feature | Designed. The first sample (§8) shows the single worker at ~8 %, so it is deprioritized unless the benchmark disagrees. |
-| Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | UHC feature, opt-in | Designed. Needs proof that no D3D call runs off the main thread and that `SetSoftwareVertexProcessing` is unused. Must keep the FPU behavior (§5). |
+| More skinning workers (`deformWorkers`), plus letting them help during the flush | UHC feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
+| Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | UHC feature, opt-in | Not built. d3d9.dll is about 3 % of the main thread. Back buffers only matter with vsync on. |
 | Frame-time statistics and device logging (`perfStats`) | UHC feature, passive | Implemented (`src/features/perf.cpp`). Read by `tools/perfprobe.py`. |
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
-| DXVK | wrapper | Planned A/B. Single-player only until its FPU handling is checked (§5). |
+| DXVK | wrapper | Measured: −28 % FPS in a late game. FPU state kept (0x007F). Not recommended. |
 | `RunAsFastAsPossible`, `fixedUpdate`, `MinRandUpdate`, `syncUpdateInterval`, the 100 ms cap | — | Rejected: they change the simulation. |
 
 ## Next steps

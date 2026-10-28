@@ -7,6 +7,7 @@ For how the features work inside the engine, see [how-it-works.md](how-it-works.
 the DLL or reverse engineer new features, see [developer-guide.md](developer-guide.md).
 
 Contents:
+- [Adding UHC.dll to your mod](#adding-uhcdll-to-your-mod): start here
 1. [What you need](#1-what-you-need)
 2. [Mod folder layout](#2-mod-folder-layout)
 3. [The uhc.cfg file](#3-the-uhccfg-file)
@@ -17,17 +18,98 @@ Contents:
 8. [Keys from UHC 1.10 that are not implemented](#8-keys-from-uhc-110-that-are-not-implemented)
 9. [Troubleshooting](#9-troubleshooting)
 
+## Adding UHC.dll to your mod
+
+**What you need:**
+- **The release zip** `UHC-x.y.z.zip`, from
+  [Releases](https://github.com/Gorgorito12/Unharcoded-AOE3--NEW/releases). It contains one folder,
+  `UHC-x.y.z\`, which holds:
+  - `UHC.dll`;
+  - `Startup\uhc.cfg`, with every key commented out;
+  - `README.txt` and `LICENSE.txt`.
+- **`UHCPatcher.exe`**, from the `Release` folder of
+  [AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). You use it once, to add the
+  loader to your mod's `age3y.exe`.
+- **Python 3 and this repository's `tools/` folder**, only for keys that need data edits: a new
+  `healNonIdle` marker, `deckCardCount` at normal levels, or reusing a stock banner for
+  `customRevolutionBanners`.
+  - Get the tools from the source code: **Code → Download ZIP** on the repository page.
+  - Install Python 3 from [python.org](https://www.python.org/downloads/). If `python` does not
+    work in a new terminal, type `py` instead.
+  - Run the commands in a terminal opened in the unzipped source folder: right-click the folder
+    and choose **Open in Terminal**.
+
+You do not need Visual Studio: building the DLL is only for changing it. **Your players need
+nothing but your mod.**
+
+**Steps:**
+1. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder with your
+   mod's files on top.
+   - The folder can live anywhere. Next to `bin` inside the game folder is fine, and that is
+     where Wars of Liberty and Knights and Barbarians sit.
+   - "Never modify the Steam install" means: never change or patch the files in `bin`, above all
+     `bin\age3y.exe`.
+2. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`
+   ([how](#getting-an-exe-with-the-uhc-loader)). The patcher also writes UHC 1.10's own `UHC.dll`
+   and a new `Startup\uhc.cfg` next to the exe, and keeps the original exe as `age3y.backupuhc`.
+3. **Copy this release over the patcher's files.** From the zip's `UHC-x.y.z\` folder, copy
+   `UHC.dll` next to `age3y.exe` and the `Startup` folder into the mod folder, replacing both
+   files. Do not extract the zip itself into the mod folder: its top folder would keep the files
+   out of place.
+   - If you run the patcher again later, first keep a copy of your own `Startup\uhc.cfg`.
+   - Afterwards, copy this release's `UHC.dll` again and put your `uhc.cfg` back.
+4. **Enable keys** in `Startup\uhc.cfg` by removing the `# ` in front of them:
+   - always `ignoreRegistryPath`, so the game reads your mod folder's data and not the Steam
+     install's;
+   - then the keys you want. Add the data or art that each one needs
+     ([what each key needs](#5-feature-reference)).
+5. **Test.** Start the mod's `age3y.exe`, then read `UHC.log` next to it
+   ([reading the log](#4-reading-uhclog)):
+   - the first lines are `UHC.dll x.y.z` and `UHCMain: working directory <mod folder>`;
+   - every key you enabled says `applied`;
+   - in game, look for one of your own data changes, which proves the mod's data loaded.
+6. **Ship.** On each player's PC, your mod must end up as a complete game folder containing your
+   files, the patched `age3y.exe`, `UHC.dll` and `Startup\uhc.cfg`. UHC mods usually ship an
+   installer that builds that folder from the player's own game install.
+   - **Ship:** your changed files (for example `data\protoy.xml`, `data\protoy.xml.XMB`,
+     `data\homecitylevels.xml`), the patched `age3y.exe`, `UHC.dll` and `Startup\uhc.cfg`.
+   - **Leave out:** `UHC.log`, `age3y.backupuhc`, your backups and the tools' work folders.
+   - **The installer** copies the player's TAD `bin` folder to the mod folder, then lays your
+     files on top. If it runs `UHCPatcher.exe` on the player's copy instead of shipping a patched
+     exe, it must copy `UHC.dll` and `Startup\uhc.cfg` after the patcher has run.
+
+   Players can then start the mod's `age3y.exe` any way they like: double-click, shortcut or
+   launcher. `UHC.dll` makes the exe's folder the working directory, as UHC 1.10 does.
+
+**Notes:**
+- **Multiplayer:** every player needs the same files
+  ([section 7](#7-multiplayer-saved-games-and-replays)).
+- **Home cities are shared.** They are stored in
+  `Documents\My Games\Age of Empires 3\Savegame\sp_<City>_homecity.xml`, and the normal game and
+  every mod copy use the same files. What the stock game does with a deck of more than 25 cards
+  was not tested, so a mod that raises the deck size may want its players to use separate home
+  cities for it.
+- **If your mod already uses UHC 1.10:**
+  - replace its `UHC.dll` with this one, then read `UHC.log`;
+  - its `uhc.cfg` keeps working, since the UHC 1.10 syntax (`basePop=500`, `//` comments) is
+    accepted;
+  - keys that this DLL does not implement yet are reported and ignored
+    ([section 8](#8-keys-from-uhc-110-that-are-not-implemented)).
+
 ## 1. What you need
 
 - **The Steam version of TAD.** Its `bin\age3y.exe` must be the stock build, SHA-256
   `b1a1dab7264d2db72e8f8ae1df1e419eecc223b40db00c9d1013a3bc77611d9d` (see
   [binaries.md](binaries.md)). Use it only as the source you copy from: never modify the Steam
   install. Check a file's hash in PowerShell with `Get-FileHash age3y.exe`.
-- **A copy of the game, or your mod's own folder,** containing:
+- **Your mod folder:** a complete game folder (a copy of the game's `bin` folder, plus your
+  files), containing:
   - an `age3y.exe` patched with the **UHC loader** (next section);
-  - `UHC.dll` from this project, built as described in [developer-guide.md](developer-guide.md);
+  - `UHC.dll`, from the release zip. To change the DLL itself, build it as described in
+    [developer-guide.md](developer-guide.md);
   - `Startup\uhc.cfg`, which selects the features.
-- **Python 3**, only for the data tools in `tools/` (no extra packages).
+- **Python 3 and the `tools/` folder** of this repository's source code, only for keys that need
+  data edits ([see above](#adding-uhcdll-to-your-mod)). They need no extra packages.
 
 ### Getting an exe with the UHC loader
 
@@ -36,54 +118,82 @@ exe's folder and calls it before the game's own startup code. Its exact bytes ar
 [binaries.md](binaries.md). This project does not ship a patcher; use the one from the original
 UnHardcoded project:
 
-1. Copy the stock `age3y.exe` into your mod folder.
-2. Download `Release/UHCPatcher.exe` from
-   [danielpereira/AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded).
-3. Drag **the copy** in your mod folder onto `UHCPatcher.exe` and apply the patch.
-   - Do not run the patcher from inside the Steam folder: it then picks the Steam exe by itself.
-   - Keep the default config path, `Startup\uhc.cfg`.
-4. Put `UHC.dll` next to the patched exe and start the game once. The first line of `UHC.log`
-   must be `UHCMain: <path>\Startup\uhc.cfg, N keys`.
+1. **Start from an unmodified exe.** Your mod folder's `age3y.exe` must be a copy of the
+   unmodified Steam exe: `Get-FileHash age3y.exe` prints `B1A1DAB7…11D9D`.
+   - The patcher writes at fixed file offsets.
+   - The DLL only detects a different build (from the PE header) or a change at one of its own
+     patch sites. Any other change goes unnoticed, so always start from the stock exe.
+2. **Get the patcher.** Download `UHCPatcher.exe` from the `Release` folder of
+   [danielpereira/AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). Keep it
+   **outside** the game folders, for example on the desktop: started from inside a game folder,
+   it picks that folder's exe by itself.
+3. **Apply the patch.** Drag the mod folder's `age3y.exe` onto `UHCPatcher.exe`. A dialog opens:
+   - leave its checkboxes as they are and click **Apply**. They only choose the keys written into
+     the `uhc.cfg` that you replace in the next step; the exe patch is the same whatever you
+     tick;
+   - keep the default config path, `Startup\uhc.cfg`.
 
-If `UHC.log` says `host is not a UHC-patched age3y.exe`, the exe is not the stock build plus the
-loader, and the DLL does nothing. If `UHC.dll` is missing, the loader shows *Failed to load
-UHC.dll!* and the game exits.
+   According to its source code (it was not run in this project's tests), the patcher:
+   - keeps the original exe as `age3y.backupuhc` next to it;
+   - patches the exe in place;
+   - writes UHC 1.10's `UHC.dll` next to it and a new `Startup\uhc.cfg`, replacing any existing
+     ones.
+4. **Install this release.** Copy its `UHC.dll` and `Startup\uhc.cfg` over the patcher's, then
+   start the game once. `UHC.log` must start with `UHC.dll x.y.z`,
+   `UHCMain: working directory …` and `UHCMain: <path>\Startup\uhc.cfg, N keys`.
+5. **Check that the Steam install was not touched:** `Get-FileHash` on the Steam
+   `bin\age3y.exe` must still print `B1A1DAB7…11D9D`.
 
-This DLL was tested with the Knights and Barbarians exe (SHA-256 `d21d0173…`, stock + loader
-only). The upstream patcher itself was not run during this project's tests.
+If something goes wrong:
+- **`host is not a UHC-patched age3y.exe`:** the exe is not the stock build plus the loader, and
+  the DLL does nothing.
+- **The loader shows *Failed to load UHC.dll!* and the game exits:** `UHC.dll` is missing.
+- **No `UHC.log` at all:** the `UHC.dll` next to the exe is still UHC 1.10's, which writes no
+  log.
+
+This DLL was tested with the Knights and Barbarians exe (SHA-256 `d21d0173…`, stock plus the
+loader only).
 
 ## 2. Mod folder layout
 
 ```
 <mod folder>\
     age3y.exe            the UHC-patched copy
+    age3y.backupuhc      the original exe, kept by the patcher
     UHC.dll              this project
     UHC.log              written by UHC.dll; it grows by one block on every start
     Startup\uhc.cfg      the features to enable
     data\  art\  AI3\    the game files, and your mod's changes to them
 ```
 
-Start the game **with the mod folder as the working directory**: in a shortcut, set "Start in"
-to the mod folder. With [`ignoreRegistryPath`](#ignoreregistrypath) the game reads its data from
-that folder. Without it, the game reads its install folder from the registry, which for a Steam
-install is the Steam folder: a standalone mod copy would then load the Steam data instead of its
-own.
-
-`UHC.dll` resolves `Startup\uhc.cfg` relative to the exe's folder, and writes `UHC.log` there.
+- **Where the data comes from.** With [`ignoreRegistryPath`](#ignoreregistrypath), the game reads
+  its data from the mod folder. Without it, the game reads the install folder stored in the
+  registry, which for a Steam install is the Steam folder: the mod would then load the Steam data
+  instead of its own.
+- **The working directory.** `UHC.dll` makes the exe's folder the working directory at startup,
+  as UHC 1.10 does. A double-click, a shortcut and a launcher therefore all start the mod the
+  same way.
+- **UHC.dll's own files.** It reads `Startup\uhc.cfg` from the exe's folder and writes `UHC.log`
+  there.
 
 ## 3. The uhc.cfg file
 
-A ready-to-copy file with every implemented key is in
-[examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg).
+Start from the `Startup\uhc.cfg` in the release zip, which lists every key, commented out. The
+repository's [examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg) is the same file with every
+key enabled, using the values this project tests with: do not ship it as it is.
 
-- One key per line, followed by its arguments, separated by spaces or tabs.
-- Keys are case-insensitive (`deckCardCount` = `deckcardcount`). Arguments keep their case.
-- A line whose first word starts with `#` is a comment. **There are no end-of-line comments:**
-  in `deckCardCount 40 # more cards`, the words `#`, `more` and `cards` are arguments.
-- A key that takes values reads only its first line. Write `hcShipmentPointFallback` once, with
-  all its names.
-- A key this DLL does not implement is logged as `<key>: not implemented yet; ignored`.
-- A key that is absent keeps the stock behavior.
+- **Syntax:** one key per line, followed by its arguments, separated by spaces or tabs. UHC
+  1.10's syntax also works, since its patcher writes it: `basePop=500` (or `basePop = 500`).
+- **Case:** keys are case-insensitive (`deckCardCount` = `deckcardcount`). Arguments keep their
+  case.
+- **Comments:** a line whose first word starts with `#`, and anything after `//` (UHC 1.10
+  style), even at the end of a line. A `#` later in a line is **not** a comment: in
+  `deckCardCount 40 # more cards`, the words `#`, `more` and `cards` are arguments.
+- **One line per key:** a key that takes values reads only its first line. Write
+  `hcShipmentPointFallback` once, with all its names.
+- **Unknown keys:** a key this DLL does not handle, whether an upstream key or a misspelling, is
+  logged in lowercase as `<key>: not implemented yet; ignored`.
+- **Absent keys** keep the stock behavior.
 
 ## 4. Reading UHC.log
 
@@ -91,13 +201,15 @@ A ready-to-copy file with every implemented key is in
 
 | Line | Meaning |
 |---|---|
+| `UHC.dll x.y.z` | The version of the DLL that wrote this run. Always the first line of a run. |
+| `UHCMain: working directory <folder>` | The DLL made the exe's folder the working directory ([section 2](#2-mod-folder-layout)). |
 | `UHCMain: <path>, N keys` | The cfg was read; N distinct keys. |
 | `UHCMain: host is not a UHC-patched age3y.exe; doing nothing` | Wrong exe. See [section 1](#getting-an-exe-with-the-uhc-loader). |
 | `UHCMain: cannot read <path> (error N); no features applied` | The cfg is missing or unreadable. |
 | `<feature>: applied` | The feature patched the game. |
 | `<feature>: FAILED` | It did not. The line before says why (bad arguments, or the next row). |
 | `<feature>: site <Name> at 0x… does not hold the stock bytes; feature not applied` | The exe differs from the stock build at that address. Nothing was written there. |
-| `<key>: not implemented yet; ignored` | See [section 8](#8-keys-from-uhc-110-that-are-not-implemented). |
+| `<key>: not implemented yet; ignored` | A key this DLL does not handle: an upstream key not implemented yet ([section 8](#8-keys-from-uhc-110-that-are-not-implemented)), or a misspelled key. |
 | `UHCMain: N applied, M failed` | The summary of this start. |
 | `hook reached: <name> (0x…)` | The first time the game ran that patched code. Use it to confirm that a feature is really used in a game. |
 
@@ -109,17 +221,17 @@ Each section gives the syntax, what changes in the game, what your mod must prov
 confirm it works, and its test status. "Changes the simulation" means every player in a
 multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-games-and-replays)).
 
-| Key | In-game status |
-|---|---|
-| [`ignoreRegistryPath`](#ignoreregistrypath) | confirmed |
-| [`deckCardCount`](#deckcardcount) | confirmed above the level table; see the section |
-| [`basePop`, `extraPop`](#basepop-and-extrapop) | partly confirmed |
-| [`noAILimit`](#noailimit) | confirmed |
-| [`customRevolutionBanners`](#customrevolutionbanners) | partly confirmed |
-| [`removeFameRestriction`](#removefamerestriction) | not tested in game |
-| [`removeConversionRestriction`](#removeconversionrestriction) | not confirmed |
-| [`hcShipmentPointFallback`](#hcshipmentpointfallback) | confirmed |
-| [`healNonIdle`](#healnonidle) | confirmed (automatic healing) |
+| Key | What it does | Your mod also needs | In-game status |
+|---|---|---|---|
+| [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from the mod folder (the exe's folder), instead of the install folder in the registry. | Nothing. Enable it in every mod folder that has its own data. | confirmed |
+| [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | A `data\homecitylevels.xml` with a higher `<maxdecksize>` per level (stock: 20 to 25). | confirmed above the level table; see the section |
+| [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | Enough houses or other population buildings to reach the new cap. | partly confirmed |
+| [`noAILimit`](#noailimit) | Shows every `AI3\*.personality` file in game setup, not just the built-in 14. | The personality files. | confirmed |
+| [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for every `XPRevolution<Name>` tech, not only O'Higgins. | A banner texture per revolution. | partly confirmed |
+| [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | Two icon textures. | not tested in game |
+| [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | Nothing. | not confirmed |
+| [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and no stock fallback building (Town Center, fort, …) is left, moves the point to the first alive building of the types you list. | Nothing beyond the proto names in the cfg. | confirmed |
+| [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
 
 No feature has been tested in multiplayer yet.
 
@@ -131,11 +243,13 @@ ignoreRegistryPath
 
 - **Effect:** the game uses its current working directory as the install folder instead of the
   path stored in the registry. Stock already falls back to the working directory when the
-  registry value cannot be read; this makes it unconditional.
-- **Your mod:** start the game with the mod folder as the working directory
-  ([section 2](#2-mod-folder-layout)).
-- **Check:** your mod's changed data is used. On the test bed, the edited `protoy.xml.XMB` of the
-  copy was loaded instead of the Steam one.
+  registry value cannot be read; this makes it unconditional. Since `UHC.dll` makes the exe's
+  folder the working directory at startup, the game reads the mod folder's data however it is
+  started.
+- **Your mod:** nothing more. Enable this key in every mod folder that has its own data.
+- **Check:** your mod's changed data is used. This key writes no `hook reached` line, because it
+  only rewrites one branch. On the test bed, the copy's edited `protoy.xml.XMB` was loaded instead
+  of the Steam one, also when the game was started from another folder.
 - **Simulation:** no.
 - **Status:** confirmed.
 
@@ -151,14 +265,35 @@ deckCardCount <N>        N from 20 to 10000
   0, one more every 10 levels, 25 from level 50.
 - **Effect:** the upper clamp becomes N instead of 25, and levels past the table get N.
 - **Your mod:** to reach N cards at normal levels, also raise `<maxdecksize>` in
-  `homecitylevels.xml`. That file is only in the archives: extract it with `tools/bar.py`, read
-  it with `tools/xmbedit.py to-xml` ([section 6](#6-editing-the-game-data)). Without that change,
-  only home cities above the last level of the table get N cards.
+  `homecitylevels.xml`. The file exists only inside the archives, so take it out once, from a
+  terminal opened in the unzipped source code folder:
+  1. extract it:
+     `python -I tools\bar.py "<mod>\data\Data3.bar" homecitylevels --extract work`. This writes
+     `work\Data\homecitylevels.xml.xmb`;
+  2. convert it to text:
+     `python -I tools\xmbedit.py to-xml work\Data\homecitylevels.xml.xmb homecitylevels.xml`;
+  3. in a text editor, set each `<maxdecksize>` you want (for example `40`);
+  4. save the result as `<mod>\data\homecitylevels.xml`.
+
+  The game reads that loose file instead of the archive copy: on the test bed, every level read
+  back as 40 from the running game. A loose `homecitylevels.xml.xmb` works too. Without this file,
+  only home cities above the last level (131) get N cards.
+- **Check:**
+  - a deck can only hold cards that its home city has unlocked, so a 40-card deck also needs a
+    home city with at least 40 unlocked cards, i.e. a high level. The confirmed test used a
+    Japanese home city of level 9999;
+  - in the deck screen, the deck must accept more than 25 cards;
+  - `UHC.log` must show `hook reached: deckCardCount (0x7EF026)`.
+
+  Home cities are shared with the normal game (see the notes under
+  [Adding UHC.dll to your mod](#adding-uhcdll-to-your-mod)).
 - **Log:** `deckCardCount: limit N`; `deckCardCount: expected an integer from 20 to 10000`;
   `hook reached: deckCardCount (0x7EF026)`.
 - **Simulation:** decks are part of the game setup; give every player the same value.
-- **Status:** confirmed with 40 cards for a Japanese home city of level 9999 (past the table).
-  A raised `<maxdecksize>` has not been tested.
+- **Status:**
+  - confirmed with 40 cards for a Japanese home city of level 9999 (past the table);
+  - with a raised `homecitylevels.xml`, the engine's level table reads 40 at every level, but
+    building a 40-card deck at a normal level has not been tried in game yet.
 
 ### basePop and extraPop
 
@@ -169,8 +304,8 @@ extraPop <N>             N from 0 to 10000, stock 50
 
 - **How population is capped in stock:** the cap is what the player's buildings provide (houses,
   Town Centers, …), limited to 200 plus the extra population granted by techs and cards, which
-  is itself limited to 50. It is also limited by a world-level value that stock sets to 200,
-  then a player bonus is added, and the result never exceeds 250.
+  is itself limited to 50. It is also limited to that extra population plus a world-level value
+  (200 in stock). Then a player bonus is added, and the result never exceeds 250.
 - **Effect:** the 200 becomes `basePop`, the 50 becomes `extraPop`, and the world-level clamp and
   the 250 cap are removed. Either key alone keeps the other at its stock value.
 - **Your mod:** buildings must still provide the population. To actually reach 300, the player
@@ -236,16 +371,20 @@ customRevolutionBanners
 - **Your mod:** provide `art\ui\ingame\politicians\REV_banner_<Name>.ddt` for each revolution.
   The stock revolution techs are `XPRevolutionBolivar`, `…Bonifacio`, `…Hidalgo`,
   `…Louverture`, `…OHiggins`, `…SanMartin`, `…Santander` and `…Washington`. The stock art
-  (`art\Art4.bar`, `Art5.bar`) has banners named after countries: `argentina`, `brazil`,
-  `chile`, `colombia`, `haiti`, `mexico`, `peru`. To reuse one, extract it and save it under
-  the tech's name, e.g. `REV_banner_mexico.ddt` as `REV_banner_Hidalgo.ddt`:
+  (`art\Art4.bar`, `Art5.bar`) has eight banners named after countries: `argentina`, `brazil`,
+  `chile`, `colombia`, `haiti`, `mexico`, `peru` and `usa`. To reuse one, extract it and save it
+  under the tech's name, e.g. `REV_banner_mexico.ddt` as `REV_banner_Hidalgo.ddt`, or
+  `REV_banner_usa.ddt` as `REV_banner_Washington.ddt`:
 
   ```
-  python -I tools/bar.py "<game>\art\Art4.bar" rev_banner_mexico --extract <work folder>
+  python -I tools\bar.py "<mod>\art\Art4.bar" rev_banner_mexico --extract work
   ```
 
-  Loose files in `art\` are the usual way to add art to a mod. Whether loose files override the
-  archives was not verified in this project's tests.
+  This writes `work\Art\ui\ingame\politicians\REV_banner_mexico.ddt`. Rename it to
+  `REV_banner_Hidalgo.ddt` and put it in `<mod>\art\ui\ingame\politicians\`.
+
+  Loose files are the usual way to add art to a mod. For data files, a loose file replaces the
+  archive copy (verified with `homecitylevels.xml`); for art, this was not tested.
 - **Log:** `hook reached: customRevolutionBanners (0x81A7CC)`.
 - **Simulation:** no (interface only).
 - **Status:** partly confirmed: the hook runs and the O'Higgins banner still shows. Banners for
@@ -289,6 +428,8 @@ removeConversionRestriction
   unit. Stock checks a unit flag that only treasure guardians have.
 - **Who has the action:** explorers, war chiefs and some cavalry list it in their tactics, and a
   tech enables it (for example the `HCXPMorningStar` card).
+- **Check:** this key writes no `hook reached` line, because it only removes one branch. Check it
+  in game: a unit with `ConvertGuardian` converts a unit that is not a treasure guardian.
 - **Simulation:** yes.
 - **Status:** not confirmed: one test with the Sioux war chief was inconclusive.
 
@@ -308,10 +449,13 @@ hcShipmentPointFallback <Proto> [<Proto> ...]     1 to 64 proto unit names
   several of one proto, the stock unit query order decides, so every machine picks the same one.
 - **Your mod:** list proto names exactly as in `protoy.xml`, e.g.
   `hcShipmentPointFallback Barracks Stable ArtilleryDepot Market Church`.
-- **Log:** `hcShipmentPointFallback: N extra types after the stock list (multiplayer unverified)`;
-  then, the first time the point must move in a game, `hcShipmentPointFallback: <Name> -> proto
-  <ID>` for each name, or `(unknown proto; skipped)`;
-  `hook reached: hcShipmentPointFallback (0x669E2E)`.
+- **Log:**
+  - at startup, `hcShipmentPointFallback: N extra types after the stock list (multiplayer unverified)`;
+  - the first time in a run of the game that no stock fallback building is left,
+    `hcShipmentPointFallback: <Name> -> proto <ID>` for each name (or `(unknown proto; skipped)`)
+    and `hook reached: hcShipmentPointFallback (0x669E2E)`.
+
+  A move to another stock building, such as a second Town Center, logs nothing.
 - **Simulation:** yes.
 - **Status:** confirmed: after deleting the Town Center, the point moved to a listed building and
   shipments arrived there. Water shipment points were not tested.
@@ -325,10 +469,10 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 
 - **How stock behaves:** a healer only picks targets that are idle. It also stops healing as soon
   as its target moves or fights.
-- **Effect:** healers whose proto is of `<UnitType>` also pick targets that are moving or
-  fighting, and keep healing them. All the other stock checks still apply: the target must be
-  damaged, a valid heal target for that healer, and reachable. Any other healer behaves as in
-  stock.
+- **Effect:** healers whose proto is of `<UnitType>` also pick targets that are busy (moving,
+  fighting or doing something else), and keep healing them while they move or fight. All the
+  other stock checks still apply: the target must be damaged, a valid heal target for that
+  healer, and reachable. Any other healer behaves as in stock.
 - **The marker type:** in TAD, abstract unit types are a fixed list compiled into the exe, and
   any other `<UnitType>` in `protoy.xml` is silently dropped. So this DLL **registers
   `<UnitType>` as a new abstract type** when the data does not define it. You can then list it on
@@ -341,11 +485,16 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
       <UnitType>AbstractHealNonIdle</UnitType>
   ```
 
-  Edit both `data\protoy.xml` and `data\protoy.xml.XMB` ([section 6](#6-editing-the-game-data)):
+  Edit both `data\protoy.xml` (plain text, by hand) and `data\protoy.xml.XMB`
+  ([section 6](#6-editing-the-game-data)). For the XMB, run this from a terminal opened in the
+  unzipped source code folder:
 
   ```
-  python -I tools/xmbedit.py add-unittype protoy.xml.XMB protoy.xml.XMB.new Surgeon AbstractHealNonIdle
+  python -I tools\xmbedit.py add-unittype "<mod>\data\protoy.xml.XMB" "<mod>\data\protoy.xml.XMB.new" Surgeon AbstractHealNonIdle
   ```
+
+  Check the result with `python -I tools\xmbedit.py check "<mod>\data\protoy.xml.XMB.new"`, then
+  rename `protoy.xml.XMB.new` to `protoy.xml.XMB`, keeping the old file as a backup.
 
   An existing type or proto name works too, with no data change: `healNonIdle AbstractMonk`
   applies the feature to every monk, `healNonIdle Surgeon` to surgeons only. This uses the same
@@ -366,34 +515,51 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 
 ## 6. Editing the game data
 
-Work on a copy of the game. Never edit the Steam install.
+Work on your mod folder, never on the Steam install. Run the tools from a terminal opened in the
+unzipped source code folder, the one that contains `tools\`, and give them full paths to your
+mod's files.
 
 - **Where data lives:**
   - loose files in `data\`: `protoy.xml`, `techtreey.xml`, `stringtabley.xml` and others,
     usually with a compiled `.XMB` twin next to them;
   - everything else is in archives: `data\Data*.bar` (tactics, home city files,
     `homecitylevels.xml`, …) and `art\Art*.bar` (textures).
+- **A file that is only in an archive:**
+  1. extract it;
+  2. convert it to XML with `xmbedit.py to-xml`;
+  3. edit the XML;
+  4. save it loose in `data\` under the stored name without `.xmb`, so
+     `Data\homecitylevels.xml.xmb` becomes `data\homecitylevels.xml`.
+
+  The game then reads the loose file instead of the archive copy. This was verified with an
+  edited `homecitylevels.xml`, and also with an edited compiled `homecitylevels.xml.xmb`. The
+  tools cannot convert XML back to XMB, and do not need to.
 - **protoy: edit both files.** `data\` holds both `protoy.xml` (plain text) and
   `protoy.xml.XMB` (compiled). Which one the game prefers was not established, so keep both in
   step.
-- **List and extract archive files** with `tools/bar.py`:
+- **List and extract archive files** with `tools\bar.py`. `--extract` recreates the stored path
+  below the folder you give, for example `work\Data\homecitylevels.xml.xmb`:
 
   ```
-  python -I tools/bar.py "<game>\data\Data3.bar" tactics/explorer
-  python -I tools/bar.py "<game>\data\Data3.bar" homecitylevels --extract <work folder>
+  python -I tools\bar.py "<mod>\data\Data3.bar" tactics/explorer
+  python -I tools\bar.py "<mod>\data\Data3.bar" homecitylevels --extract work
   ```
 
-- **Read and edit XMB files** with `tools/xmbedit.py`. It confirms that it can re-encode a file
-  byte for byte before it changes anything:
+- **Read and edit XMB files** with `tools\xmbedit.py`. Every command first confirms that it can
+  re-encode the file byte for byte, so an edit cannot change anything else:
 
   ```
-  python -I tools/xmbedit.py check protoy.xml.XMB
-  python -I tools/xmbedit.py to-xml homecitylevels.xml.xmb homecitylevels.xml
-  python -I tools/xmbedit.py add-unittype protoy.xml.XMB protoy.xml.XMB.new Surgeon AbstractHealNonIdle ypMonkIndian AbstractHealNonIdle
+  python -I tools\xmbedit.py check "<mod>\data\protoy.xml.XMB"
+  python -I tools\xmbedit.py to-xml work\Data\homecitylevels.xml.xmb homecitylevels.xml
+  python -I tools\xmbedit.py add-unittype "<mod>\data\protoy.xml.XMB" "<mod>\data\protoy.xml.XMB.new" Surgeon AbstractHealNonIdle ypMonkIndian AbstractHealNonIdle
   ```
 
-  `add-unittype` warns about unit names it cannot find; check the spelling against `protoy.xml`.
-  Rename the `.new` file over the original once it is right.
+  - `add-unittype` prints what it added, and warns about unit names it cannot find; check the
+    spelling against `protoy.xml`.
+  - Before you replace the original, run `check` on the `.new` file. Then rename it over
+    `protoy.xml.XMB`, keeping the old file as a backup.
+  - Once the game has loaded, `python -I tools\re\inspect_unittypes.py AbstractHealNonIdle` shows
+    which protos carry the type.
 
 More about the tools: [tools/README.md](../tools/README.md).
 
@@ -411,8 +577,9 @@ More about the tools: [tools/README.md](../tools/README.md).
 
 ## 8. Keys from UHC 1.10 that are not implemented
 
-These upstream keys are recognized by name only: the log reports `not implemented yet; ignored`
-and nothing changes.
+This DLL has no code for these upstream keys. Like any key it does not handle, misspellings
+included, each one is logged in lowercase as `<key>: not implemented yet; ignored`, and nothing
+changes.
 
 `enableAllTeams`, `customSyscalls`, `customCheats` (and `.upl` plugins), `enableFarmAnim`,
 `enableRectFarmAnim`, `farmingRadius`, `marketUnits`, `tacticSwitching`, `attackTypeIcons`,
@@ -423,14 +590,20 @@ Their patch sites are verified against the stock exe in
 
 ## 9. Troubleshooting
 
-- **No `UHC.log` at all:** the exe does not have the loader, or the game was started from
-  another folder. The log is always written next to the exe that loaded the DLL.
+- **No `UHC.log` at all**, although the game starts. Either the `UHC.dll` next to the exe is still
+  UHC 1.10's, which the patcher writes and which writes no log: copy this release's `UHC.dll`
+  over it. Or the exe has no loader. The log is always written next to the exe that loaded the
+  DLL.
 - **`does not hold the stock bytes`:** the exe is not the stock Steam build, or another tool
   patched the same place. Start again from a copy of the stock exe.
+- **A key you set is reported as `not implemented yet`:** check its spelling. The log prints keys
+  in lowercase.
 - **A feature is `applied` but nothing changes:** look for its `hook reached` line after playing.
   If it is missing, the game never ran that code; check the feature's data requirements above.
-- **Data changes are ignored:** the game is probably reading the Steam folder. Add
-  `ignoreRegistryPath` and set the shortcut's "Start in" folder.
+  `ignoreRegistryPath` and `removeConversionRestriction` write no such line: check them by their
+  effect.
+- **Data changes are ignored:** the game is probably reading the Steam folder. Enable
+  `ignoreRegistryPath`.
 - **The resolution reset to 800x600** after starting a copy: the copy shares your user profile
   (`Documents\My Games\Age of Empires 3\Users3\<profile>.xml`) with the normal game. Set it back
   in the options.

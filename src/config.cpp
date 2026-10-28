@@ -17,6 +17,16 @@ std::string Lower(std::string s) {
 
 bool IsSpace(char c) { return c == ' ' || c == '\t' || c == '\r'; }
 
+// Where the line [pos, end) stops counting: at "//" (a UHC 1.10 comment), or at its end.
+size_t CommentStart(const std::string& text, size_t pos, size_t end) {
+  for (size_t i = pos; i + 1 < end; ++i) {
+    if (text[i] == '/' && text[i + 1] == '/') {
+      return i;
+    }
+  }
+  return end;
+}
+
 }  // namespace
 
 bool Config::Load(const std::wstring& path) {
@@ -44,14 +54,15 @@ bool Config::Load(const std::wstring& path) {
     if (end == std::string::npos) {
       end = text.size();
     }
+    const size_t stop = CommentStart(text, pos, end);
     Args words;
     size_t i = pos;
-    while (i < end) {
-      while (i < end && IsSpace(text[i])) {
+    while (i < stop) {
+      while (i < stop && IsSpace(text[i])) {
         ++i;
       }
       const size_t start = i;
-      while (i < end && !IsSpace(text[i])) {
+      while (i < stop && !IsSpace(text[i])) {
         ++i;
       }
       if (i > start) {
@@ -62,9 +73,25 @@ bool Config::Load(const std::wstring& path) {
     if (words.empty() || words.front().front() == '#') {
       continue;
     }
-    std::string key = Lower(words.front());
+    std::string key = std::move(words.front());
     words.erase(words.begin());
-    entries_[key].push_back(std::move(words));
+    // UHC 1.10 syntax, which its patcher writes: key=value (also accept key = value).
+    const size_t equals = key.find('=');
+    if (equals != std::string::npos) {
+      std::string value = key.substr(equals + 1);
+      key.resize(equals);
+      if (!value.empty()) {
+        words.insert(words.begin(), std::move(value));
+      }
+    } else if (!words.empty() && words.front().front() == '=') {
+      words.front().erase(0, 1);
+      if (words.front().empty()) {
+        words.erase(words.begin());
+      }
+    }
+    if (!key.empty()) {
+      entries_[Lower(key)].push_back(std::move(words));
+    }
   }
   return true;
 }

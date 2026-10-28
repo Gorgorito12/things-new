@@ -1,5 +1,6 @@
 // uhc.cfg reader. The format is one key per line followed by whitespace-separated arguments;
-// blank lines and lines starting with '#' are ignored. Keys are case-insensitive.
+// blank lines and lines starting with '#' are ignored. Keys are case-insensitive. UHC 1.10's
+// syntax is accepted too, since its patcher writes it: key=value, and "//" comments anywhere.
 #pragma once
 
 #include <map>

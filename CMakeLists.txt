@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
-project(UHC LANGUAGES CXX ASM_MASM)
+# The version is shown in UHC.log and in the file's properties; bump it for every release
+# (docs/developer-guide.md, "Making a release").
+project(UHC VERSION 0.1.0 LANGUAGES CXX ASM_MASM)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
   message(FATAL_ERROR "age3y.exe is 32-bit: configure with -A Win32")
@@ -30,8 +32,12 @@ add_library(UHC SHARED
   src/hooks/misc_hooks.asm
   src/hooks/shipment_hooks.asm
   src/hooks/unittype_hooks.asm
+  src/version.rc
 )
 target_compile_definitions(UHC PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
+# version.h (from src/version.h.in) carries the project version to dllmain.cpp and version.rc.
+configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h @ONLY)
+target_include_directories(UHC PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 # For `include common.inc` in the hook files.
 target_include_directories(UHC PRIVATE src/hooks)
 target_compile_options(UHC PRIVATE

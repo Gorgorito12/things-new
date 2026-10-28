@@ -27,10 +27,17 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    - the string `"UHC.dll"` that the loader patch writes at `0xC65016`.
 
    Otherwise it logs `host is not a UHC-patched age3y.exe` and does nothing.
-4. **Configuration.** The loader patch stores the config path at `0xC65083` (at most 20 wide
-   characters, default `Startup\uhc.cfg`). The DLL resolves it against the exe's folder, parses
-   it (`src/config.cpp`), then runs every feature in the order of `kFeatures` in
-   `src/features.h`. Each returns *not configured*, *applied* or *failed*.
+4. **Working directory.** Right after the host guard, before it reads the cfg, the DLL makes the
+   exe's folder the working directory, as UHC 1.10 does (`UseExeFolderAsWorkingDirectory` in
+   `src/dllmain.cpp`). A mod then
+   starts the same way from a double-click, a shortcut or a launcher, and `ignoreRegistryPath`
+   reads the mod folder.
+5. **Configuration.** The loader patch stores the config path at `0xC65083` (at most 20 wide
+   characters, default `Startup\uhc.cfg`). The DLL resolves it against the exe's folder and
+   parses it (`src/config.cpp`). The parser accepts both `key value …` and UHC 1.10's
+   `key=value` with `//` comments, which is the syntax the UHC 1.10 patcher writes. The DLL then
+   runs every feature in the order of `kFeatures` in `src/features.h`. Each returns
+   *not configured*, *applied* or *failed*.
 
 ## 2. Verify, then patch
 
@@ -88,7 +95,12 @@ The hooks are MASM files in `src/hooks/`.
 
 At `0x57CB54` (FUN_0057CB0A), `jl 6420A1h` is taken when reading the install path from the
 registry fails. The code at `0x6420A1` uses `GetCurrentDirectoryW` instead. The patch turns the
-`jl` into an unconditional `jmp` (6 B).
+`jl` into an unconditional `jmp` (6 B). Since the DLL has already made the exe's folder the
+working directory (section 1), the game reads the mod folder.
+
+**Loose data files.** With the data read from the mod folder, a loose file in `data\` replaces
+the copy inside the archives. This was verified with `homecitylevels.xml`: written loose, as
+plain XML or as `.xml.xmb`, it set the level table read from the running game (`[db+60D0h]`).
 
 ### deckCardCount
 

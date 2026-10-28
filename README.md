@@ -14,31 +14,55 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 
 | Key | What it does | In game |
 |---|---|---|
-| `ignoreRegistryPath` | Uses the folder the game starts in, so a standalone mod folder reads its own data. | confirmed |
+| `ignoreRegistryPath` | Reads the game data from the mod folder instead of the Steam install. | confirmed |
 | `deckCardCount N` | Raises the 25-card deck cap. | confirmed above the level table (see the guide) |
 | `basePop N`, `extraPop N` | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | partly confirmed |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
 | `removeConversionRestriction` | `ConvertGuardian` may target any unit. | not confirmed |
-| `hcShipmentPointFallback Proto…` | **New.** When the building holding the shipment point dies, shipments move to the next listed building type. | confirmed |
-| `healNonIdle [UnitType]` | **New.** Healers marked with a unit type heal units that are moving or fighting. | confirmed |
-| `perfStats` | In development: performance diagnostics. See [docs/performance.md](docs/performance.md). | in progress |
+| `hcShipmentPointFallback Proto…` | **New.** When the building holding the shipment point dies and no stock fallback building (Town Center, fort, …) is left, shipments move to the first listed building type that still stands. | confirmed |
+| `healNonIdle [UnitType]` | **New.** Healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed |
+| `perfStats`, `perfAutoExec`, `perfExecFile` | In development: performance diagnostics and settings. See [docs/performance.md](docs/performance.md). | in progress |
 
 No feature has been tested in multiplayer yet. Details, data requirements and limits for each
 key are in the [modding guide](docs/modding-guide.md).
 
-## Quick start
+## Using it in your mod
 
-1. **Copy the game** to a new folder. Never modify the Steam install.
-2. **Patch the copy's `age3y.exe`** with `UHCPatcher.exe` from
-   [AoE3UnHardcoded/Release](https://github.com/danielpereira/AoE3UnHardcoded/tree/master/Release).
-3. **Build `UHC.dll`** ([developer guide](docs/developer-guide.md#1-build)) and put it next to
-   the exe.
-4. **Copy [examples/Startup/uhc.cfg](examples/Startup/uhc.cfg)** to `<copy>\Startup\uhc.cfg` and
-   keep the keys you want.
-5. **Start the game** with the copy as its working directory, then read `UHC.log` next to the
-   exe. Every key you set should show `applied`.
+No compiler is needed.
+
+**What you need:**
+- **The release zip** `UHC-x.y.z.zip`, from
+  [Releases](https://github.com/Gorgorito12/Unharcoded-AOE3--NEW/releases). It holds `UHC.dll`, a
+  `Startup\uhc.cfg` with every key commented out, a short `README.txt` and the license.
+- **`UHCPatcher.exe`**, from
+  [AoE3UnHardcoded/Release](https://github.com/danielpereira/AoE3UnHardcoded/tree/master/Release),
+  used once.
+- **Python 3 and this repository's `tools/` folder** (Code → Download ZIP), only for keys that
+  need data edits.
+
+**Steps:**
+1. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder plus your
+   files. Never modify the Steam install.
+2. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`, run from outside the game
+   folders. The exe must be the unmodified Steam exe. The patcher also writes UHC 1.10's own
+   `UHC.dll` and a `Startup\uhc.cfg`.
+3. **Copy this release's `UHC.dll` and `Startup\uhc.cfg` over the patcher's files.** Take them
+   from inside the zip's `UHC-x.y.z\` folder.
+4. **Enable keys** by removing the `# ` in front of them: always `ignoreRegistryPath`, then the
+   ones you want. Add the data or art each needs.
+5. **Start the mod's `age3y.exe`.** `UHC.log` appears next to it: its first line is the DLL
+   version, and every key you enabled says `applied`.
+6. **Ship your files, the patched exe, `UHC.dll` and `Startup\uhc.cfg`.** Do not ship a copy of
+   the game: your installer builds the complete folder from each player's own game install.
+   Players then start the mod however they like, since UHC.dll makes the exe's folder the working
+   directory. They install nothing else.
+
+The full version, with what each key needs from your mod, is in
+[Adding UHC.dll to your mod](docs/modding-guide.md#adding-uhcdll-to-your-mod). A mod that already
+uses UHC 1.10 can swap in this `UHC.dll`, since its `uhc.cfg` syntax is accepted. To build the DLL
+yourself, see the [developer guide](docs/developer-guide.md#1-build).
 
 ## Documentation
 
