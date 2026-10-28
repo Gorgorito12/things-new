@@ -1,0 +1,10 @@
+# Upstream AoE3UnHardcoded clone: unlicensed, reference only, never commit
+reference/
+
+# REA snapshots and exported evidence bundles
+rea/
+
+# Build output
+build/
+out/
+.vs/
