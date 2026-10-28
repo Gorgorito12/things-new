@@ -102,6 +102,30 @@ file size; the rows below record what was verified against this build on 2026-10
 
 No row is a `mismatch`: every upstream address is valid for this build.
 
+## Beyond upstream
+
+| Feature | cfg | Site | Type | Notes |
+|---|---|---|---|---|
+| hcShipmentPointFallback | `hcShipmentPointFallback <Proto> …` | 0x669E2E (exit of FUN_004C6CAE) | replace (5 B) | See below. |
+| healNonIdle | `healNonIdle [UnitType]` (default `AbstractHealNonIdle`) | 0x9E0C79 (busy check in FUN_009E0B53); 0x9CD9C7 (idle test in the automatic search FUN_009CD865) | replace (5 B each) | For a healer whose proto is of the marker type: the search treats every candidate as idle (the hook returns AL = 1 instead of calling 0x44F1A7, then continues at 0x9CD9CC), and each heal tick skips the "target moving / fighting" test, continuing at 0x9E0C9F. Any other healer runs the stock code (0x44F1A7, 0x9E0C80). Is-a test: 0x44D7FA. |
+| (extra abstract unit types) | requested by features, e.g. healNonIdle's marker | 0x51BA31 (epilogue of FUN_0051A5DC) | replace (5 B) | Registers each requested name after the stock abstract types, through 0x58E685 / 0x40295B (lookup) and 0x5E3549 (add, `id = [db+194h]`), and hands the ID to the feature. Stock drops unknown `<UnitType>` names, so without this a data-only marker does not exist. See `docs/engine-symbols.md`, "Unit types and healing". |
+
+**How it works.**
+- The original exit is the "no valid gather unit" path: `pop ebp/edi/esi; xor eax,eax`, continuing at 0x669E33.
+- The hook searches each configured proto with the stock unit query (0x453618 / 0x45356D / 0x4532B4 / 0x453484 / 0x453A36) and applies the same three checks as the stock blocks (verified copy: 0x6698B4..0x669963).
+- On success it jumps to the stock store-and-return path, 0x4C6CB2.
+- Proto names resolve on first use through 0x5A2346.
+- Multiplayer is unverified.
+
+**Stock behavior** (dynamic trace, `rea/evidence/age3y-b1a1dab7/hwbp-log.txt`): deleting the TC clears the point (0x6697FF). FUN_004C6CAE then moves it, but only to TC, FortFrontier, WarHut, Blockhouse, NoblesHut and three unresolved types.
+
+**healNonIdle, how the sites were found.**
+- **First version: tick only.** It patched only the heal tick. In game, surgeons still ignored a fighting explorer, and the tick hook was never reached.
+- **Dynamic trace** (`hwbp3-log.txt`): the action is started by the automatic search FUN_009CD865, which only takes idle targets (0x44F1A7).
+- **Not this predicate.** FUN_004C6CD7 (codes 0x41/0x42) also tests "fighting", but the trace never reached it while healing.
+- **Confirmed in game (2026-10-28):** with the second hook, a marked British surgeon heals the explorer while it fights.
+- **Still unverified:** whether a direct order (right-click) on a fighting unit goes through any other filter, and the unmarked control (the British Explorer as healer). Multiplayer is also unverified.
+
 ## Known upstream defects (do not reproduce)
 
 Found by reading upstream source (2026-10-27):

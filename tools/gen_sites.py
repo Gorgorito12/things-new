@@ -41,6 +41,19 @@ SITES = [
     ("IconDefaultCase", 0x9A20A0, 4),      # lea ecx,[esp+18h]
     ("PoliticianCosts", 0x80E490, 7),      # mov eax,[edi] / lea ecx,[esp+14h] / push ecx
     ("PoliticianCosts2", 0x81943D, 7),     # mov edx,[esi] / lea eax,[esp+14h] / push eax
+    # hcShipmentPointFallback (FUN_004C6CAE, "get a valid HC gather unit")
+    ("GatherFallbackExit", 0x669E2E, 10),  # pop ebp/edi/esi, xor eax,eax, pop ebx/ecx, ret 4
+    ("GatherFallbackStore", 0x4C6CB2, 12), # cmp byte [esp+18h],1 / je 669E38h: store-and-return
+    ("GatherFallbackBlock", 0x6698B4, 0xB0),  # the stock FortFrontier search block the hook mirrors
+    # healNonIdle (FUN_009E0B53, heal action applying a tick): the "target busy" check, from
+    # mov ecx,[edi+58h] through the two busy tests to the heal path at 0x9E0C9F
+    ("HealIdleCheck", 0x9E0C79, 0x2C),
+    # healNonIdle (FUN_009CD865, a healer's automatic target search): mov ecx,[esi+58h] /
+    # test / je, the "target is idle" call 0x44F1A7 / test al,al / je, and the next check
+    ("HealAutoSearchIdle", 0x9CD9C0, 0x15),
+    # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
+    # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
+    ("AbstractTypesEnd", 0x51BA23, 0x15),
 ]
 
 

@@ -15,14 +15,20 @@ add_library(UHC SHARED
   src/config.cpp
   src/log.cpp
   src/patch.cpp
+  src/unittypes.cpp
   src/features/ai.cpp
   src/features/fame.cpp
+  src/features/heal.cpp
   src/features/limits.cpp
   src/features/misc.cpp
+  src/features/shipments.cpp
   src/hooks/ai_hooks.asm
   src/hooks/fame_hooks.asm
+  src/hooks/heal_hooks.asm
   src/hooks/limit_hooks.asm
   src/hooks/misc_hooks.asm
+  src/hooks/shipment_hooks.asm
+  src/hooks/unittype_hooks.asm
 )
 target_compile_definitions(UHC PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
 # For `include common.inc` in the hook files.

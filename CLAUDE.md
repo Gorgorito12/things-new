@@ -42,6 +42,11 @@ To test:
 - Its first run reset `optiongrfxres` to `800 x 600`. It was restored to `1920 x 1080` on 2026-10-28; the backup is `NewProfile3.xml.bak-uhc-20261028`.
 - Check that setting if the resolution changes again.
 
+**Test data.** `data\` holds both `protoy.xml` and the compiled `protoy.xml.XMB`, and which one the game prefers is not established. In the copy both carry `AbstractHealNonIdle` on `Surgeon`, `ypMonkIndian` and `ypMonkIndian2`:
+- the XMB was edited with `python -I tools/xmbedit.py <in.XMB> <out.XMB> <unit> AbstractHealNonIdle …` (it skips units that already have the type);
+- the XML was edited by hand;
+- the originals are `protoy.xml.uhc-orig` and `protoy.xml.XMB.uhc-orig`.
+
 There are no unit tests yet.
 
 ## Layout
@@ -54,10 +59,12 @@ There are no unit tests yet.
   - `features/*.cpp`: one apply function per key group.
   - `hooks/*.asm`: MASM hooks.
   - `generated/sites.h`: the expected bytes, written by `tools/gen_sites.py`.
+  - `unittypes.*`: extra abstract unit types that features request. Stock only knows the abstract types compiled into the exe and drops any other `<UnitType>`.
 
   Hooks never relocate instructions. Each one re-executes or replaces the stock code itself and leaves through an explicit `jmp` to the verified continuation. Implemented so far:
   - `removeConversionRestriction`, `ignoreRegistryPath`, `deckCardCount`, `basePop`/`extraPop` (M2);
-  - `noAILimit`, `customRevolutionBanners`, `removeFameRestriction` (M3).
+  - `noAILimit`, `customRevolutionBanners`, `removeFameRestriction` (M3);
+  - beyond upstream: `hcShipmentPointFallback`, `healNonIdle` (`docs/uhc-address-map.md`, "Beyond upstream").
 
   `customCheats` waits for the plugin loader (M6): upstream registers cheats only from `.upl` plugins.
 - `docs/binaries.md`: hashes of every `age3y.exe` / `UHC.dll` build in the install, the loader stub layout, and what each mod's exe patches.

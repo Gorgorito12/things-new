@@ -157,6 +157,19 @@ Evidence: `cs` (capstone of the syscall bodies; they are not Ghidra functions).
 | Water gather unit ID | `[hc+190h]` | The land/water pair is serialized together at 0x8D30C7..0x8D310E (player save/load). The player caches them at `[player+A4h]` / `[player+A8h]`, then writes them through 0xA3FEB8. |
 | Command type 4 | factory 0x5695FC → jump table 0x5694E0, case 4 (0x568CE2) | `new(0xAC)`; ctor 0x7D549A, vtable 0xB87DB8. Fields: `+8Ch..+94h` = position (init −1.0f), `+98h..+A0h` = IDs (init −1), `+A8h` = 3. FUN_007D551B validates a position and shows string 0x8546 on failure. Slot 2 (0x7D54F7) is the destructor. Which slot executes is not established. |
 
+**Dynamic trace (2026-10-28).** Captured with hardware read/write breakpoints on `hc+18Ch`/`hc+190h` of player 1 (`rea/evidence/age3y-b1a1dab7/hwbp.py`, `hwbp-log.txt`). The game starts with land = water = −1.
+
+| Instruction | Role | Notes |
+|---|---|---|
+| 0x4C6BC6 | Frequent reader (444 hits) | Called from 0x4C6D3D / 0x4C61DC, i.e. FUN_004C6CAE: "get a valid gather unit". |
+| 0x8527F6 | Setter, when the user moves the flag | In FUN_008527EC: `void __thiscall(hc, int unitId) { [hc+18Ch] = unitId; }`. Reached from the command path through 0x7D5810 → 0x64D31F → 0x481BC7. 0x85282F is the water twin. |
+| 0x6697FF | Cleared to −1 when the TC was deleted | Unit-removal path, via 0x8584BA ← 0x511901 ← 0x66AEA5. |
+| 0x669E45 | Immediately set again, to the other building | Inside FUN_004C6CAE, at `LAB_004c6cb2`, `if (store) [hc+18Ch] = unit[4]`. |
+
+**Stock already has a fallback** (FUN_004C6CAE). When the gather unit is gone it takes the first alive, valid unit of the player from these type lists, in this order: `db+5E14h` (probably TownCenter) → FortFrontier (`+6034h`) → WarHut (`+6074h`) → Blockhouse (`+6044h`) → NoblesHut (`+606Ch`) → `+19B0h` → `+5EBCh` → `+5F6Ch` (names not resolved).
+
+Each candidate must pass `vtbl+A4h`, `0x44DDB4` and `0x4802C6 != 1`. A building outside these lists is never chosen. Ev: `ev_dc7644827b43…`.
+
 Readers of the gather unit through `[player+84h]` (the HC-specific pattern): only 0x728089 (aiGetHCGatherPoint) and 0x8D30D1 (save/load). The shipment-arrival and flag-drawing code therefore read it some other way, probably through a cached HC pointer.
 
 Still open:
@@ -165,6 +178,62 @@ Still open:
 - where shipment arrival resolves the spawn point.
 
 The `+18Ch` offset is shared by many classes (67 writes).
+
+## Unit types and healing (2026-10-28, for `healNonIdle`)
+
+Evidence: `cs` (capstone of the stock exe), plus a runtime memory read of the test copy (see the end of this section). `db = [[C66234h]+140h]`.
+
+**Unit types.**
+
+| What | Where | Notes |
+|---|---|---|
+| Unittype name table | `db+190h` | Holds protos and abstract types. Name count `[db+194h]` = next free ID; the stock code asserts IDs are dense. |
+| Proto count | `[db+19B0h]` | IDs `0..protoCount-1` are protos; abstract types follow. Written at 0x51A59E after the proto names are registered. |
+| Name → bucket | 0x58E685 | `int __thiscall(table, const char* name)`: upper-cases the name, hashes it through the function pointer `[table+181Ch]`, masks with `[table+1818h]`, `ret 4`. **Not** a lookup by itself. |
+| Find name | 0x40295B | `bool __thiscall(table, const char* name, int bucket, int* id)`, `ret 0Ch`. Callers set `*id = -1` first. The pair 0x58E685 + 0x40295B is the stock lookup pattern, e.g. in the logical-type cache at 0x51BA4E. |
+| Add name | 0x5E3549 | `__thiscall(table, const char* name, const int* id)`, `ret 8`. Copies the name (0x467BAA) and stores `*id`; if the name already exists it takes another path (0x65951D). |
+| Built-in abstract types | FUN_0051A5DC | `thiscall(db)`. Registers a **fixed list** of names compiled into the exe (`Unit`, `Ship`, `Building` … `AbstractJapaneseMonk`) with `id = protoCount + k`. It then registers the 75 names of the logical-type table at 0xDC10F0..0xDC121C (whose IDs are cached at 0xDC121C+). Epilogue at 0x51BA31. |
+| Proto unittype bitset | `proto+30h` (bytes), `proto+34h` (bit count) | Sized at 0x5F769A to `[db+194h] - [db+19B0h]` through 0x4219EA, so the size follows the table and is not a constant. Bit = `id - protoCount`. |
+| Is-a test | 0x44D7FA | `bool __thiscall(proto, int typeId)`, `ret 4`. A proto ID compares against `proto+8` (or `proto+4`); an abstract ID tests bit `id - protoCount`. Use this for IDs from the name table. |
+| Raw bit test | 0x44CAC4 | `bool __thiscall(proto, int bitIndex)`, `ret 4`. Takes the **abstract index** (already minus protoCount), not a table ID. |
+
+**Consequence.** Every abstract type that `protoy.xml` may use is in the exe: 153 of the 155 non-proto `<UnitType>` names in stock `protoy.xml` are strings in the exe. The other two are `AbstractTypeVictoryPointBuilding` (ignored by stock) and our own. A `<UnitType>` whose name is not registered is silently dropped. A new marker type must therefore be added to the table, which `src/unittypes.cpp` does at 0x51BA31.
+
+**Healing.**
+
+| What | Where | Notes |
+|---|---|---|
+| Hit points | `unit+64h` (float) | Found with a hardware write breakpoint while an Indian monk healed (`rea/evidence/age3y-b1a1dab7/hwbp2.py`, `hwbp2-log.txt`). Writers 0x4820B7 (FUN_004820A1, add) and 0x4A17A9 (clamp to max). |
+| Max hit points | 0x480408 | `float __thiscall(unit)` (st0). |
+| Add hit points | FUN_004823A3 | `(amount, 1)`, a wrapper over FUN_004820A1. |
+| Heal tick | FUN_009E0B53 | The heal action applying one tick. EDI = target, ESI = heal action, `[esi+10h]` = healer, `[esi+14h]` = target ID. Action state byte at `action+61h` (0 start, 8 healing, 10 stop). |
+| "Target busy" check | 0x9E0C79..0x9E0C9E | `[target+58h]` = the target's current action. If it exists and `0x4802D4(-1)` (moving) or `0x9CA5AC` (fighting) returns 1, the tick ends at 0x9E0D3F. Otherwise it heals from 0x9E0C9F. |
+| Automatic heal search | FUN_009CD865 | `thiscall(owner)`, healer at `[owner+4]` (EBP in the body). It returns at once unless `[[healer+5Ch]+44h]` is set. It runs a unit query around the healer (world `+184h`, 0x49A098; result entries of 38h bytes). It takes the first candidate that passes every check: not the healer itself; HP ratio (0x45F295) in [1e-6, 1); `vtbl+A4h`; `[c+58h]` not null; **0x44F1A7 idle**; not abstract bit 6 (0x44CAC4); not flag 0x42 (0x44D863); 0x4EE797(player, healer, c, 5, …) for action type 5; 0x9C2E40(5, 8) ≤ 0; and the reach test 0x7FCF2D. Then it starts the action through 0x9CBDC4(id). Called from 0x68C14E with `ecx = [unit+58h]`. |
+| Target is idle | 0x44F1A7 | `bool __thiscall(actionManager)`. True when `[mgr+24h]` (current action) is null or has type byte `[action+60h]` = 7. Otherwise it returns false, except for a per-player case (`[player+4FCh] = 1`, 0x45FC1A). |
+| Command predicate | FUN_004C6CD7 | `bool __thiscall(?, word code, target, result*, out*)`, `ret 10h`. `code - 8` indexes the byte table at 0x4C726C → jump table 0x4C7230 (15 cases); out-of-range codes return true. Code 0x41 (case 8, 0x4C6D58) requires: target alive (0x44DDB4), `[target+68h] != 0`, HP < max, not fighting (0x9CA5AC), no action of type 0x35 (0x4C72E5), then 0x9C0B73. Code 0x42 (case 9) requires the same HP/fighting checks **and** an action of type 0x35. `this` is the **player**: case 11 reads `[this+84h]`, the home city. Case 8 overwrites it with the target. 12 callers, e.g. 0x695510 with code 0x41. The dynamic trace below never reached cases 8/9 while surgeons healed, so the predicate is not on the heal path. |
+
+**Runtime check (2026-10-28).** The test copy has `AbstractHealNonIdle` added to `ypMonkIndian` and `ypMonkIndian2`. After the database loads, `UHC.log` shows `AbstractHealNonIdle -> 1666 (bit 203 of 204)`. Reading memory then gave protoCount 1463 and 1667 names. Every proto's bitset has 204 bits. Bit 203 is set on both Indian monks and clear on `ypMonkJapanese` and `Explorer`.
+
+**Dynamic trace (2026-10-28).** `rea/evidence/age3y-b1a1dab7/hwbp3.py`, `hwbp3-log.txt`: hardware execute breakpoints at 0x4C6D91, 0x4C6DDD and 0x9E0B53 while British surgeons stood next to a fighting explorer.
+- The surgeons only healed after the fight ended. The predicate breakpoints never fired.
+- The heal tick ran 31 times, through two chains:
+  - `0x9E0DBD ← 0x4893AB ← 0x48979C ← 0x482F9A`: the action update.
+  - `0x9E0DBD ← 0x494938 ← 0x9CBE7A ← 0x9CDA77`: the action's first tick, started by the automatic search FUN_009CD865.
+- That search's idle test (0x44F1A7) is what kept the fighting explorer out.
+
+## Poison leftovers in the stock engine (2026-10-28, for the DE-style poison)
+
+Evidence: `cs` scans of the stock exe and the tactics files extracted from `Data*.bar`.
+
+| What | Where | Notes |
+|---|---|---|
+| Tactics `<action>` tag table | registered at 0x51D000..0x51E400 through 0x59B738(name, handler) | 105 tags, `MaxHitpoints` … `UseBuckets`. Each flag handler sets a bit in `[[ctx]+64h]`, which by inference is the tactic action's flag dword at `+8`. Bits: Active 0, Persistent 2, SingleUse 3, AddResourcesFasterWhenOwned 5, MuteDamage 6, ReflectDamage 7, **Poison 8** (0xA11D4D), Throw 14 (0xA11D5B). |
+| Throw reader | 0x7F9DDA | `test byte [esi+9], 40h` in the attack rollover text (string 0xA43C). This places the flag dword at `+8`. |
+| Poison reader | none found | No `test byte [reg+9], 1` on a tactic action and no dword-wide test of 100h. The one hit, 0x810EFA, is an unrelated UI object. Not exhaustive: an accessor with a computed mask would escape these scans. |
+| Unit action type names | table at `[esi+2000h]`, around 0x5248C6 | … `EjectUnit` 1Fh, **`Poison` 20h**, `MoveRetry` 21h … The action type byte is at `action+60h`. Only types 2..0Ch and 38h are written as immediates by their constructors, so it is not established whether type 20h has a class. |
+| Protoaction type names | table at `[esi+19B8h]`, around 0x52280F | `Decay`, `Gather` 3, `HandAttack` 4, `Heal` 5, … (Heal = 5 matches 0x4EE797(…, 5, …) in the heal search). |
+
+**Stock data.** No tactics file uses `Poison`, `MuteDamage` or `ReflectDamage` (209 files checked). `NatPoisonArrowFrogs` is an ordinary tech. So the tactics flag parses, but no damage-over-time code was found behind it.
 
 ## IAT slots (from the loader stub and early patches)
 
