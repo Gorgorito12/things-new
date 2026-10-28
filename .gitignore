@@ -8,3 +8,6 @@ rea/
 build/
 out/
 .vs/
+
+# Python bytecode from running the tools
+__pycache__/

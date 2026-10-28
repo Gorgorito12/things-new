@@ -23,6 +23,7 @@ Outcome ApplyCustomRevolutionBanners(const Config& config);
 Outcome ApplyRemoveFameRestriction(const Config& config);
 Outcome ApplyHcShipmentPointFallback(const Config& config);
 Outcome ApplyHealNonIdle(const Config& config);
+Outcome ApplyPerfStats(const Config& config);
 
 inline constexpr Feature kFeatures[] = {
     {"removeConversionRestriction", ApplyRemoveConversionRestriction},
@@ -34,13 +35,14 @@ inline constexpr Feature kFeatures[] = {
     {"removeFameRestriction", ApplyRemoveFameRestriction},
     {"hcShipmentPointFallback", ApplyHcShipmentPointFallback},
     {"healNonIdle", ApplyHealNonIdle},
+    {"perfStats/perfAutoExec", ApplyPerfStats},
 };
 
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
-    "healnonidle",
+    "healnonidle", "perfstats", "perfautoexec", "perfexecfile",
 };
 
 }  // namespace uhc

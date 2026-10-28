@@ -10,7 +10,8 @@ All findings here come from byte diffs against the stock exe, not from REA.
 |---|---|---|---|
 | **Stock Steam** (`bin\`) | 11,598,648 | `b1a1dab7264d2db72e8f8ae1df1e419eecc223b40db00c9d1013a3bc77611d9d` | Analysis target. Also shipped unchanged by Improvement Mod, Hundred Days, Age of Dynasties (Remake). |
 | Wars of Liberty | 11,591,680 | `0a277f14e08df516fe1abd3fd9f8175b40664f3371793afff507f652d5067726` | UHC loader + extra patches (below). |
-| Knights and Barbarians | 11,591,680 | `d21d0173c3028c190055ae1f14f9a4c282e8e58318975fc5d4cefdeb61a15df9` | UHC loader only. |
+| Knights and Barbarians | 11,591,680 | `d21d0173c3028c190055ae1f14f9a4c282e8e58318975fc5d4cefdeb61a15df9` | UHC loader only. Its stored PE checksum (0xB11FCF) is stale; the contents give 0xB18410. |
+| Test bed LAA copy (`C:\AoE3-UHC-Test\age3y-laa.exe`) | 11,591,680 | `8970565c2d3bd01ad5d96280271a2ca1cc6926b19d653fb7e541a2c146b1f611` | K&B exe + Large-Address-Aware (Characteristics 0x10F → 0x12F) + correct checksum 0xB18430. Made by `tools/set_laa.py` (2026-10-28). |
 | Struggle of Indonesia | 11,598,648 | `25ec02bef535c8e6aabf5cc1706b8cd5a289e7e6ff79d223d037a3419a29d072` | Registry key rename only. |
 | The Ottoman Empire | 11,598,648 | `962c716b33576223d1a5681d0df7285c27a02a69d1d2dc423d83b6509c21937f` | Registry key rename only. |
 

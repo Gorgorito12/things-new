@@ -43,7 +43,7 @@ To test:
 - Check that setting if the resolution changes again.
 
 **Test data.** `data\` holds both `protoy.xml` and the compiled `protoy.xml.XMB`, and which one the game prefers is not established. In the copy both carry `AbstractHealNonIdle` on `Surgeon`, `ypMonkIndian` and `ypMonkIndian2`:
-- the XMB was edited with `python -I tools/xmbedit.py <in.XMB> <out.XMB> <unit> AbstractHealNonIdle …` (it skips units that already have the type);
+- the XMB was edited with `python -I tools/xmbedit.py add-unittype <in.XMB> <out.XMB> <unit> AbstractHealNonIdle …` (it skips units that already have the type and warns about unknown unit names);
 - the XML was edited by hand;
 - the originals are `protoy.xml.uhc-orig` and `protoy.xml.XMB.uhc-orig`.
 
@@ -67,6 +67,13 @@ There are no unit tests yet.
   - beyond upstream: `hcShipmentPointFallback`, `healNonIdle` (`docs/uhc-address-map.md`, "Beyond upstream").
 
   `customCheats` waits for the plugin loader (M6): upstream registers cheats only from `.upl` plugins.
+- `README.md`, `LICENSE` (MIT): the public entry point. The README's feature table keeps one honest in-game status per key; update it with every feature.
+- Documentation for modders (keep these in step with the code):
+  - `docs/modding-guide.md`: every cfg key, its data/art requirements, log lines and status;
+  - `docs/how-it-works.md`: the internals of each feature;
+  - `docs/developer-guide.md`: build, safe test bed, adding a feature, RE workflow.
+- `examples/Startup/uhc.cfg`: every implemented key, commented. Add new keys here too.
+- `tools/`: `gen_sites.py`, `bar.py` (BAR archives), `xmbedit.py` (XMB check / to-xml / add-unittype), and `re/` (a ctypes debugger: `trace_writes.py`, `trace_exec.py`, `inspect_unittypes.py`). Usage: `tools/README.md`. Stop a tracer with Ctrl+C, never by killing it: a breakpoint left behind crashes the game.
 - `docs/binaries.md`: hashes of every `age3y.exe` / `UHC.dll` build in the install, the loader stub layout, and what each mod's exe patches.
 - `docs/uhc-address-map.md`: every upstream patch site, with a verification status per row.
 - `docs/engine-symbols.md`: functions, globals, IAT slots and object offsets named by upstream, with a status per row.

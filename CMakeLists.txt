@@ -21,6 +21,7 @@ add_library(UHC SHARED
   src/features/heal.cpp
   src/features/limits.cpp
   src/features/misc.cpp
+  src/features/perf.cpp
   src/features/shipments.cpp
   src/hooks/ai_hooks.asm
   src/hooks/fame_hooks.asm

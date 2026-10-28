@@ -139,6 +139,8 @@ Evidence:
 | HC card array | `hc+204h` | `{data, count, capacity}`; FUN_0062FBC7 appends to it. |
 | Card record | 10 dwords (0x28) | `+0` tech ID, `+0Ch` **required level**, … (built at FUN_0062E6C9 lines ~766-778). |
 | Card-level check | not found | Not near any `+204h` access. Probably behind an accessor or a virtual call; still open. |
+| Max deck size | FUN_007EEFF7 | `int __thiscall(db, int level)`, `ret 4`. Returns 20 for a negative level, 25 past the end of the level table (`mov eax,19h` at 0x7EF005), otherwise the level's `maxdecksize` clamped to 20..25. The callers checked (0x852E45, 0x865D1A) pass `[hc+54h]`; 8 callers in all. `deckCardCount` patches both 25s. |
+| HC level table | `[db+60D0h]`, count `[db+60D4h]` | Records of 12 B: `{xp, maxdecksize, -1}`, loaded from `homecitylevels.xml`. Read from a running game (2026-10-28): 132 levels, 20 cards at level 0, +1 every 10 levels, 25 from level 50. |
 
 ## Home city gather point (2026-10-28, for `hcShipmentPointFallback`)
 
@@ -157,7 +159,7 @@ Evidence: `cs` (capstone of the syscall bodies; they are not Ghidra functions).
 | Water gather unit ID | `[hc+190h]` | The land/water pair is serialized together at 0x8D30C7..0x8D310E (player save/load). The player caches them at `[player+A4h]` / `[player+A8h]`, then writes them through 0xA3FEB8. |
 | Command type 4 | factory 0x5695FC → jump table 0x5694E0, case 4 (0x568CE2) | `new(0xAC)`; ctor 0x7D549A, vtable 0xB87DB8. Fields: `+8Ch..+94h` = position (init −1.0f), `+98h..+A0h` = IDs (init −1), `+A8h` = 3. FUN_007D551B validates a position and shows string 0x8546 on failure. Slot 2 (0x7D54F7) is the destructor. Which slot executes is not established. |
 
-**Dynamic trace (2026-10-28).** Captured with hardware read/write breakpoints on `hc+18Ch`/`hc+190h` of player 1 (`rea/evidence/age3y-b1a1dab7/hwbp.py`, `hwbp-log.txt`). The game starts with land = water = −1.
+**Dynamic trace (2026-10-28).** Captured with hardware read/write breakpoints on `hc+18Ch`/`hc+190h` of player 1. Reproduce it with `python -I tools/re/trace_writes.py gather.txt hc:1+0x18C hc:1+0x190 --rw` (the original log, `hwbp-log.txt`, is local evidence under `rea/`). The game starts with land = water = −1.
 
 | Instruction | Role | Notes |
 |---|---|---|
@@ -203,7 +205,7 @@ Evidence: `cs` (capstone of the stock exe), plus a runtime memory read of the te
 
 | What | Where | Notes |
 |---|---|---|
-| Hit points | `unit+64h` (float) | Found with a hardware write breakpoint while an Indian monk healed (`rea/evidence/age3y-b1a1dab7/hwbp2.py`, `hwbp2-log.txt`). Writers 0x4820B7 (FUN_004820A1, add) and 0x4A17A9 (clamp to max). |
+| Hit points | `unit+64h` (float) | Found by polling unit memory for a float that dropped when hit and rose while an Indian monk healed, then confirmed with a hardware write breakpoint (local evidence `hwbp2-log.txt`; reproduce with `tools/re/trace_writes.py hp.txt unit:Explorer+0x64`). Writers 0x4820B7 (FUN_004820A1, which sets the value) and 0x4A17A9 (clamp to max). |
 | Max hit points | 0x480408 | `float __thiscall(unit)` (st0). |
 | Add hit points | FUN_004823A3 | `(amount, 1)`, a wrapper over FUN_004820A1. |
 | Heal tick | FUN_009E0B53 | The heal action applying one tick. EDI = target, ESI = heal action, `[esi+10h]` = healer, `[esi+14h]` = target ID. Action state byte at `action+61h` (0 start, 8 healing, 10 stop). |
@@ -214,7 +216,7 @@ Evidence: `cs` (capstone of the stock exe), plus a runtime memory read of the te
 
 **Runtime check (2026-10-28).** The test copy has `AbstractHealNonIdle` added to `ypMonkIndian` and `ypMonkIndian2`. After the database loads, `UHC.log` shows `AbstractHealNonIdle -> 1666 (bit 203 of 204)`. Reading memory then gave protoCount 1463 and 1667 names. Every proto's bitset has 204 bits. Bit 203 is set on both Indian monks and clear on `ypMonkJapanese` and `Explorer`.
 
-**Dynamic trace (2026-10-28).** `rea/evidence/age3y-b1a1dab7/hwbp3.py`, `hwbp3-log.txt`: hardware execute breakpoints at 0x4C6D91, 0x4C6DDD and 0x9E0B53 while British surgeons stood next to a fighting explorer.
+**Dynamic trace (2026-10-28).** Hardware execute breakpoints at 0x4C6D91, 0x4C6DDD and 0x9E0B53 while British surgeons stood next to a fighting explorer (local evidence `hwbp3-log.txt`). Reproduce it with `python -I tools/re/trace_exec.py heal.txt 0x4C6D91=pred-0x41@esi 0x4C6DDD=pred-0x42@esi 0x9E0B53=heal-tick@[ecx+0x10]`.
 - The surgeons only healed after the fight ended. The predicate breakpoints never fired.
 - The heal tick ran 31 times, through two chains:
   - `0x9E0DBD ← 0x4893AB ← 0x48979C ← 0x482F9A`: the action update.
@@ -227,13 +229,41 @@ Evidence: `cs` scans of the stock exe and the tactics files extracted from `Data
 
 | What | Where | Notes |
 |---|---|---|
-| Tactics `<action>` tag table | registered at 0x51D000..0x51E400 through 0x59B738(name, handler) | 105 tags, `MaxHitpoints` … `UseBuckets`. Each flag handler sets a bit in `[[ctx]+64h]`, which by inference is the tactic action's flag dword at `+8`. Bits: Active 0, Persistent 2, SingleUse 3, AddResourcesFasterWhenOwned 5, MuteDamage 6, ReflectDamage 7, **Poison 8** (0xA11D4D), Throw 14 (0xA11D5B). |
-| Throw reader | 0x7F9DDA | `test byte [esi+9], 40h` in the attack rollover text (string 0xA43C). This places the flag dword at `+8`. |
+| Flag tags of the `<Unit>` tag map | registered at 0x51D000..0x51E400 through 0x59B738(name, handler); the map is described under "Parsers" below | 105 tags, `MaxHitpoints` … `UseBuckets`. Each flag handler sets a bit in the bytes that `[[target]+64h]` points to, the same flag bytes the action parser uses (`[action+64h]`). Bits: Active 0, Persistent 2, SingleUse 3, AddResourcesFasterWhenOwned 5, MuteDamage 6, ReflectDamage 7, **Poison 8** (0xA11D4D), Throw 14 (0xA11D5B). |
+| Throw reader | 0x7F9DDA | `test byte [esi+9], 40h` in the attack rollover text (string 0xA43C). It matches the Throw bit if `esi+8` is that flag storage; the object in ESI was not identified (inference). |
 | Poison reader | none found | No `test byte [reg+9], 1` on a tactic action and no dword-wide test of 100h. The one hit, 0x810EFA, is an unrelated UI object. Not exhaustive: an accessor with a computed mask would escape these scans. |
 | Unit action type names | table at `[esi+2000h]`, around 0x5248C6 | … `EjectUnit` 1Fh, **`Poison` 20h**, `MoveRetry` 21h … The action type byte is at `action+60h`. Only types 2..0Ch and 38h are written as immediates by their constructors, so it is not established whether type 20h has a class. |
 | Protoaction type names | table at `[esi+19B8h]`, around 0x52280F | `Decay`, `Gather` 3, `HandAttack` 4, `Heal` 5, … (Heal = 5 matches 0x4EE797(…, 5, …) in the heal search). |
 
-**Stock data.** No tactics file uses `Poison`, `MuteDamage` or `ReflectDamage` (209 files checked). `NatPoisonArrowFrogs` is an ordinary tech. So the tactics flag parses, but no damage-over-time code was found behind it.
+**Parsers** (`ev_591176ac…`; the pseudocode is saved locally as `rea/evidence/age3y-b1a1dab7/pseudo_protoaction_parser_5f98a0.c`, not in the repository).
+
+| What | Where | Notes |
+|---|---|---|
+| `<Unit>` tag map | FUN_0051CE1D, map at `this+0Ch`, filled through 0x59B738(name, handler) | Called from 0x51DB46 (a second map at `this+C2Ch` is initialized there too). 105 entries: the `protoy` unit tags (`DBID`, `Icon`, `AnimFile`, `MaxHitpoints`, `Flag`, `Lifespan` 0x5FCF4B, `ProtoAction` 0x5FA158, `Armor`, …), followed by action-style tags (`Rate` … `UseBuckets`, including `Poison`). Handler shape: `handler(?, node, target)`, `ret`. Attributes are read with 0x598F37(node, "attr", &out); text is converted with 0x59AC86 (float). |
+| `<ProtoAction>` handler | 0x5FA158 | `edi = target = proto`, `ebx = node`. It looks up the action named by the node's `<Name>` in the proto's action set `[proto+44h]` (0x5F8FDB). If found: `FUN_005F98A0([proto+44h], proto, action, node)`. If the proto has no such action (e.g. no tactics entry), it goes to 0x5FC891 without parsing. |
+| Action parser | FUN_005F98A0 | `thiscall(actionSet, proto, action, node)`. An if-chain of 87 compares `0x443C10(nameStr, L"Tag", 0, -1)` (0 = equal), shared by `.tactics` `<action>` and `protoy` `<ProtoAction>`. In the loop, EDI = child node and ESI = its name (the XMB element name `[[node+4]+18h][node+18h]`); the text is `*(wchar_t**)(node+14h)`. `action[1]` = action name ID (from `<Name>`), `action[2]` = type, `[action+64h]` = flag bytes. The last compare is `ModifyExclusive` (0x5FA10F); an unknown tag falls through 0x5FA11E to the loop increment 0x5FA126 and is silently ignored. Handlers also return to 0x5FA126, so only 0x5FA11E is a safe "unknown tag" hook. |
+
+**Stock data.** No tactics file (209 checked) and no `protoy.xml` entry uses `Poison`, `MuteDamage` or `ReflectDamage`. The only "poison" in the data is `NatPoisonArrowFrogs`, an ordinary tech. So the flag parses, but no damage-over-time code was found behind it.
+
+## Rendering, threads and timing (2026-10-28, for the performance investigation)
+
+Full write-up and evidence: [performance.md](performance.md). REA bundle: `rea/evidence/age3y-b1a1dab7/bundle-perf-20261028.json`.
+
+| VA | Role | Notes |
+|---|---|---|
+| 0x5AA825 | Timer setup | `timeBeginPeriod(1)`; the matching `timeEndPeriod(1)` is in the shutdown function FUN_0057D028. |
+| 0x455D91 | Sim update length | Single-player step = real elapsed time, capped at 100 ms × game speed. `fixedUpdate` / `RunAsFastAsPossible` / `MinRandUpdate` branches. |
+| 0x54EF1E | Renderer ctor | Sets PresentationInterval `[+638h]` = IMMEDIATE and calls 0x54EDAA. |
+| 0x54E60B | Renderer init | `Direct3DCreate9(0x20)` → `[+488h]`; adapter `[+640h]` from cfg `d3dadapter`. |
+| 0x545BB5 | Create/reset device | Present params at `+604h`: BackBufferCount 1, DISCARD. BehaviorFlags `(MIXED 80h or SOFTWARE 20h) \| MULTITHREADED 4`. CreateDevice at 0x545D78; device at `+4D0h`. |
+| 0x54EDAA | Skinning MT gate | MT = `!singleThreadedBatcher && cpus > 1` → `[renderer+9290h]`, through 0x54ED40 on batchers at `+8EE4h` / `+9294h`. |
+| 0x5D6B8A | Skinning worker start | Creates the single worker 0x4058BF (event 0xC674B8, CS 0xC674C8). Called once from 0x5D6B53 when `[renderer+9290h]` is set. |
+| 0x40B65E | Deform (producer) | Queues a job (cap 0x100, scratch cap 0x5000 `__m128`) and calls `SetEvent`, or deforms synchronously. |
+| 0x4058BF | Skinning worker | Takes jobs under the CS while `[0xC674C0]`; done count `[0xC67500]`; never told to quit. |
+| 0x40599C | Queue flush | Drains on the calling thread with `[0xC674C0] = 0`, spins until the worker finishes, resets the queue. |
+| 0x40B54F | Run one job | `thiscall(deformer, job*)` → `deformerdlly.dll` SSE exports by vertex format. |
+| 0x5734E0 | Register cfg variable | `thiscall(0xC66500, name, desc, default?, 0)` → ID. |
+| 0x4020C3 | Cfg "is defined" | `thiscall(0xC66500, id)`. |
 
 ## IAT slots (from the loader stub and early patches)
 
@@ -244,3 +274,10 @@ lstrcpynW 0xB843B0 · FindNextFileW 0xB843D0 · FindFirstFileW 0xB843D4
 
 All 15 are **confirmed** by parsing the stock exe's import table (2026-10-27, Python, not REA):
 every slot resolves to the named KERNEL32/USER32 import.
+
+Timing, threads and Direct3D (confirmed the same way, 2026-10-28): timeGetTime 0xB8400C ·
+timeEndPeriod 0xB84010 · timeBeginPeriod 0xB84014 · Direct3DCreate9 0xB84164 · GetSystemInfo 0xB841D0 ·
+QueryPerformanceCounter 0xB8426C · QueryPerformanceFrequency 0xB84270 · CreateEventW 0xB84274 ·
+CreateThread 0xB84314 · Sleep 0xB84324 · WaitForSingleObject 0xB84328 · SleepEx 0xB84364 ·
+GetTickCount 0xB843A4 · SetThreadPriority 0xB843E0 · SetPriorityClass 0xB843E4 · GetPriorityClass 0xB843E8 ·
+GetThreadPriority 0xB843EC · SetEvent 0xB84400

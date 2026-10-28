@@ -25,7 +25,7 @@ file size; the rows below record what was verified against this build on 2026-10
   - `cs` = capstone 5.0.6 disassembly of the file bytes, with two boundary checks:
     - a linear decode from the Ghidra entry, where the site lies in the entry's contiguous chunk;
     - decodes from Site−1…Site−48, which must land on Site.
-  - Scripts and outputs are in `rea/evidence/age3y-b1a1dab7/`.
+  - Scripts and outputs are local evidence in `rea/evidence/age3y-b1a1dab7/` (not in the repository). The method, with a runnable example, is in [developer-guide.md](developer-guide.md#byte-level-checks-with-capstone).
 - **Function**: the containing procedure from `E1`. "—" means the address lies in no Ghidra function (13 sites); those addresses resolve only through REA's file-offset fallback, so `E1`'s pseudocode for them is unrelated and must be ignored.
 - **Source refs** are `file:line` in `reference/AoE3UnHardcoded/DLL`. The cfg key → patch dispatch is in `UHC.cpp:158-329` (parse) and `UHC.cpp:416-482` (apply).
 - **Byte notation:** `NNh` = hex and `B` = bytes (`5 B` = 5 bytes). `[x]` = memory at x; `[C66234h]` is the game object pointer.
@@ -35,7 +35,7 @@ file size; the rows below record what was verified against this build on 2026-10
 | Patch | cfg key | Site VA | End VA | Type | Source | Status | Evidence | Function | Notes |
 |---|---|---|---|---|---|---|---|---|---|
 | AILimit | `noAILimit` | 0x603B0B | 0x603C4F | replace | Limits.asm:20 | confirmed | E1, E2, cs | 0x603AB7 | Stock fills a hard-coded personality table: 11 entries, or 14 when the TAD flag `[[C66234h]+C48h]&2` is set. It stores the count in `[esp+40h]` and the table in `[esp+50h]`; the cave writes both. **Cave defect**, see below. |
-| DeckLimit | `deckCardCount` | 0x7EF026 | 0x7EF030 | replace | Limits.asm:36 | confirmed | E1, cs | 0x7EEFF7 | Stock `cmp eax,19h / jle / mov eax,19h`: a 25-card cap. |
+| DeckLimit | `deckCardCount` | 0x7EF026 | 0x7EF030 | replace | Limits.asm:36 | confirmed | E1, cs | 0x7EEFF7 | Stock `cmp eax,19h / jle / mov eax,19h`: a 25-card cap on the level's `maxdecksize` from `homecitylevels.xml`, which still applies (see [engine-symbols.md](engine-symbols.md), "Max deck size"). |
 | PopLimit | `basePop`, `extraPop` | 0x4581F3 | 0x45823F | replace | Limits.asm:52 | confirmed | E1, cs | 0x4581A1 | Stock sequence (out-of-line clamps at 0x679618–0x67963B): extra ≤ 50; pop ≤ extra+200; pop ≤ extra+`[[[C66234h]+13Ch]+31Ch]`; `+[edx+4F4h]` if > 0; pop ≤ 250 (`FAh`). The cave keeps the `4F4h` add but **drops the world+31Ch clamp and the 250 cap**. |
 | TeamLimit (SP) | `enableAllTeams` | 0x7A0709 | 0x7A0709 | detour | Limits.asm:82 | confirmed | E1, cs | 0x7A0628 | Stolen `push 8D31h` (5 B). The cave inserts the team 3/4 strings `8D2Fh`/`8D30h` first. |
 | TeamLimit (MP) | `enableAllTeams` | 0x77674A | 0x77674A | detour | Limits.asm:158 | confirmed | cs | — | Stolen `jne 776780h` (rel8, first instruction, so it is relocated correctly) + `or ecx,-1`. |
@@ -108,20 +108,22 @@ No row is a `mismatch`: every upstream address is valid for this build.
 |---|---|---|---|---|
 | hcShipmentPointFallback | `hcShipmentPointFallback <Proto> …` | 0x669E2E (exit of FUN_004C6CAE) | replace (5 B) | See below. |
 | healNonIdle | `healNonIdle [UnitType]` (default `AbstractHealNonIdle`) | 0x9E0C79 (busy check in FUN_009E0B53); 0x9CD9C7 (idle test in the automatic search FUN_009CD865) | replace (5 B each) | For a healer whose proto is of the marker type: the search treats every candidate as idle (the hook returns AL = 1 instead of calling 0x44F1A7, then continues at 0x9CD9CC), and each heal tick skips the "target moving / fighting" test, continuing at 0x9E0C9F. Any other healer runs the stock code (0x44F1A7, 0x9E0C80). Is-a test: 0x44D7FA. |
-| (extra abstract unit types) | requested by features, e.g. healNonIdle's marker | 0x51BA31 (epilogue of FUN_0051A5DC) | replace (5 B) | Registers each requested name after the stock abstract types, through 0x58E685 / 0x40295B (lookup) and 0x5E3549 (add, `id = [db+194h]`), and hands the ID to the feature. Stock drops unknown `<UnitType>` names, so without this a data-only marker does not exist. See `docs/engine-symbols.md`, "Unit types and healing". |
+| (extra abstract unit types) | requested by features, e.g. healNonIdle's marker | 0x51BA31 (epilogue of FUN_0051A5DC) | replace (5 B) | Registers each requested name after the stock abstract types, through 0x58E685 / 0x40295B (lookup) and 0x5E3549 (add, `id = [db+194h]`), and hands the ID to the feature. Stock drops unknown `<UnitType>` names, so without this a data-only marker does not exist. See [engine-symbols.md](engine-symbols.md), "Unit types and healing". |
 
-**How it works.**
+User-facing descriptions of these features are in [modding-guide.md](modding-guide.md); their internals in [how-it-works.md](how-it-works.md).
+
+**hcShipmentPointFallback, how it works.**
 - The original exit is the "no valid gather unit" path: `pop ebp/edi/esi; xor eax,eax`, continuing at 0x669E33.
 - The hook searches each configured proto with the stock unit query (0x453618 / 0x45356D / 0x4532B4 / 0x453484 / 0x453A36) and applies the same three checks as the stock blocks (verified copy: 0x6698B4..0x669963).
 - On success it jumps to the stock store-and-return path, 0x4C6CB2.
 - Proto names resolve on first use through 0x5A2346.
 - Multiplayer is unverified.
 
-**Stock behavior** (dynamic trace, `rea/evidence/age3y-b1a1dab7/hwbp-log.txt`): deleting the TC clears the point (0x6697FF). FUN_004C6CAE then moves it, but only to TC, FortFrontier, WarHut, Blockhouse, NoblesHut and three unresolved types.
+**Stock behavior** (dynamic trace with `tools/re/trace_writes.py`; the original log, `hwbp-log.txt`, is local evidence): deleting the TC clears the point (0x6697FF). FUN_004C6CAE then moves it, but only to TC, FortFrontier, WarHut, Blockhouse, NoblesHut and three unresolved types.
 
 **healNonIdle, how the sites were found.**
 - **First version: tick only.** It patched only the heal tick. In game, surgeons still ignored a fighting explorer, and the tick hook was never reached.
-- **Dynamic trace** (`hwbp3-log.txt`): the action is started by the automatic search FUN_009CD865, which only takes idle targets (0x44F1A7).
+- **Dynamic trace** (`tools/re/trace_exec.py`; the original log, `hwbp3-log.txt`, is local evidence): the action is started by the automatic search FUN_009CD865, which only takes idle targets (0x44F1A7).
 - **Not this predicate.** FUN_004C6CD7 (codes 0x41/0x42) also tests "fighting", but the trace never reached it while healing.
 - **Confirmed in game (2026-10-28):** with the second hook, a marked British surgeon heals the explorer while it fights.
 - **Still unverified:** whether a direct order (right-click) on a fighting unit goes through any other filter, and the unmarked control (the British Explorer as healer). Multiplayer is also unverified.
