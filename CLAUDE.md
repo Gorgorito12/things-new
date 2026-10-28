@@ -18,16 +18,61 @@ cmake --build build --config Release                      # -> build\Release\UHC
 dumpbin /exports build\Release\UHC.dll                    # must list _UHCMain@0
 ```
 
-There are no tests yet. Nothing here launches the game.
+```
+python -I tools/gen_sites.py "<Steam>\Age Of Empires 3\bin\age3y.exe"   # regenerates src/generated/sites.h
+```
+
+Add a site to the `SITES` list in `tools/gen_sites.py` and regenerate before a feature uses it. The script refuses any exe that is not the stock build.
+
+### Test bed
+
+`C:\AoE3-UHC-Test` is a robocopy of the Steam `bin\` folder, with two changes:
+- `age3y.exe` is replaced by the Knights and Barbarians exe (stock + UHC loader, `d21d0173…`);
+- `UHC.dll` is our build, next to `Startup\uhc.cfg`.
+
+To test:
+1. Copy `build\Release\UHC.dll` there.
+2. Launch `age3y.exe` with that folder as the working directory; `ignoreRegistryPath` makes the game use it.
+3. Read `UHC.log` next to the exe. It shows:
+   - each feature as `applied` / `FAILED`;
+   - the keys not implemented yet;
+   - `hook reached: …` the first time the game runs each hook. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
+
+**Shared profile.** The copy shares the user profile with the normal game: `Documents\My Games\Age of Empires 3\Users3\NewProfile3.xml`. This file is UTF-16.
+- Its first run reset `optiongrfxres` to `800 x 600`. It was restored to `1920 x 1080` on 2026-10-28; the backup is `NewProfile3.xml.bak-uhc-20261028`.
+- Check that setting if the resolution changes again.
+
+There are no unit tests yet.
 
 ## Layout
 
-- `src/`: the DLL. It currently only identifies the host and logs the config path to `UHC.log` next to the exe.
+- `src/`: the DLL.
+  - `dllmain.cpp`: host guard, config load, then the feature loop.
+  - `config.*`: the `uhc.cfg` parser. Keys are case-insensitive.
+  - `patch.*`: patch helpers. `VerifyAll` checks the stock bytes before any write.
+  - `features.h`: the registry and the handled keys.
+  - `features/*.cpp`: one apply function per key group.
+  - `hooks/*.asm`: MASM hooks.
+  - `generated/sites.h`: the expected bytes, written by `tools/gen_sites.py`.
+
+  Hooks never relocate instructions. Each one re-executes or replaces the stock code itself and leaves through an explicit `jmp` to the verified continuation. Implemented so far:
+  - `removeConversionRestriction`, `ignoreRegistryPath`, `deckCardCount`, `basePop`/`extraPop` (M2);
+  - `noAILimit`, `customRevolutionBanners`, `removeFameRestriction` (M3).
+
+  `customCheats` waits for the plugin loader (M6): upstream registers cheats only from `.upl` plugins.
 - `docs/binaries.md`: hashes of every `age3y.exe` / `UHC.dll` build in the install, the loader stub layout, and what each mod's exe patches.
 - `docs/uhc-address-map.md`: every upstream patch site, with a verification status per row.
 - `docs/engine-symbols.md`: functions, globals, IAT slots and object offsets named by upstream, with a status per row.
+- `docs/wol-uhc-map.md`: WoL's `uhc.dll`. It covers:
+  - identity, libraries and patch mechanisms (upstream fake-instruction caves plus `remod::trackable_memory_patch`);
+  - a cross-check of the upstream caves;
+  - per-cfg-key candidate sites;
+  - the 54 `*Feature` classes.
 - `reference/AoE3UnHardcoded/` (gitignored): shallow clone of upstream. **It has no license.** Read it for addresses and behavior, but never copy its code into `src/`. Zydis (MIT) is the only clearly reusable dependency.
 - `rea/` (gitignored): REA snapshots (`rea/snapshots/`) and exported evidence bundles (`rea/evidence/`).
+  - Both are named `<target>-<sha8>`, e.g. `age3y-b1a1dab7`, `wol-uhc-c070d138`.
+  - Each evidence folder also holds the capstone/pefile scripts and their outputs that back the `cs` evidence in `docs/`.
+  - Those scripts need a venv with `capstone` 5.0.6 and `pefile`, which is not part of the repo.
 
 ## Target
 
@@ -81,4 +126,5 @@ Full byte layout: `docs/binaries.md`.
 - Mod folders inside the install ship their own `age3y.exe`. Check the SHA-256 before trusting any address; known builds are listed in `docs/binaries.md`.
 - WoL's `uhc.dll` implements options that are not in upstream (e.g. `noAILimitV2`); only its binary is available. Its exe also patches `AI3`→`AI4`, `RM3`→`RM4`, `eso.com`→`age3.us`, and sets LAA.
 - Upstream has known defects; the list is in `docs/uhc-address-map.md`. Don't reproduce them, notably the `customSyscalls` table overflow.
+- **MASM object names.** Don't give a `.asm` file the same base name as a `.cpp` (for example `limits.asm` and `limits.cpp`). CMake then puts the object in a subfolder that `ml.exe` doesn't create, and the build fails with A1000.
 - Never modify anything in the Steam install. The sibling `AoE3-Mod-Launcher` project uses a folder with a stock `age3y.exe` as the clean clone source for mods. Test on copies only.

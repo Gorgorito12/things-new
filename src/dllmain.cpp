@@ -2,10 +2,13 @@
 // before the game's own startup code runs (see docs/binaries.md).
 #include <windows.h>
 
-#include <cstdarg>
-#include <cstdio>
 #include <cstring>
 #include <cwchar>
+#include <string>
+
+#include "config.h"
+#include "features.h"
+#include "log.h"
 
 namespace {
 
@@ -33,28 +36,21 @@ bool IsUhcPatchedAge3y() {
   return std::memcmp(kLoaderDllName, "UHC.dll", sizeof("UHC.dll")) == 0;
 }
 
-void Log(const wchar_t* format, ...) {
-  wchar_t path[MAX_PATH];
-  const DWORD len = GetModuleFileNameW(nullptr, path, MAX_PATH);
+// The patched path is relative (default Startup\uhc.cfg). Resolve it against the executable's
+// folder rather than the current directory, which a shortcut can point elsewhere.
+std::wstring ResolveConfigPath() {
+  std::wstring relative(kConfigPath, wcsnlen_s(kConfigPath, kConfigPathMax));
+  if (relative.size() >= 2 && (relative[1] == L':' || relative[0] == L'\\')) {
+    return relative;
+  }
+  wchar_t exe[MAX_PATH];
+  const DWORD len = GetModuleFileNameW(nullptr, exe, MAX_PATH);
   if (len == 0 || len == MAX_PATH) {
-    return;
+    return relative;
   }
-  wchar_t* slash = std::wcsrchr(path, L'\\');
-  if (slash == nullptr) {
-    return;
-  }
-  wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - path), L"UHC.log");
-
-  FILE* file = nullptr;
-  if (_wfopen_s(&file, path, L"a, ccs=UTF-8") != 0 || file == nullptr) {
-    return;
-  }
-  va_list args;
-  va_start(args, format);
-  std::vfwprintf(file, format, args);
-  va_end(args);
-  std::fputwc(L'\n', file);
-  std::fclose(file);
+  std::wstring path(exe, len);
+  path.resize(path.find_last_of(L'\\') + 1);
+  return path + relative;
 }
 
 }  // namespace
@@ -62,11 +58,44 @@ void Log(const wchar_t* format, ...) {
 // MSVC decorates this as _UHCMain@0, the exact name the loader stub passes to GetProcAddress.
 extern "C" __declspec(dllexport) void __stdcall UHCMain() {
   if (!IsUhcPatchedAge3y()) {
-    Log(L"UHCMain: host is not a UHC-patched age3y.exe; doing nothing");
+    uhc::Log(L"UHCMain: host is not a UHC-patched age3y.exe; doing nothing");
     return;
   }
-  const size_t len = wcsnlen_s(kConfigPath, kConfigPathMax);
-  Log(L"UHCMain: config path \"%.*s\"", static_cast<int>(len), kConfigPath);
+  const std::wstring path = ResolveConfigPath();
+  uhc::Config config;
+  if (!config.Load(path)) {
+    uhc::Log(L"UHCMain: cannot read %ls (error %lu); no features applied", path.c_str(),
+             GetLastError());
+    return;
+  }
+  uhc::Log(L"UHCMain: %ls, %zu keys", path.c_str(), config.entries().size());
+
+  int applied = 0;
+  int failed = 0;
+  for (const uhc::Feature& feature : uhc::kFeatures) {
+    switch (feature.apply(config)) {
+      case uhc::Outcome::kApplied:
+        ++applied;
+        uhc::Log(L"%hs: applied", feature.name);
+        break;
+      case uhc::Outcome::kFailed:
+        ++failed;
+        uhc::Log(L"%hs: FAILED", feature.name);
+        break;
+      case uhc::Outcome::kNotConfigured:
+        break;
+    }
+  }
+  for (const auto& [key, lines] : config.entries()) {
+    bool handled = false;
+    for (const char* known : uhc::kHandledKeys) {
+      handled = handled || key == known;
+    }
+    if (!handled) {
+      uhc::Log(L"%hs: not implemented yet; ignored", key.c_str());
+    }
+  }
+  uhc::Log(L"UHCMain: %d applied, %d failed", applied, failed);
 }
 
 BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
