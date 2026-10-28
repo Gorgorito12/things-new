@@ -71,7 +71,8 @@ There are no unit tests yet.
 - Documentation for modders (keep these in step with the code):
   - `docs/modding-guide.md`: every cfg key, its data/art requirements, log lines and status;
   - `docs/how-it-works.md`: the internals of each feature;
-  - `docs/developer-guide.md`: build, safe test bed, adding a feature, RE workflow.
+  - `docs/developer-guide.md`: build, safe test bed, adding a feature, RE workflow;
+  - `docs/porting-to-another-dll.md`: rebuilding the beyond-upstream features inside a mod's own DLL (WoL). Update its site table and contracts when a beyond-upstream feature changes or a new one is added.
 - `examples/Startup/uhc.cfg`: every implemented key, commented. Add new keys here too: the release template is generated from it.
 - **Version and releases.** The version lives only in `project(UHC VERSION x.y.z)` in `CMakeLists.txt`; CMake generates `build/generated/version.h` from `src/version.h.in` for `dllmain.cpp` (first log line `UHC.dll x.y.z`) and `src/version.rc` (file properties). `python -I tools/package_release.py` builds `dist/UHC-x.y.z.zip` (gitignored) after a Release build; the user uploads it to GitHub Releases. Procedure: `docs/developer-guide.md`, section 6. When adding a key, also update the key list of `README.txt` inside `package_release.py`.
 - `tools/`: `gen_sites.py`, `package_release.py`, `bar.py` (BAR archives), `xmbedit.py` (XMB check / to-xml / add-unittype), and `re/` (a ctypes debugger: `trace_writes.py`, `trace_exec.py`, `inspect_unittypes.py`). Usage: `tools/README.md`. Stop a tracer with Ctrl+C, never by killing it: a breakpoint left behind crashes the game.
