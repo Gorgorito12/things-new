@@ -1,8 +1,9 @@
 // perfStats: passive diagnostics for the performance work (docs/performance.md). It wraps
 // Direct3DCreate9 through its IAT slot, then IDirect3D9::CreateDevice and
 // IDirect3DDevice9::Reset/Present through their vtables. It logs how the device is created and
-// the main thread's FPU state after it, and publishes frame-time counters in shared memory for
-// tools/perfprobe.py. The game's own calls and arguments pass through unchanged.
+// the main thread's FPU state after it, and publishes frame-time counters and the time window of
+// every frame over 50 ms in shared memory for tools/perfprobe.py. The game's own calls and
+// arguments pass through unchanged.
 //
 // perfAutoExec <frame> <command>: test harness for unattended benchmarks. After the given
 // Present, it runs a console command on the main thread, as if typed into the console.
@@ -14,6 +15,7 @@
 #include <psapi.h>
 #include <xmmintrin.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
@@ -34,7 +36,10 @@ constexpr int kCreateDeviceIndex = 16;  // IDirect3D9
 constexpr int kResetIndex = 16;         // IDirect3DDevice9
 constexpr int kPresentIndex = 17;       // IDirect3DDevice9
 
+constexpr std::uint32_t kSlowFrameRing = 64;
+
 // Shared with tools/perfprobe.py (mapping "Local\UHCPerfStats-<pid>"); bump kVersion on change.
+// The layout has no padding, so the reader can unpack it field by field.
 struct PerfShared {
   std::uint32_t magic;          // 'UHCP'
   std::uint32_t version;
@@ -50,9 +55,20 @@ struct PerfShared {
   std::uint32_t windowed;
   std::uint32_t width;
   std::uint32_t height;
+  // Version 2: the QPC window of every frame over 50 ms, so perfprobe can tell which of its
+  // stack samples fell inside a stutter. Frame i is slowFrame[i % kSlowFrameRing].
+  std::uint32_t slowFrames;     // published after its entry is written
+  std::int64_t qpcFrequency;
+  struct {
+    std::int64_t start;         // QPC at the Present that began the frame
+    std::int64_t end;           // and at the one that ended it
+  } slowFrame[kSlowFrameRing];
 };
+static_assert(offsetof(PerfShared, slowFrames) == 60 && offsetof(PerfShared, qpcFrequency) == 64 &&
+                  offsetof(PerfShared, slowFrame) == 72 && sizeof(PerfShared) == 72 + 16 * 64,
+              "tools/perfprobe.py unpacks this layout");
 constexpr std::uint32_t kMagic = 0x50434855;  // "UHCP"
-constexpr std::uint32_t kVersion = 1;
+constexpr std::uint32_t kVersion = 2;
 
 using Direct3DCreate9Fn = IDirect3D9*(WINAPI*)(UINT);
 using CreateDeviceFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3D9*, UINT, D3DDEVTYPE, HWND, DWORD,
@@ -193,6 +209,12 @@ HRESULT STDMETHODCALLTYPE PresentHook(IDirect3DDevice9* device, const RECT* sour
     g_shared->over33ms += us > 33333 ? 1 : 0;
     g_shared->over50ms += us > 50000 ? 1 : 0;
     g_shared->over100ms += us > 100000 ? 1 : 0;
+    if (us > 50000) {
+      auto& slow = g_shared->slowFrame[g_shared->slowFrames % kSlowFrameRing];
+      slow.start = g_lastPresent;
+      slow.end = now.QuadPart;
+      InterlockedIncrement(reinterpret_cast<volatile LONG*>(&g_shared->slowFrames));
+    }
   }
   g_lastPresent = now.QuadPart;
   const HRESULT hr = g_present(device, source, dest, window, dirty);
@@ -336,12 +358,12 @@ Outcome ApplyPerfStats(const Config& config) {
     Log(L"perfStats: MapViewOfFile failed (error %lu)", GetLastError());
     return Outcome::kFailed;
   }
-  g_shared->magic = kMagic;
-  g_shared->version = kVersion;
-
   LARGE_INTEGER frequency;
   QueryPerformanceFrequency(&frequency);
   g_qpcFrequency = frequency.QuadPart;
+  g_shared->qpcFrequency = frequency.QuadPart;
+  g_shared->magic = kMagic;
+  g_shared->version = kVersion;
 
   g_direct3DCreate9 = reinterpret_cast<Direct3DCreate9Fn>(real);
   if (!WriteDword(kDirect3DCreate9Slot, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(

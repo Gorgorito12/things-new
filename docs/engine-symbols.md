@@ -247,7 +247,10 @@ Evidence: `cs` scans of the stock exe and the tactics files extracted from `Data
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
-Full write-up and evidence: [performance.md](performance.md). REA bundle: `rea/evidence/age3y-b1a1dab7/bundle-perf-20261028.json`.
+Full write-up and evidence: [performance.md](performance.md). REA bundles:
+`rea/evidence/age3y-b1a1dab7/bundle-perf-20261028.json`, and `bundle-perf-20261028-d.json` for the frame
+structure, world update and file reader rows. Those rows are static readings confirmed by stack sampling (§9 of
+performance.md).
 
 | VA | Role | Notes |
 |---|---|---|
@@ -264,6 +267,15 @@ Full write-up and evidence: [performance.md](performance.md). REA bundle: `rea/e
 | 0x40B54F | Run one job | `thiscall(deformer, job*)` → `deformerdlly.dll` SSE exports by vertex format. |
 | 0x5734E0 | Register cfg variable | `thiscall(0xC66500, name, desc, default?, 0)` → ID. |
 | 0x4020C3 | Cfg "is defined" | `thiscall(0xC66500, id)`. |
+| 0x404EE0 | Main loop (WinMain body) | Message pump 0x402EF7, then `[0xC66234]->vtable[74h]` through the `jmp eax` stub 0x406A01 (returns to 0x404FAD). Bundle `-d`, `ev_bbbe9b38…`. |
+| 0x40542F / 0x405523 / 0x405574 | Per-frame function (game vtable+74h), cut by Ghidra at the `timeGetTime` stubs 0x405510 / 0x405561 | Update = mode manager 0x405248; render = `vtable[78h]` through 0x408FE4 (returns to 0x4056B1). The game's own per-frame ms averages are at `[game+CC0h]` (update) and `[game+CBCh]` (render), refreshed every second. `ev_0cf19746…`, `ev_66b6966f…`, `ev_fa2d724b…`. |
+| 0x405248 | Mode manager update | Mode stack ("Mode to be terminated is: %d…"); updates each active mode through 0x405339. |
+| 0x44E0CD (+0x44E183, 0x48FFD9, 0x48FFF3) | Game-mode update, in pieces | 0x44E183 is the only caller of 0x455D91. 0x48FFF3 calls the world update at 0x49000B. `ev_ee973830…`, `ev_ad8fe973…`. |
+| 0x481B1C | World update | `this` = `[game+13Ch]`; assert `.\world.cpp`. Phases are counted in `[world+810h]` and separated by 0x491C94; the sim RNG is at `[0xC6658C]+18h`. `ev_dd5f48b8…`. |
+| 0x4848BB | Unit update loop | Over `[world+D4h/D8h]`, `[+E0h/E4h]` and `[+ECh/F0h]`; per-unit update 0x482F50. `ev_4677dfc3…`. |
+| 0x45084C / 0x450A4E / 0x44FC96 | Render pass dispatcher / main view pass / world draw | 0x44FC96 builds the visible-unit lists and draws each unit through 0x452392. Other passes call it from 0x4597A4. `ev_cf045b59…`. |
+| 0x468450 | File stream open | Checks for the `l33t` compressed header (inflate stream, vtable 0xBA3318); otherwise uses a raw stream. `ev_bb0bb32c…`. |
+| 0x4683F4 | Raw file stream read | One `ReadFile` per call, no buffering. 0x599121 reads 4 bytes through 0x5990D1; 0x43B8FF reads a 16-byte header as four such reads. `ev_1c4e2090…`. |
 
 ## IAT slots (from the loader stub and early patches)
 
@@ -281,3 +293,8 @@ QueryPerformanceCounter 0xB8426C · QueryPerformanceFrequency 0xB84270 · Create
 CreateThread 0xB84314 · Sleep 0xB84324 · WaitForSingleObject 0xB84328 · SleepEx 0xB84364 ·
 GetTickCount 0xB843A4 · SetThreadPriority 0xB843E0 · SetPriorityClass 0xB843E4 · GetPriorityClass 0xB843E8 ·
 GetThreadPriority 0xB843EC · SetEvent 0xB84400
+
+File I/O (confirmed the same way, 2026-10-28; `bufferedFileReads` replaces the first six): CreateFileA 0xB842A4 ·
+CreateFileW 0xB84304 · ReadFile 0xB8424C · SetFilePointer 0xB84244 · CloseHandle 0xB84330 ·
+DuplicateHandle 0xB843A0 · GetFileSize 0xB842A8 · GetFileType 0xB84218 · CreateFileMappingW 0xB8427C ·
+MapViewOfFile 0xB84278. The exe imports no `msvcrt`: its C runtime is static and uses these slots too.

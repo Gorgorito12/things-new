@@ -255,6 +255,63 @@ In TAD, abstract unit types are not read from data:
 
 `tools/re/inspect_unittypes.py` reads that table from a running game.
 
+### bufferedFileReads
+
+**Why it exists.** The game's raw file stream reads with one `ReadFile` per request
+([performance.md](performance.md), §9):
+- 0x4683F4 is the read method;
+- 0x599121 reads 4 bytes;
+- 0x43B8FF reads a 16-byte header as four such reads.
+
+The archives (`art\Art*.bar`, `data\Data*.bar`, `sound\*.bar`, `render\*.bar`) are opened at startup
+and stay open, and everything is read through their handles. In a session that is about 10 million
+`ReadFile` calls, 93 % of them for 16 bytes or less. When a model or animation is loaded during a
+match, those calls run on the main thread inside the world update.
+
+**How it hooks.** `src/features/fileio.cpp` replaces six of the exe's KERNEL32 IAT entries:
+- `CreateFileA` 0xB842A4 and `CreateFileW` 0xB84304;
+- `ReadFile` 0xB8424C and `SetFilePointer` 0xB84244;
+- `CloseHandle` 0xB84330 and `DuplicateHandle` 0xB843A0.
+
+Each slot must still hold the address `GetProcAddress` gives for that function, or nothing is
+written. The exe links its C runtime statically and imports no `msvcrt`, so its `fopen`/`fread`
+also go through these slots. Granny reads through the game's own callbacks
+(`GrannyInitializeFileReader`), so it does too.
+
+**What is buffered.** A handle gets a buffer when it was opened:
+- for reading only (no write, delete or ACL rights);
+- without `FILE_FLAG_OVERLAPPED` or `FILE_FLAG_NO_BUFFERING`;
+- on a disk file (`GetFileType`).
+
+Its state is the file position the game sees, the real file pointer, and a buffer (64 KB by
+default) with its file offset.
+- **`ReadFile`:**
+  - serves what the buffer holds;
+  - otherwise moves the real pointer to the game's position if needed and refills the buffer
+    with one real read;
+  - reads of a buffer's size or more go straight to the file.
+
+  End of file returns `TRUE` with fewer bytes, as Windows does.
+- **`SetFilePointer`** only computes the new position: `FILE_BEGIN`, `FILE_CURRENT`, and
+  `FILE_END` through `GetFileSizeEx`. Anything unusual (a result that does not fit 32 bits
+  without a high part, an unknown method) is handed to Windows after the real pointer is synced.
+- **Fallbacks.** A handle stops being buffered, after its real pointer has been moved to the
+  game's position, when:
+  - a thread other than the one that opened it uses it;
+  - a read passes an `OVERLAPPED`;
+  - it is duplicated, because a duplicate shares the file pointer.
+- **`CloseHandle`** drops the state. The handle table takes a shared SRW lock for each operation
+  on a tracked handle; `CloseHandle` and `CreateFile` take it exclusively, so a state is never
+  freed while in use.
+- Each hook keeps `GetLastError` as Windows would leave it.
+
+**Checks.**
+- `bufferedFileReads verify` reads every buffered request again with a real positioned
+  `ReadFile` and compares the bytes. A full late-game session checked 7.5 million reads with no
+  mismatch.
+- `perfFileLog` counts the game's calls against the ones made to Windows. A session with the
+  buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows.
+
 ## 5. Rules that keep multiplayer deterministic
 
 - **Same inputs, same choices** on every machine: sorted file lists, cfg order, then the stock
@@ -264,6 +321,8 @@ In TAD, abstract unit types are not read from data:
 - **Never issue network commands** from code that runs on every machine, such as the setter
   behind `aiSetHCGatherPoint` (`0x82D9CB`).
 - **Change only state** that the stock code at that point reads or writes anyway.
+- **Outside the simulation** (`bufferedFileReads`): change only how data reaches the game, never
+  what it receives.
 
 None of this has been tested over a real network yet.
 

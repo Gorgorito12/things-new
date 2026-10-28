@@ -232,6 +232,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | Nothing. | not confirmed |
 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and no stock fallback building (Town Center, fort, …) is left, moves the point to the first alive building of the types you list. | Nothing beyond the proto names in the cfg. | confirmed |
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
+| [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. | confirmed (single player) |
 
 No feature has been tested in multiplayer yet.
 
@@ -513,6 +514,45 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
   verified.
 - **New in this DLL:** not in UHC 1.10.
 
+### bufferedFileReads
+
+```
+bufferedFileReads [<KB>] [verify]      default 64 KB
+```
+
+- **How stock behaves:** the game reads its archives (`art\Art*.bar`, `data\Data*.bar`,
+  `sound\*.bar`, …) and its loose files a few bytes at a time. It makes one Windows read call for
+  every 1 to 16 bytes, about 10 million in a session. When a match needs a model or an animation
+  it has not loaded yet, those reads run inside the frame, and the frame stalls (a stutter).
+- **Effect:** every file the game opens for reading only gets a read-ahead buffer. One Windows read
+  fills the buffer, and the game's small reads are served from memory. The game receives the
+  same bytes.
+- **Measured** in a late 8-AI game ([performance.md](performance.md), §9, "bufferedFileReads A/B"),
+  on a 150 s recording:
+
+  | | Without | With |
+  |---|---|---|
+  | Frames over 100 ms | 11 | 3 |
+  | Frames over 50 ms | 19 | 11 |
+  | Longest frame | 251 ms | 116 ms |
+  | Time in file reads, whole session (most of it loading) | 14.9 s | 1.0 s |
+
+- **What it does not fix:** most of the remaining stutter is the animation library (granny)
+  setting up the model it just read. That is processing work, not reading.
+- **Your mod:** nothing.
+  - `<KB>` (4 to 1024) is the buffer size per open file.
+  - `verify` also reads every buffered request from the file for real and compares the two. It is
+    a correctness test and makes reading slower.
+- **Log:**
+  - at startup, `bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)`;
+  - with `verify`, at exit: `bufferedFileReads verify: N buffered reads checked, M mismatches`.
+    M must be 0.
+- **Simulation:** no. It changes how the bytes are fetched, not which bytes, so players do not
+  need the same setting.
+- **Status:** confirmed in single player. On a 25-minute save, `verify` checked 7.5 million buffered
+  reads against the file and found no mismatch. Not tested in multiplayer.
+- **New in this DLL:** not in UHC 1.10.
+
 ## 6. Editing the game data
 
 Work on your mod folder, never on the Steam install. Run the tools from a terminal opened in the
@@ -569,6 +609,7 @@ More about the tools: [tools/README.md](../tools/README.md).
 - The keys that change the simulation are `deckCardCount`, `basePop`, `extraPop`, `noAILimit` (game
   setup), `removeFameRestriction`, `removeConversionRestriction`, `hcShipmentPointFallback` and
   `healNonIdle`. A difference in any of them between players can desynchronize the game.
+  `bufferedFileReads` does not change the simulation, so it may differ between players.
 - `healNonIdle` and `removeFameRestriction` change the unit type table. Load saved games and
   replays with the same DLL and cfg they were made with.
 - None of this has been tested yet: multiplayer, saved games and replays are all unverified.

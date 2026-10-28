@@ -19,13 +19,16 @@ add_library(UHC SHARED
   src/patch.cpp
   src/unittypes.cpp
   src/features/ai.cpp
+  src/features/damageovertime.cpp
   src/features/fame.cpp
+  src/features/fileio.cpp
   src/features/heal.cpp
   src/features/limits.cpp
   src/features/misc.cpp
   src/features/perf.cpp
   src/features/shipments.cpp
   src/hooks/ai_hooks.asm
+  src/hooks/dot_hooks.asm
   src/hooks/fame_hooks.asm
   src/hooks/heal_hooks.asm
   src/hooks/limit_hooks.asm

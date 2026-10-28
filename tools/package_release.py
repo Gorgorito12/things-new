@@ -156,6 +156,7 @@ removeConversionRestriction   ConvertGuardian works on any unit
 hcShipmentPointFallback ...   when no stock fallback building is left, the shipment point
                               moves to the building types you list
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
+bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
 
 What each key needs from your mod, and how well it is tested: see the guide.
 No feature has been tested in multiplayer yet. License: MIT, see LICENSE.txt.

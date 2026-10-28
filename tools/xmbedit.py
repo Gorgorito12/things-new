@@ -3,12 +3,18 @@
 Usage:
     python -I tools/xmbedit.py check <file.xmb>
     python -I tools/xmbedit.py to-xml <file.xmb> <out.xml>
+    python -I tools/xmbedit.py from-xml <in.xml> <out.xmb> [--compress]
     python -I tools/xmbedit.py add-unittype <in.xmb> <out.xmb> <Unit> <UnitType> [<Unit> <UnitType> ...]
 
 check         decodes and re-encodes the file and confirms the result is byte-identical, so an
               edit cannot change anything else.
 to-xml        writes a readable XML copy (element names as stored, which is lowercase). Use it
               to read files extracted from the BAR archives with tools/bar.py.
+from-xml      compiles an XML file (e.g. an edited protoy.xml or a new .tactics file) the way the
+              stock files are stored: element and attribute names lowercase, text trimmed,
+              whitespace-only text dropped, the XML's line numbers kept. --compress writes the
+              "l33t" zlib form (stock protoy.xml.XMB); without it the file is plain X1 (stock
+              .tactics files). Both load.
 add-unittype  adds <unittype>UnitType</unittype> after the last unittype of each named
               <unit name='Unit'> (a protoy XMB). It reports units that are missing or already
               have the type. The output keeps the input's compression.
@@ -24,6 +30,7 @@ Format (legacy TAD, as read from the stock files):
 import struct
 import sys
 import zlib
+from xml.parsers import expat
 from xml.sax.saxutils import escape, quoteattr
 
 
@@ -152,6 +159,51 @@ def to_xml(elems, attrs, root):
     return "\n".join(lines) + "\n"
 
 
+def from_xml(data):
+    """Returns (element names, attribute names, root node) of an XML document (bytes). Names are
+    numbered in order of first use, as in the stock files."""
+    elems, attrs = [], []
+    elem_ids, attr_ids = {}, {}
+
+    def index(table, ids, name):
+        name = name.lower()
+        if name not in ids:
+            ids[name] = len(table)
+            table.append(name)
+        return ids[name]
+
+    parser = expat.ParserCreate()
+    parser.ordered_attributes = True
+    stack, texts, done = [], [], []
+
+    def start(name, attr_list):
+        nd = Node()
+        nd.name = index(elems, elem_ids, name)
+        nd.line = parser.CurrentLineNumber
+        nd.attrs = [(index(attrs, attr_ids, attr_list[i]), attr_list[i + 1]) for i in range(0, len(attr_list), 2)]
+        nd.children = []
+        if stack:
+            stack[-1].children.append(nd)
+        stack.append(nd)
+        texts.append([])
+
+    def end(_name):
+        nd = stack.pop()
+        nd.text = "".join(texts.pop()).strip()
+        if not stack:
+            done.append(nd)
+
+    def chars(text):
+        if texts:
+            texts[-1].append(text)
+
+    parser.StartElementHandler = start
+    parser.EndElementHandler = end
+    parser.CharacterDataHandler = chars
+    parser.Parse(data, True)
+    return elems, attrs, done[0]
+
+
 def add_unittypes(elems, attrs, root, pairs):
     """pairs: [(unit name, unittype)]. Returns (added, already, missing) unit name lists."""
     if "unit" not in elems or "unittype" not in elems or "name" not in attrs:
@@ -184,7 +236,7 @@ def add_unittypes(elems, attrs, root, pairs):
 
 
 def main(argv):
-    if not argv or argv[0] not in ("check", "to-xml", "add-unittype"):
+    if not argv or argv[0] not in ("check", "to-xml", "from-xml", "add-unittype"):
         sys.exit(__doc__)
     command, args = argv[0], argv[1:]
     if command == "check" and len(args) == 1:
@@ -197,6 +249,15 @@ def main(argv):
         with open(args[1], "w", encoding="utf-8") as f:
             f.write(to_xml(elems, attrs, root))
         print(f"wrote {args[1]}")
+    elif command == "from-xml" and len(args) in (2, 3) and args[2:] in ([], ["--compress"]):
+        with open(args[0], "rb") as f:
+            elems, attrs, root = from_xml(f.read())
+        inner = encode(elems, attrs, root)
+        if encode(*parse(inner)) != inner:
+            raise ValueError("the compiled document does not decode to itself")
+        with open(args[1], "wb") as f:
+            f.write(wrap(inner, compressed=bool(args[2:])))
+        print(f"wrote {args[1]} ({len(elems)} element names, {len(attrs)} attribute names)")
     elif command == "add-unittype" and len(args) >= 4 and len(args) % 2 == 0:
         raw, _, elems, attrs, root = load_checked(args[0])
         added, already, missing = add_unittypes(elems, attrs, root, list(zip(args[2::2], args[3::2])))

@@ -54,6 +54,18 @@ SITES = [
     # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
     # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
     ("AbstractTypesEnd", 0x51BA23, 0x15),
+    # damageOverTime: TakeDamage FUN_0049B3D9's entry, sub esp,8Ch, and the cmp byte
+    # [esp+0C0h],1 the trampoline continues at
+    ("DotTakeDamageEntry", 0x49B3D9, 14),
+    # damageOverTime: world update FUN_00481A57's entry, sub esp,0Ch / push ebx / push ebp, and
+    # the push esi / mov esi,ecx the trampoline continues at
+    ("DotWorldUpdateEntry", 0x481A57, 8),
+    # damageOverTime (FUN_005F98A0, parses the children of an action): the last tag compare
+    # ("ModifyExclusive"), its je to the handler, and the next-child code at 0x5FA126
+    ("DotProtoActionTag", 0x5FA10F, 0x1B),
+    # damageOverTime: the ProtoAction handler's call 5F98A0h; the tag hook checks its return
+    # address 0x5FA213 to know the action comes from protoy.xml
+    ("DotProtoActionCall", 0x5FA20E, 5),
 ]
 
 

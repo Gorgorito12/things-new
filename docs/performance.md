@@ -3,8 +3,8 @@
 What in the stock `age3y.exe` (`b1a1dab7…`, see [binaries.md](binaries.md)) decides how much CPU and
 GPU the game uses. It was written for the "late-game lag and stutter" investigation of 2026-10-28.
 
-Everything below is **static** (Ghidra through REA, plus capstone on the file bytes) unless a row says otherwise.
-No runtime measurement has been made yet; see "Next steps".
+§1–§7 are **static** (Ghidra through REA, plus capstone on the file bytes) unless a row says otherwise.
+§8 and §9 are runtime measurements on the test bed.
 
 **Evidence**
 - REA records are in `rea/evidence/age3y-b1a1dab7/bundle-perf-20261028.json` (28 records). They are cited
@@ -34,7 +34,19 @@ No runtime measurement has been made yet; see "Next steps".
   The GPU sits at 10–13 % even at 4K.
   - DXVK lowers FPS by 28 %.
   - Skinning and Direct3D are too small a share for a UHC feature to win much.
-  - What is left to explain is stutter: about 4 frames per minute over 100 ms.
+- **Split of a late-game frame (§9, stack sampling):** update (simulation) 43.5 %, render 55.6 %. The game's
+  own timers agree: 4.3 ms and 5.4 ms per frame.
+  - The simulation must stay on one thread for multiplayer.
+  - The render-side work that could move runs inside the per-unit draw calls, so moving it means restructuring
+    exe code for at most about +30 % FPS. No multi-core change is worth its risk.
+- **The stutters (about 4 per minute over 100 ms) are file loads inside the simulation (§9).**
+  - 90 % of their samples are in the world update.
+  - Their leaves are `ZwReadFile` (48 %) and granny (28 %).
+  - The game's file reader issues one unbuffered `ReadFile` per 4-byte read.
+- **`bufferedFileReads` fixes the reading part (§9, A/B; multiplayer-safe):**
+  - frames over 100 ms dropped from 11 to 3, and stutter time from 2.3 s to 0.9 s per 150 s;
+  - time in `ReadFile` per session fell from 14.9 s to 1.0 s, which also speeds up loading.
+  - What remains is granny building the newly loaded data.
 
 ## 1. Frame pacing and timers
 
@@ -63,8 +75,9 @@ the register-loaded calls (`mov reg,[IAT]` … `call reg`):
 | SleepEx(0,1) | 0x63DE6A, 0x6B61E4, 0xA1C194, 0xA2D3EB, 0xA2D475, 0xA2D4EC, 0xAA74A7, 0xAA75AF, 0xAA75FD, 0xB59F87, 0xB5A2A3, 0xB5A426 | Zero-ms yields after subsystem work and in socket retries. |
 | SleepEx(0,1) | 0x57D238, 0x57E1A3 | Shutdown (FUN_0057d0e6) and a destructor (FUN_0057e105). `ev_d4419de7…` |
 
-None of the non-zero waits is tied to the main thread's per-frame path. Two static candidates are left
-for a runtime check (FUN_00771a3a, FUN_00b5a3f2).
+None of the non-zero waits is tied to the main thread's per-frame path. Two static candidates were left
+for a runtime check (FUN_00771a3a, FUN_00b5a3f2). Neither shows up in the single-player late-game samples of
+§9. FUN_00b5a3f2 concerns online play, which has not been measured.
 
 The one main-thread stall that is visible statically is the skinning flush in §4. It busy-spins on
 `GetTickCount` with no pause, for up to 5 s.
@@ -364,8 +377,172 @@ Everything else is under 1 % per 256-byte block.
   - `deformWorkers`: at most about 1–3 %;
   - `d3dNoMultithreaded`: well under the 3 % that d3d9.dll takes.
 - Large-Address-Aware is not needed with the stock data: 1.0 GB of address space at 25 minutes. It may be with DXVK or heavier mods.
-- **Stutter:** the remaining problem is about 4 frames per minute over 100 ms. Their cause is not known yet. A
-  hitch-triggered profile is the next measurement: the main-thread samples that fall inside frames over 50 ms.
+- **Stutter:** the remaining problem is about 4 frames per minute over 100 ms. §9 traces their cause to file
+  loads inside the simulation.
+
+## 9. Where the main thread's time goes (stack sampling, 2026-10-28)
+
+Answers two questions:
+- How does a late-game frame split between simulation and rendering? That bounds any multi-core change (Amdahl).
+- What runs during the stutters?
+
+### Method
+
+- `tools/perfprobe.py --sample-hz 200` suspends the main thread, reads EIP, ESP and the stack, and resumes it.
+  - It keeps the stack values that are return addresses into the exe: an address that follows a call
+    instruction in `.text`.
+  - Raw samples go to `<csv>.stacks.gz`; `--analyze` rebuilds the report from them.
+- The analysis rebuilds each call chain top-down, from the return address into the main loop.
+  - After a direct call it takes the outermost candidate inside the called function.
+  - After an indirect call, or a tail call, it takes the outermost candidate whose own call is consistent with what lies below.
+  - Values left on the stack by earlier calls are mostly skipped, not always.
+- Function entries come from Ghidra's function list: `rea/evidence/age3y-b1a1dab7/functions.txt`, built from
+  `ev_da144e22…`, with the 105 switch-case pseudo-functions dropped.
+- **Function boundaries.** Ghidra splits some functions at calls to tiny `timeGetTime` stubs and at
+  cold-code chunks (POGO layout). Those pieces show up as separate nodes, listed below.
+- **Checks.**
+  - 99.6 % of the late-game samples anchor under the per-frame call.
+  - The update/render split below matches the game's own timers to within a percent.
+- **Overhead** is not measured: FPS was 108.6 here and 125.6 in the earlier run of the same save. That run
+  had a different resolution and camera and sampled at 100 Hz without reading stacks.
+
+### Frame structure (static, REA `bundle-perf-20261028-d.json`)
+
+| VA | Role | Evidence |
+|---|---|---|
+| 0x404EE0 | Main loop (WinMain body). Each turn: message pump 0x402EF7 (returns to 0x404F7F), then `[0xC66234]->vtable[74h]` through the `jmp eax` stub 0x406A01 (call at 0x404FA8, returns to 0x404FAD). Ends on `[0xC6623C]`. | `ev_2c667950…`, `ev_bbbe9b38…` |
+| 0x40542F, 0x405523, 0x405574 | The per-frame function (vtable+74h). Ghidra cut it into three pieces at `call 0x405510` / `call 0x405561`, which are `timeGetTime` stubs followed by `jmp` to the next piece. | `ev_0cf19746…`, bytes `ev_66b6966f…` |
+| 0x40542F | **Start piece.** Once a second it stores the game's own per-frame averages: render ms at `[game+CBCh]` and update ms at `[game+CC0h]`. They come from QPC tick sums `[game+CACh]` / `[game+CB4h]` (QPC read by 0x404104) and the frame count `[game+CA8h]`. Then input/console (0x406A1E, 0x406A33, 0x406A5C). | `ev_0cf19746…` |
+| 0x405523 | **Update piece.** Calls the mode manager update 0x405248 (returns to 0x405535) and adds its time to `[game+CB4h]`. | same |
+| 0x405248 | Mode manager: pops/pushes modes ("Mode to be terminated is: %d…") and updates each active mode through 0x405339. | same |
+| 0x405574 | **Render piece.** Calls `game->vtable[78h]` through the stub 0x408FE4 (call at 0x4056AC, returns to 0x4056B1) and adds its time to `[game+CACh]`. It then bumps the frame counters and calls `_control87(0x9001F, 0xFFFFF)`, which sets 53-bit precision with all exceptions masked. That restores the x87 mode that Direct3D 9 changes (§5). | same, bytes `ev_fa2d724b…` |
+| 0x44E0CD (+0x44E183, 0x48FFD9, 0x48FFF3) | Game-mode update, also cut into pieces. 0x44E183 is the only caller of the step-length function 0x455D91 (`ev_ad8fe973…`). The cold chunk 0x48FFD9 jumps into 0x48FFF3, which calls the world update at 0x49000B (returns to 0x490010). | `ev_ee973830…` |
+| 0x481B1C | **World update**: assert `.\world.cpp`; `this` = `[game+13Ch]`. Phases are separated by 0x491C94 checks and counted in `[world+810h]`. It advances the simulation RNG at `[0xC6658C]+18h` (an MSVC-style LCG: ×0x343FD + 0x269EC3). | `ev_dd5f48b8…` |
+| 0x4848BB | Unit update loop over the world's unit lists `[world+D4h/D8h]`, `[+E0h/E4h]` and `[+ECh/F0h]`. The per-unit update is 0x482F50 (movement 0x4829FA, actions 0x48971A). | `ev_4677dfc3…` |
+| 0x4910CF | Loop over the `[world+148h/14Ch]` entries (0x491902, then 0x49108A). Role not identified. | same |
+| 0x45084C | Render pass dispatcher; pass 1 (main view) → 0x450A4E → 0x44FC96. | `ev_cf045b59…` |
+| 0x44FC96 | **World draw.** Builds the visible-unit lists, draws each unit through 0x452392, flushes batches (0x4516D9, 0x40A4ED), sets render states (0x4203AB) and material parameters (0x40D25B). The other passes under 0x408399 → 0x40B9BA → 0x424A9B / 0x425200 → 0x4597A4 call it again; which passes those are (shadow, reflection) is not established. | same |
+
+### Late-game split
+
+**Setup:** `uhcbench25` (8 AI, ~25 game minutes) at 2560×1600 windowed with vsync off. 150 s, 27,183 samples.
+**Files:** `rea/evidence/age3y-b1a1dab7/bench-late25.csv`, plus `.stacks.gz` and `.samples.txt`.
+
+FPS was 108.6 mean (max 177). The main thread ran at 95.1 %, the skinning worker at 5.6 % and the GPU at 12.7 %.
+
+| Part (inclusive share of main-thread samples) | Share | Game's own timer |
+|---|---|---|
+| **Update** (mode manager) | **43.5 %** | **4.3 ms / frame** |
+| └ world update 0x481B1C | 41.6 % | |
+| &nbsp;&nbsp;└ unit update loop 0x4848BB (per-unit 0x482F50: 11.5 %) | 15.9 % | |
+| &nbsp;&nbsp;└ `[world+148h]` loop 0x4910CF | 11.0 % | |
+| &nbsp;&nbsp;└ other phases (0x48FD70 3.0 %, 0x491961 2.7 %, the call at 0x481CE9 ≈ 6 %, …) | ≈ 14.7 % | |
+| **Render** (vtable+78h) | **55.6 %** | **5.4 ms / frame** |
+| └ main world pass 0x40BAFE → 0x45084C → 0x44FC96 | 20.5 % | |
+| └ 0x408399: other world passes 0x40B9BA (18.7 %), UI 0x41C6D3 (4.1 %), Present wrapper (2.8 %), … | 27.3 % | |
+| └ other render work (0x44F4D5 4.9 %, 0x4159EF 1.9 %, …) | ≈ 7.8 % | |
+| Frame start piece and message pump | ≈ 1 % | |
+
+By module, `granny2.dll` (animation) is 7.6 % of all samples. `deformerdlly.dll` (skinning) is 2.8 %, and
+`d3d9.dll` with the driver is 4.6 %.
+
+### The stutters
+
+There were 16 frames over 50 ms in 150 s: 11 over 100 ms, the longest 214 ms, 2.1 s in total. `perfStats` v2
+recorded their QPC windows, and 377 samples fall inside them.
+
+- **90.2 % are in the update part**, against 43.5 % overall:
+  - the world update holds 84.9 %;
+  - the unit update loop holds 63.1 % of it;
+  - 0x490960 → 0x4BF814 holds 19.9 %.
+- **The leaves are file reads.**
+
+  | Leaf | Inside slow frames | Other frames |
+  |---|---|---|
+  | `ntdll!ZwReadFile` | 48.0 % | 0.3 % |
+  | `granny2.dll` | 28.4 % | 7.6 % |
+  | `ntdll!ZwWaitForSingleObject` | 3.4 % | 3.1 % |
+  | `ntdll!ZwCreateFile` | 1.9 % | 0.1 % |
+
+- **The chains end in the game's file reader:** … → 0x43B8FF → 0x599121 → 0x5990D1 → 0x4683F4 → `ReadFile`.
+  They come from two places:
+  - the unit update, 0x482F50 → 0x48971A → 0x488A40;
+  - 0x490960 → 0x4BF814 → 0x66A452 → 0x858299.
+
+  Both go through a recursive evaluator (0x94CF27 / 0x94DAE1 / 0x7F7E97, possibly the XS interpreter;
+  not identified).
+- **The reader does no buffering** (`ev_1c4e2090…`, `ev_bb0bb32c…`):
+  - 0x4683F4 issues one `ReadFile` per call;
+  - 0x599121 reads 4 bytes;
+  - 0x43B8FF reads a 16-byte header as four 4-byte calls;
+  - 0x468450 (open) checks for the `l33t` header of compressed files (stream vtable 0xBA3318) and
+    otherwise uses a raw stream.
+
+**Inference.** The stutters are data loads that the simulation needs the first time it meets something new.
+Granny parses what was just read, so they are probably a unit's model or animation data. The loads run on the
+main thread through thousands of 4-byte unbuffered reads. **Unknown:** which files they are. That needs a
+file-open log.
+
+### What it means for "more cores"
+
+- The user requires multiplayer safety, so only render-side work may move. That is 55.6 % of the main thread.
+- **Pipelining** the whole render beside the next update, as Age of Mythology: Retold does, would give at most
+  max(4.3, 5.4) ms per frame, about +70 % FPS. It is out: the render reads live simulation objects, and the exe
+  has no double-buffered state.
+- **Splitting the render passes across threads.** The world passes do three things:
+  - visibility;
+  - animation (granny, 7.6 %);
+  - Direct3D 9 submission.
+
+  Submission has to stay on one thread, because there is one D3D9 device and `MULTITHREADED` only serializes.
+  Visibility and animation run inside the per-unit draw calls, interleaved with submission. Moving them is a
+  restructuring of exe code, not a hook-sized change. Even if a quarter of the frame went perfectly parallel,
+  the gain would be about +30 % FPS. The real gain would be well below that, and the crash and desync risks are high.
+- **No multiplayer-safe multi-core change has a good cost/benefit ratio here.**
+- **The stutters have a concrete multiplayer-safe lever:** buffered file reads (§10). The bytes stay the same and
+  far fewer syscalls are made. `ZwReadFile` was 48 % of the stutter samples.
+
+### bufferedFileReads A/B (2026-10-28, ~15:55–16:30)
+
+The feature is in `src/features/fileio.cpp`; its design is in [how-it-works.md](how-it-works.md).
+
+**Setup.**
+- Three user-driven runs of `uhcbench25` with the §8 protocol: 2560×1600, vsync off, 150 s,
+  `perfprobe --sample-hz 200`.
+- `perfFileLog 1` was on in all three, so each run carries the same hooks.
+- Files: `bench-verify`, `bench-base-filelog` and `bench-buffered` (`.csv`, `.stacks.gz`, `.samples.txt`),
+  plus the matching `fileio-*-UHC.log`, all in `rea/evidence/age3y-b1a1dab7/`.
+
+**Correctness run** (`bufferedFileReads 64 verify`):
+- every buffered read was read again from the file at the same offset and compared;
+- 7,529,881 reads were checked, with **0 mismatches**;
+- the game ran normally, slower because of the double reads.
+
+| | No buffer | `bufferedFileReads 64` |
+|---|---|---|
+| Frames over 50 ms (total time) | 19 (2.3 s) | **11 (0.9 s)** |
+| Frames over 100 ms | 11 | **3** |
+| Longest frames | 251, 228, 155 ms | **116, 106, 104 ms** |
+| Mean of the per-second longest frame | 74.8 ms | **46.0 ms** |
+| `ZwReadFile` inside the slow frames | 44.1 % | **1.8 %** |
+| `granny2.dll` inside the slow frames | 28.0 % (≈ 0.58 s) | 47.6 % (≈ 0.39 s) |
+| FPS (mean) | 88.1 | 103.8 |
+| Session `ReadFile` calls: by the game / made to Windows | 10.3 M / 10.3 M | 10.2 M / **17,797** |
+| Session time in `ReadFile` (mostly loading) | 14.9 s | **0.96 s** |
+
+**Reading.**
+- The cause is confirmed: once reads come from memory, `ZwReadFile` disappears from the stutters.
+  Frames over 100 ms drop from 11 to 3, and the total stutter time from 2.3 s to 0.9 s.
+- The last frame of the load shrank from 5.2 s to 2.7 s, and about 14 s of `ReadFile` per
+  session are gone, so loading is faster too. Load time itself was not timed.
+- **What is left** in the slow frames is mostly `granny2.dll` building what was just read. That is
+  CPU work, about the same in both runs.
+- **Noise.** One run each, and in single player the simulation step follows real frame time, so two
+  runs of the same save drift apart. FPS differences are within that noise; earlier runs of this
+  save gave 88–109 FPS. The mechanism is the firm evidence: the `ZwReadFile` share and the syscall
+  counts.
+- Multiplayer is not tested. The feature never changes the bytes the game receives, so it cannot
+  desynchronize.
 
 ## Benchmark harness
 
@@ -373,9 +550,10 @@ These parts of `src/features/perf.cpp` exist for measurement. The game behaves a
 
 | Key | What it does |
 |---|---|
-| `perfStats` | Wraps `Direct3DCreate9` through IAT slot 0xB84164, then CreateDevice/Reset/Present through the d3d9 vtables. It logs the device setup and the FPU state, and publishes frame counters in `Local\UHCPerfStats-<pid>` for `tools/perfprobe.py`. The IAT slot holds a runtime address, so it is checked against `GetProcAddress` instead of `generated/sites.h`. |
+| `perfStats` | Wraps `Direct3DCreate9` through IAT slot 0xB84164, then CreateDevice/Reset/Present through the d3d9 vtables. It logs the device setup and the FPU state, and publishes frame counters in `Local\UHCPerfStats-<pid>` for `tools/perfprobe.py`. Since version 2 that mapping also holds a ring of the last 64 frames over 50 ms, as QPC start/end pairs. The IAT slot holds a runtime address, so it is checked against `GetProcAddress` instead of `generated/sites.h`. |
 | `perfAutoExec <frame> <command>` | After that many Presents, runs a console command on the main thread. |
 | `perfExecFile <path>` | Every 30 frames, runs the lines of `<path>` as console commands and deletes the file. Lets a script drive the game without keyboard focus. |
+| `perfFileLog [ms]` | Counts every `ReadFile` the exe makes, per file, through the same IAT hooks as `bufferedFileReads` (`src/features/fileio.cpp`). At exit it writes the session totals to `UHC.log`, then each file with at least `[ms]` (default 1) of read time: reads, how many were 16 bytes or less, bytes, calls made to Windows, read time and open time (QPC seconds, the clock of `perfprobe`'s slow-frame list). Until exit the lines stay in memory, so logging adds no disk access during a match. |
 
 Console commands run through 0x433D0D, `thiscall(console = [0xC672E4], const char* command, const char* source)`
 with `ret 8`. The game uses the same call for its own commands, e.g. `uiOpenScenarioBrowser()` with
@@ -404,13 +582,16 @@ source `"console"` at 0x7E279D. The `.con` loader FUN_005bc4c1 runs each line th
 - The practical route is therefore one real setup-screen launch (8 AI players, `AIvsAI`), then
   `gameSpeedMult` and `saveGame` through `perfExecFile`, and later `loadGame` for each run.
 
-## 9. Levers (multiplayer-safe), status
+## 10. Levers (multiplayer-safe), status
 
 | Lever | Kind | Status |
 |---|---|---|
+| Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | UHC feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
+| The stutters' remaining work: granny building newly loaded models and animations | — | Open. It is CPU work on the main thread. Preloading would trade memory and load time for it. |
+| Moving render-side work to other threads | UHC feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. |
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | UHC feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
 | Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | UHC feature, opt-in | Not built. d3d9.dll is about 3 % of the main thread. Back buffers only matter with vsync on. |
-| Frame-time statistics and device logging (`perfStats`) | UHC feature, passive | Implemented (`src/features/perf.cpp`). Read by `tools/perfprobe.py`. |
+| Frame-time statistics and device logging (`perfStats`) | UHC feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
 | DXVK | wrapper | Measured: −28 % FPS in a late game. FPU state kept (0x007F). Not recommended. |
@@ -418,19 +599,30 @@ source `"console"` at 0x7E279D. The `.con` loader FUN_005bc4c1 runs each line th
 
 ## Next steps
 
-1. **Runtime baseline** with `tools/perfprobe.py` in a recorded large battle. It records:
-   - per-thread CPU, with threads named by start address;
-   - GPU 3D-engine use;
-   - working set;
-   - jobs per second from `[0xC692E0]` / `[0xC692E4]`.
-
-   The questions: is the main thread saturated, is the worker saturated, and how close is the process to 2 GB?
-2. The zero-code A/B runs, then only the features the numbers justify.
-3. Open questions:
+1. `bufferedFileReads` follow-ups:
+   - a multiplayer game with one player using it and the other not, to show it may differ between
+     players;
+   - a timed load with and without it.
+2. **The remaining stutter work.**
+   - Find which granny calls take the remaining slow-frame samples: resolve the
+     `granny2.dll` exports, as for `ntdll`.
+   - Find what the simulation loads on first use; in-match file opens are in the `perfFileLog`
+     output.
+   - Then decide whether a preload is worth its memory, with Large-Address-Aware as a fallback.
+3. The zero-code A/B runs (§10, cfg row).
+4. Open questions:
+   - which passes call the world draw 0x44FC96 under 0x408399 (shadows, reflections?);
+   - what the `[world+148h]` loop 0x4910CF updates;
+   - whether 0x94CF27 / 0x94DAE1 / 0x7F7E97 is the XS interpreter;
+   - why `[world+FCh]` read about 12,800 minutes on `uhcbench25` (only its rate is used, as the sim clock);
    - the reader of `AlwaysActive`;
    - what `disableMidUpdateRender` changes at 0x482532;
-   - whether any D3D call happens off the main thread (the loading-screen thread is a candidate);
-   - whether FUN_00771a3a or FUN_00b5a3f2 (§1) runs on the main thread during a match.
+   - whether any D3D call happens off the main thread (the loading-screen thread is a candidate).
+5. Answered for single player: FUN_00771a3a and FUN_00b5a3f2 (§1) do not run during a match.
+   - Neither appears in the 27,183 late-game samples of §9.
+   - FUN_00771a3a is the wait for "outstanding ESO tasks": `SleepEx(1,1)` plus a `PeekMessageA` pump, for up
+     to 30 s (`ev_109439de…`).
+   - FUN_00b5a3f2 is the network spin, so it still needs a check in an online match.
 
 The static claims in §1, §4 and §5 were re-checked from the raw bytes by an independent pass (2026-10-28).
 It confirmed them and supplied the corrections already folded in above:
