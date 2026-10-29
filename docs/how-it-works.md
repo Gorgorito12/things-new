@@ -301,6 +301,47 @@ How the sites were found:
 
 The trace is described in [engine-symbols.md](engine-symbols.md), "Unit types and healing".
 
+### smartHealTargets
+
+**The stock search** FUN_009CD865 (`thiscall(owner)`, healer at `[owner+4]`; called from 0x68C14E
+for an idle healer; REA Evidence `ev_41afc083…`) fills the shared query `[world+184h]` around the
+healer (0x49A098 → 0x499CE4) and walks its results, `[query+0]` (38h-byte entries, the unit ID at
+`+0`), count `[query+4]`, with no cap of its own. For each candidate: the unit table lookup, not
+the healer, HP ratio (0x45F295) below 1.0 and at least 1e-6, alive (`vtbl+A4h`), an action manager
+`[c+58h]`, idle (0x44F1A7, the call `healNonIdle` hooks at 0x9CD9C7), not abstract bit 6, not flag
+42h, a heal action of type 5 (0x4EE797), 0x9C2E40(5, 8) ≤ 0, and in range (0x7FCF2D with the
+action's range from 0x470F5E). The first one in range is healed at once (0x9CDA62: the healer's
+`vtbl+64h(1)`, then 0x9CBDC4(owner, `[esi+10h]`)); with none, 0x9CDA58 returns AL = 0.
+
+**The hooks** (`hooks/smartheal_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x9CDA36 | `call 7FCF2Dh` (5 B; ECX = healer, the candidate and the range pushed, ESI = candidate) | the stolen call; in range: `UhcSmartHealConsider(healer, candidate)` | 0x9CDA3F, the next candidate |
+| 0x9CDA58 | `pop esi / pop ebx / pop edi / xor al,al` (5 B) | `UhcSmartHealPick(healer)`; a unit: ESI = it | 0x9CDA62 (accept); none: the stolen bytes, 0x9CDA5D |
+
+`UhcSmartHealConsider` scores the candidate: the index of the first listed type it is of (is-a
+0x44D7FA; none: after them), the stock ratio 0x45F295, the squared ground distance (x `+14h`,
+z `+1Ch`) to the healer, and the unit ID; it keeps the smallest tuple, and the first candidate for
+the log. `UhcSmartHealPick` returns it and clears the state, so the next search starts empty. The
+accept path reads only ESI and EBP and the stack at 0x9CDA58 is the one it pops at 0x9CDA77.
+
+**Why it is safe.** Every stock test still runs for every candidate and in the same order; only
+the choice among the ones that pass changes. The score uses no address and no query order (the
+unit ID breaks ties), and the ratio is the stock function, so every machine picks the same unit.
+The search does not re-enter and the simulation is single-threaded, so one state is enough. The
+range hook keeps EBX, ESI, EDI and EBP (pushad); 0x9CDA3F writes EAX before reading it. The sites
+decode at instruction boundaries and nothing branches into the stolen bytes (0x9CDA58 is entered
+at its first byte from 0x9CD92A and the loop's end). `healNonIdle`'s hook at 0x9CD9C7 is a
+different site in the same loop, and both work together.
+
+**No healer marker.** The search is the same function for every healer type, and the change only
+reorders units the stock rules already accept, so a global key is enough; a mod that wants a
+healer to prefer some units lists their types.
+
+**Observed in game:** four units hit at once (90, 45, 70, 33 %) were healed in the order 33, 45, 70,
+90 % (stock: the 90 % settler first); with `Pikeman` listed, the pikeman came first.
+
 ### Extra abstract unit types (used by every key that takes a `<UnitType>`)
 
 `healNonIdle`, `dodgeAnyUnit` (and its sound keys), `maintainWaitForPop`,

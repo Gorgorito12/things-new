@@ -61,6 +61,9 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `GatherPointValid` | `0x85302C` | `0x38` B | — | — | stock stored-point check, `bool thiscall(hc, unit)`, `ret 4`; the FirstTC helper calls it |
 | `HealIdleCheck` | `0x9E0C79` | `0x2C` B | 5 B at `0x9E0C79` | `8B 4F 58 85 C9` (`mov ecx,[edi+58h]; test ecx,ecx`) | busy test of each heal tick (FUN_009E0B53) |
 | `HealAutoSearchIdle` | `0x9CD9C0` | `0x15` B | 5 B at `0x9CD9C7` | `E8 DB 17 A8 FF` (`call 44F1A7h`) | idle test of the automatic heal search (FUN_009CD865) |
+| `SmartHealRange` | `0x9CDA21` | `0x1E` B | 5 B at `0x9CDA36` | `E8 F2 F4 E2 FF` (`call 7FCF2Dh`) | the heal search's range test; smartHealTargets |
+| `SmartHealLoopEnd` | `0x9CDA3F` | `0x40` B | 5 B at `0x9CDA58` | `5E 5B 5F 32 C0` (`pop esi; pop ebx; pop edi; xor al,al`) | the search's loop step, no-target exit and accept path; smartHealTargets |
+| `SmartHealLoop` | `0x9CD923` | `0x5F` B | — | — | the search's loop head (verified only); smartHealTargets |
 | `AbstractTypesEnd` | `0x51BA23` | `0x15` B | 5 B at `0x51BA31` | `5F 5E B0 01 5B` (`pop edi; pop esi; mov al,1; pop ebx`) | epilogue of the abstract unit type registration (FUN_0051A5DC) |
 | `DotProtoActionTag` | `0x5FA10F` | `0x1B` B | 8 B at `0x5FA11E` | `85 C0 0F 84 C7 33 00 00` (`test eax,eax; je 5FD4EDh`) | unknown-tag fall-through of the action parser FUN_005F98A0; damageOverTime tag hook |
 | `DotProtoActionCall` | `0x5FA20E` | 5 B | — | — | the `<ProtoAction>` handler's `call 5F98A0h`; the tag hook checks its return address 0x5FA213 |
@@ -366,6 +369,23 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - both continue at `0x9CD9CC` (`test al,al`).
   - **Both hooks are needed.** With the tick hook alone nothing changes: the search never starts a
     heal on a busy unit, so the tick hook is never reached.
+
+### smartHealTargets
+
+- **Globals:** `g_uhcSmartHealTypes[8]` (type or proto IDs, -1 until the data loads),
+  `g_uhcSmartHealTypeCount`; the search state (healer, best and first candidate, count) is private
+  to `smartheal.cpp`.
+- **Range hook** at `0x9CDA36` (5 B, `call 7FCF2Dh`): ECX = healer, `[esp]` = candidate,
+  `[esp+4]` = range; ESI = candidate, EBP = owner (healer at `[ebp+4]`). Call 0x7FCF2D (thiscall,
+  `ret 8`); if AL: `UhcSmartHealConsider(healer, candidate)` with every register kept; then jump
+  to `0x9CDA3F` (never to the accept path).
+- **Pick hook** at `0x9CDA58` (5 B, `pop esi / pop ebx / pop edi / xor al,al`): `UhcSmartHealPick
+  (healer)`; a unit: ESI = it, jump to `0x9CDA62`; none: re-execute the four instructions, jump to
+  `0x9CDA5D`.
+- **Score** (smallest wins, compared in this order): index of the first listed type the unit's
+  proto is of (0x44D7FA; none: the type count), the stock ratio 0x45F295, (Δx² + Δz²) between
+  `[unit+14h]`/`[unit+1Ch]` and the healer's, the unit ID `[unit+10h]`. Never a pointer.
+- **Coexists** with `healNonIdle` (0x9CD9C7, same loop, other site).
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 

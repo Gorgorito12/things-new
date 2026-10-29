@@ -157,6 +157,8 @@ hcShipmentPointFallback ...   when no stock fallback building is left, the shipm
                               moves to the building types you list; FirstTC = the
                               player's first town center (with startingTC or civFirstTC)
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
+smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt unit
+                              (listed types first) instead of the first one
 damageOverTime [log]          poison: attacks with <AttachProtoUnit> damage over time
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit

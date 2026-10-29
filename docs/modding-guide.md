@@ -242,6 +242,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | Nothing. | not confirmed |
 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the 10 stock fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
+| [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
@@ -598,6 +599,49 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 - **Status:** confirmed: British surgeons marked with the type healed their explorer during a
   fight through their automatic search. A direct order (right-click) on a fighting unit was not
   verified.
+
+### smartHealTargets
+
+![smartHealTargets in game](media/smartHealTargets.gif)
+
+*In game:* four units are hit at once; the surgeon heals the one with the lowest HP ratio first (a settler at 33 %), then 45 %, 70 % and 90 %, where stock starts with the nearest settler at 90 %. The yellow lines show each pick next to stock's. [Full video (MP4)](media/smartHealTargets.mp4).
+
+```
+smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
+```
+
+- **How stock behaves:** an idle healer looks for a unit to heal on its own: it asks for the units
+  around it and heals the **first** one that passes every test (damaged, alive, idle, a valid heal
+  target, not already healed by others, in range). The order is the query's, so a healer often
+  tops up a nearly full unit next to it while a badly hurt one waits.
+- **Effect:** the same tests decide which units can be healed, and among them the healer picks:
+  1. the unit types you list, in their order (a unit of none of them comes after them);
+  2. then the lowest HP ratio (HP / max);
+  3. then the nearest to the healer;
+  4. then the lowest unit ID.
+
+  No memory address and no query order is used, so every machine picks the same unit. With no
+  type, it is the most hurt unit in reach. Only the automatic search changes: a direct order
+  (right-click) heals what the player chose.
+- **Every healer:** the key applies to every healer, with no marker on the healers: the search is
+  the same function for surgeons, monks, priests and the others, and the key only reorders units
+  the stock rules already accept. Names a type to favour targets instead, e.g.
+  `smartHealTargets AbstractInfantry Settler`.
+- **With `healNonIdle`:** both keys hook the same search at different points and work together:
+  marked healers also see busy units, and the best of all candidates is healed.
+- **Log:** `smartHealTargets: automatic heal searches pick the best candidate: <types, >lowest HP
+  ratio, nearest, lowest unit ID (multiplayer unverified)`; in a game `hook reached:
+  smartHealTargets candidate (0x9CDA36)` and `pick (0x9CDA58)`; with `log`, every pick (the first
+  200): `smartHealTargets: unit 0 (Surgeon) heals unit 4 (Settler, rank 0, HP ratio 0.333, 10.0
+  m) among 4 candidates; stock would heal unit 1 (Settler, HP ratio 0.900)`.
+- **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
+  registered as a marker unit type, which changes the unit type count.
+- **Status:** confirmed in single player (2026-10-29). A surgeon with four units hit at once
+  (90 %, 45 %, 70 %, 33 %) healed them in the order 33, 45, 70, 90 %, where stock would have
+  started with the 90 % settler; with `smartHealTargets Pikeman`, the pikeman (70 %) came first,
+  then 33, 45, 90 %. Together with `healNonIdle` both hooks ran. A skirmish against the AI with
+  the key on played normally. Multiplayer was not tested.
+- **New in this DLL:** not in UHC 1.10.
 - **New in this DLL:** not in UHC 1.10.
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet

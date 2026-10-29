@@ -55,6 +55,17 @@ SITES = [
     # healNonIdle (FUN_009CD865, a healer's automatic target search): mov ecx,[esi+58h] /
     # test / je, the "target is idle" call 0x44F1A7 / test al,al / je, and the next check
     ("HealAutoSearchIdle", 0x9CD9C0, 0x15),
+    # smartHealTargets (FUN_009CD865, the automatic heal search; EBP = owner, healer at [ebp+4],
+    # EDI = the query, ESI = candidate): the loop head, cmp [edi+4],esi (the result count) / ... /
+    # the entry's unit ID at [[edi]+[esp+10h]] / the unit table lookup / not the healer
+    ("SmartHealLoop", 0x9CD923, 0x5F),
+    # smartHealTargets: the range test, push esi / mov ecx,ebx / call 470F5Eh (the action's range)
+    # / ... / push esi / call 7FCF2Dh (replaced, 5 bytes at 0x9CDA36) / test al,al / jne 9CDA62h
+    ("SmartHealRange", 0x9CDA21, 0x1E),
+    # smartHealTargets: the loop step at 0x9CDA3F (38h-byte entries), the no-target exit
+    # pop esi / pop ebx / pop edi / xor al,al (replaced, 5 bytes at 0x9CDA58) / pop ebp / add esp,
+    # 10h / ret, and the accept path 0x9CDA62: healer vtbl+64h(1), 0x9CBDC4(owner, [esi+10h])
+    ("SmartHealLoopEnd", 0x9CDA3F, 0x40),
     # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
     # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
     ("AbstractTypesEnd", 0x51BA23, 0x15),

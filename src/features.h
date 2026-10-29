@@ -23,6 +23,7 @@ Outcome ApplyCustomRevolutionBanners(const Config& config);
 Outcome ApplyRemoveFameRestriction(const Config& config);
 Outcome ApplyHcShipmentPointFallback(const Config& config);
 Outcome ApplyHealNonIdle(const Config& config);
+Outcome ApplySmartHealTargets(const Config& config);
 Outcome ApplyDamageOverTime(const Config& config);
 Outcome ApplyDodge(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
@@ -60,6 +61,7 @@ inline constexpr Feature kFeatures[] = {
     {"removeFameRestriction", ApplyRemoveFameRestriction},
     {"hcShipmentPointFallback", ApplyHcShipmentPointFallback},
     {"healNonIdle", ApplyHealNonIdle},
+    {"smartHealTargets", ApplySmartHealTargets},
     {"damageOverTime", ApplyDamageOverTime},
     {"dodgeAnyUnit/dodgeSoundSet/criticalSoundSet", ApplyDodge},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
@@ -96,7 +98,7 @@ inline constexpr Feature kFeatures[] = {
 inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
-    "healnonidle", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
+    "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
     "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
