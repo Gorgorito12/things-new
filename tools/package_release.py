@@ -157,6 +157,8 @@ hcShipmentPointFallback ...   when no stock fallback building is left, the shipm
                               moves to the building types you list; FirstTC = the
                               player's first town center (with startingTC or civFirstTC)
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
+smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt unit
+                              (listed types first) instead of the first one
 damageOverTime [log]          poison: attacks with <AttachProtoUnit> damage over time
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
@@ -185,8 +187,14 @@ transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech 
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [log]  marked units (Daimyos) do not train within M metres
                               of an enemy's first Town Center
-overhealHitpointBars [UnitType ...] [log]   HP bars and texts of marked units use
-                              InitialHitpoints as 100 % (overheal up to MaxHitpoints)
+overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [stat[=Label]] [log]   HP bars and texts
+                              of marked units use InitialHitpoints as 100 % (overheal up to
+                              MaxHitpoints); segment: the HP above it in orange, Overwatch style
+                              (portrait bar with a UI gadget); stat: an Overheal row
+overhealSources [UnitType ...] [log]   only marked healers (AbstractOverhealer) heal
+                              overheal units above InitialHitpoints
+overhealDecay R[%] [D] [UnitType ...] [log]   overheal above InitialHitpoints decays
+                              at R HP/s, D s after the last heal (Overwatch style)
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed

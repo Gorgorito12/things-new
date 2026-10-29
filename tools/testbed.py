@@ -23,6 +23,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              live HP of those units (IDs or proto names) on every frame, --log the
                              latest UHC.log lines that match, --follow keeps the camera on a unit
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
+  drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
+  wheel <x> <y> <steps>      real mouse wheel at a client point (+ zooms in, - out)
+  front                      keep the game window above every other window and focus it
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
   log [--grep RE] [--tail N] UHC.log lines
@@ -832,6 +835,52 @@ def real_click(cx, cy, right=False):
     time.sleep(0.2)
 
 
+def real_drag(x1, y1, x2, y2, steps=12):
+    """A real left-button drag in client coordinates, e.g. a selection box."""
+    hwnd = focus()
+    def move(cx, cy):
+        pt = POINT(int(cx), int(cy))
+        user32.ClientToScreen(hwnd, ctypes.byref(pt))
+        user32.SetCursorPos(pt.x, pt.y)
+    move(x1, y1)
+    time.sleep(0.15)
+    down = INPUT(type=0)
+    down.u.mi = MOUSEINPUT(0, 0, 0, 0x0002, 0, 0)
+    send(down)
+    for i in range(1, steps + 1):
+        time.sleep(0.03)
+        move(x1 + (x2 - x1) * i / steps, y1 + (y2 - y1) * i / steps)
+    time.sleep(0.1)
+    up = INPUT(type=0)
+    up.u.mi = MOUSEINPUT(0, 0, 0, 0x0004, 0, 0)
+    send(up)
+    time.sleep(0.2)
+
+
+def real_wheel(cx, cy, steps):
+    """Real mouse-wheel steps at a client point: the camera zooms in (steps > 0) or out."""
+    hwnd = focus()
+    pt = POINT(cx, cy)
+    user32.ClientToScreen(hwnd, ctypes.byref(pt))
+    user32.SetCursorPos(pt.x, pt.y)
+    time.sleep(0.15)
+    for _ in range(abs(steps)):
+        i = INPUT(type=0)
+        i.u.mi = MOUSEINPUT(0, 0, 120 if steps > 0 else -120, 0x0800, 0, 0)
+        send(i)
+        time.sleep(0.12)
+
+
+def front():
+    """Keeps the game window above every other window (HWND_TOPMOST, until it closes) and focuses it.
+    The game draws nothing while another window covers it or has the focus, and focus() clicks the
+    title bar, which must then be the game's."""
+    hwnd = window()
+    user32.SetWindowPos(hwnd, wt.HWND(-1), 0, 0, 0, 0, 0x0001 | 0x0002)  # SWP_NOSIZE | SWP_NOMOVE
+    time.sleep(0.3)
+    focus()
+
+
 def real_key(combo):
     focus()
     vks = [vk_of(k) for k in combo.lower().split("+")]
@@ -952,6 +1001,12 @@ def main(argv):
         posted_click(int(args[0]), int(args[1]))
     elif cmd == "rclick":
         real_click(int(args[0]), int(args[1]), len(args) > 2 and args[2] == "right")
+    elif cmd == "drag":
+        real_drag(*(int(a) for a in args[:4]))
+    elif cmd == "wheel":
+        real_wheel(int(args[0]), int(args[1]), int(args[2]))
+    elif cmd == "front":
+        front()
     elif cmd == "key":
         for name in args:
             posted_key(name)

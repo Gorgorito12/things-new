@@ -61,11 +61,15 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `GatherPointValid` | `0x85302C` | `0x38` B | — | — | stock stored-point check, `bool thiscall(hc, unit)`, `ret 4`; the FirstTC helper calls it |
 | `HealIdleCheck` | `0x9E0C79` | `0x2C` B | 5 B at `0x9E0C79` | `8B 4F 58 85 C9` (`mov ecx,[edi+58h]; test ecx,ecx`) | busy test of each heal tick (FUN_009E0B53) |
 | `HealAutoSearchIdle` | `0x9CD9C0` | `0x15` B | 5 B at `0x9CD9C7` | `E8 DB 17 A8 FF` (`call 44F1A7h`) | idle test of the automatic heal search (FUN_009CD865) |
+| `SmartHealRange` | `0x9CDA21` | `0x1E` B | 5 B at `0x9CDA36` | `E8 F2 F4 E2 FF` (`call 7FCF2Dh`) | the heal search's range test; smartHealTargets |
+| `SmartHealLoopEnd` | `0x9CDA3F` | `0x40` B | 5 B at `0x9CDA58` | `5E 5B 5F 32 C0` (`pop esi; pop ebx; pop edi; xor al,al`) | the search's loop step, no-target exit and accept path; smartHealTargets |
+| `SmartHealLoop` | `0x9CD923` | `0x5F` B | — | — | the search's loop head (verified only); smartHealTargets |
 | `AbstractTypesEnd` | `0x51BA23` | `0x15` B | 5 B at `0x51BA31` | `5F 5E B0 01 5B` (`pop edi; pop esi; mov al,1; pop ebx`) | epilogue of the abstract unit type registration (FUN_0051A5DC) |
 | `DotProtoActionTag` | `0x5FA10F` | `0x1B` B | 8 B at `0x5FA11E` | `85 C0 0F 84 C7 33 00 00` (`test eax,eax; je 5FD4EDh`) | unknown-tag fall-through of the action parser FUN_005F98A0; damageOverTime tag hook |
 | `DotProtoActionCall` | `0x5FA20E` | 5 B | — | — | the `<ProtoAction>` handler's `call 5F98A0h`; the tag hook checks its return address 0x5FA213 |
 | `DotTakeDamageEntry` | `0x49B3D9` | 14 B | 6 B at `0x49B3D9` | `81 EC 8C 00 00 00` (`sub esp,8Ch`) | entry of TakeDamage FUN_0049B3D9; damageOverTime hit hook |
-| `DotWorldUpdateEntry` | `0x481A57` | 8 B | 5 B at `0x481A57` | `83 EC 0C 53 55` (`sub esp,0Ch; push ebx; push ebp`) | entry of the world update FUN_00481A57; damageOverTime tick hook |
+| `DotWorldUpdateEntry` | `0x481A57` | 8 B | 5 B at `0x481A57` | `83 EC 0C 53 55` (`sub esp,0Ch; push ebx; push ebp`) | entry of the world update FUN_00481A57; the shared tick wrapper (`worldtick.cpp`: damageOverTime, overhealDecay) |
+| `HpSetter` | `0x4820A1` | `0x22` B | — | — | the HP setter overhealDecay calls (verified only) |
 | `DodgeProtoCheck` | `0x49ACE5` | 12 B | 6 B at `0x49ACE5` | `8B 46 5C 8B 40 04` (`mov eax,[esi+5Ch]; mov eax,[eax+4]`) | proto test of the dodge FUN_0049ACAA; dodgeAnyUnit hook |
 | `DodgeTechCheck` | `0x6A249C` | 10 B | — | — | the stock dodge path the hook enters (`push "ypDodge"; call 600BE1h`) |
 | `DodgeCall` | `0x49B023` | 7 B | 5 B at `0x49B023`, only with `log` | `E8 82 FC FF FF` (`call 49ACAAh`) | the damage function's call to the dodge; dodgeAnyUnit log wrapper |
@@ -129,6 +133,19 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `OverhealStatBase` | `0x4D75DA` | `0x45` B | 6 B at `0x4D7615` | `D9 80 98 00 00 00` (`fld [eax+98h]`) | the stat row's base |
 | `OverhealInfoBase` | `0x9AFA07` | `0x2D` B | 6 B at `0x9AFA2A` | `D9 81 98 00 00 00` (`fld [ecx+98h]`) | ObjectInfo base (FUN_009AF31A) |
 | `OverhealInfoMax` | `0x9AFA34` | `0x23` B | 5 B at `0x9AFA4E` | `E8 B5 09 AD FF` (`call 480408h`) | ObjectInfo max |
+| `OverhealSegmentQueue` | `0x45FB3F` | `0x32` B | 5 B at `0x45FB6C` | `E9 42 1B FF FF` (`jmp 4516B3h`) | after the floating bar is queued; `segment` |
+| `HpBarRenderStart` | `0x45C4AF` | `0x3F` B | 6 B at `0x45C4B9` | `8B 9D D4 08 00 00` (`mov ebx,[ebp+8D4h]`) | the renderer's count, before the vertex lock; `segment` |
+| `HpBarRenderLoop` | `0x45C60B` | `0x587` B | 6 B at `0x45CB72` | `83 C0 01 83 C1 1C` (`add eax,1 / add ecx,1Ch`) | the whole per-record loop (the vertex layout the hook relies on) and its end; `segment` |
+| `OverhealTextStat`, `OverhealTextStatSplit` | `0x4D7647`, `0x69A9B0` | `0x15`, `0x1B` B | 5 B at `0x4D7651`, `0x69A9C0` | `68 54 20 BA 00`, `68 54 4A C3 00` (`push` format) | the stat row's HP text formats; `segment` |
+| `OverhealPortraitTail` | `0x4C82E6` | `0x102` B | 9 B at `0x4C83DF` | `8D 4C 24 70 E8 E2 8C F3 FF` (`lea ecx,[esp+70h]; call 4010CAh`) | the portrait bar's tail; `segment` (also `OverhealPortraitColours` 0x69A614, `HealthBarGadgets` 0x9BAEE5, verify only) |
+| `OverhealStatRow` | `0x4D76DB` | 9 B | 9 B at `0x4D76DB` | `BF 02 00 00 00 89 7C 24 2C` (`mov edi,2; mov [esp+2Ch],edi`) | the row after the HP row; `stat` (also `GroupHealthRow` 0x69A9D3, verify only) |
+| `GadgetByName`, `ProgressGadget`, `GadgetRelease`, `ProgressFill`, `GadgetShow`, `GadgetHide`, `GadgetRef`, `BStringFromWide`, `BStringSet` | `0xAB7C2F`, `0x44B8B8`, `0x40431B`, `0x590772`, `0x447F7B`, `0x448F13`, `0x4C519C`, `0x401A12`, `0x40196F` | — | — | — | the UI functions the portrait bar and the Overheal row call (verified only) |
+| `RegenAddHp`, `DanceRegenAddHp` | `0x49087C`, `0x67A036` | `0x12`, `0x15` B | 5 B at `0x490881`, `0x67A03B` | `E8 1D 1B FF FF`, `E8 63 83 E0 FF` (`call 4823A3h`) | the regeneration adds; overhealDecay |
+| `OverhealAddEntry` | `0x4823A3` | `0x0A` B | 8 B at `0x4823A3` | `51 56 8B F1 83 7E 08 08` | entry of the add-HP function FUN_004823A3; overhealSources |
+| `HealTickMax` | `0x9E0BA5` | `0x29` B | 5 B at `0x9E0BBB` | `E8 48 F8 A9 FF` (`call 480408h`) | the heal tick's HP < max test; overhealSources |
+| `HealTickAdd` | `0x9E0CCF` | `0x26` B | 5 B at `0x9E0CE9` | `E8 B5 16 AA FF` (`call 4823A3h`) | the heal tick's heal; overhealSources |
+| `HealSearchRatio` | `0x9CD982` | `0x18` B | 5 B at `0x9CD984` | `E8 0C 19 A9 FF` (`call 45F295h`) | the heal search's first ratio; overhealSources |
+| `HpBarQueue`, `DynamicVbLock`, `DynamicVbFull` | `0x45FB71`, `0x40A6A2`, `0x40A689` | `0x6F`, `0x45`, `0x19` B | — | — | the queue the segment hook calls, and the vertex buffer's size check; `segment` |
 | `OverhealInfoProto`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag` | `0x9AF33B`, `0x480408`, `0x45F295`, `0x5F5CE3`, `0x5F5D39` | `0x19`, `0x26`, `0x48`, 6, 6 B | — | — | where ObjectInfo stores the database proto, the getter the hooks call, the ratio the helper mirrors, and the stores that put InitialHitpoints / MaxHitpoints at `[proto+9Ch]` / `[proto+98h]`; overhealHitpointBars (also `IsA`, `IsATrue`) |
 | `GatherTickRate` | `0x4ED02A` | `0x26` B | 8 B at `0x4ED044` (`jmp` + 3 NOP) | `D8 4C 24 30 D9 54 24 14` (`fmul [esp+30h]; fst [esp+14h]`) | the gather tick's rate per second in ST0 (FUN_004ECD87); showGatherRate record hook (continues at `0x4ED04C`) |
 | `GatherTickHead`, `GatherTickPushEbp`, `GatherTickPushEbx`, `GatherTickGatherer`, `GatherTickPlayerRate`, `GatherTickPlayerBlock`, `GatherTickAddResource` | `0x4ECD87`, `0x4ECDCC`, `0x4ECE16`, `0x4ECE6D`, `0x4ED130`, `0x4ED1A4`, `0x4ED1E1` | `0x14`, 7, `0x0A`, `0x15`, `0x2A`, `0x14`, `0x12` B | — | — | the tick's frame and ESI, the non-null gatherer and player, and the multiplier, shrine and defeated tests and the add that the record and its reader mirror |
@@ -286,8 +303,9 @@ with your own result type.
   - the globals, such as `g_uhcHealNonIdleType`;
   - the `__stdcall` callbacks, such as `UhcRegisterAbstractUnitTypes`;
   - for `damageOverTime`, the two `__fastcall` wrappers, which the hooks reach through the
-    pointer variables `g_uhcDotTakeDamage` and `g_uhcDotWorldUpdate`, so MASM never needs their
-    decorated names. The trampolines `UhcDotTakeDamageStock` and `UhcDotWorldUpdateStock` go the
+    pointer variables `g_uhcDotTakeDamage` and `g_uhcWorldUpdate` (the shared world update
+    wrapper of `worldtick.cpp`), so MASM never needs their decorated names. The trampolines
+    `UhcDotTakeDamageStock` and `UhcWorldUpdateStock` go the
     other way: C++ casts their addresses to function pointers. `customHotkeyContexts` reaches its
     two `__fastcall` wrappers the same way (`g_uhcHotkeyFindContext`,
     `g_uhcHotkeyDeactivateAll`);
@@ -361,6 +379,23 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - both continue at `0x9CD9CC` (`test al,al`).
   - **Both hooks are needed.** With the tick hook alone nothing changes: the search never starts a
     heal on a busy unit, so the tick hook is never reached.
+
+### smartHealTargets
+
+- **Globals:** `g_uhcSmartHealTypes[8]` (type or proto IDs, -1 until the data loads),
+  `g_uhcSmartHealTypeCount`; the search state (healer, best and first candidate, count) is private
+  to `smartheal.cpp`.
+- **Range hook** at `0x9CDA36` (5 B, `call 7FCF2Dh`): ECX = healer, `[esp]` = candidate,
+  `[esp+4]` = range; ESI = candidate, EBP = owner (healer at `[ebp+4]`). Call 0x7FCF2D (thiscall,
+  `ret 8`); if AL: `UhcSmartHealConsider(healer, candidate)` with every register kept; then jump
+  to `0x9CDA3F` (never to the accept path).
+- **Pick hook** at `0x9CDA58` (5 B, `pop esi / pop ebx / pop edi / xor al,al`): `UhcSmartHealPick
+  (healer)`; a unit: ESI = it, jump to `0x9CDA62`; none: re-execute the four instructions, jump to
+  `0x9CDA5D`.
+- **Score** (smallest wins, compared in this order): index of the first listed type the unit's
+  proto is of (0x44D7FA; none: the type count), the stock ratio 0x45F295, (Δx² + Δz²) between
+  `[unit+14h]`/`[unit+1Ch]` and the healer's, the unit ID `[unit+10h]`. Never a pointer.
+- **Coexists** with `healNonIdle` (0x9CD9C7, same loop, other site).
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
@@ -440,10 +475,12 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     st0, exactly like the stock thiscall function;
   - it calls the stock function through `UhcDotTakeDamageStock` (`sub esp,8Ch; jmp 49B3DFh`);
   - when damage was dealt, it adds or renews a poison.
-- **World update hook** at `0x481A57`, a `jmp` to `UhcDotWorldUpdate`:
+- **World update hook** at `0x481A57`, a `jmp` to the shared wrapper `UhcWorldUpdate`
+  (`worldtick.cpp`, written once by `AddWorldTick`, whichever key comes first):
   - `bool __fastcall(world, unused, int, int deltaMs)`, `ret 8`, result in AL;
-  - it calls the stock update through `UhcDotWorldUpdateStock` (`sub esp,0Ch; push ebx;
-    push ebp; jmp 481A5Ch`), then applies the due ticks when `world == [[C66234h]+13Ch]`;
+  - it calls the stock update through `UhcWorldUpdateStock` (`sub esp,0Ch; push ebx;
+    push ebp; jmp 481A5Ch`), then each registered tick in kFeatures order; damageOverTime's
+    applies the due ticks when `world == [[C66234h]+13Ch]`;
   - each tick calls the **stock** TakeDamage (the trampoline, not the wrapper) with p8..p13 =
     `0, 0, 1, 1, -2, 1`, but with p11 = 0 when the attacking unit is gone. With p11 = 1,
     TakeDamage's army code (0x6A3253) reads the attacking unit with no null check, so a tick on
@@ -894,6 +931,81 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   max; it logs once per proto name.
 - **Display only:** never patch 0x480408 or 0x45F295 themselves; their other callers are
   simulation code.
+- **`segment`** (five more hooks, installed only with the option, after their own VerifyAll):
+  - `0x45FB6C` (5 B, `jmp 4516B3h`), ESI = unit, `[esp+18h]` = the bar's position, `[esp+15h]` =
+    under construction: unless under construction, compute the reference (empty FPU stack), then
+    `UhcOverhealQueueSegment(unit, pos, reference)` queues `0x45FB71(world, pos, 1.0, share,
+    804F5648h, FFh)` when HP > reference, share = min((HP − reference) / reference, 1). Keep every
+    register; → `0x4516B3`.
+  - `0x45C4B9` (6 B, `mov ebx,[ebp+8D4h]`), EBP = world: when count × 216 > `[[[0C66044h]+660h]+4]`,
+    remove the records of player 804F5648h from `[world+8D0h]` and lower the count; redo the
+    load; → `0x45C4BF`.
+  - `0x45CB72` (6 B, `add eax,1 / add ecx,1Ch`), ECX = the record's offset, EDI = its sixth vertex
+    (the first at EDI − 0B4h), ESI = camera, x87 stack empty: for player 804F5648h only, add
+    scale × (1 − share) × `[camera+28h..30h]` to the positions of vertices 0, 2 and 3, set u
+    (`+1Ch`) to 1.0 on those and 0.5 on 1, 4 and 5, and the colour (`+18h`, ARGB) on all six; redo
+    the adds; → `0x45CB78`.
+  - `0x4D7651` and `0x69A9C0` (5 B, `push` of the UTF-16 format), `[esp]` = HP, `[esp+4]` = the
+    100 % value: push `<color=r, g, b>` + the stock format + `</color>` when HP > the value, else
+    the stock one; change only the flags; → `0x4D7656`, `0x69A9C5`.
+  - These depend on the renderer's vertex layout (verified as the whole loop, site
+    `HpBarRenderLoop`) and on the marker player ID never being a real player.
+  - `0x4C83DF` (9 B, `lea ecx,[esp+70h]; call 4010CAh`), the portrait bar's tail: `[esp+50h]` =
+    panel, `[esp+78h]` = group (FPU empty). Look up `unitselectionpanel-unitHealthBarOverheal`
+    with `0xAB7C2F(panel, &handle, &BString name, 1)` (a real BString from 0x401A12, freed with
+    0x4010CA) once per panel and green handle `[panel+310h]`; if the handle is above
+    `[0C672C0h]`: `0x448F13(manager, handle)` (hide); then, when `[group+1Ch]` ≥ 0.999 and the
+    group's average min((HP − reference) / reference, 1) is above 0 (IDs `[group+10h]`, count
+    `[group+14h]`): `bar = 0x44B8B8(handle)`, `0x40431B(handle)`, `0x590772(bar, 1 − share)`,
+    `0x447F7B(manager, handle)` (show: on top). Manager = `[[0C66244h]+44h]`. Redo the stolen
+    pair; → `0x4C83E8`. The gadget comes from the mod's UI data (background = overheal colour,
+    mask = HP colour; a progress bar needs a background to be drawn).
+- **`stat`**: `0x4D76DB` (9 B, `mov edi,2; mov [esp+2Ch],edi`): redo both, then for a marked unit
+  `[esp+38h]` write row EDI of panel `[esp+50h]` as the Group Health branch (0x69A9D3) does
+  (gadgets `[panel+174h+EDI*4]` / `[panel+198h+EDI*4]` through 0x4C519C; vtable +84h with
+  0D6F5D0h / 0C6657Ch, +80h with the text, +54h; `[gadget+68h]` = `L""`), and on success
+  `add edi,1; mov [esp+2Ch],edi`; → `0x4D76E4`. EAX, ECX, EDX and the flags are dead there.
+- **Public helpers** for the other overheal keys (cdecl, in `overheal_hooks.asm`):
+  `float UhcOverhealReferenceOf(unit)`, `float UhcOverhealRatioOf(unit)`,
+  `int UhcOverhealMarked(proto)`.
+
+### overhealSources
+
+- **Needs** overhealHitpointBars' types and helpers (above); apply it after that key.
+- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount`, `g_uhcOverhealAllow`.
+- **Add-HP hook** at `0x4823A3` (8 B: `push ecx; push esi; mov esi,ecx; cmp dword ptr [esi+8],8`),
+  ECX = unit, `[esp+4]` = amount (float), `[esp+8]` = flag: pushad, `UhcOverhealAddHp(unit,
+  &amount)` (may lower the amount in place), popad, redo the 8 bytes, → `0x4823AB` (`jbe` on the
+  `cmp`). Lowering rule: amount > 0, the unit's proto marked, `g_uhcOverhealAllow` = 0 and
+  HP + amount > reference → amount = max(reference − HP, 0).
+- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the action
+  (healer `[esi+10h]`), FPU stack empty: ST0 = the reference for a marked target and a non-source
+  healer, else the stock max; → `0x9E0BC0`.
+- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the healer is a
+  source; the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
+- **Search hook** at `0x9CD984` (5 B, `call 45F295h`), ECX = ESI = candidate, healer `[ebp+4]`:
+  ST0 = HP / reference (stock rules) for a marked candidate and a non-source healer, else the stock
+  ratio; → `0x9CD989`. Coexists with smartHealTargets and healNonIdle (other sites of the loop).
+- **The add-HP hook is shared** with overhealDecay: `InstallOverhealAddHook()` writes it once.
+
+### overhealDecay
+
+- **Needs** overhealHitpointBars' helpers; apply after overhealSources (they share the add-HP hook,
+  and the second one must not verify bytes the first already replaced).
+- **Gain:** the add-HP hook calls `g_overhealGain(unit, restartDelay)` (set by this key) for a
+  positive amount on a marked unit that still takes it above its reference; it stores
+  `[world+108h]` in a map keyed by unit ID, or, for a regeneration (restartDelay false), adds the
+  unit only if missing, with `[world+108h]` − delay.
+- **Regeneration hooks:** `0x490881` and `0x67A03B` (5 B each, `call 4823A3h`): set
+  `g_uhcOverhealRegen` = 1, the stolen call, set it to 0; → `0x490886`, `0x67A040`. Without them an
+  idle unit that regenerates restarts the delay on every step and never decays.
+- **Tick** (registered with `AddWorldTick`, after damageOverTime's): elapsed = `[world+108h]` − the
+  last tick's (another world, the time going back or `[world+F8h]` jumping by more than 1 clears
+  the map, as does a data reload); for each unit in ID order: look it up (`[world+0Ch]`, ID check),
+  alive (`vtbl+A4h`), marked; at or below the reference → forget; inside the delay → skip; else
+  `FUN_004820A1(unit, max(HP − rate × elapsed / 1000, reference), 0)` (rate in HP/s, or the
+  reference × % / 100).
+- **Never** below the reference, never the real clock, never pointer order.
 
 ### showGatherRate
 

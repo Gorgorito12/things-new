@@ -10,11 +10,9 @@ include common.inc
 UhcDotProtoActionTag PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
 
 EXTERNDEF g_uhcDotTakeDamage:DWORD      ; float fastcall(target, -, the 13 stock arguments)
-EXTERNDEF g_uhcDotWorldUpdate:DWORD     ; bool fastcall(world, -, the 2 stock arguments)
 
 .data
 takeDamageBody      dd 0049B3DFh    ; cmp byte ptr [esp+0C0h],1, after the stolen sub esp,8Ch
-worldUpdateBody     dd 00481A5Ch    ; push esi / mov esi,ecx, after the stolen prologue
 lastTagHandler      dd 005FD4EDh    ; stock je target: the "ModifyExclusive" handler
 nextChild           dd 005FA126h    ; mov eax,[esp+1Ch]: the loop's next child
 
@@ -34,20 +32,7 @@ UhcDotTakeDamageStock PROC
     jmp takeDamageBody
 UhcDotTakeDamageStock ENDP
 
-; Replaces sub esp,0Ch / push ebx / push ebp at 0x481A57, the entry of the world update
-; (bool thiscall(world, int, int deltaMs), ret 8). As above, the frame passes through unchanged.
-UhcDotWorldUpdateHook PROC
-    TRACE_ONCE "damageOverTime world update (0x481A57)"
-    jmp g_uhcDotWorldUpdate
-UhcDotWorldUpdateHook ENDP
-
-; The stock world update for the wrapper: the stolen prologue, then the rest of the function.
-UhcDotWorldUpdateStock PROC
-    sub esp, 0Ch
-    push ebx
-    push ebp
-    jmp worldUpdateBody
-UhcDotWorldUpdateStock ENDP
+; The world update's tick goes through the shared wrapper of worldtick.cpp (AddWorldTick).
 
 ; Replaces test eax,eax / je 5FD4EDh at 0x5FA11E in FUN_005F98A0, after its last tag compare
 ; ("ModifyExclusive"). Reached only by that tag and by tags the stock parser does not know.

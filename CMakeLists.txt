@@ -18,6 +18,7 @@ add_library(UHC SHARED
   src/log.cpp
   src/patch.cpp
   src/unittypes.cpp
+  src/worldtick.cpp
   src/features/abilityslots.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
@@ -39,8 +40,11 @@ add_library(UHC SHARED
   src/features/misc.cpp
   src/features/notrainneartc.cpp
   src/features/overheal.cpp
+  src/features/overhealdecay.cpp
+  src/features/overhealsources.cpp
   src/features/perf.cpp
   src/features/shipments.cpp
+  src/features/smartheal.cpp
   src/features/snare.cpp
   src/features/sockets.cpp
   src/features/startingtc.cpp
@@ -69,7 +73,9 @@ add_library(UHC SHARED
   src/hooks/misc_hooks.asm
   src/hooks/notrainneartc_hooks.asm
   src/hooks/overheal_hooks.asm
+  src/hooks/overhealsources_hooks.asm
   src/hooks/shipment_hooks.asm
+  src/hooks/smartheal_hooks.asm
   src/hooks/snare_hooks.asm
   src/hooks/socket_hooks.asm
   src/hooks/startingtc_hooks.asm
@@ -80,6 +86,7 @@ add_library(UHC SHARED
   src/hooks/unittype_hooks.asm
   src/hooks/wonderpanel_hooks.asm
   src/hooks/workrate_hooks.asm
+  src/hooks/worldtick_hooks.asm
   src/version.rc
 )
 target_compile_definitions(UHC PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)

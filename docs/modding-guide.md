@@ -242,6 +242,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | Nothing. | not confirmed |
 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the 10 stock fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
+| [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
@@ -264,6 +265,8 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center; the queue resumes when they leave or that Town Center dies. | Nothing for the Daimyos; with a new marker, that type on the trainers in `protoy`. | confirmed (single player) |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units, and the unit type on them (or an existing type in the cfg). | confirmed (single player, UI) |
+| [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
+| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget in your UI. | confirmed (single player, UI; the data ref not tested) |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. | confirmed (single player) |
@@ -548,7 +551,11 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 
 ![healNonIdle in game](media/healNonIdle.gif)
 
-*In game:* a musketeer exchanges fire with two enemy musketeers while the surgeon behind it heals it: its HP drops with the hits and climbs back during the fight, and it survives (2x speed). [With the key](media/healNonIdle.mp4); [stock, key off](media/healNonIdle-stock.mp4): the same musketeer is never healed while it fights and dies at 38 s.
+*1. With the key:* a musketeer exchanges fire with two enemy musketeers while the surgeon behind it heals it: its HP drops with the hits and climbs back during the fight, and it survives (2x speed). [Full video (MP4)](media/healNonIdle.mp4).
+
+![healNonIdle stock, key off](media/healNonIdle-stock.gif)
+
+*2. Stock, key off (the same scene):* before the fight the surgeon heals the idle musketeer (113 to 131 HP); once the musketeer fights, the surgeon stops healing it and it dies at 38 s; the enemy musketeers then kill the surgeon too (2x speed). [Full video (MP4)](media/healNonIdle-stock.mp4).
 
 ```
 healNonIdle [<UnitType>]      default AbstractHealNonIdle
@@ -598,6 +605,49 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 - **Status:** confirmed: British surgeons marked with the type healed their explorer during a
   fight through their automatic search. A direct order (right-click) on a fighting unit was not
   verified.
+
+### smartHealTargets
+
+![smartHealTargets in game](media/smartHealTargets.gif)
+
+*In game:* four units are hit at once; the surgeon heals the one with the lowest HP ratio first (a settler at 33 %), then 45 %, 70 % and 90 %, where stock starts with the nearest settler at 90 %. The yellow lines show each pick next to stock's. [Full video (MP4)](media/smartHealTargets.mp4).
+
+```
+smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
+```
+
+- **How stock behaves:** an idle healer looks for a unit to heal on its own: it asks for the units
+  around it and heals the **first** one that passes every test (damaged, alive, idle, a valid heal
+  target, not already healed by others, in range). The order is the query's, so a healer often
+  tops up a nearly full unit next to it while a badly hurt one waits.
+- **Effect:** the same tests decide which units can be healed, and among them the healer picks:
+  1. the unit types you list, in their order (a unit of none of them comes after them);
+  2. then the lowest HP ratio (HP / max);
+  3. then the nearest to the healer;
+  4. then the lowest unit ID.
+
+  No memory address and no query order is used, so every machine picks the same unit. With no
+  type, it is the most hurt unit in reach. Only the automatic search changes: a direct order
+  (right-click) heals what the player chose.
+- **Every healer:** the key applies to every healer, with no marker on the healers: the search is
+  the same function for surgeons, monks, priests and the others, and the key only reorders units
+  the stock rules already accept. Names a type to favour targets instead, e.g.
+  `smartHealTargets AbstractInfantry Settler`.
+- **With `healNonIdle`:** both keys hook the same search at different points and work together:
+  marked healers also see busy units, and the best of all candidates is healed.
+- **Log:** `smartHealTargets: automatic heal searches pick the best candidate: <types, >lowest HP
+  ratio, nearest, lowest unit ID (multiplayer unverified)`; in a game `hook reached:
+  smartHealTargets candidate (0x9CDA36)` and `pick (0x9CDA58)`; with `log`, every pick (the first
+  200): `smartHealTargets: unit 0 (Surgeon) heals unit 4 (Settler, rank 0, HP ratio 0.333, 10.0
+  m) among 4 candidates; stock would heal unit 1 (Settler, HP ratio 0.900)`.
+- **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
+  registered as a marker unit type, which changes the unit type count.
+- **Status:** confirmed in single player (2026-10-29). A surgeon with four units hit at once
+  (90 %, 45 %, 70 %, 33 %) healed them in the order 33, 45, 70, 90 %, where stock would have
+  started with the 90 % settler; with `smartHealTargets Pikeman`, the pikeman (70 %) came first,
+  then 33, 45, 90 %. Together with `healNonIdle` both hooks ran. A skirmish against the AI with
+  the key on played normally. Multiplayer was not tested.
+- **New in this DLL:** not in UHC 1.10.
 - **New in this DLL:** not in UHC 1.10.
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
@@ -797,8 +847,8 @@ damageOverTime [log]
   - when you leave a game with poisons still running and start or load another one,
     `damageOverTime: another game started; <N> running poison(s) dropped`, or
     `damageOverTime: the data was reloaded; <N> running poison(s) dropped`. That is normal;
-  - `hook reached: damageOverTime TakeDamage (0x49B3D9)` and `hook reached: damageOverTime world
-    update (0x481A57)`.
+  - `hook reached: damageOverTime TakeDamage (0x49B3D9)` and `hook reached: world update
+    (0x481A57)` (the world update wrapper, shared with `overhealDecay`).
 - **Check:** hit a unit once and pull back. Its hitpoints keep dropping by one tick every ROF
   seconds. In the tests, poisoned guardians and animals sometimes jumped back to full hitpoints,
   most likely when they went back to their spot. That is stock behavior (not traced), and it can
@@ -2128,10 +2178,22 @@ noTrainNearEnemyTC <meters> [<UnitType>] [log]     default AbstractDaimyo; one l
 
 ![overhealHitpointBars in game](media/overhealHitpointBars.gif)
 
-*In game:* A marked musketeer (150 HP of 165 max) shows a full bar and 150/150; the overlay shows the real maximum. [Full video (MP4)](media/overhealHitpointBars.mp4).
+*1. The 100 %:* A marked musketeer (150 HP of 165 max) shows a full bar and 150/150; the overlay shows the real maximum. [Full video (MP4)](media/overhealHitpointBars.mp4).
+
+![overhealHitpointBars segment in game](media/overhealHitpointBars-segment.gif)
+
+*2. `segment`, the floating bars:* A marked Musketeer takes damage (white `92/150`), a Surgeon heals it, and above 150 an orange segment appears over the right end of its full bar, with an orange `165/150`; the unmarked Pikeman keeps the stock bar. [Full video (MP4)](media/overhealHitpointBars-segment.mp4).
+
+![overhealHitpointBars portrait bar, stat row and aura](media/overhealHitpointBars-portrait.gif)
+
+*3. `segment stat`, the portrait bar, the Overheal row and an aura* (the unit panel and its "Unit information" panel; the UI data has the overheal gadget below): the selected marked Musketeer starts at `165/150`: the bar under its portrait is green with the orange overheal at its right end, and the new row reads `Overheal 15/15` in orange. A hit takes it below its 100 %: the portrait shows the stock bar (green, then yellow at the second hit) and `Overheal 0/15`; the Surgeon heals it back and the orange end returns. Halfway, a Golden Pavilion whose tactic has the `UnitHitpointsIncrease2` aura (MaxHP x1.1) appears: the max goes from 165 to 181.5 and the 100 % follows it, from 150 to 165, so the text reads `181/165 (150+15)` and the row `Overheal 16/16` (2x speed). [Full video (MP4)](media/overhealHitpointBars-portrait.mp4).
+
+![overhealHitpointBars in the minimized UI](media/overhealHitpointBars-minimized.gif)
+
+*4. The minimized UI* (the game option "minimized interface", `optionminimizedui`): its HP text (`unitHitPointsValue`) takes the 100 % too: `120/150` while the Surgeon heals, `165/150`, then `181/165` under the same aura. It stays white: that text gadget prints the colour markup as text, so it is not coloured. That layout has no portrait bar and no Overheal row (3x speed). [Full video (MP4)](media/overhealHitpointBars-minimized.mp4).
 
 ```
-overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 types
+overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log]   default AbstractOverheal; up to 8 types
 ```
 
 - **How stock behaves:** a unit is created with its proto's `<InitialHitpoints>` and can be healed
@@ -2154,6 +2216,28 @@ overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 
 
   Units of other types, and marked units whose `InitialHitpoints` is not below `MaxHitpoints`,
   display as in stock.
+- **`segment`** (Overwatch style): the HP above 100 % is shown too.
+  - The floating bar stays full and the overheal is drawn over its right end, in orange: a
+    Musketeer at 165/150 has its right 10 % orange; from twice its 100 % the whole bar is orange.
+    The bar keeps its width.
+  - The unit panel's HP text above 100 % is orange too (`165/150`), through the game's own colour
+    markup.
+  - `segment=RRGGBB` sets another colour (hex, e.g. `segment=40C0FF`).
+  - The floating bar is drawn in the player's colour (the stock bar is not green), so the segment
+    sits next to the player's colour.
+  - No data change is needed beyond the marker for these.
+  - The bar under the selected unit's portrait shows the overheal too, when the UI data has a
+    fourth bar for it (below, "The portrait bar"): while the selected units have overheal and the
+    stock bar is full, that bar is drawn over it, its mask (green) on the left and its background
+    (the overheal colour) on the right end, (HP − 100 %) / 100 % of its width (the average of the
+    selected units). Below 100 % the stock green / yellow / red bar shows, as without the key.
+- **`stat`**: the unit's "Unit information" panel (the stat rows next to the portrait) gets a row
+  right after the HP row for a marked unit: `Overheal 15/15`, the HP above its 100 % and the most
+  it can have (max − 100 %), truncated like the HP row, so `165/150` gives `15/15`. With
+  `segment` the value is in the segment colour while it is above 0. The label is `Overheal`, or
+  `stat=<Label>`: one word, `_` for a space (`stat=Sobre_curación`; UTF-8 or ANSI), or a number,
+  which takes that string from the string table (`stat=90001`), so a mod can translate it. The
+  rows below move down one, as for the stock "Group Health" row (whose label is also a literal).
 - **What does not change:** the hit points themselves, healing (healers still heal up to
   `MaxHitpoints`, which is what makes the overheal possible), techs, auras, AI, triggers and every
   other game rule: they all keep reading `MaxHitpoints`.
@@ -2171,11 +2255,36 @@ overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 
       <MaxHitpoints>165.0000</MaxHitpoints>
   ```
 
-- **Techs and auras** (static reading, not tested): a `Hitpoints` tech adds the same amount to
-  `InitialHitpoints` as to `MaxHitpoints`. A percentage tech therefore leaves a full unit slightly
-  below 100 %: after +10 % on 150/165, `InitialHitpoints` is 166.5 and a unit that was at 150 HP
-  has 165 (99 %). An aura or modifier that changes one unit's max scales its reference by the same
-  factor, so a full unit stays full.
+- **Techs and auras:** a `Hitpoints` tech adds the same amount to `InitialHitpoints` as to
+  `MaxHitpoints`. A percentage tech therefore leaves a full unit slightly below 100 %: after
+  +10 % on 150/165, `InitialHitpoints` is 166.5 and a unit that was at 150 HP has 165 (99 %). An
+  aura or modifier that changes one unit's max scales its reference by the same factor, so a full
+  unit stays full (seen in game: a Golden Pavilion's MaxHP x1.1 aura took a Musketeer from
+  `165/150` to `181/165 (150+15)`, `Overheal 15/15` to `16/16`). In a skirmish, the British
+  Explorer marked for a test (400 / 440 in the data) showed `180/180` and `Overheal 0/40`: a
+  start-of-game effect lowers both values by the same amount, and the reference follows it.
+- **The portrait bar (UI data).** The selection panel looks up its bars by name in
+  `uiunitselection.xml` (`unitselectionpanel-unitHealthBarGreen`, `…Yellow`, `…Red`: three
+  `progressBar` gadgets at the same place, of which it shows one). With `segment`, the key looks
+  up a fourth, `unitselectionpanel-unitHealthBarOverheal`, and shows, fills and hides it itself.
+  Without it, the portrait bar stays stock (the log says which). Give it the same place as the
+  stock bars, a higher `z`, the overheal colour as its background and the HP colour as its mask;
+  a progress bar draws nothing without a background (`progressbarbackground` together with
+  `progressbarbackgroundsize`):
+
+  ```xml
+  <gadget name="unitselectionpanel-unitHealthBarOverheal" type="progressBar" size1024="420 756 519 766"
+          z="111" progressbarbackground="ui\ingame\uhc_health_overheal" progressbarbackgroundsize="104 8"
+          progressbarmask="ui\ingame\ingame_ui_health_green"/>
+  ```
+
+  right after `unitselectionpanel-unitHealthBarRed` in the TAD file (`Data3.bar`,
+  `Data\uiunitselection.xml.xmb`; extract it with `tools/bar.py`, convert it with
+  `tools/xmbedit.py to-xml`, add the line, compile it with `from-xml` and put the `.xmb` in the
+  mod's `data\`). The background texture is the mod's: the tests used a 16 x 8 DXT1 orange
+  gradient, `art\ui\ingame\uhc_health_overheal.ddt` (a stock colour such as
+  `ui\ingame\ingame_ui_health_yellow` works too). The minimized UI layout
+  (`uiunitselectionmin.xml`) has no such bar.
 - **`log`:** one line for the first unit of each proto whose reference differs from its max (once
   per proto name in a session).
 - **Log:** at startup `overhealHitpointBars: HP bars and HP texts of units of unittype X take
@@ -2186,15 +2295,34 @@ overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 
   `(0x4D7615)`, or `(0x9AFA2A)` with `(0x9AFA4E)`, depending on which panel shows them. With
   `log`: `overhealHitpointBars: unit N (Musketeer) HP 150.0 is shown against 150.0 instead of its
   max 165.0 (InitialHitpoints 150.0, MaxHitpoints 165.0); logged once per proto`.
+  With `segment`: the startup line adds `HP above it shown as a segment and texts coloured
+  FF8C00`; in a game `hook reached: overhealHitpointBars segment queue (0x45FB6C)`, `segment fit
+  (0x45C4B9)`, `segment vertices (0x45CB72)` and `text (0x4D7651)` (`text (0x69A9C0)` for the
+  `(base+bonus)` form); with `log`, `overhealHitpointBars: unit N (Musketeer) HP 165.0 is above its
+  100 % 150.0: overheal segment of 10.0 % of the bar; logged once per proto`; and, only if a frame
+  ever has more bars than the vertex buffer holds (about 9,700), `… bars do not fit in the vertex
+  buffer …: this frame's K overheal segments were dropped (logged once)`. A wrong colour stops the
+  key: `overhealHitpointBars: segment=…: expected segment or segment=RRGGBB (hex); feature not
+  applied`. The portrait bar: `hook reached: overhealHitpointBars portrait bar (0x4C83DF)`, then
+  `overhealHitpointBars: the UI has unitselectionpanel-unitHealthBarOverheal: the portrait bar
+  shows the overheal (logged once)` or `the UI has no …: the portrait bar stays stock`; with `log`,
+  `the portrait bar shows an overheal of 10.0 % of the bar (1 units; logged once)`.
+  With `stat`: the startup line adds `an overheal stat row labelled 'Overheal'` (or `labelled by
+  string N`); in a game `hook reached: overhealHitpointBars stat row (0x4D76DB)`; with `log`,
+  `stat row 2 of unit N (Musketeer): overheal 15/15 (logged once)` (with its colour markup). A bad
+  label stops the key: `overhealHitpointBars: stat=…: expected stat or stat=<label> (a word, '_'
+  for a space, or a string table ID); feature not applied`.
 - **Limits:**
-  - the floating bar stops at 100 %; drawing the overheal part above it would need the bar
-    renderer;
+  - without `segment` the floating bar stops at 100 %;
+  - the portrait bar needs the fourth gadget in the UI data (above); only the stat row's HP text
+    is coloured: the minimized UI's `unitHitPointsValue` prints the markup as text (seen in game),
+    so it stays white, and the ObjectInfo panel (the scenario editor's) is not coloured either;
   - other places still compare HP with `MaxHitpoints` and see a fresh marked unit as damaged: the
     damage-state visuals, the AutoRepairUnit command check (moot for infantry and cavalry), and the
     HP shown in tech and card rollovers;
   - whether the multi-selection stack buttons draw their own HP bars was not established.
 - **Simulation:** no. Only display code is hooked (floating bars, the selection's group, three HP
-  texts); every game rule reads the stock max. Players may set it differently. A new marker name
+  texts, the portrait bar's gadget, the stat row); every game rule reads the stock max. Players may set it differently. A new marker name
   adds a unit type, which changes the unit type count: load saved games and replays with the same
   cfg.
 - **Status:** confirmed in single player (2026-10-29), in the interface. A Musketeer marked
@@ -2204,7 +2332,149 @@ overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 
   shown against 150.0 instead of its max 165.0 (InitialHitpoints 150.0, MaxHitpoints 165.0)`. The
   floating bars and the group bar were not compared on their own; an overhealed unit and the
   techs were not tested.
+  `segment`: confirmed in single player (2026-10-29). Musketeers healed to 165 by a Surgeon showed
+  the full bar with an orange segment over its right tenth and an orange `165/150`; a Musketeer
+  damaged to 92 showed a partial bar and a white `92/150`; the unmarked Pikeman healed to 132/132
+  and a fresh Musketeer (150/150) showed no segment. A skirmish against the AI with the key on
+  played normally. Also confirmed: with `segment=40C0FF`, a Musketeer under a `Hitpoints` tech
+  (+15 %) healed to its max showed a light-blue segment and `189/174 (150+24)` in light blue; an
+  allied player 2 Musketeer showed its yellow bar with the light-blue segment and its panel
+  `165/150` in light blue.
+  Portrait bar and `stat`: confirmed in single player (2026-10-29), with the overheal gadget in the
+  test copy's UI data: a Musketeer at `165/150` showed the portrait bar 90 % green and 10 % orange
+  and `Overheal 15/15` in orange; damaged, the stock green or yellow bar and `Overheal 0/15`;
+  under a Golden Pavilion's MaxHP aura, `181/165 (150+15)` and `Overheal 16/16` (a max changed by
+  an aura). Selecting the Surgeon, the Pavilion, a mine or a tree after it showed their stock bar; a marked
+  Explorer at its 100 % in a skirmish showed a green bar. The minimized UI's text read `120/150`
+  and `181/165` (white). Without the gadget in the UI data the log says so and the bar is stock.
+  Not tested: the ObjectInfo panel (an editor panel, `aeditorscreen.cpp`, which did not open with
+  the clicks tried), multiplayer.
 - **New in this DLL:** not in UHC 1.10. WoL request #21 ([wol-requests.md](wol-requests.md)).
+
+### overhealSources
+
+![overhealSources in game](media/overhealSources.gif)
+
+*1. A surgeon and a source monk:* a marked Musketeer (150 / 165) is hit to 90; the surgeon heals it back to 150 and stops; at second 75 an Indian monk marked `AbstractOverhealer` appears and takes it to 165 (the orange segment). The unmarked Pikeman is healed to its max, as in stock. [Full video (MP4)](media/overhealSources.mp4).
+
+![overhealSources with a healing building](media/overhealSources-building.gif)
+
+*2. A healing building, then an idle surgeon:* a Manor with `HCXPFlorenceNightingale` heals the marked Musketeer from 90 to 150 and stops there (the log line `a heal of unit 1 (Musketeer) stops at its 100 % 150.0`), and the unmarked Pikeman to 132 / 132. At second 60 a surgeon appears next to the Musketeer at 150 and stays idle (2x speed). [Full video (MP4)](media/overhealSources-building.mp4).
+
+![overhealSources with the Regeneration dance](media/overhealSources-dance.gif)
+
+*3. An area heal that is not a building, the Regeneration dance:* three settlers dance at a fire pit whose tactic has `RegenAllUnits` (`danceBonusCivs` lets the Spanish player use it). It heals every idle unit: the two marked Musketeers go from 90 to 150 and stop there (the log line `a heal of unit 4 (Musketeer) stops at its 100 % 150.0`), the two unmarked Pikemen from 80 to 132, their max (2x speed). [Full video (MP4)](media/overhealSources-dance.mp4).
+
+```
+overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 types
+```
+
+- **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its unit types mark the units that
+  have overheal, and its 100 % (`InitialHitpoints`, scaled when an aura changes the max) is the
+  limit here. Without that line the key is not applied.
+- **Effect,** for a marked unit:
+  - a healer whose proto is of a source type (default `AbstractOverhealer`, a new marker; an
+    existing type or a proto name works too) heals it up to `MaxHitpoints`, as in stock;
+  - any other healer heals it only up to its 100 %: its automatic search does not pick a marked
+    unit at its 100 %, and its heal action ends when the unit gets there (the healer goes idle);
+    a direct order on such a unit ends at once;
+  - every other way of gaining HP stops at the 100 % too: regeneration, the Regeneration dance,
+    area heals, self heals, powers and triggers that add HP. Only the single-target heal action of
+    a source healer overheals. Damage, and code that sets HP rather than adding it (creation,
+    transforms, the aura rescale), are not touched.
+
+  Unmarked units heal as in stock.
+- **Data:** the source type on the healers that may overheal, e.g.
+  `<UnitType>AbstractOverhealer</UnitType>` on `ypMonkIndian` (in `protoy.xml` and its XMB), or name
+  an existing type: `overhealSources AbstractMonk`.
+- **Log:** `overhealSources: only healers of unittype X heal marked units above their 100 %; every
+  other heal stops there (multiplayer unverified)`; when the data loads `unit types: X -> <ID> …`;
+  in a game `hook reached: overhealSources heal search (0x9CD984)`, `heal tick (0x9E0BBB)`, `heal
+  (0x9E0CE9)` and `overheal add HP (0x4823A3)`. With `log`, the first of each proto: `overhealSources:
+  a heal of unit N (Musketeer) stops at its 100 % 150.0 (…; not from a source healer)` and `…unit N
+  (Musketeer) is healed above its 100 % 150.0 by a source healer (…)`. Without
+  `overhealHitpointBars`: `overhealSources: needs overhealHitpointBars, …; feature not applied`.
+- **Simulation:** yes. Every machine needs the same line (and `overhealHitpointBars` with the same
+  types). The source type is a new unit type, which changes the unit type count.
+- **Status:** confirmed in single player (2026-10-29). A marked Musketeer hit to 90 was healed by a
+  surgeon to 150 and stayed there (the surgeon idle) until an Indian monk marked as a source
+  appeared and healed it to 165; an unmarked Pikeman was healed to its max. A skirmish against the
+  AI with the key on played normally. Also confirmed:
+  - a building that heals (a Manor with `HCXPFlorenceNightingale`) healed a damaged marked
+    Musketeer only to 150 and an unmarked Pikeman to its max;
+  - a surgeon that appeared next to a marked Musketeer at 150 stayed idle, and a direct order
+    (right-click) on it made the surgeon walk to it and go idle on arrival, the Musketeer still at
+    150;
+  - a unit's own regeneration stops at its 100 %: an Indian monk marked for the test (250 / 275)
+    stayed at 250 for 70 s, where it regenerates to 275 without the key. A knocked-out hero
+    still gets up: stock revives it at about 40 % of its HP, below its 100 %;
+  - an area heal that is not a building: the fire pit's Regeneration dance healed marked
+    Musketeers from 90 only to 150, and unmarked Pikemen to their max 132.
+
+  Not tested: powers (`PowerHeal` exists in `powers.xml`, but no TAD unit has it; its heal goes
+  through the same add-HP entry, 0x7C378C / 0x8CCA6F), multiplayer.
+- **New in this DLL:** not in UHC 1.10.
+
+### overhealDecay
+
+![overhealDecay in game](media/overhealDecay.gif)
+
+*1. After the healer dies:* `overhealDecay 2 3`. A source monk keeps a marked Musketeer at 165 (when it slips, the monk heals it back); at second 60 the monk is killed, and the Musketeer loses about 2 HP per second and stops at 150, its 100 %. [Full video (MP4)](media/overhealDecay.mp4).
+
+![overhealDecay in a skirmish](media/overhealDecay-skirmish.gif)
+
+*2. A skirmish against the AI, against regeneration:* `overhealDecay 2 1` with the British Explorer marked for the test (its 100 % is 180 and its max 220 in this game). Explorers regenerate: the decay takes back what it regenerates above 180, so it stays at `180/180`, `Overheal 0/40`, and its portrait bar is green (2x speed). [Full video (MP4)](media/overhealDecay-skirmish.mp4).
+
+![overhealDecay skirmish control, key off](media/overhealDecay-skirmish-control.gif)
+
+*3. Control, the same skirmish without `overhealDecay`:* the Explorer regenerates past its 100 %, from 190 to 210 in these 30 s (`197/180`, `Overheal 17/40` in orange, the orange end on the portrait bar), up to 220 (2x speed). [Full video (MP4)](media/overhealDecay-skirmish-control.mp4).
+
+```
+overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
+```
+
+- **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its types mark the units and its
+  100 % (`InitialHitpoints`, scaled when an aura changes the max) is where the decay stops.
+- **Effect:** a marked unit whose HP is above its 100 % loses `rate` HP per second (`2`), or
+  `rate` percent of its 100 % per second (`1%`), counted in game time (paused games and game speed
+  follow), once `delay` seconds (default 0, decimals allowed) have passed since it last gained HP
+  above its 100 %. It stops exactly at its 100 %: the decay never goes below it and never kills.
+  With unit types (or proto names) listed, only marked units of those types decay. Works with or
+  without [`overhealSources`](#overhealsources): with it, only source healers create overheal to
+  decay; without it, any heal above the 100 % does.
+- **What counts as a gain:** any heal that takes the unit above its 100 % (healers, area heals,
+  powers…) restarts the delay. Regeneration (the unit's own, and the Regeneration dance) does not:
+  it heals a little on every step, so it would hold the delay forever; a unit that regenerates
+  above its 100 % decays at once (the rate minus what it regenerates). With `overhealSources`,
+  regeneration never passes the 100 % anyway. HP that a unit has above its 100 % without any gain
+  (a transform into another marked proto, for instance) does not decay until its next gain.
+- **Log:** `overhealDecay: marked units above their 100 % lose R HP per second of game time, D s
+  after their last gain, down to it (multiplayer unverified)`; in a game `hook reached: overheal add
+  HP (0x4823A3)`, `hook reached: world update (0x481A57)`, `hook reached: overhealDecay
+  regeneration (0x490881)` and, with a Regeneration dance, `overhealDecay Regeneration dance
+  (0x67A03B)`. With `log`, the first of each proto:
+  `overhealDecay: unit N (Musketeer) decays from 165.0 toward its 100 % 150.0 at 2.00 HP/s` and
+  `… is back at its 100 % 150.0`. Without `overhealHitpointBars`: `overhealDecay: needs
+  overhealHitpointBars, …; feature not applied`; a bad rate: `overhealDecay: expected <HP per
+  second>[%] [delay seconds] [UnitType ...] [log], …; feature not applied`.
+- **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
+  registered as a marker unit type.
+- **Status:** confirmed in single player (2026-10-29) with `overhealDecay 2 3`, together with
+  `overhealHitpointBars`, `overhealSources` and `damageOverTime`: a marked Musketeer at 165 fell to
+  160.2, 154.1 and 150.0 over about six seconds after its healer was killed, and stayed at 150; an
+  unmarked Pikeman did not change. Poison (`damageOverTime`) still ticked normally in its own test
+  copy. A skirmish against the AI with all these keys on played normally. Also confirmed:
+  `overhealDecay 2% 1 Musketeer` took 3 HP per second (2 % of 150) off a Musketeer at 165 down to
+  150; with `overhealDecay 2% 1 Pikeman` the Musketeer stayed at 165; player 2's overhealed units
+  decay too. Only the game world decays: the world update also runs for the home city's world,
+  which the key ignores.
+  In a skirmish against the AI (2026-10-29, the home city world present): a marked British Explorer
+  stayed at its 100 % (180) while regenerating; without the key it went past it, to 220. That
+  test found a fault, now fixed: every regeneration step counted as a gain and restarted the
+  delay, so an idle unit that regenerates never decayed (the AI's Explorer, moving and not
+  regenerating, did). The AI played normally (its units 12 → 16 in a minute, no XS error). Not
+  tested: multiplayer.
+- **New in this DLL:** not in UHC 1.10.
 
 ### showGatherRate
 

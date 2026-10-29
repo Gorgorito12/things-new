@@ -55,6 +55,40 @@ SITES = [
     # healNonIdle (FUN_009CD865, a healer's automatic target search): mov ecx,[esi+58h] /
     # test / je, the "target is idle" call 0x44F1A7 / test al,al / je, and the next check
     ("HealAutoSearchIdle", 0x9CD9C0, 0x15),
+    # smartHealTargets (FUN_009CD865, the automatic heal search; EBP = owner, healer at [ebp+4],
+    # EDI = the query, ESI = candidate): the loop head, cmp [edi+4],esi (the result count) / ... /
+    # the entry's unit ID at [[edi]+[esp+10h]] / the unit table lookup / not the healer
+    ("SmartHealLoop", 0x9CD923, 0x5F),
+    # smartHealTargets: the range test, push esi / mov ecx,ebx / call 470F5Eh (the action's range)
+    # / ... / push esi / call 7FCF2Dh (replaced, 5 bytes at 0x9CDA36) / test al,al / jne 9CDA62h
+    ("SmartHealRange", 0x9CDA21, 0x1E),
+    # smartHealTargets: the loop step at 0x9CDA3F (38h-byte entries), the no-target exit
+    # pop esi / pop ebx / pop edi / xor al,al (replaced, 5 bytes at 0x9CDA58) / pop ebp / add esp,
+    # 10h / ret, and the accept path 0x9CDA62: healer vtbl+64h(1), 0x9CBDC4(owner, [esi+10h])
+    ("SmartHealLoopEnd", 0x9CDA3F, 0x40),
+    # overhealSources: the add-HP function FUN_004823A3 (ECX = unit, [esp+4] = amount, [esp+8] =
+    # flag): push ecx / push esi / mov esi,ecx / cmp dword ptr [esi+8],8 (replaced, 8 bytes) and
+    # the jbe 4823FEh that reads the cmp's flags
+    ("OverhealAddEntry", 0x4823A3, 0x0A),
+    # overhealSources (the heal tick FUN_009E0B53, EDI = target, ESI = the action, healer at
+    # [esi+10h]): fld [edi+64h] / fcomp 1e-6 / ... / mov ecx,edi / call 480408h (replaced, 5 bytes
+    # at 0x9E0BBB) / fcomp [edi+64h] / fnstsw / test ah,41h / jnp 9E0D3Fh (HP < max, else state 10)
+    ("HealTickMax", 0x9E0BA5, 0x29),
+    # overhealSources: the tick's heal, call 487C45h (rate) / fmul / push 1 / ... / push ecx /
+    # mov ecx,edi / call 4823A3h (replaced, 5 bytes at 0x9E0CE9) / fld [esp+10h] / fadd [esi+68h]
+    ("HealTickAdd", 0x9E0CCF, 0x26),
+    # overhealSources (the automatic heal search, ESI = candidate, healer at [ebp+4]): mov ecx,esi /
+    # call 45F295h (replaced, 5 bytes at 0x9CD984) / fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh
+    ("HealSearchRatio", 0x9CD982, 0x18),
+    # overhealDecay, verify only: the HP setter FUN_004820A1 it calls (thiscall(unit, value, flag),
+    # ret 8): sub esp,0Ch / push edi / mov edi,ecx / ... / mov [edi+64h],ecx (the store) / the
+    # override test
+    ("HpSetter", 0x4820A1, 0x22),
+    # overhealDecay: the adder's two regeneration calls, push 1 / push eax / mov ecx,esi /
+    # call 4823A3h (replaced) / the loop after it: the unit's own regeneration in FUN_004905E1
+    # (0x490881) and the Regeneration dance (0x67A03B)
+    ("RegenAddHp", 0x49087C, 0x12),
+    ("DanceRegenAddHp", 0x67A036, 0x15),
     # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
     # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
     ("AbstractTypesEnd", 0x51BA23, 0x15),
@@ -493,6 +527,65 @@ SITES = [
     # the fnstcw after it
     ("OverhealInfoBase", 0x9AFA07, 0x2D),
     ("OverhealInfoMax", 0x9AFA34, 0x23),
+    # overhealHitpointBars segment, the floating bar's queueing: lea ecx,[esp+18h] (the bar's
+    # position, computed by 0x406BDB) / ... / push [unit+88h] (colour byte) / push [[unit+44h]]
+    # (player ID) / push [esp+10h] (fill) / push 1.0 (scale) / push ecx / mov ecx,[[0C66234h]+13Ch]
+    # (world) / call 45FB71h, and the replaced jmp 4516B3h after it
+    ("OverhealSegmentQueue", 0x45FB3F, 0x32),
+    # overhealHitpointBars segment: the queue function FUN_0045FB71, thiscall(world, pos*, scale,
+    # fill, player, colour byte), ret 14h: grows [world+8D0h] to count [world+8D4h] + 1 (0x408308)
+    # and fills a 28-byte record (+0 position, +0Ch scale, +10h fill, +14h player, +18h byte)
+    ("HpBarQueue", 0x45FB71, 0x6F),
+    # overhealHitpointBars segment, the bar renderer FUN_0045C4AF (ECX = EBP = world): the replaced
+    # mov ebx,[ebp+8D4h] (the record count), test / jle, then the vertex lock 0x40A6A2(count*6,
+    # 24h, &start) of the device [0C66044h]
+    ("HpBarRenderStart", 0x45C4AF, 0x3F),
+    # overhealHitpointBars segment, the renderer's per-record loop 0x45C60B..0x45CB91 (colour from
+    # the byte or [player+0C8h], then six 24h-byte vertices: +0 position, +0Ch the constant at
+    # 0C66544h, +18h colour, +1Ch u, +20h v; the left ones (v0, v2, v3) at P - scale/2 x B with
+    # u = 0.5 + fill/2, the right ones at P + scale/2 x B with u = fill/2, B = [[game+148h]+28h]),
+    # and its end, add eax,1 / add ecx,1Ch (replaced, 6 bytes at 0x45CB72) / add edi,24h / ...
+    ("HpBarRenderLoop", 0x45C60B, 0x587),
+    # overhealHitpointBars segment: the dynamic vertex buffer behind 0x40A6A2 ([device+660h]): a
+    # request larger than its size [vb+4] returns null (0x40A689), and the renderer then draws no
+    # bar that frame
+    ("DynamicVbLock", 0x40A6A2, 0x45),
+    ("DynamicVbFull", 0x40A689, 0x19),
+    # overhealHitpointBars segment, the stat row's HP text formats, a push of '%d/%d' (0BA2054h,
+    # 0x4D7651) or of '%d/%d (%d+%d)' (0C34A54h, cold 0x69A9C0) right after the HP and the max are
+    # pushed ([esp] = HP, [esp+4] = max), followed by a push of the buffer and the swprintf 0x444EFB
+    ("OverhealTextStat", 0x4D7647, 0x15),
+    ("OverhealTextStatSplit", 0x69A9B0, 0x1B),
+    # overhealHitpointBars segment, the portrait bar: the selection panel's group bar from mov edx,
+    # [esp+78h] (the group) to the tail lea ecx,[esp+70h] / call 4010CAh (0x4C83DF, the hook, after
+    # the chosen colour gadget was filled through 0x44B8B8 / 0x590772 and raised through 0x447F7B;
+    # [esp+50h] = the panel, the same stack level all along), and the cold yellow / red choices
+    ("OverhealPortraitTail", 0x4C82E6, 0x102),
+    ("OverhealPortraitColours", 0x69A614, 0x16),
+    # the panel's lookups of its three bar gadgets by name (0xAB7C2F(panel, &handle, &name, 1),
+    # stored at [panel+310h] / +314h / +318h) and the lookup itself: 0x402733 narrows the name,
+    # 0x433812 searches the panel's gadgets and writes [0C672C0h] (no gadget) when none matches
+    ("HealthBarGadgets", 0x9BAEE5, 0x87),
+    ("GadgetByName", 0xAB7C2F, 0x26),
+    # a progress bar gadget from its handle (cdecl, null if none), the handle release, the fill
+    # (thiscall(bar, float), clamped to [0, 1]), and the show and hide behind the UI commands
+    # gadgetReal (0x7E2244) and gadgetUnreal (0x442BE7): thiscall(manager, handle), ret 4, a call of
+    # the gadget's vtable +54h / +58h(0)
+    ("ProgressGadget", 0x44B8B8, 0x23),
+    ("GadgetRelease", 0x40431B, 0x2C),
+    ("ProgressFill", 0x590772, 0x49),
+    ("GadgetShow", 0x447F7B, 0x46),
+    ("GadgetHide", 0x448F13, 0x39),
+    # overhealHitpointBars stat: after the stat panel's HP row, mov edi,2 / mov [esp+2Ch],edi at
+    # 0x4D76DB (the row counter; EDI is the row the Group Health branch writes), and that Group
+    # Health row (0x69A9D3..0x69AB0F), whose calls the overheal row repeats: the row gadgets through
+    # 0x4C519C, the label style 0D6F5D0h and the value style 0C6657Ch (vtable +84h), the text
+    # (+80h), +54h, the help texts [gadget+68h] cleared, then add edi,1 / mov [esp+2Ch],edi
+    ("OverhealStatRow", 0x4D76DB, 0x09),
+    ("GroupHealthRow", 0x69A9D3, 0x13C),
+    ("GadgetRef", 0x4C519C, 0x1B),
+    ("BStringFromWide", 0x401A12, 0x28),
+    ("BStringSet", 0x40196F, 0x24),
     # overhealHitpointBars, verify only: the max HP getter FUN_00480408 the hooks call (override
     # [[[unit+0B4h]+0C8h]+4] if > -1e-6, else [proto+98h], 0 with no proto), the health ratio
     # FUN_0045F295 the ratio helper mirrors (0 below 1e-6, 1.0 when HP >= max, else HP / max),

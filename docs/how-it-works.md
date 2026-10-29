@@ -301,6 +301,47 @@ How the sites were found:
 
 The trace is described in [engine-symbols.md](engine-symbols.md), "Unit types and healing".
 
+### smartHealTargets
+
+**The stock search** FUN_009CD865 (`thiscall(owner)`, healer at `[owner+4]`; called from 0x68C14E
+for an idle healer; REA Evidence `ev_41afc083…`) fills the shared query `[world+184h]` around the
+healer (0x49A098 → 0x499CE4) and walks its results, `[query+0]` (38h-byte entries, the unit ID at
+`+0`), count `[query+4]`, with no cap of its own. For each candidate: the unit table lookup, not
+the healer, HP ratio (0x45F295) below 1.0 and at least 1e-6, alive (`vtbl+A4h`), an action manager
+`[c+58h]`, idle (0x44F1A7, the call `healNonIdle` hooks at 0x9CD9C7), not abstract bit 6, not flag
+42h, a heal action of type 5 (0x4EE797), 0x9C2E40(5, 8) ≤ 0, and in range (0x7FCF2D with the
+action's range from 0x470F5E). The first one in range is healed at once (0x9CDA62: the healer's
+`vtbl+64h(1)`, then 0x9CBDC4(owner, `[esi+10h]`)); with none, 0x9CDA58 returns AL = 0.
+
+**The hooks** (`hooks/smartheal_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x9CDA36 | `call 7FCF2Dh` (5 B; ECX = healer, the candidate and the range pushed, ESI = candidate) | the stolen call; in range: `UhcSmartHealConsider(healer, candidate)` | 0x9CDA3F, the next candidate |
+| 0x9CDA58 | `pop esi / pop ebx / pop edi / xor al,al` (5 B) | `UhcSmartHealPick(healer)`; a unit: ESI = it | 0x9CDA62 (accept); none: the stolen bytes, 0x9CDA5D |
+
+`UhcSmartHealConsider` scores the candidate: the index of the first listed type it is of (is-a
+0x44D7FA; none: after them), the stock ratio 0x45F295, the squared ground distance (x `+14h`,
+z `+1Ch`) to the healer, and the unit ID; it keeps the smallest tuple, and the first candidate for
+the log. `UhcSmartHealPick` returns it and clears the state, so the next search starts empty. The
+accept path reads only ESI and EBP and the stack at 0x9CDA58 is the one it pops at 0x9CDA77.
+
+**Why it is safe.** Every stock test still runs for every candidate and in the same order; only
+the choice among the ones that pass changes. The score uses no address and no query order (the
+unit ID breaks ties), and the ratio is the stock function, so every machine picks the same unit.
+The search does not re-enter and the simulation is single-threaded, so one state is enough. The
+range hook keeps EBX, ESI, EDI and EBP (pushad); 0x9CDA3F writes EAX before reading it. The sites
+decode at instruction boundaries and nothing branches into the stolen bytes (0x9CDA58 is entered
+at its first byte from 0x9CD92A and the loop's end). `healNonIdle`'s hook at 0x9CD9C7 is a
+different site in the same loop, and both work together.
+
+**No healer marker.** The search is the same function for every healer type, and the change only
+reorders units the stock rules already accept, so a global key is enough; a mod that wants a
+healer to prefer some units lists their types.
+
+**Observed in game:** four units hit at once (90, 45, 70, 33 %) were healed in the order 33, 45, 70,
+90 % (stock: the 90 % settler first); with `Pikeman` listed, the pikeman came first.
+
 ### Extra abstract unit types (used by every key that takes a `<UnitType>`)
 
 `healNonIdle`, `dodgeAnyUnit` (and its sound keys), `maintainWaitForPop`,
@@ -1389,8 +1430,9 @@ the max's change to `[proto+9Ch]` too (0x8F97CD..0x8F97DD).
 **The displays.**
 - Floating bars: the unit visual update's bar chunk 0x45FAA2 takes the fill from `call 45F295h`
   (0x45FAAF; under construction the build fraction, 0x6A1431, instead), clamps it to [0, 1]
-  (0x45FAB8..0x45FADC) and queues the bar (0x45FB71). The renderer (0x45C5xx, scoping) draws
-  0.5 + 0.5 × fill of the `hpbar` texture, so a fill above 1 cannot simply overflow the bar.
+  (0x45FAB8..0x45FADC) and queues the bar (0x45FB71). The renderer FUN_0045C4AF draws each bar
+  as one textured quad whose fill is a texture window (below, "The segment"), so a fill above 1
+  cannot simply overflow the bar.
 - Selection groups: FUN_004C4FB5 adds a unit to a group and keeps the running average of 0x45F295
   at `[group+1Ch]` (`call 45F295h` at 0x4C5014). Readers: the selection panel's bar, green / yellow
   / red by the thresholds 0.33 / 0.66 (doubles 0xBA1F80 / 0xBA1F78, 0x4C82EA), and "Group Health",
@@ -1446,6 +1488,238 @@ reloads the reference.
   changes only EAX, ECX and EDX and uses no FPU register.
 - **Observed in game:** a marked Musketeer at 150 HP with `MaxHitpoints` 165 showed `150/150` and a
   full bar in its panel; an unmarked Pikeman (120/132) kept the stock display.
+
+**The segment** (`segment[=RRGGBB]`, Overwatch style). The HP above the reference is drawn over the
+right end of the full floating bar, (HP − reference) / reference of its width (all of it from twice
+the reference), in the segment colour (default `FF8C00`); the stat row's HP text above the
+reference is coloured the same.
+
+- *The stock bar.* The queue FUN_0045FB71, `thiscall(world, pos*, scale, fill, player, colour
+  byte)`, `ret 14h`, grows `[world+8D0h]` (count `[world+8D4h]`, through 0x408308: no fixed cap)
+  by a 28-byte record: `+0` position, `+0Ch` scale, `+10h` fill, `+14h` player, `+18h` colour byte.
+  The bar chunk passes the position `[esp+18h]`, scale 1.0, the fill, `[[unit+44h]]` and
+  `[unit+88h]`, then `jmp 4516B3h` (0x45FB6C). The renderer FUN_0045C4AF (ECX = world; REA
+  Evidence `ev_0886c3a2…`) locks count × 6 vertices of 24h bytes in the device's dynamic vertex
+  buffer (0x40A6A2; `[[0C66044h]+660h]`, 2 MB in game; a request larger than its size `[vb+4]`
+  returns null at 0x40A689, and then no bar is drawn that frame), sets render states 7 and 14 to 0
+  (inference: depth test and depth writes off), and binds once the shader `defaultcolored` with the
+  texture `ui\hitpoint_bars\hpbar`. Per record: the colour is the palette entry of the byte when
+  the byte is not FFh and `[world+33Ch]` is set, else the player's `[player+0C8h]`, else white;
+  hw = scale / 2 and hh = scale / 16 along the camera's right (B, `[[game+148h]+28h]`) and up
+  (A, `+1Ch`) vectors, a camera-facing quad of six vertices (`+0` position, `+0Ch` a constant,
+  `+18h` colour, `+1Ch` u, `+20h` v): v0, v2, v3 on the left (P − hw·B ± hh·A) with
+  u = 0.5 + fill / 2, v1, v4, v5 on the right with u = fill / 2. The texture (64 × 8, art2.bar) is
+  black on its left half and a white-grey vertical gradient on its right half, so the fill is the
+  left part of the bar, tinted by the vertex colour: the floating bar is the player's colour, not
+  green (the green / yellow / red bar is the selection panel's). Every queued bar goes out in one
+  draw call (0x45F96D), and the count is reset.
+- *The hooks* (`hooks/overheal_hooks.asm`, only with `segment`):
+
+  | Site | Stolen | Hook does | Continues at |
+  |---|---|---|---|
+  | 0x45FB6C | `jmp 4516B3h` (5 B; ESI = unit) | unless under construction (`[esp+15h]`): reference, then `UhcOverhealQueueSegment(unit, pos, reference)` | 0x4516B3 |
+  | 0x45C4B9 | `mov ebx,[ebp+8D4h]` (6 B; EBP = world) | `UhcOverhealSegmentFit(world)`, then the stolen load | 0x45C4BF |
+  | 0x45CB72 | `add eax,1 / add ecx,1Ch` (6 B; ECX = the record's offset, EDI = its sixth vertex, ESI = camera) | for a segment record, `UhcOverhealSegmentVertices` | 0x45CB78 |
+  | 0x4D7651, 0x69A9C0 | `push` of `%d/%d` / `%d/%d (%d+%d)` (5 B; `[esp]` = HP, `[esp+4]` = 100 %) | pushes the coloured copy when HP > 100 % | 0x4D7656, 0x69A9C5 |
+
+  `UhcOverhealQueueSegment` queues a second record when HP > reference (for an unmarked unit the
+  reference is the stock max, so never): same position, scale 1.0, fill = min((HP − reference) /
+  reference, 1), player 804F5648h (no player has it; negative, so the renderer colours it white)
+  and byte FFh. The vertex hook, for that player ID only, moves the left vertices right by
+  scale × (1 − fill) × B, gives all six u = 1.0 (left) / 0.5 (right), the fill part of the texture,
+  and the segment colour; every other record keeps the stock vertices. `UhcOverhealSegmentFit`
+  removes the segment records before the lock when count × 216 bytes would not fit in the buffer,
+  so the segments never cost a stock bar. The coloured formats are the stock ones wrapped in the
+  UI markup the game uses itself (`<color=1, 0, 0>` at 0xBA1E44, `</color>` at 0xBA1E30):
+  `<color=1.00, 0.55, 0.00>%d/%d</color>`; the stat row's gadget draws it.
+- *Choices.* Over the right end, not past it: the bar keeps its width and the segment never leaves
+  the bar's area. A tint, not a mod texture such as `hpbar_overheal`: the queue is one draw call
+  with one texture bound, and a second texture would need a second pass inside the renderer;
+  `segment=RRGGBB` lets a mod choose the colour. The selection panel's bar is not changed: its
+  three colours are three UI gadgets (`[panel+310h]`, `+314h`, `+318h`), so the overheal is a
+  fourth one in the UI data ("The portrait bar", below). The minimized UI's `unitHitPointsValue`
+  (0x698B63) is formatted the same way, but its gadget prints the markup as text (seen in game:
+  `<color=1.00, 0.55, 0.00>181/165</color>`), so it is left plain; so is ObjectInfo (0x9AFA8B,
+  0x9AFAA5), the scenario editor's panel.
+- *Why it is safe.* The sites decode at instruction boundaries and nothing branches into the
+  stolen bytes; the x87 stack is empty at 0x45CB72 (checked over one loop iteration) and at
+  0x45FB6C; the queue hook keeps every register for 0x4516B3; the text hooks change only the
+  flags, which the next instruction does not read. Display only, like the rest of the key.
+- *Observed in game:* healed to 165, marked Musketeers showed a full bar with the orange segment
+  over its right tenth and `165/150` in orange; a Musketeer damaged to 92 showed a partial bar and
+  a white `92/150`; the unmarked Pikeman healed to 132/132 kept the stock bar. The vertex buffer
+  was 2 MB (9,709 bars), so the fit guard never ran. With `segment=40C0FF`, a `Hitpoints` tech
+  (+15 %) gave `189/174 (150+24)` in light blue through the cold split format (0x69A9C0), and an
+  allied player 2's Musketeer had its yellow bar with the light-blue segment.
+
+**The portrait bar** (with `segment`, when the UI data has the gadget).
+- *Stock.* At panel creation (0x9BAEE5..0x9BAF6C) the panel looks up its gadgets by name with
+  0xAB7C2F, `thiscall(panel, int* handle, BString* name, 1)`, `ret 0Ch` (0x402733 narrows the name,
+  0x433812 searches the panel's gadgets; no match writes `[0C672C0h]`, the "no gadget" handle;
+  valid handles are above it): `unitselectionpanel-unitHealthBarGreen` → `[panel+310h]`, `Yellow`
+  → `+314h`, `Red` → `+318h`. Each refresh (0x4C82E6, `[esp+50h]` = panel, `[esp+78h]` = group)
+  picks one by `[group+1Ch]` (≥ 0.66 green, else ≥ 0.33 yellow, else red; the cold choices at
+  0x69A614 / 0x69A61F), gets it as a progress bar (0x44B8B8, cdecl), fills it (0x590772,
+  `thiscall(bar, float)`, clamped to [0, 1]: `[bar+13Ch]`, then the mask drawable `[bar+144h]`
+  vtable +50h) and shows it, with `[panel+2E4h]`, `+2E8h`, `+2ECh` and `+31Ch` (the help button),
+  through 0x447F7B, the code behind the UI command `gadgetReal` (0x7E2244): `thiscall(manager =
+  [[0C66244h]+44h], handle)`, `ret 4`, the gadget's vtable +54h. Its pair 0x448F13 is
+  `gadgetUnreal` (0x442BE7; vtable +58h(0)). The progress bar parser (0x5CC7E0..) sets the
+  background (0x5CAF02) only when both `progressBarBackground` and `progressBarBackgroundSize` are
+  given, and the mask (0x5CD0F5) as a second drawable; with no background nothing is drawn (seen
+  in game).
+- *The hook* at 0x4C83DF (`lea ecx,[esp+70h] / call 4010CAh`, 9 B, after the colour bar was shown;
+  same stack level as 0x4C82E6): `UhcOverhealPortrait(panel, group)` looks the fourth gadget up by
+  name once per panel (again when the panel or its green handle changes), then hides it
+  (`gadgetUnreal`); if the group's average `[group+1Ch]` is ≥ 0.999 (every unit at or above its
+  100 %) and the average of min((HP − reference) / reference, 1) over the group's units (IDs
+  `[group+10h]`, count `[group+14h]`; 0 for an unmarked unit) is above 0, it fills it with
+  1 − that share and shows it again. Showing a hidden gadget puts it above its siblings; showing a
+  visible one does not move it (seen in game: never hidden, the gadget stayed above the green bar
+  with its empty fill, all orange), hence the hide first. Stock never hides a gadget it does not
+  know, so the key hides it on every refresh without overheal. Then the stolen free, → 0x4C83E8.
+  The minimized UI (`optionminimizedui`, profile option 49h, read through 0x402CE9 at 0x4C8233 and
+  0x661E03) takes the cold path 0x6987D7 and its own layout, which has no bar.
+- *Observed in game:* a Musketeer at 165/150 had the bar 90 % green, 10 % orange; damaged, the
+  stock bar showed; healed back, the orange end returned; selecting the Surgeon, a Pavilion, a
+  mine or a tree after it showed their stock bar.
+
+**The Overheal row** (`stat[=Label]`).
+- *Stock.* The stat panel fill FUN_004D70ED writes the HP row, then sets the next row
+  (`mov edi,2 / mov [esp+2Ch],edi` at 0x4D76DB). For a multi-selection the Group Health branch
+  (0x69A9D3..0x69AB0F) writes row EDI: the label and value gadgets from `[panel+174h+row*4]` /
+  `[panel+198h+row*4]` through 0x4C519C (a `{handle, gadget}` reference, released with 0x40431B),
+  the label `L"Group Health"` (0xC36838, a literal) with style 0D6F5D0h, the value with style
+  0C6657Ch (vtable +84h), the text (+80h), +54h, the help texts `[gadget+68h]` cleared (0x401A12
+  from `L""`, 0x40196F), then `add edi,1 / mov [esp+2Ch],edi`.
+- *The hook* at 0x4D76DB (9 B): the two stolen moves, then `UhcOverhealStatRow(panel =
+  [esp+50h], unit = [esp+38h], row = EDI)`; for a marked unit it writes the row with the same calls
+  (label `Overheal`, the cfg text, or a string table entry through 0x58EA52; value
+  `overheal/capacity`, coloured with `segment` while above 0) and returns true, and the hook adds
+  1 to EDI and `[esp+2Ch]`, so the Group Health row and the rows after it move down. → 0x4D76E4
+  (EAX, ECX, EDX and the flags are written there before they are read).
+- *Observed in game:* `Overheal 15/15` (orange) at 165/150, `0/15` when damaged, `16/16` under a
+  MaxHP aura, `0/40` for a marked Explorer at its 100 % in a skirmish.
+
+### overhealSources
+
+**Marked and reference** are `overhealHitpointBars`': `overheal_hooks.asm` exposes its helpers as
+cdecl functions (`UhcOverhealMarked(proto)`, `UhcOverhealReferenceOf(unit)`,
+`UhcOverhealRatioOf(unit)`), so both keys share one definition.
+
+**How HP is gained.** Every heal of a unit adds HP through FUN_004823A3 (`thiscall(unit, amount,
+flag)`, `ret 8`): when the unit's state allows it, it calls the setter FUN_004820A1(HP + amount,
+flag) and, for an amount above 1e-6, adds it to a "healed" total `[[unit+0B4h]+0E4h]`. The setter
+stores HP `[unit+64h]`, clamps it to [0, max] (the per-unit override through 0x6A2CB3, else
+`[proto+98h]`), updates the damage visuals (0x9CB73E) and, with `flag`, calls 0x482152. REA
+Evidence `ev_b83c97e4…` (both). The heal action's tick FUN_009E0B53 (`ev_e9a25933…`) heals only
+while HP < max (`call 480408h` at 0x9E0BBB, then `jnp 9E0D3Fh`, which ends the action with state
+10) and adds `0x487C45(target) × [world+318h] × [world+104h]` at 0x9E0CE9. The callers of the
+adder:
+
+| Caller of 0x4823A3 | Function | What it is (static reading unless marked) | With `overhealSources` |
+|---|---|---|---|
+| 0x9E0CE9 | FUN_009E0B53, the heal tick | the heal action (surgeons, monks, priests…), automatic or ordered (seen in game) | a source healer: up to the max, as in stock; any other healer: up to the reference, and the action ends there (seen in game) |
+| 0x9D3BFD, 0x9D3C10, 0x9D3E2F, 0x9D3E42 | FUN_009D35CE | heals of max × rate / `[proto+0CCh]`; the function is slot 15 of the vtable 0xB97330, whose constructor 0x9D302B passes action type 15h, registered as `Trade` (0x522ADC); what makes it heal in play is not known | reference |
+| 0x67A03B | FUN_00490476 | the fire pit's Regeneration dance (idle units, `[world+104h]` × max × 0.01) | reference (seen in game: marked Musketeers healed from 90 to 150 only) |
+| 0x490881 | FUN_004905E1 | per-unit regeneration (inferred: `CanAutoHeal` / `UnitRegenRate`) | reference |
+| 0x9CFA77, 0x9D0C16 | FUN_009CF93B, FUN_009D0A4D | heals of the action's own unit `[esi+10h]`, proportional to its max (inferred: self heals) | reference |
+| 0x7C378C, 0x8CCA6F | FUN_007C369B, FUN_008CC89F | heals proportional to the max (inferred: powers and effects such as `PowerHeal`) | reference |
+| 0x9E594D, 0x9E5AEB | FUN_009E5583 | repair, which pays its cost first (0x8D946A) | reference (stock data repairs buildings, which are not marked) |
+| 0x9E03C0, 0x8EDCC5 | a chunk filed under 0x9E0D4E, FUN_008EDAFD | additions capped at a total (`[esi+6Ch]`, `[ebp+12Ch]`; inferred: build or repair progress) | reference |
+| 0x49B822 | FUN_0049B3D9, TakeDamage | damage, a negative amount | not touched |
+| 0x6A4AF5 | FUN_004DCFE2 | damage that leaves at least 1 HP, negative | not touched |
+
+The 32 direct callers of the setter FUN_004820A1 (unit creation 0x49839B, transforms, the modifier
+rescale 0x9C73xx, triggers, the dance's 1-HP floor 0x67A02B, …) set HP rather than add it and are
+not touched: creation starts a unit at `InitialHitpoints` (its reference), and the rescale keeps the
+HP ratio. A `Hitpoints` tech adds the same amount to `InitialHitpoints` and the max (0x8F97CD), so
+the reference follows it; an aura that changes the max rescales the reference (overhealHitpointBars).
+A source counts only through the heal tick: a marked area healer or regeneration does not
+overheal (only the single-target heal action knows its healer).
+
+**The hooks** (`hooks/overhealsources_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x4823A3 | `push ecx / push esi / mov esi,ecx / cmp [esi+8],8` (8 B; ECX = unit, `[esp+4]` = amount) | `UhcOverhealAddHp(unit, &amount)`: a positive amount on a marked unit is lowered to reach at most the reference, unless `g_uhcOverhealAllow`; then the stolen bytes | 0x4823AB (`jbe`, on the stolen `cmp`) |
+| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | for a marked target and a healer of no source type: the reference; else the stock max | 0x9E0BC0 |
+| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = healer is a source, the stolen call, then 0 | 0x9E0CEE |
+| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | for a marked candidate and a normal healer: HP / reference (1.0 at the reference: no candidate); else the stock ratio | 0x9CD989 |
+
+**Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
+only lowers a positive amount; damage (negative amounts) and the setter's other callers are
+untouched. At 0x9E0BBB the FPU stack is empty and ECX/EDX are written again after 0x9E0BC0; the
+add hook keeps every register (pushad) and redoes the stolen `cmp`, whose flags the `jbe` reads.
+The tick hook's flag is set and cleared around one call (no re-entry: the adder does not call the
+heal tick). The direct heal order (command predicate code 41h, FUN_004C6CD7, "HP < max") still
+accepts a marked unit at its reference; its action then ends on its first tick.
+
+**Observed in game:** a marked Musketeer hit to 90 was healed by a surgeon to 150 and stayed there
+with the surgeon idle; an Indian monk marked as a source healed it to 165; the unmarked Pikeman went
+back to its max. A Manor healing with `HCXPFlorenceNightingale` (the same heal action) stopped at
+150 too. A direct order on a marked unit at its reference: the healer took the order (action type
+9), walked to the unit and went idle on arrival. A marked unit's own regeneration (an Indian monk
+marked 250 / 275 for the test) stopped at 250; without the key it reached 275. A knocked-out hero
+(action type 2Bh, the `'+'` that 0x482152 tests) regenerates and gets up at about 40 % of its HP
+in stock, below its reference, so the cap does not keep it down. The Regeneration dance, an area
+heal that is not a building, healed marked Musketeers from 90 to 150 and unmarked Pikemen to their
+max.
+
+### overhealDecay
+
+**One world update wrapper.** `damageOverTime` used to own the `jmp` at the world update's entry
+(0x481A57). It is now `worldtick.cpp` / `hooks/worldtick_hooks.asm`: the first key that needs a
+per-step tick checks the site and writes the `jmp` to a `__fastcall` wrapper with the stock thiscall
+frame (`bool(world, -, int, deltaMs)`, `ret 8`), which calls the stock body through a trampoline
+that re-executes `sub esp,0Ch / push ebx / push ebp` and jumps to 0x481A5C, then calls each
+registered tick in order (`AddWorldTick`). `damageOverTime` and `overhealDecay` register in their
+`kFeatures` order, so with both on, poison ticks run before the decay on every machine.
+
+**One add-HP hook.** The hook at the entry of FUN_004823A3 (see overhealSources) is written by
+whichever of `overhealSources` and `overhealDecay` applies first. With `overhealDecay`, a positive
+amount that still takes a marked unit above its reference (after the `overhealSources` cap, if that
+key is on) notes the unit with the game time `[world+108h]`.
+
+**Regeneration is not a gain that waits.** The unit's own regeneration (FUN_004905E1, `call
+4823A3h` at 0x490881) and the Regeneration dance (0x67A03B) add a little HP on every step of an
+idle unit. Counted as gains, they restarted the delay on every step, so an idle unit that
+regenerates never decayed (found in a skirmish: a marked Explorer regenerated from 180 to 220).
+Both calls are replaced (5 B each, → 0x490886 / 0x67A040) by a stub that sets
+`g_uhcOverhealRegen` around the stolen call; a gain made with it set notes the unit only if it was
+not noted, with a time `delay` in the past, and never restarts the delay. Heals restart it as
+before.
+
+**The decay tick.** The noted units are a `std::map` keyed by unit ID, so every machine walks them in
+the same order. The world update also runs for other worlds (the home city's; it compares `this`
+with `[game+13Ch]` at 0x481D01), so the tick returns at once unless `world` is `[game+13Ch]`:
+another world must not decay or look like a new game. After each update of the game world: the elapsed game time since the last tick (`[world+108h]`,
+never the real clock; another world, the time going back or a jump of the step count `[world+F8h]`
+forgets every unit, and so does a data reload); for each unit, the unit table lookup
+(`[world+0Ch]`, `[unit+10h]` = the ID), alive (`vtbl+A4h`), still marked (and of a listed type);
+gone, dead or unmarked units are forgotten. A unit at or below its reference is forgotten; one whose
+last gain is less than `delay` ago waits; otherwise HP = max(HP − rate × elapsed, reference)
+through the stock setter FUN_004820A1(unit, value, 0).
+
+**The setter's effects** (REA `ev_b83c97e4…`, `ev_241c1390…`): it stores HP, clamps it to [0, max]
+(the per-unit override through 0x6A2CB3), updates the damage visuals of a unit with damage stages
+(0x48223F(22h), 0x9CB73E per stage) and the animation state (0x48233B(7) → 0x487A21); with a
+non-zero flag it also runs 0x482152, the death check (HP < 1e-6 kills or destroys the unit and sends
+its events). The decay passes 0: a HP above the reference never needs the death check. Nothing in
+the setter is an attack: the "under attack" alerts and events come from TakeDamage (FUN_0049B3D9),
+which the decay does not call.
+
+**Why it is safe.** The decay reads only game state (unit HP, protos, game time) and walks units in
+ID order; it never sets HP below the reference (which is above 0) and never kills. The tick runs
+after the stock update, outside any stock loop over units. The map holds only units that gained
+overheal and drops them when they are back at the reference, so the cost is small.
+
+**Observed in game:** with `overhealDecay 2 3`, a marked Musketeer at 165 went 160.2, 154.1, 150.0
+in about six seconds of game time once its source healer was gone, and stayed at 150; with the
+healer alive, the decay started 3 s after each heal and the healer healed it back. `2% 1
+Musketeer` decayed 3 HP/s (2 % of 150); `2% 1 Pikeman` left the Musketeer at 165. In a skirmish
+against the AI (home city world present), a marked Explorer stayed at its 100 % (180) while
+regenerating; without the key it reached 220.
 
 ### showGatherRate
 

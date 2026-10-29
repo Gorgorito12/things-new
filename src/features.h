@@ -23,6 +23,7 @@ Outcome ApplyCustomRevolutionBanners(const Config& config);
 Outcome ApplyRemoveFameRestriction(const Config& config);
 Outcome ApplyHcShipmentPointFallback(const Config& config);
 Outcome ApplyHealNonIdle(const Config& config);
+Outcome ApplySmartHealTargets(const Config& config);
 Outcome ApplyDamageOverTime(const Config& config);
 Outcome ApplyDodge(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
@@ -44,6 +45,8 @@ Outcome ApplyCivFirstTc(const Config& config);
 Outcome ApplyTransformInventory(const Config& config);
 Outcome ApplyNoTrainNearEnemyTc(const Config& config);
 Outcome ApplyOverhealHitpointBars(const Config& config);
+Outcome ApplyOverhealSources(const Config& config);
+Outcome ApplyOverhealDecay(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
@@ -60,6 +63,7 @@ inline constexpr Feature kFeatures[] = {
     {"removeFameRestriction", ApplyRemoveFameRestriction},
     {"hcShipmentPointFallback", ApplyHcShipmentPointFallback},
     {"healNonIdle", ApplyHealNonIdle},
+    {"smartHealTargets", ApplySmartHealTargets},
     {"damageOverTime", ApplyDamageOverTime},
     {"dodgeAnyUnit/dodgeSoundSet/criticalSoundSet", ApplyDodge},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
@@ -83,6 +87,10 @@ inline constexpr Feature kFeatures[] = {
     // After liveBuildingWorkRate, which verifies the stock bytes of the site this one hooks.
     {"noTrainNearEnemyTC", ApplyNoTrainNearEnemyTc},
     {"overhealHitpointBars", ApplyOverhealHitpointBars},
+    // After overhealHitpointBars, whose unit types and reference it uses.
+    {"overhealSources", ApplyOverhealSources},
+    // After overhealSources: they share the add-HP hook, which the first one writes.
+    {"overhealDecay", ApplyOverhealDecay},
     {"showGatherRate", ApplyShowGatherRate},
     // Last of the WoL keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -96,12 +104,12 @@ inline constexpr Feature kFeatures[] = {
 inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
-    "healnonidle", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
+    "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
     "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
-    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "showgatherrate",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances",
 };
