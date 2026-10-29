@@ -127,8 +127,13 @@ void Note(const char* unit) {
 void Reset(char*) { g_units.clear(); }
 
 // After each world update: game time [world+108h] since the last tick, never the real clock. A new
-// game (another world, the time going back or the step count jumping) forgets every unit.
+// game (another game world, the time going back or the step count jumping) forgets every unit.
 void DecayTick(char* world, std::int32_t) {
+  // The world update also runs for other worlds (the home city's; 0x481D01 compares this with
+  // [game+13Ch]): only the game world's units decay, and another world must not look like a new game.
+  if (world != World()) {
+    return;
+  }
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
   const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
   const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;

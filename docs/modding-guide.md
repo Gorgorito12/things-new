@@ -2280,8 +2280,10 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [log]   default Abstrac
   the full bar with an orange segment over its right tenth and an orange `165/150`; a Musketeer
   damaged to 92 showed a partial bar and a white `92/150`; the unmarked Pikeman healed to 132/132
   and a fresh Musketeer (150/150) showed no segment. A skirmish against the AI with the key on
-  played normally. Not tested: a `Hitpoints` tech (the `(base+bonus)` text), a max changed by an
-  aura, a custom colour, other players' units and multiplayer.
+  played normally. Also confirmed: with `segment=40C0FF`, a Musketeer under a `Hitpoints` tech
+  (+15 %) healed to its max showed a light-blue segment and `189/174 (150+24)` in light blue; an
+  allied player 2 Musketeer showed its yellow bar with the light-blue segment and its panel
+  `165/150` in light blue. Not tested: a max changed by an aura, multiplayer.
 - **New in this DLL:** not in UHC 1.10. WoL request #21 ([wol-requests.md](wol-requests.md)).
 
 ### overhealSources
@@ -2324,8 +2326,17 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 - **Status:** confirmed in single player (2026-10-29). A marked Musketeer hit to 90 was healed by a
   surgeon to 150 and stayed there (the surgeon idle) until an Indian monk marked as a source
   appeared and healed it to 165; an unmarked Pikeman was healed to its max. A skirmish against the
-  AI with the key on played normally. Not tested: area heals, regeneration and powers on marked
-  units (the cap is static reading for them), a direct order, multiplayer.
+  AI with the key on played normally. Also confirmed:
+  - a building that heals (a Manor with `HCXPFlorenceNightingale`) healed a damaged marked
+    Musketeer only to 150 and an unmarked Pikeman to its max;
+  - a surgeon that appeared next to a marked Musketeer at 150 stayed idle, and a direct order
+    (right-click) on it made the surgeon walk to it and go idle on arrival, the Musketeer still at
+    150;
+  - a unit's own regeneration stops at its 100 %: an Indian monk marked for the test (250 / 275)
+    stayed at 250 for 70 s, where it regenerates to 275 without the key. A knocked-out hero
+    still gets up: stock revives it at about 40 % of its HP, below its 100 %.
+
+  Not tested: powers and area heals other than buildings, multiplayer.
 - **New in this DLL:** not in UHC 1.10.
 
 ### overhealDecay
@@ -2364,8 +2375,11 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
   `overhealHitpointBars`, `overhealSources` and `damageOverTime`: a marked Musketeer at 165 fell to
   160.2, 154.1 and 150.0 over about six seconds after its healer was killed, and stayed at 150; an
   unmarked Pikeman did not change. Poison (`damageOverTime`) still ticked normally in its own test
-  copy. A skirmish against the AI with all these keys on played normally. Not tested: the `%`
-  rate, a type filter, multiplayer.
+  copy. A skirmish against the AI with all these keys on played normally. Also confirmed:
+  `overhealDecay 2% 1 Musketeer` took 3 HP per second (2 % of 150) off a Musketeer at 165 down to
+  150; with `overhealDecay 2% 1 Pikeman` the Musketeer stayed at 165; player 2's overhealed units
+  decay too. Only the game world decays: the world update also runs for the home city's world,
+  which the key ignores. Not tested: multiplayer.
 - **New in this DLL:** not in UHC 1.10.
 
 ### showGatherRate

@@ -1548,7 +1548,9 @@ reference is coloured the same.
 - *Observed in game:* healed to 165, marked Musketeers showed a full bar with the orange segment
   over its right tenth and `165/150` in orange; a Musketeer damaged to 92 showed a partial bar and
   a white `92/150`; the unmarked Pikeman healed to 132/132 kept the stock bar. The vertex buffer
-  was 2 MB (9,709 bars), so the fit guard never ran.
+  was 2 MB (9,709 bars), so the fit guard never ran. With `segment=40C0FF`, a `Hitpoints` tech
+  (+15 %) gave `189/174 (150+24)` in light blue through the cold split format (0x69A9C0), and an
+  allied player 2's Musketeer had its yellow bar with the light-blue segment.
 
 ### overhealSources
 
@@ -1606,7 +1608,12 @@ accepts a marked unit at its reference; its action then ends on its first tick.
 
 **Observed in game:** a marked Musketeer hit to 90 was healed by a surgeon to 150 and stayed there
 with the surgeon idle; an Indian monk marked as a source healed it to 165; the unmarked Pikeman went
-back to its max.
+back to its max. A Manor healing with `HCXPFlorenceNightingale` (the same heal action) stopped at
+150 too. A direct order on a marked unit at its reference: the healer took the order (action type
+9), walked to the unit and went idle on arrival. A marked unit's own regeneration (an Indian monk
+marked 250 / 275 for the test) stopped at 250; without the key it reached 275. A knocked-out hero
+(action type 2Bh, the `'+'` that 0x482152 tests) regenerates and gets up at about 40 % of its HP
+in stock, below its reference, so the cap does not keep it down.
 
 ### overhealDecay
 
@@ -1624,7 +1631,9 @@ amount that still takes a marked unit above its reference (after the `overhealSo
 key is on) notes the unit with the game time `[world+108h]`.
 
 **The decay tick.** The noted units are a `std::map` keyed by unit ID, so every machine walks them in
-the same order. After each world update: the elapsed game time since the last tick (`[world+108h]`,
+the same order. The world update also runs for other worlds (the home city's; it compares `this`
+with `[game+13Ch]` at 0x481D01), so the tick returns at once unless `world` is `[game+13Ch]`:
+another world must not decay or look like a new game. After each update of the game world: the elapsed game time since the last tick (`[world+108h]`,
 never the real clock; another world, the time going back or a jump of the step count `[world+F8h]`
 forgets every unit, and so does a data reload); for each unit, the unit table lookup
 (`[world+0Ch]`, `[unit+10h]` = the ID), alive (`vtbl+A4h`), still marked (and of a listed type);
@@ -1647,7 +1656,8 @@ overheal and drops them when they are back at the reference, so the cost is smal
 
 **Observed in game:** with `overhealDecay 2 3`, a marked Musketeer at 165 went 160.2, 154.1, 150.0
 in about six seconds of game time once its source healer was gone, and stayed at 150; with the
-healer alive, the decay started 3 s after each heal and the healer healed it back.
+healer alive, the decay started 3 s after each heal and the healer healed it back. `2% 1
+Musketeer` decayed 3 HP/s (2 % of 150); `2% 1 Pikeman` left the Musketeer at 165.
 
 ### showGatherRate
 
