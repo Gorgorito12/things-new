@@ -2365,6 +2365,10 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
 
 *3. An area heal that is not a building, the Regeneration dance:* three settlers dance at a fire pit whose tactic has `RegenAllUnits` (`danceBonusCivs` lets the Spanish player use it). It heals every idle unit: the two marked Musketeers go from 90 to 150 and stop there (the log line `a heal of unit 4 (Musketeer) stops at its 100 % 150.0`), the two unmarked Pikemen from 80 to 132, their max (2x speed). [Full video (MP4)](media/overhealSources-dance.mp4).
 
+![overhealSources with PowerHeal](media/overhealSources-powerheal.gif)
+
+*4. A power, `PowerHeal`:* the Explorer has the Heal ability (`abilities.xml` gives `PowerHeal` to the Explorer with the card `HCExplorerFrench`, here set active by the test map) and casts it on a group: the marked Musketeers go from 90 to 150 and stop, the unmarked Pikemen from 80 to 132 (the `hook reached: overhealSources power heal` lines; 1.5x speed). [Full video (MP4)](media/overhealSources-powerheal.mp4).
+
 ```
 overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 types
 ```
@@ -2381,7 +2385,10 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
   - every other way of gaining HP stops at the 100 % too: regeneration, the Regeneration dance,
     area heals, self heals, powers and triggers that add HP. Only the single-target heal action of
     a source healer overheals. Damage, and code that sets HP rather than adding it (creation,
-    transforms, the aura rescale), are not touched.
+    transforms, the aura rescale), are not touched;
+  - `PowerHeal` (and any `UnitAction` power with `hitpointstoheal`) treats a marked unit at its 100 %
+    as full: it gives it nothing and does not spend its HP budget on it, as stock does for a unit
+    at its max.
 
   Unmarked units heal as in stock.
 - **Data:** the source type on the healers that may overheal, e.g.
@@ -2390,7 +2397,8 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 - **Log:** `overhealSources: only healers of unittype X heal marked units above their 100 %; every
   other heal stops there (multiplayer unverified)`; when the data loads `unit types: X -> <ID> …`;
   in a game `hook reached: overhealSources heal search (0x9CD984)`, `heal tick (0x9E0BBB)`, `heal
-  (0x9E0CE9)` and `overheal add HP (0x4823A3)`. With `log`, the first of each proto: `overhealSources:
+  (0x9E0CE9)` and `overheal add HP (0x4823A3)`; when a heal power runs, `power heal (0x9E0372)`
+  and `power heal (0x9E038B)`. With `log`, the first of each proto: `overhealSources:
   a heal of unit N (Musketeer) stops at its 100 % 150.0 (…; not from a source healer)` and `…unit N
   (Musketeer) is healed above its 100 % 150.0 by a source healer (…)`. Without
   `overhealHitpointBars`: `overhealSources: needs overhealHitpointBars, …; feature not applied`.
@@ -2409,10 +2417,13 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
     stayed at 250 for 70 s, where it regenerates to 275 without the key. A knocked-out hero
     still gets up: stock revives it at about 40 % of its HP, below its 100 %;
   - an area heal that is not a building: the fire pit's Regeneration dance healed marked
-    Musketeers from 90 only to 150, and unmarked Pikemen to their max 132.
+    Musketeers from 90 only to 150, and unmarked Pikemen to their max 132;
+  - a power: an Explorer's `PowerHeal` (the card `HCExplorerFrench`) healed marked Musketeers from
+    90 only to 150 and unmarked Pikemen to 132. Traced: the power heals through its own tick,
+    0.1 to 0.15 HP per unit per call. Before the power hooks, a marked unit at 150 was still
+    charged 0.1 per tick against the power's 400 HP budget; with them the add cap never fires.
 
-  Not tested: powers (`PowerHeal` exists in `powers.xml`, but no TAD unit has it; its heal goes
-  through the same add-HP entry, 0x7C378C / 0x8CCA6F), multiplayer.
+  Not tested: multiplayer.
 - **New in this DLL:** not in UHC 1.10.
 
 ### overhealDecay

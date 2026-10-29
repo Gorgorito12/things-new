@@ -13,6 +13,7 @@ EXTERNDEF g_uhcOverhealRegen:SDWORD   ; 1 while a regeneration adds HP (overheal
 UhcOverhealAddHp PROTO STDCALL unit:DWORD, amount:DWORD         ; may lower [amount]
 UhcOverhealUseReference PROTO STDCALL target:DWORD, healer:DWORD  ; AL: a normal healer, a marked target
 UhcOverhealIsSource PROTO STDCALL healer:DWORD                   ; AL: the healer gives overheal
+UhcOverhealPowerLimit PROTO C unit:DWORD                          ; ST0: the power heal's limit
 UhcOverhealReferenceOf PROTO C unit:DWORD                         ; ST0 (overheal_hooks.asm)
 UhcOverhealRatioOf PROTO C unit:DWORD                             ; ST0 (overheal_hooks.asm)
 
@@ -26,6 +27,8 @@ tickAddNext     dd 009E0CEEh    ; fld [esp+10h] / fadd [esi+68h]: the tick's boo
 searchRatioNext dd 009CD989h    ; fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh: ratio < 1?
 regenNext       dd 00490886h    ; mov ecx,[esp+1Ch] / add ecx,1: the regeneration loop
 danceRegenNext  dd 0067A040h    ; add ebp,1 / cmp ebp,ebx / jl: the Regeneration dance loop
+powerCompareNext dd 009E0377h   ; fcomp [esp+18h]: the power heal's limit vs HP + amount
+powerRoomNext   dd 009E0390h    ; fsub [esp+1Ch]: the power heal's limit - HP
 
 .code
 
@@ -108,6 +111,28 @@ useReference:
     add esp, 4
     jmp searchRatioNext
 UhcOverhealSearchRatioHook ENDP
+
+; Replace call 480408h at 0x9E0372 and 0x9E038B in the power heal tick FUN_009E0280 (PowerHeal;
+; ECX = EDI = the target, FPU stack empty): the tick clamps each unit's amount to this limit - HP
+; and adds the unclamped part of the tick to the power's budget [esi+68h] after the add, so a
+; marked unit at its reference would take 0 HP from the cap but still spend budget. ST0 =
+; UhcOverhealPowerLimit(unit): max(reference, HP) for a marked unit, the stock max otherwise.
+; EAX, ECX, EDX and the flags are written again after both continuations before they are read.
+UhcOverhealPowerCompareHook PROC
+    TRACE_ONCE "overhealSources power heal (0x9E0372)"
+    push edi
+    call UhcOverhealPowerLimit
+    add esp, 4
+    jmp powerCompareNext
+UhcOverhealPowerCompareHook ENDP
+
+UhcOverhealPowerRoomHook PROC
+    TRACE_ONCE "overhealSources power heal (0x9E038B)"
+    push edi
+    call UhcOverhealPowerLimit
+    add esp, 4
+    jmp powerRoomNext
+UhcOverhealPowerRoomHook ENDP
 
 ; overhealDecay: replace call 4823A3h at 0x490881 (the unit's own regeneration, FUN_004905E1) and
 ; at 0x67A03B (the Regeneration dance), with the amount and 1 pushed and ECX = ESI = the unit:

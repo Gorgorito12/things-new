@@ -89,6 +89,11 @@ SITES = [
     # (0x490881) and the Regeneration dance (0x67A03B)
     ("RegenAddHp", 0x49087C, 0x12),
     ("DanceRegenAddHp", 0x67A036, 0x15),
+    # overhealSources: the power heal tick FUN_009E0280 (PowerHeal, seen in game), from the amount
+    # rate x [world+318h] x [world+104h] to the budget update: call 480408h at 0x9E0372 (max vs
+    # HP + amount) and 0x9E038B (max - HP), both replaced, the add 0x9E03C0 and fadd [esi+68h] /
+    # fstp [esi+68h], the budget (hitpointstoheal is [esi+6Ch])
+    ("PowerHealTick", 0x9E0352, 0x8C),
     # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
     # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
     ("AbstractTypesEnd", 0x51BA23, 0x15),

@@ -17,7 +17,11 @@
 //   idle; a direct order on a unit at its reference ends the same way at once;
 // - the tick's add (0x9E0CE9): sets g_uhcOverhealAllow for a source healer;
 // - the automatic search FUN_009CD865's first ratio test (0x9CD984): for a normal healer a marked
-//   unit at its reference is no candidate.
+//   unit at its reference is no candidate;
+// - the power heal tick FUN_009E0280 (PowerHeal)'s two max reads (0x9E0372, 0x9E038B): for a marked
+//   unit they read max(reference, HP), so the power gives it nothing above its reference and does
+//   not spend its budget (hitpointstoheal) on it: the tick adds the amount it computed to the
+//   budget after the add, whatever the add hook let through.
 // A source healer heals to MaxHitpoints, as in stock. The decisions read only the units' protos
 // and HP, the same on every machine.
 #include <cstdint>
@@ -47,7 +51,9 @@ namespace {
 constexpr std::size_t kMaxTypes = 8;
 
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
+using MaxHitpointsFn = float(__thiscall*)(const char* unit);
 const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
+const auto kMaxHitpoints = reinterpret_cast<MaxHitpointsFn>(0x00480408);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -86,6 +92,20 @@ void UhcOverhealAddHook();
 void UhcOverhealTickMaxHook();
 void UhcOverhealTickAddHook();
 void UhcOverhealSearchRatioHook();
+void UhcOverhealPowerCompareHook();
+void UhcOverhealPowerRoomHook();
+
+// For the power heal tick's two max reads: max(reference, HP) for a marked unit (never below its HP,
+// so the tick's limit - HP is never negative), the stock max for any other unit.
+float __cdecl UhcOverhealPowerLimit(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+    return kMaxHitpoints(unit);
+  }
+  const float reference = UhcOverhealReferenceOf(unit);
+  const float hp = Field<float>(unit, 0x64);
+  return hp > reference ? hp : reference;
+}
 
 bool __stdcall UhcOverhealIsSource(const char* healer) {
   const char* proto = healer == nullptr ? nullptr : Field<const char*>(healer, 0x5C);
@@ -186,7 +206,7 @@ Outcome ApplyOverhealSources(const Config& config) {
   }
   if (!VerifyAll("overhealSources", {&sites::kOverhealAddEntry, &sites::kHealTickMax, &sites::kHealTickAdd,
                                      &sites::kHealSearchRatio, &sites::kMaxHitpointsGetter, &sites::kHealthRatio,
-                                     &sites::kIsA})) {
+                                     &sites::kIsA, &sites::kPowerHealTick})) {
     return Outcome::kFailed;
   }
   for (std::size_t i = 0; i < typeNames.size(); ++i) {
@@ -198,7 +218,9 @@ Outcome ApplyOverhealSources(const Config& config) {
   g_cap = true;
   if (!InstallOverhealAddHook() || !WriteJmp(0x009E0BBB, reinterpret_cast<const void*>(&UhcOverhealTickMaxHook), 5) ||
       !WriteJmp(0x009E0CE9, reinterpret_cast<const void*>(&UhcOverhealTickAddHook), 5) ||
-      !WriteJmp(0x009CD984, reinterpret_cast<const void*>(&UhcOverhealSearchRatioHook), 5)) {
+      !WriteJmp(0x009CD984, reinterpret_cast<const void*>(&UhcOverhealSearchRatioHook), 5) ||
+      !WriteJmp(0x009E0372, reinterpret_cast<const void*>(&UhcOverhealPowerCompareHook), 5) ||
+      !WriteJmp(0x009E038B, reinterpret_cast<const void*>(&UhcOverhealPowerRoomHook), 5)) {
     return Outcome::kFailed;
   }
   std::string names;

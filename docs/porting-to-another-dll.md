@@ -141,6 +141,7 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `OverhealStatRow` | `0x4D76DB` | 9 B | 9 B at `0x4D76DB` | `BF 02 00 00 00 89 7C 24 2C` (`mov edi,2; mov [esp+2Ch],edi`) | the row after the HP row; `stat` (also `GroupHealthRow` 0x69A9D3, verify only) |
 | `GadgetByName`, `ProgressGadget`, `GadgetRelease`, `ProgressFill`, `GadgetShow`, `GadgetHide`, `GadgetRef`, `BStringFromWide`, `BStringSet` | `0xAB7C2F`, `0x44B8B8`, `0x40431B`, `0x590772`, `0x447F7B`, `0x448F13`, `0x4C519C`, `0x401A12`, `0x40196F` | — | — | — | the UI functions the portrait bar and the Overheal row call (verified only) |
 | `RegenAddHp`, `DanceRegenAddHp` | `0x49087C`, `0x67A036` | `0x12`, `0x15` B | 5 B at `0x490881`, `0x67A03B` | `E8 1D 1B FF FF`, `E8 63 83 E0 FF` (`call 4823A3h`) | the regeneration adds; overhealDecay |
+| `PowerHealTick` | `0x9E0352` | `0x8C` B | 5 B at `0x9E0372`, `0x9E038B` | `E8 91 00 AA FF`, `E8 78 00 AA FF` (`call 480408h`) | the power heal tick's max; overhealSources |
 | `OverhealAddEntry` | `0x4823A3` | `0x0A` B | 8 B at `0x4823A3` | `51 56 8B F1 83 7E 08 08` | entry of the add-HP function FUN_004823A3; overhealSources |
 | `HealTickMax` | `0x9E0BA5` | `0x29` B | 5 B at `0x9E0BBB` | `E8 48 F8 A9 FF` (`call 480408h`) | the heal tick's HP < max test; overhealSources |
 | `HealTickAdd` | `0x9E0CCF` | `0x26` B | 5 B at `0x9E0CE9` | `E8 B5 16 AA FF` (`call 4823A3h`) | the heal tick's heal; overhealSources |
@@ -986,6 +987,10 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Search hook** at `0x9CD984` (5 B, `call 45F295h`), ECX = ESI = candidate, healer `[ebp+4]`:
   ST0 = HP / reference (stock rules) for a marked candidate and a non-source healer, else the stock
   ratio; → `0x9CD989`. Coexists with smartHealTargets and healNonIdle (other sites of the loop).
+- **Power heal hooks** at `0x9E0372` and `0x9E038B` (5 B each, `call 480408h`), ECX = EDI = target,
+  FPU stack empty: ST0 = max(reference, HP) for a marked target, else the stock max; →
+  `0x9E0377`, `0x9E0390`. Without them a heal power (`PowerHeal`) still caps at the reference
+  through the add hook, but spends its `hitpointstoheal` budget on marked units at their reference.
 - **The add-HP hook is shared** with overhealDecay: `InstallOverhealAddHook()` writes it once.
 
 ### overhealDecay

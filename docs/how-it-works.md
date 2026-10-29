@@ -1624,9 +1624,10 @@ adder:
 | 0x67A03B | FUN_00490476 | the fire pit's Regeneration dance (idle units, `[world+104h]` × max × 0.01) | reference (seen in game: marked Musketeers healed from 90 to 150 only) |
 | 0x490881 | FUN_004905E1 | per-unit regeneration (inferred: `CanAutoHeal` / `UnitRegenRate`) | reference |
 | 0x9CFA77, 0x9D0C16 | FUN_009CF93B, FUN_009D0A4D | heals of the action's own unit `[esi+10h]`, proportional to its max (inferred: self heals) | reference |
-| 0x7C378C, 0x8CCA6F | FUN_007C369B, FUN_008CC89F | heals proportional to the max (inferred: powers and effects such as `PowerHeal`) | reference |
+| 0x7C378C, 0x8CCA6F | FUN_007C369B, FUN_008CC89F | heals proportional to the max (not `PowerHeal`: traced, no hit while it healed; what uses them is not known) | reference |
 | 0x9E594D, 0x9E5AEB | FUN_009E5583 | repair, which pays its cost first (0x8D946A) | reference (stock data repairs buildings, which are not marked) |
-| 0x9E03C0, 0x8EDCC5 | a chunk filed under 0x9E0D4E, FUN_008EDAFD | additions capped at a total (`[esi+6Ch]`, `[ebp+12Ch]`; inferred: build or repair progress) | reference |
+| 0x9E03C0 | FUN_009E0280, the power heal tick | `PowerHeal` and any `UnitAction` power with `hitpointstoheal` (traced in game): each unit of the action's list (`[esi+74h]`, count `[esi+78h]`) gets `0x487C45(unit) × [world+318h] × [world+104h]`, limited to max − HP (two `call 480408h`) and to the budget left, `[esi+6Ch]` (hitpointstoheal) − `[esi+68h]`; the amount is added to `[esi+68h]` after the add | the tick reads max(reference, HP) for a marked unit (below), so it adds nothing above the reference and spends no budget on it (seen in game) |
+| 0x8EDCC5 | FUN_008EDAFD | an addition capped at a total (`[ebp+12Ch]`; inferred: build or repair progress) | reference |
 | 0x49B822 | FUN_0049B3D9, TakeDamage | damage, a negative amount | not touched |
 | 0x6A4AF5 | FUN_004DCFE2 | damage that leaves at least 1 HP, negative | not touched |
 
@@ -1646,13 +1647,18 @@ overheal (only the single-target heal action knows its healer).
 | 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | for a marked target and a healer of no source type: the reference; else the stock max | 0x9E0BC0 |
 | 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = healer is a source, the stolen call, then 0 | 0x9E0CEE |
 | 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | for a marked candidate and a normal healer: HP / reference (1.0 at the reference: no candidate); else the stock ratio | 0x9CD989 |
+| 0x9E0372, 0x9E038B | `call 480408h` in the power heal tick (ECX = EDI = target, FPU empty) | `UhcOverhealPowerLimit(unit)`: max(reference, HP) for a marked unit (so limit − HP is never negative), the stock max otherwise | 0x9E0377 (`fcomp`), 0x9E0390 (`fsub`) |
 
 **Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
 only lowers a positive amount; damage (negative amounts) and the setter's other callers are
 untouched. At 0x9E0BBB the FPU stack is empty and ECX/EDX are written again after 0x9E0BC0; the
 add hook keeps every register (pushad) and redoes the stolen `cmp`, whose flags the `jbe` reads.
 The tick hook's flag is set and cleared around one call (no re-entry: the adder does not call the
-heal tick). The direct heal order (command predicate code 41h, FUN_004C6CD7, "HP < max") still
+heal tick). Why the power heal tick needs its own hooks: it adds the amount it computed to the
+power's budget after the add, so with only the add cap a marked unit at its reference took 0 HP but
+cost the power 0.1 per call (traced: `edx` = 0.1 at 0x9E03C0 for a Musketeer at 150). After both
+power hooks, EAX, ECX and EDX are written before they are read (`fnstsw ax`, `mov ecx,[edi+64h]`,
+`mov edx,[esp+14h]`, `mov ecx,edi`) and the flags are not read. The direct heal order (command predicate code 41h, FUN_004C6CD7, "HP < max") still
 accepts a marked unit at its reference; its action then ends on its first tick.
 
 **Observed in game:** a marked Musketeer hit to 90 was healed by a surgeon to 150 and stayed there
@@ -1664,7 +1670,9 @@ marked 250 / 275 for the test) stopped at 250; without the key it reached 275. A
 (action type 2Bh, the `'+'` that 0x482152 tests) regenerates and gets up at about 40 % of its HP
 in stock, below its reference, so the cap does not keep it down. The Regeneration dance, an area
 heal that is not a building, healed marked Musketeers from 90 to 150 and unmarked Pikemen to their
-max.
+max. So did an Explorer's `PowerHeal` (the card `HCExplorerFrench` gives it, through `abilities.xml`),
+which a tracer showed going through 0x9E03C0 (FUN_009E0280), not 0x7C378C / 0x8CCA6F; with the power
+hooks the add cap no longer fired for it.
 
 ### overhealDecay
 
