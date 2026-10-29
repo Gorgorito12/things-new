@@ -5,7 +5,7 @@
 // model a firing slot when the action is set up, in FUN_0050339A: one slot per MuzzleR attach
 // point, then one per MuzzleL point. Each group is clamped to 6 (`mov esi,6` at 0x5033D5), or to
 // 1 when the action has <SingleUsePlayer> (cold block 0x6A8236). A volley fires one projectile per
-// slot, so a stock ship fires at most 6 per side whatever its model has (the Tekkousen's has 11).
+// slot, so a stock ship fires at most 6 per side whatever its model has (the Tekkousen's has 10).
 //
 // broadsideMuzzleLimit <N> [<UnitType>] [log] replaces the 6 with N (1..255: the muzzle index is
 // passed on as a byte) for ships whose proto has <UnitType> (a marker, a stock type or a proto

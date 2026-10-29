@@ -118,6 +118,21 @@ there:
   no error. The game writes what the triggers compiled to in
   `Documents\My Games\Age of Empires 3\Trigger3\trigtemp.xs`, and a dump of the map script in
   `…\RM3\Age3RM<name>.dmp.txt`.
+- **What a scenario's triggers can and cannot do** (checked 2026-10-29): Change Unit Type, Kill,
+  Damage Unit, Unit Create, Set Tech Status, Grant Resources and Move From Area (`go<N>=`) work;
+  the unit-order effects `Unit Work` and `Unit Build Building` do nothing. Give such orders with
+  the real mouse: `exec 'uiLookAtAndSelectUnit(<id>)' 'uiLookAtUnit(<target id>)'`, then
+  `rclick 1277 757 right` (the looked-at unit is at the centre of the view); to build, select the
+  builder, `exec 'tis("<Proto>")'`, then `rclick <x> <y>`. The first real click after the window
+  takes the focus is often lost: repeat it. Synthetic key presses (`rkey`) do not reach the
+  game's hotkeys, not even the stock Delete.
+- **The editor route finishes buildings:** a `PlaceAsFoundation` proto placed by the map is a
+  complete building once the scenario is reloaded, so place a foundation in game (see above).
+  Scenario players lack their civ's start techs: add `tech1=Age0British` (or the civ's own Age0
+  tech) when a building is "not enabled". In these tests player 1 was Spanish and player 2 British.
+- **Placement:** big buildings (BloodFactory) or tight clusters (`House*8`) may not be placed by
+  the map at all; create them with `"at1=Unit Create;…;Location=pt:<x>,<z>"`. `p0=` places Gaia
+  units (hunts), `sea=<SeaType>` makes a water map, `units --los` shows each unit's line of sight.
 - **Timed events:** `"at<seconds>=<Effect>;<Param>=<value>;…"` runs any trigger effect listed in
   `trigger3\typetest.xml` once, that many seconds into the game, for example
   `"at20=Change Unit Type;SrcObject=g0;ProtoUnit=Grenadier"` (transform),

@@ -31,9 +31,10 @@ Contents:
   [AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). You use it once, to add the
   loader to your mod's `age3y.exe`.
 - **Python 3 and this repository's `tools/` folder**, only for keys that need data edits: a new
-  `healNonIdle` marker, `deckCardCount` at normal levels, reusing a stock banner for
-  `customRevolutionBanners`, or compiling `protoy.xml` again after the edits that
-  `damageOverTime` needs.
+  marker unit type (`healNonIdle`, `dodgeAnyUnit` and the other keys that take a `<UnitType>`),
+  `deckCardCount` at normal levels, reusing a stock banner for `customRevolutionBanners`,
+  compiling `protoy.xml` again after the edits that `damageOverTime` needs, or taking a file such
+  as `abilities.xml` out of the archives.
   - Get the tools from the source code: **Code → Download ZIP** on the repository page.
   - Install Python 3 from [python.org](https://www.python.org/downloads/). If `python` does not
     work in a new terminal, type `py` instead.
@@ -195,7 +196,9 @@ key enabled, using the values this project tests with: do not ship it as it is.
   style), even at the end of a line. A `#` later in a line is **not** a comment: in
   `deckCardCount 40 # more cards`, the words `#`, `more` and `cards` are arguments.
 - **One line per key:** a key that takes values reads only its first line. Write
-  `hcShipmentPointFallback` once, with all its names.
+  `hcShipmentPointFallback` once, with all its names. The exceptions: `dodgeSoundSet`,
+  `criticalSoundSet`, `danceBonusCivs` and `perfAutoExec` read every line, and
+  `broadsideMuzzleLimit` refuses a second line.
 - **Unknown keys:** a key this DLL does not handle, whether an upstream key or a misspelling, is
   logged in lowercase as `<key>: not implemented yet; ignored`.
 - **Absent keys** keep the stock behavior.
@@ -240,6 +243,20 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
+| [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech. | Nothing. | confirmed (single player, `Maintain`) |
+| [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Techs with `<TypeCount>` prerequisites in `techtreey` (stock data has none). | confirmed (single player) |
+| [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | That unit type on the producing buildings in `protoy`, or the name of an existing type or proto. | confirmed (single player) |
+| [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | Nothing. | confirmed (single player) |
+| [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side; for a new marker, that type on the ships in `protoy`. | confirmed (single player) |
+| [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | Units with more than 6 abilities in `abilities.xml`. | confirmed (single player, UI) |
+| [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
+| [`lifespanAfterConstruction`](#lifespanafterconstruction) | Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). | confirmed (single player) |
+| [`gaiaSocketsOnly`](#gaiasocketsonly) | Lets a socketed building (TradingPost, or a mod's) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy`. | not tested in game |
+| [`customHotkeyContexts`](#customhotkeycontexts) | Lets a keymap context named `<ProtoName>Accel` hold the unit hotkeys of that proto (a new building, or a stock one the exe has no context for). | Those contexts in `data\DefaultKeyMapY.xml`. | partly confirmed |
+| [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. | confirmed from the log (single player) |
+| [`techRenameEffect`](#techrenameeffect) | Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in your string table. | confirmed (single player) |
+| [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | `<Flag>Doppled</Flag>` on those protos, and the unit type in the cfg (`Huntable` needs no data change). | confirmed (single player) |
+| [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player, Healing Dance) |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. | confirmed (single player) |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | Nothing. | confirmed (two copies, single player) |
 
@@ -740,6 +757,851 @@ damageOverTime [log]
 - **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
   proto that carries the duration and the damage.
 
+### liveBuildingWorkRate
+
+```
+liveBuildingWorkRate [log]
+```
+
+- **How stock behaves:** a building's `<BuildingWorkRate>` (1.0 on every stock proto) scales how
+  fast it trains units, researches techs and spawns the units of its `Maintain` actions. The exe
+  copies the proto's value into the building once, when the building is completed (for a unit
+  with the flag `ForceBuildingData`, when it is created), and the train, research and `Maintain`
+  code read that copy. A tech effect `type='Data' subtype='BuildingWorkRate'` changes only the
+  proto. So the buildings completed after the tech get the new speed, and the ones already
+  standing keep the old one, although their stat panel shows the new value. Loading a saved game
+  copies the value again for completed buildings, so the bug seems to vanish after a save and
+  load.
+- **Effect:** every building and `ForceBuildingData` unit trains, researches and spawns at its
+  proto's current `BuildingWorkRate`. A `BuildingWorkRate` tech therefore applies at once to
+  everything that exists, in both directions (a tech that is removed again, a trigger, any later
+  change of the value). Units without building data already worked this way in stock.
+- **Your mod:** nothing. It works with the techs you have:
+
+  ```xml
+  <Effect type ='Data' amount ='2.00' subtype ='BuildingWorkRate' relativity ='BasePercent'>
+      <Target type ='ProtoUnit'>Stable</Target></Effect>
+  ```
+
+- **Not covered:** the action rates. `type='Data' subtype='WorkRate'` effects (gathering,
+  building, healing, …) and `type='Data2' subtype='WorkRateSpecific'` effects are read live by
+  stock already (static reading), so they already reach existing units; this key does not change
+  them.
+- **Transformed buildings:** a building that changes proto in place (a `TransformUnit` tech) now
+  works at the new proto's rate; stock kept the old proto's copy. With stock data there is no
+  difference, since every stock proto has 1.0.
+- **`log`:** one line for each building whose speed this key changes, the first time it works at
+  the new rate, and again only if the rate changes later. Use it to check your data, not in a
+  release.
+- **Log:** at startup `liveBuildingWorkRate: train, research and Maintain speed follow the
+  proto's current BuildingWorkRate (multiplayer unverified)` (with `log`:
+  `…BuildingWorkRate, every building it changes logged (multiplayer unverified)`); in a game,
+  `hook reached: liveBuildingWorkRate (0x9BFE33)` the first time any building trains, researches
+  or spawns. With `log`: `liveBuildingWorkRate: unit N (Proto, player P) works at
+  BuildingWorkRate 4.000, not its snapshot 1.000`.
+- **Limits:**
+  - with `log`, a unit is logged once per unit ID and pair of rates in a session, so a unit of a
+    later game with the same ID and rates is not logged again;
+  - whether a building under construction can train or research was not checked. If it can, it
+    now uses the proto's rate there, where stock used 1.0. `Maintain` never runs on an unfinished
+    building.
+- **Simulation:** yes. Saved games load with or without the key: the building's copy is still
+  kept and saved as in stock.
+- **Status:** confirmed in single player (2026-10-29). Each of two players got a `BloodFactory`
+  (which spawns musketeers through a `Maintain` action) at 1 s; at 20 s a test tech gave player
+  1's `BloodFactory` `BuildingWorkRate` 4. At 112 s player 1 had 12 musketeers and player 2 had 3.
+  With the key off, both had 3 (the bug). The log showed `works at BuildingWorkRate 4.000, not its
+  snapshot 1.000` for player 1's factory. Training and research use the same code path but were
+  not tested.
+- **New in this DLL:** not in UHC 1.10. WoL request #5 ([wol-requests.md](wol-requests.md)).
+
+### techPrereqRecheck
+
+```
+techPrereqRecheck [N] [full] [log]       N: check each player every N world updates (default 1)
+```
+
+- **How stock behaves:** the game evaluates a tech's `<Prereqs>` only when the player's tech tree
+  is marked for a re-check: when one of the player's techs changes status (researched, activated,
+  made obtainable, a shipment), at an age-up, at a home city level-up, and when the player's
+  population cap changes (a house is built or destroyed). Creating or killing any other unit never
+  does. A `<TypeCount>` prerequisite counts the player's units, so it is noticed late: a tech with
+  `<TypeCount unit='Dock' count='1' state='noneState aliveState' operator='gte'/>` waits for the
+  player's next house after the first dock is built. Stock data has no `<TypeCount>`; WoL has 12
+  in 9 techs.
+- **Effect:** on every world update (or every N), for each tech with a `<TypeCount>`
+  prerequisite, the DLL evaluates the tech's prerequisites for each player exactly as the stock
+  re-check does, and compares the result with the one the game cached. On a difference it starts
+  the stock re-check at once. What follows is the stock re-check, the same as after a house:
+  - a tech with no research time (`<ResearchPoints>0</ResearchPoints>`) whose prerequisites are now
+    met activates;
+  - a `Volatile` tech activates or deactivates;
+  - the AI's tech list and the UI are updated.
+
+  Techs without `<TypeCount>` are not checked by the DLL, but the stock re-check it starts
+  re-evaluates them too.
+- **`N`:** each player is checked every N world updates, offset by its player number so the
+  players' checks are spread out. A larger N costs less and reacts later.
+- **`full`:** for measurements only. It starts the stock re-check of every tech for each player
+  every N updates, whether anything changed or not. The stock re-check walks every tech, so use a
+  large N (e.g. 60) on a big techtree.
+- **Writing `<TypeCount>`** (from the stock XML handler, static reading):
+  - all four attributes are required: `unit`, `count`, `operator`, `state`. Without one, the game
+    drops the prerequisite with an error;
+  - `state` is a list of words. It starts as "any state"; `noneState` clears it, then
+    `aliveState`, `deadState` and `buildingState` add those states. A lone `state='aliveState'`
+    still means any state: write `state='noneState aliveState'`;
+  - `operator` is read as substrings `lt`, `e` and `gt`, so `gte` means "greater or equal";
+  - `count` is read as an integer.
+
+  ```xml
+  <Tech name ='MyDockBonus' type ='Normal'>
+      <DBID>…</DBID>
+      <ResearchPoints>0.0000</ResearchPoints>
+      <Status>OBTAINABLE</Status>
+      <Flag>Shadow</Flag>
+      <Prereqs>
+          <TypeCount unit ='Dock' count ='1' state ='noneState aliveState' operator ='gte'></TypeCount></Prereqs>
+      <Effects>…</Effects>
+  </Tech>
+  ```
+- **`log`:** one line per re-check started, and a summary per game minute (checks, evaluations,
+  re-checks started, time spent in the checks). Use it to check your data or measure the cost,
+  not in a release.
+- **Log:**
+  - at startup, `techPrereqRecheck: techs with TypeCount prerequisites are re-checked every N
+    world update(s); a change starts the stock re-check (multiplayer unverified)` (with `log`,
+    `…; every re-check and a summary every game minute are logged (multiplayer unverified)`; with
+    `full`, `techPrereqRecheck: full: the stock re-check of every tech runs every N world
+    update(s) for each player (multiplayer unverified)`);
+  - in a game, `hook reached: techPrereqRecheck (0x491A18)`;
+  - once per data load, `techPrereqRecheck: K tech(s) of T have TypeCount prerequisites (P in
+    all)` and one `techPrereqRecheck:   tech <ID> (<Name>), n TypeCount prerequisite(s)` line per
+    tech, up to 100. With none: `…; nothing to re-check`;
+  - the first re-check is always logged: `techPrereqRecheck: player P, tech <ID> (<Name>):
+    prerequisites now met; stock re-check at step S, game time T ms (add log to see every
+    re-check)` (or `no longer met`). With `log`, every re-check is, and every game minute
+    `techPrereqRecheck: game minute M: … check(s), … evaluation(s), … re-check(s) started, … full
+    pass(es) requested, … us in checks`;
+  - a bad argument: `techPrereqRecheck: unexpected argument X (expected: [N] [full] [log], N a whole
+    number of world updates from 1 to 1000000); feature not applied`.
+- **Limits:**
+  - the counts are the ones the player's knowledge base keeps, the counts XS `kbUnitCount` reads;
+  - only `<TypeCount>` prerequisites are watched; `<Culture>` and `<Civilization>` prerequisites
+    after a civilization change are not;
+  - a tech that is not relevant to the player yet (unobtainable and not named by its civ's techs)
+    has no status entry. Neither stock nor the DLL evaluates it until a status change creates one.
+- **Simulation:** yes: techs activate earlier than in stock. Every player needs the same setting,
+  N included. The check reads only game state and the world's step count.
+- **Status:** confirmed in single player (2026-10-29). Two test techs with `<TypeCount>`
+  prerequisites and no research time, one met when the player has a live Settler and one when he
+  has no live Musketeer, activated in the same world update as the Settler's creation (20.0 s) and
+  the Musketeer's death (32.0 s). With the key off they waited for an unrelated tech change at
+  70 s. With these 2 techs, the checks cost about 4 ms per game minute (the `log` summary).
+- **New in this DLL:** not in UHC 1.10. WoL request #6 ([wol-requests.md](wol-requests.md)).
+
+### maintainWaitForPop
+
+```
+maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
+```
+
+- **How stock behaves:** some buildings produce units on their own, through a `Maintain` action
+  in their tactics file: the factory's `SpawnCannon`, the Ottoman Town Center's settlers, the
+  dock's `SpawnBoat`, the native trading posts' warriors, and many more in WoL. The building fills
+  a timer: `<rate type="X">n</rate>` gives the unit X and n units per cycle, and the cycle costs
+  n × X's `TrainPoints` at the building's work rate. When the timer is full, the game tries to
+  spawn the units. A unit that does not fit in the player's population is not created, and the
+  game does not check whether anything was spawned:
+  - a normal action starts the next cycle from zero, so after a house is built the next unit
+    comes a whole cycle later;
+  - a `SingleUse` action (dock boats, native warriors) ends, so its units are lost.
+- **Effect:** for a building whose proto is of `<UnitType>`, a cycle that ends while the first
+  unit does not fit is **held**: the timer stays full and no new cycle starts. The unit spawns on
+  the first game update with room (a unit dies, a house is finished, a tech raises the cap). A
+  held `SingleUse` action waits instead of ending. Any other building behaves as in stock.
+- **"Does not fit"** is exactly the stock test that would have refused the unit: its
+  `PopulationCount` against the player's current population and cap, with `AllowOverPopCap` and
+  `AlwaysAllowOverPopCap`, and with the cap set by `basePop` / `extraPop`. A unit with no
+  population cost is never held. After a revolution, settlers and coureurs are tested as
+  `xpColonialMilitia`, as the game spawns them.
+- **Which buildings:** the marker goes on the **producing building**, not on the produced unit.
+  - The default `AbstractMaintainWaitForPop` is registered by the DLL, like `healNonIdle`'s
+    marker; list it on the buildings you want and edit `protoy.xml` and its XMB as described
+    there:
+
+    ```xml
+    <Unit id ='348' name ='Factory'>
+        ...
+        <UnitType>AbstractMaintainWaitForPop</UnitType>
+    ```
+
+  - An existing type or proto name works with no data change: `maintainWaitForPop Factory` covers
+    factories only, `maintainWaitForPop Building` every building.
+- **Balance:** this is a gameplay change. With `Building`, a housed Ottoman player gets the next
+  free settler as soon as a house is up, instead of a whole cycle later. Mark only the buildings
+  you mean.
+- **Limits** (stock behavior kept):
+  - batches (`<rate>` above 1): a cycle is held only while its **first** unit does not fit. When
+    there is room for some but not all, the stock spawn creates what fits and drops the rest;
+  - `AbstractMonk` spawns: stock may reuse an existing unit without testing the population, so
+    they are never held;
+  - a cycle that spawns nothing for another reason (the build limit, no room to place the unit)
+    still restarts as in stock.
+- **`log`:** one line when a building starts holding a unit and one when it releases it.
+- **Log:** at startup `maintainWaitForPop: buildings of unittype X keep a finished Maintain unit
+  until there is population room (multiplayer unverified)` (with `log`: `…room, holds and releases
+  logged (multiplayer unverified)`); when the data loads, `unit types: X -> <ID> …`; in a game,
+  `hook reached: maintainWaitForPop (0x6AB27D)` the first time any `Maintain` cycle ends. With
+  `log`: `maintainWaitForPop: unit N (TownCenter) holds a finished Settler (pop 1, 10 of 10 used)`
+  and `maintainWaitForPop: unit N (TownCenter) releases its Settler (pop 1, 9 of 10 used)`.
+- **Saved games:** a held cycle is saved as a full timer, with no extra data. Loaded without the
+  key, it behaves as in stock.
+- **Simulation:** yes. It may also add a unit type, which changes the unit type count.
+- **Status:** confirmed in single player (2026-10-29), with an Ottoman Town Center (the tech
+  `Age0Ottoman` gives it its settler `Maintain` action) at 10 of 10 population. It held its
+  finished settler (`holds a finished Settler (pop 1, 10 of 10 used)`) and released it right after
+  two settlers died (`releases its Settler (pop 1, 9 of 10 used)`). With the key off, no settler
+  came until the next full cycle. Factory cannons, batches and `SingleUse` spawns were not tested.
+- **New in this DLL:** not in UHC 1.10. WoL request #8 ([wol-requests.md](wol-requests.md)).
+
+### transformUpdatesLOS
+
+```
+transformUpdatesLOS [log]
+```
+
+- **How stock behaves:** each unit has its own line of sight. The game copies it from the proto's
+  `<LOS>` when the unit is created, when a building is finished, and when a tech changes that
+  proto's LOS. A tech effect `<Effect type ='TransformUnit' fromprotoid ='A' toprotoid ='B'>` and a
+  revolution change living units into another proto in place: the unit keeps its ID, HP ratio
+  and orders, but also keeps A's LOS. Stock TAD has four such pairs with different LOS values:
+  `HCXPTirailleurs` (Crossbowman 20 → Skirmisher 24), `HCXPEveningStar` (xpAxeRider 12 →
+  xpRifleRider 15), `YPHCBannerReforms` (ypChuKoNu 20 → ypArquebusier 24) and
+  `YPHCSepoyRebellion` (ypSettlerIndian 14 → ypSepoy 16). A revolution turns Settlers (14) into
+  xpColonialMilitia (18). The old LOS stays until something resets it, for example a later tech
+  that changes B's LOS, so the bug looks random.
+- **Effect:** the transformed unit takes the LOS of its player's copy of B, so LOS techs that
+  player already has for B count. The fog of war around it and everything else that reads its LOS
+  use the new value from the moment it changes.
+- **Units that keep their own LOS:** a unit whose LOS is not its old proto's at the moment of the
+  transform keeps it. Stock gives some units a LOS of their own on purpose: a foundation under
+  construction and a knocked-out hero (6). One case is kept by mistake: a unit converted from
+  another player keeps the LOS of its former owner's copy of the proto (stock does not update it
+  on conversion), so if the two players' LOS techs for that proto differ, a later transform leaves
+  that unit's LOS alone too. With `log` these units show up as `keeps its own LOS`.
+- **Not affected (already right in stock):** transforms that replace the unit with a new unit,
+  such as walls into gates, and the trigger effect "Change Unit Type" (`trUnitChangeProtoUnit`),
+  which takes another path: in game the unit kept its ID and already had the new proto's LOS.
+- **Your mod:** nothing. The key covers every in-place transform; there is no per-unit marker.
+- **`log`:** one line per unit transformed in place. A tech that transforms many units writes one
+  line for each.
+- **Log:** at startup `transformUpdatesLOS: units transformed in place (TransformUnit, revolution)
+  take their new proto's LOS (multiplayer unverified)` (with `log`: `…LOS, every transform logged
+  (multiplayer unverified)`); in a game, `hook reached: transformUpdatesLOS (0x9C763F)` the first
+  time a unit is transformed in place. With `log`: `transformUpdatesLOS: unit N (Crossbowman ->
+  Skirmisher) LOS 20 -> 24`, or `transformUpdatesLOS: unit N (A -> B) keeps its own LOS 6 (its
+  proto's is 18)`.
+- **Simulation:** yes: line of sight decides what a player sees and what units can target.
+- **Status:** confirmed in single player (2026-10-29). Four Crossbowmen turned into Skirmishers by
+  `HCXPTirailleurs` got LOS 24, the Skirmisher's; with the key off they kept 20 (the bug).
+  Pikemen turned into Rodeleros logged `12 -> 12`. "Change Unit Type" never reached the hook and
+  was already right in stock. Revolutions were not tested.
+- **New in this DLL:** not in UHC 1.10. WoL request #10 ([wol-requests.md](wol-requests.md)).
+
+### broadsideMuzzleLimit
+
+```
+broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitType, every ship
+```
+
+- **How stock behaves:** most ships' attacks are `BroadsideAttack` actions in their tactics file:
+  the normal ranged attack of the TAD warships (the Tekkousen uses `frigate.tactics`), the action
+  of the `PowerBroadside` ability, and the ironclad's long-range shot. When such an action is set
+  up, each muzzle of the ship's model gets a firing slot; the muzzles are the model's MuzzleR
+  (right) and MuzzleL (left) attach points. The exe keeps at most **6 slots per side**, and only
+  **1** when the attack has `<SingleUsePlayer>`. A volley fires one projectile per slot on the side
+  that faces the target, so a stock ship fires at most 6 shots per side whatever its model has.
+  The Tekkousen's model has 10 muzzles per side, and 4 of them never fire. `<NumberProjectiles>`
+  is not read at all in TAD.
+- **Effect:** for the matched ships the limit becomes N.
+  - The model still decides how many muzzles there are: a model with 5 per side fires 5 whatever N
+    is.
+  - `SingleUsePlayer` attacks keep 1 per side, and ships that do not match keep 6.
+  - N below 6 lowers the limit.
+- **Choosing the ships:** `<UnitType>` can be a proto name (`broadsideMuzzleLimit 11
+  ypTekkousen`), a stock unit type (`AbstractWarShip`), or a new marker, which the DLL registers
+  like `healNonIdle`'s (list it on the ships in `protoy.xml` and its XMB). With no `<UnitType>`,
+  every ship gets the limit. The exe only gives muzzle slots to units of the built-in type `Ship`.
+- **Which attacks:** every `BroadsideAttack` action of a matched ship, its normal attack as well as
+  the ability's. In continuous fire, more slots mean a longer rotation over more muzzles: the rate
+  stays about one shot per `ROF`. A single-volley ability (`PowerBroadside`) fires all its slots
+  once, so it gains the most. Attacks of type `Attack` never use muzzle slots.
+- **Your mod:** a ship model with more than 6 muzzle attach points per side. Two stock quirks stay:
+  - the right side drives both schedules: the left side fires at most as many shots as the right
+    side has slots, and a model with no MuzzleR point never fires its broadside;
+  - each slot waits a random 0.25 to 1.75 × `ROF` after the previous one (sync RNG).
+- **When it takes effect:** an action gets its slots when it is set up, which is when it is
+  created. A saved game keeps the slot count its actions were saved with.
+- **`log`:** one line per action set-up of a matched ship, with the slots it got, at most 500
+  lines per run.
+- **Log:** at startup `broadsideMuzzleLimit: ships of unittype X use up to N muzzles per side in a
+  broadside (stock 6; SingleUsePlayer attacks keep 1) (multiplayer unverified)` (without a type,
+  `broadsideMuzzleLimit: every ship uses up to N …`; with `log`, `…keep 1), every set-up logged
+  (multiplayer unverified)`); when the data loads, `unit types: X -> <ID> …`; in a game,
+  `hook reached: broadsideMuzzleLimit (0x5033D5)` the first time any ship's broadside action is
+  set up, and with `log` `hook reached: broadsideMuzzleLimit log (0x5034E2)` and
+  `broadsideMuzzleLimit: unit N (ypTekkousen) has 10 right and 10 left muzzle slots (limit 11 per
+  side)` (`limit 1` there means a `SingleUsePlayer` attack). Bad arguments: `broadsideMuzzleLimit:
+  expected "broadsideMuzzleLimit <N> [UnitType] [log]" with N from 1 to 255, got "X"; feature not
+  applied`, and `broadsideMuzzleLimit: N lines, expected one; feature not applied` for a second
+  line.
+- **Simulation:** yes: more projectiles, and one more sync-RNG draw per extra slot and volley. A
+  new marker also adds a unit type.
+- **Status:** confirmed in single player (2026-10-29) with `broadsideMuzzleLimit 11 ypTekkousen
+  log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. The
+  `PowerBroadside` ability and `SingleUsePlayer` attacks were not tested.
+- **New in this DLL:** not in UHC 1.10. WoL request #15 ([wol-requests.md](wol-requests.md)).
+  According to the scoping (not tested), WoL's FloatingBattery and Battleship models have 7
+  muzzles per side, and its ironclad long-range attack has `SingleUsePlayer`, so it keeps 1. A
+  projectile count set in the data, independent of the model (`numberprojectiles`), is a
+  different and larger change; it is not provided.
+
+### abilitySlots
+
+```
+abilitySlots <N> [log]      N from 6 (stock) to 36
+```
+
+- **How stock behaves:** a unit's abilities (powers such as Sharpshooter or Crackshot) are listed
+  per proto in `data\abilities\abilities.xml`; a proto shows them on the Abilities page of its
+  command panel through `<Command page ='11' column ='0'>Abilities</Command>`. The panel asks for
+  the first 6 abilities of the unit's list, and only those:
+  - an ability whose `<tech>` is not active, or whose `<age>` is not the player's age, gets no
+    button, but it still counts as one of the 6;
+  - an ability with `<NeverShowInGrid>` does not count;
+  - an ability with `<AlwaysDisabledInGrid>` counts and is shown greyed.
+
+  So a 7th ability never gets a button, even when its tech is active and the first 6 are all
+  disabled.
+- **Effect:** the panel asks for the first N abilities of the list. A unit with 6 abilities or
+  fewer looks exactly as before. Enabled abilities past the 6th get buttons; a page with more than
+  6 buttons wraps to the next row, as Train and Tech pages already do. The panel still has 6 rows
+  of 6 buttons: whatever does not fit is not drawn, as in stock.
+- **Your mod:** use N at least the length of the longest ability list in your `abilities.xml`
+  (WoL's explorer has 8). A larger N costs a little: each refresh of the panel scans the whole
+  ability list once per extra slot.
+- **Existing data:** abilities that were silently dropped at position 7 or later now appear. In
+  WoL, the 7th ability of `ypMonkJapanese`, `ypMonkJapanese2` and `ypMonkChinese` is an
+  `AlwaysDisabledInGrid` aura (scoping, not tested): with the key it shows as a greyed button once
+  its tech is active.
+- **`log`:** one line per unit and ability the first time the panel shows a button past the 6th
+  (once per unit ID and ability record in a session).
+- **Log:** at startup `abilitySlots: the command panel asks for N abilities per unit (stock 6)`
+  (with `log`: `…(stock 6), every button past the 6th logged once per unit`); without `log` the key
+  writes no `hook reached` line, because it only changes one number. With `log`, in a game,
+  `hook reached: abilitySlots log (0x696C70)` the first time any selected unit gets an ability
+  button, and `abilitySlots: unit N (Explorer) shows ability 7 of its list (record R, power P,
+  enabled), past the stock 6`: `record` is the ability's position in `abilities.xml`, counted from
+  0 over the whole file; `greyed` instead of `enabled` means an `AlwaysDisabledInGrid` or
+  recharging ability. A bad value: `abilitySlots: expected an integer from 6 to 36, then
+  optionally log; feature not applied`.
+- **Simulation:** no. Only the local command panel changes; a click sends the same
+  `ability(record, unit)` command as a stock button. Players may set it differently (static
+  reading; not tested in multiplayer).
+- **Limits:** the second row of a wrapped Abilities page may have no page label, or a stale one
+  (not checked). The wonder power panel is separate: see `wonderPanelSkipAuras`.
+- **Status:** confirmed in single player (2026-10-29), in the interface. A test Explorer with 8
+  abilities, the first 6 locked by techs: with `abilitySlots 8` the 7th showed a button at once and
+  the 8th when its tech was activated; with the key off, no ability button.
+- **New in this DLL:** not in UHC 1.10. WoL request #16 ([wol-requests.md](wol-requests.md)).
+
+### wonderPanelSkipAuras
+
+```
+wonderPanelSkipAuras [log]
+```
+
+- **How stock behaves:** the Asian wonders' global powers sit in the wonder power panel, a row of
+  up to five buttons that is always on screen. For each wonder of the local player with
+  `<Command page='11' column='1'>Abilities</Command>`, the panel asks for the wonder's **first**
+  ability in `abilities.xml` and nothing else. It adds no button when that ability is
+  `<alwaysdisabledingrid>true</alwaysdisabledingrid>`, as every stock passive aura is
+  (`ypPowerShrineAura`, …), or is not available yet (its `<tech>` is not active, or its `<age>` is
+  not the player's). So a power listed after an aura (for example a power added to the Toshogu
+  Shrine) never gets a panel button, although the selected wonder's command panel shows both
+  abilities.
+- **Effect:** the panel tries the wonder's abilities in file order (up to 8) and shows the first
+  one that is available and is not `alwaysdisabledingrid`. A wonder whose first ability already
+  qualifies is shown exactly as in stock, so with stock data nothing changes: every stock wonder
+  has a single ability. The button does what a command panel button does
+  (`ability(<record>, <unit>, true)`).
+- **Your data:** the wonder's proto must be an `AbstractWonder` with
+  `<Command page='11' column='1'>Abilities</Command>`. In `abilities.xml`, list the power after the
+  aura under the proto's lowercase name:
+
+  ```xml
+  <ypwjtoshogushrine2>
+    <ability>ypPowerShrineAura
+      <alwaysdisabledingrid>true</alwaysdisabledingrid>
+    </ability>
+    <ability>ypPowerInformers<rof>300</rof><castonself>true</castonself></ability>
+  </ypwjtoshogushrine2>
+  ```
+
+  The stock file is inside `Data3.bar`: extract it with `tools\bar.py`, convert it with
+  `xmbedit.py to-xml`, and ship the edited `data\abilities\abilities.xml` with an
+  `abilities.xml.xmb` compiled from it ([section 6](#6-editing-the-game-data)). **Every child of a
+  proto element must be `<ability>`:** any other tag makes the whole file fail to load, and then no
+  unit has abilities (static reading).
+- **Limits:** one panel button per `Abilities` command, so a wonder still shows a single global
+  power; only `AbstractWonder` units appear in the panel; only the first 8 abilities of a wonder
+  are tried.
+- **Without the key** (not tested): listing the power *before* the aura, or marking the aura
+  `<nevershowingrid>true</nevershowingrid>` (which also hides its icon from the command panel),
+  should give the power its panel button in stock.
+- **`log`:** one line the first time the panel shows each ability that stock would not have shown
+  (an ability past the first).
+- **Log:** at startup `wonderPanelSkipAuras: the wonder power panel shows a wonder's first
+  available ability that is not a passive aura (AlwaysDisabledInGrid) (UI only)` (with `log`:
+  `…(AlwaysDisabledInGrid), each ability it shows past the first logged once (UI only)`); in a
+  game, `hook reached: wonderPanelSkipAuras (0x69EE5D)` once the panel looks at a wonder with an
+  `Abilities` command. With `log`: `wonderPanelSkipAuras: unit N (Proto) shows its ability n=K in
+  the wonder power panel (record R, power P)`, where K counts from 0.
+- **Simulation:** no. Only what the panel shows changes; the button sends the same command a
+  command panel button sends. Players may set it differently (not tested in multiplayer).
+- **Status:** confirmed in single player (2026-10-29), in the interface: with a test ability added
+  after the Toshogu Shrine's aura, the panel showed 2 buttons; with the key off, 1.
+- **New in this DLL:** not in UHC 1.10. WoL request #20 ([wol-requests.md](wol-requests.md)).
+
+### lifespanAfterConstruction
+
+```
+lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterConstruction
+```
+
+- **How stock behaves:** `<Lifespan>` (seconds) is a countdown that starts when the unit is
+  created. A building is created when its foundation is placed, so the countdown runs while the
+  building is under construction, and nothing restarts it when the construction ends. A building
+  whose Lifespan is shorter than its construction dies as a foundation; any other one lives
+  Lifespan minus its construction time once built. With `<Flag>AlphaFadeLifespan</Flag>`, the
+  fade-out before the end runs on its own timer from placement too, and its end kills the unit by
+  itself. No stock building has a Lifespan; mods such as WoL use it (its `*Maturing` buildings).
+- **Effect:** for a unit whose proto is of `<UnitType>`, the countdown and the lifespan fade-out do
+  not advance while the unit is not fully built. When the construction is finished, both run from
+  their full values as in stock: the building lives `Lifespan` seconds after it is finished. Any
+  other unit, and every unit that is already built, behaves as in stock.
+- **Marking the buildings:** the protos also need a `<Lifespan>`:
+
+  ```xml
+  <Unit id ='293' name ='House'>
+      ...
+      <Lifespan>20</Lifespan>
+      <UnitType>AbstractLifespanAfterConstruction</UnitType>
+  ```
+
+  The marker is registered by the DLL, like `healNonIdle`'s; edit `protoy.xml` and its XMB as
+  described there. An existing type or proto name works too, with no data change:
+  `lifespanAfterConstruction Outpost` covers outposts only, `lifespanAfterConstruction Building`
+  every building.
+- **"Built"** means the unit has no construction data, or its build percent is at least 100 %.
+  Units that are not buildings (projectiles, rubble, …) are always built, so a marker on them
+  changes nothing.
+- **Destroyed or deleted foundations** are never held: once the unit is dying, its corpse fades
+  and is removed as in stock.
+- **A Lifespan set during construction** (a tech with a `Lifespan` data effect, or a trigger) also
+  waits for the construction.
+- **`log`:** one line the first time each unit's countdown is held, one when its fade-out is held,
+  and one when its countdown runs again, with the reason and the seconds left.
+- **Log:** at startup `lifespanAfterConstruction: units of unittype X keep their Lifespan and its
+  fade-out until their construction is finished (multiplayer unverified)` (with `log`:
+  `…finished, every hold and start logged (multiplayer unverified)`); when the data loads,
+  `unit types: X -> <ID> …`; in a game, `hook reached: lifespanAfterConstruction fade (0x482A1A)`
+  (the first step of any game) and `hook reached: lifespanAfterConstruction (0x483EEC)` (the first
+  time any unit with a Lifespan counts down, e.g. a cannonball). With `log`:
+  - `lifespanAfterConstruction: unit N (Proto) is P % built; its lifespan (S s left) waits for the
+    construction (game time T ms)`;
+  - `lifespanAfterConstruction: unit N (Proto) is P % built; its fade-out (due in S s, D s long)
+    waits for the construction (game time T ms)`;
+  - `lifespanAfterConstruction: unit N (Proto) is built; its lifespan starts with S s left (game
+    time T ms)`, or, instead of `is built; its lifespan starts`: `is dying; its lifespan runs as in
+    stock`, `lost the marker unittype; its lifespan runs` or `is no longer held; its lifespan runs`.
+- **Limits:**
+  - `FadeInOnCreation` together with `AlphaFadeLifespan` (a stock limitation): the creation
+    fade-in reuses the lifespan fade's timer, so in stock such a unit dies right after its fade-in.
+    With this key a marked building with both flags dies when its construction ends. Do not
+    combine the two flags on a marked building;
+  - the hold lasts while the unit is not fully built: if a building's percent dropped below 100 %
+    again, its countdown would stop again.
+- **Simulation:** yes. It may also add a unit type, which changes the unit type count.
+- **Status:** confirmed in single player (2026-10-29), with `lifespanAfterConstruction Outpost log`
+  and test data (Outpost `Lifespan` 20, 50 build points, `PlaceAsFoundation`). An Outpost placed by
+  a settler at 19.5 s was held through its construction, finished at 70.5 s (`its lifespan starts
+  with 20.00 s left`) and died at about 90 s. In the control, an unmarked Outpost died at 20 s,
+  still under construction (the bug). The `AlphaFadeLifespan` fade-out hold was not checked in
+  game. To test it yourself, place the foundation in game: a building placed by a scenario is
+  complete once the scenario is loaded.
+- **New in this DLL:** not in UHC 1.10. WoL request #7 ([wol-requests.md](wol-requests.md)).
+
+### gaiaSocketsOnly
+
+```
+gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the rule
+```
+
+- **How stock behaves:** a building with `<SocketUnitType>` (stock: `TradingPost`,
+  `ypTradingPostAsian`) must stand exactly on a socket unit of that type. Only the placement
+  preview checks the socket's owner: the building snaps onto a socket only if Gaia owns it, so a
+  socket a player owns shows red. The check that decides (run when the order executes, on every
+  machine, and before it by the UI and the AI) never reads the owner. According to the static
+  reading, an order that carries the socket's exact position (an AI build plan) therefore builds
+  on a player's socket; WoL reports this with its saltpeter sockets. Stock data never shows it,
+  because every stock socket has the flag `ForceToGaia` (it is created for Gaia).
+- **Effect:** when a socketed building is placed, a socket that a player owns no longer counts.
+  The order fails as if there were no socket. The rule also covers the socket's owner himself, as
+  the stock preview does. Gaia sockets behave as in stock, and so does the preview.
+- **`<UnitType>`:** only sockets whose proto is of that type (or that proto name) follow the rule;
+  every other socket keeps the stock behavior. Use it to apply the rule to your own sockets only,
+  for example a marker on the saltpeter socket:
+
+  ```xml
+  <Unit id ='…' name ='SaltpeterSocket'>
+      ...
+      <UnitType>AbstractGaiaOnlySocket</UnitType>
+  ```
+
+  The marker is registered by the DLL, like `healNonIdle`'s; edit `protoy.xml` and its XMB as
+  described there. Without a unit type, in stock data the rule only matters for
+  `ypTradingPostCapture` and `AIStart`, the two socket-typed protos without `ForceToGaia`.
+- **Not covered:** placement that skips this check or runs it without a player's knowledge: the
+  scenario editor, units created by triggers or random map scripts, and the in-place
+  transformation of a unit into a socketed building.
+- **AI:** an AI build plan that is given a socket takes the first socket of the right type,
+  whatever its owner, and then fails its placement check on a refused one. An AI script that
+  hands a build plan a socket should pick one that Gaia owns.
+- **`log`:** one line per refused order, once per socket, owner, player and building in a game
+  (at most 1000 per game): an AI build plan that picked a refused socket may retry on every
+  update.
+- **Log:** at startup `gaiaSocketsOnly: socketed buildings take only sockets owned by Gaia
+  (multiplayer unverified)` or, with a unit type, `gaiaSocketsOnly: sockets of unittype X take a
+  socketed building only while Gaia owns them (multiplayer unverified)` (`, refusals logged`
+  before the parenthesis with `log`); with a unit type, when the data loads,
+  `unit types: X -> <ID> …`; in a game, `hook reached: gaiaSocketsOnly (0x508CC1)` the first time
+  a socketed building is checked exactly on a socket (any owner). With `log`:
+  `gaiaSocketsOnly: refused TradingPost for player 1 on socket N (Proto), owned by player 2`.
+- **Simulation:** yes. With a new marker it also adds a unit type.
+- **Status:** implemented, not tested in game. In the test (2026-10-29) the stock interface itself
+  refused a Trading Post on a player-owned socket: no foundation, and the message that it must be
+  built near a native settlement or trade route. Scenario triggers cannot give build orders, so
+  the order path that bypasses that check, WoL's case, was not driven. The code was reviewed
+  adversarially and no defect was found.
+- **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)).
+
+### customHotkeyContexts
+
+```
+customHotkeyContexts [log]
+```
+
+- **How stock behaves:** every hotkey in `DefaultKeyMapY.xml` belongs to a `<context>`, e.g.
+  `BarracksAccel` for the keys that train units while a Barracks is selected. The exe knows a
+  fixed list of 123 context names (35 of them are unit contexts, `TownCenterAccel` …
+  `WonderAccel`) and silently drops every `<keymapdata>` whose context is not on that list. Which
+  context a selected unit turns on is also fixed in the exe: a table of about 40 stock protos (for
+  example `ypCaravanserai` → `StableAccel`), plus shrines and wonders by unit type. A mod's new
+  building gets no context, so its hotkeys do nothing even when the keymap lists them. A selected
+  unit that is not a building but has a `<Train>` list only ever gets `BuildAccel`.
+- **Effect:** a `<context>` named `<ProtoName>Accel` that the exe does not know is registered when
+  the game reads the keymap, so its entries are kept. `<ProtoName>` is the `name` of a `<Unit>` in
+  `protoy.xml` (case does not matter). While a unit of that proto is selected, that context is on,
+  **instead of** the proto's stock context, if it had one. Selecting anything else switches it off,
+  as stock does with its own. Contexts the exe already knows are never redirected, so with the
+  stock keymap nothing changes.
+- **Which units use it:** only units that enter a hotkey context at all:
+  - a building with a `<Train>` list;
+  - any other unit with a `<Train>` list (a wagon, a settler), which then enters its own context
+    instead of `BuildAccel`;
+  - a fire pit (`AbstractFirePit`);
+  - a unit whose proto has the flag `EnterHotkeyContext`.
+
+  Other units (a soldier, a hero) never enter a context, so theirs stays off although it is
+  registered: give them the flag `EnterHotkeyContext`.
+- **Your mod:** add the contexts to `data\DefaultKeyMapY.xml` (a loose file there replaces the
+  archive copy; that worked in the test). WoL's file already uses this naming for its new
+  contexts:
+
+  ```xml
+  <keymapgroup name="Forge Hotkeys" displayname="Forge Hotkeys">
+    <keymapdata>
+      <name>Train AqUyli</name>
+      <displayname>Train AqUyli</displayname>
+      <event>o</event>
+      <context>ForgeAccel</context>
+      <command>tis("AqUyli")</command>
+    </keymapdata>
+  </keymapgroup>
+  ```
+
+  An added context replaces the stock one, so copy into it every stock key the unit should keep.
+  For a trainer that is not a building, copy the `BuildAccel` keys it needs.
+- **`log`:** one line each time the selection turns an added context on (repeats of the same unit
+  and context are not logged again in a game), and once per proto when a unit that is not a
+  building enters its context.
+- **Log:**
+  - at startup, `customHotkeyContexts: a keymap context named <ProtoName>Accel that the game does
+    not know becomes that proto's hotkey context` (`, every switch logged` with `log`);
+  - when the keymap is read, `hook reached: customHotkeyContexts (0x5C1778)` and one line per added
+    context: `customHotkeyContexts: registered keymap context ForgeAccel as context 151`;
+  - on the first selection, `hook reached: customHotkeyContexts (0x79F1A5)` and `… (0x79F897)`; on
+    the first selected trainer that is not a building, `… (0x64A034)`;
+  - with `log`: `customHotkeyContexts: unit N (Forge) selected: hotkey context ForgeAccel (151)
+    instead of stock context -1` (-1: the proto had none) and `customHotkeyContexts: unit N
+    (ForgeCaravan) is not a building: units of this proto enter hotkey context ForgeCaravanAccel
+    (152) instead of BuildAccel (logged once per proto)`;
+  - when the context table is too full: `customHotkeyContexts: N contexts are registered; keymap
+    context X not registered, its entries are dropped (the last 32 of the 255 context IDs stay free
+    for the game)`.
+- **Limits:**
+  - at most 255 contexts in all; the DLL stops adding at ID 222 to leave the game room. In the
+    test the game had registered 151 contexts before the keymap, so about 70 can be added;
+  - names the exe already knows (`SettlerAccel`, `CoveredWagonAccel`, …) stay as in stock;
+  - a context is on only for the last unit of the selection, as in stock;
+  - the hotkey letter on train-button tooltips comes from a fixed list of stock contexts, so keys
+    of an added context are not shown there (static reading).
+- **Simulation:** no. A hotkey issues the same command as clicking the button, so players may set
+  the key differently. Not tested in multiplayer.
+- **Status:** partly confirmed in single player (2026-10-29). With a loose keymap holding the test
+  contexts `ypSacredFieldAccel`, `ypCaravanseraiAccel` and `ypMarketWagonAccel`, the three were
+  registered (IDs 151 to 153), and selecting each unit switched to its context, per the log: the
+  Sacred Field (no stock context), the Caravanserai (instead of stock context 72, `StableAccel`)
+  and the market wagon, not a building (instead of `BuildAccel`). The key press itself was not
+  tested: synthetic key presses do not reach the game's hotkeys.
+- **New in this DLL:** not in UHC 1.10. WoL request #12 ([wol-requests.md](wol-requests.md)).
+
+### snareOnlyHitUnit
+
+```
+snareOnlyHitUnit [log]
+```
+
+- **How stock behaves:** an attack whose tactics action has
+  `<TargetSpeedBoost>1</TargetSpeedBoost>` snares its target: the target's speed is multiplied by
+  0.65 for 3 seconds. Stock TAD gives it to most melee attacks; WoL uses it on many more. A unit
+  that moves in a group (several units ordered together) does not use its own speed: the group
+  moves at the speed of its slowest member. One snared unit therefore slows its whole group to
+  0.65× for 3 s.
+- **Effect:** the group's pace ignores the snare: a snared member counts with the speed it would
+  have without it (other speed modifiers, such as auras, still count). While the snare lasts, the
+  snared member also no longer makes the group wait when it falls behind its place in the
+  formation. Only the hit unit slows down.
+- **After the snare:** the stock rule for stragglers applies again. If the unit is then more than
+  2 m behind its place, the group moves at 0.83× its speed until the unit is back, as for a unit
+  that got stuck. A unit snared again and again keeps falling behind while the group goes on.
+- **Your mod:** nothing. Every `<TargetSpeedBoost>` attack is covered, and only those: the
+  attacker's own `<SpeedBoost>`, speed auras and techs keep their stock effect on the group.
+- **`log`:** one line per snare and unit when the snare is left out of the group's pace, and one
+  when the snared unit falls behind without making the group wait.
+- **Log:** at startup `snareOnlyHitUnit: a snared unit (TargetSpeedBoost) no longer slows its
+  group; the group neither paces at nor waits for it while the snare lasts (multiplayer
+  unverified)` (with `log`: `…lasts, every snared member logged (multiplayer unverified)`); in a
+  game, `hook reached: snareOnlyHitUnit (0x4FD3FD)` (the first time any group recomputes its
+  speed), and `(0x4FA17D)`, `(0x6AA514)` or `(0x6AA56A)` the first time a member falls more than
+  2 m behind its place. With `log`: `snareOnlyHitUnit: unit N (Musketeer) is snared; it counts
+  4.000 instead of 2.600 toward its group's pace` and `snareOnlyHitUnit: unit N (Musketeer) is
+  snared and lags behind its formation slot; its group does not wait for it (0x4FA17D)`.
+- **Limits:** a unit that is not in a group already slowed alone in stock. A snare is exclusive in
+  stock: while a unit is snared, its later speed modifiers are ignored and several snares do not
+  stack; the key keeps that. The value and duration (0.65, 3 s) stay as in stock.
+- **Simulation:** yes.
+- **Status:** confirmed from the log in single player (2026-10-29), with no stock control run: a
+  hussar snaring members of a group of 6 musketeers produced `is snared; it counts 4.000 instead of
+  2.600 toward its group's pace` and `lags behind its formation slot; its group does not wait for
+  it`, with the feature's `hook reached` lines. The group's positions were not measured against
+  stock.
+- **New in this DLL:** not in UHC 1.10. WoL request #13 ([wol-requests.md](wol-requests.md)).
+
+### techRenameEffect
+
+```
+techRenameEffect [log]
+enableTechRenameEffect [log]     the same key under WoL's name
+```
+
+- **How stock behaves:** no tech effect changes a tech's texts; the stock `SetName` effect renames
+  a *unit* for one player. WoL's `uhc.dll` adds a `SetTechName` effect (`enableTechRenameEffect`),
+  but it writes the new string IDs into the database's copy of the tech, which all players share:
+  when one civ's tech renames a tech, every player sees the new name.
+- **Effect:** adds the tech effect `SetTechName`. When a tech that carries it becomes active for a
+  player, the named tech shows the new name, rollover and help text **for that player only**. If
+  the carrier is a team tech, every member of the team gets the rename. Costs, prerequisites,
+  effects, icon and research stay as before.
+- **Data:** put the effect in the `<Effects>` of any tech:
+
+  ```xml
+  <Effect type='SetTechName' tech='HuntingDogs' newName='11070' newRolloverTextID='10670'/>
+  ```
+
+  | Attribute | Meaning |
+  |---|---|
+  | `tech` | Required. The name of the tech to rename. |
+  | `newName` | New `DisplayNameID` (the button and message name). |
+  | `newRolloverTextID` | New `RolloverTextID` (the button's rollover). |
+  | `newLongRolloverTextID` | New `LongRolloverTextID` (the long help text). WoL's effect has no such attribute. |
+
+  The three string IDs are optional, but at least one must be given; leave one out, or write
+  `-1`, to keep that text. The IDs come from your string table (`stringtabley.xml`). The
+  attributes are WoL's, so WoL's data works unchanged. "Per civ" means placing the effect in a
+  tech that only that civ gets, such as its `Age0<Civ>` shadow tech or a home city card's tech.
+- **Where the new texts show:** wherever the game reads the tech through the player's own tech
+  tree: the buttons and rollovers of that player's buildings and the "researching" /
+  "researched" messages. From the code, these keep the stock texts: the in-game help (F1), the home
+  city screens and every screen outside a game. Other players and observers see the stock texts.
+- **When:** from the moment the carrier tech becomes active. A saved game re-applies the rename
+  when it loads (static reading; not tested). Nothing undoes a rename: a carrier that is
+  deactivated later leaves the new texts, as the stock `SetName` does. Two carriers that rename
+  the same tech for one player: the last one applied wins, text by text.
+- **Without the key** the game does not know `SetTechName`: it drops each such effect with its own
+  error and loads the rest of the techtree.
+- **`log`:** one line per `SetTechName` read from the data and one per rename.
+- **Log:** at startup `techRenameEffect: the tech effect SetTechName (tech, newName,
+  newRolloverTextID, newLongRolloverTextID) renames a tech for the players it reaches (multiplayer
+  unverified)` (the line starts with `enableTechRenameEffect:` under WoL's key name; with `log`,
+  `…reaches, every rename logged (multiplayer unverified)`), then
+  `techRenameEffect/enableTechRenameEffect: applied`; at data load `hook reached: techRenameEffect
+  register (0x524CB5)`, `techRenameEffect: effect type SetTechName -> 17` and, at the first effect
+  read, `hook reached: techRenameEffect factory (0x62146F)`. Data errors are always logged, and
+  the effect is dropped while the rest of the file loads:
+  - `techRenameEffect: SetTechName: unknown tech 'X'; this effect is dropped`;
+  - `techRenameEffect: SetTechName without tech='...'; this effect is dropped`;
+  - `techRenameEffect: SetTechName on X: newName='abc' is not a string ID (a number from 0, or -1 to
+    keep the text); this effect is dropped`;
+  - `techRenameEffect: SetTechName on X sets none of newName, newRolloverTextID,
+    newLongRolloverTextID; this effect is dropped`.
+
+  With `log`: `techRenameEffect: read SetTechName on X (tech N): newName …` per effect read, and
+  `techRenameEffect: player P: tech N (X), from tech M: name a -> b, rollover c -> d, long rollover
+  e -> f (node …, NodeData … -> copy …)` per rename.
+- **Simulation:** no gameplay change: only string IDs differ. The effect does run inside the
+  simulation (tech activation), so give every player the same setting; multiplayer is not tested.
+- **Status:** confirmed in single player (2026-10-29). A test tech for player 1 carried
+  `SetTechName tech='HuntingDogs' newName='11070'` (Gang Saw's name) and `newRolloverTextID='10670'`.
+  Player 1's Market showed Hunting Dogs as "Sierra de bastidor" (Gang Saw in the Spanish game) with
+  Gang Saw's rollover. In memory, the database's tech data, which other players see, kept 23401 /
+  23400, and only player 1's copy had 11070 / 10670. A second effect naming an unknown tech was
+  logged and dropped, and the techtree still loaded. Saved games were not tested.
+- **New in this DLL:** not in UHC 1.10. WoL request #17 ([wol-requests.md](wol-requests.md)).
+
+### noCorpseDopples
+
+```
+noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
+```
+
+- **How stock behaves:** a *dopple* is the copy of a unit that a player keeps seeing in the fog of
+  war after the unit left his view. Only protos with `<Flag>Doppled</Flag>` get one (stock:
+  buildings, mines, trees, …). The game makes it when the unit leaves the player's view, for him
+  and for the players who share his vision, and removes it only when the player sees the unit or
+  the spot again. It never asks whether the unit is alive. Stock hunts use
+  `VisibleUnderFogOnlyAfterSeen` instead. A mod that makes its hunts `Doppled`, so that a herd
+  stays where it was last seen (WoL does this for most of its hunts), also gets corpse dopples: a
+  carcass that still holds food when it leaves a player's view stays in his fog in its death pose,
+  long after it was eaten or abandoned, until he looks at the spot again.
+- **Effect:** a unit whose proto is of `<UnitType>` and that is not alive (0 hitpoints, killed)
+  gets no dopple when it leaves a player's view, for any player: it simply disappears into the
+  fog. A live unit of that type is still doppled. A carcass that is fully gathered was never
+  doppled: the game takes it out of the world before it decays.
+- **Choosing the units:** `noCorpseDopples Huntable` covers every hunt with no data change
+  (`Huntable` is a built-in type). A proto name works too (`noCorpseDopples Deer`). With the
+  default marker, or any new name, add it to the protos and edit `protoy.xml` and its XMB as for
+  `healNonIdle`. Units without `<Flag>Doppled</Flag>` have no dopples anyway.
+- **Do not mark livestock** or other `DoppleOnlyWhenDead` protos: that flag exists to leave a
+  corpse dopple, and the key removes it.
+- **`log`:** one line per dopple it skips, up to 1000 lines per session.
+- **Log:** at startup `noCorpseDopples: dead units of unittype X leave no dopple in the fog of war
+  (multiplayer unverified)` (with `log`: `…of war, every skipped dopple logged (multiplayer
+  unverified)`); when the data loads, `unit types: X -> <ID> …` (`already defined` for `Huntable`
+  or a proto name); in a game, `hook reached: noCorpseDopples (0x49534D)` the first time any
+  doppled unit (a building, a tree, …) leaves a player's view. With `log`: `noCorpseDopples: unit N
+  (Deer, hp 0.0) left player 1's view dead; no dopple`.
+- **Limits:**
+  - the dopple of a **live** animal that is then killed and eaten out of the player's sight still
+    shows the live animal until he looks at the spot again. Removing dopples when a unit leaves
+    the world would fix that; it is not implemented;
+  - a saved game made without the key keeps the corpse dopples it already had;
+  - `MutateDopples` protos (none in stock or WoL data) refresh their dopples through another path
+    that the key does not cover.
+- **Simulation:** probably not, but unverified. Dopples belong to the game state, which every
+  machine keeps the same way; the key only reads that state (unit types, hitpoints). Give every
+  player the same setting. With a new marker it also adds a unit type.
+- **Status:** confirmed in single player (2026-10-29), with `noCorpseDopples Deer log` and Deer and
+  Bison given `<Flag>Doppled</Flag>` in the test data: after leaving them, player 1 kept 6 dopples
+  (3 dead Bison, 3 live Deer) and none for the 3 dead Deer. With the key off, 9 (the 3 dead Deer
+  too).
+- **New in this DLL:** not in UHC 1.10. WoL request #18 ([wol-requests.md](wol-requests.md)).
+
+### danceBonusCivs
+
+```
+danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lines add up
+```
+
+- **How stock behaves:** a fire pit dance is a tactic of the building (`firepit.tactics`); its
+  actions have `<type>DanceBonus</type>` and a `<dancebonustype>`. Four kinds act by themselves for
+  any civ that owns the building and has the tactic: `UnitModification`, `UnitSpawn`, `PopCap` and
+  `WarChiefRansom`. The other four are applied by the engine where it needs them, and only for the
+  civs `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`:
+  - `Training`: train rate (stock: Fertility Dance, action `VillagerTrainFaster`);
+  - `XPTrickle`: XP trickle (Gift Dance, `XPTrickleIncrease`);
+  - `Gathering`: gather rate of every resource (no stock dance uses it; the action
+    `GatherRateIncrease` exists in `firepit.tactics`);
+  - `Regeneration`: heals the units of `<modifyabstracttype>` that have been idle for 3.5 s
+    (Healing Dance, `RegenAllUnits`).
+
+  For any other civ these four dances run, the villagers dance and (except Gift Dance) the tooltip
+  even shows the bonus, but nothing happens.
+- **Effect:** the listed civs get these four kinds exactly as the native civs do: the same
+  strength, the same building (the player's first `AbstractFirePit` building) and the same
+  targets. The civ does not become "native" for anything else, unlike UHC 1.10's `nativeCivs`
+  (which also misses the Gift Dance). The native civs keep the stock behavior.
+- **Your mod needs:**
+  - the internal civ names (the `<name>` in `civs.xml`: `British`, `Spanish`, a mod civ, …); case
+    does not matter;
+  - a building with `<UnitType>AbstractFirePit</UnitType>` (the stock `FirePit`, or your own). Only
+    the player's first such building is read, and the dancer count needs that type;
+  - the dance tactic in the building's tactics file, enabled for the civ by a tech, and a button
+    for it;
+  - villagers that can work on the building (a `Gather` rate for it in their tactics:
+    `settler.tactics` already has `FirePit`).
+- **`log`:** one line the first time each player passes each of the four checks in a game. A
+  listed civ with no fire pit gets the line too: the check passes, then the engine finds no
+  building and the bonus stays 1.0.
+- **Log:** at startup `danceBonusCivs: civs A, B get the fire pit's Training, XPTrickle, Gathering
+  and Regeneration dances like the native civs (multiplayer unverified)` (with `log`: `…civs, each
+  player's first use of each kind logged (multiplayer unverified)`); on the first use with each
+  data load, one `danceBonusCivs: <Civ> -> civ <ID>` line per name, or `danceBonusCivs: <Civ> is not
+  a civ in civs.xml; ignored` (and, when no name is valid, `danceBonusCivs: none of the listed civs
+  exists; the four dance kinds stay native-only`). In a game: `hook reached: danceBonusCivs
+  Training (0x8D47AB)`, `… XPTrickle (0x4E0DFF)`, `… Gathering (0x4ECD53)` and `… Regeneration
+  (0x49048B)` the first time the game evaluates each kind for any player. With `log`:
+  `danceBonusCivs: player N (<Civ>) reads its fire pit's <Kind> dances (game time T ms)`. Without
+  any civ name: `danceBonusCivs: expected "danceBonusCivs <Civ> [<Civ> ...] [log]" with at least
+  one civ name; feature not applied`.
+- **Limits:**
+  - only the player's first `AbstractFirePit` building counts, as in stock;
+  - each listed civ now looks for its fire pit (a scan of its units) on every train, gather-rate,
+    XP trickle and regeneration evaluation, as the native civs always did. List only the civs that
+    can own a dance building;
+  - new dance kinds, more dance buttons and several dance buildings per player are not covered.
+    WoL's own `uhc.dll` has a key `danceCiv`, which only changes interface checks; this is another
+    key.
+- **Simulation:** yes.
+- **Status:** confirmed in single player (2026-10-29) for the Healing Dance. Player 1 was Spanish,
+  with 3 settlers dancing at a `FirePit` whose tactic has `RegenAllUnits`: its damaged musketeers
+  read 107 HP at the first check and healed to 150. With the key off, the same dancers left them at
+  90. Training, XPTrickle and Gathering were not tested in game.
+- **New in this DLL:** not in UHC 1.10. WoL request #19, first part
+  ([wol-requests.md](wol-requests.md)).
+
 ### bufferedFileReads
 
 ```
@@ -906,13 +1768,21 @@ More about the tools: [tools/README.md](../tools/README.md).
 - Every player needs the same `UHC.dll`, the same `uhc.cfg` and the same data.
 - The keys that change the simulation are `deckCardCount`, `basePop`, `extraPop`, `noAILimit` (game
   setup), `removeFameRestriction`, `removeConversionRestriction`, `hcShipmentPointFallback`,
-  `healNonIdle` and `damageOverTime`. A difference in any of them between players can
-  desynchronize the game.
-  `bufferedFileReads` does not change the simulation, so it may differ between players.
+  `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `liveBuildingWorkRate`, `techPrereqRecheck`,
+  `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
+  `lifespanAfterConstruction`, `gaiaSocketsOnly`, `snareOnlyHitUnit` and `danceBonusCivs`. A
+  difference in any of them between players can desynchronize the game. `techRenameEffect` and
+  `noCorpseDopples` change no gameplay as far as the code shows, but they act inside the
+  simulation: give every player the same setting for them too.
+- `bufferedFileReads`, `abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
+  `dodgeSoundSet` and `criticalSoundSet` do not change the simulation (the interface keys only
+  change what the local player sees or which keys work), so they may differ between players.
 - `damageOverTime` keeps its poisons in the DLL, not in the game state: a saved game loads without
   the poisons that were running.
-- `healNonIdle` and `removeFameRestriction` change the unit type table. Load saved games and
-  replays with the same DLL and cfg they were made with.
+- `healNonIdle`, `dodgeAnyUnit` and `removeFameRestriction` change the unit type table, and so do
+  `maintainWaitForPop`, `lifespanAfterConstruction`, `noCorpseDopples`, `broadsideMuzzleLimit` and
+  `gaiaSocketsOnly` when their unit type is a new name (a stock type or a proto name adds nothing).
+  Load saved games and replays with the same DLL and cfg they were made with.
 - None of this has been tested yet: multiplayer, saved games and replays are all unverified.
 - No feature sends network commands of its own: they all act inside the normal simulation, on
   every machine, in the same deterministic order.
@@ -942,8 +1812,8 @@ Their patch sites are verified against the stock exe in
   in lowercase.
 - **A feature is `applied` but nothing changes:** look for its `hook reached` line after playing.
   If it is missing, the game never ran that code; check the feature's data requirements above.
-  `ignoreRegistryPath` and `removeConversionRestriction` write no such line: check them by their
-  effect.
+  `ignoreRegistryPath`, `removeConversionRestriction` and `abilitySlots` without `log` write no
+  such line: check them by their effect.
 - **Data changes are ignored:** the game is probably reading the Steam folder. Enable
   `ignoreRegistryPath`. Also check that a newer `.xmb` is not shadowing the `.xml` you edited
   ([section 6](#6-editing-the-game-data)).

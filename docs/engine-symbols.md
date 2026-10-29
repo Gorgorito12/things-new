@@ -24,7 +24,7 @@ Notation: `this` is passed in ECX (`__thiscall`); `NNh` is hex.
 | 0x4010CA | BString dtor | `void __thiscall(BString*)` | DLL/Cheat.asm:56 | confirmed | E3 | Frees `[this]-10h` and zeroes `[this]`. |
 | 0x40196F | BString assign | `void __thiscall(BString*, const BString* src)` | DLL/Cheat.asm:49 | confirmed | E3 | The argument is a BString pointer, not a raw string. |
 | 0x443C10 | BString compare | `int __thiscall(BString*, const wchar_t*, int start, int len)`; 0 means equal | DLL/Civs.asm:91 | confirmed | E3, cs | Ghidra cuts the body at a terminal call. The signature comes from the call sites (`push -1; push 0; push str`). |
-| 0x58E71F | civ name → civ ID | `int __thiscall(Database*, const char* name)`; −1 if not found | DLL/Civs.asm:32 | confirmed | E3 | Iterates `[db+24h]`/`[db+28h]`; the name is at `civ+4`. |
+| 0x58E71F | civ name → civ ID | `int __thiscall(Database*, const char* name)`, `ret 4`; −1 if not found or the name is null | DLL/Civs.asm:32 | confirmed | E3, cs | Iterates `[db+24h]`/`[db+28h]`; the name is at `civ+4`, compared with `_stricmp` (0x4028B4). The civ ID is the index in `[db+24h]`. FUN_00512651 resolves the native civ IDs with it; `danceBonusCivs` resolves its cfg names with it (confirmed in game). |
 | 0x5A2346 | proto-unit name → proto ID | `int __thiscall(Database*, const char* name)`; −1 if not found | DLL/Units.asm:32 | confirmed | E3 | Iterates `[db+54h]`/`[db+58h]`; the name is at `proto+10h`. |
 | 0x52D6FF | civ name → civ object | `Civ* __thiscall(Database*, const char* name)`; 0 if not found | DLL/Civs.asm:188 | confirmed | E3 | Same loop as 0x58E71F, but returns the pointer. |
 | 0x44CB0A | unit → proto ID | `int __thiscall(Unit*)` | DLL/Units.asm:419 | confirmed | E3 | Returns `[[unit+5Ch]+8]`, or −1. |
@@ -62,8 +62,8 @@ help text (e.g. `resourceMarket` 0x7DEEC5).
 | 0xC66664 | current player index | DLL/syscalls.h:10951 | unverified | 538 refs; role not checked. |
 | 0xC6FB88 | Asian civ ID global | DLL/Civs.asm:216 | confirmed | cs. Compared in `isAsianCiv` 0x454ED7 and in 0x8D6AC4. 5 refs. |
 | 0xC6FB48, 0xC6FB4C | civ ID globals used by the wonder-civ check 0x49A2D8 | — | confirmed (role: civ IDs) | cs. Not in upstream. |
-| 0xC6FB50, 0xC6FB54 | native civ ID globals (always native) | — | confirmed | cs. Checked by `isNativeCiv` 0x453D37. Not in upstream. |
-| 0xC6FB58, 0xC6FB5C | native civ ID globals; 5Ch counts only when the bool arg is set | DLL/Civs.asm:301, 325 | confirmed | cs (0x453D37) |
+| 0xC6FB50, 0xC6FB54 | native civ ID globals (always native): XPIroquois, XPSioux | — | confirmed | cs. Checked by `isNativeCiv` 0x453D37. Written by FUN_00512651 (0x51266C..0x5126BC) through 0x58E71F on each data load, which also writes 0xC6FB7C (`Japanese`). Not in upstream. |
+| 0xC6FB58, 0xC6FB5C | native civ ID globals: XPAztec, XPSPC; 5Ch counts only when the bool arg is set | DLL/Civs.asm:301, 325 | confirmed | cs (0x453D37). The four dance readers compare all four ("Dances" below). |
 | 0xC66588 | RNG object | DLL/Units.asm:518 | confirmed | E3 (0x422648 layout), 483 refs |
 | 0xD65600 / 0xD65604 | cheat array / count (16-byte entries) | DLL/Cheat.asm:33 | partial | E3 (0x5ACE63 is a 16-byte-entry array). 50 / 29 refs. The cheat role is not checked. |
 | 0xBE3A98 | `L"AI3\"` AI folder string | DLL/Patch.cpp:108 | confirmed | cs. WoL patches it to `AI4`. |
@@ -90,10 +90,12 @@ Database (`[game+140h]`):
 |---|---|---|---|
 | `+24h` / `+28h` | civs `{Civ*[], count}`; a civ's name is at `+4` | confirmed | E3 |
 | `+54h` / `+58h` | proto units `{Proto*[], count}`; a proto's name is at `+10h` | new | E3 |
-| `+190h` | unit types | upstream, unverified | |
+| `+190h` | unit types | confirmed | cs; see "Unit types and healing" |
 | `+1FF0h` | tactics | upstream, unverified | |
-| `+3824h` | techs | upstream, unverified | |
-| `+19B0h` | read by AttackTypeIcons #3 | new | cs |
+| `+3824h` | tech names: array of wide-string pointers by tech ID, count `[+3828h]` | confirmed | cs (getter 0x5C400B), `techPrereqRecheck` in game |
+| `+335Ch` / `+3360h` | effect type name table / its count (the next effect type ID) | confirmed | cs, `techRenameEffect` in game |
+| `+5D9Ch` | the database's tech tree (TT0) | confirmed | cs, `techRenameEffect` in game; see "Tech tree and tech effects" |
+| `+19B0h` | proto count (read by AttackTypeIcons #3) | confirmed | cs; see "Unit types and healing" |
 | `+5E30h` | read by MarketUnits | new | cs |
 | `+5E58h` | mill-like proto ID | confirmed | cs, FarmAnim #1/#5 |
 | `+5E5Ch` | read next to `+5E58h`, after the FarmAnim #5 site | new | cs |
@@ -112,9 +114,15 @@ World (`[game+13Ch]`):
 | `+0Ch` / `+10h` | units by ID: array, count (index = ID & 3FFFFh) | confirmed | cs, `damageOverTime` in game |
 | `+58h` | player array | confirmed | cs (TakeDamage), `damageOverTime` in game |
 | `+5Ch` | player count | confirmed | E3, 0x49A98A |
+| `+7Ch` | tech status manager: the 16 per-player tech trees, `[+4·playerId]` | confirmed | cs, `techPrereqRecheck` and `techRenameEffect` in game |
 | `+F8h` | step count: +1 per world update (0x481A87) | confirmed | cs, `damageOverTime` in game |
+| `+104h` | length of the current step (seconds, inferred) | new | cs (Maintain and regeneration updates) |
 | `+108h` | game time, ms (advanced by the world update FUN_00481A57) | confirmed | cs, `damageOverTime` in game |
+| `+310h` | training rate (`trRateTrain`) | new | cs (Maintain update) |
 | `+31Ch` | pop-cap-like limit read by PopLimit | new | cs |
+| `+330h` | dopple manager | new | cs; see "Dopples" |
+| `+56Ch` | ability manager (`abilities.xml`) | confirmed | cs, `abilitySlots` and `wonderPanelSkipAuras` in game |
+| `+5ACh` | global LOS multiplier (1.0) | new | cs (LOS getter 0x48206D) |
 | `+6912h` | shared-resources flag | new | E3 |
 
 Other objects:
@@ -122,6 +130,7 @@ Other objects:
 | Object | Fields | Status | Evidence |
 |---|---|---|---|
 | Player data | `[player+80h]+0Ch`; civ at `[[pd]+20h]`; team at `[pd+10h]` | upstream, unverified | |
+| Player | `+0` player ID; `+20h` pointer to the civ IDs, `+24h` their count (the dance readers take `[[player+20h]]`); `+50h` current age (compared by the ability code); `+80h` knowledge base (KB); `+84h` home city; `+E0h`/`+E4h` the player's proto copies; `+507h` TC spawning allowed and `+50Ah` revolted (both inferred) | confirmed (reads), inferred where marked | cs; `danceBonusCivs`, `techPrereqRecheck` and `maintainWaitForPop` in game |
 | Unit | proto at `[unit+5Ch]`; proto ID at `proto+8` (confirmed, E3 0x44CB0A) and also at `proto+4` | partial | E3; `proto+4` per FarmAnim #5 and RectFarm #1. TakeDamage's callers pass `[[unit+5Ch]+4]` as the attacker proto ID, which FUN_0045311B maps back to the proto (`damageOverTime` relies on it, confirmed in game). More unit fields: "Damage and poison" below. |
 
 Sources: `Documentation/Examples/UHCPluginDemo/syscalls.h` (~lines 11033-11088), `DLL/syscalls.h`, and the stock-code observations above.
@@ -199,7 +208,7 @@ Evidence: `cs` (capstone of the stock exe), plus a runtime memory read of the te
 | Add name | 0x5E3549 | `__thiscall(table, const char* name, const int* id)`, `ret 8`. Copies the name (0x467BAA) and stores `*id`; if the name already exists it takes another path (0x65951D). |
 | Built-in abstract types | FUN_0051A5DC | `thiscall(db)`. Registers a **fixed list** of names compiled into the exe (`Unit`, `Ship`, `Building` … `AbstractJapaneseMonk`) with `id = protoCount + k`. It then registers the 75 names of the logical-type table at 0xDC10F0..0xDC121C (whose IDs are cached at 0xDC121C+). Epilogue at 0x51BA31. |
 | Proto unittype bitset | `proto+30h` (bytes), `proto+34h` (bit count) | Sized at 0x5F769A to `[db+194h] - [db+19B0h]` through 0x4219EA, so the size follows the table and is not a constant. Bit = `id - protoCount`. |
-| Is-a test | 0x44D7FA | `bool __thiscall(proto, int typeId)`, `ret 4`. A proto ID compares against `proto+8` (or `proto+4`); an abstract ID tests bit `id - protoCount`. Use this for IDs from the name table. |
+| Is-a test | 0x44D7FA | `bool __thiscall(proto, int typeId)`, `ret 4`. A proto ID compares against `proto+8` (or `proto+4`); an abstract ID tests bit `id - protoCount`; a negative ID is false. Use this for IDs from the name table. True exit 0x44F139. Changes EAX/ECX/EDX and saves ESI (cs). Every marker key calls it. |
 | Raw bit test | 0x44CAC4 | `bool __thiscall(proto, int bitIndex)`, `ret 4`. Takes the **abstract index** (already minus protoCount), not a table ID. |
 
 **Consequence.** Every abstract type that `protoy.xml` may use is in the exe: 153 of the 155 non-proto `<UnitType>` names in stock `protoy.xml` are strings in the exe. The other two are `AbstractTypeVictoryPointBuilding` (ignored by stock) and our own. A `<UnitType>` whose name is not registered is silently dropped. A new marker type must therefore be added to the table, which `src/unittypes.cpp` does at 0x51BA31.
@@ -215,7 +224,7 @@ Evidence: `cs` (capstone of the stock exe), plus a runtime memory read of the te
 | "Target busy" check | 0x9E0C79..0x9E0C9E | `[target+58h]` = the target's current action. If it exists and `0x4802D4(-1)` (moving) or `0x9CA5AC` (fighting) returns 1, the tick ends at 0x9E0D3F. Otherwise it heals from 0x9E0C9F. |
 | Automatic heal search | FUN_009CD865 | `thiscall(owner)`, healer at `[owner+4]` (EBP in the body). It returns at once unless `[[healer+5Ch]+44h]` is set. It runs a unit query around the healer (world `+184h`, 0x49A098; result entries of 38h bytes). It takes the first candidate that passes every check: not the healer itself; HP ratio (0x45F295) in [1e-6, 1); `vtbl+A4h`; `[c+58h]` not null; **0x44F1A7 idle**; not abstract bit 6 (0x44CAC4); not flag 0x42 (0x44D863); 0x4EE797(player, healer, c, 5, …) for action type 5; 0x9C2E40(5, 8) ≤ 0; and the reach test 0x7FCF2D. Then it starts the action through 0x9CBDC4(id). Called from 0x68C14E with `ecx = [unit+58h]`. |
 | Target is idle | 0x44F1A7 | `bool __thiscall(actionManager)`. True when `[mgr+24h]` (current action) is null or has type byte `[action+60h]` = 7. Otherwise it returns false, except for a per-player case (`[player+4FCh] = 1`, 0x45FC1A). |
-| Command predicate | FUN_004C6CD7 | `bool __thiscall(?, word code, target, result*, out*)`, `ret 10h`. `code - 8` indexes the byte table at 0x4C726C → jump table 0x4C7230 (15 cases); out-of-range codes return true. Code 0x41 (case 8, 0x4C6D58) requires: target alive (0x44DDB4), `[target+68h] != 0`, HP < max, not fighting (0x9CA5AC), no action of type 0x35 (0x4C72E5), then 0x9C0B73. Code 0x42 (case 9) requires the same HP/fighting checks **and** an action of type 0x35. `this` is the **player**: case 11 reads `[this+84h]`, the home city. Case 8 overwrites it with the target. 12 callers, e.g. 0x695510 with code 0x41. The dynamic trace below never reached cases 8/9 while surgeons healed, so the predicate is not on the heal path. |
+| Command predicate | FUN_004C6CD7 | `bool __thiscall(?, word code, target, result*, out*)`, `ret 10h`. `code - 8` indexes the byte table at 0x4C726C → jump table 0x4C7230 (15 cases); out-of-range codes return true. Code 0x41 (case 8, 0x4C6D58) requires: target fully built (0x44DDB4; an earlier version of this table called it "alive", see "Lifespan and construction"), `[target+68h] != 0`, HP < max, not fighting (0x9CA5AC), no action of type 0x35 (0x4C72E5), then 0x9C0B73. Code 0x42 (case 9) requires the same HP/fighting checks **and** an action of type 0x35. `this` is the **player**: case 11 reads `[this+84h]`, the home city. Case 8 overwrites it with the target. 12 callers, e.g. 0x695510 with code 0x41. The dynamic trace below never reached cases 8/9 while surgeons healed, so the predicate is not on the heal path. |
 
 **Runtime check (2026-10-28).** The test copy has `AbstractHealNonIdle` added to `ypMonkIndian` and `ypMonkIndian2`. After the database loads, `UHC.log` shows `AbstractHealNonIdle -> 1666 (bit 203 of 204)`. Reading memory then gave protoCount 1463 and 1667 names. Every proto's bitset has 204 bits. Bit 203 is set on both Indian monks and clear on `ypMonkJapanese` and `Explorer`.
 
@@ -274,8 +283,8 @@ TakeDamage.
 
 | What | Where | Notes |
 |---|---|---|
-| Unit | vtable 0xB934B8 (ctor 0x9C4A8F; base ctor 0x4F6A70, vtable 0xB93190) | `+10h` ID, `+44h` player object (`[+0]` = player ID), `+58h` action manager, `+5Ch` proto, `+64h` HP (float), `+6Ch` container unit ID (−1 when not contained), `+70h`/`+74h` contained unit IDs and count. |
-| Unit alive | unit vtable slot A4h, 0x44D019 | `bool __thiscall(unit)`: state bit 8 of `[unit+4]` set, bit 12 clear, HP > 1e-6. The stock code tests it before special damage and in the Poison event handler. |
+| Unit | vtable 0xB934B8 (ctor 0x9C4A8F; base ctor 0x4F6A70, vtable 0xB93190) | `+4` state bits (count `+8`), `+10h` ID, `+44h` player object (`[+0]` = player ID), `+58h` action manager, `+5Ch` proto, `+64h` HP (float), `+68h` building data (null for most units; "Building work rate" below), `+6Ch` container unit ID (−1 when not contained), `+70h`/`+74h` contained unit IDs and count, `+B4h` a sub-object (lifespan timers, base LOS, velocity record; see the WoL Tier 2 sections). |
+| Unit alive | unit vtable slot A4h, 0x44D019 (pointer at 0xB9355C) | `bool __thiscall(unit)`: state bit 8 of `[unit+4]` set, bit 12 clear, HP > 1e-6. Uses EAX/ECX/EDX only. The stock code tests it before special damage, in the Poison event handler and in the visibility update (0x4868FA, a virtual call). The base vtable 0xB93190 has 0x58EA6B in that slot. |
 | World | `[game+13Ch]` | Units by ID: `[world+0Ch]` array, `[world+10h]` count; index = ID & 3FFFFh, and `[unit+10h]` must equal the ID. Players: `[world+58h]` array, `[world+5Ch]` count. Game time: `[world+108h]`, ms. |
 | World update | FUN_00481A57 | `bool __thiscall(world, int, int deltaMs)`, `ret 8`: raises the step count `[world+F8h]` by 1 (0x481A87), adds deltaMs to `[world+108h]`, then runs the world (the body the rendering section lists as 0x481B1C). Two flags at `[world+691Bh]` / `[world+691Eh]` branch to out-of-line blocks (0x6AE55F, 0x6AE845) before the step count; both come back to 0x481A7F, just before it. 0x481A87 is the only `add dword ptr [esi+0F8h],1` in the exe, and no branch after it leads back, so each call adds exactly 1. Called directly only from 0x482044 (FUN_0048202E), and also listed in the vtable at 0xB95730 (slot 6F4h). It runs for other worlds too: it compares `this` with `[game+13Ch]` at 0x481D01. |
 | Player's proto | FUN_0045311B | `Proto* __thiscall(player, int protoId)`, `ret 4`: the player's copy `[player+E0h][id]` (count `[player+E4h]`), else the database proto. IDs at or above the count are per-player dynamic protos, `(player ID + 1) × 100000 + index`, from `[player+ECh]` (12-byte entries, count `[player+F0h]`). It only reads (`ev_7e87e1bc…`). |
@@ -344,7 +353,7 @@ call sites; in game on the test bed, with the `log` option (2026-10-28).
 | Dodge test | FUN_0049ACAA | `bool __thiscall(unit)`. True = the hit is dodged. Conditions: database, `[unit+44h]` player, world, `[world+7Ch]` non-null; proto ID `[[unit+5Ch]+4]` ∈ {`[db+5E88h]`, `[db+5E8Ch]`, `[db+5E90h]`}; tech `ypDodge` active for the player; `0x407CE7(2, 100)` in [0, 15). The visible case shows string 0xF9CE as floating text and plays the sound set `"PowerEvade"` (0xBD74E0). Cold chunk 0x6A248D..0x6A2650. |
 | Caller | 0x49B023 in FUN_0048649F (damage from an action) | `mov ecx,esi / call 49ACAAh / test al,al / jne 4DD5B3h`; the only caller. ESI = the unit hit, EBX = the attacker unit (from the ID by an inline lookup at 0x49AFC2, 0 when gone). |
 | Proto ID cache | `db+5E74h`…`db+5EA0h`, written at 0x5EEB75…0x5EEC7D through 0x5A2346 (proto ID by name) | `ypBerryBuilding`, `ypPotala`, `ypMonkChinese`, `ypMonkChinese2`, `ypMonkChinese3`, `ypMonkJapanese` (+5E88h), `ypMonkJapanese2`, `ypMonkJapanese3`, `ypMonkIndian` (+5E94h), `ypMonkIndian2`, `ypMonkIndian3`, `ypMonkDisciple` (+5EA0h). Other readers: 0x556E80 (cache reset), 0x6A0150 (monk-specific code, not identified) and 0x8F76C7, `bool __thiscall(proto)` "is a Japanese monk" (`[proto+8]` against the three IDs). Its only caller, 0x6AB049, picks string IDs 0x112C2..0x112C4 per monk family before jumping to 0x50B039, probably a rollover text (inference; not traced). |
-| Tech by name | 0x600BE1 | `int(const char* name)`; −1 when absent. |
+| Tech by name | 0x600BE1 | `int __thiscall(db, const char* name)`, over the names at `[db+3824h]`; −1 when absent. (An earlier version of this row gave no `this`; `techRenameEffect` calls it as thiscall, confirmed in game.) All tech names exist before the effects are parsed, so forward references resolve. |
 | Tech active for a player | 0x94AF27 | `bool __thiscall(techStatus = [world+7Ch], int playerId, int techId)`. |
 | Sync RNG | 0x407CE7 on the object at 0xC66588 | `int __thiscall(rng, int a, int b)`; here (2, 100), compared as a float with 0.0 and 15.0 (0xBA1474). |
 | Play a sound set by name | 0x4AA24C | `__thiscall(game, const float* position, const char* name, void* extra)`, `ret 0Ch`. Calls `[game+950h]`→0x4AA201. The names are sound sets of `Sound\soundsetsy.xml` (found in `SoundXML3.bar`). |
@@ -395,6 +404,203 @@ Evidence: `cs` and string references in the stock exe; WoL's binaries and data s
 | `"TownCenter"` string 0xBCC600 | refs 0x5EE8E2 (the cache), 0x66FC0D/0x66FC27 (unit type lookup by name), 0x79DEBC (a UI table), 0x7DEEB1 (call 0x82FAD6), 0x82E481 | 0x82E45B is the **start camera**: it looks at the first of `camera start`, `TownCenter`, `CoveredWagon`, `Explorer`, `Settler`, `Unit` that the world has. |
 | Who places the starting TC | the random map script | e.g. `great plains.xs`: `rmAddObjectDefItem(startingTCID, "TownCenter", 1, 0.0)` (a `CoveredWagon` for a nomad start); the civ's `<startingunit>` / `<townstartingunit>` come from `rmCreateStartingUnitsObjectDef` (`Special_StartingUnits`, 0x90D69A, 0x924921). |
 | `StartingTC` | — | Not a string in the stock exe, WoL's `age3*.exe`, `uhc.dll`, `wol.dll`, or WoL's `protoy.xml` / `civs.xml` / `techtreey.xml`. |
+
+## WoL Tier 2 features (2026-10-29)
+
+The sections below back the 14 features built for WoL's Tier 2 requests
+([wol-requests.md](wol-requests.md)). Evidence, for every table:
+- **confirmed:** capstone of the stock exe (`cs`) for the feature, re-read during its
+  implementation; the ranges a feature relies on are also sites in `tools/gen_sites.py`, which
+  `VerifyAll` checks on every start;
+- **scoping:** read by the scoping pass of the request or by its adversarial verifier (also `cs`),
+  not re-read byte by byte. Those scripts and listings were not exported to `rea/evidence`;
+- **in game:** observed in the single-player tests of 2026-10-29 (see each feature in
+  [modding-guide.md](modding-guide.md)).
+
+No REA session was used for these sections.
+
+### Building work rate (for `liveBuildingWorkRate`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Proto BuildingWorkRate | `[proto+D0h]` (float) | confirmed (reads); handler scoping | Tag `<BuildingWorkRate>` (handler 0x5F81E5); default 1.0. Read live by the getter's tail 0x9BFE41, the copy 0x6A208F and the stat panel 0x6F49FC. |
+| Building data | `[unit+68h]`, 84h B (init 0x4E5E8F) | `+28h` confirmed; rest scoping | Created by setProto 0x4981F3 when the proto is a `Building` or has flag 57h `ForceBuildingData`; kept when the proto changes. `+4` build points, `+8` build fraction (≥ 1.0 = complete), `+28h` the BuildingWorkRate copy (1.0 at 0x4E5EB6). The lifespan section calls the same object "BuildInfo". |
+| Completion routine | FUN_006A1F82 | confirmed (the two copies); rest scoping | `void __thiscall(unit, bool notify)`, `ret 4`, 18 callers. Copies BuildingWorkRate (0x6A2089..0x6A2095: `[[unit+68h]+28h] = [[unit+5Ch]+D0h]`) and the LOS (0x6A20B2..0x6A2105, between a visibility remove and add); sets the percent to 1.0 and the full build points; never calls setLifespan. Runs when a building completes, when a `ForceBuildingData` unit is created, and on load for completed buildings (0x9C54B4..0x9C54D3: `[bd+8]` ≥ 1.0, then `call 6A1F82h` with 0). |
+| setProto | FUN_004981F3 | confirmed | `void __thiscall(unit, Proto*)`, `ret 4` (0x498265). Writes `[unit+5Ch]` (0x498212), the visual and the building data (cold 0x6A031B..0x6A0386); not the LOS. 4 callers: 0x49828E (creation), 0x8D1BF0, 0x9C500D (load), 0x9C763F (transform). |
+| BuildingWorkRate getter | 0x9BFE33..0x9BFE47 | confirmed, in game | `float __thiscall(unit)`: `[unit+68h] ? [[unit+68h]+28h] : [[unit+5Ch]+D0h]`; writes only EAX and the flags. Four direct callers, no other reference. |
+| Getter callers | Train 0x9EA413 (FUN_009EA28B), Research 0x9E65F7 (FUN_009E648B), CommandResearch 0x9D58D4 (FUN_009D5843), Maintain 0x6AB23F (cold chunk of FUN_00492F3E) | confirmed (call bytes, vtable slots) | Each is `mov ecx,[esi+10h] / call 9BFE33h` and multiplies the result into its progress. They are slot 3Ch (update) of the action vtables 0xB98388, 0xB98078, 0xB973A8, 0xB97B98. |
+| Save / load of `+28h` | 0x7AE73D (FUN_007AE672), 0x7AEEAD (FUN_007AEDDD) | confirmed (the two instructions) | Through 0xA3FEB8 / 0x599121, from the unit save and load. |
+| Tech effect case BuildingWorkRate | FUN_008F973F case 5Eh at 0x8FAE7D; the remove twin FUN_008FB01C at 0x8FC16F | 0x8FAE7D confirmed | Computes the new `[playerProto+D0h]` through 0x7F892A and returns; no unit is touched. The Data effect vtable is 0xB9E5A8 (slot 1 parse 0x6205F6, slot 9 apply 0x7F86C0, slot 10 remove 0x7F8705). |
+| Stat panel | 0x6F49B1 (`currentUnitBuildingWorkRate`) | read confirmed | Reads the selected unit's `[[unit+5Ch]+D0h]`. |
+
+### Tech prerequisites (for `techPrereqRecheck`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Tech status update | FUN_00491A40 | confirmed | `thiscall(root = [world+7Ch])`, called only from 0x481D51 in the world update, gated by `[world+7Ch]` and byte `[game+B3Ah]` = 0. For each player slot 0..15 with a tree and a live player (`[player+338h]` = 0): 0x4919CE(tree, player), then 0x4918A8(tree, player). |
+| Per-player tree update | FUN_004919CE | confirmed, in game | `thiscall(tree, Player*)`, `ret 4`; EDI = tree, EBP = player. DynamicCost loop, then the dirty test at 0x491A18 (`cmp byte [edi+10h],0 / jne 5096D4h`); epilogue 0x491A22. Callers 0x491A30 and the forced update 0x852882. |
+| Re-check pass | 0x5096D4 (cold chunk of FUN_004919CE) | confirmed | Clears `[tree+10h]`, then 0x5095A1..0x509616 over all entries: a null one gets the relevance test 0x4C5725 and is created (0x94CC2B); a non-null one goes through `call 5094D8h` at 0x5095EC. |
+| Per-tech update | FUN_005094D8 | confirmed | `thiscall(entry, Player*)`, `ret 4`. Cached result = status bit 3, OrPrereqs = bit 21; evaluates `0x5094B4([entry]+1Ch, player, or)` and writes bit 3. On 0 → 1, with no research time and bits 5 and 18 clear, it activates the tech (0x94CF27); a Volatile tech (bit 2) is toggled; the KB tech list is updated (0x509646). Only caller 0x5095EC. |
+| Prerequisite list evaluator | FUN_005094B4 | confirmed, in game | `bool thiscall(list = def+1Ch, Player*, bool or)`, `ret 8`. `[list]` = array, byte `[list+4]` = length, null slots skipped; each through vtable slot +8. AND (empty = true) or OR (empty = false). Only caller 0x509537. |
+| Prerequisite base / TypeCount | base ctor 0x6201AA; TypeCount ctor 0x8EE860, vtable 0xBA533C | confirmed | Byte `[p+5]` = type (TypeCount = 0), byte `[p+4]` = operator bits (lt 1, e 2, gt 4). TypeCount: `+8` unit type, `+0Ch` count, `+10h` unique, `+11h` state mask. |
+| TypeCount evaluate | 0x8EE8E7 | confirmed | `bool thiscall(p, Player*)`, `ret 4`. Count = `0x4C846D([player+80h], [player], type, mask, 0)` (the backend of XS `kbUnitCount`), or 0x86ACA2 when unique. The KB `[player+80h]` is not null-checked. |
+| TypeCount XML handler | 0xA14125 | scoping | Attributes `unit`, `count` (`%d`), `operator` (substrings lt / e / gt), `state` (starts FFh; `noneState` = 0; `buildingState` / `aliveState` / `deadState` OR 1 / 2 / 4), all required. |
+| Tree | ctor 0x94D816, 20h B | confirmed (uses) | `+0` player ID, `+4` array of status entries, `+8` count (`[db+3828h]`), `+10h` dirty byte (1 at creation), `+11h` a second flag set only by the forced update FUN_00852850. |
+| Status entry | `[[tree+4]+4·id]` | confirmed | `+0` definition, `+4` pointer to the status bits, `+8` bit count, `+18h` ResearchPoints. Bits: 0 obtainable, 1 active, 2 Volatile, 3 prerequisites met (cache), 5 set by activation, 7 DynamicCost, 18 HomeCity, 21 OrPrereqs. |
+| Entry getter | FUN_004804D1 | confirmed | `thiscall(root, playerId, techId)`, `ret 8`: the player's entry, or the template record `[[db+5D9Ch]+0Ch] + 24h·id` when the entry is null. |
+| Template records | `[[db+5D9Ch]+0Ch]`, count `[[db+5D9Ch]+10h]` | confirmed, in game | 24h B each, the same layout as an entry; record `+0` is the definition, whose prerequisites are at def+1Ch (byte length def+20h). |
+| setDirty | 0x506A41 | confirmed | `thiscall(root, playerId, bool)`, `ret 8`. 10 direct callers (status changes 0x94C433 / 0x94CE86 / 0x94CFFC, age 0x8D506A, home city level 0x66923E, pop cap 0x8D1480, tree creation 0x8D005A, world start 0x8D53AF / 0x8D7F23 / 0x94AC00), all with 1. An inline copy in the pop cap adder FUN_00506A5F covers units with `PopulationCapAddition`. No other unit event sets the byte. |
+| Tech name getter | 0x5C400B | confirmed | `thiscall(db, id)` over `[db+3824h]` / `[db+3828h]`. |
+
+**Measured in game:** with 2 TypeCount techs, the checks took about 4 ms per game minute.
+
+### Maintain (automatic production) (for `maintainWaitForPop`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Action type `Maintain` | 22h (name at 0x522CCC) | confirmed | Factory case 0x4EF4EC: `new(7Ch)`, ctor 0x9E2510, vtable 0xB97B98 (slot 34h setState 0x9E2829, 3Ch update 0x492F3E, 50h progress 0x9D504E). |
+| Maintain fields | | confirmed (reads) | `+10h` owner, `+64h` proto ID to spawn, `+68h` units per cycle, `+6Ch` train points of a cycle, `+70h` points accumulated, `+74h` fraction; state byte `+61h` (14h working, 0Ch at the build limit, 0Ah done). |
+| Maintain update | FUN_00492F3E, cold chunk 0x6AB0E4..0x6AB314 | confirmed, in game | Accumulates at 0x6AB23C..0x6AB261 (`0x9BFE33(building) × [world+310h] × [world+104h]`); fraction 0x9E27E4; ≥ 1.0 → spawn `call 9E2DEFh` at 0x6AB285, whose outcome is ignored (0x6AB28A..0x6AB2D8: SingleUse → setState(0Ah), else setState(14h)). "Not complete" exit 0x6AB180 (`pop ebx / jmp 493039h`). Both callers (0x4893A6, 0x494933) ignore its return value. |
+| Cycle restart | setState(14h) entry 0x9E28AB | confirmed (reset 0x9E2A42..0x9E2A47) | Zeroes `+70h` and `+74h`, recomputes `+6Ch`. |
+| Maintain spawn | FUN_009E2DEF | confirmed (site ranges) | `thiscall(action, protoId, count)`, `ret 8`; only caller 0x6AB285. Revolution remap 0x9E2E35..0x9E2E7D; group call 0x9E2EA0; AbstractMonk test 0x9E2EAD. Population test before each unit 0x9E2F79..0x9E2FE2 and 0x9E3110..0x9E3125: `pop = [proto+D8h]`; ≤ 0 or flag A3h → no test; flag 9Fh → `cap - used > 0`; else `cap ≥ used + pop`. |
+| Group spawn | FUN_009E2AC8 | confirmed (0x9E2B69..0x9E2BD5) | The same test once, through 0x45EE02. |
+| Population getters | 0x45805C (population), 0x4581A1 (cap; contains the `basePop` site) | confirmed | `int thiscall(player)`; `used = [player+78h] + 0x45805C(player)`. |
+| Proto flag test | 0x45EE02 | confirmed | `bool thiscall(proto, int bit)` on `[proto+50h]` (count `[proto+54h]`). Flags 9Fh `AllowOverPopCap`, A3h `AlwaysAllowOverPopCap` (handlers scoping). |
+| Database proto IDs | `[db+5E08h]` TownCenter, `[db+5E1Ch]` Settler, `[db+6050h]` SettlerWagon, `[db+6054h]` Coureur, `[db+6058h]` CoureurCree, `[db+609Ch]` xpColonialMilitia | scoping | Cached by name through 0x5A2346. |
+
+### Line of sight and transforms (for `transformUpdatesLOS`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Transform in place | FUN_009C754C | confirmed, in game | `thiscall(unit, int newProtoId)`, `ret 4`. EBP = `0x45311B([unit+44h], id)` (null → exit); visibility remove 0x9C7570; setProto 0x9C763F; per-player LOS cache 0x483DA5 at 0x9C768D; visibility add 0x9C7730. Never writes the unit's LOS. 8 callers: 0x6A42C8, 0x7FBC79 (`TransformUnit`), 0x7FBEF2 and 0x8F05F5 (revolution), 0x8C2D08, 0x8EB78A, 0x9BB6D5, 0x9C7C16. The trigger effect "Change Unit Type" does not reach it (in game). |
+| setLOS | FUN_00484518 | confirmed | `thiscall(unit, float los, bool updateVisibility, bool force)`, `ret 0Ch`. Writes the base LOS at 0x484553 between a visibility remove and add. 12 callers, among them creation 0x49833D, the Knockout action (6.0), the foundation 0x6A40F3 and the LOS tech 0xA009B0. |
+| LOS getter | FUN_0048206D | confirmed | `[world+5ACh]` × (`[[unit+B4h]+C8h]` ? its `+1Ch` : 1.0) × `[[unit+B4h]+90h]`. |
+| Visibility add / remove | FUN_00483262 | partly confirmed | `thiscall(unit, bool add, bool force)`, `ret 8` (scoping); calls the getter (0x4832E7, 0x483347), so the radius follows the current LOS. |
+| `TransformUnit` effect apply | 0x7FBBAF (vtable 0xB96B60, slot 3Ch) | confirmed (0x7FBC32..0x7FBC8A) | For each of the player's units of `fromprotoid` that is alive and built, `0x9C754C(toprotoid)` at 0x7FBC79. |
+| Owner change | 0x514529 in 0x514358 (from FUN_004E3334) | confirmed | Writes `[unit+5Ch]` with the new owner's copy of the same proto; does not touch the LOS. |
+| Fields | `[unit+B4h]+90h` base LOS (float); `[proto+48h]` `<LOS>` | confirmed, in game | |
+
+### Broadside attacks (for `broadsideMuzzleLimit`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| `BroadsideAttack` protoaction | type 29h (name 0xBD7AB4 at 0x522DD7) | confirmed | Factory case 0x4EF566: `new(98h)`, ctor 0x9D2B23, vtable 0xB962E8 (slot 1 set-up 0x50339A). |
+| Broadside set-up | FUN_0050339A | confirmed, in game | `thiscall(arg)`, `ret 4`; EDI = the action. Only for an owner whose proto has abstract bit 1 (`Ship`, 0x44CAC4). The limit `mov esi,6` at 0x5033D5, kept at `[esp+0Ch]`; `SingleUsePlayer` (flag bit 26 of the proto action, tested at 0x5033E0) → cold block 0x6A8236, limit 1. Clamps 0x503447 (MuzzleR, cold 0x6A8247) and 0x5034E2 (MuzzleL, cold 0x6A8252). `[edi+80h]` = MuzzleR slots. |
+| Broadside fields | `+68h/+6Ch` muzzle index array; `+74h/+78h` fire time array; `+80h` MuzzleR slots; `+84h` ROF in ms | confirmed | BArray<int>, appended through 0x401113. |
+| Attach points of a type | 0x484304 | confirmed (head) | `int thiscall(visual = [unit+60h], int attachType)`; −1 without a model, 0 for an absent type. MuzzleR / MuzzleL type IDs at 0xD6F6AC / 0xD6F6B4 (looked up by name at load). |
+| Volley schedule | FUN_004CEE48 | confirmed (head); loop scoping | For each MuzzleR slot, t += sync RNG(0.25·ROF, 1.75·ROF); slot i and slot i + n1 get the same t. |
+| Fire step | FUN_004C1290 | confirmed (call at 0x4CEA43) | Side from the target's direction; per due slot, the muzzle position (the index read as a byte at 0x4A98F8, which caps N at 255) and **one** projectile, `call 499422h`. Tekkousen in game: 10 slots per side, all fired. |
+| Save / load | 0x9D2BAC / 0x9D2D87 | scoping | Each array with its count, resized on load; no maximum. |
+
+### Abilities, the command panel and the wonder power panel (for `abilitySlots` and `wonderPanelSkipAuras`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Ability manager | `[world+56Ch]` | confirmed | Built by 0x9FF9A1 (from 0xA06788 with `L"abilities.xml"`); read by the wonder panel (0x45873E; the panel is skipped while it is 0), the command panel (0x696BFE) and the `ability` UI command (0x7DDCA0). Records `[mgr+0]`, count `[mgr+4]`. |
+| abilities.xml loader | FUN_006EDF6A | scoping | `thiscall(mgr, name, dir)`, `ret 8`. One element per proto, one `<Ability>` per record (text = power name); a child that is not `<Ability>` fails the whole load. |
+| Ability record | 20h B | partly confirmed | `+0` index, `+4` proto ID, `+8` power ID, `+0Ch` tech, `+10h` age (compared with `[player+50h]`), `+14h` ROF ms, `+1Ch` flags: 2 UseBigButton, 4 NeverShowInGrid, 10h CastOnSelf, 100h AlwaysDisabledInGrid (byte `+1Dh` bit 0, set at 0x6EE32E). 153 records in stock TAD (scoping). |
+| GetNth visible ability | 0x6EE5CC | confirmed, in game | `bool __thiscall(mgr, int n, player, unit, cost*, icon*, rollover*, bool* usable, int* recIdx, int* powerId)`, `ret 24h`. Resets every output at entry (0x6EE623..0x6EE64C), then counts the records of the unit's proto without flag 4; at the n-th: false if its tech is inactive (0x94AF27) or its age differs; true with `*recIdx` and `*powerId` (0x6EEEBA), `*usable` forced to 0 for flag 100h. Past the list: false. Keeps EBX, ESI, EDI, EBP. Callers: 0x696C59 (command panel) and 0x69EE5D (wonder panel, n = 0 only). |
+| Record by index | 0x44E702 | confirmed | `rec* __thiscall(mgr, int index)`, `ret 4`; 0 out of range. |
+| Command panel refresh | FUN_0046188E (`commandpanel2`) | scoping, key ranges confirmed | Collects the proto's `<Command>` entries into the global array 0xCF05FC (`{ptr, count, capacity}`, grows by doubling), sorts them by column, then lays them out in the 6 × 6 grid (columns wrap at 6, 0x46266B; rows stop at 6, 0x6972C6). |
+| Page-11 copy loop | 0x695BB6..0x695C02 | confirmed, in game | Entered only from 0x4C5AF6 (after `cmp byte [eax+esi+3],0Bh` at 0x4C5AEB). `mov edi,5` at 0x695BD2, do-while `sub edi,1 / je 461C3Fh`: 6 ability entries per `Abilities` command. |
+| Ability counter | `[esp+34h]` in FUN_0046188E | confirmed | 0 once per refresh (0x461CD5); `n = [esp+34h]++` at 0x696C0B..0x696C1F; GetNth at 0x696C59, with the outputs at `[esp+0Ch]` (usable), `[esp+2Ch]` (record), `[esp+78h]` (power); true path 0x696C70 `call 45EE37h`. The button's command is `ability(record, unitId)` (0x696D87..0x696D9B). |
+| Wonder power panel refresh | FUN_004586B1, cold chunk 0x69EC5E..0x69F35E | partly confirmed, in game | For the local player's `AbstractWonder` units and each page-11 command (type 2): GetNth with n = 0 at 0x69EE5D (`push 0` at 0x69EE5B), then `test al,al / je 69F31Bh`, the record re-check `0x44E702` and `test byte [eax+1Dh],1 / jne 69F31Bh`; a button with `ability(recIdx, unitId, true)`. Gadget `uiwonderpowerpanel` (ctor 0x9BCE92, five buttons; scoping). |
+| `ability` UI command | 0x7DDC52 | partly confirmed | `ability(int record, int unitId, bool doWhenNotSelected)`: the record by index through 0x44E702 (0x7DDCCC); no slot limit. |
+| Proto command entries | `[proto+E8h]`, 6-byte records | scoping | `{word id, byte kind (0 Train, 1 Tech, 2 Command), byte page, byte column}`, appended by 0x5F5F05, which skips its duplicate check for page 11. |
+
+### Lifespan and construction (for `lifespanAfterConstruction`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Lifespan tick | FUN_00482BF6 | confirmed, in game | `void __thiscall(unit, float dt)`, `ret 4`. Hot part returns (0x482C20 `pop esi / pop ecx / ret 4`) unless `[game+B3Ah]` = 0 and state bit 3 is set; cold part 0x483EEC: dt ≤ 0 returns; less than dt left → expiry 0x4CBABC (state bit 11 set: only removes the corpse; else zeroes the countdown, clears bit 3 and queues the kill 0x4B4DC2); else `[sub+1Ch] -= dt`. Callers 0x483104 (full unit update), 0x51169E (light update). |
+| Fade update | FUN_004829FA | confirmed | `float __thiscall(unit, float dt, bool commit)`, `ret 8`. `t = [sub+88h] − dt` into `[esp+10h]`, stored at 0x482A20 when commit; then bit 61 → 0x4E5F88, bit 4 (fade-in) → 0x6A1CE1, bit 5 → 0x4A174A, which returns while t > 0 and, when the alpha reaches 0, calls setLifespan(2e-6) (0x4CBB2E). (`docs/performance.md` calls this function "movement"; that label is wrong.) |
+| setLifespan | FUN_0048DCB9 | confirmed | `void __thiscall(unit, float seconds, bool alphaFade)`, `ret 8`. `[sub+1Ch]` = seconds; > 0 → state bit 3; alphaFade → fade-out scheduled through 0x47B50C. Callers include unit init 0x498372 (with `[proto+ACh]` and flag `AlphaFadeLifespan`), the fade end 0x4CBB2E and the Lifespan tech effect 0xA005D9. |
+| Schedule a fade-out | FUN_0047B50C | confirmed (body) | `__thiscall(unit, float duration, float delay)`: `[sub+84h]`, `[sub+88h]`, state bit 5 set, bit 61 cleared. Also used by the Death actions for the corpse fade. |
+| Is built | FUN_0044DDB4 | confirmed, in game | `bool __thiscall(unit)`: `[unit+68h] == 0` or `[[unit+68h]+8] >= 1.0`. Changes EAX only; false exit 0x69F904. Earlier tables called it "alive"; it is "fully built". |
+| Kill handler | FUN_004B4F70 | confirmed | Returns at once if state bit 11 is set; otherwise sets bit 11 (0x4B51F9) and clears bit 8 (0x4B520E). |
+| Unit sub-object | `[unit+B4h]` | confirmed (as read above) | `+1Ch` lifespan left, `+84h` fade duration, `+88h` time before the fade, `+8Ch` alpha, `+90h` base LOS, `+C8h` velocity record. State bits of `[unit+4]` used: 3 lifespan armed, 4 fade-in, 5 fade-out, 8 in the world, 11 dying, 12 not alive, 61 another fade. |
+| `<Lifespan>` | `[proto+ACh]` (handler 0x5FCF4B) | confirmed (already in "Damage and poison") | Default 0. |
+
+### Sockets and placement (for `gaiaSocketsOnly`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| PLACE (placement check) | FUN_0050703D; slot `+14h` of the World vtables 0xB95E08 / 0xB9FB88 | confirmed (prologue, frame uses) | `bool __thiscall(world, protoId, player, pos*, …, a5 knowledge, a6 flags, a7 int* reason, …)`, `ret 2Ch`. In the body a1 (player) is at `[esp+1C0h]`, a5 at `[esp+1D0h]`. Callers: the build command (0x7D7EC7, a5 = 1, every machine), uiBuildAtPointer (0x7E6E9B, a5 = 1), the AI's checkPlacement (0x73D7E3), the in-place conversion command (0x7D65E0, a5 = 0). |
+| Socket test in PLACE | 0x508C14..0x508CC6 | confirmed | A building already on the socket refuses; a unit that is not a matching socket (0x466C31) is ignored; a matching socket counts only when its xz distance² is below 1e-12; 0x508CC1 stores "socket found" `[esp+37h]`; ESI = unit + 14h, EDI = the building's proto. No read of `[unit+44h]`. |
+| No socket found | 0x509215 | confirmed | `cmp byte [esp+37h],0 / jne … / mov byte [esp+13h],0`. |
+| Matching socket | 0x466C31 | confirmed (entry) | `bool __thiscall(buildingProto, int protoId)`: is-a of the proto against `[buildingProto+12Ch]` (`<SocketUnitType>`, stored at 0x5FCC8E). |
+| Snap to socket | FUN_00A036BB (callers 0x96E7A3 cursor ghost, 0x87DB30 AI) | confirmed (0xA0383B..0xA03855) | The only owner test on the placement paths: `mov edx,[esi+44h] / cmp dword [edx],0 / jne`. A socket a player owns is never snapped to; the ghost stays red. |
+| ForceToGaia | flag 42, applied at unit creation (0x498865 → 0x506B0F) | scoping | Every stock socket has it except `ypTradingPostCapture` and `AIStart`. |
+
+### Hotkey contexts (for `customHotkeyContexts`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Context manager | `[[[0xC66244]+74h]+34h]` | confirmed, in game | Built by FUN_0055BB99. `+18h` active set (255 bits), `+24h` saved sets, `+28h` their count, `+30h` name table: names `[+30h]`, count `[+34h]` = the next ID, `{id, layer}` records `[+3Ch]`. |
+| Register a context | 0x628FC0 | confirmed, in game | `int __thiscall(manager, const char* name, int layer)`, `ret 8`; ID = `[manager+34h]`; 0 = registered, 2 = the name exists or is null. |
+| Find a context by name | 0x5C16AB | confirmed, in game | `int __thiscall(manager, const BString* name, {int id, int layer}* out)`, `ret 8`; 0 found, 3 unknown. Callers 0x5C168A, 0x5C1778 (keymap), 0x79F9A9, 0xAB4087. |
+| The stock contexts | FUN_005D7948 | scoping; count in game | 123 names; the 35 unit contexts `TownCenterAccel` … `WonderAccel` at layer 5, `BuildAccel` at layer 6. In game, `ypCaravanserai`'s stock context had ID 72 (`StableAccel`), and the first context the DLL added got ID 151: the game had registered 151 contexts before the keymap. |
+| Apply the keymap | FUN_005BF3B8 → FUN_005C16EA | confirmed, in game | Per entry: `call 5C16ABh` at 0x5C1778, then `cmp eax,3 / je` drops the entry. A loose `data\DefaultKeyMapY.xml` replaced the archive copy (in game). |
+| Proto → context table | FUN_005C13C5 | confirmed (writes) | Writes `[proto+178h]` at data load: about 40 protos by cached ID, AbstractShrine, AbstractWonder, else −1. |
+| Turn the unit's context on | FUN_0079F851 | confirmed | `stdcall(bool on, Unit*)`, `ret 8`; ESI = the database proto; `mov edi,[esi+178h]` at 0x79F897; `jge 79F9BFh` → 0xAB3EE3(manager, edi, 0). Only caller 0x64A095. |
+| Switch the unit contexts off | FUN_0079EF9C | confirmed | 35 × `0x4421F3(manager, name, 0)`, the last (`WonderAccel`) at 0x79F1A5. By ID: 0xAB397F; on by ID: 0xAB3EE3 (all `thiscall(manager, name or id, bool)`, `ret 8`). |
+| Selection qualification | chunk 0x649FA4 (0x64A016..0x64A05C) | confirmed, in game | Local player's units only. A `<Train>` list and Building → BL = 1 (enters a context); a `<Train>` list and not Building → `mov byte [esp+13h],1` (BuildAccel) at 0x64A034; no `<Train>`: AbstractFirePit or the unit flag `EnterHotkeyContext` (0x44D063(unit, 0A1h)) → BL = 1. Any other unit enters no context. |
+| Binding context set | ctor 0x5BC7D3; bit set at 0x5BC9AB | confirmed | 255 bits, set with no bounds check: context IDs must stay below 255. |
+
+### Snare and group movement (for `snareOnlyHitUnit`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Snare trigger | FUN_0048FA07 → cold chunk 0x4DD1DE | confirmed | Tactics action flag bit 11 (`<SpeedBoost>`) → 0x4B3E31; bit 12 (`<TargetSpeedBoost>`) → `0x4DD22D(target, 0, 0.65f, -1f, -1f, 0, 2, 3000, -1, -1, 1)` when the target can move. |
+| Apply / create a modifier | 0x4DD22D → 0x4B3D9E; init 0x4B3D44 | confirmed | Unit action type 2Ch: `[+64h]` stat (0 = velocity), `[+68h]` value, `[+78h]` operation (0 set, 1 add, 2 multiply), `[+88h]` ms; flag 15h when timed, 14h when not; flag 16h = exclusive. Only the snare is both timed and exclusive (`<SpeedBoost>` is timed, not exclusive; the auras pass 0 ms). |
+| Action lists | `[actionManager+14h]`, `{count +0, data +8}`; children at `[action+40h]`; type byte `[+60h]`; flag bitset `{[+30h] bytes, [+34h] count}` | confirmed | Walked depth first, parent first, by the collector 0x49F1A0 / 0x49F397 / 0x49F34B. |
+| Velocity modifier sum | 0x4B3C48 / 0x4B3C7D (cold 0x4E2A8E, 0x6A88D6) | confirmed | Starts from MaxVelocity `[proto+80h]`; applies each stat-0 modifier in order, rounded by `fstp`; stops after the first with flag 16h or whose tactics action has `<ModifyExclusive>` (bit 33). Stored in the record `[[unit+B4h]+C8h]` only if a modifier matched. |
+| Unit max velocity | 0x487E27 (unit vtable slot 34h; cold 0x488612) | confirmed, in game | The record when it is above −1e-6, else MaxVelocity; times the cfg float `MovementMod` (0x44734C on 0xC66500 with the ID at `[[0xCEFFA0]]`; 1.0 when unset). |
+| Group recompute | FUN_004FD289 | confirmed, in game | `[group+7Ch]` (pace) = the minimum of the members' `vtbl[34h]()` (0x4FD3FD..0x4FD411, store 0x4FD53A). Members `[group+98h]`, count `[group+9Ch]`. Triggered by group bit 13, set by 0x49F3D0 when a member's velocity changes. |
+| Group speed | 0x4FAA5D | confirmed | Target speed = `[group+88h]` × pace; × 0.8333 when bit 7 ("a member is behind") is set (0x4FAAA5). |
+| Straggler bit | 0x4FA17D (member step FUN_004FA03B), 0x6AA514 and 0x6AA56A (own-path branch of the member loop FUN_004F9E05) | confirmed, in game | Set when a member is more than 2.0 from its formation slot (0x4F9B69, scoping for the value). The member loop clears bit 7 first and looks units up by ID inline (0x4F9EB7). |
+| Member speed | 0x4F9BCB | confirmed | `min(v·[group+88h], max(v, [group+84h]))`: a member never walks faster than its own velocity v. |
+
+### Tech tree and tech effects (for `techRenameEffect`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Database tech tree TT0 | `[db+5D9Ch]` | confirmed, in game | `[TT0+0]` NodeData array (34h each), `[TT0+0Ch]` base node array (24h each); per tech set up at 0x6201E5 (`[base+0]` = NodeData). |
+| BTechTreeNodeData | ctor 0x6236BE, 34h B | confirmed, in game | `+0` tech ID, `+4` DBID, `+8` DisplayNameID, `+0Ch` RolloverTextID, `+10h` LongRolloverTextID, `+14h` icon, `+1Ch` prerequisites, `+24h`/`+28h` effects. In game, Hunting Dogs read 23401 / 23400 here. |
+| Player's tech node | 0x8D0005 (BPlayer::getLocalTechNode) | confirmed, in game | `BTechTreeNode* __thiscall(player, techId)`, `ret 4`; 0 without a tech manager. Creates the node on first use (0x94D88A → 0x94CC2B: `new(24h)`, a copy of the base node, so `[node+0]` is the shared NodeData). |
+| Effect type names | `[db+335Ch]`, count `[db+3360h]` | confirmed, in game | Registered in FUN_0052277E (0x524A2E..0x524CB0): SetName 0, Sound 1, TextOutput 2, TextOutputAll 3, SetAge 4, TechStatus 5, Data 6, SharedLOS 7, Blockade 8, ShowHCView 9, ShowWorldView 10, ModifyProtoUnit 11, InitiateRevolution 12, TransformUnit 13, ResourceExchange 14, SetOnBuildingDeathTech 15, Data2 16. `SetTechName` became 17 in game. Add a name: 0x5375AC (`thiscall(table, name, const int* id)`, `ret 8`); by name: 0x61FF1B (`thiscall(db, name)`, −1 if absent). |
+| Effect parse and factory | 0x620572; factory FUN_00620535 | confirmed | The parse looks the type up (−1: error 512h, dropped), calls the factory (`BEffect* cdecl(uchar)`, 0..10h through the jump table 0x621490, anything above to 0x62146F: error 51Fh, 0), then setData `[vtbl+4]`; false deletes the effect with no message (0x621ECA). |
+| BEffect | ctor 0x620B8F; vtable 0xB965C0 (17 slots) | confirmed | `+4` = −1, `+8` type, `+9` = 28h (kind 8, "general", plus flag 20h, re-applied after a saved game loads). Slots: 0 dtor, 1 setData, 2 save, 3 load, 4 copyFrom, 15 generalApply (`ret 10h`), 16 generalUnapply (no-op). Stock SetName: vtable 0xB969F8. |
+| Effect apply dispatcher | 0x7F7E97 | confirmed | Kind 8 calls `[vtbl+3Ch](player, sourceTech, unit, flags)` at 0x7F8111. Callers 0x94DBE6 (applyEffects: research, triggers, shipments; the whole team for a team tech) and 0x94DF10 (the post-load pass, effects with flag 20h). |
+| Research message gate | 0x94D148 | confirmed | No "researched" message for a negative DisplayNameID. |
+| Engine new / free | 0x401398 / 0x401548 | confirmed | `cdecl(size)` / `cdecl(void*)`. |
+| XML attribute | 0x598F37 | confirmed | `bool __thiscall(node, const char* name, void** value)`, `ret 8`; `*value`'s first field is the UTF-16 text. |
+| Help dialog | 0x70D128..0x70D13F | confirmed | Reads the base node: shows the database texts. |
+| WoL SetTechName | WoL `uhc.dll` 0x100369C0 | scoping | Writes `[[node]+8]`, `[[node]+0Ch]`: the shared NodeData. |
+
+### Dopples (for `noCorpseDopples`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Unit visibility update | FUN_0048679A | confirmed | `void __thiscall(unit, int forced)`, `ret 4`. Per player: EBX = index, EBP = `1 << EBX`, EDI = the player. |
+| Loss branch | 0x49520B..0x49536C | confirmed, in game | The unit left player EBX's view. A dopple only if proto flag `Doppled` (2Eh, test at 0x49522B), state bit 8 (0x495276), not state bit 1Dh (0x4952BC), and for `DoppleOnlyWhenDead` (55h) a Gaia owner (0x4F1088 → `je 49534Dh`). Then `mov eax,[esp+2Ch] / mov ecx,[esp+54h] / call 4DB3D0h` (0x495367) / `jmp 486A30h`. No alive test. |
+| Next-player exit | 0x486A30 | confirmed | EAX/ECX/EDX written before they are read. |
+| Create dopples | 0x4DB3D0 | confirmed (entry) | `bool __thiscall(world, player, unitID, forced, mask)`, `ret 10h`; nothing for player 0 or without the manager `[world+330h]`; else 0x4E4899 for each player that shares the losing player's vision. |
+| Dopple init | 0x4E46B5 | scoping | Stores the unit ID, proto ID, owner and HP ratio; a unit that is not alive takes the hold-pose path (death pose, inferred). Draws RNG stream 1 (0x4CFEA3). |
+| Dopple removal | gain branch 0x5036C4 → 0x503685; manager update 0x491961 | confirmed (call site, entry); update scoping | When the unit is seen again, or when the player sees the dopple's spot again. destroyUnit 0x4726B2 leaves the dopples alone. |
+| Deferred kill clears bit 8 | 0x4B520E | confirmed | A depleted carcass leaves the world before it decays, so it is never doppled. |
+| Proto flag `Doppled` | bit 2Eh of `[proto+50h]` (set at 0x5F81DD) | confirmed, in game | Also (scoping): `DoppleOnlyWhenDead` 55h, `MutateDopples` 72h, `VisibleUnderFogOnlyAfterSeen` 79h. |
+| `Huntable` | built-in abstract type (0x51B256 in FUN_0051A5DC) | confirmed | Usable as the marker with no data change. |
+
+### Dances (for `danceBonusCivs`)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Dance readers | Training FUN_008D4790 (`float thiscall(player, protoId)`, `ret 4`; caller 0x9EA4A2); XPTrickle FUN_004E0DE5 (callers 0x4E0DD7 and the dance tooltips 0x9D6D98, 0x9D793F); Gathering FUN_004ECD39 (caller 0x4ED02A); Regeneration FUN_00490476 (`this` in EDI; caller 0x490A59) | confirmed (bytes); callers scoping; Regeneration in game | Each: EAX = `[[player+20h]]` (or −1 through a separate path, 0x8D47A1 / 0x679D6A / 0x679DE4 / 0x679E5E), four compares with 0xC6FB50..0xC6FB5C (gates 0x8D47AB, 0x4E0DFF, 0x4ECD53, 0x49048B), native branch 0x8D47CF / 0x4E0E29 / 0x4ECD7D / 0x679E66. |
+| getFirePit | 0x4819EF | confirmed | `unit* __thiscall(player)`: the player's first unit of `AbstractFirePit` (protoCount + 52h), else 0. |
+| DanceBonus kind | byte `[action+0C1h]` | values 1/2/5/8 confirmed | Training 1, XPTrickle 2, UnitModification 3, UnitSpawn 4, Regeneration 5, PopCap 6, WarChiefRansom 7, Gathering 8 (enum scoping). DanceBonus is protoaction type 45h. |
+| Dance strength | 0x9D665C | scoping | exp^n + mult·n − 1 + base, n = dancers on the `AbstractFirePit` building (a villager counts 1, any other unit 2). |
+| Regeneration | 0x679EC6.. | confirmed (bytes) | Heals each unit of the action's type that has been idle ≥ 3.5 s (or is knocked out, bypass at 0x679FBA) by value × `[world+104h]` × max HP × 0.01. In game: a listed civ's damaged musketeers healed to 150 HP; without the key they stayed at 90. |
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 

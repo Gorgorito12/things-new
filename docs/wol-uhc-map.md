@@ -102,7 +102,7 @@ WoL's own `Startup\uhc.cfg` spells one key `NativeCivs`, while the DLL holds onl
 | `basePop`, `extraPop` | yes | 0x10034BF0 | ExtendLimitsByXmlFeature? | 0x4581F3, the upstream PopLimit site | candidates |
 | `deckCardCount` | yes | 0x10034F20 | ExtendLimitsByXmlFeature? | the `19h` (25) in `mov eax,19h` @0x7EF005 (+1), `cmp eax,19h` @0x7EF026 (+2) and `mov eax,19h` @0x7EF02B (+1). These are imm patches instead of upstream's cave, and they add a third site, 0x7EF005. | candidates |
 | `selectionLimit` | no | 0x10034F20 | ExtendLimitsByXmlFeature? | the `32h` (50) in `mov eax,32h` @ 0x4E0BEE, 0x4E0F5F, 0x4E0F7E, 0x4E10A5, 0x4FC457, 0x4FE663, 0x4FEB94, 0x503DCE (+1 each). WoL's cfg sets 75. | candidates |
-| `enablerandomtecheffect`, `enabletechrenameeffect` | no | 0x10036680 | AdditionalTechEffectsFeature | none. Registers the tech effect types `RandomTech` and `SetTechName`. | unknown |
+| `enablerandomtecheffect`, `enabletechrenameeffect` | no | 0x10036680 | AdditionalTechEffectsFeature | none. Registers the tech effect types `RandomTech` and `SetTechName`. Our DLL implements `SetTechName` per player as `techRenameEffect` (alias `enableTechRenameEffect`; modding guide). | unknown |
 | `loadingScreenCount` | no | — | MoreLoadingScreensFeature | none (no direct string reference) | unknown |
 | `unstretchedui` | no | 0x10050E20 | UnstretchedUiFeature | fn 0x402FAA, fn 0x44812E | candidates |
 | `optionhighpolycliff` | no | 0x100517F0 | HighPolyCliffFeature | fn 0x402CE9 and 25 `call→402CE9` sites, 0x7B6F78 … 0x82E9CD | candidates |

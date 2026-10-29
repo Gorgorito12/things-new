@@ -11,7 +11,10 @@
 // With this key, a keymap context named <ProtoName>Accel that the exe does not know is registered
 // while the keymap is applied (layer 5, like the stock unit contexts), so its entries are bound
 // instead of dropped. Selecting a unit of that proto turns that context on instead of the stock
-// one, a non-building trainer of that proto enters it like a building, and the selection code
+// one when the unit enters a hotkey context at all: a building with a <Train> list, a fire pit,
+// a unit with the EnterHotkeyContext flag, or (through the hook at 0x64A034) a non-building with
+// a <Train> list. Other units (a soldier, a hero) never enter one, so their context, although
+// registered, stays off; give them EnterHotkeyContext. The selection code
 // switches it off with the stock ones. A stock context is never redirected, so with the stock
 // keymap nothing changes. UI only: a hotkey issues the same command as a click. The hooks are in
 // hooks/hotkey_hooks.asm.
@@ -74,6 +77,8 @@ void* g_manager = nullptr;           // the context manager the IDs in g_added b
 bool g_log = false;                  // "customHotkeyContexts log": log every switch
 std::int32_t g_lastUnit = -1;        // "log": the last unit and context logged
 std::int32_t g_lastContext = -1;
+const void* g_lastWorld = nullptr;   // "log": the game those two belong to
+std::uint32_t g_lastStep = 0;
 
 template <typename T>
 T Field(const void* base, std::uint32_t offset) {
@@ -210,6 +215,17 @@ std::int32_t __stdcall UhcHotkeyContextFor(const char* proto, const char* unit) 
     return -1;
   }
   if (g_log && unit != nullptr) {
+    // Unit IDs start again in every game: a new world, or a step count [world+F8h] that went
+    // back, forgets the last line.
+    const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+    const void* world = game == nullptr ? nullptr : Field<const void*>(game, 0x13C);
+    const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+    if (world != g_lastWorld || step < g_lastStep) {
+      g_lastUnit = -1;
+      g_lastContext = -1;
+    }
+    g_lastWorld = world;
+    g_lastStep = step;
     const std::int32_t unitId = Field<std::int32_t>(unit, 0x10);
     if (unitId != g_lastUnit || added->id != g_lastContext) {
       g_lastUnit = unitId;
