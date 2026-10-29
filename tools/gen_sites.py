@@ -41,10 +41,14 @@ SITES = [
     ("IconDefaultCase", 0x9A20A0, 4),      # lea ecx,[esp+18h]
     ("PoliticianCosts", 0x80E490, 7),      # mov eax,[edi] / lea ecx,[esp+14h] / push ecx
     ("PoliticianCosts2", 0x81943D, 7),     # mov edx,[esi] / lea eax,[esp+14h] / push eax
-    # hcShipmentPointFallback (FUN_004C6CAE, "get a valid HC gather unit")
+    # hcShipmentPointFallback (FUN_004C6B9E, "get a valid HC gather unit")
     ("GatherFallbackExit", 0x669E2E, 10),  # pop ebp/edi/esi, xor eax,eax, pop ebx/ecx, ret 4
     ("GatherFallbackStore", 0x4C6CB2, 12), # cmp byte [esp+18h],1 / je 669E38h: store-and-return
     ("GatherFallbackBlock", 0x6698B4, 0xB0),  # the stock FortFrontier search block the hook mirrors
+    # hcShipmentPointFallback FirstTC: the stored-point check 0x85302C, bool thiscall(hc, unit),
+    # null-safe, alive vtbl+A4h, then call 44DDB4h, then call 4802C6h != 1 (setne al), ret 4; the
+    # FirstTC helper calls it on the player's first town center
+    ("GatherPointValid", 0x85302C, 0x38),
     # healNonIdle (FUN_009E0B53, heal action applying a tick): the "target busy" check, from
     # mov ecx,[edi+58h] through the two busy tests to the heal path at 0x9E0C9F
     ("HealIdleCheck", 0x9E0C79, 0x2C),
@@ -583,6 +587,49 @@ SITES = [
     # chunk's fld [ecx+24h] / fcomp [0B9FB64h] (1e-6) / fnstsw / test ah,5 / jnp (1.0) / fld [ecx+24h]
     ("BwrGatherRateRecord", 0x4ECFE9, 0x14),
     ("BwrGatherRateRule", 0x69FE53, 0x1C),
+    # civFirstTC (FUN_0052A590, the civs.xml parser, ESI = the child node, EBX = database,
+    # [esp+10h] = the civ): the last tag compare of the <civ> child loop, call 443C10h /
+    # test eax,eax / je 65A549h, then the unknown-tag path, xor edi,edi / cmp [ebx+80h],edi
+    # (replaced, 8 bytes at 0x52BB07) and the jle 52B43Dh / jmp 52C066h the hook resumes at
+    ("CivTagUnknown", 0x52BAFA, 0x20),
+    # civFirstTC: the next-child step every handled tag jumps to, mov eax,[esp+80h] /
+    # mov ebp,[esp+0B0h] / add eax,1 / cmp eax,[ebp+0Ch]
+    ("CivTagNextNode", 0x52B43D, 0x14),
+    # civFirstTC: the civ by ID 0x405C2E, thiscall(database, id) = [[db+24h]+4*id] (count
+    # [db+28h]), ret 4; a civ's ID is [civ+8] and its name [civ+4] (char*)
+    ("CivById", 0x405C2E, 0x18),
+    # civFirstTC: a player's civ ID 0x4539D3, [[player+20h]] when [player+24h] > 0, else -1
+    ("CivOfPlayer", 0x4539D3, 0x10),
+    # civFirstTC: proto by name 0x5A2346, thiscall(database, const char*), ret 4: a
+    # case-insensitive scan of [db+54h] (count [db+58h]) by [proto+10h], -1 if none
+    ("ProtoByName", 0x5A2346, 0x20),
+    # civFirstTC: proto by ID 0x45316E, thiscall(database, id) = [[db+54h]+4*id], ret 4
+    ("ProtoById", 0x45316E, 0x1E),
+    # civFirstTC (FUN_00925F11, the step every rmPlaceObjectDef* reaches): mov eax,[edi] /
+    # push ecx / mov ecx,[eax+esi*4] (the object def) / push edx / call 925936h / mov ebx,eax;
+    # the call at 0x925F4C is redirected
+    ("RmPlaceCall", 0x925F45, 0x0E),
+    # civFirstTC: objectDef::place FUN_00925936, thiscall(def, player, x, z, count), ret 10h, up to
+    # its Special_StartingUnits test cmp byte [esi+55h],0 at 0x925988 (those defs rebuild their
+    # items from the civ's <startingunit> inside place); the RM is [game+92Ch]
+    ("RmPlace", 0x925936, 0x6F),
+    # civFirstTC: objectDef::addItem's footprint, proto flag 2 (0x45EE02), then
+    # (int)([proto+88h] * [[world+88h]+1Ch] * 2 + 0.5) and the same with [proto+8Ch], stored at
+    # item +0Ch / +10h (items: [def+8], count [def+0Ch], 20 bytes, +0 the proto ID)
+    ("RmItemFootprint", 0x924B1D, 0x9E),
+    # civFirstTC: rmGetNomadStart, byte [[[0C66234h]+92Ch]+1A95h] (0 without an RM)
+    ("RmNomadStart", 0x90B683, 0x19),
+    # civFirstTC (FUN_0049039A, the town starting units, EDI = player): mov ecx,[eax+140h] /
+    # push ebx / mov ebx,[ecx+5E08h] (TownCenter, replaced, 6 bytes at 0x679AC8) / push ebp /
+    # push esi / mov esi,[edi+80h]; the query after it takes the first built unit of proto EBX
+    ("TownStartQuery", 0x679AC1, 0x15),
+    # civFirstTC: the spawn, FUN_007C238E([player+3E0h], unit ID), then [player+349h] &= 0BFh,
+    # which clears the pending bit whether or not anything spawned
+    ("TownStartSpawn", 0x679B50, 0x1A),
+    # civFirstTC: FUN_007C238E spawns only if bit 0 of [colonies] is clear and a colony has
+    # [colony+28h] == the unit (count [edi+18h], indices [edi+14h], colonies [edi+8]); the
+    # helper repeats this test
+    ("TownStartColonyLoop", 0x7C2407, 0x31),
 ]
 
 

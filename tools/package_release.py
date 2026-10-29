@@ -154,7 +154,8 @@ customRevolutionBanners       a banner for every XPRevolution<Name> tech
 removeFameRestriction         Fame, XP and shipment costs and icons
 removeConversionRestriction   ConvertGuardian works on any unit
 hcShipmentPointFallback ...   when no stock fallback building is left, the shipment point
-                              moves to the building types you list
+                              moves to the building types you list; FirstTC = the
+                              player's first town center (with startingTC or civFirstTC)
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
 damageOverTime [log]          poison: attacks with <AttachProtoUnit> damage over time
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
@@ -178,6 +179,8 @@ noCorpseDopples [UnitType] [log]   dead marked units (hunt carcasses) leave no d
 danceBonusCivs Civ ... [log]  fire pit train/XP/gather/regen dances for more civs
 startingTC [UnitType] [log]   marked buildings count as a player's first town center
                               (FirstTC in placementrules), like TownCenter
+civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCenter maps
+                              place for its players (not Nomad); it is their FirstTC
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [log]  marked units (Daimyos) do not train within M metres
