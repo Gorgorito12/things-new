@@ -5,7 +5,7 @@ Source: JTMaston (WoL), Discord, 2026-10-28. Three messages of requests, then hi
 1. First, everything that is a bug or has odd logic, above all: **dodge** (needed for ME), **shotguns**, the **TC hardcode**, and **conversion of units with a resource inventory**.
 2. Then the new mechanics, in the order he listed them.
 
-Their next patch is planned for **December 2026 – January 2027**; he is busy until the end of November. Tier 1 should land before December.
+Their next patch is planned for **December 2026 – January 2027**. Tier 1 should land before December.
 
 **Missing items.** The top of the 1:44 p.m. message was cut off in the screenshot. Ask for the items above "workrate modifiable by auras".
 
