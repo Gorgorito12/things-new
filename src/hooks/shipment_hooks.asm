@@ -10,6 +10,9 @@ include common.inc
 EXTERNDEF g_uhcGatherFallbackTypes:DWORD    ; proto IDs, resolved on first use
 EXTERNDEF g_uhcGatherFallbackCount:SDWORD
 UhcResolveGatherFallbackTypes PROTO STDCALL
+UhcGatherFirstTcUnit PROTO STDCALL hc:DWORD   ; the player's FirstTC if it is a valid point, else 0
+
+FIRST_TC_ENTRY EQU -2                       ; g_uhcGatherFallbackTypes entry of the keyword FirstTC
 
 .data
 querySetPlayer   dd 00453618h   ; thiscall(query, 0, playerId, 1)
@@ -26,11 +29,14 @@ resolved         db 0
 
 .code
 
-; Replaces 0x669E2E..0x669E32, the "no valid gather unit" exit of FUN_004C6CAE, reached after
-; the stock search of its eight fixed unit types. State on entry, as in the stock blocks:
-; ESI = unit query object, [esp+10h] = home city, [esp+18h] = store flag. EBX, EBP and EDI are
-; free (the epilogue pops them). Each configured proto is searched exactly like a stock block
-; (0x6698B4..0x669963), and the first unit that passes the same checks becomes the point.
+; Replaces 0x669E2E..0x669E32, the "no valid gather unit" exit of FUN_004C6B9E, reached after
+; the stock search of its ten fixed unit types (TownCenter at 0x4C6BF1, then nine in the cold
+; chunk 0x669804..0x669E2C). State on entry, as in the stock blocks: ESI = unit query object,
+; [esp+10h] = home city, [esp+18h] = store flag. EBX, EBP and EDI are free (the epilogue pops
+; them). Each configured proto is searched exactly like a stock block (0x6698B4..0x669963), and
+; the first unit that passes the same checks becomes the point. A FirstTC entry runs no query:
+; UhcGatherFirstTcUnit returns the player's first town center when it passes the stock check
+; 0x85302C, and it becomes the point the same way.
 UhcHcGatherFallbackHook PROC
     TRACE_ONCE "hcShipmentPointFallback (0x669E2E)"
     cmp resolved, 0
@@ -46,6 +52,8 @@ nextType:
     cmp eax, g_uhcGatherFallbackCount
     jge notFound
     mov edx, g_uhcGatherFallbackTypes[eax*4]
+    cmp edx, FIRST_TC_ENTRY
+    je firstTc
     cmp edx, -1
     je typeDone
     mov eax, dword ptr [esp+10h]    ; home city
@@ -114,6 +122,14 @@ typeDone:
     jmp nextType
 found:
     jmp storeAndReturn              ; EDI = the chosen unit
+firstTc:
+    TRACE_ONCE "hcShipmentPointFallback FirstTC (0x669E2E)"
+    push dword ptr [esp+10h]        ; home city (address taken before the push)
+    call UhcGatherFirstTcUnit       ; Unit* or 0; clobbers EAX/ECX/EDX only
+    test eax, eax
+    je typeDone
+    mov edi, eax
+    jmp storeAndReturn              ; 0x4C6CB2: stores [hc+18Ch] when [esp+18h]==1, returns EDI
 notFound:
     pop ebp                         ; stolen 0x669E2E..0x669E32
     pop edi

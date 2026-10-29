@@ -82,6 +82,7 @@ help text (e.g. `resourceMarket` 0x7DEEC5).
 |---|---|---|---|
 | `+13Ch` | world | confirmed | cs |
 | `+140h` | database | confirmed | cs |
+| `+92Ch` | random map object (RM); byte `[rm+1A95h]` is the Nomad start (rmGetNomadStart 0x90B683) | confirmed (reads); observed | cs (0x90B683, objectDef::place 0x925936); in game it stayed allocated during the tested games, byte 0 ("Civ first town center") |
 | `+C48h` | flags; bit 1 selects the 14-personality TAD table | observed | cs, AILimit |
 
 Database (`[game+140h]`):
@@ -134,7 +135,7 @@ Other objects:
 | Object | Fields | Status | Evidence |
 |---|---|---|---|
 | Player data | `[player+80h]+0Ch`; civ at `[[pd]+20h]`; team at `[pd+10h]` | upstream, unverified | |
-| Player | `+0` player ID; `+20h` pointer to the civ IDs, `+24h` their count (the dance readers take `[[player+20h]]`); `+50h` current age (compared by the ability code); `+80h` knowledge base (KB); `+84h` home city; `+E0h`/`+E4h` the player's proto copies; `+1D4h` stances toward each player, `[player+1D4h+4·id]` (2 = enemy, 0 or 1 = ally; 0x484D2D / 0x4707EC); `+338h` non-zero for a player the tech update and the gather tick skip (defeated, inferred); `+37Ch` a float that multiplies every gathered amount (0x4ED13A) and, when `0x485D2C(action, 16h)` is true, the Train update's rate (FUN_009EA28B); `+4F0h` FirstTC, the unit ID of the first Town Center ("Starting town center"); `+507h` TC spawning allowed and `+50Ah` revolted (both inferred) | confirmed (reads), inferred where marked | cs; `danceBonusCivs`, `techPrereqRecheck`, `maintainWaitForPop`, `startingTC` and `showGatherRate` in game |
+| Player | `+0` player ID; `+20h` pointer to the civ IDs, `+24h` their count (the dance readers take `[[player+20h]]`); `+50h` current age (compared by the ability code); `+80h` knowledge base (KB); `+84h` home city; `+E0h`/`+E4h` the player's proto copies; `+1D4h` stances toward each player, `[player+1D4h+4·id]` (2 = enemy, 0 or 1 = ally; 0x484D2D / 0x4707EC); `+338h` non-zero for a player the tech update and the gather tick skip (defeated, inferred); `+37Ch` a float that multiplies every gathered amount (0x4ED13A) and, when `0x485D2C(action, 16h)` is true, the Train update's rate (FUN_009EA28B); `+349h` bit 40h, player flag 14: the request for the town starting units, set through the flag setter 0x8D00E5 and cleared at 0x679B63; `+3E0h` the player's colony list (FUN_007C238E); `+4F0h` FirstTC, the unit ID of the first Town Center ("Starting town center"); `+507h` TC spawning allowed and `+50Ah` revolted (both inferred) | confirmed (reads), inferred where marked | cs; `danceBonusCivs`, `techPrereqRecheck`, `maintainWaitForPop`, `startingTC`, `civFirstTC` and `showGatherRate` in game |
 | Unit | proto at `[unit+5Ch]`; proto ID at `proto+8` (confirmed, E3 0x44CB0A) and also at `proto+4` | partial | E3; `proto+4` per FarmAnim #5 and RectFarm #1. TakeDamage's callers pass `[[unit+5Ch]+4]` as the attacker proto ID, which FUN_0045311B maps back to the proto (`damageOverTime` relies on it, confirmed in game). More unit fields: "Damage and poison" below. |
 
 Sources: `Documentation/Examples/UHCPluginDemo/syscalls.h` (~lines 11033-11088), `DLL/syscalls.h`, and the stock-code observations above.
@@ -167,6 +168,9 @@ Evidence: `cs` (capstone of the syscall bodies; they are not Ghidra functions).
 | Gather unit ID | `[hc+18Ch]`, with `hc = [player+84h]` | A **unit ID**, not a position. Initialized to 0 in the HC constructor (0x62C1F5). |
 | Player by ID | 0x44CB21 | `thiscall(world = [[C66234h]+13Ch], int playerId)`, `ret 4` → `[world+58h][id]` for 0 ≤ id < `[world+5Ch]`, else 0 (0x4649E1). Sites `PlayerById`, `PlayerByIdNull` (`noTrainNearEnemyTC`). |
 | Unit by ID | 0x44CC6D | `thiscall(world, int unitId)`, `ret 4` → `[[world+0Ch]+4·(id & 3FFFFh)]` if the index is below `[world+10h]` and that unit's `[unit+10h]` is the ID, else 0 (0x4E2A35). The position is at `unit+14h` (3 floats). Sites `UnitById`, `UnitByIdNull` (`noTrainNearEnemyTC`); `startingTC` and `showGatherRate` repeat the lookup in C++, as the FirstTC rule does inline (0x8CE597). |
+| Get gather unit | FUN_004C6B9E | `Unit* __thiscall(hc, bool store)`, `ret 4` (cs, 2026-10-29). 10 callers: 0x4C6D38 (pushes EBX = 0), 0x63FD3E, 0x6966D4 (command panel FUN_0046188E), 0x7B4F31, **0x857F06** (FreeHomeCityUnit FUN_00857E77, store 1; bails at 0x857F3F on 0), **0x8584B5** (FUN_00858299, store 1; its water alternative is 0x855D71 at 0x8584AA), 0x8585FF, 0x9CEF2B, 0x9DA942, 0x9E656C; all others push 0. "FUN_004C6CAE" in older notes is only the label after `call 4C6CA0h` inside it. |
+| Stored point check | 0x85302C | `bool __thiscall(hc, Unit*)`, `ret 4`: false for null; then the unit's vtbl+A4h (alive), 0x44DDB4, and 0x4802C6 != 1 (`setne al`). No owner and no type check. Called for the stored point at 0x6697D8; the stock blocks inline the same three calls. Site `GatherPointValid` (`hcShipmentPointFallback FirstTC` calls it; confirmed in game 2026-10-29). |
+| Gather point setter | FUN_008527EC | `void __thiscall(hc, int unitId)`: `[hc+18Ch] = unitId` (the write is at 0x8527F0). Callers: 0x7D580B (the move-flag command; it checks only the owner) and 0x67AA3E (copies `[player+A4h]`). 0x85282F is the water twin. |
 | `aiGetHCGatherPoint` | 0x728050 | The gather unit's position, or the invalid vector at 0xC665E4 when the unit is gone. A dead unit is therefore detectable: `0x44CC6D` returns 0. |
 | `aiSetHCGatherPoint` | 0x726236 | Calls 0x82D9CB(game, playerId, unitId). |
 | 0x82D9CB | thiscall on the game object | Builds and queues a **network command** (0x5695FC with type 4, then 0x5696E1). It does not write `[hc+18Ch]` itself, so simulation code must not call it on every client. |
@@ -177,23 +181,47 @@ Evidence: `cs` (capstone of the syscall bodies; they are not Ghidra functions).
 
 **Dynamic trace (2026-10-28).** Captured with hardware read/write breakpoints on `hc+18Ch`/`hc+190h` of player 1. Reproduce it with `python -I tools/re/trace_writes.py gather.txt hc:1+0x18C hc:1+0x190 --rw` (the original log, `hwbp-log.txt`, is local evidence under `rea/`). The game starts with land = water = −1.
 
+Hardware breakpoints report the EIP **after** the access, so the first column names the
+instruction that made the access and the reported EIP is in the notes.
+
 | Instruction | Role | Notes |
 |---|---|---|
-| 0x4C6BC6 | Frequent reader (444 hits) | Called from 0x4C6D3D / 0x4C61DC, i.e. FUN_004C6CAE: "get a valid gather unit". |
-| 0x8527F6 | Setter, when the user moves the flag | In FUN_008527EC: `void __thiscall(hc, int unitId) { [hc+18Ch] = unitId; }`. Reached from the command path through 0x7D5810 → 0x64D31F → 0x481BC7. 0x85282F is the water twin. |
-| 0x6697FF | Cleared to −1 when the TC was deleted | Unit-removal path, via 0x8584BA ← 0x511901 ← 0x66AEA5. |
-| 0x669E45 | Immediately set again, to the other building | Inside FUN_004C6CAE, at `LAB_004c6cb2`, `if (store) [hc+18Ch] = unit[4]`. |
+| 0x4C6BC0 | Frequent reader (444 hits; reported EIP 0x4C6BC6) | `mov eax,[ebx+18Ch]` in FUN_004C6B9E. The older note's 0x4C6D3D is the return address of its caller at 0x4C6D38; 0x4C61DC is not a caller. |
+| 0x8527F0 | Setter, when the user moves the flag (reported EIP 0x8527F6) | In FUN_008527EC: `[hc+18Ch] = unitId`. Reached from the command path through 0x7D5810 → 0x64D31F → 0x481BC7. 0x85282F is the water twin. |
+| 0x6697F5 | Cleared to −1 when the TC was deleted (reported EIP 0x6697FF) | Inside FUN_004C6B9E, on the store = 1 path, when the stored unit fails 0x85302C; not a separate unit-removal writer. The stack showed 0x8584BA (return of the call at 0x8584B5 in FUN_00858299) ← 0x511901 ← 0x66AEA5. |
+| 0x669E3F | Immediately set again, to the other building (reported EIP 0x669E45) | Inside FUN_004C6B9E, the store path 0x669E38..0x669E45 that 0x4C6CB2 enters: `if (store) [hc+18Ch] = [unit+10h]`. |
 
-**Stock already has a fallback** (FUN_004C6CAE). When the gather unit is gone it takes the first alive, valid unit of the player from these type lists, in this order: `db+5E14h` (Outpost; an earlier version of this line guessed TownCenter, corrected by the scoping of WoL request #3) → FortFrontier (`+6034h`) → WarHut (`+6074h`) → Blockhouse (`+6044h`) → NoblesHut (`+606Ch`) → `+19B0h` → `+5EBCh` → `+5F6Ch` (names not resolved).
+**Stock fallback** (FUN_004C6B9E, cs 2026-10-29). When the stored unit fails 0x85302C, it takes
+the first unit of the player, of these 10 types in this order, that passes the same three checks
+(`vtbl+A4h`, `0x44DDB4`, `0x4802C6 != 1`). A building of any other type is never chosen.
 
-Each candidate must pass `vtbl+A4h`, `0x44DDB4` and `0x4802C6 != 1`. A building outside these lists is never chosen. Ev: `ev_dc7644827b43…`.
+| # | Type | Type ID read at | Read |
+|---|---|---|---|
+| 1 | TownCenter | 0x4C6BF1 (main body 0x4C6BCF..0x4C6CD2; inline checks 0x4C6C5E..0x4C6CB0) | `[db+5E08h]` |
+| 2 | Outpost | 0x669824 | `[db+5E14h]` |
+| 3 | FortFrontier | 0x6698D4 (block 0x6698B4, site `GatherFallbackBlock`) | `[db+6034h]` |
+| 4 | WarHut | 0x669984 | `[db+6074h]` |
+| 5 | Blockhouse | 0x669A34 | `[db+6044h]` |
+| 6 | NoblesHut | 0x669AE4 | `[db+606Ch]` |
+| 7 | AbstractAgraFort | 0x669B89 | `[[0DC139Ch]]` (a pointer to 0xDC13A0) |
+| 8 | AbstractDaimyo | 0x669C3B | `[db+19B0h]+69h` (abstract type #69h) |
+| 9 | ypCastle | 0x669CEE | `[db+5EBCh]` |
+| 10 | ypVillage | 0x669D9E | `[db+5F6Ch]` |
+
+db = `[[0C66234h]+140h]`. The cold chunk ends at 0x669E2C; the "nothing found" exit is
+0x669E2E (`5D 5F 5E 33 C0 5B 59 C2 04 00`), and the store is 0x669E38..0x669E45. At that exit
+`[esp+10h]` = hc, `[esp+18h]` = store, ESI = the query object, and EBX, EBP and EDI are free.
+Ev: `ev_dc7644827b43…` (first list), cs (2026-10-29, full list).
 
 Readers of the gather unit through `[player+84h]` (the HC-specific pattern): only 0x728089 (aiGetHCGatherPoint) and 0x8D30D1 (save/load). The shipment-arrival and flag-drawing code therefore read it some other way, probably through a cached HC pointer.
 
-Still open:
-- the code that writes `[hc+18Ch]` when the point is set;
-- the unit-removal path;
-- where shipment arrival resolves the spawn point.
+Answered (cs, 2026-10-29):
+- the code that writes `[hc+18Ch]`: the setter FUN_008527EC (from the command at 0x7D580B, which
+  checks only the owner, and from 0x67AA3E, a copy of `[player+A4h]`), and FUN_004C6B9E itself
+  (0x6697F5 clears, 0x669E3F stores);
+- the "unit-removal path" is FUN_004C6B9E's store = 1 path (0x6697F5), reached from 0x8584B5;
+- shipment arrival resolves the drop point at 0x857F06 (FreeHomeCityUnit, store 1) and 0x8584B5
+  (FUN_00858299, store 1).
 
 The `+18Ch` offset is shared by many classes (67 writes).
 
@@ -405,15 +433,15 @@ The exe's own "starting TC", the placement rules' `FirstTC`, is in "Starting tow
 
 | What | Where | Notes |
 |---|---|---|
-| TownCenter proto ID cache | `db+5E08h`, written at 0x5EE8ED through 0x5A2346("TownCenter") | 25 code references, each classified by the scoping of request #3 (2026-10-29): only 0x506B3B feeds FirstTC; the others are the shipment-point fallback (0x4C6BF1), the `trPlayerToggleAllowTCSpawning` gate on `Maintain` (0x492FD6), `startingResourceDelay` (0x679AC8), the `CoveredWagon` build limit (0x857FD5, 0x8D8ECC, 0x727FAA), the repair cost (0x9C0B95), `ConvertCoveredWagon` (0x4C6E9D), the AI (0x4D4ED8, 0x73D256) and interface code (age-up picker 0x7E6905 / 0x7E803F, age-up progress, music, a sort bias). A second "is a TownCenter" test, FUN_004CF222 (type cached at `[0xCF065C]`), serves the AI auto-bases and chats. `db+5E0Ch` caches `CoveredWagon`, `db+5E14h` `Outpost`. |
+| TownCenter proto ID cache | `db+5E08h`, written at 0x5EE8ED through 0x5A2346("TownCenter") | 25 code references, each classified by the scoping of request #3 (2026-10-29): only 0x506B3B feeds FirstTC; the others are the shipment-point fallback (0x4C6BF1), the `trPlayerToggleAllowTCSpawning` gate on `Maintain` (0x492FD6), the town starting units (0x679AC8 in FUN_0049039A, which the scoping had filed under `startingResourceDelay`; `civFirstTC` hooks it, see "Civ first town center"), the `CoveredWagon` build limit (0x857FD5, 0x8D8ECC, 0x727FAA), the repair cost (0x9C0B95), `ConvertCoveredWagon` (0x4C6E9D), the AI (0x4D4ED8, 0x73D256) and interface code (age-up picker 0x7E6905 / 0x7E803F, age-up progress, music, a sort bias). A second "is a TownCenter" test, FUN_004CF222 (type cached at `[0xCF065C]`), serves the AI auto-bases and chats. `db+5E0Ch` caches `CoveredWagon`, `db+5E14h` `Outpost`. |
 | `"TownCenter"` string 0xBCC600 | refs 0x5EE8E2 (the cache), 0x66FC0D/0x66FC27 (unit type lookup by name), 0x79DEBC (a UI table), 0x7DEEB1 (call 0x82FAD6), 0x82E481 | 0x82E45B is the **start camera**: it looks at the first of `camera start`, `TownCenter`, `CoveredWagon`, `Explorer`, `Settler`, `Unit` that the world has. |
 | Who places the starting TC | the random map script | e.g. `great plains.xs`: `rmAddObjectDefItem(startingTCID, "TownCenter", 1, 0.0)` (a `CoveredWagon` for a nomad start); the civ's `<startingunit>` / `<townstartingunit>` come from `rmCreateStartingUnitsObjectDef` (`Special_StartingUnits`, 0x90D69A, 0x924921). |
 | `StartingTC` | — | Not a string in the stock exe, WoL's `age3*.exe`, `uhc.dll`, `wol.dll`, or WoL's `protoy.xml` / `civs.xml` / `techtreey.xml`. |
 
 ## WoL features (2026-10-29)
 
-The sections below back the 20 features built for WoL's requests
-([wol-requests.md](wol-requests.md)): the 14 of Tier 2, then `startingTC` and
+The sections below back the 21 features built for WoL's requests
+([wol-requests.md](wol-requests.md)): the 14 of Tier 2, then `startingTC`, `civFirstTC` and
 `transformInventory` (Tier 1) and `noTrainNearEnemyTC`, `overhealHitpointBars`, `showGatherRate`
 and `buildingWorkRateAuras` (Tier 3). Evidence, for every table:
 - **confirmed:** capstone of the stock exe (`cs`) for the feature, re-read during its
@@ -624,6 +652,33 @@ No REA session was used for these sections.
 | Bitset test | 0x44D863 | confirmed | `bool __thiscall(bitset, int bit)`, `ret 4`; bits at `[this+4]`, count `[this+8]`. With ECX = a unit it tests a unit state bit; `startingTC` reads bit 3 (lifespan armed) the same way, inline. |
 | Lifespan Data effect | FUN_008F973F (ProtoUnit Data effect apply, subtype switch 0x8F979D), case 0x8FA939 | confirmed (bytes) | Writes the proto's `[proto+ACh]` through 0x7F892A, then, when a main world exists, FUN_00A00505(world, playerID, protoID): a query of the player's units of that proto, each through setLifespan(`[proto+ACh]`, AlphaFadeLifespan bit 1Fh). So a Lifespan tech reaches live units at once (WoL's `Age0Maori`). |
 | FreeHomeCityUnit | FUN_008D842B → 0x8D8FBC → FUN_00857E77 | scoping | Resolves the drop point with FUN_004C6B9E (TownCenter first) and creates the unit in the same call; nothing without a drop point (0x857F3F). |
+
+### Civ first town center (for `civFirstTC`)
+
+The ranges the feature relies on are the `civFirstTC` sites of `tools/gen_sites.py`, whose
+comments hold the disassembly they were read from; FirstTC itself is in "Starting town center"
+above, Player by ID and Unit by ID in "Home city gather point". "In game" means the single-player
+tests of 2026-10-29 ([modding-guide.md](modding-guide.md#civfirsttc)).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| civs.xml parser | FUN_0052A590 | confirmed (the `<civ>` child loop around 0x52BAFA..0x52BB19 and 0x52B43D), in game | ESI = the child node, EBX = database, `[esp+10h]` = the civ being read. Each child tag is compared with the known names through 0x443C10; the last compare is `call 443C10h / test eax,eax / je 65A549h` at 0x52BAFA. A tag that matches none reaches 0x52BB07 (`xor edi,edi / cmp [ebx+80h],edi`), then `jle 52B43Dh / jmp 52C066h` (the resource names, then a silent skip), so stock ignores an unknown tag such as `<firstTC>`. Every handled tag continues at 0x52B43D (`mov eax,[esp+80h] / mov ebp,[esp+0B0h] / add eax,1 / cmp eax,[ebp+0Ch]`, the next child; reads only the stack). Sites `CivTagUnknown`, `CivTagNextNode`. In game, `<firstTC>` was read and logged. |
+| XML node | the node in ESI | confirmed (the parser's compare chain), in game | Element name `[[node+4]+18h][[node+18h]]` (wide; the name table's count is `[[node+4]+1Ch]`), text `[node+14h]` (wide). |
+| Civ object | `[civ+4]` name (`char*`), `[civ+8]` civ ID | confirmed, in game | The civ ID is the index in `[db+24h]` (see 0x58E71F). |
+| Civ by ID | 0x405C2E | confirmed | `Civ* __thiscall(database, int id)`, `ret 4`: `[[db+24h]+4·id]` for 0 ≤ id < `[db+28h]`, else 0. Site `CivById`. |
+| Player's civ ID | 0x4539D3 | confirmed | `int __thiscall(player)`: `[[player+20h]]` when `[player+24h]` > 0, else −1 (cold path). Site `CivOfPlayer`. |
+| Proto by name / by ID | 0x5A2346 / 0x45316E | confirmed | 0x5A2346 (Functions table) scans `[db+54h]` (count `[db+58h]`) comparing `[proto+10h]` without case; −1 if none. 0x45316E: `Proto* __thiscall(database, int id)` = `[[db+54h]+4·id]`, `ret 4`. Sites `ProtoByName`, `ProtoById`. |
+| RM placement step | FUN_00925F11 | confirmed (0x925F45..0x925F52) | Reached by every `rmPlaceObjectDef*`. `mov eax,[edi] / push ecx / mov ecx,[eax+esi*4]` (the object def) `/ push edx / call 925936h / mov ebx,eax`: the only call of objectDef::place, at 0x925F4C. Site `RmPlaceCall`. |
+| objectDef::place | FUN_00925936 | confirmed (head 0x925936..0x9259A4), in game | `int __thiscall(def, int player, float x, float z, int count)`, `ret 10h`. Reads the world's terrain `[world+88h]` and the RM `[game+92Ch]` (none: an error string and 0). At 0x925988, `cmp byte [esi+55h],0`: a `Special_StartingUnits` def (`rmCreateStartingUnitsObjectDef`) rebuilds its items from the civ's `<startingunit>` list inside the call. Site `RmPlace`. |
+| Object def | `[def+0]` ID, `[def+4]` name (`char*`), `[def+8]` items, `[def+0Ch]` item count, byte `[def+55h]` Special_StartingUnits | confirmed (+8, +0Ch, +55h); in game (+0, +4 in the log) | Items are 20 B: `+0` proto ID, `+0Ch` / `+10h` footprint (x, z); `+4` the count and `+8` the cluster distance of `rmAddObjectDefItem` (inferred from its arguments). In game, Mongolia's def named `startingTC` held the `TownCenter` item. |
+| objectDef::addItem footprint | 0x924B1D | confirmed | When the proto has flag 2 (0x45EE02): `(int)([proto+88h] × [[world+88h]+1Ch] × 2 + 0.5)`, and the same with `[proto+8Ch]`; else 0 and 0. Stored at item `+0Ch` / `+10h`. Site `RmItemFootprint`. |
+| rmGetNomadStart | 0x90B683 | confirmed (bytes); value 0 in game | `bool()`: byte `[[[0C66234h]+92Ch]+1A95h]`, false when `[game+92Ch]` is null. Site `RmNomadStart`. In the tested games the RM object stayed allocated during the game and the byte was 0. A Nomad start was not seen: TAD's skirmish setup offers none. |
+| Town starting units | FUN_0049039A, out-of-line parts at 0x679AC1 and 0x679B50 | confirmed, in game | EDI = the player. `mov ecx,[eax+140h] / push ebx / mov ebx,[ecx+5E08h]` (TownCenter, 0x679AC8) `/ push ebp / push esi / mov esi,[edi+80h]`; the query after it takes the player's first built unit of proto EBX. At 0x679B50: `FUN_007C238E([player+3E0h], [unit+10h])`, then `and byte [player+349h],0BFh` (0x679B63), which clears the request whether or not anything spawned. Sites `TownStartQuery`, `TownStartSpawn`. The scoping had filed 0x679AC8 under `startingResourceDelay`. In game, with `civFirstTC` querying the Market instead, 6 Settlers spawned at the Market. |
+| Colony spawn | FUN_007C238E | confirmed (loop 0x7C2407..0x7C2437), in game | `thiscall(colonies = [player+3E0h], int unitId)`: spawns the town starting units only if bit 0 of `[colonies]` is clear and a colony `[[colonies+8]+4·[[colonies+14h]+4k]]` (k < `[colonies+18h]`) has `[colony+28h]` = the unit. In game a colony started at a Market listed in `<starttypes>` of `placementrules\colonies.xml`; that a proto absent from that list gets no colony is an inference (the `no colony` log path was not seen). Site `TownStartColonyLoop`. |
+| Town starting units request | `[player+349h]` bit 40h (player flag 14) | confirmed, in game | Set by the player flag setter 0x8D00E5, called at 0x6A214A when a unit is created whose proto has flag 136 (0x6A211F..0x6A214A, `[[proto+50h]+11h]` & 1); cleared at 0x679B63. In game, a Market without flag 136 that was FirstTC, with a colony at it, never got its settlers; with the flag it got 6. |
+| Proto flag 136 | `StartingColonyBuilding` | confirmed | The `protoy` flag parser maps the name (0x5F7018) to `or byte [eax+11h],1` (0x5FD751), bit 136 of the bitset `[proto+50h]` (0x45EE02). Stock `TownCenter` has it, `Market` does not. Other flags `TownCenter` has and `Market` lacks (stock `protoy`): `ColonyPlacementCenter`, `HasGatherPoint`, `AllowAutoGarrison`, `ShowGarrisonButton`; what they do was not traced. |
+| FirstTC proto hook | 0x506B3B | confirmed, in game | Shared by `startingTC` and `civFirstTC` (one `jmp`, written by whichever applies first). With `civFirstTC`, a unit of its civ's `<firstTC>` proto, added while the player has no FirstTC, outside a Nomad start, is stored as FirstTC by 0x67ABD4. In game `[player+4F0h]` held the Market's ID. |
+| Out of scope | 0x4CF222, 0x7E6905 / 0x7E803F, 0x82E45B, 0x492FD6, `[hc+190h]` | scoping | Code that still looks for the `TownCenter` proto itself: the engine AI's automatic bases (FUN_004CF222), the age-up picker `uiPoliticianUI`, the start camera, the `Maintain` spawn gate, and the water shipment point. The AI scripts (XS) also expect a Town Center: in game a tagged AI got its Market and settlers, then stayed idle. |
 
 ### Resource inventories (for `transformInventory`)
 

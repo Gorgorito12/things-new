@@ -16,7 +16,7 @@ This guide covers these features that are new in this DLL:
     `transformUpdatesLOS`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`,
     `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`,
     `techRenameEffect`, `noCorpseDopples` and `danceBonusCivs`;
-  - Tier 1 and Tier 3: `startingTC`, `transformInventory`, `noTrainNearEnemyTC`,
+  - Tier 1 and Tier 3: `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
     `overhealHitpointBars`, `showGatherRate` and `buildingWorkRateAuras`.
 
 `bufferedFileReads` is not covered yet. Its design is in
@@ -55,9 +55,10 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 
 | Site | VA | Length | Written | Stock bytes at the written VA | Role |
 |---|---|---|---|---|---|
-| `GatherFallbackExit` | `0x669E2E` | 10 B | 5 B at `0x669E2E` | `5D 5F 5E 33 C0` (`pop ebp; pop edi; pop esi; xor eax,eax`) | "nothing found" exit of FUN_004C6CAE; hcShipmentPointFallback hook |
+| `GatherFallbackExit` | `0x669E2E` | 10 B | 5 B at `0x669E2E` | `5D 5F 5E 33 C0` (`pop ebp; pop edi; pop esi; xor eax,eax`) | "nothing found" exit of FUN_004C6B9E; hcShipmentPointFallback hook |
 | `GatherFallbackStore` | `0x4C6CB2` | 12 B | — | — | store-and-return path the hook jumps to |
 | `GatherFallbackBlock` | `0x6698B4` | `0xB0` B | — | — | stock FortFrontier search block; the hook repeats its logic, so it must be unchanged |
+| `GatherPointValid` | `0x85302C` | `0x38` B | — | — | stock stored-point check, `bool thiscall(hc, unit)`, `ret 4`; the FirstTC helper calls it |
 | `HealIdleCheck` | `0x9E0C79` | `0x2C` B | 5 B at `0x9E0C79` | `8B 4F 58 85 C9` (`mov ecx,[edi+58h]; test ecx,ecx`) | busy test of each heal tick (FUN_009E0B53) |
 | `HealAutoSearchIdle` | `0x9CD9C0` | `0x15` B | 5 B at `0x9CD9C7` | `E8 DB 17 A8 FF` (`call 44F1A7h`) | idle test of the automatic heal search (FUN_009CD865) |
 | `AbstractTypesEnd` | `0x51BA23` | `0x15` B | 5 B at `0x51BA31` | `5F 5E B0 01 5B` (`pop edi; pop esi; mov al,1; pop ebx`) | epilogue of the abstract unit type registration (FUN_0051A5DC) |
@@ -112,11 +113,15 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `DanceTrainGate`, `DanceXpGate`, `DanceGatherGate`, `DanceRegenGate` | `0x8D47A6`, `0x4E0DFA`, `0x4ECD4E`, `0x490486` | 13, 13, 13, 17 B | 6 B each at `0x8D47AB`, `0x4E0DFF`, `0x4ECD53`, `0x49048B` | `3B 05 50 FB C6 00` (`cmp eax,[0C6FB50h]`) at each | the first native civ compare of the four dance readers; danceBonusCivs. Each range covers the civ load before it and the `je` after it |
 | `DanceTrainBranch`, `DanceXpBranch`, `DanceGatherBranch`, `DanceRegenBranch` | `0x8D47CF`, `0x4E0E29`, `0x4ECD7D`, `0x679E66` | 13, 10, 10, 13 B | — | — | the native branches the hooks enter |
 | `FirstTcGate` | `0x49880A` | `0x16` B | 13 B at `0x49880A` (`jmp` + 8 NOP) | `83 BE F0 04 00 00 00 0F 8C 13 E3 06 00` (`cmp dword ptr [esi+4F0h],0; jl 506B2Ah`) | FirstTC gate at the end of Player::addUnit FUN_0049874F, with the exit `0x498817` both startingTC hooks continue at; startingTC gate hook |
-| `FirstTcProtoCheck` | `0x506B3B` | `0x11` B | 6 B at `0x506B3B` (`jmp` + 1 NOP) | `3B 81 08 5E 00 00` (`cmp eax,[ecx+5E08h]`) | the TownCenter test of addUnit's cold chunk; startingTC proto hook |
-| `FirstTcChunk`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot` | `0x506B2A`, `0x67ABD4`, `0x8CE597`, `0x48DCB9`, `0xB9355C` | `0x11`, `0x0E`, `0x44`, `0x28`, 4 B | — | — | the registers the proto hook is entered with, the FirstTC store both hooks leave through, the rule's unit lookup the helper mirrors, the lifespan bit, and the unit vtable's alive slot (`.rdata`); startingTC (also `IsA`) |
+| `FirstTcProtoCheck` | `0x506B3B` | `0x11` B | 6 B at `0x506B3B` (`jmp` + 1 NOP), once for startingTC and civFirstTC | `3B 81 08 5E 00 00` (`cmp eax,[ecx+5E08h]`) | the TownCenter test of addUnit's cold chunk; the FirstTC proto hook both keys share |
+| `FirstTcChunk`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot` | `0x506B2A`, `0x67ABD4`, `0x8CE597`, `0x48DCB9`, `0xB9355C` | `0x11`, `0x0E`, `0x44`, `0x28`, 4 B | — | — | the registers the proto hook is entered with, the FirstTC store both hooks leave through, the rule's unit lookup the helper mirrors, the lifespan bit, and the unit vtable's alive slot (`.rdata`); startingTC (also `IsA`). civFirstTC verifies `FirstTcChunk`, `FirstTcSet` and `UnitAliveSlot` too; `FirstTcSet` is also verified by hcShipmentPointFallback when `FirstTC` is listed |
+| `CivTagUnknown` | `0x52BAFA` | `0x20` B | 8 B at `0x52BB07` (`jmp` + 3 NOP) | `33 FF 39 BB 80 00 00 00` (`xor edi,edi; cmp [ebx+80h],edi`) | the unknown-tag path of the `<civ>` child loop in the civs.xml parser FUN_0052A590, with the last tag compare before it and the `jle 52B43Dh / jmp 52C066h` after it (continuation `0x52BB0F`); civFirstTC tag hook |
+| `RmPlaceCall` | `0x925F45` | `0x0E` B | 5 B at `0x925F4C` (a `call` to the wrapper) | `E8 E5 F9 FF FF` (`call 925936h`) | the only call of objectDef::place, in FUN_00925F11, which every `rmPlaceObjectDef*` reaches; civFirstTC placement wrapper (returns to `0x925F51`) |
+| `TownStartQuery` | `0x679AC1` | `0x15` B | 6 B at `0x679AC8` (`jmp` + 1 NOP) | `8B 99 08 5E 00 00` (`mov ebx,[ecx+5E08h]`) | the TownCenter proto the town starting units' query (FUN_0049039A) looks for; civFirstTC town hook (continues at `0x679ACE`) |
+| `CivTagNextNode`, `CivById`, `CivOfPlayer`, `ProtoByName`, `ProtoById`, `RmPlace`, `RmItemFootprint`, `RmNomadStart`, `TownStartSpawn`, `TownStartColonyLoop` | `0x52B43D`, `0x405C2E`, `0x4539D3`, `0x5A2346`, `0x45316E`, `0x925936`, `0x924B1D`, `0x90B683`, `0x679B50`, `0x7C2407` | `0x14`, `0x18`, `0x10`, `0x20`, `0x1E`, `0x6F`, `0x9E`, `0x19`, `0x1A`, `0x31` B | — | — | the next-child step the tag hook jumps to, the civ by ID and a player's civ ID, the two proto lookups, the head of objectDef::place up to its `Special_StartingUnits` test, addItem's footprint, rmGetNomadStart, the spawn and request clear after the query, and the spawn's colony test the helper repeats; civFirstTC (also `ProtoFlag`, `FirstTcChunk`, `FirstTcProtoCheck` while it is stock, `FirstTcSet`, `PlayerById`, `UnitById`, `UnitAliveSlot`) |
 | `TransformInvHook` | `0x9C7625` | `0x17` B | 7 B at `0x9C7625` (`jmp` + 2 NOP) | `8B 46 58 85 C0 74 10` (`mov eax,[esi+58h]; test eax,eax; je 9C763Ch`) | action manager test in the transform in place FUN_009C754C; transformInventory (continues at `0x9C762C` or `0x9C763C`) |
 | `TransformKbRemove`, `TransformKbReAdd`, `InventorySeed`, `InventoryRecreate`, `InventoryFree`, `ResListCopy`, `ResListScale`, `ResListTotal` | `0x9C75CF`, `0x9C766F`, `0x67DE0D`, `0x9BFE5A`, `0x4BA757`, `0x480A73`, `0x480B94`, `0x58EF02` | `0x56`, `0x23`, `0x1E`, `0x6E`, `0x50`, `0x49`, `0x7E`, `0x81` B | — | — | the knowledge-base remove and re-add around the hook, creation's inventory recipe, the engine functions the helper calls, and the list encoding it decodes; transformInventory (also `TransformProtoLookup`, `TransformPushProto`, `IsA`) |
-| `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`) |
+| `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`); `PlayerById(Null)` and `UnitById(Null)` are also verified by hcShipmentPointFallback when `FirstTC` is listed, and `PlayerById` and `UnitById` by civFirstTC |
 | `OverhealBarRatio` | `0x45FAA7` | `0x11` B | 5 B at `0x45FAAF` | `E8 E1 F7 FF FF` (`call 45F295h`) | floating HP bar fill in the unit visual update's bar chunk; overhealHitpointBars |
 | `OverhealGroupRatio` | `0x4C5012` | `0x0F` B | 5 B at `0x4C5014` | `E8 7C A2 F9 FF` (`call 45F295h`) | selection group average in FUN_004C4FB5 |
 | `OverhealPanelMax` | `0x698B18` | `0x26` B | 5 B at `0x698B35` | `E8 CE 78 DE FF` (`call 480408h`) | unitHitPointsValue max |
@@ -140,9 +145,11 @@ inside ranges that others verify, and the order in [`src/features.h`](../src/fea
 both: noTrainNearEnemyTC writes `WorkRateTrainCall`, and buildingWorkRateAuras the four getter
 calls, all of which liveBuildingWorkRate verifies first; buildingWorkRateAuras comes last and
 leaves the Train call to noTrainNearEnemyTC when that key owns it
-([section 5](#5-integration-rules)). No other write falls inside another feature's range (checked
-with a script over `tools/gen_sites.py` and the written addresses, 2026-10-29), so any combination
-of keys can be enabled together.
+([section 5](#5-integration-rules)). startingTC and civFirstTC share one write, the proto hook at
+`0x506B3B`: whichever applies first writes it, and civFirstTC then verifies `FirstTcChunk` instead
+of `FirstTcProtoCheck`. No other write falls inside another feature's range (checked with a script
+over `tools/gen_sites.py` and the written addresses, 2026-10-29, again after civFirstTC and
+`GatherPointValid` were added), so any combination of keys can be enabled together.
 
 **Status for Wars of Liberty: not checked.**
 - None of these addresses appears among the WoL `uhc.dll` sites found so far
@@ -201,7 +208,11 @@ of keys can be enabled together.
     helper. None of them overlaps these ranges (dword scan of the DLL), but check that `0x4ED044`
     is still reached with the same entry state in WoL's build;
   - `transformInventory`, `noTrainNearEnemyTC`, `overhealHitpointBars`: not checked against WoL's
-    patches. `docs/wol-uhc-map.md` mentions none of their sites.
+    patches. `docs/wol-uhc-map.md` mentions none of their sites;
+  - `civFirstTC` and the `FirstTC` keyword of `hcShipmentPointFallback` (`GatherPointValid`): not
+    checked against WoL's patches. Check `CivTagUnknown` (the civs.xml parser) and `RmPlaceCall`
+    (random map placement) first: a mod DLL that adds civ tags or map syscalls may patch the same
+    places.
 
 **The reliable check is at runtime.** Port the `VerifyAll` step (below) and run it after your
 DLL has applied all its own patches. A range that another patch changed then makes the feature
@@ -213,7 +224,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 |---|---|---|
 | [`src/unittypes.h`](../src/unittypes.h), [`src/unittypes.cpp`](../src/unittypes.cpp), [`src/hooks/unittype_hooks.asm`](../src/hooks/unittype_hooks.asm) | Registers extra abstract unit type names on every data load. | site `AbstractTypesEnd`, `VerifyAll`, `WriteJmp`, `Log`, `TRACE_ONCE` |
 | [`src/features/heal.cpp`](../src/features/heal.cpp), [`src/hooks/heal_hooks.asm`](../src/hooks/heal_hooks.asm) | `healNonIdle`. | unittypes, sites `HealIdleCheck` and `HealAutoSearchIdle`, your cfg reader |
-| [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*`, your cfg reader |
+| [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*` and `GatherPointValid`; with `FirstTC` also `FirstTcSet`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`; your cfg reader |
 | [`src/features/damageovertime.cpp`](../src/features/damageovertime.cpp), [`src/hooks/dot_hooks.asm`](../src/hooks/dot_hooks.asm) | `damageOverTime`. | sites `Dot*`, your cfg reader |
 | [`src/features/dodge.cpp`](../src/features/dodge.cpp), [`src/hooks/dodge_hooks.asm`](../src/hooks/dodge_hooks.asm) | `dodgeAnyUnit`, `dodgeSoundSet`, `criticalSoundSet`. | unittypes, sites `Dodge*` and `CriticalSound`, `WriteCall` (in `patch.cpp`), your cfg reader |
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
@@ -231,7 +242,8 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/techrename.cpp`](../src/features/techrename.cpp), [`src/hooks/techrename_hooks.asm`](../src/hooks/techrename_hooks.asm) | `techRenameEffect`. | sites `TechRename*`, your cfg reader |
 | [`src/features/dopples.cpp`](../src/features/dopples.cpp), [`src/hooks/dopple_hooks.asm`](../src/hooks/dopple_hooks.asm) | `noCorpseDopples`. | unittypes, sites `NoCorpseDopple*`, your cfg reader |
 | [`src/features/dance.cpp`](../src/features/dance.cpp), [`src/hooks/dance_hooks.asm`](../src/hooks/dance_hooks.asm) | `danceBonusCivs`. | sites `Dance*`, your cfg reader (`Config::All`) |
-| [`src/features/startingtc.cpp`](../src/features/startingtc.cpp), [`src/hooks/startingtc_hooks.asm`](../src/hooks/startingtc_hooks.asm) | `startingTC`. | unittypes, sites `FirstTcGate`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot`, `IsA`, `WriteBytes`, your cfg reader |
+| [`src/features/startingtc.cpp`](../src/features/startingtc.cpp), [`src/hooks/startingtc_hooks.asm`](../src/hooks/startingtc_hooks.asm) | `startingTC`, and the FirstTC proto hook it shares with `civFirstTC` (`InstallFirstTcProtoHook`, `UhcStartingTcProtoHook`). | unittypes, sites `FirstTcGate`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot`, `IsA`, `WriteBytes`; the data symbol `g_uhcCivFirstTcOn` and the function `UhcCivFirstTcMatches` (defined in `civfirsttc.cpp`; without that feature, define the global as 0 and a stub that returns false); your cfg reader |
+| [`src/features/civfirsttc.cpp`](../src/features/civfirsttc.cpp), [`src/hooks/civfirsttc_hooks.asm`](../src/hooks/civfirsttc_hooks.asm) | `civFirstTC`. | the startingTC files above for the shared proto hook; sites `CivTagUnknown`, `CivTagNextNode`, `CivById`, `CivOfPlayer`, `ProtoByName`, `ProtoById`, `ProtoFlag`, `RmPlaceCall`, `RmPlace`, `RmItemFootprint`, `RmNomadStart`, `TownStartQuery`, `TownStartSpawn`, `TownStartColonyLoop`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `PlayerById`, `UnitById`, `UnitAliveSlot`; `WriteCall`, `UhcTraceHook` (the wrapper's trace line is written from C++); your cfg reader |
 | [`src/features/transforminv.cpp`](../src/features/transforminv.cpp), [`src/hooks/transforminv_hooks.asm`](../src/hooks/transforminv_hooks.asm) | `transformInventory`. | unittypes (only with a UnitType), sites `TransformInvHook`, `TransformProtoLookup`, `TransformKbRemove`, `TransformPushProto`, `TransformKbReAdd`, `Inventory*`, `ResList*`, `IsA`, your cfg reader |
 | [`src/features/notrainneartc.cpp`](../src/features/notrainneartc.cpp), [`src/hooks/notrainneartc_hooks.asm`](../src/hooks/notrainneartc_hooks.asm) | `noTrainNearEnemyTC`. | unittypes (and `OnDatabaseLoad` for `log`), sites `WorkRateTrainCall`, `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById*`, `UnitById*`, `PlayerIsEnemy`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`; the data symbol `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`; define it yourself as `0x9BFE33` without that feature); your cfg reader (`Config::All`) |
 | [`src/features/overheal.cpp`](../src/features/overheal.cpp), [`src/hooks/overheal_hooks.asm`](../src/hooks/overheal_hooks.asm) | `overhealHitpointBars`. | unittypes, sites `Overheal*`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag`, `IsA`, `IsATrue`, your cfg reader |
@@ -283,7 +295,13 @@ with your own result type.
     C++ functions in a vtable the DLL fills;
   - one data symbol links two features: `g_uhcBwrTrainGetter`, defined in `bwrauras.cpp` and
     called by `notrainneartc_hooks.asm` (`call g_uhcBwrTrainGetter`, an indirect call through the
-    variable).
+    variable);
+  - startingTC and civFirstTC are linked both ways: `startingtc_hooks.asm` reads
+    `g_uhcCivFirstTcOn` and calls `UhcCivFirstTcMatches` (stdcall), both defined in
+    `civfirsttc.cpp`, and `civfirsttc.cpp` calls `InstallFirstTcProtoHook` and
+    `FirstTcProtoHookInstalled` from `startingtc.cpp`;
+  - civFirstTC's map placement wrapper `UhcRmPlaceObjectDef` is a `__fastcall` C++ function that
+    `WriteCall` targets directly; no MASM is involved.
 - **Build setup:**
   - CMake: `project(... LANGUAGES CXX ASM_MASM)`, as in this repository's `CMakeLists.txt`.
   - A Visual Studio project: enable **Build Dependencies → Build Customizations → masm**, then
@@ -368,15 +386,20 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### hcShipmentPointFallback
 
-- **Globals:** `g_uhcGatherFallbackTypes[64]` (proto IDs, -1 = skip) and
+- **Globals:** `g_uhcGatherFallbackTypes[64]` (proto IDs; -1 = skip, -2 = `FirstTC`) and
   `g_uhcGatherFallbackCount`.
 - **Name resolution:** on the first call of the hook, through `0x5A2346`
-  (`thiscall(database, name)` → proto ID), with database = `[[C66234h]+140h]`. This happens once
-  per process, so every game in a run must use the same data.
-- **The hook** at `0x669E2E` sits on the "nothing found" exit of FUN_004C6CAE, after the stock
-  search of its eight fixed types.
+  (`thiscall(database, name)` → proto ID), with database = `[[C66234h]+140h]`. `FirstTC` (any
+  case) becomes -2 before any lookup, also when the database is null. This happens once per
+  process, so every game in a run must use the same data.
+- **The hook** at `0x669E2E` sits on the "nothing found" exit of FUN_004C6B9E, after the stock
+  search of its ten fixed types (TownCenter at `0x4C6BF1`, then nine in the cold chunk
+  `0x669804..0x669E2C`).
   - Entry state: ESI = the unit query object, `[esp+10h]` = home city, `[esp+18h]` = store
     flag. EBX, EBP and EDI are free, because the epilogue pops them.
+  - An entry of -2 is tested before -1 and before any query: `push [esp+10h]` (the home city),
+    `call UhcGatherFirstTcUnit`; a non-null result goes to EDI and the hook jumps to `0x4C6CB2`;
+    null goes to the next entry.
   - For each configured proto it repeats the stock block at `0x6698B4..0x669963`:
     - the same query calls (`0x453618`, `0x45356D`, `0x4532B4`, `0x453484`, `0x453A36`);
     - the same unit lookup in the world;
@@ -384,6 +407,19 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - Found: EDI = the unit, then jump to `0x4C6CB2`. That stock path stores the unit's ID in
     `[hc+18Ch]` when the store flag is 1, and returns the unit.
   - Nothing found: re-execute `pop ebp; pop edi; pop esi; xor eax,eax` and jump to `0x669E33`.
+- **`const char* __stdcall UhcGatherFirstTcUnit(const char* hc)`** (C++, changes EAX, ECX and
+  EDX only):
+  - world = `[[C66234h]+13Ch]`; null world or null `[hc+8]` → null;
+  - player ID = `[[hc+8]]`; player = `0x44CB21(world, id)`; null → null;
+  - FirstTC = `[player+4F0h]`; < 0 → null; unit = `0x44CC6D(world, FirstTC)`; null → null;
+  - owner `[unit+44h]` null or `[[unit+44h]]` != player ID → null (a converted FirstTC);
+  - `0x85302C(hc, unit)` false → null; else the unit.
+  - It writes no game state: the store = 0 callers (the command panel) may call it every frame.
+    Its log line is written only when the chosen unit changes for that player (a log-only array
+    of 32 IDs, reset when the world pointer changes).
+- **Dependency:** `FirstTC` finds something new only when a non-`TownCenter` unit can be FirstTC
+  (`startingTC` or `civFirstTC`); without either line in the cfg the DLL logs a warning and still
+  applies the key.
 
 ### damageOverTime
 
@@ -714,15 +750,73 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - else if the marker ID ≥ 0, `[edi+5Ch]` ≠ 0, `0x44D7FA([edi+5Ch], type)` and
     `UhcStartingTcStale(esi, edi)` → `jmp 67ABD4h`;
   - else `jmp 498817h`. EBX, EBP, ESI, EDI and ESP as on entry on every path.
-- **Proto hook** at `0x506B3B`, 6 bytes (`jmp` + 1 NOP):
+- **Proto hook** at `0x506B3B`, 6 bytes (`jmp` + 1 NOP), shared with civFirstTC:
   - entry state: EAX = the unit's proto ID, ECX = database, EDX = proto, EDI = unit, ESI = player;
   - `cmp eax,[ecx+5E08h]`; equal → `jmp 67ABD4h`;
+  - else if `g_uhcCivFirstTcOn` ≠ 0: `UhcCivFirstTcMatches(esi, eax, edi)` (stdcall; it changes
+    EAX, ECX and EDX); true → `jmp 67ABD4h`;
   - else if the marker ID ≥ 0, `[edi+5Ch]` ≠ 0 and `0x44D7FA([edi+5Ch], type)` → (log) →
     `jmp 67ABD4h`;
   - else `jmp 498817h`. EBX, EBP, ESI, EDI and ESP as on entry.
 - **Install both or neither:** the proto hook alone gives FirstTC to marked units but never
   replaces a dead one. This DLL writes the proto hook first and puts its bytes back if the gate
   hook cannot be written.
+- **One proto hook for two keys:** `InstallFirstTcProtoHook()` writes the `jmp` once, for
+  whichever of startingTC and civFirstTC applies first (`FirstTcProtoHookInstalled()` tells the
+  other); write it only once, and verify `FirstTcProtoCheck` only while it is still stock.
+
+### civFirstTC
+
+- **State** (`civfirsttc.cpp`): the tags by civ ID (the civ object each was read for, its text,
+  and the resolved proto with the proto array it was resolved in); `g_uhcCivFirstTcOn`, 1 once the
+  key is applied, read by the shared proto hook; the `log` flag and the once-per-game log table.
+- **A player's proto** (`CivFirstTcProto`): database `[[C66234h]+140h]`; civ ID as `0x4539D3`
+  (`[[player+20h]]` when `[player+24h]` > 0). No tag, an empty text, or `0x405C2E(db, civ ID)` not
+  the civ object the tag was read for → -1. Resolve the text with `0x5A2346` whenever `[db+54h]` is
+  another array than the one it was resolved in; an unknown name gives -1 and one log line.
+- **Tag hook** at `0x52BB07`, 8 bytes (`jmp` + 3 NOP), in the civs.xml parser FUN_0052A590:
+  - entry state: ESI = the child node, EBX = database, `[esp+10h]` = the civ;
+  - `pushad`, then `UhcCivFirstTcTag(node = ESI, civ = [esp+30h])` (stdcall), with AL carried
+    through `popad`;
+  - true → `jmp 52B43Dh`, the next child, which reads only the stack;
+  - false → re-execute `xor edi,edi; cmp dword ptr [ebx+80h],edi` and `jmp 52BB0Fh`, whose `jle`
+    reads those flags;
+  - `UhcCivFirstTcTag`: element name `[[node+4]+18h][[node+18h]]` (index below `[[node+4]+1Ch]`),
+    compared with L"firstTC" without case; text `[node+14h]`, narrowed to ASCII and trimmed;
+    stored under the civ ID `[civ+8]` with the civ pointer; true for every `<firstTC>`, whatever
+    its text.
+- **Placement wrapper:** `WriteCall(0x925F4C, UhcRmPlaceObjectDef)`, an
+  `int __fastcall(def, unused, player, x, z, count)` with the thiscall frame of `0x925936`
+  (`ret 10h`; x and z are floats, passed on as raw dwords):
+  - call `0x925936` unchanged unless a tag exists, the world and database exist, `[def+0Ch]` > 0,
+    `[def+55h]` = 0, an item (`[def+8]`, 20 B each, `+0` proto ID) holds `[db+5E08h]`, and the
+    owner `[world+58h][player]` (0 ≤ player < `[world+5Ch]`) has a resolved proto other than
+    `TownCenter`;
+  - in a Nomad start (`[game+92Ch]` non-null and its byte `+1A95h` ≠ 0, as `0x90B683`), call it
+    unchanged (and log, with `log`);
+  - otherwise compute the new proto's footprint as `0x924B1D` (proto `0x45316E(db, id)`; when
+    `0x45EE02(proto, 2)`, `(int)([proto+88h] × [[world+88h]+1Ch] × 2 + 0.5)` and the same with
+    `[proto+8Ch]`, else 0); save each `TownCenter` item and set its `+0` to the proto and `+0Ch` /
+    `+10h` to the larger footprint; call `0x925936` with the same arguments; put back each saved
+    item that is still below `[def+0Ch]` and still holds the proto; return place's result.
+- **FirstTC:** the civFirstTC branch of the shared proto hook (startingTC above).
+  `UhcCivFirstTcMatches(player, protoId, unit)` is true when the player's proto is `protoId`
+  (≥ 0) and the Nomad byte is 0; it logs with `log`.
+- **Town hook** at `0x679AC8`, 6 bytes (`jmp` + 1 NOP), in FUN_0049039A:
+  - entry state: EDI = player, ECX = database; after `0x679ACE`, EAX, ECX and EDX are written
+    before they are read;
+  - re-execute `mov ebx,[ecx+5E08h]`; call `UhcCivFirstTcTownProto(EDI)` (stdcall); a result
+    ≥ 0 replaces EBX; `jmp 679ACEh`;
+  - `UhcCivFirstTcTownProto`: the player's proto, or -1, unless the FirstTC `[player+4F0h]` is in
+    the unit table (as `0x44CC6D`), of exactly that proto (`[[unit+5Ch]+4]`), owned by the player
+    (`[unit+44h]`), alive (`call [[unit]+0A4h]`), and a colony starts at it: `[player+3E0h]`
+    non-null, bit 0 of its first byte clear, and a colony `[[list+8]+4·[[list+14h]+4k]]`
+    (k < `[list+18h]`) with `[colony+28h]` = the FirstTC ID, as the loop at `0x7C2407` tests.
+    Return -1 when any of these fails (the colony case is logged once per game).
+  - Keep the colony test: FUN_007C238E spawns only at such a colony, and `0x679B63` clears the
+    request after the call whether or not anything spawned. Without the test, a building with no
+    colony would use up the request with nothing spawned.
+- **Order:** after startingTC, as in `features.h`; or install the shared proto hook yourself, once.
 
 ### transformInventory
 
@@ -873,7 +967,7 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 - **Keep the cfg keys and their syntax:**
   - `healNonIdle [UnitType]`, default `AbstractHealNonIdle`;
-  - `hcShipmentPointFallback <Proto> …`, 1 to 64 names;
+  - `hcShipmentPointFallback <Proto|FirstTC> …`, 1 to 64 entries;
   - `damageOverTime [log]`, with `<AttachProtoUnit>` in `protoy.xml` and an `Attaching` action on
     the attachment proto;
   - `dodgeAnyUnit [UnitType] [log]`, default `AbstractDodge`, and any number of
@@ -890,6 +984,7 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `techRenameEffect [log]`, also read as `enableTechRenameEffect`;
   - `danceBonusCivs <Civ> [<Civ> ...] [log]`, several lines add up;
   - `startingTC [UnitType] [log]` (default `AbstractStartingTC`);
+  - `civFirstTC [log]`, with `<firstTC>Proto</firstTC>` inside a `<civ>` of `civs.xml`;
   - `transformInventory [all] [scale] [UnitType] [log]` (no default: every in-place transform);
   - `noTrainNearEnemyTC <meters> [UnitType] [log]`, meters above 0 and at most 1000, one line
     (default `AbstractDaimyo`);
@@ -902,12 +997,13 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Verify, then write.** Check all of a feature's ranges first, and write nothing if any range
   differs.
 - **Order.** Apply the features in the order of `kFeatures` in
-  [`src/features.h`](../src/features.h). Two constraints matter: `noTrainNearEnemyTC` after
+  [`src/features.h`](../src/features.h). Three constraints matter: `noTrainNearEnemyTC` after
   `liveBuildingWorkRate` (both check `WorkRateTrainCall` as stock bytes; only the first writes
-  inside it), and `buildingWorkRateAuras` after both (it redirects the four getter calls and finds
-  the Train call already hooked when `noTrainNearEnemyTC` is on). The two features share
-  `g_uhcBwrTrainGetter`: port both, or define that pointer as `0x9BFE33` in a port of
-  `noTrainNearEnemyTC` alone.
+  inside it), `buildingWorkRateAuras` after both (it redirects the four getter calls and finds
+  the Train call already hooked when `noTrainNearEnemyTC` is on), and `civFirstTC` after
+  `startingTC` (they share the proto hook at `0x506B3B`, written once by whichever applies first).
+  `noTrainNearEnemyTC` and `buildingWorkRateAuras` share `g_uhcBwrTrainGetter`: port both, or
+  define that pointer as `0x9BFE33` in a port of `noTrainNearEnemyTC` alone.
 - **Apply from `UHCMain`.** Every hook is in code that runs later, during data load or in game.
 - **Multiplayer determinism** ([how-it-works.md](how-it-works.md#5-rules-that-keep-multiplayer-deterministic)):
   - names are resolved inside the game, from its own database;
@@ -915,8 +1011,11 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - poisons tick on the game time `[world+108h]`, in integer milliseconds and key order;
   - `techPrereqRecheck` schedules on the world's step count, never on a clock;
   - predicates that mirror stock code (`maintainWaitForPop`, `snareOnlyHitUnit`, `startingTC`,
-    `noTrainNearEnemyTC`, `buildingWorkRateAuras`) call the same engine functions with the same
-    arithmetic;
+    `civFirstTC`, `noTrainNearEnemyTC`, `buildingWorkRateAuras`) call the same engine functions
+    with the same arithmetic;
+  - `civFirstTC` reads its tags while `civs.xml` is parsed on every machine, decides from each
+    player's civ and the random map's Nomad byte, and restores the object def after each
+    placement;
   - `transformInventory` copies the encoded amounts raw; only `scale` divides two game values
     (single precision);
   - `overhealHitpointBars` and `showGatherRate` change only the interface; `showGatherRate`'s
@@ -933,7 +1032,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   their type is a new name. Load saves and replays with the same DLL and cfg they were made with.
   `damageOverTime` keeps its poisons outside the game state, so a loaded game has none.
   `buildingWorkRateAuras` modifiers are saved with stat 40h; a DLL without the feature ignores
-  them.
+  them. `civFirstTC` adds no unit type, but a recorded game generates its map again on playback,
+  so it needs the same `civs.xml`, `placementrules\colonies.xml` and `protoy` as well.
 
 ## 6. Data and testing
 
@@ -950,7 +1050,16 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - **healNonIdle:** marked surgeons heal an explorer while it fights.
   - **hcShipmentPointFallback:** delete every Town Center (and every other stock fallback
     building) and send a shipment. It must arrive at the first listed building that still
-    stands.
+    stands. With `civFirstTC` (or `startingTC`) and `hcShipmentPointFallback FirstTC`, a player
+    whose first town center is a Market and who has no Town Center receives a shipment at the
+    Market (the log names it as FirstTC).
+  - **civFirstTC:** give a civ `<firstTC>Market</firstTC>` in `civs.xml`, the Market
+    `<Flag>StartingColonyBuilding</Flag>` and a `<type maxcount="1">Market</type>` in the
+    `<starttypes>` of `placementrules\colonies.xml`, then start a skirmish as that civ: the map's
+    Town Center is a Market, and the starting Settlers stand at it. A skirmish against an AI of
+    an untagged civ checks that it still gets its Town Center and plays. Real clicks are needed
+    for the skirmish and for sending a card
+    ([developer guide](developer-guide.md#driving-the-game-unattended)).
   - **damageOverTime:** with the data of the
     [modding guide](modding-guide.md#damageovertime) and `damageOverTime log`, hit a unit once
     and pull back. The log must show one `tick` line per ROF with the hitpoints falling. Then
@@ -977,8 +1086,9 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   ([section 1](#1-check-that-you-can-use-the-sites)).
 - **Multiplayer, saved games and replays:** untested for every feature.
 - **hcShipmentPointFallback:**
-  - three of the eight stock fallback types are not resolved yet;
-  - water shipment points (`[hc+190h]`) were not tested.
+  - `FirstTC` was confirmed in game with `civFirstTC` only; with `startingTC`, and the owner check
+    on a converted first town center, it was not tested;
+  - water shipment points (`[hc+190h]`) were not tested (the key does not change them).
 - **healNonIdle:**
   - a direct order (right-click) on a fighting unit was not verified.
 - **dodgeAnyUnit / dodgeSoundSet / criticalSoundSet:** confirmed in single player only; the
@@ -1016,3 +1126,11 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     center of a player without one); the replacement of a dead or expiring first town center
     (WoL's Maori case) and the placement effect were not driven. The other `TownCenter` checks
     are not covered (question Q2 in [wol-requests.md](wol-requests.md)).
+- **civFirstTC** (2026-10-29, single player): confirmed in game on a test map (editor route) and
+  in skirmishes on Mongolia: the substitution, the first town center, the town starting units
+  (with `StartingColonyBuilding` and `<starttypes>`), an untagged AI keeping its Town Center, and
+  a shipment to the building through `hcShipmentPointFallback FirstTC`. Not tested: a Nomad start
+  (TAD's skirmish setup offers none), multiplayer, recorded games, the `no colony` log path. Not
+  covered: AI scripts that expect a Town Center (a tagged AI stayed idle), the engine AI's
+  automatic base, the age-up picker, the start camera, the `Maintain` spawn gate, the water
+  shipment point.

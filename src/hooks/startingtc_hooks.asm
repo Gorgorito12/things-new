@@ -8,9 +8,11 @@ include common.inc
 
 EXTERNDEF g_uhcStartingTcType:SDWORD   ; marker unittype ID, set on each database load; -1 before
 EXTERNDEF g_uhcStartingTcLog:SDWORD    ; 1 with "startingTC ... log"
+EXTERNDEF g_uhcCivFirstTcOn:SDWORD     ; 1 with civFirstTC (features/civfirsttc.cpp)
 
 UhcStartingTcFirst PROTO STDCALL player:DWORD, unit:DWORD
 UhcStartingTcStale PROTO STDCALL player:DWORD, unit:DWORD
+UhcCivFirstTcMatches PROTO STDCALL player:DWORD, protoId:DWORD, unit:DWORD
 
 .data
 protoIsType     dd 0044D7FAh    ; bool thiscall(proto, int unitTypeId): proto IDs and abstract types
@@ -55,12 +57,22 @@ UhcStartingTcGateHook ENDP
 ; Replaces 0x506B3B..0x506B40 (cmp eax,[ecx+5E08h]) in the cold chunk of Player::addUnit, which
 ; runs only while the player has no FirstTC. EAX = the unit's exact proto ID, ECX = database,
 ; EDX = proto, EDI = unit, ESI = player. Stock makes the unit FirstTC only when the ID is
-; TownCenter's (jne 498817h / jmp 67ABD4h); the hook also accepts a unit whose proto is of the
-; marker type. Both exits read only EDI and ESI.
+; TownCenter's (jne 498817h / jmp 67ABD4h); the hook also accepts, with civFirstTC, the <firstTC>
+; proto of the player's civ and, with startingTC, a unit whose proto is of the marker type.
+; Both exits read only EDI and ESI. Installed once for both keys (features/startingtc.cpp).
 UhcStartingTcProtoHook PROC
-    TRACE_ONCE "startingTC (0x506B3B)"
+    TRACE_ONCE "FirstTC proto check (0x506B3B)"
     cmp eax, dword ptr [ecx+5E08h]  ; stolen 0x506B3B: TownCenter
     je setFirst
+    cmp g_uhcCivFirstTcOn, 0
+    je marker
+    push edi
+    push eax
+    push esi
+    call UhcCivFirstTcMatches       ; the civ's <firstTC> proto (logs it); clobbers EAX/ECX/EDX
+    test al, al
+    jne setFirst
+marker:
     cmp g_uhcStartingTcType, 0
     jl done
     mov ecx, dword ptr [edi+5Ch]    ; the unit's proto

@@ -22,6 +22,7 @@ add_library(UHC SHARED
   src/features/ai.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp
+  src/features/civfirsttc.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/dodge.cpp
@@ -53,6 +54,7 @@ add_library(UHC SHARED
   src/hooks/ai_hooks.asm
   src/hooks/broadside_hooks.asm
   src/hooks/bwraura_hooks.asm
+  src/hooks/civfirsttc_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm

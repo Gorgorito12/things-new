@@ -195,6 +195,11 @@ there:
   before each "Play". After a game, the home city screen sometimes ignores the first click on
   "Play": take a small screenshot (`shot out.png 4`) and click again. `startRandomGame2` does
   nothing from the main menu; it works only inside the editor.
+- **Shipments need a skirmish and real clicks.** Scenario players have no home city, so a test of
+  shipments (`hcShipmentPointFallback`) runs in a skirmish. Send a card by clicking the home city
+  flag (client 667, 1217 on a 2560×1600 client), then a card in its panel. The console cannot set
+  a tech in a skirmish either: `trTechSetStatus` is a trigger syscall, and `editorSetTechStatus`
+  needs the editor.
 - **An error dialog outlives the game.** A game dialog, such as an XS error at game start, stays
   on screen through `leaveGame()` and the menus and eats the clicks meant for them. Click its
   button first (client 1282, 809 for the centered dialog).

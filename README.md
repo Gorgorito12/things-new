@@ -21,7 +21,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
 | `removeConversionRestriction` | `ConvertGuardian` may target any unit. | not confirmed |
-| `hcShipmentPointFallback Proto…` | **New.** When the building holding the shipment point dies and no stock fallback building (Town Center, fort, …) is left, shipments move to the first listed building type that still stands. | confirmed |
+| `hcShipmentPointFallback Proto…` / `FirstTC` | **New.** When the building holding the shipment point dies and none of the 10 stock fallback types (Town Center, Outpost, forts, …) is left, shipments move to the first listed building type that still stands. `FirstTC` is the player's first town center, which `startingTC` or `civFirstTC` can make another building (a civ that starts with a Market). | confirmed (single player; `FirstTC` with `civFirstTC`) |
 | `healNonIdle [UnitType]` | **New.** Healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed |
 | `dodgeAnyUnit [UnitType] [log]` | **New.** Units marked with a unit type can dodge hits like the Japanese monk: no damage, 15 % of the time, while their player has the tech `YPDodge`. Stock allows it only for `ypMonkJapanese`. | confirmed (single player) |
 | `dodgeSoundSet UnitType SoundSet`, `criticalSoundSet UnitType SoundSet` | **New.** Choose the sound set a unit plays when it dodges, or when it lands a critical hit, instead of the stock `PowerEvade` / `PowerCriticalStrike`. | confirmed (single player; the choice is logged, the sound itself was not listened to) |
@@ -41,6 +41,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `noCorpseDopples [UnitType] [log]` | **New.** A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | confirmed (single player) |
 | `danceBonusCivs Civ… [log]` | **New.** The fire pit's Training, XPTrickle, Gathering and Regeneration dances also work for the civs you list, not only for the native civs. | confirmed (single player, Healing Dance) |
 | `startingTC [UnitType] [log]` | **New.** A building of a marked type can be a player's first town center (`FirstTC` in the placement rules), like a `TownCenter`: a player with none takes it, and it replaces a first town center that is gone, dead or about to expire (WoL's Maori Pa start). | confirmed from the log and memory (single player; the placement effect not driven) |
+| `civFirstTC [log]` | **New.** A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players, except in a Nomad start. That building is their first town center (`FirstTC`) and, with the data the guide lists, receives their town starting units (settlers, crates). WoL's design. | confirmed (single player; a Nomad start and multiplayer not tested; AI scripts still expect a `TownCenter`) |
 | `transformInventory [all] [scale] [UnitType] [log]` | **New.** A unit that a tech (`TransformUnit`) or a revolution changes into another proto takes that proto's resources (`InitialResource`) when the two protos hold different resource types: a wood crate turned into a food crate holds food. Stock keeps the old resources (or none). | confirmed (single player) |
 | `noTrainNearEnemyTC M [UnitType] [log]` | **New.** Marked units (default `AbstractDaimyo`: the Daimyos and the Shogun) do not train while they stand less than M metres from an enemy's first Town Center; the queue keeps its progress and resumes when they leave or that Town Center dies. | confirmed (single player) |
 | `overhealHitpointBars [UnitType…] [log]` | **New.** HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`, so a mod whose healers push units above their starting HP shows fresh units as full. Display only. | confirmed (single player, UI) |
@@ -51,9 +52,9 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `perfStats`, `perfAutoExec`, `perfExecFile`, `perfFileLog` | In development: performance diagnostics. See [docs/performance.md](docs/performance.md). | in progress |
 
 No feature has been tested in multiplayer yet. Details, data requirements and limits for each
-key are in the [modding guide](docs/modding-guide.md), where each feature that works in game
-shows a short clip of it, with the live numbers (hit points, line of sight, the feature's own
-log lines) drawn over the game, and a link to the full recording.
+key are in the [modding guide](docs/modding-guide.md), where most features confirmed in game
+show a short clip of their test, with the live numbers (hit points, line of sight, the
+feature's own log lines) drawn over the game, and a link to the full recording.
 
 ## Using it in your mod
 
@@ -114,12 +115,12 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 26 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
+  - 27 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
     `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
     `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
     `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
     `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,
-    `danceBonusCivs`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC`,
+    `danceBonusCivs`, `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
     `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `bufferedFileReads`,
     `multipleInstances`. Most of them answer Wars of Liberty's requests
     ([docs/wol-requests.md](docs/wol-requests.md)).

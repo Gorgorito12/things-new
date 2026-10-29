@@ -20,7 +20,10 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    exist yet: the game object pointer `[0xC66234]` is still null. So at startup a feature only
    patches code and prepares its own data. Anything that needs game data is resolved later,
    from inside the game:
-   - `hcShipmentPointFallback` resolves proto names the first time its hook runs;
+   - `hcShipmentPointFallback` resolves proto names the first time its hook runs (`FirstTC` is a
+     keyword and needs no lookup);
+   - `civFirstTC` reads `<firstTC>` while `civs.xml` is parsed, and resolves the proto name on
+     its first use, and again whenever the database's proto table changes;
    - `healNonIdle` and every other key that takes a `<UnitType>` get the type's ID from a hook in
      the data loader;
    - `damageOverTime` records its tags while the data loads and resolves them on the first hit;
@@ -99,9 +102,10 @@ The hooks are MASM files in `src/hooks/`.
   prologue and jumps past it. The prologue's instructions are written out by hand, never
   relocated.
 - **Redirecting a call** (`customHotkeyContexts`, `wonderPanelSkipAuras`, the `dodgeAnyUnit log`
-  wrapper). `WriteCall` rewrites a stock `call` (5 B, `E8` and a new rel32) so that it calls the
-  DLL. The new target takes the callee's exact frame (thiscall, the same arguments, the same
-  `ret N`) and returns to the stock return address.
+  wrapper, `civFirstTC`'s map placement). `WriteCall` rewrites a stock `call` (5 B, `E8` and a new
+  rel32) so that it calls the DLL. The new target takes the callee's exact frame (thiscall, the
+  same arguments, the same `ret N`) and returns to the stock return address; `civFirstTC`'s target
+  is a `__fastcall` C++ function with the thiscall frame, as in the previous point.
 - **Patching a constant** (`abilitySlots`). `WriteDword` replaces an immediate operand; no code
   runs in the DLL.
 - **A C++ object with an engine vtable** (`techRenameEffect`). The DLL builds a copy of a stock
@@ -218,22 +222,60 @@ The patch writes two NOPs over the `je`.
 
 ### hcShipmentPointFallback
 
-FUN_004C6CAE returns the unit that home city shipments arrive at. The player's home city object
-is `[player+84h]`, and it stores that unit's ID at `[hc+18Ch]` (land) and `[hc+190h]` (water).
+FUN_004C6B9E (`Unit* __thiscall(hc, bool store)`, `ret 4`) returns the unit that home city
+shipments arrive at. The player's home city object is `[player+84h]`. It stores that unit's ID
+at `[hc+18Ch]`; the water point `[hc+190h]` (0x855D71) and the consulate's drop point (0x855EC0)
+are resolved elsewhere and the key does not change them.
 
-When the stored unit is gone, stock clears the ID (`0x6697FF`, on unit removal). FUN_004C6CAE
-then searches fixed type lists:
-- the search uses the stock unit query: `0x453618` (player), `0x45356D` (add type), `0x4532B4`
-  (state), `0x453484` (run) and `0x453A36` (unit ID by index);
-- each candidate must pass `vtbl+A4h`, `0x44DDB4` and `0x4802C6 != 1`.
+What stock does:
+1. **The stored point:** when `[hc+18Ch]` >= 0, it looks the unit up (`0x44CC6D`) and checks it
+   with `0x85302C`: not null, alive (unit vtable slot A4h), `0x44DDB4` true, `0x4802C6` not 1.
+   There is no owner and no type check. A unit that passes is returned. Otherwise, with
+   store = 1, the ID is set to -1 (`0x6697F5`).
+2. **The search** of 10 fixed types: `TownCenter` in the main body (`0x4C6BF1`, with inline
+   copies of the same three checks), then nine types in the cold chunk `0x669804..0x669E2C`
+   (Outpost, FortFrontier, WarHut, Blockhouse, NoblesHut, AbstractAgraFort, AbstractDaimyo,
+   ypCastle, ypVillage). Each runs the stock unit query: `0x453618` (player), `0x45356D` (add
+   type), `0x4532B4` (state 2, alive), `0x453484` (run), `0x453A36` (unit ID by index).
+3. **Found:** `0x4C6CB2` writes the unit's ID to `[hc+18Ch]` when store = 1
+   (`0x669E38..0x669E45`) and returns the unit.
+4. **Nothing found:** the exit at `0x669E2E` returns 0.
 
-The hook sits on the "nothing found" exit at `0x669E2E`. It runs the same query and the same
-three checks for each proto named in the cfg, in order. On success it jumps to the stock
-store-and-return path at `0x4C6CB2`, which writes the new ID back.
+Only two of the ten callers pass store = 1: FreeHomeCityUnit (FUN_00857E77, `0x857F06`), which
+creates nothing when 0 comes back (`0x857F3F`), and FUN_00858299 (`0x8584B5`). The others, the
+command panel among them (`0x6966D4`), only read, possibly every frame.
+
+The hook sits on the "nothing found" exit at `0x669E2E`. It tries each cfg entry in order:
+- **a proto:** the same query and the same three checks as the stock block `0x6698B4..0x669963`;
+- **`FirstTC`** (entry -2, tested before -1 = unknown proto, so no query runs for it): the hook
+  calls `UhcGatherFirstTcUnit(hc)`, which
+  - reads the player ID `[[hc+8]]` and gets the player of the main world
+    (`0x44CB21([[C66234h]+13Ch], id)`);
+  - reads `FirstTC` at `[player+4F0h]` (set by Player::addUnit at `0x67ABD4`: stock for a
+    `TownCenter`; `startingTC` for a marked building; `civFirstTC` for the civ's `<firstTC>`
+    building) and looks the unit up (`0x44CC6D`);
+  - requires the unit's owner `[unit+44h]` to be that player (`[[unit+44h]]` = the ID): the
+    game never clears `FirstTC`, and `0x85302C` checks no owner, so a converted first town
+    center would otherwise be accepted;
+  - calls the stock stored-point check `0x85302C(hc, unit)` itself, so the unit passes exactly
+    the checks stock applies to a stored point and to every candidate.
+
+  It writes no game state; its only state is the log-only "last FirstTC logged per player".
+
+On success the hook jumps to the stock store-and-return path at `0x4C6CB2` with EDI = the unit,
+like a stock block, so the store = 1 callers keep it as the stored point. From then on stock
+keeps it while it is alive and built, even after a Town Center is built. When nothing matches,
+the hook re-executes the stolen `pop ebp / pop edi / pop esi / xor eax,eax` and continues at
+`0x669E33`.
 
 Proto names are resolved to IDs (`0x5A2346`, name → proto ID) the first time the hook runs, when
-the database exists. The hook never calls `aiSetHCGatherPoint`'s setter: it issues a network
-command (`0x82D9CB`), which every machine would then send.
+the database exists; `FirstTC` is mapped to -2 before any lookup. The hook never calls
+`aiSetHCGatherPoint`'s setter: it issues a network command (`0x82D9CB`), which every machine
+would then send.
+
+**Observed in game** (2026-10-29, with `civFirstTC`): a player whose first town center was a
+Market and who had no Town Center sent a card of food crates; the helper returned the Market
+(unit 148), the store = 1 path wrote 148 to `[hc+18Ch]`, and the crates landed beside the Market.
 
 ### healNonIdle
 
@@ -1049,8 +1091,11 @@ it, and the town center dies 0.5 s later.
 **The hooks** (`hooks/startingtc_hooks.asm`):
 - **Proto hook**, a `jmp` over `cmp eax,[ecx+5E08h]` at 0x506B3B (6 B), in the cold chunk, so only
   for a player with no first town center. It re-executes the compare: equal → 0x67ABD4, as in
-  stock. Otherwise a unit whose proto is of the marker type (is-a 0x44D7FA) also goes to 0x67ABD4
-  (logged first, with `log`); any other unit leaves through 0x498817, the stock `jne` target.
+  stock. Otherwise, with `civFirstTC` on, a unit of the exact proto its player's civ names in
+  `<firstTC>` goes to 0x67ABD4 ([civFirstTC](#civfirsttc)); then a unit whose proto is of the
+  marker type (is-a 0x44D7FA) also goes to 0x67ABD4 (logged first, with `log`); any other unit
+  leaves through 0x498817, the stock `jne` target. Its trace line is `FirstTC proto check
+  (0x506B3B)`, since both keys use it.
 - **Gate hook**, a `jmp` over `cmp dword ptr [esi+4F0h],0 / jl 506B2Ah` at 0x49880A (13 B). It
   re-executes both: a negative value goes to the cold chunk 0x506B2A (and the proto hook). For a
   player who has a first town center, a unit of the marker type calls
@@ -1066,6 +1111,12 @@ it, and the town center dies 0.5 s later.
   replaced.
 - The proto hook is written first; if the gate hook cannot be written, the proto hook's stock bytes
   are put back, so the feature is never half installed.
+- **One proto hook for two keys.** `startingTC` and `civFirstTC` share the hook at 0x506B3B. A
+  single installer, `InstallFirstTcProtoHook` (`features/startingtc.cpp`), writes it once for
+  whichever key applies first; `startingTC` comes before `civFirstTC` in `features.h`. When the
+  `jmp` is already there, `civFirstTC` verifies the chunk before it (`FirstTcChunk`) instead of
+  the stock compare (`FirstTcProtoCheck`). Each key's branch is off while its own global is unset
+  (`g_uhcCivFirstTcOn`, the marker ID).
 
 **Why it is safe.**
 - Both exits are stock code: 0x67ABD4 reads EDI (unit) and ESI (player) and writes ECX; 0x498817
@@ -1084,6 +1135,118 @@ it, and the town center dies 0.5 s later.
 - **Not covered:** the other `TownCenter` checks ([modding guide](modding-guide.md#startingtc)); a
   captured first town center; a hook on unit removal (a dead first town center is replaced only
   when a marked building is added afterwards).
+
+### civFirstTC
+
+WoL's design (request #3, by WoL's developer Mandos): a civ names its first building in
+`civs.xml`, `<firstTC>Proto</firstTC>`; wherever map code places `TownCenter` for its players,
+that proto is placed instead, except in a Nomad start, and it is the `FirstTC` the placement rules
+read.
+
+**The stock start.**
+- **Map placement.** A random map script places the starting buildings through object defs:
+  `rmAddObjectDefItem(def, "TownCenter", 1, 0.0)`, then an `rmPlaceObjectDef*` call. Every
+  `rmPlaceObjectDef*` reaches FUN_00925F11, which calls objectDef::place FUN_00925936
+  (`int thiscall(def, player, float x, float z, count)`, `ret 10h`) at 0x925F4C, its only call
+  of place. A def holds its items at `[def+8]` (count `[def+0Ch]`), 20 B each: `+0` the proto ID,
+  `+0Ch` / `+10h` a footprint that objectDef::addItem computes at 0x924B1D: when the proto has
+  flag 2 (0x45EE02), `(int)([proto+88h] × [[world+88h]+1Ch] × 2 + 0.5)` and the same with
+  `[proto+8Ch]`, else 0. A def made by `rmCreateStartingUnitsObjectDef` has the byte `[def+55h]`
+  set (`Special_StartingUnits`): place tests it at 0x925988 and rebuilds such a def's items from
+  the civ's `<startingunit>` list. The random map object is `[game+92Ch]`; rmGetNomadStart
+  (0x90B683) returns its byte `+1A95h`, or false without one.
+- **civs.xml.** The parser FUN_0052A590 compares each child tag of a `<civ>` with the names it
+  knows (BString compare 0x443C10; the last compare is at 0x52BAFA). A tag that matches none
+  reaches 0x52BB07: `xor edi,edi / cmp [ebx+80h],edi`, then `jle 52B43Dh / jmp 52C066h` (the
+  resource names, then a silent skip). Every handled tag goes on at 0x52B43D, the next child.
+  There ESI = the node (element name `[[node+4]+18h][[node+18h]]`, text `[node+14h]`, both wide),
+  EBX = the database and `[esp+10h]` = the civ (`[civ+4]` its name, `[civ+8]` its ID).
+- **FirstTC.** Player::addUnit makes a unit the player's first town center only while there is
+  none, and only for the exact proto `TownCenter` (0x506B3B; see [startingTC](#startingtc)).
+- **The town starting units.** FUN_0049039A (EDI = the player) hands the civ's
+  `<townstartingunit>` units (settlers, crates) to a building. At 0x679AC8 it loads the
+  `TownCenter` proto ID (`mov ebx,[ecx+5E08h]`), and the query after it takes the player's first
+  built unit of proto EBX. FUN_007C238E(`[player+3E0h]`, that unit's ID) then spawns them, but
+  only when bit 0 of the colony list `[player+3E0h]` is clear and one of its colonies has
+  `[colony+28h]` = that unit (loop 0x7C2407). In game, a colony started at a building whose proto
+  is listed in `<starttypes>` of `placementrules\colonies.xml`. After the call,
+  `and byte [player+349h],0BFh` (0x679B63) clears the request, player flag 14, whether or not
+  anything spawned. While no built `TownCenter` exists, nothing reaches the spawn and the request
+  stays, so the units come with the first Town Center (static reading).
+- **Who asks for them.** The request bit is set by the player flag setter 0x8D00E5, called at
+  0x6A214A when a unit is created whose proto has flag 136 (0x6A211F..0x6A214A,
+  `[[proto+50h]+11h]` & 1). Flag 136 is `StartingColonyBuilding`: the `protoy` flag parser maps
+  that name (0x5F7018) to `or byte [eax+11h],1` (0x5FD751). Stock `TownCenter` has the flag,
+  `Market` does not. This was found in game: a Market that was the first town center, with a
+  colony started at it, got no settlers until it had the flag.
+
+**The hooks** (`features/civfirsttc.cpp`, `hooks/civfirsttc_hooks.asm`):
+1. **civs.xml**, a `jmp` over 0x52BB07 (8 B, `jmp` + 3 NOP). Inside `pushad`/`popad` it calls
+   `UhcCivFirstTcTag(node, civ)`, which compares the element name with `firstTC`, ignoring case.
+   For that tag it keeps the text, trimmed (non-ASCII characters become `?`), by civ ID together
+   with the civ object, logs it and returns true; a later tag of the same civ replaces it. True →
+   `jmp 52B43Dh`, the next child. False → re-execute `xor edi,edi / cmp [ebx+80h],edi` and
+   `jmp 52BB0Fh`, which branches on those flags. The parse runs after `UHCMain`, so every parse
+   is seen, including the one at each skirmish start.
+2. **Map placement**, `WriteCall` at 0x925F4C to `UhcRmPlaceObjectDef`, a `__fastcall(def, unused,
+   player, x, z, count)` function with the thiscall frame, which returns place's result. It calls
+   the stock place unchanged unless a `<firstTC>` was read, the world and database exist, the def
+   has items, `[def+55h]` is 0, an item holds the `TownCenter` proto ID `[db+5E08h]`, and the
+   owner (`[world+58h][player]`) has a civ (`[[player+20h]]` when `[player+24h]` > 0, as 0x4539D3)
+   whose `<firstTC>` resolves to a proto other than `TownCenter`. In a Nomad start it then calls
+   place unchanged (and logs, with `log`). Otherwise it saves each `TownCenter` item, gives it the `<firstTC>` proto ID
+   and the larger of the two footprints (the new proto's computed as addItem does), calls place,
+   and puts back each saved item that is still below the count and still holds the substituted
+   proto. The same def therefore places a `TownCenter` for the next player.
+3. **FirstTC**, in the proto hook it shares with `startingTC` (0x506B3B): when the unit is not a
+   `TownCenter`, `UhcCivFirstTcMatches(player, protoId, unit)` (stdcall) returns true when the
+   player's civ names the unit's exact proto ID (the EAX the cold chunk loaded) and the Nomad byte
+   is 0; the hook then jumps to the stock store 0x67ABD4. This is also what makes a building
+   loaded from a scenario or a saved game the first town center again.
+4. **Town starting units**, a `jmp` over 0x679AC8 (6 B, `jmp` + 1 NOP). It re-executes
+   `mov ebx,[ecx+5E08h]`, calls `UhcCivFirstTcTownProto(player = EDI)` and puts the result in EBX
+   when it is ≥ 0, then continues at 0x679ACE. The helper returns the `<firstTC>` proto only when
+   the player's FirstTC `[player+4F0h]` is in the unit table (looked up as 0x44CC6D does), of that
+   exact proto, owned by the player (`[unit+44h]`), alive (unit vtable slot A4h), and a colony
+   starts at it (the test of 0x7C2407, repeated). Otherwise it returns -1, and logs once per game
+   when only the colony is missing: EBX stays `TownCenter`, so the request is never spent on a
+   spawn that would create nothing.
+
+**Name resolution.** `CivFirstTcProto(player)` takes the civ ID as 0x4539D3 does and checks that
+the civ by ID (0x405C2E) is still the object the tag was read for, so a tag from an older parse
+never applies to a new civ table. It resolves the name with 0x5A2346 on first use and again
+whenever the database's proto array `[db+54h]` is another one (a data reload); an unknown name
+gives -1 and is logged once per resolution.
+
+**Why it is safe.**
+- Every exit is stock code: 0x52B43D reads only the stack and 0x52BB0F the flags the hook
+  rebuilt; the placement wrapper returns to 0x925F51 with place's result in EAX and the stack as
+  `ret 10h` leaves it; 0x67ABD4 and 0x498817 read only EDI and ESI (see [startingTC](#startingtc));
+  after 0x679ACE, EAX, ECX and EDX are written before they are read. The C++ helpers are
+  `__stdcall` and keep EBX, ESI, EDI and EBP.
+- The object def is changed only for the length of one place call, and only its `TownCenter`
+  items; a `Special_StartingUnits` def is never touched, since place rebuilds its items itself.
+  Nothing else in the game changes: the map script, the database and the civ are read only.
+- Every decision reads only game state: the player's civ, the database, the random map's Nomad
+  byte, the unit table and the colonies. The footprint is addItem's formula computed in single
+  precision in the DLL, the same on every machine with this build.
+- The town hook changes only which proto the stock query looks for; the spawn, its units and the
+  request are stock. Because it repeats FUN_007C238E's colony test, a request it redirects is
+  always one the spawn can serve.
+- The once-per-game log tables reset when the world pointer changes or its step count goes back;
+  they decide only what is written.
+
+**Observed in game** (2026-10-29, single player): a `TownCenter` item of a test map and of the
+stock map Mongolia's own def `startingTC` became a Market for the tagged players only; the
+Market's ID was in `[player+4F0h]`; with `StartingColonyBuilding` on the Market, 6 Settlers
+spawned at it; an untagged AI kept its Town Center. In those games `[game+92Ch]` stayed allocated
+during the game and its byte `+1A95h` was 0.
+
+**Not covered:** a Nomad start was not driven (TAD's skirmish setup has no Nomad option); a
+`TownCenter` from `<startingunit>`; the AI scripts, which expect a Town Center (a tagged AI got
+its Market and settlers, then stayed idle), and the engine's AI auto-base FUN_004CF222; the age-up
+picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B), the `Maintain` spawn
+gate (0x492FD6) and the water shipment point `[hc+190h]`, which all look for `TownCenter` itself.
 
 ### transformInventory
 
@@ -1544,10 +1707,16 @@ and watched with `PrintWindow`, and both work without focus.
   (`[world+F8h]` + player ID) % N, stateless, so every machine checks the same players on the same
   update.
 - **Decide with the engine's own test** (`maintainWaitForPop`, `snareOnlyHitUnit`, `startingTC`,
-  `noTrainNearEnemyTC`, `buildingWorkRateAuras`): a predicate that mirrors stock code calls the
-  same engine functions in the same order, with the same 32-bit or single-precision arithmetic,
-  and the mirrored code is verified byte for byte. `noTrainNearEnemyTC` measures with the
-  placement rule's own distance call; `buildingWorkRateAuras` sums with the stock modifier sum.
+  `civFirstTC`, `noTrainNearEnemyTC`, `buildingWorkRateAuras`): a predicate that mirrors stock
+  code calls the same engine functions in the same order, with the same 32-bit or
+  single-precision arithmetic, and the mirrored code is verified byte for byte.
+  `noTrainNearEnemyTC` measures with the placement rule's own distance call;
+  `buildingWorkRateAuras` sums with the stock modifier sum; `civFirstTC` repeats the colony test of
+  the town starting units' spawn, and computes a footprint with addItem's formula in single
+  precision, the same on every machine with this build.
+- **Data read with the game's data** (`civFirstTC`): `<firstTC>` is read while `civs.xml` is
+  parsed, on every machine; the substitution then depends only on each player's civ and the
+  random map's Nomad byte, and the object def is restored after each placement.
 - **Copy, don't compute** (`transformUpdatesLOS`, `liveBuildingWorkRate`, `transformInventory`): a
   value is copied or read as the stock code would, with no new float operation. The one exception
   is `transformInventory scale`: a single-precision division of two game values, the same on every

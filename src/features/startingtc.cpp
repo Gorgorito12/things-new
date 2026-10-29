@@ -132,6 +132,23 @@ bool __stdcall UhcStartingTcStale(const char* player, const char* unit) {
 
 namespace uhc {
 
+namespace {
+bool g_protoHookInstalled = false;
+}  // namespace
+
+// The hook at 0x506B3B serves startingTC and civFirstTC (features/civfirsttc.cpp): whichever key
+// applies first writes it, after its own VerifyAll.
+bool FirstTcProtoHookInstalled() { return g_protoHookInstalled; }
+
+bool InstallFirstTcProtoHook() {
+  if (!g_protoHookInstalled) {
+    // Replaces cmp eax,[ecx+5E08h] at 0x506B3B; the hook re-executes it.
+    g_protoHookInstalled =
+        WriteJmp(sites::kFirstTcProtoCheck.va, reinterpret_cast<const void*>(&UhcStartingTcProtoHook), 6);
+  }
+  return g_protoHookInstalled;
+}
+
 Outcome ApplyStartingTc(const Config& config) {
   const Config::Args* args = config.First("startingTC");
   if (args == nullptr) {
@@ -161,14 +178,15 @@ Outcome ApplyStartingTc(const Config& config) {
     return Outcome::kFailed;
   }
   g_uhcStartingTcLog = log ? 1 : 0;
-  // Replaces cmp eax,[ecx+5E08h] at 0x506B3B; the hook re-executes it.
-  if (!WriteJmp(sites::kFirstTcProtoCheck.va, reinterpret_cast<const void*>(&UhcStartingTcProtoHook), 6)) {
+  if (!InstallFirstTcProtoHook()) {
     return Outcome::kFailed;
   }
   // Replaces cmp dword ptr [esi+4F0h],0 / jl 506B2Ah at 0x49880A; the hook re-executes both. Without
   // it the proto hook would run alone: put its stock bytes back rather than run half the feature.
   if (!WriteJmp(sites::kFirstTcGate.va, reinterpret_cast<const void*>(&UhcStartingTcGateHook), 13)) {
-    WriteBytes(sites::kFirstTcProtoCheck.va, sites::kFirstTcProtoCheck.bytes, 6);
+    if (WriteBytes(sites::kFirstTcProtoCheck.va, sites::kFirstTcProtoCheck.bytes, 6)) {
+      g_protoHookInstalled = false;
+    }
     return Outcome::kFailed;
   }
   Log(L"startingTC: units of unittype %hs can be a player's first town center (FirstTC) like TownCenter, and "

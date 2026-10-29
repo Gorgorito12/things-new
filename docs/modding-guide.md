@@ -240,7 +240,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for every `XPRevolution<Name>` tech, not only O'Higgins. | A banner texture per revolution. | partly confirmed |
 | [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | Two icon textures. | not tested in game |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | Nothing. | not confirmed |
-| [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and no stock fallback building (Town Center, fort, …) is left, moves the point to the first alive building of the types you list. | Nothing beyond the proto names in the cfg. | confirmed |
+| [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the 10 stock fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
@@ -260,6 +260,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | `<Flag>Doppled</Flag>` on those protos, and the unit type in the cfg (`Huntable` needs no data change). | confirmed (single player) |
 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player, Healing Dance) |
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed from the log and memory (single player) |
+| [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center; the queue resumes when they leave or that Town Center dies. | Nothing for the Daimyos; with a new marker, that type on the trainers in `protoy`. | confirmed (single player) |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units, and the unit type on them (or an existing type in the cfg). | confirmed (single player, UI) |
@@ -470,30 +471,77 @@ removeConversionRestriction
 
 ### hcShipmentPointFallback
 
+![hcShipmentPointFallback in game](media/hcShipmentPointFallback.gif)
+
+*In game:* No Town Center on the map: the food crates of a home city card land beside player 1's Market, its first town center (made by [`civFirstTC`](#civfirsttc)), through `hcShipmentPointFallback FirstTC`. [Full video (MP4)](media/hcShipmentPointFallback.mp4).
+
 ```
-hcShipmentPointFallback <Proto> [<Proto> ...]     1 to 64 proto unit names
+hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entries
 ```
 
 - **How stock behaves:** home city shipments arrive at the player's shipment point, a building
-  (usually the Town Center). When that building is destroyed or deleted, the game moves the
-  point to the first alive building it finds among a fixed list: Town Center, FortFrontier,
-  WarHut, Blockhouse, NoblesHut, and three types not resolved yet. If none of those is left,
-  there is no valid shipment point.
-- **Effect:** after that stock list, the listed protos are tried in cfg order. The first alive
-  building of the player that passes the same checks as stock becomes the point. When there are
-  several of one proto, the stock unit query order decides, so every machine picks the same one.
-- **Your mod:** list proto names exactly as in `protoy.xml`, e.g.
-  `hcShipmentPointFallback Barracks Stable ArtilleryDepot Market Church`.
+  (usually the Town Center). The game keeps that point while the building is alive and built.
+  When it is destroyed or deleted, the game moves the point to the first alive, built building of
+  the player among 10 fixed types, in this order: `TownCenter`, `Outpost`, `FortFrontier`,
+  `WarHut`, `Blockhouse`, `NoblesHut`, any `AbstractAgraFort`, any `AbstractDaimyo`, `ypCastle`,
+  `ypVillage`. If none of those is left, there is no shipment point (a `FreeHomeCityUnit` effect,
+  for example, then creates nothing).
+- **Effect:** after that stock list, the entries are tried in cfg order.
+  - A **proto name:** the first alive building of the player of that proto that passes the same
+    checks as stock becomes the point. When there are several, the stock unit query order
+    decides, so every machine picks the same one.
+  - **`FirstTC`** (any case): the player's first town center, the unit the placement rules call
+    `FirstTC`. It becomes the point when it still belongs to the player and passes the same
+    checks as stock (alive, built). A first town center that was converted or captured is
+    skipped: the game never clears `FirstTC`, so it can belong to another player.
+- **`FirstTC` needs `startingTC` or `civFirstTC`:** stock makes only a `TownCenter` a first town
+  center, and the stock list already tries every `TownCenter` first, so without
+  [`startingTC`](#startingtc) or [`civFirstTC`](#civfirsttc) the keyword finds nothing new (the
+  key is still applied, with a warning in the log). With one of them, another building, for
+  example the Market a civ starts with instead of a Town Center, is the player's `FirstTC` and
+  receives the shipments. Without this key, a player whose buildings are none of the 10 stock
+  types has no shipment point at all (read from the stock search; not tested in game).
+- **Your mod:** list proto names exactly as in `protoy.xml`, and `FirstTC` where it should be
+  tried, e.g. `hcShipmentPointFallback Barracks Stable ArtilleryDepot Market Church`, or for WoL
+  `hcShipmentPointFallback FirstTC Barracks Market` (with `startingTC` or `civFirstTC`). A proto
+  named `FirstTC` cannot be listed: the keyword wins.
+- **The point then stays:** as in stock, once a building is the point it stays the point while
+  it is alive and built, even if a Town Center is built later. The player can still move the flag.
+- **Not affected:** the water shipment point and the consulate's drop point (`ypConsulate`) are
+  chosen by other code.
 - **Log:**
-  - at startup, `hcShipmentPointFallback: N extra types after the stock list (multiplayer unverified)`;
+  - at startup, `hcShipmentPointFallback: N extra types after the stock list (multiplayer
+    unverified)`; with `FirstTC` listed, `hcShipmentPointFallback: N extra types after the stock
+    list, including each player's first town center (FirstTC) (multiplayer unverified)`;
+  - at startup, with `FirstTC` but neither a `startingTC` nor a `civFirstTC` line:
+    `hcShipmentPointFallback: FirstTC without startingTC: a first town center can only be a
+    TownCenter, which the stock list already tries first`;
   - the first time in a run of the game that no stock fallback building is left,
-    `hcShipmentPointFallback: <Name> -> proto <ID>` for each name (or `(unknown proto; skipped)`)
-    and `hook reached: hcShipmentPointFallback (0x669E2E)`.
+    `hcShipmentPointFallback: <Name> -> proto <ID>` for each name (or `(unknown proto;
+    skipped)`), `hcShipmentPointFallback: FirstTC -> each player's first town center (FirstTC)`
+    for the keyword, and `hook reached: hcShipmentPointFallback (0x669E2E)`;
+  - the first time a `FirstTC` entry is tried, `hook reached: hcShipmentPointFallback FirstTC
+    (0x669E2E)`;
+  - when a player's first town center is chosen, `hcShipmentPointFallback: player <N>'s shipment
+    point -> unit <ID> (<Proto>), its first town center (FirstTC)`. The game also asks for the
+    point while drawing the interface, so the line is written only when the chosen unit changes
+    for that player.
 
   A move to another stock building, such as a second Town Center, logs nothing.
-- **Simulation:** yes.
-- **Status:** confirmed: after deleting the Town Center, the point moved to a listed building and
-  shipments arrived there. Water shipment points were not tested.
+- **Simulation:** yes. Every choice reads only game state, so every machine with the same cfg
+  picks the same building. Every player needs the same line (and the same `startingTC` or
+  `civFirstTC` line).
+- **Status:**
+  - proto names: confirmed: after deleting the Town Center, the point moved to a listed building
+    and shipments arrived there;
+  - `FirstTC`: confirmed in single player (2026-10-29) with `civFirstTC`. In a skirmish where
+    player 1's civ started with a Market instead of a Town Center, a card of 300 food sent with no
+    Town Center on the map logged `hcShipmentPointFallback: player 1's shipment point -> unit 148
+    (Market), its first town center (FirstTC)`; the point `[hc+18Ch]` read 148 in memory, and
+    three `CrateofFood` landed beside the Market (food 200 → 500). It also ran with
+    `noTrainNearEnemyTC 65 log` on. Not tested: `FirstTC` with `startingTC`, and a converted
+    first town center (the owner check);
+  - water shipment points were not tested (the key does not change them).
 - **New in this DLL:** not in UHC 1.10.
 
 ### healNonIdle
@@ -1705,14 +1753,16 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   - the age-up picker (`uiPoliticianUI`) and the age-up progress display;
   - the start camera;
   - the AI: its automatic main base, its build plan and its chat lines;
-  - the `trPlayerToggleAllowTCSpawning` gate on `Maintain`, and the starting crates of
-    `startingResourceDelay`;
+  - the `trPlayerToggleAllowTCSpawning` gate on `Maintain`;
+  - the town starting units (`<townstartingunit>`: settlers, crates), which go to the first
+    built `TownCenter` ([`civFirstTC`](#civfirsttc) sends them to its own building);
   - the `CoveredWagon` build limit and a Town Center's fixed repair cost.
 
   The home city shipment point is covered by
-  [`hcShipmentPointFallback`](#hcshipmentpointfallback): list the marked protos there. Which of
-  the others matter for WoL is question Q2 of [wol-requests.md](wol-requests.md); they stay stock
-  until it is answered.
+  [`hcShipmentPointFallback`](#hcshipmentpointfallback): list `FirstTC` there (the marked
+  building that is the player's first town center), or the marked protos. For a civ that starts
+  with another building on every map, see [`civFirstTC`](#civfirsttc), WoL's own design for
+  request #3 ([wol-requests.md](wol-requests.md)); the other checks above stay stock.
 - **Giving buildings the marker:** add it to the buildings that stand in for a town center at the
   start, e.g. WoL's `MaoriPa`, `Presidio`, `EGYtowncenterCARAVAN` and the `*Colony` protos:
 
@@ -1730,14 +1780,19 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   next marked building he gets becomes his first town center, wherever it stands. Mark the
   buildings that replace a town center, not a common building. A `TownCenter` built after the
   first one died does not replace it (stock), unless `TownCenter` is marked too.
+- **With [`civFirstTC`](#civfirsttc):** both keys can be on; they share the hook that sets a
+  player's first town center. A player with none takes the first unit added to it that is a
+  `TownCenter` (stock), of its civ's `<firstTC>` proto, or of the marked type. Only `startingTC`
+  replaces a first town center that is gone, dead or about to expire.
 - **`log`:** one line for each marked building that becomes a first town center. This happens
   about once per player per game, so it can stay on.
 - **Log:** at startup `startingTC: units of unittype X can be a player's first town center
   (FirstTC) like TownCenter, and replace one that is gone, dead or has a pending lifespan
   (multiplayer unverified)` (with `log`: `…pending lifespan, every new FirstTC logged (multiplayer
   unverified)`); when the data loads, `unit types: X -> <ID> …`; in a game,
-  `hook reached: startingTC (0x49880A)` and `hook reached: startingTC (0x506B3B)` as the map's
-  first units are added to their players. With `log`:
+  `hook reached: startingTC (0x49880A)` and `hook reached: FirstTC proto check (0x506B3B)` (the
+  hook it shares with `civFirstTC`) as the map's first units are added to their players. With
+  `log`:
   - `startingTC: unit N (Market) is player 2's first town center (FirstTC)`;
   - `startingTC: unit N (MaoriPa) replaces player 2's first town center M (TownCenter), whose
     lifespan ends in 0.50 s`, or `…first town center M (TownCenter), which is dead`, or `…first
@@ -1759,6 +1814,147 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   first town center that is dead or has a pending lifespan (WoL's Maori case).
 - **New in this DLL:** not in UHC 1.10. WoL request #3, the part the placement rules read
   ([wol-requests.md](wol-requests.md)).
+
+### civFirstTC
+
+![civFirstTC in game](media/civFirstTC.gif)
+
+*In game:* A skirmish start on the stock map Mongolia: player 1, whose civ has `<firstTC>Market</firstTC>`, starts with a Market where the map puts the Town Center; then the Market is selected, with its 6 starting Settlers. The Iroquois AI, whose civ has no tag, keeps its Town Center. [Full video (MP4)](media/civFirstTC.mp4).
+
+```
+civFirstTC [log]
+```
+
+In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
+
+```xml
+<civ>
+    <name>Spanish</name>
+    ...
+    <firstTC>Market</firstTC>
+</civ>
+```
+
+- **How stock behaves:** each random map script places the players' first buildings itself,
+  usually `rmAddObjectDefItem(startingTCID, "TownCenter", 1, 0.0)` and then an
+  `rmPlaceObjectDef*` call, or a `CoveredWagon` in a Nomad start (`rmGetNomadStart()`).
+  `civs.xml` only lists a civ's units: `<startingunit>` (placed by
+  `rmCreateStartingUnitsObjectDef`) and `<townstartingunit>` (settlers and crates that appear at
+  the first built Town Center). A civ therefore cannot start with another building unless every
+  map script is changed, and only a `TownCenter` becomes the player's first town center
+  (`FirstTC`, see [`startingTC`](#startingtc)).
+- **Effect,** for the players of a civ that has `<firstTC>Proto</firstTC>`:
+  - **Map placement:** where a random map places `TownCenter` through an object def, the player
+    gets `Proto` instead, at the same place. The placement uses the larger of the two footprints.
+    The same object def still places a `TownCenter` for the players of other civs, and the map
+    scripts are not changed. Items are compared by proto ID, so any spelling of `TownCenter` in a
+    script counts.
+  - **First town center:** the building becomes the player's `FirstTC`, as a stock `TownCenter`
+    does: the placement rules (no enemy building within 65 m, the no-rush rule),
+    [`noTrainNearEnemyTC`](#notrainnearenemytc) and `hcShipmentPointFallback FirstTC` use it. A
+    unit of that proto added in any other way while the player has no first town center becomes
+    it too, so a scenario or a saved game loaded later gets the same first town center.
+  - **Town starting units:** the civ's `<townstartingunit>` units appear at the building, when the
+    data below allows it.
+- **Nomad start:** when `rmGetNomadStart()` is true, nothing is substituted: the map's own start
+  (a `CoveredWagon`) stays, and a building of the `<firstTC>` proto does not become the first
+  town center through this key. A `TownCenter` the player builds becomes it, as in stock.
+- **Not substituted:** a `TownCenter` from the civ's `<startingunit>` list (the
+  `Special_StartingUnits` object def of `rmCreateStartingUnitsObjectDef`, whose items the game
+  rebuilds from the civ's list), by design; and Town Centers that triggers, cards, techs or
+  players create.
+- **The tag:** its name may be written in any case; its text is a proto name as in `protoy.xml`
+  (matched in any case; spaces around it are dropped); the last `<firstTC>` of a civ counts. An
+  empty tag, or a name that is not a proto, leaves the civ's players with `TownCenter` (logged).
+  `<firstTC>TownCenter</firstTC>` changes nothing. The stock game ignores the tag, so the file
+  still loads without the DLL or with the key off: the civ then starts with its `TownCenter`.
+- **Data your mod needs:**
+  - **`civs.xml`:** the tag. Keep the XML and its compiled `.xmb` in step, as for `protoy`
+    ([section 6](#6-editing-the-game-data)); the test used a loose `data\civs.xml` and
+    `data\civs.xml.xmb`.
+  - **For the town starting units,** two more edits. Without them the player gets those units
+    only once the player builds a `TownCenter`; none is lost.
+    - `<Flag>StartingColonyBuilding</Flag>` on the proto, in `protoy.xml` and its XMB. The game
+      asks for the town starting units when a unit with that flag is created; `TownCenter`
+      has it, `Market` does not. In the test, a Market without the flag became the first town
+      center and a colony started at it, but no settler came.
+    - The proto in the `<starttypes>` of `placementrules\colonies.xml`, e.g.
+      `<type maxcount="1">Market</type>`. The units spawn only at a building where a colony
+      starts; otherwise the log says `no colony starts at player N's first town center …`.
+  - **For shipments:** the stock fallback of the shipment point knows only 10 building types
+    (`TownCenter`, `Outpost`, forts, …). Add `hcShipmentPointFallback FirstTC` (or the proto name)
+    so that home city shipments arrive at the building
+    ([hcShipmentPointFallback](#hcshipmentpointfallback)).
+  - `TownCenter` also has the flags `ColonyPlacementCenter`, `HasGatherPoint`,
+    `AllowAutoGarrison` and `ShowGarrisonButton`, which `Market` lacks. This key needs none of
+    them; what they change on another building was not tested.
+- **What it does not cover:** other code still looks for the `TownCenter` proto itself:
+  - the AI scripts: in the test, an AI whose civ had the tag got its Market and its settlers, then
+    stayed idle, because its scripts expect a Town Center (WoL's AI is WoL's part);
+  - the engine's automatic AI main base;
+  - the age-up picker (`uiPoliticianUI`);
+  - the start camera (it looks for `TownCenter`, then `CoveredWagon`, `Explorer`, …);
+  - the `trPlayerToggleAllowTCSpawning` gate on `Maintain`;
+  - the water shipment point.
+
+  The [`startingTC`](#startingtc) section lists the rest.
+- **With other keys:** [`startingTC`](#startingtc) can be on too: the two share the hook that sets
+  the first town center, and only `startingTC` replaces one that is gone, dead or about to
+  expire. [`hcShipmentPointFallback`](#hcshipmentpointfallback) `FirstTC` sends shipments to the
+  building, and [`noTrainNearEnemyTC`](#notrainnearenemytc) measures from it.
+- **`log`:** adds a line for each substitution (per player and object def, when the map is
+  generated), one when the building becomes a first town center, and one per game and player
+  when the town starting units go to it. That is a few lines per game, so it can stay on.
+- **Log:**
+  - at startup, `civFirstTC: a civ's <firstTC> proto in civs.xml replaces the TownCenter random
+    maps place for its players (not in a Nomad start) and is their first town center (FirstTC)
+    (multiplayer unverified)` (with `log`: `…(FirstTC), every substitution logged (multiplayer
+    unverified)`);
+  - each time `civs.xml` is read, for each tag: `civFirstTC: civ N (Spanish) starts with Market
+    instead of TownCenter`, or `civFirstTC: civ N (Spanish): empty <firstTC>; its players keep
+    TownCenter`;
+  - the first time a name is used after the data loads, if it is not a proto: `civFirstTC: civ N
+    (Spanish): <firstTC> names no proto unit (Markt); its players keep TownCenter`;
+  - once per game for each player and building, when no colony starts at the building:
+    `civFirstTC: no colony starts at player 1's first town center N (Market): its town starting
+    units wait for a TownCenter (add the proto to placementrules\colonies.xml <starttypes>)`;
+  - `hook reached: civFirstTC civs.xml (0x52BB07)` when `civs.xml` is read, `civFirstTC map
+    placement (0x925F4C)` when the map places its first object def, `FirstTC proto check
+    (0x506B3B)` (the hook it shares with `startingTC`) and `civFirstTC town units (0x679AC8)` in
+    a game.
+
+  With `log`:
+  - `civFirstTC: player 1 gets Market instead of TownCenter in object def D 'startingTC'`;
+  - `civFirstTC: player 1 keeps TownCenter in object def D 'startingTC' (Nomad start)`;
+  - `civFirstTC: unit N (Market) is player 1's first town center (FirstTC)`;
+  - `civFirstTC: player 1's town starting units go to its first town center N (Market)`, once per
+    game for each player and building.
+- **Simulation:** yes: the substitution, the first town center and the town starting units are
+  all game state. Every machine needs the same line, `civs.xml`, `placementrules\colonies.xml`
+  and `protoy`. A recorded game generates its map again when it is played back, so playback needs
+  them too. The key adds no unit type.
+- **Status:** confirmed in single player (2026-10-29), with a loose `civs.xml` (and `.xmb`) that
+  gives civs `<firstTC>Market</firstTC>`:
+  - editor route, a test map that places a `TownCenter` for both players: player 1 (Spanish,
+    tagged) got a Market, which became its first town center (`[player+4F0h]` in memory); player
+    2 (British, untagged) kept its `TownCenter`. Scenario players have no home city, so no
+    shipment was tried there;
+  - skirmish on the stock map Mongolia, with the Market in `colonies.xml` `<starttypes>` but
+    without `StartingColonyBuilding`: the map's own object def `startingTC` placed a Market for
+    player 1, which became its first town center, and a colony started at it, but no settler
+    came. With `<Flag>StartingColonyBuilding</Flag>` on the Market, 6 Settlers spawned at it
+    (`player 1's town starting units go to its first town center 121 (Market)`). The AI, of a
+    tagged civ, also got a Market and its settlers, then stayed idle (see above);
+  - a skirmish against an Iroquois AI (untagged): it kept its Town Center and played normally,
+    and a shipment to player 1 landed at its Market
+    ([hcShipmentPointFallback](#hcshipmentpointfallback));
+  - no XS error dialog in any of these games.
+
+  Not tested: a Nomad start (TAD's skirmish setup has no Nomad option, and the editor route
+  cannot set one), multiplayer, recorded games, the `no colony` log line, and any building other
+  than the Market.
+- **New in this DLL:** not in UHC 1.10. WoL request #3 ([wol-requests.md](wol-requests.md)), as
+  redesigned by WoL's developer Mandos.
 
 ### transformInventory
 
@@ -1886,7 +2082,9 @@ noTrainNearEnemyTC <meters> [<UnitType>] [log]     default AbstractDaimyo; one l
 - **Which Town Center counts:** only each player's first Town Center, not every Town Center. A
   player whose first Town Center was destroyed gives no protection, even if he built another one.
   WoL's Maori (whose first Town Center dies at 0.5 s) are protected only with
-  [`startingTC`](#startingtc) and the `MaoriPa` marked.
+  [`startingTC`](#startingtc) and the `MaoriPa` marked. A civ that starts with another building
+  through [`civFirstTC`](#civfirsttc) is protected by that building (static reading; not tested
+  with this key).
 - **With other keys:** with [`buildingWorkRateAuras`](#buildingworkrateauras), a trainer out of
   range trains at its aura-boosted rate, and with `liveBuildingWorkRate` at its proto's current
   rate: this key's hook calls the same getter.
@@ -2352,8 +2550,10 @@ More about the tools: [tools/README.md](../tools/README.md).
   `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `liveBuildingWorkRate`, `techPrereqRecheck`,
   `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
   `lifespanAfterConstruction`, `gaiaSocketsOnly`, `snareOnlyHitUnit`, `danceBonusCivs`,
-  `startingTC`, `transformInventory`, `noTrainNearEnemyTC` and `buildingWorkRateAuras`. A
-  difference in any of them between players can desynchronize the game. `techRenameEffect` and
+  `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC` and
+  `buildingWorkRateAuras`. A difference in any of them between players can desynchronize the
+  game. `civFirstTC` also needs the same `civs.xml`, `placementrules\colonies.xml` and `protoy`
+  on every machine, and in a recorded game's playback, which generates the map again. `techRenameEffect` and
   `noCorpseDopples` change no gameplay as far as the code shows, but they act inside the
   simulation: give every player the same setting for them too.
 - `bufferedFileReads`, `abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
