@@ -39,6 +39,12 @@ Outcome ApplySnareOnlyHitUnit(const Config& config);
 Outcome ApplyTechRenameEffect(const Config& config);
 Outcome ApplyNoCorpseDopples(const Config& config);
 Outcome ApplyDanceBonusCivs(const Config& config);
+Outcome ApplyStartingTc(const Config& config);
+Outcome ApplyTransformInventory(const Config& config);
+Outcome ApplyNoTrainNearEnemyTc(const Config& config);
+Outcome ApplyOverhealHitpointBars(const Config& config);
+Outcome ApplyShowGatherRate(const Config& config);
+Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
@@ -69,6 +75,15 @@ inline constexpr Feature kFeatures[] = {
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
+    {"startingTC", ApplyStartingTc},
+    {"transformInventory", ApplyTransformInventory},
+    // After liveBuildingWorkRate, which verifies the stock bytes of the site this one hooks.
+    {"noTrainNearEnemyTC", ApplyNoTrainNearEnemyTc},
+    {"overhealHitpointBars", ApplyOverhealHitpointBars},
+    {"showGatherRate", ApplyShowGatherRate},
+    // Last of the WoL keys: it redirects the four calls of the BuildingWorkRate getter, which
+    // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
+    {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"multipleInstances", ApplyMultipleInstances},
@@ -82,8 +97,10 @@ inline constexpr const char* kHandledKeys[] = {
     "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "perfstats", "perfautoexec",
-    "perfexecfile", "bufferedfilereads", "perffilelog", "multipleinstances",
+    "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "showgatherrate",
+    "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
+    "perffilelog", "multipleinstances",
 };
 
 }  // namespace uhc

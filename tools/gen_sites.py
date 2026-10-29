@@ -377,6 +377,212 @@ SITES = [
     # [edi+80h],0 / je 4904BBh (no unit list: no regeneration)
     ("DanceRegenGate", 0x490486, 0x11),
     ("DanceRegenBranch", 0x679E66, 0xD),
+    # startingTC (FUN_0049874F, Player::addUnit, ESI = player, EDI = unit): cmp dword ptr
+    # [esi+4F0h],0 / jl 506B2Ah, FirstTC (the placementrules keyword) is only set while it is
+    # still -1, and the exit pop ebx / pop ebp / pop edi / mov al,1 / pop esi / ret 8 after it
+    ("FirstTcGate", 0x49880A, 0x16),
+    # startingTC: the cold chunk the jl enters, mov eax,[0C66234h] / mov ecx,[eax+140h]
+    # (database) / mov edx,[edi+5Ch] / mov eax,[edx+4] (the unit's exact proto ID)
+    ("FirstTcChunk", 0x506B2A, 0x11),
+    # startingTC: cmp eax,[ecx+5E08h] (TownCenter), replaced by the hook, and the jne 498817h /
+    # jmp 67ABD4h after it
+    ("FirstTcProtoCheck", 0x506B3B, 0x11),
+    # startingTC: the store both hooks leave through, mov ecx,[edi+10h] / mov [esi+4F0h],ecx /
+    # jmp 498817h
+    ("FirstTcSet", 0x67ABD4, 14),
+    # startingTC: the FirstTC rule FUN_008CE515 reads [player+4F0h] and looks the unit up in the
+    # world's table ([world+0Ch], count [+10h], [unit+10h] = the ID) with no alive test, then
+    # calls the distance vtbl+B8h; UnitById mirrors that lookup
+    ("FirstTcRuleLookup", 0x8CE597, 0x44),
+    # startingTC: setLifespan FUN_0048DCB9 stores the seconds and, when they are > 0, sets state
+    # bit 3 (or byte [[esi+4]],8): a FirstTC with that bit has a pending lifespan
+    ("SetLifespanArm", 0x48DCB9, 0x28),
+    # startingTC: the unit vtable's alive slot A4h (.rdata 0xB9355C = 0x44D019), called for the
+    # old FirstTC
+    ("UnitAliveSlot", 0xB9355C, 4),
+    # transformInventory (FUN_009C754C, a unit changes proto in place): mov eax,[esi+58h] /
+    # test eax,eax / je 9C763Ch, which the hook re-executes, and the action manager release
+    # push eax / call 4BA630h / add esp,4 / mov dword [esi+58h],0 it continues at (the other
+    # continuation, 0x9C763C, is TransformPushProto)
+    ("TransformInvHook", 0x9C7625, 0x17),
+    # transformInventory: push ebx / mov ebx,[esi+44h] through the other players' knowledge base
+    # loop (call 876D3Bh drops the unit, reading its old resource type) and the own player's
+    # call 472AFDh, which run before the hook; ESI and EBP are unchanged in it
+    ("TransformKbRemove", 0x9C75CF, 0x56),
+    # transformInventory: the other players' knowledge base loop after setProto, up to its
+    # call 483DA5h (takes the unit back, reading its amounts)
+    ("TransformKbReAdd", 0x9C766F, 0x23),
+    # transformInventory: unit creation's inventory seed (cold chunk of FUN_00498274), which the
+    # helper repeats: call 9BFE5Ah (a fresh inventory) / test / je, then push [ebp+0E0h] (the
+    # proto's resource object, InitialResource first) / lea ecx,[eax+4] / call 480A73h
+    ("InventorySeed", 0x67DE0D, 0x1E),
+    # transformInventory: FUN_009BFE5A, thiscall(unit) -> inventory: frees [[unit+0B4h]+94h]
+    # (cdecl 4BA757h), allocates a new one (86A865h: pool 0CAFCA8h, -1 at +0Ch/+10h), stores the
+    # unit ID at +0 and returns it; both exits through ret
+    ("InventoryRecreate", 0x9BFE5A, 0x6E),
+    # transformInventory all: FUN_004BA757, cdecl(inventory): clears the list, -1 at +0/+0Ch/+10h,
+    # and returns the object to the pool's free list; through its ret
+    ("InventoryFree", 0x4BA757, 0x50),
+    # transformInventory: ResList copy 0x480A73, thiscall(dst, src), ret 4: the [0C6DF38h] raw
+    # encoded entries and the total, when both arrays exist
+    ("ResListCopy", 0x480A73, 0x49),
+    # transformInventory scale: ResList scale 0x480B94, thiscall(list, float f), ret 4: each
+    # decoded entry times f, then the total recompute 58EF02h
+    ("ResListScale", 0x480B94, 0x7E),
+    # transformInventory: ResList total recompute 0x58EF02, the encoding the helper decodes:
+    # entry r = [list][r] XOR [0C6DF14h+4r] for r < [0C6DF38h], total [list+4] XOR [0C6DF10h]
+    ("ResListTotal", 0x58EF02, 0x81),
+    # noTrainNearEnemyTC hooks WorkRateTrainCall (mov ecx,[esi+10h] / call 9BFE33h in the Train
+    # update FUN_009EA28B, and mov ebx,[0C66234h] / mov eax,[ebx+13Ch] at the continuation
+    # 0x9EA418). Its head: mov eax,[esi+10h] / push edi / mov edi,[eax+44h] / test edi,edi / jne,
+    # ESI = the Train action, [esi+10h] = the trainer, [trainer+44h] = its player
+    ("TrainUpdateTrainer", 0x9EA2B2, 0x0B),
+    # noTrainNearEnemyTC: after the continuation, fmul [eax+310h] / push 16h / mov ecx,esi /
+    # fstp [esp+14h] / call 485D2Ch: ECX is written before it is read, EDX is not read (0x485D2C
+    # starts with mov edx,ecx)
+    ("TrainRateScale", 0x9EA424, 0x13),
+    # noTrainNearEnemyTC (FUN_008CE935, the placement rule distanceAtLeastFromType): its FirstTC
+    # loop, world [[0C66234h]+13Ch], players 1 .. [world+5Ch]-1 through call 44CB21h, FirstTC
+    # [player+4F0h] (-1: none), the unit table [world+0Ch] below [world+10h] with the ID check
+    # [unit+10h], and the distance call [vtbl+0B8h](point) on the TC
+    ("FirstTcRuleLoop", 0x8CE9BE, 0x68),
+    # noTrainNearEnemyTC: the same rule's player filter [ebp+18h]: 3 (enemy) calls 484D2Dh and
+    # 2 (ally) 4707ECh, both thiscall(the TC's owner [tc+44h], the builder's player ID); 1 (self)
+    # compares [[tc+44h]], the owner's player ID
+    ("FirstTcRuleFilter", 0x8CEB45, 0x37),
+    # noTrainNearEnemyTC: player by ID 0x44CB21, thiscall(world, id): [world+58h][id] for
+    # 0 <= id < [world+5Ch], ret 4; out of range its null exit xor eax,eax / ret 4
+    ("PlayerById", 0x44CB21, 0x1E),
+    ("PlayerByIdNull", 0x4649E1, 5),
+    # noTrainNearEnemyTC: unit by ID 0x44CC6D, thiscall(world, id): [[world+0Ch]+4*(id & 3FFFFh)]
+    # below [world+10h] whose [unit+10h] is id, ret 4; otherwise its null exit
+    ("UnitById", 0x44CC6D, 0x3A),
+    ("UnitByIdNull", 0x4E2A35, 5),
+    # noTrainNearEnemyTC: isEnemy 0x484D2D, bool thiscall(player, id): [player+1D4h+4*id] == 2 for
+    # 0 <= id < 10h, ret 4
+    ("PlayerIsEnemy", 0x484D2D, 0x20),
+    # overhealHitpointBars, the floating HP bars (bar chunk 0x45FAA2 of the unit visual update):
+    # mov ecx,esi (the unit) / jne 6A1431h (under construction: the build fraction instead), the
+    # hooked call 45F295h (health ratio, the bar's fill) and the fstp [esp+10h] it continues at
+    ("OverhealBarRatio", 0x45FAA7, 0x11),
+    # overhealHitpointBars (FUN_004C4FB5, adds a unit to a selection group): mov ecx,ebp (the
+    # unit) / the hooked call 45F295h, and fadd [esi+1Ch] / pop edi / pop ebx / fidiv [esi+14h]
+    # (the group's average health, read by the group bar and 'Group Health') it continues at
+    ("OverhealGroupRatio", 0x4C5012, 0x0F),
+    # overhealHitpointBars, selection panel unitHitPointsValue: mov ecx,ebx (the unit) / ... /
+    # fistp [esp+88h] (the HP) / fldcw, the hooked call 480408h (max HP) and the fnstcw after it
+    ("OverhealPanelMax", 0x698B18, 0x26),
+    # overhealHitpointBars, selection panel stat row 'Hit Points': mov ecx,edi (the unit) / fld
+    # [edi+64h] / ... / fistp [esp+30h] (the HP), the max HP getter inlined at 0x4D7575..0x4D75AC
+    # (its first instruction hooked; its branches stay inside or rejoin, as do the cold
+    # 0x69FB66/0x69FB6E, at 0x4D75AD) and the fnstcw at 0x4D75AD it continues at
+    ("OverhealStatMax", 0x4D7560, 0x51),
+    # overhealHitpointBars, same row: EAX = the database proto ([[[game+140h]+54h]+[proto+8]*4],
+    # not null), the hooked fld [eax+98h] (the base of '%d/%d (%d+%d)') and the fnstcw after it
+    ("OverhealStatBase", 0x4D75DA, 0x45),
+    # overhealHitpointBars (FUN_009AF31A, ObjectInfo_singleUnitStats): call 45316Eh, the database
+    # proto of the unit, stored at [esp+2Ch] ([esp+30h] after the push ebp at 0x9AF354)
+    ("OverhealInfoProto", 0x9AF33B, 0x19),
+    # overhealHitpointBars, same panel: fld [esi+64h] / mov ecx,[esp+30h] (the database proto) /
+    # ... / fistp [esp+28h] (the HP), the hooked fld [ecx+98h] (the base) and the fnstcw after it;
+    # then mov ecx,esi (the unit) / ... / fistp [esp+20h], the hooked call 480408h (max HP) and
+    # the fnstcw after it
+    ("OverhealInfoBase", 0x9AFA07, 0x2D),
+    ("OverhealInfoMax", 0x9AFA34, 0x23),
+    # overhealHitpointBars, verify only: the max HP getter FUN_00480408 the hooks call (override
+    # [[[unit+0B4h]+0C8h]+4] if > -1e-6, else [proto+98h], 0 with no proto), the health ratio
+    # FUN_0045F295 the ratio helper mirrors (0 below 1e-6, 1.0 when HP >= max, else HP / max),
+    # and the stores of the <InitialHitpoints> and <MaxHitpoints> tag handlers, fstp [ecx+9Ch] /
+    # fstp [ecx+98h], the proto fields the hooks read
+    ("MaxHitpointsGetter", 0x480408, 0x26),
+    ("HealthRatio", 0x45F295, 0x48),
+    ("InitialHitpointsTag", 0x5F5CE3, 6),
+    ("MaxHitpointsTag", 0x5F5D39, 6),
+    # showGatherRate (FUN_004ECD87, the gather tick BUnitGatherAction::collectStuff_2, thiscall
+    # on the action, ret 4): sub esp,1Ch / push esi / push edi / ... / mov esi,ecx (ESI = the
+    # action), and the two later pushes, push ebp and push ebx, that put the elapsed-time
+    # argument at [esp+30h]; push ebx follows mov ecx,[esi+14h] (the target's ID)
+    ("GatherTickHead", 0x4ECD87, 0x14),
+    ("GatherTickPushEbp", 0x4ECDCC, 7),
+    ("GatherTickPushEbx", 0x4ECE16, 0x0A),
+    # showGatherRate: mov eax,[esi+10h] / test / je, cmp dword [eax+44h],0 / je: the gatherer
+    # and its player are not null past this point
+    ("GatherTickGatherer", 0x4ECE6D, 0x15),
+    # showGatherRate: call 4ECD39h (Gathering dance) / fmul [esp+14h], ST0 = the rate per second,
+    # the fcom / jnp 6A8AEAh that ends the action at <= 1e-6, the record hook's fmul [esp+30h]
+    # (elapsed) / fst [esp+14h], and the fcomp [esp+1Ch] it continues at
+    ("GatherTickRate", 0x4ED02A, 0x26),
+    # showGatherRate: the amount times [player+37Ch] (the record applies it to the rate), then
+    # the AbstractShrine test push 58h / call 44CAC4h on the target that zeroes the amount
+    ("GatherTickPlayerRate", 0x4ED130, 0x2A),
+    # showGatherRate: cmp dword [player+338h],0 / jne 6A8CBEh, which also zeroes the amount
+    ("GatherTickPlayerBlock", 0x4ED1A4, 0x14),
+    # showGatherRate: the add to the stockpile, push [esi+70h] (the resource) / call 49A98Ah
+    ("GatherTickAddResource", 0x4ED1E1, 0x12),
+    # showGatherRate (FUN_004D70ED, stat panel fill, EBP frame): the stock AutoGather row gate
+    # the panel hook mirrors, byte [[ebp+8]+21h], row [esp+2Ch] in 0..8, [[ebp+8]+14h] = 1
+    # selected unit, unit [esp+38h] built, [unit+58h], proto flag 9Bh, not Herdable, and the
+    # call 485CAC(mgr, 1Dh) / jne 69AF6Dh into the row writer (verify only)
+    ("StatPanelAutoGatherGate", 0x4D76FF, 0x135),
+    # showGatherRate: mov esi,[esp+38h] / mov ecx,[esi+5Ch], the join point after the
+    # AutoGather row (the panel hook), and the test ecx,ecx / je it continues at
+    ("StatPanelAfterAutoGather", 0x4D7834, 0x0B),
+    # showGatherRate: the row writer's head, the label and value gadgets of row EBX from
+    # [[esp+50h]+174h/198h]; a missing gadget jumps back to 0x4D7834
+    ("StatPanelRowWriter", 0x69AF7C, 0x64),
+    # showGatherRate: the AutoGather resource loop, mov ecx,[0C66234h] (the row hook) / mov edx,
+    # [ecx+140h] ..., whose only outputs to the formatter are EBX (resource) and [esp+1Ch] (rate)
+    ("StatPanelAgLoop", 0x69AFE0, 0x4A),
+    # showGatherRate: the row formatter, "%s (<icon=...>):" and "%.2f/s" or "%d/s", the row
+    # count add [esp+2Ch],1 and the jmp 4D7834h back
+    ("StatPanelRowFormat", 0x69B02A, 0x15D),
+    # showGatherRate (FUN_005CFA7C, data-ref registration): mov dword ptr [esp+2Ch],5FDE49h, the
+    # provider of id 68h currentUnitGatherRateString (type 3); the imm32 at 0x5D2D3C is replaced
+    ("GatherRateStringRef", 0x5D2D38, 8),
+    # showGatherRate: the stub that provider was, xor al,al / ret 4
+    ("DataRefStub", 0x5FDE49, 5),
+    # showGatherRate: the formatText evaluator's type-3 case: value {type 3, BString 0}, the
+    # provider call through jmp eax with [0C6DF7Ch] = the argument, the BString copy and free
+    ("DataRefStringEval", 0x44A635, 0x64),
+    # showGatherRate: the data refs' current unit, [[[0C67310h]+920h]+13Ch] in world
+    # [[0C66234h]+13Ch], as currentUnitBuildingWorkRate FUN_006F49B1 looks it up
+    ("CurrentUnitRef", 0x6F49B1, 0x41),
+    # showGatherRate: the proto flag test 0x45EE02 (thiscall(proto, bit), ret 4), bitset
+    # [proto+50h] / count [proto+54h]
+    ("ProtoFlag", 0x45EE02, 0x35),
+    # showGatherRate: the abstract index test 0x44CAC4 (thiscall(proto, index), ret 4)
+    ("IsAbstractIndex", 0x44CAC4, 0x46),
+    # showGatherRate: the resource's name string ID 0x60782A (thiscall(database, resource),
+    # [db+180h] / count [db+184h], -1 out of range)
+    ("ResourceNameId", 0x60782A, 0x22),
+    # showGatherRate: BString from a string ID 0x58EA52 (thiscall(this, id), ret 4), the
+    # assign forwarder 0x443BB8 (thiscall(this, BString*, -1, -1)) and the free 0x4010CA
+    ("BStringFromId", 0x58EA52, 0x19),
+    ("BStringAssign", 0x443BB8, 0x0F),
+    ("BStringFree", 0x4010CA, 0x1F),
+    # buildingWorkRateAuras (FUN_005F5645, ModifyType name -> stat): the last compare, push -1 /
+    # push 0 / push "AutoGatherRate" / mov ecx,esi (ESI = the name) / call 443C10h, the hooked
+    # neg eax / sbb eax,eax / and al,0F1h, and the pop esi / add eax,0Eh / ret it continues at
+    ("ModifyTypeNameTail", 0x5FE6C7, 0x1B),
+    # buildingWorkRateAuras: the head of the name compare 0x443C10 the hook calls again, int
+    # thiscall(BString*, const wchar_t*, flag, n), ret 0Ch; 0 = equal, case ignored for flag 0
+    ("ModifyTypeNameCompare", 0x443C10, 0x10),
+    # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not
+    # in the VerifyAll: noTrainNearEnemyTC hooks these bytes and calls g_uhcBwrTrainGetter, and the
+    # call is redirected only while they are stock
+    ("BwrTrainCall", 0x9EA410, 8),
+    # buildingWorkRateAuras: after that call, mov ebx,[0C66234h] / mov eax,[ebx+13Ch], up to the first
+    # write of EAX (the wrapper returns another EAX)
+    ("BwrTrainCallNext", 0x9EA418, 0x0C),
+    # buildingWorkRateAuras: the getter after its first two instructions (liveBuildingWorkRate may
+    # replace those), je 9BFE3Eh / fld [eax+28h] / ret / mov eax,[ecx+5Ch] / fld [eax+0D0h] / ret:
+    # the wrapper calls it as a float thiscall(unit) that changes only EAX and the flags
+    ("BwrGetterTail", 0x9BFE38, 0x10),
+    # buildingWorkRateAuras, the GatherRate reader whose rule the factor mirrors: FUN_004ECD87's
+    # mov eax,[ecx+0B4h] / mov ecx,[eax+0C8h] (the modifier record) / test / jne 69FE53h, and that
+    # chunk's fld [ecx+24h] / fcomp [0B9FB64h] (1e-6) / fnstsw / test ah,5 / jnp (1.0) / fld [ecx+24h]
+    ("BwrGatherRateRecord", 0x4ECFE9, 0x14),
+    ("BwrGatherRateRule", 0x69FE53, 0x1C),
 ]
 
 

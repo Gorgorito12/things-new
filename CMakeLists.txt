@@ -21,12 +21,14 @@ add_library(UHC SHARED
   src/features/abilityslots.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
+  src/features/bwrauras.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/dodge.cpp
   src/features/dopples.cpp
   src/features/fame.cpp
   src/features/fileio.cpp
+  src/features/gatherrate.cpp
   src/features/heal.cpp
   src/features/hotkeys.cpp
   src/features/instances.cpp
@@ -34,35 +36,45 @@ add_library(UHC SHARED
   src/features/limits.cpp
   src/features/maintain.cpp
   src/features/misc.cpp
+  src/features/notrainneartc.cpp
+  src/features/overheal.cpp
   src/features/perf.cpp
   src/features/shipments.cpp
   src/features/snare.cpp
   src/features/sockets.cpp
+  src/features/startingtc.cpp
   src/features/techprereq.cpp
   src/features/techrename.cpp
   src/features/transform.cpp
+  src/features/transforminv.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/ai_hooks.asm
   src/hooks/broadside_hooks.asm
+  src/hooks/bwraura_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm
   src/hooks/dot_hooks.asm
   src/hooks/fame_hooks.asm
+  src/hooks/gatherrate_hooks.asm
   src/hooks/heal_hooks.asm
   src/hooks/hotkey_hooks.asm
   src/hooks/lifespan_hooks.asm
   src/hooks/limit_hooks.asm
   src/hooks/maintain_hooks.asm
   src/hooks/misc_hooks.asm
+  src/hooks/notrainneartc_hooks.asm
+  src/hooks/overheal_hooks.asm
   src/hooks/shipment_hooks.asm
   src/hooks/snare_hooks.asm
   src/hooks/socket_hooks.asm
+  src/hooks/startingtc_hooks.asm
   src/hooks/techprereq_hooks.asm
   src/hooks/techrename_hooks.asm
   src/hooks/transform_hooks.asm
+  src/hooks/transforminv_hooks.asm
   src/hooks/unittype_hooks.asm
   src/hooks/wonderpanel_hooks.asm
   src/hooks/workrate_hooks.asm

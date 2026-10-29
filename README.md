@@ -40,12 +40,20 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `techRenameEffect [log]` | **New.** The tech effect `SetTechName` gives a tech new texts for the players the effect reaches, and only for them. WoL's key `enableTechRenameEffect` is read too. | confirmed (single player) |
 | `noCorpseDopples [UnitType] [log]` | **New.** A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | confirmed (single player) |
 | `danceBonusCivs Civ… [log]` | **New.** The fire pit's Training, XPTrickle, Gathering and Regeneration dances also work for the civs you list, not only for the native civs. | confirmed (single player, Healing Dance) |
+| `startingTC [UnitType] [log]` | **New.** A building of a marked type can be a player's first town center (`FirstTC` in the placement rules), like a `TownCenter`: a player with none takes it, and it replaces a first town center that is gone, dead or about to expire (WoL's Maori Pa start). | confirmed from the log and memory (single player; the placement effect not driven) |
+| `transformInventory [all] [scale] [UnitType] [log]` | **New.** A unit that a tech (`TransformUnit`) or a revolution changes into another proto takes that proto's resources (`InitialResource`) when the two protos hold different resource types: a wood crate turned into a food crate holds food. Stock keeps the old resources (or none). | confirmed (single player) |
+| `noTrainNearEnemyTC M [UnitType] [log]` | **New.** Marked units (default `AbstractDaimyo`: the Daimyos and the Shogun) do not train while they stand less than M metres from an enemy's first Town Center; the queue keeps its progress and resumes when they leave or that Town Center dies. | confirmed (single player) |
+| `overhealHitpointBars [UnitType…] [log]` | **New.** HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`, so a mod whose healers push units above their starting HP shows fresh units as full. Display only. | confirmed (single player, UI) |
+| `showGatherRate [UnitType] [log]` | **New.** The stat panel shows a gathering unit's rate per second under its HP row, like DE (`Food (icon): 0.67/s`), and the data ref `{currentUnitGatherRateString}` returns it to a mod's own UI. | confirmed (single player, stat panel; the data ref not tested) |
+| `buildingWorkRateAuras [log]` | **New.** Auras and other stat modifiers may use `<ModifyType>BuildingWorkRate</ModifyType>`: the multiplier then scales how fast the units they reach train, research and spawn their `Maintain` units. Stock reads the name as unknown and the aura does nothing. | confirmed (single player, `Maintain`) |
 | `bufferedFileReads [KB]` | **New.** Reads the game's files through a read-ahead buffer instead of millions of tiny reads. In a late 8-AI game, frames over 100 ms dropped from 11 to 3, and time spent reading files fell from 14.9 s to 1 s per session. It does not change the simulation. | confirmed (single player) |
 | `multipleInstances [background]` | **New.** Lets this copy run while a copy of the game from another folder is running; stock allows one copy per machine. `background` keeps its windows behind all others and never focused, for unattended tests. | confirmed (two copies, single player) |
 | `perfStats`, `perfAutoExec`, `perfExecFile`, `perfFileLog` | In development: performance diagnostics. See [docs/performance.md](docs/performance.md). | in progress |
 
 No feature has been tested in multiplayer yet. Details, data requirements and limits for each
-key are in the [modding guide](docs/modding-guide.md).
+key are in the [modding guide](docs/modding-guide.md), where each feature that works in game
+shows a short clip of it, with the live numbers (hit points, line of sight, the feature's own
+log lines) drawn over the game, and a link to the full recording.
 
 ## Using it in your mod
 
@@ -106,13 +114,15 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 20 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
+  - 26 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
     `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
     `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
     `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
     `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,
-    `danceBonusCivs`, `bufferedFileReads`, `multipleInstances`. Most of them answer Wars of
-    Liberty's requests ([docs/wol-requests.md](docs/wol-requests.md)).
+    `danceBonusCivs`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC`,
+    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `bufferedFileReads`,
+    `multipleInstances`. Most of them answer Wars of Liberty's requests
+    ([docs/wol-requests.md](docs/wol-requests.md)).
 - **In research:**
   - `unlockAllCards` (every card usable from a new home city): paused.
 - **Later:** the remaining UHC 1.10 keys (civilizations, units, teams, syscalls, cheats and

@@ -24,16 +24,20 @@
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
+#include "../modifiers.h"
 #include "../patch.h"
 
 namespace {
+
+using uhc::modifiers::ModifierList;
+using uhc::modifiers::Walk;
+using uhc::modifiers::WalkModifiers;
 
 // Engine layout (docs/engine-symbols.md, "Snare and group movement").
 constexpr std::uint32_t kGameGlobal = 0x00C66234;      // game; +13Ch world
 constexpr std::uint32_t kMovementModIdPtr = 0x00CEFFA0;  // -> the ID of the cfg float MovementMod
 constexpr std::uint32_t kGameConfig = 0x00C66500;       // the game's cfg values
 
-constexpr std::uint8_t kModifierAction = 0x2C;  // unit action type of a stat modifier (0x4B3D9E)
 constexpr std::int32_t kStatVelocity = 0;
 constexpr std::int32_t kOpSet = 0;
 constexpr std::int32_t kOpAdd = 1;
@@ -42,7 +46,6 @@ constexpr std::uint32_t kFlagTimed = 0x15;      // the modifier has a duration (
 constexpr std::uint32_t kFlagExclusive = 0x16;  // the modifier sum stops after it (0x4B3CDA)
 constexpr std::uint32_t kTacticModifyExclusive = 33;  // the same, from <ModifyExclusive> (0x6A88D6)
 constexpr float kNoVelocityRecord = -1.0e-6f;   // 0xB9FB60: the per-unit velocity is unset
-constexpr int kMaxDepth = 16;                   // nested actions; deeper trees run the stock code
 
 using GetVelocityFn = float(__thiscall*)(const char* unit);
 using CfgFloatFn = bool(__thiscall*)(void* config, std::int32_t id, float* value);
@@ -75,41 +78,8 @@ bool IsSnare(const char* action) {
          Bit(action, 0x30, kFlagTimed) && Bit(action, 0x30, kFlagExclusive);
 }
 
-enum class Walk { kDone, kStopped, kTooDeep };
-
-// Calls visit(action) for each modifier action in an action list {count +0, data +8} and, depth
-// first, in each action's children ([action+40h]): the order of the stock collector
-// 0x49F1A0 / 0x49F34B. visit returns false to stop the walk.
-template <typename Visit>
-Walk WalkModifiers(const char* list, Visit& visit, int depth) {
-  if (depth > kMaxDepth) {
-    return Walk::kTooDeep;
-  }
-  const std::int32_t count = Field<std::int32_t>(list, 0);
-  const char* const* actions = Field<const char* const*>(list, 8);
-  for (std::int32_t i = 0; i < count; ++i) {
-    const char* action = actions[i];
-    if (action == nullptr) {
-      continue;
-    }
-    if (Field<std::uint8_t>(action, 0x60) == kModifierAction && !visit(action)) {
-      return Walk::kStopped;
-    }
-    const Walk inner = WalkModifiers(action + 0x40, visit, depth + 1);
-    if (inner != Walk::kDone) {
-      return inner;
-    }
-  }
-  return Walk::kDone;
-}
-
-// The unit's modifier actions: the list at [actionManager+14h], as FUN_0049F1BA collects them.
-const char* ModifierList(const char* unit) {
-  const char* manager = Field<const char*>(unit, 0x58);
-  return manager == nullptr ? nullptr : manager + 0x14;
-}
-
-// The first active snare on the unit, or nullptr.
+// The first active snare on the unit, or nullptr. A tree deeper than modifiers::kMaxDepth counts
+// as "not snared", which runs the stock code.
 const char* FindSnare(const char* unit) {
   const char* list = unit == nullptr ? nullptr : ModifierList(unit);
   if (list == nullptr || Field<const char*>(unit, 0x5C) == nullptr) {
@@ -127,7 +97,7 @@ const char* FindSnare(const char* unit) {
 }
 
 // The unit's max velocity as 0x487E27 returns it, with the snares left out of the modifier sum
-// 0x4B3C48 / 0x4B3C7D. False if the action tree is deeper than kMaxDepth.
+// 0x4B3C48 / 0x4B3C7D. False if the action tree is deeper than modifiers::kMaxDepth.
 bool VelocityWithoutSnares(const char* unit, float* velocity) {
   const float base = Field<float>(Field<const char*>(unit, 0x5C), 0x80);  // proto MaxVelocity
   float sum = base;

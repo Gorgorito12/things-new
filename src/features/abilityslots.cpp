@@ -33,12 +33,26 @@ constexpr int kStockSlots = 6;  // 1 entry at 0x4C5ACA + 5 copies
 constexpr int kMaxSlots = 36;   // the 6x6 button grid at [commandpanel2+1B4h]
 
 // (unit ID, record index) pairs already logged; the panel refreshes many times a second.
-// Read and written only from the game thread, by the hook.
+// Read and written only from the game thread, by the hook. Unit IDs start again in every game: a
+// new world, or a step count [world+F8h] that went back, clears it.
 std::set<std::pair<std::int32_t, std::int32_t>> g_logged;
+const char* g_logWorld = nullptr;
+std::uint32_t g_logStep = 0;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
+}
+
+void ForgetOtherGames() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    g_logged.clear();
+  }
+  g_logWorld = world;
+  g_logStep = step;
 }
 
 const char* ProtoName(const char* unit) {
@@ -56,6 +70,7 @@ void UhcAbilityButtonHook();
 // never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid or a recharging one).
 void __stdcall UhcAbilitySlotsLogButton(const char* unit, std::int32_t n, std::int32_t record, std::int32_t power,
                                         std::int32_t enabled) {
+  ForgetOtherGames();
   const std::int32_t id = unit == nullptr ? -1 : Field<std::int32_t>(unit, 0x10);
   if (!g_logged.insert({id, record}).second) {
     return;

@@ -11,11 +11,13 @@ This guide covers these features that are new in this DLL:
 - `damageOverTime`;
 - `dodgeAnyUnit`, `dodgeSoundSet` and `criticalSoundSet`;
 - `multipleInstances`;
-- the features built for WoL's Tier 2 requests ([wol-requests.md](wol-requests.md)):
-  `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`,
-  `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`,
-  `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`,
-  `noCorpseDopples` and `danceBonusCivs`.
+- the features built for WoL's requests ([wol-requests.md](wol-requests.md)):
+  - Tier 2: `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`,
+    `transformUpdatesLOS`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`,
+    `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`,
+    `techRenameEffect`, `noCorpseDopples` and `danceBonusCivs`;
+  - Tier 1 and Tier 3: `startingTC`, `transformInventory`, `noTrainNearEnemyTC`,
+    `overhealHitpointBars`, `showGatherRate` and `buildingWorkRateAuras`.
 
 `bufferedFileReads` is not covered yet. Its design is in
 [how-it-works.md](how-it-works.md#bufferedfilereads), and its code is
@@ -70,7 +72,9 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `CriticalSound` | `0x6A2A9A` | 8 B | 5 B at `0x6A2A9A` | `68 18 75 BD 00` (`push "PowerCriticalStrike"`) | the critical hit's sound set; criticalSoundSet hook |
 | `SingleInstanceSemaphore` | `0x55A185` | 6 B | — (the IAT slot `0xB843F0` instead) | `FF 15 F0 43 B8 00` (`call [CreateSemaphoreW]`) | the single-instance check; multipleInstances knows this call by its return address `0x55A18B` |
 | `BuildingWorkRateGetter` | `0x9BFE33` | `0x15` B | 5 B at `0x9BFE33` | `8B 41 68 85 C0` (`mov eax,[ecx+68h]; test eax,eax`) | the BuildingWorkRate getter, including the tail `0x9BFE3E` the hook continues at; liveBuildingWorkRate |
-| `WorkRateTrainCall`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall` | `0x9EA410`, `0x9E65F4`, `0x9D58D1`, `0x6AB23C` | `0x14`, `0x0D`, `0x0D`, `0x14` B | — | — | the getter's four callers, each up to its first write of EAX (the hook returns another EAX) |
+| `WorkRateTrainCall` | `0x9EA410` | `0x14` B | 8 B at `0x9EA410` (`jmp` + 3 NOP), noTrainNearEnemyTC only | `8B 4E 10 E8 1B 5A FD FF` (`mov ecx,[esi+10h]; call 9BFE33h`) | the Train update's getter call (FUN_009EA28B), up to its first write of EAX; liveBuildingWorkRate verifies it, noTrainNearEnemyTC hooks it (continuation `0x9EA418`) |
+| `BwrTrainCall` | `0x9EA410` | 8 B | 5 B at `0x9EA413` (a `call` to the wrapper), buildingWorkRateAuras, only while all 8 bytes are stock | `E8 1B 5A FD FF` (`call 9BFE33h`) | the same call, checked on its own: with noTrainNearEnemyTC on, buildingWorkRateAuras leaves it to that key's hook |
+| `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall` | `0x9E65F4`, `0x9D58D1`, `0x6AB23C` | `0x0D`, `0x0D`, `0x14` B | 5 B each at `0x9E65F7`, `0x9D58D4`, `0x6AB23F` (a `call` to the wrapper), buildingWorkRateAuras only | `E8 37 98 FD FF`, `E8 5A A5 FE FF`, `E8 EF 4B 31 00` (`call 9BFE33h`) | the getter's other three callers, each up to its first write of EAX (the hooks return another EAX); liveBuildingWorkRate verifies them |
 | `TechPrereqDirtyCheck` | `0x491A18` | 10 B | 10 B at `0x491A18` (`jmp` + 5 NOP) | `80 7F 10 00 0F 85 B2 7C 07 00` (`cmp byte [edi+10h],0; jne 5096D4h`) | dirty test of a player's tech tree (FUN_004919CE); techPrereqRecheck |
 | `TechPrereqNoPass`, `TechPrereqPassEntry`, `TechPrereqPassLoop`, `TechPrereqEntryUpdate`, `TechPrereqListEval`, `TechPrereqListLoop`, `TypeCountCtor`, `PrereqBaseCtor`, `TypeCountEval`, `TechTemplateFallback`, `TechTemplateLoop`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount` | `0x491A22`, `0x5096D4`, `0x5095A1`, `0x5094EB`, `0x5094B4`, `0x50946A`, `0x8EE860`, `0x6201AA`, `0x8EE8E7`, `0x48050F`, `0x61FE63`, `0x5C400B`, `0x481D3D`, `0x481A87` | 10, 9, `0x77`, `0x51`, `0x24`, `0x4A`, `0x10`, `0x16`, `0x34`, `0x1B`, `0x3C`, `0x19`, `0x19`, `0x0F` B | — | — | the two continuations, the stock re-check and evaluator the check mirrors and calls, the TypeCount layout, the template records, the tech names, the world update's call and step count |
 | `MaintainSpawn` | `0x6AB27D` | `0x2C` B | 6 B at `0x6AB27D` | `8B 56 68 8B 46 64` (`mov edx,[esi+68h]; mov eax,[esi+64h]`) | cycle-complete path of the Maintain update FUN_00492F3E; maintainWaitForPop (continues at `0x6AB283`) |
@@ -107,11 +111,38 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `NoCorpseDoppleGaiaCheck`, `NoCorpseDoppleSkip`, `NoCorpseDoppleAliveCall` | `0x4F1088`, `0x486A30`, `0x4868FA` | `0x11`, `0x17`, `0x15` B | — | — | the second way into the site, the "no dopple" exit the hook takes, and the stock virtual isAlive call it imitates |
 | `DanceTrainGate`, `DanceXpGate`, `DanceGatherGate`, `DanceRegenGate` | `0x8D47A6`, `0x4E0DFA`, `0x4ECD4E`, `0x490486` | 13, 13, 13, 17 B | 6 B each at `0x8D47AB`, `0x4E0DFF`, `0x4ECD53`, `0x49048B` | `3B 05 50 FB C6 00` (`cmp eax,[0C6FB50h]`) at each | the first native civ compare of the four dance readers; danceBonusCivs. Each range covers the civ load before it and the `je` after it |
 | `DanceTrainBranch`, `DanceXpBranch`, `DanceGatherBranch`, `DanceRegenBranch` | `0x8D47CF`, `0x4E0E29`, `0x4ECD7D`, `0x679E66` | 13, 10, 10, 13 B | — | — | the native branches the hooks enter |
+| `FirstTcGate` | `0x49880A` | `0x16` B | 13 B at `0x49880A` (`jmp` + 8 NOP) | `83 BE F0 04 00 00 00 0F 8C 13 E3 06 00` (`cmp dword ptr [esi+4F0h],0; jl 506B2Ah`) | FirstTC gate at the end of Player::addUnit FUN_0049874F, with the exit `0x498817` both startingTC hooks continue at; startingTC gate hook |
+| `FirstTcProtoCheck` | `0x506B3B` | `0x11` B | 6 B at `0x506B3B` (`jmp` + 1 NOP) | `3B 81 08 5E 00 00` (`cmp eax,[ecx+5E08h]`) | the TownCenter test of addUnit's cold chunk; startingTC proto hook |
+| `FirstTcChunk`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot` | `0x506B2A`, `0x67ABD4`, `0x8CE597`, `0x48DCB9`, `0xB9355C` | `0x11`, `0x0E`, `0x44`, `0x28`, 4 B | — | — | the registers the proto hook is entered with, the FirstTC store both hooks leave through, the rule's unit lookup the helper mirrors, the lifespan bit, and the unit vtable's alive slot (`.rdata`); startingTC (also `IsA`) |
+| `TransformInvHook` | `0x9C7625` | `0x17` B | 7 B at `0x9C7625` (`jmp` + 2 NOP) | `8B 46 58 85 C0 74 10` (`mov eax,[esi+58h]; test eax,eax; je 9C763Ch`) | action manager test in the transform in place FUN_009C754C; transformInventory (continues at `0x9C762C` or `0x9C763C`) |
+| `TransformKbRemove`, `TransformKbReAdd`, `InventorySeed`, `InventoryRecreate`, `InventoryFree`, `ResListCopy`, `ResListScale`, `ResListTotal` | `0x9C75CF`, `0x9C766F`, `0x67DE0D`, `0x9BFE5A`, `0x4BA757`, `0x480A73`, `0x480B94`, `0x58EF02` | `0x56`, `0x23`, `0x1E`, `0x6E`, `0x50`, `0x49`, `0x7E`, `0x81` B | — | — | the knowledge-base remove and re-add around the hook, creation's inventory recipe, the engine functions the helper calls, and the list encoding it decodes; transformInventory (also `TransformProtoLookup`, `TransformPushProto`, `IsA`) |
+| `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`) |
+| `OverhealBarRatio` | `0x45FAA7` | `0x11` B | 5 B at `0x45FAAF` | `E8 E1 F7 FF FF` (`call 45F295h`) | floating HP bar fill in the unit visual update's bar chunk; overhealHitpointBars |
+| `OverhealGroupRatio` | `0x4C5012` | `0x0F` B | 5 B at `0x4C5014` | `E8 7C A2 F9 FF` (`call 45F295h`) | selection group average in FUN_004C4FB5 |
+| `OverhealPanelMax` | `0x698B18` | `0x26` B | 5 B at `0x698B35` | `E8 CE 78 DE FF` (`call 480408h`) | unitHitPointsValue max |
+| `OverhealStatMax` | `0x4D7560` | `0x51` B | 6 B at `0x4D7575` | `8B 81 B4 00 00 00` (`mov eax,[ecx+0B4h]`) | the max HP getter inlined in the 'Hit Points' stat row; the rest of it (to `0x4D75AC`) becomes dead code |
+| `OverhealStatBase` | `0x4D75DA` | `0x45` B | 6 B at `0x4D7615` | `D9 80 98 00 00 00` (`fld [eax+98h]`) | the stat row's base |
+| `OverhealInfoBase` | `0x9AFA07` | `0x2D` B | 6 B at `0x9AFA2A` | `D9 81 98 00 00 00` (`fld [ecx+98h]`) | ObjectInfo base (FUN_009AF31A) |
+| `OverhealInfoMax` | `0x9AFA34` | `0x23` B | 5 B at `0x9AFA4E` | `E8 B5 09 AD FF` (`call 480408h`) | ObjectInfo max |
+| `OverhealInfoProto`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag` | `0x9AF33B`, `0x480408`, `0x45F295`, `0x5F5CE3`, `0x5F5D39` | `0x19`, `0x26`, `0x48`, 6, 6 B | — | — | where ObjectInfo stores the database proto, the getter the hooks call, the ratio the helper mirrors, and the stores that put InitialHitpoints / MaxHitpoints at `[proto+9Ch]` / `[proto+98h]`; overhealHitpointBars (also `IsA`, `IsATrue`) |
+| `GatherTickRate` | `0x4ED02A` | `0x26` B | 8 B at `0x4ED044` (`jmp` + 3 NOP) | `D8 4C 24 30 D9 54 24 14` (`fmul [esp+30h]; fst [esp+14h]`) | the gather tick's rate per second in ST0 (FUN_004ECD87); showGatherRate record hook (continues at `0x4ED04C`) |
+| `GatherTickHead`, `GatherTickPushEbp`, `GatherTickPushEbx`, `GatherTickGatherer`, `GatherTickPlayerRate`, `GatherTickPlayerBlock`, `GatherTickAddResource` | `0x4ECD87`, `0x4ECDCC`, `0x4ECE16`, `0x4ECE6D`, `0x4ED130`, `0x4ED1A4`, `0x4ED1E1` | `0x14`, 7, `0x0A`, `0x15`, `0x2A`, `0x14`, `0x12` B | — | — | the tick's frame and ESI, the non-null gatherer and player, and the multiplier, shrine and defeated tests and the add that the record and its reader mirror |
+| `StatPanelAfterAutoGather` | `0x4D7834` | `0x0B` B | 7 B at `0x4D7834` (`jmp` + 2 NOP) | `8B 74 24 38 8B 4E 5C` (`mov esi,[esp+38h]; mov ecx,[esi+5Ch]`) | join point after the stat panel's AutoGather row (FUN_004D70ED); showGatherRate panel hook (continues at `0x4D783B`) |
+| `StatPanelAgLoop` | `0x69AFE0` | `0x4A` B | 6 B at `0x69AFE0` (`jmp` + 1 NOP) | `8B 0D 34 62 C6 00` (`mov ecx,[0C66234h]`) | start of the AutoGather resource loop; showGatherRate row value hook (continues at `0x69AFE6`, or `0x69B02A` for the new row) |
+| `GatherRateStringRef` | `0x5D2D38` | 8 B | 4 B at `0x5D2D3C` (imm32) | `49 DE 5F 00` (`5FDE49h`) | provider of data ref 68h `currentUnitGatherRateString` in FUN_005CFA7C; showGatherRate |
+| `StatPanelAutoGatherGate`, `StatPanelRowWriter`, `StatPanelRowFormat`, `DataRefStub`, `DataRefStringEval`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BStringFromId`, `BStringAssign`, `BStringFree` | `0x4D76FF`, `0x69AF7C`, `0x69B02A`, `0x5FDE49`, `0x44A635`, `0x6F49B1`, `0x45EE02`, `0x44CAC4`, `0x60782A`, `0x58EA52`, `0x443BB8`, `0x4010CA` | `0x135`, `0x64`, `0x15D`, 5, `0x64`, `0x41`, `0x35`, `0x46`, `0x22`, `0x19`, `0x0F`, `0x1F` B | — | — | the gate the panel hook mirrors, the row writer and formatter it reuses, the stub and the string evaluator, the current-unit lookup, and the functions the C++ side calls; showGatherRate (also `IsBuilt`, `IsA`) |
+| `ModifyTypeNameTail` | `0x5FE6C7` | `0x1B` B | 6 B at `0x5FE6D7` (`jmp` + 1 NOP) | `F7 D8 1B C0 24 F1` (`neg eax; sbb eax,eax; and al,0F1h`) | tail of the ModifyType parser FUN_005F5645, through the `pop esi; add eax,0Eh; ret` at `0x5FE6DD`; buildingWorkRateAuras name hook |
+| `ModifyTypeNameCompare`, `BwrTrainCallNext`, `BwrGetterTail`, `BwrGatherRateRecord`, `BwrGatherRateRule` | `0x443C10`, `0x9EA418`, `0x9BFE38`, `0x4ECFE9`, `0x69FE53` | `0x10`, `0x0C`, `0x10`, `0x14`, `0x1C` B | — | — | the head of the name compare the hook calls, the Train call's continuation up to its first write of EAX, the getter after its first two instructions, and the GatherRate reader whose rule the factor mirrors; buildingWorkRateAuras (also `SnareCollector`, `SnareModifierSum`, `SnareModifierSumEnd`, `SnareModifierSumTactic`, and the getter head `BuildingWorkRateGetter`, which must be stock or liveBuildingWorkRate's `jmp`) |
 
 The full expected bytes of every range are in [`src/generated/sites.h`](../src/generated/sites.h),
-generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py). No feature writes
-inside another feature's range (checked with a script over `tools/gen_sites.py`, 2026-10-29), so
-any combination of keys can be enabled together.
+generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py). Two features write
+inside ranges that others verify, and the order in [`src/features.h`](../src/features.h) handles
+both: noTrainNearEnemyTC writes `WorkRateTrainCall`, and buildingWorkRateAuras the four getter
+calls, all of which liveBuildingWorkRate verifies first; buildingWorkRateAuras comes last and
+leaves the Train call to noTrainNearEnemyTC when that key owns it
+([section 5](#5-integration-rules)). No other write falls inside another feature's range (checked
+with a script over `tools/gen_sites.py` and the written addresses, 2026-10-29), so any combination
+of keys can be enabled together.
 
 **Status for Wars of Liberty: not checked.**
 - None of these addresses appears among the WoL `uhc.dll` sites found so far
@@ -154,6 +185,23 @@ any combination of keys can be enabled together.
   - `techPrereqRecheck`, `transformUpdatesLOS`, `abilitySlots`, `lifespanAfterConstruction`,
     `snareOnlyHitUnit`: not checked against WoL's patches. The upstream `BigButton` site
     `0x461BD8` is in the command panel function but outside the `abilitySlots` ranges.
+- The WoL Tier 1 and Tier 3 sites (same method, 2026-10-29):
+  - `startingTC`: WoL's `age3y.exe` is byte-identical over these ranges, and no hook site or
+    continuation appears as a 32-bit value in WoL's `uhc.dll` or `wol.dll` (its `uhc.dll` holds
+    0x44D019, the alive function, as a value, which is not a site);
+  - `buildingWorkRateAuras`: WoL's memory diff does not touch the name parser
+    (`0x5F5645..0x5FE6E1`), the four getter calls or the getter. Its `ModifyActionFix` retypes the
+    tactics-driven modifier class (`0x9E36D0`: 2Ch → 46h) and replaces the collector call at
+    `0x49F251`, so inside WoL's DLL the factor must walk types 2Ch **and** 46h (see the contract).
+    `snareOnlyHitUnit`'s replay of the velocity sum walks the same lists, so it may need the same
+    change (not checked);
+  - `showGatherRate`: WoL's `uhc.dll` builds patches at `0x4EC8DE` and `0x4ECC8E` (inside the
+    Gather action; `0x4ECC8E` is doAnimationLooped's state test), one at `0x4D7880` in the stat
+    panel fill, and passes `0x5D31CA` / `0x5D31D1` (the end of the data-ref registration) to a
+    helper. None of them overlaps these ranges (dword scan of the DLL), but check that `0x4ED044`
+    is still reached with the same entry state in WoL's build;
+  - `transformInventory`, `noTrainNearEnemyTC`, `overhealHitpointBars`: not checked against WoL's
+    patches. `docs/wol-uhc-map.md` mentions none of their sites.
 
 **The reliable check is at runtime.** Port the `VerifyAll` step (below) and run it after your
 DLL has applied all its own patches. A range that another patch changed then makes the feature
@@ -179,10 +227,16 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/lifespan.cpp`](../src/features/lifespan.cpp), [`src/hooks/lifespan_hooks.asm`](../src/hooks/lifespan_hooks.asm) | `lifespanAfterConstruction`. | unittypes (and `OnDatabaseLoad` for `log`), sites `Lifespan*`, `Fade*`, `IsBuilt*`, `IsA*`, `WriteBytes`, your cfg reader |
 | [`src/features/sockets.cpp`](../src/features/sockets.cpp), [`src/hooks/socket_hooks.asm`](../src/hooks/socket_hooks.asm) | `gaiaSocketsOnly`. | unittypes (only with a UnitType), sites `GaiaSocket*`, your cfg reader |
 | [`src/features/hotkeys.cpp`](../src/features/hotkeys.cpp), [`src/hooks/hotkey_hooks.asm`](../src/hooks/hotkey_hooks.asm) | `customHotkeyContexts`. | sites `Hotkey*`, `WriteCall`, your cfg reader |
-| [`src/features/snare.cpp`](../src/features/snare.cpp), [`src/hooks/snare_hooks.asm`](../src/hooks/snare_hooks.asm) | `snareOnlyHitUnit`. | sites `Snare*`, your cfg reader |
+| [`src/features/snare.cpp`](../src/features/snare.cpp), [`src/hooks/snare_hooks.asm`](../src/hooks/snare_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `snareOnlyHitUnit`. `modifiers.h` holds the read-only walk over a unit's modifier actions (`WalkModifiers`, `ModifierList`), shared with `buildingWorkRateAuras`. | sites `Snare*`, your cfg reader |
 | [`src/features/techrename.cpp`](../src/features/techrename.cpp), [`src/hooks/techrename_hooks.asm`](../src/hooks/techrename_hooks.asm) | `techRenameEffect`. | sites `TechRename*`, your cfg reader |
 | [`src/features/dopples.cpp`](../src/features/dopples.cpp), [`src/hooks/dopple_hooks.asm`](../src/hooks/dopple_hooks.asm) | `noCorpseDopples`. | unittypes, sites `NoCorpseDopple*`, your cfg reader |
 | [`src/features/dance.cpp`](../src/features/dance.cpp), [`src/hooks/dance_hooks.asm`](../src/hooks/dance_hooks.asm) | `danceBonusCivs`. | sites `Dance*`, your cfg reader (`Config::All`) |
+| [`src/features/startingtc.cpp`](../src/features/startingtc.cpp), [`src/hooks/startingtc_hooks.asm`](../src/hooks/startingtc_hooks.asm) | `startingTC`. | unittypes, sites `FirstTcGate`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot`, `IsA`, `WriteBytes`, your cfg reader |
+| [`src/features/transforminv.cpp`](../src/features/transforminv.cpp), [`src/hooks/transforminv_hooks.asm`](../src/hooks/transforminv_hooks.asm) | `transformInventory`. | unittypes (only with a UnitType), sites `TransformInvHook`, `TransformProtoLookup`, `TransformKbRemove`, `TransformPushProto`, `TransformKbReAdd`, `Inventory*`, `ResList*`, `IsA`, your cfg reader |
+| [`src/features/notrainneartc.cpp`](../src/features/notrainneartc.cpp), [`src/hooks/notrainneartc_hooks.asm`](../src/hooks/notrainneartc_hooks.asm) | `noTrainNearEnemyTC`. | unittypes (and `OnDatabaseLoad` for `log`), sites `WorkRateTrainCall`, `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById*`, `UnitById*`, `PlayerIsEnemy`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`; the data symbol `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`; define it yourself as `0x9BFE33` without that feature); your cfg reader (`Config::All`) |
+| [`src/features/overheal.cpp`](../src/features/overheal.cpp), [`src/hooks/overheal_hooks.asm`](../src/hooks/overheal_hooks.asm) | `overhealHitpointBars`. | unittypes, sites `Overheal*`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag`, `IsA`, `IsATrue`, your cfg reader |
+| [`src/features/gatherrate.cpp`](../src/features/gatherrate.cpp), [`src/hooks/gatherrate_hooks.asm`](../src/hooks/gatherrate_hooks.asm) | `showGatherRate`. | unittypes (only with a UnitType), sites `GatherTick*`, `StatPanel*`, `GatherRateStringRef`, `DataRef*`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BString*`, `IsBuilt`, `IsA`, `WriteDword`, your cfg reader |
+| [`src/features/bwrauras.cpp`](../src/features/bwrauras.cpp), [`src/hooks/bwraura_hooks.asm`](../src/hooks/bwraura_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `buildingWorkRateAuras`. | sites `ModifyTypeName*`, `Bwr*`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall`, `SnareCollector`, `SnareModifierSum*`, `BuildingWorkRateGetter`; liveBuildingWorkRate's `UhcBwrGetterHook` symbol for the getter-head check (or drop that check); `WriteCall`, `Matches`; your cfg reader |
 
 Every feature also needs `VerifyAll`, `WriteJmp`, `Log` and `TRACE_ONCE`, listed below.
 
@@ -192,7 +246,8 @@ Support code they use, small enough to copy or to map onto your own helpers:
   - `VerifyAll` compares live memory with the expected bytes;
   - `WriteJmp` writes `jmp rel32` and NOP-fills the rest, through `VirtualProtect` and
     `FlushInstructionCache`;
-  - `WriteCall` writes a 5-byte `call rel32`, `WriteDword` one dword, `WriteBytes` raw bytes.
+  - `WriteCall` writes a 5-byte `call rel32`, `WriteDword` one dword, `WriteBytes` raw bytes;
+    `Matches` checks one site without logging (buildingWorkRateAuras uses it for the Train call).
 
   If your DLL has its own patch library (WoL uses `remod`), keep the check before every write.
 - [`src/log.h`](../src/log.h), [`src/log.cpp`](../src/log.cpp): `Log` (printf-style, wide) and
@@ -201,8 +256,9 @@ Support code they use, small enough to copy or to map onto your own helpers:
   the `TRACE_ONCE` lines if you do not want the "hook reached" log lines.
 - [`src/config.h`](../src/config.h): `Config::First(key)` returns the key's first line of
   arguments as a list of strings, or null when the key is absent. `broadsideMuzzleLimit`,
-  `danceBonusCivs` and the dodge sound keys also use `Config::All(key)` (every line), and
-  `abilitySlots` uses `Config::Int(key)`. Replace these calls with your own cfg reader.
+  `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys also use `Config::All(key)`
+  (every line), and `abilitySlots` uses `Config::Int(key)`. Replace these calls with your own cfg
+  reader.
 - [`src/unittypes.h`](../src/unittypes.h): besides `RequestAbstractUnitType`,
   `OnDatabaseLoad(callback)` calls a feature on every data load, from the same hook.
 
@@ -224,7 +280,10 @@ with your own result type.
     two `__fastcall` wrappers the same way (`g_uhcHotkeyFindContext`,
     `g_uhcHotkeyDeactivateAll`);
   - for `techRenameEffect`, no MASM is involved in the effect's methods: they are `__fastcall`
-    C++ functions in a vtable the DLL fills.
+    C++ functions in a vtable the DLL fills;
+  - one data symbol links two features: `g_uhcBwrTrainGetter`, defined in `bwrauras.cpp` and
+    called by `notrainneartc_hooks.asm` (`call g_uhcBwrTrainGetter`, an indirect call through the
+    variable).
 - **Build setup:**
   - CMake: `project(... LANGUAGES CXX ASM_MASM)`, as in this repository's `CMakeLists.txt`.
   - A Visual Studio project: enable **Build Dependencies → Build Customizations → masm**, then
@@ -389,6 +448,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     one), every other register and EFLAGS as in stock.
 - **Callers' contract:** each of the four callers writes EAX before reading it (sites
   `WorkRate*Call`). A caller you add that reads EAX after the call gets the proto.
+  `buildingWorkRateAuras` and `noTrainNearEnemyTC` later redirect or replace these calls, but their
+  hooks still call the getter, so this hook keeps running.
 - **Without a hook:** `74 04` → `EB 04` at `0x9BFE38` gives the same result with no log.
 
 ### techPrereqRecheck
@@ -634,6 +695,180 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `nativeCivs` port. Such a port should also patch the XP gate's compare at `0x4E0E17`, which
   upstream misses.
 
+### startingTC
+
+- **Globals:** `g_uhcStartingTcType` (the marker's ID or a proto ID; while it is -1 both hooks run
+  the stock code) and `g_uhcStartingTcLog`.
+- **Helpers:**
+  - `bool __stdcall UhcStartingTcStale(player*, unit*)`: false when `[player+4F0h]` is the unit's
+    ID, when `[[0xC66234]+13Ch]` (the main world) is 0, or when the world's player of ID
+    `[player]` (`[world+58h]`, count `[world+5Ch]`) is not this player; else true when
+    `[player+4F0h]` is not in the world's unit table (`[world+0Ch]`, count `[world+10h]`, index
+    `id & 3FFFFh`, `[unit+10h]` = ID), when `call [[u]+0A4h]` returns 0, or when bit 3 of the
+    bitset `[u+4]` is set with a bit count `[u+8]` above 3; else false. It only reads game state.
+  - `void __stdcall UhcStartingTcFirst(player*, unit*)`: the log line, only with `log`.
+- **Gate hook** at `0x49880A`, 13 bytes (`jmp` + 8 NOP):
+  - entry state: ESI = player, EDI = the unit just added, EBX and EBP the function's own; EAX,
+    ECX, EDX and the flags are free;
+  - `cmp dword ptr [esi+4F0h],0; jl` → `jmp 506B2Ah` (the stock cold chunk, registers unchanged);
+  - else if the marker ID ≥ 0, `[edi+5Ch]` ≠ 0, `0x44D7FA([edi+5Ch], type)` and
+    `UhcStartingTcStale(esi, edi)` → `jmp 67ABD4h`;
+  - else `jmp 498817h`. EBX, EBP, ESI, EDI and ESP as on entry on every path.
+- **Proto hook** at `0x506B3B`, 6 bytes (`jmp` + 1 NOP):
+  - entry state: EAX = the unit's proto ID, ECX = database, EDX = proto, EDI = unit, ESI = player;
+  - `cmp eax,[ecx+5E08h]`; equal → `jmp 67ABD4h`;
+  - else if the marker ID ≥ 0, `[edi+5Ch]` ≠ 0 and `0x44D7FA([edi+5Ch], type)` → (log) →
+    `jmp 67ABD4h`;
+  - else `jmp 498817h`. EBX, EBP, ESI, EDI and ESP as on entry.
+- **Install both or neither:** the proto hook alone gives FirstTC to marked units but never
+  replaces a dead one. This DLL writes the proto hook first and puts its bytes back if the gate
+  hook cannot be written.
+
+### transformInventory
+
+- **Hook** at `0x9C7625`, replacing `mov eax,[esi+58h] / test eax,eax / je 9C763Ch` (7 B):
+  - entry state: ESI = the unit, EBP = the player's copy of the new proto, `[esi+5Ch]` = the old
+    proto, x87 stack empty. The unit has left the other players' knowledge bases (0x9C75FE) and
+    its player's lists (0x9C7620); it goes back at 0x9C7658 / 0x9C768D, and setHP's checkState runs
+    at 0x9C76F3;
+  - call the helper `UhcTransformInventory(unit, newProto)` (stdcall) with every register
+    preserved (`pushad` / `popad`);
+  - re-execute the stolen code: `mov eax,[esi+58h]; test eax,eax`; jump to `0x9C762C` when EAX is
+    not 0 (it pushes EAX), else to `0x9C763C`. The flags are dead after the `je`.
+- **Helper rules:**
+  - treat `[proto+E0h]` as the resource object (InitialResource list at `+0`) and
+    `[[unit+B4h]+94h]` as the inventory (list at `+4`);
+  - compare resource types by decoding entries (`[list][r] ^ [0xC6DF14+4r]`, r < `[0xC6DF38]`) and
+    testing `> 1e-6`; never write decoded values back, copy raw with 0x480A73;
+  - reuse an existing inventory (set `+0Ch` and `+10h` to −1), create a missing one with 0x9BFE5A,
+    never free one that you then re-create in the same call;
+  - free (only for a new proto without a resource object, if you offer `all`) with cdecl 0x4BA757
+    followed by `[[unit+B4h]+94h] = 0`, as 0x4BA74C / 0x4BA7A7 do;
+  - with `scale`, compute the factor before the copy and apply it with 0x480B94.
+- **Coexistence:** it runs with transformUpdatesLOS (0x9C763F); do not verify `TransformSetProto`
+  in this feature, since that feature may have written its `jmp` there.
+
+### noTrainNearEnemyTC
+
+- **Globals:** `g_uhcNoTrainType` (the marker's ID; while it is -1 the hook runs the stock code),
+  and the pointer `g_uhcBwrTrainGetter` it calls (owned by buildingWorkRateAuras; `0x9BFE33` by
+  default).
+- **Helper:** `bool __stdcall UhcNoTrainBlocked(unit* trainer)`: false unless
+  `0x44D7FA([trainer+5Ch], type)`; then the nearest enemy FirstTC as in
+  [how-it-works.md](how-it-works.md#notrainnearenemytc): players 1 .. `[world+5Ch]`-1 in order,
+  `0x44CB21`, `[p+4F0h]` ≥ 0, `0x44CC6D`, owner `[tc+44h]` ≠ the trainer's, `0x484D2D(owner,
+  [[trainer+44h]])`, `call [[tc]+0A4h]` (alive), `call [[tc]+0B8h](tc, trainer+14h)`; true when the
+  smallest distance is below the cfg value. Reads only simulation state.
+- **Hook** at `0x9EA410`, in FUN_009EA28B, 8 bytes (`jmp` + 3 NOP):
+  - entry state: ESI = the Train action, EDI = the trainer's player, x87 stack empty; EAX, ECX,
+    EDX and the flags are free; EBX is reloaded at `0x9EA418`;
+  - blocked: `fldz`, `jmp 9EA418h`;
+  - otherwise: `mov ecx,[esi+10h]; call [g_uhcBwrTrainGetter]; jmp 9EA418h`;
+  - keep ESI, EDI, EBP and ESP; leave exactly one value on the x87 stack.
+- **Order:** apply it after `liveBuildingWorkRate`, which checks the stock bytes of
+  `WorkRateTrainCall`, and before `buildingWorkRateAuras`, which then sees the Train call hooked
+  and only sets the pointer.
+
+### overhealHitpointBars
+
+- **Globals:** `g_uhcOverhealTypes[8]` (marker or proto IDs, -1 until the data loads; a -1 entry is
+  skipped), `g_uhcOverhealTypeCount` (entries in use) and `g_uhcOverhealLog`.
+- **"Uses initial":** proto P is of one of the types (`0x44D7FA(P, id)`) and
+  1e-6 < `[P+9Ch]` < `[P+98h]` (strict, float compares).
+- **Reference** (`float thiscall(unit)` in ST0, called with an empty FPU stack): m =
+  `0x480408(unit)`; if `[unit+5Ch]` is not null and uses initial: `[P+9Ch]` when m == `[P+98h]`,
+  else m × `[P+9Ch]` / `[P+98h]`; otherwise m. Keep the exact `[P+9Ch]` when there is no override:
+  the texts truncate.
+- **Ratio** (`float thiscall(unit)`): r = reference; 0.0 when r < 1e-6; 1.0 when `[unit+64h]` ≥ r;
+  else `[unit+64h]` / r. The comparisons must treat NaN as 0x45F295 does (`test ah,5 / jnp`,
+  `test ah,41h / jnp`).
+- **Base** (`float thiscall(database proto)`): `[P+9Ch]` when P uses initial, else `[P+98h]`.
+- **Hooks** (each: the result in ST0, then `jmp` to the next stock instruction):
+  - `0x45FAAF` (5 B) ECX = ESI = unit: ratio, → `0x45FAB4`;
+  - `0x4C5014` (5 B) ECX = EBP = unit: ratio, → `0x4C5019`; keep EBX, EDI, ESI, EBP (popped
+    after);
+  - `0x698B35` (5 B) ECX = EBX = unit: reference, → `0x698B3A`;
+  - `0x4D7575` (6 B) ECX = EDI = unit: reference, → `0x4D75AD` (skips the inlined getter);
+  - `0x4D7615` (6 B) EAX = database proto (not null): base, → `0x4D761B`;
+  - `0x9AFA2A` (6 B) ECX = database proto (not null): base, → `0x9AFA30`;
+  - `0x9AFA4E` (5 B) ECX = ESI = unit: reference, → `0x9AFA53`.
+
+  At every site the FPU stack is empty and EAX, ECX, EDX and the flags are dead after the
+  continuation. Preserve EBX, ESI, EDI and EBP.
+- **Log callback** (only with `log`): `UhcOverhealLogReference(unit, reference, max)`, stdcall,
+  floats by value, called with an empty FPU stack whenever a reference differs from the stock
+  max; it logs once per proto name.
+- **Display only:** never patch 0x480408 or 0x45F295 themselves; their other callers are
+  simulation code.
+
+### showGatherRate
+
+- **Globals:** `g_uhcGatherRecords` (4000h records of 20h bytes: `+0` gatherer ID, written last;
+  `+4` action; `+8` resource; `+0Ch` target ID; `+10h` float rate; `+14h` float elapsed; `+18h`
+  game time), `g_uhcGatherRowPending`, `g_uhcGatherRowRes`, `g_uhcGatherRowRate` (float).
+- **Record hook** at `0x4ED044` (8 B), on the simulation path, every gather loop of every unit:
+  - entry: ST0 = R (rate per second), the only x87 value; ESI = the Gather action; `[esi+10h]` the
+    gatherer and `[[esi+10h]+44h]` its player, both non-null; elapsed at `[esp+30h]`; flags dead;
+  - write only DLL memory; keep ST0 exactly (multiply a copy: `fld st(0); fmul [player+37Ch];
+    fstp`), leave the x87 depth and control word as found, preserve EAX / ECX / EDX (dead, but
+    cheap) and EBX / ESI / EDI / EBP;
+  - re-execute `fmul dword ptr [esp+30h]; fst dword ptr [esp+14h]` and jump to `0x4ED04C`.
+- **Panel hook** at `0x4D7834` (7 B):
+  - entry: the fill's frame (`[esp+2Ch]` row, `[esp+38h]` unit, `[ebp+8]` selection), x87 empty,
+    flags dead; EAX, EBX, EDX, EDI may be anything (the stock AutoGather path arrives so);
+  - pending flag set: clear it and take the stock path;
+  - otherwise call `bool __stdcall UhcGatherPanelRow(unit, selection, row)` with EAX / ECX / EDX
+    saved; on true set the pending flag, EBX = `[esp+2Ch]`, jump to `0x69AF7C`;
+  - stock path: `mov esi,[esp+38h]; mov ecx,[esi+5Ch]`, jump to `0x4D783B`.
+- **Row value hook** at `0x69AFE0` (6 B): pending → EBX = `g_uhcGatherRowRes`, `[esp+1Ch]` =
+  `g_uhcGatherRowRate`, jump to `0x69B02A` (keep ESI / EDI, the gadgets; EAX is free); else
+  `mov ecx,[0C66234h]`, jump to `0x69AFE6`. Write this hook before the panel hook.
+- **Never use a stack slot as the re-entry guard:** the formatter's `%d/s` branch writes
+  `[esp+0Ch]` (0x69B0EF, 0x69B0FB); a whole-number rate would then repeat the row in rows 2..8.
+- **Provider** at the imm32 `0x5D2D3C`: `bool __stdcall(Value*)` (`ret 4`, ECX unused). Return
+  false unless `Value.type` = 3; otherwise assign the text to `Value+4` with
+  `0x443BB8(&value->text, &src, -1, -1)` (src = a BString whose first dword points to your
+  `wchar_t` buffer) and return true, or return true without assigning (empty string). Do **not**
+  write the imm32 at `0x5D06E8` (ids 19h / 1Ah): WoL's `uimainnew.xml` reads
+  `{currentUnitGatherRate(gold)}`, which must keep failing.
+- **Record validity**, shared by both readers: same ID; `[[unit+58h]+24h]` = the action; byte
+  `[action+61h]` = 5; `[action+10h]` = the unit; resource < `[db+80h]`; rate > 0; age in
+  `[world+108h]` ms within max(2500, 2000 × elapsed), at most 60000; `[player+338h]` = 0; the
+  target, if found, not `0x44CAC4(proto, 58h)`.
+
+### buildingWorkRateAuras
+
+- **Globals:** `g_uhcBwrTrainGetter` (exported data, `void*`, default `0x9BFE33`): set it to the
+  wrapper when the feature applies. A hook that replaces the Train call at `0x9EA410` (this DLL's
+  noTrainNearEnemyTC) must call through it.
+- **Name hook** at `0x5FE6D7` (`jmp`, 1 NOP), in FUN_005F5645:
+  - entry state: EAX = the result of `0x443C10(name, L"AutoGatherRate", 0, -1)` (0 = equal), ESI =
+    the name (`BString*`), `[esp]` = the ESI the function saved;
+  - EAX = 0: keep it; else call `0x443C10` again with `push -1; push 0; push L"BuildingWorkRate";
+    mov ecx,esi` (thiscall, `ret 0Ch`) and set EAX = `40h - 0Eh` on 0, `-0Fh` otherwise;
+  - continue at `0x5FE6DD` (`pop esi; add eax,0Eh; ret`). EBX, ESI, EDI, EBP kept; ECX, EDX and the
+    flags free.
+- **Rate wrapper**, the target of the calls at `0x9E65F7`, `0x9D58D4`, `0x6AB23F` and (when
+  `0x9EA410..0x9EA417` are stock) `0x9EA413`, and the value of `g_uhcBwrTrainGetter`:
+  - entry state: ECX = the unit, `[esp]` = the return address, x87 stack empty;
+  - `[ecx+0B4h]` null or `[[ecx+0B4h]+0C8h]` null: `jmp 9BFE33h`;
+  - otherwise: push ECX, EDX; call `0x9BFE33` (ECX = the unit; ST0 = base); factor = 1.0f;
+    collect the unit's actions with type byte `[+60h]` = 2Ch (**and, in WoL, 46h**: its
+    ModifyActionFix retypes the tactics-driven class) from `[[unit+58h]+14h]` (`{count +0, data
+    +8}`, children at `[+40h]`, depth first, parent first; stop at 16 levels and use 1.0) whose
+    `[+64h]` = 40h; call `0x4B3C7D(ecx = 0, &factor, &{data, count}, 40h)` (`ret 0Ch`); use 1.0
+    when it returns false or `factor < 1e-6f`; ST0 = base × factor (base itself when the factor is
+    1.0); pop EDX, ECX; `ret`;
+  - on return: ST0 = the rate, ECX, EDX, EBX, ESI, EDI, EBP as on entry; EAX and EFLAGS clobbered
+    (each caller writes EAX before reading it and calls a function before reading the flags).
+- **Getter head:** the wrapper calls `0x9BFE33`, so a getter hook (liveBuildingWorkRate) applies
+  first; this DLL checks that the getter's first 5 bytes are stock or that hook's `jmp`.
+- **Order:** apply it after every feature that verifies the four call sites as stock bytes
+  (liveBuildingWorkRate, noTrainNearEnemyTC). Check the Train call (`BwrTrainCall`) on its own and
+  leave it alone when it is not stock.
+- **Stat 40h** is this DLL's number for BuildingWorkRate. Keep it, or agree on another one, if your
+  DLL adds its own ModifyTypes.
+
 ## 5. Integration rules
 
 - **Keep the cfg keys and their syntax:**
@@ -653,19 +888,39 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `broadsideMuzzleLimit <N> [UnitType] [log]`, N from 1 to 255, one line;
   - `abilitySlots <N> [log]`, N from 6 to 36;
   - `techRenameEffect [log]`, also read as `enableTechRenameEffect`;
-  - `danceBonusCivs <Civ> [<Civ> ...] [log]`, several lines add up.
+  - `danceBonusCivs <Civ> [<Civ> ...] [log]`, several lines add up;
+  - `startingTC [UnitType] [log]` (default `AbstractStartingTC`);
+  - `transformInventory [all] [scale] [UnitType] [log]` (no default: every in-place transform);
+  - `noTrainNearEnemyTC <meters> [UnitType] [log]`, meters above 0 and at most 1000, one line
+    (default `AbstractDaimyo`);
+  - `overhealHitpointBars [UnitType ...] [log]` (default `AbstractOverheal`, up to 8 types, one
+    line);
+  - `showGatherRate [UnitType] [log]` (no default: every unit);
+  - `buildingWorkRateAuras [log]`.
 
   The [modding guide](modding-guide.md#5-feature-reference) then applies to your mod as written.
 - **Verify, then write.** Check all of a feature's ranges first, and write nothing if any range
   differs.
+- **Order.** Apply the features in the order of `kFeatures` in
+  [`src/features.h`](../src/features.h). Two constraints matter: `noTrainNearEnemyTC` after
+  `liveBuildingWorkRate` (both check `WorkRateTrainCall` as stock bytes; only the first writes
+  inside it), and `buildingWorkRateAuras` after both (it redirects the four getter calls and finds
+  the Train call already hooked when `noTrainNearEnemyTC` is on). The two features share
+  `g_uhcBwrTrainGetter`: port both, or define that pointer as `0x9BFE33` in a port of
+  `noTrainNearEnemyTC` alone.
 - **Apply from `UHCMain`.** Every hook is in code that runs later, during data load or in game.
 - **Multiplayer determinism** ([how-it-works.md](how-it-works.md#5-rules-that-keep-multiplayer-deterministic)):
   - names are resolved inside the game, from its own database;
   - choices follow cfg order, then the stock unit query order;
   - poisons tick on the game time `[world+108h]`, in integer milliseconds and key order;
   - `techPrereqRecheck` schedules on the world's step count, never on a clock;
-  - predicates that mirror stock code (`maintainWaitForPop`, `snareOnlyHitUnit`) call the same
-    engine functions with the same arithmetic;
+  - predicates that mirror stock code (`maintainWaitForPop`, `snareOnlyHitUnit`, `startingTC`,
+    `noTrainNearEnemyTC`, `buildingWorkRateAuras`) call the same engine functions with the same
+    arithmetic;
+  - `transformInventory` copies the encoded amounts raw; only `scale` divides two game values
+    (single precision);
+  - `overhealHitpointBars` and `showGatherRate` change only the interface; `showGatherRate`'s
+    record hook runs in the gather code but writes only the DLL's memory;
   - no hook sends a network command.
 
   Keep it that way if you change the code. In particular, never set the shipment point through
@@ -673,9 +928,12 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   would then send.
 - **Saved games and replays:** `healNonIdle` and `dodgeAnyUnit` add a unit type, which changes the
   unit type count, and so do `maintainWaitForPop`, `lifespanAfterConstruction`,
-  `noCorpseDopples`, `broadsideMuzzleLimit` and `gaiaSocketsOnly` when their type is a new name.
-  Load saves and replays with the same DLL and cfg they were made with. `damageOverTime` keeps
-  its poisons outside the game state, so a loaded game has none.
+  `noCorpseDopples`, `broadsideMuzzleLimit`, `gaiaSocketsOnly`, `startingTC`,
+  `transformInventory`, `noTrainNearEnemyTC`, `overhealHitpointBars` and `showGatherRate` when
+  their type is a new name. Load saves and replays with the same DLL and cfg they were made with.
+  `damageOverTime` keeps its poisons outside the game state, so a loaded game has none.
+  `buildingWorkRateAuras` modifiers are saved with stat 40h; a DLL without the feature ignores
+  them.
 
 ## 6. Data and testing
 
@@ -704,7 +962,7 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `dodgeAnyUnit: unit N (Proto) dodged a hit`; a Japanese monk still dodges as in stock.
     `tools/testbed.py` builds such a fight with no clicks
     ([developer guide](developer-guide.md#driving-the-game-unattended)).
-  - **The WoL Tier 2 features:** the test that confirmed each one, with its data, is in its
+  - **The WoL features:** the test that confirmed each one, with its data, is in its
     "Status" in the [modding guide](modding-guide.md#5-feature-reference). For each, run the same
     test with and without the key: the stock run must show the bug. Two pitfalls from these tests:
     scenario triggers cannot give build or work orders (use real clicks for placing foundations,
@@ -745,3 +1003,16 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - **partly confirmed:** `customHotkeyContexts` (registration and context switch; no key press);
   - **not tested in game:** `gaiaSocketsOnly`. The stock interface already refused a player's
     socket in the test, and the order path that bypasses it (WoL's case) was not driven.
+- **The WoL Tier 1 and Tier 3 features** (2026-10-29, single player only, all 21 WoL keys on
+  together):
+  - **confirmed in game:** `transformInventory` (six `TransformUnit` cases; `all`, `scale`, a
+    marker, revolutions and a conversion afterwards not tested; no key-off run),
+    `noTrainNearEnemyTC` (pause near an enemy Town Center, resume when it died; walking away not
+    tested), `buildingWorkRateAuras` (`Maintain`; train, research and powers not tested);
+  - **confirmed in the interface:** `overhealHitpointBars` (the unit panel's text and bar; the
+    floating and group bars not compared on their own), `showGatherRate` (the stat panel row for
+    berries; the data ref not tested);
+  - **confirmed from the log and memory:** `startingTC` (a marked building became the first town
+    center of a player without one); the replacement of a dead or expiring first town center
+    (WoL's Maori case) and the placement effect were not driven. The other `TownCenter` checks
+    are not covered (question Q2 in [wol-requests.md](wol-requests.md)).

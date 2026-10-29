@@ -155,6 +155,17 @@ there:
   so it works while the window is covered. It encodes H.264 with ffmpeg: `UHC_FFMPEG`, `PATH`, or
   the static build in `C:\Tools\ffmpeg\ffmpeg.exe` (taken from the PyPI package
   `imageio-ffmpeg`). Center the camera first, e.g. `exec 'uiFindType("Explorer")'`.
+  Make the numbers visible: `--watch <IDs or proto names>` draws the game time and the live HP of
+  those units on every frame, `--log <regex>` the latest matching `UHC.log` lines (the feature's
+  own `log` output); select the key unit (`exec 'uiLookAtAndSelectUnit(<id>)'`) so its stat panel
+  shows too. `scenario` sets `flashHitpointBarsOnDamage`, so damaged units show their HP bar.
+- **Black screenshots and videos** mean the game stopped drawing: it does so while another window
+  has the foreground (`record` and real clicks bring it to the front; `focus()` falls back to a
+  click on the title bar, since Windows refuses `SetForegroundWindow` to a background process) and
+  when the monitor turns off from inactivity, after which its graphics device stays lost until
+  the game restarts. For a long unattended session keep the display on first, e.g. a background
+  `python -I -c "import ctypes,time; ctypes.windll.kernel32.SetThreadExecutionState(0x80000003);
+  time.sleep(10800)"`, and restart the game if the frames are already black.
 - **Test data:** `tools/protoy_testdata.py <bed> unittype Proto=Type …` adds marker types to the
   copy's `protoy.xml` and compiles the XMB from it; `reset` restores the files.
 - **One game at a time.** Other sessions may be testing in their own copies (for example
