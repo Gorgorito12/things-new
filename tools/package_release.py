@@ -159,6 +159,23 @@ healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, 
 damageOverTime [log]          poison: attacks with <AttachProtoUnit> damage over time
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
+liveBuildingWorkRate [log]    BuildingWorkRate techs also speed up existing buildings
+techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units are
+                              created or die, not only at the next house or age-up
+maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit
+                              (Maintain action) until there is population room
+transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
+broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
+abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
+wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
+lifespanAfterConstruction [UnitType] [log]   a marked building's Lifespan starts when
+                              its construction ends, not when it is placed
+gaiaSocketsOnly [UnitType] [log]  socketed buildings only on sockets owned by Gaia
+customHotkeyContexts [log]    keymap contexts <ProtoName>Accel: hotkeys for new buildings
+snareOnlyHitUnit [log]        a snared unit no longer slows the group it moves with
+techRenameEffect [log]        tech effect SetTechName: rename a tech per player
+noCorpseDopples [UnitType] [log]   dead marked units (hunt carcasses) leave no dopple
+danceBonusCivs Civ ... [log]  fire pit train/XP/gather/regen dances for more civs
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
 multipleInstances [background]  run beside a copy of the game from another folder
 

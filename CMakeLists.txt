@@ -18,26 +18,54 @@ add_library(UHC SHARED
   src/log.cpp
   src/patch.cpp
   src/unittypes.cpp
+  src/features/abilityslots.cpp
   src/features/ai.cpp
+  src/features/broadside.cpp
   src/features/damageovertime.cpp
+  src/features/dance.cpp
   src/features/dodge.cpp
+  src/features/dopples.cpp
   src/features/fame.cpp
   src/features/fileio.cpp
   src/features/heal.cpp
+  src/features/hotkeys.cpp
   src/features/instances.cpp
+  src/features/lifespan.cpp
   src/features/limits.cpp
+  src/features/maintain.cpp
   src/features/misc.cpp
   src/features/perf.cpp
   src/features/shipments.cpp
+  src/features/snare.cpp
+  src/features/sockets.cpp
+  src/features/techprereq.cpp
+  src/features/techrename.cpp
+  src/features/transform.cpp
+  src/features/wonderpanel.cpp
+  src/features/workrate.cpp
+  src/hooks/abilityslot_hooks.asm
   src/hooks/ai_hooks.asm
+  src/hooks/broadside_hooks.asm
+  src/hooks/dance_hooks.asm
   src/hooks/dodge_hooks.asm
+  src/hooks/dopple_hooks.asm
   src/hooks/dot_hooks.asm
   src/hooks/fame_hooks.asm
   src/hooks/heal_hooks.asm
+  src/hooks/hotkey_hooks.asm
+  src/hooks/lifespan_hooks.asm
   src/hooks/limit_hooks.asm
+  src/hooks/maintain_hooks.asm
   src/hooks/misc_hooks.asm
   src/hooks/shipment_hooks.asm
+  src/hooks/snare_hooks.asm
+  src/hooks/socket_hooks.asm
+  src/hooks/techprereq_hooks.asm
+  src/hooks/techrename_hooks.asm
+  src/hooks/transform_hooks.asm
   src/hooks/unittype_hooks.asm
+  src/hooks/wonderpanel_hooks.asm
+  src/hooks/workrate_hooks.asm
   src/version.rc
 )
 target_compile_definitions(UHC PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)

@@ -135,6 +135,11 @@ there:
 - **Signals, most reliable first:** a feature's own `log` option; `hook reached` lines; memory
   (`units`, or `tools/re/debugger.py`); screenshots. The game's own log is
   `Documents\My Games\Age of Empires 3\Age3Log.txt`.
+- **Video:** once a feature works, `record <out.mp4> [seconds] [fps] [width]` films the window
+  in real time (default 30 s, 10 fps, 1280 px wide), with the same PrintWindow capture as `shot`,
+  so it works while the window is covered. It encodes H.264 with ffmpeg: `UHC_FFMPEG`, `PATH`, or
+  the static build in `C:\Tools\ffmpeg\ffmpeg.exe` (taken from the PyPI package
+  `imageio-ffmpeg`). Center the camera first, e.g. `exec 'uiFindType("Explorer")'`.
 - **Test data:** `tools/protoy_testdata.py <bed> unittype Proto=Type …` adds marker types to the
   copy's `protoy.xml` and compiles the XMB from it; `reset` restores the files.
 - **One game at a time.** Other sessions may be testing in their own copies (for example

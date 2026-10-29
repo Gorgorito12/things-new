@@ -13,8 +13,12 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              load it as a game and unpause. Players have no AI.
   wait <seconds>             let that much game time pass (polls the world clock)
   state                      process, window, world and game time
-  units [--player N] [--proto TEXT]   live units: ID, player, proto, HP, position
+  units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
+                             (--los adds the unit's own line of sight and its proto's)
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
+  record <out.mp4> [seconds] [fps] [width]   films the window in real time to an H.264 MP4
+                             (default 30 s, 10 fps, 1280 px wide); needs ffmpeg (UHC_FFMPEG,
+                             PATH or C:\\Tools\\ffmpeg\\ffmpeg.exe)
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
@@ -34,6 +38,7 @@ Map spec, one argument each:
                                  g<i>.<k> = its k-th unit, tech:<Name> = a tech, pt:<x>,<z> = a
                                  point (fractions of the map side); numbers and text as written
   size=<metres>                  map side, default 80
+  sea=<SeaType>                  a water map ("sea=ceylon coast", quoted), for ship tests
 
 Console commands only reach the game through `perfExecFile <bed>\\uhc-exec.txt` in the bed's
 uhc.cfg (posted key presses never reach the console). Without `DontPauseWhenLosingFocus` the game
@@ -89,6 +94,10 @@ gdi32.SelectObject.argtypes = [wt.HDC, wt.HGDIOBJ]
 gdi32.GetDIBits.argtypes = [wt.HDC, wt.HBITMAP, wt.UINT, wt.UINT, ctypes.c_void_p, ctypes.c_void_p, wt.UINT]
 gdi32.DeleteObject.argtypes = [wt.HGDIOBJ]
 gdi32.DeleteDC.argtypes = [wt.HDC]
+gdi32.SetStretchBltMode.argtypes = [wt.HDC, ctypes.c_int]
+gdi32.SetBrushOrgEx.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
+gdi32.StretchBlt.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                             wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wt.DWORD]
 
 
 class RECT(ctypes.Structure):
@@ -293,12 +302,7 @@ void main(void)
 {{
    rmSetStatusText("",0.01);
    rmSetMapSize({size}, {size});
-   rmSetSeaLevel(0.0);
-   rmSetBaseTerrainMix("texas_grass");
-   rmTerrainInitialize("yukon\\ground1_yuk", 0.0);
-   rmSetLightingSet("great plains");
-   rmSetMapType("land");
-   rmSetMapType("grass");
+{terrain}
    rmSetWorldCircleConstraint(false);
 {players}
 {units}
@@ -313,6 +317,20 @@ void main(void)
    rmSetStatusText("",1.0);
 }}
 """
+
+LAND_TERRAIN = """   rmSetSeaLevel(0.0);
+   rmSetBaseTerrainMix("texas_grass");
+   rmTerrainInitialize("yukon\\ground1_yuk", 0.0);
+   rmSetLightingSet("great plains");
+   rmSetMapType("land");
+   rmSetMapType("grass");"""
+
+# sea=<SeaType>: the whole map is water, set up as RM3\Ceylon.xs does, for ship tests.
+SEA_TERRAIN = """   rmSetSeaLevel(1.0);
+   rmSetSeaType("{sea}");
+   rmSetLightingSet("great plains");
+   rmSetMapType("water");
+   rmTerrainInitialize("water");"""
 
 MAP_INFO = """<?xml version = "1.0" encoding = "UTF-8"?>
 <mapinfo details = "28599" imagepath = "ui\\random_map\\great_plains" displayNameID = "28598" cannotReplace = ""
@@ -351,10 +369,13 @@ def effect_param(bed, groups, size, name, value):
 
 
 def write_map(bed, name, specs):
-    size, groups, techs, moves, timed = 80, [], [], [], []
+    size, groups, techs, moves, timed, sea = 80, [], [], [], [], None
     for spec in specs:
         if spec.startswith("size="):
             size = int(spec[5:])
+            continue
+        if spec.startswith("sea="):
+            sea = spec[4:]
             continue
         m = re.fullmatch(r"p(\d)=([A-Za-z0-9_]+)\*(\d+)@([0-9.]+),([0-9.]+)", spec)
         if m:
@@ -373,7 +394,7 @@ def write_map(bed, name, specs):
             timed.append((int(m[1]), m[2].strip(), [p.split("=", 1) for p in m[3].split(";")[1:]]))
             continue
         sys.exit(f"testbed: bad map spec {spec!r} (expected p<N>=<Proto>*<count>@<x>,<z>, tech<N>=<Tech>, "
-                 f"go<N>=<seconds>@<x>,<z>, at<seconds>=<Effect>;<Param>=<value>... or size=<m>)")
+                 f"go<N>=<seconds>@<x>,<z>, at<seconds>=<Effect>;<Param>=<value>..., size=<m> or sea=<SeaType>)")
     players = sorted({g[0] for g in groups} | {t[0] for t in techs} | {1, 2})
     first = {}
     for g in groups:
@@ -443,7 +464,8 @@ def write_map(bed, name, specs):
             effect_lines.append(f'   rmAddTriggerEffect("{effect}");')
             effect_lines += [effect_param(bed, groups, size, param, f"g{whole[1]}.{unit}" if whole and param == whole[0]
                                           else value) for param, value in params]
-    text = MAP_TEMPLATE.format(size=size, players=player_lines, units="\n".join(unit_lines),
+    terrain = SEA_TERRAIN.format(sea=sea) if sea else LAND_TERRAIN
+    text = MAP_TEMPLATE.format(size=size, terrain=terrain, players=player_lines, units="\n".join(unit_lines),
                                effects="\n".join(effect_lines))
     folder = bed / "RM3"
     (folder / f"{name}.xs").write_text(text, encoding="utf-8")
@@ -486,7 +508,7 @@ def scenario(bed, map_name, seed):
 
 # --- reading the game ---------------------------------------------------------------------------
 
-def list_units(player=None, proto_filter=None):
+def list_units(player=None, proto_filter=None, los=False):
     proc = process() or sys.exit("testbed: the game is not running")
     for unit in D.units(proc):
         owner = D.unit_player(proc, unit)
@@ -496,8 +518,13 @@ def list_units(player=None, proto_filter=None):
         if proto_filter and proto_filter.lower() not in name.lower():
             continue
         x, y, z = struct.unpack("<fff", proc.read(unit + 0x14, 12) or b"\0" * 12)
+        extra = ""
+        if los:  # the unit's own LOS [[unit+B4h]+90h] and its proto's [[unit+5Ch]+48h]
+            block = proc.u32(unit + 0xB4)
+            unit_los = proc.f32(block + 0x90) if block else float("nan")
+            extra = f"  los {unit_los:5.1f} (proto {proc.f32(proc.u32(unit + 0x5C) + 0x48):5.1f})"
         print(f"{proc.u32(unit + 0x10):7d}  player {owner}  {name:32s} hp {proc.f32(unit + 0x64):8.1f}  "
-              f"at {x:6.1f},{z:6.1f}")
+              f"at {x:6.1f},{z:6.1f}{extra}")
 
 
 def state():
@@ -569,6 +596,75 @@ def shot(path, scale=2):
         rows.append(bytes(px))
     png(path, (w + scale - 1) // scale, len(rows), rows)
     print(f"{path}: window {w}x{h}, PrintWindow {'ok' if ok else 'FAILED'}, saved at 1/{scale}")
+
+
+def ffmpeg_path():
+    """ffmpeg for `record`: UHC_FFMPEG, then PATH, then C:\\Tools\\ffmpeg (a static build)."""
+    for candidate in (os.environ.get("UHC_FFMPEG"), shutil.which("ffmpeg"), r"C:\Tools\ffmpeg\ffmpeg.exe"):
+        if candidate and os.path.isfile(candidate):
+            return candidate
+    sys.exit("testbed: record needs ffmpeg (set UHC_FFMPEG, put it on PATH or in C:\\Tools\\ffmpeg)")
+
+
+def record(path, seconds=30.0, fps=10, width=1280):
+    """Films the game window to an H.264 MP4 in real time, with PrintWindow like `shot` (it works
+    while the window is covered). A frame that takes longer than 1/fps to capture is repeated, so
+    the video keeps the game's real speed."""
+    ffmpeg = ffmpeg_path()
+    hwnd = window()
+    rc = RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(rc))
+    w, h = rc.right - rc.left, rc.bottom - rc.top
+    ow = min(width, w) // 2 * 2
+    oh = round(h * ow / w / 2) * 2
+    screen = user32.GetDC(None)
+    full_dc, small_dc = gdi32.CreateCompatibleDC(screen), gdi32.CreateCompatibleDC(screen)
+    full, small = gdi32.CreateCompatibleBitmap(screen, w, h), gdi32.CreateCompatibleBitmap(screen, ow, oh)
+    gdi32.SelectObject(full_dc, full)
+    gdi32.SelectObject(small_dc, small)
+    gdi32.SetStretchBltMode(small_dc, 4)  # HALFTONE: averages pixels, so text stays readable
+    gdi32.SetBrushOrgEx(small_dc, 0, 0, None)
+    bmi = ctypes.create_string_buffer(struct.pack("<IiiHHIIiiII", 40, ow, -oh, 1, 32, 0, 0, 0, 0, 0, 0) + b"\0" * 16)
+    buf = ctypes.create_string_buffer(ow * oh * 4)
+
+    def grab():
+        user32.PrintWindow(hwnd, full_dc, 2)  # PW_RENDERFULLCONTENT
+        gdi32.StretchBlt(small_dc, 0, 0, ow, oh, full_dc, 0, 0, w, h, 0x00CC0020)  # SRCCOPY
+        gdi32.GetDIBits(small_dc, small, 0, oh, buf, bmi, 0)
+        return buf.raw
+
+    encoder = subprocess.Popen(
+        [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra",
+         "-s", f"{ow}x{oh}", "-framerate", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "veryfast",
+         "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)],
+        stdin=subprocess.PIPE)
+    total, written, captured = int(seconds * fps), 0, 0
+    proc = process()
+    game_start = game_time(proc) if proc else None
+    t0 = time.perf_counter()
+    try:
+        while written < total:
+            delay = t0 + written / fps - time.perf_counter()
+            if delay > 0:
+                time.sleep(delay)
+            frame = grab()
+            captured += 1
+            due = min(total, max(written + 1, int((time.perf_counter() - t0) * fps) + 1))
+            encoder.stdin.write(frame * (due - written))
+            written = due
+    finally:
+        encoder.stdin.close()
+        encoder.wait()
+        for obj in (full, small):
+            gdi32.DeleteObject(obj)
+        for dc in (full_dc, small_dc):
+            gdi32.DeleteDC(dc)
+        user32.ReleaseDC(None, screen)
+    game_end = game_time(proc) if proc else None
+    game = f", game time {game_start} -> {game_end} ms" if game_start is not None and game_end is not None else ""
+    size = os.path.getsize(path) / 1e6 if os.path.exists(path) else 0
+    print(f"testbed: {path}: {seconds:g} s at {fps} fps, {ow}x{oh}, {captured} frames captured "
+          f"({written - captured} repeated){game}, {size:.1f} MB, ffmpeg exit {encoder.returncode}")
 
 
 WM_KEYDOWN, WM_KEYUP, WM_CHAR = 0x100, 0x101, 0x102
@@ -736,9 +832,12 @@ def main(argv):
     elif cmd == "units":
         player = int(args[args.index("--player") + 1]) if "--player" in args else None
         proto = args[args.index("--proto") + 1] if "--proto" in args else None
-        list_units(player, proto)
+        list_units(player, proto, "--los" in args)
     elif cmd == "shot":
         shot(args[0], int(args[1]) if len(args) > 1 else 2)
+    elif cmd == "record":
+        record(args[0], float(args[1]) if len(args) > 1 else 30.0, int(args[2]) if len(args) > 2 else 10,
+               int(args[3]) if len(args) > 3 else 1280)
     elif cmd == "click":
         posted_click(int(args[0]), int(args[1]))
     elif cmd == "rclick":

@@ -25,6 +25,20 @@ Outcome ApplyHcShipmentPointFallback(const Config& config);
 Outcome ApplyHealNonIdle(const Config& config);
 Outcome ApplyDamageOverTime(const Config& config);
 Outcome ApplyDodge(const Config& config);
+Outcome ApplyLiveBuildingWorkRate(const Config& config);
+Outcome ApplyTechPrereqRecheck(const Config& config);
+Outcome ApplyMaintainWaitForPop(const Config& config);
+Outcome ApplyTransformUpdatesLos(const Config& config);
+Outcome ApplyBroadsideMuzzleLimit(const Config& config);
+Outcome ApplyAbilitySlots(const Config& config);
+Outcome ApplyWonderPanelSkipAuras(const Config& config);
+Outcome ApplyLifespanAfterConstruction(const Config& config);
+Outcome ApplyGaiaSocketsOnly(const Config& config);
+Outcome ApplyCustomHotkeyContexts(const Config& config);
+Outcome ApplySnareOnlyHitUnit(const Config& config);
+Outcome ApplyTechRenameEffect(const Config& config);
+Outcome ApplyNoCorpseDopples(const Config& config);
+Outcome ApplyDanceBonusCivs(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
@@ -41,6 +55,20 @@ inline constexpr Feature kFeatures[] = {
     {"healNonIdle", ApplyHealNonIdle},
     {"damageOverTime", ApplyDamageOverTime},
     {"dodgeAnyUnit/dodgeSoundSet/criticalSoundSet", ApplyDodge},
+    {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
+    {"techPrereqRecheck", ApplyTechPrereqRecheck},
+    {"maintainWaitForPop", ApplyMaintainWaitForPop},
+    {"transformUpdatesLOS", ApplyTransformUpdatesLos},
+    {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
+    {"abilitySlots", ApplyAbilitySlots},
+    {"wonderPanelSkipAuras", ApplyWonderPanelSkipAuras},
+    {"lifespanAfterConstruction", ApplyLifespanAfterConstruction},
+    {"gaiaSocketsOnly", ApplyGaiaSocketsOnly},
+    {"customHotkeyContexts", ApplyCustomHotkeyContexts},
+    {"snareOnlyHitUnit", ApplySnareOnlyHitUnit},
+    {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
+    {"noCorpseDopples", ApplyNoCorpseDopples},
+    {"danceBonusCivs", ApplyDanceBonusCivs},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"multipleInstances", ApplyMultipleInstances},
@@ -51,8 +79,11 @@ inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
-    "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "perffilelog",
-    "multipleinstances",
+    "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
+    "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
+    "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "perfstats", "perfautoexec",
+    "perfexecfile", "bufferedfilereads", "perffilelog", "multipleinstances",
 };
 
 }  // namespace uhc
