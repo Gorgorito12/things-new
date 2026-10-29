@@ -23,7 +23,11 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `removeConversionRestriction` | `ConvertGuardian` may target any unit. | not confirmed |
 | `hcShipmentPointFallback Proto…` | **New.** When the building holding the shipment point dies and no stock fallback building (Town Center, fort, …) is left, shipments move to the first listed building type that still stands. | confirmed |
 | `healNonIdle [UnitType]` | **New.** Healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed |
+| `dodgeAnyUnit [UnitType] [log]` | **New.** Units marked with a unit type can dodge hits like the Japanese monk: no damage, 15 % of the time, while their player has the tech `YPDodge`. Stock allows it only for `ypMonkJapanese`. | confirmed (single player) |
+| `dodgeSoundSet UnitType SoundSet`, `criticalSoundSet UnitType SoundSet` | **New.** Choose the sound set a unit plays when it dodges, or when it lands a critical hit, instead of the stock `PowerEvade` / `PowerCriticalStrike`. | confirmed (single player; the choice is logged, the sound itself was not listened to) |
+| `damageOverTime [log]` | **New.** Poison: an attack that lists `<AttachProtoUnit>X</AttachProtoUnit>` keeps damaging what it hits, with X's `Attaching` action every `ROF` seconds for X's `Lifespan`. Damage type and armor apply as for any hit. | confirmed (single player; area damage, bonuses and techs on X not tested) |
 | `bufferedFileReads [KB]` | **New.** Reads the game's files through a read-ahead buffer instead of millions of tiny reads. In a late 8-AI game, frames over 100 ms dropped from 11 to 3, and time spent reading files fell from 14.9 s to 1 s per session. It does not change the simulation. | confirmed (single player) |
+| `multipleInstances [background]` | **New.** Lets this copy run while a copy of the game from another folder is running; stock allows one copy per machine. `background` keeps its windows behind all others and never focused, for unattended tests. | confirmed (two copies, single player) |
 | `perfStats`, `perfAutoExec`, `perfExecFile`, `perfFileLog` | In development: performance diagnostics. See [docs/performance.md](docs/performance.md). | in progress |
 
 No feature has been tested in multiplayer yet. Details, data requirements and limits for each
@@ -88,10 +92,9 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 3 new features: `hcShipmentPointFallback`, `healNonIdle`, `bufferedFileReads`.
+  - 5 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
+    `bufferedFileReads`, `multipleInstances`.
 - **In research:**
-  - DE-style poison: damage over time driven by `<AttachProtoUnit>` in the data, as in AoE3 DE.
-    The engine findings so far are in [engine-symbols.md](docs/engine-symbols.md).
   - `unlockAllCards` (every card usable from a new home city): paused.
 - **Later:** the remaining UHC 1.10 keys (civilizations, units, teams, syscalls, cheats and
   plugins). The keys not implemented yet are logged and ignored.

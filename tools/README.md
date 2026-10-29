@@ -8,15 +8,24 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`gen_sites.py`](#gen_sitespy) | Writes `src/generated/sites.h` from the stock exe. |
 | [`package_release.py`](#package_releasepy) | Builds the release zip that modders download. |
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
-| [`xmbedit.py`](#xmbeditpy) | Checks, converts and edits compiled XML (`.xmb`). |
+| [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
+| [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
+| [`protoy_testdata.py`](#protoy_testdatapy) | Adds marker unit types to protos in a test copy's `protoy.xml` and its XMB. |
+| [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, console commands, units, log, screenshots. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
+| [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`re/inspect_unittypes.py`](#reinspect_unittypespy) | Shows a unit type's ID and the protos that carry it. |
 | `re/debugger.py` | The shared debugger and game-memory helpers the `re/` scripts use. |
 | `perfprobe.py`, `set_laa.py` | Part of the performance work in progress; see [docs/performance.md](../docs/performance.md) and each script's docstring. |
+| `re/pe64.py` | Static helper for a large 64-bit exe (AoE3 DE): strings, RIP-relative xrefs, functions from `.pdata`, callers, thread-creation sites. Listings need capstone. See its docstring and [docs/de-architecture.md](../docs/de-architecture.md). |
+| `threadprobe.py` | Per-thread CPU, thread names and start addresses of any running process. By default it does not suspend the process or read its memory; `--sample-hz` briefly suspends the busiest threads to read their instruction pointer. |
+| `legacybench.py` | Unattended late-game benchmark in a test copy (default `C:\AoE3-UHC-Perf`): loads a save through `perfExecFile`, records with `perfprobe.py` (and `threadprobe.py`), closes the game. It sends no input and never activates the window. The game allows only one running copy per machine, so it refuses to start while another `age3y.exe` runs, unless the copy's cfg has `multipleInstances background`. |
+| `gameui.py` | Drives a game window for unattended tests: screenshots, clicks, keys. Select the window with `--process` (age3y.exe or AoE3DE_s.exe). It moves the real cursor, so use it only with the machine owner's permission. |
 
 Never point a tool that writes at the Steam install. The data tools write only the output file
-you name, and `gen_sites.py` only reads the exe.
+you name, `dot_testdata.py` writes only into the test copy you name, and `gen_sites.py` only
+reads the exe.
 
 ## gen_sites.py
 
@@ -68,17 +77,76 @@ Files are written exactly as stored. Compiled XML usually starts with `l33t`: re
 ```
 python -I tools/xmbedit.py check <file.xmb>
 python -I tools/xmbedit.py to-xml <file.xmb> <out.xml>
+python -I tools/xmbedit.py from-xml <in.xml> <out.xmb> [--compress]
 python -I tools/xmbedit.py add-unittype <in.xmb> <out.xmb> <Unit> <UnitType> [<Unit> <UnitType> ...]
 ```
 
-- `check` decodes and re-encodes the file and confirms the result is byte-identical. Every
-  command does this first, so an edit cannot change anything else.
+- `check` decodes and re-encodes the file and confirms the result is byte-identical. `to-xml` and
+  `add-unittype` do this first, so an edit cannot change anything else. `from-xml` reads no XMB:
+  it builds the whole document from the XML and only checks that its output decodes to itself.
 - `to-xml` writes readable XML, with element names as stored (lowercase).
+- `from-xml` compiles an XML file the way the stock files are stored: element and attribute
+  names in lowercase, numbered in order of first use; text trimmed, whitespace-only text dropped;
+  the XML's line numbers kept. `--compress` writes the `l33t` form of the stock
+  `protoy.xml.XMB`; without it the file is plain `X1`, like the stock `.tactics.xmb` files.
+  Compiling the stock `protoy.xml` gives the stock `protoy.xml.XMB` document byte for byte once
+  decompressed; the compressed bytes differ, because zlib settings differ. The game
+  loads an XMB instead of its XML unless the XML is newer
+  ([modding guide, section 6](../docs/modding-guide.md#6-editing-the-game-data)).
 - `add-unittype` adds `<unittype>` entries to units of a `protoy.xml.XMB`. It warns about unit
   names it cannot find, and keeps the input's compression.
 
 It handles compressed (`l33t` + zlib) and uncompressed (`X1`) files, version 8, the format of
 the TAD data.
+
+## dot_testdata.py
+
+```
+python -I tools/dot_testdata.py <test folder>
+```
+
+Writes the data the `damageOverTime` test uses into a **test copy** of the game. It refuses any
+folder inside a Steam library.
+- `data\protoy.xml`: the Explorer's `HandAttack` and `VolleyRangedAttack` get
+  `<AttachProtoUnit>UHCPoisonTest</AttachProtoUnit>`, and a proto `UHCPoisonTest` is added:
+  Lifespan 10 s, and an `Attaching` action that deals 20 Ranged damage every second to Gaia and
+  enemies.
+- `data\protoy.xml.XMB`: compiled from that XML with `xmbedit.py`.
+- `data\tactics\uhcpoisontest.tactics` and its `.xmb`: the `Attaching` action. The XML keeps the
+  tactic name and its first child on one line, so it also works without the `.xmb`
+  ([modding guide, "Tactics files"](../docs/modding-guide.md#tactics-files)).
+
+The first run keeps the folder's protoy files as `*.dot-orig`. Every run starts again from
+`protoy.xml.dot-orig` and compiles the XMB from the result, so it can be repeated;
+`protoy.xml.XMB.dot-orig` is only a backup. Then enable `damageOverTime log` in the copy's cfg
+and let the Explorer hit something (for an unattended run, see the developer guide, "Driving
+the game unattended").
+
+## protoy_testdata.py
+
+```
+python -I tools/protoy_testdata.py <test folder> unittype <Proto>=<UnitType> [...]
+python -I tools/protoy_testdata.py <test folder> reset
+```
+
+Adds `<UnitType>UnitType</UnitType>` to each named `<Unit>` of the copy's `data\protoy.xml`,
+then compiles `data\protoy.xml.XMB` from that XML, so the game sees the marker whichever file it
+loads. Example: `Explorer=AbstractDodge` for `dodgeAnyUnit`. The first run keeps the two files as
+`*.testdata-orig`; each run starts again from those, and `reset` puts them back. It refuses any
+folder inside a Steam library.
+
+## testbed.py
+
+```
+python -I tools/testbed.py [--bed <folder>] <command> ...
+```
+
+Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
+no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
+`units`, `shot`, `click`/`rclick`, `key`/`rkey`, `type`, `log`, `safety`; the docstring lists
+their arguments. It needs `perfExecFile <bed>\uhc-exec.txt` in the copy's cfg (`deploy` adds
+it). The method and its pitfalls are in
+[developer-guide.md, "Driving the game unattended"](../docs/developer-guide.md#driving-the-game-unattended).
 
 ## re/trace_writes.py
 
@@ -107,6 +175,27 @@ python -I tools/re/trace_exec.py <log> SPEC [SPEC ...] [--minutes N] [--max-per-
 `SPEC` is `ADDRESS[=LABEL][@UNIT]`, for example `0x9E0B53=heal-tick@[ecx+0x10]`. `UNIT`, when
 given, names a register or a `[register+offset]` slot that holds a unit pointer; the log then
 shows that unit's proto, owner and hit points. Each hit logs the registers and the call chain.
+
+## re/trace_xs.py
+
+```
+python -I tools/re/trace_xs.py <log> [--minutes N]
+```
+
+When an XS script fails to compile, the game shows only its last message, for example
+`XS: Error 0003: could not compile file 'aiLoaderStandard.xs'.`, and the AI players do nothing.
+This tracer logs every parser error with its argument, and each compile with the number of
+errors it starts with. Start it, then start the game that fails:
+
+```
+error: "Error 0014: '%s' is already defined." with 'cTacticNormal' (chain [...])
+compile: 1 error(s) before it (chain [...])
+message: "Error 0003: could not compile file '%S'." 'aiLoaderStandard.xs' (chain [...])
+```
+
+`1 error(s) before it` means the error came from the game's own declarations, which it compiles
+before the script, not from the script. The example is the tactics problem in the
+[modding guide, "Tactics files"](../docs/modding-guide.md#tactics-files).
 
 ## re/inspect_unittypes.py
 

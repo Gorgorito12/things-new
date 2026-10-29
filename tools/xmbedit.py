@@ -11,8 +11,9 @@ check         decodes and re-encodes the file and confirms the result is byte-id
 to-xml        writes a readable XML copy (element names as stored, which is lowercase). Use it
               to read files extracted from the BAR archives with tools/bar.py.
 from-xml      compiles an XML file (e.g. an edited protoy.xml or a new .tactics file) the way the
-              stock files are stored: element and attribute names lowercase, text trimmed,
-              whitespace-only text dropped, the XML's line numbers kept. --compress writes the
+              stock files are stored: element and attribute names lowercase, whitespace-only
+              text dropped, leading whitespace dropped (trailing spaces of a leaf's text are
+              kept), the XML's line numbers kept. --compress writes the
               "l33t" zlib form (stock protoy.xml.XMB); without it the file is plain X1 (stock
               .tactics files). Both load.
 add-unittype  adds <unittype>UnitType</unittype> after the last unittype of each named
@@ -68,7 +69,7 @@ def parse(x):
     def wstr():
         nonlocal pos
         n = u32()
-        text = x[pos:pos + 2 * n].decode("utf-16-le")
+        text = x[pos:pos + 2 * n].decode("utf-16-le", "surrogatepass")
         pos += 2 * n
         return text
 
@@ -107,7 +108,9 @@ def parse(x):
 
 
 def _wstr(s):
-    return struct.pack("<I", len(s)) + s.encode("utf-16-le")
+    """Length in UTF-16 code units (a character outside the BMP counts 2), then the text."""
+    data = s.encode("utf-16-le", "surrogatepass")
+    return struct.pack("<I", len(data) // 2) + data
 
 
 def encode(elems, attrs, root):
@@ -146,7 +149,8 @@ def to_xml(elems, attrs, root):
         pad = "  " * depth
         tag = elems[nd.name]
         attr_text = "".join(f" {attrs[k]}={quoteattr(v)}" for k, v in nd.attrs)
-        text = escape(nd.text.strip())
+        # A leaf's text is written as stored: stock strings can end in a space ("Mejora en: ").
+        text = escape(nd.text if not nd.children else nd.text.strip())
         if not nd.children:
             lines.append(f"{pad}<{tag}{attr_text}>{text}</{tag}>" if text else f"{pad}<{tag}{attr_text}/>")
             return
@@ -189,7 +193,10 @@ def from_xml(data):
 
     def end(_name):
         nd = stack.pop()
-        nd.text = "".join(texts.pop()).strip()
+        text = "".join(texts.pop())
+        # As the stock files store it: an element with children keeps its trimmed text (a tactic's
+        # name); a leaf drops leading whitespace but keeps trailing spaces ("Mejora en: ").
+        nd.text = text.strip() if nd.children else (text.lstrip() if text.strip() else "")
         if not stack:
             done.append(nd)
 

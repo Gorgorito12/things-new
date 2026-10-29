@@ -56,4 +56,12 @@ bool WriteJmp(std::uint32_t va, const void* target, std::size_t length) {
   return WriteJmp(va, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(target)), length);
 }
 
+bool WriteCall(std::uint32_t va, const void* target) {
+  std::uint8_t code[5];
+  code[0] = 0xE8;
+  const std::uint32_t rel = static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(target)) - (va + 5);
+  std::memcpy(code + 1, &rel, sizeof(rel));
+  return WriteBytes(va, code, sizeof(code));
+}
+
 }  // namespace uhc

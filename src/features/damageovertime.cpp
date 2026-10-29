@@ -6,6 +6,7 @@
 // created in the world. The hooks are in hooks/dot_hooks.asm.
 #include <windows.h>
 
+#include <algorithm>
 #include <compare>
 #include <cstdint>
 #include <cstring>
@@ -17,6 +18,7 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unittypes.h"
 
 namespace {
 
@@ -163,6 +165,7 @@ struct Dot {
 std::map<DotKey, Dot> g_dots;
 const char* g_dotWorld = nullptr;
 std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
 
 extern "C" void UhcDotTakeDamageStock();
 extern "C" void UhcDotWorldUpdateStock();
@@ -208,19 +211,63 @@ char* PlayerAttaching(const char* world, std::int32_t player, std::int32_t attac
   return FindAction(*proto, g_attachingName);
 }
 
+// The engine's diplomacy filter (FUN_0049AEE0) for a tick whose attacking unit is gone: without
+// an attacking unit the engine lets every unit through, so the poison applies it with the
+// attacker's player instead. DamageFlags are at [[action+24h]+4] (GAIA 1, Self 2, Ally 4,
+// Enemy 8; FFh when the data sets none); a player's relations at [player+1D4h + 4*id], 2 = enemy.
+bool DamageAllowed(const char* world, const char* attaching, std::int32_t player, const char* unit) {
+  const char* info = Field<const char*>(attaching, 0x24);
+  const char* owner = Field<const char*>(unit, 0x44);
+  const char* attackerPlayer = PlayerById(world, player);
+  if (info == nullptr || owner == nullptr || attackerPlayer == nullptr) {
+    return true;
+  }
+  const std::uint8_t flags = Field<std::uint8_t>(info, 0x04);
+  const std::int32_t unitPlayer = Field<std::int32_t>(owner, 0x00);
+  if ((unitPlayer == 0 && !(flags & 1)) || (unitPlayer == player && !(flags & 2))) {
+    return false;
+  }
+  const bool enemy = unitPlayer >= 0 && unitPlayer <= 15 &&
+                     Field<std::int32_t>(attackerPlayer, 0x1D4 + 4 * static_cast<std::uint32_t>(unitPlayer)) == 2;
+  return (flags & (enemy ? 8 : 4)) != 0;
+}
+
 // The Attaching ROF, stored in ms at [action+34h]; one second if it is missing.
 std::uint32_t TickInterval(const char* attaching) {
   const std::int32_t rof = Field<std::int32_t>(attaching, 0x34);
   return static_cast<std::uint32_t>(rof > 0 ? rof : 1000);
 }
 
-// Drops every poison when the world changes (a new or loaded game) or game time goes back.
+// From the database load hook (unittypes.h), before the protos' contents are read: the data
+// is loaded at startup and again when a skirmish starts (not when a scenario loads). Each load
+// reads the tags again, and running poisons belong to the previous game.
+void ResetForDataLoad(char*) {
+  if (!g_dots.empty()) {
+    uhc::Log(L"damageOverTime: the data was reloaded; %u running poison(s) dropped",
+             static_cast<unsigned>(g_dots.size()));
+  }
+  g_attachments.clear();
+  g_attachingName = kUnresolved;
+  g_dots.clear();
+  g_dotWorld = nullptr;
+}
+
+// Drops every poison when another game is running: a new or loaded game can reuse the old
+// world's address, so the test is the world's step count [world+F8h], which the world update
+// raises by exactly 1 per step (0x481A87), and the game time going back. While poisons run, Tick
+// sees every step; with none running, a jump only clears an empty map.
 void SyncWorld(const char* world, std::uint32_t now) {
-  if (world != g_dotWorld || !Reached(now, g_lastTime)) {
+  const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
+  if (world != g_dotWorld || !Reached(now, g_lastTime) || step - g_lastStep > 1) {
+    if (!g_dots.empty()) {
+      uhc::Log(L"damageOverTime: another game started; %u running poison(s) dropped",
+               static_cast<unsigned>(g_dots.size()));
+    }
     g_dots.clear();
     g_dotWorld = world;
   }
   g_lastTime = now;
+  g_lastStep = step;
 }
 
 // One-time diagnostics: each reason is logged the first time it happens, so a modder can see
@@ -267,8 +314,12 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, std::int32
   const DotKey key{targetId, attachment, player};
   const auto [it, added] = g_dots.try_emplace(key, Dot{attacker, now + TickInterval(attaching), 0});
   Dot& dot = it->second;
+  // A new hit by the player's units makes that unit the attacker and restarts the duration
+  // (with the current Lifespan); the tick timer keeps running.
+  // Capped so the end stays within the 2^31 ms window that Reached() compares.
   dot.attacker = attacker;
-  dot.end = now + static_cast<std::uint32_t>(lifespan * 1000.0f);  // a new hit restarts the duration only
+  dot.end = now + static_cast<std::uint32_t>(
+                      std::min(static_cast<double>(lifespan) * 1000.0, 2147483647.0 - TickInterval(attaching)));
   if (!g_loggedFirstPoison || g_logEvery) {
     g_loggedFirstPoison = true;
     uhc::Log(L"damageOverTime: %ls: unit %d (%hs) by player %d, proto %d, every %u ms until game time %u (now %u, "
@@ -280,23 +331,20 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, std::int32
 
 // One tick: the stock TakeDamage with X's Attaching action, called the way the stock
 // special-damage callers call it (0x986237 and others): multiplier 1, damage computed from the
-// action, notifications on, no stats slot. Returns the damage dealt.
+// action, no stats slot. Returns the damage dealt.
+// The 11th argument turns on the hit notifications (retaliation, attack alerts, the army's
+// attacker list). The army code (0x6A3253) reads the attacking unit without a null check, so an
+// army unit (AI armies) poisoned by a unit that is gone would crash the game: with no attacking
+// unit the tick passes 0 and skips them (the jne at 0x49B929).
 float ApplyTick(char* target, char* attaching, const DotKey& key, const Dot& dot) {
+  const std::int32_t notify = dot.attacker >= 0 ? 1 : 0;
   return kTakeDamageStock(target, nullptr, key.player, key.attachment, attaching, dot.attacker, 1.0f, 0.0f, 0.0f, 0, 0,
-                          1, 1, -2, 1);
+                          1, notify, -2, 1);
 }
-
-bool g_loggedTicking = false;
-bool g_loggedOtherWorld = false;
 
 void Tick(char* world) {
   if (world != MainWorld()) {
-    return;  // the home city has its own world
-  }
-  if (!g_loggedTicking) {
-    g_loggedTicking = true;
-    uhc::Log(L"damageOverTime: ticking %u poison(s) at game time %u", static_cast<unsigned>(g_dots.size()),
-             Field<std::uint32_t>(world, 0x108));
+    return;  // other worlds run the same update; the function itself compares this with [game+13Ch]
   }
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
   SyncWorld(world, now);
@@ -315,7 +363,9 @@ void Tick(char* world) {
       if (UnitById(world, dot.attacker) == nullptr) {
         dot.attacker = -1;
       }
-      const float dealt = ApplyTick(target, attaching, key, dot);
+      const float dealt =
+          dot.attacker >= 0 || DamageAllowed(world, attaching, key.player, target) ? ApplyTick(target, attaching, key, dot)
+                                                                                   : 0.0f;
       if (!g_loggedFirstTick || g_logEvery) {
         g_loggedFirstTick = true;
         uhc::Log(L"damageOverTime: tick: unit %d (%hs) took %.2f damage, %.1f hitpoints left (tick due %u, game "
@@ -342,8 +392,8 @@ void Tick(char* world) {
 extern "C" {
 
 // From the tag hook, for each <ProtoAction> child of protoy.xml the stock parser does not know.
-// tag points to the child's UTF-16 tag name; its text is at [node+14h]. [proto+4] is the proto
-// ID, [proto+10h] its name.
+// tag is the address of the child's tag-name BString (its UTF-16 text is *tag); the child's text
+// is at [node+14h]. [proto+4] is the proto ID, [proto+10h] its name.
 void __stdcall UhcDotProtoActionTag(const wchar_t* const* tag, const char* node, const char* proto,
                                     const char* action) {
   if (tag == nullptr || *tag == nullptr || _wcsicmp(*tag, L"AttachProtoUnit") != 0) {
@@ -357,7 +407,6 @@ void __stdcall UhcDotProtoActionTag(const wchar_t* const* tag, const char* node,
     return;
   }
   g_attachments[key] = Attachment{Narrow(text)};
-  g_attachingName = kUnresolved;  // the database is being (re)loaded; look the name up again
   uhc::Log(L"damageOverTime: %hs/%ls attaches %ls", protoName, ActionName(key.name), text);
 }
 
@@ -379,10 +428,6 @@ float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::i
 bool __fastcall UhcDotWorldUpdate(char* world, void*, std::int32_t a, std::int32_t deltaMs) {
   const bool result = kWorldUpdateStock(world, nullptr, a, deltaMs);
   if (!g_dots.empty()) {
-    if (world != MainWorld() && !g_loggedOtherWorld) {
-      g_loggedOtherWorld = true;
-      uhc::Log(L"damageOverTime: world update for world %p while the game world is %p", world, MainWorld());
-    }
     Tick(world);
   }
   return result;
@@ -412,7 +457,8 @@ Outcome ApplyDamageOverTime(const Config& config) {
     }
   }
   if (!VerifyAll("damageOverTime", {&sites::kDotTakeDamageEntry, &sites::kDotWorldUpdateEntry,
-                                    &sites::kDotProtoActionTag, &sites::kDotProtoActionCall})) {
+                                    &sites::kDotProtoActionTag, &sites::kDotProtoActionCall}) ||
+      !OnDatabaseLoad(&ResetForDataLoad)) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(0x005FA11E, reinterpret_cast<const void*>(&UhcDotProtoActionTagHook), 8) ||

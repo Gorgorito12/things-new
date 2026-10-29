@@ -31,8 +31,9 @@ Contents:
   [AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). You use it once, to add the
   loader to your mod's `age3y.exe`.
 - **Python 3 and this repository's `tools/` folder**, only for keys that need data edits: a new
-  `healNonIdle` marker, `deckCardCount` at normal levels, or reusing a stock banner for
-  `customRevolutionBanners`.
+  `healNonIdle` marker, `deckCardCount` at normal levels, reusing a stock banner for
+  `customRevolutionBanners`, or compiling `protoy.xml` again after the edits that
+  `damageOverTime` needs.
   - Get the tools from the source code: **Code → Download ZIP** on the repository page.
   - Install Python 3 from [python.org](https://www.python.org/downloads/). If `python` does not
     work in a new terminal, type `py` instead.
@@ -236,7 +237,11 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | Nothing. | not confirmed |
 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and no stock fallback building (Town Center, fort, …) is left, moves the point to the first alive building of the types you list. | Nothing beyond the proto names in the cfg. | confirmed |
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
+| [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
+| [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
+| [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. | confirmed (single player) |
+| [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | Nothing. | confirmed (two copies, single player) |
 
 No feature has been tested in multiplayer yet.
 
@@ -518,6 +523,223 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
   verified.
 - **New in this DLL:** not in UHC 1.10.
 
+### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
+
+```
+dodgeAnyUnit [<UnitType>] [log]          default AbstractDodge
+dodgeSoundSet <UnitType> <SoundSet>      one line per unit type; the first match wins
+criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match wins
+```
+
+- **How stock behaves:** a hit can be dodged (it does no damage) only when the target is a
+  Japanese monk: the exe compares the target's proto with `ypMonkJapanese`, `ypMonkJapanese2`
+  and `ypMonkJapanese3`. The dodge then needs the tech `YPDodge` to be active for the target's
+  player (stock activates it with `ypMonasteryJapaneseCombat`), and happens on 15 % of the hits.
+  A dodge shows a floating text and plays the sound set `PowerEvade`; a critical hit (an attack
+  with `<HitPercentType>CriticalAttack</HitPercentType>`, e.g. the Chinese monk's) plays
+  `PowerCriticalStrike`. Both sound sets are the same for every unit.
+- **Effect of `dodgeAnyUnit`:** units whose proto is of `<UnitType>` can dodge too, through the
+  same stock code: the `YPDodge` tech of their player, the 15 % roll, the floating text and the
+  sound are unchanged. The Japanese monks keep dodging as in stock.
+- **Giving units the dodge:** add the marker to their protos, and make `YPDodge` active for the
+  players who should have it, from a tech of that civ (for example a starting tech, or a home
+  city card):
+
+  ```xml
+  <Unit id ='288' name ='Explorer'>
+      ...
+      <UnitType>AbstractDodge</UnitType>
+  ```
+
+  ```xml
+  <Effect type ='TechStatus' status ='active'>YPDodge</Effect>
+  ```
+
+  The marker is registered by the DLL, like `healNonIdle`'s; edit `protoy.xml` and its XMB as
+  described there. An existing type or proto name works too (`dodgeAnyUnit AbstractInfantry`),
+  with no data change.
+- **Effect of `dodgeSoundSet` / `criticalSoundSet`:** a unit of `<UnitType>` (a unit type, which
+  may be a marker, or a proto name) plays `<SoundSet>` instead of the stock set: when it dodges,
+  for `dodgeSoundSet`; when it lands a critical hit, for `criticalSoundSet` (the sound belongs to
+  the attacker). `<SoundSet>` is the name of a sound set of the game's sound data
+  (`soundsetsy.xml` in TAD). A unit that matches no line keeps the stock sound. These two keys
+  work with or without `dodgeAnyUnit`.
+- **`log`:** writes one line per dodge, and, while `dodgeAnyUnit … log` is set, one line per
+  dodge or critical sound with the set it played. Use it to check your data, not in a release:
+  a long game writes many lines.
+- **Log:** `dodgeAnyUnit: units of unittype X can dodge like ypMonkJapanese (tech ypDodge, 15 %)`
+  and one `dodgeSoundSet:` / `criticalSoundSet:` line per rule; when the data loads,
+  `unit types: X -> <ID> …`; in a game, `hook reached: dodgeAnyUnit (0x49ACE5)` (the first time a
+  unit with a player is hit while the tech tree exists), `hook reached: dodgeSoundSet (0x6A2628)`
+  (the first visible dodge) and `hook reached: criticalSoundSet (0x6A2A9A)` (the first critical
+  hit). With `log`: `dodgeAnyUnit: unit N (Proto) dodged a hit` and
+  `dodgeSoundSet: unit N (Proto) plays sound set S`.
+- **Simulation:** `dodgeAnyUnit` yes (a dodged hit does no damage; it also adds a unit type, which
+  changes the unit type count). The sound keys no.
+- **Status:** confirmed in single player (test bed, 2026-10-28): an Explorer with
+  `AbstractDodge`, with `YPDodge` active, dodged 5 of the hits of four musketeers in 30 s of game
+  time; a Japanese monk next to it dodged as in stock. The floating text was not checked. With a marker no unit had, the
+  Explorer never dodged and the monk still did. `dodgeSoundSet` picked the configured set for the
+  Explorer, and `criticalSoundSet ypMonkChinese PowerEvade` for a Chinese monk's critical hits
+  (seen in the log; the sound itself was not listened to).
+- **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b
+  ([wol-requests.md](wol-requests.md)).
+
+### damageOverTime
+
+```
+damageOverTime [log]
+```
+
+- **How stock behaves:** TAD has no damage over time. The exe still contains Age of Mythology's
+  poison, but the function that would apply it is empty, so nothing happens.
+- **Effect:** an attack whose `<ProtoAction>` lists `<AttachProtoUnit>X</AttachProtoUnit>` poisons
+  every unit it damages.
+  - For X's `<Lifespan>` seconds, the unit takes the damage of X's `Attaching` action every `ROF`
+    seconds. The first tick comes one ROF after the hit.
+  - Each tick is a normal hit: the damage type, the damage bonuses, the armor and X's
+    `DamageFlags` apply, also after the attacking unit is gone. Kills and XP go to the attacker's
+    player. (Bonuses and kill credit follow from the code; see the status below.)
+  - Once the attacking unit is gone, the ticks still hurt but no longer cause the reactions to a
+    hit, such as retaliation and under-attack alerts.
+  - Another hit by the same player renews the duration and keeps the tick timer.
+  - Poisons from different players, or from different attachment protos, run side by side.
+- **Your mod**, three pieces:
+  1. **The attacks.** Add the tag inside the attacker's existing `<ProtoAction>` blocks in
+     `protoy.xml`:
+
+     ```xml
+     <ProtoAction>
+         <Name>VolleyRangedAttack</Name>
+         ...
+         <AttachProtoUnit>PoisonDart</AttachProtoUnit>
+     </ProtoAction>
+     ```
+
+     - The game reads a `<ProtoAction>` only when its `<Name>` is its first child and names an
+       action of the unit's tactics file. It skips any other block without a message, and the
+       tag with it.
+     - A unit has one attack per stance, and each needs its own tag. Use the `<Name>`s of the
+       unit's existing blocks. The Skirmisher, for example, has no `RangedAttack`. Its ranged
+       attacks are `VolleyRangedAttack`, `StaggerRangedAttack` and `DefendRangedAttack`, and its
+       melee attacks are `VolleyHandAttack`, `StaggerHandAttack`, `DefendHandAttack` and
+       `MeleeHandAttack`.
+     - The load-time line `<Unit>/<Action> attaches <X>` in `UHC.log` lists every tag the game
+       read.
+
+  2. **The attachment proto X**, a new `<Unit>` in `protoy.xml`. It holds data only: it is never
+     created in the world.
+
+     ```xml
+     <Unit id ='1463' name ='PoisonDart'>
+         <DBID>2142</DBID>
+         <Lifespan>6.0</Lifespan>
+         <Tactics>uhcattachment.tactics</Tactics>
+         <ProtoAction>
+             <Name>Attaching</Name>
+             <Damage>4.0</Damage>
+             <DamageType>Ranged</DamageType>
+             <ROF>1.0</ROF>
+             <DamageFlags>GAIAEnemy</DamageFlags>
+             <DamageBonus type ='AbstractInfantry'>1.5</DamageBonus>
+         </ProtoAction>
+     </Unit>
+     ```
+
+     - `id`: unit IDs in `protoy.xml` are numbered in order, so a new unit at the end takes the
+       last ID plus one (1463 in stock TAD). `DBID`: any value that no other unit uses (2142 is
+       free in stock).
+     - `Lifespan` is the duration in seconds and `ROF` the seconds between ticks, so a poison
+       deals Lifespan ÷ ROF ticks, rounded down (6 here).
+     - `DamageFlags` says whose units the ticks hurt: `GAIA`, `Self`, `Ally` and `Enemy`,
+       combined, as in `GAIAEnemy`. Without the tag they hurt everyone. Treasure guardians and
+       animals are Gaia. The attack's own `DamageFlags` decide what gets poisoned. A poisoned unit
+       that X's flags exclude takes `0.00` damage per tick, for example after a conversion.
+     - Techs can change X for the player who researches them. Target X by name: the attacker's
+       own upgrades do not reach it. Two effects apply:
+       - its `Lifespan` (`subtype ='Lifespan'`), from the next hit;
+       - the damage of its `Attaching` action, from the next tick:
+         `<Effect type ='Data' action ='Attaching' amount ='1.25' subtype ='Damage'
+         relativity ='BasePercent'><Target type ='ProtoUnit'>PoisonDart</Target></Effect>`.
+
+       TAD has no tech effect for ROF, so the tick interval is always the `<ROF>` of the data.
+       Techs on X were not tested in game.
+  3. **A tactics file for X.** The game ignores a `<ProtoAction>` whose name is not an action in
+     the proto's tactics file, so X needs one with an action named `Attaching`. Save
+     [examples/data/tactics/uhcattachment.tactics](../examples/data/tactics/uhcattachment.tactics)
+     as `data\tactics\uhcattachment.tactics`; one file serves every attachment proto:
+
+     ```xml
+     <tactics>
+       <action>
+         <name>Attaching</name>
+         <type>Attack</type>
+         <rate type="Unit">1.0</rate>
+       </action>
+       <tactic>Normal<action priority="100">Attaching</action></tactic>
+     </tactics>
+     ```
+
+     Keep `<tactic>Normal` and its `<action>` on one line, as here, or ship the compiled
+     `uhcattachment.tactics.xmb` next to the file. A line break after the tactic name can break
+     every AI player in the game ([tactics files](#tactics-files)).
+
+  After editing `protoy.xml`, make sure the game reads it rather than an older
+  `protoy.xml.XMB` ([section 6](#6-editing-the-game-data)).
+- **Not done:**
+  - no model or effect shows the poison, since X never exists in the world;
+  - poisons are not saved in saved games, so a loaded game starts without them;
+  - the stock `Poison` flag is not used.
+- **`log`** writes every poison, renewal, tick and end to `UHC.log`. Use it while tuning the
+  numbers; in a long game the log grows quickly.
+- **Log:**
+  - at startup, `damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage
+    over time (multiplayer unverified)`;
+  - while the data loads, `hook reached: damageOverTime ProtoAction tag (0x5FA11E)` and, for each
+    tag, `damageOverTime: <Proto>/<Action> attaches <X>`;
+  - on the first hit with each tag, `damageOverTime: <X> -> proto <ID>: Lifespan <L> s, Attaching
+    every <N> ms`, or the reason it cannot work:
+    - `<X> is not a proto unit`: the name in `<AttachProtoUnit>` is not the name of a unit;
+    - `<X> has no ProtoAction named Attaching`: the tactics file is missing, or has no action
+      named `Attaching`;
+  - the first poison and the first tick of a run: `damageOverTime: poison: unit <N> (<proto>) …`
+    and `damageOverTime: tick: unit <N> (<proto>) took <D> damage, <H> hitpoints left …`;
+  - once each: `… has Lifespan 0.00; unit <N> not poisoned` (set a Lifespan), and
+    `unit <N> is no longer alive and damageable; not poisoned` (the hit killed the unit, which is
+    normal);
+  - with `log`, also `poison renewed` and `poison on unit <N> ended …: expired`, `unit dead or
+    not damageable`, or `unit gone`;
+  - when you leave a game with poisons still running and start or load another one,
+    `damageOverTime: another game started; <N> running poison(s) dropped`, or
+    `damageOverTime: the data was reloaded; <N> running poison(s) dropped`. That is normal;
+  - `hook reached: damageOverTime TakeDamage (0x49B3D9)` and `hook reached: damageOverTime world
+    update (0x481A57)`.
+- **Check:** hit a unit once and pull back. Its hitpoints keep dropping by one tick every ROF
+  seconds. In the tests, poisoned guardians and animals sometimes jumped back to full hitpoints,
+  most likely when they went back to their spot. That is stock behavior (not traced), and it can
+  hide the poison; the `log` lines show the ticks anyway.
+- **Simulation:** yes.
+- **Status:** confirmed in single player, by hand and with the unattended test
+  ([developer-guide.md](developer-guide.md#driving-the-game-unattended)). With the Explorer's
+  `HandAttack` and `VolleyRangedAttack` attaching a 20-damage, 1-second, 10-second poison:
+  - against Musketeers, each tick took exactly 20 hitpoints every 1000 ms of game time;
+  - leaving a game with a poison running dropped it when the next game started, a scenario or a
+    skirmish (the `another game started` line);
+  - lions, macaques and wandering horsemen (Gaia) took 20 damage per tick, 14 against the
+    horsemen's ranged armor;
+  - each hit renewed the poison, and several units died from the poison alone;
+  - the AI's explorer poisoned units too, since the data applies to every player;
+  - skirmishes started after a poison game, in the same session, had working AI players;
+  - X's tactics file worked as XML alone, without its `.xmb`, in the one-line form above.
+
+  Only a hand attack and an instant ranged attack (`InvisibleProjectile`) were tested. The
+  following follow from the code but were **not tested in game**: area damage, attacks with a
+  flying projectile (arrows, grenades, cannon balls), `DamageBonus` on X, techs on X, kill and XP
+  credit, DamageFlags that exclude a poisoned unit, and a tick on a unit of an AI army after the
+  attacking unit is gone. Multiplayer was not tested either.
+- **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
+  proto that carries the duration and the damage.
+
 ### bufferedFileReads
 
 ```
@@ -557,6 +779,42 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
   reads against the file and found no mismatch. Not tested in multiplayer.
 - **New in this DLL:** not in UHC 1.10.
 
+### multipleInstances
+
+```
+multipleInstances [background]
+```
+
+- **How stock behaves:** one copy of the game per machine. A second copy, even one started from
+  another folder, stops at "Only one copy of the game can run at a time" (in Spanish, "Sólo puede
+  ejecutarse una copia del juego al mismo tiempo").
+- **Effect:** this copy no longer collides with copies in other folders. Two copies started from the
+  same folder still refuse each other, because they would share that folder's files (`UHC.log`, the
+  `perfExecFile` file, …). Only one of the two copies needs the key.
+- **`background`:** this copy's windows open behind every other window, stay there and never take the
+  focus. The copy cannot cover another window or receive the clicks and keys meant for it. This is
+  for unattended tests driven through `perfExecFile`
+  ([developer guide](developer-guide.md#driving-the-game-unattended)). Define
+  `config("DontPauseWhenLosingFocus")` too: a game in progress pauses whenever its window is not
+  focused, which with `background` is always.
+- **Shared files:** every copy uses the same `Documents\My Games\Age of Empires 3` folder: the profile
+  (the last copy to exit writes it), saved games, scenarios and the game's own `Age3Log.txt`. Give
+  saves and scenarios different names in each copy.
+- **Your mod:** nothing.
+- **Log:**
+  - at startup, `multipleInstances: this copy may run beside copies in other folders (semaphore suffix -XXXXXXXX)`;
+  - when the game checks for another copy, `multipleInstances: single-instance semaphore "…" renamed to "…-XXXXXXXX"`;
+  - with `background`, one line per window: `multipleInstances background: window of class … placed at the bottom, never activated`.
+- **Simulation:** no.
+- **Status:** confirmed on 2026-10-28 with two copies on one machine.
+  - A copy with `multipleInstances background` started while a copy without the key sat at the main
+    menu. It loaded a 25-minute save and ran a 60 s benchmark at 179 FPS (195 when alone).
+  - Its log showed the stock name `Global\Age3` renamed to `Global\Age3-BCD865D7`.
+  - Sampled every second, its window stayed second from the bottom of 50 windows and was never the
+    focused window. The copy without the key did take the focus when it started.
+  - Not tested: three or more copies, multiplayer.
+- **New in this DLL:** not in UHC 1.10.
+
 ## 6. Editing the game data
 
 Work on your mod folder, never on the Steam install. Run the tools from a terminal opened in the
@@ -576,11 +834,21 @@ mod's files.
      `Data\homecitylevels.xml.xmb` becomes `data\homecitylevels.xml`.
 
   The game then reads the loose file instead of the archive copy. This was verified with an
-  edited `homecitylevels.xml`, and also with an edited compiled `homecitylevels.xml.xmb`. The
-  tools cannot convert XML back to XMB, and do not need to.
-- **protoy: edit both files.** `data\` holds both `protoy.xml` (plain text) and
-  `protoy.xml.XMB` (compiled). Which one the game prefers was not established, so keep both in
-  step.
+  edited `homecitylevels.xml`, and also with an edited compiled `homecitylevels.xml.xmb`.
+- **XML or XMB: the newer one wins.** When a data file exists both as XML and as compiled `.xmb`,
+  the game loads the XMB unless the XML file is newer; with only one of the two, it uses that one.
+  This rule was read from the game's loader (FUN_00599A7D, see
+  [engine-symbols.md](engine-symbols.md), "Damage and poison").
+- **protoy: keep both files in step.** `data\` holds both `protoy.xml` (plain text) and
+  `protoy.xml.XMB` (compiled). After editing `protoy.xml`, do one of these, so that no player can
+  end up with the old XMB because of file times:
+  - compile it again: `python -I tools\xmbedit.py from-xml "<mod>\data\protoy.xml"
+    "<mod>\data\protoy.xml.XMB.new" --compress`, then `check` the `.new` file and rename it over
+    `protoy.xml.XMB`, keeping the old file as a backup;
+  - or apply the same edit to the XMB with `xmbedit.py` (`add-unittype` for unit types).
+
+  Compiling the stock `protoy.xml` this way gives the same document as the stock
+  `protoy.xml.XMB`, byte for byte once decompressed.
 - **List and extract archive files** with `tools\bar.py`. `--extract` recreates the stored path
   below the folder you give, for example `work\Data\homecitylevels.xml.xmb`:
 
@@ -589,14 +857,19 @@ mod's files.
   python -I tools\bar.py "<mod>\data\Data3.bar" homecitylevels --extract work
   ```
 
-- **Read and edit XMB files** with `tools\xmbedit.py`. Every command first confirms that it can
-  re-encode the file byte for byte, so an edit cannot change anything else:
+- **Read and edit XMB files** with `tools\xmbedit.py`. The commands that read an XMB first confirm
+  that they can re-encode it byte for byte, so an edit cannot change anything else:
 
   ```
   python -I tools\xmbedit.py check "<mod>\data\protoy.xml.XMB"
   python -I tools\xmbedit.py to-xml work\Data\homecitylevels.xml.xmb homecitylevels.xml
+  python -I tools\xmbedit.py from-xml "<mod>\data\protoy.xml" "<mod>\data\protoy.xml.XMB.new" --compress
   python -I tools\xmbedit.py add-unittype "<mod>\data\protoy.xml.XMB" "<mod>\data\protoy.xml.XMB.new" Surgeon AbstractHealNonIdle ypMonkIndian AbstractHealNonIdle
   ```
+
+  - `from-xml` compiles any XML file the way the stock files are stored. `--compress` gives the
+    compressed form of the stock `protoy.xml.XMB`; without it the result is the plain form that
+    the stock `.tactics.xmb` files use. Both load.
 
   - `add-unittype` prints what it added, and warns about unit names it cannot find; check the
     spelling against `protoy.xml`.
@@ -605,15 +878,39 @@ mod's files.
   - Once the game has loaded, `python -I tools\re\inspect_unittypes.py AbstractHealNonIdle` shows
     which protos carry the type.
 
+### Tactics files
+
+A proto's `<Tactics>` file (`data\tactics\<name>.tactics`) lists its actions and its tactics
+(`Volley`, `Melee`, `Normal`, …). The stock files are compiled `.tactics.xmb` files in the
+archives. A mod can ship a tactics file as plain XML, but then the layout of its `<tactic>`
+lines matters:
+
+- **Put each tactic name and its first child on one line:**
+  `<tactic>Normal<action priority="100">Attaching</action></tactic>`. The stock layout, with the
+  name alone on its line, also works when the file has Windows (CRLF) line endings.
+- **Why:** with Unix (LF) line endings, which many editors and scripts write, a line break after
+  the name stays part of the name. When the game compiles the AI scripts, it then defines the XS
+  constant `cTacticNormal` twice. The compile fails, and no AI player does anything in any game
+  after that file was loaded. The game only shows `XS: Error 0003: could not compile file
+  'aiLoaderStandard.xs'.`; the cause, `Error 0014: 'cTacticNormal' is already defined.`, shows in
+  `python -I tools\re\trace_xs.py <log file>` ([tools/README.md](../tools/README.md)).
+- **A compiled `.tactics.xmb` is always safe:** `from-xml` stores the name without the line
+  break, as the stock files do. Ship it next to the XML or instead of it.
+- **Tested:** the one-line layout, CRLF line endings and the compiled file worked in game; the
+  LF layout with the name alone on its line broke the AI. Restart the game after fixing a file.
+
 More about the tools: [tools/README.md](../tools/README.md).
 
 ## 7. Multiplayer, saved games and replays
 
 - Every player needs the same `UHC.dll`, the same `uhc.cfg` and the same data.
 - The keys that change the simulation are `deckCardCount`, `basePop`, `extraPop`, `noAILimit` (game
-  setup), `removeFameRestriction`, `removeConversionRestriction`, `hcShipmentPointFallback` and
-  `healNonIdle`. A difference in any of them between players can desynchronize the game.
+  setup), `removeFameRestriction`, `removeConversionRestriction`, `hcShipmentPointFallback`,
+  `healNonIdle` and `damageOverTime`. A difference in any of them between players can
+  desynchronize the game.
   `bufferedFileReads` does not change the simulation, so it may differ between players.
+- `damageOverTime` keeps its poisons in the DLL, not in the game state: a saved game loads without
+  the poisons that were running.
 - `healNonIdle` and `removeFameRestriction` change the unit type table. Load saved games and
   replays with the same DLL and cfg they were made with.
 - None of this has been tested yet: multiplayer, saved games and replays are all unverified.
@@ -648,7 +945,29 @@ Their patch sites are verified against the stock exe in
   `ignoreRegistryPath` and `removeConversionRestriction` write no such line: check them by their
   effect.
 - **Data changes are ignored:** the game is probably reading the Steam folder. Enable
-  `ignoreRegistryPath`.
+  `ignoreRegistryPath`. Also check that a newer `.xmb` is not shadowing the `.xml` you edited
+  ([section 6](#6-editing-the-game-data)).
+- **A poison does nothing.** Read the `damageOverTime` lines of `UHC.log` in order
+  ([damageOverTime](#damageovertime)):
+  - **no `<Unit>/<Action> attaches <X>` line for that attack:** the game did not see the tag.
+    Possible causes:
+    - an older `protoy.xml.XMB` was loaded (compile it again, [section 6](#6-editing-the-game-data));
+    - `ignoreRegistryPath` is off;
+    - the tag is not inside a `<ProtoAction>` of `protoy.xml` (a tactics `<action>` or the `<Unit>`
+      itself does not work);
+    - the block's `<Name>` is not its first child, or is not an action of the unit's tactics file.
+      The game skips such a block silently.
+  - **`<X> is not a proto unit`:** the text of `<AttachProtoUnit>` is not the name of a `<Unit>`.
+  - **`<X> has no ProtoAction named Attaching`:** X's tactics file is missing or has no
+    `Attaching` action, or X's `<Tactics>` line comes after its `<ProtoAction>`.
+  - **no `poison:` line:** that attack never dealt damage, or its hits killed the unit.
+  - **`tick … took 0.00 damage`:** X's `DamageFlags` exclude that unit, or X's `Attaching` action
+    has no `<Damage>`.
+- **`XS: Error 0003: could not compile file 'aiLoaderStandard.xs'`** when a game starts, and the AI
+  players do nothing: one of the AI scripts or the game's own declarations failed to compile. In
+  this DLL's tests the cause was a tactics file shipped as XML with a line break after a tactic
+  name ([tactics files](#tactics-files)). `tools\re\trace_xs.py` logs the hidden error that names
+  the cause.
 - **The resolution reset to 800x600** after starting a copy: the copy shares your user profile
   (`Documents\My Games\Age of Empires 3\Users3\<profile>.xml`) with the normal game. Set it back
   in the options.

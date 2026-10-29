@@ -89,4 +89,22 @@ inline constexpr Site kDotProtoActionTag{"DotProtoActionTag", 0x005FA10F, kDotPr
 inline constexpr std::uint8_t kDotProtoActionCallBytes[] = {0xE8, 0x8D, 0xF6, 0xFF, 0xFF};
 inline constexpr Site kDotProtoActionCall{"DotProtoActionCall", 0x005FA20E, kDotProtoActionCallBytes, sizeof(kDotProtoActionCallBytes)};
 
+inline constexpr std::uint8_t kDodgeProtoCheckBytes[] = {0x8B, 0x46, 0x5C, 0x8B, 0x40, 0x04, 0x3B, 0x81, 0x88, 0x5E, 0x00, 0x00};
+inline constexpr Site kDodgeProtoCheck{"DodgeProtoCheck", 0x0049ACE5, kDodgeProtoCheckBytes, sizeof(kDodgeProtoCheckBytes)};
+
+inline constexpr std::uint8_t kDodgeTechCheckBytes[] = {0x68, 0x98, 0x6E, 0xC3, 0x00, 0xE8, 0x3B, 0xE7, 0xF5, 0xFF};
+inline constexpr Site kDodgeTechCheck{"DodgeTechCheck", 0x006A249C, kDodgeTechCheckBytes, sizeof(kDodgeTechCheckBytes)};
+
+inline constexpr std::uint8_t kDodgeCallBytes[] = {0xE8, 0x82, 0xFC, 0xFF, 0xFF, 0x84, 0xC0};
+inline constexpr Site kDodgeCall{"DodgeCall", 0x0049B023, kDodgeCallBytes, sizeof(kDodgeCallBytes)};
+
+inline constexpr std::uint8_t kDodgeSoundBytes[] = {0x68, 0xE0, 0x74, 0xBD, 0x00, 0x83, 0xC6, 0x14};
+inline constexpr Site kDodgeSound{"DodgeSound", 0x006A2628, kDodgeSoundBytes, sizeof(kDodgeSoundBytes)};
+
+inline constexpr std::uint8_t kCriticalSoundBytes[] = {0x68, 0x18, 0x75, 0xBD, 0x00, 0x8D, 0x43, 0x14};
+inline constexpr Site kCriticalSound{"CriticalSound", 0x006A2A9A, kCriticalSoundBytes, sizeof(kCriticalSoundBytes)};
+
+inline constexpr std::uint8_t kSingleInstanceSemaphoreBytes[] = {0xFF, 0x15, 0xF0, 0x43, 0xB8, 0x00};
+inline constexpr Site kSingleInstanceSemaphore{"SingleInstanceSemaphore", 0x0055A185, kSingleInstanceSemaphoreBytes, sizeof(kSingleInstanceSemaphoreBytes)};
+
 }  // namespace uhc::sites

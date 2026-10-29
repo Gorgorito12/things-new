@@ -499,6 +499,10 @@ file-open log.
   restructuring of exe code, not a hook-sized change. Even if a quarter of the frame went perfectly parallel,
   the gain would be about +30 % FPS. The real gain would be well below that, and the crash and desync risks are high.
 - **No multiplayer-safe multi-core change has a good cost/benefit ratio here.**
+- **The Definitive Edition was measured the same way** ([de-architecture.md](de-architecture.md)). Its
+  main thread still saturates in a battle (91–95 %), and the simulation is still on it. It adds a render
+  thread (45–61 % of a core), a PopcornFX particle pool and streaming texture loads; in total it uses
+  about 2.1 cores. The render-thread part is the "pipelining" ruled out above for a binary patch.
 - **The stutters have a concrete multiplayer-safe lever:** buffered file reads (§10). The bytes stay the same and
   far fewer syscalls are made. `ZwReadFile` was 48 % of the stutter samples.
 
@@ -581,6 +585,27 @@ source `"console"` at 0x7E279D. The `.con` loader FUN_005bc4c1 runs each line th
   benchmark must define it.
 - The practical route is therefore one real setup-screen launch (8 AI players, `AIvsAI`), then
   `gameSpeedMult` and `saveGame` through `perfExecFile`, and later `loadGame` for each run.
+
+**Unattended benchmark (2026-10-28).** `tools/legacybench.py` replays that save with no keyboard or
+mouse input at all:
+1. it starts `age3y.exe +noIntroCinematics` with an inactive window;
+2. it loads `uhcbench25` and unpauses it through `perfExecFile`;
+3. it records with `perfprobe` (and `threadprobe`);
+4. it sends `leaveGame()` and closes the window with a posted `WM_CLOSE`.
+
+First run, `bench-threadval` (test copy `C:\AoE3-UHC-Perf`, 2560×1600, the camera where the save left it,
+the window never focused):
+- **Without focus the game runs at full speed** once `DontPauseWhenLosingFocus` is defined: 194.6 FPS
+  on average.
+- The main thread was at 94.4 %. Update took 2.4 ms and render 2.8 ms per frame, against 4.3 and 5.4 ms in
+  §9, because the saved camera shows fewer units than the battle view the user clicked to.
+- `threadprobe` and `perfprobe` gave the same per-thread numbers ([de-architecture.md](de-architecture.md),
+  "Verification").
+
+The game allows one running copy per machine. With `multipleInstances background` in its copy's cfg
+([modding guide](modding-guide.md#multipleinstances)), the benchmark can run beside another session's
+game. Run `bench-parallel` did that: 60 s beside a second copy idling at the main menu, at 179.1 FPS,
+with the main thread at 94.7 %. Runs that share the machine are only comparable with each other.
 
 ## 10. Levers (multiplayer-safe), status
 

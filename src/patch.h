@@ -21,5 +21,7 @@ bool WriteDword(std::uint32_t va, std::uint32_t value);
 // Writes `jmp rel32` to target at va and NOP-fills the rest of `length` (>= 5) bytes.
 bool WriteJmp(std::uint32_t va, const void* target, std::size_t length);
 bool WriteJmp(std::uint32_t va, std::uint32_t target, std::size_t length);
+// Writes `call rel32` to target at va (5 bytes), e.g. to redirect an existing call.
+bool WriteCall(std::uint32_t va, const void* target);
 
 }  // namespace uhc

@@ -15,6 +15,7 @@ struct Request {
 };
 
 std::vector<Request> g_requests;
+std::vector<void (*)(char*)> g_loadCallbacks;
 bool g_hooked = false;
 
 }  // namespace
@@ -50,24 +51,46 @@ void __stdcall UhcRegisterAbstractUnitTypes(char* database) {
     uhc::Log(L"unit types: %hs -> %d (bit %d of %d)%ls", name, id, id - protoCount, *count - protoCount,
              existed ? L", already defined" : L", added");
   }
+  for (void (*callback)(char*) : g_loadCallbacks) {
+    callback(database);
+  }
 }
 }
+
+namespace {
+
+bool InstallHook() {
+  if (!g_hooked) {
+    if (!uhc::VerifyAll("abstract unit types", {&uhc::sites::kAbstractTypesEnd})) {
+      return false;
+    }
+    // Replaces pop edi / pop esi / mov al,1 / pop ebx at 0x51BA31; the hook re-executes them.
+    if (!uhc::WriteJmp(0x0051BA31, reinterpret_cast<const void*>(&UhcAbstractUnitTypesHook), 5)) {
+      return false;
+    }
+    g_hooked = true;
+  }
+  return true;
+}
+
+}  // namespace
 
 namespace uhc {
 
 bool RequestAbstractUnitType(const char* name, std::int32_t* id) {
   *id = -1;
-  if (!g_hooked) {
-    if (!VerifyAll("abstract unit types", {&sites::kAbstractTypesEnd})) {
-      return false;
-    }
-    // Replaces pop edi / pop esi / mov al,1 / pop ebx at 0x51BA31; the hook re-executes them.
-    if (!WriteJmp(0x0051BA31, reinterpret_cast<const void*>(&UhcAbstractUnitTypesHook), 5)) {
-      return false;
-    }
-    g_hooked = true;
+  if (!InstallHook()) {
+    return false;
   }
   g_requests.push_back({name, id});
+  return true;
+}
+
+bool OnDatabaseLoad(void (*callback)(char* database)) {
+  if (!InstallHook()) {
+    return false;
+  }
+  g_loadCallbacks.push_back(callback);
   return true;
 }
 

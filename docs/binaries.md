@@ -19,6 +19,12 @@ Stock layout: PE32 i386, ImageBase `0x400000`, no ASLR, no NX, not LAA, EP RVA `
 Raw offsets equal RVAs for `.text`, `.rdata`, `.data`, so file offset = VA − `0x400000` there. The
 Authenticode certificate sits at file `0xB0E000`, size `0x1B38` (6,968 B).
 
+## AoE3 Definitive Edition (comparison only)
+
+| Build | Size (B) | SHA-256 | Notes |
+|---|---|---|---|
+| `AoE3DE\AoE3DE_s.exe`, Steam build 25969874, game 100.19.18658.0 | 59,276,600 | `31fad98fc4fd82b4b7b3049b131b37be6918022e4637a4075c7ec7a119bd8cab` | PE32+ x64, studied read-only in [de-architecture.md](de-architecture.md). About 42 % of its functions are encrypted on disk by a protection layer. |
+
 ## UHC loader patch (Patch.uhc, upstream v1.6+)
 
 A UHC exe is the stock exe with the certificate removed (`ImageRemoveCertificate`, hence −6,968 B)

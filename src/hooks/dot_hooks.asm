@@ -51,7 +51,7 @@ UhcDotWorldUpdateStock ENDP
 
 ; Replaces test eax,eax / je 5FD4EDh at 0x5FA11E in FUN_005F98A0, after its last tag compare
 ; ("ModifyExclusive"). Reached only by that tag and by tags the stock parser does not know.
-; ESI = the child's tag name (a pointer to its UTF-16 text), EDI = the child node; the
+; ESI = the address of the child's tag-name BString (its UTF-16 text is [esi]), EDI = the child node; the
 ; arguments are at [esp+0C4h] (proto) and [esp+0C8h] (action), the return address at
 ; [esp+0C0h]. Unknown tags of a protoy.xml <ProtoAction> go to the C++ handler.
 UhcDotProtoActionTagHook PROC

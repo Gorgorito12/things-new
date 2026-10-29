@@ -156,7 +156,11 @@ removeConversionRestriction   ConvertGuardian works on any unit
 hcShipmentPointFallback ...   when no stock fallback building is left, the shipment point
                               moves to the building types you list
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
+damageOverTime [log]          poison: attacks with <AttachProtoUnit> damage over time
+dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
+dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
+multipleInstances [background]  run beside a copy of the game from another folder
 
 What each key needs from your mod, and how well it is tested: see the guide.
 No feature has been tested in multiplayer yet. License: MIT, see LICENSE.txt.

@@ -66,6 +66,20 @@ SITES = [
     # damageOverTime: the ProtoAction handler's call 5F98A0h; the tag hook checks its return
     # address 0x5FA213 to know the action comes from protoy.xml
     ("DotProtoActionCall", 0x5FA20E, 5),
+    # dodgeAnyUnit (FUN_0049ACAA, "is this hit dodged?"): mov eax,[esi+5Ch] / mov eax,[eax+4],
+    # the target's proto ID, and the first compare with the cached ypMonkJapanese ID
+    ("DodgeProtoCheck", 0x49ACE5, 12),
+    # dodgeAnyUnit: the dodge path the hook enters, push "ypDodge" / call 600BE1h (tech by name)
+    ("DodgeTechCheck", 0x6A249C, 10),
+    # dodgeAnyUnit log: call 49ACAAh in the damage function and the test al,al after it
+    ("DodgeCall", 0x49B023, 7),
+    # dodgeSoundSet: push "PowerEvade", the sound set a dodge plays, and the add esi,14h after it
+    ("DodgeSound", 0x6A2628, 8),
+    # criticalSoundSet: push "PowerCriticalStrike", played at the attacker, and lea eax,[ebx+14h]
+    ("CriticalSound", 0x6A2A9A, 8),
+    # multipleInstances: call [CreateSemaphoreW] of the single-instance check; the IAT hook knows
+    # that call by its return address, 0x55A18B
+    ("SingleInstanceSemaphore", 0x55A185, 6),
 ]
 
 

@@ -1,10 +1,12 @@
 """Sample how a running age3y.exe uses CPU, GPU and memory (docs/performance.md, "Next steps").
 
 Usage: python -I tools/perfprobe.py <out.csv> [seconds (default 120)] [interval (default 1.0)]
-                                   [--wait] [--sample-hz N] [--functions PATH]
+                                   [--wait] [--pid N] [--sample-hz N] [--functions PATH]
        python -I tools/perfprobe.py --analyze <out.csv.stacks.gz> [--functions PATH]
 
 --wait waits for the game to start and records until it exits, ignoring `seconds`.
+--pid N records that process. Without it, the probe takes the last age3y.exe it finds, which can be
+another test copy's game when several run at once.
 --sample-hz N also profiles the main thread N times a second: it suspends the thread, reads EIP and
 its stack, and resumes it. The raw samples go to <out.csv>.stacks.gz and the report to
 <out.csv>.samples.txt: time per module, the call tree under the main loop, exclusive and inclusive
@@ -709,6 +711,7 @@ def main():
     parser.add_argument("seconds", nargs="?", type=float, default=120.0)
     parser.add_argument("interval", nargs="?", type=float, default=1.0)
     parser.add_argument("--wait", action="store_true", help="wait for the game to start, record until it exits")
+    parser.add_argument("--pid", type=int, help="the game process to record (default: the last age3y.exe found)")
     parser.add_argument("--sample-hz", type=float, default=0.0, help="also profile the main thread (e.g. 200)")
     parser.add_argument("--functions", default=DEFAULT_FUNCTIONS, help="function entry table (Ghidra export)")
     parser.add_argument("--analyze", metavar="STACKS_GZ", help="rebuild the report of a saved run")
@@ -721,7 +724,7 @@ def main():
         parser.error("out_csv is required")
     out_path, seconds, interval = args.out_csv, args.seconds, args.interval
 
-    pid = wait_for_game() if args.wait else find_pid()
+    pid = args.pid or (wait_for_game() if args.wait else find_pid())
     if pid is None:
         sys.exit(f"{EXE} is not running")
     process = k32.OpenProcess(PROCESS_ACCESS, False, pid)

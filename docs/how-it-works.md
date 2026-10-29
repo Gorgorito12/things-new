@@ -21,7 +21,8 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    patches code and prepares its own data. Anything that needs game data is resolved later,
    from inside the game:
    - `hcShipmentPointFallback` resolves proto names the first time its hook runs;
-   - `healNonIdle` gets its unit type ID from a hook in the data loader.
+   - `healNonIdle` gets its unit type ID from a hook in the data loader;
+   - `damageOverTime` records its tags while the data loads and resolves them on the first hit.
 3. **Host guard** (`src/dllmain.cpp`). Before touching any fixed address, the DLL checks that
    the exe is the stock build plus the loader:
    - module base `0x400000`;
@@ -87,6 +88,12 @@ The hooks are MASM files in `src/hooks/`.
   EAX. The upper bytes of EAX are garbage, which is upstream's `asianCivs` defect.
 - **Calling the DLL's C++ from a hook.** Declare the function `extern "C" __stdcall` and wrap the
   call in `pushad`/`popad` when the hook must preserve registers.
+- **Wrapping a whole function** (`damageOverTime`). A `jmp` over the function's first instructions
+  leads to a `__fastcall` C++ wrapper. Its frame is the thiscall frame: ECX = `this`, EDX unused,
+  the stack arguments in place, and the wrapper pops them as the stock function would. The
+  wrapper reaches the stock body through a small MASM trampoline that re-executes the stolen
+  prologue and jumps past it. The prologue's instructions are written out by hand, never
+  relocated.
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
   first time execution passes. It preserves every register, the flags and ESP, so it can sit at
   the top of any hook.
@@ -235,7 +242,7 @@ How the sites were found:
 
 The trace is described in [engine-symbols.md](engine-symbols.md), "Unit types and healing".
 
-### Extra abstract unit types (used by healNonIdle)
+### Extra abstract unit types (used by healNonIdle and dodgeAnyUnit)
 
 In TAD, abstract unit types are not read from data:
 - FUN_0051A5DC (`thiscall(database)`) registers a fixed list compiled into the exe, `Unit`,
@@ -256,6 +263,130 @@ In TAD, abstract unit types are not read from data:
   proto loader then sets the bit for every `<UnitType>` that names it.
 
 `tools/re/inspect_unittypes.py` reads that table from a running game.
+
+### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
+
+**The stock dodge** is FUN_0049ACAA, `bool __thiscall(unit)`, called once per hit at `0x49B023`
+by the damage function FUN_0048649F; a true result skips the damage. With ESI = the unit hit:
+1. it needs the database, the unit's player `[esi+44h]`, the world and `[world+7Ch]` (the tech
+   status object, kept in EDI);
+2. **the hardcode:** the proto ID `[[esi+5Ch]+4]` must equal one of `[db+5E88h]`, `[db+5E8Ch]`,
+   `[db+5E90h]`. Those are proto IDs cached by name at data load (`0x5EEBED`…): `ypMonkJapanese`,
+   `ypMonkJapanese2`, `ypMonkJapanese3`. The same cache (`db+5E74h`…`5EA0h`) also holds the
+   berry building, the Potala and the Chinese and Indian monks;
+3. the cold path at `0x6A249C`: the tech `ypDodge` (`0x600BE1`, by name) must be active for the
+   player (`0x94AF27`); then the sync RNG `0x407CE7(2, 100)` must give a value in [0, 15);
+4. if `[world+8A8h]` exists and the unit is visible to the local player (`0x4818F4`), it shows a
+   floating text (string 0xF9CE) and plays the sound set `"PowerEvade"` at the unit:
+   `0x4AA24C(game, position = unit+14h, name, …)`, which plays a sound set by name.
+
+**dodgeAnyUnit** jumps at `0x49ACE5` (`mov eax,[esi+5Ch]` / `mov eax,[eax+4]`). For a unit
+whose proto is of the marker type (`0x44D7FA`), it continues at `0x6A249C`, the stock step 3,
+with the stock frame and registers (EDI, EBX, ESI) untouched. Any other unit re-executes the two
+instructions and continues with the stock compares at `0x49ACEB`. ECX holds the database there
+and is saved around the is-a call. The tech, the roll and the feedback are therefore identical
+for a marked unit and a monk.
+
+**`log`** also rewrites the call at `0x49B023` to a wrapper that calls FUN_0049ACAA itself and
+logs the unit when it returns true; the wrapper returns to `0x49B028`, so the caller sees the
+same AL. A call does not preserve EAX/ECX/EDX in the stock code either.
+
+**The sound sets.** Both pushes of the set's name are replaced by a jump to a hook that pushes
+the configured name instead:
+- `0x6A2628` `push "PowerEvade"` in the dodge, with ESI = the unit that dodged; it continues at
+  `0x6A262D` (`add esi,14h`);
+- `0x6A2A9A` `push "PowerCriticalStrike"` in the damage function's critical-hit block, with
+  EBX = the attacker (looked up by ID at `0x49AFC2`, checked non-null at `0x6A2A8B`); it
+  continues at `0x6A2A9F` (`lea eax,[ebx+14h]`).
+
+ECX (the game, used by the call that follows) is saved around the C++ lookup. The lookup walks
+the cfg rules in order with the same is-a test and returns the stock string when none matches.
+The names are `std::string`s that live as long as the DLL. Choosing a sound set changes nothing
+in the simulation.
+
+### damageOverTime
+
+**What stock has.** An Age of Mythology poison survives only as dead code:
+- TakeDamage tests bit 8 (`Poison`) of the hitting action's flag bytes;
+- it then posts unit event 20h (`Poison`) to the attacker;
+- the attack action's event handler (0x48F175) passes `(damage × −0.1, 3.0)` to 0xB1BE43, which is
+  `mov al,1; ret 8`.
+
+Nothing is applied. The details are in [engine-symbols.md](engine-symbols.md), "Damage and poison".
+The DLL ignores that path and adds its own, driven by data.
+
+**Data.** At load time, the action parser FUN_005F98A0 ends every unknown `<ProtoAction>` child at
+0x5FA11E.
+- The tag hook there runs only when the return address `[esp+C0h]` is 0x5FA213, i.e. a `protoy`
+  `<ProtoAction>`.
+- For a tag named `AttachProtoUnit` (case-insensitive), it records the text X under the key
+  (attacker proto ID `[proto+4]`, action name index `[action+4]`).
+- That key also matches every player's copy of the proto and its actions, which keep both
+  numbers.
+- The data is parsed at startup and again when a skirmish starts, but not when a scenario loads
+  (both observed in `UHC.log`). Every load starts from scratch: `uhc::OnDatabaseLoad`
+  (`src/unittypes.h`) calls the feature from the abstract-unit-type hook at 0x51BA31. That hook
+  runs on every load, before the protos' contents are read, and the call clears the records, the
+  "Attaching" name index and the running poisons. So a tag removed from the data stops working
+  at the next load, and IDs that shifted cannot match stale records.
+
+**Hit.** The entry of TakeDamage (`0x49B3D9`) jumps to a C++ wrapper.
+- The stock frame is unchanged: the wrapper is `__fastcall` with ECX = the unit, and the 13
+  stack arguments are in place.
+- It calls the stock function through a trampoline (`sub esp,8Ch; jmp 49B3DFh`).
+- If damage was dealt by an action with a record, it looks up X once:
+  - X's proto ID comes from 0x5A2346;
+  - X must have an action named `Attaching`, found through the action-name table at
+    `[db+1FD8h]`.
+- It then reads, from the attacker player's copy of X (FUN_0045311B), the `Attaching` action, its
+  ROF `[action+34h]` and the Lifespan `[proto+ACh]`.
+- It adds a poison keyed (unit ID, X, attacker player):
+  - a new poison ticks first one ROF after the hit;
+  - a later hit by any unit of the same player moves the end to `now + Lifespan` (the current
+    Lifespan) and makes that unit the attacker; the tick timer keeps running.
+- A hit that kills the unit, or a unit that is not alive (unit `vtbl+A4h`), adds nothing.
+
+**Tick.** The entry of the world update (`0x481A57`) jumps to a second wrapper.
+- It calls the stock update through its trampoline (`sub esp,0Ch; push ebx; push ebp;
+  jmp 481A5Ch`).
+- It then, for the game world `[game+13Ch]` only, walks the poisons in key order with
+  `now = [world+108h]`.
+- Each due tick (`nextTick ≤ now` and `nextTick ≤ end`) calls the stock TakeDamage:
+  - unit, attacker player, X's proto ID, X's `Attaching` action;
+  - the attacker unit ID while that unit exists, else −1;
+  - multiplier 1, damage 0 (computed), no cap;
+  - p8..p13 = `0, 0, 1, 1, -2, 1`, as the stock special-damage callers pass them, except p11
+    (the hit reactions), which is 0 when the attacking unit is gone.
+
+  The engine therefore applies the damage type, the bonuses, the armor and the DamageFlags. Kills
+  and XP go to the attacker's player.
+- **Why p11 depends on the attacker.** With p11 = 1, TakeDamage runs the reactions to a hit:
+  retaliation, attack alerts, and, for a unit in an army (AI armies), the army's list of
+  attackers. That last part reads the attacking unit with no null check (0x6A3253). An army unit
+  poisoned by a unit that is gone would crash the game, so such a tick passes 0 and skips the
+  whole block (`jne 0x49BC00` at 0x49B929). The damage itself does not depend on it. This comes
+  from the code; no AI army was poisoned in game.
+- **Techs on X.** Each tick reads the player's copy of X's `Attaching` action again, so a tech
+  that changes its damage applies from the next tick. A Lifespan change applies from the next
+  hit, which sets the end time. TAD's tech effects have no ROF subtype: the table of `subtype`
+  names at `[db+3500h]` has none, so the interval always comes from the data. Not tested in
+  game.
+- **When the attacking unit is gone,** the engine skips its diplomacy filter (FUN_0049AEE0 lets
+  everything through without an attacking unit). The wrapper then applies the same filter
+  itself, with the attacker's player: X's DamageFlags against the unit's owner and the player's
+  relation to it (`[player+1D4h + 4*id]`, 2 = enemy). A unit converted to the attacker's side
+  therefore stops taking the poison, as it would with the attacker alive.
+- A poison ends when its end time passes, or when the unit dies or disappears.
+- **Another game clears all poisons.** A new or loaded game can reuse the old world's address, so
+  the test is the world's step count `[world+F8h]`. The world update raises it by exactly 1
+  (0x481A87), and while poisons run every step reaches the wrapper. A jump of more than 1, game
+  time going back, or another world pointer clears the poisons and logs `another game started`.
+  A data load clears them too, and logs `the data was reloaded`.
+
+**What it does not do.**
+- X is never created in the world, so there is no model or effect.
+- Poisons are not saved in saved games.
+- The stock Poison flag stays unused.
 
 ### bufferedFileReads
 
@@ -314,6 +445,37 @@ default) with its file offset.
 - `perfFileLog` counts the game's calls against the ones made to Windows. A session with the
   buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows.
 
+### multipleInstances
+
+**Why it exists.** The game allows one running copy per machine
+([engine-symbols.md](engine-symbols.md), 0x55A185). At startup it calls
+`CreateSemaphoreW(NULL, 1, 1, name)` and then `WaitForSingleObject(h, 0)`. A timeout means another
+copy holds the semaphore, and the game stops with "Only one copy of the game can run at a time". The
+name is `Global\Age3`, so copies in different folders, and even in different sessions, share it. Tests
+that run in several copies at once need that check gone.
+
+**How it hooks.** `src/features/instances.cpp` replaces the exe's KERNEL32 IAT entry for
+`CreateSemaphoreW` (0xB843F0), after checking that it holds the `GetProcAddress` address. The call
+at 0x55A185 is the only one whose return address is 0x55A18B; site `SingleInstanceSemaphore` checks
+its stock bytes. For that call alone the hook appends `-XXXXXXXX`, an FNV-1a hash of the exe's folder
+(lowercase), to the name. Every other call goes to Windows unchanged.
+- Copies in different folders get different semaphores.
+- Two copies from the same folder still get the same one, so they still refuse each other.
+
+**`background`.** The windows must stay behind every other window from the moment they exist.
+Moving them after they appear would leave a moment in which another session's real click could hit
+them. `UHCMain` runs on the game's main thread, which creates the game's windows, so the feature
+installs a `WH_CBT` hook for that thread only:
+- **`HCBT_CREATEWND`:** a top-level window (not a child, not message-only, not the system's IME
+  windows) is created with `hwndInsertAfter = HWND_BOTTOM`. Its window procedure is wrapped through
+  `SetWindowLongPtrW` (the old one is kept in a window property). The wrapper adds `SWP_NOZORDER`
+  and `SWP_NOACTIVATE` to every `WM_WINDOWPOSCHANGING` and answers `WM_MOUSEACTIVATE` with
+  `MA_NOACTIVATE`, so the game cannot raise its own window later.
+- **`HCBT_ACTIVATE`:** refused, so the window never becomes the active or foreground window.
+
+A window that cannot be activated gets no keyboard input. The game is driven through `perfExecFile`
+and watched with `PrintWindow`, and both work without focus.
+
 ## 5. Rules that keep multiplayer deterministic
 
 - **Same inputs, same choices** on every machine: sorted file lists, cfg order, then the stock
@@ -323,6 +485,9 @@ default) with its file offset.
 - **Never issue network commands** from code that runs on every machine, such as the setter
   behind `aiSetHCGatherPoint` (`0x82D9CB`).
 - **Change only state** that the stock code at that point reads or writes anyway.
+- **Time and order from the simulation** (`damageOverTime`): poisons tick on the game time
+  `[world+108h]`, in integer milliseconds, in the order of their keys, from inside the world
+  update. The damage itself is the stock TakeDamage.
 - **Outside the simulation** (`bufferedFileReads`): change only how data reaches the game, never
   what it receives.
 

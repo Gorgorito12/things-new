@@ -65,6 +65,11 @@ Never modify the Steam install. Work on a copy:
 
 5. **Read `UHC.log`** next to the exe. Delete it before each run: it is appended.
 
+**One copy per test, when several people or sessions test at once.** A copy is about 3.8 GB and
+takes seconds to make: `robocopy C:\AoE3-UHC-Test C:\AoE3-UHC-Poison /E /XF UHC.log`. Give it its own
+cfg and data. The `damageOverTime` test copy gets its data from `tools/dot_testdata.py`. Only one
+`age3y.exe` should run at a time, so check `Get-Process age3y` before starting one.
+
 **Shared profile.** The copy uses your normal user profile
 (`Documents\My Games\Age of Empires 3\Users3\<profile>.xml`, a UTF-16 file). A first run of a
 copy may reset the resolution there (`optiongrfxres`). Back the profile up before testing.
@@ -81,7 +86,90 @@ Compare-Object (Get-Content steam-before.tsv) (Listing)       # later: must prin
 ```
 
 Use the same `Get-ChildItem` options both times: `-Force` adds hidden files and makes the two
-listings differ.
+listings differ. `python -I tools/testbed.py safety record` / `safety check` does the same.
+
+### Driving the game unattended
+
+`tools/testbed.py` plays a test with no clicks: it starts the copy, builds a small map with the
+units you name, loads it as a game, lets them fight, and reads the result from `UHC.log` and
+from memory. Every feature test of `dodgeAnyUnit` was run this way. A full cycle:
+
+```
+python -I tools/testbed.py deploy test.cfg      # UHC.dll + Startup\uhc.cfg (adds perfExecFile)
+python -I tools/testbed.py map uhcdodge p1=Explorer*1@0.45,0.48 p2=Musketeer*4@0.55,0.51 tech1=YPDodge
+python -I tools/testbed.py launch               # +noIntroCinematics, waits for the main menu
+python -I tools/testbed.py scenario uhcdodge    # generate, save, reload as a game, unpause
+python -I tools/testbed.py wait 30              # 30 s of game time
+python -I tools/testbed.py log --grep dodged
+python -I tools/testbed.py units                # ID, player, proto, HP, position of every unit
+python -I tools/testbed.py shot out.png 2       # works while the window is covered
+python -I tools/testbed.py close                # also deletes the uhc-* scenarios it saved
+```
+
+`launch` to a running fight takes about three minutes. How it works, and what it took to get
+there:
+- **Commands reach the game only through `perfExecFile`** (`src/features/perf.cpp`): every 30
+  frames the DLL runs each line of `<bed>\uhc-exec.txt` as a console command and deletes the
+  file. Posted key presses never reach the console. `deploy` adds the key to the cfg.
+- **The map** is a random map script written to the copy's `RM3` folder. `p<N>=Proto*count@x,z`
+  places units of player N (x, z are fractions of the map side); `tech<N>=Name` adds a trigger
+  that makes a tech active for player N. A trigger's tech parameter is the tech's **index in
+  `techtreey.xml`**, which `map` looks up: a name such as `cTechYPDodge` compiles to tech 0 with
+  no error. The game writes what the triggers compiled to in
+  `Documents\My Games\Age of Empires 3\Trigger3\trigtemp.xs`, and a dump of the map script in
+  `…\RM3\Age3RM<name>.dmp.txt`.
+- **The scenario route**, found during the performance work (performance.md, §8):
+  `startRandomGame(true)` opens the editor, `startRandomGame2("<map>", 2, seed, "", false, 2, 1,
+  0, false)` generates the map in it (two teams, so the players are enemies),
+  `saveScenario("uhc-<map>")` writes `Documents\My Games\Age of Empires 3\Scenario\…`,
+  `leaveGame()` returns to the menu and `loadScenario` plays it. The players have no AI, which
+  keeps a test deterministic: units still attack enemies in range on their own.
+- **The game pauses when it loses focus** unless `config("DontPauseWhenLosingFocus")` is set;
+  `launch` and `scenario` send it, and `scenario` sends `pause(0)` after loading.
+- **Signals, most reliable first:** a feature's own `log` option; `hook reached` lines; memory
+  (`units`, or `tools/re/debugger.py`); screenshots. The game's own log is
+  `Documents\My Games\Age of Empires 3\Age3Log.txt`.
+- **Test data:** `tools/protoy_testdata.py <bed> unittype Proto=Type …` adds marker types to the
+  copy's `protoy.xml` and compiles the XMB from it; `reset` restores the files.
+- **One game at a time.** Other sessions may be testing in their own copies (for example
+  `C:\AoE3-UHC-Poison`) and may drive their game with real mouse input. `testbed.py` finds the
+  process and window by the copy's exe path, never by title, and `launch` refuses while any
+  `age3y.exe` runs. Ask before starting a game when another session says it is testing. The
+  game itself refuses a second instance, even from another folder: it stops at a dialog ("Only
+  one copy of the game can run at a time"), so sessions take turns.
+- **Running beside another session's game** is possible with `multipleInstances background` in
+  your copy's cfg ([modding guide](modding-guide.md#multipleinstances)):
+  - the semaphore check no longer collides with copies in other folders;
+  - your windows are created behind every other window, stay there and are never focused, so
+    another session's real clicks and keys cannot reach your game.
+
+  A copy without `background` does take the focus and can cover other windows when it starts, even
+  when it is launched with `SW_SHOWNOACTIVATE`. `tools/legacybench.py` starts beside another game
+  only when its copy's cfg has the key; `testbed.py launch` still refuses. Ask the other session
+  first anyway: both games share the CPU and the `My Games` folder.
+- **Closing:** `close` sends WM_CLOSE and kills the process after 30 s. Killing is safe unless a
+  `tools/re` tracer is attached ([rule 2 below](#dynamic-analysis-hardware-breakpoint-tracers)).
+- **Data is parsed once, at startup.** The editor route does not reload `protoy.xml` (a skirmish
+  start does), so after a data edit run `close` and `launch` again. A skirmish start compiles the
+  AI scripts before it reloads the data, so its AI sees the data of the previous load.
+- **A skirmish against the AI** needs real clicks (`rclick`, client coordinates for a 2560×1600
+  client area): main menu "Single player" (341, 1191), "Skirmish" (921, 1191), home city "Play"
+  (239, 1527), setup "Play" (635, 1451). Wait about 5 s between the menu clicks and 8–12 s
+  before each "Play". After a game, the home city screen sometimes ignores the first click on
+  "Play": take a small screenshot (`shot out.png 4`) and click again. `startRandomGame2` does
+  nothing from the main menu; it works only inside the editor.
+- **An error dialog outlives the game.** A game dialog, such as an XS error at game start, stays
+  on screen through `leaveGame()` and the menus and eats the clicks meant for them. Click its
+  button first (client 1282, 809 for the centered dialog).
+- **Check that the AI plays** in any test of data or hooks that the AI could reach. Signs that it
+  does: it gathers its starting crates (`units --player 2` shrinks) and it may greet in the chat.
+  `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` at game start means it does
+  not; `tools/re/trace_xs.py` logs the error behind it
+  ([modding guide, "Tactics files"](modding-guide.md#tactics-files) has the case found so far).
+- **Shared files it touches:** the scenarios (`close` removes the ones this copy saved, listed in
+  `<bed>\uhc-scenarios.txt`, never another session's), `RecentFilesy.xml`,
+  `Trigger3\trigtemp.xs` and the `RM3\*.dmp.txt` dumps in the user's `My Games` folder, and the
+  profile (back it up first, see above).
 
 ## 3. Adding a feature, step by step
 
@@ -217,7 +305,8 @@ for o in range(0x1000, 0x784000 - 6):  # .text is file 0x1000..0x784000
 `tools/re/` holds a small debugger, Python with ctypes and no packages. It attaches to the
 running game, sets up to four hardware breakpoints and logs who hits them:
 - `trace_writes.py`: who writes (or reads) a field;
-- `trace_exec.py`: who runs an address, with the registers and a call chain.
+- `trace_exec.py`: who runs an address, with the registers and a call chain;
+- `trace_xs.py`: the XS compiler's errors, which the game hides behind `Error 0003`.
 
 Usage is in [tools/README.md](../tools/README.md). The traces behind this project's features:
 
@@ -226,6 +315,7 @@ Usage is in [tools/README.md](../tools/README.md). The traces behind this projec
 | What moves the shipment point when a Town Center dies? | `trace_writes.py gather.txt hc:1+0x18C hc:1+0x190 --rw` |
 | Which code changes a unit's hit points? | `trace_writes.py hp.txt unit:Explorer+0x64` |
 | What starts a heal, and does the command predicate run? | `trace_exec.py heal.txt 0x4C6D91=pred-0x41@esi 0x4C6DDD=pred-0x42@esi 0x9E0B53=heal-tick@[ecx+0x10]` |
+| Why does the AI fail to compile after the `damageOverTime` test data loads? | `trace_xs.py xs.txt` (it was `Error 0014: 'cTacticNormal' is already defined.`) |
 
 **Rules:**
 1. Start the tracer, then start (or switch to) the game, then play the scenario.

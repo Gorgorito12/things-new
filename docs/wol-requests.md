@@ -24,11 +24,20 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
 
 | # | Request | Kind | First lead | Notes | Status |
 |---|---|---|---|---|---|
-| 1 | Dodge only works for one Asian monk; make it work on any unit. | hardcode | strings `Dodge`, monk protos (`ypMonk*`); find the proto-ID compare. | Marker type via `unittypes.*`. Needed for ME. | open |
-| 1b | Dodge and critical-hit sound sets are hardcoded (DE has the proto attribute `DodgeSoundSet`). | hardcode | same area as #1. | Do with #1 if the sound lookup is next to it. A cfg mapping avoids a new proto attribute. | open |
-| 2 | Shotgun spread (`MaxSpread`) only happens when accuracy < 1; allow spread regardless of accuracy. | odd logic | strings `MaxSpread`, `Accuracy`; the `accuracy < 1` branch in projectile launch. | Probably a small branch patch, opt-in per unit by marker. | open |
-| 3 | The TC is hardcoded as the starting building for every civ; choose it per civ. The building must still carry `StartingTC`. | hardcode | strings `TownCenter`, `StartingTC`; start-unit creation in game setup. | Per-civ cfg key, e.g. `startingBuilding <civ> <proto>`. Related: #27. | open |
-| 4 | Converting a unit with a resource inventory into a unit with a different inventory breaks. | bug | convert / transform path, inventory copy. | Reproduce with and without our `removeConversionRestriction` first: is the bug stock or ours? | open |
+| 1 | Dodge only works for one Asian monk; make it work on any unit. | hardcode | strings `Dodge`, monk protos (`ypMonk*`); find the proto-ID compare. | Done: `dodgeAnyUnit [UnitType]` (default `AbstractDodge`). Stock limits it to the three `ypMonkJapanese` protos (FUN_0049ACAA); marked units take the same path (tech `YPDodge`, 15 %). Needed for ME. | confirmed in game (single player) |
+| 1b | Dodge and critical-hit sound sets are hardcoded (DE has the proto attribute `DodgeSoundSet`). | hardcode | same area as #1. | Done as cfg mappings: `dodgeSoundSet <UnitType> <SoundSet>`, `criticalSoundSet <UnitType> <SoundSet>` (stock `PowerEvade` / `PowerCriticalStrike`). | confirmed in game from the log (single player; not listened to) |
+| 2 | Shotgun spread (`MaxSpread`) only happens when accuracy < 1; allow spread regardless of accuracy. | odd logic | strings `MaxSpread`, `Accuracy`; the `accuracy < 1` branch in projectile launch. | RE done ([engine-symbols.md](engine-symbols.md), "Projectile accuracy and spread"): the spread is the stock **miss** offset, `min(0.25 × distance, 5)`, applied only when the precalculated accuracy roll misses; `MaxSpread`, `SpreadFactor` and `NumberProjectiles` are **not read by TAD at all**. Needs a decision (question Q1 below). | RE |
+| 3 | The TC is hardcoded as the starting building for every civ; choose it per civ. The building must still carry `StartingTC`. | hardcode | strings `TownCenter`, `StartingTC`; start-unit creation in game setup. | Partial RE: the random map scripts place `TownCenter` themselves (`rmAddObjectDefItem(startingTCID, "TownCenter", …)`), the exe caches its proto ID at `db+5E08h` (25 readers), and `StartingTC` exists nowhere (exe, WoL DLLs, WoL data). 0x82E46A is only the start camera. Which stock behavior breaks is not known yet (question Q2). Related: #27. | RE |
+| 4 | Converting a unit with a resource inventory into a unit with a different inventory breaks. | bug | convert / transform path, inventory copy. | Not reproduced yet: the conversion and the units involved are not known (question Q3). Then reproduce with and without `removeConversionRestriction`: is the bug stock or ours? | open |
+
+**Open questions for JTMaston** (2026-10-28; the answers decide the work):
+- **Q1 (#2):** in TAD a shot's spread exists only as the miss offset, with fixed values (0.25 × distance, at most 5 m); `maxspread`, `spreadfactor` and `numberprojectiles` in the tactics are ignored, so the shotgun fires one projectile per shot. Which do you want?
+  (a) marked units scatter **every** shot with the stock offset, hits included (the target still takes the damage; the projectile just lands around it);
+  (b) every shot of a marked unit becomes a miss-with-offset, so it damages whatever is at the landing point;
+  (c) the tactics' own `maxspread` / `spreadfactor` per action instead of the fixed 0.25 / 5 (needs parsing new tags: a bigger item);
+  (d) `numberprojectiles` working, several pellets per shot (the biggest).
+- **Q2 (#3):** what is `StartingTC`: a unit type, a flag, a name in your data or DLL? The random maps already choose the starting building per civ if their script does; what goes wrong when a civ starts with another building (shipments, AI, Nomad, age-up, defeat, something else)?
+- **Q3 (#4):** which conversion is it (`ConvertGuardian`, a trigger, a tech, livestock capture) and between which protos? What "breaks": a crash, lost or duplicated resources, a stuck unit? A save or a minimal data set to reproduce it would settle whether it is stock or `removeConversionRestriction`.
 
 Done when:
 - **#1:** a non-monk unit with the marker dodges in game, and `UHC.log` shows the hook reached.

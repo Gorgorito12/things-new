@@ -13,4 +13,9 @@ namespace uhc {
 // Installs the registration hook on first use; false if the host bytes do not match.
 bool RequestAbstractUnitType(const char* name, std::int32_t* id);
 
+// Calls `callback(database)` on every database load, from the same hook: after the abstract types
+// are registered and before the contents of the protos (their <ProtoAction> children among them)
+// are read. Installs the hook on first use; false if the host bytes do not match.
+bool OnDatabaseLoad(void (*callback)(char* database));
+
 }  // namespace uhc

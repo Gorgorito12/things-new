@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tactics>
+  <action>
+    <name>Attaching</name>
+    <type>Attack</type>
+    <rate type="Unit">1.0</rate>
+  </action>
+  <tactic>Normal<action priority="100">Attaching</action></tactic>
+</tactics>

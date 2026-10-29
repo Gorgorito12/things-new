@@ -24,8 +24,10 @@ Outcome ApplyRemoveFameRestriction(const Config& config);
 Outcome ApplyHcShipmentPointFallback(const Config& config);
 Outcome ApplyHealNonIdle(const Config& config);
 Outcome ApplyDamageOverTime(const Config& config);
+Outcome ApplyDodge(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
+Outcome ApplyMultipleInstances(const Config& config);
 
 inline constexpr Feature kFeatures[] = {
     {"removeConversionRestriction", ApplyRemoveConversionRestriction},
@@ -38,15 +40,19 @@ inline constexpr Feature kFeatures[] = {
     {"hcShipmentPointFallback", ApplyHcShipmentPointFallback},
     {"healNonIdle", ApplyHealNonIdle},
     {"damageOverTime", ApplyDamageOverTime},
+    {"dodgeAnyUnit/dodgeSoundSet/criticalSoundSet", ApplyDodge},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
+    {"multipleInstances", ApplyMultipleInstances},
 };
 
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
-    "healnonidle", "damageovertime", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "perffilelog",
+    "healnonidle", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
+    "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "perffilelog",
+    "multipleinstances",
 };
 
 }  // namespace uhc
