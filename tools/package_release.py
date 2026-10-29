@@ -176,6 +176,17 @@ snareOnlyHitUnit [log]        a snared unit no longer slows the group it moves w
 techRenameEffect [log]        tech effect SetTechName: rename a tech per player
 noCorpseDopples [UnitType] [log]   dead marked units (hunt carcasses) leave no dopple
 danceBonusCivs Civ ... [log]  fire pit train/XP/gather/regen dances for more civs
+startingTC [UnitType] [log]   marked buildings count as a player's first town center
+                              (FirstTC in placementrules), like TownCenter
+transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
+                              resources (InitialResource) of their new proto
+noTrainNearEnemyTC M [UnitType] [log]  marked units (Daimyos) do not train within M metres
+                              of an enemy's first Town Center
+overhealHitpointBars [UnitType ...] [log]   HP bars and texts of marked units use
+                              InitialHitpoints as 100 % (overheal up to MaxHitpoints)
+showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
+buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
+                              research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
 multipleInstances [background]  run beside a copy of the game from another folder
 

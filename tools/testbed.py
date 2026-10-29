@@ -16,9 +16,12 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
                              (--los adds the unit's own line of sight and its proto's)
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
-  record <out.mp4> [seconds] [fps] [width]   films the window in real time to an H.264 MP4
-                             (default 30 s, 10 fps, 1280 px wide); needs ffmpeg (UHC_FFMPEG,
-                             PATH or C:\\Tools\\ffmpeg\\ffmpeg.exe)
+  record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--follow ID]
+                             films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
+                             1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
+                             C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
+                             live HP of those units (IDs or proto names) on every frame, --log the
+                             latest UHC.log lines that match, --follow keeps the camera on a unit
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
@@ -98,6 +101,12 @@ gdi32.SetStretchBltMode.argtypes = [wt.HDC, ctypes.c_int]
 gdi32.SetBrushOrgEx.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
 gdi32.StretchBlt.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
                              wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wt.DWORD]
+gdi32.CreateFontW.restype = wt.HFONT
+gdi32.CreateFontW.argtypes = [ctypes.c_int] * 5 + [wt.DWORD] * 8 + [wt.LPCWSTR]
+gdi32.SetBkMode.argtypes = [wt.HDC, ctypes.c_int]
+gdi32.SetBkColor.argtypes = [wt.HDC, wt.DWORD]
+gdi32.SetTextColor.argtypes = [wt.HDC, wt.DWORD]
+gdi32.TextOutW.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, wt.LPCWSTR, ctypes.c_int]
 
 
 class RECT(ctypes.Structure):
@@ -487,7 +496,9 @@ def scenario(bed, map_name, seed):
         run_commands(bed, ["leaveGame()"])
         wait_until(lambda: not D.world(proc), 60, 1, "the main menu")
         time.sleep(3)
-    run_commands(bed, ['config("DontPauseWhenLosingFocus")', "startRandomGame(true)"])
+    # flashHitpointBarsOnDamage: the game shows the HP bar of every damaged unit, for videos.
+    run_commands(bed, ['config("DontPauseWhenLosingFocus")', 'config("flashHitpointBarsOnDamage")',
+                       "startRandomGame(true)"])
     wait_until(lambda: D.world(proc), 120, 1, "the scenario editor")
     time.sleep(5)
     run_commands(bed, [f'startRandomGame2("{map_name}", 2, {seed}, "", false, 2, 1, 0, false)'])
@@ -607,12 +618,81 @@ def ffmpeg_path():
     sys.exit("testbed: record needs ffmpeg (set UHC_FFMPEG, put it on PATH or in C:\\Tools\\ffmpeg)")
 
 
-def record(path, seconds=30.0, fps=10, width=1280):
+class Overlay:
+    """Live text drawn on every recorded frame, so a video shows what the numbers do: the game time,
+    the hit points of the watched units (unit IDs or proto names, matched again every second, so new
+    units appear and dead ones go) and the latest UHC.log lines that match a pattern."""
+
+    def __init__(self, bed, watch, log_pattern, follow=None):
+        self.proc = process()
+        self.bed, self.follow, self.next_follow = bed, follow, 0.0
+        self.ids = {int(w) for w in watch if w.isdigit()}
+        self.protos = [w.lower() for w in watch if not w.isdigit()]
+        self.pattern = re.compile(log_pattern) if log_pattern else None
+        self.log_path = bed / "UHC.log"
+        # Show the lines of the current game: read from the last scenario load on.
+        data = self.log_path.read_bytes() if self.log_path.exists() else b""
+        start = data.rfind(b"loadScenario(")
+        self.log_pos = data.rfind(b"\n", 0, start) + 1 if start >= 0 else len(data)
+        self.log_lines, self.units, self.lines = [], [], []
+        self.next_scan = self.next_text = 0.0
+
+    def text(self, now):
+        if self.follow is not None and now >= self.next_follow:
+            # Keep the camera on that unit: perfExecFile runs the file within 30 frames. Written
+            # without waiting, so a frame is never held up.
+            self.next_follow = now + 2.0
+            path = exec_file(self.bed)
+            if not path.exists():
+                tmp = path.with_suffix(".tmp")
+                tmp.write_text(f"uiLookAtUnit({self.follow})\r\n", encoding="ascii")
+                os.replace(tmp, path)
+        if now < self.next_text or self.proc is None:
+            return self.lines
+        proc = self.proc
+        if now >= self.next_scan:
+            self.next_scan = now + 1.0
+            self.units = [u for u in D.units(proc)
+                          if proc.u32(u + 0x10) in self.ids
+                          or any(p in D.proto_name(proc, proc.u32(u + 0x5C)).lower() for p in self.protos)]
+            self.read_log()
+        lines = [f"game time {(game_time(proc) or 0) / 1000:.1f} s"]
+        if len(self.units) > 6:  # many units: one count per proto and player instead of one line each
+            counts = {}
+            for unit in self.units:
+                key = (D.proto_name(proc, proc.u32(unit + 0x5C)), D.unit_player(proc, unit))
+                counts[key] = counts.get(key, 0) + 1
+            lines += [f"{n} x {name} (player {player})" for (name, player), n in sorted(counts.items())]
+        for unit in self.units if len(self.units) <= 6 else []:
+            proto = proc.u32(unit + 0x5C)
+            block = proc.u32(unit + 0xB4)  # the unit's own LOS is [[unit+B4h]+90h]
+            los = f", LOS {proc.f32(block + 0x90):.0f}" if block else ""
+            lines.append(f"unit {proc.u32(unit + 0x10)} {D.proto_name(proc, proto)} (player {D.unit_player(proc, unit)}): "
+                         f"HP {proc.f32(unit + 0x64):.1f} / {proc.f32(proto + 0x98):.0f}{los}")
+        self.lines = lines + self.log_lines[-4:]
+        self.next_text = now + 0.25
+        return self.lines
+
+    def read_log(self):
+        if self.pattern is None or not self.log_path.exists():
+            return
+        with open(self.log_path, "rb") as f:
+            f.seek(self.log_pos)
+            data = f.read()
+        self.log_pos += len(data)
+        self.log_lines += [line[:140] for line in data.decode("utf-8", "replace").splitlines()
+                           if self.pattern.search(line)]
+
+
+def record(path, seconds=30.0, fps=10, width=1280, overlay=None):
     """Films the game window to an H.264 MP4 in real time, with PrintWindow like `shot` (it works
     while the window is covered). A frame that takes longer than 1/fps to capture is repeated, so
-    the video keeps the game's real speed."""
+    the video keeps the game's real speed. With an Overlay, its text is drawn on every frame."""
     ffmpeg = ffmpeg_path()
-    hwnd = window()
+    # The game stops drawing while another window has the foreground (PrintWindow then returns
+    # black frames), so bring it to the front first and give it a moment to draw again.
+    hwnd = focus()
+    time.sleep(1.0)
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
     w, h = rc.right - rc.left, rc.bottom - rc.top
@@ -627,10 +707,19 @@ def record(path, seconds=30.0, fps=10, width=1280):
     gdi32.SetBrushOrgEx(small_dc, 0, 0, None)
     bmi = ctypes.create_string_buffer(struct.pack("<IiiHHIIiiII", 40, ow, -oh, 1, 32, 0, 0, 0, 0, 0, 0) + b"\0" * 16)
     buf = ctypes.create_string_buffer(ow * oh * 4)
+    line_height = max(14, oh // 48)
+    font = gdi32.CreateFontW(-line_height, 0, 0, 0, 700, 0, 0, 0, 0, 0, 0, 5, 0, "Consolas")  # bold, ClearType
+    gdi32.SelectObject(small_dc, font)
+    gdi32.SetBkMode(small_dc, 2)                 # OPAQUE: each line on a black band
+    gdi32.SetBkColor(small_dc, 0x000000)
+    gdi32.SetTextColor(small_dc, 0x0000FFFF)     # yellow (COLORREF is 0x00BBGGRR)
 
     def grab():
         user32.PrintWindow(hwnd, full_dc, 2)  # PW_RENDERFULLCONTENT
         gdi32.StretchBlt(small_dc, 0, 0, ow, oh, full_dc, 0, 0, w, h, 0x00CC0020)  # SRCCOPY
+        if overlay is not None:
+            for i, line in enumerate(overlay.text(time.perf_counter())):
+                gdi32.TextOutW(small_dc, 8, oh // 18 + i * (line_height + 2), line, len(line))
         gdi32.GetDIBits(small_dc, small, 0, oh, buf, bmi, 0)
         return buf.raw
 
@@ -656,7 +745,7 @@ def record(path, seconds=30.0, fps=10, width=1280):
     finally:
         encoder.stdin.close()
         encoder.wait()
-        for obj in (full, small):
+        for obj in (full, small, font):
             gdi32.DeleteObject(obj)
         for dc in (full_dc, small_dc):
             gdi32.DeleteDC(dc)
@@ -709,6 +798,20 @@ def focus():
     hwnd = window()
     user32.SetForegroundWindow(hwnd)
     time.sleep(0.25)
+    if user32.GetForegroundWindow() != hwnd:
+        # Windows refuses SetForegroundWindow to a process that is not in the foreground; a real
+        # click on the title bar activates the window without sending a click into the game.
+        rc = RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(rc))
+        user32.SetCursorPos((rc.left + rc.right) // 2, rc.top + 10)
+        time.sleep(0.1)
+        down, up = INPUT(type=0), INPUT(type=0)
+        down.u.mi = MOUSEINPUT(0, 0, 0, 0x0002, 0, 0)
+        up.u.mi = MOUSEINPUT(0, 0, 0, 0x0004, 0, 0)
+        send(down)
+        time.sleep(0.05)
+        send(up)
+        time.sleep(0.3)
     return hwnd
 
 
@@ -837,8 +940,14 @@ def main(argv):
     elif cmd == "shot":
         shot(args[0], int(args[1]) if len(args) > 1 else 2)
     elif cmd == "record":
-        record(args[0], float(args[1]) if len(args) > 1 else 30.0, int(args[2]) if len(args) > 2 else 10,
-               int(args[3]) if len(args) > 3 else 1280)
+        watch = args[args.index("--watch") + 1].split(",") if "--watch" in args else []
+        log_pattern = args[args.index("--log") + 1] if "--log" in args else None
+        follow = int(args[args.index("--follow") + 1]) if "--follow" in args else None
+        flags = {i for f in ("--watch", "--log", "--follow") if f in args for i in (args.index(f), args.index(f) + 1)}
+        pos = [a for i, a in enumerate(args) if i not in flags]
+        overlay = Overlay(bed, watch, log_pattern, follow) if watch or log_pattern or follow is not None else None
+        record(pos[0], float(pos[1]) if len(pos) > 1 else 30.0, int(pos[2]) if len(pos) > 2 else 10,
+               int(pos[3]) if len(pos) > 3 else 1280, overlay)
     elif cmd == "click":
         posted_click(int(args[0]), int(args[1]))
     elif cmd == "rclick":

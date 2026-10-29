@@ -56,17 +56,17 @@ To test:
 
 Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\AoE3-UHC-Poison` when no other `age3y.exe` is running.
 
-**WoL Tier 2 copy.** `C:\AoE3-UHC-WoL` is a private copy for the WoL Tier 2 tests (2026-10-29), with edited data; pass `--bed C:\AoE3-UHC-WoL` to `testbed.py`:
-- `protoy`: `House`, `Outpost` and `Barracks` with `Lifespan` 20 and `PlaceAsFoundation`; `AlphaFadeLifespan` on `Barracks`; `AbstractLifespanAfterConstruction` on `House` and `Barracks`; `Deer` and `Bison` `Doppled`;
-- `techtreey`: `BuildingWorkRate` 4 on `BloodFactory` inside `YPHCBakufu`; the techs `UHCTestTypeCountCreate`, `UHCTestTypeCountDeath` and `UHCRenameTest` appended at the end (so stock tech indices are unchanged);
-- loose `data\abilities\abilities.xml`, `data\DefaultKeyMapY.xml` and `data\tactics\firepit.tactics`;
+**WoL Tier 2 copy.** `C:\AoE3-UHC-WoL` is a private copy for the WoL tests (Tier 2, then the Tier 1 and 3 features, 2026-10-29), with edited data; pass `--bed C:\AoE3-UHC-WoL` to `testbed.py`:
+- `protoy`: `House`, `Outpost` and `Barracks` with `Lifespan` 20 and `PlaceAsFoundation`; `AlphaFadeLifespan` on `Barracks`; `AbstractLifespanAfterConstruction` on `House` and `Barracks`; `Deer` and `Bison` `Doppled`; `AbstractStartingTC` on `Market`; `AbstractOverheal` and `MaxHitpoints` 165 on `Musketeer`; `MaxHitpoints` 132 on `Pikeman` (the unmarked control);
+- `techtreey`: `BuildingWorkRate` 4 on `BloodFactory` inside `YPHCBakufu`; the techs `UHCTestTypeCountCreate`, `UHCTestTypeCountDeath`, `UHCRenameTest` and `UHCInvTransformTest` (six `TransformUnit` effects for `transformInventory`) appended at the end (so stock tech indices are unchanged);
+- loose `data\abilities\abilities.xml`, `data\DefaultKeyMapY.xml`, `data\tactics\firepit.tactics`, and `data\tactics\explorer.tactics.xmb` (the Explorer carries `UHCBwrAura`, an `AutoRangedModify` with `ModifyType` `BuildingWorkRate`, ×4, 40 m, on `BloodFactory`; delete the file to restore stock);
 - the originals are kept as `*.wol-orig` / `*.testdata-orig`.
 
 **Check the AI after data or combat changes.** Start a skirmish against an AI (clicks: `docs/developer-guide.md`, "Driving the game unattended"). The dialog `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error behind it.
 
 There are no unit tests yet.
 
-**Unattended in-game tests.** `python -I tools/testbed.py` plays a test with no clicks: `deploy` (DLL + cfg), `map` (a random map with the units and techs you name), `launch`, `scenario` (editor route: generate, save, reload as a game), `wait`, `log`, `units`, `shot`, `close`. Once a feature works, `record <out.mp4>` films about 30 s of it for the user (ffmpeg from `C:\Tools\ffmpeg`). It drives the console through `perfExecFile`. Method and pitfalls: `docs/developer-guide.md`, "Driving the game unattended". Other Claude sessions may test in their own copies (e.g. `C:\AoE3-UHC-Poison`) with real mouse input: never run two games at once unless yours has `multipleInstances background` in its cfg and the other session agreed (the game itself refuses a second copy otherwise), and stop yours when one asks.
+**Unattended in-game tests.** `python -I tools/testbed.py` plays a test with no clicks: `deploy` (DLL + cfg), `map` (a random map with the units and techs you name), `launch`, `scenario` (editor route: generate, save, reload as a game), `wait`, `log`, `units`, `shot`, `close`. Once a feature works, `record <out.mp4>` films about 30 s of it for the user (ffmpeg from `C:\Tools\ffmpeg`); it brings the window to the front first, and `--watch <IDs or protos>` (live HP and LOS of those units), `--log <regex>` (the feature's `UHC.log` lines) and `--follow <ID>` (the camera stays on a unit) draw live stats on the video. It drives the console through `perfExecFile`. Method and pitfalls: `docs/developer-guide.md`, "Driving the game unattended". Other Claude sessions may test in their own copies (e.g. `C:\AoE3-UHC-Poison`) with real mouse input: never run two games at once unless yours has `multipleInstances background` in its cfg and the other session agreed (the game itself refuses a second copy otherwise), and stop yours when one asks.
 
 ## Layout
 
@@ -79,12 +79,14 @@ There are no unit tests yet.
   - `hooks/*.asm`: MASM hooks.
   - `generated/sites.h`: the expected bytes, written by `tools/gen_sites.py`.
   - `unittypes.*`: extra abstract unit types that features request. Stock only knows the abstract types compiled into the exe and drops any other `<UnitType>`.
+  - `modifiers.h`: the read-only walk over a unit's stat-modifier actions (type 2Ch, in the stock collector's order), shared by `snareOnlyHitUnit` and `buildingWorkRateAuras`.
 
   Hooks never relocate instructions. Each one re-executes or replaces the stock code itself and leaves through an explicit `jmp` to the verified continuation. Implemented so far:
   - `removeConversionRestriction`, `ignoreRegistryPath`, `deckCardCount`, `basePop`/`extraPop` (M2);
   - `noAILimit`, `customRevolutionBanners`, `removeFameRestriction` (M3);
   - beyond upstream: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`, `dodgeAnyUnit` / `dodgeSoundSet` / `criticalSoundSet`, `bufferedFileReads`, `multipleInstances` (`docs/uhc-address-map.md`, "Beyond upstream");
-  - WoL Tier 2 (`docs/wol-requests.md`): `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect` (alias `enableTechRenameEffect`), `noCorpseDopples`, `danceBonusCivs`.
+  - WoL Tier 2 (`docs/wol-requests.md`): `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect` (alias `enableTechRenameEffect`), `noCorpseDopples`, `danceBonusCivs`;
+  - WoL Tier 1 and 3: `startingTC` (#3, the FirstTC part), `transformInventory` (#4), `overhealHitpointBars` (#21), `buildingWorkRateAuras` (#22), `noTrainNearEnemyTC` (#27), `showGatherRate` (#28). Keep their order in `kFeatures`: `noTrainNearEnemyTC` after `liveBuildingWorkRate`, `buildingWorkRateAuras` last of the WoL keys; the two share `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`, called by noTrainNearEnemyTC's Train hook).
 
   `damageOverTime` wraps two whole functions (TakeDamage, the world update): the `jmp` at the entry leads to a `__fastcall` C++ wrapper with the stock thiscall frame, which calls the stock body through a MASM trampoline that re-executes the stolen prologue.
 

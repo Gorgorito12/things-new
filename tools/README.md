@@ -150,8 +150,20 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
 `units`, `shot`, `record`, `click`/`rclick`, `key`/`rkey`, `type`, `log`, `safety`; the
-docstring lists their arguments. `record` films the window to an MP4 with ffmpeg (`UHC_FFMPEG`,
-`PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`).
+docstring lists their arguments.
+
+`record <out.mp4> [seconds] [fps] [width]` films the window to an MP4 in real time, with ffmpeg
+(`UHC_FFMPEG`, `PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`). It first brings the game window to the
+front, since the game stops drawing while another window has the foreground. Options that draw
+live text on every frame:
+- `--watch <IDs or proto names>` (comma-separated): the game time and the live HP and line of
+  sight of those units, matched again every second, so new units appear and dead ones go (more
+  than 6 units are counted per proto and player instead);
+- `--log <regex>`: the latest `UHC.log` lines of the current game that match, e.g. a feature's own
+  `log` output;
+- `--follow <ID>`: keeps the camera on that unit (a `uiLookAtUnit` every 2 s through
+  `perfExecFile`).
+
 It needs `perfExecFile <bed>\uhc-exec.txt` in the copy's cfg (`deploy` adds
 it). The method and its pitfalls are in
 [developer-guide.md, "Driving the game unattended"](../docs/developer-guide.md#driving-the-game-unattended).

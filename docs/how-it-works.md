@@ -262,9 +262,10 @@ The trace is described in [engine-symbols.md](engine-symbols.md), "Unit types an
 ### Extra abstract unit types (used by every key that takes a `<UnitType>`)
 
 `healNonIdle`, `dodgeAnyUnit` (and its sound keys), `maintainWaitForPop`,
-`broadsideMuzzleLimit`, `lifespanAfterConstruction`, `gaiaSocketsOnly` and `noCorpseDopples`
-request their type here. A name that already exists, a stock type or a proto name, keeps its ID
-and adds nothing.
+`broadsideMuzzleLimit`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `noCorpseDopples`,
+`startingTC`, `noTrainNearEnemyTC`, `overhealHitpointBars` (each of its types), and
+`transformInventory` and `showGatherRate` when given a type, request their type here. A name that
+already exists, a stock type or a proto name, keeps its ID and adds nothing.
 
 In TAD, abstract unit types are not read from data:
 - FUN_0051A5DC (`thiscall(database)`) registers a fixed list compiled into the exe, `Unit`,
@@ -1022,6 +1023,423 @@ count is 0 it answers "not listed".
   bytes. Upstream's `nativeCivs` patches the later compares (0x4904B5, 0x4ECD6B, 0x8D47C9), outside
   these ranges, so a `nativeCivs` port can share these functions.
 
+### startingTC
+
+**The stock first town center.** A player keeps one unit ID at `[player+4F0h]`: -1 from the
+player's constructor (0x8DCC1D), saved and loaded with the player (0x8D4088). Player::addUnit
+FUN_0049874F (`bool thiscall(player, unit*, bool)`, `ret 8`) adds a unit to the player's list; at
+its end (0x49880A) `cmp dword ptr [esi+4F0h],0 / jl 506B2Ah` enters a cold chunk only while the
+value is negative. The chunk loads the unit's exact proto ID (`[[edi+5Ch]+4]`) and compares it with
+the cached `TownCenter` ID `[database+5E08h]` (0x506B3B); if equal it jumps to 0x67ABD4, which
+stores `[edi+10h]` (the unit ID) into `[esi+4F0h]`. Nothing else writes the field during a game, so
+a dead first town center stays. The placement rules parse the keyword `FirstTC` as type -2
+(FUN_005FDE94 / FUN_005FDFEA). Their evaluators FUN_008CE515 (`distanceatmostfromtype`, the no-rush
+rule) and FUN_008CE935 (`distanceatleastfromtype`, the 65 m rule) loop over the players, read
+`[p+4F0h]`, look the unit up in the world's table with no alive test, and measure with the unit's
+`vtbl+B8h`. AtLeast skips a player with -1; AtMost returns "satisfied" as soon as any player has -1.
+
+**WoL's Maori start** (static reading). `Age0Maori` applies `Data Lifespan 0.5 Assign` to
+`TownCenter`, then `FreeHomeCityUnit MaoriPa`. The Lifespan case of the Data effect (FUN_008F973F,
+case 0x8FA939) writes `[proto+ACh]` and calls FUN_00A00505, which runs setLifespan (0x48DCB9) on
+each of the player's units of that proto: the live town center gets state bit 3 (lifespan armed) at
+once. FreeHomeCityUnit then creates the Pa at the shipment point, the town center, in the same tech
+application. The Pa's addUnit sees a first town center that is still a live unit, so stock keeps
+it, and the town center dies 0.5 s later.
+
+**The hooks** (`hooks/startingtc_hooks.asm`):
+- **Proto hook**, a `jmp` over `cmp eax,[ecx+5E08h]` at 0x506B3B (6 B), in the cold chunk, so only
+  for a player with no first town center. It re-executes the compare: equal → 0x67ABD4, as in
+  stock. Otherwise a unit whose proto is of the marker type (is-a 0x44D7FA) also goes to 0x67ABD4
+  (logged first, with `log`); any other unit leaves through 0x498817, the stock `jne` target.
+- **Gate hook**, a `jmp` over `cmp dword ptr [esi+4F0h],0 / jl 506B2Ah` at 0x49880A (13 B). It
+  re-executes both: a negative value goes to the cold chunk 0x506B2A (and the proto hook). For a
+  player who has a first town center, a unit of the marker type calls
+  `UhcStartingTcStale(player, unit)`; true → 0x67ABD4 (the unit becomes the first town center),
+  false → 0x498817. Every other unit leaves through 0x498817, as in stock. The is-a test comes
+  first, so the lookup runs only for marked units.
+- **`UhcStartingTcStale`** returns false when the old ID is the unit's own, when there is no main
+  world, or when the player is not `[world+58h][id]` of the main world (a home city world's
+  player). It looks the old ID up as the rule does (`[world+0Ch]`, count `[world+10h]`, full ID at
+  `[unit+10h]`), and returns true when the unit is not there (gone), when unit vtable slot A4h
+  (0x44D019, the stock alive test) is false (dead), or when state bit 3 of `[unit+4]` (bit count
+  `[unit+8]`) is set (pending lifespan). Otherwise false: a live first town center is never
+  replaced.
+- The proto hook is written first; if the gate hook cannot be written, the proto hook's stock bytes
+  are put back, so the feature is never half installed.
+
+**Why it is safe.**
+- Both exits are stock code: 0x67ABD4 reads EDI (unit) and ESI (player) and writes ECX; 0x498817
+  pops EBX, EBP, EDI and ESI and returns with `mov al,1`, reading no other register and no flag.
+  The hooks keep EBX, EBP, ESI, EDI and the stack (the C++ helpers are `__stdcall`); EAX, ECX and
+  EDX are free on both paths. The three callers of addUnit (0x498980, 0x51453E, 0x9C7658) test
+  only AL or ignore the result.
+- Nothing branches into the replaced ranges (0x49880B..0x498816, 0x506B3C..0x506B40); the
+  continuation 0x498817 and the store 0x67ABD4 lie outside them. The `jne`/`jmp` after the replaced
+  compare at 0x506B41 stay, unreachable.
+- With the marker ID -1 (before the data loads) both hooks behave as stock.
+- The decision reads only game state (proto types, the unit table, state bits, HP); addUnit runs in
+  the simulation on every machine, in the same order.
+- **Observed in game:** a marked Market created for a player without a Town Center became his first
+  town center; `[player+4F0h]` held its ID (3), where stock leaves -1.
+- **Not covered:** the other `TownCenter` checks ([modding guide](modding-guide.md#startingtc)); a
+  captured first town center; a hook on unit removal (a dead first town center is replaced only
+  when a marked building is added afterwards).
+
+### transformInventory
+
+**Where a unit's resources live.**
+- Each proto with a resource tag (`InitialResource`, `CarryCapacity`, `GathererLimit`) has a
+  resource object at `[proto+E0h]` (14h bytes): `+0` the `InitialResource` list, `+8` the
+  `CarryCapacity` list, `+10h` the `GathererLimit` byte. The `<InitialResource>` handler 0x5F8643
+  writes the list at `+0` through the list setter 0x58EF83.
+- A resource list is 8 bytes: `+0` an array of `[0xC6DF38]` floats, entry r XORed with the dword
+  at `0xC6DF14 + 4r`; `+4` the total, XORed with `[0xC6DF10]`. Every setter recomputes the total
+  (0x58EF83 → 0x58EF02). The exe registers 8 resource names, Gold to Trade, at 0x5381E0, and holds
+  8 keys in `.data`.
+- Each unit that holds resources has its own inventory at `[[unit+B4h]+94h]`, a 14h-byte pool
+  object (pool 0xCAFCA8): `+0` the unit ID, `+4` a resource list, `+0Ch` and `+10h` −1 when fresh.
+  `+10h`, when not −1, is the resource type a gatherer takes (Gather set-target 0x4EDC50,
+  scoping).
+- Unit creation seeds it only when the proto has a resource object (0x4983A0 → cold 0x67DE0D):
+  `0x9BFE5A(unit)` (free any old inventory, allocate a fresh one, store the unit ID), then
+  `0x480A73(inv+4, [proto+E0h])`, a raw copy of the encoded entries and the total.
+- Gathering, the AI knowledge bases and death at zero resources read the inventory, never the proto
+  (scoping): the gather target's type comes from the inventory (0x4DBEC1); a target with no
+  inventory or an empty one is skipped; `DieAtZeroResources` kills a unit whose inventory exists
+  and totals ≤ 1e-6.
+
+**The stock bug.** FUN_009C754C, the in-place transform (`TransformUnit` 0x7FBC79, revolution
+0x7FBEF2 / 0x8F05F5, and 0x6A42C8, 0x8C2D08, 0x8EB78A, 0x9BB6D5, 0x9C7C16), calls setProto and
+rebuilds HP, build points, obstruction and visibility, but has no operand on `+94h` or `+E0h`, and
+none of its callees reaches the inventory except through a read (scoping, re-checked by the
+verifier). The unit keeps its old proto's inventory, or none. A conversion then zeroes it: the
+owner change 0x514358 keeps the proto ID and sets each resource to
+`min(cur[r], newInit[r] × cur[r] / oldInit[r])`, or 0 when `oldInit[r]` is 0 (scoping). The trigger
+"Change Unit Type" is right in stock: the unit reset frees the inventory (0x4729D0 → 0x4BA74C) and
+the re-add seeds it from the new proto. In game, with the key on, a Musketeer turned into a
+`CrateofXP` was logged `inventory created: none -> {5: 100}`: it reached the transform with no
+inventory. That the rest of the transform never creates one is static analysis; no run with the
+key off was made.
+
+**The hook** replaces `mov eax,[esi+58h] / test eax,eax / je 9C763Ch` at 0x9C7625 (7 bytes: `jmp`
++ 2 NOP). There, ESI = the unit, EBP = the player's copy of the new proto (from 0x9C7560, unchanged
+until 0x9C764D) and `[esi+5Ch]` is still the old proto. Inside `pushad` / `popad` it calls
+`UhcTransformInventory(unit, newProto)`, then re-executes the three stolen instructions and jumps
+to 0x9C762C (`push eax / call 4BA630h`, which needs EAX = `[esi+58h]`) or 0x9C763C (`push ebp /
+mov ecx,esi`, then setProto, or transformUpdatesLOS's hook). The helper:
+1. returns if `[unit+B4h]` or the new proto is null, if a type is configured and the new proto is
+   not of it (is-a 0x44D7FA), or if `[0xC6DF38]` is outside 0..64;
+2. new proto without a resource object: keeps the inventory (stock), or with `all` frees it like
+   0x4BA74C / 0x4BA7A7: cdecl `0x4BA757(inv)`, then `[[unit+B4h]+94h] = 0`;
+3. without `all`, keeps the inventory when it exists, the old proto has a resource object and both
+   `InitialResource` lists hold the same types (decoded value > 1e-6 per index);
+4. otherwise rebuilds: a missing inventory comes from `0x9BFE5A(unit)`; an existing one is reused
+   with `+0Ch` / `+10h` set to −1; then `0x480A73(inv+4, [newProto+E0h])`. With `scale`, the factor
+   `clamp(total(inv) / total(oldInit), 0, 1)` is computed before the copy and applied after it with
+   the list's own scale 0x480B94.
+
+**Why it is safe.**
+- The point lies after the other players' knowledge bases dropped the unit (0x9C75FE, which reads
+  its old resource type) and the own player's removal (0x9C7620), and before the player add
+  (0x9C7658), the knowledge base re-add (0x9C768D, which reads the new amounts) and setHP's
+  checkState (0x9C76F3), so every reader sees one consistent inventory.
+- The rebuild repeats creation's own recipe with the engine's own functions, and the free repeats
+  "Change Unit Type"'s. An existing inventory is reused, not freed, so a pointer held elsewhere
+  cannot dangle.
+- The amounts are copied as raw encoded dwords, as stock copies them. The only float arithmetic in
+  the DLL is the `scale` factor: one single-precision SSE division of two game values, the same on
+  every machine with this build. No RNG, local player, UI state or clock. The pool allocation is
+  the one creation makes, in step on every machine.
+- All registers are preserved for the stolen code; the flags are dead after its `je`; the x87 stack
+  is empty at the site (the transform stored its values with `fstp`).
+- It is independent of transformUpdatesLOS (0x9C763F): the verified ranges do not overlap, and this
+  feature does not verify `TransformSetProto`, where that feature writes.
+
+**Not changed:** gatherers already working the target keep their `[action+70h]` type and stop at
+their next gather tick after a cross-type rebuild (0x4ECEA6 → 0x50E327, verifier). Units with a
+mismatched inventory from an older save are not repaired; that would need a hook in the owner
+change or the load path.
+
+### noTrainNearEnemyTC
+
+**FirstTC.** See [startingTC](#startingtc): `[player+4F0h]` holds the unit ID of the player's first
+Town Center, set once by Player::addUnit and never cleared. The rule `distanceAtLeastFromType`
+FUN_008CE935 loops over the players 1 .. `[world+5Ch]`-1 (0x44CB21), looks each FirstTC up in the
+unit table with an ID check, calls the Town Center's vtable slot B8h with the placement point
+(distance from the Town Center to a point), keeps the ones closer than the rule distance, then
+filters them by `player=` on the owner `[tc+44h]`: 3 (enemy) is `0x484D2D(owner, builder's player
+ID)`, `[owner+1D4h+4*id] == 2`.
+
+**The Train update.** FUN_009EA28B (`thiscall(action)`, vtable 0xB98388 slot 3Ch) runs every tick
+of a Train action: ESI = the action, `[action+10h]` = the trainer, EDI = its player. With a queue in
+progress it calls the work-rate getter at 0x9EA410 (`mov ecx,[esi+10h] / call 9BFE33h`), multiplies
+the rate by `[world+310h]`, `[world+104h]`, two optional factors and the civ's train rate
+(FUN_008D4790), and adds the result to the progress `[action+68h]`; 0x9EA1FA turns it into the
+fraction `[action+6Ch]` = `[+68h]` / `[+64h]`, and a fraction of 1.0 completes the unit. Stock never
+asks where the trainer stands.
+
+**The hook.** An 8-byte `jmp` (+3 NOP) over `mov ecx,[esi+10h] / call 9BFE33h`:
+1. with the marker resolved, it calls `UhcNoTrainBlocked(trainer)` (stdcall; the x87 stack is empty
+   there, as no x87 code runs in the function before);
+2. blocked: `fldz` (rate 0.0) and `jmp 9EA418h`;
+3. otherwise: `mov ecx,[esi+10h]`, then `call [g_uhcBwrTrainGetter]` and `jmp 9EA418h`. The pointer
+   holds 0x9BFE33, the stock getter (so `liveBuildingWorkRate`'s getter hook still applies), or
+   `buildingWorkRateAuras`' wrapper when that key is on.
+
+`UhcNoTrainBlocked`: false unless the trainer's proto is of the marker type (0x44D7FA). Then, for
+players 1 .. `[world+5Ch]`-1 in order: FirstTC `[p+4F0h]` ≥ 0, the unit 0x44CC6D(world, id)
+exists, its owner `[tc+44h]` is not the trainer's player and `0x484D2D(owner, trainer's player ID)`
+is true, it is alive (unit vtable slot A4h), and its distance `[vtbl+B8h](tc, trainer+14h)` is the
+smallest so far. Blocked when that smallest distance is below `<meters>`.
+
+**Why it is safe.**
+- Both paths leave one value on the x87 stack, as the getter does. After `0x9EA418`, EBX and EAX
+  are loaded before they are read, ECX at `0x9EA42C`; EDX is not read (0x485D2C, called at
+  0x9EA432, starts with `mov edx,ecx`), nor are the flags. The helper keeps ESI, EDI, EBP and EBX
+  (stdcall); the stack is balanced. `WorkRateTrainCall` and `TrainRateScale` are verified sites.
+- A rate of 0.0 is a state the update already handles: `[+68h]` does not move and 0x9EA1FA keeps
+  the fraction below 1.0. The queue, its resources and its population stay as stock left them.
+- The answer depends only on simulation state (unit types, FirstTC, stances, alive state,
+  positions), read in player order with the engine's own functions and the placement rule's
+  distance call; the comparison with `<meters>` is a single-precision compare. No local player,
+  clock or interface state is read.
+- `liveBuildingWorkRate` verifies `WorkRateTrainCall` before this feature writes it, and
+  `buildingWorkRateAuras` is applied after it (the order in `features.h`).
+- **Observed in game:** a Daimyo 34.1 m from an enemy Town Center made no progress, and trained
+  both queued units once that Town Center was killed. The distance's reference point (the Town
+  Center's center or its edge) is not known.
+- **Not covered:** players whose FirstTC is dead or never set; refusing the order instead of
+  pausing it.
+
+### overhealHitpointBars
+
+**The stock numbers.** The `<MaxHitpoints>` tag handler (0x5F5CED) stores `[proto+98h]` (`fstp
+[ecx+98h]` at 0x5F5D39), `<InitialHitpoints>` (0x5F5C97) `[proto+9Ch]` (0x5F5CE3). Unit creation
+FUN_00498274 starts the unit at `[proto+9Ch]` (`mov ecx,[ebp+9Ch] / push 1 / push ecx / call
+4820A1h` at 0x498390; the setter clamps to the max). The max HP getter `0x480408`,
+`float thiscall(unit)`, returns the per-unit override `[[[unit+0B4h]+0C8h]+4]` when that record
+exists and its value is above −1e-6, else `[[unit+5Ch]+98h]`, else 0. The health ratio `0x45F295`,
+`float thiscall(unit)`, takes the same max and returns 0 below 1e-6 (constant 0xB9FB64), 1.0 when
+HP `[unit+64h]` reaches it, else HP / max. The `Hitpoints` tech effect (case 0 of FUN_008F973F) adds
+the max's change to `[proto+9Ch]` too (0x8F97CD..0x8F97DD).
+
+**The displays.**
+- Floating bars: the unit visual update's bar chunk 0x45FAA2 takes the fill from `call 45F295h`
+  (0x45FAAF; under construction the build fraction, 0x6A1431, instead), clamps it to [0, 1]
+  (0x45FAB8..0x45FADC) and queues the bar (0x45FB71). The renderer (0x45C5xx, scoping) draws
+  0.5 + 0.5 × fill of the `hpbar` texture, so a fill above 1 cannot simply overflow the bar.
+- Selection groups: FUN_004C4FB5 adds a unit to a group and keeps the running average of 0x45F295
+  at `[group+1Ch]` (`call 45F295h` at 0x4C5014). Readers: the selection panel's bar, green / yellow
+  / red by the thresholds 0.33 / 0.66 (doubles 0xBA1F80 / 0xBA1F78, 0x4C82EA), and "Group Health",
+  `[group+1Ch]` × 100 with `%0.0f%%` (0x69AA75).
+- HP texts, `%d/%d` (0xBA2054) or `%d/%d (%d+%d)` (0xC34A54) when the unit's max is above the
+  database proto's `[+98h]`; HP and max go through `fistp` with RC = 11b (truncation):
+  - T1, the selection panel's `unitHitPointsValue`: `call 480408h` at 0x698B35;
+  - T2, the selection panel's 'Hit Points' stat row: the getter inlined at 0x4D7575..0x4D75AC, the
+    base `fld [eax+98h]` at 0x4D7615 (EAX = database proto), the split in cold 0x69A9B0;
+  - T3, the ObjectInfo_singleUnitStats panel FUN_009AF31A: base `fld [ecx+98h]` at 0x9AFA2A (ECX =
+    database proto from 0x45316E), max `call 480408h` at 0x9AFA4E.
+
+**The reference.** For a unit whose proto (`[unit+5Ch]`, its player's copy) is of a configured type
+(is-a 0x44D7FA) and has 1e-6 < `[+9Ch]` < `[+98h]`, the reference is `[+9Ch]` when the unit's max
+equals `[+98h]` (no override), else max × `[+9Ch]` / `[+98h]`. The proportional form follows the
+stock ratio-preserving rescale 0x9C738B (HP = ratio × new max, used after a modifier recompute,
+0x49F1DB): a unit at its reference before an aura is at its reference after it. `[+9Ch]` is
+returned as it is, not through the product: 165 × 150 / 165 rounded at single precision could give
+149.99998, which the truncating `fistp` prints as 149.
+
+**The hooks** (`hooks/overheal_hooks.asm`), each a 5- or 6-byte `jmp` (NOP-padded) that redoes the
+stolen instruction with the reference and jumps to the next one:
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x45FAAF | `call 45F295h` (ECX = ESI = unit) | `call OverhealRatio` | 0x45FAB4 `fstp [esp+10h]` |
+| 0x4C5014 | `call 45F295h` (ECX = EBP = unit) | `call OverhealRatio` | 0x4C5019 `fadd [esi+1Ch]` |
+| 0x698B35 | `call 480408h` (ECX = EBX = unit) | `call OverhealReference` | 0x698B3A `fnstcw` |
+| 0x4D7575 | `mov eax,[ecx+0B4h]` (6 B; ECX = EDI = unit) | `call OverhealReference`, replacing the whole inlined getter | 0x4D75AD `fnstcw` |
+| 0x4D7615 | `fld [eax+98h]` (6 B) | `mov ecx,eax / call OverhealBase` | 0x4D761B `fnstcw` |
+| 0x9AFA2A | `fld [ecx+98h]` (6 B) | `call OverhealBase` | 0x9AFA30 `fnstcw` |
+| 0x9AFA4E | `call 480408h` (ECX = ESI = unit) | `call OverhealReference` | 0x9AFA53 `fnstcw` |
+
+`OverhealReference` calls the stock `0x480408` first, so an unmarked unit gets exactly the stock
+max. `OverhealRatio` applies the stock rules of 0x45F295 to HP / reference (same compares, `jnp` on
+the same status bits; `fldz` / `fld1` for the stock 0.0 / 1.0). `OverhealBase` returns the database
+proto's `[+9Ch]` under the same condition, else `[+98h]`. With `log`, the reference path stores its
+two values, calls `UhcOverhealLogReference(unit, reference, max)` with an empty FPU stack and
+reloads the reference.
+
+**Why it is safe.**
+- Only display code is patched: the floating bar queue, the selection grouping (the local
+  selection, which differs per machine, so stock cannot feed it into the simulation) and three text
+  panels. `0x45F295` and `0x480408` keep their 25 and 45 callers (heal search, transforms, the
+  modifier recompute, AI queries, triggers) unchanged, and no hook reads the local player.
+- The sites decode at instruction boundaries and nothing branches into the stolen bytes; at
+  0x4D7575 the getter's own branches (0x4D7583, 0x4D7596, 0x4D75A6) and cold blocks (0x69FB66,
+  0x69FB6E) only rejoin at 0x4D75AD, which the hook jumps to.
+- At every site the FPU stack is empty (the HP was just stored with `fistp`, or it is a call site),
+  and the hooks leave exactly one value in ST0, as the stolen instruction did.
+- EAX, ECX, EDX and the flags are written before they are read after each continuation; the
+  helpers keep EBX, ESI, EDI and EBP (0x4C501C pops EDI and EBX; 0x45FAE2 reads ESI). The is-a test
+  changes only EAX, ECX and EDX and uses no FPU register.
+- **Observed in game:** a marked Musketeer at 150 HP with `MaxHitpoints` 165 showed `150/150` and a
+  full bar in its panel; an unmarked Pikeman (120/132) kept the stock display.
+
+### showGatherRate
+
+**The stock rate rows.** The stat panel (`uiunitstatpanel3`; 9 label/value rows `StackLabel%d` /
+`StackValue%d`, bound to `[panel+174h+i*4]` / `[panel+198h+i*4]` by 0x9BBAD1) is filled by
+FUN_004D70ED, split into a hot part and a cold part (0x698A00..0x69C800). The row counter is
+`[esp+2Ch]` (2 after the HP row), the first selected unit `[esp+38h]`, and `[ebp+8]` the selection
+(`+14h` count). After the HP row, the AutoGather block (0x4D76FF..0x4D7834) checks: byte `[sel+21h]`
+= 0, the row < 9, one selected unit, the unit built (`[unit+68h]` null or complete), an action
+manager `[unit+58h]`, proto flag 9Bh (cleared by `DoNotShowAutoGatherRate`), not `Herdable`, and an
+AutoGather action (0x485CAC(mgr, 1Dh)). The cold part then runs a row writer (0x69AF7C: the two
+gadgets of row EBX; a missing one jumps back to 0x4D7834), a loop over the resources that asks the
+AutoGather getter 0x49EBE4 for each rate and stops at the first non-zero one (0x69AFE0..0x69B028:
+EBX = resource, `[esp+1Ch]` = rate), and a formatter (0x69B02A..0x69B182): label
+`%s (<icon="(32)(%S)">):` with the resource's name and icon, value `%.2f/s`, or `%d/s` when the
+rate is a whole number, then `add [esp+2Ch],1` and `jmp 4D7834h`. Every way out of the block lands
+on 0x4D7834.
+
+**The villager's rate.** BUnitGatherAction::doAnimationLooped (0x4ECC88, Gather action vtable
+0xB97880) calls collectStuff_2 (FUN_004ECD87, `thiscall(action, float elapsed)`, `ret 4`) once per
+gather animation loop while the action's state byte `[action+61h]` is 5, with elapsed = the loop's
+length (0x4939BD). The tick reads the gatherer `[action+10h]`, the target's ID `[action+14h]` and
+the resource `[action+70h]`, and computes R = ((cur − base) + k·base) · `[world+318h]` · Gathering
+dance (0x4ECD39 at 0x4ED02A). If R ≤ 1e-6 the action ends; otherwise, at 0x4ED044, `fmul
+[esp+30h]` multiplies R by elapsed. The amount is clamped to what the target holds, multiplied by
+`[player+37Ch]` (0x4ED13A), set to 0 for an `AbstractShrine` target (0x4ED14B) or a player with
+`[player+338h]` set (0x4ED1AB), and added to the stockpile by 0x49A98A (0x4ED1EE). No function
+returns R.
+
+**The data refs.** FUN_005CFA7C registers the `formatText` data refs `{id, type, name,
+provider}`. `currentUnitGatherRate` (19h, int), `…Float` (1Ah, float) and `…String` (68h, string)
+point to 0x5FDE49 (`xor al,al / ret 4`), which always fails. A provider is `bool provider(Value*)`,
+`ret 4`; the evaluators (vtable 0xB9EA48: 0xAB9544 color, 0x44A25A string, 0xAB94A2 int, 0xAB9400
+float) only call a ref whose registered type matches theirs, or, for the string evaluator, dispatch
+on the registered type (jump table 0x44A40C), and set `Value.type` to that type first. A type-3
+Value is `{3, BString}` with an empty BString (0x44A635).
+
+**The hooks.**
+- **Record** (0x4ED044, 8 bytes: `jmp` + 3 NOP over `fmul [esp+30h] / fst [esp+14h]`). ST0 = R
+  there, the only value on the x87 stack. The hook saves EAX, ECX and EDX, and fills the record
+  `(ID & 3FFFh)` of a 4000h-entry DLL table (32 bytes each, 512 KB): gatherer ID, the action, the
+  resource, the target's ID, R × `[player+37Ch]` (computed on a copy: `fld st(0) / fmul / fstp`),
+  elapsed (`[esp+3Ch]` after the three pushes) and the game time `[world+108h]`; the ID last. It
+  restores the registers, re-executes the two stolen instructions and jumps to 0x4ED04C.
+- **Panel** (0x4D7834, 7 bytes over `mov esi,[esp+38h] / mov ecx,[esi+5Ch]`, the join point after
+  the AutoGather block). If `g_uhcGatherRowPending` is set, the row writer has just come back: the
+  hook clears it and takes the stock path. Otherwise `UhcGatherPanelRow(unit, selection, row)`
+  checks the stock gate (except Herdable and the AutoGather action), the optional unit type and the
+  record. The record is valid when the unit's ID matches, `[[unit+58h]+24h]` (the current action) is
+  the recorded action, that action's state is 5 and its `[+10h]` is the unit, the resource is below
+  `[db+80h]`, the rate is above 0, the record is at most max(2.5 s, 2 × elapsed) old in game time
+  (capped at 60 s), the player's `[+338h]` is 0 and the target (if it still exists) is not an
+  `AbstractShrine`. On success the hook sets the pending flag, EBX = the row, and jumps to the
+  stock row writer 0x69AF7C. The stock path re-executes the two stolen instructions and jumps to
+  0x4D783B.
+- **Row value** (0x69AFE0, 6 bytes over `mov ecx,[0C66234h]`, the start of the AutoGather loop,
+  reached only by fall-through). With the pending flag, it sets EBX = the resource and `[esp+1Ch]`
+  = the rate, exactly what the loop leaves, and jumps to the formatter 0x69B02A; otherwise it
+  re-executes the `mov` and continues at 0x69AFE6. The formatter writes the row in the stock style,
+  adds 1 to the row counter and jumps back to 0x4D7834, where the panel hook clears the flag.
+- **Data ref** (the imm32 at 0x5D2D3C, `mov dword ptr [esp+2Ch],5FDE49h`): the provider of id 68h
+  becomes `UhcGatherRateRefHook`, which traces and jumps to the stdcall `UhcGatherRateRef(Value*)`.
+  For a type-3 Value it reads the current unit as FUN_006F49B1 does (`[[[0C67310h]+920h]+13Ch]` in
+  the world), applies the same record test, and assigns `"<name> 0.67/s"` (`%d/s` for a whole
+  number) to the Value's BString with 0x443BB8; otherwise it leaves the empty string and returns
+  true. The resource's name is `0x58EA52(0x60782A(db, res))`, freed with 0x4010CA. Ids 19h and 1Ah
+  keep the stub (their shared imm32 at 0x5D06E8 is not written): WoL's UI uses
+  `{currentUnitGatherRate(gold)}`.
+
+**Why it is safe.**
+- The simulation is unchanged: the record hook only reads game memory and writes the DLL's table.
+  R stays in ST0 untouched (the multiplication runs on a copy that is popped), the x87 stack has
+  the same depth on exit, the control word is not touched, and the flags are dead at 0x4ED044 (the
+  `fcomp / fnstsw / test` after the continuation set them).
+- The row writer is entered with the state the stock AutoGather path gives it: the same frame
+  (0x4D782E and 0x4D7834 are adjacent, with nothing constructed or destroyed between them) and
+  EBX = the row; it reloads every other register. The formatter needs only ESI/EDI (set by the
+  writer), EBX and `[esp+1Ch]`; it overwrites `[esp+0Ch]` in its `%d/s` branch, so the re-entry
+  guard is a DLL global, not a stack slot. All three exits of the writer go back to 0x4D7834.
+- If a write fails part-way, nothing diverts: the row value hook is written first and the panel
+  hook, the only one that sets the pending flag, last.
+- The record is checked against the unit's live state on every read (current action, state 5,
+  owner, game time), so a stale or colliding entry shows nothing rather than a wrong rate; actions
+  come from a pool, which is why the owner and the time are checked too.
+- The data ref keeps the stub's answer for any other value type, and the int and float refs keep
+  the stub itself.
+- **Observed in game:** a Settler on a berry bush got the row `Alim. (icon): 0.67/s` right under
+  its HP row, with the rate the log reported (0.670/s; the stock `Settler` gathers `BerryBush` at
+  0.67).
+
+### buildingWorkRateAuras
+
+**The stock mechanism.**
+- **Names.** FUN_005F5645, `int cdecl(BString* name)`, turns a ModifyType name into a stat with a
+  chain of compares through 0x443C10 (`thiscall(BString*, const wchar_t*, flag, n)`, `ret 0Ch`,
+  0 = equal; flag 0 makes CompareStringW ignore case). The last compare is `AutoGatherRate`; its
+  tail `neg eax / sbb eax,eax / and al,0F1h / pop esi / add eax,0Eh / ret` (0x5FE6D7..0x5FE6E1)
+  returns 0Eh on a match and -1 otherwise. Two callers: the tactics `<ModifyType>` handler 0x5FC8AE
+  stores the result unchecked in the byte `[action+B8h]`, and the powers' `<unitModify>` parser
+  0x5F3EFA rejects a negative stat.
+- **Modifiers.** An `AutoRangedModify` aura (FUN_009D033E) calls 0x4DD22D for each unit in range,
+  which creates the unit's modifier record `[[unit+B4h]+C8h]` when it is missing and adds a unit
+  action of type 2Ch: stat `[+64h]`, value `[+68h]` (the multiplier), operation `[+78h]` = 2
+  (multiply). Powers and the second applier 0x9D7696 use the same call.
+- **Readers.** The lazy recompute FUN_0049F1BA collects the unit's type-2Ch actions (0x49F1A0,
+  depth first) and sums 13 stats with 0x4B3C7D into the record; any other stat is ignored. A reader
+  such as the gather rate (0x4ECFE9 → 0x69FE53) uses the record's field when it is at least 1e-6,
+  else 1.0.
+- **BuildingWorkRate** is not a modifier stat. The getter 0x9BFE33 returns the building's copy
+  `[[unit+68h]+28h]`, or the proto's `[proto+D0h]` for a unit without building data
+  ([liveBuildingWorkRate](#livebuildingworkrate)), and is called by the per-tick updates of Train
+  (0x9EA413), Research (0x9E65F7), CommandResearch (0x9D58D4) and Maintain (0x6AB23F).
+
+**The hooks** (`hooks/bwraura_hooks.asm`).
+1. **Name, 0x5FE6D7** (6 bytes, `jmp` + 1 NOP over `neg / sbb / and`). EAX = the `AutoGatherRate`
+   compare, ESI = the name. On a match EAX stays 0. Otherwise the hook compares the name with
+   L"BuildingWorkRate" through the same 0x443C10 call (`push -1 / push 0 / push name / mov
+   ecx,esi`): a match gives EAX = 40h − 0Eh, anything else −0Fh. It continues at 0x5FE6DD, so the
+   tail returns 0Eh, 40h or −1. Stat 40h is new: no stock code produces it, the recompute skips
+   it, the save writes `[+64h]` as an int, and the aura tooltip (switch on stat − 1, cases 0..5)
+   takes its default case.
+2. **Rate, the calls of 0x9BFE33** (their rel32 points to `UhcBwrAuraCall`). The wrapper has the
+   getter's contract, `float thiscall(unit)`:
+   - a unit without a modifier record (`[[ecx+B4h]+C8h]` null) tail-calls the getter: the stock
+     call, bit for bit;
+   - otherwise it calls the getter (ST0 = the rate, through liveBuildingWorkRate's hook when that
+     key is on), stores it as a float and calls `UhcBwrAuraRate(base, unit, return address)`. The
+     helper walks the unit's type-2Ch actions in the collector's order (`src/modifiers.h`, the walk
+     `snareOnlyHitUnit` also uses), keeps those with stat 40h, and calls the stock sum 0x4B3C7D on
+     them from 1.0. With no match, or a sum below 1e-6, the factor is 1.0 and the helper returns the
+     base unchanged; otherwise base × factor. The wrapper restores ECX and EDX and returns.
+3. **The Train call and noTrainNearEnemyTC.** That key replaces `mov ecx,[esi+10h] / call 9BFE33h`
+   at 0x9EA410 with its own hook, which calls the getter through the exported pointer
+   `g_uhcBwrTrainGetter` (default 0x9BFE33). This key sets the pointer to its wrapper and writes the
+   Train call's rel32 only when 0x9EA410..0x9EA417 are still stock; the other three calls are
+   redirected either way.
+
+**Why it is safe.**
+- One `VerifyAll` checks 13 sites before the first write: the name tail and its continuation, the
+  compare's head, three call sites with the code after them up to the first write of EAX, the
+  Train call's continuation, the getter's tail, the collector, the sum with its two cold chunks,
+  and the GatherRate reader whose rule the factor mirrors. The getter's first 5 bytes must be stock
+  or liveBuildingWorkRate's `jmp`, and the Train call is checked on its own.
+- The name hook keeps EBX, ESI, EDI and EBP; ECX, EDX and the flags are free at the tail, whose two
+  callers read only EAX.
+- The wrapper returns with ECX, EDX, EBX, ESI, EDI, EBP and ESP as the getter does, and one value on
+  the x87 stack. EAX and the flags differ, which each caller allows: it writes EAX before reading it
+  and calls a function before it reads the flags.
+- **Determinism:** the factor depends only on the unit's modifiers, which every machine has in the
+  same order, and comes from the stock sum (x87, rounded to a float at each step). The product
+  base × factor is one IEEE single multiplication. A unit with no stat-40h modifier gets the stock
+  value. The log table only decides whether to write a line.
+- It is the last WoL key in `features.h`, so the keys that verify the call sites as stock bytes
+  (liveBuildingWorkRate, noTrainNearEnemyTC) check them before this key rewrites them.
+- **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
+  spawned 11 musketeers while a factory without the aura spawned 2.
+
 ### bufferedFileReads
 
 **Why it exists.** The game's raw file stream reads with one `ReadFile` per request
@@ -1125,16 +1543,21 @@ and watched with `PrintWindow`, and both work without focus.
 - **Schedules on the step count** (`techPrereqRecheck`): "every N updates" is
   (`[world+F8h]` + player ID) % N, stateless, so every machine checks the same players on the same
   update.
-- **Decide with the engine's own test** (`maintainWaitForPop`, `snareOnlyHitUnit`): a predicate
-  that mirrors stock code calls the same engine functions in the same order, with the same 32-bit
-  or single-precision arithmetic, and the mirrored code is verified byte for byte.
-- **Copy, don't compute** (`transformUpdatesLOS`, `liveBuildingWorkRate`): a value is copied or
-  read as the stock code would, with no new float operation.
+- **Decide with the engine's own test** (`maintainWaitForPop`, `snareOnlyHitUnit`, `startingTC`,
+  `noTrainNearEnemyTC`, `buildingWorkRateAuras`): a predicate that mirrors stock code calls the
+  same engine functions in the same order, with the same 32-bit or single-precision arithmetic,
+  and the mirrored code is verified byte for byte. `noTrainNearEnemyTC` measures with the
+  placement rule's own distance call; `buildingWorkRateAuras` sums with the stock modifier sum.
+- **Copy, don't compute** (`transformUpdatesLOS`, `liveBuildingWorkRate`, `transformInventory`): a
+  value is copied or read as the stock code would, with no new float operation. The one exception
+  is `transformInventory scale`: a single-precision division of two game values, the same on every
+  machine with the same build.
 - **Outside the simulation** (`bufferedFileReads`): change only how data reaches the game, never
   what it receives.
-- **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`): change only
-  what the local player sees or which keys work; every button or key sends the same command as
-  stock.
+- **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
+  `overhealHitpointBars`, `showGatherRate`): change only what the local player sees or which keys
+  work; every button or key sends the same command as stock. `showGatherRate`'s record hook runs in
+  the gather code on every machine, but only copies values into the DLL's own memory.
 - **Logs never feed back:** every `log` option only writes `UHC.log`; its dedupe tables decide
   whether to write a line, never what the game does.
 

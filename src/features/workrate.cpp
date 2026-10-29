@@ -29,8 +29,22 @@ T Field(const char* base, std::uint32_t offset) {
 }
 
 // Unit ID -> the (snapshot, proto) rate bits last logged for it, so a unit is logged once per
-// change of either value. Only the game thread (the simulation update) touches it.
+// change of either value. Only the game thread (the simulation update) touches it. Unit IDs start
+// again in every game: a new world, or a step count [world+F8h] that went back, clears it.
 std::unordered_map<std::int32_t, std::uint64_t> g_logged;
+const char* g_logWorld = nullptr;
+std::uint32_t g_logStep = 0;
+
+void ForgetOtherGames() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    g_logged.clear();
+  }
+  g_logWorld = world;
+  g_logStep = step;
+}
 
 }  // namespace
 
@@ -52,6 +66,7 @@ void __stdcall UhcBwrLogUnit(const char* unit) {
   if (snapshot == live) {
     return;
   }
+  ForgetOtherGames();
   const std::int32_t id = Field<std::int32_t>(unit, 0x10);
   const std::uint64_t pair = (static_cast<std::uint64_t>(snapshot) << 32) | live;
   const auto [it, added] = g_logged.try_emplace(id, pair);
