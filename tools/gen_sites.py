@@ -84,6 +84,11 @@ SITES = [
     # ret 8): sub esp,0Ch / push edi / mov edi,ecx / ... / mov [edi+64h],ecx (the store) / the
     # override test
     ("HpSetter", 0x4820A1, 0x22),
+    # overhealDecay: the adder's two regeneration calls, push 1 / push eax / mov ecx,esi /
+    # call 4823A3h (replaced) / the loop after it: the unit's own regeneration in FUN_004905E1
+    # (0x490881) and the Regeneration dance (0x67A03B)
+    ("RegenAddHp", 0x49087C, 0x12),
+    ("DanceRegenAddHp", 0x67A036, 0x15),
     # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
     # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
     ("AbstractTypesEnd", 0x51BA23, 0x15),
@@ -551,6 +556,36 @@ SITES = [
     # pushed ([esp] = HP, [esp+4] = max), followed by a push of the buffer and the swprintf 0x444EFB
     ("OverhealTextStat", 0x4D7647, 0x15),
     ("OverhealTextStatSplit", 0x69A9B0, 0x1B),
+    # overhealHitpointBars segment, the portrait bar: the selection panel's group bar from mov edx,
+    # [esp+78h] (the group) to the tail lea ecx,[esp+70h] / call 4010CAh (0x4C83DF, the hook, after
+    # the chosen colour gadget was filled through 0x44B8B8 / 0x590772 and raised through 0x447F7B;
+    # [esp+50h] = the panel, the same stack level all along), and the cold yellow / red choices
+    ("OverhealPortraitTail", 0x4C82E6, 0x102),
+    ("OverhealPortraitColours", 0x69A614, 0x16),
+    # the panel's lookups of its three bar gadgets by name (0xAB7C2F(panel, &handle, &name, 1),
+    # stored at [panel+310h] / +314h / +318h) and the lookup itself: 0x402733 narrows the name,
+    # 0x433812 searches the panel's gadgets and writes [0C672C0h] (no gadget) when none matches
+    ("HealthBarGadgets", 0x9BAEE5, 0x87),
+    ("GadgetByName", 0xAB7C2F, 0x26),
+    # a progress bar gadget from its handle (cdecl, null if none), the handle release, the fill
+    # (thiscall(bar, float), clamped to [0, 1]), and the show and hide behind the UI commands
+    # gadgetReal (0x7E2244) and gadgetUnreal (0x442BE7): thiscall(manager, handle), ret 4, a call of
+    # the gadget's vtable +54h / +58h(0)
+    ("ProgressGadget", 0x44B8B8, 0x23),
+    ("GadgetRelease", 0x40431B, 0x2C),
+    ("ProgressFill", 0x590772, 0x49),
+    ("GadgetShow", 0x447F7B, 0x46),
+    ("GadgetHide", 0x448F13, 0x39),
+    # overhealHitpointBars stat: after the stat panel's HP row, mov edi,2 / mov [esp+2Ch],edi at
+    # 0x4D76DB (the row counter; EDI is the row the Group Health branch writes), and that Group
+    # Health row (0x69A9D3..0x69AB0F), whose calls the overheal row repeats: the row gadgets through
+    # 0x4C519C, the label style 0D6F5D0h and the value style 0C6657Ch (vtable +84h), the text
+    # (+80h), +54h, the help texts [gadget+68h] cleared, then add edi,1 / mov [esp+2Ch],edi
+    ("OverhealStatRow", 0x4D76DB, 0x09),
+    ("GroupHealthRow", 0x69A9D3, 0x13C),
+    ("GadgetRef", 0x4C519C, 0x1B),
+    ("BStringFromWide", 0x401A12, 0x28),
+    ("BStringSet", 0x40196F, 0x24),
     # overhealHitpointBars, verify only: the max HP getter FUN_00480408 the hooks call (override
     # [[[unit+0B4h]+0C8h]+4] if > -1e-6, else [proto+98h], 0 with no proto), the health ratio
     # FUN_0045F295 the ratio helper mirrors (0 below 1e-6, 1.0 when HP >= max, else HP / max),

@@ -21,6 +21,8 @@ UhcOverhealLogReference PROTO STDCALL unit:DWORD, reference:DWORD, maxHp:DWORD
 UhcOverhealQueueSegment PROTO STDCALL unit:DWORD, pos:DWORD, reference:DWORD
 UhcOverhealSegmentFit PROTO STDCALL world:DWORD
 UhcOverhealSegmentVertices PROTO STDCALL world:DWORD, recordOffset:DWORD, vertices:DWORD, camera:DWORD
+UhcOverhealPortrait PROTO STDCALL panel:DWORD, selGroup:DWORD
+UhcOverhealStatRow PROTO STDCALL panel:DWORD, unit:DWORD, row:DWORD
 
 SEGMENT_PLAYER EQU 804F5648h            ; the player ID of a segment record ('OVH', negative: no player colour)
 
@@ -40,6 +42,9 @@ renderCountNext dd 0045C4BFh    ; test ebx,ebx / mov [esp+3Ch],ebx / jle: the re
 vertexLoopNext  dd 0045CB78h    ; add edi,24h / add ebx,24h / cmp eax,[ebp+8D4h]: the next record
 textStatNext    dd 004D7656h    ; push eax / call 444EFBh: the stat row's '%d/%d'
 textStatSplitNext dd 0069A9C5h  ; push ecx / call 444EFBh: the stat row's '%d/%d (%d+%d)'
+bstringFree     dd 004010CAh    ; void thiscall(BString*): the free 0x4C83E3 calls
+portraitNext    dd 004C83E8h    ; mov ecx,[esp+1C4h] / call 4C83F6h: after the portrait bar
+statRowNext     dd 004D76E4h    ; mov edx,[0CF059Ch]: the rows after the HP row
 
 .code
 
@@ -256,8 +261,9 @@ UhcOverhealSegmentVertexHook ENDP
 ; ([esp+4]) were pushed: with "segment", an HP above it gets the coloured copy of the format. Only
 ; the flags change (the next instruction does not read them); stock HP never exceeds the max, so
 ; an unmarked unit always gets the stock format. Only the stat row's two formats are hooked: its
-; gadget draws the <color> markup (seen in game); unitHitPointsValue (0x698B63) and ObjectInfo
-; (0x9AFA8B, 0x9AFAA5) format the same way, but their gadgets were not seen in a game.
+; gadget draws the <color> markup (seen in game). The minimized UI's unitHitPointsValue (0x698B63)
+; formats the same way, but its gadget prints the markup as text (seen in game), so it stays white;
+; ObjectInfo (0x9AFA8B, 0x9AFAA5), an editor panel, is not hooked either.
 OVERHEAL_TEXT_HOOK MACRO hookName:REQ, traceText:REQ, stockFormat:REQ, colourFormat:REQ, nextAddress:REQ
 hookName PROC
     TRACE_ONCE traceText
@@ -328,6 +334,47 @@ UhcOverhealInfoMaxHook PROC
     call OverhealReference
     jmp infoMaxNext
 UhcOverhealInfoMaxHook ENDP
+
+; Replaces lea ecx,[esp+70h] / call 4010CAh (9 bytes) at 0x4C83DF, the end of the selection
+; panel's portrait bar: the colour gadget was filled and raised. [esp+50h] = the panel, [esp+78h] =
+; the group, at the stack level of 0x4C82E6. UhcOverhealPortrait fills and raises the UI data's
+; overheal gadget, if any; then the stolen free. The FPU stack is empty (the fcomp pairs at
+; 0x4C82F5 / 0x4C830A pop what they load); EAX, ECX, EDX and the flags are dead after the free.
+UhcOverhealPortraitHook PROC
+    TRACE_ONCE "overhealHitpointBars portrait bar (0x4C83DF)"
+    pushad
+    push dword ptr [esp+20h+78h]    ; group
+    push dword ptr [esp+24h+50h]    ; panel
+    call UhcOverhealPortrait
+    popad
+    lea ecx, [esp+70h]              ; stolen 0x4C83DF
+    call bstringFree                ; stolen 0x4C83E3: call 4010CAh
+    jmp portraitNext
+UhcOverhealPortraitHook ENDP
+
+; Replaces mov edi,2 / mov [esp+2Ch],edi (9 bytes) at 0x4D76DB, the stat panel fill right after
+; the HP row: EDI and [esp+2Ch] are the next free row (the Group Health branch 0x69A9D3 writes row
+; EDI, then adds 1 to both). UhcOverhealStatRow writes the overheal row there for a marked unit
+; ([esp+38h], the panel [esp+50h]); when it did, the row is counted the same way. EAX, ECX, EDX
+; and the flags are dead at 0x4D76E4 (mov edx,[0CF059Ch] / mov eax,[edx] / ... / mov ecx,0C66500h).
+UhcOverhealStatRowHook PROC
+    TRACE_ONCE "overhealHitpointBars stat row (0x4D76DB)"
+    mov edi, 2                      ; stolen 0x4D76DB
+    mov dword ptr [esp+2Ch], edi    ; stolen 0x4D76E0
+    pushad
+    push edi                        ; row
+    push dword ptr [esp+24h+38h]    ; unit
+    push dword ptr [esp+28h+50h]    ; panel
+    call UhcOverhealStatRow
+    mov dword ptr [esp+1Ch], eax    ; the pushad slot of EAX: the result survives popad
+    popad
+    test al, al
+    jz done
+    add edi, 1
+    mov dword ptr [esp+2Ch], edi
+done:
+    jmp statRowNext
+UhcOverhealStatRowHook ENDP
 
 ; Public forms of the reference helpers for the other overheal keys (overhealSources,
 ; overhealDecay), cdecl so the C++ side can call them: the same definition, not a copy.

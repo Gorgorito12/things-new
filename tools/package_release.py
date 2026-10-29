@@ -187,9 +187,10 @@ transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech 
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [log]  marked units (Daimyos) do not train within M metres
                               of an enemy's first Town Center
-overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [log]   HP bars and texts of marked
-                              units use InitialHitpoints as 100 % (overheal up to MaxHitpoints);
-                              segment: the HP above it in orange, Overwatch style
+overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [stat[=Label]] [log]   HP bars and texts
+                              of marked units use InitialHitpoints as 100 % (overheal up to
+                              MaxHitpoints); segment: the HP above it in orange, Overwatch style
+                              (portrait bar with a UI gadget); stat: an Overheal row
 overhealSources [UnitType ...] [log]   only marked healers (AbstractOverhealer) heal
                               overheal units above InitialHitpoints
 overhealDecay R[%] [D] [UnitType ...] [log]   overheal above InitialHitpoints decays

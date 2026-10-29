@@ -39,7 +39,7 @@ std::int32_t UhcOverhealMarked(const char* proto);
 }
 
 namespace uhc {
-extern void (*g_overhealGain)(const char* unit);  // set by overhealDecay
+extern void (*g_overhealGain)(const char* unit, bool restartDelay);  // set by overhealDecay
 }
 
 namespace {
@@ -80,6 +80,7 @@ extern "C" {
 std::int32_t g_uhcOverhealSourceTypes[kMaxTypes] = {-1, -1, -1, -1, -1, -1, -1, -1};
 std::int32_t g_uhcOverhealSourceTypeCount = 0;
 std::int32_t g_uhcOverhealAllow = 0;  // set by the tick hook around a source healer's add
+std::int32_t g_uhcOverhealRegen = 0;  // set by overhealDecay's hooks around a regeneration's add
 
 void UhcOverhealAddHook();
 void UhcOverhealTickMaxHook();
@@ -117,7 +118,7 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   const float hp = Field<float>(unit, 0x64);
   if (!g_cap || g_uhcOverhealAllow != 0) {
     if (uhc::g_overhealGain != nullptr && hp + *amount > reference) {
-      uhc::g_overhealGain(unit);
+      uhc::g_overhealGain(unit, g_uhcOverhealRegen == 0);
     }
     if (!g_cap) {
       return;
@@ -146,7 +147,7 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
 
 namespace uhc {
 
-void (*g_overhealGain)(const char* unit) = nullptr;
+void (*g_overhealGain)(const char* unit, bool restartDelay) = nullptr;
 
 bool InstallOverhealAddHook() {
   if (!g_addHooked) {

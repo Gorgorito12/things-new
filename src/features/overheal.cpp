@@ -31,8 +31,19 @@
 // ID no player has, whose six vertices are then moved to the right end of the bar and given the
 // segment colour. The stat row's HP text uses the UI markup <color=r, g, b> for the colour. A unit
 // at or below its 100 %, and every unmarked unit (whose HP never exceeds its max), keeps the stock
-// bar and texts. The selection panel's group bar keeps its three stock
-// colours: they are three UI gadgets, and a fourth would need one in the UI data.
+// bar and texts. The selection panel's bar under the portrait is one of three progress bar gadgets
+// (green, yellow, red) of uiunitselection.xml; "segment" also fills a fourth one, when the mod's UI
+// data has it: unitselectionpanel-unitHealthBarOverheal, looked up by name as the panel looks up
+// the stock three (0xAB7C2F), filled with the group's average overheal share and raised above them
+// after each refresh (0x4C83DF). Its look and place are the UI data's; without it nothing changes.
+//
+// "stat[=Label]": the stat panel gets an "Overheal" row right after the HP row (0x4D76DB) for a
+// marked unit, 'overheal/capacity' (HP above the 100 % / max above it, truncated like the HP row),
+// written with the calls of the stock "Group Health" row (0x69A9D3), whose label is a literal too.
+// The label is the text after '=' ('_' for a space; UTF-8 or ANSI), or a string table entry when it
+// is a number.
+#include <windows.h>
+
 #include <cstdint>
 #include <cctype>
 #include <cstdlib>
@@ -100,6 +111,134 @@ struct Hook {
   void (*target)();
 };
 
+// The engine's string: one pointer to a wide, reference-counted buffer; null is empty.
+struct BString {
+  wchar_t* text;
+};
+
+// UI gadgets (docs/engine-symbols.md, "Hit points").
+constexpr std::uint32_t kUiHolder = 0x00C66244;      // +44h the gadget manager
+constexpr std::uint32_t kNoGadget = 0x00C672C0;      // the handle of no gadget; valid ones are above it
+constexpr std::uint32_t kLabelStyle = 0x00D6F5D0;    // the Group Health row's label style (vtable +84h)
+constexpr std::uint32_t kValueStyle = 0x00C6657C;    // its value style
+constexpr std::int32_t kStatPanelRows = 9;           // StackLabel/StackValue 0..8 (0x9BBAD1)
+constexpr wchar_t kPortraitGadget[] = L"unitselectionpanel-unitHealthBarOverheal";
+
+using GadgetByNameFn = std::int32_t*(__thiscall*)(char* panel, std::int32_t* handle, const BString* name,
+                                                  std::int32_t flag);
+using ProgressGadgetFn = char*(__cdecl*)(std::int32_t handle);
+using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
+using ProgressFillFn = void(__thiscall*)(char* bar, float fill);
+using GadgetVisibleFn = void(__thiscall*)(char* manager, std::int32_t handle);  // gadgetReal / gadgetUnreal
+using GadgetRefFn = std::int32_t*(__thiscall*)(std::int32_t* ref, std::int32_t handle);  // ref: handle, gadget
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t stringId);
+using BStringSetFn = BString*(__thiscall*)(BString* self, const BString* source);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+using MaxHitpointsFn = float(__thiscall*)(const char* unit);
+using GadgetStyleFn = void(__thiscall*)(char* gadget, const void* style);
+using GadgetTextFn = void(__thiscall*)(char* gadget, const BString* text);
+using GadgetUpdateFn = void(__thiscall*)(char* gadget);
+const auto kGadgetByName = reinterpret_cast<GadgetByNameFn>(0x00AB7C2F);
+const auto kProgressGadget = reinterpret_cast<ProgressGadgetFn>(0x0044B8B8);
+const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
+const auto kProgressFill = reinterpret_cast<ProgressFillFn>(0x00590772);
+const auto kGadgetShow = reinterpret_cast<GadgetVisibleFn>(0x00447F7B);
+const auto kGadgetHide = reinterpret_cast<GadgetVisibleFn>(0x00448F13);
+const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kMaxHitpoints = reinterpret_cast<MaxHitpointsFn>(0x00480408);
+
+template <typename Fn>
+Fn VirtualAt(const char* object, std::uint32_t offset) {
+  return *reinterpret_cast<const Fn*>(*reinterpret_cast<const char* const*>(object) + offset);
+}
+
+const char* GameWorld() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+// The unit with this ID in the world's table ([world+0Ch], count [world+10h]), as the engine looks
+// it up (ID & 3FFFFh, then the stored ID must match); null if it is gone.
+const char* UnitById(const char* world, std::int32_t id) {
+  if (world == nullptr || id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  const char* unit = Field<const char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+// The portrait gadget's handle, looked up again when the panel is another one or was rebuilt (its
+// green bar has another handle).
+const char* g_portraitPanel = nullptr;
+std::int32_t g_portraitGreen = 0;
+std::int32_t g_portraitHandle = 0;
+bool g_portraitLogged = false;
+bool g_portraitFillLogged = false;
+
+// The stat row: its label (a literal, or a string table ID when g_statLabelId >= 0).
+bool g_statRow = false;
+std::wstring g_statLabel = L"Overheal";
+std::int32_t g_statLabelId = -1;
+bool g_statLogged = false;
+
+bool ValidHandle(std::int32_t handle) { return handle > *reinterpret_cast<const std::int32_t*>(kNoGadget); }
+
+// Sets a stat row gadget's text as the Group Health row does: the style, the text, the update
+// (vtable +84h, +80h, +54h), then an empty help text ([gadget+68h]).
+void SetRowText(char* gadget, const void* style, const wchar_t* text) {
+  BString value;
+  kBStringFromWide(&value, text);
+  VirtualAt<GadgetStyleFn>(gadget, 0x84)(gadget, style);
+  VirtualAt<GadgetTextFn>(gadget, 0x80)(gadget, &value);
+  VirtualAt<GadgetUpdateFn>(gadget, 0x54)(gadget);
+  kBStringFree(&value);
+  BString empty;
+  kBStringFromWide(&empty, L"");
+  kBStringSet(reinterpret_cast<BString*>(gadget + 0x68), &empty);
+  kBStringFree(&empty);
+}
+
+// A row gadget from its handle, as 0x69A9D3 gets it (the reference is released at once; the panel
+// keeps the gadget).
+char* RowGadget(std::int32_t handle) {
+  std::int32_t ref[2] = {0, 0};
+  std::int32_t* result = kGadgetRef(ref, handle);
+  char* gadget = reinterpret_cast<char*>(static_cast<std::uintptr_t>(static_cast<std::uint32_t>(result[1])));
+  if (result[1] != 0) {
+    kGadgetRelease(result[0]);
+  }
+  return gadget;
+}
+
+// "Sobrecuración", "Over_heal" (a space), or "12345" (a string table ID); UTF-8, else ANSI.
+bool ParseLabel(const std::string& text, std::wstring* label, std::int32_t* stringId) {
+  if (text.empty()) {
+    return false;
+  }
+  if (text.find_first_not_of("0123456789") == std::string::npos) {
+    *stringId = std::atoi(text.c_str());
+    return true;
+  }
+  wchar_t wide[64];
+  int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.c_str(), -1, wide, 64);
+  if (length == 0) {
+    length = MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, wide, 64);
+  }
+  if (length == 0) {
+    return false;
+  }
+  for (wchar_t& c : wide) {
+    c = c == L'_' ? L' ' : c;
+  }
+  *label = wide;
+  return true;
+}
+
 }  // namespace
 
 extern "C" {
@@ -124,6 +263,10 @@ void UhcOverhealSegmentRenderHook();
 void UhcOverhealSegmentVertexHook();
 void UhcOverhealTextStatHook();
 void UhcOverhealTextStatSplitHook();
+void UhcOverhealPortraitHook();
+void UhcOverhealStatRowHook();
+float UhcOverhealReferenceOf(const char* unit);  // overheal_hooks.asm, cdecl; the max for an unmarked unit
+std::int32_t UhcOverhealMarked(const char* proto);
 
 // Called by the hooks (only with "log") each time a unit's reference differs from its max; logs
 // the first such unit of each proto name.
@@ -223,6 +366,136 @@ void __stdcall UhcOverhealSegmentVertices(const char* world, std::int32_t offset
     vertex.colour = g_segmentColour;
   }
 }
+
+// From the portrait hook (0x4C83DF), after the selection panel filled and showed the group's colour
+// bar (gadgetReal, 0x447F7B): the UI data's overheal gadget, if it has one, is shown only while the
+// group has an overheal and its stock bar is full. Then it is hidden and shown again (gadgetUnreal
+// 0x448F13, gadgetReal), which puts it above the colour bar (showing a gadget that is already
+// visible does not move it), and filled with 1 - the group's average overheal share ((HP - 100 %) /
+// 100 %, at most 1; 0 for a unit at or below its 100 % or unmarked): the mask (the HP colour) from
+// the left, the background (the overheal colour) on the right. Otherwise it is hidden: stock never
+// hides a gadget it does not know. The group: unit IDs [group+10h], count [group+14h]
+// (FUN_004C4FB5).
+void __stdcall UhcOverhealPortrait(char* panel, const char* group) {
+  if (panel == nullptr || group == nullptr) {
+    return;
+  }
+  const std::int32_t green = Field<std::int32_t>(panel, 0x310);
+  if (panel != g_portraitPanel || green != g_portraitGreen) {
+    g_portraitPanel = panel;
+    g_portraitGreen = green;
+    BString name;
+    kBStringFromWide(&name, kPortraitGadget);
+    std::int32_t handle = *reinterpret_cast<const std::int32_t*>(kNoGadget);
+    kGadgetByName(panel, &handle, &name, 1);
+    kBStringFree(&name);
+    g_portraitHandle = handle;
+    if (!g_portraitLogged) {
+      g_portraitLogged = true;
+      uhc::Log(ValidHandle(handle)
+                   ? L"overhealHitpointBars: the UI has %ls: the portrait bar shows the overheal (logged once)"
+                   : L"overhealHitpointBars: the UI has no %ls: the portrait bar stays stock (logged once)",
+               kPortraitGadget);
+    }
+  }
+  if (!ValidHandle(g_portraitHandle)) {
+    return;
+  }
+  const char* holder = *reinterpret_cast<const char* const*>(kUiHolder);
+  char* manager = holder == nullptr ? nullptr : Field<char*>(holder, 0x44);
+  if (manager == nullptr) {
+    return;
+  }
+  kGadgetHide(manager, g_portraitHandle);
+  // The stock bar is full only when every unit of the group is at or above its 100 % (the average
+  // of the ratios, each clamped to 1).
+  if (!(Field<float>(group, 0x1C) >= 0.999f)) {
+    return;
+  }
+  const char* world = GameWorld();
+  const auto* ids = Field<const std::int32_t*>(group, 0x10);
+  const std::int32_t count = Field<std::int32_t>(group, 0x14);
+  float sum = 0.0f;
+  std::int32_t units = 0;
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    const char* unit = UnitById(world, ids[i]);
+    if (unit == nullptr) {
+      continue;
+    }
+    ++units;
+    const char* proto = Field<const char*>(unit, 0x5C);
+    if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+      continue;
+    }
+    const float reference = UhcOverhealReferenceOf(unit);
+    const float hp = Field<float>(unit, 0x64);
+    if (reference > 1e-6f && hp > reference) {
+      const float share = (hp - reference) / reference;
+      sum += share < 1.0f ? share : 1.0f;
+    }
+  }
+  const float share = units > 0 ? sum / static_cast<float>(units) : 0.0f;
+  if (!(share > 0.0f)) {
+    return;
+  }
+  char* bar = kProgressGadget(g_portraitHandle);
+  if (bar == nullptr) {
+    return;
+  }
+  kGadgetRelease(g_portraitHandle);
+  kProgressFill(bar, 1.0f - share);  // the mask (the HP part) from the left, the background shows the rest
+  if (g_uhcOverhealLog != 0 && !g_portraitFillLogged) {
+    g_portraitFillLogged = true;
+    uhc::Log(L"overhealHitpointBars: the portrait bar shows an overheal of %.1f %% of the bar (%d units; logged once)",
+             static_cast<double>(share * 100.0f), units);
+  }
+  kGadgetShow(manager, g_portraitHandle);
+}
+
+// From the stat row hook (0x4D76DB, right after the HP row; row = the next free row): writes the
+// overheal row for the panel's unit when it is marked. True if it did; the hook then counts it.
+bool __stdcall UhcOverhealStatRow(const char* panel, const char* unit, std::int32_t row) {
+  if (panel == nullptr || unit == nullptr || row < 0 || row >= kStatPanelRows) {
+    return false;
+  }
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+    return false;
+  }
+  char* label = RowGadget(Field<std::int32_t>(panel, 0x174 + row * 4));
+  char* value = RowGadget(Field<std::int32_t>(panel, 0x198 + row * 4));
+  if (label == nullptr || value == nullptr) {
+    return false;
+  }
+  // Truncated like the HP row's '%d/%d' (fistp with the chop rounding), so the numbers add up.
+  const int reference = static_cast<int>(UhcOverhealReferenceOf(unit));
+  const int hp = static_cast<int>(Field<float>(unit, 0x64));
+  const int maxHp = static_cast<int>(kMaxHitpoints(unit));
+  const int overheal = hp > reference ? hp - reference : 0;
+  const int capacity = maxHp > reference ? maxHp - reference : 0;
+  wchar_t text[96];
+  if (overheal > 0 && g_uhcOverhealTextColor != 0) {
+    swprintf_s(text, L"<color=%.2f, %.2f, %.2f>%d/%d</color>", ((g_segmentColour >> 16) & 0xFF) / 255.0,
+               ((g_segmentColour >> 8) & 0xFF) / 255.0, (g_segmentColour & 0xFF) / 255.0, overheal, capacity);
+  } else {
+    swprintf_s(text, L"%d/%d", overheal, capacity);
+  }
+  if (g_statLabelId >= 0) {
+    BString name;
+    kBStringFromId(&name, g_statLabelId);
+    SetRowText(label, reinterpret_cast<const void*>(kLabelStyle), name.text == nullptr ? L"" : name.text);
+    kBStringFree(&name);
+  } else {
+    SetRowText(label, reinterpret_cast<const void*>(kLabelStyle), g_statLabel.c_str());
+  }
+  SetRowText(value, reinterpret_cast<const void*>(kValueStyle), text);
+  if (g_uhcOverhealLog != 0 && !g_statLogged) {
+    g_statLogged = true;
+    uhc::Log(L"overhealHitpointBars: stat row %d of unit %d (%hs): overheal %ls (logged once)", row,
+             Field<std::int32_t>(unit, 0x10), Field<const char*>(proto, 0x10), text);
+  }
+  return true;
+}
 }
 
 namespace uhc {
@@ -251,9 +524,17 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
         }
         g_segmentColour = 0xFF000000u | static_cast<std::uint32_t>(rgb);
       }
+    } else if (_strnicmp(arg.c_str(), "stat", 4) == 0 && (arg.size() == 4 || arg[4] == '=')) {
+      g_statRow = true;
+      if (arg.size() > 4 && !ParseLabel(arg.substr(5), &g_statLabel, &g_statLabelId)) {
+        Log(L"overhealHitpointBars: %hs: expected stat or stat=<label> (a word, '_' for a space, or a string table "
+            L"ID); feature not applied",
+            arg.c_str());
+        return Outcome::kFailed;
+      }
     } else if (typeNames.size() == kMaxTypes) {
-      Log(L"overhealHitpointBars: more than %u unit types (expected: [UnitType ...] [segment[=RRGGBB]] [log]); "
-          L"feature not applied",
+      Log(L"overhealHitpointBars: more than %u unit types (expected: [UnitType ...] [segment[=RRGGBB]] [stat[=Label]] "
+          L"[log]); feature not applied",
           static_cast<unsigned>(kMaxTypes));
       return Outcome::kFailed;
     } else {
@@ -275,7 +556,17 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
   if (segment && !VerifyAll("overhealHitpointBars segment",
                             {&sites::kOverhealSegmentQueue, &sites::kHpBarQueue, &sites::kHpBarRenderStart,
                              &sites::kHpBarRenderLoop, &sites::kDynamicVbLock, &sites::kDynamicVbFull,
-                             &sites::kOverhealTextStat, &sites::kOverhealTextStatSplit})) {
+                             &sites::kOverhealTextStat, &sites::kOverhealTextStatSplit,
+                             &sites::kOverhealPortraitTail, &sites::kOverhealPortraitColours,
+                             &sites::kHealthBarGadgets, &sites::kGadgetByName, &sites::kProgressGadget,
+                             &sites::kGadgetRelease, &sites::kProgressFill, &sites::kGadgetShow, &sites::kGadgetHide,
+                             &sites::kBStringFromWide, &sites::kBStringFree})) {
+    return Outcome::kFailed;
+  }
+  if (g_statRow && !VerifyAll("overhealHitpointBars stat",
+                              {&sites::kOverhealStatRow, &sites::kGroupHealthRow, &sites::kGadgetRef,
+                               &sites::kGadgetRelease, &sites::kBStringFromWide, &sites::kBStringSet,
+                               &sites::kBStringFree, &sites::kBStringFromId})) {
     return Outcome::kFailed;
   }
   for (std::size_t i = 0; i < typeNames.size(); ++i) {
@@ -318,12 +609,17 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
         {0x0045CB72, 6, &UhcOverhealSegmentVertexHook},  // add eax,1 / add ecx,1Ch: a record's end
         {0x004D7651, 5, &UhcOverhealTextStatHook},       // push '%d/%d': the stat row
         {0x0069A9C0, 5, &UhcOverhealTextStatSplitHook},  // push '%d/%d (%d+%d)': the stat row
+        {0x004C83DF, 9, &UhcOverhealPortraitHook},       // lea ecx,[esp+70h] / call 4010CAh: the portrait bar
     };
     for (const Hook& hook : segmentHooks) {
       if (!WriteJmp(hook.va, reinterpret_cast<const void*>(hook.target), hook.length)) {
         return Outcome::kFailed;
       }
     }
+  }
+  // mov edi,2 / mov [esp+2Ch],edi: the row counter after the HP row.
+  if (g_statRow && !WriteJmp(0x004D76DB, reinterpret_cast<const void*>(&UhcOverhealStatRowHook), 9)) {
+    return Outcome::kFailed;
   }
 
   std::string names;
@@ -334,9 +630,15 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
   if (segment) {
     swprintf_s(segmentText, L", HP above it shown as a segment and texts coloured %06X", g_segmentColour & 0xFFFFFFu);
   }
-  Log(L"overhealHitpointBars: HP bars and HP texts of units of unittype %hs take InitialHitpoints as 100 %%%ls%ls "
+  wchar_t statText[96] = L"";
+  if (g_statRow && g_statLabelId >= 0) {
+    swprintf_s(statText, L", an overheal stat row labelled by string %d", g_statLabelId);
+  } else if (g_statRow) {
+    swprintf_s(statText, L", an overheal stat row labelled '%ls'", g_statLabel.c_str());
+  }
+  Log(L"overhealHitpointBars: HP bars and HP texts of units of unittype %hs take InitialHitpoints as 100 %%%ls%ls%ls "
       L"(display only)",
-      names.c_str(), segmentText, log ? L", the first unit of each proto logged" : L"");
+      names.c_str(), segmentText, statText, log ? L", the first unit of each proto logged" : L"");
   return Outcome::kApplied;
 }
 

@@ -1536,11 +1536,11 @@ reference is coloured the same.
   the bar's area. A tint, not a mod texture such as `hpbar_overheal`: the queue is one draw call
   with one texture bound, and a second texture would need a second pass inside the renderer;
   `segment=RRGGBB` lets a mod choose the colour. The selection panel's bar is not changed: its
-  three colours are three UI gadgets (`[panel+310h]`, `+314h`, `+318h`, looked up through 0x44B8B8
-  and filled through 0x590772, clamped to [0, 1]), and a fourth colour would need a fourth gadget
-  in the UI data. The texts of `unitHitPointsValue` (0x698B63) and ObjectInfo (0x9AFA8B, 0x9AFAA5)
-  are formatted the same way, but their panels were not reached in a game, so whether their
-  gadgets draw the markup is not known: they are left plain.
+  three colours are three UI gadgets (`[panel+310h]`, `+314h`, `+318h`), so the overheal is a
+  fourth one in the UI data ("The portrait bar", below). The minimized UI's `unitHitPointsValue`
+  (0x698B63) is formatted the same way, but its gadget prints the markup as text (seen in game:
+  `<color=1.00, 0.55, 0.00>181/165</color>`), so it is left plain; so is ObjectInfo (0x9AFA8B,
+  0x9AFAA5), the scenario editor's panel.
 - *Why it is safe.* The sites decode at instruction boundaries and nothing branches into the
   stolen bytes; the x87 stack is empty at 0x45CB72 (checked over one loop iteration) and at
   0x45FB6C; the queue hook keeps every register for 0x4516B3; the text hooks change only the
@@ -1551,6 +1551,55 @@ reference is coloured the same.
   was 2 MB (9,709 bars), so the fit guard never ran. With `segment=40C0FF`, a `Hitpoints` tech
   (+15 %) gave `189/174 (150+24)` in light blue through the cold split format (0x69A9C0), and an
   allied player 2's Musketeer had its yellow bar with the light-blue segment.
+
+**The portrait bar** (with `segment`, when the UI data has the gadget).
+- *Stock.* At panel creation (0x9BAEE5..0x9BAF6C) the panel looks up its gadgets by name with
+  0xAB7C2F, `thiscall(panel, int* handle, BString* name, 1)`, `ret 0Ch` (0x402733 narrows the name,
+  0x433812 searches the panel's gadgets; no match writes `[0C672C0h]`, the "no gadget" handle;
+  valid handles are above it): `unitselectionpanel-unitHealthBarGreen` → `[panel+310h]`, `Yellow`
+  → `+314h`, `Red` → `+318h`. Each refresh (0x4C82E6, `[esp+50h]` = panel, `[esp+78h]` = group)
+  picks one by `[group+1Ch]` (≥ 0.66 green, else ≥ 0.33 yellow, else red; the cold choices at
+  0x69A614 / 0x69A61F), gets it as a progress bar (0x44B8B8, cdecl), fills it (0x590772,
+  `thiscall(bar, float)`, clamped to [0, 1]: `[bar+13Ch]`, then the mask drawable `[bar+144h]`
+  vtable +50h) and shows it, with `[panel+2E4h]`, `+2E8h`, `+2ECh` and `+31Ch` (the help button),
+  through 0x447F7B, the code behind the UI command `gadgetReal` (0x7E2244): `thiscall(manager =
+  [[0C66244h]+44h], handle)`, `ret 4`, the gadget's vtable +54h. Its pair 0x448F13 is
+  `gadgetUnreal` (0x442BE7; vtable +58h(0)). The progress bar parser (0x5CC7E0..) sets the
+  background (0x5CAF02) only when both `progressBarBackground` and `progressBarBackgroundSize` are
+  given, and the mask (0x5CD0F5) as a second drawable; with no background nothing is drawn (seen
+  in game).
+- *The hook* at 0x4C83DF (`lea ecx,[esp+70h] / call 4010CAh`, 9 B, after the colour bar was shown;
+  same stack level as 0x4C82E6): `UhcOverhealPortrait(panel, group)` looks the fourth gadget up by
+  name once per panel (again when the panel or its green handle changes), then hides it
+  (`gadgetUnreal`); if the group's average `[group+1Ch]` is ≥ 0.999 (every unit at or above its
+  100 %) and the average of min((HP − reference) / reference, 1) over the group's units (IDs
+  `[group+10h]`, count `[group+14h]`; 0 for an unmarked unit) is above 0, it fills it with
+  1 − that share and shows it again. Showing a hidden gadget puts it above its siblings; showing a
+  visible one does not move it (seen in game: never hidden, the gadget stayed above the green bar
+  with its empty fill, all orange), hence the hide first. Stock never hides a gadget it does not
+  know, so the key hides it on every refresh without overheal. Then the stolen free, → 0x4C83E8.
+  The minimized UI (`optionminimizedui`, profile option 49h, read through 0x402CE9 at 0x4C8233 and
+  0x661E03) takes the cold path 0x6987D7 and its own layout, which has no bar.
+- *Observed in game:* a Musketeer at 165/150 had the bar 90 % green, 10 % orange; damaged, the
+  stock bar showed; healed back, the orange end returned; selecting the Surgeon, a Pavilion, a
+  mine or a tree after it showed their stock bar.
+
+**The Overheal row** (`stat[=Label]`).
+- *Stock.* The stat panel fill FUN_004D70ED writes the HP row, then sets the next row
+  (`mov edi,2 / mov [esp+2Ch],edi` at 0x4D76DB). For a multi-selection the Group Health branch
+  (0x69A9D3..0x69AB0F) writes row EDI: the label and value gadgets from `[panel+174h+row*4]` /
+  `[panel+198h+row*4]` through 0x4C519C (a `{handle, gadget}` reference, released with 0x40431B),
+  the label `L"Group Health"` (0xC36838, a literal) with style 0D6F5D0h, the value with style
+  0C6657Ch (vtable +84h), the text (+80h), +54h, the help texts `[gadget+68h]` cleared (0x401A12
+  from `L""`, 0x40196F), then `add edi,1 / mov [esp+2Ch],edi`.
+- *The hook* at 0x4D76DB (9 B): the two stolen moves, then `UhcOverhealStatRow(panel =
+  [esp+50h], unit = [esp+38h], row = EDI)`; for a marked unit it writes the row with the same calls
+  (label `Overheal`, the cfg text, or a string table entry through 0x58EA52; value
+  `overheal/capacity`, coloured with `segment` while above 0) and returns true, and the hook adds
+  1 to EDI and `[esp+2Ch]`, so the Group Health row and the rows after it move down. → 0x4D76E4
+  (EAX, ECX, EDX and the flags are written there before they are read).
+- *Observed in game:* `Overheal 15/15` (orange) at 165/150, `0/15` when damaged, `16/16` under a
+  MaxHP aura, `0/40` for a marked Explorer at its 100 % in a skirmish.
 
 ### overhealSources
 
@@ -1571,8 +1620,8 @@ adder:
 | Caller of 0x4823A3 | Function | What it is (static reading unless marked) | With `overhealSources` |
 |---|---|---|---|
 | 0x9E0CE9 | FUN_009E0B53, the heal tick | the heal action (surgeons, monks, priests…), automatic or ordered (seen in game) | a source healer: up to the max, as in stock; any other healer: up to the reference, and the action ends there (seen in game) |
-| 0x9D3BFD, 0x9D3C10, 0x9D3E2F, 0x9D3E42 | FUN_009D35CE | heals of max × rate / `[proto+0CCh]` (inferred: an area or aura heal) | reference |
-| 0x67A03B | FUN_00490476 | the fire pit's Regeneration dance (idle units, `[world+104h]` × max × 0.01) | reference |
+| 0x9D3BFD, 0x9D3C10, 0x9D3E2F, 0x9D3E42 | FUN_009D35CE | heals of max × rate / `[proto+0CCh]`; the function is slot 15 of the vtable 0xB97330, whose constructor 0x9D302B passes action type 15h, registered as `Trade` (0x522ADC); what makes it heal in play is not known | reference |
+| 0x67A03B | FUN_00490476 | the fire pit's Regeneration dance (idle units, `[world+104h]` × max × 0.01) | reference (seen in game: marked Musketeers healed from 90 to 150 only) |
 | 0x490881 | FUN_004905E1 | per-unit regeneration (inferred: `CanAutoHeal` / `UnitRegenRate`) | reference |
 | 0x9CFA77, 0x9D0C16 | FUN_009CF93B, FUN_009D0A4D | heals of the action's own unit `[esi+10h]`, proportional to its max (inferred: self heals) | reference |
 | 0x7C378C, 0x8CCA6F | FUN_007C369B, FUN_008CC89F | heals proportional to the max (inferred: powers and effects such as `PowerHeal`) | reference |
@@ -1613,7 +1662,9 @@ back to its max. A Manor healing with `HCXPFlorenceNightingale` (the same heal a
 9), walked to the unit and went idle on arrival. A marked unit's own regeneration (an Indian monk
 marked 250 / 275 for the test) stopped at 250; without the key it reached 275. A knocked-out hero
 (action type 2Bh, the `'+'` that 0x482152 tests) regenerates and gets up at about 40 % of its HP
-in stock, below its reference, so the cap does not keep it down.
+in stock, below its reference, so the cap does not keep it down. The Regeneration dance, an area
+heal that is not a building, healed marked Musketeers from 90 to 150 and unmarked Pikemen to their
+max.
 
 ### overhealDecay
 
@@ -1629,6 +1680,15 @@ registered tick in order (`AddWorldTick`). `damageOverTime` and `overhealDecay` 
 whichever of `overhealSources` and `overhealDecay` applies first. With `overhealDecay`, a positive
 amount that still takes a marked unit above its reference (after the `overhealSources` cap, if that
 key is on) notes the unit with the game time `[world+108h]`.
+
+**Regeneration is not a gain that waits.** The unit's own regeneration (FUN_004905E1, `call
+4823A3h` at 0x490881) and the Regeneration dance (0x67A03B) add a little HP on every step of an
+idle unit. Counted as gains, they restarted the delay on every step, so an idle unit that
+regenerates never decayed (found in a skirmish: a marked Explorer regenerated from 180 to 220).
+Both calls are replaced (5 B each, → 0x490886 / 0x67A040) by a stub that sets
+`g_uhcOverhealRegen` around the stolen call; a gain made with it set notes the unit only if it was
+not noted, with a time `delay` in the past, and never restarts the delay. Heals restart it as
+before.
 
 **The decay tick.** The noted units are a `std::map` keyed by unit ID, so every machine walks them in
 the same order. The world update also runs for other worlds (the home city's; it compares `this`
@@ -1657,7 +1717,9 @@ overheal and drops them when they are back at the reference, so the cost is smal
 **Observed in game:** with `overhealDecay 2 3`, a marked Musketeer at 165 went 160.2, 154.1, 150.0
 in about six seconds of game time once its source healer was gone, and stayed at 150; with the
 healer alive, the decay started 3 s after each heal and the healer healed it back. `2% 1
-Musketeer` decayed 3 HP/s (2 % of 150); `2% 1 Pikeman` left the Musketeer at 165.
+Musketeer` decayed 3 HP/s (2 % of 150); `2% 1 Pikeman` left the Musketeer at 165. In a skirmish
+against the AI (home city world present), a marked Explorer stayed at its 100 % (180) while
+regenerating; without the key it reached 220.
 
 ### showGatherRate
 

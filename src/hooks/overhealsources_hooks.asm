@@ -8,6 +8,7 @@ option casemap :none
 include common.inc
 
 EXTERNDEF g_uhcOverhealAllow:SDWORD   ; 1 while a source healer's heal tick adds HP
+EXTERNDEF g_uhcOverhealRegen:SDWORD   ; 1 while a regeneration adds HP (overhealDecay)
 
 UhcOverhealAddHp PROTO STDCALL unit:DWORD, amount:DWORD         ; may lower [amount]
 UhcOverhealUseReference PROTO STDCALL target:DWORD, healer:DWORD  ; AL: a normal healer, a marked target
@@ -23,6 +24,8 @@ healthRatio     dd 0045F295h    ; float thiscall(unit): the stock HP / max
 tickMaxNext     dd 009E0BC0h    ; fcomp [edi+64h] / fnstsw / test ah,41h / jnp 9E0D3Fh: HP < max?
 tickAddNext     dd 009E0CEEh    ; fld [esp+10h] / fadd [esi+68h]: the tick's bookkeeping
 searchRatioNext dd 009CD989h    ; fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh: ratio < 1?
+regenNext       dd 00490886h    ; mov ecx,[esp+1Ch] / add ecx,1: the regeneration loop
+danceRegenNext  dd 0067A040h    ; add ebp,1 / cmp ebp,ebx / jl: the Regeneration dance loop
 
 .code
 
@@ -105,5 +108,25 @@ useReference:
     add esp, 4
     jmp searchRatioNext
 UhcOverhealSearchRatioHook ENDP
+
+; overhealDecay: replace call 4823A3h at 0x490881 (the unit's own regeneration, FUN_004905E1) and
+; at 0x67A03B (the Regeneration dance), with the amount and 1 pushed and ECX = ESI = the unit:
+; g_uhcOverhealRegen is set around the call, so these gains do not restart the decay's delay.
+; Only memory writes are added; registers and flags are as after the stock call.
+UhcOverhealRegenAddHook PROC
+    TRACE_ONCE "overhealDecay regeneration (0x490881)"
+    mov g_uhcOverhealRegen, 1
+    call addHp                      ; stolen 0x490881
+    mov g_uhcOverhealRegen, 0
+    jmp regenNext
+UhcOverhealRegenAddHook ENDP
+
+UhcOverhealDanceRegenAddHook PROC
+    TRACE_ONCE "overhealDecay Regeneration dance (0x67A03B)"
+    mov g_uhcOverhealRegen, 1
+    call addHp                      ; stolen 0x67A03B
+    mov g_uhcOverhealRegen, 0
+    jmp danceRegenNext
+UhcOverhealDanceRegenAddHook ENDP
 
 END

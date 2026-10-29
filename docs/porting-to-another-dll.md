@@ -137,6 +137,10 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `HpBarRenderStart` | `0x45C4AF` | `0x3F` B | 6 B at `0x45C4B9` | `8B 9D D4 08 00 00` (`mov ebx,[ebp+8D4h]`) | the renderer's count, before the vertex lock; `segment` |
 | `HpBarRenderLoop` | `0x45C60B` | `0x587` B | 6 B at `0x45CB72` | `83 C0 01 83 C1 1C` (`add eax,1 / add ecx,1Ch`) | the whole per-record loop (the vertex layout the hook relies on) and its end; `segment` |
 | `OverhealTextStat`, `OverhealTextStatSplit` | `0x4D7647`, `0x69A9B0` | `0x15`, `0x1B` B | 5 B at `0x4D7651`, `0x69A9C0` | `68 54 20 BA 00`, `68 54 4A C3 00` (`push` format) | the stat row's HP text formats; `segment` |
+| `OverhealPortraitTail` | `0x4C82E6` | `0x102` B | 9 B at `0x4C83DF` | `8D 4C 24 70 E8 E2 8C F3 FF` (`lea ecx,[esp+70h]; call 4010CAh`) | the portrait bar's tail; `segment` (also `OverhealPortraitColours` 0x69A614, `HealthBarGadgets` 0x9BAEE5, verify only) |
+| `OverhealStatRow` | `0x4D76DB` | 9 B | 9 B at `0x4D76DB` | `BF 02 00 00 00 89 7C 24 2C` (`mov edi,2; mov [esp+2Ch],edi`) | the row after the HP row; `stat` (also `GroupHealthRow` 0x69A9D3, verify only) |
+| `GadgetByName`, `ProgressGadget`, `GadgetRelease`, `ProgressFill`, `GadgetShow`, `GadgetHide`, `GadgetRef`, `BStringFromWide`, `BStringSet` | `0xAB7C2F`, `0x44B8B8`, `0x40431B`, `0x590772`, `0x447F7B`, `0x448F13`, `0x4C519C`, `0x401A12`, `0x40196F` | — | — | — | the UI functions the portrait bar and the Overheal row call (verified only) |
+| `RegenAddHp`, `DanceRegenAddHp` | `0x49087C`, `0x67A036` | `0x12`, `0x15` B | 5 B at `0x490881`, `0x67A03B` | `E8 1D 1B FF FF`, `E8 63 83 E0 FF` (`call 4823A3h`) | the regeneration adds; overhealDecay |
 | `OverhealAddEntry` | `0x4823A3` | `0x0A` B | 8 B at `0x4823A3` | `51 56 8B F1 83 7E 08 08` | entry of the add-HP function FUN_004823A3; overhealSources |
 | `HealTickMax` | `0x9E0BA5` | `0x29` B | 5 B at `0x9E0BBB` | `E8 48 F8 A9 FF` (`call 480408h`) | the heal tick's HP < max test; overhealSources |
 | `HealTickAdd` | `0x9E0CCF` | `0x26` B | 5 B at `0x9E0CE9` | `E8 B5 16 AA FF` (`call 4823A3h`) | the heal tick's heal; overhealSources |
@@ -946,6 +950,21 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     the stock one; change only the flags; → `0x4D7656`, `0x69A9C5`.
   - These depend on the renderer's vertex layout (verified as the whole loop, site
     `HpBarRenderLoop`) and on the marker player ID never being a real player.
+  - `0x4C83DF` (9 B, `lea ecx,[esp+70h]; call 4010CAh`), the portrait bar's tail: `[esp+50h]` =
+    panel, `[esp+78h]` = group (FPU empty). Look up `unitselectionpanel-unitHealthBarOverheal`
+    with `0xAB7C2F(panel, &handle, &BString name, 1)` (a real BString from 0x401A12, freed with
+    0x4010CA) once per panel and green handle `[panel+310h]`; if the handle is above
+    `[0C672C0h]`: `0x448F13(manager, handle)` (hide); then, when `[group+1Ch]` ≥ 0.999 and the
+    group's average min((HP − reference) / reference, 1) is above 0 (IDs `[group+10h]`, count
+    `[group+14h]`): `bar = 0x44B8B8(handle)`, `0x40431B(handle)`, `0x590772(bar, 1 − share)`,
+    `0x447F7B(manager, handle)` (show: on top). Manager = `[[0C66244h]+44h]`. Redo the stolen
+    pair; → `0x4C83E8`. The gadget comes from the mod's UI data (background = overheal colour,
+    mask = HP colour; a progress bar needs a background to be drawn).
+- **`stat`**: `0x4D76DB` (9 B, `mov edi,2; mov [esp+2Ch],edi`): redo both, then for a marked unit
+  `[esp+38h]` write row EDI of panel `[esp+50h]` as the Group Health branch (0x69A9D3) does
+  (gadgets `[panel+174h+EDI*4]` / `[panel+198h+EDI*4]` through 0x4C519C; vtable +84h with
+  0D6F5D0h / 0C6657Ch, +80h with the text, +54h; `[gadget+68h]` = `L""`), and on success
+  `add edi,1; mov [esp+2Ch],edi`; → `0x4D76E4`. EAX, ECX, EDX and the flags are dead there.
 - **Public helpers** for the other overheal keys (cdecl, in `overheal_hooks.asm`):
   `float UhcOverhealReferenceOf(unit)`, `float UhcOverhealRatioOf(unit)`,
   `int UhcOverhealMarked(proto)`.
@@ -973,9 +992,13 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 - **Needs** overhealHitpointBars' helpers; apply after overhealSources (they share the add-HP hook,
   and the second one must not verify bytes the first already replaced).
-- **Gain:** the add-HP hook calls `g_overhealGain(unit)` (set by this key) for a positive amount on
-  a marked unit that still takes it above its reference; it stores `[world+108h]` in a map keyed by
-  unit ID.
+- **Gain:** the add-HP hook calls `g_overhealGain(unit, restartDelay)` (set by this key) for a
+  positive amount on a marked unit that still takes it above its reference; it stores
+  `[world+108h]` in a map keyed by unit ID, or, for a regeneration (restartDelay false), adds the
+  unit only if missing, with `[world+108h]` − delay.
+- **Regeneration hooks:** `0x490881` and `0x67A03B` (5 B each, `call 4823A3h`): set
+  `g_uhcOverhealRegen` = 1, the stolen call, set it to 0; → `0x490886`, `0x67A040`. Without them an
+  idle unit that regenerates restarts the delay on every step and never decays.
 - **Tick** (registered with `AddWorldTick`, after damageOverTime's): elapsed = `[world+108h]` − the
   last tick's (another world, the time going back or `[world+F8h]` jumping by more than 1 clears
   the map, as does a data reload); for each unit in ID order: look it up (`[world+0Ch]`, ID check),

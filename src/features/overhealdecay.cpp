@@ -4,7 +4,8 @@
 // "Marked" and "reference" are overhealHitpointBars' (through the public helpers of
 // overheal_hooks.asm), so this key needs it. A unit is noted when a heal takes it above its
 // reference: the add-HP hook (shared with overhealSources, overhealsources.cpp) calls Note with the
-// game time. After each world update (the shared wrapper of worldtick.cpp), every noted unit, in
+// game time (a heal restarts the delay; a regeneration, flagged by two call-site hooks, does not:
+// an idle unit regenerates every step and would otherwise never decay). After each world update (the shared wrapper of worldtick.cpp), every noted unit, in
 // unit ID order, loses rate HP per second (or rate % of its reference per second) of game time,
 // once <delay> seconds have passed since its last gain, down to the reference and never below it.
 // A unit that is gone, dead, unmarked or back at its reference is forgotten. HP is set through the
@@ -33,10 +34,15 @@ std::int32_t UhcOverhealMarked(const char* proto);
 }
 
 namespace uhc {
-extern void (*g_overhealGain)(const char* unit);  // overhealsources.cpp
+extern void (*g_overhealGain)(const char* unit, bool restartDelay);  // overhealsources.cpp
 bool InstallOverhealAddHook();
 bool OverhealAddHookInstalled();
 }  // namespace uhc
+
+extern "C" {
+void UhcOverhealRegenAddHook();       // overhealsources_hooks.asm: the unit's own regeneration
+void UhcOverhealDanceRegenAddHook();  // the Regeneration dance
+}
 
 namespace {
 
@@ -115,13 +121,21 @@ bool Decays(const char* proto) {
   return false;
 }
 
-// From the add-HP hook: a heal takes this marked unit above its reference.
-void Note(const char* unit) {
+// From the add-HP hook: a gain takes this marked unit above its reference. A heal restarts the
+// delay; a regeneration (the unit's own, or the Regeneration dance) does not: it only notes a unit
+// that was not noted yet, as if its delay had passed, so regenerating every step cannot hold the
+// overheal.
+void Note(const char* unit, bool restartDelay) {
   const char* world = World();
   if (world == nullptr || !Decays(Field<const char*>(unit, 0x5C))) {
     return;
   }
-  g_units[Field<std::int32_t>(unit, 0x10)] = Field<std::uint32_t>(world, 0x108);
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (restartDelay) {
+    g_units[Field<std::int32_t>(unit, 0x10)] = now;
+  } else {
+    g_units.emplace(Field<std::int32_t>(unit, 0x10), now - g_delayMs);
+  }
 }
 
 void Reset(char*) { g_units.clear(); }
@@ -245,7 +259,7 @@ Outcome ApplyOverhealDecay(const Config& config) {
   }
   const Site* addEntry = OverhealAddHookInstalled() ? &sites::kHpSetter : &sites::kOverhealAddEntry;
   if (!VerifyAll("overhealDecay", {addEntry, &sites::kHpSetter, &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot,
-                                   &sites::kIsA}) ||
+                                   &sites::kIsA, &sites::kRegenAddHp, &sites::kDanceRegenAddHp}) ||
       !OnDatabaseLoad(&Reset)) {
     return Outcome::kFailed;
   }
@@ -256,7 +270,10 @@ Outcome ApplyOverhealDecay(const Config& config) {
   }
   g_typeCount = static_cast<std::int32_t>(typeNames.size());
   g_overhealGain = &Note;
-  if (!InstallOverhealAddHook() || !AddWorldTick(&DecayTick)) {
+  // The adder's two regeneration calls (call 4823A3h) are flagged, so they do not restart the delay.
+  if (!InstallOverhealAddHook() || !WriteJmp(0x00490881, reinterpret_cast<const void*>(&UhcOverhealRegenAddHook), 5) ||
+      !WriteJmp(0x0067A03B, reinterpret_cast<const void*>(&UhcOverhealDanceRegenAddHook), 5) ||
+      !AddWorldTick(&DecayTick)) {
     g_overhealGain = nullptr;
     return Outcome::kFailed;
   }
