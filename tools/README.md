@@ -52,7 +52,7 @@ Checks `build\Release\UHC.dll` and stops if it fails any check:
 It then writes `dist\UHC-x.y.z.zip` with `UHC.dll`, `Startup\uhc.cfg` (the example with every key
 commented out), `README.txt` and `LICENSE.txt`, and prints the SHA-256 of the zip and of the DLL.
 An existing zip is kept unless `--force` is given. The procedure around it is in
-[developer-guide.md, section 6](../docs/developer-guide.md#6-making-a-release).
+[developer-guide.md, section 7](../docs/developer-guide.md#7-making-a-release).
 
 ## bar.py
 
