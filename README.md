@@ -25,6 +25,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `healNonIdle [UnitType]` | **New.** Healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed |
 | `smartHealTargets [UnitType…] [log]` | **New.** A healer's automatic search heals the best of the units the stock rules accept, not the first one: the listed unit types first, then the lowest HP ratio, the nearest, the lowest unit ID. | confirmed (single player) |
 | `dodgeAnyUnit [UnitType] [log]` | **New.** Units marked with a unit type can dodge hits like the Japanese monk: no damage, 15 % of the time, while their player has the tech `YPDodge`. Stock allows it only for `ypMonkJapanese`. | confirmed (single player) |
+| `dodgeChance <UnitType> <percent> [tech <TechName> \| notech] [ranged \| melee \| all] [log]` | **New.** A dodge chance per unit type, with the tech it needs (`YPDodge` by default, another, or none) and a filter for ranged or melee hits; one rule per line, the first that matches decides. | confirmed (single player) |
 | `dodgeSoundSet UnitType SoundSet`, `criticalSoundSet UnitType SoundSet` | **New.** Choose the sound set a unit plays when it dodges, or when it lands a critical hit, instead of the stock `PowerEvade` / `PowerCriticalStrike`. | confirmed (single player; the choice is logged, the sound itself was not listened to) |
 | `damageOverTime [log]` | **New.** Poison: an attack that lists `<AttachProtoUnit>X</AttachProtoUnit>` keeps damaging what it hits, with X's `Attaching` action every `ROF` seconds for X's `Lifespan`. Damage type and armor apply as for any hit. | confirmed (single player; area damage, bonuses and techs on X not tested) |
 | `liveBuildingWorkRate [log]` | **New.** A `BuildingWorkRate` tech (train, research and `Maintain` speed) also speeds up the buildings that already stand. Stock only speeds up the ones completed after the tech. | confirmed (single player, `Maintain`) |
@@ -119,7 +120,7 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
   - 28 new features: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime`,
-    `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
+    `dodgeAnyUnit` (with `dodgeChance`, `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
     `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
     `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
     `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,

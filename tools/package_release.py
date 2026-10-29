@@ -161,6 +161,8 @@ smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt un
                               (listed types first) instead of the first one
 damageOverTime [log]          poison: attacks with <AttachProtoUnit> damage over time
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
+dodgeChance T P [tech X | notech] [ranged | melee | all] [log]   dodge chance P % per
+                              unit type, with a tech (YPDodge by default) and a hit filter
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
 liveBuildingWorkRate [log]    BuildingWorkRate techs also speed up existing buildings
 techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units are
