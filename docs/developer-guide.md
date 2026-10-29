@@ -118,6 +118,12 @@ there:
   no error. The game writes what the triggers compiled to in
   `Documents\My Games\Age of Empires 3\Trigger3\trigtemp.xs`, and a dump of the map script in
   `…\RM3\Age3RM<name>.dmp.txt`.
+- **Timed events:** `"at<seconds>=<Effect>;<Param>=<value>;…"` runs any trigger effect listed in
+  `trigger3\typetest.xml` once, that many seconds into the game, for example
+  `"at20=Change Unit Type;SrcObject=g0;ProtoUnit=Grenadier"` (transform),
+  `"at5=Set Tech Status;PlayerID=1;TechID=tech:YPDodge;Status=2"`, `Kill`, `Convert`,
+  `Damage Unit`, `Unit Create`. `g<i>` stands for every unit of the i-th `p<N>=` group (counted
+  from 0), `g<i>.<k>` for one of them, `tech:<Name>` for a tech's index, `pt:<x>,<z>` for a point.
 - **The scenario route**, found during the performance work (performance.md, §8):
   `startRandomGame(true)` opens the editor, `startRandomGame2("<map>", 2, seed, "", false, 2, 1,
   0, false)` generates the map in it (two teams, so the players are enemies),

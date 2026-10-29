@@ -38,6 +38,16 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
   (d) `numberprojectiles` working, several pellets per shot (the biggest).
 - **Q2 (#3):** what is `StartingTC`: a unit type, a flag, a name in your data or DLL? The random maps already choose the starting building per civ if their script does; what goes wrong when a civ starts with another building (shipments, AI, Nomad, age-up, defeat, something else)?
 - **Q3 (#4):** which conversion is it (`ConvertGuardian`, a trigger, a tech, livestock capture) and between which protos? What "breaks": a crash, lost or duplicated resources, a stuck unit? A save or a minimal data set to reproduce it would settle whether it is stock or `removeConversionRestriction`.
+- **Q4 (#11):** stock works the same way. A `WorkRate` effect on `AbstractMine` changes only the gatherers' `AbstractMine` rate; a gatherer that has its own `Plantation` rate uses that one, so mining techs never reach plantations. Do you want mining techs to boost plantation-like buildings at all?
+  - If yes, the data fix is to add, next to each such effect, the same effect with `unittype='Plantation'` (and `OlivePlantation`, `WOLPlantationIroquois`, `Beehive`, …), as stock does for `HCRoyalMint`. We can send the list of mining-only techs and the gatherers that lack a rate for one of these buildings.
+  - A DLL option (`workRateInherit`: a marker on the building makes its rate follow the mining boosts) is possible, but the WoL techs that already pair the two effects would then apply twice, so those lines would have to go anyway.
+  - Side finding: some WoL effects use `type='Data' subtype='WorkRateSpecific'`, which stock accepts only as `Data2`. Your DLL replaces that parser, so it may handle them; with our DLL alone they would do nothing.
+- **Q5 (#14):** any unit can cast a `CeaseFire` power: nothing checks the Taj Mahal. But every caster of `ypPowerCeaseFire` shares one charge per player, with the period of the last ability record granted at game start (the Taj Mahal's 450 s in practice). What exactly fails for you?
+  (a) no button; (b) "This ability is not available"; (c) it works but shares the Taj Mahal's charge and 450 s recharge; (d) the effect should not hit everyone; (e) you want a ceasefire with extra effects.
+  For (c), the fix is data only: a copy of `ypPowerCeaseFire` per caster, with its own name and `activetime`, plus `<alwaysaddtoplayer>1</alwaysaddtoplayer>` when its ability record has a `<tech>`. Do not add `allowduringnorush`: a ceasefire cast during a Treaty game ends the treaty early.
+- **Q6 (#19):** which dance failed? Its kind (`Training`, `XPTrickle`, `Gathering`, `Regeneration`, `UnitModification` with which ModifyType, or a new kind), the civ, the building (with or without `AbstractFirePit`), and what failed (no effect, a blank tooltip, no button).
+  - The four global kinds apply only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`: for any other civ they silently do nothing, although the tooltip shows the bonus. A fix is verified and can be built now, as `danceBonusCivs <Civ>…`.
+  - Only the first `AbstractFirePit` of a player counts, and a dance building needs `AbstractFirePit` to dance at all. Lifting either is more work.
 
 Done when:
 - **#1:** a non-monk unit with the marker dodges in game, and `UHC.log` shows the hook reached.
@@ -58,15 +68,15 @@ Ordered by gameplay impact, then expected effort.
 | 8 | Auto-produced units (factory cannons) restart their train timer when pop-capped, even though nothing was trained. | bug | | open |
 | 9 | Building over a socket unit owned by a player (not Gaia) shows red but is allowed anyway (saltpeter / saltpeter mines in their next patch). It should be blocked. | bug | | open |
 | 10 | Transformed units keep the LoS of the source unit instead of the target's. | bug | | open |
-| 11 | `AbstractMine` behaves oddly with gather-rate boosts: plantations have the tag, yet mining techs don't affect them. | odd logic | Probably gather type vs unit type; check before patching. | open |
+| 11 | `AbstractMine` behaves oddly with gather-rate boosts: plantations have the tag, yet mining techs don't affect them. | odd logic | RE done (static): stock behaves the same. A `WorkRate` effect changes one exact rate key, and a gatherer that has its own rate for `Plantation` never reads its `AbstractMine` rate. Data fix: pair each mining tech with the same effect on `Plantation` (and the other plantation-like buildings), as stock does for `HCRoyalMint`. A DLL option is possible but makes the 100 WoL techs that already pair them apply twice. Question Q4. | RE |
 | 12 | Unit-train hotkeys don't work in buildings added by the mod (forge, gunsmith). | hardcode | | open |
 | 13 | Snare spreads to the whole group when one unit is hit. | odd logic | Related: #38. | open |
-| 14 | Ceasefire is hardcoded to the Indian wonder. | hardcode | | open |
+| 14 | Ceasefire is hardcoded to the Indian wonder. | hardcode | RE done (static): nothing in the exe ties `CeaseFire` to the Taj Mahal. Every caster of `ypPowerCeaseFire` shares one charge per player, made at game start from the ability records; the Taj Mahal records give it a 450 s period. Data fix, no DLL: give each other caster its own `CeaseFire` power, with `<alwaysaddtoplayer>1</alwaysaddtoplayer>` when its ability record has a `<tech>`. Question Q5. | RE |
 | 15 | Barrage-type ship attacks (floating battery, long range) have a capped projectile count. | hardcode | | open |
 | 16 | A unit can have any number of powers (e.g. crackshot), but the UI shows only the first 6: a 7th power enabled for a civ, with the first 6 disabled, gets no button. | hardcode | | open |
 | 17 | Tech rename / redescribe (WoL `enabletechrenameeffect`, effect `SetTechName`) applies globally, not per civ / player. | bug (WoL) | Our DLL does not implement this key yet; make it per player when we do. See [wol-uhc-map.md](wol-uhc-map.md). | open |
 | 18 | Dopples (the fog-of-war copy) of hunted animals leave a static corpse; they should just vanish. | odd logic | To test, revert the dopple flags to legacy. | open |
-| 19 | New dances with global (aura-like) effects can't be added. | hardcode | | open |
+| 19 | New dances with global (aura-like) effects can't be added. | hardcode | RE done (static): the fire pit's four global dance kinds (`Training`, `XPTrickle`, `Gathering`, `Regeneration`) apply only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`; the exe compares the civ ID, silently (the tooltip still shows the bonus). Fix ready to build as `danceBonusCivs <Civ>…` (WoL's DLL already has a UI-only `danceCiv`). `UnitModification` dances should already work in data. Question Q6. | RE |
 | 20 | Global powers can't be added to buildings with auras, like the Japanese wonder. | hardcode | | open |
 
 ## Tier 3: new mechanics, in his order

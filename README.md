@@ -92,8 +92,9 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 5 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
-    `bufferedFileReads`, `multipleInstances`.
+  - 6 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
+    `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `bufferedFileReads`,
+    `multipleInstances`.
 - **In research:**
   - `unlockAllCards` (every card usable from a new home city): paused.
 - **Later:** the remaining UHC 1.10 keys (civilizations, units, teams, syscalls, cheats and

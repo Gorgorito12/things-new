@@ -26,6 +26,13 @@ Map spec, one argument each:
   tech<N>=<TechName>             a trigger sets the tech active for player N at the start
   go<N>=<seconds>@<x>,<z>        after that many seconds, player N's units attack-move there
                                  (place the groups out of sight of each other to delay a fight)
+  at<seconds>=<Effect>;<Param>=<value>;...
+                                 after that many seconds, run one trigger effect of
+                                 trigger3\\typetest.xml with these parameters (quote the spec),
+                                 e.g. "at20=Change Unit Type;SrcObject=g0;ProtoUnit=Grenadier".
+                                 Values: g<i> = every unit of the i-th p<N>= group (from 0),
+                                 g<i>.<k> = its k-th unit, tech:<Name> = a tech, pt:<x>,<z> = a
+                                 point (fractions of the map side); numbers and text as written
   size=<metres>                  map side, default 80
 
 Console commands only reach the game through `perfExecFile <bed>\\uhc-exec.txt` in the bed's
@@ -320,8 +327,31 @@ def tech_indices(bed):
     return {name.lower(): i for i, name in enumerate(re.findall(r"<Tech name\s*=\s*'([^']+)'", text))}
 
 
+def effect_param(bed, groups, size, name, value):
+    """One trigger-effect parameter as an rmSetTriggerEffectParam* call (see the at<seconds> spec)."""
+    m = re.fullmatch(r"g(\d+)\.(\d+)", value)
+    if m:  # one unit placed by a p<N>= group (timed_effects expands a whole group g<i>)
+        if int(m[1]) >= len(groups):
+            sys.exit(f"testbed: {value} names group {m[1]}, but the map has {len(groups)} p<N>= group(s)")
+        return f'   rmSetTriggerEffectParamInt("{name}", rmGetUnitPlaced(uhcGroup{m[1]}, {m[2]}), false);'
+    if value.startswith("tech:"):  # a trigger's tech parameter is the tech's index in techtreey.xml
+        ids = tech_indices(bed)
+        tech = value[5:]
+        if tech.lower() not in ids:
+            sys.exit(f"testbed: no tech {tech} in {bed / 'data' / 'techtreey.xml'}")
+        return f'   rmSetTriggerEffectParamInt("{name}", {ids[tech.lower()]}, false);'
+    m = re.fullmatch(r"pt:([0-9.]+),([0-9.]+)", value)
+    if m:  # a point, in fractions of the map side
+        return f'   rmSetTriggerEffectParam("{name}", "{float(m[1]) * size:.1f},0,{float(m[2]) * size:.1f}", false);'
+    if re.fullmatch(r"-?\d+", value):
+        return f'   rmSetTriggerEffectParamInt("{name}", {value}, false);'
+    if re.fullmatch(r"-?\d+\.\d*", value):
+        return f'   rmSetTriggerEffectParamFloat("{name}", {value}, false);'
+    return f'   rmSetTriggerEffectParam("{name}", "{value}", false);'
+
+
 def write_map(bed, name, specs):
-    size, groups, techs, moves = 80, [], [], []
+    size, groups, techs, moves, timed = 80, [], [], [], []
     for spec in specs:
         if spec.startswith("size="):
             size = int(spec[5:])
@@ -338,8 +368,12 @@ def write_map(bed, name, specs):
         if m:
             moves.append((int(m[1]), int(m[2]), float(m[3]), float(m[4])))
             continue
+        m = re.fullmatch(r"at(\d+)=([^;]+)((?:;[A-Za-z0-9_]+=[^;]*)*)", spec)
+        if m:
+            timed.append((int(m[1]), m[2].strip(), [p.split("=", 1) for p in m[3].split(";")[1:]]))
+            continue
         sys.exit(f"testbed: bad map spec {spec!r} (expected p<N>=<Proto>*<count>@<x>,<z>, tech<N>=<Tech>, "
-                 f"go<N>=<seconds>@<x>,<z> or size=<m>)")
+                 f"go<N>=<seconds>@<x>,<z>, at<seconds>=<Effect>;<Param>=<value>... or size=<m>)")
     players = sorted({g[0] for g in groups} | {t[0] for t in techs} | {1, 2})
     first = {}
     for g in groups:
@@ -389,12 +423,33 @@ def write_map(bed, name, specs):
             f'   rmSetTriggerEffectParam("DstPoint", "{x * size:.1f},0,{z * size:.1f}", false);',
             '   rmSetTriggerEffectParam("AttackMove", "true", false);',
         ]
+    for k, (seconds, effect, params) in enumerate(timed):
+        effect_lines += [  # any trigger effect of trigger3\typetest.xml, once, after <seconds>
+            f'   rmCreateTrigger("uhcAt{k}");',
+            f'   rmSwitchToTrigger(rmTriggerID("uhcAt{k}"));',
+            "   rmSetTriggerPriority(4);",
+            "   rmSetTriggerActive(true);",
+            "   rmSetTriggerRunImmediately(true);",
+            "   rmSetTriggerLoop(false);",
+            '   rmAddTriggerCondition("Timer");',
+            f'   rmSetTriggerConditionParamInt("Param1", {seconds}, false);',
+        ]
+        # The trigger compiler treats a unit list "3,4" as one name, so a whole group g<i> becomes
+        # one copy of the effect per unit.
+        whole = next(((n, int(v[1:])) for n, v in params if re.fullmatch(r"g\d+", v)), None)
+        if whole and whole[1] >= len(groups):
+            sys.exit(f"testbed: g{whole[1]} names a group the map does not have ({len(groups)} p<N>= group(s))")
+        for unit in range(groups[whole[1]][2]) if whole else [None]:
+            effect_lines.append(f'   rmAddTriggerEffect("{effect}");')
+            effect_lines += [effect_param(bed, groups, size, param, f"g{whole[1]}.{unit}" if whole and param == whole[0]
+                                          else value) for param, value in params]
     text = MAP_TEMPLATE.format(size=size, players=player_lines, units="\n".join(unit_lines),
                                effects="\n".join(effect_lines))
     folder = bed / "RM3"
     (folder / f"{name}.xs").write_text(text, encoding="utf-8")
     (folder / f"{name}.xml").write_text(MAP_INFO, encoding="utf-8")
-    print(f"testbed: wrote {folder / (name + '.xs')} ({len(groups)} unit groups, {len(techs)} techs)")
+    print(f"testbed: wrote {folder / (name + '.xs')} ({len(groups)} unit groups, {len(techs)} techs, "
+          f"{len(timed)} timed effects)")
 
 
 def scenario(bed, map_name, seed):
