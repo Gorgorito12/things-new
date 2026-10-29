@@ -263,7 +263,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed from the log and memory (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
-| [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center; the queue resumes when they leave or that Town Center dies. | Nothing for the Daimyos; with a new marker, that type on the trainers in `protoy`. | confirmed (single player) |
+| [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos; with a new marker, that type on the trainers (or on the blocking buildings) in `protoy`. | confirmed (single player) |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units, and the unit type on them (or an existing type in the cfg). | confirmed (single player, UI) |
 | [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
 | [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. | confirmed |
@@ -1951,7 +1951,7 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
 - **With other keys:** [`startingTC`](#startingtc) can be on too: the two share the hook that sets
   the first town center, and only `startingTC` replaces one that is gone, dead or about to
   expire. [`hcShipmentPointFallback`](#hcshipmentpointfallback) `FirstTC` sends shipments to the
-  building, and [`noTrainNearEnemyTC`](#notrainnearenemytc) measures from it.
+  building, and [`noTrainNearEnemyTC`](#notrainnearenemytc) measures to its edge.
 - **`log`:** adds a line for each substitution (per player and object def, when the map is
   generated), one when the building becomes a first town center, and one per game and player
   when the town starting units go to it. That is a few lines per game, so it can stay on.
@@ -2103,10 +2103,19 @@ transformInventory [all] [scale] [<UnitType>] [log]
 
 ![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)
 
-*In game:* A Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
+*1. Near an enemy's first Town Center:* A Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
+
+![noTrainNearEnemyTC near a Stable, with the warning](media/noTrainNearEnemyTC-near.gif)
+
+*2. `near Stable` and the warning:* `noTrainNearEnemyTC 40 near Stable near FirstTC log`, the camera on the Daimyo. It stands 21 m from the edge of an enemy Stable with 5 Ashigaru queued: the queue does not move, and every 8 s of game time the red text "Too close to the enemy: training paused" appears over it (the overlay shows each `warning shown` line). The Stable is destroyed at 75 s: the log reads `resumed training`, now with the enemy Town Center 138.6 m away as the nearest, and the Ashigaru are trained (2x speed). [Full video (MP4)](media/noTrainNearEnemyTC-near.mp4).
+
+![noTrainNearEnemyTC with its own warning text](media/noTrainNearEnemyTC-warn.gif)
+
+*3. Your own text:* with `warn=¡Demasiado_cerca!`, the same held Daimyo shows "¡Demasiado cerca!" (1.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC-warn.mp4).
 
 ```
-noTrainNearEnemyTC <meters> [<UnitType>] [log]     default AbstractDaimyo; one line
+noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | warn=<text> | warn=<stringID>] [log]
+    default AbstractDaimyo, near FirstTC, the English warning; up to 4 near; one line
 ```
 
 - **How stock behaves:** each player remembers his first Town Center, the `FirstTC` of the
@@ -2115,63 +2124,109 @@ noTrainNearEnemyTC <meters> [<UnitType>] [log]     default AbstractDaimyo; one l
   enemy's first Town Center. Nothing limits a unit that trains: a Daimyo or the Shogun can walk
   into the enemy base and train an army next to his Town Center.
 - **Effect:** a unit whose proto is of `<UnitType>` does not train while an enemy's first Town
-  Center is alive and less than `<meters>` away. Its queue keeps the progress it has, and goes on
-  as soon as the unit is `<meters>` or more away or that Town Center is destroyed. Nothing is
-  refunded or cancelled, and the order is accepted as in stock. "Enemy" is the stance of the Town
-  Center's owner toward the trainer's player, as for `player=enemy` in the placement rules; your
-  own and your allies' Town Centers never block. The distance is measured by the placement rule's
-  own call (from the Town Center to the trainer's position).
+  Center, or an enemy's unit of a `near` type, is alive and less than `<meters>` away. Its queue
+  keeps the progress it has, and goes on as soon as nothing is that close any more (the blocker is
+  destroyed). Nothing is refunded or cancelled, and the order is accepted as in stock. "Enemy" is
+  the stance of the blocker's owner toward the trainer's player, as for `player=enemy` in the
+  placement rules: your own and your allies' buildings never block, nor do Gaia's (natives,
+  treasures).
 - **Choosing the trainers:** the default `AbstractDaimyo` is a stock type that the Daimyos and the
   Shogun already have, so it needs no data change. In WoL it also covers `MapucheWarchief`, the
   `WOLGensui*` units, `EGYtowncenterCARAVAN`, `EGYbarracks3CARAVAN` and `DummyGather` (static scan
   of WoL's `protoy`). To pick the trainers yourself, give them a new marker (for example
   `AbstractNoTrainNearEnemyTC`) in `protoy.xml` and its XMB, as for `healNonIdle`, and name it in
   the cfg. A proto name works too.
+- **Choosing what blocks (`near`):** without `near`, only an enemy's first Town Center blocks.
+  Each `near <UnitType>` adds a type: a proto name (`near Stable`, `near Barracks`), a stock type
+  (`near AbstractTownCenter` for every Town Center, not only the first; not tested) or a new marker
+  that you put on your buildings in `protoy`. As soon as the line has one `near`, only the listed
+  entries block: add `near FirstTC` to keep the first Town Center. Up to 4 entries. A building
+  blocks only once it is built (a foundation does not; static reading), and while it is alive. A
+  type of moving units is accepted (units always count as built) but was not tested.
+- **How the distance is measured:** from the trainer's centre to the nearest edge of the
+  blocker's footprint, 0 inside it. It is the engine's own distance, the one the placement rules
+  use, so `65` matches the stock 65 m rule. For example, a Stable (3 × 5 m half-sizes) whose
+  centre is 24 m from the Daimyo is 21 m away. For units without such a footprint the engine uses
+  the centre distance minus the unit's radius × 1.41 (static reading).
 - **Choosing the distance:** `<meters>` is a number above 0 and at most 1000 (decimals allowed).
-  65 matches the stock building rule.
-- **Which Town Center counts:** only each player's first Town Center, not every Town Center. A
-  player whose first Town Center was destroyed gives no protection, even if he built another one.
-  WoL's Maori (whose first Town Center dies at 0.5 s) are protected only with
+- **Which Town Center counts for `FirstTC`:** only each player's first Town Center, not every Town
+  Center. A player whose first Town Center was destroyed gives no protection, even if he built
+  another one. WoL's Maori (whose first Town Center dies at 0.5 s) are protected only with
   [`startingTC`](#startingtc) and the `MaoriPa` marked. A civ that starts with another building
   through [`civFirstTC`](#civfirsttc) is protected by that building (static reading; not tested
-  with this key).
+  with this key). `near AbstractTownCenter` covers every Town Center instead.
+- **The warning:** while one of your units is held, a red text appears over it, at most once every
+  8 s of game time per unit, and only on your own screen: other players see nothing, not even for
+  units they can see. It is the stock dodge's floating text ("¡Esquiva!" uses it) without its rise,
+  so it stays over the unit for about 1.5 s. `warn=<text>` replaces the English default "Too close
+  to the enemy: training paused": `_` stands for a space, at most 127 characters, UTF-8 (else the
+  Windows code page). `warn=<number>` takes that string from the string table (`warn=63950` shows
+  the stock "Dodge!" in the game's language), so a mod can translate its own text in
+  `stringtabley.xml`. `nowarn` turns it off.
+- **A held trainer stays where it is.** In stock, a Daimyo with units in its queue does not move: a
+  right-click on the ground sets its gather point, and move orders (a trigger, the console's
+  `uiMoveAllMilitaryAtPointer`) are ignored until the queue is empty (seen in game). So a held
+  Daimyo waits until the blocker is destroyed, or until the player cancels the queue (stock refund),
+  moves it away and queues again.
 - **With other keys:** with [`buildingWorkRateAuras`](#buildingworkrateauras), a trainer out of
   range trains at its aura-boosted rate, and with `liveBuildingWorkRate` at its proto's current
   rate: this key's hook calls the same getter.
 - **`log`:** one line the first time each marked unit trains (whether it may train, with the
-  nearest enemy first Town Center and its distance), then one line each time it pauses or resumes.
-  The list of logged units starts again at each data load; at most 1000 lines per session. Use it
-  to check your data and your distance, not in a release.
-- **Log:** at startup `noTrainNearEnemyTC: units of unittype X do not train within 65.0 m of an
-  enemy's first Town Center (FirstTC) (multiplayer unverified)` (with `log`: `…(FirstTC), every
-  pause and resume logged (multiplayer unverified)`); when the data loads, `unit types:
-  AbstractDaimyo -> <ID> (…), already defined`; in a game, `hook reached: noTrainNearEnemyTC
-  (0x9EA410)` the first time any unit or building trains. With `log`:
-  - `noTrainNearEnemyTC: unit N (ypDaimyoKiyomasa, player 1) paused training: player 2's FirstTC M
-    (TownCenter) is 34.1 m away (limit 65.0 m)`;
-  - `noTrainNearEnemyTC: unit N (…) resumed training: …`, with the nearest enemy first Town Center
-    or `no enemy FirstTC`;
+  nearest blocker and its distance), then one line each time it pauses or resumes, and one per
+  warning. The list of logged units starts again at each data load; at most 1000 lines per session.
+  Use it to check your data and your distance, not in a release.
+- **Log:** at startup `noTrainNearEnemyTC: units of unittype X do not train within 40.0 m (from the
+  trainer's centre to the edge of the building) of an enemy's Stable, an enemy's first Town Center
+  (FirstTC), with a warning over the local player's held units, every pause and resume logged
+  (multiplayer unverified)` (the warning and `log` parts only when on); when the data loads,
+  `unit types: AbstractDaimyo -> <ID> (…), already defined` and one such line per `near` type; in a
+  game, `hook reached: noTrainNearEnemyTC (0x9EA410)` the first time any unit or building trains.
+  With `log`:
+  - `noTrainNearEnemyTC: unit N (ypDaimyoKiyomasa, player 1) paused training: player 2's unit M
+    (Stable) is 21.0 m away (limit 40.0 m)`;
+  - `noTrainNearEnemyTC: unit N (…) resumed training: …`, with the nearest blocker left, or
+    `nothing to keep away from`;
   - `noTrainNearEnemyTC: unit N (…) trains: …` the first time a unit trains with no block;
+  - `noTrainNearEnemyTC: warning shown over unit N (ypDaimyoKiyomasa)` (`: refused by the engine`
+    when the game did not take the text);
   - `noTrainNearEnemyTC: 1000 lines logged; the next changes are not`.
 
-  A bad line: `noTrainNearEnemyTC: expected "noTrainNearEnemyTC <meters> [UnitType] [log]" with
-  meters above 0 and at most 1000, got "…"; feature not applied`.
+  A bad line, and the key is not applied:
+  - `noTrainNearEnemyTC: expected "noTrainNearEnemyTC <meters> [UnitType] [near <UnitType> ...]
+    [nowarn | warn=<text>] [log]" with meters above 0 and at most 1000, got "…"`;
+  - `noTrainNearEnemyTC: near needs a unit type (or FirstTC), at most 4`;
+  - `noTrainNearEnemyTC: warn=…: expected warn=<text> (at most 127 characters, '_' for a space) or
+    warn=<string table ID>`;
+  - `noTrainNearEnemyTC: unexpected argument … (expected: …)`.
 - **Limits:**
   - training pauses; the command is not refused, and the interface still shows the queue (its
     progress bar stops);
-  - a unit that trains while it walks resumes only on a tick where it is out of range;
-  - only first Town Centers count (see above);
+  - a held trainer does not walk away with its queue (stock, above);
+  - `FirstTC` is only the first Town Center (see above);
   - the AI does not know about the rule: it may queue units in a Daimyo that stands near an enemy
-    Town Center and wait.
-- **Simulation:** yes. Every player needs the same line. With a new marker it also adds a unit
-  type.
-- **Status:** confirmed in single player (2026-10-29), with every WoL key on. With
-  `noTrainNearEnemyTC 65 log`, a `ypDaimyoKiyomasa` standing 34.1 m from player 2's Town Center
-  (his first Town Center) was ordered to train 2 `ypAshigaru`: the log showed `paused training:
-  player 2's FirstTC 1 (TownCenter) is 34.1 m away (limit 65.0 m)` and the queue made no progress.
-  After the Town Center was killed at 75 s, the log showed `resumed training: no enemy FirstTC`
-  and both Ashigaru were trained. For such a test, the Daimyo trains only from Age II and needs
-  population room. Not tested: resuming by walking away, the AI.
+    building and wait.
+- **Simulation:** yes. Every player needs the same meters, trainer type and `near` entries; a new
+  marker name adds a unit type. `nowarn` and `warn=` only change what the local player sees and may
+  differ.
+- **Status:** confirmed in single player (2026-10-29), in a test map (no AI) unless noted:
+  - `noTrainNearEnemyTC 65 log` (with every WoL key on): a `ypDaimyoKiyomasa` 34.1 m from player
+    2's first Town Center made no progress on 2 `ypAshigaru`, and trained both once the Town Center
+    was killed (`resumed training: no enemy FirstTC` in that version of the log). The same test
+    with `nowarn`: paused at 34.1 m, no warning line, resumed when the Town Center died;
+  - `noTrainNearEnemyTC 40 near Stable near FirstTC log`, with `liveBuildingWorkRate` and
+    `buildingWorkRateAuras`: paused 21.0 m from a Stable's edge (Town Center 138.6 m away), 9
+    warnings 8 s apart, all 5 Ashigaru trained once the Stable was killed; walked next to the enemy
+    Town Center, it paused again (`player 2's unit 1 (TownCenter) is 6.4 m away`) with 1 Ashigaru
+    queued (video 2);
+  - `warn=¡Demasiado_cerca!` and `warn=63950` showed "¡Demasiado cerca!" and "¡Esquiva!" (video 3);
+  - four bad lines (`near` with no type, 5 `near`, `warn=` empty, a 140-character text): one log
+    line each, the key `FAILED`, the game normal;
+  - AI: a skirmish against a Japanese AI with this key (`near Barracks near Stable near FirstTC`)
+    and every WoL key on: the AI went from 15 to 25 units in 2 minutes and started its wonder, no
+    XS error.
+
+  Not tested: a `near` type of moving units, a foundation near the trainer, multiplayer, saved
+  games. For such a test, the Daimyo trains only from Age II and needs population room and food.
 - **New in this DLL:** not in UHC 1.10. WoL request #27 ([wol-requests.md](wol-requests.md)).
 
 ### overhealHitpointBars
@@ -2836,8 +2891,8 @@ More about the tools: [tools/README.md](../tools/README.md).
   game loaded without the key ignores them.
 - `healNonIdle`, `dodgeAnyUnit` and `removeFameRestriction` change the unit type table, and so do
   `maintainWaitForPop`, `lifespanAfterConstruction`, `noCorpseDopples`, `broadsideMuzzleLimit`,
-  `gaiaSocketsOnly`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC`,
-  `overhealHitpointBars` and `showGatherRate` when their unit type is a new name (a stock type or a
+  `gaiaSocketsOnly`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC` (and its `near`
+  types), `overhealHitpointBars` and `showGatherRate` when their unit type is a new name (a stock type or a
   proto name adds nothing; the defaults of `startingTC` and `overhealHitpointBars` are new names,
   `noTrainNearEnemyTC`'s `AbstractDaimyo` is a stock type). Load saved games and replays with the
   same DLL and cfg they were made with.
