@@ -66,6 +66,8 @@ Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\
 
 There are no unit tests yet.
 
+**Definition of done.** Every new or changed feature meets the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done) before it is reported as done.
+
 **Unattended in-game tests.** `python -I tools/testbed.py` plays a test with no clicks: `deploy` (DLL + cfg), `map` (a random map with the units and techs you name), `launch`, `scenario` (editor route: generate, save, reload as a game), `wait`, `log`, `units`, `shot`, `close`. Once a feature works, `record <out.mp4>` films about 30 s of it for the user (ffmpeg from `C:\Tools\ffmpeg`); it brings the window to the front first, and `--watch <IDs or protos>` (live HP and LOS of those units), `--log <regex>` (the feature's `UHC.log` lines) and `--follow <ID>` (the camera stays on a unit) draw live stats on the video. It drives the console through `perfExecFile`. Method and pitfalls: `docs/developer-guide.md`, "Driving the game unattended". Other Claude sessions may test in their own copies (e.g. `C:\AoE3-UHC-Poison`) with real mouse input: never run two games at once unless yours has `multipleInstances background` in its cfg and the other session agreed (the game itself refuses a second copy otherwise), and stop yours when one asks.
 
 ## Layout
@@ -98,7 +100,7 @@ There are no unit tests yet.
   - `docs/developer-guide.md`: build, safe test bed, adding a feature, RE workflow;
   - `docs/porting-to-another-dll.md`: rebuilding the beyond-upstream features inside a mod's own DLL (WoL). Update its site table and contracts when a beyond-upstream feature changes or a new one is added.
 - `examples/Startup/uhc.cfg`: every implemented key, commented. Add new keys here too: the release template is generated from it.
-- **Version and releases.** The version lives only in `project(UHC VERSION x.y.z)` in `CMakeLists.txt`; CMake generates `build/generated/version.h` from `src/version.h.in` for `dllmain.cpp` (first log line `UHC.dll x.y.z`) and `src/version.rc` (file properties). `python -I tools/package_release.py` builds `dist/UHC-x.y.z.zip` (gitignored) after a Release build; the user uploads it to GitHub Releases. Procedure: `docs/developer-guide.md`, section 6. When adding a key, also update the key list of `README.txt` inside `package_release.py`.
+- **Version and releases.** The version lives only in `project(UHC VERSION x.y.z)` in `CMakeLists.txt`; CMake generates `build/generated/version.h` from `src/version.h.in` for `dllmain.cpp` (first log line `UHC.dll x.y.z`) and `src/version.rc` (file properties). `python -I tools/package_release.py` builds `dist/UHC-x.y.z.zip` (gitignored) after a Release build; the user uploads it to GitHub Releases. Procedure: `docs/developer-guide.md`, section 7. When adding a key, also update the key list of `README.txt` inside `package_release.py`.
 - `tools/`: `gen_sites.py`, `package_release.py`, `bar.py` (BAR archives), `xmbedit.py` (XMB check / to-xml / from-xml / add-unittype), and `re/` (a ctypes debugger: `trace_writes.py`, `trace_exec.py`, `trace_xs.py`, `inspect_unittypes.py`). Usage: `tools/README.md`. Stop a tracer with Ctrl+C, never by killing it: a breakpoint left behind crashes the game.
 - `docs/binaries.md`: hashes of every `age3y.exe` / `UHC.dll` build in the install, the loader stub layout, and what each mod's exe patches.
 - `docs/uhc-address-map.md`: every upstream patch site, with a verification status per row.
