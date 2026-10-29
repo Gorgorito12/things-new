@@ -185,8 +185,9 @@ transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech 
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [log]  marked units (Daimyos) do not train within M metres
                               of an enemy's first Town Center
-overhealHitpointBars [UnitType ...] [log]   HP bars and texts of marked units use
-                              InitialHitpoints as 100 % (overheal up to MaxHitpoints)
+overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [log]   HP bars and texts of marked
+                              units use InitialHitpoints as 100 % (overheal up to MaxHitpoints);
+                              segment: the HP above it in orange, Overwatch style
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed

@@ -129,6 +129,11 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `OverhealStatBase` | `0x4D75DA` | `0x45` B | 6 B at `0x4D7615` | `D9 80 98 00 00 00` (`fld [eax+98h]`) | the stat row's base |
 | `OverhealInfoBase` | `0x9AFA07` | `0x2D` B | 6 B at `0x9AFA2A` | `D9 81 98 00 00 00` (`fld [ecx+98h]`) | ObjectInfo base (FUN_009AF31A) |
 | `OverhealInfoMax` | `0x9AFA34` | `0x23` B | 5 B at `0x9AFA4E` | `E8 B5 09 AD FF` (`call 480408h`) | ObjectInfo max |
+| `OverhealSegmentQueue` | `0x45FB3F` | `0x32` B | 5 B at `0x45FB6C` | `E9 42 1B FF FF` (`jmp 4516B3h`) | after the floating bar is queued; `segment` |
+| `HpBarRenderStart` | `0x45C4AF` | `0x3F` B | 6 B at `0x45C4B9` | `8B 9D D4 08 00 00` (`mov ebx,[ebp+8D4h]`) | the renderer's count, before the vertex lock; `segment` |
+| `HpBarRenderLoop` | `0x45C60B` | `0x587` B | 6 B at `0x45CB72` | `83 C0 01 83 C1 1C` (`add eax,1 / add ecx,1Ch`) | the whole per-record loop (the vertex layout the hook relies on) and its end; `segment` |
+| `OverhealTextStat`, `OverhealTextStatSplit` | `0x4D7647`, `0x69A9B0` | `0x15`, `0x1B` B | 5 B at `0x4D7651`, `0x69A9C0` | `68 54 20 BA 00`, `68 54 4A C3 00` (`push` format) | the stat row's HP text formats; `segment` |
+| `HpBarQueue`, `DynamicVbLock`, `DynamicVbFull` | `0x45FB71`, `0x40A6A2`, `0x40A689` | `0x6F`, `0x45`, `0x19` B | — | — | the queue the segment hook calls, and the vertex buffer's size check; `segment` |
 | `OverhealInfoProto`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag` | `0x9AF33B`, `0x480408`, `0x45F295`, `0x5F5CE3`, `0x5F5D39` | `0x19`, `0x26`, `0x48`, 6, 6 B | — | — | where ObjectInfo stores the database proto, the getter the hooks call, the ratio the helper mirrors, and the stores that put InitialHitpoints / MaxHitpoints at `[proto+9Ch]` / `[proto+98h]`; overhealHitpointBars (also `IsA`, `IsATrue`) |
 | `GatherTickRate` | `0x4ED02A` | `0x26` B | 8 B at `0x4ED044` (`jmp` + 3 NOP) | `D8 4C 24 30 D9 54 24 14` (`fmul [esp+30h]; fst [esp+14h]`) | the gather tick's rate per second in ST0 (FUN_004ECD87); showGatherRate record hook (continues at `0x4ED04C`) |
 | `GatherTickHead`, `GatherTickPushEbp`, `GatherTickPushEbx`, `GatherTickGatherer`, `GatherTickPlayerRate`, `GatherTickPlayerBlock`, `GatherTickAddResource` | `0x4ECD87`, `0x4ECDCC`, `0x4ECE16`, `0x4ECE6D`, `0x4ED130`, `0x4ED1A4`, `0x4ED1E1` | `0x14`, 7, `0x0A`, `0x15`, `0x2A`, `0x14`, `0x12` B | — | — | the tick's frame and ESI, the non-null gatherer and player, and the multiplier, shrine and defeated tests and the add that the record and its reader mirror |
@@ -894,6 +899,25 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   max; it logs once per proto name.
 - **Display only:** never patch 0x480408 or 0x45F295 themselves; their other callers are
   simulation code.
+- **`segment`** (five more hooks, installed only with the option, after their own VerifyAll):
+  - `0x45FB6C` (5 B, `jmp 4516B3h`), ESI = unit, `[esp+18h]` = the bar's position, `[esp+15h]` =
+    under construction: unless under construction, compute the reference (empty FPU stack), then
+    `UhcOverhealQueueSegment(unit, pos, reference)` queues `0x45FB71(world, pos, 1.0, share,
+    804F5648h, FFh)` when HP > reference, share = min((HP − reference) / reference, 1). Keep every
+    register; → `0x4516B3`.
+  - `0x45C4B9` (6 B, `mov ebx,[ebp+8D4h]`), EBP = world: when count × 216 > `[[[0C66044h]+660h]+4]`,
+    remove the records of player 804F5648h from `[world+8D0h]` and lower the count; redo the
+    load; → `0x45C4BF`.
+  - `0x45CB72` (6 B, `add eax,1 / add ecx,1Ch`), ECX = the record's offset, EDI = its sixth vertex
+    (the first at EDI − 0B4h), ESI = camera, x87 stack empty: for player 804F5648h only, add
+    scale × (1 − share) × `[camera+28h..30h]` to the positions of vertices 0, 2 and 3, set u
+    (`+1Ch`) to 1.0 on those and 0.5 on 1, 4 and 5, and the colour (`+18h`, ARGB) on all six; redo
+    the adds; → `0x45CB78`.
+  - `0x4D7651` and `0x69A9C0` (5 B, `push` of the UTF-16 format), `[esp]` = HP, `[esp+4]` = the
+    100 % value: push `<color=r, g, b>` + the stock format + `</color>` when HP > the value, else
+    the stock one; change only the flags; → `0x4D7656`, `0x69A9C5`.
+  - These depend on the renderer's vertex layout (verified as the whole loop, site
+    `HpBarRenderLoop`) and on the marker player ID never being a real player.
 
 ### showGatherRate
 

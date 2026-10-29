@@ -149,7 +149,7 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `shot`, `record`, `click`/`rclick`, `key`/`rkey`, `type`, `log`, `safety`; the
+`units`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
 docstring lists their arguments.
 
 `record <out.mp4> [seconds] [fps] [width]` films the window to an MP4 in real time, with ffmpeg

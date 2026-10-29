@@ -13,8 +13,16 @@ include common.inc
 EXTERNDEF g_uhcOverhealTypes:SDWORD      ; marker unittype IDs, set on each database load; -1 before
 EXTERNDEF g_uhcOverhealTypeCount:SDWORD  ; how many of them the cfg line names
 EXTERNDEF g_uhcOverhealLog:SDWORD        ; 1 with "overhealHitpointBars ... log"
+EXTERNDEF g_uhcOverhealTextColor:SDWORD  ; 1 with "segment": an HP text above its 100 % is coloured
+EXTERNDEF g_uhcOverhealFmtPlain:WORD     ; '<color=r, g, b>%d/%d</color>'
+EXTERNDEF g_uhcOverhealFmtSplit:WORD     ; '<color=r, g, b>%d/%d (%d+%d)</color>'
 
 UhcOverhealLogReference PROTO STDCALL unit:DWORD, reference:DWORD, maxHp:DWORD
+UhcOverhealQueueSegment PROTO STDCALL unit:DWORD, pos:DWORD, reference:DWORD
+UhcOverhealSegmentFit PROTO STDCALL world:DWORD
+UhcOverhealSegmentVertices PROTO STDCALL world:DWORD, recordOffset:DWORD, vertices:DWORD, camera:DWORD
+
+SEGMENT_PLAYER EQU 804F5648h            ; the player ID of a segment record ('OVH', negative: no player colour)
 
 .data
 protoIsType     dd 0044D7FAh    ; bool thiscall(proto, int unitTypeId): integer code, ret 4
@@ -27,6 +35,11 @@ statBaseNext    dd 004D761Bh    ; fnstcw / ... / fistp [esp+0Ch]: the stat row's
 infoBaseNext    dd 009AFA30h    ; fnstcw / mov ecx,esi / ... / fistp [esp+20h]: ObjectInfo's base
 infoMaxNext     dd 009AFA53h    ; fnstcw / ... / fistp [esp+24h]: ObjectInfo's max
 minHitpoints    real4 1.0E-6    ; the stock threshold of 0x45F295 (0xB9FB64)
+barQueueExit    dd 004516B3h    ; where the bar chunk goes after queueing the bar (jmp at 0x45FB6C)
+renderCountNext dd 0045C4BFh    ; test ebx,ebx / mov [esp+3Ch],ebx / jle: the renderer's record count
+vertexLoopNext  dd 0045CB78h    ; add edi,24h / add ebx,24h / cmp eax,[ebp+8D4h]: the next record
+textStatNext    dd 004D7656h    ; push eax / call 444EFBh: the stat row's '%d/%d'
+textStatSplitNext dd 0069A9C5h  ; push ecx / call 444EFBh: the stat row's '%d/%d (%d+%d)'
 
 .code
 
@@ -176,6 +189,94 @@ UhcOverhealBarHook PROC
     call OverhealRatio
     jmp barNext
 UhcOverhealBarHook ENDP
+
+; Replaces jmp 4516B3h at 0x45FB6C, right after the floating bar of unit ESI was queued (0x45FB67):
+; with "segment", a unit above its 100 % gets a second record, the overheal segment, which the
+; renderer hooks below draw over the right end of the bar. [esp+18h] = the bar's position (the
+; record copies it), [esp+15h] = under construction (that bar is the build progress). The FPU
+; stack is empty here and every register is kept for 0x4516B3.
+UhcOverhealSegmentQueueHook PROC
+    TRACE_ONCE "overhealHitpointBars segment queue (0x45FB6C)"
+    cmp byte ptr [esp+15h], 0
+    jne done
+    pushad
+    mov ecx, esi
+    call OverhealReference          ; ST0 = the unit's 100 % (its max when not marked)
+    sub esp, 4
+    fstp dword ptr [esp]            ; reference
+    lea eax, [esp+3Ch]              ; the position: [esp+18h] at entry, +20h pushad, +4 reference
+    push eax
+    push esi                        ; unit
+    call UhcOverhealQueueSegment    ; queues the segment when HP > reference
+    popad
+done:
+    jmp barQueueExit
+UhcOverhealSegmentQueueHook ENDP
+
+; Replaces mov ebx,[ebp+8D4h] at 0x45C4B9 in the bar renderer FUN_0045C4AF (EBP = world): before
+; the vertex lock, UhcOverhealSegmentFit drops the segment records when the queue would not fit
+; in the dynamic vertex buffer, so they never cost a stock bar; then the stolen load of the count.
+UhcOverhealSegmentRenderHook PROC
+    TRACE_ONCE "overhealHitpointBars segment fit (0x45C4B9)"
+    pushad
+    push ebp
+    call UhcOverhealSegmentFit
+    popad
+    mov ebx, dword ptr [ebp+8D4h]   ; stolen 0x45C4B9
+    jmp renderCountNext
+UhcOverhealSegmentRenderHook ENDP
+
+; Replaces add eax,1 / add ecx,1Ch at 0x45CB72, the end of the renderer's per-record loop: ECX =
+; the record's offset in [ebp+8D0h], EDI = its sixth vertex, ESI = the camera. The six vertices of
+; a segment record are rewritten (UhcOverhealSegmentVertices); every other record is left as the
+; stock loop wrote it. The FPU stack is empty here (checked over one iteration); the flags are
+; set again by the stolen adds.
+UhcOverhealSegmentVertexHook PROC
+    TRACE_ONCE "overhealHitpointBars segment vertices (0x45CB72)"
+    push edx
+    mov edx, dword ptr [ebp+8D0h]
+    cmp dword ptr [edx+ecx+14h], SEGMENT_PLAYER
+    pop edx
+    jne done
+    pushad
+    push esi                        ; camera
+    lea eax, [edi-0B4h]             ; the first vertex, five 24h-byte vertices back
+    push eax
+    push ecx                        ; the record's offset
+    push ebp                        ; world
+    call UhcOverhealSegmentVertices
+    popad
+done:
+    add eax, 1                      ; stolen 0x45CB72
+    add ecx, 1Ch                    ; stolen 0x45CB75
+    jmp vertexLoopNext
+UhcOverhealSegmentVertexHook ENDP
+
+; Replaces a push of an HP text's format (5 bytes) right after the HP ([esp]) and the 100 % value
+; ([esp+4]) were pushed: with "segment", an HP above it gets the coloured copy of the format. Only
+; the flags change (the next instruction does not read them); stock HP never exceeds the max, so
+; an unmarked unit always gets the stock format. Only the stat row's two formats are hooked: its
+; gadget draws the <color> markup (seen in game); unitHitPointsValue (0x698B63) and ObjectInfo
+; (0x9AFA8B, 0x9AFAA5) format the same way, but their gadgets were not seen in a game.
+OVERHEAL_TEXT_HOOK MACRO hookName:REQ, traceText:REQ, stockFormat:REQ, colourFormat:REQ, nextAddress:REQ
+hookName PROC
+    TRACE_ONCE traceText
+    push stockFormat
+    cmp g_uhcOverhealTextColor, 0
+    je @F
+    push eax
+    mov eax, dword ptr [esp+8]      ; HP
+    cmp eax, dword ptr [esp+0Ch]    ; the 100 % value
+    pop eax
+    jle @F
+    mov dword ptr [esp], OFFSET colourFormat
+@@:
+    jmp nextAddress
+hookName ENDP
+ENDM
+
+OVERHEAL_TEXT_HOOK UhcOverhealTextStatHook, "overhealHitpointBars text (0x4D7651)", 0BA2054h, g_uhcOverhealFmtPlain, textStatNext
+OVERHEAL_TEXT_HOOK UhcOverhealTextStatSplitHook, "overhealHitpointBars text (0x69A9C0)", 0C34A54h, g_uhcOverhealFmtSplit, textStatSplitNext
 
 ; Replaces call 45F295h at 0x4C5014 in FUN_004C4FB5, which adds unit EBP (= ECX) to the selection
 ; group ESI: [esi+1Ch] keeps the group's average health, which the group bar (colour and fill,

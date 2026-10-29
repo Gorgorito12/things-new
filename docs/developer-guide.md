@@ -165,7 +165,18 @@ there:
   when the monitor turns off from inactivity, after which its graphics device stays lost until
   the game restarts. For a long unattended session keep the display on first, e.g. a background
   `python -I -c "import ctypes,time; ctypes.windll.kernel32.SetThreadExecutionState(0x80000003);
-  time.sleep(10800)"`, and restart the game if the frames are already black.
+  time.sleep(10800)"`, and restart the game if the frames are already black. A window covering the
+  game on its monitor (a terminal) has the same effect, and `focus()`'s title-bar click then lands
+  on that window: run `front` after `launch` (it keeps the game above every window and focuses
+  it). Do not move the game to a monitor with another DPI scale: its HUD still draws, but the 3D
+  view stays black.
+- **Camera, selection and bars:** in the scenario route `uiLookAtUnit` and
+  `uiLookAtAndSelectUnit` select but may leave the camera off the map (a black world, the
+  minimap frame at the edge); a real click on the minimap (`rclick` on the island) moves it, and
+  `wheel <x> <y> <steps>` zooms (positive steps zoom in). Floating HP bars show only for selected
+  or damaged units: `drag <x1> <y1> <x2> <y2>` box-selects. To read small bars, record at width
+  2560 and crop in ffmpeg. A Surgeon heals idle damaged units nearby on its own, about 75 HP in
+  10 s, so put damage triggers after the recording starts.
 - **Test data:** `tools/protoy_testdata.py <bed> unittype Proto=Type …` adds marker types to the
   copy's `protoy.xml` and compiles the XMB from it; `reset` restores the files.
 - **One game at a time.** Other sessions may be testing in their own copies (for example

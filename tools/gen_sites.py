@@ -493,6 +493,35 @@ SITES = [
     # the fnstcw after it
     ("OverhealInfoBase", 0x9AFA07, 0x2D),
     ("OverhealInfoMax", 0x9AFA34, 0x23),
+    # overhealHitpointBars segment, the floating bar's queueing: lea ecx,[esp+18h] (the bar's
+    # position, computed by 0x406BDB) / ... / push [unit+88h] (colour byte) / push [[unit+44h]]
+    # (player ID) / push [esp+10h] (fill) / push 1.0 (scale) / push ecx / mov ecx,[[0C66234h]+13Ch]
+    # (world) / call 45FB71h, and the replaced jmp 4516B3h after it
+    ("OverhealSegmentQueue", 0x45FB3F, 0x32),
+    # overhealHitpointBars segment: the queue function FUN_0045FB71, thiscall(world, pos*, scale,
+    # fill, player, colour byte), ret 14h: grows [world+8D0h] to count [world+8D4h] + 1 (0x408308)
+    # and fills a 28-byte record (+0 position, +0Ch scale, +10h fill, +14h player, +18h byte)
+    ("HpBarQueue", 0x45FB71, 0x6F),
+    # overhealHitpointBars segment, the bar renderer FUN_0045C4AF (ECX = EBP = world): the replaced
+    # mov ebx,[ebp+8D4h] (the record count), test / jle, then the vertex lock 0x40A6A2(count*6,
+    # 24h, &start) of the device [0C66044h]
+    ("HpBarRenderStart", 0x45C4AF, 0x3F),
+    # overhealHitpointBars segment, the renderer's per-record loop 0x45C60B..0x45CB91 (colour from
+    # the byte or [player+0C8h], then six 24h-byte vertices: +0 position, +0Ch the constant at
+    # 0C66544h, +18h colour, +1Ch u, +20h v; the left ones (v0, v2, v3) at P - scale/2 x B with
+    # u = 0.5 + fill/2, the right ones at P + scale/2 x B with u = fill/2, B = [[game+148h]+28h]),
+    # and its end, add eax,1 / add ecx,1Ch (replaced, 6 bytes at 0x45CB72) / add edi,24h / ...
+    ("HpBarRenderLoop", 0x45C60B, 0x587),
+    # overhealHitpointBars segment: the dynamic vertex buffer behind 0x40A6A2 ([device+660h]): a
+    # request larger than its size [vb+4] returns null (0x40A689), and the renderer then draws no
+    # bar that frame
+    ("DynamicVbLock", 0x40A6A2, 0x45),
+    ("DynamicVbFull", 0x40A689, 0x19),
+    # overhealHitpointBars segment, the stat row's HP text formats, a push of '%d/%d' (0BA2054h,
+    # 0x4D7651) or of '%d/%d (%d+%d)' (0C34A54h, cold 0x69A9C0) right after the HP and the max are
+    # pushed ([esp] = HP, [esp+4] = max), followed by a push of the buffer and the swprintf 0x444EFB
+    ("OverhealTextStat", 0x4D7647, 0x15),
+    ("OverhealTextStatSplit", 0x69A9B0, 0x1B),
     # overhealHitpointBars, verify only: the max HP getter FUN_00480408 the hooks call (override
     # [[[unit+0B4h]+0C8h]+4] if > -1e-6, else [proto+98h], 0 with no proto), the health ratio
     # FUN_0045F295 the ratio helper mirrors (0 below 1e-6, 1.0 when HP >= max, else HP / max),

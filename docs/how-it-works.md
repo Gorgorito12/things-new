@@ -1389,8 +1389,9 @@ the max's change to `[proto+9Ch]` too (0x8F97CD..0x8F97DD).
 **The displays.**
 - Floating bars: the unit visual update's bar chunk 0x45FAA2 takes the fill from `call 45F295h`
   (0x45FAAF; under construction the build fraction, 0x6A1431, instead), clamps it to [0, 1]
-  (0x45FAB8..0x45FADC) and queues the bar (0x45FB71). The renderer (0x45C5xx, scoping) draws
-  0.5 + 0.5 × fill of the `hpbar` texture, so a fill above 1 cannot simply overflow the bar.
+  (0x45FAB8..0x45FADC) and queues the bar (0x45FB71). The renderer FUN_0045C4AF draws each bar
+  as one textured quad whose fill is a texture window (below, "The segment"), so a fill above 1
+  cannot simply overflow the bar.
 - Selection groups: FUN_004C4FB5 adds a unit to a group and keeps the running average of 0x45F295
   at `[group+1Ch]` (`call 45F295h` at 0x4C5014). Readers: the selection panel's bar, green / yellow
   / red by the thresholds 0.33 / 0.66 (doubles 0xBA1F80 / 0xBA1F78, 0x4C82EA), and "Group Health",
@@ -1446,6 +1447,67 @@ reloads the reference.
   changes only EAX, ECX and EDX and uses no FPU register.
 - **Observed in game:** a marked Musketeer at 150 HP with `MaxHitpoints` 165 showed `150/150` and a
   full bar in its panel; an unmarked Pikeman (120/132) kept the stock display.
+
+**The segment** (`segment[=RRGGBB]`, Overwatch style). The HP above the reference is drawn over the
+right end of the full floating bar, (HP − reference) / reference of its width (all of it from twice
+the reference), in the segment colour (default `FF8C00`); the stat row's HP text above the
+reference is coloured the same.
+
+- *The stock bar.* The queue FUN_0045FB71, `thiscall(world, pos*, scale, fill, player, colour
+  byte)`, `ret 14h`, grows `[world+8D0h]` (count `[world+8D4h]`, through 0x408308: no fixed cap)
+  by a 28-byte record: `+0` position, `+0Ch` scale, `+10h` fill, `+14h` player, `+18h` colour byte.
+  The bar chunk passes the position `[esp+18h]`, scale 1.0, the fill, `[[unit+44h]]` and
+  `[unit+88h]`, then `jmp 4516B3h` (0x45FB6C). The renderer FUN_0045C4AF (ECX = world; REA
+  Evidence `ev_0886c3a2…`) locks count × 6 vertices of 24h bytes in the device's dynamic vertex
+  buffer (0x40A6A2; `[[0C66044h]+660h]`, 2 MB in game; a request larger than its size `[vb+4]`
+  returns null at 0x40A689, and then no bar is drawn that frame), sets render states 7 and 14 to 0
+  (inference: depth test and depth writes off), and binds once the shader `defaultcolored` with the
+  texture `ui\hitpoint_bars\hpbar`. Per record: the colour is the palette entry of the byte when
+  the byte is not FFh and `[world+33Ch]` is set, else the player's `[player+0C8h]`, else white;
+  hw = scale / 2 and hh = scale / 16 along the camera's right (B, `[[game+148h]+28h]`) and up
+  (A, `+1Ch`) vectors, a camera-facing quad of six vertices (`+0` position, `+0Ch` a constant,
+  `+18h` colour, `+1Ch` u, `+20h` v): v0, v2, v3 on the left (P − hw·B ± hh·A) with
+  u = 0.5 + fill / 2, v1, v4, v5 on the right with u = fill / 2. The texture (64 × 8, art2.bar) is
+  black on its left half and a white-grey vertical gradient on its right half, so the fill is the
+  left part of the bar, tinted by the vertex colour: the floating bar is the player's colour, not
+  green (the green / yellow / red bar is the selection panel's). Every queued bar goes out in one
+  draw call (0x45F96D), and the count is reset.
+- *The hooks* (`hooks/overheal_hooks.asm`, only with `segment`):
+
+  | Site | Stolen | Hook does | Continues at |
+  |---|---|---|---|
+  | 0x45FB6C | `jmp 4516B3h` (5 B; ESI = unit) | unless under construction (`[esp+15h]`): reference, then `UhcOverhealQueueSegment(unit, pos, reference)` | 0x4516B3 |
+  | 0x45C4B9 | `mov ebx,[ebp+8D4h]` (6 B; EBP = world) | `UhcOverhealSegmentFit(world)`, then the stolen load | 0x45C4BF |
+  | 0x45CB72 | `add eax,1 / add ecx,1Ch` (6 B; ECX = the record's offset, EDI = its sixth vertex, ESI = camera) | for a segment record, `UhcOverhealSegmentVertices` | 0x45CB78 |
+  | 0x4D7651, 0x69A9C0 | `push` of `%d/%d` / `%d/%d (%d+%d)` (5 B; `[esp]` = HP, `[esp+4]` = 100 %) | pushes the coloured copy when HP > 100 % | 0x4D7656, 0x69A9C5 |
+
+  `UhcOverhealQueueSegment` queues a second record when HP > reference (for an unmarked unit the
+  reference is the stock max, so never): same position, scale 1.0, fill = min((HP − reference) /
+  reference, 1), player 804F5648h (no player has it; negative, so the renderer colours it white)
+  and byte FFh. The vertex hook, for that player ID only, moves the left vertices right by
+  scale × (1 − fill) × B, gives all six u = 1.0 (left) / 0.5 (right), the fill part of the texture,
+  and the segment colour; every other record keeps the stock vertices. `UhcOverhealSegmentFit`
+  removes the segment records before the lock when count × 216 bytes would not fit in the buffer,
+  so the segments never cost a stock bar. The coloured formats are the stock ones wrapped in the
+  UI markup the game uses itself (`<color=1, 0, 0>` at 0xBA1E44, `</color>` at 0xBA1E30):
+  `<color=1.00, 0.55, 0.00>%d/%d</color>`; the stat row's gadget draws it.
+- *Choices.* Over the right end, not past it: the bar keeps its width and the segment never leaves
+  the bar's area. A tint, not a mod texture such as `hpbar_overheal`: the queue is one draw call
+  with one texture bound, and a second texture would need a second pass inside the renderer;
+  `segment=RRGGBB` lets a mod choose the colour. The selection panel's bar is not changed: its
+  three colours are three UI gadgets (`[panel+310h]`, `+314h`, `+318h`, looked up through 0x44B8B8
+  and filled through 0x590772, clamped to [0, 1]), and a fourth colour would need a fourth gadget
+  in the UI data. The texts of `unitHitPointsValue` (0x698B63) and ObjectInfo (0x9AFA8B, 0x9AFAA5)
+  are formatted the same way, but their panels were not reached in a game, so whether their
+  gadgets draw the markup is not known: they are left plain.
+- *Why it is safe.* The sites decode at instruction boundaries and nothing branches into the
+  stolen bytes; the x87 stack is empty at 0x45CB72 (checked over one loop iteration) and at
+  0x45FB6C; the queue hook keeps every register for 0x4516B3; the text hooks change only the
+  flags, which the next instruction does not read. Display only, like the rest of the key.
+- *Observed in game:* healed to 165, marked Musketeers showed a full bar with the orange segment
+  over its right tenth and `165/150` in orange; a Musketeer damaged to 92 showed a partial bar and
+  a white `92/150`; the unmarked Pikeman healed to 132/132 kept the stock bar. The vertex buffer
+  was 2 MB (9,709 bars), so the fit guard never ran.
 
 ### showGatherRate
 

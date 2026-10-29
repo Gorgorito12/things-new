@@ -2130,8 +2130,12 @@ noTrainNearEnemyTC <meters> [<UnitType>] [log]     default AbstractDaimyo; one l
 
 *In game:* A marked musketeer (150 HP of 165 max) shows a full bar and 150/150; the overlay shows the real maximum. [Full video (MP4)](media/overhealHitpointBars.mp4).
 
+![overhealHitpointBars segment in game](media/overhealHitpointBars-segment.gif)
+
+*In game, with `segment`:* A marked Musketeer takes damage (white `92/150`), a Surgeon heals it, and above 150 an orange segment appears over the right end of its full bar, with an orange `165/150`; the unmarked Pikeman keeps the stock bar. [Full video (MP4)](media/overhealHitpointBars-segment.mp4).
+
 ```
-overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 types
+overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [log]   default AbstractOverheal; up to 8 types
 ```
 
 - **How stock behaves:** a unit is created with its proto's `<InitialHitpoints>` and can be healed
@@ -2154,6 +2158,16 @@ overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 
 
   Units of other types, and marked units whose `InitialHitpoints` is not below `MaxHitpoints`,
   display as in stock.
+- **`segment`** (Overwatch style): the HP above 100 % is shown too.
+  - The floating bar stays full and the overheal is drawn over its right end, in orange: a
+    Musketeer at 165/150 has its right 10 % orange; from twice its 100 % the whole bar is orange.
+    The bar keeps its width.
+  - The unit panel's HP text above 100 % is orange too (`165/150`), through the game's own colour
+    markup.
+  - `segment=RRGGBB` sets another colour (hex, e.g. `segment=40C0FF`).
+  - The floating bar is drawn in the player's colour (the stock bar is not green), so the segment
+    sits next to the player's colour.
+  - No data change is needed beyond the marker.
 - **What does not change:** the hit points themselves, healing (healers still heal up to
   `MaxHitpoints`, which is what makes the overheal possible), techs, auras, AI, triggers and every
   other game rule: they all keep reading `MaxHitpoints`.
@@ -2186,9 +2200,21 @@ overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 
   `(0x4D7615)`, or `(0x9AFA2A)` with `(0x9AFA4E)`, depending on which panel shows them. With
   `log`: `overhealHitpointBars: unit N (Musketeer) HP 150.0 is shown against 150.0 instead of its
   max 165.0 (InitialHitpoints 150.0, MaxHitpoints 165.0); logged once per proto`.
+  With `segment`: the startup line adds `HP above it shown as a segment and texts coloured
+  FF8C00`; in a game `hook reached: overhealHitpointBars segment queue (0x45FB6C)`, `segment fit
+  (0x45C4B9)`, `segment vertices (0x45CB72)` and `text (0x4D7651)` (`text (0x69A9C0)` for the
+  `(base+bonus)` form); with `log`, `overhealHitpointBars: unit N (Musketeer) HP 165.0 is above its
+  100 % 150.0: overheal segment of 10.0 % of the bar; logged once per proto`; and, only if a frame
+  ever has more bars than the vertex buffer holds (about 9,700), `… bars do not fit in the vertex
+  buffer …: this frame's K overheal segments were dropped (logged once)`. A wrong colour stops the
+  key: `overhealHitpointBars: segment=…: expected segment or segment=RRGGBB (hex); feature not
+  applied`.
 - **Limits:**
-  - the floating bar stops at 100 %; drawing the overheal part above it would need the bar
-    renderer;
+  - without `segment` the floating bar stops at 100 %;
+  - with `segment`, the selection panel's bar keeps its three stock colours (they are three UI
+    gadgets; a fourth colour would need one in the UI data), and only the unit panel's stat row is
+    coloured: the other two HP texts (`unitHitPointsValue`, the ObjectInfo panel) were never seen
+    in a game, so they stay plain;
   - other places still compare HP with `MaxHitpoints` and see a fresh marked unit as damaged: the
     damage-state visuals, the AutoRepairUnit command check (moot for infantry and cavalry), and the
     HP shown in tech and card rollovers;
@@ -2204,6 +2230,12 @@ overhealHitpointBars [<UnitType> ...] [log]   default AbstractOverheal; up to 8 
   shown against 150.0 instead of its max 165.0 (InitialHitpoints 150.0, MaxHitpoints 165.0)`. The
   floating bars and the group bar were not compared on their own; an overhealed unit and the
   techs were not tested.
+  `segment`: confirmed in single player (2026-10-29). Musketeers healed to 165 by a Surgeon showed
+  the full bar with an orange segment over its right tenth and an orange `165/150`; a Musketeer
+  damaged to 92 showed a partial bar and a white `92/150`; the unmarked Pikeman healed to 132/132
+  and a fresh Musketeer (150/150) showed no segment. A skirmish against the AI with the key on
+  played normally. Not tested: a `Hitpoints` tech (the `(base+bonus)` text), a max changed by an
+  aura, a custom colour, other players' units and multiplayer.
 - **New in this DLL:** not in UHC 1.10. WoL request #21 ([wol-requests.md](wol-requests.md)).
 
 ### showGatherRate
