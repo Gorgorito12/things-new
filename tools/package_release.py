@@ -190,6 +190,8 @@ noTrainNearEnemyTC M [UnitType] [log]  marked units (Daimyos) do not train withi
 overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [log]   HP bars and texts of marked
                               units use InitialHitpoints as 100 % (overheal up to MaxHitpoints);
                               segment: the HP above it in orange, Overwatch style
+overhealSources [UnitType ...] [log]   only marked healers (AbstractOverhealer) heal
+                              overheal units above InitialHitpoints
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed

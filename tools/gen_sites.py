@@ -66,6 +66,20 @@ SITES = [
     # pop esi / pop ebx / pop edi / xor al,al (replaced, 5 bytes at 0x9CDA58) / pop ebp / add esp,
     # 10h / ret, and the accept path 0x9CDA62: healer vtbl+64h(1), 0x9CBDC4(owner, [esi+10h])
     ("SmartHealLoopEnd", 0x9CDA3F, 0x40),
+    # overhealSources: the add-HP function FUN_004823A3 (ECX = unit, [esp+4] = amount, [esp+8] =
+    # flag): push ecx / push esi / mov esi,ecx / cmp dword ptr [esi+8],8 (replaced, 8 bytes) and
+    # the jbe 4823FEh that reads the cmp's flags
+    ("OverhealAddEntry", 0x4823A3, 0x0A),
+    # overhealSources (the heal tick FUN_009E0B53, EDI = target, ESI = the action, healer at
+    # [esi+10h]): fld [edi+64h] / fcomp 1e-6 / ... / mov ecx,edi / call 480408h (replaced, 5 bytes
+    # at 0x9E0BBB) / fcomp [edi+64h] / fnstsw / test ah,41h / jnp 9E0D3Fh (HP < max, else state 10)
+    ("HealTickMax", 0x9E0BA5, 0x29),
+    # overhealSources: the tick's heal, call 487C45h (rate) / fmul / push 1 / ... / push ecx /
+    # mov ecx,edi / call 4823A3h (replaced, 5 bytes at 0x9E0CE9) / fld [esp+10h] / fadd [esi+68h]
+    ("HealTickAdd", 0x9E0CCF, 0x26),
+    # overhealSources (the automatic heal search, ESI = candidate, healer at [ebp+4]): mov ecx,esi /
+    # call 45F295h (replaced, 5 bytes at 0x9CD984) / fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh
+    ("HealSearchRatio", 0x9CD982, 0x18),
     # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
     # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
     ("AbstractTypesEnd", 0x51BA23, 0x15),

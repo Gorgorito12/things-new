@@ -39,6 +39,7 @@ add_library(UHC SHARED
   src/features/misc.cpp
   src/features/notrainneartc.cpp
   src/features/overheal.cpp
+  src/features/overhealsources.cpp
   src/features/perf.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -70,6 +71,7 @@ add_library(UHC SHARED
   src/hooks/misc_hooks.asm
   src/hooks/notrainneartc_hooks.asm
   src/hooks/overheal_hooks.asm
+  src/hooks/overhealsources_hooks.asm
   src/hooks/shipment_hooks.asm
   src/hooks/smartheal_hooks.asm
   src/hooks/snare_hooks.asm

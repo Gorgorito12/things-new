@@ -329,4 +329,27 @@ UhcOverhealInfoMaxHook PROC
     jmp infoMaxNext
 UhcOverhealInfoMaxHook ENDP
 
+; Public forms of the reference helpers for the other overheal keys (overhealSources,
+; overhealDecay), cdecl so the C++ side can call them: the same definition, not a copy.
+; float UhcOverhealReferenceOf(unit): the 100 % reference in ST0 (the stock max for an unmarked unit).
+UhcOverhealReferenceOf PROC
+    mov ecx, dword ptr [esp+4]
+    jmp OverhealReference
+UhcOverhealReferenceOf ENDP
+
+; float UhcOverhealRatioOf(unit): HP / reference with the stock rules of 0x45F295, in ST0.
+UhcOverhealRatioOf PROC
+    mov ecx, dword ptr [esp+4]
+    jmp OverhealRatio
+UhcOverhealRatioOf ENDP
+
+; int UhcOverhealMarked(proto): 1 if the proto is of a configured type and 1e-6 <
+; InitialHitpoints < MaxHitpoints (a unit of it has a reference below its max), else 0.
+UhcOverhealMarked PROC
+    mov ecx, dword ptr [esp+4]
+    call OverhealUsesInitial
+    movzx eax, al
+    ret
+UhcOverhealMarked ENDP
+
 END

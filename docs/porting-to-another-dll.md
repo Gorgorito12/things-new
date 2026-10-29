@@ -136,6 +136,10 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `HpBarRenderStart` | `0x45C4AF` | `0x3F` B | 6 B at `0x45C4B9` | `8B 9D D4 08 00 00` (`mov ebx,[ebp+8D4h]`) | the renderer's count, before the vertex lock; `segment` |
 | `HpBarRenderLoop` | `0x45C60B` | `0x587` B | 6 B at `0x45CB72` | `83 C0 01 83 C1 1C` (`add eax,1 / add ecx,1Ch`) | the whole per-record loop (the vertex layout the hook relies on) and its end; `segment` |
 | `OverhealTextStat`, `OverhealTextStatSplit` | `0x4D7647`, `0x69A9B0` | `0x15`, `0x1B` B | 5 B at `0x4D7651`, `0x69A9C0` | `68 54 20 BA 00`, `68 54 4A C3 00` (`push` format) | the stat row's HP text formats; `segment` |
+| `OverhealAddEntry` | `0x4823A3` | `0x0A` B | 8 B at `0x4823A3` | `51 56 8B F1 83 7E 08 08` | entry of the add-HP function FUN_004823A3; overhealSources |
+| `HealTickMax` | `0x9E0BA5` | `0x29` B | 5 B at `0x9E0BBB` | `E8 48 F8 A9 FF` (`call 480408h`) | the heal tick's HP < max test; overhealSources |
+| `HealTickAdd` | `0x9E0CCF` | `0x26` B | 5 B at `0x9E0CE9` | `E8 B5 16 AA FF` (`call 4823A3h`) | the heal tick's heal; overhealSources |
+| `HealSearchRatio` | `0x9CD982` | `0x18` B | 5 B at `0x9CD984` | `E8 0C 19 A9 FF` (`call 45F295h`) | the heal search's first ratio; overhealSources |
 | `HpBarQueue`, `DynamicVbLock`, `DynamicVbFull` | `0x45FB71`, `0x40A6A2`, `0x40A689` | `0x6F`, `0x45`, `0x19` B | — | — | the queue the segment hook calls, and the vertex buffer's size check; `segment` |
 | `OverhealInfoProto`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag` | `0x9AF33B`, `0x480408`, `0x45F295`, `0x5F5CE3`, `0x5F5D39` | `0x19`, `0x26`, `0x48`, 6, 6 B | — | — | where ObjectInfo stores the database proto, the getter the hooks call, the ratio the helper mirrors, and the stores that put InitialHitpoints / MaxHitpoints at `[proto+9Ch]` / `[proto+98h]`; overhealHitpointBars (also `IsA`, `IsATrue`) |
 | `GatherTickRate` | `0x4ED02A` | `0x26` B | 8 B at `0x4ED044` (`jmp` + 3 NOP) | `D8 4C 24 30 D9 54 24 14` (`fmul [esp+30h]; fst [esp+14h]`) | the gather tick's rate per second in ST0 (FUN_004ECD87); showGatherRate record hook (continues at `0x4ED04C`) |
@@ -938,6 +942,27 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     the stock one; change only the flags; → `0x4D7656`, `0x69A9C5`.
   - These depend on the renderer's vertex layout (verified as the whole loop, site
     `HpBarRenderLoop`) and on the marker player ID never being a real player.
+- **Public helpers** for the other overheal keys (cdecl, in `overheal_hooks.asm`):
+  `float UhcOverhealReferenceOf(unit)`, `float UhcOverhealRatioOf(unit)`,
+  `int UhcOverhealMarked(proto)`.
+
+### overhealSources
+
+- **Needs** overhealHitpointBars' types and helpers (above); apply it after that key.
+- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount`, `g_uhcOverhealAllow`.
+- **Add-HP hook** at `0x4823A3` (8 B: `push ecx; push esi; mov esi,ecx; cmp dword ptr [esi+8],8`),
+  ECX = unit, `[esp+4]` = amount (float), `[esp+8]` = flag: pushad, `UhcOverhealAddHp(unit,
+  &amount)` (may lower the amount in place), popad, redo the 8 bytes, → `0x4823AB` (`jbe` on the
+  `cmp`). Lowering rule: amount > 0, the unit's proto marked, `g_uhcOverhealAllow` = 0 and
+  HP + amount > reference → amount = max(reference − HP, 0).
+- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the action
+  (healer `[esi+10h]`), FPU stack empty: ST0 = the reference for a marked target and a non-source
+  healer, else the stock max; → `0x9E0BC0`.
+- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the healer is a
+  source; the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
+- **Search hook** at `0x9CD984` (5 B, `call 45F295h`), ECX = ESI = candidate, healer `[ebp+4]`:
+  ST0 = HP / reference (stock rules) for a marked candidate and a non-source healer, else the stock
+  ratio; → `0x9CD989`. Coexists with smartHealTargets and healNonIdle (other sites of the loop).
 
 ### showGatherRate
 

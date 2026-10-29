@@ -265,6 +265,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center; the queue resumes when they leave or that Town Center dies. | Nothing for the Daimyos; with a new marker, that type on the trainers in `protoy`. | confirmed (single player) |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units, and the unit type on them (or an existing type in the cfg). | confirmed (single player, UI) |
+| [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget in your UI. | confirmed (single player, UI; the data ref not tested) |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. | confirmed (single player) |
@@ -2281,6 +2282,50 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [log]   default Abstrac
   played normally. Not tested: a `Hitpoints` tech (the `(base+bonus)` text), a max changed by an
   aura, a custom colour, other players' units and multiplayer.
 - **New in this DLL:** not in UHC 1.10. WoL request #21 ([wol-requests.md](wol-requests.md)).
+
+### overhealSources
+
+![overhealSources in game](media/overhealSources.gif)
+
+*In game:* a marked Musketeer (150 / 165) is hit to 90; the surgeon heals it back to 150 and stops; at second 75 an Indian monk marked `AbstractOverhealer` appears and takes it to 165 (the orange segment). The unmarked Pikeman is healed to its max, as in stock. [Full video (MP4)](media/overhealSources.mp4).
+
+```
+overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 types
+```
+
+- **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its unit types mark the units that
+  have overheal, and its 100 % (`InitialHitpoints`, scaled when an aura changes the max) is the
+  limit here. Without that line the key is not applied.
+- **Effect,** for a marked unit:
+  - a healer whose proto is of a source type (default `AbstractOverhealer`, a new marker; an
+    existing type or a proto name works too) heals it up to `MaxHitpoints`, as in stock;
+  - any other healer heals it only up to its 100 %: its automatic search does not pick a marked
+    unit at its 100 %, and its heal action ends when the unit gets there (the healer goes idle);
+    a direct order on such a unit ends at once;
+  - every other way of gaining HP stops at the 100 % too: regeneration, the Regeneration dance,
+    area heals, self heals, powers and triggers that add HP. Only the single-target heal action of
+    a source healer overheals. Damage, and code that sets HP rather than adding it (creation,
+    transforms, the aura rescale), are not touched.
+
+  Unmarked units heal as in stock.
+- **Data:** the source type on the healers that may overheal, e.g.
+  `<UnitType>AbstractOverhealer</UnitType>` on `ypMonkIndian` (in `protoy.xml` and its XMB), or name
+  an existing type: `overhealSources AbstractMonk`.
+- **Log:** `overhealSources: only healers of unittype X heal marked units above their 100 %; every
+  other heal stops there (multiplayer unverified)`; when the data loads `unit types: X -> <ID> …`;
+  in a game `hook reached: overhealSources heal search (0x9CD984)`, `heal tick (0x9E0BBB)`, `heal
+  (0x9E0CE9)` and `overheal add HP (0x4823A3)`. With `log`, the first of each proto: `overhealSources:
+  a heal of unit N (Musketeer) stops at its 100 % 150.0 (…; not from a source healer)` and `…unit N
+  (Musketeer) is healed above its 100 % 150.0 by a source healer (…)`. Without
+  `overhealHitpointBars`: `overhealSources: needs overhealHitpointBars, …; feature not applied`.
+- **Simulation:** yes. Every machine needs the same line (and `overhealHitpointBars` with the same
+  types). The source type is a new unit type, which changes the unit type count.
+- **Status:** confirmed in single player (2026-10-29). A marked Musketeer hit to 90 was healed by a
+  surgeon to 150 and stayed there (the surgeon idle) until an Indian monk marked as a source
+  appeared and healed it to 165; an unmarked Pikeman was healed to its max. A skirmish against the
+  AI with the key on played normally. Not tested: area heals, regeneration and powers on marked
+  units (the cap is static reading for them), a direct order, multiplayer.
+- **New in this DLL:** not in UHC 1.10.
 
 ### showGatherRate
 

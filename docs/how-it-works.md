@@ -1550,6 +1550,64 @@ reference is coloured the same.
   a white `92/150`; the unmarked Pikeman healed to 132/132 kept the stock bar. The vertex buffer
   was 2 MB (9,709 bars), so the fit guard never ran.
 
+### overhealSources
+
+**Marked and reference** are `overhealHitpointBars`': `overheal_hooks.asm` exposes its helpers as
+cdecl functions (`UhcOverhealMarked(proto)`, `UhcOverhealReferenceOf(unit)`,
+`UhcOverhealRatioOf(unit)`), so both keys share one definition.
+
+**How HP is gained.** Every heal of a unit adds HP through FUN_004823A3 (`thiscall(unit, amount,
+flag)`, `ret 8`): when the unit's state allows it, it calls the setter FUN_004820A1(HP + amount,
+flag) and, for an amount above 1e-6, adds it to a "healed" total `[[unit+0B4h]+0E4h]`. The setter
+stores HP `[unit+64h]`, clamps it to [0, max] (the per-unit override through 0x6A2CB3, else
+`[proto+98h]`), updates the damage visuals (0x9CB73E) and, with `flag`, calls 0x482152. REA
+Evidence `ev_b83c97e4…` (both). The heal action's tick FUN_009E0B53 (`ev_e9a25933…`) heals only
+while HP < max (`call 480408h` at 0x9E0BBB, then `jnp 9E0D3Fh`, which ends the action with state
+10) and adds `0x487C45(target) × [world+318h] × [world+104h]` at 0x9E0CE9. The callers of the
+adder:
+
+| Caller of 0x4823A3 | Function | What it is (static reading unless marked) | With `overhealSources` |
+|---|---|---|---|
+| 0x9E0CE9 | FUN_009E0B53, the heal tick | the heal action (surgeons, monks, priests…), automatic or ordered (seen in game) | a source healer: up to the max, as in stock; any other healer: up to the reference, and the action ends there (seen in game) |
+| 0x9D3BFD, 0x9D3C10, 0x9D3E2F, 0x9D3E42 | FUN_009D35CE | heals of max × rate / `[proto+0CCh]` (inferred: an area or aura heal) | reference |
+| 0x67A03B | FUN_00490476 | the fire pit's Regeneration dance (idle units, `[world+104h]` × max × 0.01) | reference |
+| 0x490881 | FUN_004905E1 | per-unit regeneration (inferred: `CanAutoHeal` / `UnitRegenRate`) | reference |
+| 0x9CFA77, 0x9D0C16 | FUN_009CF93B, FUN_009D0A4D | heals of the action's own unit `[esi+10h]`, proportional to its max (inferred: self heals) | reference |
+| 0x7C378C, 0x8CCA6F | FUN_007C369B, FUN_008CC89F | heals proportional to the max (inferred: powers and effects such as `PowerHeal`) | reference |
+| 0x9E594D, 0x9E5AEB | FUN_009E5583 | repair, which pays its cost first (0x8D946A) | reference (stock data repairs buildings, which are not marked) |
+| 0x9E03C0, 0x8EDCC5 | a chunk filed under 0x9E0D4E, FUN_008EDAFD | additions capped at a total (`[esi+6Ch]`, `[ebp+12Ch]`; inferred: build or repair progress) | reference |
+| 0x49B822 | FUN_0049B3D9, TakeDamage | damage, a negative amount | not touched |
+| 0x6A4AF5 | FUN_004DCFE2 | damage that leaves at least 1 HP, negative | not touched |
+
+The 32 direct callers of the setter FUN_004820A1 (unit creation 0x49839B, transforms, the modifier
+rescale 0x9C73xx, triggers, the dance's 1-HP floor 0x67A02B, …) set HP rather than add it and are
+not touched: creation starts a unit at `InitialHitpoints` (its reference), and the rescale keeps the
+HP ratio. A `Hitpoints` tech adds the same amount to `InitialHitpoints` and the max (0x8F97CD), so
+the reference follows it; an aura that changes the max rescales the reference (overhealHitpointBars).
+A source counts only through the heal tick: a marked area healer or regeneration does not
+overheal (only the single-target heal action knows its healer).
+
+**The hooks** (`hooks/overhealsources_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x4823A3 | `push ecx / push esi / mov esi,ecx / cmp [esi+8],8` (8 B; ECX = unit, `[esp+4]` = amount) | `UhcOverhealAddHp(unit, &amount)`: a positive amount on a marked unit is lowered to reach at most the reference, unless `g_uhcOverhealAllow`; then the stolen bytes | 0x4823AB (`jbe`, on the stolen `cmp`) |
+| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | for a marked target and a healer of no source type: the reference; else the stock max | 0x9E0BC0 |
+| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = healer is a source, the stolen call, then 0 | 0x9E0CEE |
+| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | for a marked candidate and a normal healer: HP / reference (1.0 at the reference: no candidate); else the stock ratio | 0x9CD989 |
+
+**Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
+only lowers a positive amount; damage (negative amounts) and the setter's other callers are
+untouched. At 0x9E0BBB the FPU stack is empty and ECX/EDX are written again after 0x9E0BC0; the
+add hook keeps every register (pushad) and redoes the stolen `cmp`, whose flags the `jbe` reads.
+The tick hook's flag is set and cleared around one call (no re-entry: the adder does not call the
+heal tick). The direct heal order (command predicate code 41h, FUN_004C6CD7, "HP < max") still
+accepts a marked unit at its reference; its action then ends on its first tick.
+
+**Observed in game:** a marked Musketeer hit to 90 was healed by a surgeon to 150 and stayed there
+with the surgeon idle; an Indian monk marked as a source healed it to 165; the unmarked Pikeman went
+back to its max.
+
 ### showGatherRate
 
 **The stock rate rows.** The stat panel (`uiunitstatpanel3`; 9 label/value rows `StackLabel%d` /
