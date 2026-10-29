@@ -10,7 +10,12 @@ This guide covers these features that are new in this DLL:
 - `hcShipmentPointFallback`;
 - `damageOverTime`;
 - `dodgeAnyUnit`, `dodgeSoundSet` and `criticalSoundSet`;
-- `multipleInstances`.
+- `multipleInstances`;
+- the features built for WoL's Tier 2 requests ([wol-requests.md](wol-requests.md)):
+  `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`,
+  `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`,
+  `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`,
+  `noCorpseDopples` and `danceBonusCivs`.
 
 `bufferedFileReads` is not covered yet. Its design is in
 [how-it-works.md](how-it-works.md#bufferedfilereads), and its code is
@@ -39,10 +44,12 @@ loader. They are only valid for that build, so any patched exe must be built fro
 string patches ([binaries.md](binaries.md#extra-patches-in-the-wars-of-liberty-exe)). None of
 those patches falls inside the ranges below.
 
-**Your DLL.** Each hook writes a 5-byte `jmp` (NOP-padded where it covers more), and relies on
-stock code around it: the instructions it re-executes, the code it jumps back to, and, for
-`hcShipmentPointFallback`, the stock search block it mirrors. **Nothing else may patch these
-ranges**, neither your DLL nor any other tool:
+**Your DLL.** Each hook writes a 5-byte `jmp` (NOP-padded where it covers more), the rel32 of a
+`call`, or a single constant, and relies on stock code around it: the instructions it
+re-executes, the code it jumps back to, and the stock code its C++ side mirrors or calls (for
+example the search block of `hcShipmentPointFallback`, or the population test of
+`maintainWaitForPop`). Rows with "—" in the Written column are such verify-only ranges.
+**Nothing else may patch these ranges**, neither your DLL nor any other tool:
 
 | Site | VA | Length | Written | Stock bytes at the written VA | Role |
 |---|---|---|---|---|---|
@@ -62,9 +69,49 @@ ranges**, neither your DLL nor any other tool:
 | `DodgeSound` | `0x6A2628` | 8 B | 5 B at `0x6A2628` | `68 E0 74 BD 00` (`push "PowerEvade"`) | the dodge's sound set; dodgeSoundSet hook |
 | `CriticalSound` | `0x6A2A9A` | 8 B | 5 B at `0x6A2A9A` | `68 18 75 BD 00` (`push "PowerCriticalStrike"`) | the critical hit's sound set; criticalSoundSet hook |
 | `SingleInstanceSemaphore` | `0x55A185` | 6 B | — (the IAT slot `0xB843F0` instead) | `FF 15 F0 43 B8 00` (`call [CreateSemaphoreW]`) | the single-instance check; multipleInstances knows this call by its return address `0x55A18B` |
+| `BuildingWorkRateGetter` | `0x9BFE33` | `0x15` B | 5 B at `0x9BFE33` | `8B 41 68 85 C0` (`mov eax,[ecx+68h]; test eax,eax`) | the BuildingWorkRate getter, including the tail `0x9BFE3E` the hook continues at; liveBuildingWorkRate |
+| `WorkRateTrainCall`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall` | `0x9EA410`, `0x9E65F4`, `0x9D58D1`, `0x6AB23C` | `0x14`, `0x0D`, `0x0D`, `0x14` B | — | — | the getter's four callers, each up to its first write of EAX (the hook returns another EAX) |
+| `TechPrereqDirtyCheck` | `0x491A18` | 10 B | 10 B at `0x491A18` (`jmp` + 5 NOP) | `80 7F 10 00 0F 85 B2 7C 07 00` (`cmp byte [edi+10h],0; jne 5096D4h`) | dirty test of a player's tech tree (FUN_004919CE); techPrereqRecheck |
+| `TechPrereqNoPass`, `TechPrereqPassEntry`, `TechPrereqPassLoop`, `TechPrereqEntryUpdate`, `TechPrereqListEval`, `TechPrereqListLoop`, `TypeCountCtor`, `PrereqBaseCtor`, `TypeCountEval`, `TechTemplateFallback`, `TechTemplateLoop`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount` | `0x491A22`, `0x5096D4`, `0x5095A1`, `0x5094EB`, `0x5094B4`, `0x50946A`, `0x8EE860`, `0x6201AA`, `0x8EE8E7`, `0x48050F`, `0x61FE63`, `0x5C400B`, `0x481D3D`, `0x481A87` | 10, 9, `0x77`, `0x51`, `0x24`, `0x4A`, `0x10`, `0x16`, `0x34`, `0x1B`, `0x3C`, `0x19`, `0x19`, `0x0F` B | — | — | the two continuations, the stock re-check and evaluator the check mirrors and calls, the TypeCount layout, the template records, the tech names, the world update's call and step count |
+| `MaintainSpawn` | `0x6AB27D` | `0x2C` B | 6 B at `0x6AB27D` | `8B 56 68 8B 46 64` (`mov edx,[esi+68h]; mov eax,[esi+64h]`) | cycle-complete path of the Maintain update FUN_00492F3E; maintainWaitForPop (continues at `0x6AB283`) |
+| `MaintainCycleDone`, `MaintainRestart`, `MaintainNotDone`, `MaintainEpilogue`, `MaintainSpawnSetup`, `MaintainSpawnPopTest`, `MaintainSpawnPopTest2`, `MaintainGroupPopTest` | `0x6AB264`, `0x6AB2D1`, `0x6AB180`, `0x493039`, `0x9E2E35`, `0x9E2F79`, `0x9E3110`, `0x9E2B69` | `0x19`, `0x0F`, 6, 7, `0xBA`, `0x6D`, `0x19`, `0x71` B | — | — | the ≥ 1.0 test, the restart a held cycle skips, the "not complete" exit and the epilogue, and the spawn's population tests the predicate repeats |
+| `TransformSetProto` | `0x9C763F` | 14 B | 5 B at `0x9C763F` | `E8 AF 0B AD FF` (`call 4981F3h`) | setProto in the transform in place FUN_009C754C; transformUpdatesLOS (continues at `0x9C7644`) |
+| `TransformProtoLookup`, `TransformPushProto`, `TransformVisRemove`, `TransformVisAdd`, `LosBuildCopyRead`, `LosBuildCopyWrite`, `LosGetter` | `0x9C754C`, `0x9C763C`, `0x9C756A`, `0x9C772A`, `0x6A20B2`, `0x6A20ED`, `0x48207E` | 22, 3, 11, 11, 8, 16, `0x20` B | — | — | the new proto in EBP and at `[esp]`, the visibility remove and add around the hook, and the LOS layout (build completion's copy, the getter) |
+| `BroadsideMuzzleCap` | `0x5033CF` | `0x11` B | 5 B at `0x5033D5` | `BE 06 00 00 00` (`mov esi,6`) | the stock limit of 6 muzzles per side in FUN_0050339A; broadsideMuzzleLimit |
+| `BroadsideMuzzleClampL` | `0x5034E2` | 12 B | 6 B at `0x5034E2`, only with `log` | `3B C6 89 44 24 1C` (`cmp eax,esi; mov [esp+1Ch],eax`) | the MuzzleL clamp; broadsideMuzzleLimit log hook |
+| `BroadsideInitHead`, `BroadsideMuzzleClampR`, `BroadsideMuzzleReload`, `BroadsideSingleUseCap`, `BroadsideClampCold` | `0x50339A`, `0x503447`, `0x5034B3`, `0x6A8236`, `0x6A8247` | `0x35`, 12, 13, 17, 22 B | — | — | the set-up up to the Ship test, the MuzzleR clamp, the limit reload, the `SingleUsePlayer` block and the cold clamps |
+| `AbilitySlotCopies` | `0x695BB6` | `0x4C` B | 4 B at `0x695BD3` | `05 00 00 00` (imm32 of `mov edi,5`) | page-11 copy loop of the command panel refresh FUN_0046188E; abilitySlots |
+| `AbilityButtonRecharge` | `0x696C70` | 11 B | 5 B at `0x696C70`, only with `log` | `E8 C2 81 DC FF` (`call 45EE37h`) | first instruction of GetNth's true path; abilitySlots log hook |
+| `AbilityPage11Branch`, `AbilityNthCall` | `0x4C5AEB`, `0x696C0B` | `0x10`, `0x65` B | — | — | the only entry of the copy loop, and the GetNth call frame the log hook reads |
+| `WonderPanelAbilityCall` | `0x69EE5D` | `0x2D` B | 5 B at `0x69EE5D` (a `call` to the hook) | `E8 6A F7 04 00` (`call 6EE5CCh`) | the wonder power panel's ability request and the stock re-check after it; wonderPanelSkipAuras (returns to `0x69EE62`) |
+| `WonderPanelAbilityArgs`, `NthVisibleAbility`, `AbilityByIndex` | `0x69EE37`, `0x6EE5CC`, `0x44E702` | `0x26`, `0x14`, `0x1D` B | — | — | the arguments the hook re-pushes, and the two functions it calls |
+| `LifespanTick` | `0x483EEC` | 12 B | 10 B at `0x483EEC` | `D9 44 24 0C D8 1D E4 4B B8 00` (`fld [esp+0Ch]; fcomp [0B84BE4h]`) | start of the lifespan tick's cold part; lifespanAfterConstruction tick hook (continues at `0x483EF6`) |
+| `FadeTimerCommit` | `0x482A1A` | 12 B | 6 B at `0x482A1A` | `75 0A 8B 4C 24 10` (`jne 482A26h; mov ecx,[esp+10h]`) | store of the fade timer in FUN_004829FA; lifespanAfterConstruction fade hook (continues at `0x482A20` or `0x482A26`) |
+| `LifespanTickHead`, `LifespanTickReturn`, `FadeUpdateHead`, `FadeDispatch`, `FadeOutTimerTest`, `IsBuilt`, `IsBuiltFalse`, `IsA`, `IsATrue` | `0x482BF6`, `0x482C20`, `0x4829FA`, `0x482A26`, `0x4A174A`, `0x44DDB4`, `0x69F904`, `0x44D7FA`, `0x44F139` | `0x2A`, 5, `0x20`, `0x63`, `0x15`, `0x1F`, 3, `0x69`, 5 B | — | — | the frames the hooks read, the exit a held unit takes, the fade branches, and the isBuilt and is-a functions the hooks call |
+| `GaiaSocketFound` | `0x508CC1` | 10 B | 5 B at `0x508CC1` | `C6 44 24 37 01` (`mov byte [esp+37h],1`) | "socket found" in PLACE (FUN_0050703D); gaiaSocketsOnly (continues at the `jmp 50757Eh` at `0x508CC6`) |
+| `GaiaSocketMatch`, `GaiaSocketLoopNext`, `GaiaSocketMissing` | `0x508BE6`, `0x50757E`, `0x509215` | `0xDB`, `0x11`, `0x15` B | — | — | PLACE's socket test (frame and registers the hook relies on), its next entry, and its "no socket" failure |
+| `HotkeyFindCall` | `0x5C1778` | 10 B | 5 B at `0x5C1778` (a `call` to the hook) | `E8 2E FF FF FF` (`call 5C16ABh`) | keymap find in FUN_005C16EA; customHotkeyContexts registration wrapper |
+| `HotkeyDeactivateLast` | `0x79F1A5` | 7 B | 5 B at `0x79F1A5` (a `call` to the hook) | `E8 49 30 CA FF` (`call 4421F3h`) | last switch-off (`WonderAccel`) in FUN_0079EF9C; customHotkeyContexts switch-off wrapper |
+| `HotkeyUnitContext` | `0x79F897` | 14 B | 6 B at `0x79F897` | `8B BE 78 01 00 00` (`mov edi,[esi+178h]`) | the selected unit's context in FUN_0079F851; customHotkeyContexts context hook |
+| `HotkeyTrainerBuildFlag` | `0x64A034` | 7 B | 5 B at `0x64A034` | `C6 44 24 13 01` (`mov byte [esp+13h],1`) | BuildAccel byte for a trainer that is not a building; customHotkeyContexts trainer hook |
+| `HotkeyFindContext`, `HotkeyRegisterContext`, `HotkeyUnitActivate`, `HotkeyDeactivateById`, `HotkeyTrainerQualified` | `0x5C16AB`, `0x628FC0`, `0x79F9BF`, `0xAB397F`, `0x64A05A` | `0x3F`, `0x2F`, `0x26`, 14, 4 B | — | — | the find and register functions the wrapper calls, the code that turns EDI on, the switch-off by ID, and the Building path the trainer hook enters |
+| `SnareGroupPace` | `0x4FD3FD` | `0x1D` B | `0x1A` B at `0x4FD3FD` (`jmp` + NOPs to `0x4FD417`) | `8B 17 8B CF 8B 42 34 E8 41 C3 FA FF D8 5E 7C DF E0 F6 C4 05 0F 8B 23 01 00 00` (`mov edx,[edi]` … `jnp 4FD53Ah`) | member velocity compare of the group recompute FUN_004FD289; snareOnlyHitUnit pace hook |
+| `SnareSlotWait` | `0x4FA172` | `0x15` B | 6 B at `0x4FA17D` | `8B 46 04 80 08 80` (`mov eax,[esi+4]; or byte [eax],80h`) | straggler bit of the member step FUN_004FA03B |
+| `SnarePathWait` | `0x6AA510` | `0x0D` B | 6 B at `0x6AA514` | `8B 43 04 80 08 80` (`mov eax,[ebx+4]; or byte [eax],80h`) | straggler bit for a member with its own path |
+| `SnarePathCheck` | `0x6AA537` | `0x3E` B | 6 B at `0x6AA56A` | `8B 40 04 80 08 80` (`mov eax,[eax+4]; or byte [eax],80h`) | the same path's distance check, up to the `jmp 4F9F99h` it continues at |
+| `SnareGroupPaceStore`, `SnareCreate`, `SnareModifierInit`, `SnareCollector`, `SnareModifierSum`, `SnareModifierSumEnd`, `SnareModifierSumTactic`, `SnareVelocityGetter`, `SnareVelocityRecord`, `SnareUnitById` | `0x4FD53A`, `0x4DD201`, `0x4B3D44`, `0x49F34B`, `0x4B3C48`, `0x4E2A8E`, `0x6A88D6`, `0x487E27`, `0x488612`, `0x4F9EB7` | `0x14`, `0x2C`, `0x5A`, `0x79`, `0xB7`, `0x1B`, `0x22`, `0x4D`, `0x1E`, `0x44` B | — | — | the stock store the pace hook leaves to, and the stock code the helpers mirror (the snare's parameters, the modifier layout, the collector, the velocity sum, the getter, the unit lookup) |
+| `TechRenameRegister` | `0x524CAA` | `0x1C` B | 7 B at `0x524CB5` | `83 BE 04 35 00 00 00` (`cmp dword ptr [esi+3504h],0`) | after the last stock effect type registration in FUN_0052277E; techRenameEffect registration hook |
+| `TechRenameFactoryDefault` | `0x62146F` | `0x13` B | 5 B at `0x62146F` | `68 1F 05 00 00` (`push 51Fh`) | default case of the effect factory FUN_00620535; techRenameEffect factory hook |
+| `TechRenameTypeByName`, `TechRenameFactoryHead`, `TechRenameEffectParse`, `TechRenameEffectCtor`, `TechRenameEffectVtable`, `TechRenameApplyCall`, `TechRenameLocalTechNode` | `0x61FF1B`, `0x620535`, `0x6205C7`, `0x620B8F`, `0xB965C0`, `0x7F80FD`, `0x8D0005` | `0x10`, `0x0F`, `0x2D`, `0x1D`, `0x44`, `0x17`, `0x27` B | — | — | the type lookup, the factory head and the parse around the hook, the BEffect ctor and vtable (`.rdata`) the effect copies, the apply dispatcher's call and the player's tech node function |
+| `NoCorpseDoppleCreate` | `0x49534D` | `0x24` B | 8 B at `0x49534D` | `8B 44 24 2C 8B 4C 24 54` (`mov eax,[esp+2Ch]; mov ecx,[esp+54h]`) | dopple creation in the unit visibility update FUN_0048679A, through `call 4DB3D0h` and `jmp 486A30h`; noCorpseDopples |
+| `NoCorpseDoppleGaiaCheck`, `NoCorpseDoppleSkip`, `NoCorpseDoppleAliveCall` | `0x4F1088`, `0x486A30`, `0x4868FA` | `0x11`, `0x17`, `0x15` B | — | — | the second way into the site, the "no dopple" exit the hook takes, and the stock virtual isAlive call it imitates |
+| `DanceTrainGate`, `DanceXpGate`, `DanceGatherGate`, `DanceRegenGate` | `0x8D47A6`, `0x4E0DFA`, `0x4ECD4E`, `0x490486` | 13, 13, 13, 17 B | 6 B each at `0x8D47AB`, `0x4E0DFF`, `0x4ECD53`, `0x49048B` | `3B 05 50 FB C6 00` (`cmp eax,[0C6FB50h]`) at each | the first native civ compare of the four dance readers; danceBonusCivs. Each range covers the civ load before it and the `je` after it |
+| `DanceTrainBranch`, `DanceXpBranch`, `DanceGatherBranch`, `DanceRegenBranch` | `0x8D47CF`, `0x4E0E29`, `0x4ECD7D`, `0x679E66` | 13, 10, 10, 13 B | — | — | the native branches the hooks enter |
 
 The full expected bytes of every range are in [`src/generated/sites.h`](../src/generated/sites.h),
-generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py).
+generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py). No feature writes
+inside another feature's range (checked with a script over `tools/gen_sites.py`, 2026-10-29), so
+any combination of keys can be enabled together.
 
 **Status for Wars of Liberty: not checked.**
 - None of these addresses appears among the WoL `uhc.dll` sites found so far
@@ -81,6 +128,32 @@ generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py).
 - The dodge sites (`Dodge*`, `CriticalSound`, and the continuations `0x49ACEB`, `0x49B028`,
   `0x6A262D`, `0x6A2A9F`): none of these addresses appears as a 32-bit value in WoL's `uhc.dll`
   or `wol.dll` (byte search, 2026-10-28). That rules out absolute references, not every patch.
+- The WoL Tier 2 sites, from the scoping passes of 2026-10-29 (byte searches of WoL's `uhc.dll`
+  and `wol.dll`, and a memory diff of WoL's `uhc.dll` taken at the main menu; patches WoL's DLL
+  applies later, in a game, are not excluded):
+  - `liveBuildingWorkRate`: WoL hooks the Data effect calls (`0x7F86FE`, `0x7F8743`, `0x7F8778`,
+    `0x7F87A8`), three calls in the proto copy-on-write (`0x8D1B3B`, `0x8D1B61`, `0x8D1B79`) and the
+    Armor case `0x8FAE57`; none is inside these ranges. WoL owns the effect pipeline that writes
+    `[proto+D0h]`, though: if it moves BuildingWorkRate elsewhere, the getter reads the wrong field;
+  - `maintainWaitForPop`: WoL's exe is byte-identical over the `Maintain*` ranges, and the memory
+    diff does not overlap them;
+  - `broadsideMuzzleLimit`: no WoL patch in `0x5033AA..0x503560` or `0x6A8236..0x6A825D`; its
+    nearby `BroadsideNoTurn` patches (`0x4C0EB8`, `0x5030FE`) are outside these ranges;
+  - `gaiaSocketsOnly`, `noCorpseDopples`, `wonderPanelSkipAuras`: no overlap with the memory diff,
+    and none of their sites or continuations appears as a 32-bit value in WoL's DLLs;
+  - `customHotkeyContexts`: WoL's DLL has no `Accel` string and patches none of these ranges; its
+    upstream `tacticSwitching` cave at `0x5C161C` is in FUN_005C13C5, which this feature does not
+    touch. WoL's `DefaultKeyMapY.xml` already names its new contexts `<ProtoName>Accel`;
+  - `danceBonusCivs`: WoL's `NativeCivs` (upstream's caves at `0x4904B5`, `0x4ECD6B`, `0x8D47C9`,
+    each ending before the next range here) and its `danceCiv` key (interface calls at `0x4551D0`,
+    `0x6440F0`, `0x64414C`, `0x6441B8`) do not overlap. WoL also NOPs `0x679FBA` (the regeneration
+    knock-out bypass) and the WarChiefRansom revive call at `0x9D6BE7`; a DLL that replaces WoL's
+    loses those unless it ports them too;
+  - `techRenameEffect`: WoL's own `RandomTech` and `SetTechName` effects use the same factory
+    default case `0x62146F`; merge the two instead of installing a second `jmp` (see the contract);
+  - `techPrereqRecheck`, `transformUpdatesLOS`, `abilitySlots`, `lifespanAfterConstruction`,
+    `snareOnlyHitUnit`: not checked against WoL's patches. The upstream `BigButton` site
+    `0x461BD8` is in the command panel function but outside the `abilitySlots` ranges.
 
 **The reliable check is at runtime.** Port the `VerifyAll` step (below) and run it after your
 DLL has applied all its own patches. A range that another patch changed then makes the feature
@@ -96,22 +169,42 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/damageovertime.cpp`](../src/features/damageovertime.cpp), [`src/hooks/dot_hooks.asm`](../src/hooks/dot_hooks.asm) | `damageOverTime`. | sites `Dot*`, your cfg reader |
 | [`src/features/dodge.cpp`](../src/features/dodge.cpp), [`src/hooks/dodge_hooks.asm`](../src/hooks/dodge_hooks.asm) | `dodgeAnyUnit`, `dodgeSoundSet`, `criticalSoundSet`. | unittypes, sites `Dodge*` and `CriticalSound`, `WriteCall` (in `patch.cpp`), your cfg reader |
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
+| [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, your cfg reader |
+| [`src/features/techprereq.cpp`](../src/features/techprereq.cpp), [`src/hooks/techprereq_hooks.asm`](../src/hooks/techprereq_hooks.asm) | `techPrereqRecheck`. | sites `TechPrereq*`, `TypeCount*`, `PrereqBaseCtor`, `TechTemplate*`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount`; `OnDatabaseLoad` (unittypes); your cfg reader |
+| [`src/features/maintain.cpp`](../src/features/maintain.cpp), [`src/hooks/maintain_hooks.asm`](../src/hooks/maintain_hooks.asm) | `maintainWaitForPop`. | unittypes (and `OnDatabaseLoad` for `log`), sites `Maintain*`, your cfg reader |
+| [`src/features/transform.cpp`](../src/features/transform.cpp), [`src/hooks/transform_hooks.asm`](../src/hooks/transform_hooks.asm) | `transformUpdatesLOS`. | sites `Transform*` and `Los*`, your cfg reader |
+| [`src/features/broadside.cpp`](../src/features/broadside.cpp), [`src/hooks/broadside_hooks.asm`](../src/hooks/broadside_hooks.asm) | `broadsideMuzzleLimit`. | unittypes (only with a UnitType), sites `Broadside*`, your cfg reader (`Config::All`) |
+| [`src/features/abilityslots.cpp`](../src/features/abilityslots.cpp), [`src/hooks/abilityslot_hooks.asm`](../src/hooks/abilityslot_hooks.asm) | `abilitySlots`. | sites `Ability*` (not `AbilityByIndex`), `WriteDword`, your cfg reader (`Config::Int`) |
+| [`src/features/wonderpanel.cpp`](../src/features/wonderpanel.cpp), [`src/hooks/wonderpanel_hooks.asm`](../src/hooks/wonderpanel_hooks.asm) | `wonderPanelSkipAuras`. | sites `WonderPanel*`, `NthVisibleAbility`, `AbilityByIndex`, `WriteCall`, your cfg reader |
+| [`src/features/lifespan.cpp`](../src/features/lifespan.cpp), [`src/hooks/lifespan_hooks.asm`](../src/hooks/lifespan_hooks.asm) | `lifespanAfterConstruction`. | unittypes (and `OnDatabaseLoad` for `log`), sites `Lifespan*`, `Fade*`, `IsBuilt*`, `IsA*`, `WriteBytes`, your cfg reader |
+| [`src/features/sockets.cpp`](../src/features/sockets.cpp), [`src/hooks/socket_hooks.asm`](../src/hooks/socket_hooks.asm) | `gaiaSocketsOnly`. | unittypes (only with a UnitType), sites `GaiaSocket*`, your cfg reader |
+| [`src/features/hotkeys.cpp`](../src/features/hotkeys.cpp), [`src/hooks/hotkey_hooks.asm`](../src/hooks/hotkey_hooks.asm) | `customHotkeyContexts`. | sites `Hotkey*`, `WriteCall`, your cfg reader |
+| [`src/features/snare.cpp`](../src/features/snare.cpp), [`src/hooks/snare_hooks.asm`](../src/hooks/snare_hooks.asm) | `snareOnlyHitUnit`. | sites `Snare*`, your cfg reader |
+| [`src/features/techrename.cpp`](../src/features/techrename.cpp), [`src/hooks/techrename_hooks.asm`](../src/hooks/techrename_hooks.asm) | `techRenameEffect`. | sites `TechRename*`, your cfg reader |
+| [`src/features/dopples.cpp`](../src/features/dopples.cpp), [`src/hooks/dopple_hooks.asm`](../src/hooks/dopple_hooks.asm) | `noCorpseDopples`. | unittypes, sites `NoCorpseDopple*`, your cfg reader |
+| [`src/features/dance.cpp`](../src/features/dance.cpp), [`src/hooks/dance_hooks.asm`](../src/hooks/dance_hooks.asm) | `danceBonusCivs`. | sites `Dance*`, your cfg reader (`Config::All`) |
+
+Every feature also needs `VerifyAll`, `WriteJmp`, `Log` and `TRACE_ONCE`, listed below.
 
 Support code they use, small enough to copy or to map onto your own helpers:
 - [`src/site.h`](../src/site.h) and the matching `Site` entries of `src/generated/sites.h`.
 - [`src/patch.h`](../src/patch.h), [`src/patch.cpp`](../src/patch.cpp):
   - `VerifyAll` compares live memory with the expected bytes;
   - `WriteJmp` writes `jmp rel32` and NOP-fills the rest, through `VirtualProtect` and
-    `FlushInstructionCache`.
+    `FlushInstructionCache`;
+  - `WriteCall` writes a 5-byte `call rel32`, `WriteDword` one dword, `WriteBytes` raw bytes.
 
   If your DLL has its own patch library (WoL uses `remod`), keep the check before every write.
 - [`src/log.h`](../src/log.h), [`src/log.cpp`](../src/log.cpp): `Log` (printf-style, wide) and
   `UhcTraceHook`, which `TRACE_ONCE` calls. Point them at your own logger if you like.
 - [`src/hooks/common.inc`](../src/hooks/common.inc): the `TRACE_ONCE` macro. Optional: delete
   the `TRACE_ONCE` lines if you do not want the "hook reached" log lines.
-- [`src/config.h`](../src/config.h): only `Config::First(key)` is used. It returns the key's
-  arguments as a list of strings, or null when the key is absent. Replace those two calls with
-  your own cfg reader.
+- [`src/config.h`](../src/config.h): `Config::First(key)` returns the key's first line of
+  arguments as a list of strings, or null when the key is absent. `broadsideMuzzleLimit`,
+  `danceBonusCivs` and the dodge sound keys also use `Config::All(key)` (every line), and
+  `abilitySlots` uses `Config::Int(key)`. Replace these calls with your own cfg reader.
+- [`src/unittypes.h`](../src/unittypes.h): besides `RequestAbstractUnitType`,
+  `OnDatabaseLoad(callback)` calls a feature on every data load, from the same hook.
 
 The `Apply…` functions return `Outcome` from [`src/features.h`](../src/features.h). Replace it
 with your own result type.
@@ -127,7 +220,11 @@ with your own result type.
   - for `damageOverTime`, the two `__fastcall` wrappers, which the hooks reach through the
     pointer variables `g_uhcDotTakeDamage` and `g_uhcDotWorldUpdate`, so MASM never needs their
     decorated names. The trampolines `UhcDotTakeDamageStock` and `UhcDotWorldUpdateStock` go the
-    other way: C++ casts their addresses to function pointers.
+    other way: C++ casts their addresses to function pointers. `customHotkeyContexts` reaches its
+    two `__fastcall` wrappers the same way (`g_uhcHotkeyFindContext`,
+    `g_uhcHotkeyDeactivateAll`);
+  - for `techRenameEffect`, no MASM is involved in the effect's methods: they are `__fastcall`
+    C++ functions in a vtable the DLL fills.
 - **Build setup:**
   - CMake: `project(... LANGUAGES CXX ASM_MASM)`, as in this repository's `CMakeLists.txt`.
   - A Visual Studio project: enable **Build Dependencies → Build Customizations → masm**, then
@@ -152,7 +249,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 - **Why:** TAD registers a fixed list of abstract unit types, compiled into the exe. Any other
   `<UnitType>` in `protoy.xml` is dropped silently. `healNonIdle` needs its marker
-  (`AbstractHealNonIdle` by default) to exist as a type.
+  (`AbstractHealNonIdle` by default) to exist as a type, and so does every other key that takes a
+  `<UnitType>` when it is given a new name.
 - **API:** `RequestAbstractUnitType(name, &id)`. The first call installs the hook at `0x51BA31`.
   Call it from `UHCMain`, before the game loads its data.
 - **The hook** runs at the end of FUN_0051A5DC, on every data load, with EDI = database:
@@ -164,7 +262,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **If your DLL can already register unit types**, use your mechanism and skip this one. Two
   conditions:
   - the name must be registered before the protos load, so the proto loader sets its bit;
-  - its ID must reach `g_uhcHealNonIdleType` on every data load.
+  - its ID must reach the feature's variable (`g_uhcHealNonIdleType`, `g_uhcLifespanType`, …) on
+    every data load.
 
 ### healNonIdle
 
@@ -276,6 +375,265 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   with `hwndInsertAfter = HWND_BOTTOM`, wraps their window procedure to keep that z-order, and
   refuses every `HCBT_ACTIVATE`.
 
+### liveBuildingWorkRate
+
+- **Global:** `g_uhcBwrLog`, 1 with `log`. Without `log` the hook calls nothing.
+- **Getter hook** at `0x9BFE33`, the entry of `float thiscall(unit)`:
+  - entry state: ECX = the unit, `[esp]` = the return address into one of the four callers, x87
+    stack empty;
+  - with `log`, call the logger inside `pushad` / `popad` (it compares `[[ecx+68h]+28h]` with
+    `[[ecx+5Ch]+0D0h]` as dwords and changes no game state);
+  - re-execute `mov eax,[ecx+68h]; test eax,eax` (for EFLAGS) and jump to `0x9BFE3E`
+    (`mov eax,[ecx+5Ch]; fld dword ptr [eax+0D0h]; ret`);
+  - on return: ST0 = the proto's rate, EAX = the proto (stock: the building data, when there is
+    one), every other register and EFLAGS as in stock.
+- **Callers' contract:** each of the four callers writes EAX before reading it (sites
+  `WorkRate*Call`). A caller you add that reads EAX after the call gets the proto.
+- **Without a hook:** `74 04` → `EB 04` at `0x9BFE38` gives the same result with no log.
+
+### techPrereqRecheck
+
+- **State, all in `techprereq.cpp`:** N, `full`, `log`; the IDs of the techs with a TypeCount
+  prerequisite (ascending), rebuilt on the first check after each data load (`OnDatabaseLoad`);
+  the log counters.
+- **The hook** at `0x491A18`, in FUN_004919CE (`thiscall(tree, Player*)`, `ret 4`), over
+  `cmp byte [edi+10h],0; jne 5096D4h` (10 bytes):
+  - entry state: EDI = the player's tree, EBP = the player (non-null); the flags are dead;
+  - `pushad`, `UhcTechPrereqMaybeMark(tree = EDI, player = EBP)` (stdcall), `popad`;
+  - re-execute `cmp byte [edi+10h],0`; set → `jmp 0x5096D4`, clear → `jmp 0x491A22`.
+- **The check** may only set `[tree+10h]` = 1; never write `[tree+11h]`.
+  - Skip when the byte is set, when the world or database is null, or when `[player+80h]` (the
+    KB) is null.
+  - The player's turn: N = 1, or (`[world+F8h]` + `[player]`) % N = 0.
+  - For each listed tech ID below `[tree+8]` whose entry `e = [[tree+4]+4·id]` has a definition
+    `[e]`, a bit array `[e+4]` and a bit count `[e+8]` > 3:
+    `met = 0x5094B4([e]+1Ch, player, [e+8] > 21 && (byte [[e+4]+2] & 20h))`; when `met` differs
+    from `byte [[e+4]] & 8`, set the byte and stop.
+- **The tech list:** template records `[[db+5D9Ch]+0Ch]`, 24h bytes, count `[[db+5D9Ch]+10h]`;
+  keep the IDs whose definition (record `+0`) has a prerequisite with byte `[p+5]` = 0 in
+  `[def+1Ch][0..byte def+20h)`.
+
+### maintainWaitForPop
+
+- **Global:** the marker's unit type ID (or a proto ID), set on each data load; while it is -1 the
+  predicate answers "not blocked".
+- **Hook** at `0x6AB27D`, in the cold chunk of the Maintain update, 6 bytes (`jmp` + NOP):
+  - entry state: the cycle is complete; ESI = the action, ECX = ESI (`this` of the spawn call),
+    EBX pushed by the chunk, FPU stack empty;
+  - call the predicate with every register preserved (`pushad` / `push esi` / `call` /
+    `test al,al` / `popad`);
+  - not blocked: re-execute `mov edx,[esi+68h]; mov eax,[esi+64h]` and jump to `0x6AB283`;
+  - blocked: `mov eax,[esi+6Ch]; mov [esi+70h],eax` and jump to `0x6AB180`.
+- **Predicate** (read-only; any failed step answers "not blocked"): owner `[a+10h]` and player
+  `[owner+44h]` non-null, `[a+68h]` ≥ 1; `0x44D7FA([owner+5Ch], marker)`; the proto ID `[a+64h]`,
+  replaced by `[db+609Ch]` when byte `[player+50Ah]` ≠ 0 and the ID is `[db+5E1Ch]`, `[db+6054h]`,
+  `[db+6050h]` or `[db+6058h]`; `proto = 0x45311B(player, id)` non-null; not `0x44CAC4(proto, 5Dh)`;
+  `pop = [proto+D8h]` > 0; not `0x45EE02(proto, A3h)`; `used = [player+78h] + 0x45805C(player)`,
+  `cap = 0x4581A1(player)` (32-bit wrap); blocked = `(int)(cap − used) <= 0` with
+  `0x45EE02(proto, 9Fh)`, else `(int)cap < (int)(used + pop)`.
+- **Requirement:** nothing else may patch the spawn's population test (the verify-only ranges),
+  or the predicate and the engine disagree. A DLL that changes that test must change the
+  predicate the same way.
+
+### transformUpdatesLOS
+
+- **Hook** at `0x9C763F`, replacing `call 4981F3h` (setProto, `thiscall(unit, Proto*)`, `ret 4`):
+  - entry state: ESI = ECX = the unit, `[esp]` = the new proto, `[unit+5Ch]` = the old proto. The
+    unit is off the visibility map (`0x9C7570`) and goes back on it at `0x9C7730`;
+  - when the dword `[[unit+B4h]+90h]` equals the old proto's `[proto+48h]`, copy the new proto's
+    `[proto+48h]` there; skip if either proto or `[unit+B4h]` is null. Compare and copy as integers;
+  - re-execute `call 4981F3h` with the argument still at `[esp]`, then jump to `0x9C7644`;
+  - preserve ESI, EDI, EBX, EBP and ESP; EAX, ECX, EDX and the flags are what setProto leaves.
+- **Keep the write before setProto:** the old proto is only readable there, and the per-player
+  LOS cache (`0x9C768D`) and the visibility add (`0x9C7730`) must both see the new value.
+
+### broadsideMuzzleLimit
+
+- **Globals:** `g_uhcBroadsideLimit` (N), `g_uhcBroadsideAll` (1 = every ship),
+  `g_uhcBroadsideType` (the marker's ID; while it is -1 and `All` is 0, the hook keeps 6),
+  `g_uhcBroadsideAction` (the last action given N, read only by the log hook).
+- **Limit hook** at `0x5033D5`, in FUN_0050339A:
+  - entry state: EDI = the action, its owner `[edi+10h]` and that unit's proto were tested
+    non-null, and the proto is a `Ship`. ECX = `[edi+4]` (the proto action), ZF = its
+    `test ecx,ecx`. The caller's ESI is already pushed;
+  - set ESI = 6, or N for a matched owner (`0x44D7FA([[edi+10h]+5Ch], type)`, or always with
+    `All`);
+  - preserve ECX, re-create ZF with `test ecx,ecx`, keep EBX/EBP/EDI/ESP, and jump to `0x5033DA`.
+    EAX and EDX are free. Leave the `SingleUsePlayer` code after it alone.
+- **Log hook** (only with `log`) at `0x5034E2`: EAX = MuzzleL count, ESI = final limit, EDI = the
+  action, `[edi+80h]` = MuzzleR slots. After logging, re-execute `cmp eax,esi; mov [esp+1Ch],eax`
+  with ESP as on entry, and jump to `0x5034E8` (`jg`, which reads that compare).
+
+### abilitySlots
+
+- **The patch:** one dword, N − 1 at `0x695BD3` (the imm32 of `mov edi,5`). Keep N − 1 ≥ 1 (the
+  loop is a do-while: 0 would run about 4 billion times), N ≥ 6 so stock abilities are not hidden,
+  and N ≤ 36 (the grid).
+- **Log hook** (optional) at `0x696C70`, on GetNth's true path in FUN_0046188E:
+  - entry state: the stock frame; EDI = the unit; `[esp+34h]` = n + 1; GetNth's outputs at
+    `[esp+0Ch]` (enabled byte), `[esp+2Ch]` (record), `[esp+78h]` (power); ECX = `[esp+58h]`;
+  - log only when n ≥ 6, inside `pushad` / `popad`, **before** the stock call (it returns a float
+    in ST0);
+  - re-execute `call 45EE37h` with ECX unchanged and jump to `0x696C75`. EAX, EDX and the flags are
+    dead at the hook.
+
+### wonderPanelSkipAuras
+
+- **Global:** `g_uhcWonderPanelLog`, nonzero with `log`.
+- **Call redirect** at `0x69EE5D`: the hook must be a drop-in for `0x6EE5CC`,
+  `bool __thiscall(mgr, n, player, unit, cost*, icon*, rollover*, usable*, recIdx*, powerId*)`,
+  `ret 24h`. ECX = the ability manager (never 0 there); the caller passes n = 0.
+  - For n = 0..7, call `0x6EE5CC` with the same ECX, that n and the caller's eight other
+    arguments. On AL = 1, take `0x44E702(mgr, *recIdx)`; when it is non-null and `[rec+1Dh] & 1`
+    is clear, return AL = 1.
+  - When no n qualifies, return AL = 0.
+  - Preserve EBX, ESI, EDI and EBP. The caller continues at `0x69EE62` (`test al,al`) and reads
+    nothing else.
+- **Log callback** (only with `log`): `UhcWonderPanelLogAbility(unit, n, record, power)`, stdcall,
+  for n > 0; it logs once per record.
+
+### lifespanAfterConstruction
+
+- **Globals:** `g_uhcLifespanType` (the marker's ID or a proto ID; while it is -1 both hooks run
+  the stock code), `g_uhcLifespanLog`, and `g_uhcLifespanHeldCount` (log only: logged held units
+  not yet running again).
+- **Held unit:** state bit 11 of `[unit+4]` clear (when the bit count `[unit+8]` > 11),
+  `0x44DDB4(unit)` false, `[unit+5Ch]` non-null and `0x44D7FA([unit+5Ch], type)` true. Results
+  are in AL only.
+- **Tick hook** at `0x483EEC` (10 B), reached only from the `ja` at `0x482C1A`:
+  - entry state: ESI = unit, `[esp+0Ch]` = dt; EAX/ECX/EDX free; keep EBX, EDI, EBP;
+  - held unit: jump to `0x482C20` (`pop esi; pop ecx; ret 4`);
+  - any other unit: re-execute `fld dword ptr [esp+0Ch]; fcomp dword ptr [0B84BE4h]` and jump to
+    `0x483EF6`. Push nothing before the `fld`.
+- **Fade hook** at `0x482A1A` (6 B), entered with the flags of `cmp bl,1`:
+  - entry state: ESI = unit, EAX = `[esi+B4h]`, EBX = commit flag, `[esp+10h]` = t; ECX and EDX
+    free; keep EAX for the store, EBX and the stack;
+  - commit clear (`jne`): jump to `0x482A26`;
+  - held unit with bits 5 and 3 set and bits 4 and 61 clear: `[esp+10h] = [eax+88h]`, jump to
+    `0x482A26` (no store);
+  - any other unit: `mov ecx,[esp+10h]`, jump to `0x482A20` with EAX intact. Preserve the entry
+    flags until the `jne` if you add tracing.
+- **Both hooks are needed**, and **never drop the alive test:** dead foundations stay below 100 %,
+  and their corpse removal goes through the same fade and lifespan.
+
+### gaiaSocketsOnly
+
+- **Globals:** the mode (every socket, or marker) and the marker's ID; in marker mode, while the ID
+  is -1 the rule never applies.
+- **Hook** at `0x508CC1`, in PLACE (FUN_0050703D, `ret 2Ch`):
+  - entry state, reached only by falling through from `0x508CBB`: ESI = socket unit + 14h,
+    EDI = the building's proto, ESP = PLACE's body frame: a1 (player) at `[esp+1C0h]`, a5
+    (knowledge) at `[esp+1D0h]`, the found flag at `[esp+37h]`;
+  - a5 = 0: re-execute `mov byte [esp+37h],1`;
+  - else accept (re-execute the store) when the socket is out of the rule's scope (marker mode and
+    not `0x44D7FA([unit+5Ch], id)`), when `[unit+44h]` is null, or when `[[unit+44h]] == 0`;
+    refuse (skip the store) otherwise;
+  - continue at `0x508CC6` on both paths. EAX, ECX, EDX and the flags are free; keep EBX, ESI,
+    EDI, EBP and ESP (the frame offsets are ESP-relative). The x87 stack is empty there.
+
+### customHotkeyContexts
+
+- **State:** a list of added contexts `{proto name, context name, ID}` and the manager they belong
+  to (`[[[0xC66244]+74h]+34h]` when they were registered). The selection hooks act only while the
+  current manager is that one.
+- **Find wrapper** (the `call 5C16ABh` at `0x5C1778`, redirected to a stub that jumps to a
+  `__fastcall(manager, edx, name, record)` function, `ret 8`): call `0x5C16AB` with the same
+  arguments; when it returns 3, the context (a BString: `[name]` is its UTF-16 text) ends in
+  `Accel` and `[manager+34h]` < 223, call `0x628FC0(manager, narrowName, 5)`, then `0x5C16AB`
+  again, record the context and return the second result. The caller continues at `0x5C177D`;
+  EBX/ESI/EDI/EBP must survive.
+- **Switch-off wrapper** (the `call 4421F3h` at `0x79F1A5`, same mechanism): the same call, then
+  `0xAB397F(manager, id, flag)` for every added ID; return to `0x79F1AA` with ESI intact.
+- **Context hook** at `0x79F897` (6 B): ESI = the database proto (name at `[esi+10h]`), EBP = the
+  unit. EDI = the added ID of a proto with that name, else `mov edi,[esi+178h]`; jump to
+  `0x79F89D`. EAX/ECX/EDX are free.
+- **Trainer hook** at `0x64A034` (5 B): ESI = the unit (its proto may be null when entered from
+  `0x64A027`). If the proto has an added context jump to `0x64A05A`; else
+  `mov byte [esp+13h],1` and jump to `0x64A05C`. EAX/ECX/EDX are free; keep EBX, ESI, EDI, EBP and
+  ESP.
+- **Ordering:** write the switch-off wrapper first and the trainer hook last, so a failed write
+  leaves contexts that are never on, or on and switched off.
+
+### snareOnlyHitUnit
+
+- **Snare test:** walk the unit's actions `[[unit+58h]+14h]` (`{count +0, data +8}`; children at
+  `[+40h]`, depth first, parent first) and take the first action with byte `[+60h]` = 2Ch,
+  `[+64h]` = 0, `[+78h]` = 2, and flags 15h and 16h set in the bitset `{[+30h] bytes, [+34h]
+  count}`. Read-only; stop at 16 levels and answer "not snared".
+- **Pace hook** at `0x4FD3FD` (`jmp`, NOP to `0x4FD417`), in FUN_004FD289:
+  - entry state: ESI = group, EDI = member, EBX/EBP = member count/index, FPU stack empty;
+    EAX/ECX/EDX and the flags are free;
+  - snared member: compute its velocity without the snares (below); if it is lower than the float
+    `[esi+7Ch]`, store it there; continue at `0x4FD417`;
+  - any other member: re-execute `mov edx,[edi]; mov ecx,edi; mov eax,[edx+34h]; call eax;
+    fcomp dword [esi+7Ch]; fnstsw ax; test ah,5`, then `jnp` → `0x4FD53A`, else → `0x4FD417`.
+- **Velocity without the snares:** `v = [[unit+5Ch]+80h]`; for each type-2Ch action in walk order
+  with `[+64h]` = 0 that is not a snare: op 0 `v = value`, 1 `v = value + v`, 2 `v = value · v`
+  (float, rounded each step), other ignored; stop after it if flag 16h is set or its tactics
+  action `[+4]` has bit 33. Use v if the record `[[unit+B4h]+C8h]` exists, a modifier matched and
+  `v > -1e-6f`, else `[[unit+5Ch]+80h]`; multiply by `m` from `0x44734C(0xC66500, **(int**)0xCEFFA0,
+  &m)` with `m = 1.0f` first.
+- **Straggler hooks** (6 B each, `mov eax,[reg+4]; or byte [eax],80h`): `0x4FA17D` (ESI = group,
+  EBP = member; continue at `0x4FA183`), `0x6AA514` (EBX = group, ESI = member; `0x6AA51A`),
+  `0x6AA56A` (EAX = group, ESI = the member's **ID**, looked up as at `0x4F9EB7`; `0x6AA570`).
+  Snared member: skip both instructions; otherwise re-execute them.
+
+### techRenameEffect
+
+- **Globals:** `g_uhcTechRenameType`, SetTechName's effect type ID (-1 until the database init
+  ran; while it is -1 the factory hook runs the stock code). The DLL vtable (17 slots) is filled
+  before the hooks are written.
+- **Registration hook** at `0x524CB5`, in FUN_0052277E, over `cmp dword ptr [esi+3504h],0`:
+  ESI = database; `pushad`, `UhcTechRenameRegister(esi)`, `popad`; re-execute the `cmp` **last**
+  (its flags feed the `jne` at `0x524CC4`) and jump to `0x524CBC`. The registration adds
+  `SetTechName` with ID `[db+3360h]` (must be 11h..FFh) through `0x5375AC(db+335Ch, name, &id)`
+  unless `0x61FF1B` already finds it.
+- **Factory hook** at `0x62146F`, over `push 51Fh`: EAX = the type, `[esp]` = the ESI the factory
+  pushed. Our type: `UhcTechRenameCreate()` (EAX = the effect or 0), then `pop esi; ret`, the
+  factory's epilogue; any other type: `push 51Fh` and jump to `0x621474`.
+- **The effect** (1Ch bytes from `0x401398`) must keep `+9 = 28h` from the ctor `0x620B8F`. Its
+  methods are `__fastcall` with a dummy EDX: slot 0 `ret 4`, 1 `ret 4`, 2 and 3 `ret 8`, 4 `ret 4`,
+  15 `ret 10h`; 16 keeps the stock no-op.
+- **The apply** reads `[player+0]`, calls `0x8D0005(player, tech)`, keeps one 34h-byte copy per
+  (player ID, tech ID) that is never freed or moved, refreshes it from `[node]` whenever `[node]`
+  is not the copy, writes the IDs that are not -1, then sets `[node+0]`.
+- **If your DLL already creates extra effect types** (WoL's `RandomTech` and `SetTechName` use the
+  same factory default case), merge this into your factory hook: `VerifyAll` refuses a second
+  patch. WoL's own `SetTechName` can be fixed in place by replacing its apply with the
+  copy-and-repoint logic.
+
+### noCorpseDopples
+
+- **Globals:** `g_uhcNoCorpseDoppleType` (the marker's ID or a proto ID; while it is -1 the hook
+  runs the stock code) and `g_uhcNoCorpseDoppleLog`.
+- **Hook** at `0x49534D`, in FUN_0048679A, 8 bytes (`jmp` + 3 NOP):
+  - entry state: ESI = the unit, EBX = the index of the player whose view it left, EBP =
+    `1 << EBX`, EDI = that player; `[esp+2Ch]` = the new mask, `[esp+54h]` = forced. EAX, ECX, EDX
+    and the flags are free;
+  - skip when EBX ≠ 0, `[esi+5Ch]` ≠ 0, `0x44D7FA([esi+5Ch], type)` is true and
+    `call [[esi]+0A4h]` (ECX = ESI) returns AL = 0: `jmp 486A30h`, with every register except
+    EAX/ECX/EDX and the stack as on entry;
+  - otherwise: `mov eax,[esp+2Ch]; mov ecx,[esp+54h]; jmp 495355h`.
+
+### danceBonusCivs
+
+- **Helper:** `bool __stdcall UhcDanceCivAllowed(int kind, player*, int civ)`, true if `civ` is
+  listed. It resolves the cfg names with `0x58E71F(database, name)` on the first call for each
+  database (or civ count `[database+28h]`), and returns false for -1 and while the civ count is 0.
+  The answer depends only on the cfg and the data.
+- **Four hooks**, each over `cmp eax,[0C6FB50h]` (6 B), with EAX = the player's first civ ID or -1
+  and the flags dead:
+  - train rate `0x8D47AB` (ECX = player): listed → `0x8D47CF`; else re-execute the compare →
+    `0x8D47B1`;
+  - XP trickle `0x4E0DFF` (ECX = player): listed → `0x4E0E29`; else → `0x4E0E05`;
+  - gather rate `0x4ECD53` (ECX = player): listed → `0x4ECD7D`; else → `0x4ECD59`;
+  - regeneration `0x49048B` (EDI = player): listed → `0x679E66`; else → `0x490491`;
+  - preserve EAX, ECX, EDX, EDI and ESP on both exits.
+- **Coexistence with `nativeCivs`:** upstream's patches #5 (`0x4904B5`), #6 (`0x4ECD6B`) and #8
+  (`0x8D47C9`) are later compares of the same gates; leave these four ranges alone in a
+  `nativeCivs` port. Such a port should also patch the XP gate's compare at `0x4E0E17`, which
+  upstream misses.
+
 ## 5. Integration rules
 
 - **Keep the cfg keys and their syntax:**
@@ -284,7 +642,18 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `damageOverTime [log]`, with `<AttachProtoUnit>` in `protoy.xml` and an `Attaching` action on
     the attachment proto;
   - `dodgeAnyUnit [UnitType] [log]`, default `AbstractDodge`, and any number of
-    `dodgeSoundSet <UnitType> <SoundSet>` / `criticalSoundSet <UnitType> <SoundSet>` lines.
+    `dodgeSoundSet <UnitType> <SoundSet>` / `criticalSoundSet <UnitType> <SoundSet>` lines;
+  - `liveBuildingWorkRate [log]`, `transformUpdatesLOS [log]`, `snareOnlyHitUnit [log]`,
+    `wonderPanelSkipAuras [log]`, `customHotkeyContexts [log]`;
+  - `techPrereqRecheck [N] [full] [log]`, N from 1 to 1000000;
+  - `maintainWaitForPop [UnitType] [log]` (default `AbstractMaintainWaitForPop`),
+    `lifespanAfterConstruction [UnitType] [log]` (default `AbstractLifespanAfterConstruction`),
+    `noCorpseDopples [UnitType] [log]` (default `AbstractNoCorpseDopple`),
+    `gaiaSocketsOnly [UnitType] [log]` (no default: every socket);
+  - `broadsideMuzzleLimit <N> [UnitType] [log]`, N from 1 to 255, one line;
+  - `abilitySlots <N> [log]`, N from 6 to 36;
+  - `techRenameEffect [log]`, also read as `enableTechRenameEffect`;
+  - `danceBonusCivs <Civ> [<Civ> ...] [log]`, several lines add up.
 
   The [modding guide](modding-guide.md#5-feature-reference) then applies to your mod as written.
 - **Verify, then write.** Check all of a feature's ranges first, and write nothing if any range
@@ -294,12 +663,17 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - names are resolved inside the game, from its own database;
   - choices follow cfg order, then the stock unit query order;
   - poisons tick on the game time `[world+108h]`, in integer milliseconds and key order;
+  - `techPrereqRecheck` schedules on the world's step count, never on a clock;
+  - predicates that mirror stock code (`maintainWaitForPop`, `snareOnlyHitUnit`) call the same
+    engine functions with the same arithmetic;
   - no hook sends a network command.
 
   Keep it that way if you change the code. In particular, never set the shipment point through
   `aiSetHCGatherPoint`'s setter (`0x82D9CB`): it sends a network command, which every machine
   would then send.
-- **Saved games and replays:** `healNonIdle` and `dodgeAnyUnit` add a unit type, which changes the unit type count.
+- **Saved games and replays:** `healNonIdle` and `dodgeAnyUnit` add a unit type, which changes the
+  unit type count, and so do `maintainWaitForPop`, `lifespanAfterConstruction`,
+  `noCorpseDopples`, `broadsideMuzzleLimit` and `gaiaSocketsOnly` when their type is a new name.
   Load saves and replays with the same DLL and cfg they were made with. `damageOverTime` keeps
   its poisons outside the game state, so a loaded game has none.
 
@@ -330,6 +704,12 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `dodgeAnyUnit: unit N (Proto) dodged a hit`; a Japanese monk still dodges as in stock.
     `tools/testbed.py` builds such a fight with no clicks
     ([developer guide](developer-guide.md#driving-the-game-unattended)).
+  - **The WoL Tier 2 features:** the test that confirmed each one, with its data, is in its
+    "Status" in the [modding guide](modding-guide.md#5-feature-reference). For each, run the same
+    test with and without the key: the stock run must show the bug. Two pitfalls from these tests:
+    scenario triggers cannot give build or work orders (use real clicks for placing foundations,
+    `lifespanAfterConstruction` and `gaiaSocketsOnly`), and synthetic key presses do not reach the
+    game's hotkeys (`customHotkeyContexts`).
 - **Check the type table** with the game running: `python -I tools/re/inspect_unittypes.py
   AbstractHealNonIdle` lists the protos that carry the type.
 
@@ -351,3 +731,17 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   so keep both in step. A tick on an AI army unit after the attacking unit is gone (the p11 = 0
   path) comes from the code and was not reproduced in game.
 - **multipleInstances:** confirmed with two copies on one machine, in single player only.
+- **The WoL Tier 2 features** (2026-10-29, single player only; "(multiplayer unverified)" for every
+  one that changes the simulation):
+  - **confirmed in game:** `liveBuildingWorkRate` (`Maintain` only; train and research not
+    tested), `techPrereqRecheck`, `maintainWaitForPop` (Ottoman settlers; batches and `SingleUse`
+    not tested), `transformUpdatesLOS` (tech transforms; revolutions not tested),
+    `broadsideMuzzleLimit` (normal attack; `PowerBroadside` not tested), `abilitySlots`,
+    `wonderPanelSkipAuras`, `lifespanAfterConstruction` (the countdown hold; the
+    `AlphaFadeLifespan` fade-out hold not checked), `techRenameEffect` (saved games not tested),
+    `noCorpseDopples`, `danceBonusCivs` (Regeneration only);
+  - **confirmed from the log only:** `snareOnlyHitUnit` (no stock control run; the group's
+    positions were not measured);
+  - **partly confirmed:** `customHotkeyContexts` (registration and context switch; no key press);
+  - **not tested in game:** `gaiaSocketsOnly`. The stock interface already refused a player's
+    socket in the test, and the order path that bypasses it (WoL's case) was not driven.

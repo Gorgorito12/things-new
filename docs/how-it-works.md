@@ -21,8 +21,12 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    patches code and prepares its own data. Anything that needs game data is resolved later,
    from inside the game:
    - `hcShipmentPointFallback` resolves proto names the first time its hook runs;
-   - `healNonIdle` gets its unit type ID from a hook in the data loader;
-   - `damageOverTime` records its tags while the data loads and resolves them on the first hit.
+   - `healNonIdle` and every other key that takes a `<UnitType>` get the type's ID from a hook in
+     the data loader;
+   - `damageOverTime` records its tags while the data loads and resolves them on the first hit;
+   - `techPrereqRecheck` lists its techs, and `danceBonusCivs` resolves its civ names, on their
+     first use after each data load;
+   - `techRenameEffect` registers its effect type from a hook in the database init.
 3. **Host guard** (`src/dllmain.cpp`). Before touching any fixed address, the DLL checks that
    the exe is the stock build plus the loader:
    - module base `0x400000`;
@@ -94,6 +98,19 @@ The hooks are MASM files in `src/hooks/`.
   wrapper reaches the stock body through a small MASM trampoline that re-executes the stolen
   prologue and jumps past it. The prologue's instructions are written out by hand, never
   relocated.
+- **Redirecting a call** (`customHotkeyContexts`, `wonderPanelSkipAuras`, the `dodgeAnyUnit log`
+  wrapper). `WriteCall` rewrites a stock `call` (5 B, `E8` and a new rel32) so that it calls the
+  DLL. The new target takes the callee's exact frame (thiscall, the same arguments, the same
+  `ret N`) and returns to the stock return address.
+- **Patching a constant** (`abilitySlots`). `WriteDword` replaces an immediate operand; no code
+  runs in the DLL.
+- **A C++ object with an engine vtable** (`techRenameEffect`). The DLL builds a copy of a stock
+  vtable, verified in place, replaces some slots with `__fastcall` functions (ECX = `this`, EDX
+  unused: the thiscall frame), and gives engine-allocated objects that vtable.
+- **Data-load callbacks.** `OnDatabaseLoad` (`src/unittypes.h`) calls a feature on every data
+  load, from the abstract-unit-type hook below; `damageOverTime`, `techPrereqRecheck`,
+  `maintainWaitForPop` and `lifespanAfterConstruction` use it to drop state that belongs to the
+  old data.
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
   first time execution passes. It preserves every register, the flags and ESP, so it can sit at
   the top of any hook.
@@ -242,7 +259,12 @@ How the sites were found:
 
 The trace is described in [engine-symbols.md](engine-symbols.md), "Unit types and healing".
 
-### Extra abstract unit types (used by healNonIdle and dodgeAnyUnit)
+### Extra abstract unit types (used by every key that takes a `<UnitType>`)
+
+`healNonIdle`, `dodgeAnyUnit` (and its sound keys), `maintainWaitForPop`,
+`broadsideMuzzleLimit`, `lifespanAfterConstruction`, `gaiaSocketsOnly` and `noCorpseDopples`
+request their type here. A name that already exists, a stock type or a proto name, keeps its ID
+and adds nothing.
 
 In TAD, abstract unit types are not read from data:
 - FUN_0051A5DC (`thiscall(database)`) registers a fixed list compiled into the exe, `Unit`,
@@ -388,6 +410,618 @@ The DLL ignores that path and adds its own, driven by data.
 - Poisons are not saved in saved games.
 - The stock Poison flag stays unused.
 
+### liveBuildingWorkRate
+
+**The stock mechanism.**
+- A proto's `BuildingWorkRate` is the float `[proto+D0h]`.
+- A Building, or a unit whose proto has the flag `ForceBuildingData`, gets a building data object
+  at `[unit+68h]` from setProto `0x4981F3`. Its init `0x4E5E8F` sets the copy `+28h` to 1.0.
+- **The copy.** The completion routine FUN_006A1F82 (18 callers) runs
+  `[[unit+68h]+28h] = [[unit+5Ch]+D0h]` at `0x6A2089..0x6A2095`, once: when a building completes,
+  when a `ForceBuildingData` unit is created, and when a saved game loads, for completed buildings
+  (`0x9C54B4..0x9C54D3`).
+- **The getter** `0x9BFE33`, `float thiscall(unit)`, returns `[unit+68h] ? [[unit+68h]+28h] :
+  [[unit+5Ch]+D0h]`. Its only callers are the per-tick updates of four actions, which multiply the
+  result into their progress: Train (`0x9EA413`), Research (`0x9E65F7`), CommandResearch
+  (`0x9D58D4`) and Maintain (`0x6AB23F`).
+- **The tech.** The Data effect's case `0x5E` (BuildingWorkRate, `0x8FAE7D`; the removal twin
+  `0x8FC16F`) only computes the new `[proto+D0h]` of the player's copy of the proto. Unlike the
+  Hitpoints case, nothing walks the existing units.
+- The stat panel (`currentUnitBuildingWorkRate`, `0x6F49B1`) reads the proto's value, so it showed
+  the new rate while the building still used its copy.
+
+**The hook.** A 5-byte `jmp` replaces the getter's first two instructions, `mov eax,[ecx+68h] /
+test eax,eax`. The hook:
+1. with `log`, calls `UhcBwrLogUnit(unit)` inside `pushad` / `popad`, which logs the unit when the
+   copy's bits differ from the proto's;
+2. re-executes the two stolen instructions, so EFLAGS are the ones stock returns with;
+3. jumps to the getter's own tail `0x9BFE3E`, `mov eax,[ecx+5Ch] / fld [eax+0D0h] / ret`, the path
+   stock already takes for a unit without building data.
+
+The copy is still written at completion and saved and loaded with the unit; the getter was its
+only other reader.
+
+**Why it is safe.**
+- The hook returns with the stock ECX, ESP, EBX, ESI, EDI, EBP, EDX and EFLAGS, and one value on
+  the x87 stack, as stock does. Only EAX differs (the proto, where stock left the building data).
+  Each of the four callers writes EAX before reading it; the four call sites are verified sites
+  (`WorkRate*Call`), so a build where that is not so is not patched.
+- The result depends only on `[proto+D0h]`, simulation state that is the same on every machine.
+- Every stock proto has 1.0 and only two unobtainable stock techs change it, so with stock data the
+  key changes nothing unless a trigger, a card or a mod changes the value.
+- A building transformed in place (FUN_009C754C keeps its building data and copies nothing) now
+  uses the new proto's rate.
+
+### techPrereqRecheck
+
+**The stock re-check.** Each world update calls FUN_00491A40 (call at `0x481D51`) when
+`[world+7Ch]` exists and byte `[game+B3Ah]` is 0. For each player slot with a tech tree and a live
+player, it calls FUN_004919CE(tree, player). The tree (20h bytes) holds the player ID, an array of
+status entries (`+4`, count `+8`) and the dirty byte `+10h`. After its DynamicCost loop,
+FUN_004919CE tests the dirty byte at `0x491A18`: `cmp byte [edi+10h],0 / jne 5096D4h`. The pass at
+`0x5096D4` clears the byte, then for every tech:
+- a null entry gets a relevance test and is created when relevant;
+- every entry goes through FUN_005094D8. It reads the cached result (status bit 3) and the
+  OrPrereqs flag (bit 21), evaluates FUN_005094B4(def+1Ch, player, or), and writes bit 3. On a
+  0 → 1 change it activates the tech when it has no research time; a Volatile tech is toggled; the
+  AI's tech list is updated.
+
+**Who sets the dirty byte.** Only setDirty `0x506A41` and an inline copy in the pop cap adder
+FUN_00506A5F, always with 1: tech status changes and activation, the age, the home city level, the
+pop cap (including a unit with `PopulationCapAddition` that starts or stops counting), the tree's
+creation and the world start. Creating or killing a unit without `PopulationCapAddition` reaches
+none of them.
+
+**TypeCount** is prerequisite type 0 (ctor `0x8EE860`). Its evaluator `0x8EE8E7` counts with
+`0x4C846D([player+80h], player ID, type, state mask, 0)`, the backend of XS `kbUnitCount`, then
+applies the operators. `[player+80h]` is the KB; it is used with no null check.
+
+**The hook.** A `jmp` over the 10 bytes at `0x491A18` leads to `UhcTechPrereqHook`: `TRACE_ONCE`,
+`pushad`, `UhcTechPrereqMaybeMark(tree = EDI, player = EBP)`, `popad`, the stolen
+`cmp byte [edi+10h],0`, then `jmp 0x5096D4` when the byte is set and `jmp 0x491A22` otherwise.
+`UhcTechPrereqMaybeMark`:
+1. returns when the byte is already set, when the game, world or database is missing, or when the
+   player's KB is null;
+2. returns unless it is the player's turn: N = 1, or (`[world+F8h]` + player ID) % N = 0, with
+   `[world+F8h]` the world's step count (+1 per world update);
+3. once per data load, lists the techs whose definition has a TypeCount prerequisite, from the
+   template status records `[[db+5D9Ch]+0Ch]` (24h bytes each, count `[+10h]`);
+4. for each listed tech with an entry in this tree that has more than 3 status bits, computes the
+   result with `0x5094B4`, with the arguments `0x5094EB` uses. On a difference from bit 3 it sets
+   `[tree+10h]` = 1 and returns; the re-executed test then enters the stock pass in the same call.
+
+`full` sets the byte on every turn instead and does not scan.
+
+**Why it is safe.**
+- The stock pass runs in the same call frame and state as when a house sets the byte; the hook only
+  sets it sooner. It never writes `[tree+11h]`, whose pass is a nested loop over all techs.
+- The evaluation is the stock evaluator with the stock arguments. TypeCount writes the KB's shared
+  count query and a scratch vector and resets both, as any `kbUnitCount` call does.
+- After a pass, bit 3 equals the evaluation for every non-null entry, so the byte cannot stay set
+  for no reason: a new difference needs a new change of the counts. Entries with 3 bits or fewer
+  are skipped, because stock reads their bit 3 as 0 but writes it anyway.
+- The choice reads only game state (status bits, KB counts, the step count, the player ID), walks
+  the techs in ID order and stops at the first difference. The time measured for the `log`
+  summary is only logged.
+- **Measured:** with 2 TypeCount techs, the checks took about 4 ms per game minute.
+
+### maintainWaitForPop
+
+**The stock mechanism.** `Maintain` is unit action type 22h (ctor `0x9E2510`, vtable `0xB97B98`).
+Its fields: `+10h` the owner (the building), `+64h` the proto ID to spawn, `+68h` units per cycle,
+`+6Ch` the train points of a cycle, `+70h` the points accumulated, `+74h` the fraction. The update
+(FUN_00492F3E, cold chunk `0x6AB0E4`) runs while the action is active and the building complete
+and alive. Each update:
+1. adds `0x9BFE33(building) × [world+310h] (training rate) × [world+104h] (step)` to `+70h`;
+2. sets `+74h` = clamp(`+70h` / `+6Ch`, 0, 1) (`0x9E27E4`);
+3. leaves through `0x6AB180` while `+74h` < 1.0;
+4. otherwise calls the spawn `0x9E2DEF(this, [+64h], [+68h])` at `0x6AB285`, then **ignores its
+   outcome**: a `SingleUse` action ends (setState(0Ah)), any other restarts (setState(14h), which
+   zeroes `+70h` and `+74h`).
+
+The spawn tests the population before each unit (`0x9E2F79..0x9E2FDC`, `0x9E3110..0x9E311F`):
+`pop = [proto+D8h]`; pop ≤ 0 or flag A3h (`AlwaysAllowOverPopCap`) skips the test; with flag 9Fh
+(`AllowOverPopCap`) the unit needs `cap - used > 0`, otherwise `cap ≥ used + pop`, with
+`used = [player+78h] + 0x45805C(player)` and `cap = 0x4581A1(player)`. A failure on the first unit
+creates nothing. The group variant `0x9E2AC8` runs the same test once.
+
+**The hook.** A 6-byte patch at `0x6AB27D` (`jmp` + NOP over `mov edx,[esi+68h] /
+mov eax,[esi+64h]`), reached only by the fall-through of the ≥ 1.0 test. With ESI = the action, it
+calls `UhcMaintainPopBlocked(action)` inside `pushad` / `popad` and branches on AL:
+- **not blocked:** it re-executes the two `mov`s and jumps to `0x6AB283` (`push edx / push eax /
+  call 9E2DEFh`): the stock spawn and restart run unchanged;
+- **blocked:** it writes `[esi+70h] = [esi+6Ch]` (the progress stays exactly complete) and jumps to
+  `0x6AB180`, the stock "cycle not complete" exit. The next update finds the cycle complete and
+  asks again.
+
+**The predicate** repeats the spawn's first-unit test with the engine's own functions, in the
+engine's order and 32-bit arithmetic: owner and player non-null and `[a+68h]` ≥ 1; the building's
+proto is of the marker type (`0x44D7FA`); the proto ID remapped to `xpColonialMilitia` after a
+revolution, like the spawn; the player's proto (`0x45311B`), not `AbstractMonk` (the spawn may
+reuse a unit without testing); then the population test above. Any step that fails answers "not
+blocked", so the stock call runs.
+
+**Why it is safe.**
+- When the predicate says "blocked", the stock call would have created no unit; when it says "not
+  blocked", the stock code runs as is. The engine code it mirrors is verified too
+  (`MaintainSpawnSetup`, `MaintainSpawnPopTest`, `MaintainSpawnPopTest2`, `MaintainGroupPopTest`):
+  if another DLL changes that test, the feature refuses to apply instead of disagreeing with it.
+- The held path is the stock "not complete" exit of the same frame; both callers of the update
+  ignore its return value.
+- The predicate reads only simulation state, and the hook's only write is `+70h`, a field the
+  update writes every tick.
+
+### transformUpdatesLOS
+
+**The per-unit LOS.** A unit's base LOS is the float `[[unit+B4h]+90h]`; the proto's `<LOS>` is
+`[proto+48h]`. The getter FUN_0048206D returns `[world+5ACh]` × a per-unit multiplier ×
+`[[unit+B4h]+90h]` and never reads the proto. FUN_00483262 (`thiscall(unit, bool add, bool
+force)`) takes the unit off the world's visibility map or puts it back, with the radius from the
+getter. Four instructions write the base LOS: the default 10.0 of a new unit object, setLOS
+FUN_00484518 (called at creation with the proto's LOS, and by a tech that changes a proto's LOS),
+build completion FUN_006A1F82, and the savegame loader. setLOS and build completion write it
+between a visibility remove and a visibility add.
+
+**The stock bug.** FUN_009C754C, `thiscall(unit, int newProtoId)`, changes a live unit into
+another proto in place. It is called by the `TransformUnit` tech effect (`0x7FBC79`), the
+revolution (`0x7FBEF2`, `0x8F05F5`) and a few other callers. It:
+1. looks up the player's copy of the new proto (`0x45311B`, into EBP);
+2. takes the unit off the visibility map with its current LOS (`0x9C7570`);
+3. calls setProto FUN_004981F3 at `0x9C763F`, which writes `[unit+5Ch]` but not the LOS;
+4. rebuilds HP, build points and obstruction, caches the LOS for each player (`0x9C768D`), and puts
+   the unit back on the map (`0x9C7730`) with the LOS it had before.
+
+The trigger effect "Change Unit Type" (`trUnitChangeProtoUnit`) does not go through this function.
+Observed in game: it never reached the hook, the unit kept its ID, and its LOS already matched the
+new proto in stock. How that path sets the LOS was not traced.
+
+**The hook** replaces the `call 4981F3h` at `0x9C763F`. There, ESI = ECX = the unit, `[esp]` = the
+new proto, and `[unit+5Ch]` still holds the old one. The hook calls `UhcTransformLos(unit,
+newProto)` inside `pushad` / `popad`, re-executes `call 4981F3h` with the argument still at
+`[esp]`, and jumps to `0x9C7644`. The helper compares the unit's base LOS with the old proto's
+`[proto+48h]` as raw dwords; when they are equal it copies the new proto's dword, otherwise it
+leaves the field alone.
+
+**Why it is safe.**
+- The write lands between the stock visibility remove (old radius) and add (new radius), as setLOS
+  and build completion do it, so the map never holds a radius it did not add. The per-player cache
+  at `0x9C768D` runs after the write and sees the new value.
+- The new proto is the argument setProto receives, so the LOS comes from exactly the proto the unit
+  becomes, LOS techs of that player included.
+- After the hook, EAX, ECX, EDX and the flags are what setProto leaves, as in stock; the other
+  registers are unchanged.
+- Only an integer copy of the dword changes the simulation: no float operation, RNG, local player
+  or clock.
+- The equality guard keeps a value the game set on purpose (a foundation's LOS, a knocked-out
+  hero's 6.0). It also keeps the stock gap of a converted unit, which carries its former owner's
+  LOS (the owner change at `0x514529` swaps the proto copy without touching the LOS).
+
+### broadsideMuzzleLimit
+
+**The stock broadside.** `BroadsideAttack` is protoaction type 29h (ctor `0x9D2B23`, vtable
+`0xB962E8`). The action keeps two parallel arrays: `+68h` (count `+6Ch`), the muzzle index of each
+slot, and `+74h` (count `+78h`), its fire time. Its set-up, FUN_0050339A (vtable slot 1):
+1. requires an owner unit `[edi+10h]` whose proto is of the built-in type `Ship`;
+2. **the hardcode:** `mov esi,6` at `0x5033D5`, kept in a local;
+3. if the proto action has `<SingleUsePlayer>` (flag bit 26), the cold block `0x6A8236` sets the
+   limit to 1;
+4. counts the model's MuzzleR attach points (`0x484304`), clamps the count to the limit
+   (`0x503447`), appends one slot per point, and stores the count in `[edi+80h]`;
+5. does the same for MuzzleL (`0x5034E2`), appended after the right side.
+
+The fire step (FUN_004C1290) picks the side from the target's direction and, for each due slot on
+that side, launches **one projectile** (`call 499422h` at `0x4CEA43`). The schedule `0x4CEE48`
+draws one sync-RNG interval per right-side slot and gives slot i and slot i + n1 the same time, so
+the left side never fires more than the right side has slots.
+
+**The hook.** A `jmp` replaces `mov esi,6` at `0x5033D5`. It sets ESI = 6, then N when no UnitType
+was given or when the owner's proto is of the configured type (`0x44D7FA`; the marker ID is -1 until
+the data loads, and then the stock 6 is kept). It re-creates ZF with `test ecx,ecx`, the stock test
+at `0x5033D2`, and continues at `0x5033DA`. ECX, the proto action, is saved around the call, since
+the code after the continuation reads it. The `SingleUsePlayer` test runs after the continuation,
+so it still lowers the limit to 1, and both clamps still read ESI.
+
+**The log hook** (only with `log`) replaces the MuzzleL clamp's `cmp eax,esi / mov [esp+1Ch],eax`
+at `0x5034E2`. For the action the first hook matched, it calls the C++ logger with the action, the
+MuzzleL count (EAX) and the limit (ESI) inside `pushad` / `popad`, then re-executes both
+instructions and jumps to the `jg` at `0x5034E8`, which reads the flags of that `cmp`.
+
+**Why it is safe.**
+- The arrays have no other bound: save and load write each count and resize on load, the fire step
+  walks the count, and the muzzle index is read as a byte, which caps N at 255. A larger N needs
+  no save-format change.
+- Nothing else reads the hardcoded 6.
+- The limit depends only on the cfg and the owner proto's unit types, decided once per action
+  set-up. It adds projectiles (each with its accuracy roll) and sync-RNG draws, so every machine
+  needs the same cfg.
+
+### abilitySlots
+
+**Abilities.** `data\abilities\abilities.xml` is loaded into the ability manager `[world+56Ch]`,
+one 20h-byte record per `<ability>`, in file order: `+4` proto ID, `+8` power ID, `+0Ch` tech,
+`+10h` age, `+1Ch` flags (4 NeverShowInGrid, 100h AlwaysDisabledInGrid, …).
+
+**GetNth** (`0x6EE5CC`, `bool thiscall(mgr, n, player, unit, …outputs)`, `ret 24h`) counts the
+records of the unit's proto that are not NeverShowInGrid, and at the n-th one returns false when
+its tech is not active or its age is not the player's; otherwise it fills the outputs (record
+index, power ID, an "enabled" byte forced to 0 for AlwaysDisabledInGrid) and returns true. Past the
+end of the unit's list it returns false. Nothing in it bounds n.
+
+**The command panel** (refresh FUN_0046188E) builds its entries in two passes:
+1. **Collection.** A page-11 `Abilities` command entry is appended once (`0x4C5ACA`), then
+   `0x4C5AEB` sends it to a cold block that appends it again in a do-while:
+   `0x695BD2 mov edi,5` … `sub edi,1 / je 461C3Fh / jmp 695BD7h`. 1 + 5 = **6 ability entries per
+   `Abilities` command: this is the cap.**
+2. **Layout.** The counter `[esp+34h]`, reset once per refresh, gives each ability entry its n
+   (`0x696C0B..0x696C1F`); the entry calls GetNth at `0x696C59`. False takes no column; true
+   places a button whose command is `ability(record, unit)`. Columns wrap at 6 and the layout stops
+   at row 6.
+
+**The patch** writes N − 1 over the `5` of `mov edi,5` (imm32 at `0x695BD3`): the panel then gets N
+ability entries and asks GetNth for n = 0..N − 1. N stays within 6..36: below 6 it would hide stock
+abilities, N − 1 must never be 0 (the do-while tests after the first append and would run about
+4 billion times), and 36 is the size of the button grid.
+
+**Why it is safe:**
+- the entry array `0xCF05FC` grows by doubling, so more entries cannot overflow it;
+- the grid bounds are unchanged: rows stop at 6, so no button index passes 35;
+- the per-button state is indexed by grid position and reset on every refresh;
+- a click runs the stock `ability` UI command (`0x7DDC52`), which looks the record up by index
+  with no slot limit. The panel is built from the local selection only.
+
+**`log`** jumps at `0x696C70` (`call 45EE37h`, the first instruction of GetNth's true path). When
+n + 1 = `[esp+34h]` ≥ 7 it calls the C++ logger with the unit (EDI) and GetNth's outputs inside
+`pushad` / `popad`, before the stock call (which returns a float in ST0), then makes the stock call
+itself and jumps to `0x696C75`.
+
+### wonderPanelSkipAuras
+
+**The stock panel.** The wonder power panel (gadget `uiwonderpowerpanel`, five buttons) refreshes
+through FUN_004586B1 and a cold chunk at `0x69EC5E..0x69F35E`. For each `AbstractWonder` of the
+local player, and each page-11 command of its proto, it calls GetNth (`0x6EE5CC`, see
+abilitySlots) with **n = 0** at `0x69EE5D`, and skips the command when that returns false or when
+the record `0x44E702(mgr, recIdx)` has AlwaysDisabledInGrid (byte `+1Dh` bit 0, tested at
+`0x69EE80`). Otherwise it builds a button whose command is `ability(recIdx, unitId, true)`. The
+command panel asks for n = 0, 1, … and shows every ability, passive ones greyed; the wonder panel
+only ever sees n = 0, so an aura listed first hides any power after it.
+
+**The hook.** `WriteCall` turns the `call 6EE5CCh` at `0x69EE5D` into a call to
+`UhcWonderPanelAbilityHook`, a drop-in for `0x6EE5CC` (thiscall, nine stack arguments, `ret 24h`)
+that returns to `0x69EE62` like the stock call. For n = 0..7 it re-pushes the caller's eight other
+arguments, calls `0x6EE5CC`, and on success looks the record up with `0x44E702` and tests the flag
+the stock code tests next. It returns AL = 1 at the first record that is not AlwaysDisabledInGrid,
+with that call's outputs in the caller's locals; the caller's own re-check then passes and it builds
+the button as in stock. When no n qualifies it returns AL = 0, and the caller skips the command, as
+stock does for an aura. With `log`, a success at n > 0 calls the C++ logger.
+
+**Why it is safe.**
+- Only the call's target changes; the hook leaves through `ret 24h` to the verified `test al,al`.
+- The hook saves EBX and ESI; `0x6EE5CC`, `0x44E702` and the logger keep EDI and EBP. The caller
+  reads only AL and reloads everything else from its frame.
+- Repeated calls are what the command panel already does: `0x6EE5CC` resets every output at entry
+  and writes nothing else through the caller's pointers.
+- A first ability that qualifies returns at once, so a wonder with a single ability (every stock
+  wonder) shows the same button.
+- UI only: the refresh runs for the local player's units, and the button sends the same `ability`
+  UI command a command panel button sends.
+
+### lifespanAfterConstruction
+
+**The stock lifespan.** `<Lifespan>` is a float in seconds at `[proto+ACh]`. It is armed once, in
+unit init FUN_00498274, which calls setLifespan `0x48DCB9(unit, [proto+ACh], AlphaFadeLifespan)` at
+`0x498372`. setLifespan writes the countdown `[[unit+B4h]+1Ch]`, sets state bit 3 ("lifespan
+armed") when it is above 0, and, with `AlphaFadeLifespan`, schedules a fade-out (`0x47B50C`):
+duration `[sub+84h]` (1.0), time before the fade `[sub+88h]` = Lifespan − duration, state bit 5.
+Two per-step functions then count down, for every unit, foundations included:
+1. **The tick**, FUN_00482BF6 (`void thiscall(unit, float dt)`). For a unit with bit 3, its cold
+   part at `0x483EEC` subtracts dt from the countdown, or, when less than dt is left, takes the
+   expiry: if state bit 11 (dying) is set it only removes the corpse; otherwise it queues the
+   kill.
+2. **The fade update**, FUN_004829FA (`float thiscall(unit, float dt, bool commit)`). It computes
+   `t = [sub+88h] − dt` into its argument slot and stores it at `0x482A20` when commit is set. The
+   bit-5 branch returns while t > 0; afterwards it fades the unit and, when alpha reaches 0, calls
+   setLifespan(2e-6) so the next tick expires the unit.
+
+Construction never touches either timer: the completion handler FUN_006A1F82 does not call
+setLifespan. So a foundation counts down from its placement.
+
+**The hooks.** Both test the same predicate, cheap tests first: the marker ID is resolved, the unit
+is alive (state bit 11 clear, the test the stock expiry makes), not built (`0x44DDB4`: construction
+data present and percent < 1.0), and its proto is of the marker type (`0x44D7FA`).
+- **Tick hook** at `0x483EEC` (10 bytes: `fld [esp+0Ch] / fcomp [0B84BE4h]`). A held unit leaves
+  through `0x482C20` (`pop esi / pop ecx / ret 4`), the exit stock takes for dt ≤ 0: no countdown,
+  no expiry. Any other unit re-executes the two instructions and continues at `0x483EF6`.
+- **Fade hook** at `0x482A1A` (6 bytes: `jne 482A26h / mov ecx,[esp+10h]`), entered with the flags
+  of `cmp bl,1` (the commit flag), which `TRACE_ONCE` keeps. It also requires bit 5 (a fade-out
+  pending), bit 3 (the lifespan armed) and bits 4 and 61 clear (those fades take priority and use
+  the same timer). A held unit does not store t: it writes the stored timer into the argument slot,
+  so the bit-5 branch sees no time pass, and continues at `0x482A26`. Any other unit re-executes
+  `mov ecx,[esp+10h]` and continues at the store `0x482A20`.
+
+Both hooks are needed: with the tick hook alone, an `AlphaFadeLifespan` foundation would fade out
+during construction and die at completion. If the second jump cannot be written, the first one is
+put back.
+
+**Why it is safe.**
+- The hooks only skip the stores the stock code makes at those points; they write no other state.
+  Holding is decided again every step from the unit's state, so nothing is kept between steps and
+  saved games need nothing extra.
+- A dying unit is never held: the corpse fade uses the same bit 5 and the same 2e-6 lifespan, and
+  the kill handler leaves the construction percent below 100 %, so without the alive test a
+  destroyed marked foundation would never leave the world.
+- Every site is checked byte for byte first (11 sites, including isBuilt and the is-a test the
+  hooks call).
+- The predicate reads only simulation state; the `log` lines change nothing.
+
+### gaiaSocketsOnly
+
+**The stock rule.** `<SocketUnitType>` stores a unit type ID at `proto+12Ch`. `0x466C31`
+(`bool thiscall(buildingProto, int protoId)`) says whether a proto is a matching socket. It never
+reads an owner.
+
+**Where the owner is read.** Only in the snap to a socket, FUN_00A036BB (the cursor ghost, and the
+AI's placement helper): a candidate needs `[[unit+44h]] == 0` (`0xA0383B`), so a socket a player
+owns is never snapped to, and the ghost stays red.
+
+**The check that decides** is FUN_0050703D, "PLACE" (World vtable `+14h`, `ret 2Ch`; a1 the player
+at `[esp+1C0h]` and a5, "use the player's knowledge", at `[esp+1D0h]` in the body). The build
+command calls it on every machine, and so do the UI's pre-check and the AI's placement check. In
+its obstruction loop, a matching socket counts only when it stands exactly at the position (xz
+distance² below 1e-12), and `0x508CC1 mov byte [esp+37h],1` records "socket found". After the loop,
+a socketed building with no socket found fails (`0x509215`). No step reads the socket's owner.
+Every stock socket has `ForceToGaia`, so stock never meets a player's socket.
+
+**The hook** replaces the 5 bytes at `0x508CC1`, reached only by falling through from the
+exact-position test (ESI = socket + 14h, EDI = the building's proto).
+- a5 = 0 (no player's knowledge: the editor, the engine, the in-place conversion): set the flag as
+  in stock;
+- else call `UhcGaiaSocketAllowed(socket, building, player)`. It returns true (stock) when the
+  marker mode is on and the socket is not of the marker type, when `[unit+44h]` is null, or when
+  the owner is player 0. Otherwise it logs (with `log`) and returns false;
+- true: `mov byte [esp+37h],1`; false: nothing;
+- both leave through `jmp 0x508CC6`, the stock `jmp 50757Eh`, where EAX, ECX, EDX and the flags are
+  overwritten before they are read.
+
+**Why it is safe.**
+- A refused socket takes the stock "no socket found" path: no new failure mode, no state change.
+- The rule reads the socket's owner, the placing player, a5 and the data. PLACE runs inside the
+  build command on every machine with the same arguments, so every machine refuses alike.
+- The UI pre-check and the AI's placement check call the same PLACE, so they agree with the
+  command.
+- **Not observed in game:** in the test, the stock interface already refused a Trading Post on a
+  player-owned socket, and triggers cannot give build orders, so the order path WoL reports was not
+  driven.
+
+### customHotkeyContexts
+
+**The stock mechanism.** Hotkeys live in a context manager, `[[[0xC66244]+74h]+34h]`. Each context
+has a dense ID and a layer; the name count `[manager+34h]` is the next ID, and the active contexts
+are a 255-bit set.
+1. **The list of contexts.** At startup the game registers 123 names through
+   `0x628FC0(manager, name, layer)`. The 35 unit contexts (`TownCenterAccel` … `WonderAccel`) are at
+   layer 5.
+2. **The keymap.** FUN_005C16EA applies `DefaultKeyMapY.xml`. For each entry, the call at
+   `0x5C1778` looks its `<context>` up by name (`0x5C16AB`: 0 found, 3 unknown); on 3 the entry is
+   skipped.
+3. **The proto → context table.** FUN_005C13C5 writes `[proto+178h]` for every proto at data load:
+   about 40 protos by cached ID, shrines, wonders, and −1 for anything else.
+4. **The selection.** When the selection changes (chunk `0x649FA4`), a selected unit of the local
+   player enters a context (BL = 1, EDI = the unit) if it is a Building with a `<Train>` list, a
+   fire pit, or has the flag `EnterHotkeyContext`; a non-building with a `<Train>` list only sets the
+   "BuildAccel" byte (`0x64A034`). FUN_0079EF9C then switches off the 35 stock unit contexts by name,
+   and FUN_0079F851 reads `[proto+178h]` (`0x79F897`) and turns that context on.
+
+**The hooks.**
+- **`0x5C1778`, the keymap find (call target).** The wrapper calls `0x5C16AB`. When it returns 3,
+  the name ends in `Accel` and fewer than 223 contexts exist, it registers the name with
+  `0x628FC0(manager, name, 5)`, finds it again and returns that result, so the stock code binds the
+  entry. The new ID and the proto name (the context name without `Accel`) go into a list owned by
+  the DLL, tied to that manager.
+- **`0x79F897`, the unit's context (jmp, 6 B).** ESI = the database proto. A proto whose name
+  matches an added context gets EDI = that ID; any other proto re-executes `mov edi,[esi+178h]`.
+  Both continue at `0x79F89D`, which turns EDI on.
+- **`0x79F1A5`, the switch-off (call target).** The last `call 4421F3h` (`WonderAccel`) goes to a
+  wrapper that makes the same call, then switches off every added ID (`0xAB397F`), and returns to
+  `0x79F1AA`.
+- **`0x64A034`, trainers that are not buildings (jmp, 5 B).** If the unit's proto has an added
+  context, the stub jumps to `0x64A05A`, the Building path, without the BuildAccel byte; otherwise
+  it re-executes `mov byte [esp+13h],1` and continues at `0x64A05C`.
+
+Units that enter no context (a soldier, a hero) never reach `0x79F897`, so an added context for
+them stays off; the flag `EnterHotkeyContext` makes them enter one.
+
+**Why it is safe.**
+- With the stock keymap every context is known, so the find never returns 3, the list stays empty
+  and the selection hooks run the stock code.
+- Only names the exe does not know are added, and only those IDs are redirected or switched off.
+- IDs must stay below 255 (every context set is 255 bits, set without a bounds check); the DLL
+  stops at 222 to leave the game room for contexts it registers later. In the test the game had
+  registered 151 contexts before the keymap pass.
+- The list is written during the keymap pass and read by the selection hooks, all on the UI thread.
+  If the manager changes, the list is rebuilt on the next keymap pass, and until then the selection
+  hooks do nothing.
+- UI only: a context decides which keys are live; the command a key runs is the one a click runs.
+
+### snareOnlyHitUnit
+
+**The stock snare.** When an attack's tactics action has `<TargetSpeedBoost>` and the target can
+move, the cold chunk `0x4DD1DE` calls `0x4DD22D(target, 0, 0.65f, …, 2, 3000, …, 1)`. That creates
+on the target's action manager a unit action of type 2Ch (init `0x4B3D44`): stat `[+64h]` = 0
+(velocity), value `[+68h]` = 0.65, operation `[+78h]` = 2 (multiply), 3000 ms with flag 15h
+("timed"), and flag 16h ("exclusive").
+
+**From one unit to the group.** The per-unit recompute collects the unit's type-2Ch actions and
+sums the velocity modifiers (`0x4B3C48` / `0x4B3C7D`): start from the proto's MaxVelocity, apply each
+velocity modifier in order (0 set, 1 add, 2 multiply), and stop after the first exclusive one. The
+max-velocity getter `0x487E27` (unit vtable slot 34h) returns the result times the cfg float
+`MovementMod`. A grouped unit only marks its group dirty; the group recompute FUN_004FD289 then sets
+the group's pace `[group+7Ch]` to the minimum of its members' velocities (`0x4FD3FD..0x4FD411`,
+store at `0x4FD53A`), snare included. That is the spread.
+
+**The straggler rule.** When a member is more than 2.0 from its formation slot, the member step
+sets group bit 7 (`0x4FA17D`; `0x6AA514` and `0x6AA56A` for a member with its own path), and the
+group then moves at 0.8333× its pace (`0x4FAAA5`). Without a second change, a snared member left
+out of the pace would fall behind and trigger this rule, and the group would still slow.
+
+**The hooks.**
+1. **Group pace, `0x4FD3FD`** (26 bytes, up to `0x4FD417`). For a member with an active snare, the
+   helper computes the member's velocity without the snares and lowers `[group+7Ch]` to it when it
+   is smaller, as the stock compare does; the hook continues at `0x4FD417`. Any other member
+   re-executes the stock instructions and leaves through `jnp` to the stock store at `0x4FD53A` or
+   to `0x4FD417`, so an unsnared group is computed bit for bit as in stock.
+2. **Straggler bit, `0x4FA17D`, `0x6AA514`, `0x6AA56A`** (6 bytes each, `mov eax,[reg+4] / or byte
+   ptr [eax],80h`). For a snared member the hook skips the `or`; otherwise it re-executes both. At
+   `0x6AA56A` only the member's ID is left, so the helper looks the unit up as the member loop does.
+
+**What counts as a snare:** a type-2Ch action with stat 0, operation 2, and both flags 15h and 16h.
+The only other timed creator, `<SpeedBoost>`, is not exclusive, and the auras (exclusive or not)
+have no duration flag, so WoL's exclusive speed auras are not taken for snares.
+
+**The velocity without the snares** replays the stock sum over the same actions in the same order,
+skipping the snares: the same operations, the same stop on the first exclusive modifier, the same
+`MovementMod`. Each step is rounded to a float, as the stock `fstp` does.
+
+**Why it is safe.** One `VerifyAll` checks the written ranges, the continuations and the stock code
+the helpers mirror (14 sites). A nested action tree deeper than 16 levels makes the helper answer
+"not snared", which runs the stock code. The helpers read only simulation state and the game's cfg
+value, in a fixed order, with IEEE single precision.
+
+### techRenameEffect
+
+**How a tech is stored.** The database's tech tree TT0 (`[db+5D9Ch]`) holds, per tech, a
+`BTechTreeNodeData` (34h bytes: `+8` DisplayNameID, `+0Ch` RolloverTextID, `+10h`
+LongRolloverTextID, `+14h` icon, then the prerequisite and effect arrays) and a base node. Each
+player has a tech tree in the tech manager `[world+7Ch]`; its nodes are created on first use as a
+copy of the base node, `[node+0]` included. So **every player's node points at the same
+NodeData**; only status, cost and research points are per player. The interface reads a tech's texts
+through the player's node.
+
+**WoL's bug.** WoL's `SetTechName` apply writes `[[node]+8]` and `[[node]+0Ch]`: the shared
+NodeData, hence a global rename.
+
+**The fix.** The effect's apply gives the player a private copy of the NodeData and points that
+player's node at it:
+1. `node = 0x8D0005(player, tech)` (the player's node, created if needed);
+2. the copy for (player ID, tech ID) lives in the DLL (a `std::map`, never freed or moved);
+3. if `[node]` is not the copy yet, the 34h bytes are copied from `[node]` (the node is new: first
+   rename, a new or loaded game, a data reload);
+4. the configured IDs are written into the copy, then `[node+0] = copy`, last.
+
+The copy is shallow: the prerequisite and effect arrays and the icon stay shared with the database,
+so research, effects and prerequisites run as before.
+
+**Registering the effect type.** The 17 stock effect type names (`SetName` 0 … `Data2` 16) are
+registered once, in the database init FUN_0052277E, into the table `[db+335Ch]` (count `[db+3360h]`
+= the next ID). The hook at `0x524CB5` replaces `cmp dword ptr [esi+3504h],0`, right after Data2's
+registration. Inside `pushad` / `popad` it adds `SetTechName` with ID 17 unless the name exists,
+then re-executes the `cmp` last (its flags feed the `jne` at `0x524CC4`) and jumps to `0x524CBC`.
+
+**Creating the effect.** The parse `0x620572` looks the type up by name, then calls the factory
+FUN_00620535, which handles 0..10h and sends anything above to its default case `0x62146F` (error
+51Fh, return 0). The hook there compares the type with SetTechName's ID: for it, it calls
+`UhcTechRenameCreate()` and returns through the factory's own epilogue (`pop esi; ret`); any other
+type re-executes `push 51Fh` and continues at `0x621474`. The effect is allocated with the engine's
+`operator new` (`0x401398`), built by `BEffect::BEffect(type)` (`0x620B8F`, which sets kind 8, a
+"general" effect applied per player, and flag 20h, re-applied after a saved game loads), and given
+the DLL vtable.
+
+**The DLL vtable** is a copy of the stock BEffect's 17 slots (verified in place) with: the
+destructor; setData (reads `tech`, `newName`, `newRolloverTextID`, `newLongRolloverTextID`, and logs
+every refusal, since a false return makes the parse drop the effect without a message); save and
+load (the base, then the four ints, as the stock SetName); copyFrom; and generalApply (the rename
+above), which the effect dispatcher calls at `0x7F8111` when the carrier becomes active for a
+player (the whole team for a team tech) and after a saved game loads. generalUnapply stays the stock
+no-op, as for the stock SetName.
+
+**Why it is safe.**
+- Only string IDs change, in memory the database does not own. The one simulation-side reader, the
+  "researched" message, tests `DisplayNameID >= 0`; the DLL refuses negative IDs other than -1
+  (keep), so that message is never suppressed.
+- The engine never frees or saves `[node+0]`: a loaded game rebuilds its nodes from the base, and
+  the post-load pass re-applies the rename with a fresh copy.
+- The apply depends only on the effect, the player and its tech tree, never on the local player.
+- **Observed in game:** the database's NodeData kept the stock IDs (23401 / 23400) while player 1's
+  copy held the new ones (11070 / 10670).
+
+### noCorpseDopples
+
+**Stock dopples.** FUN_0048679A (`void thiscall(unit, int forced)`) is the per-unit visibility
+update. It loops over the players (EBX = player index, EDI = the player). When a unit leaves player
+EBX's view (`0x49520B`), stock makes a dopple if the proto has the flag `Doppled`, the unit is in
+the world (state bit 8), state bit 1Dh is clear, and, for a `DoppleOnlyWhenDead` proto, the owner
+is Gaia. It then runs `mov eax,[esp+2Ch] / mov ecx,[esp+54h]` at `0x49534D` and calls `0x4DB3D0`,
+which creates the dopple for every player that shares the losing player's vision. Nothing on this
+path asks whether the unit is alive; a dead unit's dopple shows its death pose.
+
+**The hunt flow.** A hunt at 0 HP stays in the world as a carcass (state bit 8 kept, bit 12 set:
+not alive). If it leaves a player's view while it still holds food, it gets a corpse dopple, which
+stays until the player sees the spot again. A depleted carcass is taken out of the world (bit 8
+cleared at `0x4B520E`) before it decays, so it is never doppled.
+
+**The hook.** A `jmp` over the 8 bytes at `0x49534D` (two paths reach it: the fall-through and the
+`DoppleOnlyWhenDead` test's `je` at `0x4F108E`). The hook runs the stock code when the marker ID is
+-1, EBX = 0 (Gaia; `0x4DB3D0` makes nothing for it), the proto is null, the is-a test fails, or the
+unit is alive (unit vtable slot A4h, called as the stock code does at `0x4868FA`). A marked unit
+that is not alive is logged (with `log`) and leaves through `jmp 486A30h`, the exit the stock code
+takes after a creation. Any other unit re-executes the two `mov`s and continues at `0x495355`.
+
+**Why it is safe.**
+- EAX, ECX, EDX and the flags are dead at both continuations; the is-a test and isAlive keep the
+  other registers, and the stack is balanced.
+- The skip path is the path after a stock creation, so the rest of the player loop runs as in
+  stock.
+- The hook's inputs are the proto's types, the unit's HP and state bits, and the player index; the
+  visibility update runs inside the simulation, for every player, on every machine. Skipping a
+  creation also skips its draw on RNG stream 1, which is probably a local stream (inference, not
+  verified).
+- **Not covered:** the `MutateDopples` refresh (no stock or WoL proto uses it), the dopples a saved
+  game already holds, and the dopple of a live unit that later dies out of sight.
+
+### danceBonusCivs
+
+**The stock dances.** A `DanceBonus` action (protoaction type 45h) stores its kind as a byte at
+`[action+0C1h]` (Training 1, XPTrickle 2, Regeneration 5, Gathering 8, …). The action's own update
+handles UnitModification, UnitSpawn, PopCap and WarChiefRansom, with no civ test. The other four
+kinds are read by the engine in four `thiscall(player)` readers:
+
+| Kind | Reader | Native branch |
+|---|---|---|
+| Training | FUN_008D4790 (train rate, `ret 4`) | `0x8D47CF` |
+| XPTrickle | FUN_004E0DE5 (XP trickle; also the dance tooltips) | `0x4E0E29` |
+| Gathering | FUN_004ECD39 (gather rate) | `0x4ECD7D` |
+| Regeneration | FUN_00490476 (`this` in EDI) | `0x679E66` |
+
+Each one loads the player's first civ ID (`[[player+20h]]`, or -1 through a separate path that
+jumps back to the same compare), then compares it with the four native civ IDs that FUN_00512651
+caches by name on each data load: `[0C6FB50h]` XPIroquois, `[0C6FB54h]` XPSioux, `[0C6FB58h]`
+XPAztec, `[0C6FB5Ch]` XPSPC. A match goes to the native branch: getFirePit (`0x4819EF`, the player's
+first `AbstractFirePit` unit), then the product of the strength `0x9D665C` over that unit's dance
+actions of the kind. Any other civ gets 1.0 (Regeneration: no healing).
+
+**The hooks.** Each one replaces the first compare, `cmp eax,[0C6FB50h]` (6 bytes), with a `jmp`
+(+1 NOP); both paths into the compare reach it. It saves EAX, ECX and EDX and calls
+`UhcDanceCivAllowed(kind, player, civ)`:
+- listed civ: jump to the native branch, with the registers and the stack as the stock code has
+  them there;
+- any other civ, or -1: re-execute the compare and continue at the stock `je` right after it, which
+  reads its flags; the three other native compares then run unchanged.
+
+`UhcDanceCivAllowed` resolves the cfg names with the engine's own lookup, `0x58E71F(database, name)`
+(case-insensitive), into a table by civ ID. When `[game+140h]` or its civ count changes (the data is
+read again when a skirmish starts), the names are resolved again on the next call. While the civ
+count is 0 it answers "not listed".
+
+**Why it is safe.**
+- The written bytes are one whole instruction, nothing branches into its last 5 bytes, and the NOP
+  is never executed.
+- EAX, ECX and EDX are restored on both exits, ESP is unchanged, and no x87 value is live at any of
+  the four sites.
+- The answer depends only on the cfg list and the data's civ table, so every machine with the same
+  cfg decides the same.
+- The native civs pass the stock compares as before, and an unlisted civ runs exactly the stock
+  bytes. Upstream's `nativeCivs` patches the later compares (0x4904B5, 0x4ECD6B, 0x8D47C9), outside
+  these ranges, so a `nativeCivs` port can share these functions.
+
 ### bufferedFileReads
 
 **Why it exists.** The game's raw file stream reads with one `ReadFile` per request
@@ -488,8 +1122,21 @@ and watched with `PrintWindow`, and both work without focus.
 - **Time and order from the simulation** (`damageOverTime`): poisons tick on the game time
   `[world+108h]`, in integer milliseconds, in the order of their keys, from inside the world
   update. The damage itself is the stock TakeDamage.
+- **Schedules on the step count** (`techPrereqRecheck`): "every N updates" is
+  (`[world+F8h]` + player ID) % N, stateless, so every machine checks the same players on the same
+  update.
+- **Decide with the engine's own test** (`maintainWaitForPop`, `snareOnlyHitUnit`): a predicate
+  that mirrors stock code calls the same engine functions in the same order, with the same 32-bit
+  or single-precision arithmetic, and the mirrored code is verified byte for byte.
+- **Copy, don't compute** (`transformUpdatesLOS`, `liveBuildingWorkRate`): a value is copied or
+  read as the stock code would, with no new float operation.
 - **Outside the simulation** (`bufferedFileReads`): change only how data reaches the game, never
   what it receives.
+- **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`): change only
+  what the local player sees or which keys work; every button or key sends the same command as
+  stock.
+- **Logs never feed back:** every `log` option only writes `UHC.log`; its dedupe tables decide
+  whether to write a line, never what the game does.
 
 None of this has been tested over a real network yet.
 

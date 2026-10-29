@@ -56,7 +56,20 @@ const char* Name(const char* proto) {
   return name == nullptr ? "?" : name;
 }
 
+const char* g_logWorld = nullptr;  // the game g_logged belongs to
+std::uint32_t g_logStep = 0;
+
 void LogRefusal(const char* socket, std::int32_t owner, const char* building, std::int32_t player) {
+  // Unit IDs start again in every game: a new world, or a step count [world+F8h] that went back,
+  // forgets the refusals logged so far.
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    g_logged.clear();
+  }
+  g_logWorld = world;
+  g_logStep = step;
   const std::int32_t socketId = Field<std::int32_t>(socket, 0x10);
   const std::int32_t buildingId = Field<std::int32_t>(building, 0x04);
   if (g_logged.size() >= kMaxLogged || !g_logged.insert({socketId, owner, player, buildingId}).second) {

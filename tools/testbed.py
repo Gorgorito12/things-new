@@ -395,7 +395,8 @@ def write_map(bed, name, specs):
             continue
         sys.exit(f"testbed: bad map spec {spec!r} (expected p<N>=<Proto>*<count>@<x>,<z>, tech<N>=<Tech>, "
                  f"go<N>=<seconds>@<x>,<z>, at<seconds>=<Effect>;<Param>=<value>..., size=<m> or sea=<SeaType>)")
-    players = sorted({g[0] for g in groups} | {t[0] for t in techs} | {1, 2})
+    # p0= groups belong to Gaia, which the map must not place as a player.
+    players = sorted(({g[0] for g in groups} | {t[0] for t in techs} | {1, 2}) - {0})
     first = {}
     for g in groups:
         first.setdefault(g[0], (g[3], g[4]))

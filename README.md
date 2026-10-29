@@ -26,6 +26,20 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `dodgeAnyUnit [UnitType] [log]` | **New.** Units marked with a unit type can dodge hits like the Japanese monk: no damage, 15 % of the time, while their player has the tech `YPDodge`. Stock allows it only for `ypMonkJapanese`. | confirmed (single player) |
 | `dodgeSoundSet UnitType SoundSet`, `criticalSoundSet UnitType SoundSet` | **New.** Choose the sound set a unit plays when it dodges, or when it lands a critical hit, instead of the stock `PowerEvade` / `PowerCriticalStrike`. | confirmed (single player; the choice is logged, the sound itself was not listened to) |
 | `damageOverTime [log]` | **New.** Poison: an attack that lists `<AttachProtoUnit>X</AttachProtoUnit>` keeps damaging what it hits, with X's `Attaching` action every `ROF` seconds for X's `Lifespan`. Damage type and armor apply as for any hit. | confirmed (single player; area damage, bonuses and techs on X not tested) |
+| `liveBuildingWorkRate [log]` | **New.** A `BuildingWorkRate` tech (train, research and `Maintain` speed) also speeds up the buildings that already stand. Stock only speeds up the ones completed after the tech. | confirmed (single player, `Maintain`) |
+| `techPrereqRecheck [N] [full] [log]` | **New.** Techs whose prerequisites count units (`<TypeCount>`) react as soon as such units are created or die. Stock re-checks them only at the player's next house, age-up or tech change. | confirmed (single player) |
+| `maintainWaitForPop [UnitType] [log]` | **New.** A marked building whose automatic production (`Maintain`: factory cannons, Ottoman settlers, …) finishes a unit at the population cap keeps it and spawns it as soon as there is room. Stock throws it away and starts the cycle again. | confirmed (single player) |
+| `transformUpdatesLOS [log]` | **New.** A unit that a tech (`TransformUnit`) or a revolution changes into another proto takes that proto's line of sight. Stock keeps the old one. | confirmed (single player) |
+| `broadsideMuzzleLimit N [UnitType] [log]` | **New.** A ship's broadside fires from up to N muzzles per side instead of 6, as many as its model has. | confirmed (single player) |
+| `abilitySlots N [log]` | **New.** The command panel shows up to N abilities per unit instead of 6, so a 7th ability gets a button even when the first 6 are disabled. | confirmed (single player, UI) |
+| `wonderPanelSkipAuras [log]` | **New.** The wonder power panel shows a wonder's first available ability that is not a passive aura, so a global power listed after an aura gets its button. | confirmed (single player, UI) |
+| `lifespanAfterConstruction [UnitType] [log]` | **New.** A marked building starts its `<Lifespan>` when its construction is finished, not when the foundation is placed. | confirmed (single player) |
+| `gaiaSocketsOnly [UnitType] [log]` | **New.** A socketed building (`TradingPost`, or a mod's) may only be placed on a socket that Gaia owns, as the red placement preview already shows. | not tested in game |
+| `customHotkeyContexts [log]` | **New.** A keymap context named `<ProtoName>Accel` becomes that proto's hotkey context, for buildings the exe has no context for (a mod's, or the Sacred Field). | partly confirmed (contexts registered and switched; key presses not tested) |
+| `snareOnlyHitUnit [log]` | **New.** A snared unit (`<TargetSpeedBoost>`) no longer slows the group it moves with; only the hit unit slows. | confirmed from the log (single player) |
+| `techRenameEffect [log]` | **New.** The tech effect `SetTechName` gives a tech new texts for the players the effect reaches, and only for them. WoL's key `enableTechRenameEffect` is read too. | confirmed (single player) |
+| `noCorpseDopples [UnitType] [log]` | **New.** A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | confirmed (single player) |
+| `danceBonusCivs Civ… [log]` | **New.** The fire pit's Training, XPTrickle, Gathering and Regeneration dances also work for the civs you list, not only for the native civs. | confirmed (single player, Healing Dance) |
 | `bufferedFileReads [KB]` | **New.** Reads the game's files through a read-ahead buffer instead of millions of tiny reads. In a late 8-AI game, frames over 100 ms dropped from 11 to 3, and time spent reading files fell from 14.9 s to 1 s per session. It does not change the simulation. | confirmed (single player) |
 | `multipleInstances [background]` | **New.** Lets this copy run while a copy of the game from another folder is running; stock allows one copy per machine. `background` keeps its windows behind all others and never focused, for unattended tests. | confirmed (two copies, single player) |
 | `perfStats`, `perfAutoExec`, `perfExecFile`, `perfFileLog` | In development: performance diagnostics. See [docs/performance.md](docs/performance.md). | in progress |
@@ -92,9 +106,13 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 6 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
-    `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `bufferedFileReads`,
-    `multipleInstances`.
+  - 20 new features: `hcShipmentPointFallback`, `healNonIdle`, `damageOverTime`,
+    `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
+    `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
+    `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
+    `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,
+    `danceBonusCivs`, `bufferedFileReads`, `multipleInstances`. Most of them answer Wars of
+    Liberty's requests ([docs/wol-requests.md](docs/wol-requests.md)).
 - **In research:**
   - `unlockAllCards` (every card usable from a new home city): paused.
 - **Later:** the remaining UHC 1.10 keys (civilizations, units, teams, syscalls, cheats and

@@ -11,8 +11,9 @@
 // its old proto's takes the new proto's (the player's copy, so its LOS techs count). A unit with
 // another value (a foundation's footprint LOS, a knocked-out hero's 6) keeps it.
 //
-// Units that a transform replaces with a new unit (uiTransformSelectedUnit, e.g. wall -> gate;
-// trUnitChangeProtoUnit) get the new proto's LOS in stock and never reach the hook.
+// Units that a transform replaces with a new unit (uiTransformSelectedUnit, e.g. wall -> gate) get
+// the new proto's LOS in stock and never reach the hook. trUnitChangeProtoUnit takes another path
+// too: in game the unit kept its ID, already had the new LOS and never reached the hook.
 #include <bit>
 #include <cstdint>
 #include <cstring>

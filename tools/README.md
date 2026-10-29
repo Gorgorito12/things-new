@@ -10,8 +10,8 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
 | [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
-| [`protoy_testdata.py`](#protoy_testdatapy) | Adds marker unit types to protos in a test copy's `protoy.xml` and its XMB. |
-| [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, console commands, units, log, screenshots. |
+| [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
+| [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
@@ -125,15 +125,21 @@ the game unattended").
 ## protoy_testdata.py
 
 ```
-python -I tools/protoy_testdata.py <test folder> unittype <Proto>=<UnitType> [...]
+python -I tools/protoy_testdata.py <test folder> <verb> <edit> [...] [<verb> <edit> [...]] ...
 python -I tools/protoy_testdata.py <test folder> reset
 ```
 
-Adds `<UnitType>UnitType</UnitType>` to each named `<Unit>` of the copy's `data\protoy.xml`,
-then compiles `data\protoy.xml.XMB` from that XML, so the game sees the marker whichever file it
-loads. Example: `Explorer=AbstractDodge` for `dodgeAnyUnit`. The first run keeps the two files as
-`*.testdata-orig`; each run starts again from those, and `reset` puts them back. It refuses any
-folder inside a Steam library.
+Edits the named `<Unit>`s of the copy's `data\protoy.xml`, then compiles `data\protoy.xml.XMB`
+from that XML, so the game sees the edits whichever file it loads. Verbs, combinable in one run:
+- `unittype <Proto>=<UnitType>` adds a unit type, e.g. `Explorer=AbstractDodge` for
+  `dodgeAnyUnit`;
+- `flag <Proto>=+<Flag>` adds a flag, `flag <Proto>=-<Flag>` removes one, e.g.
+  `Deer=+Doppled Deer=-VisibleUnderFogOnlyAfterSeen`;
+- `line <Proto>=<xml>` inserts one element before `</Unit>`, e.g. `"House=<Lifespan>20</Lifespan>"`.
+
+The first run keeps the two files as `*.testdata-orig`; each run starts again from those (so give
+all of a test's edits in one run), and `reset` puts them back. It refuses any folder inside a
+Steam library.
 
 ## testbed.py
 
@@ -143,8 +149,10 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `shot`, `click`/`rclick`, `key`/`rkey`, `type`, `log`, `safety`; the docstring lists
-their arguments. It needs `perfExecFile <bed>\uhc-exec.txt` in the copy's cfg (`deploy` adds
+`units`, `shot`, `record`, `click`/`rclick`, `key`/`rkey`, `type`, `log`, `safety`; the
+docstring lists their arguments. `record` films the window to an MP4 with ffmpeg (`UHC_FFMPEG`,
+`PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`).
+It needs `perfExecFile <bed>\uhc-exec.txt` in the copy's cfg (`deploy` adds
 it). The method and its pitfalls are in
 [developer-guide.md, "Driving the game unattended"](../docs/developer-guide.md#driving-the-game-unattended).
 

@@ -208,9 +208,19 @@ const char* UnitById(std::int32_t id) {
   return unit != nullptr && UnitId(unit) == id ? unit : nullptr;
 }
 
+// "log": a unit seen without a snare forgets the one it had, so a later snare is logged even when
+// the engine allocates it at the same address.
+void ForgetSnare(const char* unit) {
+  g_loggedPace.erase(UnitId(unit));
+  g_loggedWait.erase(UnitId(unit));
+}
+
 bool SkipsWait(const char* member, std::uint32_t site) {
   const char* snare = FindSnare(member);
   if (snare == nullptr) {
+    if (g_log) {
+      ForgetSnare(member);
+    }
     return false;
   }
   if (g_log && FirstForSnare(&g_loggedWait, member, snare)) {
@@ -235,6 +245,9 @@ void UhcSnarePathCheckHook();
 bool __stdcall UhcSnareGroupPace(const char* member, char* group) {
   const char* snare = FindSnare(member);
   float velocity = 0.0f;
+  if (snare == nullptr && g_log) {
+    ForgetSnare(member);
+  }
   if (snare == nullptr || !VelocityWithoutSnares(member, &velocity)) {
     return false;
   }
