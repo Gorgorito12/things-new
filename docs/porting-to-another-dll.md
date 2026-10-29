@@ -68,7 +68,8 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `DotProtoActionTag` | `0x5FA10F` | `0x1B` B | 8 B at `0x5FA11E` | `85 C0 0F 84 C7 33 00 00` (`test eax,eax; je 5FD4EDh`) | unknown-tag fall-through of the action parser FUN_005F98A0; damageOverTime tag hook |
 | `DotProtoActionCall` | `0x5FA20E` | 5 B | — | — | the `<ProtoAction>` handler's `call 5F98A0h`; the tag hook checks its return address 0x5FA213 |
 | `DotTakeDamageEntry` | `0x49B3D9` | 14 B | 6 B at `0x49B3D9` | `81 EC 8C 00 00 00` (`sub esp,8Ch`) | entry of TakeDamage FUN_0049B3D9; damageOverTime hit hook |
-| `DotWorldUpdateEntry` | `0x481A57` | 8 B | 5 B at `0x481A57` | `83 EC 0C 53 55` (`sub esp,0Ch; push ebx; push ebp`) | entry of the world update FUN_00481A57; damageOverTime tick hook |
+| `DotWorldUpdateEntry` | `0x481A57` | 8 B | 5 B at `0x481A57` | `83 EC 0C 53 55` (`sub esp,0Ch; push ebx; push ebp`) | entry of the world update FUN_00481A57; the shared tick wrapper (`worldtick.cpp`: damageOverTime, overhealDecay) |
+| `HpSetter` | `0x4820A1` | `0x22` B | — | — | the HP setter overhealDecay calls (verified only) |
 | `DodgeProtoCheck` | `0x49ACE5` | 12 B | 6 B at `0x49ACE5` | `8B 46 5C 8B 40 04` (`mov eax,[esi+5Ch]; mov eax,[eax+4]`) | proto test of the dodge FUN_0049ACAA; dodgeAnyUnit hook |
 | `DodgeTechCheck` | `0x6A249C` | 10 B | — | — | the stock dodge path the hook enters (`push "ypDodge"; call 600BE1h`) |
 | `DodgeCall` | `0x49B023` | 7 B | 5 B at `0x49B023`, only with `log` | `E8 82 FC FF FF` (`call 49ACAAh`) | the damage function's call to the dodge; dodgeAnyUnit log wrapper |
@@ -298,8 +299,9 @@ with your own result type.
   - the globals, such as `g_uhcHealNonIdleType`;
   - the `__stdcall` callbacks, such as `UhcRegisterAbstractUnitTypes`;
   - for `damageOverTime`, the two `__fastcall` wrappers, which the hooks reach through the
-    pointer variables `g_uhcDotTakeDamage` and `g_uhcDotWorldUpdate`, so MASM never needs their
-    decorated names. The trampolines `UhcDotTakeDamageStock` and `UhcDotWorldUpdateStock` go the
+    pointer variables `g_uhcDotTakeDamage` and `g_uhcWorldUpdate` (the shared world update
+    wrapper of `worldtick.cpp`), so MASM never needs their decorated names. The trampolines
+    `UhcDotTakeDamageStock` and `UhcWorldUpdateStock` go the
     other way: C++ casts their addresses to function pointers. `customHotkeyContexts` reaches its
     two `__fastcall` wrappers the same way (`g_uhcHotkeyFindContext`,
     `g_uhcHotkeyDeactivateAll`);
@@ -469,10 +471,12 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     st0, exactly like the stock thiscall function;
   - it calls the stock function through `UhcDotTakeDamageStock` (`sub esp,8Ch; jmp 49B3DFh`);
   - when damage was dealt, it adds or renews a poison.
-- **World update hook** at `0x481A57`, a `jmp` to `UhcDotWorldUpdate`:
+- **World update hook** at `0x481A57`, a `jmp` to the shared wrapper `UhcWorldUpdate`
+  (`worldtick.cpp`, written once by `AddWorldTick`, whichever key comes first):
   - `bool __fastcall(world, unused, int, int deltaMs)`, `ret 8`, result in AL;
-  - it calls the stock update through `UhcDotWorldUpdateStock` (`sub esp,0Ch; push ebx;
-    push ebp; jmp 481A5Ch`), then applies the due ticks when `world == [[C66234h]+13Ch]`;
+  - it calls the stock update through `UhcWorldUpdateStock` (`sub esp,0Ch; push ebx;
+    push ebp; jmp 481A5Ch`), then each registered tick in kFeatures order; damageOverTime's
+    applies the due ticks when `world == [[C66234h]+13Ch]`;
   - each tick calls the **stock** TakeDamage (the trampoline, not the wrapper) with p8..p13 =
     `0, 0, 1, 1, -2, 1`, but with p11 = 0 when the attacking unit is gone. With p11 = 1,
     TakeDamage's army code (0x6A3253) reads the attacking unit with no null check, so a tick on
@@ -963,6 +967,22 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Search hook** at `0x9CD984` (5 B, `call 45F295h`), ECX = ESI = candidate, healer `[ebp+4]`:
   ST0 = HP / reference (stock rules) for a marked candidate and a non-source healer, else the stock
   ratio; → `0x9CD989`. Coexists with smartHealTargets and healNonIdle (other sites of the loop).
+- **The add-HP hook is shared** with overhealDecay: `InstallOverhealAddHook()` writes it once.
+
+### overhealDecay
+
+- **Needs** overhealHitpointBars' helpers; apply after overhealSources (they share the add-HP hook,
+  and the second one must not verify bytes the first already replaced).
+- **Gain:** the add-HP hook calls `g_overhealGain(unit)` (set by this key) for a positive amount on
+  a marked unit that still takes it above its reference; it stores `[world+108h]` in a map keyed by
+  unit ID.
+- **Tick** (registered with `AddWorldTick`, after damageOverTime's): elapsed = `[world+108h]` − the
+  last tick's (another world, the time going back or `[world+F8h]` jumping by more than 1 clears
+  the map, as does a data reload); for each unit in ID order: look it up (`[world+0Ch]`, ID check),
+  alive (`vtbl+A4h`), marked; at or below the reference → forget; inside the delay → skip; else
+  `FUN_004820A1(unit, max(HP − rate × elapsed / 1000, reference), 0)` (rate in HP/s, or the
+  reference × % / 100).
+- **Never** below the reference, never the real clock, never pointer order.
 
 ### showGatherRate
 

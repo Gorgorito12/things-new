@@ -266,6 +266,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center; the queue resumes when they leave or that Town Center dies. | Nothing for the Daimyos; with a new marker, that type on the trainers in `protoy`. | confirmed (single player) |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units, and the unit type on them (or an existing type in the cfg). | confirmed (single player, UI) |
 | [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
+| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget in your UI. | confirmed (single player, UI; the data ref not tested) |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. | confirmed (single player) |
@@ -842,8 +843,8 @@ damageOverTime [log]
   - when you leave a game with poisons still running and start or load another one,
     `damageOverTime: another game started; <N> running poison(s) dropped`, or
     `damageOverTime: the data was reloaded; <N> running poison(s) dropped`. That is normal;
-  - `hook reached: damageOverTime TakeDamage (0x49B3D9)` and `hook reached: damageOverTime world
-    update (0x481A57)`.
+  - `hook reached: damageOverTime TakeDamage (0x49B3D9)` and `hook reached: world update
+    (0x481A57)` (the world update wrapper, shared with `overhealDecay`).
 - **Check:** hit a unit once and pull back. Its hitpoints keep dropping by one tick every ROF
   seconds. In the tests, poisoned guardians and animals sometimes jumped back to full hitpoints,
   most likely when they went back to their spot. That is stock behavior (not traced), and it can
@@ -2325,6 +2326,46 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
   appeared and healed it to 165; an unmarked Pikeman was healed to its max. A skirmish against the
   AI with the key on played normally. Not tested: area heals, regeneration and powers on marked
   units (the cap is static reading for them), a direct order, multiplayer.
+- **New in this DLL:** not in UHC 1.10.
+
+### overhealDecay
+
+![overhealDecay in game](media/overhealDecay.gif)
+
+*In game:* `overhealDecay 2 3`. A source monk keeps a marked Musketeer at 165 (when it slips, the monk heals it back); at second 60 the monk is killed, and the Musketeer loses about 2 HP per second and stops at 150, its 100 %. [Full video (MP4)](media/overhealDecay.mp4).
+
+```
+overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
+```
+
+- **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its types mark the units and its
+  100 % (`InitialHitpoints`, scaled when an aura changes the max) is where the decay stops.
+- **Effect:** a marked unit whose HP is above its 100 % loses `rate` HP per second (`2`), or
+  `rate` percent of its 100 % per second (`1%`), counted in game time (paused games and game speed
+  follow), once `delay` seconds (default 0, decimals allowed) have passed since it last gained HP
+  above its 100 %. It stops exactly at its 100 %: the decay never goes below it and never kills.
+  With unit types (or proto names) listed, only marked units of those types decay. Works with or
+  without [`overhealSources`](#overhealsources): with it, only source healers create overheal to
+  decay; without it, any heal above the 100 % does.
+- **What counts as a gain:** any heal that takes the unit above its 100 % (healers, regeneration,
+  dances, powers…): each such heal restarts the delay. HP that a unit has above its 100 % without
+  such a heal (a transform into another marked proto, for instance) does not decay until its next
+  gain.
+- **Log:** `overhealDecay: marked units above their 100 % lose R HP per second of game time, D s
+  after their last gain, down to it (multiplayer unverified)`; in a game `hook reached: overheal add
+  HP (0x4823A3)` and `hook reached: world update (0x481A57)`. With `log`, the first of each proto:
+  `overhealDecay: unit N (Musketeer) decays from 165.0 toward its 100 % 150.0 at 2.00 HP/s` and
+  `… is back at its 100 % 150.0`. Without `overhealHitpointBars`: `overhealDecay: needs
+  overhealHitpointBars, …; feature not applied`; a bad rate: `overhealDecay: expected <HP per
+  second>[%] [delay seconds] [UnitType ...] [log], …; feature not applied`.
+- **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
+  registered as a marker unit type.
+- **Status:** confirmed in single player (2026-10-29) with `overhealDecay 2 3`, together with
+  `overhealHitpointBars`, `overhealSources` and `damageOverTime`: a marked Musketeer at 165 fell to
+  160.2, 154.1 and 150.0 over about six seconds after its healer was killed, and stayed at 150; an
+  unmarked Pikeman did not change. Poison (`damageOverTime`) still ticked normally in its own test
+  copy. A skirmish against the AI with all these keys on played normally. Not tested: the `%`
+  rate, a type filter, multiplayer.
 - **New in this DLL:** not in UHC 1.10.
 
 ### showGatherRate

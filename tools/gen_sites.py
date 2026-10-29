@@ -80,6 +80,10 @@ SITES = [
     # overhealSources (the automatic heal search, ESI = candidate, healer at [ebp+4]): mov ecx,esi /
     # call 45F295h (replaced, 5 bytes at 0x9CD984) / fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh
     ("HealSearchRatio", 0x9CD982, 0x18),
+    # overhealDecay, verify only: the HP setter FUN_004820A1 it calls (thiscall(unit, value, flag),
+    # ret 8): sub esp,0Ch / push edi / mov edi,ecx / ... / mov [edi+64h],ecx (the store) / the
+    # override test
+    ("HpSetter", 0x4820A1, 0x22),
     # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
     # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
     ("AbstractTypesEnd", 0x51BA23, 0x15),

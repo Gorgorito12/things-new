@@ -38,6 +38,10 @@ float UhcOverhealReferenceOf(const char* unit);  // overheal_hooks.asm, cdecl
 std::int32_t UhcOverhealMarked(const char* proto);
 }
 
+namespace uhc {
+extern void (*g_overhealGain)(const char* unit);  // set by overhealDecay
+}
+
 namespace {
 
 constexpr std::size_t kMaxTypes = 8;
@@ -51,6 +55,8 @@ T Field(const char* base, std::uint32_t offset) {
 }
 
 bool g_log = false;
+bool g_cap = false;      // overhealSources is on
+bool g_addHooked = false;
 std::set<std::string, std::less<>> g_loggedCaps;     // proto names, "log" only
 std::set<std::string, std::less<>> g_loggedSources;  // healer proto names, "log" only
 
@@ -96,8 +102,9 @@ bool __stdcall UhcOverhealUseReference(const char* target, const char* healer) {
   return proto != nullptr && UhcOverhealMarked(proto) != 0 && !UhcOverhealIsSource(healer);
 }
 
-// From the add-HP hook, before every HP addition: a positive amount on a marked unit is lowered so
-// that HP does not pass the reference, unless a source healer's tick is adding it.
+// From the add-HP hook, before every HP addition: with overhealSources a positive amount on a marked
+// unit is lowered so that HP does not pass the reference, unless a source healer's tick is adding
+// it; with overhealDecay a unit that still goes above its reference is noted.
 void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   if (!(*amount > 0.0f)) {
     return;
@@ -108,7 +115,13 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   }
   const float reference = UhcOverhealReferenceOf(unit);
   const float hp = Field<float>(unit, 0x64);
-  if (g_uhcOverhealAllow != 0) {
+  if (!g_cap || g_uhcOverhealAllow != 0) {
+    if (uhc::g_overhealGain != nullptr && hp + *amount > reference) {
+      uhc::g_overhealGain(unit);
+    }
+    if (!g_cap) {
+      return;
+    }
     if (g_log && hp + *amount > reference && FirstLog(g_loggedSources, ProtoName(unit))) {
       uhc::Log(L"overhealSources: unit %d (%hs) is healed above its 100 %% %.1f by a source healer (HP %.1f + %.2f); "
                L"logged once per proto",
@@ -132,6 +145,18 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
 }
 
 namespace uhc {
+
+void (*g_overhealGain)(const char* unit) = nullptr;
+
+bool InstallOverhealAddHook() {
+  if (!g_addHooked) {
+    // Replaces push ecx / push esi / mov esi,ecx / cmp dword ptr [esi+8],8 at 0x4823A3.
+    g_addHooked = WriteJmp(0x004823A3, reinterpret_cast<const void*>(&UhcOverhealAddHook), 8);
+  }
+  return g_addHooked;
+}
+
+bool OverhealAddHookInstalled() { return g_addHooked; }
 
 Outcome ApplyOverhealSources(const Config& config) {
   const Config::Args* args = config.First("overhealSources");
@@ -169,8 +194,8 @@ Outcome ApplyOverhealSources(const Config& config) {
     }
   }
   g_uhcOverhealSourceTypeCount = static_cast<std::int32_t>(typeNames.size());
-  if (!WriteJmp(0x004823A3, reinterpret_cast<const void*>(&UhcOverhealAddHook), 8) ||
-      !WriteJmp(0x009E0BBB, reinterpret_cast<const void*>(&UhcOverhealTickMaxHook), 5) ||
+  g_cap = true;
+  if (!InstallOverhealAddHook() || !WriteJmp(0x009E0BBB, reinterpret_cast<const void*>(&UhcOverhealTickMaxHook), 5) ||
       !WriteJmp(0x009E0CE9, reinterpret_cast<const void*>(&UhcOverhealTickAddHook), 5) ||
       !WriteJmp(0x009CD984, reinterpret_cast<const void*>(&UhcOverhealSearchRatioHook), 5)) {
     return Outcome::kFailed;

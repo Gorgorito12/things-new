@@ -46,6 +46,7 @@ Outcome ApplyTransformInventory(const Config& config);
 Outcome ApplyNoTrainNearEnemyTc(const Config& config);
 Outcome ApplyOverhealHitpointBars(const Config& config);
 Outcome ApplyOverhealSources(const Config& config);
+Outcome ApplyOverhealDecay(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
@@ -88,6 +89,8 @@ inline constexpr Feature kFeatures[] = {
     {"overhealHitpointBars", ApplyOverhealHitpointBars},
     // After overhealHitpointBars, whose unit types and reference it uses.
     {"overhealSources", ApplyOverhealSources},
+    // After overhealSources: they share the add-HP hook, which the first one writes.
+    {"overhealDecay", ApplyOverhealDecay},
     {"showGatherRate", ApplyShowGatherRate},
     // Last of the WoL keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -106,7 +109,7 @@ inline constexpr const char* kHandledKeys[] = {
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
-    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "showgatherrate",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances",
 };

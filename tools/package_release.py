@@ -192,6 +192,8 @@ overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [log]   HP bars and texts
                               segment: the HP above it in orange, Overwatch style
 overhealSources [UnitType ...] [log]   only marked healers (AbstractOverhealer) heal
                               overheal units above InitialHitpoints
+overhealDecay R[%] [D] [UnitType ...] [log]   overheal above InitialHitpoints decays
+                              at R HP/s, D s after the last heal (Overwatch style)
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed

@@ -19,6 +19,7 @@
 #include "../log.h"
 #include "../patch.h"
 #include "../unittypes.h"
+#include "../worldtick.h"
 
 namespace {
 
@@ -30,7 +31,6 @@ using TakeDamageFn = float(__fastcall*)(char* unit, void* unused, std::int32_t p
                                         char* action, std::int32_t attacker, float multiplier, float damage,
                                         float cap, std::int32_t, std::int32_t, std::int32_t, std::int32_t,
                                         std::int32_t, std::int32_t);
-using WorldUpdateFn = bool(__fastcall*)(char* world, void* unused, std::int32_t a, std::int32_t deltaMs);
 using PlayerProtoFn = char*(__thiscall*)(char* player, std::int32_t protoId);
 using ProtoIdByNameFn = std::int32_t(__thiscall*)(char* database, const char* name);
 using IsAliveFn = bool(__thiscall*)(char* unit);
@@ -168,9 +168,7 @@ std::uint32_t g_lastTime = 0;
 std::uint32_t g_lastStep = 0;
 
 extern "C" void UhcDotTakeDamageStock();
-extern "C" void UhcDotWorldUpdateStock();
 const auto kTakeDamageStock = reinterpret_cast<TakeDamageFn>(&UhcDotTakeDamageStock);
-const auto kWorldUpdateStock = reinterpret_cast<WorldUpdateFn>(&UhcDotWorldUpdateStock);
 
 // Resolves X's proto ID and the "Attaching" name index once, logging what a modder needs to
 // fix. False if this attachment cannot work.
@@ -425,19 +423,16 @@ float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::i
   return dealt;
 }
 
-bool __fastcall UhcDotWorldUpdate(char* world, void*, std::int32_t a, std::int32_t deltaMs) {
-  const bool result = kWorldUpdateStock(world, nullptr, a, deltaMs);
+// After each world update (the shared wrapper of worldtick.cpp).
+void DotWorldTick(char* world, std::int32_t) {
   if (!g_dots.empty()) {
     Tick(world);
   }
-  return result;
 }
 
 void* g_uhcDotTakeDamage = reinterpret_cast<void*>(&UhcDotTakeDamage);
-void* g_uhcDotWorldUpdate = reinterpret_cast<void*>(&UhcDotWorldUpdate);
 
 void UhcDotTakeDamageHook();
-void UhcDotWorldUpdateHook();
 void UhcDotProtoActionTagHook();
 }
 
@@ -456,14 +451,14 @@ Outcome ApplyDamageOverTime(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  if (!VerifyAll("damageOverTime", {&sites::kDotTakeDamageEntry, &sites::kDotWorldUpdateEntry,
-                                    &sites::kDotProtoActionTag, &sites::kDotProtoActionCall}) ||
+  if (!VerifyAll("damageOverTime", {&sites::kDotTakeDamageEntry, &sites::kDotProtoActionTag,
+                                    &sites::kDotProtoActionCall}) ||
       !OnDatabaseLoad(&ResetForDataLoad)) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(0x005FA11E, reinterpret_cast<const void*>(&UhcDotProtoActionTagHook), 8) ||
       !WriteJmp(sites::kDotTakeDamageEntry.va, reinterpret_cast<const void*>(&UhcDotTakeDamageHook), 6) ||
-      !WriteJmp(sites::kDotWorldUpdateEntry.va, reinterpret_cast<const void*>(&UhcDotWorldUpdateHook), 5)) {
+      !uhc::AddWorldTick(&DotWorldTick)) {
     return Outcome::kFailed;
   }
   Log(L"damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time "

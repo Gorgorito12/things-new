@@ -1608,6 +1608,47 @@ accepts a marked unit at its reference; its action then ends on its first tick.
 with the surgeon idle; an Indian monk marked as a source healed it to 165; the unmarked Pikeman went
 back to its max.
 
+### overhealDecay
+
+**One world update wrapper.** `damageOverTime` used to own the `jmp` at the world update's entry
+(0x481A57). It is now `worldtick.cpp` / `hooks/worldtick_hooks.asm`: the first key that needs a
+per-step tick checks the site and writes the `jmp` to a `__fastcall` wrapper with the stock thiscall
+frame (`bool(world, -, int, deltaMs)`, `ret 8`), which calls the stock body through a trampoline
+that re-executes `sub esp,0Ch / push ebx / push ebp` and jumps to 0x481A5C, then calls each
+registered tick in order (`AddWorldTick`). `damageOverTime` and `overhealDecay` register in their
+`kFeatures` order, so with both on, poison ticks run before the decay on every machine.
+
+**One add-HP hook.** The hook at the entry of FUN_004823A3 (see overhealSources) is written by
+whichever of `overhealSources` and `overhealDecay` applies first. With `overhealDecay`, a positive
+amount that still takes a marked unit above its reference (after the `overhealSources` cap, if that
+key is on) notes the unit with the game time `[world+108h]`.
+
+**The decay tick.** The noted units are a `std::map` keyed by unit ID, so every machine walks them in
+the same order. After each world update: the elapsed game time since the last tick (`[world+108h]`,
+never the real clock; another world, the time going back or a jump of the step count `[world+F8h]`
+forgets every unit, and so does a data reload); for each unit, the unit table lookup
+(`[world+0Ch]`, `[unit+10h]` = the ID), alive (`vtbl+A4h`), still marked (and of a listed type);
+gone, dead or unmarked units are forgotten. A unit at or below its reference is forgotten; one whose
+last gain is less than `delay` ago waits; otherwise HP = max(HP − rate × elapsed, reference)
+through the stock setter FUN_004820A1(unit, value, 0).
+
+**The setter's effects** (REA `ev_b83c97e4…`, `ev_241c1390…`): it stores HP, clamps it to [0, max]
+(the per-unit override through 0x6A2CB3), updates the damage visuals of a unit with damage stages
+(0x48223F(22h), 0x9CB73E per stage) and the animation state (0x48233B(7) → 0x487A21); with a
+non-zero flag it also runs 0x482152, the death check (HP < 1e-6 kills or destroys the unit and sends
+its events). The decay passes 0: a HP above the reference never needs the death check. Nothing in
+the setter is an attack: the "under attack" alerts and events come from TakeDamage (FUN_0049B3D9),
+which the decay does not call.
+
+**Why it is safe.** The decay reads only game state (unit HP, protos, game time) and walks units in
+ID order; it never sets HP below the reference (which is above 0) and never kills. The tick runs
+after the stock update, outside any stock loop over units. The map holds only units that gained
+overheal and drops them when they are back at the reference, so the cost is small.
+
+**Observed in game:** with `overhealDecay 2 3`, a marked Musketeer at 165 went 160.2, 154.1, 150.0
+in about six seconds of game time once its source healer was gone, and stayed at 150; with the
+healer alive, the decay started 3 s after each heal and the healer healed it back.
+
 ### showGatherRate
 
 **The stock rate rows.** The stat panel (`uiunitstatpanel3`; 9 label/value rows `StackLabel%d` /
