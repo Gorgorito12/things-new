@@ -499,6 +499,23 @@ SITES = [
     # noTrainNearEnemyTC: isEnemy 0x484D2D, bool thiscall(player, id): [player+1D4h+4*id] == 2 for
     # 0 <= id < 10h, ret 4
     ("PlayerIsEnemy", 0x484D2D, 0x20),
+    # noTrainNearEnemyTC near, verify only: the world's spatial query FUN_004A1C55, int
+    # thiscall(world, const float* point, float radius, char precise, list*), ret 10h (a box query
+    # through 0x462DBA into the obstruction manager's scratch, then with precise the entries whose
+    # vtable+0B8h(point) <= radius are copied to the list {data, count, capacity}), and the type
+    # branch of the placement rule FUN_008CE935 that calls it with precise 1
+    ("UnitsNearPoint", 0x4A1C55, 0xF8),
+    ("TypeRuleQuery", 0x8CEA69, 0x22),
+    # noTrainNearEnemyTC warning, verify only: the dodge's floating text 0x6A24FC..0x6A2608 (text
+    # manager [world+8A8h], visible-to test 0x4818F4(unit, [game+3C0h]), ret 4; the config reads,
+    # 0x46A144 for the two times, int thiscall(0C66500h, [[id ptr]], out*), ret 8; then
+    # 0x8023AE(text, time1, time2, unit ID, float[3] motion, colour ARGB, 1.0, 0, -1), ret 24h,
+    # whose head refuses an empty text or a negative unit ID and whose body reads the three floats
+    # and appends the text to the manager's list, returning its index)
+    ("DodgeFloatingText", 0x6A24FC, 0x10D),
+    ("FloatingTextAdd", 0x8023AE, 0xC4),
+    ("UnitVisibleTo", 0x4818F4, 0x45),
+    ("ConfigInt", 0x46A144, 0x3F),
     # overhealHitpointBars, the floating HP bars (bar chunk 0x45FAA2 of the unit visual update):
     # mov ecx,esi (the unit) / jne 6A1431h (under construction: the build fraction instead), the
     # hooked call 45F295h (health ratio, the bar's fill) and the fstp [esp+10h] it continues at

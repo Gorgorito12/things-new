@@ -126,6 +126,8 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `TransformInvHook` | `0x9C7625` | `0x17` B | 7 B at `0x9C7625` (`jmp` + 2 NOP) | `8B 46 58 85 C0 74 10` (`mov eax,[esi+58h]; test eax,eax; je 9C763Ch`) | action manager test in the transform in place FUN_009C754C; transformInventory (continues at `0x9C762C` or `0x9C763C`) |
 | `TransformKbRemove`, `TransformKbReAdd`, `InventorySeed`, `InventoryRecreate`, `InventoryFree`, `ResListCopy`, `ResListScale`, `ResListTotal` | `0x9C75CF`, `0x9C766F`, `0x67DE0D`, `0x9BFE5A`, `0x4BA757`, `0x480A73`, `0x480B94`, `0x58EF02` | `0x56`, `0x23`, `0x1E`, `0x6E`, `0x50`, `0x49`, `0x7E`, `0x81` B | — | — | the knowledge-base remove and re-add around the hook, creation's inventory recipe, the engine functions the helper calls, and the list encoding it decodes; transformInventory (also `TransformProtoLookup`, `TransformPushProto`, `IsA`) |
 | `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`); `PlayerById(Null)` and `UnitById(Null)` are also verified by hcShipmentPointFallback when `FirstTC` is listed, and `PlayerById` and `UnitById` by civFirstTC |
+| `UnitsNearPoint`, `TypeRuleQuery` (+ `IsBuilt`) | `0x4A1C55`, `0x8CEA69` | `0xF8`, `0x22` B | — | — | noTrainNearEnemyTC with a `near` type: the world's spatial query the helper calls (`int thiscall(world, point, radius, 1, IdList*)`, `ret 10h`) and the placement rule's call of it |
+| `DodgeFloatingText`, `FloatingTextAdd`, `UnitVisibleTo`, `ConfigInt` (+ `BStringFromWide`, `BStringFromId`, `BStringFree`) | `0x6A24FC`, `0x8023AE`, `0x4818F4`, `0x46A144` | `0x10D`, `0xC4`, `0x45`, `0x3F` B | — | — | noTrainNearEnemyTC's warning (unless `nowarn`): the dodge's floating text block it repeats, the text add (`ret 24h`), the visible-to test and the cfg int reader |
 | `OverhealBarRatio` | `0x45FAA7` | `0x11` B | 5 B at `0x45FAAF` | `E8 E1 F7 FF FF` (`call 45F295h`) | floating HP bar fill in the unit visual update's bar chunk; overhealHitpointBars |
 | `OverhealGroupRatio` | `0x4C5012` | `0x0F` B | 5 B at `0x4C5014` | `E8 7C A2 F9 FF` (`call 45F295h`) | selection group average in FUN_004C4FB5 |
 | `OverhealPanelMax` | `0x698B18` | `0x26` B | 5 B at `0x698B35` | `E8 CE 78 DE FF` (`call 480408h`) | unitHitPointsValue max |
@@ -888,8 +890,22 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `0x44D7FA([trainer+5Ch], type)`; then the nearest enemy FirstTC as in
   [how-it-works.md](how-it-works.md#notrainnearenemytc): players 1 .. `[world+5Ch]`-1 in order,
   `0x44CB21`, `[p+4F0h]` ≥ 0, `0x44CC6D`, owner `[tc+44h]` ≠ the trainer's, `0x484D2D(owner,
-  [[trainer+44h]])`, `call [[tc]+0A4h]` (alive), `call [[tc]+0B8h](tc, trainer+14h)`; true when the
-  smallest distance is below the cfg value. Reads only simulation state.
+  [[trainer+44h]])`, `call [[tc]+0A4h]` (alive), `call [[tc]+0B8h](tc, trainer+14h)`; with
+  `near` types, for each one `0x4A1C55(world, trainer+14h, meters, 1, &list)` (one list kept for
+  the session: `{int* data; int count; int capacity}`, zero-initialised; the engine grows it) and,
+  per ID, `0x44CC6D`, owner not null, not the trainer's, not player 0, `0x44D7FA(proto, type)`,
+  `0x484D2D`, alive, `0x44DDB4` (built), then the same distance call. True when the smallest
+  distance is below the cfg value. The distance is to the blocker's footprint edge
+  ([how-it-works.md](how-it-works.md#notrainnearenemytc)). The decision reads only simulation
+  state.
+- **Warning (interface only):** after a blocked decision, when `[[trainer+44h]]` equals
+  `[[0C66234h]+3C0h]`, `[world+8A8h]` is not null and `0x4818F4(trainer, local player)` is true,
+  at most once per 8000 ms of `[world+108h]` per trainer ID: two cfg ints through `0x46A144` on
+  `0xC66500` with the IDs `[[0CEFFF8h]]` and `[[0CF0000h]]` (defaults 1000 and 2000), a BString
+  (`0x401A12` from a wide text or `0x58EA52` from a string ID), then
+  `0x8023AE([world+8A8h], &text, t1, t2, [trainer+10h], float[3]{0,0,0}, 0xFFFF4040, 1.0f, 0, -1)`
+  and `0x4010CA` on the text. A non-zero second float makes the text rise (the stock 0.1 left the
+  screen in about 0.3 s in the test bed).
 - **Hook** at `0x9EA410`, in FUN_009EA28B, 8 bytes (`jmp` + 3 NOP):
   - entry state: ESI = the Train action, EDI = the trainer's player, x87 stack empty; EAX, ECX,
     EDX and the flags are free; EBX is reloaded at `0x9EA418`;
@@ -1098,8 +1114,9 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `startingTC [UnitType] [log]` (default `AbstractStartingTC`);
   - `civFirstTC [log]`, with `<firstTC>Proto</firstTC>` inside a `<civ>` of `civs.xml`;
   - `transformInventory [all] [scale] [UnitType] [log]` (no default: every in-place transform);
-  - `noTrainNearEnemyTC <meters> [UnitType] [log]`, meters above 0 and at most 1000, one line
-    (default `AbstractDaimyo`);
+  - `noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC]... [nowarn | warn=<text> |
+    warn=<stringID>] [log]`, meters above 0 and at most 1000, up to 4 `near`, one line (default
+    `AbstractDaimyo`, `near FirstTC`, the warning on);
   - `overhealHitpointBars [UnitType ...] [log]` (default `AbstractOverheal`, up to 8 types, one
     line);
   - `showGatherRate [UnitType] [log]` (no default: every unit);
@@ -1229,8 +1246,9 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   together):
   - **confirmed in game:** `transformInventory` (six `TransformUnit` cases; `all`, `scale`, a
     marker, revolutions and a conversion afterwards not tested; no key-off run),
-    `noTrainNearEnemyTC` (pause near an enemy Town Center, resume when it died; walking away not
-    tested), `buildingWorkRateAuras` (`Maintain`; train, research and powers not tested);
+    `noTrainNearEnemyTC` (pause near an enemy Town Center or a `near` Stable, resume when it died,
+    the warning with its default, UTF-8 and string-table texts; a trainer with a queue does not
+    move in stock, so walking away does not happen), `buildingWorkRateAuras` (`Maintain`; train, research and powers not tested);
   - **confirmed in the interface:** `overhealHitpointBars` (the unit panel's text and bar; the
     floating and group bars not compared on their own), `showGatherRate` (the stat panel row for
     berries; the data ref not tested);

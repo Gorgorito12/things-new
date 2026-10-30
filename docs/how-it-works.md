@@ -346,7 +346,7 @@ healer to prefer some units lists their types.
 
 `healNonIdle`, `dodgeAnyUnit` (and its sound keys), `maintainWaitForPop`,
 `broadsideMuzzleLimit`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `noCorpseDopples`,
-`startingTC`, `noTrainNearEnemyTC`, `overhealHitpointBars` (each of its types), and
+`startingTC`, `noTrainNearEnemyTC` (and each `near` type), `overhealHitpointBars` (each of its types), and
 `transformInventory` and `showGatherRate` when given a type, request their type here. A name that
 already exists, a stock type or a proto name, keeps its ID and adds nothing.
 
@@ -1390,11 +1390,49 @@ asks where the trainer stands.
    holds 0x9BFE33, the stock getter (so `liveBuildingWorkRate`'s getter hook still applies), or
    `buildingWorkRateAuras`' wrapper when that key is on.
 
-`UhcNoTrainBlocked`: false unless the trainer's proto is of the marker type (0x44D7FA). Then, for
-players 1 .. `[world+5Ch]`-1 in order: FirstTC `[p+4F0h]` ≥ 0, the unit 0x44CC6D(world, id)
-exists, its owner `[tc+44h]` is not the trainer's player and `0x484D2D(owner, trainer's player ID)`
-is true, it is alive (unit vtable slot A4h), and its distance `[vtbl+B8h](tc, trainer+14h)` is the
-smallest so far. Blocked when that smallest distance is below `<meters>`.
+`UhcNoTrainBlocked`: false unless the trainer's proto is of the marker type (0x44D7FA). Then it
+takes each `near` entry in order (only `FirstTC` without one) and keeps the nearest blocker:
+- `FirstTC`: for players 1 .. `[world+5Ch]`-1 in order, FirstTC `[p+4F0h]` ≥ 0, the unit
+  0x44CC6D(world, id) exists, its owner `[tc+44h]` is not the trainer's player and
+  `0x484D2D(owner, trainer's player ID)` is true, it is alive (unit vtable slot A4h); its distance
+  is `[vtbl+B8h](tc, trainer+14h)`.
+- a unit type: the placement rule's type branch (0x8CEA69) asks the world for the units near a
+  point, FUN_004A1C55(world, point, radius, 1, list), instead of walking every unit; the key makes
+  the same call with the trainer's position `[trainer+14h]` and `<meters>`. The function fills
+  the obstruction manager's scratch list from a box query (0x462DBA), keeps the units whose
+  distance to the point (`[vtbl+B8h]`) is at most the radius and appends their IDs to the
+  caller's list {data, count, capacity}, resetting its count first. The DLL keeps one list for the
+  session, so once it has grown no tick allocates. Each ID must give a unit (0x44CC6D) whose owner is not null, not
+  the trainer's player and not player 0 (Gaia, as the FirstTC loop starts at player 1), whose proto
+  is of the type (0x44D7FA), whose owner is an enemy (0x484D2D), that is alive (slot A4h) and
+  built (0x44DDB4: no construction record, or its progress at 1.0, so a foundation does not block
+  and a unit always counts).
+
+Blocked when the smallest distance is below `<meters>`.
+
+**The distance.** Slot B8h (0x485D68) is not a centre-to-centre distance. It calls slot B0h
+(0x485D83) with the unit's own position and the point, which asks slot 90h (0x45EE55): for a proto
+with bit 4 of its flag bitset set (the Town Center has it), slot 108h (0x4A0ED5) measures from the
+point to the unit's obstruction outline, the nearest of its four edges, 0 inside it (0x485E35);
+otherwise slot F4h (0x485DBC) takes the centre distance in x and z minus the larger obstruction
+radius times √2, at least 0. The trainer counts by its centre. In game: a Stable (half-sizes 3 × 5)
+whose centre was 24 m from the Daimyo in x and 4 m in z gave 21.0 m; a Barracks (4 × 4) at the same
+place 20.0 m; a Town Center (4 × 4) 10.4 m away in x gave 6.4 m. The placement rule uses the same
+call, so `65` here is the stock rule's 65 m.
+
+**The warning.** After a blocked decision, `Warn(trainer)` runs only when the trainer's player is
+the local player `[game+3C0h]`, the text manager `[world+8A8h]` exists and 0x4818F4(trainer, local
+player) is true, as the stock dodge text checks (0x6A24FC..0x6A2525). A map from the trainer's ID
+to the game time `[world+108h]` of its last warning keeps one per 8000 ms per unit; it is cleared on
+each data load, when the world changes and when the game time goes back (a new game). The text is a
+BString from the cfg text (0x401A12) or from a string ID (0x58EA52), freed with 0x4010CA. The two
+times come from the dodge's cfg variables (0x46A144 with the IDs `[[0CEFFF8h]]` and `[[0CF0000h]]`;
+2000 and 1000 in game, the values of the stock caller 0x9C039E). Then 0x8023AE(manager, &text,
+time1, time2, unit ID, motion, 0xFFFF4040, 1.0, 0, -1), the dodge's call with a red colour and a
+motion of {0, 0, 0}: the dodge's {0, 0.1, 0} makes the text rise, and in the test bed it left the
+screen in about 0.3 s, while at 0 it stays over the unit. 0x8023AE refuses a text when
+`[game+0B39h]` ≠ 0 or `[game+0B3Bh]` = 0, for a negative unit ID or an empty text (−1, logged as
+"refused by the engine"); otherwise it appends the text to the manager's list and returns its index.
 
 **Why it is safe.**
 - Both paths leave one value on the x87 stack, as the getter does. After `0x9EA418`, EBX and EAX
@@ -1403,17 +1441,27 @@ smallest so far. Blocked when that smallest distance is below `<meters>`.
   (stdcall); the stack is balanced. `WorkRateTrainCall` and `TrainRateScale` are verified sites.
 - A rate of 0.0 is a state the update already handles: `[+68h]` does not move and 0x9EA1FA keeps
   the fraction below 1.0. The queue, its resources and its population stay as stock left them.
-- The answer depends only on simulation state (unit types, FirstTC, stances, alive state,
-  positions), read in player order with the engine's own functions and the placement rule's
-  distance call; the comparison with `<meters>` is a single-precision compare. No local player,
-  clock or interface state is read.
+- The answer depends only on simulation state (unit types, FirstTC, stances, alive and built
+  state, positions), read with the engine's own functions, the placement rule's spatial query and
+  its distance call; the comparison with `<meters>` is a single-precision compare. The order of the
+  query's list can change which blocker the log names, not whether one is near. No local player,
+  clock or interface state takes part in the decision.
+- The warning reads the local player and writes only the text manager, which stock fills from the
+  same simulation code under the same local-player test (the dodge). It never feeds back into the
+  decision, so `nowarn` and `warn=` may differ between players.
 - `liveBuildingWorkRate` verifies `WorkRateTrainCall` before this feature writes it, and
   `buildingWorkRateAuras` is applied after it (the order in `features.h`).
 - **Observed in game:** a Daimyo 34.1 m from an enemy Town Center made no progress, and trained
-  both queued units once that Town Center was killed. The distance's reference point (the Town
-  Center's center or its edge) is not known.
+  both queued units once that Town Center was killed. With `near Stable near FirstTC` (40 m), a
+  Daimyo 21.0 m from a Stable's edge made no progress, the warning appeared over it every 8 s, and
+  it trained 5 Ashigaru once the Stable was destroyed; walked to the enemy Town Center, it paused
+  again at 6.4 m. `warn=` with a UTF-8 text and with a string ID showed that text.
+- **Stock: a trainer with a queue stands still.** With units queued, the Daimyo ignored a
+  trigger's attack-move and `uiMoveAllMilitaryAtPointer`, and a right-click on the ground placed its
+  gather point; with the queue empty the same command moved it. So a held trainer leaves only when
+  its queue is cancelled; the key does not change that.
 - **Not covered:** players whose FirstTC is dead or never set; refusing the order instead of
-  pausing it.
+  pausing it; a `near` type of moving units (accepted, not tested).
 
 ### overhealHitpointBars
 
@@ -1984,7 +2032,7 @@ and watched with `PrintWindow`, and both work without focus.
   `civFirstTC`, `noTrainNearEnemyTC`, `buildingWorkRateAuras`): a predicate that mirrors stock
   code calls the same engine functions in the same order, with the same 32-bit or
   single-precision arithmetic, and the mirrored code is verified byte for byte.
-  `noTrainNearEnemyTC` measures with the placement rule's own distance call;
+  `noTrainNearEnemyTC` measures with the placement rule's own distance call and spatial query;
   `buildingWorkRateAuras` sums with the stock modifier sum; `civFirstTC` repeats the colony test of
   the town starting units' spawn, and computes a footprint with addItem's formula in single
   precision, the same on every machine with this build.
