@@ -106,6 +106,7 @@ There are no unit tests yet.
 - `docs/uhc-address-map.md`: every upstream patch site, with a verification status per row.
 - `docs/engine-symbols.md`: functions, globals, IAT slots and object offsets named by upstream, with a status per row.
 - `docs/wol-requests.md`: WoL's feature requests in priority order; pick the next item to work on here.
+- `docs/de-parity.md`: how AoE3 DE implements those requests (data interface, meaning, legacy status, UHC cost), from DE's official modding guide (`AoE3DE\ModDocumentation`), DE's data and its plaintext code; `docs/de-architecture.md` is DE's threading and loading. DE work keeps that page's rules: read-only install, the code protection is not studied, no DE code or data in the repo or the DLL. Evidence in `rea/evidence/aoe3de-31fad98f/`.
 - `docs/wol-uhc-map.md`: WoL's `uhc.dll`. It covers:
   - identity, libraries and patch mechanisms (upstream fake-instruction caves plus `remod::trackable_memory_patch`);
   - a cross-check of the upstream caves;
