@@ -10,6 +10,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
 | [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
+| [`pop_testdata.py`](#pop_testdatapy) | Writes the `decimalPopulation` test data into a test copy of the game. |
 | [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
@@ -24,7 +25,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `gameui.py` | Drives a game window for unattended tests: screenshots, clicks, keys. Select the window with `--process` (age3y.exe or AoE3DE_s.exe). It moves the real cursor, so use it only with the machine owner's permission. |
 
 Never point a tool that writes at the Steam install. The data tools write only the output file
-you name, `dot_testdata.py` writes only into the test copy you name, and `gen_sites.py` only
+you name, `dot_testdata.py` and `pop_testdata.py` write only into the test copy you name, and `gen_sites.py` only
 reads the exe.
 
 ## gen_sites.py
@@ -98,6 +99,28 @@ python -I tools/xmbedit.py add-unittype <in.xmb> <out.xmb> <Unit> <UnitType> [<U
 
 It handles compressed (`l33t` + zlib) and uncompressed (`X1`) files, version 8, the format of
 the TAD data.
+
+## pop_testdata.py
+
+```
+python -I tools/pop_testdata.py <test folder> [--restore]
+```
+
+Writes the data the `decimalPopulation` tests use into a **test copy** of the game. It refuses
+any folder inside a Steam library. The tables at the top of the script list the cases:
+- `data\protoy.xml`: `<PopulationCount>` 1.5 on `Settler`, `Crossbowman` and `Hussar`, 0.5 on
+  `Pikeman`, and `<PopulationCapAddition>` 7.5 on `Manor`;
+- `data\techtreey.xml`: four techs appended (UNOBTAINABLE; turn them on with a trigger, e.g.
+  `"at35=Set Tech Status;PlayerID=1;TechID=tech:UHCPopCountTest;Status=2"` in a `testbed.py`
+  map): `UHCPopCountTest` (Crossbowman +0.5 `Absolute`, Musketeer = 0.5 `Assign`, Town Center
+  `PopulationCapAddition` +2.5), `UHCPopCapTest` (the player's `PopulationCap` +2.5),
+  `UHCPopCapBig` (+300, to reach the limits) and `UHCPopPercentTest` (`BasePercent`: Hussar × 0.6,
+  Pikeman × 3);
+- `data\protoy.xml.XMB` and `data\techtreey.xml.XMB`: compiled from that XML with `xmbedit.py`.
+
+The first run keeps the four files as `*.pop-before`; every run starts again from the
+`.xml.pop-before` files, and `--restore` puts the four back. The tests of 2026-10-29 used it on
+`C:\AoE3-UHC-WoL` ([modding guide](../docs/modding-guide.md#decimalpopulation)).
 
 ## dot_testdata.py
 

@@ -149,6 +149,7 @@ Keys
 ignoreRegistryPath            read the game data from the mod folder
 deckCardCount N               decks of more than 25 cards
 basePop N, extraPop N         higher population limits (no 250 cap)
+decimalPopulation [K] [log]   population with decimals (PopulationCount 0.5), steps of 1/K
 noAILimit                     every AI3\\*.personality file in game setup
 customRevolutionBanners       a banner for every XPRevolution<Name> tech
 removeFameRestriction         Fame, XP and shipment costs and icons

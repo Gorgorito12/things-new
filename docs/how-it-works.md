@@ -165,6 +165,90 @@ extra population is negative, and that path skips the first 5 patched bytes. Ups
 
 The shared-team-population path (`0x679641`) is not patched.
 
+[decimalPopulation](#decimalpopulation) installs the same hook when neither key is set, keeping
+steps 3 and 5 (`g_uhcPopStockClamps` = 1), and multiplies every limit by its scale
+(`g_uhcPopScale`, 1 otherwise).
+
+### decimalPopulation
+
+**Stock.** `<PopulationCount>` (handler FUN_005FB8FA) and `<PopulationCapAddition>`
+(FUN_005FD6E5) parse an ANSI copy of the tag's text (0x402733, WideCharToMultiByte) with
+0x59A71D (`sscanf "%d"`) into `[proto+0D8h]` / `[proto+0D4h]`. A player's population
+`[player+70h]` and raw cap `[player+74h]` are XOR-encoded sums of them (getPop 0x45805C, getCap
+0x4581A1, which clamps the raw cap: see [basePop](#basepop-and-extrapop)); `[player+78h]` is the
+population the queues reserve. Every consumer compares those sums: the Train add FUN_009EAC35
+(`getPop + reserved + n × pop ≤ getCap`), the spawns FUN_009E2AC8 / FUN_009E2DEF, the command
+predicate FUN_004C6968, the Maintain update, `trPlayerAtPopCap`, … (44 calls of the two getters;
+all compares except the outputs below).
+
+**The change: fixed point.** Every population quantity is stored K times larger, so the compares
+stay as they are, and only the places where a population enters or leaves change.
+- **Inputs:**
+  - the two tag calls of 0x59A71D (0x5FB92E, 0x5FD719) go to `UhcPopCountParse` /
+    `UhcPopCapAddParse` (cdecl `(const char*, int*)`, bool): strtod, × K, rounded. The `int*` is
+    the handler's own argument slot (`lea eax,[esp+0Ch]`); the next slot is the proto, which the
+    log reads for its name (`[proto+10h]`);
+  - the proto effects (switch 0x8F978D, cases 0x8FA814 / 0x8FA8AB) call the int effect
+    FUN_007F899B(rel, int* out, base, float amount, negate), cdecl, at 0x8FA835 / 0x8FA8CF; both
+    calls go to wrappers. Relativity 1 (Absolute; stock truncates `amount`) gets
+    `round(amount × K)`; 3 (Assign; stock `(int)(amount + 0.5)`) gets `amount × K`; 2
+    (BasePercent; stock `(int)(base × amount − base + 0.5)`, truncated toward zero) is computed as
+    `lround(base × amount − base)` and applied as Absolute; 0 (Percent, `× (int)(amount + 0.5)`)
+    is passed through. PopulationCount's floor (`result ≤ 0 → 1`, `mov eax,1` at 0x8FA849) gets
+    K in its imm32. After the change the stock code recounts the player's population
+    (FUN_00A00470) or cap from the scaled values;
+  - the player effect PopulationCap (FUN_008D842B case 14h, and its removal at 0x8D2099):
+    `fld [esp+X] / fnstcw [esp+X]` (8 bytes at 0x8D87AB and 0x8D20AB) become `fld / fimul K /
+    frndint / fnstcw`, so the truncating `fistp` that follows gets an exact integer.
+    PopulationCapBonus (56h) and PopulationCapExtra (57h) store `[player+4F4h]` / `[player+4F8h]`
+    in whole population, scaled where getCap reads them;
+  - getCap's limits: the cap hook of [basePop](#basepop-and-extrapop) multiplies base + extra,
+    the bonus and, when decimalPopulation installs it alone (`g_uhcPopStockClamps` = 1), the
+    world's `[world+31Ch]` + extra and the 250 by `g_uhcPopScale`. The shared-team path
+    (0x679694..0x6796B7) gets the same for its 200 and `[world+31Ch]`. The game-start bonus
+    (0xA0D2D1: `setCap(getCap() + [player+7Ch] + [world+320h])`) gets K for the two bonuses;
+  - the XS setters (below) multiply their value.
+- **Outputs:**
+  - **XS:** the registration `push impl / push name` of 19 syscalls (sites `Xs*`) gets a
+    wrapper's address. The wrappers are cdecl and read two arguments in place (no declared
+    parameters, so the compiler never reuses a slot the caller did not push), call the stock impl
+    with them, and divide (getters: rounded half away from zero; `kbGetPopSlots` up;
+    `kbUnitPickGet*` keep negatives) or multiply the value (setters: `aiSetEconomyPop`,
+    `aiSetMilitaryPop` → `[ai+24h]` / `[ai+28h]`, `kbUnitPickSet*Pop` → `[pick+78h]` /
+    `[pick+7Ch]`; negatives kept, the picks' default is −1). C++ callers of the same impls are
+    untouched: they work on scaled values;
+  - **data refs:** pop (22h), popcap (23h), futurepop (24h) and totalpop (25h) are registered as
+    ints (type 2). Their registration's `mov eax,[esp+1Ch]` (the type) becomes `push 3 / pop eax
+    / nop` (text), and their provider imm32 a stdcall wrapper that calls the stock provider with
+    an int Value `{2, 0}` and assigns the formatted number (0x443BB8);
+  - **colorizePop** (6Ch, 0x6F5736): its argument parse 0x6F2A1D (strtok `()`, atoi of the second
+    token) becomes `UhcColorizePopArg(BString*)`: the number after the first `(`, × K; its
+    `"%s%d%s"` call (0x6F580C) prints the number with its decimals;
+  - **printed populations:** the calls of the BString sprintf 0x444EFB that print one (0x63F98D,
+    0x70FF3A: str 11725 with `[proto+0D8h]`; 0x63FEC5, 0x70F58F, 0x710651: `{colorizePop(%d)}`;
+    0x6F2DB5: `%d %s = %d`; 0x6F2E34: str 18963 with getCap) go to `PopFormat<i>`, which replaces
+    the i-th conversion of the format with `%s` and passes the text (`12`, `12.5`, up to three
+    decimals) in the same 4-byte slot.
+
+**Why it is safe.**
+- Integer data is unchanged in meaning: every value is a multiple of K and every compare is
+  between scaled values. Any consumer not listed reads a relative quantity (checked for the 44
+  getter calls; [engine-symbols](engine-symbols.md#population-for-decimalpopulation)).
+- The parse wrappers keep the stock contract: same arguments, bool in AL, the out int written on
+  success. The effect wrappers call the stock function with its five arguments. The PopulationCap
+  hooks leave the x87 stack as stock does (one value, then the stock `fistp`), and the control
+  word is set by the stock `fnstcw / fldcw` right after; `frndint` rounds with the game's mode,
+  round to nearest.
+- The cap hook keeps every stock clamp when decimalPopulation runs without basePop/extraPop; with
+  them, their semantics, in whole population. `g_uhcPopScale` is 1 otherwise, so basePop/extraPop
+  alone behave as before (tested: 6 / 300).
+- The text refs are used only as text by the stock and WoL UIs (`formatText`); the int evaluator
+  now refuses them, which no UI asks for.
+- The format wrappers pass the arguments in the same slots (all 4 bytes), so a format whose
+  conversion is missing (a translation) is printed by the stock call unchanged.
+- **Not covered** (scaled values shown as they are): the AI's debug text (0x7167EB) and, if they
+  show one, the post-game statistics. Saved games store the scaled values.
+
 ### noAILimit
 
 FUN_00603AB7 builds, at `0x603B0B..0x603C4E`, a table of 11 (or 14 with TAD content)

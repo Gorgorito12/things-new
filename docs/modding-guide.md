@@ -236,6 +236,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from the mod folder (the exe's folder), instead of the install folder in the registry. | Nothing. Enable it in every mod folder that has its own data. | confirmed |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | A `data\homecitylevels.xml` with a higher `<maxdecksize>` per level (stock: 20 to 25). | confirmed above the level table; see the section |
 | [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | Enough houses or other population buildings to reach the new cap. | partly confirmed |
+| [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`noAILimit`](#noailimit) | Shows every `AI3\*.personality` file in game setup, not just the built-in 14. | The personality files. | confirmed |
 | [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for every `XPRevolution<Name>` tech, not only O'Higgins. | A banner texture per revolution. | partly confirmed |
 | [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | Two icon textures. | not tested in game |
@@ -351,14 +352,118 @@ extraPop <N>             N from 0 to 10000, stock 50
   needs enough houses: raise the house `BuildLimit` or `PopulationCapAddition` in `protoy.xml`
   if needed.
 - **Not changed:** the shared team population mode keeps its stock limit of 200 per player.
+- **With [`decimalPopulation`](#decimalpopulation):** both limits stay in whole population
+  (`basePop 300` is 300 population with any K).
 - **Log:** `basePop/extraPop: base X, extra Y (…)`;
   `basePop/extraPop: expected integers from 0 to 10000`;
-  `hook reached: basePop/extraPop (0x4581F3)`.
+  `hook reached: basePop/extraPop/decimalPopulation (0x4581F3)`.
 - **Simulation:** yes.
 - **Status:** partly confirmed. A skirmish went past 200 with `basePop 300`; the limit reached was
   the number of houses that could be built.
 - **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
   where the stock 200/250 limits stayed active.
+
+### decimalPopulation
+
+![decimalPopulation in game](media/decimalPopulation.gif)
+
+*1. `decimalPopulation 10 log`:* in the test data a Settler costs 1.5 population, a Pikeman 0.5, and a Manor gives 7.5. At 16.5 / 17.5 the Town Center refuses a Settler ("No hay más espacio de población para Colono") and its tooltip shows the cost `1.5` in red. A test tech at 35 s (the log lines at the top: Crossbowman 1.5 → 2, Town Center 10 → 12.5) makes room for two Settlers (20 / 20 with the queue), and a `PopulationCap` +2.5 at 56 s for one more (21.5 / 22.5). [Full video (MP4)](media/decimalPopulation.mp4).
+
+![decimalPopulation control in game](media/decimalPopulation-control.gif)
+
+*2. The control, without the key:* the same data read by stock. `%d` drops the decimals: the Settler costs 1, the Pikemen nothing, the Manor gives 7 (9 / 17), and the Settlers train. [Full video (MP4)](media/decimalPopulation-control.mp4).
+
+![decimalPopulation and the population limits](media/decimalPopulation-caps.png)
+
+*3. The limits:* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at stock's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
+
+```
+decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in steps of 1/K
+```
+
+- **How stock behaves:** `<PopulationCount>` and `<PopulationCapAddition>` are whole numbers.
+  The exe reads them with `%d`, so `0.5` becomes 0 (a free unit) and `7.5` becomes 7, with no
+  message. A player's population, the population its queues reserve and its cap are sums of them,
+  and every test (can this unit be queued, can it spawn, is the player at the cap) compares those
+  sums.
+- **Effect:** both tags take decimals, and population works in steps of 1/K. Inside the engine
+  every population number is kept K times larger, so all of its tests stay exact:
+  - **tech effects:** `PopulationCount` and `PopulationCapAddition` (on protos) and
+    `PopulationCap` (on the player) take decimal amounts (`amount='0.5'`). `Absolute` adds the
+    amount and `Assign` sets it, rounded to the nearest step; `BasePercent` is rounded to the
+    nearest step too (stock truncates it, so a decrease came out one step high: 1.5 × 0.6 gives
+    0.9, stock's formula 1.0); `Percent` multiplies by a whole number, as in stock. A
+    `PopulationCount` effect that would bring a unit to 0 or less still gives it 1, as in stock;
+  - **limits:** the cap keeps its stock limits (200 from buildings, plus 0 to 50 extra, at most
+    250), or those of [`basePop` and `extraPop`](#basepop-and-extrapop), in whole population;
+  - **interface:** the population counter (`{totalPop} / {popcap}`, and `{pop}` and
+    `{futurepop}`) and its tooltip show decimals (`16.5 / 17.5`), and so do the population cost
+    in unit tooltips (`Poblac.: 1.5`, red when it does not fit), the unit help
+    (`Population: 0.5`) and the population of a shipment;
+  - **AI and scripts:** XS still sees whole numbers. `kbGetPop`, `kbGetPopCap`,
+    `trPlayerGetPopulation`, `aiGetEconomyPop`, `aiGetMilitaryPop`, `aiGetAvailableEconomyPop`,
+    `aiGetAvailableMilitaryPop`, `aiGetCurrentEconomyPop`, `aiGetPopNeeds`, `kbGetPopCapAddition`
+    and `kbGetPopulationSlotsBy{QueryID,UnitTypeID}` return the population rounded to the nearest
+    whole number (halves away from zero); `kbGetPopSlots` (a unit's cost) rounds up, so a unit
+    that costs population never reads as 0 (an AI script may divide by it);
+    `kbUnitPickGet{Minimum,Maximum}Pop` round, and keep −1 as −1. `aiSetEconomyPop`,
+    `aiSetMilitaryPop` and `kbUnitPickSet{Minimum,Maximum}Pop` take whole numbers as before (−1
+    stays −1).
+- **Your data:** the decimals, in the two tags and in the effect amounts. Whole numbers behave
+  exactly as without the key. A UI gadget that shows `{pop}`, `{popcap}`, `{futurepop}` or
+  `{totalPop}` now gets text such as `12.5` instead of a number; that is fine in a `formatText`
+  gadget, which is how stock and WoL use them.
+- **Choosing K:** 10 for one decimal (0.5, 1.5), 100 for two (0.25), or any value from 2 to 1000.
+  Texts show up to three decimals, trailing zeros dropped (K = 3 shows 0.333).
+- **Not adapted:** the AI's debug text (`AIDebugPopToggle`) and the post-game statistics, if they
+  show a population, show K times the value (not checked).
+- **Saved games** keep the population as stored: load them with the same K. A game saved without
+  the key, or with another K, loads with wrong populations.
+- **Log:** at startup `decimalPopulation: population in 1/10 steps (<PopulationCount> and
+  <PopulationCapAddition> take decimals; caps (stock limits), effects, 19 XS syscalls and the
+  population texts scaled)` (`(basePop/extraPop limits)` with those keys; `, decimal values and
+  changes logged` with `log`); `decimalPopulation: expected a scale from 2 to 1000 and/or log, got
+  "x"`. Hooks: `hook reached: decimalPopulation <PopulationCount> (0x5FB92E)`,
+  `… <PopulationCapAddition> (0x5FD719)`, `… effect PopulationCount (0x8FA835)`,
+  `… effect PopulationCapAddition (0x8FA8CF)`, `… PopulationCap effect (0x8D87AB)`,
+  `… start cap bonus (0xA0D2D1)`, `basePop/extraPop/decimalPopulation (0x4581F3)`,
+  `… data ref totalpop` (and `popcap`, `futurepop`, `pop`), `… colorizePop argument (0x6F576F)`,
+  `… printed population (unit help, costs)` (and `(colorizePop)`, `(population help)`), and one
+  `… XS <name>` per syscall. With `log` (at most 200 lines): each decimal value read
+  (`decimalPopulation: Settler <PopulationCount>1.5</PopulationCount> = 1.5`), each effect
+  (`decimalPopulation: effect PopulationCount, relativity 2, amount 0.6: 1.5 -> 0.9`; relativity 1
+  is `Absolute`, 2 `BasePercent`, 3 `Assign`), and each XS setter's value when it changes
+  (`decimalPopulation: aiSetEconomyPop(80) stored as 800`).
+- **Simulation:** yes: every player needs the same key and the same K. Not tested in multiplayer.
+- **Status:** confirmed in single player (2026-10-29), K = 10 and 100, with the data of
+  [`tools/pop_testdata.py`](../tools/README.md#pop_testdatapy) in a test copy:
+  - **values:** the log and memory showed Settler 1.5, Pikeman 0.5, Crossbowman 1.5, Manor 7.5,
+    and a player with 6 Settlers, 12 Pikemen and a Crossbowman at 16.5 / 17.5 (top bar and
+    memory);
+  - **training** (real clicks on the Town Center, Settlers at 1.5): refused at 16.5 / 17.5 with
+    the stock message, then at 17 / 20 two queued and the third refused, then at 22.5 one more and
+    the next refused; the first Settler out brought the population to 18.5;
+  - **effects:** `Absolute` (Crossbowman 1.5 → 2), `Assign` (Musketeer 1 → 0.5), `BasePercent`
+    (Hussar 1.5 × 0.6 → 0.9, Pikeman 0.5 × 3 → 1.5, the population recounted to 29),
+    `PopulationCapAddition` (Town Center 10 → 12.5) and `PopulationCap` (+2.5, and +300 against
+    the limits of video 3);
+  - **interface:** the counter, its tooltip (`La población actual es 21.5 / … máxima de 22.5`),
+    the cost `1.5` in red and white in the Settler's tooltip;
+  - **saved game:** with K = 100, a game saved at 17 / 20 loaded at 17 / 20, and its next trigger
+    brought the cap to 22.5;
+  - **bad values:** `1`, `abc` and `5000` logged the error and `FAILED`, and the game read the
+    stock values;
+  - **AI:** two skirmishes, three players (two Hard AIs): `aiSetEconomyPop(80)` stored as 800,
+    `aiSetMilitaryPop(15)` and `(30)`, `kbGetPop`, `kbGetPopCap`, `kbGetPopSlots` and the
+    `kbUnitPick` setters reached; the Russian AI built houses and reached 62.5 population of a
+    95 cap (31 Settlers at 1.5, 8 Strelets, 8 Cossacks), no XS error. The other AI stayed at a cap
+    of 10 because that test copy's `House` has `Lifespan` 20 (an earlier test's data).
+
+  Not run: multiplayer; the shared team population (`GameTeamSharePop`, no option for it in TAD's
+  setup); taking back a `PopulationCap` effect (0x8D20AB); the counter-help lines
+  (`populationHelp`, which no stock or WoL UI uses), the unit help `Population: %d` and a
+  shipment's population cost; `trPlayerGetPopulation` and the other XS getters not listed above.
+- **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)).
 
 ### noAILimit
 
@@ -2988,8 +3093,8 @@ More about the tools: [tools/README.md](../tools/README.md).
   `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `liveBuildingWorkRate`, `techPrereqRecheck`,
   `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
   `lifespanAfterConstruction`, `gaiaSocketsOnly`, `snareOnlyHitUnit`, `danceBonusCivs`,
-  `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC` and
-  `buildingWorkRateAuras`. A difference in any of them between players can desynchronize the
+  `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
+  `buildingWorkRateAuras` and `decimalPopulation` (with the same K). A difference in any of them between players can desynchronize the
   game. `civFirstTC` also needs the same `civs.xml`, `placementrules\colonies.xml` and `protoy`
   on every machine, and in a recorded game's playback, which generates the map again. `techRenameEffect` and
   `noCorpseDopples` change no gameplay as far as the code shows, but they act inside the
@@ -3001,7 +3106,9 @@ More about the tools: [tools/README.md](../tools/README.md).
   writes only the DLL's own memory.
 - `damageOverTime` keeps its poisons in the DLL, not in the game state: a saved game loads without
   the poisons that were running. `buildingWorkRateAuras` modifiers are saved with the game, but a
-  game loaded without the key ignores them.
+  game loaded without the key ignores them. `decimalPopulation` stores every population K times
+  larger, and saved games keep it so: load them with the same K (tested with K = 100: a game saved
+  at 17 / 20 loaded at 17 / 20).
 - `healNonIdle`, `dodgeAnyUnit` and `removeFameRestriction` change the unit type table, and so do
   `maintainWaitForPop`, `lifespanAfterConstruction`, `noCorpseDopples`, `broadsideMuzzleLimit`,
   `gaiaSocketsOnly`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC` (and its `near`
@@ -3009,7 +3116,7 @@ More about the tools: [tools/README.md](../tools/README.md).
   proto name adds nothing; the defaults of `startingTC` and `overhealHitpointBars` are new names,
   `noTrainNearEnemyTC`'s `AbstractDaimyo` is a stock type). Load saved games and replays with the
   same DLL and cfg they were made with.
-- None of this has been tested yet: multiplayer, saved games and replays are all unverified.
+- Multiplayer and replays are untested for every key; saved games only where a section says so.
 - No feature sends network commands of its own: they all act inside the normal simulation, on
   every machine, in the same deterministic order.
 
