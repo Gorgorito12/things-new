@@ -98,12 +98,32 @@ SITES = [
     # damageOverTime: world update FUN_00481A57's entry, sub esp,0Ch / push ebx / push ebp, and
     # the push esi / mov esi,ecx the trampoline continues at
     ("DotWorldUpdateEntry", 0x481A57, 8),
-    # damageOverTime (FUN_005F98A0, parses the children of an action): the last tag compare
+    # the shared action tag hook (actiontags.cpp: damageOverTime, spreadAnyAccuracy) in
+    # FUN_005F98A0, which parses the children of an action: the last tag compare
     # ("ModifyExclusive"), its je to the handler, and the next-child code at 0x5FA126
     ("DotProtoActionTag", 0x5FA10F, 0x1B),
-    # damageOverTime: the ProtoAction handler's call 5F98A0h; the tag hook checks its return
-    # address 0x5FA213 to know the action comes from protoy.xml
+    # the action tag hook: the ProtoAction handler's call 5F98A0h; the hook checks its return
+    # address 0x5FA213 to know the action comes from a protoy.xml <ProtoAction>
     ("DotProtoActionCall", 0x5FA20E, 5),
+    # the action tag hook: FUN_005FA5B3 (a tactics file's <action>, called by the tactics loader
+    # FUN_005FAA4F with the proto that loads the file) and its call 5F98A0h; return address
+    # 0x5FA623 means the action comes from a .tactics file
+    ("TacticsActionCall", 0x5FA60A, 0x19),
+    # spreadAnyAccuracy (the projectile launch, after the precalculated roll and the target
+    # leading 0x4A5B02): cmp ebx,2 / je 4CEF7Bh (replaced, 9 bytes), then the continuation
+    # mov [esi+20h],ebx / mov ebx,[esp+18h] (the unit action) / mov edi,[esp+0ECh] (the target)
+    ("SpreadHitRoll", 0x499890, 0x17),
+    # spreadAnyAccuracy: the miss stub every miss reaches (from 0x499893 and from the failed lead
+    # at 0x6A4BCA): lea eax,[esp+28h] / push eax / mov ecx,esi (replaced, 7 bytes) /
+    # call 4CEF8Ch / jmp 499899h
+    ("SpreadMissStub", 0x4CEF7B, 0x11),
+    # spreadAnyAccuracy (FUN_004CEF8C, the miss offset): fmul [0.25] / fst [esp+0Ch] /
+    # fcomp [5.0] / fnstsw ax / test ah,41h / je 4E2CE3h (replaced, 27 bytes), then the
+    # continuation fld [esp+0Ch] / fcomp [1e-6] / fnstsw ax / test ah,5 / jnp 4CF073h
+    ("SpreadRadius", 0x4CF00B, 0x2C),
+    # spreadAnyAccuracy, verify only: the two random draws uniform(-r, r) of FUN_004CEF8C
+    # (0x422648 on the sync RNG 0xC66588, stream 2) that the hook leaves to the stock code
+    ("SpreadDraws", 0x4CF037, 0x40),
     # dodgeAnyUnit (FUN_0049ACAA, "is this hit dodged?"): mov eax,[esi+5Ch] / mov eax,[eax+4],
     # the target's proto ID, and the first compare with the cached ypMonkJapanese ID
     ("DodgeProtoCheck", 0x49ACE5, 12),

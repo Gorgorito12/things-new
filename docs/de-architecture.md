@@ -2,7 +2,8 @@
 
 The question behind this page: the Definitive Edition shares its engine lineage with the 2007 game.
 Does it use more cores, and how? If it does, could legacy copy the ideas through UHC.dll? The legacy side
-is in [performance.md](performance.md) §9–§10.
+is in [performance.md](performance.md) §9–§10. The game mechanics DE adds over legacy, for WoL's
+requests, are in [de-parity.md](de-parity.md).
 
 **Target.**
 - `AoE3DE\AoE3DE_s.exe`, Steam build 25969874, game version 100.19.18658.0.

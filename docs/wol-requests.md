@@ -26,7 +26,7 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
 |---|---|---|---|---|---|
 | 1 | Dodge only works for one Asian monk; make it work on any unit. | hardcode | strings `Dodge`, monk protos (`ypMonk*`); find the proto-ID compare. | Done: `dodgeAnyUnit [UnitType]` (default `AbstractDodge`). Stock limits it to the three `ypMonkJapanese` protos (FUN_0049ACAA); marked units take the same path (tech `YPDodge`, 15 %). Needed for ME. | confirmed in game (single player) |
 | 1b | Dodge and critical-hit sound sets are hardcoded (DE has the proto attribute `DodgeSoundSet`). | hardcode | same area as #1. | Done as cfg mappings: `dodgeSoundSet <UnitType> <SoundSet>`, `criticalSoundSet <UnitType> <SoundSet>` (stock `PowerEvade` / `PowerCriticalStrike`). | confirmed in game from the log (single player; not listened to) |
-| 2 | Shotgun spread (`MaxSpread`) only happens when accuracy < 1; allow spread regardless of accuracy. | odd logic | strings `MaxSpread`, `Accuracy`; the `accuracy < 1` branch in projectile launch. | RE done ([engine-symbols.md](engine-symbols.md), "Projectile accuracy and spread"): the spread is the stock **miss** offset, `min(0.25 × distance, 5)`, applied only when the precalculated accuracy roll misses; `MaxSpread`, `SpreadFactor` and `NumberProjectiles` are **not read by TAD at all**. Needs a decision (question Q1 below). | RE |
+| 2 | Shotgun spread (`MaxSpread`) only happens when accuracy < 1; allow spread regardless of accuracy. | odd logic | strings `MaxSpread`, `Accuracy`; the `accuracy < 1` branch in projectile launch. | Done as `spreadAnyAccuracy [UnitType] [log]` (default `AbstractSpreadAnyAccuracy`), as JTMaston asked (Q1): every attack reads `<MaxSpread>` and `<SpreadFactor>` (tactics or `<ProtoAction>`; stock reads neither), every miss lands within `min(SpreadFactor × distance, MaxSpread)` with the stock random draws, and every shot of a marked unit, accuracy 1 and `PerfectAccuracy` included, lands at such an offset point as a ground shot that deals its area damage there. A stock miss deals no damage at all, area included (seen in game), so marked shots use the `TargetGround` mode instead; a marked attack needs `<DamageArea>`, which WoL's shotguns have. Not covered: `InstantBallistics` and `TargetGround` attacks (304 and 122 of WoL's 647 actions with spread tags; the current Escopetero, Bacamarteer and trench fighter volley files are covered), shots without a target unit, `ballisticPrecalcHits` off (on in the stock startup cfg), `NumberProjectiles` (not wanted). In game: tactics and protoy values, invalid values, misses at `r` = 20 m, marked accuracy-1 and `PerfectAccuracy` units scattering every shot, area kills by a marked unit, the AI playing. | confirmed in game (single player) |
 | 3 | The TC is hardcoded as the starting building for every civ; choose it per civ. The building must still carry `StartingTC`. | hardcode | strings `TownCenter`, `StartingTC`; start-unit creation in game setup. | `StartingTC` exists nowhere (exe, WoL DLLs, WoL data); the exe's own "starting TC" is the placement rules' `FirstTC`, `[player+4F0h]`: the first unit of the exact `TownCenter` proto a player gets, never replaced, even when it dies. WoL's Maori start (`Age0Maori`: `TownCenter` Lifespan 0.5, then a free `MaoriPa`) leaves the Maori with a dead FirstTC, so no 65 m protection and a broken no-rush rule (static reading). Done for that part as `startingTC [UnitType] [log]` (default `AbstractStartingTC`): a marked building becomes FirstTC of a player with none, and replaces one that is gone, dead or has a pending lifespan. In game, a marked Market became FirstTC of a player without a Town Center (log, and `[player+4F0h]` = its ID in memory). Not driven: the Maori replacement and the 65 m refusal. Shipments: `hcShipmentPointFallback` takes the keyword `FirstTC`, the player's first town center (e.g. a Market marked for `startingTC`), tried in cfg order after the 10 stock types (`hcShipmentPointFallback FirstTC Barracks Market`); confirmed in game with `civFirstTC` (below), not tested with `startingTC`. **Per-civ start, as redesigned by WoL's developer Mandos:** `civFirstTC [log]` reads `<firstTC>Proto</firstTC>` in `civs.xml` (like `<startingunit>`); wherever map code places `TownCenter`, a player of that civ gets the proto instead, except in a Nomad start (`rmGetNomadStart()`), and that building is the FirstTC the placementrules files use. The civ's `<townstartingunit>` units go to it when the proto has `<Flag>StartingColonyBuilding</Flag>` (found in game: the engine asks for those units when a unit with that flag is created; stock `TownCenter` has it) and is listed in `placementrules\colonies.xml` `<starttypes>`. In game (single player), a Market replaced the Town Center of the tagged civs on a test map and on Mongolia, became FirstTC, received 6 Settlers, and received a shipment through `hcShipmentPointFallback FirstTC`; an untagged Iroquois AI kept its Town Center and played. A tagged AI got its Market and settlers, then stayed idle: the AI scripts expect a Town Center (WoL's AI). Not covered: the engine AI's automatic base, the age-up picker, the start camera, the `Maintain` spawn gate, the water shipment point. Not tested: a Nomad start (TAD's skirmish setup has none), multiplayer, recorded games. Related: #27. | implemented: `startingTC` (FirstTC part, confirmed from the log and memory) and `civFirstTC` (confirmed in game, single player; Nomad start and multiplayer not tested) |
 | 4 | Converting a unit with a resource inventory into a unit with a different inventory breaks. | bug | convert / transform path, inventory copy. | A **stock** defect, not `removeConversionRestriction`: the in-place transform FUN_009C754C (`TransformUnit` effects, revolutions) never rebuilds the unit's resource inventory, so the unit keeps its old proto's resources, or has none; a later conversion (owner change) then rescales them by the new proto's `InitialResource` and zeroes every type it lacks (static reading). Stock TAD never hits it; WoL has 64 `TransformUnit` effects with inventories (e.g. `HCCardDogTaxWar` pets → `CrateofCoin` with no inventory, `WOLNatAssyrianTWO` coin crates → `CrateofXP` still holding gold, `WOLHCBlueBreed` rams → cows holding gold). Fixed by `transformInventory [all] [scale] [UnitType] [log]`: a unit whose two protos hold different resource types gets the new proto's `InitialResource`. In game, a test tech's six transforms turned a Sheep (food) into a coin crate holding 100 gold, a wood crate into a food crate holding 100 food (shown in the panel), and a Musketeer into an XP crate with a new inventory of 100 XP; a same-type transform (`ypGoatFat` → `Cow`) kept its food. JTMaston's own case is still unconfirmed (question Q3). | confirmed in game (single player) |
 
@@ -36,9 +36,39 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
   (b) every shot of a marked unit becomes a miss-with-offset, so it damages whatever is at the landing point;
   (c) the tactics' own `maxspread` / `spreadfactor` per action instead of the fixed 0.25 / 5 (needs parsing new tags: a bigger item);
   (d) `numberprojectiles` working, several pellets per shot (the biggest).
+  - **Answered** by JTMaston (2026-10-30, Discord):
+    - He wants `maxspread` respected whatever the accuracy. With accuracy 1 the shots must spread too.
+    - `numberprojectiles` is not needed (WoL sets it elsewhere).
+    - He believes the game reads `maxspread` or `spreadfactor`, and that the Escopetero's attack uses
+      it.
+    - DE's shotgun model is not relevant to WoL.
+  - **What we see** [O]: neither name is in the legacy exe or in WoL's `uhc.dll` (ASCII and UTF-16, 0/0).
+    The spread of a miss is the hardcoded `min(0.25 × distance, 5)` (engine-symbols.md, "Projectile
+    accuracy and spread"). So the Escopetero (`maxspread` 3, `spreadfactor` 1.5, accuracy 0.41) scatters
+    its misses like any other unit.
+  - [O] In WoL's tactics, 668 actions carry the spread tags with accuracy ≥ 1:
+    - 308 have `InstantBallistics` and 149 have `PerfectAccuracy`: sure hits, so the roll never runs;
+    - 211 have neither. [I] By the roll's formula, `accuracy × 100 − 0.5 × distance`, they can still
+      miss at range.
+  - [I] So the request becomes: parse `MaxSpread` and `SpreadFactor` per action (as `damageOverTime`
+    parses its tags), and apply `min(SpreadFactor × distance, MaxSpread)` to every shot of an action
+    that has them, hits included.
+  - **Settled in game (2026-10-30):** a stock miss deals no damage, not even with `<DamageArea>`:
+    marked units whose shots were turned into misses left their targets at full HP. So a marked
+    unit's shot lands at the offset point as a ground shot (the mode of `TargetGround` grenades),
+    which deals its area damage there; without `<DamageArea>` it hits nothing.
+  - **Proof offered:** an in-game test where changing `maxspread` changes nothing. Without the key
+    that is still true; with `spreadAnyAccuracy` a Crossbowman with `maxspread` 20 /
+    `spreadfactor` 2 missed by up to 20 m (`r = 20.00 m` in the log), against `0.25 × distance`
+    for stock values.
+  - **Built** as `spreadAnyAccuracy` ([modding guide](modding-guide.md#spreadanyaccuracy)).
 - **Q2 (#3):** what is `StartingTC`: a unit type, a flag, a name in your data or DLL? The random maps already choose the starting building per civ if their script does; what goes wrong when a civ starts with another building (shipments, AI, Nomad, age-up, defeat, something else)? The part the placement rules read (`FirstTC`) is now `startingTC`.
   - **Answered in part** by WoL's developer Mandos, who redesigned the request: a `<firstTC>` tag per civ in `civs.xml`, substituted where map code places `TownCenter`, not in a Nomad start, and the building is the placementrules' FirstTC. Built as `civFirstTC`, with shipments through `hcShipmentPointFallback FirstTC` and the town starting units (see #3).
   - **Still open:** which of the other `TownCenter` checks matter for WoL: the AI scripts (a tagged AI stays idle), the engine AI's automatic main base, the age-up picker, the start camera, `trPlayerToggleAllowTCSpawning`, the `CoveredWagon` build limit, the water shipment point. They stay stock until WoL says.
+  - JTMaston (2026-10-30): "`startingTC` is a hardcoded tag, used in files like placementrules or
+    civs.xml". [O] `StartingTC` does not appear in WoL's data, DE's data, the legacy exe or WoL's
+    `uhc.dll`. The placementrules token is `FirstTC`, and the town-center proto flag is
+    `StartingColonyBuilding`; both are covered by `startingTC` / `civFirstTC`.
 - **Q3 (#4):** which conversion is it (`ConvertGuardian`, a trigger, a tech, livestock capture) and between which protos? What "breaks": a crash, lost or duplicated resources, a stuck unit? What we found, statically and then in game: a `TransformUnit` effect or a revolution changes a unit's proto but never its resource inventory (stock, not `removeConversionRestriction`), so an XP crate made from a coin crate still pays gold, and a crate made from a pet has no inventory and can never be gathered; converting or capturing such a unit afterwards zeroes the resources its proto does not list. `transformInventory` fixes the transform (confirmed in game). Please confirm that your case is one of these (e.g. `WOLNatAssyrianTWO`, `WOLHCBlueBreed`, `HCCardDogTaxWar`, then a capture); a save or a minimal data set would settle it.
 - **Q4 (#11):** stock works the same way. A `WorkRate` effect on `AbstractMine` changes only the gatherers' `AbstractMine` rate; a gatherer that has its own `Plantation` rate uses that one, so mining techs never reach plantations. Do you want mining techs to boost plantation-like buildings at all?
   - If yes, the data fix is to add, next to each such effect, the same effect with `unittype='Plantation'` (and `OlivePlantation`, `WOLPlantationIroquois`, `Beehive`, …), as stock does for `HCRoyalMint`. We can send the list of mining-only techs and the gatherers that lack a rate for one of these buildings.
@@ -51,10 +81,46 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
   - The four global kinds apply only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`: for any other civ they silently do nothing, although the tooltip shows the bonus. This is now built and confirmed in game as `danceBonusCivs <Civ>…` (Healing Dance tested).
   - Only the first `AbstractFirePit` of a player counts, and a dance building needs `AbstractFirePit` to dance at all. Lifting either is more work.
 
+- **From the DE comparison (2026-10-30):** nine more questions, on #2, #24, #25, #29–#31, #32, #33, #34, #36, #40 and #44. They are in [de-parity.md, "Questions for JTMaston"](de-parity.md#questions-for-jtmaston).
+
+**JTMaston's answers, 2026-10-30, second batch (Discord, relayed by the user).** The user's instruction
+is to build what he asked for without further questions. Where he did not understand a question, the
+design below is ours.
+- **Q3 / #4:** still unanswered.
+- **Q4 / #11:** mining techs must reach every unit that carries `AbstractMine`. Today they miss
+  plantations and custom buildings that are not natural mines. "If it is fixed I would remove the tag
+  from the plantations." Design: a `WorkRate` effect on an abstract type also reaches the gatherers'
+  rates for every target proto that carries that type.
+- **Q5 / #14:** the ceasefire cast by another unit "does not start at all". It needs an in-game
+  repro: the static reading found nothing that ties it to the Taj Mahal.
+- **Q6 / #19:** ask Punchline, another WoL developer. No action until then.
+- **#5:** the techs that change train and research work rate, and those that change building work
+  rate, must apply to buildings that already stand. `liveBuildingWorkRate` covers `BuildingWorkRate`;
+  train and research `WorkRate` techs are to be checked in game.
+- **#25:** yes. `<ScaleByContainedUnits>1` must also work on AutoGather actions, not only on attacks.
+- **#29, #30, #31:** use DE's names. When a DE name carries "DE" (e.g. the tech flag
+  `DECheckBuildLimit`), use it without that prefix.
+- **#33:** he did not understand the question. Design: a crate order per civ, read from `civs.xml`
+  the way `civFirstTC` reads `<firstTC>`. A civ without the tag keeps stock.
+- **#34, #35:** `KillBounty` techs and `resourcetype` bounties, plus `TeamKillBounty`. Not
+  `BountyResourceOverride`.
+- **#36:** he did not understand the DE comparison. Design: his original request, tech flags
+  `HCTargetEnemy` / `HCTargetAll` that apply a tech's effects to the enemies or to every player,
+  the way `TeamTech` applies them to the team.
+- **#40:** both units and shipments.
+- **#41:** "I suppose?" Design: his `transformspan` on `TransformUnit` (see the row).
+- **#44:** a flag that forces a building placed by another building to keep an orientation relative
+  to its builder, "like the Moon, which always shows us the same face".
+
+**Work order** (bugs and odd logic first, his rule):
+1. #5, #14, #11;
+2. then #25, #26, #29–#31, #32, #33, #34/#35, #36, #37–#39, #40, #41, #42/#43, #44, #45.
+
 Done when:
 - **#1:** a non-monk unit with the marker dodges in game, and `UHC.log` shows the hook reached.
 - **#1b:** a configured unit plays its own dodge / critical sound.
-- **#2:** a marked unit with accuracy 1 and `MaxSpread` > 0 visibly spreads its shots.
+- **#2:** a marked unit with accuracy 1 and `MaxSpread` > 0 visibly spreads its shots. Done
+  (`docs/media/spreadAnyAccuracy.mp4`).
 - **#3:** a civ configured with another building starts with it, and every `StartingTC` check (e.g. shipments, AI) still works.
 - **#4:** the reported conversion no longer breaks; the cause (stock or ours) is written down.
 
@@ -87,10 +153,7 @@ Ordered by gameplay impact, then expected effort.
 |---|---|---|---|
 | 21 | Overheal: UI and floating HP bars should use initial HP instead of max HP. | WoL currently sets max HP = 1.1 × initial HP on infantry and cavalry. `overhealHitpointBars [UnitType…] [log]` (default `AbstractOverheal`; WoL can name `AbstractCavalryInfantry` and change no data): the floating bars, the selection's bar, Group Health and the HP texts of marked units take `InitialHitpoints` as 100 %; display only. In game, a marked Musketeer (150 / 165) showed `150/150` and a full bar, where the unmarked Pikeman (120 / 132) kept the stock, not-full bar. The bar is not drawn past 100 % for an overhealed unit; with `segment[=RRGGBB]` the HP above 100 % is shown Overwatch style, an orange segment over the right end of the full floating bar and an orange `165/150` in the unit panel (seen in game). Pending: the selection panel's bar (its three colours are three UI gadgets) and the two HP texts never seen in a game. | confirmed in game (single player, UI) |
 | 22 | `Workrate` modifiable by auras. | `buildingWorkRateAuras [log]`: `<ModifyType>BuildingWorkRate</ModifyType>` becomes a valid stat (stock reads it as unknown), and the four calls of the BuildingWorkRate getter multiply in the unit's modifiers: train, research and `Maintain` speed. Works with #5's `liveBuildingWorkRate`. In game, an Explorer's `AutoRangedModify` aura (×4, 40 m, `ModifyProtoID` `BloodFactory`) made its factory spawn 11 musketeers against 2 without the aura. WoL's `alguacil.tactics` already has such an aura (`GuatemalaAura`, inactive). | confirmed in game (single player, `Maintain`) |
-| 23 | Decimal population. | `decimalPopulation [K] [log]` (K = 10 by default): `<PopulationCount>` and `<PopulationCapAddition>` take decimals, and so do their tech effects and `PopulationCap`. Fixed point: the engine keeps every population number K times larger, so every stock test stays exact; the counter and the tooltips print the decimals, XS scripts keep seeing whole numbers (rounded). In game, Settlers at 1.5 were refused at 16.5 / 17.5 and trained once techs raised the cap to 20 and 22.5; a saved game loaded with its decimals; Hard AIs played (one reached 62.5 population of 95), and all 19 XS syscalls were checked with probes; card tooltips show the decimal cost. The post-game timeline still draws the population ×K. Saved games need the same K; multiplayer not tested. | confirmed in game (single player) |
-| 24 | Negative resource trickles, with debt allowed. | | open |
-| 25 | The tactic tag that scales a building's attack with its garrison: also allow it to scale trickles or rate of fire. | | open |
-| 26 | Buildings that gather resources. | | open |
+
 | 27 | Prevent enemy units from training near your StartingTC (like Daimyos). | Related: #3. `noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC]... [nowarn | warn=<text>] [log]` (default `AbstractDaimyo`: the Daimyos, the Shogun, and in WoL also `MapucheWarchief`, the `WOLGensui*` units and a few others; default `near FirstTC`): a marked unit does not train while an enemy's first Town Center (FirstTC), or an enemy building of a `near` type, is alive and closer than the distance, measured to the building's edge; its queue keeps its progress, and its owner sees a red warning over it every 8 s (`warn=` for your own text or a string ID). In game (`65`), a Daimyo 34.1 m from an enemy Town Center paused, and trained both queued Ashigaru once that Town Center was killed; with `near Stable`, 21.0 m from a Stable's edge, the same, with the warning. In stock a Daimyo with a queue does not move, so a held one waits for the blocker to die or for its queue to be cancelled. Only FirstTC counts: the Maori need `startingTC` (#3); a civ's `civFirstTC` building is its FirstTC (not tested with this key). | confirmed in game (single player) |
 | 28 | Show gather rate per second, like DE. | `showGatherRate [UnitType] [log]`: the stat panel gets a row with the selected gathering unit's rate under its HP row, in the stock AutoGather style, and the data ref `{currentUnitGatherRateString}` returns it for a mod's own UI (`{currentUnitGatherRate}`, which WoL's UI uses, is left as it is). In game, a Settler on berries showed `Alim. (icon): 0.67/s` (Spanish game). WoL's stat panel has only 5 rows: the new row pushes the last one out, so WoL may prefer the data ref. The data ref was not tested. | confirmed in game (single player, UI) |
 
@@ -100,19 +163,20 @@ DE parity and extras, in rough order.
 
 | # | Request | Notes | Status |
 |---|---|---|---|
-| 29 | Shared build limits (team-wide, DE): e.g. a livestock limit per team, or no more wagons for building X once all X are built. | Do with #30: same mechanism. | open |
-| 30 | Settler build limit: a civ XML tag setting one shared limit for all units with `AbstractWoLSettler`. | | open |
-| 31 | Per-unit military batch limit as a proto attribute, instead of only a global tech. | New proto attribute. | open |
-| 32 | Economic aura per resource, instead of all resources. | | open |
-| 33 | Customizable gather priority on crates (Dutch gold is hardcoded). | | open |
-| 34 | Kill bounty modifiable by techs. | | open |
-| 35 | `TeamKillBounty` flag (DE). | Do with #34. | open |
-| 36 | `HCTargetEnemy` and `HCTargetAll` tech flags, like team techs. | | open |
-| 37 | `NextResearchIsFree` tech effect (DE). | | open |
-| 38 | `CantBeSlowed` tag (DE). | Marker via `unittypes.*`; related: #13. | open |
-| 39 | `DetonationDeath` (DE). | | open |
-| 40 | Flag for units and shipments to be trained ahead of the queue. | | open |
-| 41 | Reversible transformations on a timer. | | open |
-| 42 | DE veterancy bonus. | | open |
-| 43 | `NativePreview` (DE). | | open |
-| 44 | Rotate buildings by the unit that builds them (AoE4-style visual upgrades / annexes). | | open |
+| 29 | Shared build limits (team-wide, DE): e.g. a livestock limit per team, or no more wagons for building X once all X are built. | Do with #30: same mechanism. DE: `UseSharedBuildLimit`, `SharedBuildLimitUnit`, `SharedBuildLimitUnitTypes` (`weight`), `TeamBuildLimit`. Legacy: every check uses the limit 0x4C7B5F and the count 0x4C7BC5 ([de-parity](de-parity.md#29-shared-and-team-build-limits)). | RE |
+| 30 | Settler build limit: a civ XML tag setting one shared limit for all units with `AbstractWoLSettler`. | DE's design under other names: flag `SettlerBuildLimit`, type `LogicalTypeSettlerBuildLimit`, civ `SettlerProtoName` ([de-parity](de-parity.md#30-settler-build-limit-shared-by-a-unit-type)); legacy sites as #29. | RE |
+| 31 | Per-unit military batch limit as a proto attribute, instead of only a global tech. | New proto attribute. DE: `TrainBatchSize`, `DontTrainInBatches`, `ForceBatchTrain`. Legacy: the units per Train action come from one call, 0x9CE645 ([de-parity](de-parity.md#31-per-unit-military-batch-limit)). | RE |
+| 32 | Economic aura per resource, instead of all resources. | DE splits by target class: `NaturalFoodGatherRate`, `TreeGatherRate`, `MineGatherRate`, `FarmingGatherRate` ([de-parity](de-parity.md#32-economic-aura-per-resource)). | open |
+| 33 | Customizable gather priority on crates (Dutch gold is hardcoded). | RE (static): two per-civ hardcodes, a rank in the gather target search (0x4DBF40; Dutch coin, Ottomans and Indians wood, others food) and a next-crate cycle (FUN_00501786). DE has no interface for it ([de-parity](de-parity.md#33-crate-gather-priority)). | RE |
+| 34 | Kill bounty modifiable by techs. | DE: subtype `KillBounty`, `Bounty resourcetype`, `BountyResourceOverride`. Legacy: `<Bounty>` at `[proto+168h]`, value 0x4D4DC5, paid from TakeDamage 0x49B73C ([de-parity](de-parity.md#34-kill-bounty-modifiable-by-techs)). | RE |
+| 35 | `TeamKillBounty` flag (DE). | Do with #34. A flag on the victim. The stock payment FUN_0049BDC0 already pays the whole team with player −1, so it is one test at 0x49BDAB ([de-parity](de-parity.md#35-teamkillbounty)). | RE |
+| 36 | `HCTargetEnemy` and `HCTargetAll` tech flags, like team techs. | No such flag in DE: it uses `CreatePower` and timed `EnemyEffect` / `TeamEffect` powers ([de-parity](de-parity.md#36-cards-that-target-enemies-or-all-players)). | open |
+| 37 | `NextResearchIsFree` tech effect (DE). | DE: a building flag set by subtype `SetNextResearchFree`. Legacy: a research is paid when queued, 0x9E67E1 (and 0x9D54CF) ([de-parity](de-parity.md#37-nextresearchisfree)). | RE |
+| 38 | `CantBeSlowed` tag (DE). | Marker via `unittypes.*`; related: #13. DE also has `CannotSnare`. Site: 0x4DD201 (ESI target, `[ebp+10h]` attacker; skip → 0x48FA49) ([de-parity](de-parity.md#38-cantbeslowed)). | RE |
+| 39 | `DetonationDeath` (DE). | DE: the flag and `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` ([de-parity](de-parity.md#39-detonationdeath)). | open |
+| 40 | Flag for units and shipments to be trained ahead of the queue. | DE: proto flag `DoNotQueue` (units only). Legacy knows `DoNotQueue` only as a tech flag, with no reader found ([de-parity](de-parity.md#40-train-a-unit-ahead-of-the-queue)). | RE |
+| 41 | Reversible transformations on a timer. | JTMaston's design (2026-10-30): an attribute `transformspan` (seconds) on the `TransformUnit` effect; when it ends, the surviving units turn back into their previous unit. Legacy's effect apply (0x7FBBAF) transforms in place with 0x9C754C, which keeps the unit ID, so a timer (`worldtick.cpp`) can turn the same IDs back. DE: `SwapUnit` power with `<reversible/>` and `<activetime>`. Legacy's `SwapUnit` never swaps back (mutate → 0x9C754C, else destroy and create) ([de-parity](de-parity.md#41-reversible-transformation-on-a-timer)). | RE |
+| 42 | DE veterancy bonus. | DE: `VeterancyBonus` ranks + `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) ([de-parity](de-parity.md#42-veterancy-bonus)). | open |
+| 43 | `NativePreview` (DE). | DE: a flag on native sockets, part of its socket-build chain, all absent from legacy ([de-parity](de-parity.md#43-nativepreview)). | open |
+| 44 | Rotate buildings by the unit that builds them (AoE4-style visual upgrades / annexes). | Nothing in DE ([de-parity](de-parity.md#44-building-rotated-or-annexed-by-its-builder)). | open |
+| 45 | A protoaction's accuracy modifiable by techs (JTMaston, 2026-10-30). | RE (static, file bytes): legacy registers 193 effect and Data subtype names (pushes at 0x524800..0x526200). They include `TrackRating`, `MaximumRange`, `MinimumRange`, `DamageArea`, `DamageCap` and `HitPercent`, but not `Accuracy`. DE has none either: its guide lists `Accuracy` only as a tactics tag. The field is the action's `+38h` (engine-symbols.md, "Projectile accuracy and spread"). It needs a new Data subtype on ProtoAction targets, built like `TrackRating`'s. Related: #2. | RE |

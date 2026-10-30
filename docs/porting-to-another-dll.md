@@ -65,8 +65,13 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `SmartHealLoopEnd` | `0x9CDA3F` | `0x40` B | 5 B at `0x9CDA58` | `5E 5B 5F 32 C0` (`pop esi; pop ebx; pop edi; xor al,al`) | the search's loop step, no-target exit and accept path; smartHealTargets |
 | `SmartHealLoop` | `0x9CD923` | `0x5F` B | — | — | the search's loop head (verified only); smartHealTargets |
 | `AbstractTypesEnd` | `0x51BA23` | `0x15` B | 5 B at `0x51BA31` | `5F 5E B0 01 5B` (`pop edi; pop esi; mov al,1; pop ebx`) | epilogue of the abstract unit type registration (FUN_0051A5DC) |
-| `DotProtoActionTag` | `0x5FA10F` | `0x1B` B | 8 B at `0x5FA11E` | `85 C0 0F 84 C7 33 00 00` (`test eax,eax; je 5FD4EDh`) | unknown-tag fall-through of the action parser FUN_005F98A0; damageOverTime tag hook |
+| `DotProtoActionTag` | `0x5FA10F` | `0x1B` B | 8 B at `0x5FA11E` | `85 C0 0F 84 C7 33 00 00` (`test eax,eax; je 5FD4EDh`) | unknown-tag fall-through of the action parser FUN_005F98A0; the shared action tag hook (`actiontags.cpp`: damageOverTime, spreadAnyAccuracy) |
 | `DotProtoActionCall` | `0x5FA20E` | 5 B | — | — | the `<ProtoAction>` handler's `call 5F98A0h`; the tag hook checks its return address 0x5FA213 |
+| `TacticsActionCall` | `0x5FA60A` | `0x19` B | — | — | a tactics `<action>`'s parse in FUN_005FA5B3, up to its `call 5F98A0h`; the tag hook checks its return address 0x5FA623 |
+| `SpreadHitRoll` | `0x499890` | `0x17` B | 9 B at `0x499890` | `83 FB 02 0F 84 E2 56 03 00` (`cmp ebx,2; je 4CEF7Bh`) | the projectile launch after the precalculated roll; spreadAnyAccuracy hit hook (continuation 0x499899 `mov [esi+20h],ebx` and the reloads after it) |
+| `SpreadMissStub` | `0x4CEF7B` | `0x11` B | 7 B at `0x4CEF7B` | `8D 44 24 28 50 8B CE` (`lea eax,[esp+28h]; push eax; mov ecx,esi`) | the miss stub (`call 4CEF8Ch; jmp 499899h`); spreadAnyAccuracy miss hook |
+| `SpreadRadius` | `0x4CF00B` | `0x2C` B | 27 B at `0x4CF00B` | `D8 0D EC 0A BA 00 D9 54 24 0C D8 1D F8 0A BA 00 DF E0 F6 C4 41 0F 84 BD 3C 01 00` (`fmul [0BA0AECh]; fst [esp+0Ch]; fcomp [0BA0AF8h]; fnstsw ax; test ah,41h; je 4E2CE3h`) | the radius of the miss offset FUN_004CEF8C; spreadAnyAccuracy radius hook (continuation 0x4CF026, the `r > 1e-6` test) |
+| `SpreadDraws` | `0x4CF037` | `0x40` B | — | — | the offset's two random draws, which the radius hook leaves to the stock code |
 | `DotTakeDamageEntry` | `0x49B3D9` | 14 B | 6 B at `0x49B3D9` | `81 EC 8C 00 00 00` (`sub esp,8Ch`) | entry of TakeDamage FUN_0049B3D9; damageOverTime hit hook |
 | `DotWorldUpdateEntry` | `0x481A57` | 8 B | 5 B at `0x481A57` | `83 EC 0C 53 55` (`sub esp,0Ch; push ebx; push ebp`) | entry of the world update FUN_00481A57; the shared tick wrapper (`worldtick.cpp`: damageOverTime, overhealDecay) |
 | `HpSetter` | `0x4820A1` | `0x22` B | — | — | the HP setter overhealDecay calls (verified only) |
@@ -500,14 +505,17 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - the "Attaching" name index.
 
   The poisons live in a `std::map`, so every machine walks them in the same order.
-- **Tag hook** at `0x5FA11E`, in FUN_005F98A0, over `test eax,eax; je 5FD4EDh`:
+- **Tag hook** at `0x5FA11E`, in FUN_005F98A0, over `test eax,eax; je 5FD4EDh`, shared with
+  spreadAnyAccuracy (`actiontags.cpp`, written once by `AddActionTagHandler`):
   - re-execute the test: on EAX = 0 (the `ModifyExclusive` compare matched), jump to `0x5FD4ED`;
-  - otherwise, only when `[esp+C0h]` is `0x5FA213` (a `protoy` `<ProtoAction>`), call
-    `UhcDotProtoActionTag(tagName = ESI, node = EDI, proto = [esp+C4h], action = [esp+C8h])`
-    inside `pushad`/`popad`;
-  - then jump to `0x5FA126`, the next child. The handler takes `AttachProtoUnit`,
-    `AttachMaxStacks`, `AttachSnare` and `AttachTickText` (case-insensitive); the child's text is
-    the UTF-16 string at `[node+14h]`.
+  - otherwise, only when `[esp+C0h]` is `0x5FA213` (a `protoy` `<ProtoAction>`) or `0x5FA623` (a
+    `.tactics` `<action>`), call `UhcActionTag(tagName = ESI, node = EDI, proto = [esp+C4h],
+    action = [esp+C8h], returnAddress = [esp+C0h])` inside `pushad`/`popad`, which calls each
+    handler with the tag name, the child's text (the UTF-16 string at `[node+14h]`), the proto,
+    the action and the source;
+  - then jump to `0x5FA126`, the next child. damageOverTime's handler takes only `<ProtoAction>`
+    tags: `AttachProtoUnit`, `AttachMaxStacks`, `AttachSnare` and `AttachTickText`
+    (case-insensitive).
 - **TakeDamage hook** at `0x49B3D9`, a `jmp` to the wrapper `UhcDotTakeDamage`:
   - `float __fastcall(unit, unused, 13 stock arguments)`, so it pops 34h bytes and returns in
     st0, exactly like the stock thiscall function;
@@ -539,6 +547,36 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **If your DLL already hooks TakeDamage or the world update,** call this feature's logic from
   your own wrapper instead of installing a second `jmp` at the same entry: `VerifyAll` would
   refuse the second patch anyway.
+
+### spreadAnyAccuracy
+
+- **State, all in `spread.cpp`:** the values read from the data, a `std::map` keyed by (proto ID
+  `[proto+4]`, action name index `[action+4]`) of `SpreadFactor` and `MaxSpread` (default 0.25 and
+  5.0), cleared by `OnDatabaseLoad`; the marker type ID; two globals `g_uhcSpreadFactor` /
+  `g_uhcSpreadMax` that hold the stock values except during the miss hook's call.
+- **Tag handler** on the shared tag hook (see damageOverTime): `MaxSpread` (0..100) and
+  `SpreadFactor` (0..10), case-insensitive, from both sources; an action whose name index is still
+  -1 (a tag before `<name>` in a tactics file) or a value that does not parse is logged and ignored.
+- **Hit hook** at `0x499890` (9 B: `cmp ebx,2; je 4CEF7Bh`). EBX = the roll's result (1 also for
+  `PerfectAccuracy`), ESI = the projectile, EDI = the tactics action, `[esp+0E8h]` = the shooting
+  unit. EBX = 2 jumps to the miss hook. Otherwise `bool __stdcall UhcSpreadForceMiss(shooter,
+  action)` (inside `pushad`/`popad`) tests the shooter's proto `[unit+5Ch]` for the marker
+  (0x44D7FA); true sets EBX = 2 and jumps to the miss hook, false jumps to `0x499899`.
+- **Miss hook** at `0x4CEF7B` (7 B over the stub). Both entries (`0x499893`, now the hit hook, and
+  `0x6A4BCA`, a failed lead) have the launch's frame and EBX = 2. It calls
+  `UhcSpreadSelect(unitAction = [esp+18h], shooter = [esp+0E8h])`, which puts the action's values in
+  the globals; then `lea eax,[esp+28h]; push eax; mov ecx,esi; call 4CEF8Ch` as the stub did; then
+  `int __stdcall UhcSpreadDone()`, which restores the globals and returns the result to store: 2,
+  or 3 (a ground shot, the `TargetGround` mode, which deals the attack where it lands) for a
+  marked shooter. The hook writes it into `popad`'s EBX slot and jumps to `0x499899`
+  (`mov [esi+20h],ebx`).
+- **Radius hook** at `0x4CF00B` (27 B) in FUN_004CEF8C, ST0 = d: `fmul [g_uhcSpreadFactor]; fst
+  [esp+0Ch]; fcomp [g_uhcSpreadMax]; fnstsw ax`; if r > MaxSpread, `[esp+0Ch] = MaxSpread`; jump to
+  `0x4CF026` (the stock `r > 1e-6` test and the two draws). The x87 stack is empty on leaving.
+- **Engine calls:** 0x44D7FA (is-a) and the stock FUN_004CEF8C; reads the action-name table for the
+  log.
+- **If your DLL already reads action tags at 0x5FA11E,** add these two tags to your handler instead
+  of a second hook; if it changes the launch at 0x499890 or the miss offset, merge the logic there.
 
 ### multipleInstances
 

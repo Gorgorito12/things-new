@@ -20,6 +20,7 @@ add_library(UHC SHARED
   src/patch.cpp
   src/unittypes.cpp
   src/worldtick.cpp
+  src/actiontags.cpp
   src/features/abilityslots.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
@@ -49,6 +50,7 @@ add_library(UHC SHARED
   src/features/smartheal.cpp
   src/features/snare.cpp
   src/features/sockets.cpp
+  src/features/spread.cpp
   src/features/startingtc.cpp
   src/features/techprereq.cpp
   src/features/techrename.cpp
@@ -57,6 +59,7 @@ add_library(UHC SHARED
   src/features/wonderpanel.cpp
   src/features/workrate.cpp
   src/hooks/abilityslot_hooks.asm
+  src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
   src/hooks/broadside_hooks.asm
   src/hooks/bwraura_hooks.asm
@@ -81,6 +84,7 @@ add_library(UHC SHARED
   src/hooks/smartheal_hooks.asm
   src/hooks/snare_hooks.asm
   src/hooks/socket_hooks.asm
+  src/hooks/spread_hooks.asm
   src/hooks/startingtc_hooks.asm
   src/hooks/techprereq_hooks.asm
   src/hooks/techrename_hooks.asm

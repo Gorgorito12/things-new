@@ -248,6 +248,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | That unit type on the units in `protoy`, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
+| [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags in the tactics files or `<ProtoAction>`; the unit type and a `<DamageArea>` on the attacks that should always scatter. | confirmed (single player) |
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech. | Nothing. | confirmed (single player, `Maintain`) |
 | [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Techs with `<TypeCount>` prerequisites in `techtreey` (stock data has none). | confirmed (single player) |
 | [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | That unit type on the producing buildings in `protoy`, or the name of an existing type or proto. | confirmed (single player) |
@@ -1067,7 +1068,8 @@ damageOverTime [log] [noticktext]
   - at startup, `damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage
     over time, with <AttachMaxStacks>, <AttachSnare> and <AttachTickText> (multiplayer
     unverified)` (with `noticktext`, `…; tick texts off on this machine …`);
-  - while the data loads, `hook reached: damageOverTime ProtoAction tag (0x5FA11E)` and, for each
+  - while the data loads, `hook reached: action tag (0x5FA11E)` (the tag hook it shares with
+    `spreadAnyAccuracy`) and, for each
     tag, `damageOverTime: <Proto>/<Action> attaches <X>`, `…: up to <N> stacks`, `…: poisoned
     units move at <F> times their speed`, `…: ticks shown in colour <RRGGBB>`, or why a value was
     ignored (`<AttachMaxStacks>…</AttachMaxStacks> is not a whole number from 1 to 100; ignored`,
@@ -1165,6 +1167,112 @@ damageOverTime [log] [noticktext]
   guard stays a reading of the code. Multiplayer was not tested either.
 - **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
   proto that carries the duration and the damage.
+
+### spreadAnyAccuracy
+
+![spreadAnyAccuracy in game](media/spreadAnyAccuracy.gif)
+
+*In game:* six Aenna marked with AbstractSpreadAnyAccuracy (accuracy 1.0 in `archer.tactics`; `MaxSpread` 3, `SpreadFactor` 1.5 and `DamageArea` 2.5 in their `<ProtoAction>`) shoot nine musketeers: every shot is logged as a hit made a ground shot at the offset point, and the arrows land around the musketeers and damage them by area. [Full video (MP4)](media/spreadAnyAccuracy.mp4).
+
+```
+spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
+```
+
+- **How stock behaves:** each ranged shot that is not `InstantBallistics` rolls its `Accuracy` when
+  it is fired (the roll also counts the distance, so even accuracy 1.0 misses about 8 % of the shots
+  at 16 m). A hit flies to its target and damages it. A miss lands at a random point up to `r` away
+  on each axis, with `r = min(0.25 × distance, 5)` for every unit, and **deals no damage at all**,
+  not even with `<DamageArea>`. The `<maxspread>` and `<spreadfactor>` lines of the tactics files
+  are ignored: the exe has no code for them.
+- **Effect:**
+  - Every action reads **`<MaxSpread>`** (a number from 0 to 100, in metres) and
+    **`<SpreadFactor>`** (a number from 0 to 10), in a tactics file's `<action>` or in a `protoy`
+    `<ProtoAction>` (a `<ProtoAction>` overrides the tactics file). Without a tag the stock value
+    stays (5 and 0.25).
+  - **Every miss** of every unit uses its action's values: `r = min(SpreadFactor × distance,
+    MaxSpread)`. The random draws are the stock ones; only `r` changes.
+  - **Units of `<UnitType>`** scatter every shot that rolls, whatever the accuracy (1.0 and
+    `PerfectAccuracy` included): each shot lands at the offset point as a **ground shot** (what
+    grenades and mortars fire) and deals its attack where it lands. With `<DamageArea>` the units
+    within that radius of the point take the damage, the target included when it is close enough;
+    without `<DamageArea>` the shot hits nothing.
+  - Unmarked units keep the stock hits; only their misses change.
+- **Your data:**
+
+  ```xml
+  <!-- data\tactics\<file>.tactics, in the <action> (keep <name> first) -->
+  <maxspread>3</maxspread>
+  <spreadfactor>1.5</spreadfactor>
+  ```
+
+  ```xml
+  <!-- or protoy.xml, per proto -->
+  <Unit id ='...' name ='Escopetero'>
+      ...
+      <UnitType>AbstractSpreadAnyAccuracy</UnitType>
+      <ProtoAction>
+          <Name>VolleyRangedAttack</Name>
+          ...
+          <DamageArea>2.000000</DamageArea>
+          <DamageFlags>GAIAEnemy</DamageFlags>
+          <MaxSpread>3</MaxSpread>
+          <SpreadFactor>1.5</SpreadFactor>
+      </ProtoAction>
+  ```
+
+  Mark only units whose attack has `<DamageArea>`, such as shotguns: a marked attack without area
+  does no damage. The marker is registered by the DLL, like `healNonIdle`'s; an existing type or
+  proto name works too (`spreadAnyAccuracy Escopetero`).
+- **Not covered** (these shots never reach the code; they behave as in stock):
+  - actions with `<InstantBallistics>` (sure hits: most muskets) or `<TargetGround>` (grenades,
+    mortars). Of WoL's 647 actions with spread tags, 304 and 122; the current shotgun files
+    (`wolinfantryrangedescopetero`, `wolinfantryrangedbacamarteer`, the trench fighter's volley)
+    are covered;
+  - shots at the ground with no target unit, and every shot when the startup cfg does not define
+    `ballisticPrecalcHits` (the game's own `Startup\gamey.cfg` defines it; keep that line if your mod
+    ships its own startup cfg);
+  - `<NumberProjectiles>`: a shot is still one projectile.
+- **`log`:** one line per value that differs from the stock 5 / 0.25 (the first 200 per data load),
+  and the first 5 offset shots of each attack (at most 100): who shot, a miss or a marked shot, `r`
+  and the values used. Invalid values are logged with or without `log`.
+- **Log:**
+  - at startup, `spreadAnyAccuracy: <MaxSpread> and <SpreadFactor> are read per action (stock 5.0
+    and 0.25) and every miss uses them; units of unittype X scatter every precalculated shot
+    (multiplayer unverified)` (with `log`: `…; values and shots logged …`);
+  - while the data loads, `unit types: X -> <ID> …`, `hook reached: action tag (0x5FA11E)` and,
+    for each invalid value, `spreadAnyAccuracy: Musketeer/VolleyRangedAttack (protoy):
+    <MaxSpread>abc</MaxSpread> is not a number from 0 to 100; ignored` (or `… before the action's
+    <name>; ignored (put <name> first)`); with `log`, `spreadAnyAccuracy:
+    Crossbowman/VolleyRangedAttack (tactics): MaxSpread 20.00`;
+  - in a game, `hook reached: spreadAnyAccuracy hit roll (0x499890)`, `… miss offset (0x4CEF7B)`
+    and `… miss radius (0x4CF00B)`, then at the first miss `spreadAnyAccuracy: 622 action(s) of this
+    data carry <MaxSpread> or <SpreadFactor>, 23 of them with values other than the stock 5.0 and
+    0.25` (once per data load). With `log`: `spreadAnyAccuracy: shot by unit 20
+    (xpAenna/VolleyRangedAttack): marked unit, a hit made a ground shot at the offset point, r =
+    3.00 m (SpreadFactor 1.50, MaxSpread 3.00)` or `shot by unit 1 (Crossbowman/VolleyRangedAttack):
+    a miss, r = 20.00 m (SpreadFactor 2.00, MaxSpread 20.00)`.
+- **Simulation:** yes (where shots land and what they damage; it also adds a unit type, which
+  changes the unit type count).
+- **Status:** confirmed in single player (test bed, 2026-10-30), in fights of five units against
+  musketeers:
+  - the values: read from a loose `archer.tactics` (20 / 2) and from `<ProtoAction>` lines, which
+    overrode the file (3 / 1.5); invalid values (`abc`, `-1`, `1000`, `2x`, `-3`) logged and ignored;
+  - misses: unmarked Crossbowmen missed with `r = 20 m`, unmarked Chu Ko Nu with the stock
+    `0.25 × d`;
+  - marked units: every shot of Longbowmen with accuracy 1 (and in another run with
+    `PerfectAccuracy`) became a ground shot with `r = 3 m`, and the musketeers they shot kept full
+    HP (no `DamageArea`); stock Longbowmen won the same fight. Marked Aenna with `DamageArea` 2.5
+    killed their musketeers by area hits. A marked unit with `MaxSpread` 0 hit its targets by area
+    at the target's point;
+  - marked Grenadiers (`TargetGround`) behaved as in stock, never reaching the hooks;
+  - without the key, nothing was logged and the Longbowmen hit as in stock; with a bad argument the
+    key logged `FAILED` and the game ran;
+  - a skirmish against two AIs with the key and `damageOverTime` on played normally (the AI
+    gathered, built, chatted), and the data reload at its start read the values again.
+
+  Multiplayer, saved games and a loaded game were not tested; the area damage of the ground shots
+  was seen on HP, the landing points only on video.
+- **New in this DLL:** not in UHC 1.10. WoL request #2 ([wol-requests.md](wol-requests.md)).
 
 ### liveBuildingWorkRate
 
@@ -3164,6 +3272,9 @@ lines matters:
   break, as the stock files do. Ship it next to the XML or instead of it.
 - **Tested:** the one-line layout, CRLF line endings and the compiled file worked in game; the
   LF layout with the name alone on its line broke the AI. Restart the game after fixing a file.
+- **Extra action tags:** with [`spreadAnyAccuracy`](#spreadanyaccuracy), an `<action>` also reads
+  `<maxspread>` and `<spreadfactor>`; keep its `<name>` as the first child, as the stock files do.
+  A loose `data\tactics\archer.tactics.xmb` alone (no XML) replaced the archive's file in the test.
 
 More about the tools: [tools/README.md](../tools/README.md).
 
@@ -3172,7 +3283,7 @@ More about the tools: [tools/README.md](../tools/README.md).
 - Every player needs the same `UHC.dll`, the same `uhc.cfg` and the same data.
 - The keys that change the simulation are `deckCardCount`, `basePop`, `extraPop`, `noAILimit` (game
   setup), `removeFameRestriction`, `removeConversionRestriction`, `hcShipmentPointFallback`,
-  `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `dodgeChance`, `liveBuildingWorkRate`, `techPrereqRecheck`,
+
   `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
   `lifespanAfterConstruction`, `gaiaSocketsOnly`, `snareOnlyHitUnit`, `danceBonusCivs`,
   `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,

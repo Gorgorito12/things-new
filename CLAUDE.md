@@ -63,6 +63,8 @@ Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\
 - for `decimalPopulation` (2026-10-29), written by `python -I tools/pop_testdata.py C:\AoE3-UHC-WoL` (`--restore` undoes it; the files before it are kept as `*.pop-before`): `PopulationCount` 1.5 on `Settler`, `Crossbowman` and `Hussar`, 0.5 on `Pikeman`, `PopulationCapAddition` 7.5 on `Manor`, and the techs `UHCPopCountTest`, `UHCPopCapTest`, `UHCPopCapBig` and `UHCPopPercentTest` (indices 2553–2556) appended;
 - the originals are kept as `*.wol-orig` / `*.testdata-orig`.
 
+**Spread copy.** `C:\AoE3-UHC-Spread` is the private `spreadAnyAccuracy` test copy (2026-10-30): its `protoy` carries `AbstractSpreadAnyAccuracy` and spread / area / bad values on Longbowman, Grenadier, xpAenna, ypChuKoNu, Musketeer, Skirmisher (and an `<AttachProtoUnit>` on Crossbowman), written by `tools/protoy_testdata.py`; `data\tactics\archer.tactics.xmb` sets `maxspread` 20 / `spreadfactor` 2. The originals are `*.spread-orig`.
+
 **Check the AI after data or combat changes.** Start a skirmish against an AI (clicks: `docs/developer-guide.md`, "Driving the game unattended"). The dialog `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error behind it.
 
 There are no unit tests yet.
@@ -87,6 +89,7 @@ There are no unit tests yet.
   Hooks never relocate instructions. Each one re-executes or replaces the stock code itself and leaves through an explicit `jmp` to the verified continuation. Implemented so far:
   - `removeConversionRestriction`, `ignoreRegistryPath`, `deckCardCount`, `basePop`/`extraPop` (M2);
   - `noAILimit`, `customRevolutionBanners`, `removeFameRestriction` (M3);
+
   - WoL Tier 2 (`docs/wol-requests.md`): `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect` (alias `enableTechRenameEffect`), `noCorpseDopples`, `danceBonusCivs`;
   - WoL Tier 1 and 3: `startingTC` (#3, the FirstTC part), `civFirstTC` (#3 as Mandos redesigned it: `<firstTC>` per civ in `civs.xml`; after `startingTC` in `kFeatures`, the two share the FirstTC proto hook at 0x506B3B), `transformInventory` (#4), `overhealHitpointBars` (#21; `overhealSources` and `overhealDecay` build on its types and reference, applied after it, and share the add-HP hook at 0x4823A3), `buildingWorkRateAuras` (#22), `noTrainNearEnemyTC` (#27; `near` types through the spatial query 0x4A1C55, and a warning through the dodge's floating text 0x8023AE), `showGatherRate` (#28), `decimalPopulation` (#23; fixed point ×K: after `basePop`/`extraPop` in `kFeatures`, it scales their cap hook at 0x4581F3 through `g_uhcPopScale` in `limits.cpp`, and installs it with the stock clamps when they are not set). Keep their order in `kFeatures`: `noTrainNearEnemyTC` after `liveBuildingWorkRate`, `buildingWorkRateAuras` last of the WoL keys; the two share `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`, called by noTrainNearEnemyTC's Train hook).
 
@@ -106,6 +109,7 @@ There are no unit tests yet.
 - `docs/uhc-address-map.md`: every upstream patch site, with a verification status per row.
 - `docs/engine-symbols.md`: functions, globals, IAT slots and object offsets named by upstream, with a status per row.
 - `docs/wol-requests.md`: WoL's feature requests in priority order; pick the next item to work on here.
+- `docs/de-parity.md`: how AoE3 DE implements those requests (data interface, meaning, legacy status, UHC cost), from DE's official modding guide (`AoE3DE\ModDocumentation`), DE's data and its plaintext code; `docs/de-architecture.md` is DE's threading and loading. DE work keeps that page's rules: read-only install, the code protection is not studied, no DE code or data in the repo or the DLL. Evidence in `rea/evidence/aoe3de-31fad98f/`.
 - `docs/wol-uhc-map.md`: WoL's `uhc.dll`. It covers:
   - identity, libraries and patch mechanisms (upstream fake-instruction caves plus `remod::trackable_memory_patch`);
   - a cross-check of the upstream caves;

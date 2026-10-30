@@ -112,9 +112,12 @@ The hooks are MASM files in `src/hooks/`.
   vtable, verified in place, replaces some slots with `__fastcall` functions (ECX = `this`, EDX
   unused: the thiscall frame), and gives engine-allocated objects that vtable.
 - **Data-load callbacks.** `OnDatabaseLoad` (`src/unittypes.h`) calls a feature on every data
-  load, from the abstract-unit-type hook below; `damageOverTime`, `techPrereqRecheck`,
-  `maintainWaitForPop` and `lifespanAfterConstruction` use it to drop state that belongs to the
-  old data.
+  load, from the abstract-unit-type hook below; `damageOverTime`, `spreadAnyAccuracy`,
+  `techPrereqRecheck`, `maintainWaitForPop` and `lifespanAfterConstruction` use it to drop state
+  that belongs to the old data.
+- **Shared hooks.** A site that two keys need is hooked once by a shared module that calls each key's
+  function in `kFeatures` order: the world update (`worldtick.cpp`, `AddWorldTick`) and the unknown
+  tags of an action (`actiontags.cpp`, `AddActionTagHandler`, at 0x5FA11E).
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
   first time execution passes. It preserves every register, the flags and ESP, so it can sit at
   the top of any hook.
@@ -553,8 +556,9 @@ The DLL ignores that path and adds its own, driven by data.
 
 **Data.** At load time, the action parser FUN_005F98A0 ends every unknown `<ProtoAction>` child at
 0x5FA11E.
-- The tag hook there runs only when the return address `[esp+C0h]` is 0x5FA213, i.e. a `protoy`
-  `<ProtoAction>`.
+- The shared action tag hook (`src/actiontags.cpp`, see [spreadAnyAccuracy](#spreadanyaccuracy))
+  passes it every unknown tag; this key reads only those of a `protoy` `<ProtoAction>` (return
+  address `[esp+C0h]` = 0x5FA213).
 - For a tag named `AttachProtoUnit` (case-insensitive), it records the text X under the key
   (attacker proto ID `[proto+4]`, action name index `[action+4]`). `AttachMaxStacks`,
   `AttachSnare` and `AttachTickText` set the record's options under the same key, in any order;
@@ -678,6 +682,109 @@ tick text depends on the local player and touches nothing the simulation reads, 
   poisons (seen in game: `the data was reloaded; 1 running poison(s) dropped`, and the unit took
   no more ticks).
 - The stock Poison flag stays unused.
+
+### spreadAnyAccuracy
+
+**What stock does.** A projectile's fate is decided when it is launched
+([engine-symbols.md](engine-symbols.md), "Projectile accuracy and spread"). With the cfg var
+`ballisticPrecalcHits` (on in the game's own `Startup\gamey.cfg`) and a target unit, the launch
+rolls the action's accuracy: a hit flies to its target and damages it; a miss is moved by
+uniform(-r, r) on x and z, with a hardcoded `r = min(0.25 × d, 5)`, and **deals no damage at all**
+where it lands. `PerfectAccuracy` skips the roll (a hit). `InstantBallistics` and `TargetGround`
+shots never reach that code. The tactics tags `<MaxSpread>` and `<SpreadFactor>` (Age of Mythology
+leftovers) are not read.
+
+**Data.** The key adds a handler to the shared action tag hook (`src/actiontags.cpp`, below). For a
+child named `MaxSpread` or `SpreadFactor` (case-insensitive) of a `.tactics` `<action>` or a `protoy`
+`<ProtoAction>`, it parses the text as a float (spaces around it allowed). It stores the value under
+the key (proto ID `[proto+4]`, action name index `[action+4]`), the key `damageOverTime` uses.
+- The tactics loader FUN_005FAA4F loads each proto's tactics file into that proto's own action set, so
+  the key is per proto even when several protos share a file. A proto's `<ProtoAction>` is read after
+  its `<Tactics>` line, so its values override the file's (seen in game: a Longbowman's tactics
+  `20 / 2` and its `<ProtoAction>` `3 / 1.5` gave 3 / 1.5).
+- A missing tag keeps the stock value (5.0, 0.25). A value that is not a number from 0 to 100
+  (`MaxSpread`) or from 0 to 10 (`SpreadFactor`) is logged and ignored. So is a tag that comes
+  before the action's `<name>` in a tactics file (the action has no name index yet); every stock and
+  WoL file has `<name>` first.
+- The table is cleared on every data load (`OnDatabaseLoad`), before the protos are read again.
+  Every player's copy of a proto and of its actions keeps both numbers of the key.
+
+**The shared action tag hook.** The jmp at 0x5FA11E (unknown-tag fall-through of the action parser
+FUN_005F98A0) used to belong to `damageOverTime`. It is now written once by `actiontags.cpp`,
+whichever of the two keys are on, and calls each key's handler in `kFeatures` order. It passes the
+tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`<ProtoAction>`) and
+0x5FA623 (a tactics `<action>`, FUN_005FA5B3). Any other caller goes straight on to the next child.
+`damageOverTime`'s handler keeps reading only `<ProtoAction>` tags.
+
+**Shots: three hooks.**
+1. **Hit roll** (0x499890, over `cmp ebx,2 / je 4CEF7Bh`, 9 B). EBX holds the roll's result. A miss
+   goes on to the miss hook, as in stock. For any other result, a C++ call checks the shooting unit
+   `[esp+0E8h]`: if its proto (the player's copy, `[unit+5Ch]`) has the marker type (is-a 0x44D7FA),
+   EBX becomes 2 and the shot goes to the miss hook too; otherwise it continues at 0x499899 unchanged.
+   This covers accuracy 1.0 and `PerfectAccuracy` (whose EBX stays 1).
+2. **Miss** (0x4CEF7B, over the stub's `lea eax,[esp+28h] / push eax / mov ecx,esi`, 7 B). Every miss
+   reaches the stub: from 0x499893 (now the hit hook) and from 0x6A4BCA, where a failed target lead
+   makes a miss. The hook:
+   - looks up the shooting action's values from the unit action `[esp+18h]` (its `+4` is the
+     player's copy of the action) and the shooting unit's proto, and puts them in two globals;
+   - calls FUN_004CEF8C itself, as the stub did;
+   - puts the stock 0.25 and 5.0 back, writes the `log` line and, for a marked shooter, sets EBX to 3;
+   - continues at 0x499899, which stores EBX in `[projectile+20h]`.
+
+   3 is the mode of a `TargetGround` shot: the projectile flies to the (offset) point and, where it
+   lands, the attack applier FUN_0049BE95 is called with no target, so the action's `DamageArea`
+   damages the units around that point. A miss (2) never calls it; that is why a marked unit's shots
+   are ground shots and not misses. Unmarked units keep 2: their misses still deal no damage, only
+   their offset changes.
+3. **Radius** (0x4CF00B in FUN_004CEF8C, over `fmul [0.25] / fst [esp+0Ch] / fcomp [5.0] / fnstsw ax
+   / test ah,41h / je 4E2CE3h`, 27 B). With ST0 = d it computes `r = d × SpreadFactor`, clamps it to
+   `MaxSpread` and stores it where the stock code does. It then continues at the stock `r > 1e-6` test
+   0x4CF026, so the two random draws 0x422648(sync RNG, stream 2, -r, r) are the stock code's.
+   FUN_004CEF8C has no other caller, and outside the miss hook the globals hold 0.25 and 5.0.
+
+**What it does not cover.**
+- `InstantBallistics` shots (sure hits, 0x4A9455 jumps past the block) and `TargetGround` shots
+  (mode 3 from 0x4C4DD9): they never reach the roll. In WoL's tactics, 304 and 122 of the 647
+  actions with spread tags; the 222 others, including the current shotgun files, are covered
+  ([engine-symbols.md](engine-symbols.md), "Consequence for WoL's shotguns").
+- Shots with no target unit, and every shot while `ballisticPrecalcHits` is off (a mod's startup
+  cfg could drop it): the block is skipped and the flight physics decide.
+- A marked unit without `<DamageArea>` deals no damage: its ground shots land with nothing to hit
+  (seen in game: marked Longbowmen left every musketeer at full HP). Mark only area attacks, as
+  WoL's shotguns are.
+- `NumberProjectiles` (one projectile per shot, as in stock); dynamic per-player protos that techs
+  create (IDs from 100000 up) do not match the base proto's key and keep the stock values.
+
+**Why it is safe.**
+- Registers: the hit hook keeps EBX/ESI/EDI/EBP except EBX on purpose. EAX, ECX, EDX and the flags are
+  dead at both continuations: 0x499899 stores EBX and overwrites them before reading them (`mov
+  ebx,[esp+18h] / mov edi,[esp+0ECh] / mov ecx,[esp+10h] / … / test eax,eax`), and the stub's call
+  clobbered them anyway. The C++ calls sit inside `pushad`/`popad`; `popad` keeps the flags the
+  hook tests. The miss hook writes the new EBX into `popad`'s slot.
+- Stack: the hooks push and pop symmetrically; the miss hook's frame at 0x4CEF7B is the launch's
+  (`[esp+18h]`, `[esp+28h]`, `[esp+0E8h]` read as the stock code and the stub read them). Both stub
+  entries come from the launch's frame (0x499893 and 0x6A4BCA, the only branches there, `cs`).
+- x87: the launch and the stub have an empty x87 stack (each is right after a call). The radius hook
+  leaves it empty, as the stock `fcomp` does, and its `TRACE_ONCE` runs after the `fcomp`, so the
+  log call never sees a loaded stack. AX is overwritten by `fnstsw` in both versions.
+- The overwritten bytes are instruction-aligned and no branch lands inside them; the only branches
+  to the sites target their first byte: 0x499893 and 0x6A4BCA → 0x4CEF7B, 0x4E2CFD → 0x4CF00B
+  (`rea/evidence/age3y-b1a1dab7/spread_sitecheck.txt`). `SpreadDraws` checks the stock draws the radius
+  hook continues into.
+- Mode 3 is a stock mode: FUN_0049539B and FUN_0049BE95 handle it for every projectile type
+  (`TargetGround` grenades and mortars), and the lead was already computed by FUN_004A5B02 with the
+  same fields (`+94h`, `+9Ch`) FUN_004C4DF8 sets for ground shots. In game, arrows of marked units
+  landed and damaged with area, and no test run crashed.
+
+**Determinism.** The values come from the data and the marker from the proto, the same on every
+machine. The random draws are the stock code's, on the sync RNG, in the same order; a marked shot
+draws the same two numbers a stock miss would (or none when r ≤ 1e-6, as in stock). The roll still
+runs for marked units, so the RNG stream advances as in stock. The table is a `std::map` read by key;
+the log reads the simulation and never writes it.
+
+**Performance.** Per shot through the block: one C++ call with an is-a bit test (hits); per miss, one
+`std::map` lookup (about 600 entries with the stock data) and the stock function. No allocation per
+shot. Not measured with `perfStats`.
 
 ### liveBuildingWorkRate
 
