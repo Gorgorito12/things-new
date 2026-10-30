@@ -245,6 +245,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
 | [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
+| [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | That unit type on the units in `protoy`, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech. | Nothing. | confirmed (single player, `Maintain`) |
@@ -824,7 +825,7 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   a long game writes many lines.
 - **Log:** `dodgeAnyUnit: units of unittype X can dodge like ypMonkJapanese (tech ypDodge, 15 %)`
   and one `dodgeSoundSet:` / `criticalSoundSet:` line per rule; when the data loads,
-  `unit types: X -> <ID> …`; in a game, `hook reached: dodgeAnyUnit (0x49ACE5)` (the first time a
+  `unit types: X -> <ID> …`; in a game, `hook reached: dodge test (0x49ACE5)` (the first time a
   unit with a player is hit while the tech tree exists), `hook reached: dodgeSoundSet (0x6A2628)`
   (the first visible dodge) and `hook reached: criticalSoundSet (0x6A2A9A)` (the first critical
   hit). With `log`: `dodgeAnyUnit: unit N (Proto) dodged a hit` and
@@ -837,6 +838,68 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   Explorer never dodged and the monk still did. `dodgeSoundSet` picked the configured set for the
   Explorer, and `criticalSoundSet ypMonkChinese PowerEvade` for a Chinese monk's critical hits
   (seen in the log; the sound itself was not listened to).
+
+### dodgeChance
+
+![dodgeChance in game](media/dodgeChance.gif)
+
+*In game:* `dodgeChance AbstractDodge 50 ranged log` and `dodgeChance AbstractDodge 0 melee`, with `YPDodge` active: two Explorers marked `AbstractDodge` against musketeers and pikemen. Each roll is a log line in the overlay: musket shots are dodged about half the time (`rule 1 (50.0 %): roll 238 -> dodged`, with the stock floating text), pike thrusts never (`rule 2 (0.0 %): roll -1 -> hit`). The Japanese monk, which no rule names, dodges as in stock (2x speed). [Full video (MP4)](media/dodgeChance.mp4).
+
+```
+dodgeChance <UnitType> <percent> [tech <TechName> | notech] [ranged | melee | all] [log]
+```
+
+One line per rule; several lines add up, and the first rule that matches a hit decides.
+
+- **How stock behaves:** only the three Japanese monks dodge, on 15 % of the hits (15 of the
+  101 values of the roll), while their player has `YPDodge` ([dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset)).
+- **Effect:** each hit on a unit is matched against the rules, in cfg order. A rule matches
+  when the unit's proto is of `<UnitType>` (a marker, a stock type or a proto name) and, with
+  `ranged` or `melee`, when the hit's damage type is `Ranged` or `Hand` (of `damagetypes.xml`;
+  `all`, the default, matches every hit, `Siege` included). The first matching rule decides:
+  - its tech must be active for the unit's player: `YPDodge` by default, as stock;
+    `tech <TechName>` another tech; `notech` none. Otherwise the hit lands;
+  - the hit is then dodged with `<percent>` % chance: 0 to 100, one decimal at most (`12.5`),
+    drawn from the game's synced random numbers. 0 % and 100 % draw nothing;
+  - a dodge is the stock dodge: no damage, the floating text, the dodge sound
+    (`dodgeSoundSet` still picks it).
+
+  A rule's units dodge with or without `dodgeAnyUnit`. A hit that no rule matches keeps the
+  other keys' behaviour: a unit with `dodgeAnyUnit`'s marker gets the stock 15 % with
+  `YPDodge`, a Japanese monk the stock dodge, any other unit no dodge.
+- **Per damage type:** `dodgeChance X 40 ranged` then `dodgeChance X 10 melee` gives 40 % against
+  ranged hits and 10 % against melee hits; siege hits match neither and fall back as above.
+  `dodgeChance X 0 melee` alone stops marked units from dodging melee hits.
+- **Data:** the unit type on the units, as for [dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset),
+  and the rule's tech active for their players (none with `notech`).
+- **`log`** (on any line): once per data load, each rule's resolved tech and damage type; then
+  one line per roll: `dodgeChance: unit N (Explorer), rule 1 (50.0 %): roll 238 -> dodged` (the
+  roll is 0..999 and dodges below the percent × 10; −1 when nothing is drawn), or `… rule 2: tech
+  X not active -> hit`. For checking data: a long game writes many lines.
+- **Log:** at startup `dodgeChance: rule K: units of X dodge P % of ranged hits, with tech T
+  (multiplayer unverified)`; in a game `hook reached: dodge test (0x49ACE5)`. A tech or damage
+  type that does not exist is logged once per data load and disables its rule (the next rules
+  still apply): `dodgeChance: rule K (X): no tech named T; rule disabled`. A bad line stops the
+  key, and the other dodge keys with it: `dodgeChance: expected "dodgeChance <UnitType> <percent
+  0-100> …" (bad percent 150); feature not applied` or `dodgeChance X: unexpected argument …`,
+  then `dodgeAnyUnit/dodgeChance/dodgeSoundSet/criticalSoundSet: FAILED`.
+- **Simulation:** yes, every player needs the same lines. The rolls use the stream of the game's
+  synced random numbers that the stock dodge uses, only for hits that a rule between 0 and 100 %
+  matches, the same on every machine. A rule's type that the data does not define adds a unit
+  type: load saved games and replays with the same cfg.
+- **Status:** confirmed in single player (2026-10-29):
+  - 50 % `ranged`: 18 dodges in 46 rolls, then 28 in 50 in a second game; 0 % `melee`: 0 in 57;
+  - 30 % `notech`, `YPDodge` not active: 20 in 71;
+  - 100 % with `tech HCExplorerFrench`, active: 49 of 49 (the Explorers stayed at full HP); a
+    monk rule whose tech was not active: 15 hits, no dodge, no fall back to the stock dodge;
+  - an unknown tech: logged, the rule disabled; bad lines (`150`, `12.25`, `-5`, an unknown word,
+    no percent, `tech` with no name): logged, the key not applied, the game normal;
+  - with `dodgeAnyUnit log` and `dodgeSoundSet`, the dodges of the rules logged `dodged a hit`
+    and played the configured set; without `dodgeChance` those keys behaved as before;
+  - a skirmish against the AI with these keys on played normally.
+
+  Not tested: multiplayer, siege hits, damage types other than the stock three.
+- **New in this DLL:** not in UHC 1.10.
 - **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b
   ([wol-requests.md](wol-requests.md)).
 
@@ -3109,7 +3172,7 @@ More about the tools: [tools/README.md](../tools/README.md).
 - Every player needs the same `UHC.dll`, the same `uhc.cfg` and the same data.
 - The keys that change the simulation are `deckCardCount`, `basePop`, `extraPop`, `noAILimit` (game
   setup), `removeFameRestriction`, `removeConversionRestriction`, `hcShipmentPointFallback`,
-  `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `liveBuildingWorkRate`, `techPrereqRecheck`,
+  `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `dodgeChance`, `liveBuildingWorkRate`, `techPrereqRecheck`,
   `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
   `lifespanAfterConstruction`, `gaiaSocketsOnly`, `snareOnlyHitUnit`, `danceBonusCivs`,
   `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
@@ -3130,8 +3193,7 @@ More about the tools: [tools/README.md](../tools/README.md).
   at 17 / 20 loaded at 17 / 20).
 - `healNonIdle`, `dodgeAnyUnit` and `removeFameRestriction` change the unit type table, and so do
   `maintainWaitForPop`, `lifespanAfterConstruction`, `noCorpseDopples`, `broadsideMuzzleLimit`,
-  `gaiaSocketsOnly`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC` (and its `near`
-  types), `overhealHitpointBars` and `showGatherRate` when their unit type is a new name (a stock type or a
+
   proto name adds nothing; the defaults of `startingTC` and `overhealHitpointBars` are new names,
   `noTrainNearEnemyTC`'s `AbstractDaimyo` is a stock type). Load saved games and replays with the
   same DLL and cfg they were made with.

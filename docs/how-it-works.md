@@ -478,6 +478,51 @@ instructions and continues with the stock compares at `0x49ACEB`. ECX holds the 
 and is saved around the is-a call. The tech, the roll and the feedback are therefore identical
 for a marked unit and a monk.
 
+**dodgeChance** shares that hook. The hook now calls `UhcDodgeDecide(unit, damageInfo)` and
+takes one of four ways out:
+- the stock compares (the two loads redone, `0x49ACEB`): no rule matched and the unit has no
+  marker;
+- the stock dodge path `0x6A249C`, with ECX restored to the database and EDI = `[world+7Ch]` as it
+  expects: no rule matched and the unit has `dodgeAnyUnit`'s marker;
+- `0x6A24FC`, the end of that path after its roll: a rule dodged the hit. From there the path
+  reads only ESI (the unit), EBX (its player, `[esi+44h]` from 0x49ACC4) and its own locals:
+  floating text, sound set (`dodgeSoundSet`'s hook included), `mov al,1`, `ret`;
+- `0x49AD0F`, the stock "not dodged" exit: a rule matched and the hit lands.
+
+The inputs:
+- **The damage type of the hit.** At the hook, `[esp]` is the caller's EDI, saved by
+  `push edi` at 0x49ACDD. FUN_0049ACAA has one caller, `0x49B023` in FUN_0048649F, where EDI =
+  `[ebp+24h]` (0x49AF98), the action's damage info: `+0` damage, `+4` flags, `+5` the damage type,
+  an index into `damagetypes.xml`. Traced at 0x49B021 in game: a Pikeman's hit 0 (`Hand`), a
+  Musketeer's and an Explorer's 1 (`Ranged`); `[action+10h]` was 1 for all three, so it is not the
+  type. The names are resolved in the database's list `[db+44h]` (count `[db+48h]`; entries of
+  10h bytes with the name at `+4`, written by 0x5FFC55), filled from `damagetypes.xml` by
+  FUN_0052D454, which the database load calls at 0x526DD0.
+- **The tech.** `0x600BE1(db, name)` once per data load, then `0x94AF27([world+7Ch], player ID
+  [[unit+44h]], tech)` per hit, as the stock path does.
+- **The roll.** `0x407CE7(rng = 0C66588h, stream, max)` is a per-stream LCG, seed × 343FDh +
+  269EC3h, returning `((seed >> 16) & 7FFFh) mod (max + 1)`, so values 0..max. Stock draws
+  (2, 100) and dodges below 15.0: 15 of 101 values, 14.85 %. A rule draws (2, 999) on the same
+  stream and dodges below percent × 10; the 768 lowest values of 1000 come up once more in 32768
+  draws, so 15 % is 15.1 %. 0 % and 100 % do not draw.
+- **Resolution.** Rule types are marker or proto IDs from the abstract unit type registration;
+  tech and damage type names are resolved on the first test after each data load (a counter
+  raised by `OnDatabaseLoad`), from that machine's database. In a process, scenarios do not reload
+  the data (seen in game: one resolution for two games); a skirmish start does.
+
+**Why it is safe.** The hook keeps the stock frame: it pushes ECX around the C++ call and
+restores it, and the FPU stack is empty at 0x49ACE5 and at each exit. EAX and EDX are written
+before they are read on every way out (the compares load EAX; 0x6A249C pushes and calls; 0x6A24FC
+loads EAX and EDX; 0x49AD0F sets AL). The decision reads only the unit's proto, the hit's damage
+type, the synced tech status and the synced RNG, on the stream and in the order every machine
+uses; the rules are fixed after startup. It runs once per hit, over the few rules, with no
+allocation.
+
+**Observed in game:** 50 % against ranged hits gave 18 of 46 and 28 of 50 dodges, 0 % against
+melee 0 of 57; 30 % `notech` without `YPDodge` 20 of 71; 100 % with `HCExplorerFrench` active
+49 of 49; a rule whose tech was not active let all 15 hits land. Without `dodgeChance`,
+`dodgeAnyUnit` and `dodgeSoundSet` behaved as before.
+
 **`log`** also rewrites the call at `0x49B023` to a wrapper that calls FUN_0049ACAA itself and
 logs the unit when it returns true; the wrapper returns to `0x49B028`, so the caller sees the
 same AL. A call does not preserve EAX/ECX/EDX in the stock code either.

@@ -9,7 +9,7 @@ This guide covers these features that are new in this DLL:
 - `healNonIdle`, with the extra abstract unit types it relies on;
 - `hcShipmentPointFallback`;
 - `damageOverTime`;
-- `dodgeAnyUnit`, `dodgeSoundSet` and `criticalSoundSet`;
+- `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet` and `criticalSoundSet`;
 - `multipleInstances`;
 - the features built for WoL's requests ([wol-requests.md](wol-requests.md)):
   - Tier 2: `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`,
@@ -73,6 +73,8 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `DodgeProtoCheck` | `0x49ACE5` | 12 B | 6 B at `0x49ACE5` | `8B 46 5C 8B 40 04` (`mov eax,[esi+5Ch]; mov eax,[eax+4]`) | proto test of the dodge FUN_0049ACAA; dodgeAnyUnit hook |
 | `DodgeTechCheck` | `0x6A249C` | 10 B | — | — | the stock dodge path the hook enters (`push "ypDodge"; call 600BE1h`) |
 | `DodgeCall` | `0x49B023` | 7 B | 5 B at `0x49B023`, only with `log` | `E8 82 FC FF FF` (`call 49ACAAh`) | the damage function's call to the dodge; dodgeAnyUnit log wrapper |
+| `DodgeTest`, `DodgeRollPath`, `DodgeCaller` | `0x49ACAA`, `0x6A249C`, `0x49AF98` | `0x6E`, `0x1B5`, `0x92` B | — | — | the dodge test's frame and exits, its roll path and feedback, the caller's EDI = damage info; dodgeChance (verified only) |
+| `SyncRandom`, `TechActive`, `TechByName`, `DamageTypeLoad` | `0x407CE7`, `0x94AF27`, `0x600BE1`, `0x52D454` | `0x40`, `0x33`, `0x10`, `0x51` B | — | — | the synced RNG, the tech test, tech by name and the damage type list loader; dodgeChance (verified only) |
 | `DodgeSound` | `0x6A2628` | 8 B | 5 B at `0x6A2628` | `68 E0 74 BD 00` (`push "PowerEvade"`) | the dodge's sound set; dodgeSoundSet hook |
 | `CriticalSound` | `0x6A2A9A` | 8 B | 5 B at `0x6A2A9A` | `68 18 75 BD 00` (`push "PowerCriticalStrike"`) | the critical hit's sound set; criticalSoundSet hook |
 | `SingleInstanceSemaphore` | `0x55A185` | 6 B | — (the IAT slot `0xB843F0` instead) | `FF 15 F0 43 B8 00` (`call [CreateSemaphoreW]`) | the single-instance check; multipleInstances knows this call by its return address `0x55A18B` |
@@ -262,9 +264,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/unittypes.h`](../src/unittypes.h), [`src/unittypes.cpp`](../src/unittypes.cpp), [`src/hooks/unittype_hooks.asm`](../src/hooks/unittype_hooks.asm) | Registers extra abstract unit type names on every data load. | site `AbstractTypesEnd`, `VerifyAll`, `WriteJmp`, `Log`, `TRACE_ONCE` |
 | [`src/features/heal.cpp`](../src/features/heal.cpp), [`src/hooks/heal_hooks.asm`](../src/hooks/heal_hooks.asm) | `healNonIdle`. | unittypes, sites `HealIdleCheck` and `HealAutoSearchIdle`, your cfg reader |
 | [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*` and `GatherPointValid`; with `FirstTC` also `FirstTcSet`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`; your cfg reader |
-| [`src/features/damageovertime.cpp`](../src/features/damageovertime.cpp), [`src/hooks/dot_hooks.asm`](../src/hooks/dot_hooks.asm) | `damageOverTime`. | sites `Dot*`, `SnareTargetCheck`, `SnareCreate`, `SnareApply`, `floatingtext.cpp`, `worldtick.cpp`, `OnDatabaseLoad`, your cfg reader |
-| [`src/floatingtext.cpp`](../src/floatingtext.cpp) (no `.asm`) | The stock floating text over a unit, for the local player (noTrainNearEnemyTC, damageOverTime). | sites `DodgeFloatingText`, `FloatingTextAdd`, `UnitVisibleTo`, `ConfigInt`, `BStringFromWide`, `BStringFromId`, `BStringFree` |
-| [`src/features/dodge.cpp`](../src/features/dodge.cpp), [`src/hooks/dodge_hooks.asm`](../src/hooks/dodge_hooks.asm) | `dodgeAnyUnit`, `dodgeSoundSet`, `criticalSoundSet`. | unittypes, sites `Dodge*` and `CriticalSound`, `WriteCall` (in `patch.cpp`), your cfg reader |
+
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
 | [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, your cfg reader |
 | [`src/features/techprereq.cpp`](../src/features/techprereq.cpp), [`src/hooks/techprereq_hooks.asm`](../src/hooks/techprereq_hooks.asm) | `techPrereqRecheck`. | sites `TechPrereq*`, `TypeCount*`, `PrereqBaseCtor`, `TechTemplate*`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount`; `OnDatabaseLoad` (unittypes); your cfg reader |
@@ -440,6 +440,17 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     long as the DLL.
 - **Marker registration:** through the abstract unit types above. The sound rules register
   their type names the same way, which returns the existing ID for a proto or stock type.
+- **dodgeChance** uses the same proto hook. At `0x49ACE5`, `[esp]` is the caller's EDI (saved by
+  `push edi` at `0x49ACDD`), which at the only call, `0x49B023`, is the action's damage info
+  `[ebp+24h]`; its byte `+5` is the hit's damage type (`Hand` 0, `Ranged` 1 in stock, by name in
+  `[db+44h]`, count `[db+48h]`, name at `[entry+4]`). The hook saves ECX, calls the decision and
+  leaves:
+  - no rule matches: as above (the marker's path or the stock compares);
+  - a rule matches: its tech must be active (`0x94AF27([world+7Ch], [[esi+44h]], tech)`), then
+    `0x407CE7(0C66588h, 2, 999)` < percent × 10; dodged → `0x6A24FC` (ESI, EBX and the frame as at
+    the hook; EDI is reloaded there), hit → `0x49AD0F`.
+  - Resolve tech names (`0x600BE1`) and damage type names after each data load, never per hit by
+    name, and draw only for chances strictly between 0 and 100 %, so every machine draws the same.
 
 ### hcShipmentPointFallback
 
@@ -1273,6 +1284,10 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `dodgeAnyUnit: unit N (Proto) dodged a hit`; a Japanese monk still dodges as in stock.
     `tools/testbed.py` builds such a fight with no clicks
     ([developer guide](developer-guide.md#driving-the-game-unattended)).
+  - **dodgeChance:** with `dodgeChance <marker> 50 ranged log` and `dodgeChance <marker> 0 melee`,
+    about half of the musket shots and none of the pike thrusts on a marked unit log `roll … ->
+    dodged`; a rule with `notech` dodges without `YPDodge`, one with an unknown tech logs `rule
+    disabled`.
   - **The WoL features:** the test that confirmed each one, with its data, is in its
     "Status" in the [modding guide](modding-guide.md#5-feature-reference). For each, run the same
     test with and without the key: the stock run must show the bug. Two pitfalls from these tests:

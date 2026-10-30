@@ -111,6 +111,19 @@ SITES = [
     ("DodgeTechCheck", 0x6A249C, 10),
     # dodgeAnyUnit log: call 49ACAAh in the damage function and the test al,al after it
     ("DodgeCall", 0x49B023, 7),
+    # dodgeChance, verify only: the dodge test FUN_0049ACAA up to its "not dodged" exit (the frame:
+    # push esi / push ebx = [esi+44h] / push edi, the caller's EDI, then EDI = [world+7Ch]); the
+    # whole roll path 0x6A249C..0x6A2650 (tech, roll 0x407CE7(2, 100) against 15.0, then from
+    # 0x6A24FC the floating text and the sound, which read only ESI, EBX and locals); the caller from
+    # mov edi,[ebp+24h] (the damage info) to the call; the synced RNG, the tech test, the tech by
+    # name and the damage type loader FUN_0052D454 (the list at [db+44h], count [db+48h])
+    ("DodgeTest", 0x49ACAA, 0x6E),
+    ("DodgeRollPath", 0x6A249C, 0x1B5),
+    ("DodgeCaller", 0x49AF98, 0x92),
+    ("SyncRandom", 0x407CE7, 0x40),
+    ("TechActive", 0x94AF27, 0x33),
+    ("TechByName", 0x600BE1, 0x10),
+    ("DamageTypeLoad", 0x52D454, 0x51),
     # dodgeSoundSet: push "PowerEvade", the sound set a dodge plays, and the add esi,14h after it
     ("DodgeSound", 0x6A2628, 8),
     # criticalSoundSet: push "PowerCriticalStrike", played at the attacker, and lea eax,[ebx+14h]
