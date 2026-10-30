@@ -11,8 +11,8 @@
 // multiply its dances of that kind.
 //
 // danceBonusCivs <Civ> ... lets the listed civs pass those four compares, so they get these
-// dances exactly as the native civs do. Nothing else about the civ changes (upstream nativeCivs
-// makes a civ native everywhere, and still misses the XP compare). The hooks are in
+// dances exactly as the native civs do. Nothing else about the civ changes (a key that makes a civ
+// native everywhere would be broader, and the XP compare is easy to miss). The hooks are in
 // hooks/dance_hooks.asm.
 #include <cstdint>
 #include <cstring>

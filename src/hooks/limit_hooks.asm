@@ -1,7 +1,7 @@
 ; Hooks for the limit features (deckCardCount, basePop/extraPop; decimalPopulation scales the
 ; population cap hook).
 ; Each hook is entered through a jmp written over the stock code and leaves through an explicit
-; jmp to the continuation verified in docs/uhc-address-map.md; nothing is relocated.
+; jmp to the continuation verified in src/generated/sites.h; nothing is relocated.
 .686
 .model flat, c
 option casemap :none
@@ -33,7 +33,7 @@ UhcDeckLimitHook ENDP
 ; Replaces 0x4581F3..0x45823E. In: ECX = extra population, EAX = population cap,
 ; EDX = the player data whose [+4F4h] adds a bonus. ESI is free: the continuation pops it.
 ; Stock also clamps against [[[C66234h]+13Ch]+31Ch] (initialized to 200) and caps at 250;
-; basePop/extraPop drop both, as upstream does, or basePop above 200 would have no effect.
+; basePop/extraPop drop both, or basePop above 200 would have no effect.
 ; decimalPopulation installs the same hook when neither key is set, with g_uhcPopStockClamps
 ; = 1 so both clamps stay. Every limit (base, extra, world, bonus, 250) is in whole population and
 ; is multiplied by g_uhcPopScale (1 without decimalPopulation), the scale of EAX.
@@ -44,7 +44,7 @@ UhcPopLimitHook PROC
     mov ecx, g_uhcExtraPop
 UhcPopLimitHook ENDP
 ; Falls through. Also entered from 0x4581FC, where stock jumps with ECX = 0 when the extra
-; population is negative (0x679611); upstream misses that path.
+; population is negative (0x679611); that path must be covered too.
 UhcPopLimitBaseHook PROC
     mov esi, g_uhcBasePop
     add esi, ecx

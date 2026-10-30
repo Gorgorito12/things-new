@@ -49,7 +49,7 @@ std::wstring ExeFolder() {
   return path;
 }
 
-// UHC 1.10 makes the exe's folder the working directory before anything else, so a mod starts
+// Make the exe's folder the working directory before anything else, so a mod starts
 // the same way from any shortcut or launcher (with ignoreRegistryPath, the game then reads its
 // data from that folder). Mods rely on this, so keep it.
 void UseExeFolderAsWorkingDirectory() {

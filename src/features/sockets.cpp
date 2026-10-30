@@ -7,7 +7,7 @@
 // command on every machine, by uiBuildAtPointer's pre-check and by the AI's checkPlacement),
 // accepts any socket of the right type at exactly the building's position and never reads its
 // owner. Stock data never shows it, because every stock socket has ForceToGaia; a mod socket that
-// a player owns (WoL's saltpeter mines) is red in the preview, but an order that carries its exact
+// a player owns (e.g. a mine socket) is red in the preview, but an order that carries its exact
 // position (AI, triggers) builds on it anyway.
 //
 // The hook (hooks/socket_hooks.asm) sits where PLACE records "socket found" (0x508CC1). When the

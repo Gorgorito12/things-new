@@ -1,5 +1,4 @@
-// decimalPopulation: population counts and caps with decimals, e.g. <PopulationCount>0.5 (WoL
-// request #23).
+// decimalPopulation: population counts and caps with decimals, e.g. <PopulationCount>0.5.
 //
 // Stock keeps every population quantity as a whole number: <PopulationCount> ([proto+0D8h]) and
 // <PopulationCapAddition> ([proto+0D4h]) are read with "%d" (0x59A71D), the player's population

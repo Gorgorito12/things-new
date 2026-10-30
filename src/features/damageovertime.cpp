@@ -1,4 +1,4 @@
-// damageOverTime: DE-style poison. A <ProtoAction> in protoy.xml that lists
+// damageOverTime: poison. A <ProtoAction> in protoy.xml that lists
 // <AttachProtoUnit>X</AttachProtoUnit> attaches proto unit X to every unit it damages. For X's
 // <Lifespan> seconds the damaged unit then takes, every ROF seconds, the damage of X's
 // ProtoAction "Attaching", computed by the stock TakeDamage (damage type, damage bonuses,

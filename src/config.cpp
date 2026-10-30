@@ -17,7 +17,7 @@ std::string Lower(std::string s) {
 
 bool IsSpace(char c) { return c == ' ' || c == '\t' || c == '\r'; }
 
-// Where the line [pos, end) stops counting: at "//" (a UHC 1.10 comment), or at its end.
+// Where the line [pos, end) stops counting: at "//" (a comment in the UHC patcher's syntax), or at its end.
 size_t CommentStart(const std::string& text, size_t pos, size_t end) {
   for (size_t i = pos; i + 1 < end; ++i) {
     if (text[i] == '/' && text[i + 1] == '/') {
@@ -75,7 +75,7 @@ bool Config::Load(const std::wstring& path) {
     }
     std::string key = std::move(words.front());
     words.erase(words.begin());
-    // UHC 1.10 syntax, which its patcher writes: key=value (also accept key = value).
+    // The syntax the UHC patcher writes: key=value (also accept key = value).
     const size_t equals = key.find('=');
     if (equals != std::string::npos) {
       std::string value = key.substr(equals + 1);

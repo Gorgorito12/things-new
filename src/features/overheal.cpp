@@ -7,7 +7,7 @@
 // group bar and 'Group Health' (0x4C5014) take the health ratio FUN_0045F295, HP / max clamped to
 // 1; the three HP texts print 'HP/max' with the max from FUN_00480408 (or a copy of it inlined in
 // the stat row, 0x4D7575), and '%d/%d (%d+%d)' when that max is above the database proto's
-// MaxHitpoints. WoL gives infantry and cavalry MaxHitpoints = 1.1 x InitialHitpoints, so a fresh
+// MaxHitpoints. A mod that gives infantry and cavalry MaxHitpoints = 1.1 x InitialHitpoints, so a fresh
 // unit shows a 91 % bar and '150/165'.
 //
 // For a unit whose proto has a marker type (default AbstractOverheal; a stock type or a proto

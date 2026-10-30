@@ -1,4 +1,4 @@
-// techRenameEffect (also read as WoL's key enableTechRenameEffect): the tech effect
+// techRenameEffect (also read as enableTechRenameEffect): the tech effect
 // <Effect type='SetTechName' tech='T' newName='ID' newRolloverTextID='ID'
 // [newLongRolloverTextID='ID']/> gives the tech T new string IDs for the players the effect
 // reaches, and only for them.
@@ -7,8 +7,8 @@
 // 34h bytes each: +0 tech ID, +8 DisplayNameID, +0Ch RolloverTextID, +10h LongRolloverTextID,
 // +14h icon, then the prerequisite and effect arrays). Each player's BTechTreeNode (24h bytes,
 // created on first use as a copy of the base node, 0x94CC2B) points at that shared NodeData
-// through [node+0]; only status, cost and research points are per player. WoL's SetTechName
-// writes the new IDs into the shared NodeData, so one civ's tech renames the tech for everyone.
+// through [node+0]; only status, cost and research points are per player. A global SetTechName
+// would write the new IDs into the shared NodeData, so one civ's tech renames the tech for everyone.
 //
 // Here the effect's apply gives the player a private copy of the NodeData and points that
 // player's node at it. The UI reads a tech's texts through the player's node (0x7103CE and its
@@ -358,7 +358,7 @@ Outcome ApplyTechRenameEffect(const Config& config) {
   const char* key = "techRenameEffect";
   const Config::Args* args = config.First(key);
   if (args == nullptr) {
-    key = "enableTechRenameEffect";  // WoL's key for its (global) SetTechName
+    key = "enableTechRenameEffect";  // alias key
     args = config.First(key);
   }
   if (args == nullptr) {

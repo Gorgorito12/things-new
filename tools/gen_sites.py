@@ -3,7 +3,7 @@
 Usage: python -I tools/gen_sites.py <stock age3y.exe> [out.h]
 
 The DLL compares live memory against these bytes before patching, so a site is only written
-when the host really is the build documented in docs/uhc-address-map.md. Ranges cover the
+when the host really is the build this script was run on (the stock exe). Ranges cover the
 bytes a feature overwrites or skips, plus the instruction it continues at.
 """
 import hashlib

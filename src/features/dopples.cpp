@@ -9,8 +9,8 @@
 // death pose, and the dopple stays until the player sees the spot again, long after the carcass
 // was eaten (by other players' hunters, or allies') or abandoned. A depleted carcass is never
 // doppled, because the game takes it out of the world (bit 8) before it decays. Stock hunts use
-// VisibleUnderFogOnlyAfterSeen instead and are never doppled; WoL made its hunts Doppled, so a
-// live herd stays where it was last seen.
+// VisibleUnderFogOnlyAfterSeen instead and are never doppled; a mod that makes its hunts Doppled
+// keeps a live herd stays where it was last seen.
 //
 // The hook runs just before the creation call: a unit whose proto is of the marker type (default
 // AbstractNoCorpseDopple; "Huntable" covers every hunt with no data change) and that is not alive

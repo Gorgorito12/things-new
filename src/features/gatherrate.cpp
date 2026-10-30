@@ -1,4 +1,4 @@
-// showGatherRate: the gather rate per second of the selected unit, like AoE3 DE ("Food 0.84/s"),
+// showGatherRate: the gather rate per second of the selected unit, ("Food 0.84/s"),
 // as a stat panel row and as the formatText data ref {currentUnitGatherRateString}. UI only.
 //
 // Stock: the stat panel (uiunitstatpanel3, rows StackLabel/StackValue 0..8, filled by
@@ -19,7 +19,7 @@
 // current action is still the recorded Gather action, in its gathering state, and the record is
 // fresh. The data ref currentUnitGatherRateString (id 68h) gets a provider that returns
 // "Food 0.67/s", or an empty string when the current unit is not gathering. The int and float
-// refs (ids 19h and 1Ah) keep the stub: WoL's UI already uses {currentUnitGatherRate(gold)}.
+// refs (ids 19h and 1Ah) keep the stub: mod UIs already use {currentUnitGatherRate(gold)}.
 // The hooks are in hooks/gatherrate_hooks.asm.
 #include <cmath>
 #include <cstdint>
