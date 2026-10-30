@@ -127,7 +127,8 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `TransformKbRemove`, `TransformKbReAdd`, `InventorySeed`, `InventoryRecreate`, `InventoryFree`, `ResListCopy`, `ResListScale`, `ResListTotal` | `0x9C75CF`, `0x9C766F`, `0x67DE0D`, `0x9BFE5A`, `0x4BA757`, `0x480A73`, `0x480B94`, `0x58EF02` | `0x56`, `0x23`, `0x1E`, `0x6E`, `0x50`, `0x49`, `0x7E`, `0x81` B | — | — | the knowledge-base remove and re-add around the hook, creation's inventory recipe, the engine functions the helper calls, and the list encoding it decodes; transformInventory (also `TransformProtoLookup`, `TransformPushProto`, `IsA`) |
 | `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`); `PlayerById(Null)` and `UnitById(Null)` are also verified by hcShipmentPointFallback when `FirstTC` is listed, and `PlayerById` and `UnitById` by civFirstTC |
 | `UnitsNearPoint`, `TypeRuleQuery` (+ `IsBuilt`) | `0x4A1C55`, `0x8CEA69` | `0xF8`, `0x22` B | — | — | noTrainNearEnemyTC with a `near` type: the world's spatial query the helper calls (`int thiscall(world, point, radius, 1, IdList*)`, `ret 10h`) and the placement rule's call of it |
-| `DodgeFloatingText`, `FloatingTextAdd`, `UnitVisibleTo`, `ConfigInt` (+ `BStringFromWide`, `BStringFromId`, `BStringFree`) | `0x6A24FC`, `0x8023AE`, `0x4818F4`, `0x46A144` | `0x10D`, `0xC4`, `0x45`, `0x3F` B | — | — | noTrainNearEnemyTC's warning (unless `nowarn`): the dodge's floating text block it repeats, the text add (`ret 24h`), the visible-to test and the cfg int reader |
+| `DodgeFloatingText`, `FloatingTextAdd`, `UnitVisibleTo`, `ConfigInt` (+ `BStringFromWide`, `BStringFromId`, `BStringFree`) | `0x6A24FC`, `0x8023AE`, `0x4818F4`, `0x46A144` | `0x10D`, `0xC4`, `0x45`, `0x3F` B | — | — | the shared floating text (`src/floatingtext.cpp`), for noTrainNearEnemyTC's warning (unless `nowarn`) and damageOverTime's tick text: the dodge's floating text block it repeats, the text add (`ret 24h`), the visible-to test and the cfg int reader |
+| `SnareTargetCheck`, `SnareApply` (+ `SnareCreate`) | `0x4DD1DE`, `0x4DD22D` | `0x23`, `0x82` B | — | — | damageOverTime's `AttachSnare`: the stock snare's "can move" test (`vtbl+90h`) and the modifier creator it calls (`ret 28h`) |
 | `OverhealBarRatio` | `0x45FAA7` | `0x11` B | 5 B at `0x45FAAF` | `E8 E1 F7 FF FF` (`call 45F295h`) | floating HP bar fill in the unit visual update's bar chunk; overhealHitpointBars |
 | `OverhealGroupRatio` | `0x4C5012` | `0x0F` B | 5 B at `0x4C5014` | `E8 7C A2 F9 FF` (`call 45F295h`) | selection group average in FUN_004C4FB5 |
 | `OverhealPanelMax` | `0x698B18` | `0x26` B | 5 B at `0x698B35` | `E8 CE 78 DE FF` (`call 480408h`) | unitHitPointsValue max |
@@ -244,7 +245,8 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/unittypes.h`](../src/unittypes.h), [`src/unittypes.cpp`](../src/unittypes.cpp), [`src/hooks/unittype_hooks.asm`](../src/hooks/unittype_hooks.asm) | Registers extra abstract unit type names on every data load. | site `AbstractTypesEnd`, `VerifyAll`, `WriteJmp`, `Log`, `TRACE_ONCE` |
 | [`src/features/heal.cpp`](../src/features/heal.cpp), [`src/hooks/heal_hooks.asm`](../src/hooks/heal_hooks.asm) | `healNonIdle`. | unittypes, sites `HealIdleCheck` and `HealAutoSearchIdle`, your cfg reader |
 | [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*` and `GatherPointValid`; with `FirstTC` also `FirstTcSet`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`; your cfg reader |
-| [`src/features/damageovertime.cpp`](../src/features/damageovertime.cpp), [`src/hooks/dot_hooks.asm`](../src/hooks/dot_hooks.asm) | `damageOverTime`. | sites `Dot*`, your cfg reader |
+| [`src/features/damageovertime.cpp`](../src/features/damageovertime.cpp), [`src/hooks/dot_hooks.asm`](../src/hooks/dot_hooks.asm) | `damageOverTime`. | sites `Dot*`, `SnareTargetCheck`, `SnareCreate`, `SnareApply`, `floatingtext.cpp`, `worldtick.cpp`, `OnDatabaseLoad`, your cfg reader |
+| [`src/floatingtext.cpp`](../src/floatingtext.cpp) (no `.asm`) | The stock floating text over a unit, for the local player (noTrainNearEnemyTC, damageOverTime). | sites `DodgeFloatingText`, `FloatingTextAdd`, `UnitVisibleTo`, `ConfigInt`, `BStringFromWide`, `BStringFromId`, `BStringFree` |
 | [`src/features/dodge.cpp`](../src/features/dodge.cpp), [`src/hooks/dodge_hooks.asm`](../src/hooks/dodge_hooks.asm) | `dodgeAnyUnit`, `dodgeSoundSet`, `criticalSoundSet`. | unittypes, sites `Dodge*` and `CriticalSound`, `WriteCall` (in `patch.cpp`), your cfg reader |
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
 | [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, your cfg reader |
@@ -461,8 +463,11 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 ### damageOverTime
 
 - **State, all in `damageovertime.cpp`:**
-  - the attachments read from the data, keyed by (attacker proto ID, action name index);
-  - the running poisons, keyed by (unit ID, attachment proto ID, attacker player);
+  - the attachments read from the data, keyed by (attacker proto ID, action name index): X's
+    name, then its proto ID, the stack limit (1..100, default 1), the snare factor (none by
+    default) and the tick colour (none by default);
+  - the running poisons, keyed by (unit ID, attachment proto ID, attacker player): attacker unit
+    ID, next tick, end, the stacks (end times in expiry order) and the last hit's options;
   - the "Attaching" name index.
 
   The poisons live in a `std::map`, so every machine walks them in the same order.
@@ -471,26 +476,36 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - otherwise, only when `[esp+C0h]` is `0x5FA213` (a `protoy` `<ProtoAction>`), call
     `UhcDotProtoActionTag(tagName = ESI, node = EDI, proto = [esp+C4h], action = [esp+C8h])`
     inside `pushad`/`popad`;
-  - then jump to `0x5FA126`, the next child.
+  - then jump to `0x5FA126`, the next child. The handler takes `AttachProtoUnit`,
+    `AttachMaxStacks`, `AttachSnare` and `AttachTickText` (case-insensitive); the child's text is
+    the UTF-16 string at `[node+14h]`.
 - **TakeDamage hook** at `0x49B3D9`, a `jmp` to the wrapper `UhcDotTakeDamage`:
   - `float __fastcall(unit, unused, 13 stock arguments)`, so it pops 34h bytes and returns in
     st0, exactly like the stock thiscall function;
   - it calls the stock function through `UhcDotTakeDamageStock` (`sub esp,8Ch; jmp 49B3DFh`);
-  - when damage was dealt, it adds or renews a poison.
+  - when damage was dealt, it adds a stack to the poison (dropping expired stacks, then the
+    oldest at the limit) and, for a new poison with `AttachSnare`, snares the unit. Projectile and
+    area damage reach it with the launcher's proto ID and action, one call per damaged unit.
 - **World update hook** at `0x481A57`, a `jmp` to the shared wrapper `UhcWorldUpdate`
   (`worldtick.cpp`, written once by `AddWorldTick`, whichever key comes first):
   - `bool __fastcall(world, unused, int, int deltaMs)`, `ret 8`, result in AL;
   - it calls the stock update through `UhcWorldUpdateStock` (`sub esp,0Ch; push ebx;
     push ebp; jmp 481A5Ch`), then each registered tick in kFeatures order; damageOverTime's
     applies the due ticks when `world == [[C66234h]+13Ch]`;
-  - each tick calls the **stock** TakeDamage (the trampoline, not the wrapper) with p8..p13 =
-    `0, 0, 1, 1, -2, 1`, but with p11 = 0 when the attacking unit is gone. With p11 = 1,
-    TakeDamage's army code (0x6A3253) reads the attacking unit with no null check, so a tick on
-    an AI army unit would crash;
+  - each tick calls the **stock** TakeDamage (the trampoline, not the wrapper) with multiplier =
+    the stacks alive at the tick's time (TakeDamage scales the computed damage by it) and p8..p13
+    = `0, 0, 1, 1, -2, 1`, but with p11 = 0 when the attacking unit is gone (its ID no longer
+    gives a unit; a dead unit's body keeps it). With p11 = 1, TakeDamage's army code (0x6A3253)
+    reads the attacking unit with no null check, so a tick on an AI army unit would crash;
+  - after a tick that is not the last, `AttachSnare F` calls
+    `0x4DD22D(unit, 0, F, -1f, -1f, 0, 2, ROF + 250, -1, -1, 1)` when `vtbl+90h` says the unit can
+    move; `AttachTickText` shows `-N` through `floatingtext.cpp` (interface only, off with
+    `noticktext`);
   - another game drops every poison: a jump of the world's step count `[world+F8h]` (normally +1
     per update), game time going back, another world pointer, or a new data load.
 - **Engine calls:** `0x5A2346` (proto ID by name), `0x45311B` (a player's copy of a proto), unit
-  `vtbl+A4h` (alive). The layouts read (unit, world, player, action set, action, the
+  `vtbl+A4h` (alive), `vtbl+90h` (can move), `0x4DD22D` (the snare), the floating text of
+  `floatingtext.cpp`; for the log only, `vtbl+34h` (speed) and the army flag 37h. The layouts read (unit, world, player, action set, action, the
   action-name table) are listed in [engine-symbols.md](engine-symbols.md), "Damage and poison".
 - **If your DLL already hooks TakeDamage or the world update,** call this feature's logic from
   your own wrapper instead of installing a second `jmp` at the same entry: `VerifyAll` would
@@ -898,9 +913,10 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   distance is below the cfg value. The distance is to the blocker's footprint edge
   ([how-it-works.md](how-it-works.md#notrainnearenemytc)). The decision reads only simulation
   state.
-- **Warning (interface only):** after a blocked decision, when `[[trainer+44h]]` equals
-  `[[0C66234h]+3C0h]`, `[world+8A8h]` is not null and `0x4818F4(trainer, local player)` is true,
-  at most once per 8000 ms of `[world+108h]` per trainer ID: two cfg ints through `0x46A144` on
+- **Warning (interface only, the shared `floatingtext.cpp`):** after a blocked decision, when
+  `[[trainer+44h]]` equals `[[0C66234h]+3C0h]`, `[world+8A8h]` is not null and
+  `0x4818F4(trainer, local player)` is true, at most once per 8000 ms of `[world+108h]` per
+  trainer ID: two cfg ints through `0x46A144` on
   `0xC66500` with the IDs `[[0CEFFF8h]]` and `[[0CF0000h]]` (defaults 1000 and 2000), a BString
   (`0x401A12` from a wide text or `0x58EA52` from a string ID), then
   `0x8023AE([world+8A8h], &text, t1, t2, [trainer+10h], float[3]{0,0,0}, 0xFFFF4040, 1.0f, 0, -1)`
@@ -1096,7 +1112,9 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Keep the cfg keys and their syntax:**
   - `healNonIdle [UnitType]`, default `AbstractHealNonIdle`;
   - `hcShipmentPointFallback <Proto|FirstTC> …`, 1 to 64 entries;
-  - `damageOverTime [log]`, with `<AttachProtoUnit>` in `protoy.xml` and an `Attaching` action on
+  - `damageOverTime [log] [noticktext]`, with `<AttachProtoUnit>` (and optionally
+    `<AttachMaxStacks>`, `<AttachSnare>`, `<AttachTickText>`) in `protoy.xml` and an `Attaching`
+    action on
     the attachment proto;
   - `dodgeAnyUnit [UnitType] [log]`, default `AbstractDodge`, and any number of
     `dodgeSoundSet <UnitType> <SoundSet>` / `criticalSoundSet <UnitType> <SoundSet>` lines;
@@ -1223,10 +1241,13 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **dodgeAnyUnit / dodgeSoundSet / criticalSoundSet:** confirmed in single player only; the
   sound sets were checked in the log, not by ear. The unit's rollover text about dodging (if any)
   still names only the Japanese monks (0x6AB049, not traced).
-- **damageOverTime:** confirmed in single player only. The game loads `protoy.xml.XMB` unless
-  `protoy.xml` is newer ([modding guide, section 6](modding-guide.md#6-editing-the-game-data)),
-  so keep both in step. A tick on an AI army unit after the attacking unit is gone (the p11 = 0
-  path) comes from the code and was not reproduced in game.
+- **damageOverTime:** confirmed in single player only, with hand attacks, instant shots,
+  arrows, grenades, cannon balls and area damage, `DamageBonus` and a tech on X, X's DamageFlags
+  after a conversion, an attacker removed, kill XP, and the three optional tags. The game loads
+  `protoy.xml.XMB` unless `protoy.xml` is newer
+  ([modding guide, section 6](modding-guide.md#6-editing-the-game-data)), so keep both in step.
+  A tick on an AI army unit after the attacking unit is gone (the p11 = 0 path) comes from the
+  code; the attacker-gone path ran in game, but not on an army unit.
 - **multipleInstances:** confirmed with two copies on one machine, in single player only.
 - **The WoL Tier 2 features** (2026-10-29, single player only; "(multiplayer unverified)" for every
   one that changes the simulation):

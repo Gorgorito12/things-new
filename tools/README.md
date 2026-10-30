@@ -102,23 +102,38 @@ the TAD data.
 ## dot_testdata.py
 
 ```
-python -I tools/dot_testdata.py <test folder>
+python -I tools/dot_testdata.py <test folder> [--ai | --bad]
 ```
 
-Writes the data the `damageOverTime` test uses into a **test copy** of the game. It refuses any
-folder inside a Steam library.
-- `data\protoy.xml`: the Explorer's `HandAttack` and `VolleyRangedAttack` get
-  `<AttachProtoUnit>UHCPoisonTest</AttachProtoUnit>`, and a proto `UHCPoisonTest` is added:
-  Lifespan 10 s, and an `Attaching` action that deals 20 Ranged damage every second to Gaia and
-  enemies.
-- `data\protoy.xml.XMB`: compiled from that XML with `xmbedit.py`.
+Writes the data the `damageOverTime` tests use into a **test copy** of the game. It refuses any
+folder inside a Steam library. The tables at the top of the script list the cases:
+- `data\protoy.xml`: one attachment proto per weapon, each attached to that weapon's attacks:
+  - the Explorer (`HandAttack`, `VolleyRangedAttack`): `UHCPoisonTest`, 20 Ranged every second
+    for 10 s, Gaia and enemies;
+  - the Grenadier (an area attack, a flying grenade): `UHCPoisonGrenade`, 10 Siege for 6 s,
+    enemies only (a unit converted to the attacker's side is excluded);
+  - the Crossbowman (a flying arrow): `UHCPoisonArrow`, 6 Hand for 8 s, triple against
+    `AbstractCavalry`;
+  - the Falconet (a cannon ball): `UHCPoisonCannon`, 15 Siege for 9 s;
+  - the Longbowman: `UHCPoisonStack`, 5 Siege for 6 s, with `<AttachMaxStacks>3`,
+    `<AttachSnare>0.5` and `<AttachTickText>40FF40` on its attacks;
+  - with `--ai`, also the Musketeer, Skirmisher, Pikeman and Hussar: `UHCPoisonLong`, 1 Siege for
+    120 s, so that two AI players poison each other's armies and the poisons outlive their
+    attackers;
+  - with `--bad`, invalid `<AttachMaxStacks>`, `<AttachSnare>` and `<AttachTickText>` values on the
+    Musketeer's three ranged attacks (and an empty `<AttachTickText>`), and `<AttachMaxStacks>`
+    without `<AttachProtoUnit>` on the Skirmisher, to check the load-time messages.
+- `data\techtreey.xml`: the tech `UHCPoisonArrowUpgrade` (UNOBTAINABLE; doubles
+  `UHCPoisonArrow`'s `Attaching` damage), for a trigger to turn on (`tech:UHCPoisonArrowUpgrade`
+  in a `testbed.py` map).
+- `data\protoy.xml.XMB` and `data\techtreey.xml.XMB`: compiled from that XML with `xmbedit.py`.
 - `data\tactics\uhcpoisontest.tactics` and its `.xmb`: the `Attaching` action. The XML keeps the
   tactic name and its first child on one line, so it also works without the `.xmb`
   ([modding guide, "Tactics files"](../docs/modding-guide.md#tactics-files)).
 
-The first run keeps the folder's protoy files as `*.dot-orig`. Every run starts again from
-`protoy.xml.dot-orig` and compiles the XMB from the result, so it can be repeated;
-`protoy.xml.XMB.dot-orig` is only a backup. Then enable `damageOverTime log` in the copy's cfg
+The first run keeps the folder's protoy and techtreey files as `*.dot-orig`. Every run starts
+again from the `.xml.dot-orig` files and compiles the XMB from the result, so it can be repeated;
+the `.XMB.dot-orig` files are only backups. Then enable `damageOverTime log` in the copy's cfg
 and let the Explorer hit something (for an unattended run, see the developer guide, "Driving
 the game unattended").
 
