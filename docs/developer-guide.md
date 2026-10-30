@@ -113,7 +113,18 @@ there:
   file. Posted key presses never reach the console. `deploy` adds the key to the cfg. The
   console has no trigger or AI syscalls: `uiMessageBox("…")` works, but a command that calls
   `trPlayerGetPopulation`, `kbGetPop` or `trChatSend` does nothing (it does not compile there).
-  Test XS syscalls in an AI skirmish or through a trigger.
+  Test XS syscalls in an AI skirmish or through a trigger. Two probes that work in a test copy
+  (back the files up first): an effect added to `trigger3\typetest.xml` whose `<Command>` calls
+  the syscalls and prints them with `trChatSend(0, "…" + value)`, run by a map's `at<s>=` spec;
+  and, for `ai*` / `kb*` syscalls, a rule file included after `aiMain.xs` in
+  `AI3\aiLoaderStandard.xs` that prints with `aiChat(1, "…")` every few seconds.
+- **UI tests:** loose UI files in a test copy's `data` folder override the archives (`uimainnew.xml`
+  plus its `.xmb`, compiled with `xmbedit.py from-xml`), so a data ref no stock UI shows can be put
+  in a gadget's text or `mouseovertext`. String tables edited there are not read (neither `.xml`
+  nor `.XMB`).
+- **Post-game statistics:** `Menú` (client 2373, 27), `Claudicar` (2373, 353), `Sí` (1097, 799);
+  then `Menú` again and `Resumen partida` (2373, 83). The `Línea cronológica` tab draws per-player
+  curves, chosen in its `Mostrar` list (client 2395, 171).
 - **The map** is a random map script written to the copy's `RM3` folder. `p<N>=Proto*count@x,z`
   places units of player N (x, z are fractions of the map side); `tech<N>=Name` adds a trigger
   that makes a tech active for player N. A trigger's tech parameter is the tech's **index in

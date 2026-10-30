@@ -415,8 +415,10 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
   gadget, which is how stock and WoL use them.
 - **Choosing K:** 10 for one decimal (0.5, 1.5), 100 for two (0.25), or any value from 2 to 1000.
   Texts show up to three decimals, trailing zeros dropped (K = 3 shows 0.333).
-- **Not adapted:** the AI's debug text (`AIDebugPopToggle`) and the post-game statistics, if they
-  show a population, show K times the value (not checked).
+- **Not adapted:** the post-game timeline (`Línea cronológica`, the curves `Toda la población`,
+  `Población de aldeanos` and `Población de militares`) draws K times the population: a player
+  with 9 population is drawn at 90 (seen in game). The AI's debug text (`AIDebugPopToggle`) does
+  the same (read in the code, not seen).
 - **Saved games** keep the population as stored: load them with the same K. A game saved without
   the key, or with another K, loads with wrong populations.
 - **Log:** at startup `decimalPopulation: population in 1/10 steps (<PopulationCount> and
@@ -453,16 +455,33 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
     brought the cap to 22.5;
   - **bad values:** `1`, `abc` and `5000` logged the error and `FAILED`, and the game read the
     stock values;
-  - **AI:** two skirmishes, three players (two Hard AIs): `aiSetEconomyPop(80)` stored as 800,
-    `aiSetMilitaryPop(15)` and `(30)`, `kbGetPop`, `kbGetPopCap`, `kbGetPopSlots` and the
-    `kbUnitPick` setters reached; the Russian AI built houses and reached 62.5 population of a
-    95 cap (31 Settlers at 1.5, 8 Strelets, 8 Cossacks), no XS error. The other AI stayed at a cap
-    of 10 because that test copy's `House` has `Lifespan` 20 (an earlier test's data).
+  - **AI:** three skirmishes, three players (two Hard AIs): `aiSetEconomyPop(80)` stored as 800,
+    `aiSetMilitaryPop(15)` and `(30)`; the Russian AI built houses and reached 62.5 population of
+    a 95 cap (31 Settlers at 1.5, 8 Strelets, 8 Cossacks), no XS error. The other AI stayed at a
+    cap of 10 in two games because that test copy's `House` has `Lifespan` 20 (an earlier test's
+    data);
+  - **every XS syscall:** all 19 reached. A probe rule added to the copy's AI (`aiChat` to
+    player 1, every 45 s) printed, for a Portuguese AI, `pop 12/20 avEco 68 avMil 15 curEco 12
+    needs 38` and `slots Settler 2 capadd Manor 8 TC 10 villagers 12 query 11 pick 7-42`: the
+    Settler's 1.5 rounded up, the Manor's 7.5 rounded to 8, a pick's minimum and maximum (7, 42)
+    read back as set; for the Spanish AI `avEco 70` (80 − 10.5). A trigger effect added to the
+    copy's `typetest.xml` printed `trPlayerGetPopulation(1)` = 17 at 16.5 and at 17.0;
+  - **shipments:** in game, the home city panel's card tooltips showed `2 colonos — Poblac.: 3`
+    (red at 9 / 10) and `4 colonos — Poblac.: 6` (Settlers at 1.5; the tooltip of 0x710651);
+  - **shared team population:** TAD's setup has no option for it, so the flag `[world+6913h]` was
+    set in memory; the team path then capped the player at 200 after a `PopulationCap` +300 (its
+    hook reached; unscaled it would have shown 20);
+  - **`{pop}` and `{populationHelp}`:** no stock UI shows them (WoL's editor shows `{pop}`), so a
+    loose `uimainnew.xml` in the test copy put `{pop}/{popcap}` in the counter and
+    `{populationHelp}` in its tooltip: the counter read `16.5/17.5` and the tooltip
+    `1 Centro urbano = 10, 1 Casa solariega = 7.5 Tamaño máx. ejército = 17.5` (the population
+    help line and the max army size, both with decimals).
 
-  Not run: multiplayer; the shared team population (`GameTeamSharePop`, no option for it in TAD's
-  setup); taking back a `PopulationCap` effect (0x8D20AB); the counter-help lines
-  (`populationHelp`, which no stock or WoL UI uses), the unit help `Population: %d` and a
-  shipment's population cost; `trPlayerGetPopulation` and the other XS getters not listed above.
+  Not run: multiplayer; taking back a `PopulationCap` effect (0x8D20AB): setting the tech's status
+  back to 0 or 1 with a trigger does not take its effects back, and no stock path that does was
+  found; the unit help `Población: %d` (FUN_004C8748, which the `trainsandcontains` row of the
+  unit information panel calls; that row did not show for a Town Center, and a card on the home
+  city screen, outside a game, shows no population).
 - **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)).
 
 ### noAILimit
