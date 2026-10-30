@@ -17,6 +17,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `ignoreRegistryPath` | Reads the game data from the mod folder instead of the Steam install. | confirmed |
 | `deckCardCount N` | Raises the 25-card deck cap. | confirmed above the level table (see the guide) |
 | `basePop N`, `extraPop N` | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | partly confirmed |
+| `decimalPopulation [K] [log]` | **New.** Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects, in steps of 1/K (default 10). The population counter and the tooltips show the decimals; AI scripts still see whole numbers. | confirmed (single player, also a skirmish vs AI) |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
@@ -25,6 +26,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `healNonIdle [UnitType]` | **New.** Healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed |
 | `smartHealTargets [UnitType…] [log]` | **New.** A healer's automatic search heals the best of the units the stock rules accept, not the first one: the listed unit types first, then the lowest HP ratio, the nearest, the lowest unit ID. | confirmed (single player) |
 | `dodgeAnyUnit [UnitType] [log]` | **New.** Units marked with a unit type can dodge hits like the Japanese monk: no damage, 15 % of the time, while their player has the tech `YPDodge`. Stock allows it only for `ypMonkJapanese`. | confirmed (single player) |
+| `dodgeChance <UnitType> <percent> [tech <TechName> \| notech] [ranged \| melee \| all] [log]` | **New.** A dodge chance per unit type, with the tech it needs (`YPDodge` by default, another, or none) and a filter for ranged or melee hits; one rule per line, the first that matches decides. | confirmed (single player) |
 | `dodgeSoundSet UnitType SoundSet`, `criticalSoundSet UnitType SoundSet` | **New.** Choose the sound set a unit plays when it dodges, or when it lands a critical hit, instead of the stock `PowerEvade` / `PowerCriticalStrike`. | confirmed (single player; the choice is logged, the sound itself was not listened to) |
 | `damageOverTime [log] [noticktext]` | **New.** Poison: an attack that lists `<AttachProtoUnit>X</AttachProtoUnit>` keeps damaging what it hits, with X's `Attaching` action every `ROF` seconds for X's `Lifespan`. Damage type, bonuses, armor and techs on X apply as for any hit; arrows, grenades, cannon balls and area damage poison too. Optional tags on the attack: `<AttachMaxStacks>` (stacks that expire one by one), `<AttachSnare>` (slow) and `<AttachTickText>` (the damage shown over the unit). | confirmed (single player; a tick on an AI army unit after its attacker is gone not reproduced) |
 | `spreadAnyAccuracy [UnitType] [log]` | **New.** `<MaxSpread>` and `<SpreadFactor>` of each attack (tactics or `<ProtoAction>`) set how far its misses land, instead of the hardcoded `min(0.25 × distance, 5)`; stock reads neither tag. Units marked with the unit type scatter every shot that way whatever their accuracy (1.0 and `PerfectAccuracy` too), and each shot deals its area damage where it lands. `InstantBallistics` and `TargetGround` attacks are not covered. | confirmed (single player) |
@@ -119,14 +121,13 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 29 new features: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime`,
-    `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `spreadAnyAccuracy`, `liveBuildingWorkRate`,
+
     `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
     `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
     `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,
     `danceBonusCivs`, `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
-    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `bufferedFileReads`,
-    `multipleInstances`. Most of them answer Wars of Liberty's requests
+    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `decimalPopulation`,
+    `bufferedFileReads`, `multipleInstances`. Most of them answer Wars of Liberty's requests
     ([docs/wol-requests.md](docs/wol-requests.md)).
 - **In research:**
   - `unlockAllCards` (every card usable from a new home city): paused.

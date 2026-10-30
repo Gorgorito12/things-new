@@ -236,6 +236,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from the mod folder (the exe's folder), instead of the install folder in the registry. | Nothing. Enable it in every mod folder that has its own data. | confirmed |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | A `data\homecitylevels.xml` with a higher `<maxdecksize>` per level (stock: 20 to 25). | confirmed above the level table; see the section |
 | [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | Enough houses or other population buildings to reach the new cap. | partly confirmed |
+| [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`noAILimit`](#noailimit) | Shows every `AI3\*.personality` file in game setup, not just the built-in 14. | The personality files. | confirmed |
 | [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for every `XPRevolution<Name>` tech, not only O'Higgins. | A banner texture per revolution. | partly confirmed |
 | [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | Two icon textures. | not tested in game |
@@ -244,6 +245,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy`, or the name of an existing type. | confirmed (automatic healing) |
 | [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
+| [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | That unit type on the units in `protoy`, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags in the tactics files or `<ProtoAction>`; the unit type and a `<DamageArea>` on the attacks that should always scatter. | confirmed (single player) |
@@ -352,14 +354,137 @@ extraPop <N>             N from 0 to 10000, stock 50
   needs enough houses: raise the house `BuildLimit` or `PopulationCapAddition` in `protoy.xml`
   if needed.
 - **Not changed:** the shared team population mode keeps its stock limit of 200 per player.
+- **With [`decimalPopulation`](#decimalpopulation):** both limits stay in whole population
+  (`basePop 300` is 300 population with any K).
 - **Log:** `basePop/extraPop: base X, extra Y (…)`;
   `basePop/extraPop: expected integers from 0 to 10000`;
-  `hook reached: basePop/extraPop (0x4581F3)`.
+  `hook reached: basePop/extraPop/decimalPopulation (0x4581F3)`.
 - **Simulation:** yes.
 - **Status:** partly confirmed. A skirmish went past 200 with `basePop 300`; the limit reached was
   the number of houses that could be built.
 - **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
   where the stock 200/250 limits stayed active.
+
+### decimalPopulation
+
+![decimalPopulation in game](media/decimalPopulation.gif)
+
+*1. `decimalPopulation 10 log`:* in the test data a Settler costs 1.5 population, a Pikeman 0.5, and a Manor gives 7.5. At 16.5 / 17.5 the Town Center refuses a Settler ("No hay más espacio de población para Colono") and its tooltip shows the cost `1.5` in red. A test tech at 35 s (the log lines at the top: Crossbowman 1.5 → 2, Town Center 10 → 12.5) makes room for two Settlers (20 / 20 with the queue), and a `PopulationCap` +2.5 at 56 s for one more (21.5 / 22.5). [Full video (MP4)](media/decimalPopulation.mp4).
+
+![decimalPopulation control in game](media/decimalPopulation-control.gif)
+
+*2. The control, without the key:* the same data read by stock. `%d` drops the decimals: the Settler costs 1, the Pikemen nothing, the Manor gives 7 (9 / 17), and the Settlers train. [Full video (MP4)](media/decimalPopulation-control.mp4).
+
+![decimalPopulation and the population limits](media/decimalPopulation-caps.png)
+
+*3. The limits:* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at stock's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
+
+```
+decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in steps of 1/K
+```
+
+- **How stock behaves:** `<PopulationCount>` and `<PopulationCapAddition>` are whole numbers.
+  The exe reads them with `%d`, so `0.5` becomes 0 (a free unit) and `7.5` becomes 7, with no
+  message. A player's population, the population its queues reserve and its cap are sums of them,
+  and every test (can this unit be queued, can it spawn, is the player at the cap) compares those
+  sums.
+- **Effect:** both tags take decimals, and population works in steps of 1/K. Inside the engine
+  every population number is kept K times larger, so all of its tests stay exact:
+  - **tech effects:** `PopulationCount` and `PopulationCapAddition` (on protos) and
+    `PopulationCap` (on the player) take decimal amounts (`amount='0.5'`). `Absolute` adds the
+    amount and `Assign` sets it, rounded to the nearest step; `BasePercent` is rounded to the
+    nearest step too (stock truncates it, so a decrease came out one step high: 1.5 × 0.6 gives
+    0.9, stock's formula 1.0); `Percent` multiplies by a whole number, as in stock. A
+    `PopulationCount` effect that would bring a unit to 0 or less still gives it 1, as in stock;
+  - **limits:** the cap keeps its stock limits (200 from buildings, plus 0 to 50 extra, at most
+    250), or those of [`basePop` and `extraPop`](#basepop-and-extrapop), in whole population;
+  - **interface:** the population counter (`{totalPop} / {popcap}`, and `{pop}` and
+    `{futurepop}`) and its tooltip show decimals (`16.5 / 17.5`), and so do the population cost
+    in unit tooltips (`Poblac.: 1.5`, red when it does not fit), the unit help
+    (`Population: 0.5`) and the population of a shipment;
+  - **AI and scripts:** XS still sees whole numbers. `kbGetPop`, `kbGetPopCap`,
+    `trPlayerGetPopulation`, `aiGetEconomyPop`, `aiGetMilitaryPop`, `aiGetAvailableEconomyPop`,
+    `aiGetAvailableMilitaryPop`, `aiGetCurrentEconomyPop`, `aiGetPopNeeds`, `kbGetPopCapAddition`
+    and `kbGetPopulationSlotsBy{QueryID,UnitTypeID}` return the population rounded to the nearest
+    whole number (halves away from zero); `kbGetPopSlots` (a unit's cost) rounds up, so a unit
+    that costs population never reads as 0 (an AI script may divide by it);
+    `kbUnitPickGet{Minimum,Maximum}Pop` round, and keep −1 as −1. `aiSetEconomyPop`,
+    `aiSetMilitaryPop` and `kbUnitPickSet{Minimum,Maximum}Pop` take whole numbers as before (−1
+    stays −1).
+- **Your data:** the decimals, in the two tags and in the effect amounts. Whole numbers behave
+  exactly as without the key. A UI gadget that shows `{pop}`, `{popcap}`, `{futurepop}` or
+  `{totalPop}` now gets text such as `12.5` instead of a number; that is fine in a `formatText`
+  gadget, which is how stock and WoL use them.
+- **Choosing K:** 10 for one decimal (0.5, 1.5), 100 for two (0.25), or any value from 2 to 1000.
+  Texts show up to three decimals, trailing zeros dropped (K = 3 shows 0.333).
+- **Not adapted:** the post-game timeline (`Línea cronológica`, the curves `Toda la población`,
+  `Población de aldeanos` and `Población de militares`) draws K times the population: a player
+  with 9 population is drawn at 90 (seen in game). The AI's debug text (`AIDebugPopToggle`) does
+  the same (read in the code, not seen).
+- **Saved games** keep the population as stored: load them with the same K. A game saved without
+  the key, or with another K, loads with wrong populations.
+- **Log:** at startup `decimalPopulation: population in 1/10 steps (<PopulationCount> and
+  <PopulationCapAddition> take decimals; caps (stock limits), effects, 19 XS syscalls and the
+  population texts scaled)` (`(basePop/extraPop limits)` with those keys; `, decimal values and
+  changes logged` with `log`); `decimalPopulation: expected a scale from 2 to 1000 and/or log, got
+  "x"`. Hooks: `hook reached: decimalPopulation <PopulationCount> (0x5FB92E)`,
+  `… <PopulationCapAddition> (0x5FD719)`, `… effect PopulationCount (0x8FA835)`,
+  `… effect PopulationCapAddition (0x8FA8CF)`, `… PopulationCap effect (0x8D87AB)`,
+  `… start cap bonus (0xA0D2D1)`, `basePop/extraPop/decimalPopulation (0x4581F3)`,
+  `… data ref totalpop` (and `popcap`, `futurepop`, `pop`), `… colorizePop argument (0x6F576F)`,
+  `… printed population (unit help, costs)` (and `(colorizePop)`, `(population help)`), and one
+  `… XS <name>` per syscall. With `log` (at most 200 lines): each decimal value read
+  (`decimalPopulation: Settler <PopulationCount>1.5</PopulationCount> = 1.5`), each effect
+  (`decimalPopulation: effect PopulationCount, relativity 2, amount 0.6: 1.5 -> 0.9`; relativity 1
+  is `Absolute`, 2 `BasePercent`, 3 `Assign`), and each XS setter's value when it changes
+  (`decimalPopulation: aiSetEconomyPop(80) stored as 800`).
+- **Simulation:** yes: every player needs the same key and the same K. Not tested in multiplayer.
+- **Status:** confirmed in single player (2026-10-29), K = 10 and 100, with the data of
+  [`tools/pop_testdata.py`](../tools/README.md#pop_testdatapy) in a test copy:
+  - **values:** the log and memory showed Settler 1.5, Pikeman 0.5, Crossbowman 1.5, Manor 7.5,
+    and a player with 6 Settlers, 12 Pikemen and a Crossbowman at 16.5 / 17.5 (top bar and
+    memory);
+  - **training** (real clicks on the Town Center, Settlers at 1.5): refused at 16.5 / 17.5 with
+    the stock message, then at 17 / 20 two queued and the third refused, then at 22.5 one more and
+    the next refused; the first Settler out brought the population to 18.5;
+  - **effects:** `Absolute` (Crossbowman 1.5 → 2), `Assign` (Musketeer 1 → 0.5), `BasePercent`
+    (Hussar 1.5 × 0.6 → 0.9, Pikeman 0.5 × 3 → 1.5, the population recounted to 29),
+    `PopulationCapAddition` (Town Center 10 → 12.5) and `PopulationCap` (+2.5, and +300 against
+    the limits of video 3);
+  - **interface:** the counter, its tooltip (`La población actual es 21.5 / … máxima de 22.5`),
+    the cost `1.5` in red and white in the Settler's tooltip;
+  - **saved game:** with K = 100, a game saved at 17 / 20 loaded at 17 / 20, and its next trigger
+    brought the cap to 22.5;
+  - **bad values:** `1`, `abc` and `5000` logged the error and `FAILED`, and the game read the
+    stock values;
+  - **AI:** three skirmishes, three players (two Hard AIs): `aiSetEconomyPop(80)` stored as 800,
+    `aiSetMilitaryPop(15)` and `(30)`; the Russian AI built houses and reached 62.5 population of
+    a 95 cap (31 Settlers at 1.5, 8 Strelets, 8 Cossacks), no XS error. The other AI stayed at a
+    cap of 10 in two games because that test copy's `House` has `Lifespan` 20 (an earlier test's
+    data);
+  - **every XS syscall:** all 19 reached. A probe rule added to the copy's AI (`aiChat` to
+    player 1, every 45 s) printed, for a Portuguese AI, `pop 12/20 avEco 68 avMil 15 curEco 12
+    needs 38` and `slots Settler 2 capadd Manor 8 TC 10 villagers 12 query 11 pick 7-42`: the
+    Settler's 1.5 rounded up, the Manor's 7.5 rounded to 8, a pick's minimum and maximum (7, 42)
+    read back as set; for the Spanish AI `avEco 70` (80 − 10.5). A trigger effect added to the
+    copy's `typetest.xml` printed `trPlayerGetPopulation(1)` = 17 at 16.5 and at 17.0;
+  - **shipments:** in game, the home city panel's card tooltips showed `2 colonos — Poblac.: 3`
+    (red at 9 / 10) and `4 colonos — Poblac.: 6` (Settlers at 1.5; the tooltip of 0x710651);
+  - **shared team population:** TAD's setup has no option for it, so the flag `[world+6913h]` was
+    set in memory; the team path then capped the player at 200 after a `PopulationCap` +300 (its
+    hook reached; unscaled it would have shown 20);
+  - **`{pop}` and `{populationHelp}`:** no stock UI shows them (WoL's editor shows `{pop}`), so a
+    loose `uimainnew.xml` in the test copy put `{pop}/{popcap}` in the counter and
+    `{populationHelp}` in its tooltip: the counter read `16.5/17.5` and the tooltip
+    `1 Centro urbano = 10, 1 Casa solariega = 7.5 Tamaño máx. ejército = 17.5` (the population
+    help line and the max army size, both with decimals).
+
+  Not run: multiplayer; taking back a `PopulationCap` effect (0x8D20AB): setting the tech's status
+  back to 0 or 1 with a trigger does not take its effects back, and no stock path that does was
+  found; the unit help `Población: %d` (FUN_004C8748, which the `trainsandcontains` row of the
+  unit information panel calls; that row did not show for a Town Center, and a card on the home
+  city screen, outside a game, shows no population).
+- **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)).
 
 ### noAILimit
 
@@ -701,7 +826,7 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   a long game writes many lines.
 - **Log:** `dodgeAnyUnit: units of unittype X can dodge like ypMonkJapanese (tech ypDodge, 15 %)`
   and one `dodgeSoundSet:` / `criticalSoundSet:` line per rule; when the data loads,
-  `unit types: X -> <ID> …`; in a game, `hook reached: dodgeAnyUnit (0x49ACE5)` (the first time a
+  `unit types: X -> <ID> …`; in a game, `hook reached: dodge test (0x49ACE5)` (the first time a
   unit with a player is hit while the tech tree exists), `hook reached: dodgeSoundSet (0x6A2628)`
   (the first visible dodge) and `hook reached: criticalSoundSet (0x6A2A9A)` (the first critical
   hit). With `log`: `dodgeAnyUnit: unit N (Proto) dodged a hit` and
@@ -714,6 +839,68 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   Explorer never dodged and the monk still did. `dodgeSoundSet` picked the configured set for the
   Explorer, and `criticalSoundSet ypMonkChinese PowerEvade` for a Chinese monk's critical hits
   (seen in the log; the sound itself was not listened to).
+
+### dodgeChance
+
+![dodgeChance in game](media/dodgeChance.gif)
+
+*In game:* `dodgeChance AbstractDodge 50 ranged log` and `dodgeChance AbstractDodge 0 melee`, with `YPDodge` active: two Explorers marked `AbstractDodge` against musketeers and pikemen. Each roll is a log line in the overlay: musket shots are dodged about half the time (`rule 1 (50.0 %): roll 238 -> dodged`, with the stock floating text), pike thrusts never (`rule 2 (0.0 %): roll -1 -> hit`). The Japanese monk, which no rule names, dodges as in stock (2x speed). [Full video (MP4)](media/dodgeChance.mp4).
+
+```
+dodgeChance <UnitType> <percent> [tech <TechName> | notech] [ranged | melee | all] [log]
+```
+
+One line per rule; several lines add up, and the first rule that matches a hit decides.
+
+- **How stock behaves:** only the three Japanese monks dodge, on 15 % of the hits (15 of the
+  101 values of the roll), while their player has `YPDodge` ([dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset)).
+- **Effect:** each hit on a unit is matched against the rules, in cfg order. A rule matches
+  when the unit's proto is of `<UnitType>` (a marker, a stock type or a proto name) and, with
+  `ranged` or `melee`, when the hit's damage type is `Ranged` or `Hand` (of `damagetypes.xml`;
+  `all`, the default, matches every hit, `Siege` included). The first matching rule decides:
+  - its tech must be active for the unit's player: `YPDodge` by default, as stock;
+    `tech <TechName>` another tech; `notech` none. Otherwise the hit lands;
+  - the hit is then dodged with `<percent>` % chance: 0 to 100, one decimal at most (`12.5`),
+    drawn from the game's synced random numbers. 0 % and 100 % draw nothing;
+  - a dodge is the stock dodge: no damage, the floating text, the dodge sound
+    (`dodgeSoundSet` still picks it).
+
+  A rule's units dodge with or without `dodgeAnyUnit`. A hit that no rule matches keeps the
+  other keys' behaviour: a unit with `dodgeAnyUnit`'s marker gets the stock 15 % with
+  `YPDodge`, a Japanese monk the stock dodge, any other unit no dodge.
+- **Per damage type:** `dodgeChance X 40 ranged` then `dodgeChance X 10 melee` gives 40 % against
+  ranged hits and 10 % against melee hits; siege hits match neither and fall back as above.
+  `dodgeChance X 0 melee` alone stops marked units from dodging melee hits.
+- **Data:** the unit type on the units, as for [dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset),
+  and the rule's tech active for their players (none with `notech`).
+- **`log`** (on any line): once per data load, each rule's resolved tech and damage type; then
+  one line per roll: `dodgeChance: unit N (Explorer), rule 1 (50.0 %): roll 238 -> dodged` (the
+  roll is 0..999 and dodges below the percent × 10; −1 when nothing is drawn), or `… rule 2: tech
+  X not active -> hit`. For checking data: a long game writes many lines.
+- **Log:** at startup `dodgeChance: rule K: units of X dodge P % of ranged hits, with tech T
+  (multiplayer unverified)`; in a game `hook reached: dodge test (0x49ACE5)`. A tech or damage
+  type that does not exist is logged once per data load and disables its rule (the next rules
+  still apply): `dodgeChance: rule K (X): no tech named T; rule disabled`. A bad line stops the
+  key, and the other dodge keys with it: `dodgeChance: expected "dodgeChance <UnitType> <percent
+  0-100> …" (bad percent 150); feature not applied` or `dodgeChance X: unexpected argument …`,
+  then `dodgeAnyUnit/dodgeChance/dodgeSoundSet/criticalSoundSet: FAILED`.
+- **Simulation:** yes, every player needs the same lines. The rolls use the stream of the game's
+  synced random numbers that the stock dodge uses, only for hits that a rule between 0 and 100 %
+  matches, the same on every machine. A rule's type that the data does not define adds a unit
+  type: load saved games and replays with the same cfg.
+- **Status:** confirmed in single player (2026-10-29):
+  - 50 % `ranged`: 18 dodges in 46 rolls, then 28 in 50 in a second game; 0 % `melee`: 0 in 57;
+  - 30 % `notech`, `YPDodge` not active: 20 in 71;
+  - 100 % with `tech HCExplorerFrench`, active: 49 of 49 (the Explorers stayed at full HP); a
+    monk rule whose tech was not active: 15 hits, no dodge, no fall back to the stock dodge;
+  - an unknown tech: logged, the rule disabled; bad lines (`150`, `12.25`, `-5`, an unknown word,
+    no percent, `tech` with no name): logged, the key not applied, the game normal;
+  - with `dodgeAnyUnit log` and `dodgeSoundSet`, the dodges of the rules logged `dodged a hit`
+    and played the configured set; without `dodgeChance` those keys behaved as before;
+  - a skirmish against the AI with these keys on played normally.
+
+  Not tested: multiplayer, siege hits, damage types other than the stock three.
+- **New in this DLL:** not in UHC 1.10.
 - **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b
   ([wol-requests.md](wol-requests.md)).
 
@@ -3152,11 +3339,11 @@ More about the tools: [tools/README.md](../tools/README.md).
 - Every player needs the same `UHC.dll`, the same `uhc.cfg` and the same data.
 - The keys that change the simulation are `deckCardCount`, `basePop`, `extraPop`, `noAILimit` (game
   setup), `removeFameRestriction`, `removeConversionRestriction`, `hcShipmentPointFallback`,
-  `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `spreadAnyAccuracy`, `liveBuildingWorkRate`, `techPrereqRecheck`,
+
   `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
   `lifespanAfterConstruction`, `gaiaSocketsOnly`, `snareOnlyHitUnit`, `danceBonusCivs`,
-  `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC` and
-  `buildingWorkRateAuras`. A difference in any of them between players can desynchronize the
+  `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
+  `buildingWorkRateAuras` and `decimalPopulation` (with the same K). A difference in any of them between players can desynchronize the
   game. `civFirstTC` also needs the same `civs.xml`, `placementrules\colonies.xml` and `protoy`
   on every machine, and in a recorded game's playback, which generates the map again. `techRenameEffect` and
   `noCorpseDopples` change no gameplay as far as the code shows, but they act inside the
@@ -3168,15 +3355,16 @@ More about the tools: [tools/README.md](../tools/README.md).
   writes only the DLL's own memory.
 - `damageOverTime` keeps its poisons in the DLL, not in the game state: a saved game loads without
   the poisons that were running. `buildingWorkRateAuras` modifiers are saved with the game, but a
-  game loaded without the key ignores them.
+  game loaded without the key ignores them. `decimalPopulation` stores every population K times
+  larger, and saved games keep it so: load them with the same K (tested with K = 100: a game saved
+  at 17 / 20 loaded at 17 / 20).
 - `healNonIdle`, `dodgeAnyUnit` and `removeFameRestriction` change the unit type table, and so do
   `maintainWaitForPop`, `lifespanAfterConstruction`, `noCorpseDopples`, `broadsideMuzzleLimit`,
-  `gaiaSocketsOnly`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC` (and its `near`
-  types), `overhealHitpointBars`, `spreadAnyAccuracy` and `showGatherRate` when their unit type is a new name (a stock type or a
+
   proto name adds nothing; the defaults of `startingTC` and `overhealHitpointBars` are new names,
   `noTrainNearEnemyTC`'s `AbstractDaimyo` is a stock type). Load saved games and replays with the
   same DLL and cfg they were made with.
-- None of this has been tested yet: multiplayer, saved games and replays are all unverified.
+- Multiplayer and replays are untested for every key; saved games only where a section says so.
 - No feature sends network commands of its own: they all act inside the normal simulation, on
   every machine, in the same deterministic order.
 

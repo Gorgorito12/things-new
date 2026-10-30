@@ -18,6 +18,7 @@ Outcome ApplyRemoveConversionRestriction(const Config& config);
 Outcome ApplyIgnoreRegistryPath(const Config& config);
 Outcome ApplyDeckCardCount(const Config& config);
 Outcome ApplyPopLimit(const Config& config);
+Outcome ApplyDecimalPopulation(const Config& config);
 Outcome ApplyNoAiLimit(const Config& config);
 Outcome ApplyCustomRevolutionBanners(const Config& config);
 Outcome ApplyRemoveFameRestriction(const Config& config);
@@ -59,6 +60,8 @@ inline constexpr Feature kFeatures[] = {
     {"ignoreRegistryPath", ApplyIgnoreRegistryPath},
     {"deckCardCount", ApplyDeckCardCount},
     {"basePop/extraPop", ApplyPopLimit},
+    // After basePop/extraPop: it scales their cap hook, and installs it when they did not.
+    {"decimalPopulation", ApplyDecimalPopulation},
     {"noAILimit", ApplyNoAiLimit},
     {"customRevolutionBanners", ApplyCustomRevolutionBanners},
     {"removeFameRestriction", ApplyRemoveFameRestriction},
@@ -66,9 +69,7 @@ inline constexpr Feature kFeatures[] = {
     {"healNonIdle", ApplyHealNonIdle},
     {"smartHealTargets", ApplySmartHealTargets},
     {"damageOverTime", ApplyDamageOverTime},
-    {"dodgeAnyUnit/dodgeSoundSet/criticalSoundSet", ApplyDodge},
-    // After damageOverTime: both read action tags through the shared hook (actiontags.h), in this order.
-    {"spreadAnyAccuracy", ApplySpreadAnyAccuracy},
+
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
@@ -106,9 +107,9 @@ inline constexpr Feature kFeatures[] = {
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
+    "decimalpopulation",
     "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
-    "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
-    "spreadanyaccuracy",
+
     "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",

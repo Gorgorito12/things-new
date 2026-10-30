@@ -9,7 +9,7 @@ This guide covers these features that are new in this DLL:
 - `healNonIdle`, with the extra abstract unit types it relies on;
 - `hcShipmentPointFallback`;
 - `damageOverTime`;
-- `dodgeAnyUnit`, `dodgeSoundSet` and `criticalSoundSet`;
+- `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet` and `criticalSoundSet`;
 - `multipleInstances`;
 - the features built for WoL's requests ([wol-requests.md](wol-requests.md)):
   - Tier 2: `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`,
@@ -17,7 +17,7 @@ This guide covers these features that are new in this DLL:
     `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`,
     `techRenameEffect`, `noCorpseDopples` and `danceBonusCivs`;
   - Tier 1 and Tier 3: `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
-    `overhealHitpointBars`, `showGatherRate` and `buildingWorkRateAuras`.
+    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras` and `decimalPopulation`.
 
 `bufferedFileReads` is not covered yet. Its design is in
 [how-it-works.md](how-it-works.md#bufferedfilereads), and its code is
@@ -78,6 +78,8 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `DodgeProtoCheck` | `0x49ACE5` | 12 B | 6 B at `0x49ACE5` | `8B 46 5C 8B 40 04` (`mov eax,[esi+5Ch]; mov eax,[eax+4]`) | proto test of the dodge FUN_0049ACAA; dodgeAnyUnit hook |
 | `DodgeTechCheck` | `0x6A249C` | 10 B | — | — | the stock dodge path the hook enters (`push "ypDodge"; call 600BE1h`) |
 | `DodgeCall` | `0x49B023` | 7 B | 5 B at `0x49B023`, only with `log` | `E8 82 FC FF FF` (`call 49ACAAh`) | the damage function's call to the dodge; dodgeAnyUnit log wrapper |
+| `DodgeTest`, `DodgeRollPath`, `DodgeCaller` | `0x49ACAA`, `0x6A249C`, `0x49AF98` | `0x6E`, `0x1B5`, `0x92` B | — | — | the dodge test's frame and exits, its roll path and feedback, the caller's EDI = damage info; dodgeChance (verified only) |
+| `SyncRandom`, `TechActive`, `TechByName`, `DamageTypeLoad` | `0x407CE7`, `0x94AF27`, `0x600BE1`, `0x52D454` | `0x40`, `0x33`, `0x10`, `0x51` B | — | — | the synced RNG, the tech test, tech by name and the damage type list loader; dodgeChance (verified only) |
 | `DodgeSound` | `0x6A2628` | 8 B | 5 B at `0x6A2628` | `68 E0 74 BD 00` (`push "PowerEvade"`) | the dodge's sound set; dodgeSoundSet hook |
 | `CriticalSound` | `0x6A2A9A` | 8 B | 5 B at `0x6A2A9A` | `68 18 75 BD 00` (`push "PowerCriticalStrike"`) | the critical hit's sound set; criticalSoundSet hook |
 | `SingleInstanceSemaphore` | `0x55A185` | 6 B | — (the IAT slot `0xB843F0` instead) | `FF 15 F0 43 B8 00` (`call [CreateSemaphoreW]`) | the single-instance check; multipleInstances knows this call by its return address `0x55A18B` |
@@ -165,6 +167,16 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `StatPanelAutoGatherGate`, `StatPanelRowWriter`, `StatPanelRowFormat`, `DataRefStub`, `DataRefStringEval`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BStringFromId`, `BStringAssign`, `BStringFree` | `0x4D76FF`, `0x69AF7C`, `0x69B02A`, `0x5FDE49`, `0x44A635`, `0x6F49B1`, `0x45EE02`, `0x44CAC4`, `0x60782A`, `0x58EA52`, `0x443BB8`, `0x4010CA` | `0x135`, `0x64`, `0x15D`, 5, `0x64`, `0x41`, `0x35`, `0x46`, `0x22`, `0x19`, `0x0F`, `0x1F` B | — | — | the gate the panel hook mirrors, the row writer and formatter it reuses, the stub and the string evaluator, the current-unit lookup, and the functions the C++ side calls; showGatherRate (also `IsBuilt`, `IsA`) |
 | `ModifyTypeNameTail` | `0x5FE6C7` | `0x1B` B | 6 B at `0x5FE6D7` (`jmp` + 1 NOP) | `F7 D8 1B C0 24 F1` (`neg eax; sbb eax,eax; and al,0F1h`) | tail of the ModifyType parser FUN_005F5645, through the `pop esi; add eax,0Eh; ret` at `0x5FE6DD`; buildingWorkRateAuras name hook |
 | `ModifyTypeNameCompare`, `BwrTrainCallNext`, `BwrGetterTail`, `BwrGatherRateRecord`, `BwrGatherRateRule` | `0x443C10`, `0x9EA418`, `0x9BFE38`, `0x4ECFE9`, `0x69FE53` | `0x10`, `0x0C`, `0x10`, `0x14`, `0x1C` B | — | — | the head of the name compare the hook calls, the Train call's continuation up to its first write of EAX, the getter after its first two instructions, and the GatherRate reader whose rule the factor mirrors; buildingWorkRateAuras (also `SnareCollector`, `SnareModifierSum`, `SnareModifierSumEnd`, `SnareModifierSumTactic`, and the getter head `BuildingWorkRateGetter`, which must be stock or liveBuildingWorkRate's `jmp`) |
+| `PopCountParse`, `PopCapAddParse` | `0x5FB92E`, `0x5FD719` | `0x1E` B each | 5 B at each (call rel32) | `E8 …` (`call 59A71Dh`) | the `%d` parse of `<PopulationCount>` / `<PopulationCapAddition>`; decimalPopulation |
+| `PopCountEffect`, `PopCapAddEffect` | `0x8FA835`, `0x8FA8CF` | `0x1D`, `0x1A` B | 5 B at each (call rel32); 4 B at `0x8FA84A` (imm32, K) | `E8 …` (`call 7F899Bh`); `01 00 00 00` | the int effect calls of the PopulationCount / PopulationCapAddition proto effects, and PopulationCount's floor `mov eax,1`; decimalPopulation |
+| `PopCapEffectAdd`, `PopCapEffectRemove` | `0x8D87AB`, `0x8D20AB` | 8 B each | 8 B at each (`jmp` + 3 NOP) | `D9 44 24 34 D9 7C 24 34`; `D9 44 24 20 D9 7C 24 20` (`fld [esp+X]; fnstcw [esp+X]`) | the amount of the player effect PopulationCap and of its removal; decimalPopulation (continues at `0x8D87B3` / `0x8D20B3`) |
+| `TeamPopCap` | `0x679694` | `0x26` B | `0x24` B at `0x679694` (`jmp` + NOPs) | `3D C8 00 00 00` (`cmp eax,0C8h`) | getCap's shared-team path; decimalPopulation (continues at `0x6796B8`) |
+| `StartPopBonus` | `0xA0D2D1` | 9 B | 8 B at `0xA0D2D1` (`jmp` + 3 NOP) | `03 C3 03 86 20 03 00 00` (`add eax,ebx; add eax,[esi+320h]`) | the game-start cap bonus; decimalPopulation (continues at `0xA0D2D9`) |
+| `Xs*` (19: `XsAiGetAvailableEconomyPop` … `XsTrPlayerGetPopulation`) | see `tools/gen_sites.py` | `0x0A` B each | 4 B at each `+1` (the impl imm32 of `push impl`) | the stock impl addresses | the XS registrations of the population syscalls; decimalPopulation |
+| `RefPopReg`, `RefPopCapReg`, `RefFuturePopReg`, `RefTotalPopReg` | `0x5D0B47`, `0x5D0BC3`, `0x5D0C3F`, `0x5D0CBB` | `0x2B` B each | 4 B at `+4` (provider imm32) and 4 B at `+20h` (`push 3; pop eax; nop`) | the stock provider; `8B 44 24 1C` (`mov eax,[esp+1Ch]`) | the registration of the data refs pop, popcap, futurepop, totalpop; decimalPopulation |
+| `ColorizePopArg`, `ColorizePopFormat` | `0x6F576F`, `0x6F580C` | 8, `0x0C` B | 5 B at each (call rel32) | `E8 …` (`call 6F2A1Dh`, `call 444EFBh`) | colorizePop's argument parse and its print; decimalPopulation |
+| `PopFormatHelp`, `PopFormatHelp2`, `PopFormatCost`, `PopFormatCost2`, `PopFormatCost3`, `PopFormatCapLine`, `PopFormatCap` | `0x63F98D`, `0x70FF3A`, `0x63FEC5`, `0x70F58F`, `0x710651`, `0x6F2DB5`, `0x6F2E34` | 8 B each | 5 B at each (call rel32) | `E8 …` (`call 444EFBh`) | the sprintf calls that print a population; decimalPopulation (**WoL redirects `0x710651`**) |
+| `RefPopProvider`, `RefPopCapProvider`, `RefFuturePopProvider`, `RefTotalPopProvider`, `IntEffect`, `BStringFormat`, `PopLimit` | `0x6F2274`, `0x458244`, `0x44CE3A`, `0x45809D`, `0x7F899B`, `0x444EFB`, `0x4581F3` | `0x0A` ×4, `0x23`, `0x14`, `0x50` B | — (`PopLimit`: basePop's cap hook, see below) | — | the stock functions the wrappers call, and the cap hook decimalPopulation scales; decimalPopulation |
 
 The full expected bytes of every range are in [`src/generated/sites.h`](../src/generated/sites.h),
 generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py). Two features write
@@ -177,6 +189,9 @@ leaves the Train call to noTrainNearEnemyTC when that key owns it
 of `FirstTcProtoCheck`. No other write falls inside another feature's range (checked with a script
 over `tools/gen_sites.py` and the written addresses, 2026-10-29, again after civFirstTC and
 `GatherPointValid` were added), so any combination of keys can be enabled together.
+decimalPopulation and basePop/extraPop share the cap hook (`PopLimit`): it is written once, by
+basePop/extraPop when they are set, otherwise by decimalPopulation, which is applied after them
+and only sets the scale the hook reads.
 
 **Status for Wars of Liberty: not checked.**
 - None of these addresses appears among the WoL `uhc.dll` sites found so far
@@ -234,6 +249,10 @@ over `tools/gen_sites.py` and the written addresses, 2026-10-29, again after civ
     panel fill, and passes `0x5D31CA` / `0x5D31D1` (the end of the data-ref registration) to a
     helper. None of them overlaps these ranges (dword scan of the DLL), but check that `0x4ED044`
     is still reached with the same entry state in WoL's build;
+  - `decimalPopulation`: a dword scan of WoL's `uhc.dll` and `wol.dll` over its ranges finds
+    WoL's basePop hook at `0x4581F3` (scale it, see the contract) and the call redirections at
+    `0x71063C` / `0x710651` of WoL's `DoubleShipmentsInspectFixFeature` (chain them with the
+    population text wrapper); nothing else;
   - `transformInventory`, `noTrainNearEnemyTC`, `overhealHitpointBars`: not checked against WoL's
     patches. `docs/wol-uhc-map.md` mentions none of their sites;
   - `civFirstTC` and the `FirstTC` keyword of `hcShipmentPointFallback` (`GatherPointValid`): not
@@ -252,11 +271,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/unittypes.h`](../src/unittypes.h), [`src/unittypes.cpp`](../src/unittypes.cpp), [`src/hooks/unittype_hooks.asm`](../src/hooks/unittype_hooks.asm) | Registers extra abstract unit type names on every data load. | site `AbstractTypesEnd`, `VerifyAll`, `WriteJmp`, `Log`, `TRACE_ONCE` |
 | [`src/features/heal.cpp`](../src/features/heal.cpp), [`src/hooks/heal_hooks.asm`](../src/hooks/heal_hooks.asm) | `healNonIdle`. | unittypes, sites `HealIdleCheck` and `HealAutoSearchIdle`, your cfg reader |
 | [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*` and `GatherPointValid`; with `FirstTC` also `FirstTcSet`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`; your cfg reader |
-| [`src/actiontags.h`](../src/actiontags.h), [`src/actiontags.cpp`](../src/actiontags.cpp), [`src/hooks/actiontag_hooks.asm`](../src/hooks/actiontag_hooks.asm) | The shared action tag hook: the unknown tags of every `.tactics` `<action>` and `protoy` `<ProtoAction>`, passed to each registered handler (damageOverTime, spreadAnyAccuracy). | sites `DotProtoActionTag`, `DotProtoActionCall`, `TacticsActionCall` |
-| [`src/features/damageovertime.cpp`](../src/features/damageovertime.cpp), [`src/hooks/dot_hooks.asm`](../src/hooks/dot_hooks.asm) | `damageOverTime`. | sites `DotTakeDamageEntry`, `DotWorldUpdateEntry`, `SnareTargetCheck`, `SnareCreate`, `SnareApply`, `actiontags.cpp`, `floatingtext.cpp`, `worldtick.cpp`, `OnDatabaseLoad`, your cfg reader |
-| [`src/features/spread.cpp`](../src/features/spread.cpp), [`src/hooks/spread_hooks.asm`](../src/hooks/spread_hooks.asm) | `spreadAnyAccuracy`. | unittypes and `OnDatabaseLoad`, `actiontags.cpp`, sites `Spread*`, `IsA` (0x44D7FA), your cfg reader |
-| [`src/floatingtext.cpp`](../src/floatingtext.cpp) (no `.asm`) | The stock floating text over a unit, for the local player (noTrainNearEnemyTC, damageOverTime). | sites `DodgeFloatingText`, `FloatingTextAdd`, `UnitVisibleTo`, `ConfigInt`, `BStringFromWide`, `BStringFromId`, `BStringFree` |
-| [`src/features/dodge.cpp`](../src/features/dodge.cpp), [`src/hooks/dodge_hooks.asm`](../src/hooks/dodge_hooks.asm) | `dodgeAnyUnit`, `dodgeSoundSet`, `criticalSoundSet`. | unittypes, sites `Dodge*` and `CriticalSound`, `WriteCall` (in `patch.cpp`), your cfg reader |
+
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
 | [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, `TrainFrac`, `MaintainFrac`, `TrainPoints*`, `MaintainPoints*`, your cfg reader |
 | [`src/features/techprereq.cpp`](../src/features/techprereq.cpp), [`src/hooks/techprereq_hooks.asm`](../src/hooks/techprereq_hooks.asm) | `techPrereqRecheck`. | sites `TechPrereq*`, `TypeCount*`, `PrereqBaseCtor`, `TechTemplate*`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount`; `OnDatabaseLoad` (unittypes); your cfg reader |
@@ -278,6 +293,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/notrainneartc.cpp`](../src/features/notrainneartc.cpp), [`src/hooks/notrainneartc_hooks.asm`](../src/hooks/notrainneartc_hooks.asm) | `noTrainNearEnemyTC`. | unittypes (and `OnDatabaseLoad` for `log`), sites `WorkRateTrainCall`, `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById*`, `UnitById*`, `PlayerIsEnemy`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`; the data symbol `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`; define it yourself as `0x9BFE33` without that feature); your cfg reader (`Config::All`) |
 | [`src/features/overheal.cpp`](../src/features/overheal.cpp), [`src/hooks/overheal_hooks.asm`](../src/hooks/overheal_hooks.asm) | `overhealHitpointBars`. | unittypes, sites `Overheal*`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag`, `IsA`, `IsATrue`, your cfg reader |
 | [`src/features/gatherrate.cpp`](../src/features/gatherrate.cpp), [`src/hooks/gatherrate_hooks.asm`](../src/hooks/gatherrate_hooks.asm) | `showGatherRate`. | unittypes (only with a UnitType), sites `GatherTick*`, `StatPanel*`, `GatherRateStringRef`, `DataRef*`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BString*`, `IsBuilt`, `IsA`, `WriteDword`, your cfg reader |
+| [`src/features/decimalpop.cpp`](../src/features/decimalpop.cpp), [`src/hooks/decimalpop_hooks.asm`](../src/hooks/decimalpop_hooks.asm), and the cap hook in [`src/features/limits.cpp`](../src/features/limits.cpp) / [`src/hooks/limit_hooks.asm`](../src/hooks/limit_hooks.asm) | `decimalPopulation`. | sites `PopCountParse`, `PopCapAddParse`, `PopCountEffect`, `PopCapAddEffect`, `IntEffect`, `PopCapEffect*`, `TeamPopCap`, `StartPopBonus`, `Xs*`, `Ref*`, `ColorizePop*`, `BStringFormat`, `PopFormat*`, `PopLimit`; `WriteCall`, `WriteDword`, `WriteBytes`, `UhcTraceHook`; your cfg reader |
 | [`src/features/bwrauras.cpp`](../src/features/bwrauras.cpp), [`src/hooks/bwraura_hooks.asm`](../src/hooks/bwraura_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `buildingWorkRateAuras`. | sites `ModifyTypeName*`, `Bwr*`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall`, `SnareCollector`, `SnareModifierSum*`, `BuildingWorkRateGetter`; liveBuildingWorkRate's `UhcBwrGetterHook` symbol for the getter-head check (or drop that check); `WriteCall`, `Matches`; your cfg reader |
 
 Every feature also needs `VerifyAll`, `WriteJmp`, `Log` and `TRACE_ONCE`, listed below.
@@ -431,6 +447,17 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     long as the DLL.
 - **Marker registration:** through the abstract unit types above. The sound rules register
   their type names the same way, which returns the existing ID for a proto or stock type.
+- **dodgeChance** uses the same proto hook. At `0x49ACE5`, `[esp]` is the caller's EDI (saved by
+  `push edi` at `0x49ACDD`), which at the only call, `0x49B023`, is the action's damage info
+  `[ebp+24h]`; its byte `+5` is the hit's damage type (`Hand` 0, `Ranged` 1 in stock, by name in
+  `[db+44h]`, count `[db+48h]`, name at `[entry+4]`). The hook saves ECX, calls the decision and
+  leaves:
+  - no rule matches: as above (the marker's path or the stock compares);
+  - a rule matches: its tech must be active (`0x94AF27([world+7Ch], [[esi+44h]], tech)`), then
+    `0x407CE7(0C66588h, 2, 999)` < percent × 10; dodged → `0x6A24FC` (ESI, EBX and the frame as at
+    the hook; EDI is reloaded there), hit → `0x49AD0F`.
+  - Resolve tech names (`0x600BE1`) and damage type names after each data load, never per hit by
+    name, and draw only for chances strictly between 0 and 100 %, so every machine draws the same.
 
 ### hcShipmentPointFallback
 
@@ -1167,6 +1194,42 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Stat 40h** is this DLL's number for BuildingWorkRate. Keep it, or agree on another one, if your
   DLL adds its own ModifyTypes.
 
+### decimalPopulation
+
+- **Globals:** `g_uhcPopScale` (K; 1 without the key) and `g_uhcPopStockClamps` (1 when this key
+  installs the cap hook itself), both read by the cap hook of basePop/extraPop
+  (`src/hooks/limit_hooks.asm`).
+- **Cap hook** at `0x4581F3` (basePop's): every limit is in whole population and is multiplied by
+  K: base + extra, the bonus `[player+4F4h]`, and with the stock clamps on, `[world+31Ch]` + extra
+  and 250. **In WoL** this site is WoL's own basePop/extraPop hook
+  (`ExtendLimitsByXmlFeature?`): scale its limits the same way instead of installing this one.
+- **Parse calls** (`0x5FB92E`, `0x5FD719`): `bool __cdecl f(const char* text, int* out)`. The
+  text is ANSI. `out` is the handler's argument slot; `out + 1` holds the proto. Write
+  `round(value × K)` and return true, or return false (the stock error path).
+- **Effect calls** (`0x8FA835`, `0x8FA8CF`): `void __cdecl f(rel, int* out, int base, float
+  amount, negate)` with the stock five arguments; call `0x7F899B` with `round(amount × K)` for
+  relativity 1 (or any value but 0, 2, 3), `amount × K` for 3, and for 2 with relativity 1 and
+  `lround(base × amount − base)`. Write K into the imm32 at `0x8FA84A`.
+- **PopulationCap hooks** (`0x8D87AB`, `0x8D20AB`): `fld [esp+X]; fimul K; frndint; fnstcw
+  [esp+X]`, continue 8 bytes later. X = 34h / 20h.
+- **Team cap** (`0x679694`): EAX = an ally's raw cap; `min(EAX, 200 × K, [world+31Ch] × K)`;
+  ECX, EDX free; continue at `0x6796B8`. **Start bonus** (`0xA0D2D1`): EAX += (EBX +
+  `[ESI+320h]`) × K, keep EBX, EDX free; continue at `0xA0D2D9`.
+- **XS wrappers:** cdecl, two arguments read in place (declare none: a caller may push fewer, and
+  a declared parameter's slot can be reused as scratch); call the stock impl from the site's
+  bytes with both. Getters divide (half away from zero; `kbGetPopSlots` rounds a positive value
+  up; `kbUnitPickGet*` keep negatives); setters multiply a value ≥ 0 (argument 1, or 2 for
+  `kbUnitPickSet*`). Return the stock EAX.
+- **Data refs:** write the wrapper into the provider imm32 (`+4`) and `6A 03 58 90` at `+20h`;
+  the wrapper is `bool __stdcall f(Value*)`: type must be 3; call the stock provider with
+  `{2, 0}`; assign the text to the Value's BString (`0x443BB8`, `-1, -1`).
+- **colorizePop:** `int __cdecl f(BString* arg)`: the number after the first `(` × K, −1 if none.
+- **Format wrappers:** cdecl, arguments read in place: `(dest, format, a0..a3)`; replace the
+  i-th conversion (i = 0, or 1 at `0x6F580C`, 2 at `0x6F2DB5`) with `%s`, pass the text in its
+  slot, call `0x444EFB`. **In WoL** `0x710651` (and `0x71063C`) are redirected by
+  `DoubleShipmentsInspectFixFeature`: call this wrapper from WoL's replacement, or the reverse.
+- **Order:** after basePop/extraPop.
+
 ## 5. Integration rules
 
 - **Keep the cfg keys and their syntax:**
@@ -1198,7 +1261,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `overhealHitpointBars [UnitType ...] [log]` (default `AbstractOverheal`, up to 8 types, one
     line);
   - `showGatherRate [UnitType] [log]` (no default: every unit);
-  - `buildingWorkRateAuras [log]`.
+  - `buildingWorkRateAuras [log]`;
+  - `decimalPopulation [K] [log]`, K from 2 to 1000 (default 10).
 
   The [modding guide](modding-guide.md#5-feature-reference) then applies to your mod as written.
 - **Verify, then write.** Check all of a feature's ranges first, and write nothing if any range
@@ -1278,6 +1342,10 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `dodgeAnyUnit: unit N (Proto) dodged a hit`; a Japanese monk still dodges as in stock.
     `tools/testbed.py` builds such a fight with no clicks
     ([developer guide](developer-guide.md#driving-the-game-unattended)).
+  - **dodgeChance:** with `dodgeChance <marker> 50 ranged log` and `dodgeChance <marker> 0 melee`,
+    about half of the musket shots and none of the pike thrusts on a marked unit log `roll … ->
+    dodged`; a rule with `notech` dodges without `YPDodge`, one with an unknown tech logs `rule
+    disabled`.
   - **The WoL features:** the test that confirmed each one, with its data, is in its
     "Status" in the [modding guide](modding-guide.md#5-feature-reference). For each, run the same
     test with and without the key: the stock run must show the bug. Two pitfalls from these tests:
