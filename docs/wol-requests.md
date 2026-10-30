@@ -83,6 +83,39 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
 
 - **From the DE comparison (2026-10-30):** nine more questions, on #2, #24, #25, #29–#31, #32, #33, #34, #36, #40 and #44. They are in [de-parity.md, "Questions for JTMaston"](de-parity.md#questions-for-jtmaston).
 
+**JTMaston's answers, 2026-10-30, second batch (Discord, relayed by the user).** The user's instruction
+is to build what he asked for without further questions. Where he did not understand a question, the
+design below is ours.
+- **Q3 / #4:** still unanswered.
+- **Q4 / #11:** mining techs must reach every unit that carries `AbstractMine`. Today they miss
+  plantations and custom buildings that are not natural mines. "If it is fixed I would remove the tag
+  from the plantations." Design: a `WorkRate` effect on an abstract type also reaches the gatherers'
+  rates for every target proto that carries that type.
+- **Q5 / #14:** the ceasefire cast by another unit "does not start at all". It needs an in-game
+  repro: the static reading found nothing that ties it to the Taj Mahal.
+- **Q6 / #19:** ask Punchline, another WoL developer. No action until then.
+- **#5:** the techs that change train and research work rate, and those that change building work
+  rate, must apply to buildings that already stand. `liveBuildingWorkRate` covers `BuildingWorkRate`;
+  train and research `WorkRate` techs are to be checked in game.
+- **#25:** yes. `<ScaleByContainedUnits>1` must also work on AutoGather actions, not only on attacks.
+- **#29, #30, #31:** use DE's names. When a DE name carries "DE" (e.g. the tech flag
+  `DECheckBuildLimit`), use it without that prefix.
+- **#33:** he did not understand the question. Design: a crate order per civ, read from `civs.xml`
+  the way `civFirstTC` reads `<firstTC>`. A civ without the tag keeps stock.
+- **#34, #35:** `KillBounty` techs and `resourcetype` bounties, plus `TeamKillBounty`. Not
+  `BountyResourceOverride`.
+- **#36:** he did not understand the DE comparison. Design: his original request, tech flags
+  `HCTargetEnemy` / `HCTargetAll` that apply a tech's effects to the enemies or to every player,
+  the way `TeamTech` applies them to the team.
+- **#40:** both units and shipments.
+- **#41:** "I suppose?" Design: his `transformspan` on `TransformUnit` (see the row).
+- **#44:** a flag that forces a building placed by another building to keep an orientation relative
+  to its builder, "like the Moon, which always shows us the same face".
+
+**Work order** (bugs and odd logic first, his rule):
+1. #5, #14, #11;
+2. then #25, #26, #29–#31, #32, #33, #34/#35, #36, #37–#39, #40, #41, #42/#43, #44, #45.
+
 Done when:
 - **#1:** a non-monk unit with the marker dodges in game, and `UHC.log` shows the hook reached.
 - **#1b:** a configured unit plays its own dodge / critical sound.
