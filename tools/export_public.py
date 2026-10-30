@@ -47,7 +47,7 @@ INCLUDE = [
 
 BANNED = [
     r"\bWoL\b", r"Wars of Liberty", r"\bMandos\b", r"\bMaston\b",
-    r"\bDE\b", r"AoE3DE", r"Definitive Edition", r"World'?s Edge",
+    r"(?-i:\bDE\b)", r"AoE3DE", r"Definitive Edition", r"World'?s Edge",
     r"Pereira", r"Un-?har(?:d)?coded", r"\bupstream\b", r"UHC 1\.\d",
     r"Knights and Barbarians", r"Cosas_magicas",
     # Names from one mod's data that identify it without naming it.
