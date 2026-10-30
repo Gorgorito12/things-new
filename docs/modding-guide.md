@@ -470,14 +470,18 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
     (red at 9 / 10) and `4 colonos — Poblac.: 6` (Settlers at 1.5; the tooltip of 0x710651);
   - **shared team population:** TAD's setup has no option for it, so the flag `[world+6913h]` was
     set in memory; the team path then capped the player at 200 after a `PopulationCap` +300 (its
-    hook reached; unscaled it would have shown 20).
+    hook reached; unscaled it would have shown 20);
+  - **`{pop}` and `{populationHelp}`:** no stock UI shows them (WoL's editor shows `{pop}`), so a
+    loose `uimainnew.xml` in the test copy put `{pop}/{popcap}` in the counter and
+    `{populationHelp}` in its tooltip: the counter read `16.5/17.5` and the tooltip
+    `1 Centro urbano = 10, 1 Casa solariega = 7.5 Tamaño máx. ejército = 17.5` (the population
+    help line and the max army size, both with decimals).
 
-  Not run: multiplayer; taking back a `PopulationCap` effect (0x8D20AB: setting the tech's status
-  back to 0 does not take its effects back, and no stock path that does was found); the
-  counter-help lines `{populationHelp}` (no stock or WoL UI uses them, and the game did not read
-  a string edited in the copy's `data` folder); the unit help `Población: %d` (FUN_004C8748,
-  whose screen was not found; a card on the home city screen, outside a game, shows no
-  population); `{pop}` (only WoL's editor UI shows it).
+  Not run: multiplayer; taking back a `PopulationCap` effect (0x8D20AB): setting the tech's status
+  back to 0 or 1 with a trigger does not take its effects back, and no stock path that does was
+  found; the unit help `Población: %d` (FUN_004C8748, which the `trainsandcontains` row of the
+  unit information panel calls; that row did not show for a Town Center, and a card on the home
+  city screen, outside a game, shows no population).
 - **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)).
 
 ### noAILimit

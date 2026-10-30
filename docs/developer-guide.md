@@ -118,6 +118,10 @@ there:
   the syscalls and prints them with `trChatSend(0, "…" + value)`, run by a map's `at<s>=` spec;
   and, for `ai*` / `kb*` syscalls, a rule file included after `aiMain.xs` in
   `AI3\aiLoaderStandard.xs` that prints with `aiChat(1, "…")` every few seconds.
+- **UI tests:** loose UI files in a test copy's `data` folder override the archives (`uimainnew.xml`
+  plus its `.xmb`, compiled with `xmbedit.py from-xml`), so a data ref no stock UI shows can be put
+  in a gadget's text or `mouseovertext`. String tables edited there are not read (neither `.xml`
+  nor `.XMB`).
 - **Post-game statistics:** `Menú` (client 2373, 27), `Claudicar` (2373, 353), `Sí` (1097, 799);
   then `Menú` again and `Resumen partida` (2373, 83). The `Línea cronológica` tab draws per-player
   curves, chosen in its `Mostrar` list (client 2395, 171).
