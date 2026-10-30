@@ -236,6 +236,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from the mod folder (the exe's folder), instead of the install folder in the registry. | Nothing. Enable it in every mod folder that has its own data. | confirmed |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | A `data\homecitylevels.xml` with a higher `<maxdecksize>` per level (stock: 20 to 25). | confirmed above the level table; see the section |
 | [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | Enough houses or other population buildings to reach the new cap. | partly confirmed |
+| [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`noAILimit`](#noailimit) | Shows every `AI3\*.personality` file in game setup, not just the built-in 14. | The personality files. | confirmed |
 | [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for every `XPRevolution<Name>` tech, not only O'Higgins. | A banner texture per revolution. | partly confirmed |
 | [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | Two icon textures. | not tested in game |
@@ -264,7 +265,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed from the log and memory (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
-| [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center; the queue resumes when they leave or that Town Center dies. | Nothing for the Daimyos; with a new marker, that type on the trainers in `protoy`. | confirmed (single player) |
+| [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos; with a new marker, that type on the trainers (or on the blocking buildings) in `protoy`. | confirmed (single player) |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units, and the unit type on them (or an existing type in the cfg). | confirmed (single player, UI) |
 | [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
 | [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. | confirmed |
@@ -352,14 +353,137 @@ extraPop <N>             N from 0 to 10000, stock 50
   needs enough houses: raise the house `BuildLimit` or `PopulationCapAddition` in `protoy.xml`
   if needed.
 - **Not changed:** the shared team population mode keeps its stock limit of 200 per player.
+- **With [`decimalPopulation`](#decimalpopulation):** both limits stay in whole population
+  (`basePop 300` is 300 population with any K).
 - **Log:** `basePop/extraPop: base X, extra Y (…)`;
   `basePop/extraPop: expected integers from 0 to 10000`;
-  `hook reached: basePop/extraPop (0x4581F3)`.
+  `hook reached: basePop/extraPop/decimalPopulation (0x4581F3)`.
 - **Simulation:** yes.
 - **Status:** partly confirmed. A skirmish went past 200 with `basePop 300`; the limit reached was
   the number of houses that could be built.
 - **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
   where the stock 200/250 limits stayed active.
+
+### decimalPopulation
+
+![decimalPopulation in game](media/decimalPopulation.gif)
+
+*1. `decimalPopulation 10 log`:* in the test data a Settler costs 1.5 population, a Pikeman 0.5, and a Manor gives 7.5. At 16.5 / 17.5 the Town Center refuses a Settler ("No hay más espacio de población para Colono") and its tooltip shows the cost `1.5` in red. A test tech at 35 s (the log lines at the top: Crossbowman 1.5 → 2, Town Center 10 → 12.5) makes room for two Settlers (20 / 20 with the queue), and a `PopulationCap` +2.5 at 56 s for one more (21.5 / 22.5). [Full video (MP4)](media/decimalPopulation.mp4).
+
+![decimalPopulation control in game](media/decimalPopulation-control.gif)
+
+*2. The control, without the key:* the same data read by stock. `%d` drops the decimals: the Settler costs 1, the Pikemen nothing, the Manor gives 7 (9 / 17), and the Settlers train. [Full video (MP4)](media/decimalPopulation-control.mp4).
+
+![decimalPopulation and the population limits](media/decimalPopulation-caps.png)
+
+*3. The limits:* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at stock's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
+
+```
+decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in steps of 1/K
+```
+
+- **How stock behaves:** `<PopulationCount>` and `<PopulationCapAddition>` are whole numbers.
+  The exe reads them with `%d`, so `0.5` becomes 0 (a free unit) and `7.5` becomes 7, with no
+  message. A player's population, the population its queues reserve and its cap are sums of them,
+  and every test (can this unit be queued, can it spawn, is the player at the cap) compares those
+  sums.
+- **Effect:** both tags take decimals, and population works in steps of 1/K. Inside the engine
+  every population number is kept K times larger, so all of its tests stay exact:
+  - **tech effects:** `PopulationCount` and `PopulationCapAddition` (on protos) and
+    `PopulationCap` (on the player) take decimal amounts (`amount='0.5'`). `Absolute` adds the
+    amount and `Assign` sets it, rounded to the nearest step; `BasePercent` is rounded to the
+    nearest step too (stock truncates it, so a decrease came out one step high: 1.5 × 0.6 gives
+    0.9, stock's formula 1.0); `Percent` multiplies by a whole number, as in stock. A
+    `PopulationCount` effect that would bring a unit to 0 or less still gives it 1, as in stock;
+  - **limits:** the cap keeps its stock limits (200 from buildings, plus 0 to 50 extra, at most
+    250), or those of [`basePop` and `extraPop`](#basepop-and-extrapop), in whole population;
+  - **interface:** the population counter (`{totalPop} / {popcap}`, and `{pop}` and
+    `{futurepop}`) and its tooltip show decimals (`16.5 / 17.5`), and so do the population cost
+    in unit tooltips (`Poblac.: 1.5`, red when it does not fit), the unit help
+    (`Population: 0.5`) and the population of a shipment;
+  - **AI and scripts:** XS still sees whole numbers. `kbGetPop`, `kbGetPopCap`,
+    `trPlayerGetPopulation`, `aiGetEconomyPop`, `aiGetMilitaryPop`, `aiGetAvailableEconomyPop`,
+    `aiGetAvailableMilitaryPop`, `aiGetCurrentEconomyPop`, `aiGetPopNeeds`, `kbGetPopCapAddition`
+    and `kbGetPopulationSlotsBy{QueryID,UnitTypeID}` return the population rounded to the nearest
+    whole number (halves away from zero); `kbGetPopSlots` (a unit's cost) rounds up, so a unit
+    that costs population never reads as 0 (an AI script may divide by it);
+    `kbUnitPickGet{Minimum,Maximum}Pop` round, and keep −1 as −1. `aiSetEconomyPop`,
+    `aiSetMilitaryPop` and `kbUnitPickSet{Minimum,Maximum}Pop` take whole numbers as before (−1
+    stays −1).
+- **Your data:** the decimals, in the two tags and in the effect amounts. Whole numbers behave
+  exactly as without the key. A UI gadget that shows `{pop}`, `{popcap}`, `{futurepop}` or
+  `{totalPop}` now gets text such as `12.5` instead of a number; that is fine in a `formatText`
+  gadget, which is how stock and WoL use them.
+- **Choosing K:** 10 for one decimal (0.5, 1.5), 100 for two (0.25), or any value from 2 to 1000.
+  Texts show up to three decimals, trailing zeros dropped (K = 3 shows 0.333).
+- **Not adapted:** the post-game timeline (`Línea cronológica`, the curves `Toda la población`,
+  `Población de aldeanos` and `Población de militares`) draws K times the population: a player
+  with 9 population is drawn at 90 (seen in game). The AI's debug text (`AIDebugPopToggle`) does
+  the same (read in the code, not seen).
+- **Saved games** keep the population as stored: load them with the same K. A game saved without
+  the key, or with another K, loads with wrong populations.
+- **Log:** at startup `decimalPopulation: population in 1/10 steps (<PopulationCount> and
+  <PopulationCapAddition> take decimals; caps (stock limits), effects, 19 XS syscalls and the
+  population texts scaled)` (`(basePop/extraPop limits)` with those keys; `, decimal values and
+  changes logged` with `log`); `decimalPopulation: expected a scale from 2 to 1000 and/or log, got
+  "x"`. Hooks: `hook reached: decimalPopulation <PopulationCount> (0x5FB92E)`,
+  `… <PopulationCapAddition> (0x5FD719)`, `… effect PopulationCount (0x8FA835)`,
+  `… effect PopulationCapAddition (0x8FA8CF)`, `… PopulationCap effect (0x8D87AB)`,
+  `… start cap bonus (0xA0D2D1)`, `basePop/extraPop/decimalPopulation (0x4581F3)`,
+  `… data ref totalpop` (and `popcap`, `futurepop`, `pop`), `… colorizePop argument (0x6F576F)`,
+  `… printed population (unit help, costs)` (and `(colorizePop)`, `(population help)`), and one
+  `… XS <name>` per syscall. With `log` (at most 200 lines): each decimal value read
+  (`decimalPopulation: Settler <PopulationCount>1.5</PopulationCount> = 1.5`), each effect
+  (`decimalPopulation: effect PopulationCount, relativity 2, amount 0.6: 1.5 -> 0.9`; relativity 1
+  is `Absolute`, 2 `BasePercent`, 3 `Assign`), and each XS setter's value when it changes
+  (`decimalPopulation: aiSetEconomyPop(80) stored as 800`).
+- **Simulation:** yes: every player needs the same key and the same K. Not tested in multiplayer.
+- **Status:** confirmed in single player (2026-10-29), K = 10 and 100, with the data of
+  [`tools/pop_testdata.py`](../tools/README.md#pop_testdatapy) in a test copy:
+  - **values:** the log and memory showed Settler 1.5, Pikeman 0.5, Crossbowman 1.5, Manor 7.5,
+    and a player with 6 Settlers, 12 Pikemen and a Crossbowman at 16.5 / 17.5 (top bar and
+    memory);
+  - **training** (real clicks on the Town Center, Settlers at 1.5): refused at 16.5 / 17.5 with
+    the stock message, then at 17 / 20 two queued and the third refused, then at 22.5 one more and
+    the next refused; the first Settler out brought the population to 18.5;
+  - **effects:** `Absolute` (Crossbowman 1.5 → 2), `Assign` (Musketeer 1 → 0.5), `BasePercent`
+    (Hussar 1.5 × 0.6 → 0.9, Pikeman 0.5 × 3 → 1.5, the population recounted to 29),
+    `PopulationCapAddition` (Town Center 10 → 12.5) and `PopulationCap` (+2.5, and +300 against
+    the limits of video 3);
+  - **interface:** the counter, its tooltip (`La población actual es 21.5 / … máxima de 22.5`),
+    the cost `1.5` in red and white in the Settler's tooltip;
+  - **saved game:** with K = 100, a game saved at 17 / 20 loaded at 17 / 20, and its next trigger
+    brought the cap to 22.5;
+  - **bad values:** `1`, `abc` and `5000` logged the error and `FAILED`, and the game read the
+    stock values;
+  - **AI:** three skirmishes, three players (two Hard AIs): `aiSetEconomyPop(80)` stored as 800,
+    `aiSetMilitaryPop(15)` and `(30)`; the Russian AI built houses and reached 62.5 population of
+    a 95 cap (31 Settlers at 1.5, 8 Strelets, 8 Cossacks), no XS error. The other AI stayed at a
+    cap of 10 in two games because that test copy's `House` has `Lifespan` 20 (an earlier test's
+    data);
+  - **every XS syscall:** all 19 reached. A probe rule added to the copy's AI (`aiChat` to
+    player 1, every 45 s) printed, for a Portuguese AI, `pop 12/20 avEco 68 avMil 15 curEco 12
+    needs 38` and `slots Settler 2 capadd Manor 8 TC 10 villagers 12 query 11 pick 7-42`: the
+    Settler's 1.5 rounded up, the Manor's 7.5 rounded to 8, a pick's minimum and maximum (7, 42)
+    read back as set; for the Spanish AI `avEco 70` (80 − 10.5). A trigger effect added to the
+    copy's `typetest.xml` printed `trPlayerGetPopulation(1)` = 17 at 16.5 and at 17.0;
+  - **shipments:** in game, the home city panel's card tooltips showed `2 colonos — Poblac.: 3`
+    (red at 9 / 10) and `4 colonos — Poblac.: 6` (Settlers at 1.5; the tooltip of 0x710651);
+  - **shared team population:** TAD's setup has no option for it, so the flag `[world+6913h]` was
+    set in memory; the team path then capped the player at 200 after a `PopulationCap` +300 (its
+    hook reached; unscaled it would have shown 20);
+  - **`{pop}` and `{populationHelp}`:** no stock UI shows them (WoL's editor shows `{pop}`), so a
+    loose `uimainnew.xml` in the test copy put `{pop}/{popcap}` in the counter and
+    `{populationHelp}` in its tooltip: the counter read `16.5/17.5` and the tooltip
+    `1 Centro urbano = 10, 1 Casa solariega = 7.5 Tamaño máx. ejército = 17.5` (the population
+    help line and the max army size, both with decimals).
+
+  Not run: multiplayer; taking back a `PopulationCap` effect (0x8D20AB): setting the tech's status
+  back to 0 or 1 with a trigger does not take its effects back, and no stock path that does was
+  found; the unit help `Población: %d` (FUN_004C8748, which the `trainsandcontains` row of the
+  unit information panel calls; that row did not show for a Town Center, and a card on the home
+  city screen, outside a game, shows no population).
+- **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)).
 
 ### noAILimit
 
@@ -783,10 +907,18 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 
 ![damageOverTime in game](media/damageOverTime.gif)
 
-*In game:* The Explorer's attack poisons a musketeer: 20 damage every second (the `tick` lines) until it dies. [Full video (MP4)](media/damageOverTime.mp4).
+*1. The poison:* The Explorer's attack poisons a musketeer: 20 damage every second (the `tick` lines) until it dies. [Full video (MP4)](media/damageOverTime.mp4).
+
+![damageOverTime stacks, snare and tick text](media/damageOverTime-stacks.gif)
+
+*2. `AttachMaxStacks`, `AttachSnare` and `AttachTickText`:* three Longbowmen whose arrows attach a 5 Siege poison with up to 3 stacks, a snare to half speed and a green tick text. Two Hussars charge them. The three first arrows put three stacks on one Hussar within a fraction of a second, so each tick deals 15 (`x3` in the overlay) and shows a small green `-15` over its health bar; its speed reads 3.38 instead of 6.75. When the archers are down the stacks expire one by one (10, then 5) and the last tick kills it (2x speed). [Full video (MP4)](media/damageOverTime-stacks.mp4).
+
+![damageOverTime with noticktext and snareOnlyHitUnit](media/damageOverTime-noticktext.gif)
+
+*3. `noticktext`, and the snare in a group:* the same fight with `damageOverTime log noticktext` and `snareOnlyHitUnit log`: three Hussars charge together, the poisoned one takes its 10 and 15-damage ticks with no green number over it, and the overlay shows `snareOnlyHitUnit` treating the poison's slow as a snare (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`) (2x speed). [Full video (MP4)](media/damageOverTime-noticktext.mp4).
 
 ```
-damageOverTime [log]
+damageOverTime [log] [noticktext]
 ```
 
 - **How stock behaves:** TAD has no damage over time. The exe still contains Age of Mythology's
@@ -800,8 +932,12 @@ damageOverTime [log]
     player. (Bonuses and kill credit follow from the code; see the status below.)
   - Once the attacking unit is gone, the ticks still hurt but no longer cause the reactions to a
     hit, such as retaliation and under-attack alerts.
-  - Another hit by the same player renews the duration and keeps the tick timer.
+  - Another hit by the same player renews the duration and keeps the tick timer (with
+    `<AttachMaxStacks>`, it adds a stack instead; see below).
   - Poisons from different players, or from different attachment protos, run side by side.
+  - It works with every kind of attack tested: hand attacks, instant shots, flying arrows,
+    grenades and cannon balls, and area damage (one grenade poisoned all four musketeers it
+    hit).
 - **Your mod**, three pieces:
   1. **The attacks.** Add the tag inside the attacker's existing `<ProtoAction>` blocks in
      `protoy.xml`:
@@ -884,24 +1020,69 @@ damageOverTime [log]
 
   After editing `protoy.xml`, make sure the game reads it rather than an older
   `protoy.xml.XMB` ([section 6](#6-editing-the-game-data)).
+- **Optional tags**, in the same attacker `<ProtoAction>` as `<AttachProtoUnit>` (each one changes
+  only the poisons of that attack; without them the poison is the one above):
+
+  ```xml
+  <ProtoAction>
+      <Name>VolleyRangedAttack</Name>
+      ...
+      <AttachProtoUnit>PoisonDart</AttachProtoUnit>
+      <AttachMaxStacks>3</AttachMaxStacks>
+      <AttachSnare>0.5</AttachSnare>
+      <AttachTickText>40FF40</AttachTickText>
+  </ProtoAction>
+  ```
+
+  - **`<AttachMaxStacks>N</AttachMaxStacks>`** (a whole number from 1 to 100): each hit adds a
+    stack, up to N, and a tick deals X's damage times the stacks alive at that moment (the
+    damage type, bonuses and armor apply to the whole). **Each stack expires on its own,**
+    Lifespan seconds after the hit that made it; a hit at N stacks renews the oldest one. So
+    steady hits keep N stacks, and when the hits stop the ticks fall back one stack at a time
+    (15, 10, 5 in the tests). N = 1 is the poison without the tag. When attacks with different N
+    hit the same unit with the same X, the last hit's N counts.
+  - **`<AttachSnare>F</AttachSnare>`** (a number from 0 to 10): while poisoned, a unit that can
+    move goes at F times its speed. It is the stock snare of `<TargetSpeedBoost>` (a speed
+    modifier that multiplies), with F instead of 0.65; it starts with the poison, is renewed at
+    every tick, and ends a quarter of a second after the last tick. Like the stock snare, only
+    the first snare counts when several apply, and [`snareOnlyHitUnit`](#snareonlyhitunit) treats
+    it as a snare. Buildings are not slowed.
+  - **`<AttachTickText>RRGGBB</AttachTickText>`** (a colour in hex; empty for green 40FF40): each
+    tick shows the damage it dealt, for example `-15`, over the unit in that colour. It is the
+    floating text of the stock dodge, without its rise, and only the player whose screen shows
+    the unit sees it. `damageOverTime noticktext` in a player's `uhc.cfg` turns all tick texts
+    off for that player; it changes nothing else.
+
+  A value the DLL cannot read is logged and that tag is ignored.
 - **Not done:**
-  - no model or effect shows the poison, since X never exists in the world;
-  - poisons are not saved in saved games, so a loaded game starts without them;
+  - no model or effect shows the poison, since X never exists in the world (`AttachTickText`
+    shows the ticks as text);
+  - poisons are not saved in saved games, so a loaded game starts without them (tested);
   - the stock `Poison` flag is not used.
-- **`log`** writes every poison, renewal, tick and end to `UHC.log`. Use it while tuning the
-  numbers; in a long game the log grows quickly.
+- **`log`** writes every poison, renewal, tick and end to `UHC.log`, and once per attack the
+  attacks that deal damage without `<AttachProtoUnit>` (`damage by proto N (Name), action A …:
+  no <AttachProtoUnit> there`, at most 200 a session), which tells you the name the game uses for
+  an attack. Use it while tuning the numbers; in a long game the log grows quickly.
 - **Log:**
   - at startup, `damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage
-    over time (multiplayer unverified)`;
+    over time, with <AttachMaxStacks>, <AttachSnare> and <AttachTickText> (multiplayer
+    unverified)` (with `noticktext`, `…; tick texts off on this machine …`);
   - while the data loads, `hook reached: damageOverTime ProtoAction tag (0x5FA11E)` and, for each
-    tag, `damageOverTime: <Proto>/<Action> attaches <X>`;
+    tag, `damageOverTime: <Proto>/<Action> attaches <X>`, `…: up to <N> stacks`, `…: poisoned
+    units move at <F> times their speed`, `…: ticks shown in colour <RRGGBB>`, or why a value was
+    ignored (`<AttachMaxStacks>…</AttachMaxStacks> is not a whole number from 1 to 100; ignored`,
+    and the same for the other two); an attack with the optional tags but no `<AttachProtoUnit>`
+    logs `… but no <AttachProtoUnit>; ignored` on its first hit;
   - on the first hit with each tag, `damageOverTime: <X> -> proto <ID>: Lifespan <L> s, Attaching
     every <N> ms`, or the reason it cannot work:
     - `<X> is not a proto unit`: the name in `<AttachProtoUnit>` is not the name of a unit;
     - `<X> has no ProtoAction named Attaching`: the tactics file is missing, or has no action
       named `Attaching`;
-  - the first poison and the first tick of a run: `damageOverTime: poison: unit <N> (<proto>) …`
-    and `damageOverTime: tick: unit <N> (<proto>) took <D> damage, <H> hitpoints left …`;
+  - the first poison and the first tick of a run: `damageOverTime: poison: unit <N> (<proto>) by
+    player <P>, proto <X>, stack <S>/<N> …` and `damageOverTime: tick: unit <N> (<proto>) took <D>
+    damage (x<stacks>), <H> hitpoints left …`; a tick line ends with `, attacker gone` once the
+    attacking unit no longer exists, `, army unit` for a unit of an AI army, and `, speed <V>`
+    (the unit's current speed) with `<AttachSnare>`;
   - once each: `… has Lifespan 0.00; unit <N> not poisoned` (set a Lifespan), and
     `unit <N> is no longer alive and damageable; not poisoned` (the hit killed the unit, which is
     normal);
@@ -916,7 +1097,8 @@ damageOverTime [log]
   seconds. In the tests, poisoned guardians and animals sometimes jumped back to full hitpoints,
   most likely when they went back to their spot. That is stock behavior (not traced), and it can
   hide the poison; the `log` lines show the ticks anyway.
-- **Simulation:** yes.
+- **Simulation:** yes. Every player needs the same data and the same key; `noticktext` only
+  changes what that player sees and may differ.
 - **Status:** confirmed in single player, by hand and with the unattended test
   ([developer-guide.md](developer-guide.md#driving-the-game-unattended)). With the Explorer's
   `HandAttack` and `VolleyRangedAttack` attaching a 20-damage, 1-second, 10-second poison:
@@ -930,11 +1112,57 @@ damageOverTime [log]
   - skirmishes started after a poison game, in the same session, had working AI players;
   - X's tactics file worked as XML alone, without its `.xmb`, in the one-line form above.
 
-  Only a hand attack and an instant ranged attack (`InvisibleProjectile`) were tested. The
-  following follow from the code but were **not tested in game**: area damage, attacks with a
-  flying projectile (arrows, grenades, cannon balls), `DamageBonus` on X, techs on X, kill and XP
-  credit, DamageFlags that exclude a poisoned unit, and a tick on a unit of an AI army after the
-  attacking unit is gone. Multiplayer was not tested either.
+  Then, on 2026-10-29, with the data of `tools/dot_testdata.py` (one X per weapon, test maps
+  without AI):
+  - **area damage and a flying grenade:** one Grenadier grenade poisoned all four musketeers it
+    hit (10 Siege per tick each, renewed by the next grenades, three of them died of it);
+  - **flying arrows:** a Crossbowman's arrow poisoned a musketeer, 4.80 per tick (6 Hand less its
+    20 % hand armor); Longbowman arrows too;
+  - **a cannon ball:** a Falconet's shot poisoned the musketeer it did not kill, 15 per tick;
+  - **`DamageBonus` on X:** the arrow's X (triple damage against `AbstractCavalry`) dealt 18 per
+    tick to a Hussar and 4.80 to a musketeer;
+  - **a tech on X:** a tech doubling the damage of X's `Attaching` action, turned on in the
+    middle of the poison, took the next ticks from 18 to 36 (Hussar) and from 4.80 to 9.60
+    (musketeer);
+  - **DamageFlags:** with X set to `Enemy`, a poisoned musketeer converted to the attacker's side
+    (trigger `Convert`) took 0.00 per tick from then on, also after the attacker died;
+  - **attacker gone:** an Explorer removed (trigger `Destroy`) after its hit: the ticks went on
+    (`attacker gone`) and killed the musketeer. A unit that is only killed keeps its ID while its
+    body lies there, so the attacker counts as gone only once the body disappears;
+  - **kill and XP credit:** that musketeer, killed by a tick after its attacker was removed, gave
+    player 1 its 10 XP bounty (the XP rose by 14 in that second, against 4 from the steady XP
+    trickle; read in memory, `[player+230h]`, entry 5);
+  - **`AttachMaxStacks 3`, `AttachSnare 0.5`, `AttachTickText`:** on a Hussar, the ticks went 5,
+    10, 15 as Longbowman arrows added stacks, and back to 10 and 5 as they expired one by one;
+    its speed read 3.38 (6.75 × 0.5) while poisoned; the green ticks show in the video above;
+  - **AI:** skirmishes (fast speed) between two AI players (Spanish and Portuguese, no teams)
+    and the player, with this data plus the `--ai` data (a long poison on their Musketeers,
+    Skirmishers, Pikemen and Hussars): in 12 minutes, 49 poisons and 242 ticks between the AIs'
+    units; in another 25-minute game with a 120 s poison, 902 ticks after the attacking unit was
+    gone; no XS error and no crash, both AIs kept playing;
+  - `noticktext`: the startup line says the tick texts are off, and in a filmed fight the
+    poisoned Hussar took its 15-damage ticks with no green number over it; noTrainNearEnemyTC's
+    warning, which shares the floating text code, still showed in another game with this option;
+  - **invalid values** (`dot_testdata.py --bad`): `<AttachMaxStacks>` 0, 101 and `abc`,
+    `<AttachSnare>` -1, 20 and `x`, `<AttachTickText>` `GG0000` and `12345` each logged their
+    "ignored" line at load; the Musketeer carrying them still poisoned with the defaults
+    (`stack 1/1`, no slow, no text); an empty `<AttachTickText></AttachTickText>` took the default
+    green; a Skirmisher with `<AttachMaxStacks>` but no `<AttachProtoUnit>` logged `… but no
+    <AttachProtoUnit>; ignored` on its first hit and poisoned nothing;
+  - **the snare in a group:** three Hussars charging together in formation, with
+    [`snareOnlyHitUnit`](#snareonlyhitunit) `log` on: for the poisoned one that key logged `is
+    snared; it counts 6.750 instead of 3.375 toward its group's pace` and `lags behind its
+    formation slot; its group does not wait for it`, so the poison's slow is a snare for it;
+  - **saved games:** a game saved with a poison running (its attacker already removed) and
+    loaded at once logged `the data was reloaded; 1 running poison(s) dropped`; the Hussar kept
+    its 60.4 hitpoints for the next 25 s instead of dying from the ticks, and the game went on.
+
+  **Not reproduced:** a tick on a unit of an engine army after the attacking unit is gone (the
+  p11 = 0 path of [how-it-works](how-it-works.md#damageovertime)). No unit ever carried the army
+  flag in the tests (read in memory): not the AIs' military units at minute 26, not units sent by
+  the scenario trigger `Army Deploy`, not units a map put in an army with `rmCreateArmy` /
+  `rmAddUnitsToArmy`. So the attacker-gone ticks (902 in the AI game) never met that case; the
+  guard stays a reading of the code. Multiplayer was not tested either.
 - **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
   proto that carries the duration and the damage.
 
@@ -2014,7 +2242,7 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
 - **With other keys:** [`startingTC`](#startingtc) can be on too: the two share the hook that sets
   the first town center, and only `startingTC` replaces one that is gone, dead or about to
   expire. [`hcShipmentPointFallback`](#hcshipmentpointfallback) `FirstTC` sends shipments to the
-  building, and [`noTrainNearEnemyTC`](#notrainnearenemytc) measures from it.
+  building, and [`noTrainNearEnemyTC`](#notrainnearenemytc) measures to its edge.
 - **`log`:** adds a line for each substitution (per player and object def, when the map is
   generated), one when the building becomes a first town center, and one per game and player
   when the town starting units go to it. That is a few lines per game, so it can stay on.
@@ -2166,10 +2394,19 @@ transformInventory [all] [scale] [<UnitType>] [log]
 
 ![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)
 
-*In game:* A Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
+*1. Near an enemy's first Town Center:* A Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
+
+![noTrainNearEnemyTC near a Stable, with the warning](media/noTrainNearEnemyTC-near.gif)
+
+*2. `near Stable` and the warning:* `noTrainNearEnemyTC 40 near Stable near FirstTC log`, the camera on the Daimyo. It stands 21 m from the edge of an enemy Stable with 5 Ashigaru queued: the queue does not move, and every 8 s of game time the red text "Too close to the enemy: training paused" appears over it (the overlay shows each `warning shown` line). The Stable is destroyed at 75 s: the log reads `resumed training`, now with the enemy Town Center 138.6 m away as the nearest, and the Ashigaru are trained (2x speed). [Full video (MP4)](media/noTrainNearEnemyTC-near.mp4).
+
+![noTrainNearEnemyTC with its own warning text](media/noTrainNearEnemyTC-warn.gif)
+
+*3. Your own text:* with `warn=¡Demasiado_cerca!`, the same held Daimyo shows "¡Demasiado cerca!" (1.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC-warn.mp4).
 
 ```
-noTrainNearEnemyTC <meters> [<UnitType>] [log]     default AbstractDaimyo; one line
+noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | warn=<text> | warn=<stringID>] [log]
+    default AbstractDaimyo, near FirstTC, the English warning; up to 4 near; one line
 ```
 
 - **How stock behaves:** each player remembers his first Town Center, the `FirstTC` of the
@@ -2178,63 +2415,118 @@ noTrainNearEnemyTC <meters> [<UnitType>] [log]     default AbstractDaimyo; one l
   enemy's first Town Center. Nothing limits a unit that trains: a Daimyo or the Shogun can walk
   into the enemy base and train an army next to his Town Center.
 - **Effect:** a unit whose proto is of `<UnitType>` does not train while an enemy's first Town
-  Center is alive and less than `<meters>` away. Its queue keeps the progress it has, and goes on
-  as soon as the unit is `<meters>` or more away or that Town Center is destroyed. Nothing is
-  refunded or cancelled, and the order is accepted as in stock. "Enemy" is the stance of the Town
-  Center's owner toward the trainer's player, as for `player=enemy` in the placement rules; your
-  own and your allies' Town Centers never block. The distance is measured by the placement rule's
-  own call (from the Town Center to the trainer's position).
+  Center, or an enemy's unit of a `near` type, is alive and less than `<meters>` away. Its queue
+  keeps the progress it has, and goes on as soon as nothing is that close any more (the blocker is
+  destroyed). Nothing is refunded or cancelled, and the order is accepted as in stock. "Enemy" is
+  the stance of the blocker's owner toward the trainer's player, as for `player=enemy` in the
+  placement rules: your own and your allies' buildings never block, nor do Gaia's (natives,
+  treasures).
 - **Choosing the trainers:** the default `AbstractDaimyo` is a stock type that the Daimyos and the
   Shogun already have, so it needs no data change. In WoL it also covers `MapucheWarchief`, the
   `WOLGensui*` units, `EGYtowncenterCARAVAN`, `EGYbarracks3CARAVAN` and `DummyGather` (static scan
   of WoL's `protoy`). To pick the trainers yourself, give them a new marker (for example
   `AbstractNoTrainNearEnemyTC`) in `protoy.xml` and its XMB, as for `healNonIdle`, and name it in
   the cfg. A proto name works too.
+- **Choosing what blocks (`near`):** without `near`, only an enemy's first Town Center blocks.
+  Each `near <UnitType>` adds a type: a proto name (`near Stable`, `near Barracks`), a stock type
+  (`near AbstractTownCenter` for every Town Center, not only the first) or a new marker
+  that you put on your buildings in `protoy`. As soon as the line has one `near`, only the listed
+  entries block: add `near FirstTC` to keep the first Town Center. Up to 4 entries. A building
+  blocks only once it is built (a foundation does not; static reading), and while it is alive. A
+  type of moving units works too (units always count as built): `near Hussar` held a Daimyo
+  while an enemy Hussar stood 17.3 m away.
+- **How the distance is measured:** from the trainer's centre to the nearest edge of the
+  blocker's footprint, 0 inside it. It is the engine's own distance, the one the placement rules
+  use, so `65` matches the stock 65 m rule. For example, a Stable (3 × 5 m half-sizes) whose
+  centre is 24 m from the Daimyo is 21 m away. For units without such a footprint (units that can
+  move) the engine uses the centre distance minus the unit's radius × 1.41: a Hussar whose centre
+  was 18.4 m away counted 17.3 m.
 - **Choosing the distance:** `<meters>` is a number above 0 and at most 1000 (decimals allowed).
-  65 matches the stock building rule.
-- **Which Town Center counts:** only each player's first Town Center, not every Town Center. A
-  player whose first Town Center was destroyed gives no protection, even if he built another one.
-  WoL's Maori (whose first Town Center dies at 0.5 s) are protected only with
+- **Which Town Center counts for `FirstTC`:** only each player's first Town Center, not every Town
+  Center. A player whose first Town Center was destroyed gives no protection, even if he built
+  another one. WoL's Maori (whose first Town Center dies at 0.5 s) are protected only with
   [`startingTC`](#startingtc) and the `MaoriPa` marked. A civ that starts with another building
   through [`civFirstTC`](#civfirsttc) is protected by that building (static reading; not tested
-  with this key).
+  with this key). `near AbstractTownCenter` covers every Town Center instead.
+- **The warning:** while one of your units is held, a red text appears over it, at most once every
+  8 s of game time per unit, and only on your own screen: other players see nothing, not even for
+  units they can see. It is the stock dodge's floating text ("¡Esquiva!" uses it) without its rise,
+  so it stays over the unit for about 1.5 s. `warn=<text>` replaces the English default "Too close
+  to the enemy: training paused": `_` stands for a space, at most 127 characters, UTF-8 (else the
+  Windows code page). `warn=<number>` takes that string from the string table (`warn=63950` shows
+  the stock "Dodge!" in the game's language), so a mod can translate its own text in
+  `stringtabley.xml`. `nowarn` turns it off.
+- **A held trainer stays where it is.** In stock, a Daimyo with units in its queue does not move: a
+  right-click on the ground sets its gather point, and move orders (a trigger, the console's
+  `uiMoveAllMilitaryAtPointer`) are ignored until the queue is empty (seen in game). So a held
+  Daimyo waits until the blocker is destroyed, or until the player cancels the queue (stock refund),
+  moves it away and queues again.
 - **With other keys:** with [`buildingWorkRateAuras`](#buildingworkrateauras), a trainer out of
   range trains at its aura-boosted rate, and with `liveBuildingWorkRate` at its proto's current
   rate: this key's hook calls the same getter.
 - **`log`:** one line the first time each marked unit trains (whether it may train, with the
-  nearest enemy first Town Center and its distance), then one line each time it pauses or resumes.
-  The list of logged units starts again at each data load; at most 1000 lines per session. Use it
-  to check your data and your distance, not in a release.
-- **Log:** at startup `noTrainNearEnemyTC: units of unittype X do not train within 65.0 m of an
-  enemy's first Town Center (FirstTC) (multiplayer unverified)` (with `log`: `…(FirstTC), every
-  pause and resume logged (multiplayer unverified)`); when the data loads, `unit types:
-  AbstractDaimyo -> <ID> (…), already defined`; in a game, `hook reached: noTrainNearEnemyTC
-  (0x9EA410)` the first time any unit or building trains. With `log`:
-  - `noTrainNearEnemyTC: unit N (ypDaimyoKiyomasa, player 1) paused training: player 2's FirstTC M
-    (TownCenter) is 34.1 m away (limit 65.0 m)`;
-  - `noTrainNearEnemyTC: unit N (…) resumed training: …`, with the nearest enemy first Town Center
-    or `no enemy FirstTC`;
+  nearest blocker and its distance), then one line each time it pauses or resumes, and one per
+  warning. The list of logged units starts again at each data load; at most 1000 lines per session.
+  Use it to check your data and your distance, not in a release.
+- **Log:** at startup `noTrainNearEnemyTC: units of unittype X do not train within 40.0 m (from the
+  trainer's centre to the edge of the building) of an enemy's Stable, an enemy's first Town Center
+  (FirstTC), with a warning over the local player's held units, every pause and resume logged
+  (multiplayer unverified)` (the warning and `log` parts only when on); when the data loads,
+  `unit types: AbstractDaimyo -> <ID> (…), already defined` and one such line per `near` type; in a
+  game, `hook reached: noTrainNearEnemyTC (0x9EA410)` the first time any unit or building trains.
+  With `log`:
+  - `noTrainNearEnemyTC: unit N (ypDaimyoKiyomasa, player 1) paused training: player 2's unit M
+    (Stable) is 21.0 m away (limit 40.0 m)`;
+  - `noTrainNearEnemyTC: unit N (…) resumed training: …`, with the nearest blocker left, or
+    `nothing to keep away from`;
   - `noTrainNearEnemyTC: unit N (…) trains: …` the first time a unit trains with no block;
+  - `noTrainNearEnemyTC: warning shown over unit N (ypDaimyoKiyomasa)` (`: refused by the engine`
+    when the game did not take the text);
   - `noTrainNearEnemyTC: 1000 lines logged; the next changes are not`.
 
-  A bad line: `noTrainNearEnemyTC: expected "noTrainNearEnemyTC <meters> [UnitType] [log]" with
-  meters above 0 and at most 1000, got "…"; feature not applied`.
+  A bad line, and the key is not applied:
+  - `noTrainNearEnemyTC: expected "noTrainNearEnemyTC <meters> [UnitType] [near <UnitType> ...]
+    [nowarn | warn=<text>] [log]" with meters above 0 and at most 1000, got "…"`;
+  - `noTrainNearEnemyTC: near needs a unit type (or FirstTC), at most 4`;
+  - `noTrainNearEnemyTC: warn=…: expected warn=<text> (at most 127 characters, '_' for a space) or
+    warn=<string table ID>`;
+  - `noTrainNearEnemyTC: unexpected argument … (expected: …)`.
 - **Limits:**
   - training pauses; the command is not refused, and the interface still shows the queue (its
     progress bar stops);
-  - a unit that trains while it walks resumes only on a tick where it is out of range;
-  - only first Town Centers count (see above);
+  - a held trainer does not walk away with its queue (stock, above);
+  - `FirstTC` is only the first Town Center (see above);
   - the AI does not know about the rule: it may queue units in a Daimyo that stands near an enemy
-    Town Center and wait.
-- **Simulation:** yes. Every player needs the same line. With a new marker it also adds a unit
-  type.
-- **Status:** confirmed in single player (2026-10-29), with every WoL key on. With
-  `noTrainNearEnemyTC 65 log`, a `ypDaimyoKiyomasa` standing 34.1 m from player 2's Town Center
-  (his first Town Center) was ordered to train 2 `ypAshigaru`: the log showed `paused training:
-  player 2's FirstTC 1 (TownCenter) is 34.1 m away (limit 65.0 m)` and the queue made no progress.
-  After the Town Center was killed at 75 s, the log showed `resumed training: no enemy FirstTC`
-  and both Ashigaru were trained. For such a test, the Daimyo trains only from Age II and needs
-  population room. Not tested: resuming by walking away, the AI.
+    building and wait.
+- **Simulation:** yes. Every player needs the same meters, trainer type and `near` entries; a new
+  marker name adds a unit type. `nowarn` and `warn=` only change what the local player sees and may
+  differ.
+- **Status:** confirmed in single player (2026-10-29), in a test map (no AI) unless noted:
+  - `noTrainNearEnemyTC 65 log` (with every WoL key on): a `ypDaimyoKiyomasa` 34.1 m from player
+    2's first Town Center made no progress on 2 `ypAshigaru`, and trained both once the Town Center
+    was killed (`resumed training: no enemy FirstTC` in that version of the log). The same test
+    with `nowarn`: paused at 34.1 m, no warning line, resumed when the Town Center died;
+  - `noTrainNearEnemyTC 40 near Stable near FirstTC log`, with `liveBuildingWorkRate` and
+    `buildingWorkRateAuras`: paused 21.0 m from a Stable's edge (Town Center 138.6 m away), 9
+    warnings 8 s apart, all 5 Ashigaru trained once the Stable was killed; walked next to the enemy
+    Town Center, it paused again (`player 2's unit 1 (TownCenter) is 6.4 m away`) with 1 Ashigaru
+    queued (video 2);
+  - `warn=¡Demasiado_cerca!` and `warn=63950` showed "¡Demasiado cerca!" and "¡Esquiva!" (video 3);
+  - four bad lines (`near` with no type, 5 `near`, `warn=` empty, a 140-character text): one log
+    line each, the key `FAILED`, the game normal;
+  - AI: a skirmish against a Japanese AI with this key (`near Barracks near Stable near FirstTC`)
+    and every WoL key on: the AI went from 15 to 25 units in 2 minutes and started its wonder, no
+    XS error.
+
+  - `noTrainNearEnemyTC 30 near AbstractTownCenter near Hussar log`: held by an enemy Hussar 17.3 m
+    away (a moving type), and in another game by an enemy's second Town Center 22.0 m away (not
+    its first; the first, 150 m away, did not count); each resumed when its blocker was removed,
+    and the 3 queued Ashigaru were trained;
+  - saved games: a game saved with the Daimyo held and loaded again logged `paused training` at
+    once and stayed held until the blockers were removed (the decision keeps no state).
+
+  Not tested: a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
+  from Age II and needs population room and food.
 - **New in this DLL:** not in UHC 1.10. WoL request #27 ([wol-requests.md](wol-requests.md)).
 
 ### overhealHitpointBars
@@ -2883,8 +3175,8 @@ More about the tools: [tools/README.md](../tools/README.md).
   `healNonIdle`, `damageOverTime`, `dodgeAnyUnit`, `dodgeChance`, `liveBuildingWorkRate`, `techPrereqRecheck`,
   `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
   `lifespanAfterConstruction`, `gaiaSocketsOnly`, `snareOnlyHitUnit`, `danceBonusCivs`,
-  `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC` and
-  `buildingWorkRateAuras`. A difference in any of them between players can desynchronize the
+  `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
+  `buildingWorkRateAuras` and `decimalPopulation` (with the same K). A difference in any of them between players can desynchronize the
   game. `civFirstTC` also needs the same `civs.xml`, `placementrules\colonies.xml` and `protoy`
   on every machine, and in a recorded game's playback, which generates the map again. `techRenameEffect` and
   `noCorpseDopples` change no gameplay as far as the code shows, but they act inside the
@@ -2896,15 +3188,16 @@ More about the tools: [tools/README.md](../tools/README.md).
   writes only the DLL's own memory.
 - `damageOverTime` keeps its poisons in the DLL, not in the game state: a saved game loads without
   the poisons that were running. `buildingWorkRateAuras` modifiers are saved with the game, but a
-  game loaded without the key ignores them.
+  game loaded without the key ignores them. `decimalPopulation` stores every population K times
+  larger, and saved games keep it so: load them with the same K (tested with K = 100: a game saved
+  at 17 / 20 loaded at 17 / 20).
 - `healNonIdle`, `dodgeAnyUnit` and `removeFameRestriction` change the unit type table, and so do
   `maintainWaitForPop`, `lifespanAfterConstruction`, `noCorpseDopples`, `broadsideMuzzleLimit`,
-  `gaiaSocketsOnly`, `startingTC`, `transformInventory`, `noTrainNearEnemyTC`, `dodgeChance`,
-  `overhealHitpointBars` and `showGatherRate` when their unit type is a new name (a stock type or a
+
   proto name adds nothing; the defaults of `startingTC` and `overhealHitpointBars` are new names,
   `noTrainNearEnemyTC`'s `AbstractDaimyo` is a stock type). Load saved games and replays with the
   same DLL and cfg they were made with.
-- None of this has been tested yet: multiplayer, saved games and replays are all unverified.
+- Multiplayer and replays are untested for every key; saved games only where a section says so.
 - No feature sends network commands of its own: they all act inside the normal simulation, on
   every machine, in the same deterministic order.
 

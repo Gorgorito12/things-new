@@ -17,6 +17,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `ignoreRegistryPath` | Reads the game data from the mod folder instead of the Steam install. | confirmed |
 | `deckCardCount N` | Raises the 25-card deck cap. | confirmed above the level table (see the guide) |
 | `basePop N`, `extraPop N` | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | partly confirmed |
+| `decimalPopulation [K] [log]` | **New.** Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects, in steps of 1/K (default 10). The population counter and the tooltips show the decimals; AI scripts still see whole numbers. | confirmed (single player, also a skirmish vs AI) |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
@@ -27,7 +28,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `dodgeAnyUnit [UnitType] [log]` | **New.** Units marked with a unit type can dodge hits like the Japanese monk: no damage, 15 % of the time, while their player has the tech `YPDodge`. Stock allows it only for `ypMonkJapanese`. | confirmed (single player) |
 | `dodgeChance <UnitType> <percent> [tech <TechName> \| notech] [ranged \| melee \| all] [log]` | **New.** A dodge chance per unit type, with the tech it needs (`YPDodge` by default, another, or none) and a filter for ranged or melee hits; one rule per line, the first that matches decides. | confirmed (single player) |
 | `dodgeSoundSet UnitType SoundSet`, `criticalSoundSet UnitType SoundSet` | **New.** Choose the sound set a unit plays when it dodges, or when it lands a critical hit, instead of the stock `PowerEvade` / `PowerCriticalStrike`. | confirmed (single player; the choice is logged, the sound itself was not listened to) |
-| `damageOverTime [log]` | **New.** Poison: an attack that lists `<AttachProtoUnit>X</AttachProtoUnit>` keeps damaging what it hits, with X's `Attaching` action every `ROF` seconds for X's `Lifespan`. Damage type and armor apply as for any hit. | confirmed (single player; area damage, bonuses and techs on X not tested) |
+| `damageOverTime [log] [noticktext]` | **New.** Poison: an attack that lists `<AttachProtoUnit>X</AttachProtoUnit>` keeps damaging what it hits, with X's `Attaching` action every `ROF` seconds for X's `Lifespan`. Damage type, bonuses, armor and techs on X apply as for any hit; arrows, grenades, cannon balls and area damage poison too. Optional tags on the attack: `<AttachMaxStacks>` (stacks that expire one by one), `<AttachSnare>` (slow) and `<AttachTickText>` (the damage shown over the unit). | confirmed (single player; a tick on an AI army unit after its attacker is gone not reproduced) |
 | `liveBuildingWorkRate [log]` | **New.** A `BuildingWorkRate` tech (train, research and `Maintain` speed) also speeds up the buildings that already stand. Stock only speeds up the ones completed after the tech. | confirmed (single player, `Maintain`) |
 | `techPrereqRecheck [N] [full] [log]` | **New.** Techs whose prerequisites count units (`<TypeCount>`) react as soon as such units are created or die. Stock re-checks them only at the player's next house, age-up or tech change. | confirmed (single player) |
 | `maintainWaitForPop [UnitType] [log]` | **New.** A marked building whose automatic production (`Maintain`: factory cannons, Ottoman settlers, …) finishes a unit at the population cap keeps it and spawns it as soon as there is room. Stock throws it away and starts the cycle again. | confirmed (single player) |
@@ -45,7 +46,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `startingTC [UnitType] [log]` | **New.** A building of a marked type can be a player's first town center (`FirstTC` in the placement rules), like a `TownCenter`: a player with none takes it, and it replaces a first town center that is gone, dead or about to expire (WoL's Maori Pa start). | confirmed from the log and memory (single player; the placement effect not driven) |
 | `civFirstTC [log]` | **New.** A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players, except in a Nomad start. That building is their first town center (`FirstTC`) and, with the data the guide lists, receives their town starting units (settlers, crates). WoL's design. | confirmed (single player; a Nomad start and multiplayer not tested; AI scripts still expect a `TownCenter`) |
 | `transformInventory [all] [scale] [UnitType] [log]` | **New.** A unit that a tech (`TransformUnit`) or a revolution changes into another proto takes that proto's resources (`InitialResource`) when the two protos hold different resource types: a wood crate turned into a food crate holds food. Stock keeps the old resources (or none). | confirmed (single player) |
-| `noTrainNearEnemyTC M [UnitType] [log]` | **New.** Marked units (default `AbstractDaimyo`: the Daimyos and the Shogun) do not train while they stand less than M metres from an enemy's first Town Center; the queue keeps its progress and resumes when they leave or that Town Center dies. | confirmed (single player) |
+| `noTrainNearEnemyTC M [UnitType] [near UnitType] [nowarn \| warn=Text] [log]` | **New.** Marked units (default `AbstractDaimyo`: the Daimyos and the Shogun) do not train while they stand less than M metres from an enemy's first Town Center, or from an enemy building of a `near` type (up to 4), measured to the building's edge; the queue keeps its progress and resumes when the blocker dies. Your own held units show a red warning (your text, a string ID, or `nowarn`). | confirmed (single player) |
 | `overhealHitpointBars [UnitType…] [segment[=RRGGBB]] [stat[=Label]] [log]` | **New.** HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`, so a mod whose healers push units above their starting HP shows fresh units as full. With `segment`, the HP above it shows Overwatch style: an orange segment over the right end of the full floating bar, an orange `165/150` in the unit panel, and, with a fourth bar in the UI data, an orange end on the portrait bar. `stat` adds an `Overheal 15/15` row to the unit information panel. Display only. | confirmed (single player, UI) |
 | `overhealSources [UnitType…] [log]` | **New.** Only healers of the source types (default `AbstractOverhealer`) heal units marked by `overhealHitpointBars` above their `InitialHitpoints`; every other heal (other healers, regeneration, dances, area heals, powers) stops there, and a normal healer's heal action ends there. Needs `overhealHitpointBars`. | confirmed (single player) |
 | `overhealDecay <rate>[%] [delay] [UnitType…] [log]` | **New.** Overwatch-style decay: the HP of marked units above their `InitialHitpoints` goes back down to it at `rate` HP (or % of it) per second of game time, `delay` seconds after their last heal (regeneration does not hold it); never below it, never fatal. Needs `overhealHitpointBars`. | confirmed (single player, also a skirmish vs AI) |
@@ -119,14 +120,13 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 28 new features: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime`,
-    `dodgeAnyUnit` (with `dodgeChance`, `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
+
     `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
     `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
     `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,
     `danceBonusCivs`, `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
-    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `bufferedFileReads`,
-    `multipleInstances`. Most of them answer Wars of Liberty's requests
+    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `decimalPopulation`,
+    `bufferedFileReads`, `multipleInstances`. Most of them answer Wars of Liberty's requests
     ([docs/wol-requests.md](docs/wol-requests.md)).
 - **In research:**
   - `unlockAllCards` (every card usable from a new home city): paused.

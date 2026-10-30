@@ -149,6 +149,7 @@ Keys
 ignoreRegistryPath            read the game data from the mod folder
 deckCardCount N               decks of more than 25 cards
 basePop N, extraPop N         higher population limits (no 250 cap)
+decimalPopulation [K] [log]   population with decimals (PopulationCount 0.5), steps of 1/K
 noAILimit                     every AI3\\*.personality file in game setup
 customRevolutionBanners       a banner for every XPRevolution<Name> tech
 removeFameRestriction         Fame, XP and shipment costs and icons
@@ -159,7 +160,8 @@ hcShipmentPointFallback ...   when no stock fallback building is left, the shipm
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
 smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt unit
                               (listed types first) instead of the first one
-damageOverTime [log]          poison: attacks with <AttachProtoUnit> damage over time
+damageOverTime [log] [noticktext]   poison: attacks with <AttachProtoUnit> damage over
+                              time (+ AttachMaxStacks, AttachSnare, AttachTickText)
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
 dodgeChance T P [tech X | notech] [ranged | melee | all] [log]   dodge chance P % per
                               unit type, with a tech (YPDodge by default) and a hit filter
@@ -187,8 +189,9 @@ civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCen
                               place for its players (not Nomad); it is their FirstTC
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
-noTrainNearEnemyTC M [UnitType] [log]  marked units (Daimyos) do not train within M metres
-                              of an enemy's first Town Center
+noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [log]   marked units
+                              (Daimyos) do not train within M metres of an enemy's first
+                              Town Center or of an enemy building of a near type
 overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [stat[=Label]] [log]   HP bars and texts
                               of marked units use InitialHitpoints as 100 % (overheal up to
                               MaxHitpoints); segment: the HP above it in orange, Overwatch style

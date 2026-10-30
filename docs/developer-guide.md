@@ -11,7 +11,7 @@ internals of each feature, [how-it-works.md](how-it-works.md).
   MASM (`ml.exe`). This project uses Visual Studio 2026; 2022 should work but was not tested.
 - CMake 3.25 or later. The copy bundled with Visual Studio works:
   `<VS>\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe`.
-- Python 3, for the tools. The capstone checks in [section 5](#5-reverse-engineering-workflow)
+- Python 3, for the tools. The capstone checks in [section 6](#6-reverse-engineering-workflow)
   also need `pip install capstone pefile`, preferably in a virtual environment.
 
 **Commands**, from an "x86 Native Tools Command Prompt" or with full paths:
@@ -110,7 +110,21 @@ python -I tools/testbed.py close                # also deletes the uhc-* scenari
 there:
 - **Commands reach the game only through `perfExecFile`** (`src/features/perf.cpp`): every 30
   frames the DLL runs each line of `<bed>\uhc-exec.txt` as a console command and deletes the
-  file. Posted key presses never reach the console. `deploy` adds the key to the cfg.
+  file. Posted key presses never reach the console. `deploy` adds the key to the cfg. The
+  console has no trigger or AI syscalls: `uiMessageBox("…")` works, but a command that calls
+  `trPlayerGetPopulation`, `kbGetPop` or `trChatSend` does nothing (it does not compile there).
+  Test XS syscalls in an AI skirmish or through a trigger. Two probes that work in a test copy
+  (back the files up first): an effect added to `trigger3\typetest.xml` whose `<Command>` calls
+  the syscalls and prints them with `trChatSend(0, "…" + value)`, run by a map's `at<s>=` spec;
+  and, for `ai*` / `kb*` syscalls, a rule file included after `aiMain.xs` in
+  `AI3\aiLoaderStandard.xs` that prints with `aiChat(1, "…")` every few seconds.
+- **UI tests:** loose UI files in a test copy's `data` folder override the archives (`uimainnew.xml`
+  plus its `.xmb`, compiled with `xmbedit.py from-xml`), so a data ref no stock UI shows can be put
+  in a gadget's text or `mouseovertext`. String tables edited there are not read (neither `.xml`
+  nor `.XMB`).
+- **Post-game statistics:** `Menú` (client 2373, 27), `Claudicar` (2373, 353), `Sí` (1097, 799);
+  then `Menú` again and `Resumen partida` (2373, 83). The `Línea cronológica` tab draws per-player
+  curves, chosen in its `Mostrar` list (client 2395, 171).
 - **The map** is a random map script written to the copy's `RM3` folder. `p<N>=Proto*count@x,z`
   places units of player N (x, z are fractions of the map side); `tech<N>=Name` adds a trigger
   that makes a tech active for player N. A trigger's tech parameter is the tech's **index in
@@ -206,6 +220,21 @@ there:
   before each "Play". After a game, the home city screen sometimes ignores the first click on
   "Play": take a small screenshot (`shot out.png 4`) and click again. `startRandomGame2` does
   nothing from the main menu; it works only inside the editor.
+- **A skirmish between two AIs** (for AI-only cases, such as `damageOverTime`'s army units): on
+  the setup screen the player count list is at client (2317, 131) and "3 players" at (1911, 267);
+  "No teams" (1935, 1459), speed "Fast" (2253, 1325). A player's portrait button opens the AI
+  personality list (player 2's at (1003, 385), player 3's at (1003, 537)); `wheel 1677 695 30`
+  scrolls it to the European leaders, the first row is at (1797, 575), the second at
+  (1797, 695), and "Accept" at (1577, 931). Two Hard AIs had military from about minute 5.
+- **Kill or Destroy.** The trigger `Kill` leaves a body that still answers to the unit's ID for a
+  while; `Destroy` removes the unit at once. Use `Destroy` when a test needs the unit gone.
+- **Scenario armies are not AI armies.** `Army Deploy` (`trArmyDispatch`) creates the units but
+  does not put them in an engine army (no army flag 37h).
+- **Reading a player's resources:** they are a resource list embedded at `[player+230h]`
+  ([engine-symbols.md](engine-symbols.md), "Player resources"); entry 5 is XP, which also rises
+  by a steady trickle, so compare a kill against that rhythm.
+- **Zooming for a video:** `exec "uiLookAtUnit(ID)"`, then `wheel 1280 700 8`, then `record …
+  --follow ID`.
 - **Shipments need a skirmish and real clicks.** Scenario players have no home city, so a test of
   shipments (`hcShipmentPointFallback`) runs in a skirmish. Send a card by clicking the home city
   flag (client 667, 1217 on a 2560×1600 client), then a card in its panel. The console cannot set
@@ -229,7 +258,7 @@ there:
 The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_hooks.asm`).
 
 1. **Find the code.**
-   - Start from strings and cross-references, then decompile ([section 5](#5-reverse-engineering-workflow)).
+   - Start from strings and cross-references, then decompile ([section 6](#6-reverse-engineering-workflow)).
    - When static reading is not enough, trace the running game. For `healNonIdle`:
      - the hit points field (`unit+64h`) came from a write breakpoint while a monk healed;
      - its writer's call chain led to the heal tick FUN_009E0B53 and its "target busy" check at
@@ -238,7 +267,7 @@ The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_ho
        then found the automatic target search FUN_009CD865 and its idle test.
 2. **Choose the site and check it.** It must be an instruction boundary, no branch may land
    inside the bytes you overwrite, and you must know what is live at the continuation
-   ([section 5](#byte-level-checks-with-capstone)).
+   ([section 6](#byte-level-checks-with-capstone)).
 3. **Add the site** to `SITES` in `tools/gen_sites.py`, with a comment saying what the bytes
    are. Make the range cover the overwritten bytes and the continuation. Regenerate:
 
@@ -276,7 +305,78 @@ The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_ho
 Test data goes in the test copy only. For example, add a marker unit type with
 `tools/xmbedit.py add-unittype`.
 
-## 4. Conventions
+## 4. Definition of done
+
+Every new or changed feature meets this list before it is reported as done. Each item links to
+where it is explained; the rules written nowhere else are spelled out here.
+
+**Analysis**
+- [ ] **Every reader and writer** of the value the feature changes (HP, speed, a flag…) is listed,
+  from REA cross-references ([static analysis](#static-analysis-rea-and-ghidra)) or a write
+  breakpoint ([tracers](#dynamic-analysis-hardware-breakpoint-tracers)), with a decision for each:
+  does the feature affect it? `healNonIdle`'s first hook did nothing because the automatic target
+  search was a second path ([section 3](#3-adding-a-feature-step-by-step), step 1).
+- [ ] **Every caller of a hooked function** is known (AI, triggers, UI, other players' units),
+  with what each one expects from it.
+- [ ] **What is live after each continuation** (registers, flags, x87 stack) is checked
+  ([hook conventions](how-it-works.md#3-hook-conventions),
+  [byte-level checks](#byte-level-checks-with-capstone)) and written in the feature's "Why it is
+  safe" in [how-it-works.md](how-it-works.md#4-the-features).
+- [ ] **Per-player copies:** protos, actions and techs exist per player; the code reads the right
+  copy (the player's proto, FUN_0045311B, in
+  [engine-symbols.md](engine-symbols.md#damage-and-poison-2026-10-28-for-damageovertime)).
+
+**Tests** ([driving the game unattended](#driving-the-game-unattended))
+- [ ] **Minimum matrix:**
+  - the key absent: stock behaviour;
+  - each argument;
+  - an unmarked control unit;
+  - bad arguments (an unknown type or tech, 0, negative or huge values): logged, the feature not
+    applied, never a crash.
+- [ ] **Combinations** with every key that shares a site, a pointer or a wrapper, for example
+  `g_uhcBwrTrainGetter` ([buildingWorkRateAuras](how-it-works.md#buildingworkrateauras) and
+  `noTrainNearEnemyTC`) or the world update wrapper of
+  [damageOverTime](how-it-works.md#damageovertime).
+- [ ] **Lifecycle:** a new game, a loaded game, a scenario, a data reload. The DLL's state is
+  cleared ([data-load callbacks](how-it-works.md#3-hook-conventions)) and never leaks from one
+  game into the next; what saved games do not keep is documented
+  ([modding guide, section 7](modding-guide.md#7-multiplayer-saved-games-and-replays)).
+- [ ] **Performance:** a hook on a hot path (per unit, per tick) is O(1) or close: no allocation
+  per tick, no walk over every unit of the world. Measured with `perfStats` on a large game, before
+  and after ([performance.md](performance.md#benchmark-harness)).
+- [ ] **Regression:** after a change to a shared hook, the neighbouring features still log
+  `applied` and their `hook reached` lines.
+- [ ] **Unit tests:** there is no test target yet. Once there is one, pure C++ logic (cfg and
+  argument parsing, calculations) gets unit tests that run without the game.
+- [ ] **The AI still plays** after data or combat changes ([CLAUDE.md](../CLAUDE.md#commands),
+  "Check the AI after data or combat changes").
+
+**Multiplayer**, for every key that changes the simulation (details in
+[how-it-works.md, section 5](how-it-works.md#5-rules-that-keep-multiplayer-deterministic)):
+- [ ] no decision depends on the local player;
+- [ ] no real clock: game time `[world+108h]` or the step count `[world+F8h]`;
+- [ ] no randomness but the game's synced RNG;
+- [ ] ordered containers (keyed by unit ID, never by pointer or hash order);
+- [ ] logs never feed back into the game.
+
+**Process**
+- [ ] **Scope:** if a part turns out much more expensive than planned, deliver what works and
+  document the rest as pending instead of stretching the task.
+- [ ] **One commit per key;** each commit builds and exports `_UHCMain@0` ([section 1](#1-build)).
+- [ ] **Test data backed up** before any edit, with an `*.orig`-style suffix as the existing test
+  copies do (`protoy.xml.uhc-orig`, `*.wol-orig`; [test data](#driving-the-game-unattended)).
+- [ ] **Docs updated:** [section 3](#3-adding-a-feature-step-by-step), step 9, and the doc list in
+  [CLAUDE.md](../CLAUDE.md#layout).
+- [ ] **Status words** as already defined: `unverified` / `confirmed` / `mismatch`
+  ([conventions](#5-conventions)), and in the feature tables `confirmed (single player)` and the
+  like ([README](../README.md)).
+- [ ] **The final report** always has the same shape:
+  1. what works;
+  2. what was tested in game, and how;
+  3. what was not tested;
+  4. what is inferred without being observed.
+
+## 5. Conventions
 
 - **English** for code, comments and documentation.
 - **No code from other projects in `src/`:**
@@ -290,7 +390,7 @@ Test data goes in the test copy only. For example, add a marker unit type with
   apart.
 - **Copies only:** never modify the Steam install.
 
-## 5. Reverse-engineering workflow
+## 6. Reverse-engineering workflow
 
 ### Static analysis: REA and Ghidra
 
@@ -416,7 +516,7 @@ The research notes cite their evidence:
 Each entry gives the address, the function and the method, so anyone can rerun it with the
 stock exe.
 
-## 6. Making a release
+## 7. Making a release
 
 Modders download a zip, so they never need a compiler. The version has a single source,
 `project(UHC VERSION x.y.z)` in `CMakeLists.txt`. CMake writes it into `version.h`, which

@@ -33,7 +33,7 @@ UhcNoTrainHook PROC
     cmp g_uhcNoTrainType, 0
     jl stock
     push dword ptr [esi+10h]        ; the trainer
-    call UhcNoTrainBlocked          ; bool: marked, and an enemy FirstTC is alive within range
+    call UhcNoTrainBlocked          ; bool: marked, and a blocker is alive within range
     test al, al
     je stock
     fldz                            ; rate 0.0: no progress this tick

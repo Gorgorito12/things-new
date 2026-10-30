@@ -356,6 +356,12 @@ SITES = [
     # snareOnlyHitUnit, code the helpers mirror: the TargetSpeedBoost call 0x4DD22D(target, 0,
     # 0.65f, -1f, -1f, 0, 2, 3000, -1, -1, 1), the snare signature
     ("SnareCreate", 0x4DD201, 0x2C),
+    # damageOverTime <AttachSnare>, verify only: the stock snare's target test before that call
+    # (unit vtable slot 90h, 0x45EE55: true for a unit that can move) and the creator it calls,
+    # int thiscall(unit, stat, value, -1f, -1f, 0, op, ms, -1, -1, exclusive), ret 28h, -1 without
+    # an action manager [unit+58h]; it allocates the modifier record [[unit+0B4h]+0C8h] if missing
+    ("SnareTargetCheck", 0x4DD1DE, 0x23),
+    ("SnareApply", 0x4DD22D, 0x82),
     # snareOnlyHitUnit: the modifier init 0x4B3D44 ([+64h] stat, [+68h] value, [+78h] op, flag
     # 15h or 14h by duration, flag 16h exclusive)
     ("SnareModifierInit", 0x4B3D44, 0x5A),
@@ -512,6 +518,23 @@ SITES = [
     # noTrainNearEnemyTC: isEnemy 0x484D2D, bool thiscall(player, id): [player+1D4h+4*id] == 2 for
     # 0 <= id < 10h, ret 4
     ("PlayerIsEnemy", 0x484D2D, 0x20),
+    # noTrainNearEnemyTC near, verify only: the world's spatial query FUN_004A1C55, int
+    # thiscall(world, const float* point, float radius, char precise, list*), ret 10h (a box query
+    # through 0x462DBA into the obstruction manager's scratch, then with precise the entries whose
+    # vtable+0B8h(point) <= radius are copied to the list {data, count, capacity}), and the type
+    # branch of the placement rule FUN_008CE935 that calls it with precise 1
+    ("UnitsNearPoint", 0x4A1C55, 0xF8),
+    ("TypeRuleQuery", 0x8CEA69, 0x22),
+    # noTrainNearEnemyTC warning, verify only: the dodge's floating text 0x6A24FC..0x6A2608 (text
+    # manager [world+8A8h], visible-to test 0x4818F4(unit, [game+3C0h]), ret 4; the config reads,
+    # 0x46A144 for the two times, int thiscall(0C66500h, [[id ptr]], out*), ret 8; then
+    # 0x8023AE(text, time1, time2, unit ID, float[3] motion, colour ARGB, 1.0, 0, -1), ret 24h,
+    # whose head refuses an empty text or a negative unit ID and whose body reads the three floats
+    # and appends the text to the manager's list, returning its index)
+    ("DodgeFloatingText", 0x6A24FC, 0x10D),
+    ("FloatingTextAdd", 0x8023AE, 0xC4),
+    ("UnitVisibleTo", 0x4818F4, 0x45),
+    ("ConfigInt", 0x46A144, 0x3F),
     # overhealHitpointBars, the floating HP bars (bar chunk 0x45FAA2 of the unit visual update):
     # mov ecx,esi (the unit) / jne 6A1431h (under construction: the build fraction instead), the
     # hooked call 45F295h (health ratio, the bar's fill) and the fstp [esp+10h] it continues at
@@ -736,6 +759,80 @@ SITES = [
     # [colony+28h] == the unit (count [edi+18h], indices [edi+14h], colonies [edi+8]); the
     # helper repeats this test
     ("TownStartColonyLoop", 0x7C2407, 0x31),
+    # decimalPopulation: the int parse 0x59A71D(text, int* out) of <PopulationCount> (FUN_005FB8FA,
+    # then [proto+0D8h]) and <PopulationCapAddition> (FUN_005FD6E5, then [proto+0D4h]), up to the
+    # store; the two calls are redirected
+    ("PopCountParse", 0x5FB92E, 0x1E),
+    ("PopCapAddParse", 0x5FD719, 0x1E),
+    # decimalPopulation: the proto effects PopulationCount (case 0x8FA814) and
+    # PopulationCapAddition (case 0x8FA8AB) of the effect switch 0x8F978D call the int effect
+    # FUN_007F899B(rel, int* out, base, float amount, negate), cdecl; both calls are redirected,
+    # and PopulationCount's "result <= 0 -> 1" (mov eax,1 at 0x8FA849) becomes K
+    ("PopCountEffect", 0x8FA835, 0x1D),
+    ("PopCapAddEffect", 0x8FA8CF, 0x1A),
+    ("IntEffect", 0x7F899B, 0x23),
+    # decimalPopulation: the player effect PopulationCap (FUN_008D842B case 14h, and its removal
+    # at 0x8D20AB): fld [esp+X] (the amount) / fnstcw [esp+X], then a truncating fistp; the
+    # amount is scaled in between
+    ("PopCapEffectAdd", 0x8D87AB, 0x08),
+    ("PopCapEffectRemove", 0x8D20AB, 0x08),
+    # decimalPopulation: getCap's shared-team path (GameTeamSharePop): per ally
+    # min(raw, 200, [world+31Ch]), from cmp eax,0C8h to add ebx,eax
+    ("TeamPopCap", 0x679694, 0x26),
+    # decimalPopulation: game start: setCap(getCap() + [player+7Ch] + [world+320h]), from
+    # add eax,ebx / add eax,[esi+320h] to push eax
+    ("StartPopBonus", 0xA0D2D1, 0x09),
+    # decimalPopulation: XS registrations, push impl / push name (the impl is replaced)
+    ("XsAiGetAvailableEconomyPop", 0x72A333, 0x0A),
+    ("XsAiGetAvailableMilitaryPop", 0x72A49B, 0x0A),
+    ("XsAiGetCurrentEconomyPop", 0x72A382, 0x0A),
+    ("XsAiGetEconomyPop", 0x72A3D1, 0x0A),
+    ("XsAiGetMilitaryPop", 0x72A4EA, 0x0A),
+    ("XsAiGetPopNeeds", 0x7319AA, 0x0A),
+    ("XsAiSetEconomyPop", 0x72A420, 0x0A),
+    ("XsAiSetMilitaryPop", 0x72A539, 0x0A),
+    ("XsKbGetPop", 0x885EE5, 0x0A),
+    ("XsKbGetPopCap", 0x885F34, 0x0A),
+    ("XsKbGetPopCapAddition", 0x887BB1, 0x0A),
+    ("XsKbGetPopSlots", 0x887C58, 0x0A),
+    ("XsKbGetPopulationSlotsByQueryID", 0x887DA6, 0x0A),
+    ("XsKbGetPopulationSlotsByUnitTypeID", 0x887CFF, 0x0A),
+    ("XsKbUnitPickGetMaximumPop", 0x88F88A, 0x0A),
+    ("XsKbUnitPickGetMinimumPop", 0x88F768, 0x0A),
+    ("XsKbUnitPickSetMaximumPop", 0x88F7E3, 0x0A),
+    ("XsKbUnitPickSetMinimumPop", 0x88F6C1, 0x0A),
+    ("XsTrPlayerGetPopulation", 0x98C439, 0x0A),
+    # decimalPopulation: the formatText data refs pop (22h), popcap (23h), futurepop (24h) and
+    # totalpop (25h) (FUN_005CFA7C), entries {id, type, name, provider}: mov [esp+2Ch],provider /
+    # call 5ACE63h / test / je / mov edx,[esp+18h] (the id) / ... / mov [edi],edx /
+    # mov eax,[esp+1Ch] (the type: EBX = 2, int, here; 3 is text) / push ecx / lea ecx,[edi+8] /
+    # mov [edi+4],eax
+    ("RefPopReg", 0x5D0B47, 0x2B),
+    ("RefPopCapReg", 0x5D0BC3, 0x2B),
+    ("RefFuturePopReg", 0x5D0C3F, 0x2B),
+    ("RefTotalPopReg", 0x5D0CBB, 0x2B),
+    # decimalPopulation: their stock int providers, bool stdcall(Value*) (they write [value+4])
+    ("RefPopProvider", 0x6F2274, 0x0A),
+    ("RefPopCapProvider", 0x458244, 0x0A),
+    ("RefFuturePopProvider", 0x44CE3A, 0x0A),
+    ("RefTotalPopProvider", 0x45809D, 0x0A),
+    # decimalPopulation: colorizePop (6Ch, 0x6F5736): the argument parse call 6F2A1Dh
+    # (atoi of the text in parentheses, -1 on failure), then getPop + [player+78h] + N > getCap
+    # (red), then the "%s%d%s" format call
+    ("ColorizePopArg", 0x6F576F, 0x08),
+    ("ColorizePopFormat", 0x6F580C, 0x0C),
+    # decimalPopulation: BString sprintf 0x444EFB(dest, fmt, ...), cdecl, and the calls that print
+    # a population: unit help "Population: %d" (0x63F98D, 0x70FF3A, str 11725), the pop costs
+    # "{colorizePop(%d)}" (0x63FEC5, 0x70F58F, str 20395; 0x710651, str 37461 / 20395), the pop
+    # counter's help "%d %s = %d" (0x6F2DB5) and str 18963 with getCap (0x6F2E34)
+    ("BStringFormat", 0x444EFB, 0x14),
+    ("PopFormatHelp", 0x63F98D, 0x08),
+    ("PopFormatHelp2", 0x70FF3A, 0x08),
+    ("PopFormatCost", 0x63FEC5, 0x08),
+    ("PopFormatCost2", 0x70F58F, 0x08),
+    ("PopFormatCost3", 0x710651, 0x08),
+    ("PopFormatCapLine", 0x6F2DB5, 0x08),
+    ("PopFormatCap", 0x6F2E34, 0x08),
 ]
 
 

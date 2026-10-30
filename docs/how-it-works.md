@@ -165,6 +165,91 @@ extra population is negative, and that path skips the first 5 patched bytes. Ups
 
 The shared-team-population path (`0x679641`) is not patched.
 
+[decimalPopulation](#decimalpopulation) installs the same hook when neither key is set, keeping
+steps 3 and 5 (`g_uhcPopStockClamps` = 1), and multiplies every limit by its scale
+(`g_uhcPopScale`, 1 otherwise).
+
+### decimalPopulation
+
+**Stock.** `<PopulationCount>` (handler FUN_005FB8FA) and `<PopulationCapAddition>`
+(FUN_005FD6E5) parse an ANSI copy of the tag's text (0x402733, WideCharToMultiByte) with
+0x59A71D (`sscanf "%d"`) into `[proto+0D8h]` / `[proto+0D4h]`. A player's population
+`[player+70h]` and raw cap `[player+74h]` are XOR-encoded sums of them (getPop 0x45805C, getCap
+0x4581A1, which clamps the raw cap: see [basePop](#basepop-and-extrapop)); `[player+78h]` is the
+population the queues reserve. Every consumer compares those sums: the Train add FUN_009EAC35
+(`getPop + reserved + n × pop ≤ getCap`), the spawns FUN_009E2AC8 / FUN_009E2DEF, the command
+predicate FUN_004C6968, the Maintain update, `trPlayerAtPopCap`, … (44 calls of the two getters;
+all compares except the outputs below).
+
+**The change: fixed point.** Every population quantity is stored K times larger, so the compares
+stay as they are, and only the places where a population enters or leaves change.
+- **Inputs:**
+  - the two tag calls of 0x59A71D (0x5FB92E, 0x5FD719) go to `UhcPopCountParse` /
+    `UhcPopCapAddParse` (cdecl `(const char*, int*)`, bool): strtod, × K, rounded. The `int*` is
+    the handler's own argument slot (`lea eax,[esp+0Ch]`); the next slot is the proto, which the
+    log reads for its name (`[proto+10h]`);
+  - the proto effects (switch 0x8F978D, cases 0x8FA814 / 0x8FA8AB) call the int effect
+    FUN_007F899B(rel, int* out, base, float amount, negate), cdecl, at 0x8FA835 / 0x8FA8CF; both
+    calls go to wrappers. Relativity 1 (Absolute; stock truncates `amount`) gets
+    `round(amount × K)`; 3 (Assign; stock `(int)(amount + 0.5)`) gets `amount × K`; 2
+    (BasePercent; stock `(int)(base × amount − base + 0.5)`, truncated toward zero) is computed as
+    `lround(base × amount − base)` and applied as Absolute; 0 (Percent, `× (int)(amount + 0.5)`)
+    is passed through. PopulationCount's floor (`result ≤ 0 → 1`, `mov eax,1` at 0x8FA849) gets
+    K in its imm32. After the change the stock code recounts the player's population
+    (FUN_00A00470) or cap from the scaled values;
+  - the player effect PopulationCap (FUN_008D842B case 14h, and its removal at 0x8D2099):
+    `fld [esp+X] / fnstcw [esp+X]` (8 bytes at 0x8D87AB and 0x8D20AB) become `fld / fimul K /
+    frndint / fnstcw`, so the truncating `fistp` that follows gets an exact integer.
+    PopulationCapBonus (56h) and PopulationCapExtra (57h) store `[player+4F4h]` / `[player+4F8h]`
+    in whole population, scaled where getCap reads them;
+  - getCap's limits: the cap hook of [basePop](#basepop-and-extrapop) multiplies base + extra,
+    the bonus and, when decimalPopulation installs it alone (`g_uhcPopStockClamps` = 1), the
+    world's `[world+31Ch]` + extra and the 250 by `g_uhcPopScale`. The shared-team path
+    (0x679694..0x6796B7) gets the same for its 200 and `[world+31Ch]`. The game-start bonus
+    (0xA0D2D1: `setCap(getCap() + [player+7Ch] + [world+320h])`) gets K for the two bonuses;
+  - the XS setters (below) multiply their value.
+- **Outputs:**
+  - **XS:** the registration `push impl / push name` of 19 syscalls (sites `Xs*`) gets a
+    wrapper's address. The wrappers are cdecl and read two arguments in place (no declared
+    parameters, so the compiler never reuses a slot the caller did not push), call the stock impl
+    with them, and divide (getters: rounded half away from zero; `kbGetPopSlots` up;
+    `kbUnitPickGet*` keep negatives) or multiply the value (setters: `aiSetEconomyPop`,
+    `aiSetMilitaryPop` → `[ai+24h]` / `[ai+28h]`, `kbUnitPickSet*Pop` → `[pick+78h]` /
+    `[pick+7Ch]`; negatives kept, the picks' default is −1). C++ callers of the same impls are
+    untouched: they work on scaled values;
+  - **data refs:** pop (22h), popcap (23h), futurepop (24h) and totalpop (25h) are registered as
+    ints (type 2). Their registration's `mov eax,[esp+1Ch]` (the type) becomes `push 3 / pop eax
+    / nop` (text), and their provider imm32 a stdcall wrapper that calls the stock provider with
+    an int Value `{2, 0}` and assigns the formatted number (0x443BB8);
+  - **colorizePop** (6Ch, 0x6F5736): its argument parse 0x6F2A1D (strtok `()`, atoi of the second
+    token) becomes `UhcColorizePopArg(BString*)`: the number after the first `(`, × K; its
+    `"%s%d%s"` call (0x6F580C) prints the number with its decimals;
+  - **printed populations:** the calls of the BString sprintf 0x444EFB that print one (0x63F98D,
+    0x70FF3A: str 11725 with `[proto+0D8h]`; 0x63FEC5, 0x70F58F, 0x710651: `{colorizePop(%d)}`;
+    0x6F2DB5: `%d %s = %d`; 0x6F2E34: str 18963 with getCap) go to `PopFormat<i>`, which replaces
+    the i-th conversion of the format with `%s` and passes the text (`12`, `12.5`, up to three
+    decimals) in the same 4-byte slot.
+
+**Why it is safe.**
+- Integer data is unchanged in meaning: every value is a multiple of K and every compare is
+  between scaled values. Any consumer not listed reads a relative quantity (checked for the 44
+  getter calls; [engine-symbols](engine-symbols.md#population-for-decimalpopulation)).
+- The parse wrappers keep the stock contract: same arguments, bool in AL, the out int written on
+  success. The effect wrappers call the stock function with its five arguments. The PopulationCap
+  hooks leave the x87 stack as stock does (one value, then the stock `fistp`), and the control
+  word is set by the stock `fnstcw / fldcw` right after; `frndint` rounds with the game's mode,
+  round to nearest.
+- The cap hook keeps every stock clamp when decimalPopulation runs without basePop/extraPop; with
+  them, their semantics, in whole population. `g_uhcPopScale` is 1 otherwise, so basePop/extraPop
+  alone behave as before (tested: 6 / 300).
+- The text refs are used only as text by the stock and WoL UIs (`formatText`); the int evaluator
+  now refuses them, which no UI asks for.
+- The format wrappers pass the arguments in the same slots (all 4 bytes), so a format whose
+  conversion is missing (a translation) is printed by the stock call unchanged.
+- **Not covered** (scaled values shown as they are): the post-game timeline's population curves
+  (seen in game: 9 population drawn at 90) and the AI's debug text (0x7167EB). Saved games store
+  the scaled values.
+
 ### noAILimit
 
 FUN_00603AB7 builds, at `0x603B0B..0x603C4E`, a table of 11 (or 14 with TAD content)
@@ -346,7 +431,7 @@ healer to prefer some units lists their types.
 
 `healNonIdle`, `dodgeAnyUnit` (and its sound keys), `maintainWaitForPop`,
 `broadsideMuzzleLimit`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `noCorpseDopples`,
-`startingTC`, `noTrainNearEnemyTC`, `overhealHitpointBars` (each of its types), and
+`startingTC`, `noTrainNearEnemyTC` (and each `near` type), `overhealHitpointBars` (each of its types), and
 `transformInventory` and `showGatherRate` when given a type, request their type here. A name that
 already exists, a stock type or a proto name, keeps its ID and adds nothing.
 
@@ -471,7 +556,9 @@ The DLL ignores that path and adds its own, driven by data.
 - The tag hook there runs only when the return address `[esp+C0h]` is 0x5FA213, i.e. a `protoy`
   `<ProtoAction>`.
 - For a tag named `AttachProtoUnit` (case-insensitive), it records the text X under the key
-  (attacker proto ID `[proto+4]`, action name index `[action+4]`).
+  (attacker proto ID `[proto+4]`, action name index `[action+4]`). `AttachMaxStacks`,
+  `AttachSnare` and `AttachTickText` set the record's options under the same key, in any order;
+  a value that does not parse is logged and dropped.
 - That key also matches every player's copy of the proto and its actions, which keep both
   numbers.
 - The data is parsed at startup and again when a skirmish starts, but not when a scenario loads
@@ -493,9 +580,17 @@ The DLL ignores that path and adds its own, driven by data.
   ROF `[action+34h]` and the Lifespan `[proto+ACh]`.
 - It adds a poison keyed (unit ID, X, attacker player):
   - a new poison ticks first one ROF after the hit;
-  - a later hit by any unit of the same player moves the end to `now + Lifespan` (the current
-    Lifespan) and makes that unit the attacker; the tick timer keeps running.
+  - each hit makes its unit the attacker, takes its action's options (stack limit, snare, tick
+    colour) and adds a **stack** that ends `now + Lifespan` (the current Lifespan). The stacks are
+    the end times, kept in expiry order; stacks already expired are dropped first, and at the
+    limit the oldest goes. The poison's end is the last stack's. With the default limit of 1 a
+    hit just moves the end, as before stacks existed; the tick timer keeps running either way.
 - A hit that kills the unit, or a unit that is not alive (unit `vtbl+A4h`), adds nothing.
+- The hit sees the attacking proto and action of every kind of attack tested: hand attacks,
+  instant shots, flying arrows, grenades and cannon balls (the projectile's damage arrives with
+  the launcher's proto ID and action), and each unit of an area attack (one call per unit).
+  With `log`, the first damage of each (proto, action) without a record is logged, so a modder
+  can see the names the game uses.
 
 **Tick.** The entry of the world update (`0x481A57`) jumps to a second wrapper.
 - It calls the stock update through its trampoline (`sub esp,0Ch; push ebx; push ebp;
@@ -505,38 +600,83 @@ The DLL ignores that path and adds its own, driven by data.
 - Each due tick (`nextTick ≤ now` and `nextTick ≤ end`) calls the stock TakeDamage:
   - unit, attacker player, X's proto ID, X's `Attaching` action;
   - the attacker unit ID while that unit exists, else −1;
-  - multiplier 1, damage 0 (computed), no cap;
+  - multiplier = the stacks alive at the tick's time (1 without `AttachMaxStacks`): TakeDamage
+    passes it to the damage-from-action function FUN_0048649F, which scales the computed damage
+    (in game, 5 Siege gave 5, 10 and 15 for 1, 2 and 3 stacks);
+  - damage 0 (computed), no cap;
   - p8..p13 = `0, 0, 1, 1, -2, 1`, as the stock special-damage callers pass them, except p11
     (the hit reactions), which is 0 when the attacking unit is gone.
 
   The engine therefore applies the damage type, the bonuses, the armor and the DamageFlags. Kills
-  and XP go to the attacker's player.
+  and XP go to the attacker's player. All seen in game (2026-10-29): a `DamageBonus` against
+  cavalry tripled the ticks on a Hussar, the musketeers' hand armor took 20 % off, a unit
+  converted to the attacker's side took 0.00 per tick from X's `Enemy` flags, and a musketeer
+  killed by a tick gave its 10 XP bounty to the attacker's player (the XP in `[player+230h]`,
+  entry 5).
 - **Why p11 depends on the attacker.** With p11 = 1, TakeDamage runs the reactions to a hit:
   retaliation, attack alerts, and, for a unit in an army (AI armies), the army's list of
   attackers. That last part reads the attacking unit with no null check (0x6A3253). An army unit
   poisoned by a unit that is gone would crash the game, so such a tick passes 0 and skips the
-  whole block (`jne 0x49BC00` at 0x49B929). The damage itself does not depend on it. This comes
-  from the code; no AI army was poisoned in game.
+  whole block (`jne 0x49BC00` at 0x49B929). The damage itself does not depend on it. The
+  attacker-gone path ran in game (an attacker removed by the trigger `Destroy`: the ticks went on
+  and killed the target), but not on an army unit: units sent by the scenario trigger
+  `Army Deploy` (`trArmyDispatch`) do not get the army flag (bits read in memory), nor do units a
+  map adds with `rmCreateArmy` / `rmAddUnitsToArmy`, nor the two AIs' military units read at
+  minute 26 of a skirmish (902 attacker-gone ticks in that game, none on an army unit). The only
+  writer of the flag is 0x8C2F2D, right after FUN_008C2544 (its one caller); what reaches it was
+  not traced. With `log`, such a tick line ends with `, army unit`.
+- **With snareOnlyHitUnit:** the poison's slow is a timed, exclusive velocity multiply, so that
+  key takes it for a snare: in game it logged the poisoned Hussar of a charging group as snared
+  (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`).
+- **An attacker is "gone"** only when its ID no longer gives a unit. A killed unit keeps its ID
+  while its body lies on the ground (trigger `Kill`), so its poisons keep it as the attacker
+  until the body disappears; a removed unit (trigger `Destroy`) is gone at once.
 - **Techs on X.** Each tick reads the player's copy of X's `Attaching` action again, so a tech
   that changes its damage applies from the next tick. A Lifespan change applies from the next
   hit, which sets the end time. TAD's tech effects have no ROF subtype: the table of `subtype`
-  names at `[db+3500h]` has none, so the interval always comes from the data. Not tested in
-  game.
+  names at `[db+3500h]` has none, so the interval always comes from the data. In game, a tech
+  doubling the `Attaching` damage, turned on in the middle of a poison, doubled the next tick.
 - **When the attacking unit is gone,** the engine skips its diplomacy filter (FUN_0049AEE0 lets
   everything through without an attacking unit). The wrapper then applies the same filter
   itself, with the attacker's player: X's DamageFlags against the unit's owner and the player's
   relation to it (`[player+1D4h + 4*id]`, 2 = enemy). A unit converted to the attacker's side
   therefore stops taking the poison, as it would with the attacker alive.
 - A poison ends when its end time passes, or when the unit dies or disappears.
+- **The snare** (`AttachSnare F`): when a poison starts, and after each tick that is not the
+  last, the wrapper calls the stock snare's creator 0x4DD22D(unit, 0, F, -1, -1, 0, 2, ROF +
+  250 ms, -1, -1, 1), as the `<TargetSpeedBoost>` path does with 0.65 for 3000 ms
+  (0x4DD201..0x4DD223), and only for a unit whose `vtbl+90h` (0x45EE55) says it can move, the
+  same test as there. That creates a timed, exclusive multiply modifier of the velocity (unit
+  action type 2Ch), which the speed getter `vtbl+34h` (0x487E27) and the group pace already
+  take into account (see [snareOnlyHitUnit](#snareonlyhitunit)). Each modifier outlives the next
+  tick by 250 ms, so the slow is continuous and ends 250 ms after the last tick; at most two of
+  the poison's modifiers exist at a time, and only the first exclusive one counts. In game a
+  Hussar's speed read 3.38 (6.75 × 0.5) at every tick.
+- **The tick text** (`AttachTickText`): after a tick that dealt damage, `ShowTick` writes `-N`
+  (the damage, rounded) over the unit with the shared floating-text helper
+  (`src/floatingtext.cpp`, the stock dodge text 0x8023AE without its rise, see
+  [noTrainNearEnemyTC](#notrainnearenemytc)). It shows only when the text manager exists and the
+  unit is visible to the local player; `damageOverTime noticktext` turns it off. It is
+  interface only: it reads the local player and writes the text manager, which nothing in the
+  simulation reads.
 - **Another game clears all poisons.** A new or loaded game can reuse the old world's address, so
   the test is the world's step count `[world+F8h]`. The world update raises it by exactly 1
   (0x481A87), and while poisons run every step reaches the wrapper. A jump of more than 1, game
   time going back, or another world pointer clears the poisons and logs `another game started`.
   A data load clears them too, and logs `the data was reloaded`.
 
+**Determinism of the new parts.** The stacks are game times in a vector inside the ordered map's
+value, added and dropped by game time only; the multiplier is their count. The snare is a
+simulation call made in the same order on every machine (the map's order, after the tick). The
+tick text depends on the local player and touches nothing the simulation reads, so
+`noticktext` may differ between players.
+
 **What it does not do.**
-- X is never created in the world, so there is no model or effect.
-- Poisons are not saved in saved games.
+- X is never created in the world, so there is no model or effect (the tick text is the only
+  marker).
+- Poisons are not saved in saved games. Loading one reloads the data, which drops the running
+  poisons (seen in game: `the data was reloaded; 1 running poison(s) dropped`, and the unit took
+  no more ticks).
 - The stock Poison flag stays unused.
 
 ### liveBuildingWorkRate
@@ -1435,11 +1575,49 @@ asks where the trainer stands.
    holds 0x9BFE33, the stock getter (so `liveBuildingWorkRate`'s getter hook still applies), or
    `buildingWorkRateAuras`' wrapper when that key is on.
 
-`UhcNoTrainBlocked`: false unless the trainer's proto is of the marker type (0x44D7FA). Then, for
-players 1 .. `[world+5Ch]`-1 in order: FirstTC `[p+4F0h]` ≥ 0, the unit 0x44CC6D(world, id)
-exists, its owner `[tc+44h]` is not the trainer's player and `0x484D2D(owner, trainer's player ID)`
-is true, it is alive (unit vtable slot A4h), and its distance `[vtbl+B8h](tc, trainer+14h)` is the
-smallest so far. Blocked when that smallest distance is below `<meters>`.
+`UhcNoTrainBlocked`: false unless the trainer's proto is of the marker type (0x44D7FA). Then it
+takes each `near` entry in order (only `FirstTC` without one) and keeps the nearest blocker:
+- `FirstTC`: for players 1 .. `[world+5Ch]`-1 in order, FirstTC `[p+4F0h]` ≥ 0, the unit
+  0x44CC6D(world, id) exists, its owner `[tc+44h]` is not the trainer's player and
+  `0x484D2D(owner, trainer's player ID)` is true, it is alive (unit vtable slot A4h); its distance
+  is `[vtbl+B8h](tc, trainer+14h)`.
+- a unit type: the placement rule's type branch (0x8CEA69) asks the world for the units near a
+  point, FUN_004A1C55(world, point, radius, 1, list), instead of walking every unit; the key makes
+  the same call with the trainer's position `[trainer+14h]` and `<meters>`. The function fills
+  the obstruction manager's scratch list from a box query (0x462DBA), keeps the units whose
+  distance to the point (`[vtbl+B8h]`) is at most the radius and appends their IDs to the
+  caller's list {data, count, capacity}, resetting its count first. The DLL keeps one list for the
+  session, so once it has grown no tick allocates. Each ID must give a unit (0x44CC6D) whose owner is not null, not
+  the trainer's player and not player 0 (Gaia, as the FirstTC loop starts at player 1), whose proto
+  is of the type (0x44D7FA), whose owner is an enemy (0x484D2D), that is alive (slot A4h) and
+  built (0x44DDB4: no construction record, or its progress at 1.0, so a foundation does not block
+  and a unit always counts).
+
+Blocked when the smallest distance is below `<meters>`.
+
+**The distance.** Slot B8h (0x485D68) is not a centre-to-centre distance. It calls slot B0h
+(0x485D83) with the unit's own position and the point, which asks slot 90h (0x45EE55): for a proto
+with bit 4 of its flag bitset set (the Town Center has it), slot 108h (0x4A0ED5) measures from the
+point to the unit's obstruction outline, the nearest of its four edges, 0 inside it (0x485E35);
+otherwise slot F4h (0x485DBC) takes the centre distance in x and z minus the larger obstruction
+radius times √2, at least 0. The trainer counts by its centre. In game: a Stable (half-sizes 3 × 5)
+whose centre was 24 m from the Daimyo in x and 4 m in z gave 21.0 m; a Barracks (4 × 4) at the same
+place 20.0 m; a Town Center (4 × 4) 10.4 m away in x gave 6.4 m. The placement rule uses the same
+call, so `65` here is the stock rule's 65 m.
+
+**The warning.** After a blocked decision, `Warn(trainer)` runs only when the trainer's player is
+the local player `[game+3C0h]`, the text manager `[world+8A8h]` exists and 0x4818F4(trainer, local
+player) is true, as the stock dodge text checks (0x6A24FC..0x6A2525). A map from the trainer's ID
+to the game time `[world+108h]` of its last warning keeps one per 8000 ms per unit; it is cleared on
+each data load, when the world changes and when the game time goes back (a new game). The text is a
+BString from the cfg text (0x401A12) or from a string ID (0x58EA52), freed with 0x4010CA. The two
+times come from the dodge's cfg variables (0x46A144 with the IDs `[[0CEFFF8h]]` and `[[0CF0000h]]`;
+2000 and 1000 in game, the values of the stock caller 0x9C039E). Then 0x8023AE(manager, &text,
+time1, time2, unit ID, motion, 0xFFFF4040, 1.0, 0, -1), the dodge's call with a red colour and a
+motion of {0, 0, 0}: the dodge's {0, 0.1, 0} makes the text rise, and in the test bed it left the
+screen in about 0.3 s, while at 0 it stays over the unit. 0x8023AE refuses a text when
+`[game+0B39h]` ≠ 0 or `[game+0B3Bh]` = 0, for a negative unit ID or an empty text (−1, logged as
+"refused by the engine"); otherwise it appends the text to the manager's list and returns its index.
 
 **Why it is safe.**
 - Both paths leave one value on the x87 stack, as the getter does. After `0x9EA418`, EBX and EAX
@@ -1448,17 +1626,29 @@ smallest so far. Blocked when that smallest distance is below `<meters>`.
   (stdcall); the stack is balanced. `WorkRateTrainCall` and `TrainRateScale` are verified sites.
 - A rate of 0.0 is a state the update already handles: `[+68h]` does not move and 0x9EA1FA keeps
   the fraction below 1.0. The queue, its resources and its population stay as stock left them.
-- The answer depends only on simulation state (unit types, FirstTC, stances, alive state,
-  positions), read in player order with the engine's own functions and the placement rule's
-  distance call; the comparison with `<meters>` is a single-precision compare. No local player,
-  clock or interface state is read.
+- The answer depends only on simulation state (unit types, FirstTC, stances, alive and built
+  state, positions), read with the engine's own functions, the placement rule's spatial query and
+  its distance call; the comparison with `<meters>` is a single-precision compare. The order of the
+  query's list can change which blocker the log names, not whether one is near. No local player,
+  clock or interface state takes part in the decision.
+- The warning reads the local player and writes only the text manager, which stock fills from the
+  same simulation code under the same local-player test (the dodge). It never feeds back into the
+  decision, so `nowarn` and `warn=` may differ between players.
 - `liveBuildingWorkRate` verifies `WorkRateTrainCall` before this feature writes it, and
   `buildingWorkRateAuras` is applied after it (the order in `features.h`).
 - **Observed in game:** a Daimyo 34.1 m from an enemy Town Center made no progress, and trained
-  both queued units once that Town Center was killed. The distance's reference point (the Town
-  Center's center or its edge) is not known.
+  both queued units once that Town Center was killed. With `near Stable near FirstTC` (40 m), a
+  Daimyo 21.0 m from a Stable's edge made no progress, the warning appeared over it every 8 s, and
+  it trained 5 Ashigaru once the Stable was destroyed; walked to the enemy Town Center, it paused
+  again at 6.4 m. `warn=` with a UTF-8 text and with a string ID showed that text.
+- **Stock: a trainer with a queue stands still.** With units queued, the Daimyo ignored a
+  trigger's attack-move and `uiMoveAllMilitaryAtPointer`, and a right-click on the ground placed its
+  gather point; with the queue empty the same command moved it. So a held trainer leaves only when
+  its queue is cancelled; the key does not change that.
 - **Not covered:** players whose FirstTC is dead or never set; refusing the order instead of
-  pausing it.
+  pausing it; a foundation near the trainer. A `near` type of moving units (a Hussar: 17.3 m for
+  18.4 m between centres, the radius branch of the distance), a Town Center that is not the first
+  (`near AbstractTownCenter`) and a saved game loaded with a held trainer were seen in game.
 
 ### overhealHitpointBars
 
@@ -2029,7 +2219,7 @@ and watched with `PrintWindow`, and both work without focus.
   `civFirstTC`, `noTrainNearEnemyTC`, `buildingWorkRateAuras`): a predicate that mirrors stock
   code calls the same engine functions in the same order, with the same 32-bit or
   single-precision arithmetic, and the mirrored code is verified byte for byte.
-  `noTrainNearEnemyTC` measures with the placement rule's own distance call;
+  `noTrainNearEnemyTC` measures with the placement rule's own distance call and spatial query;
   `buildingWorkRateAuras` sums with the stock modifier sum; `civFirstTC` repeats the colony test of
   the town starting units' spawn, and computes a footprint with addItem's formula in single
   precision, the same on every machine with this build.

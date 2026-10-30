@@ -17,7 +17,7 @@ This guide covers these features that are new in this DLL:
     `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`,
     `techRenameEffect`, `noCorpseDopples` and `danceBonusCivs`;
   - Tier 1 and Tier 3: `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
-    `overhealHitpointBars`, `showGatherRate` and `buildingWorkRateAuras`.
+    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras` and `decimalPopulation`.
 
 `bufferedFileReads` is not covered yet. Its design is in
 [how-it-works.md](how-it-works.md#bufferedfilereads), and its code is
@@ -128,6 +128,9 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `TransformInvHook` | `0x9C7625` | `0x17` B | 7 B at `0x9C7625` (`jmp` + 2 NOP) | `8B 46 58 85 C0 74 10` (`mov eax,[esi+58h]; test eax,eax; je 9C763Ch`) | action manager test in the transform in place FUN_009C754C; transformInventory (continues at `0x9C762C` or `0x9C763C`) |
 | `TransformKbRemove`, `TransformKbReAdd`, `InventorySeed`, `InventoryRecreate`, `InventoryFree`, `ResListCopy`, `ResListScale`, `ResListTotal` | `0x9C75CF`, `0x9C766F`, `0x67DE0D`, `0x9BFE5A`, `0x4BA757`, `0x480A73`, `0x480B94`, `0x58EF02` | `0x56`, `0x23`, `0x1E`, `0x6E`, `0x50`, `0x49`, `0x7E`, `0x81` B | — | — | the knowledge-base remove and re-add around the hook, creation's inventory recipe, the engine functions the helper calls, and the list encoding it decodes; transformInventory (also `TransformProtoLookup`, `TransformPushProto`, `IsA`) |
 | `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`); `PlayerById(Null)` and `UnitById(Null)` are also verified by hcShipmentPointFallback when `FirstTC` is listed, and `PlayerById` and `UnitById` by civFirstTC |
+| `UnitsNearPoint`, `TypeRuleQuery` (+ `IsBuilt`) | `0x4A1C55`, `0x8CEA69` | `0xF8`, `0x22` B | — | — | noTrainNearEnemyTC with a `near` type: the world's spatial query the helper calls (`int thiscall(world, point, radius, 1, IdList*)`, `ret 10h`) and the placement rule's call of it |
+| `DodgeFloatingText`, `FloatingTextAdd`, `UnitVisibleTo`, `ConfigInt` (+ `BStringFromWide`, `BStringFromId`, `BStringFree`) | `0x6A24FC`, `0x8023AE`, `0x4818F4`, `0x46A144` | `0x10D`, `0xC4`, `0x45`, `0x3F` B | — | — | the shared floating text (`src/floatingtext.cpp`), for noTrainNearEnemyTC's warning (unless `nowarn`) and damageOverTime's tick text: the dodge's floating text block it repeats, the text add (`ret 24h`), the visible-to test and the cfg int reader |
+| `SnareTargetCheck`, `SnareApply` (+ `SnareCreate`) | `0x4DD1DE`, `0x4DD22D` | `0x23`, `0x82` B | — | — | damageOverTime's `AttachSnare`: the stock snare's "can move" test (`vtbl+90h`) and the modifier creator it calls (`ret 28h`) |
 | `OverhealBarRatio` | `0x45FAA7` | `0x11` B | 5 B at `0x45FAAF` | `E8 E1 F7 FF FF` (`call 45F295h`) | floating HP bar fill in the unit visual update's bar chunk; overhealHitpointBars |
 | `OverhealGroupRatio` | `0x4C5012` | `0x0F` B | 5 B at `0x4C5014` | `E8 7C A2 F9 FF` (`call 45F295h`) | selection group average in FUN_004C4FB5 |
 | `OverhealPanelMax` | `0x698B18` | `0x26` B | 5 B at `0x698B35` | `E8 CE 78 DE FF` (`call 480408h`) | unitHitPointsValue max |
@@ -157,6 +160,16 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `StatPanelAutoGatherGate`, `StatPanelRowWriter`, `StatPanelRowFormat`, `DataRefStub`, `DataRefStringEval`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BStringFromId`, `BStringAssign`, `BStringFree` | `0x4D76FF`, `0x69AF7C`, `0x69B02A`, `0x5FDE49`, `0x44A635`, `0x6F49B1`, `0x45EE02`, `0x44CAC4`, `0x60782A`, `0x58EA52`, `0x443BB8`, `0x4010CA` | `0x135`, `0x64`, `0x15D`, 5, `0x64`, `0x41`, `0x35`, `0x46`, `0x22`, `0x19`, `0x0F`, `0x1F` B | — | — | the gate the panel hook mirrors, the row writer and formatter it reuses, the stub and the string evaluator, the current-unit lookup, and the functions the C++ side calls; showGatherRate (also `IsBuilt`, `IsA`) |
 | `ModifyTypeNameTail` | `0x5FE6C7` | `0x1B` B | 6 B at `0x5FE6D7` (`jmp` + 1 NOP) | `F7 D8 1B C0 24 F1` (`neg eax; sbb eax,eax; and al,0F1h`) | tail of the ModifyType parser FUN_005F5645, through the `pop esi; add eax,0Eh; ret` at `0x5FE6DD`; buildingWorkRateAuras name hook |
 | `ModifyTypeNameCompare`, `BwrTrainCallNext`, `BwrGetterTail`, `BwrGatherRateRecord`, `BwrGatherRateRule` | `0x443C10`, `0x9EA418`, `0x9BFE38`, `0x4ECFE9`, `0x69FE53` | `0x10`, `0x0C`, `0x10`, `0x14`, `0x1C` B | — | — | the head of the name compare the hook calls, the Train call's continuation up to its first write of EAX, the getter after its first two instructions, and the GatherRate reader whose rule the factor mirrors; buildingWorkRateAuras (also `SnareCollector`, `SnareModifierSum`, `SnareModifierSumEnd`, `SnareModifierSumTactic`, and the getter head `BuildingWorkRateGetter`, which must be stock or liveBuildingWorkRate's `jmp`) |
+| `PopCountParse`, `PopCapAddParse` | `0x5FB92E`, `0x5FD719` | `0x1E` B each | 5 B at each (call rel32) | `E8 …` (`call 59A71Dh`) | the `%d` parse of `<PopulationCount>` / `<PopulationCapAddition>`; decimalPopulation |
+| `PopCountEffect`, `PopCapAddEffect` | `0x8FA835`, `0x8FA8CF` | `0x1D`, `0x1A` B | 5 B at each (call rel32); 4 B at `0x8FA84A` (imm32, K) | `E8 …` (`call 7F899Bh`); `01 00 00 00` | the int effect calls of the PopulationCount / PopulationCapAddition proto effects, and PopulationCount's floor `mov eax,1`; decimalPopulation |
+| `PopCapEffectAdd`, `PopCapEffectRemove` | `0x8D87AB`, `0x8D20AB` | 8 B each | 8 B at each (`jmp` + 3 NOP) | `D9 44 24 34 D9 7C 24 34`; `D9 44 24 20 D9 7C 24 20` (`fld [esp+X]; fnstcw [esp+X]`) | the amount of the player effect PopulationCap and of its removal; decimalPopulation (continues at `0x8D87B3` / `0x8D20B3`) |
+| `TeamPopCap` | `0x679694` | `0x26` B | `0x24` B at `0x679694` (`jmp` + NOPs) | `3D C8 00 00 00` (`cmp eax,0C8h`) | getCap's shared-team path; decimalPopulation (continues at `0x6796B8`) |
+| `StartPopBonus` | `0xA0D2D1` | 9 B | 8 B at `0xA0D2D1` (`jmp` + 3 NOP) | `03 C3 03 86 20 03 00 00` (`add eax,ebx; add eax,[esi+320h]`) | the game-start cap bonus; decimalPopulation (continues at `0xA0D2D9`) |
+| `Xs*` (19: `XsAiGetAvailableEconomyPop` … `XsTrPlayerGetPopulation`) | see `tools/gen_sites.py` | `0x0A` B each | 4 B at each `+1` (the impl imm32 of `push impl`) | the stock impl addresses | the XS registrations of the population syscalls; decimalPopulation |
+| `RefPopReg`, `RefPopCapReg`, `RefFuturePopReg`, `RefTotalPopReg` | `0x5D0B47`, `0x5D0BC3`, `0x5D0C3F`, `0x5D0CBB` | `0x2B` B each | 4 B at `+4` (provider imm32) and 4 B at `+20h` (`push 3; pop eax; nop`) | the stock provider; `8B 44 24 1C` (`mov eax,[esp+1Ch]`) | the registration of the data refs pop, popcap, futurepop, totalpop; decimalPopulation |
+| `ColorizePopArg`, `ColorizePopFormat` | `0x6F576F`, `0x6F580C` | 8, `0x0C` B | 5 B at each (call rel32) | `E8 …` (`call 6F2A1Dh`, `call 444EFBh`) | colorizePop's argument parse and its print; decimalPopulation |
+| `PopFormatHelp`, `PopFormatHelp2`, `PopFormatCost`, `PopFormatCost2`, `PopFormatCost3`, `PopFormatCapLine`, `PopFormatCap` | `0x63F98D`, `0x70FF3A`, `0x63FEC5`, `0x70F58F`, `0x710651`, `0x6F2DB5`, `0x6F2E34` | 8 B each | 5 B at each (call rel32) | `E8 …` (`call 444EFBh`) | the sprintf calls that print a population; decimalPopulation (**WoL redirects `0x710651`**) |
+| `RefPopProvider`, `RefPopCapProvider`, `RefFuturePopProvider`, `RefTotalPopProvider`, `IntEffect`, `BStringFormat`, `PopLimit` | `0x6F2274`, `0x458244`, `0x44CE3A`, `0x45809D`, `0x7F899B`, `0x444EFB`, `0x4581F3` | `0x0A` ×4, `0x23`, `0x14`, `0x50` B | — (`PopLimit`: basePop's cap hook, see below) | — | the stock functions the wrappers call, and the cap hook decimalPopulation scales; decimalPopulation |
 
 The full expected bytes of every range are in [`src/generated/sites.h`](../src/generated/sites.h),
 generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py). Two features write
@@ -169,6 +182,9 @@ leaves the Train call to noTrainNearEnemyTC when that key owns it
 of `FirstTcProtoCheck`. No other write falls inside another feature's range (checked with a script
 over `tools/gen_sites.py` and the written addresses, 2026-10-29, again after civFirstTC and
 `GatherPointValid` were added), so any combination of keys can be enabled together.
+decimalPopulation and basePop/extraPop share the cap hook (`PopLimit`): it is written once, by
+basePop/extraPop when they are set, otherwise by decimalPopulation, which is applied after them
+and only sets the scale the hook reads.
 
 **Status for Wars of Liberty: not checked.**
 - None of these addresses appears among the WoL `uhc.dll` sites found so far
@@ -226,6 +242,10 @@ over `tools/gen_sites.py` and the written addresses, 2026-10-29, again after civ
     panel fill, and passes `0x5D31CA` / `0x5D31D1` (the end of the data-ref registration) to a
     helper. None of them overlaps these ranges (dword scan of the DLL), but check that `0x4ED044`
     is still reached with the same entry state in WoL's build;
+  - `decimalPopulation`: a dword scan of WoL's `uhc.dll` and `wol.dll` over its ranges finds
+    WoL's basePop hook at `0x4581F3` (scale it, see the contract) and the call redirections at
+    `0x71063C` / `0x710651` of WoL's `DoubleShipmentsInspectFixFeature` (chain them with the
+    population text wrapper); nothing else;
   - `transformInventory`, `noTrainNearEnemyTC`, `overhealHitpointBars`: not checked against WoL's
     patches. `docs/wol-uhc-map.md` mentions none of their sites;
   - `civFirstTC` and the `FirstTC` keyword of `hcShipmentPointFallback` (`GatherPointValid`): not
@@ -244,8 +264,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/unittypes.h`](../src/unittypes.h), [`src/unittypes.cpp`](../src/unittypes.cpp), [`src/hooks/unittype_hooks.asm`](../src/hooks/unittype_hooks.asm) | Registers extra abstract unit type names on every data load. | site `AbstractTypesEnd`, `VerifyAll`, `WriteJmp`, `Log`, `TRACE_ONCE` |
 | [`src/features/heal.cpp`](../src/features/heal.cpp), [`src/hooks/heal_hooks.asm`](../src/hooks/heal_hooks.asm) | `healNonIdle`. | unittypes, sites `HealIdleCheck` and `HealAutoSearchIdle`, your cfg reader |
 | [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*` and `GatherPointValid`; with `FirstTC` also `FirstTcSet`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`; your cfg reader |
-| [`src/features/damageovertime.cpp`](../src/features/damageovertime.cpp), [`src/hooks/dot_hooks.asm`](../src/hooks/dot_hooks.asm) | `damageOverTime`. | sites `Dot*`, your cfg reader |
-| [`src/features/dodge.cpp`](../src/features/dodge.cpp), [`src/hooks/dodge_hooks.asm`](../src/hooks/dodge_hooks.asm) | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`. | unittypes, sites `Dodge*` and `CriticalSound`, `WriteCall` (in `patch.cpp`), your cfg reader |
+
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
 | [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, your cfg reader |
 | [`src/features/techprereq.cpp`](../src/features/techprereq.cpp), [`src/hooks/techprereq_hooks.asm`](../src/hooks/techprereq_hooks.asm) | `techPrereqRecheck`. | sites `TechPrereq*`, `TypeCount*`, `PrereqBaseCtor`, `TechTemplate*`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount`; `OnDatabaseLoad` (unittypes); your cfg reader |
@@ -267,6 +286,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/notrainneartc.cpp`](../src/features/notrainneartc.cpp), [`src/hooks/notrainneartc_hooks.asm`](../src/hooks/notrainneartc_hooks.asm) | `noTrainNearEnemyTC`. | unittypes (and `OnDatabaseLoad` for `log`), sites `WorkRateTrainCall`, `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById*`, `UnitById*`, `PlayerIsEnemy`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`; the data symbol `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`; define it yourself as `0x9BFE33` without that feature); your cfg reader (`Config::All`) |
 | [`src/features/overheal.cpp`](../src/features/overheal.cpp), [`src/hooks/overheal_hooks.asm`](../src/hooks/overheal_hooks.asm) | `overhealHitpointBars`. | unittypes, sites `Overheal*`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag`, `IsA`, `IsATrue`, your cfg reader |
 | [`src/features/gatherrate.cpp`](../src/features/gatherrate.cpp), [`src/hooks/gatherrate_hooks.asm`](../src/hooks/gatherrate_hooks.asm) | `showGatherRate`. | unittypes (only with a UnitType), sites `GatherTick*`, `StatPanel*`, `GatherRateStringRef`, `DataRef*`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BString*`, `IsBuilt`, `IsA`, `WriteDword`, your cfg reader |
+| [`src/features/decimalpop.cpp`](../src/features/decimalpop.cpp), [`src/hooks/decimalpop_hooks.asm`](../src/hooks/decimalpop_hooks.asm), and the cap hook in [`src/features/limits.cpp`](../src/features/limits.cpp) / [`src/hooks/limit_hooks.asm`](../src/hooks/limit_hooks.asm) | `decimalPopulation`. | sites `PopCountParse`, `PopCapAddParse`, `PopCountEffect`, `PopCapAddEffect`, `IntEffect`, `PopCapEffect*`, `TeamPopCap`, `StartPopBonus`, `Xs*`, `Ref*`, `ColorizePop*`, `BStringFormat`, `PopFormat*`, `PopLimit`; `WriteCall`, `WriteDword`, `WriteBytes`, `UhcTraceHook`; your cfg reader |
 | [`src/features/bwrauras.cpp`](../src/features/bwrauras.cpp), [`src/hooks/bwraura_hooks.asm`](../src/hooks/bwraura_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `buildingWorkRateAuras`. | sites `ModifyTypeName*`, `Bwr*`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall`, `SnareCollector`, `SnareModifierSum*`, `BuildingWorkRateGetter`; liveBuildingWorkRate's `UhcBwrGetterHook` symbol for the getter-head check (or drop that check); `WriteCall`, `Matches`; your cfg reader |
 
 Every feature also needs `VerifyAll`, `WriteJmp`, `Log` and `TRACE_ONCE`, listed below.
@@ -472,8 +492,11 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 ### damageOverTime
 
 - **State, all in `damageovertime.cpp`:**
-  - the attachments read from the data, keyed by (attacker proto ID, action name index);
-  - the running poisons, keyed by (unit ID, attachment proto ID, attacker player);
+  - the attachments read from the data, keyed by (attacker proto ID, action name index): X's
+    name, then its proto ID, the stack limit (1..100, default 1), the snare factor (none by
+    default) and the tick colour (none by default);
+  - the running poisons, keyed by (unit ID, attachment proto ID, attacker player): attacker unit
+    ID, next tick, end, the stacks (end times in expiry order) and the last hit's options;
   - the "Attaching" name index.
 
   The poisons live in a `std::map`, so every machine walks them in the same order.
@@ -482,26 +505,36 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - otherwise, only when `[esp+C0h]` is `0x5FA213` (a `protoy` `<ProtoAction>`), call
     `UhcDotProtoActionTag(tagName = ESI, node = EDI, proto = [esp+C4h], action = [esp+C8h])`
     inside `pushad`/`popad`;
-  - then jump to `0x5FA126`, the next child.
+  - then jump to `0x5FA126`, the next child. The handler takes `AttachProtoUnit`,
+    `AttachMaxStacks`, `AttachSnare` and `AttachTickText` (case-insensitive); the child's text is
+    the UTF-16 string at `[node+14h]`.
 - **TakeDamage hook** at `0x49B3D9`, a `jmp` to the wrapper `UhcDotTakeDamage`:
   - `float __fastcall(unit, unused, 13 stock arguments)`, so it pops 34h bytes and returns in
     st0, exactly like the stock thiscall function;
   - it calls the stock function through `UhcDotTakeDamageStock` (`sub esp,8Ch; jmp 49B3DFh`);
-  - when damage was dealt, it adds or renews a poison.
+  - when damage was dealt, it adds a stack to the poison (dropping expired stacks, then the
+    oldest at the limit) and, for a new poison with `AttachSnare`, snares the unit. Projectile and
+    area damage reach it with the launcher's proto ID and action, one call per damaged unit.
 - **World update hook** at `0x481A57`, a `jmp` to the shared wrapper `UhcWorldUpdate`
   (`worldtick.cpp`, written once by `AddWorldTick`, whichever key comes first):
   - `bool __fastcall(world, unused, int, int deltaMs)`, `ret 8`, result in AL;
   - it calls the stock update through `UhcWorldUpdateStock` (`sub esp,0Ch; push ebx;
     push ebp; jmp 481A5Ch`), then each registered tick in kFeatures order; damageOverTime's
     applies the due ticks when `world == [[C66234h]+13Ch]`;
-  - each tick calls the **stock** TakeDamage (the trampoline, not the wrapper) with p8..p13 =
-    `0, 0, 1, 1, -2, 1`, but with p11 = 0 when the attacking unit is gone. With p11 = 1,
-    TakeDamage's army code (0x6A3253) reads the attacking unit with no null check, so a tick on
-    an AI army unit would crash;
+  - each tick calls the **stock** TakeDamage (the trampoline, not the wrapper) with multiplier =
+    the stacks alive at the tick's time (TakeDamage scales the computed damage by it) and p8..p13
+    = `0, 0, 1, 1, -2, 1`, but with p11 = 0 when the attacking unit is gone (its ID no longer
+    gives a unit; a dead unit's body keeps it). With p11 = 1, TakeDamage's army code (0x6A3253)
+    reads the attacking unit with no null check, so a tick on an AI army unit would crash;
+  - after a tick that is not the last, `AttachSnare F` calls
+    `0x4DD22D(unit, 0, F, -1f, -1f, 0, 2, ROF + 250, -1, -1, 1)` when `vtbl+90h` says the unit can
+    move; `AttachTickText` shows `-N` through `floatingtext.cpp` (interface only, off with
+    `noticktext`);
   - another game drops every poison: a jump of the world's step count `[world+F8h]` (normally +1
     per update), game time going back, another world pointer, or a new data load.
 - **Engine calls:** `0x5A2346` (proto ID by name), `0x45311B` (a player's copy of a proto), unit
-  `vtbl+A4h` (alive). The layouts read (unit, world, player, action set, action, the
+  `vtbl+A4h` (alive), `vtbl+90h` (can move), `0x4DD22D` (the snare), the floating text of
+  `floatingtext.cpp`; for the log only, `vtbl+34h` (speed) and the army flag 37h. The layouts read (unit, world, player, action set, action, the
   action-name table) are listed in [engine-symbols.md](engine-symbols.md), "Damage and poison".
 - **If your DLL already hooks TakeDamage or the world update,** call this feature's logic from
   your own wrapper instead of installing a second `jmp` at the same entry: `VerifyAll` would
@@ -901,8 +934,23 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `0x44D7FA([trainer+5Ch], type)`; then the nearest enemy FirstTC as in
   [how-it-works.md](how-it-works.md#notrainnearenemytc): players 1 .. `[world+5Ch]`-1 in order,
   `0x44CB21`, `[p+4F0h]` ≥ 0, `0x44CC6D`, owner `[tc+44h]` ≠ the trainer's, `0x484D2D(owner,
-  [[trainer+44h]])`, `call [[tc]+0A4h]` (alive), `call [[tc]+0B8h](tc, trainer+14h)`; true when the
-  smallest distance is below the cfg value. Reads only simulation state.
+  [[trainer+44h]])`, `call [[tc]+0A4h]` (alive), `call [[tc]+0B8h](tc, trainer+14h)`; with
+  `near` types, for each one `0x4A1C55(world, trainer+14h, meters, 1, &list)` (one list kept for
+  the session: `{int* data; int count; int capacity}`, zero-initialised; the engine grows it) and,
+  per ID, `0x44CC6D`, owner not null, not the trainer's, not player 0, `0x44D7FA(proto, type)`,
+  `0x484D2D`, alive, `0x44DDB4` (built), then the same distance call. True when the smallest
+  distance is below the cfg value. The distance is to the blocker's footprint edge
+  ([how-it-works.md](how-it-works.md#notrainnearenemytc)). The decision reads only simulation
+  state.
+- **Warning (interface only, the shared `floatingtext.cpp`):** after a blocked decision, when
+  `[[trainer+44h]]` equals `[[0C66234h]+3C0h]`, `[world+8A8h]` is not null and
+  `0x4818F4(trainer, local player)` is true, at most once per 8000 ms of `[world+108h]` per
+  trainer ID: two cfg ints through `0x46A144` on
+  `0xC66500` with the IDs `[[0CEFFF8h]]` and `[[0CF0000h]]` (defaults 1000 and 2000), a BString
+  (`0x401A12` from a wide text or `0x58EA52` from a string ID), then
+  `0x8023AE([world+8A8h], &text, t1, t2, [trainer+10h], float[3]{0,0,0}, 0xFFFF4040, 1.0f, 0, -1)`
+  and `0x4010CA` on the text. A non-zero second float makes the text rise (the stock 0.1 left the
+  screen in about 0.3 s in the test bed).
 - **Hook** at `0x9EA410`, in FUN_009EA28B, 8 bytes (`jmp` + 3 NOP):
   - entry state: ESI = the Train action, EDI = the trainer's player, x87 stack empty; EAX, ECX,
     EDX and the flags are free; EBX is reloaded at `0x9EA418`;
@@ -1088,12 +1136,50 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Stat 40h** is this DLL's number for BuildingWorkRate. Keep it, or agree on another one, if your
   DLL adds its own ModifyTypes.
 
+### decimalPopulation
+
+- **Globals:** `g_uhcPopScale` (K; 1 without the key) and `g_uhcPopStockClamps` (1 when this key
+  installs the cap hook itself), both read by the cap hook of basePop/extraPop
+  (`src/hooks/limit_hooks.asm`).
+- **Cap hook** at `0x4581F3` (basePop's): every limit is in whole population and is multiplied by
+  K: base + extra, the bonus `[player+4F4h]`, and with the stock clamps on, `[world+31Ch]` + extra
+  and 250. **In WoL** this site is WoL's own basePop/extraPop hook
+  (`ExtendLimitsByXmlFeature?`): scale its limits the same way instead of installing this one.
+- **Parse calls** (`0x5FB92E`, `0x5FD719`): `bool __cdecl f(const char* text, int* out)`. The
+  text is ANSI. `out` is the handler's argument slot; `out + 1` holds the proto. Write
+  `round(value × K)` and return true, or return false (the stock error path).
+- **Effect calls** (`0x8FA835`, `0x8FA8CF`): `void __cdecl f(rel, int* out, int base, float
+  amount, negate)` with the stock five arguments; call `0x7F899B` with `round(amount × K)` for
+  relativity 1 (or any value but 0, 2, 3), `amount × K` for 3, and for 2 with relativity 1 and
+  `lround(base × amount − base)`. Write K into the imm32 at `0x8FA84A`.
+- **PopulationCap hooks** (`0x8D87AB`, `0x8D20AB`): `fld [esp+X]; fimul K; frndint; fnstcw
+  [esp+X]`, continue 8 bytes later. X = 34h / 20h.
+- **Team cap** (`0x679694`): EAX = an ally's raw cap; `min(EAX, 200 × K, [world+31Ch] × K)`;
+  ECX, EDX free; continue at `0x6796B8`. **Start bonus** (`0xA0D2D1`): EAX += (EBX +
+  `[ESI+320h]`) × K, keep EBX, EDX free; continue at `0xA0D2D9`.
+- **XS wrappers:** cdecl, two arguments read in place (declare none: a caller may push fewer, and
+  a declared parameter's slot can be reused as scratch); call the stock impl from the site's
+  bytes with both. Getters divide (half away from zero; `kbGetPopSlots` rounds a positive value
+  up; `kbUnitPickGet*` keep negatives); setters multiply a value ≥ 0 (argument 1, or 2 for
+  `kbUnitPickSet*`). Return the stock EAX.
+- **Data refs:** write the wrapper into the provider imm32 (`+4`) and `6A 03 58 90` at `+20h`;
+  the wrapper is `bool __stdcall f(Value*)`: type must be 3; call the stock provider with
+  `{2, 0}`; assign the text to the Value's BString (`0x443BB8`, `-1, -1`).
+- **colorizePop:** `int __cdecl f(BString* arg)`: the number after the first `(` × K, −1 if none.
+- **Format wrappers:** cdecl, arguments read in place: `(dest, format, a0..a3)`; replace the
+  i-th conversion (i = 0, or 1 at `0x6F580C`, 2 at `0x6F2DB5`) with `%s`, pass the text in its
+  slot, call `0x444EFB`. **In WoL** `0x710651` (and `0x71063C`) are redirected by
+  `DoubleShipmentsInspectFixFeature`: call this wrapper from WoL's replacement, or the reverse.
+- **Order:** after basePop/extraPop.
+
 ## 5. Integration rules
 
 - **Keep the cfg keys and their syntax:**
   - `healNonIdle [UnitType]`, default `AbstractHealNonIdle`;
   - `hcShipmentPointFallback <Proto|FirstTC> …`, 1 to 64 entries;
-  - `damageOverTime [log]`, with `<AttachProtoUnit>` in `protoy.xml` and an `Attaching` action on
+  - `damageOverTime [log] [noticktext]`, with `<AttachProtoUnit>` (and optionally
+    `<AttachMaxStacks>`, `<AttachSnare>`, `<AttachTickText>`) in `protoy.xml` and an `Attaching`
+    action on
     the attachment proto;
   - `dodgeAnyUnit [UnitType] [log]`, default `AbstractDodge`, and any number of
     `dodgeSoundSet <UnitType> <SoundSet>` / `criticalSoundSet <UnitType> <SoundSet>` lines;
@@ -1111,12 +1197,14 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `startingTC [UnitType] [log]` (default `AbstractStartingTC`);
   - `civFirstTC [log]`, with `<firstTC>Proto</firstTC>` inside a `<civ>` of `civs.xml`;
   - `transformInventory [all] [scale] [UnitType] [log]` (no default: every in-place transform);
-  - `noTrainNearEnemyTC <meters> [UnitType] [log]`, meters above 0 and at most 1000, one line
-    (default `AbstractDaimyo`);
+  - `noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC]... [nowarn | warn=<text> |
+    warn=<stringID>] [log]`, meters above 0 and at most 1000, up to 4 `near`, one line (default
+    `AbstractDaimyo`, `near FirstTC`, the warning on);
   - `overhealHitpointBars [UnitType ...] [log]` (default `AbstractOverheal`, up to 8 types, one
     line);
   - `showGatherRate [UnitType] [log]` (no default: every unit);
-  - `buildingWorkRateAuras [log]`.
+  - `buildingWorkRateAuras [log]`;
+  - `decimalPopulation [K] [log]`, K from 2 to 1000 (default 10).
 
   The [modding guide](modding-guide.md#5-feature-reference) then applies to your mod as written.
 - **Verify, then write.** Check all of a feature's ranges first, and write nothing if any range
@@ -1223,10 +1311,13 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **dodgeAnyUnit / dodgeSoundSet / criticalSoundSet:** confirmed in single player only; the
   sound sets were checked in the log, not by ear. The unit's rollover text about dodging (if any)
   still names only the Japanese monks (0x6AB049, not traced).
-- **damageOverTime:** confirmed in single player only. The game loads `protoy.xml.XMB` unless
-  `protoy.xml` is newer ([modding guide, section 6](modding-guide.md#6-editing-the-game-data)),
-  so keep both in step. A tick on an AI army unit after the attacking unit is gone (the p11 = 0
-  path) comes from the code and was not reproduced in game.
+- **damageOverTime:** confirmed in single player only, with hand attacks, instant shots,
+  arrows, grenades, cannon balls and area damage, `DamageBonus` and a tech on X, X's DamageFlags
+  after a conversion, an attacker removed, kill XP, and the three optional tags. The game loads
+  `protoy.xml.XMB` unless `protoy.xml` is newer
+  ([modding guide, section 6](modding-guide.md#6-editing-the-game-data)), so keep both in step.
+  A tick on an AI army unit after the attacking unit is gone (the p11 = 0 path) comes from the
+  code; the attacker-gone path ran in game, but not on an army unit.
 - **multipleInstances:** confirmed with two copies on one machine, in single player only.
 - **The WoL Tier 2 features** (2026-10-29, single player only; "(multiplayer unverified)" for every
   one that changes the simulation):
@@ -1246,8 +1337,9 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   together):
   - **confirmed in game:** `transformInventory` (six `TransformUnit` cases; `all`, `scale`, a
     marker, revolutions and a conversion afterwards not tested; no key-off run),
-    `noTrainNearEnemyTC` (pause near an enemy Town Center, resume when it died; walking away not
-    tested), `buildingWorkRateAuras` (`Maintain`; train, research and powers not tested);
+    `noTrainNearEnemyTC` (pause near an enemy Town Center or a `near` Stable, resume when it died,
+    the warning with its default, UTF-8 and string-table texts; a trainer with a queue does not
+    move in stock, so walking away does not happen), `buildingWorkRateAuras` (`Maintain`; train, research and powers not tested);
   - **confirmed in the interface:** `overhealHitpointBars` (the unit panel's text and bar; the
     floating and group bars not compared on their own), `showGatherRate` (the stat panel row for
     berries; the data ref not tested);

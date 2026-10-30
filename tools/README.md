@@ -10,6 +10,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
 | [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
+| [`pop_testdata.py`](#pop_testdatapy) | Writes the `decimalPopulation` test data into a test copy of the game. |
 | [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
@@ -24,7 +25,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `gameui.py` | Drives a game window for unattended tests: screenshots, clicks, keys. Select the window with `--process` (age3y.exe or AoE3DE_s.exe). It moves the real cursor, so use it only with the machine owner's permission. |
 
 Never point a tool that writes at the Steam install. The data tools write only the output file
-you name, `dot_testdata.py` writes only into the test copy you name, and `gen_sites.py` only
+you name, `dot_testdata.py` and `pop_testdata.py` write only into the test copy you name, and `gen_sites.py` only
 reads the exe.
 
 ## gen_sites.py
@@ -52,7 +53,7 @@ Checks `build\Release\UHC.dll` and stops if it fails any check:
 It then writes `dist\UHC-x.y.z.zip` with `UHC.dll`, `Startup\uhc.cfg` (the example with every key
 commented out), `README.txt` and `LICENSE.txt`, and prints the SHA-256 of the zip and of the DLL.
 An existing zip is kept unless `--force` is given. The procedure around it is in
-[developer-guide.md, section 6](../docs/developer-guide.md#6-making-a-release).
+[developer-guide.md, section 7](../docs/developer-guide.md#7-making-a-release).
 
 ## bar.py
 
@@ -99,26 +100,63 @@ python -I tools/xmbedit.py add-unittype <in.xmb> <out.xmb> <Unit> <UnitType> [<U
 It handles compressed (`l33t` + zlib) and uncompressed (`X1`) files, version 8, the format of
 the TAD data.
 
+## pop_testdata.py
+
+```
+python -I tools/pop_testdata.py <test folder> [--restore]
+```
+
+Writes the data the `decimalPopulation` tests use into a **test copy** of the game. It refuses
+any folder inside a Steam library. The tables at the top of the script list the cases:
+- `data\protoy.xml`: `<PopulationCount>` 1.5 on `Settler`, `Crossbowman` and `Hussar`, 0.5 on
+  `Pikeman`, and `<PopulationCapAddition>` 7.5 on `Manor`;
+- `data\techtreey.xml`: four techs appended (UNOBTAINABLE; turn them on with a trigger, e.g.
+  `"at35=Set Tech Status;PlayerID=1;TechID=tech:UHCPopCountTest;Status=2"` in a `testbed.py`
+  map): `UHCPopCountTest` (Crossbowman +0.5 `Absolute`, Musketeer = 0.5 `Assign`, Town Center
+  `PopulationCapAddition` +2.5), `UHCPopCapTest` (the player's `PopulationCap` +2.5),
+  `UHCPopCapBig` (+300, to reach the limits) and `UHCPopPercentTest` (`BasePercent`: Hussar × 0.6,
+  Pikeman × 3);
+- `data\protoy.xml.XMB` and `data\techtreey.xml.XMB`: compiled from that XML with `xmbedit.py`.
+
+The first run keeps the four files as `*.pop-before`; every run starts again from the
+`.xml.pop-before` files, and `--restore` puts the four back. The tests of 2026-10-29 used it on
+`C:\AoE3-UHC-WoL` ([modding guide](../docs/modding-guide.md#decimalpopulation)).
+
 ## dot_testdata.py
 
 ```
-python -I tools/dot_testdata.py <test folder>
+python -I tools/dot_testdata.py <test folder> [--ai | --bad]
 ```
 
-Writes the data the `damageOverTime` test uses into a **test copy** of the game. It refuses any
-folder inside a Steam library.
-- `data\protoy.xml`: the Explorer's `HandAttack` and `VolleyRangedAttack` get
-  `<AttachProtoUnit>UHCPoisonTest</AttachProtoUnit>`, and a proto `UHCPoisonTest` is added:
-  Lifespan 10 s, and an `Attaching` action that deals 20 Ranged damage every second to Gaia and
-  enemies.
-- `data\protoy.xml.XMB`: compiled from that XML with `xmbedit.py`.
+Writes the data the `damageOverTime` tests use into a **test copy** of the game. It refuses any
+folder inside a Steam library. The tables at the top of the script list the cases:
+- `data\protoy.xml`: one attachment proto per weapon, each attached to that weapon's attacks:
+  - the Explorer (`HandAttack`, `VolleyRangedAttack`): `UHCPoisonTest`, 20 Ranged every second
+    for 10 s, Gaia and enemies;
+  - the Grenadier (an area attack, a flying grenade): `UHCPoisonGrenade`, 10 Siege for 6 s,
+    enemies only (a unit converted to the attacker's side is excluded);
+  - the Crossbowman (a flying arrow): `UHCPoisonArrow`, 6 Hand for 8 s, triple against
+    `AbstractCavalry`;
+  - the Falconet (a cannon ball): `UHCPoisonCannon`, 15 Siege for 9 s;
+  - the Longbowman: `UHCPoisonStack`, 5 Siege for 6 s, with `<AttachMaxStacks>3`,
+    `<AttachSnare>0.5` and `<AttachTickText>40FF40` on its attacks;
+  - with `--ai`, also the Musketeer, Skirmisher, Pikeman and Hussar: `UHCPoisonLong`, 1 Siege for
+    120 s, so that two AI players poison each other's armies and the poisons outlive their
+    attackers;
+  - with `--bad`, invalid `<AttachMaxStacks>`, `<AttachSnare>` and `<AttachTickText>` values on the
+    Musketeer's three ranged attacks (and an empty `<AttachTickText>`), and `<AttachMaxStacks>`
+    without `<AttachProtoUnit>` on the Skirmisher, to check the load-time messages.
+- `data\techtreey.xml`: the tech `UHCPoisonArrowUpgrade` (UNOBTAINABLE; doubles
+  `UHCPoisonArrow`'s `Attaching` damage), for a trigger to turn on (`tech:UHCPoisonArrowUpgrade`
+  in a `testbed.py` map).
+- `data\protoy.xml.XMB` and `data\techtreey.xml.XMB`: compiled from that XML with `xmbedit.py`.
 - `data\tactics\uhcpoisontest.tactics` and its `.xmb`: the `Attaching` action. The XML keeps the
   tactic name and its first child on one line, so it also works without the `.xmb`
   ([modding guide, "Tactics files"](../docs/modding-guide.md#tactics-files)).
 
-The first run keeps the folder's protoy files as `*.dot-orig`. Every run starts again from
-`protoy.xml.dot-orig` and compiles the XMB from the result, so it can be repeated;
-`protoy.xml.XMB.dot-orig` is only a backup. Then enable `damageOverTime log` in the copy's cfg
+The first run keeps the folder's protoy and techtreey files as `*.dot-orig`. Every run starts
+again from the `.xml.dot-orig` files and compiles the XMB from the result, so it can be repeated;
+the `.XMB.dot-orig` files are only backups. Then enable `damageOverTime log` in the copy's cfg
 and let the Explorer hit something (for an unattended run, see the developer guide, "Driving
 the game unattended").
 
