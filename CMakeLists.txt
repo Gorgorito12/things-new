@@ -15,6 +15,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 add_library(UHC SHARED
   src/dllmain.cpp
   src/config.cpp
+  src/floatingtext.cpp
   src/log.cpp
   src/patch.cpp
   src/unittypes.cpp

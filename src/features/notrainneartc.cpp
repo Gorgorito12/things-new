@@ -49,6 +49,7 @@
 #include <vector>
 
 #include "../features.h"
+#include "../floatingtext.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -70,11 +71,6 @@ struct IdList {
   std::int32_t capacity;
 };
 
-// The engine's string: one pointer to a wide, reference-counted buffer.
-struct BString {
-  wchar_t* text;
-};
-
 using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
 using PlayerByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
 using UnitByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
@@ -83,15 +79,6 @@ using UnitIsAliveFn = bool(__thiscall*)(const char* unit);
 using UnitDistanceFn = float(__thiscall*)(const char* unit, const float* point);
 using IsBuiltFn = bool(__thiscall*)(const char* unit);
 using UnitsNearFn = std::int32_t(__thiscall*)(char* world, const float* point, float radius, char precise, IdList* out);
-using VisibleToFn = bool(__thiscall*)(const char* unit, std::int32_t playerId);
-using ConfigIntFn = bool(__thiscall*)(void* config, std::int32_t id, std::int32_t* out);
-using FloatingTextFn = std::int32_t(__thiscall*)(char* manager, const BString* text, std::int32_t time1Ms,
-                                                 std::int32_t time2Ms, std::int32_t unitId, const float* motion,
-                                                 std::uint32_t colour, float scale, std::int32_t zero,
-                                                 std::int32_t minusOne);
-using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
-using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t stringId);
-using BStringFreeFn = void(__thiscall*)(BString* self);
 
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
@@ -99,17 +86,6 @@ const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 const auto kIsEnemy = reinterpret_cast<IsEnemyFn>(0x00484D2D);
 const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
 const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
-const auto kVisibleTo = reinterpret_cast<VisibleToFn>(0x004818F4);
-const auto kConfigInt = reinterpret_cast<ConfigIntFn>(0x0046A144);
-const auto kFloatingText = reinterpret_cast<FloatingTextFn>(0x008023AE);
-const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
-const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
-const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
-void* const kConfig = reinterpret_cast<void*>(0x00C66500);
-// The config variables the dodge's floating text reads for its two times in ms (pointers to their
-// IDs, 0x6A257B..0x6A25A6; 2000 and 1000 in game, as the stock caller 0x9C039E passes).
-constexpr std::uint32_t kTextTime1 = 0x00CEFFF8;
-constexpr std::uint32_t kTextTime2 = 0x00CF0000;
 
 constexpr float kMaxMeters = 1000.0f;
 constexpr unsigned kMaxLogLines = 1000;
@@ -259,17 +235,11 @@ void ClearLogged(char*) {
   g_warned.clear();
 }
 
-// The stock dodge's floating text (0x6A24FC..0x6A2604), over a held trainer of the local player,
-// at most once every kWarnIntervalMs of game time.
+// The stock dodge's floating text (floatingtext.h), over a held trainer of the local player, at
+// most once every kWarnIntervalMs of game time.
 void Warn(const char* trainer) {
-  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
   char* world = World();
-  if (game == nullptr || world == nullptr) {
-    return;
-  }
-  const std::int32_t localPlayer = Field<std::int32_t>(game, 0x3C0);
-  char* manager = Field<char*>(world, 0x8A8);
-  if (manager == nullptr || PlayerIdOf(trainer) != localPlayer || !kVisibleTo(trainer, localPlayer)) {
+  if (world == nullptr || PlayerIdOf(trainer) != uhc::LocalPlayer() || !uhc::CanShowUnitText(trainer)) {
     return;
   }
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
@@ -284,21 +254,7 @@ void Warn(const char* trainer) {
     return;
   }
   g_warned[id] = now;
-  // Three floats. The stock callers pass {0, 0.1, 0}: the second makes the text rise, and in the test
-  // bed it left the screen in about 0.3 s. At 0 it stays over the unit for its whole life.
-  const float motion[3] = {0.0f, 0.0f, 0.0f};
-  std::int32_t time1 = 1000;
-  std::int32_t time2 = 2000;
-  kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime1), &time1);
-  kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime2), &time2);
-  BString text;
-  if (g_warnStringId >= 0) {
-    kBStringFromId(&text, g_warnStringId);
-  } else {
-    kBStringFromWide(&text, g_warnText.c_str());
-  }
-  const std::int32_t shown = kFloatingText(manager, &text, time1, time2, id, motion, kWarnColour, 1.0f, 0, -1);
-  kBStringFree(&text);
+  const std::int32_t shown = uhc::ShowUnitText(trainer, g_warnText.c_str(), g_warnStringId, kWarnColour);
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
     uhc::Log(L"noTrainNearEnemyTC: warning shown over unit %d (%hs)%ls", id, ProtoName(trainer),
@@ -463,10 +419,7 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
       !VerifyAll("noTrainNearEnemyTC near", {&sites::kUnitsNearPoint, &sites::kTypeRuleQuery, &sites::kIsBuilt})) {
     return Outcome::kFailed;
   }
-  if (g_warn && !VerifyAll("noTrainNearEnemyTC warning",
-                           {&sites::kDodgeFloatingText, &sites::kFloatingTextAdd, &sites::kUnitVisibleTo,
-                            &sites::kConfigInt, &sites::kBStringFromWide,
-                            &sites::kBStringFromId, &sites::kBStringFree})) {
+  if (g_warn && !uhc::VerifyFloatingText("noTrainNearEnemyTC warning")) {
     return Outcome::kFailed;
   }
   if (!RequestAbstractUnitType(typeName.c_str(), &g_uhcNoTrainType)) {
