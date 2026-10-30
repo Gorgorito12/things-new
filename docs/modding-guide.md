@@ -3,8 +3,9 @@
 How to use `UHC.dll` in an Age of Empires III: The Asian Dynasties mod: what to install, how to
 configure each feature, what data or art your mod must provide, and how to check that it works.
 
-For how the features work inside the engine, see [how-it-works.md](how-it-works.md). To build
-the DLL or reverse engineer new features, see [developer-guide.md](developer-guide.md).
+For how the features work inside the engine, see [how-it-works.md](how-it-works.md).
+To build the DLL or reverse engineer new features, see [developer-guide.md](developer-guide.md). <!-- private -->
+<!-- public: To build the DLL, see the [README](../README.md#building). -->
 
 Contents:
 - [Adding UHC.dll to your mod](#adding-uhcdll-to-your-mod): start here
@@ -15,21 +16,23 @@ Contents:
 5. [Feature reference](#5-feature-reference)
 6. [Editing the game data](#6-editing-the-game-data)
 7. [Multiplayer, saved games and replays](#7-multiplayer-saved-games-and-replays)
-8. [Keys from UHC 1.10 that are not implemented](#8-keys-from-uhc-110-that-are-not-implemented)
+8. [Keys that are not implemented](#8-keys-that-are-not-implemented)
 9. [Troubleshooting](#9-troubleshooting)
 
 ## Adding UHC.dll to your mod
 
 **What you need:**
 - **The release zip** `UHC-x.y.z.zip`, from
-  [Releases](https://github.com/Gorgorito12/Unharcoded-AOE3--NEW/releases). It contains one folder,
+  [Releases](https://github.com/Gorgorito12/tad-engine-extensions/releases). It contains one folder,
   `UHC-x.y.z\`, which holds:
   - `UHC.dll`;
   - `Startup\uhc.cfg`, with every key commented out;
   - `README.txt` and `LICENSE.txt`.
-- **`UHCPatcher.exe`**, from the `Release` folder of
-  [AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). You use it once, to add the
-  loader to your mod's `age3y.exe`.
+- **`UHCPatcher.exe`**, from the `Release` folder of <!-- private -->
+  [AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). You use it once, to add the <!-- private -->
+  loader to your mod's `age3y.exe`. <!-- private -->
+<!-- public: - **`UHCPatcher.exe`**, the patcher that adds the UHC loader to your mod's `age3y.exe`. -->
+<!-- public:   You use it once. -->
 - **Python 3 and this repository's `tools/` folder**, only for keys that need data edits: a new
   marker unit type (`healNonIdle`, `dodgeAnyUnit` and the other keys that take a `<UnitType>`),
   `deckCardCount` at normal levels, reusing a stock banner for `customRevolutionBanners`,
@@ -47,12 +50,12 @@ nothing but your mod.**
 **Steps:**
 1. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder with your
    mod's files on top.
-   - The folder can live anywhere. Next to `bin` inside the game folder is fine, and that is
-     where Wars of Liberty and Knights and Barbarians sit.
+   - The folder can live anywhere. Next to `bin` inside the game folder is fine.
+     Wars of Liberty and Knights and Barbarians sit there. <!-- private -->
    - "Never modify the Steam install" means: never change or patch the files in `bin`, above all
      `bin\age3y.exe`.
 2. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`
-   ([how](#getting-an-exe-with-the-uhc-loader)). The patcher also writes UHC 1.10's own `UHC.dll`
+   ([how](#getting-an-exe-with-the-uhc-loader)). The patcher also writes its own `UHC.dll`
    and a new `Startup\uhc.cfg` next to the exe, and keeps the original exe as `age3y.backupuhc`.
 3. **Copy this release over the patcher's files.** From the zip's `UHC-x.y.z\` folder, copy
    `UHC.dll` next to `age3y.exe` and the `Startup` folder into the mod folder, replacing both
@@ -81,7 +84,8 @@ nothing but your mod.**
      exe, it must copy `UHC.dll` and `Startup\uhc.cfg` after the patcher has run.
 
    Players can then start the mod's `age3y.exe` any way they like: double-click, shortcut or
-   launcher. `UHC.dll` makes the exe's folder the working directory, as UHC 1.10 does.
+   launcher. `UHC.dll` makes the exe's folder the working directory.
+   UHC 1.10 does the same. <!-- private -->
 
 **Notes:**
 - **Multiplayer:** every player needs the same files
@@ -91,28 +95,30 @@ nothing but your mod.**
   every mod copy use the same files. What the stock game does with a deck of more than 25 cards
   was not tested, so a mod that raises the deck size may want its players to use separate home
   cities for it.
-- **If your mod already uses UHC 1.10:**
-  - replace its `UHC.dll` with this one, then read `UHC.log`;
-  - its `uhc.cfg` keeps working, since the UHC 1.10 syntax (`basePop=500`, `//` comments) is
-    accepted;
-  - keys that this DLL does not implement yet are reported and ignored
-    ([section 8](#8-keys-from-uhc-110-that-are-not-implemented)).
-- **If your mod ships its own `uhc.dll`** (for example Wars of Liberty): replacing it would lose
-  its features, and the loader loads only one DLL. Rebuild the features you want inside your DLL
-  instead, as described in [porting-to-another-dll.md](porting-to-another-dll.md). The cfg keys
-  and data edits in this guide stay the same.
+- **If your mod already uses UHC 1.10:** <!-- private -->
+  - replace its `UHC.dll` with this one, then read `UHC.log`; <!-- private -->
+  - its `uhc.cfg` keeps working, since the UHC 1.10 syntax (`basePop=500`, `//` comments) is <!-- private -->
+    accepted; <!-- private -->
+  - keys that this DLL does not implement yet are reported and ignored <!-- private -->
+    ([section 8](#8-keys-that-are-not-implemented)). <!-- private -->
+- **If your mod ships its own `uhc.dll`** (for example Wars of Liberty): replacing it would lose <!-- private -->
+  its features, and the loader loads only one DLL. Rebuild the features you want inside your DLL <!-- private -->
+  instead, as described in [porting-to-another-dll.md](porting-to-another-dll.md). The cfg keys <!-- private -->
+  and data edits in this guide stay the same. <!-- private -->
 
 ## 1. What you need
 
 - **The Steam version of TAD.** Its `bin\age3y.exe` must be the stock build, SHA-256
-  `b1a1dab7264d2db72e8f8ae1df1e419eecc223b40db00c9d1013a3bc77611d9d` (see
-  [binaries.md](binaries.md)). Use it only as the source you copy from: never modify the Steam
-  install. Check a file's hash in PowerShell with `Get-FileHash age3y.exe`.
+  `b1a1dab7264d2db72e8f8ae1df1e419eecc223b40db00c9d1013a3bc77611d9d`.
+  Known builds: [binaries.md](binaries.md). <!-- private -->
+  Use it only as the source you copy from: never modify the Steam install. Check a file's hash
+  in PowerShell with `Get-FileHash age3y.exe`.
 - **Your mod folder:** a complete game folder (a copy of the game's `bin` folder, plus your
   files), containing:
   - an `age3y.exe` patched with the **UHC loader** (next section);
   - `UHC.dll`, from the release zip. To change the DLL itself, build it as described in
-    [developer-guide.md](developer-guide.md);
+    [developer-guide.md](developer-guide.md); <!-- private -->
+    <!-- public: the [README](../README.md#building); -->
   - `Startup\uhc.cfg`, which selects the features.
 - **Python 3 and the `tools/` folder** of this repository's source code, only for keys that need
   data edits ([see above](#adding-uhcdll-to-your-mod)). They need no extra packages.
@@ -120,19 +126,21 @@ nothing but your mod.**
 ### Getting an exe with the UHC loader
 
 The loader is a small patch to `age3y.exe`. When the game starts, it loads `UHC.dll` from the
-exe's folder and calls it before the game's own startup code. Its exact bytes are in
-[binaries.md](binaries.md). This project does not ship a patcher; use the one from the original
-UnHardcoded project:
+exe's folder and calls it before the game's own startup code.
+Its exact bytes are in [binaries.md](binaries.md). <!-- private -->
+This project does not ship a patcher; use the one from the original UnHardcoded project: <!-- private -->
+<!-- public: This project does not ship a patcher; use `UHCPatcher.exe`: -->
 
 1. **Start from an unmodified exe.** Your mod folder's `age3y.exe` must be a copy of the
    unmodified Steam exe: `Get-FileHash age3y.exe` prints `B1A1DAB7…11D9D`.
    - The patcher writes at fixed file offsets.
    - The DLL only detects a different build (from the PE header) or a change at one of its own
      patch sites. Any other change goes unnoticed, so always start from the stock exe.
-2. **Get the patcher.** Download `UHCPatcher.exe` from the `Release` folder of
-   [danielpereira/AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). Keep it
-   **outside** the game folders, for example on the desktop: started from inside a game folder,
-   it picks that folder's exe by itself.
+2. **Get the patcher.** Download `UHCPatcher.exe` from the `Release` folder of <!-- private -->
+   [danielpereira/AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). <!-- private -->
+<!-- public: 2. **Get the patcher.** -->
+   Keep it **outside** the game folders, for example on the desktop: started from inside a game
+   folder, it picks that folder's exe by itself.
 3. **Apply the patch.** Drag the mod folder's `age3y.exe` onto `UHCPatcher.exe`. A dialog opens:
    - leave its checkboxes as they are and click **Apply**. They only choose the keys written into
      the `uhc.cfg` that you replace in the next step; the exe patch is the same whatever you
@@ -142,7 +150,7 @@ UnHardcoded project:
    According to its source code (it was not run in this project's tests), the patcher:
    - keeps the original exe as `age3y.backupuhc` next to it;
    - patches the exe in place;
-   - writes UHC 1.10's `UHC.dll` next to it and a new `Startup\uhc.cfg`, replacing any existing
+   - writes its own `UHC.dll` next to it and a new `Startup\uhc.cfg`, replacing any existing
      ones.
 4. **Install this release.** Copy its `UHC.dll` and `Startup\uhc.cfg` over the patcher's, then
    start the game once. `UHC.log` must start with `UHC.dll x.y.z`,
@@ -154,11 +162,11 @@ If something goes wrong:
 - **`host is not a UHC-patched age3y.exe`:** the exe is not the stock build plus the loader, and
   the DLL does nothing.
 - **The loader shows *Failed to load UHC.dll!* and the game exits:** `UHC.dll` is missing.
-- **No `UHC.log` at all:** the `UHC.dll` next to the exe is still UHC 1.10's, which writes no
+- **No `UHC.log` at all:** the `UHC.dll` next to the exe is still the patcher's, which writes no
   log.
 
-This DLL was tested with the Knights and Barbarians exe (SHA-256 `d21d0173…`, stock plus the
-loader only).
+This DLL was tested with the Knights and Barbarians exe (SHA-256 `d21d0173…`, stock plus the <!-- private -->
+loader only). <!-- private -->
 
 ## 2. Mod folder layout
 
@@ -176,8 +184,9 @@ loader only).
   its data from the mod folder. Without it, the game reads the install folder stored in the
   registry, which for a Steam install is the Steam folder: the mod would then load the Steam data
   instead of its own.
-- **The working directory.** `UHC.dll` makes the exe's folder the working directory at startup,
-  as UHC 1.10 does. A double-click, a shortcut and a launcher therefore all start the mod the
+- **The working directory.** `UHC.dll` makes the exe's folder the working directory at startup.
+  UHC 1.10 does the same. <!-- private -->
+  A double-click, a shortcut and a launcher therefore all start the mod the
   same way.
 - **UHC.dll's own files.** It reads `Startup\uhc.cfg` from the exe's folder and writes `UHC.log`
   there.
@@ -188,18 +197,19 @@ Start from the `Startup\uhc.cfg` in the release zip, which lists every key, comm
 repository's [examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg) is the same file with every
 key enabled, using the values this project tests with: do not ship it as it is.
 
-- **Syntax:** one key per line, followed by its arguments, separated by spaces or tabs. UHC
-  1.10's syntax also works, since its patcher writes it: `basePop=500` (or `basePop = 500`).
+- **Syntax:** one key per line, followed by its arguments, separated by spaces or tabs. The
+  patcher's syntax also works: `basePop=500` (or `basePop = 500`).
+  It is UHC 1.10's syntax. <!-- private -->
 - **Case:** keys are case-insensitive (`deckCardCount` = `deckcardcount`). Arguments keep their
   case.
-- **Comments:** a line whose first word starts with `#`, and anything after `//` (UHC 1.10
+- **Comments:** a line whose first word starts with `#`, and anything after `//` (the patcher's
   style), even at the end of a line. A `#` later in a line is **not** a comment: in
   `deckCardCount 40 # more cards`, the words `#`, `more` and `cards` are arguments.
 - **One line per key:** a key that takes values reads only its first line. Write
   `hcShipmentPointFallback` once, with all its names. The exceptions: `dodgeSoundSet`,
   `criticalSoundSet`, `danceBonusCivs` and `perfAutoExec` read every line, and
   `broadsideMuzzleLimit` and `noTrainNearEnemyTC` refuse a second line.
-- **Unknown keys:** a key this DLL does not handle, whether an upstream key or a misspelling, is
+- **Unknown keys:** a key this DLL does not handle, whether a key not implemented yet or a misspelling, is
   logged in lowercase as `<key>: not implemented yet; ignored`.
 - **Absent keys** keep the stock behavior.
 
@@ -217,7 +227,7 @@ key enabled, using the values this project tests with: do not ship it as it is.
 | `<feature>: applied` | The feature patched the game. |
 | `<feature>: FAILED` | It did not. The line before says why (bad arguments, or the next row). |
 | `<feature>: site <Name> at 0x… does not hold the stock bytes; feature not applied` | The exe differs from the stock build at that address. Nothing was written there. |
-| `<key>: not implemented yet; ignored` | A key this DLL does not handle: an upstream key not implemented yet ([section 8](#8-keys-from-uhc-110-that-are-not-implemented)), or a misspelled key. |
+| `<key>: not implemented yet; ignored` | A key this DLL does not handle: a key not implemented yet ([section 8](#8-keys-that-are-not-implemented)), or a misspelled key. |
 | `UHCMain: N applied, M failed` | The summary of this start. |
 | `hook reached: <name> (0x…)` | The first time the game ran that patched code. Use it to confirm that a feature is really used in a game. |
 
@@ -225,7 +235,8 @@ Feature-specific lines are listed in each section below.
 
 ## 5. Feature reference
 
-Each feature that works in game shows a short clip of a test, with the live numbers (game time, hit points, LOS and the feature's own `log` lines) drawn over it by `tools/testbed.py record`, and a link to the full recording.
+Each feature that works in game shows a short clip of a test, with the live numbers (game time, hit points, LOS and the feature's own `log` lines) drawn over it, and a link to the full recording.
+The overlay comes from `tools/testbed.py record`. <!-- private -->
 
 Each section gives the syntax, what changes in the game, what your mod must provide, how to
 confirm it works, and its test status. "Changes the simulation" means every player in a
@@ -263,7 +274,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`techRenameEffect`](#techrenameeffect) | Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in your string table. | confirmed (single player) |
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | `<Flag>Doppled</Flag>` on those protos, and the unit type in the cfg (`Huntable` needs no data change). | confirmed (single player) |
 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player, Healing Dance) |
-| [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed from the log and memory (single player) |
+| [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. a starting fort), or an existing type or proto name in the cfg. | confirmed from the log and memory (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos; with a new marker, that type on the trainers (or on the blocking buildings) in `protoy`. | confirmed (single player) |
@@ -362,8 +373,8 @@ extraPop <N>             N from 0 to 10000, stock 50
 - **Simulation:** yes.
 - **Status:** partly confirmed. A skirmish went past 200 with `basePop 300`; the limit reached was
   the number of houses that could be built.
-- **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
-  where the stock 200/250 limits stayed active.
+- **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative, <!-- private -->
+  where the stock 200/250 limits stayed active. <!-- private -->
 
 ### decimalPopulation
 
@@ -414,7 +425,8 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
 - **Your data:** the decimals, in the two tags and in the effect amounts. Whole numbers behave
   exactly as without the key. A UI gadget that shows `{pop}`, `{popcap}`, `{futurepop}` or
   `{totalPop}` now gets text such as `12.5` instead of a number; that is fine in a `formatText`
-  gadget, which is how stock and WoL use them.
+  gadget, which is how stock uses them.
+  WoL uses them the same way. <!-- private -->
 - **Choosing K:** 10 for one decimal (0.5, 1.5), 100 for two (0.25), or any value from 2 to 1000.
   Texts show up to three decimals, trailing zeros dropped (K = 3 shows 0.333).
 - **Not adapted:** the post-game timeline (`Línea cronológica`, the curves `Toda la población`,
@@ -439,8 +451,8 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
   is `Absolute`, 2 `BasePercent`, 3 `Assign`), and each XS setter's value when it changes
   (`decimalPopulation: aiSetEconomyPop(80) stored as 800`).
 - **Simulation:** yes: every player needs the same key and the same K. Not tested in multiplayer.
-- **Status:** confirmed in single player (2026-10-29), K = 10 and 100, with the data of
-  [`tools/pop_testdata.py`](../tools/README.md#pop_testdatapy) in a test copy:
+- **Status:** confirmed in single player (2026-10-29), K = 10 and 100, in a test copy:
+  - **data:** written by [`tools/pop_testdata.py`](../tools/README.md#pop_testdatapy); <!-- private -->
   - **values:** the log and memory showed Settler 1.5, Pikeman 0.5, Crossbowman 1.5, Manor 7.5,
     and a player with 6 Settlers, 12 Pikemen and a Crossbowman at 16.5 / 17.5 (top bar and
     memory);
@@ -473,8 +485,8 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
   - **shared team population:** TAD's setup has no option for it, so the flag `[world+6913h]` was
     set in memory; the team path then capped the player at 200 after a `PopulationCap` +300 (its
     hook reached; unscaled it would have shown 20);
-  - **`{pop}` and `{populationHelp}`:** no stock UI shows them (WoL's editor shows `{pop}`), so a
-    loose `uimainnew.xml` in the test copy put `{pop}/{popcap}` in the counter and
+  - **`{pop}` and `{populationHelp}`:** no stock UI shows them, so a
+    loose copy of the main UI file in the test copy put `{pop}/{popcap}` in the counter and
     `{populationHelp}` in its tooltip: the counter read `16.5/17.5` and the tooltip
     `1 Centro urbano = 10, 1 Casa solariega = 7.5 Tamaño máx. ejército = 17.5` (the population
     help line and the max army size, both with decimals).
@@ -484,7 +496,7 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
   found; the unit help `Población: %d` (FUN_004C8748, which the `trainsandcontains` row of the
   unit information panel calls; that row did not show for a Town Center, and a card on the home
   city screen, outside a game, shows no population).
-- **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### noAILimit
 
@@ -495,7 +507,7 @@ noAILimit
 - **Effect:** the AI personality list in game setup shows every `AI3\*.personality` file of the
   game folder, sorted by file name (case-insensitive). Stock shows a built-in list of 11
   personalities, 14 with TAD content. The folder name and the extension are read from the exe,
-  so an exe patched to another folder (Wars of Liberty uses `AI4\`) works too.
+  so an exe patched to another folder (for example `AI4\`) works too.
 - **Your mod:** add personality files. For example, a copy of `AI3\elizabeth.personality` saved as
   `AI3\mymod.personality`, with its fields changed:
 
@@ -522,7 +534,7 @@ noAILimit
   `hook reached: noAILimit (0x603B0B)`.
 - **Simulation:** the list feeds game setup; every player needs the same personality files.
 - **Status:** confirmed: an added personality appeared in game setup and played.
-- **Fixed from UHC 1.10:** upstream leaves two of the function's variables uninitialized.
+- **Fixed from UHC 1.10:** upstream leaves two of the function's variables uninitialized. <!-- private -->
 
 ### customRevolutionBanners
 
@@ -554,8 +566,8 @@ customRevolutionBanners
 - **Simulation:** no (interface only).
 - **Status:** partly confirmed: the hook runs and the O'Higgins banner still shows. Banners for
   other revolutions were not tested.
-- **Fixed from UHC 1.10:** the banner path is bounded; upstream overflows its buffer on long tech
-  names.
+- **Fixed from UHC 1.10:** the banner path is bounded; upstream overflows its buffer on long tech <!-- private -->
+  names. <!-- private -->
 
 ### removeFameRestriction
 
@@ -569,19 +581,21 @@ Three changes:
    the first screen, export.
 2. **Home city cards** that cost Fame or XP show an icon for those resources.
 3. **"Fame trickle":** the built-in abstract unit type `FavoriteUnit` is renamed `Fame` (same
-   ID). The original UnHardcoded project applies this change under that name; how it enables a
-   Fame trickle was not traced. Stock data does not use `FavoriteUnit`.
+   ID). The original UnHardcoded project applies this change under that name; how it enables a <!-- private -->
+   Fame trickle was not traced. <!-- private -->
+   <!-- public: ID). How the rename enables a Fame trickle was not traced. -->
+   Stock data does not use `FavoriteUnit`.
 
 - **Your mod:** provide the icons `art\ui\home_city\xp_hc_icon.ddt` and
-  `art\ui\home_city\fame_hc_icon.ddt` (the names upstream uses). Without them, those cards show
+  `art\ui\home_city\fame_hc_icon.ddt`. Without them, those cards show
   no icon, as in stock.
 - **Log:** `removeFameRestriction: icons need …`;
   `hook reached: removeFameRestriction costs #1 (0x80E490)` (also `#2`, `icon load`,
   `fame icon case`, `XP icon case`).
 - **Simulation:** the unit type rename changes game data; give every player the same setting.
 - **Status:** not tested in game.
-- **Fixed from UHC 1.10:** on the second politician screen, upstream passes the wrong object
-  as the owner of each cost line.
+- **Fixed from UHC 1.10:** on the second politician screen, upstream passes the wrong object <!-- private -->
+  as the owner of each cost line. <!-- private -->
 
 ### removeConversionRestriction
 
@@ -631,7 +645,7 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
   receives the shipments. Without this key, a player whose buildings are none of the 10 stock
   types has no shipment point at all (read from the stock search; not tested in game).
 - **Your mod:** list proto names exactly as in `protoy.xml`, and `FirstTC` where it should be
-  tried, e.g. `hcShipmentPointFallback Barracks Stable ArtilleryDepot Market Church`, or for WoL
+  tried, e.g. `hcShipmentPointFallback Barracks Stable ArtilleryDepot Market Church`, or
   `hcShipmentPointFallback FirstTC Barracks Market` (with `startingTC` or `civFirstTC`). A proto
   named `FirstTC` cannot be listed: the keyword wins.
 - **The point then stays:** as in stock, once a building is the point it stays the point while
@@ -671,7 +685,7 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     `noTrainNearEnemyTC 65 log` on. Not tested: `FirstTC` with `startingTC`, and a converted
     first town center (the owner check);
   - water shipment points were not tested (the key does not change them).
-- **New in this DLL:** not in UHC 1.10.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ### healNonIdle
 
@@ -725,8 +739,8 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
   the data loads, `hook reached: abstract unit types (0x51BA31)` and
   `unit types: X -> <ID> (bit B of N), added` (or `already defined`); in a game,
   `hook reached: healNonIdle auto-search (0x9CD9C7)` and `hook reached: healNonIdle (0x9E0C79)`.
-- **Check the data:** with the game running, `python -I tools/re/inspect_unittypes.py
-  AbstractHealNonIdle` lists the protos that carry the type.
+- **Check the data:** with the game running, `python -I tools/re/inspect_unittypes.py <!-- private -->
+  AbstractHealNonIdle` lists the protos that carry the type. <!-- private -->
 - **Simulation:** yes. It also adds a unit type, which changes the unit type count.
 - **Status:** confirmed: British surgeons marked with the type healed their explorer during a
   fight through their automatic search. A direct order (right-click) on a fighting unit was not
@@ -773,8 +787,8 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
   started with the 90 % settler; with `smartHealTargets Pikeman`, the pikeman (70 %) came first,
   then 33, 45, 90 %. Together with `healNonIdle` both hooks ran. A skirmish against the AI with
   the key on played normally. Multiplayer was not tested.
-- **New in this DLL:** not in UHC 1.10.
-- **New in this DLL:** not in UHC 1.10.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
@@ -900,9 +914,9 @@ One line per rule; several lines add up, and the first rule that matches a hit d
   - a skirmish against the AI with these keys on played normally.
 
   Not tested: multiplayer, siege hits, damage types other than the stock three.
-- **New in this DLL:** not in UHC 1.10.
-- **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b
-  ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
+- **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b <!-- private -->
+  ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### damageOverTime
 
@@ -1101,8 +1115,9 @@ damageOverTime [log] [noticktext]
   hide the poison; the `log` lines show the ticks anyway.
 - **Simulation:** yes. Every player needs the same data and the same key; `noticktext` only
   changes what that player sees and may differ.
-- **Status:** confirmed in single player, by hand and with the unattended test
-  ([developer-guide.md](developer-guide.md#driving-the-game-unattended)). With the Explorer's
+- **Status:** confirmed in single player, by hand and with an unattended test.
+  Method: [developer-guide.md](developer-guide.md#driving-the-game-unattended). <!-- private -->
+  With the Explorer's
   `HandAttack` and `VolleyRangedAttack` attaching a 20-damage, 1-second, 10-second poison:
   - against Musketeers, each tick took exactly 20 hitpoints every 1000 ms of game time;
   - leaving a game with a poison running dropped it when the next game started, a scenario or a
@@ -1114,8 +1129,8 @@ damageOverTime [log] [noticktext]
   - skirmishes started after a poison game, in the same session, had working AI players;
   - X's tactics file worked as XML alone, without its `.xmb`, in the one-line form above.
 
-  Then, on 2026-10-29, with the data of `tools/dot_testdata.py` (one X per weapon, test maps
-  without AI):
+  Then, on 2026-10-29, with test data that gives one X per weapon (test maps without AI):
+  The data was written by `tools/dot_testdata.py`. <!-- private -->
   - **area damage and a flying grenade:** one Grenadier grenade poisoned all four musketeers it
     hit (10 Siege per tick each, renewed by the next grenades, three of them died of it);
   - **flying arrows:** a Crossbowman's arrow poisoned a musketeer, 4.80 per tick (6 Hand less its
@@ -1145,7 +1160,7 @@ damageOverTime [log] [noticktext]
   - `noticktext`: the startup line says the tick texts are off, and in a filmed fight the
     poisoned Hussar took its 15-damage ticks with no green number over it; noTrainNearEnemyTC's
     warning, which shares the floating text code, still showed in another game with this option;
-  - **invalid values** (`dot_testdata.py --bad`): `<AttachMaxStacks>` 0, 101 and `abc`,
+  - **invalid values**: `<AttachMaxStacks>` 0, 101 and `abc`,
     `<AttachSnare>` -1, 20 and `x`, `<AttachTickText>` `GG0000` and `12345` each logged their
     "ignored" line at load; the Musketeer carrying them still poisoned with the defaults
     (`stack 1/1`, no slow, no text); an empty `<AttachTickText></AttachTickText>` took the default
@@ -1165,8 +1180,8 @@ damageOverTime [log] [noticktext]
   the scenario trigger `Army Deploy`, not units a map put in an army with `rmCreateArmy` /
   `rmAddUnitsToArmy`. So the attacker-gone ticks (902 in the AI game) never met that case; the
   guard stays a reading of the code. Multiplayer was not tested either.
-- **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
-  proto that carries the duration and the damage.
+- **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment <!-- private -->
+  proto that carries the duration and the damage. <!-- private -->
 
 ### spreadAnyAccuracy
 
@@ -1207,7 +1222,7 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
   ```xml
   <!-- or protoy.xml, per proto -->
-  <Unit id ='...' name ='Escopetero'>
+  <Unit id ='...' name ='MyShotgunner'>
       ...
       <UnitType>AbstractSpreadAnyAccuracy</UnitType>
       <ProtoAction>
@@ -1222,12 +1237,13 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
   Mark only units whose attack has `<DamageArea>`, such as shotguns: a marked attack without area
   does no damage. The marker is registered by the DLL, like `healNonIdle`'s; an existing type or
-  proto name works too (`spreadAnyAccuracy Escopetero`).
+  proto name works too (`spreadAnyAccuracy MyShotgunner`).
 - **Not covered** (these shots never reach the code; they behave as in stock):
   - actions with `<InstantBallistics>` (sure hits: most muskets) or `<TargetGround>` (grenades,
-    mortars). Of WoL's 647 actions with spread tags, 304 and 122; the current shotgun files
-    (`wolinfantryrangedescopetero`, `wolinfantryrangedbacamarteer`, the trench fighter's volley)
-    are covered;
+    mortars);
+    of WoL's 647 actions with spread tags, 304 and 122; the current shotgun files <!-- private -->
+    (`wolinfantryrangedescopetero`, `wolinfantryrangedbacamarteer`, the trench fighter's volley) <!-- private -->
+    are covered; <!-- private -->
   - shots at the ground with no target unit, and every shot when the startup cfg does not define
     `ballisticPrecalcHits` (the game's own `Startup\gamey.cfg` defines it; keep that line if your mod
     ships its own startup cfg);
@@ -1272,7 +1288,7 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
   Multiplayer, saved games and a loaded game were not tested; the area damage of the ground shots
   was seen on HP, the landing points only on video.
-- **New in this DLL:** not in UHC 1.10. WoL request #2 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #2 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### liveBuildingWorkRate
 
@@ -1334,7 +1350,7 @@ liveBuildingWorkRate [log]
   With the key off, both had 3 (the bug). The log showed `works at BuildingWorkRate 4.000, not its
   snapshot 1.000` for player 1's factory. Training and research use the same code path but were
   not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #5 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #5 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### techPrereqRecheck
 
@@ -1352,8 +1368,8 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
   population cap changes (a house is built or destroyed). Creating or killing any other unit never
   does. A `<TypeCount>` prerequisite counts the player's units, so it is noticed late: a tech with
   `<TypeCount unit='Dock' count='1' state='noneState aliveState' operator='gte'/>` waits for the
-  player's next house after the first dock is built. Stock data has no `<TypeCount>`; WoL has 12
-  in 9 techs.
+  player's next house after the first dock is built. Stock data has no `<TypeCount>`.
+  WoL has 12 in 9 techs. <!-- private -->
 - **Effect:** on every world update (or every N), for each tech with a `<TypeCount>`
   prerequisite, the DLL evaluates the tech's prerequisites for each player exactly as the stock
   re-check does, and compares the result with the one the game cached. On a difference it starts
@@ -1423,7 +1439,7 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
   has no live Musketeer, activated in the same world update as the Settler's creation (20.0 s) and
   the Musketeer's death (32.0 s). With the key off they waited for an unrelated tech change at
   70 s. With these 2 techs, the checks cost about 4 ms per game minute (the `log` summary).
-- **New in this DLL:** not in UHC 1.10. WoL request #6 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #6 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### maintainWaitForPop
 
@@ -1437,7 +1453,7 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 
 - **How stock behaves:** some buildings produce units on their own, through a `Maintain` action
   in their tactics file: the factory's `SpawnCannon`, the Ottoman Town Center's settlers, the
-  dock's `SpawnBoat`, the native trading posts' warriors, and many more in WoL. The building fills
+  dock's `SpawnBoat`, the native trading posts' warriors, and many more in mods. The building fills
   a timer: `<rate type="X">n</rate>` gives the unit X and n units per cycle, and the cycle costs
   n × X's `TrainPoints` at the building's work rate. When the timer is full, the game tries to
   spawn the units. A unit that does not fit in the player's population is not created, and the
@@ -1492,7 +1508,7 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
   finished settler (`holds a finished Settler (pop 1, 10 of 10 used)`) and released it right after
   two settlers died (`releases its Settler (pop 1, 9 of 10 used)`). With the key off, no settler
   came until the next full cycle. Factory cannons, batches and `SingleUse` spawns were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #8 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #8 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### transformUpdatesLOS
 
@@ -1540,7 +1556,7 @@ transformUpdatesLOS [log]
   `HCXPTirailleurs` got LOS 24, the Skirmisher's; with the key off they kept 20 (the bug).
   Pikemen turned into Rodeleros logged `12 -> 12`. "Change Unit Type" never reached the hook and
   was already right in stock. Revolutions were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #10 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #10 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### broadsideMuzzleLimit
 
@@ -1598,11 +1614,11 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 - **Status:** confirmed in single player (2026-10-29) with `broadsideMuzzleLimit 11 ypTekkousen
   log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. The
   `PowerBroadside` ability and `SingleUsePlayer` attacks were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #15 ([wol-requests.md](wol-requests.md)).
-  According to the scoping (not tested), WoL's FloatingBattery and Battleship models have 7
-  muzzles per side, and its ironclad long-range attack has `SingleUsePlayer`, so it keeps 1. A
-  projectile count set in the data, independent of the model (`numberprojectiles`), is a
-  different and larger change; it is not provided.
+- **New in this DLL:** not in UHC 1.10. WoL request #15 ([wol-requests.md](wol-requests.md)). <!-- private -->
+  According to the scoping (not tested), WoL's FloatingBattery and Battleship models have 7 <!-- private -->
+  muzzles per side, and its ironclad long-range attack has `SingleUsePlayer`, so it keeps 1. <!-- private -->
+- **Not provided:** a projectile count set in the data, independent of the model
+  (`numberprojectiles`), is a different and larger change.
 
 ### abilitySlots
 
@@ -1629,13 +1645,16 @@ abilitySlots <N> [log]      N from 6 (stock) to 36
   fewer looks exactly as before. Enabled abilities past the 6th get buttons; a page with more than
   6 buttons wraps to the next row, as Train and Tech pages already do. The panel still has 6 rows
   of 6 buttons: whatever does not fit is not drawn, as in stock.
-- **Your mod:** use N at least the length of the longest ability list in your `abilities.xml`
-  (WoL's explorer has 8). A larger N costs a little: each refresh of the panel scans the whole
+- **Your mod:** use N at least the length of the longest ability list in your `abilities.xml`.
+  WoL's explorer has 8. <!-- private -->
+  A larger N costs a little: each refresh of the panel scans the whole
   ability list once per extra slot.
-- **Existing data:** abilities that were silently dropped at position 7 or later now appear. In
-  WoL, the 7th ability of `ypMonkJapanese`, `ypMonkJapanese2` and `ypMonkChinese` is an
-  `AlwaysDisabledInGrid` aura (scoping, not tested): with the key it shows as a greyed button once
-  its tech is active.
+- **Existing data:** abilities that were silently dropped at position 7 or later now appear.
+  In <!-- private -->
+  WoL, the 7th ability of `ypMonkJapanese`, `ypMonkJapanese2` and `ypMonkChinese` is an <!-- private -->
+  `AlwaysDisabledInGrid` aura (scoping, not tested): with the key it shows as a greyed button once <!-- private -->
+  its tech is active. <!-- private -->
+  <!-- public: An `AlwaysDisabledInGrid` aura at such a position shows as a greyed button once its tech is active (static reading, not tested). -->
 - **`log`:** one line per unit and ability the first time the panel shows a button past the 6th
   (once per unit ID and ability record in a game).
 - **Log:** at startup `abilitySlots: the command panel asks for N abilities per unit (stock 6)`
@@ -1655,7 +1674,7 @@ abilitySlots <N> [log]      N from 6 (stock) to 36
 - **Status:** confirmed in single player (2026-10-29), in the interface. A test Explorer with 8
   abilities, the first 6 locked by techs: with `abilitySlots 8` the 7th showed a button at once and
   the 8th when its tech was activated; with the key off, no ability button.
-- **New in this DLL:** not in UHC 1.10. WoL request #16 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #16 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### wonderPanelSkipAuras
 
@@ -1717,7 +1736,7 @@ wonderPanelSkipAuras [log]
   command panel button sends. Players may set it differently (not tested in multiplayer).
 - **Status:** confirmed in single player (2026-10-29), in the interface: with a test ability added
   after the Toshogu Shrine's aura, the panel showed 2 buttons; with the key off, 1.
-- **New in this DLL:** not in UHC 1.10. WoL request #20 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #20 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### lifespanAfterConstruction
 
@@ -1735,7 +1754,8 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
   whose Lifespan is shorter than its construction dies as a foundation; any other one lives
   Lifespan minus its construction time once built. With `<Flag>AlphaFadeLifespan</Flag>`, the
   fade-out before the end runs on its own timer from placement too, and its end kills the unit by
-  itself. No stock building has a Lifespan; mods such as WoL use it (its `*Maturing` buildings).
+  itself. No stock building has a Lifespan; some mods use it.
+  WoL does (its `*Maturing` buildings). <!-- private -->
 - **Effect:** for a unit whose proto is of `<UnitType>`, the countdown and the lifespan fade-out do
   not advance while the unit is not fully built. When the construction is finished, both run from
   their full values as in stock: the building lives `Lifespan` seconds after it is finished. Any
@@ -1790,7 +1810,7 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
   still under construction (the bug). The `AlphaFadeLifespan` fade-out hold was not checked in
   game. To test it yourself, place the foundation in game: a building placed by a scenario is
   complete once the scenario is loaded.
-- **New in this DLL:** not in UHC 1.10. WoL request #7 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #7 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### gaiaSocketsOnly
 
@@ -1804,17 +1824,19 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
   socket a player owns shows red. The check that decides (run when the order executes, on every
   machine, and before it by the UI and the AI) never reads the owner. According to the static
   reading, an order that carries the socket's exact position (an AI build plan) therefore builds
-  on a player's socket; WoL reports this with its saltpeter sockets. Stock data never shows it,
+  on a player's socket.
+  WoL reports this with its saltpeter sockets. <!-- private -->
+  Stock data never shows it,
   because every stock socket has the flag `ForceToGaia` (it is created for Gaia).
 - **Effect:** when a socketed building is placed, a socket that a player owns no longer counts.
   The order fails as if there were no socket. The rule also covers the socket's owner himself, as
   the stock preview does. Gaia sockets behave as in stock, and so does the preview.
 - **`<UnitType>`:** only sockets whose proto is of that type (or that proto name) follow the rule;
   every other socket keeps the stock behavior. Use it to apply the rule to your own sockets only,
-  for example a marker on the saltpeter socket:
+  for example a marker on a socket of your own:
 
   ```xml
-  <Unit id ='…' name ='SaltpeterSocket'>
+  <Unit id ='…' name ='MyResourceSocket'>
       ...
       <UnitType>AbstractGaiaOnlySocket</UnitType>
   ```
@@ -1842,9 +1864,9 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 - **Status:** implemented, not tested in game. In the test (2026-10-29) the stock interface itself
   refused a Trading Post on a player-owned socket: no foundation, and the message that it must be
   built near a native settlement or trade route. Scenario triggers cannot give build orders, so
-  the order path that bypasses that check, WoL's case, was not driven. The code was reviewed
+  the order path that bypasses that check was not driven. The code was reviewed
   adversarially and no defect was found.
-- **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### customHotkeyContexts
 
@@ -1876,8 +1898,8 @@ customHotkeyContexts [log]
   Other units (a soldier, a hero) never enter a context, so theirs stays off although it is
   registered: give them the flag `EnterHotkeyContext`.
 - **Your mod:** add the contexts to `data\DefaultKeyMapY.xml` (a loose file there replaces the
-  archive copy; that worked in the test). WoL's file already uses this naming for its new
-  contexts:
+  archive copy; that worked in the test), named like this:
+  WoL's file already uses this naming for its new contexts. <!-- private -->
 
   ```xml
   <keymapgroup name="Forge Hotkeys" displayname="Forge Hotkeys">
@@ -1925,7 +1947,7 @@ customHotkeyContexts [log]
   Sacred Field (no stock context), the Caravanserai (instead of stock context 72, `StableAccel`)
   and the market wagon, not a building (instead of `BuildAccel`). The key press itself was not
   tested: synthetic key presses do not reach the game's hotkeys.
-- **New in this DLL:** not in UHC 1.10. WoL request #12 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #12 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### snareOnlyHitUnit
 
@@ -1939,7 +1961,7 @@ snareOnlyHitUnit [log]
 
 - **How stock behaves:** an attack whose tactics action has
   `<TargetSpeedBoost>1</TargetSpeedBoost>` snares its target: the target's speed is multiplied by
-  0.65 for 3 seconds. Stock TAD gives it to most melee attacks; WoL uses it on many more. A unit
+  0.65 for 3 seconds. Stock TAD gives it to most melee attacks; mods may use it on many more. A unit
   that moves in a group (several units ordered together) does not use its own speed: the group
   moves at the speed of its slowest member. One snared unit therefore slows its whole group to
   0.65× for 3 s.
@@ -1971,7 +1993,7 @@ snareOnlyHitUnit [log]
   2.600 toward its group's pace` and `lags behind its formation slot; its group does not wait for
   it`, with the feature's `hook reached` lines. The group's positions were not measured against
   stock.
-- **New in this DLL:** not in UHC 1.10. WoL request #13 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #13 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### techRenameEffect
 
@@ -1981,13 +2003,14 @@ snareOnlyHitUnit [log]
 
 ```
 techRenameEffect [log]
-enableTechRenameEffect [log]     the same key under WoL's name
+enableTechRenameEffect [log]     the same key under its other name
 ```
 
 - **How stock behaves:** no tech effect changes a tech's texts; the stock `SetName` effect renames
-  a *unit* for one player. WoL's `uhc.dll` adds a `SetTechName` effect (`enableTechRenameEffect`),
-  but it writes the new string IDs into the database's copy of the tech, which all players share:
-  when one civ's tech renames a tech, every player sees the new name.
+  a *unit* for one player.
+  WoL's `uhc.dll` adds a `SetTechName` effect (`enableTechRenameEffect`), <!-- private -->
+  but it writes the new string IDs into the database's copy of the tech, which all players share: <!-- private -->
+  when one civ's tech renames a tech, every player sees the new name. <!-- private -->
 - **Effect:** adds the tech effect `SetTechName`. When a tech that carries it becomes active for a
   player, the named tech shows the new name, rollover and help text **for that player only**. If
   the carrier is a team tech, every member of the team gets the rename. Costs, prerequisites,
@@ -2003,11 +2026,12 @@ enableTechRenameEffect [log]     the same key under WoL's name
   | `tech` | Required. The name of the tech to rename. |
   | `newName` | New `DisplayNameID` (the button and message name). |
   | `newRolloverTextID` | New `RolloverTextID` (the button's rollover). |
-  | `newLongRolloverTextID` | New `LongRolloverTextID` (the long help text). WoL's effect has no such attribute. |
+  | `newLongRolloverTextID` | New `LongRolloverTextID` (the long help text). |
 
   The three string IDs are optional, but at least one must be given; leave one out, or write
-  `-1`, to keep that text. The IDs come from your string table (`stringtabley.xml`). The
-  attributes are WoL's, so WoL's data works unchanged. "Per civ" means placing the effect in a
+  `-1`, to keep that text. The IDs come from your string table (`stringtabley.xml`).
+  The attributes are WoL's, so WoL's data works unchanged; WoL's effect has no `newLongRolloverTextID`. <!-- private -->
+  "Per civ" means placing the effect in a
   tech that only that civ gets, such as its `Age0<Civ>` shadow tech or a home city card's tech.
 - **Where the new texts show:** wherever the game reads the tech through the player's own tech
   tree: the buttons and rollovers of that player's buildings and the "researching" /
@@ -2022,7 +2046,7 @@ enableTechRenameEffect [log]     the same key under WoL's name
 - **`log`:** one line per `SetTechName` read from the data and one per rename.
 - **Log:** at startup `techRenameEffect: the tech effect SetTechName (tech, newName,
   newRolloverTextID, newLongRolloverTextID) renames a tech for the players it reaches (multiplayer
-  unverified)` (the line starts with `enableTechRenameEffect:` under WoL's key name; with `log`,
+  unverified)` (the line starts with `enableTechRenameEffect:` under the other key name; with `log`,
   `…reaches, every rename logged (multiplayer unverified)`), then
   `techRenameEffect/enableTechRenameEffect: applied`; at data load `hook reached: techRenameEffect
   register (0x524CB5)`, `techRenameEffect: effect type SetTechName -> 17` and, at the first effect
@@ -2046,7 +2070,7 @@ enableTechRenameEffect [log]     the same key under WoL's name
   Gang Saw's rollover. In memory, the database's tech data, which other players see, kept 23401 /
   23400, and only player 1's copy had 11070 / 10670. A second effect naming an unknown tech was
   logged and dropped, and the techtree still loaded. Saved games were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #17 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #17 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### noCorpseDopples
 
@@ -2064,7 +2088,7 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
   and for the players who share his vision, and removes it only when the player sees the unit or
   the spot again. It never asks whether the unit is alive. Stock hunts use
   `VisibleUnderFogOnlyAfterSeen` instead. A mod that makes its hunts `Doppled`, so that a herd
-  stays where it was last seen (WoL does this for most of its hunts), also gets corpse dopples: a
+  stays where it was last seen, also gets corpse dopples: a
   carcass that still holds food when it leaves a player's view stays in his fog in its death pose,
   long after it was eaten or abandoned, until he looks at the spot again.
 - **Effect:** a unit whose proto is of `<UnitType>` and that is not alive (0 hitpoints, killed)
@@ -2089,7 +2113,7 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
     shows the live animal until he looks at the spot again. Removing dopples when a unit leaves
     the world would fix that; it is not implemented;
   - a saved game made without the key keeps the corpse dopples it already had;
-  - `MutateDopples` protos (none in stock or WoL data) refresh their dopples through another path
+  - `MutateDopples` protos (none in stock data) refresh their dopples through another path
     that the key does not cover.
 - **Simulation:** probably not, but unverified. Dopples belong to the game state, which every
   machine keeps the same way; the key only reads that state (unit types, hitpoints). Give every
@@ -2098,7 +2122,7 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
   Bison given `<Flag>Doppled</Flag>` in the test data: after leaving them, player 1 kept 6 dopples
   (3 dead Bison, 3 live Deer) and none for the 3 dead Deer. With the key off, 9 (the 3 dead Deer
   too).
-- **New in this DLL:** not in UHC 1.10. WoL request #18 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #18 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### danceBonusCivs
 
@@ -2126,8 +2150,9 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
   even shows the bonus, but nothing happens.
 - **Effect:** the listed civs get these four kinds exactly as the native civs do: the same
   strength, the same building (the player's first `AbstractFirePit` building) and the same
-  targets. The civ does not become "native" for anything else, unlike UHC 1.10's `nativeCivs`
-  (which also misses the Gift Dance). The native civs keep the stock behavior.
+  targets. The civ does not become "native" for anything else.
+  This is unlike UHC 1.10's `nativeCivs` (which also misses the Gift Dance). <!-- private -->
+  The native civs keep the stock behavior.
 - **Your mod needs:**
   - the internal civ names (the `<name>` in `civs.xml`: `British`, `Spanish`, a mod civ, …); case
     does not matter;
@@ -2157,15 +2182,15 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
     XP trickle and regeneration evaluation, as the native civs always did. List only the civs that
     can own a dance building;
   - new dance kinds, more dance buttons and several dance buildings per player are not covered.
-    WoL's own `uhc.dll` has a key `danceCiv`, which only changes interface checks; this is another
-    key.
+    WoL's own `uhc.dll` has a key `danceCiv`, which only changes interface checks; this is another <!-- private -->
+    key. <!-- private -->
 - **Simulation:** yes.
 - **Status:** confirmed in single player (2026-10-29) for the Healing Dance. Player 1 was Spanish,
   with 3 settlers dancing at a `FirePit` whose tactic has `RegenAllUnits`: its damaged musketeers
   read 107 HP at the first check and healed to 150. With the key off, the same dancers left them at
   90. Training, XPTrickle and Gathering were not tested in game.
-- **New in this DLL:** not in UHC 1.10. WoL request #19, first part
-  ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #19, first part <!-- private -->
+  ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### startingTC
 
@@ -2179,26 +2204,26 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   enemy's first town center (`buildingsmall.xml`, `buildinglarge.xml`, …: error 25521), and, in a
   no-rush game (`norushonly`), buildings only within 75 m of a team's first town center. The
   choice is made once and never undone:
-  - a player who starts with another building (a Pa, a Presidio) has no first town center, so no
+  - a player who starts with another building (a fort, a camp) has no first town center, so no
     enemy is kept 65 m away from him;
   - a player whose first town center dies keeps the dead one, and the rules skip him too.
 
-  WoL's Maori start is the second case (static reading of WoL's techtree and of the exe):
-  `Age0Maori` gives `TownCenter` a `Lifespan` of 0.5 s, then a free `MaoriPa`. The Pa is added
-  while the town center still lives, so the first town center stays the town center, which dies
-  half a second later. From then on the Maori have no 65 m protection, and the no-rush rule fails
-  for their team.
+  WoL's Maori start is the second case (static reading of WoL's techtree and of the exe): <!-- private -->
+  `Age0Maori` gives `TownCenter` a `Lifespan` of 0.5 s, then a free `MaoriPa`. The Pa is added <!-- private -->
+  while the town center still lives, so the first town center stays the town center, which dies <!-- private -->
+  half a second later. From then on the Maori have no 65 m protection, and the no-rush rule fails <!-- private -->
+  for their team. <!-- private -->
 - **Effect:** a building whose proto is of `<UnitType>` can be a first town center too:
   - a player who has none takes the first marked building added to him, as stock takes a
     `TownCenter`;
   - a player whose first town center is **gone** (no longer in the game), **dead**, or has a
-    **pending lifespan** (it is about to expire, like WoL's town center under `Lifespan 0.5`)
+    **pending lifespan** (it is about to expire, like a town center under `Lifespan 0.5`)
     takes the next marked building added to him instead.
 
   The `FirstTC` rules then measure from that building. A `TownCenter` keeps its stock behavior,
   and a live first town center with no lifespan is never replaced.
 - **What it does not cover:** only the `FirstTC` rules follow the marked building. Other code
-  still looks for the `TownCenter` proto itself (scoping of request #3, static reading):
+  still looks for the `TownCenter` proto itself (static reading):
   - the age-up picker (`uiPoliticianUI`) and the age-up progress display;
   - the start camera;
   - the AI: its automatic main base, its build plan and its chat lines;
@@ -2210,21 +2235,24 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   The home city shipment point is covered by
   [`hcShipmentPointFallback`](#hcshipmentpointfallback): list `FirstTC` there (the marked
   building that is the player's first town center), or the marked protos. For a civ that starts
-  with another building on every map, see [`civFirstTC`](#civfirsttc), WoL's own design for
-  request #3 ([wol-requests.md](wol-requests.md)); the other checks above stay stock.
+  with another building on every map, see [`civFirstTC`](#civfirsttc).
+  It is WoL's own design for request #3 ([wol-requests.md](wol-requests.md)). <!-- private -->
+  The other checks above stay stock.
 - **Giving buildings the marker:** add it to the buildings that stand in for a town center at the
-  start, e.g. WoL's `MaoriPa`, `Presidio`, `EGYtowncenterCARAVAN` and the `*Colony` protos:
+  start, e.g. a `StartingFort`:
+  In WoL: `MaoriPa`, `Presidio`, `EGYtowncenterCARAVAN` and the `*Colony` protos. <!-- private -->
 
   ```xml
-  <Unit id ='…' name ='MaoriPa'>
+  <Unit id ='…' name ='StartingFort'>
       ...
       <UnitType>AbstractStartingTC</UnitType>
   ```
 
   The DLL registers the marker, like `healNonIdle`'s; edit `protoy.xml` and its XMB as described
-  there. An existing type or proto name works too (`startingTC MaoriPa`). `TownCenter` needs
-  nothing. WoL's `Age0Maori` needs no change: the Pa replaces the dying town center the moment it
-  is added.
+  there. An existing type or proto name works too (`startingTC StartingFort`). `TownCenter` needs
+  nothing.
+  WoL's `Age0Maori` needs no change: the Pa replaces the dying town center the moment it <!-- private -->
+  is added. <!-- private -->
 - **Choose the marked protos with care:** once a player's first town center is dead or gone, the
   next marked building he gets becomes his first town center, wherever it stands. Mark the
   buildings that replace a town center, not a common building. A `TownCenter` built after the
@@ -2243,7 +2271,7 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   hook it shares with `civFirstTC`) as the map's first units are added to their players. With
   `log`:
   - `startingTC: unit N (Market) is player 2's first town center (FirstTC)`;
-  - `startingTC: unit N (MaoriPa) replaces player 2's first town center M (TownCenter), whose
+  - `startingTC: unit N (StartingFort) replaces player 2's first town center M (TownCenter), whose
     lifespan ends in 0.50 s`, or `…first town center M (TownCenter), which is dead`, or `…first
     town center M, which is gone`.
 - **Limits:**
@@ -2260,9 +2288,10 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   center: `startingTC: unit 3 (Market) is player 2's first town center (FirstTC)`, and
   `[player+4F0h]` read 3 for player 2, where stock leaves -1 (the Market is not a `TownCenter`).
   Not driven in game: the visible effect on placement (the 65 m refusal), and the replacement of a
-  first town center that is dead or has a pending lifespan (WoL's Maori case).
-- **New in this DLL:** not in UHC 1.10. WoL request #3, the part the placement rules read
-  ([wol-requests.md](wol-requests.md)).
+  first town center that is dead or has a pending lifespan.
+  That is WoL's Maori case. <!-- private -->
+- **New in this DLL:** not in UHC 1.10. WoL request #3, the part the placement rules read <!-- private -->
+  ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### civFirstTC
 
@@ -2339,7 +2368,7 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
     them; what they change on another building was not tested.
 - **What it does not cover:** other code still looks for the `TownCenter` proto itself:
   - the AI scripts: in the test, an AI whose civ had the tag got its Market and its settlers, then
-    stayed idle, because its scripts expect a Town Center (WoL's AI is WoL's part);
+    stayed idle, because its scripts expect a Town Center (the AI scripts are the mod's part);
   - the engine's automatic AI main base;
   - the age-up picker (`uiPoliticianUI`);
   - the start camera (it looks for `TownCenter`, then `CoveredWagon`, `Explorer`, …);
@@ -2402,8 +2431,8 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   Not tested: a Nomad start (TAD's skirmish setup has no Nomad option, and the editor route
   cannot set one), multiplayer, recorded games, the `no colony` log line, and any building other
   than the Market.
-- **New in this DLL:** not in UHC 1.10. WoL request #3 ([wol-requests.md](wol-requests.md)), as
-  redesigned by WoL's developer Mandos.
+- **New in this DLL:** not in UHC 1.10. WoL request #3 ([wol-requests.md](wol-requests.md)), as <!-- private -->
+  redesigned by WoL's developer Mandos. <!-- private -->
 
 ### transformInventory
 
@@ -2421,11 +2450,16 @@ transformInventory [all] [scale] [<UnitType>] [log]
   `<Effect type ='TransformUnit' fromprotoid ='A' toprotoid ='B'>` and a revolution change living
   units into another proto in place, but never touch the inventory: the unit keeps A's resource
   types and amounts, or has none at all. Stock TAD never hits this (none of its 7 `TransformUnit`
-  effects involves an inventory). WoL has 64 such effects (static scan of its techtree):
-  - `CrateofCoin` → `CrateofXP` (`WOLNatAssyrianTWO`): the "XP crate" still holds 100 gold;
-  - `MerinoRam` → `Cow` (`WOLHCBlueBreed`): the cow holds the ram's gold;
-  - a pet or a priest → a crate (`HCCardDogTaxWar`, `WOLHCOrganizedSecularism`): the crate has no
-    inventory, so it can never be gathered and never empties;
+  effects involves an inventory), but a mod's techs can, for example:
+  WoL has 64 such effects (static scan of its techtree): <!-- private -->
+  - `CrateofCoin` → `CrateofXP` (`WOLNatAssyrianTWO`): the "XP crate" still holds 100 gold; <!-- private -->
+  - `MerinoRam` → `Cow` (`WOLHCBlueBreed`): the cow holds the ram's gold; <!-- private -->
+  - a pet or a priest → a crate (`HCCardDogTaxWar`, `WOLHCOrganizedSecularism`): the crate has no <!-- private -->
+    inventory, so it can never be gathered and never empties; <!-- private -->
+  <!-- public: - a coin crate turned into an XP crate still holds its 100 gold; -->
+  <!-- public: - an animal that holds gold turned into a `Cow` still holds the gold; -->
+  <!-- public: - a pet or a priest turned into a crate has no inventory, so the crate can never be -->
+  <!-- public:   gathered and never empties; -->
   - a later conversion or capture of such a unit makes it worse: the owner change rescales each
     resource by the proto's `InitialResource` and zeroes every type the proto does not list. A
     gold-holding XP crate that changes owner ends up with nothing.
@@ -2446,8 +2480,9 @@ transformInventory [all] [scale] [<UnitType>] [log]
   stock type or a proto name works too (`transformInventory AbstractResourceCrate`). Without a
   type, every in-place transform is covered.
 - **Your mod:** nothing, unless you use a marker. The key covers every `TransformUnit` effect and
-  revolution. The trigger effect "Change Unit Type" and `uiTransformSelectedUnit` (WoL's
-  `*Maturing`) already give the new proto's resources in stock and are not changed.
+  revolution. The trigger effect "Change Unit Type" and `uiTransformSelectedUnit`
+  (WoL's `*Maturing`) <!-- private -->
+  already give the new proto's resources in stock and are not changed.
 - **Gatherers:** a unit already gathering a target whose resource type changes keeps gathering the
   old type; that amount is now 0, so it stops at its next gather tick and must be re-tasked. In
   stock it would keep collecting the old resource.
@@ -2496,7 +2531,7 @@ transformInventory [all] [scale] [<UnitType>] [log]
   The stock behavior (the inventory is never rebuilt) comes from static analysis; no run with the
   key off was made. `all`, `scale`, a marker, revolutions and a conversion after a transform were
   not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #4 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #4 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### noTrainNearEnemyTC
 
@@ -2530,9 +2565,11 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
   placement rules: your own and your allies' buildings never block, nor do Gaia's (natives,
   treasures).
 - **Choosing the trainers:** the default `AbstractDaimyo` is a stock type that the Daimyos and the
-  Shogun already have, so it needs no data change. In WoL it also covers `MapucheWarchief`, the
-  `WOLGensui*` units, `EGYtowncenterCARAVAN`, `EGYbarracks3CARAVAN` and `DummyGather` (static scan
-  of WoL's `protoy`). To pick the trainers yourself, give them a new marker (for example
+  Shogun already have, so it needs no data change.
+  In WoL it also covers `MapucheWarchief`, the <!-- private -->
+  `WOLGensui*` units, `EGYtowncenterCARAVAN`, `EGYbarracks3CARAVAN` and `DummyGather` (static scan <!-- private -->
+  of WoL's `protoy`). <!-- private -->
+  To pick the trainers yourself, give them a new marker (for example
   `AbstractNoTrainNearEnemyTC`) in `protoy.xml` and its XMB, as for `healNonIdle`, and name it in
   the cfg. A proto name works too.
 - **Choosing what blocks (`near`):** without `near`, only an enemy's first Town Center blocks.
@@ -2552,8 +2589,10 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 - **Choosing the distance:** `<meters>` is a number above 0 and at most 1000 (decimals allowed).
 - **Which Town Center counts for `FirstTC`:** only each player's first Town Center, not every Town
   Center. A player whose first Town Center was destroyed gives no protection, even if he built
-  another one. WoL's Maori (whose first Town Center dies at 0.5 s) are protected only with
-  [`startingTC`](#startingtc) and the `MaoriPa` marked. A civ that starts with another building
+  another one. A civ whose first Town Center dies at 0.5 s is protected only with
+  [`startingTC`](#startingtc) and its replacement building marked.
+  For WoL's Maori, that is the `MaoriPa`. <!-- private -->
+  A civ that starts with another building
   through [`civFirstTC`](#civfirsttc) is protected by that building (static reading; not tested
   with this key). `near AbstractTownCenter` covers every Town Center instead.
 - **The warning:** while one of your units is held, a red text appears over it, at most once every
@@ -2610,7 +2649,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
   marker name adds a unit type. `nowarn` and `warn=` only change what the local player sees and may
   differ.
 - **Status:** confirmed in single player (2026-10-29), in a test map (no AI) unless noted:
-  - `noTrainNearEnemyTC 65 log` (with every WoL key on): a `ypDaimyoKiyomasa` 34.1 m from player
+  - `noTrainNearEnemyTC 65 log` (with every other new key on): a `ypDaimyoKiyomasa` 34.1 m from player
     2's first Town Center made no progress on 2 `ypAshigaru`, and trained both once the Town Center
     was killed (`resumed training: no enemy FirstTC` in that version of the log). The same test
     with `nowarn`: paused at 34.1 m, no warning line, resumed when the Town Center died;
@@ -2623,7 +2662,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
   - four bad lines (`near` with no type, 5 `near`, `warn=` empty, a 140-character text): one log
     line each, the key `FAILED`, the game normal;
   - AI: a skirmish against a Japanese AI with this key (`near Barracks near Stable near FirstTC`)
-    and every WoL key on: the AI went from 15 to 25 units in 2 minutes and started its wonder, no
+    and every other new key on: the AI went from 15 to 25 units in 2 minutes and started its wonder, no
     XS error.
 
   - `noTrainNearEnemyTC 30 near AbstractTownCenter near Hussar log`: held by an enemy Hussar 17.3 m
@@ -2635,7 +2674,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 
   Not tested: a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
   from Age II and needs population room and food.
-- **New in this DLL:** not in UHC 1.10. WoL request #27 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #27 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### overhealHitpointBars
 
@@ -2664,7 +2703,7 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   a unit, the selection panel's HP bar (green, yellow below 66 %, red below 33 %), "Group Health",
   and the texts `HP/max`, or `HP/max (base+bonus)` when techs raised the max. A mod that gives
   units more `MaxHitpoints` than `InitialHitpoints`, so that healers can push them above their
-  starting HP (WoL plans `MaxHitpoints` = 1.1 × `InitialHitpoints` on infantry and cavalry), shows
+  starting HP (for example `MaxHitpoints` = 1.1 × `InitialHitpoints` on infantry and cavalry), shows
   every fresh unit as damaged: a 91 % bar and `150/165`.
 - **Effect:** for a unit whose proto is of `<UnitType>` and has `InitialHitpoints` below
   `MaxHitpoints`, the displays take `InitialHitpoints` as 100 %:
@@ -2706,8 +2745,10 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   other game rule: they all keep reading `MaxHitpoints`.
 - **Choosing the units:** the default marker `AbstractOverheal` is registered by the DLL, like
   `healNonIdle`'s; add it to the protos and edit `protoy.xml` and its XMB as described there. An
-  existing type works with no data change: WoL can write `overhealHitpointBars
-  AbstractCavalryInfantry` (WoL gives that type to its infantry and cavalry). A proto name works
+  existing type works with no data change, for example `overhealHitpointBars
+  AbstractCavalryInfantry` for a mod that gives that type to its infantry and cavalry.
+  WoL does. <!-- private -->
+  A proto name works
   too, and up to 8 names may follow the key on one line.
 - **Data:** give the units `<MaxHitpoints>` above `<InitialHitpoints>`:
 
@@ -2812,7 +2853,7 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   and `181/165` (white). Without the gadget in the UI data the log says so and the bar is stock.
   Not tested: the ObjectInfo panel (an editor panel, `aeditorscreen.cpp`, which did not open with
   the clicks tried), multiplayer.
-- **New in this DLL:** not in UHC 1.10. WoL request #21 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #21 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### overhealSources
 
@@ -2876,7 +2917,7 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 
   Not tested: powers (`PowerHeal` exists in `powers.xml`, but no TAD unit has it; its heal goes
   through the same add-HP entry, 0x7C378C / 0x8CCA6F), multiplayer.
-- **New in this DLL:** not in UHC 1.10.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ### overhealDecay
 
@@ -2937,7 +2978,7 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
   delay, so an idle unit that regenerates never decayed (the AI's Explorer, moving and not
   regenerating, did). The AI played normally (its units 12 → 16 in a minute, no XS error). Not
   tested: multiplayer.
-- **New in this DLL:** not in UHC 1.10.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ### showGatherRate
 
@@ -2975,7 +3016,7 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 - **The data ref, for your own UI:** `{currentUnitGatherRateString}` in a `formatText` gadget
   returns `Food 0.67/s` (`Food 8/s` for a whole number) for the data refs' current unit (the one
   the stock refs such as `{currentUnitLOS}` show), and an empty string when that unit is not
-  gathering. Give the gadget a `datarefreshrate`, as WoL does for `{currentUnitLOS}`:
+  gathering. Give the gadget a `datarefreshrate`, as for `{currentUnitLOS}`:
 
   ```xml
   <gadget name="myGatherRate" type="formatText" datarefreshrate=".5" ...>Gather: {currentUnitGatherRateString}</gadget>
@@ -2983,10 +3024,12 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 
   The data ref works for any unit, with or without `<UnitType>`, and ignores the stat panel's
   rules (selection size, `DoNotShowAutoGatherRate`). `{currentUnitGatherRate}` (whole number) and
-  `{currentUnitGatherRateFloat}` are **not** changed: WoL's `uimainnew.xml` already uses
+  `{currentUnitGatherRateFloat}` are **not** changed: a mod's UI may already use
   `{currentUnitGatherRate(gold)}` in a tooltip, and they keep failing as in stock.
-- **Your data:** nothing. A mod whose stat panel has fewer rows (WoL's `uiunitstatpanel3.xml` has
-  5) loses its last row while the gather row is shown: the row goes right after HP and the rows
+  WoL's `uimainnew.xml` does. <!-- private -->
+- **Your data:** nothing. A mod whose stat panel has fewer rows
+  (WoL's `uiunitstatpanel3.xml` has 5) <!-- private -->
+  loses its last row while the gather row is shown: the row goes right after HP and the rows
   after it move down. Such a mod may prefer the data ref and a `<UnitType>` that no unit has.
 - **Limits:**
   - one selected unit only (the stock rule for the AutoGather row); nothing for a group;
@@ -3021,7 +3064,7 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   `showGatherRate: unit 0 (Settler) of player 1 gathers Alim. (resource 2) at 0.670/s from unit 1
   (BerryBush), shown in the stat panel`. Only that case was run: the data ref, other targets,
   whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #28 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #28 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### buildingWorkRateAuras
 
@@ -3099,11 +3142,11 @@ buildingWorkRateAuras [log]
     game with the same ID and factor is not logged again;
   - the value 0x40 that stands for the new stat is this DLL's choice. Another DLL that adds its own
     `ModifyType`s must not use it.
-- **WoL data** (static scan): `alguacil.tactics` already has such an aura (`GuatemalaAura`,
-  `EscuelaPolitecnica`, 1.20), but it is `<active>0</active>` and no tech turns it on. Five
-  tactics use `GATHER` (`GatherRate` is meant), two use `Hitpoints` (`MaxHP` is meant) and one
-  uses `UnitResource`, which is no stat: stock reads all three as unknown, so those auras do
-  nothing, with or without this DLL.
+- **WoL data** (static scan): `alguacil.tactics` already has such an aura (`GuatemalaAura`, <!-- private -->
+  `EscuelaPolitecnica`, 1.20), but it is `<active>0</active>` and no tech turns it on. Five <!-- private -->
+  tactics use `GATHER` (`GatherRate` is meant), two use `Hitpoints` (`MaxHP` is meant) and one <!-- private -->
+  uses `UnitResource`, which is no stat: stock reads all three as unknown, so those auras do <!-- private -->
+  nothing, with or without this DLL. <!-- private -->
 - **Simulation:** yes. A saved game keeps the modifier's stat; loading it without the key ignores
   it.
 - **Status:** confirmed in single player (2026-10-29), with an aura on the Explorer (multiplier
@@ -3112,7 +3155,7 @@ buildingWorkRateAuras [log]
   without the aura, spawned 2 in the same time. `liveBuildingWorkRate` and `noTrainNearEnemyTC`
   were on in the same run. Train and research speed, the removal of the aura, powers and saved
   games were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #22 ([wol-requests.md](wol-requests.md)).
+- **New in this DLL:** not in UHC 1.10. WoL request #22 ([wol-requests.md](wol-requests.md)). <!-- private -->
 
 ### bufferedFileReads
 
@@ -3127,8 +3170,8 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
 - **Effect:** every file the game opens for reading only gets a read-ahead buffer. One Windows read
   fills the buffer, and the game's small reads are served from memory. The game receives the
   same bytes.
-- **Measured** in a late 8-AI game ([performance.md](performance.md), §9, "bufferedFileReads A/B"),
-  on a 150 s recording:
+- **Measured** in a late 8-AI game, on a 150 s recording:
+  Details: [performance.md](performance.md), §9, "bufferedFileReads A/B". <!-- private -->
 
   | | Without | With |
   |---|---|---|
@@ -3151,7 +3194,7 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
   need the same setting.
 - **Status:** confirmed in single player. On a 25-minute save, `verify` checked 7.5 million buffered
   reads against the file and found no mismatch. Not tested in multiplayer.
-- **New in this DLL:** not in UHC 1.10.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ### multipleInstances
 
@@ -3167,8 +3210,9 @@ multipleInstances [background]
   `perfExecFile` file, …). Only one of the two copies needs the key.
 - **`background`:** this copy's windows open behind every other window, stay there and never take the
   focus. The copy cannot cover another window or receive the clicks and keys meant for it. This is
-  for unattended tests driven through `perfExecFile`
-  ([developer guide](developer-guide.md#driving-the-game-unattended)). Define
+  for unattended tests driven through `perfExecFile`.
+  ([developer guide](developer-guide.md#driving-the-game-unattended)) <!-- private -->
+  Define
   `config("DontPauseWhenLosingFocus")` too: a game in progress pauses whenever its window is not
   focused, which with `background` is always.
 - **Shared files:** every copy uses the same `Documents\My Games\Age of Empires 3` folder: the profile
@@ -3187,7 +3231,7 @@ multipleInstances [background]
   - Sampled every second, its window stayed second from the bottom of 50 windows and was never the
     focused window. The copy without the key did take the focus when it started.
   - Not tested: three or more copies, multiplayer.
-- **New in this DLL:** not in UHC 1.10.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ## 6. Editing the game data
 
@@ -3211,8 +3255,8 @@ mod's files.
   edited `homecitylevels.xml`, and also with an edited compiled `homecitylevels.xml.xmb`.
 - **XML or XMB: the newer one wins.** When a data file exists both as XML and as compiled `.xmb`,
   the game loads the XMB unless the XML file is newer; with only one of the two, it uses that one.
-  This rule was read from the game's loader (FUN_00599A7D, see
-  [engine-symbols.md](engine-symbols.md), "Damage and poison").
+  This rule was read from the game's loader (FUN_00599A7D).
+  See [engine-symbols.md](engine-symbols.md), "Damage and poison". <!-- private -->
 - **protoy: keep both files in step.** `data\` holds both `protoy.xml` (plain text) and
   `protoy.xml.XMB` (compiled). After editing `protoy.xml`, do one of these, so that no player can
   end up with the old XMB because of file times:
@@ -3249,8 +3293,8 @@ mod's files.
     spelling against `protoy.xml`.
   - Before you replace the original, run `check` on the `.new` file. Then rename it over
     `protoy.xml.XMB`, keeping the old file as a backup.
-  - Once the game has loaded, `python -I tools\re\inspect_unittypes.py AbstractHealNonIdle` shows
-    which protos carry the type.
+  - Once the game has loaded, `python -I tools\re\inspect_unittypes.py AbstractHealNonIdle` shows <!-- private -->
+    which protos carry the type. <!-- private -->
 
 ### Tactics files
 
@@ -3266,8 +3310,8 @@ lines matters:
   the name stays part of the name. When the game compiles the AI scripts, it then defines the XS
   constant `cTacticNormal` twice. The compile fails, and no AI player does anything in any game
   after that file was loaded. The game only shows `XS: Error 0003: could not compile file
-  'aiLoaderStandard.xs'.`; the cause, `Error 0014: 'cTacticNormal' is already defined.`, shows in
-  `python -I tools\re\trace_xs.py <log file>` ([tools/README.md](../tools/README.md)).
+  'aiLoaderStandard.xs'.`; the cause is `Error 0014: 'cTacticNormal' is already defined.`
+  It shows in `python -I tools\re\trace_xs.py <log file>` ([tools/README.md](../tools/README.md)). <!-- private -->
 - **A compiled `.tactics.xmb` is always safe:** `from-xml` stores the name without the line
   break, as the stock files do. Ship it next to the XML or instead of it.
 - **Tested:** the one-line layout, CRLF line endings and the compiled file worked in game; the
@@ -3276,7 +3320,7 @@ lines matters:
   `<maxspread>` and `<spreadfactor>`; keep its `<name>` as the first child, as the stock files do.
   A loose `data\tactics\archer.tactics.xmb` alone (no XML) replaced the archive's file in the test.
 
-More about the tools: [tools/README.md](../tools/README.md).
+More about the tools: [tools/README.md](../tools/README.md). <!-- private -->
 
 ## 7. Multiplayer, saved games and replays
 
@@ -3312,11 +3356,13 @@ More about the tools: [tools/README.md](../tools/README.md).
 - No feature sends network commands of its own: they all act inside the normal simulation, on
   every machine, in the same deterministic order.
 
-## 8. Keys from UHC 1.10 that are not implemented
+## 8. Keys that are not implemented
 
-This DLL has no code for these upstream keys. Like any key it does not handle, misspellings
-included, each one is logged in lowercase as `<key>: not implemented yet; ignored`, and nothing
-changes.
+A key that this DLL does not handle, misspellings included, is logged in lowercase as
+`<key>: not implemented yet; ignored`, and nothing changes.
+
+<!-- private:begin -->
+This DLL has no code for these UHC 1.10 (upstream) keys yet:
 
 `enableAllTeams`, `customSyscalls`, `customCheats` (and `.upl` plugins), `enableFarmAnim`,
 `enableRectFarmAnim`, `farmingRadius`, `marketUnits`, `tacticSwitching`, `attackTypeIcons`,
@@ -3324,11 +3370,12 @@ changes.
 
 Their patch sites are verified against the stock exe in
 [uhc-address-map.md](uhc-address-map.md), with the upstream defects to avoid.
+<!-- private:end -->
 
 ## 9. Troubleshooting
 
 - **No `UHC.log` at all**, although the game starts. Either the `UHC.dll` next to the exe is still
-  UHC 1.10's, which the patcher writes and which writes no log: copy this release's `UHC.dll`
+  the one the patcher writes, which writes no log: copy this release's `UHC.dll`
   over it. Or the exe has no loader. The log is always written next to the exe that loaded the
   DLL.
 - **`does not hold the stock bytes`:** the exe is not the stock Steam build, or another tool
@@ -3361,8 +3408,8 @@ Their patch sites are verified against the stock exe in
 - **`XS: Error 0003: could not compile file 'aiLoaderStandard.xs'`** when a game starts, and the AI
   players do nothing: one of the AI scripts or the game's own declarations failed to compile. In
   this DLL's tests the cause was a tactics file shipped as XML with a line break after a tactic
-  name ([tactics files](#tactics-files)). `tools\re\trace_xs.py` logs the hidden error that names
-  the cause.
+  name ([tactics files](#tactics-files)).
+  `tools\re\trace_xs.py` logs the hidden error that names the cause. <!-- private -->
 - **The resolution reset to 800x600** after starting a copy: the copy shares your user profile
   (`Documents\My Games\Age of Empires 3\Users3\<profile>.xml`) with the normal game. Set it back
   in the options.
