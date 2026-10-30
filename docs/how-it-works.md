@@ -426,7 +426,9 @@ The DLL ignores that path and adds its own, driven by data.
 - The tag hook there runs only when the return address `[esp+C0h]` is 0x5FA213, i.e. a `protoy`
   `<ProtoAction>`.
 - For a tag named `AttachProtoUnit` (case-insensitive), it records the text X under the key
-  (attacker proto ID `[proto+4]`, action name index `[action+4]`).
+  (attacker proto ID `[proto+4]`, action name index `[action+4]`). `AttachMaxStacks`,
+  `AttachSnare` and `AttachTickText` set the record's options under the same key, in any order;
+  a value that does not parse is logged and dropped.
 - That key also matches every player's copy of the proto and its actions, which keep both
   numbers.
 - The data is parsed at startup and again when a skirmish starts, but not when a scenario loads
@@ -448,9 +450,17 @@ The DLL ignores that path and adds its own, driven by data.
   ROF `[action+34h]` and the Lifespan `[proto+ACh]`.
 - It adds a poison keyed (unit ID, X, attacker player):
   - a new poison ticks first one ROF after the hit;
-  - a later hit by any unit of the same player moves the end to `now + Lifespan` (the current
-    Lifespan) and makes that unit the attacker; the tick timer keeps running.
+  - each hit makes its unit the attacker, takes its action's options (stack limit, snare, tick
+    colour) and adds a **stack** that ends `now + Lifespan` (the current Lifespan). The stacks are
+    the end times, kept in expiry order; stacks already expired are dropped first, and at the
+    limit the oldest goes. The poison's end is the last stack's. With the default limit of 1 a
+    hit just moves the end, as before stacks existed; the tick timer keeps running either way.
 - A hit that kills the unit, or a unit that is not alive (unit `vtbl+A4h`), adds nothing.
+- The hit sees the attacking proto and action of every kind of attack tested: hand attacks,
+  instant shots, flying arrows, grenades and cannon balls (the projectile's damage arrives with
+  the launcher's proto ID and action), and each unit of an area attack (one call per unit).
+  With `log`, the first damage of each (proto, action) without a record is logged, so a modder
+  can see the names the game uses.
 
 **Tick.** The entry of the world update (`0x481A57`) jumps to a second wrapper.
 - It calls the stock update through its trampoline (`sub esp,0Ch; push ebx; push ebp;
@@ -460,37 +470,74 @@ The DLL ignores that path and adds its own, driven by data.
 - Each due tick (`nextTick ≤ now` and `nextTick ≤ end`) calls the stock TakeDamage:
   - unit, attacker player, X's proto ID, X's `Attaching` action;
   - the attacker unit ID while that unit exists, else −1;
-  - multiplier 1, damage 0 (computed), no cap;
+  - multiplier = the stacks alive at the tick's time (1 without `AttachMaxStacks`): TakeDamage
+    passes it to the damage-from-action function FUN_0048649F, which scales the computed damage
+    (in game, 5 Siege gave 5, 10 and 15 for 1, 2 and 3 stacks);
+  - damage 0 (computed), no cap;
   - p8..p13 = `0, 0, 1, 1, -2, 1`, as the stock special-damage callers pass them, except p11
     (the hit reactions), which is 0 when the attacking unit is gone.
 
   The engine therefore applies the damage type, the bonuses, the armor and the DamageFlags. Kills
-  and XP go to the attacker's player.
+  and XP go to the attacker's player. All seen in game (2026-10-29): a `DamageBonus` against
+  cavalry tripled the ticks on a Hussar, the musketeers' hand armor took 20 % off, a unit
+  converted to the attacker's side took 0.00 per tick from X's `Enemy` flags, and a musketeer
+  killed by a tick gave its 10 XP bounty to the attacker's player (the XP in `[player+230h]`,
+  entry 5).
 - **Why p11 depends on the attacker.** With p11 = 1, TakeDamage runs the reactions to a hit:
   retaliation, attack alerts, and, for a unit in an army (AI armies), the army's list of
   attackers. That last part reads the attacking unit with no null check (0x6A3253). An army unit
   poisoned by a unit that is gone would crash the game, so such a tick passes 0 and skips the
-  whole block (`jne 0x49BC00` at 0x49B929). The damage itself does not depend on it. This comes
-  from the code; no AI army was poisoned in game.
+  whole block (`jne 0x49BC00` at 0x49B929). The damage itself does not depend on it. The
+  attacker-gone path ran in game (an attacker removed by the trigger `Destroy`: the ticks went on
+  and killed the target), but not on an army unit: units sent by the scenario trigger
+  `Army Deploy` (`trArmyDispatch`) do not get the army flag (bits read in memory), so only an AI
+  game produces that case. With `log`, such a tick line ends with `, army unit`.
+- **An attacker is "gone"** only when its ID no longer gives a unit. A killed unit keeps its ID
+  while its body lies on the ground (trigger `Kill`), so its poisons keep it as the attacker
+  until the body disappears; a removed unit (trigger `Destroy`) is gone at once.
 - **Techs on X.** Each tick reads the player's copy of X's `Attaching` action again, so a tech
   that changes its damage applies from the next tick. A Lifespan change applies from the next
   hit, which sets the end time. TAD's tech effects have no ROF subtype: the table of `subtype`
-  names at `[db+3500h]` has none, so the interval always comes from the data. Not tested in
-  game.
+  names at `[db+3500h]` has none, so the interval always comes from the data. In game, a tech
+  doubling the `Attaching` damage, turned on in the middle of a poison, doubled the next tick.
 - **When the attacking unit is gone,** the engine skips its diplomacy filter (FUN_0049AEE0 lets
   everything through without an attacking unit). The wrapper then applies the same filter
   itself, with the attacker's player: X's DamageFlags against the unit's owner and the player's
   relation to it (`[player+1D4h + 4*id]`, 2 = enemy). A unit converted to the attacker's side
   therefore stops taking the poison, as it would with the attacker alive.
 - A poison ends when its end time passes, or when the unit dies or disappears.
+- **The snare** (`AttachSnare F`): when a poison starts, and after each tick that is not the
+  last, the wrapper calls the stock snare's creator 0x4DD22D(unit, 0, F, -1, -1, 0, 2, ROF +
+  250 ms, -1, -1, 1), as the `<TargetSpeedBoost>` path does with 0.65 for 3000 ms
+  (0x4DD201..0x4DD223), and only for a unit whose `vtbl+90h` (0x45EE55) says it can move, the
+  same test as there. That creates a timed, exclusive multiply modifier of the velocity (unit
+  action type 2Ch), which the speed getter `vtbl+34h` (0x487E27) and the group pace already
+  take into account (see [snareOnlyHitUnit](#snareonlyhitunit)). Each modifier outlives the next
+  tick by 250 ms, so the slow is continuous and ends 250 ms after the last tick; at most two of
+  the poison's modifiers exist at a time, and only the first exclusive one counts. In game a
+  Hussar's speed read 3.38 (6.75 × 0.5) at every tick.
+- **The tick text** (`AttachTickText`): after a tick that dealt damage, `ShowTick` writes `-N`
+  (the damage, rounded) over the unit with the shared floating-text helper
+  (`src/floatingtext.cpp`, the stock dodge text 0x8023AE without its rise, see
+  [noTrainNearEnemyTC](#notrainnearenemytc)). It shows only when the text manager exists and the
+  unit is visible to the local player; `damageOverTime noticktext` turns it off. It is
+  interface only: it reads the local player and writes the text manager, which nothing in the
+  simulation reads.
 - **Another game clears all poisons.** A new or loaded game can reuse the old world's address, so
   the test is the world's step count `[world+F8h]`. The world update raises it by exactly 1
   (0x481A87), and while poisons run every step reaches the wrapper. A jump of more than 1, game
   time going back, or another world pointer clears the poisons and logs `another game started`.
   A data load clears them too, and logs `the data was reloaded`.
 
+**Determinism of the new parts.** The stacks are game times in a vector inside the ordered map's
+value, added and dropped by game time only; the multiplier is their count. The snare is a
+simulation call made in the same order on every machine (the map's order, after the tick). The
+tick text depends on the local player and touches nothing the simulation reads, so
+`noticktext` may differ between players.
+
 **What it does not do.**
-- X is never created in the world, so there is no model or effect.
+- X is never created in the world, so there is no model or effect (the tick text is the only
+  marker).
 - Poisons are not saved in saved games.
 - The stock Poison flag stays unused.
 

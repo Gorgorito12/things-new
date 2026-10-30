@@ -720,10 +720,14 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 
 ![damageOverTime in game](media/damageOverTime.gif)
 
-*In game:* The Explorer's attack poisons a musketeer: 20 damage every second (the `tick` lines) until it dies. [Full video (MP4)](media/damageOverTime.mp4).
+*1. The poison:* The Explorer's attack poisons a musketeer: 20 damage every second (the `tick` lines) until it dies. [Full video (MP4)](media/damageOverTime.mp4).
+
+![damageOverTime stacks, snare and tick text](media/damageOverTime-stacks.gif)
+
+*2. `AttachMaxStacks`, `AttachSnare` and `AttachTickText`:* three Longbowmen whose arrows attach a 5 Siege poison with up to 3 stacks, a snare to half speed and a green tick text. Two Hussars charge them. The three first arrows put three stacks on one Hussar within a fraction of a second, so each tick deals 15 (`x3` in the overlay) and shows a small green `-15` over its health bar; its speed reads 3.38 instead of 6.75. When the archers are down the stacks expire one by one (10, then 5) and the last tick kills it (2x speed). [Full video (MP4)](media/damageOverTime-stacks.mp4).
 
 ```
-damageOverTime [log]
+damageOverTime [log] [noticktext]
 ```
 
 - **How stock behaves:** TAD has no damage over time. The exe still contains Age of Mythology's
@@ -737,8 +741,12 @@ damageOverTime [log]
     player. (Bonuses and kill credit follow from the code; see the status below.)
   - Once the attacking unit is gone, the ticks still hurt but no longer cause the reactions to a
     hit, such as retaliation and under-attack alerts.
-  - Another hit by the same player renews the duration and keeps the tick timer.
+  - Another hit by the same player renews the duration and keeps the tick timer (with
+    `<AttachMaxStacks>`, it adds a stack instead; see below).
   - Poisons from different players, or from different attachment protos, run side by side.
+  - It works with every kind of attack tested: hand attacks, instant shots, flying arrows,
+    grenades and cannon balls, and area damage (one grenade poisoned all four musketeers it
+    hit).
 - **Your mod**, three pieces:
   1. **The attacks.** Add the tag inside the attacker's existing `<ProtoAction>` blocks in
      `protoy.xml`:
@@ -821,24 +829,69 @@ damageOverTime [log]
 
   After editing `protoy.xml`, make sure the game reads it rather than an older
   `protoy.xml.XMB` ([section 6](#6-editing-the-game-data)).
+- **Optional tags**, in the same attacker `<ProtoAction>` as `<AttachProtoUnit>` (each one changes
+  only the poisons of that attack; without them the poison is the one above):
+
+  ```xml
+  <ProtoAction>
+      <Name>VolleyRangedAttack</Name>
+      ...
+      <AttachProtoUnit>PoisonDart</AttachProtoUnit>
+      <AttachMaxStacks>3</AttachMaxStacks>
+      <AttachSnare>0.5</AttachSnare>
+      <AttachTickText>40FF40</AttachTickText>
+  </ProtoAction>
+  ```
+
+  - **`<AttachMaxStacks>N</AttachMaxStacks>`** (a whole number from 1 to 100): each hit adds a
+    stack, up to N, and a tick deals X's damage times the stacks alive at that moment (the
+    damage type, bonuses and armor apply to the whole). **Each stack expires on its own,**
+    Lifespan seconds after the hit that made it; a hit at N stacks renews the oldest one. So
+    steady hits keep N stacks, and when the hits stop the ticks fall back one stack at a time
+    (15, 10, 5 in the tests). N = 1 is the poison without the tag. When attacks with different N
+    hit the same unit with the same X, the last hit's N counts.
+  - **`<AttachSnare>F</AttachSnare>`** (a number from 0 to 10): while poisoned, a unit that can
+    move goes at F times its speed. It is the stock snare of `<TargetSpeedBoost>` (a speed
+    modifier that multiplies), with F instead of 0.65; it starts with the poison, is renewed at
+    every tick, and ends a quarter of a second after the last tick. Like the stock snare, only
+    the first snare counts when several apply, and [`snareOnlyHitUnit`](#snareonlyhitunit) treats
+    it as a snare. Buildings are not slowed.
+  - **`<AttachTickText>RRGGBB</AttachTickText>`** (a colour in hex; empty for green 40FF40): each
+    tick shows the damage it dealt, for example `-15`, over the unit in that colour. It is the
+    floating text of the stock dodge, without its rise, and only the player whose screen shows
+    the unit sees it. `damageOverTime noticktext` in a player's `uhc.cfg` turns all tick texts
+    off for that player; it changes nothing else.
+
+  A value the DLL cannot read is logged and that tag is ignored.
 - **Not done:**
-  - no model or effect shows the poison, since X never exists in the world;
+  - no model or effect shows the poison, since X never exists in the world (`AttachTickText`
+    shows the ticks as text);
   - poisons are not saved in saved games, so a loaded game starts without them;
   - the stock `Poison` flag is not used.
-- **`log`** writes every poison, renewal, tick and end to `UHC.log`. Use it while tuning the
-  numbers; in a long game the log grows quickly.
+- **`log`** writes every poison, renewal, tick and end to `UHC.log`, and once per attack the
+  attacks that deal damage without `<AttachProtoUnit>` (`damage by proto N (Name), action A …:
+  no <AttachProtoUnit> there`, at most 200 a session), which tells you the name the game uses for
+  an attack. Use it while tuning the numbers; in a long game the log grows quickly.
 - **Log:**
   - at startup, `damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage
-    over time (multiplayer unverified)`;
+    over time, with <AttachMaxStacks>, <AttachSnare> and <AttachTickText> (multiplayer
+    unverified)` (with `noticktext`, `…; tick texts off on this machine …`);
   - while the data loads, `hook reached: damageOverTime ProtoAction tag (0x5FA11E)` and, for each
-    tag, `damageOverTime: <Proto>/<Action> attaches <X>`;
+    tag, `damageOverTime: <Proto>/<Action> attaches <X>`, `…: up to <N> stacks`, `…: poisoned
+    units move at <F> times their speed`, `…: ticks shown in colour <RRGGBB>`, or why a value was
+    ignored (`<AttachMaxStacks>…</AttachMaxStacks> is not a whole number from 1 to 100; ignored`,
+    and the same for the other two); an attack with the optional tags but no `<AttachProtoUnit>`
+    logs `… but no <AttachProtoUnit>; ignored` on its first hit;
   - on the first hit with each tag, `damageOverTime: <X> -> proto <ID>: Lifespan <L> s, Attaching
     every <N> ms`, or the reason it cannot work:
     - `<X> is not a proto unit`: the name in `<AttachProtoUnit>` is not the name of a unit;
     - `<X> has no ProtoAction named Attaching`: the tactics file is missing, or has no action
       named `Attaching`;
-  - the first poison and the first tick of a run: `damageOverTime: poison: unit <N> (<proto>) …`
-    and `damageOverTime: tick: unit <N> (<proto>) took <D> damage, <H> hitpoints left …`;
+  - the first poison and the first tick of a run: `damageOverTime: poison: unit <N> (<proto>) by
+    player <P>, proto <X>, stack <S>/<N> …` and `damageOverTime: tick: unit <N> (<proto>) took <D>
+    damage (x<stacks>), <H> hitpoints left …`; a tick line ends with `, attacker gone` once the
+    attacking unit no longer exists, `, army unit` for a unit of an AI army, and `, speed <V>`
+    (the unit's current speed) with `<AttachSnare>`;
   - once each: `… has Lifespan 0.00; unit <N> not poisoned` (set a Lifespan), and
     `unit <N> is no longer alive and damageable; not poisoned` (the hit killed the unit, which is
     normal);
@@ -853,7 +906,8 @@ damageOverTime [log]
   seconds. In the tests, poisoned guardians and animals sometimes jumped back to full hitpoints,
   most likely when they went back to their spot. That is stock behavior (not traced), and it can
   hide the poison; the `log` lines show the ticks anyway.
-- **Simulation:** yes.
+- **Simulation:** yes. Every player needs the same data and the same key; `noticktext` only
+  changes what that player sees and may differ.
 - **Status:** confirmed in single player, by hand and with the unattended test
   ([developer-guide.md](developer-guide.md#driving-the-game-unattended)). With the Explorer's
   `HandAttack` and `VolleyRangedAttack` attaching a 20-damage, 1-second, 10-second poison:
@@ -867,11 +921,41 @@ damageOverTime [log]
   - skirmishes started after a poison game, in the same session, had working AI players;
   - X's tactics file worked as XML alone, without its `.xmb`, in the one-line form above.
 
-  Only a hand attack and an instant ranged attack (`InvisibleProjectile`) were tested. The
-  following follow from the code but were **not tested in game**: area damage, attacks with a
-  flying projectile (arrows, grenades, cannon balls), `DamageBonus` on X, techs on X, kill and XP
-  credit, DamageFlags that exclude a poisoned unit, and a tick on a unit of an AI army after the
-  attacking unit is gone. Multiplayer was not tested either.
+  Then, on 2026-10-29, with the data of `tools/dot_testdata.py` (one X per weapon, test maps
+  without AI):
+  - **area damage and a flying grenade:** one Grenadier grenade poisoned all four musketeers it
+    hit (10 Siege per tick each, renewed by the next grenades, three of them died of it);
+  - **flying arrows:** a Crossbowman's arrow poisoned a musketeer, 4.80 per tick (6 Hand less its
+    20 % hand armor); Longbowman arrows too;
+  - **a cannon ball:** a Falconet's shot poisoned the musketeer it did not kill, 15 per tick;
+  - **`DamageBonus` on X:** the arrow's X (triple damage against `AbstractCavalry`) dealt 18 per
+    tick to a Hussar and 4.80 to a musketeer;
+  - **a tech on X:** a tech doubling the damage of X's `Attaching` action, turned on in the
+    middle of the poison, took the next ticks from 18 to 36 (Hussar) and from 4.80 to 9.60
+    (musketeer);
+  - **DamageFlags:** with X set to `Enemy`, a poisoned musketeer converted to the attacker's side
+    (trigger `Convert`) took 0.00 per tick from then on, also after the attacker died;
+  - **attacker gone:** an Explorer removed (trigger `Destroy`) after its hit: the ticks went on
+    (`attacker gone`) and killed the musketeer. A unit that is only killed keeps its ID while its
+    body lies there, so the attacker counts as gone only once the body disappears;
+  - **kill and XP credit:** that musketeer, killed by a tick after its attacker was removed, gave
+    player 1 its 10 XP bounty (the XP rose by 14 in that second, against 4 from the steady XP
+    trickle; read in memory, `[player+230h]`, entry 5);
+  - **`AttachMaxStacks 3`, `AttachSnare 0.5`, `AttachTickText`:** on a Hussar, the ticks went 5,
+    10, 15 as Longbowman arrows added stacks, and back to 10 and 5 as they expired one by one;
+    its speed read 3.38 (6.75 × 0.5) while poisoned; the green ticks show in the video above;
+  - **AI:** a 12-minute skirmish (fast speed) between two AI players (Spanish and Portuguese,
+    no teams) and the player, with this data plus the `--ai` data (a 30 s poison on their
+    Musketeers, Skirmishers, Pikemen and Hussars): 49 poisons and 242 ticks between the AIs'
+    units (Pikemen poisoning Crossbowmen and the reverse), no XS error, both AIs kept playing;
+  - `noticktext`: the startup line says the tick texts are off; noTrainNearEnemyTC's warning,
+    which shares the floating text code, still showed in the same game.
+
+  **Not reproduced:** a tick on a unit of an AI army after the attacking unit is gone (the p11 = 0
+  path of [how-it-works](how-it-works.md#damageovertime)). In the AI game no poison outlived its
+  attacker's removal, and units sent by the scenario trigger `Army Deploy` are not in an engine
+  army (their army flag stays clear), so that case was not produced; the attacker-gone path
+  itself ran (above). Multiplayer was not tested either.
 - **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
   proto that carries the duration and the damage.
 

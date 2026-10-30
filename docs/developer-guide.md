@@ -206,6 +206,21 @@ there:
   before each "Play". After a game, the home city screen sometimes ignores the first click on
   "Play": take a small screenshot (`shot out.png 4`) and click again. `startRandomGame2` does
   nothing from the main menu; it works only inside the editor.
+- **A skirmish between two AIs** (for AI-only cases, such as `damageOverTime`'s army units): on
+  the setup screen the player count list is at client (2317, 131) and "3 players" at (1911, 267);
+  "No teams" (1935, 1459), speed "Fast" (2253, 1325). A player's portrait button opens the AI
+  personality list (player 2's at (1003, 385), player 3's at (1003, 537)); `wheel 1677 695 30`
+  scrolls it to the European leaders, the first row is at (1797, 575), the second at
+  (1797, 695), and "Accept" at (1577, 931). Two Hard AIs had military from about minute 5.
+- **Kill or Destroy.** The trigger `Kill` leaves a body that still answers to the unit's ID for a
+  while; `Destroy` removes the unit at once. Use `Destroy` when a test needs the unit gone.
+- **Scenario armies are not AI armies.** `Army Deploy` (`trArmyDispatch`) creates the units but
+  does not put them in an engine army (no army flag 37h).
+- **Reading a player's resources:** they are a resource list embedded at `[player+230h]`
+  ([engine-symbols.md](engine-symbols.md), "Player resources"); entry 5 is XP, which also rises
+  by a steady trickle, so compare a kill against that rhythm.
+- **Zooming for a video:** `exec "uiLookAtUnit(ID)"`, then `wheel 1280 700 8`, then `record …
+  --follow ID`.
 - **Shipments need a skirmish and real clicks.** Scenario players have no home city, so a test of
   shipments (`hcShipmentPointFallback`) runs in a skirmish. Send a card by clicking the home city
   flag (client 667, 1217 on a 2560×1600 client), then a card in its panel. The console cannot set

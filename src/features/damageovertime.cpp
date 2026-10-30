@@ -4,17 +4,32 @@
 // ProtoAction "Attaching", computed by the stock TakeDamage (damage type, damage bonuses,
 // armor) and credited to the attacker's player. X is a data definition only: it is never
 // created in the world. The hooks are in hooks/dot_hooks.asm.
+//
+// Optional tags next to <AttachProtoUnit>, in the same attacker <ProtoAction>:
+// - <AttachMaxStacks>N</AttachMaxStacks>: each hit adds a stack, up to N; a tick deals the damage
+//   times the stacks alive at its time (TakeDamage's multiplier). Each stack expires Lifespan
+//   after its own hit; a hit at N stacks renews the oldest. N = 1 (no tag) is the single poison.
+// - <AttachSnare>F</AttachSnare>: while poisoned, a unit that can move is slowed to F times its
+//   speed, by the stock snare's call (0x4DD22D, the <TargetSpeedBoost> modifier, F instead of
+//   0.65), renewed at each tick for one interval and a quarter second.
+// - <AttachTickText>RRGGBB</AttachTickText>: each tick shows the damage dealt over the unit in
+//   that colour, for the local player only (floatingtext.h); "damageOverTime noticktext" in
+//   uhc.cfg turns it off on that machine.
 #include <windows.h>
 
 #include <algorithm>
+#include <cmath>
 #include <compare>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <cwchar>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "../features.h"
+#include "../floatingtext.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -34,9 +49,17 @@ using TakeDamageFn = float(__fastcall*)(char* unit, void* unused, std::int32_t p
 using PlayerProtoFn = char*(__thiscall*)(char* player, std::int32_t protoId);
 using ProtoIdByNameFn = std::int32_t(__thiscall*)(char* database, const char* name);
 using IsAliveFn = bool(__thiscall*)(char* unit);
+using SnareFn = std::int32_t(__thiscall*)(char* unit, std::int32_t stat, float value, float, float, std::int32_t,
+                                          std::int32_t operation, std::int32_t ms, std::int32_t, std::int32_t,
+                                          std::int32_t exclusive);
 
 const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
 const auto kProtoIdByName = reinterpret_cast<ProtoIdByNameFn>(0x005A2346);
+const auto kSnare = reinterpret_cast<SnareFn>(0x004DD22D);
+
+constexpr std::int32_t kMaxStacks = 100;
+constexpr std::uint32_t kSnareSlackMs = 250;  // the snare outlasts the next tick by this much
+constexpr std::uint32_t kDefaultTickColour = 0xFF40FF40;
 
 template <typename T>
 T& Field(const char* base, std::uint32_t offset) {
@@ -75,6 +98,25 @@ const char* UnitProtoName(const char* unit) {
 // before applying special damage.
 bool IsAlive(char* unit) {
   return (*reinterpret_cast<IsAliveFn**>(unit))[0xA4 / 4](unit);
+}
+
+// Unit vtable slot 90h (0x45EE55): true for a unit that can move, the stock snare's test (0x4DD1EE).
+bool CanMove(char* unit) {
+  return (*reinterpret_cast<IsAliveFn**>(unit))[0x90 / 4](unit);
+}
+
+// Unit vtable slot 34h (0x487E27): the unit's current max velocity, modifiers (the snare) included.
+// For the log only.
+float Speed(char* unit) {
+  using SpeedFn = float(__thiscall*)(char* unit);
+  return (*reinterpret_cast<SpeedFn**>(unit))[0x34 / 4](unit);
+}
+
+// Unit flag 37h (bit 7 of [[unit+4]+6], bit count [unit+8]): the unit is in an army (AI armies;
+// engine-symbols.md). For the log only.
+bool InArmy(const char* unit) {
+  const auto* bits = Field<const std::uint8_t*>(unit, 0x04);
+  return bits != nullptr && Field<std::int32_t>(unit, 0x08) > 0x37 && (bits[6] & 0x80) != 0;
 }
 
 // ProtoAction names: [database+1FD8h] holds one UTF-16 string per name index, [+1FDCh] the
@@ -139,13 +181,18 @@ struct ActionKey {
 };
 
 struct Attachment {
-  std::string protoName;  // X, as written in protoy.xml
+  std::string protoName;  // X, as written in protoy.xml; empty: only the optional tags were given
   std::int32_t proto = kUnresolved;
+  std::int32_t maxStacks = 1;    // <AttachMaxStacks>
+  float snare = -1.0f;           // <AttachSnare>: the speed factor while poisoned; < 0 none
+  std::uint32_t tickColour = 0;  // <AttachTickText>: ARGB of the tick text; 0 none
 };
 
 // Filled while protoy.xml is parsed, keyed by proto ID and action name, since every player's
 // copy of a proto keeps both.
 std::map<ActionKey, Attachment> g_attachments;
+// With "log": the (proto, action) pairs already reported as dealing damage without a record.
+std::map<ActionKey, bool> g_loggedUntagged;
 std::int32_t g_attachingName = kUnresolved;
 
 struct DotKey {
@@ -156,9 +203,14 @@ struct DotKey {
 };
 
 struct Dot {
-  std::int32_t attacker;  // unit ID, -1 once it is gone
-  std::uint32_t nextTick;
-  std::uint32_t end;
+  std::int32_t attacker = -1;  // unit ID, -1 once it is gone
+  std::uint32_t nextTick = 0;
+  std::uint32_t end = 0;                 // the last stack's end
+  std::vector<std::uint32_t> stacks;     // each stack's end, in game time order of expiry
+  // From the latest hit's action.
+  std::int32_t maxStacks = 1;
+  float snare = -1.0f;
+  std::uint32_t tickColour = 0;
 };
 
 // Ordered by key, so every machine applies the ticks in the same order.
@@ -173,6 +225,11 @@ const auto kTakeDamageStock = reinterpret_cast<TakeDamageFn>(&UhcDotTakeDamageSt
 // Resolves X's proto ID and the "Attaching" name index once, logging what a modder needs to
 // fix. False if this attachment cannot work.
 bool Resolve(Attachment& attachment) {
+  if (attachment.proto == kUnresolved && attachment.protoName.empty()) {
+    uhc::Log(L"damageOverTime: an attack has <AttachMaxStacks>, <AttachSnare> or <AttachTickText> but no "
+             L"<AttachProtoUnit>; ignored");
+    attachment.proto = -1;
+  }
   if (attachment.proto == kUnresolved) {
     char* database = Database();
     attachment.proto = database == nullptr ? -1 : kProtoIdByName(database, attachment.protoName.c_str());
@@ -236,6 +293,34 @@ std::uint32_t TickInterval(const char* attaching) {
   return static_cast<std::uint32_t>(rof > 0 ? rof : 1000);
 }
 
+// The stock snare's modifier (snareOnlyHitUnit in how-it-works.md): stat 0 (velocity), operation 2
+// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration.
+void Snare(char* unit, float factor, std::uint32_t ms) {
+  if (factor >= 0.0f && CanMove(unit)) {
+    kSnare(unit, 0, factor, -1.0f, -1.0f, 0, 2, static_cast<std::int32_t>(ms), -1, -1, 1);
+  }
+}
+
+// "damageOverTime noticktext" in uhc.cfg: no tick text on this machine.
+bool g_noTickText = false;
+
+// The damage of a tick over the unit, for the local player (interface only).
+void ShowTick(const char* unit, float dealt, std::uint32_t colour) {
+  if (colour == 0 || g_noTickText || !(dealt > 0.0f) || !uhc::CanShowUnitText(unit)) {
+    return;
+  }
+  wchar_t text[16];
+  swprintf_s(text, L"-%ld", std::lround(dealt));
+  uhc::ShowUnitText(unit, text, -1, colour);
+}
+
+// Drops the stacks whose end is before time (a tick at time counts the stacks with end >= time).
+void DropExpired(Dot& dot, std::uint32_t time) {
+  const auto alive = std::find_if(dot.stacks.begin(), dot.stacks.end(),
+                                  [time](std::uint32_t end) { return Reached(end, time); });
+  dot.stacks.erase(dot.stacks.begin(), alive);
+}
+
 // From the database load hook (unittypes.h), before the protos' contents are read: the data
 // is loaded at startup and again when a skirmish starts (not when a scenario loads). Each load
 // reads the tags again, and running poisons belong to the previous game.
@@ -245,6 +330,7 @@ void ResetForDataLoad(char*) {
              static_cast<unsigned>(g_dots.size()));
   }
   g_attachments.clear();
+  g_loggedUntagged.clear();
   g_attachingName = kUnresolved;
   g_dots.clear();
   g_dotWorld = nullptr;
@@ -278,7 +364,8 @@ bool g_loggedFirstTick = false;
 // "damageOverTime log" in uhc.cfg: every poison start, refresh, tick and end, for tuning data.
 bool g_logEvery = false;
 
-void Attach(char* target, std::int32_t player, std::int32_t attacker, std::int32_t attachment) {
+void Attach(char* target, std::int32_t player, std::int32_t attacker, const Attachment& source) {
+  const std::int32_t attachment = source.proto;
   const char* world = MainWorld();
   const char* proto = nullptr;
   const char* attaching = world == nullptr ? nullptr : PlayerAttaching(world, player, attachment, &proto);
@@ -310,34 +397,54 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, std::int32
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
   SyncWorld(world, now);
   const DotKey key{targetId, attachment, player};
-  const auto [it, added] = g_dots.try_emplace(key, Dot{attacker, now + TickInterval(attaching), 0});
+  const auto [it, added] = g_dots.try_emplace(key);
   Dot& dot = it->second;
-  // A new hit by the player's units makes that unit the attacker and restarts the duration
-  // (with the current Lifespan); the tick timer keeps running.
+  if (added) {
+    dot.nextTick = now + TickInterval(attaching);
+  }
+  // A new hit by the player's units makes that unit the attacker and takes its action's options.
+  // It adds a stack that ends Lifespan (the current one) from now; at the stack limit it renews the
+  // oldest stack instead. With one stack this restarts the duration. The tick timer keeps running.
   // Capped so the end stays within the 2^31 ms window that Reached() compares.
   dot.attacker = attacker;
-  dot.end = now + static_cast<std::uint32_t>(
-                      std::min(static_cast<double>(lifespan) * 1000.0, 2147483647.0 - TickInterval(attaching)));
+  dot.maxStacks = source.maxStacks;
+  dot.snare = source.snare;
+  dot.tickColour = source.tickColour;
+  const std::uint32_t stackEnd =
+      now + static_cast<std::uint32_t>(
+                std::min(static_cast<double>(lifespan) * 1000.0, 2147483647.0 - TickInterval(attaching)));
+  DropExpired(dot, now);
+  while (static_cast<std::int32_t>(dot.stacks.size()) >= dot.maxStacks) {
+    dot.stacks.erase(dot.stacks.begin());  // the oldest, the first to expire
+  }
+  const auto before = [](std::uint32_t a, std::uint32_t b) { return static_cast<std::int32_t>(a - b) < 0; };
+  dot.stacks.insert(std::upper_bound(dot.stacks.begin(), dot.stacks.end(), stackEnd, before), stackEnd);
+  dot.end = dot.stacks.back();
+  if (added) {
+    Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+  }
   if (!g_loggedFirstPoison || g_logEvery) {
     g_loggedFirstPoison = true;
-    uhc::Log(L"damageOverTime: %ls: unit %d (%hs) by player %d, proto %d, every %u ms until game time %u (now %u, "
-             L"%u active)",
+    uhc::Log(L"damageOverTime: %ls: unit %d (%hs) by player %d, proto %d, stack %u/%d, every %u ms until game time "
+             L"%u (now %u, %u active)",
              added ? L"poison" : L"poison renewed", targetId, UnitProtoName(target), player, attachment,
-             TickInterval(attaching), dot.end, now, static_cast<unsigned>(g_dots.size()));
+             static_cast<unsigned>(dot.stacks.size()), dot.maxStacks, TickInterval(attaching), dot.end, now,
+             static_cast<unsigned>(g_dots.size()));
   }
 }
 
 // One tick: the stock TakeDamage with X's Attaching action, called the way the stock
-// special-damage callers call it (0x986237 and others): multiplier 1, damage computed from the
-// action, no stats slot. Returns the damage dealt.
+// special-damage callers call it (0x986237 and others): multiplier = the live stacks (1 without
+// <AttachMaxStacks>), damage computed from the action, no stats slot. Returns the damage dealt.
 // The 11th argument turns on the hit notifications (retaliation, attack alerts, the army's
 // attacker list). The army code (0x6A3253) reads the attacking unit without a null check, so an
 // army unit (AI armies) poisoned by a unit that is gone would crash the game: with no attacking
 // unit the tick passes 0 and skips them (the jne at 0x49B929).
 float ApplyTick(char* target, char* attaching, const DotKey& key, const Dot& dot) {
   const std::int32_t notify = dot.attacker >= 0 ? 1 : 0;
-  return kTakeDamageStock(target, nullptr, key.player, key.attachment, attaching, dot.attacker, 1.0f, 0.0f, 0.0f, 0, 0,
-                          1, notify, -2, 1);
+  const float multiplier = static_cast<float>(dot.stacks.size());
+  return kTakeDamageStock(target, nullptr, key.player, key.attachment, attaching, dot.attacker, multiplier, 0.0f, 0.0f,
+                          0, 0, 1, notify, -2, 1);
 }
 
 void Tick(char* world) {
@@ -361,17 +468,28 @@ void Tick(char* world) {
       if (UnitById(world, dot.attacker) == nullptr) {
         dot.attacker = -1;
       }
+      DropExpired(dot, dot.nextTick);
       const float dealt =
           dot.attacker >= 0 || DamageAllowed(world, attaching, key.player, target) ? ApplyTick(target, attaching, key, dot)
                                                                                    : 0.0f;
       if (!g_loggedFirstTick || g_logEvery) {
         g_loggedFirstTick = true;
-        uhc::Log(L"damageOverTime: tick: unit %d (%hs) took %.2f damage, %.1f hitpoints left (tick due %u, game "
-                 L"time %u)",
-                 key.target, UnitProtoName(target), dealt, Field<float>(target, 0x64), dot.nextTick, now);
+        wchar_t speed[32] = L"";
+        if (dot.snare >= 0.0f) {
+          swprintf_s(speed, L", speed %.2f", static_cast<double>(Speed(target)));
+        }
+        uhc::Log(L"damageOverTime: tick: unit %d (%hs) took %.2f damage (x%u), %.1f hitpoints left (tick due %u, game "
+                 L"time %u)%ls%ls%ls",
+                 key.target, UnitProtoName(target), dealt, static_cast<unsigned>(dot.stacks.size()),
+                 Field<float>(target, 0x64), dot.nextTick, now, dot.attacker < 0 ? L", attacker gone" : L"",
+                 dot.attacker < 0 && InArmy(target) ? L", army unit" : L"", speed);
       }
       dot.nextTick += TickInterval(attaching);
       alive = IsAlive(target);
+      ShowTick(target, dealt, dot.tickColour);
+      if (alive && Reached(dot.end, dot.nextTick)) {
+        Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+      }
     }
     if (!alive || Reached(now, dot.end)) {
       if (g_logEvery) {
@@ -394,18 +512,63 @@ extern "C" {
 // is at [node+14h]. [proto+4] is the proto ID, [proto+10h] its name.
 void __stdcall UhcDotProtoActionTag(const wchar_t* const* tag, const char* node, const char* proto,
                                     const char* action) {
-  if (tag == nullptr || *tag == nullptr || _wcsicmp(*tag, L"AttachProtoUnit") != 0) {
+  if (tag == nullptr || *tag == nullptr) {
+    return;
+  }
+  const wchar_t* name = *tag;
+  const bool attach = _wcsicmp(name, L"AttachProtoUnit") == 0;
+  const bool stacks = _wcsicmp(name, L"AttachMaxStacks") == 0;
+  const bool snare = _wcsicmp(name, L"AttachSnare") == 0;
+  const bool tickText = _wcsicmp(name, L"AttachTickText") == 0;
+  if (!attach && !stacks && !snare && !tickText) {
     return;
   }
   const char* protoName = Field<const char*>(proto, 0x10);
   const ActionKey key{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)};
   const wchar_t* text = Field<const wchar_t*>(node, 0x14);
-  if (text == nullptr || *text == L'\0') {
-    uhc::Log(L"damageOverTime: %hs/%ls: empty <AttachProtoUnit>; ignored", protoName, ActionName(key.name));
+  if (attach) {
+    if (text == nullptr || *text == L'\0') {
+      uhc::Log(L"damageOverTime: %hs/%ls: empty <AttachProtoUnit>; ignored", protoName, ActionName(key.name));
+      return;
+    }
+    g_attachments[key].protoName = Narrow(text);
+    uhc::Log(L"damageOverTime: %hs/%ls attaches %ls", protoName, ActionName(key.name), text);
     return;
   }
-  g_attachments[key] = Attachment{Narrow(text)};
-  uhc::Log(L"damageOverTime: %hs/%ls attaches %ls", protoName, ActionName(key.name), text);
+  wchar_t* end = nullptr;
+  if (stacks) {
+    const long value = text == nullptr ? 0 : std::wcstol(text, &end, 10);
+    if (text == nullptr || end == text || *end != L'\0' || value < 1 || value > kMaxStacks) {
+      uhc::Log(L"damageOverTime: %hs/%ls: <AttachMaxStacks>%ls</AttachMaxStacks> is not a whole number from 1 to %d; "
+               L"ignored",
+               protoName, ActionName(key.name), text == nullptr ? L"" : text, kMaxStacks);
+      return;
+    }
+    g_attachments[key].maxStacks = static_cast<std::int32_t>(value);
+    uhc::Log(L"damageOverTime: %hs/%ls: up to %ld stacks", protoName, ActionName(key.name), value);
+  } else if (snare) {
+    const float value = text == nullptr ? -1.0f : std::wcstof(text, &end);
+    if (text == nullptr || end == text || *end != L'\0' || !(value >= 0.0f) || value > 10.0f) {
+      uhc::Log(L"damageOverTime: %hs/%ls: <AttachSnare>%ls</AttachSnare> is not a speed factor from 0 to 10; ignored",
+               protoName, ActionName(key.name), text == nullptr ? L"" : text);
+      return;
+    }
+    g_attachments[key].snare = value;
+    uhc::Log(L"damageOverTime: %hs/%ls: poisoned units move at %.2f times their speed", protoName,
+             ActionName(key.name), static_cast<double>(value));
+  } else {
+    unsigned long rgb = kDefaultTickColour & 0xFFFFFFu;
+    if (text != nullptr && *text != L'\0') {
+      rgb = std::wcstoul(text, &end, 16);
+      if (end == text || *end != L'\0' || end - text != 6) {
+        uhc::Log(L"damageOverTime: %hs/%ls: <AttachTickText>%ls</AttachTickText> is not a colour RRGGBB; ignored",
+                 protoName, ActionName(key.name), text);
+        return;
+      }
+    }
+    g_attachments[key].tickColour = 0xFF000000u | static_cast<std::uint32_t>(rgb);
+    uhc::Log(L"damageOverTime: %hs/%ls: ticks shown in colour %06lX", protoName, ActionName(key.name), rgb);
+  }
 }
 
 float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::int32_t proto, char* action,
@@ -415,9 +578,19 @@ float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::i
   const float dealt = kTakeDamageStock(unit, nullptr, player, proto, action, attacker, multiplier, damage, cap, a8, a9,
                                        a10, a11, a12, a13);
   if (dealt > 0.0f && action != nullptr && !g_attachments.empty()) {
-    const auto it = g_attachments.find({proto, Field<std::int32_t>(action, 0x04)});
+    const ActionKey key{proto, Field<std::int32_t>(action, 0x04)};
+    const auto it = g_attachments.find(key);
     if (it != g_attachments.end() && Resolve(it->second)) {
-      Attach(unit, player, attacker, it->second.proto);
+      Attach(unit, player, attacker, it->second);
+    } else if (g_logEvery && it == g_attachments.end() && g_loggedUntagged.size() < 200 &&
+               g_loggedUntagged.try_emplace(key, true).second) {
+      const char* database = Database();
+      const char* attackerProto = database == nullptr || proto < 0 || proto >= Field<std::int32_t>(database, 0x58)
+                                      ? nullptr
+                                      : Field<char**>(database, 0x54)[proto];
+      uhc::Log(L"damageOverTime: damage by proto %d (%hs), action %ls, attacker unit %d: no <AttachProtoUnit> there",
+               proto, attackerProto == nullptr ? "?" : Field<const char*>(attackerProto, 0x10), ActionName(key.name),
+               attacker);
     }
   }
   return dealt;
@@ -446,14 +619,18 @@ Outcome ApplyDamageOverTime(const Config& config) {
   for (const std::string& arg : *args) {
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_logEvery = true;
+    } else if (_stricmp(arg.c_str(), "noticktext") == 0) {
+      g_noTickText = true;
     } else {
-      Log(L"damageOverTime: unknown argument %hs (expected: log)", arg.c_str());
+      Log(L"damageOverTime: unknown argument %hs (expected: log, noticktext)", arg.c_str());
       return Outcome::kFailed;
     }
   }
+  // The snare and the tick text sites are checked here too, though data decides whether they run.
   if (!VerifyAll("damageOverTime", {&sites::kDotTakeDamageEntry, &sites::kDotProtoActionTag,
-                                    &sites::kDotProtoActionCall}) ||
-      !OnDatabaseLoad(&ResetForDataLoad)) {
+                                    &sites::kDotProtoActionCall, &sites::kSnareTargetCheck, &sites::kSnareCreate,
+                                    &sites::kSnareApply}) ||
+      !uhc::VerifyFloatingText("damageOverTime") || !OnDatabaseLoad(&ResetForDataLoad)) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(0x005FA11E, reinterpret_cast<const void*>(&UhcDotProtoActionTagHook), 8) ||
@@ -461,8 +638,9 @@ Outcome ApplyDamageOverTime(const Config& config) {
       !uhc::AddWorldTick(&DotWorldTick)) {
     return Outcome::kFailed;
   }
-  Log(L"damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time "
-      L"(multiplayer unverified)");
+  Log(L"damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with "
+      L"<AttachMaxStacks>, <AttachSnare> and <AttachTickText>%ls (multiplayer unverified)",
+      g_noTickText ? L"; tick texts off on this machine" : L"");
   return Outcome::kApplied;
 }
 

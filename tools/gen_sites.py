@@ -343,6 +343,12 @@ SITES = [
     # snareOnlyHitUnit, code the helpers mirror: the TargetSpeedBoost call 0x4DD22D(target, 0,
     # 0.65f, -1f, -1f, 0, 2, 3000, -1, -1, 1), the snare signature
     ("SnareCreate", 0x4DD201, 0x2C),
+    # damageOverTime <AttachSnare>, verify only: the stock snare's target test before that call
+    # (unit vtable slot 90h, 0x45EE55: true for a unit that can move) and the creator it calls,
+    # int thiscall(unit, stat, value, -1f, -1f, 0, op, ms, -1, -1, exclusive), ret 28h, -1 without
+    # an action manager [unit+58h]; it allocates the modifier record [[unit+0B4h]+0C8h] if missing
+    ("SnareTargetCheck", 0x4DD1DE, 0x23),
+    ("SnareApply", 0x4DD22D, 0x82),
     # snareOnlyHitUnit: the modifier init 0x4B3D44 ([+64h] stat, [+68h] value, [+78h] op, flag
     # 15h or 14h by duration, flag 16h exclusive)
     ("SnareModifierInit", 0x4B3D44, 0x5A),
