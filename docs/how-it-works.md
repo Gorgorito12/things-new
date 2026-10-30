@@ -168,6 +168,91 @@ extra population is negative, and that path skips the first 5 patched bytes. Ups
 
 The shared-team-population path (`0x679641`) is not patched.
 
+[decimalPopulation](#decimalpopulation) installs the same hook when neither key is set, keeping
+steps 3 and 5 (`g_uhcPopStockClamps` = 1), and multiplies every limit by its scale
+(`g_uhcPopScale`, 1 otherwise).
+
+### decimalPopulation
+
+**Stock.** `<PopulationCount>` (handler FUN_005FB8FA) and `<PopulationCapAddition>`
+(FUN_005FD6E5) parse an ANSI copy of the tag's text (0x402733, WideCharToMultiByte) with
+0x59A71D (`sscanf "%d"`) into `[proto+0D8h]` / `[proto+0D4h]`. A player's population
+`[player+70h]` and raw cap `[player+74h]` are XOR-encoded sums of them (getPop 0x45805C, getCap
+0x4581A1, which clamps the raw cap: see [basePop](#basepop-and-extrapop)); `[player+78h]` is the
+population the queues reserve. Every consumer compares those sums: the Train add FUN_009EAC35
+(`getPop + reserved + n × pop ≤ getCap`), the spawns FUN_009E2AC8 / FUN_009E2DEF, the command
+predicate FUN_004C6968, the Maintain update, `trPlayerAtPopCap`, … (44 calls of the two getters;
+all compares except the outputs below).
+
+**The change: fixed point.** Every population quantity is stored K times larger, so the compares
+stay as they are, and only the places where a population enters or leaves change.
+- **Inputs:**
+  - the two tag calls of 0x59A71D (0x5FB92E, 0x5FD719) go to `UhcPopCountParse` /
+    `UhcPopCapAddParse` (cdecl `(const char*, int*)`, bool): strtod, × K, rounded. The `int*` is
+    the handler's own argument slot (`lea eax,[esp+0Ch]`); the next slot is the proto, which the
+    log reads for its name (`[proto+10h]`);
+  - the proto effects (switch 0x8F978D, cases 0x8FA814 / 0x8FA8AB) call the int effect
+    FUN_007F899B(rel, int* out, base, float amount, negate), cdecl, at 0x8FA835 / 0x8FA8CF; both
+    calls go to wrappers. Relativity 1 (Absolute; stock truncates `amount`) gets
+    `round(amount × K)`; 3 (Assign; stock `(int)(amount + 0.5)`) gets `amount × K`; 2
+    (BasePercent; stock `(int)(base × amount − base + 0.5)`, truncated toward zero) is computed as
+    `lround(base × amount − base)` and applied as Absolute; 0 (Percent, `× (int)(amount + 0.5)`)
+    is passed through. PopulationCount's floor (`result ≤ 0 → 1`, `mov eax,1` at 0x8FA849) gets
+    K in its imm32. After the change the stock code recounts the player's population
+    (FUN_00A00470) or cap from the scaled values;
+  - the player effect PopulationCap (FUN_008D842B case 14h, and its removal at 0x8D2099):
+    `fld [esp+X] / fnstcw [esp+X]` (8 bytes at 0x8D87AB and 0x8D20AB) become `fld / fimul K /
+    frndint / fnstcw`, so the truncating `fistp` that follows gets an exact integer.
+    PopulationCapBonus (56h) and PopulationCapExtra (57h) store `[player+4F4h]` / `[player+4F8h]`
+    in whole population, scaled where getCap reads them;
+  - getCap's limits: the cap hook of [basePop](#basepop-and-extrapop) multiplies base + extra,
+    the bonus and, when decimalPopulation installs it alone (`g_uhcPopStockClamps` = 1), the
+    world's `[world+31Ch]` + extra and the 250 by `g_uhcPopScale`. The shared-team path
+    (0x679694..0x6796B7) gets the same for its 200 and `[world+31Ch]`. The game-start bonus
+    (0xA0D2D1: `setCap(getCap() + [player+7Ch] + [world+320h])`) gets K for the two bonuses;
+  - the XS setters (below) multiply their value.
+- **Outputs:**
+  - **XS:** the registration `push impl / push name` of 19 syscalls (sites `Xs*`) gets a
+    wrapper's address. The wrappers are cdecl and read two arguments in place (no declared
+    parameters, so the compiler never reuses a slot the caller did not push), call the stock impl
+    with them, and divide (getters: rounded half away from zero; `kbGetPopSlots` up;
+    `kbUnitPickGet*` keep negatives) or multiply the value (setters: `aiSetEconomyPop`,
+    `aiSetMilitaryPop` → `[ai+24h]` / `[ai+28h]`, `kbUnitPickSet*Pop` → `[pick+78h]` /
+    `[pick+7Ch]`; negatives kept, the picks' default is −1). C++ callers of the same impls are
+    untouched: they work on scaled values;
+  - **data refs:** pop (22h), popcap (23h), futurepop (24h) and totalpop (25h) are registered as
+    ints (type 2). Their registration's `mov eax,[esp+1Ch]` (the type) becomes `push 3 / pop eax
+    / nop` (text), and their provider imm32 a stdcall wrapper that calls the stock provider with
+    an int Value `{2, 0}` and assigns the formatted number (0x443BB8);
+  - **colorizePop** (6Ch, 0x6F5736): its argument parse 0x6F2A1D (strtok `()`, atoi of the second
+    token) becomes `UhcColorizePopArg(BString*)`: the number after the first `(`, × K; its
+    `"%s%d%s"` call (0x6F580C) prints the number with its decimals;
+  - **printed populations:** the calls of the BString sprintf 0x444EFB that print one (0x63F98D,
+    0x70FF3A: str 11725 with `[proto+0D8h]`; 0x63FEC5, 0x70F58F, 0x710651: `{colorizePop(%d)}`;
+    0x6F2DB5: `%d %s = %d`; 0x6F2E34: str 18963 with getCap) go to `PopFormat<i>`, which replaces
+    the i-th conversion of the format with `%s` and passes the text (`12`, `12.5`, up to three
+    decimals) in the same 4-byte slot.
+
+**Why it is safe.**
+- Integer data is unchanged in meaning: every value is a multiple of K and every compare is
+  between scaled values. Any consumer not listed reads a relative quantity (checked for the 44
+  getter calls; [engine-symbols](engine-symbols.md#population-for-decimalpopulation)).
+- The parse wrappers keep the stock contract: same arguments, bool in AL, the out int written on
+  success. The effect wrappers call the stock function with its five arguments. The PopulationCap
+  hooks leave the x87 stack as stock does (one value, then the stock `fistp`), and the control
+  word is set by the stock `fnstcw / fldcw` right after; `frndint` rounds with the game's mode,
+  round to nearest.
+- The cap hook keeps every stock clamp when decimalPopulation runs without basePop/extraPop; with
+  them, their semantics, in whole population. `g_uhcPopScale` is 1 otherwise, so basePop/extraPop
+  alone behave as before (tested: 6 / 300).
+- The text refs are used only as text by the stock and WoL UIs (`formatText`); the int evaluator
+  now refuses them, which no UI asks for.
+- The format wrappers pass the arguments in the same slots (all 4 bytes), so a format whose
+  conversion is missing (a translation) is printed by the stock call unchanged.
+- **Not covered** (scaled values shown as they are): the post-game timeline's population curves
+  (seen in game: 9 population drawn at 90) and the AI's debug text (0x7167EB). Saved games store
+  the scaled values.
+
 ### noAILimit
 
 FUN_00603AB7 builds, at `0x603B0B..0x603C4E`, a table of 11 (or 14 with TAD content)
@@ -395,6 +480,51 @@ with the stock frame and registers (EDI, EBX, ESI) untouched. Any other unit re-
 instructions and continues with the stock compares at `0x49ACEB`. ECX holds the database there
 and is saved around the is-a call. The tech, the roll and the feedback are therefore identical
 for a marked unit and a monk.
+
+**dodgeChance** shares that hook. The hook now calls `UhcDodgeDecide(unit, damageInfo)` and
+takes one of four ways out:
+- the stock compares (the two loads redone, `0x49ACEB`): no rule matched and the unit has no
+  marker;
+- the stock dodge path `0x6A249C`, with ECX restored to the database and EDI = `[world+7Ch]` as it
+  expects: no rule matched and the unit has `dodgeAnyUnit`'s marker;
+- `0x6A24FC`, the end of that path after its roll: a rule dodged the hit. From there the path
+  reads only ESI (the unit), EBX (its player, `[esi+44h]` from 0x49ACC4) and its own locals:
+  floating text, sound set (`dodgeSoundSet`'s hook included), `mov al,1`, `ret`;
+- `0x49AD0F`, the stock "not dodged" exit: a rule matched and the hit lands.
+
+The inputs:
+- **The damage type of the hit.** At the hook, `[esp]` is the caller's EDI, saved by
+  `push edi` at 0x49ACDD. FUN_0049ACAA has one caller, `0x49B023` in FUN_0048649F, where EDI =
+  `[ebp+24h]` (0x49AF98), the action's damage info: `+0` damage, `+4` flags, `+5` the damage type,
+  an index into `damagetypes.xml`. Traced at 0x49B021 in game: a Pikeman's hit 0 (`Hand`), a
+  Musketeer's and an Explorer's 1 (`Ranged`); `[action+10h]` was 1 for all three, so it is not the
+  type. The names are resolved in the database's list `[db+44h]` (count `[db+48h]`; entries of
+  10h bytes with the name at `+4`, written by 0x5FFC55), filled from `damagetypes.xml` by
+  FUN_0052D454, which the database load calls at 0x526DD0.
+- **The tech.** `0x600BE1(db, name)` once per data load, then `0x94AF27([world+7Ch], player ID
+  [[unit+44h]], tech)` per hit, as the stock path does.
+- **The roll.** `0x407CE7(rng = 0C66588h, stream, max)` is a per-stream LCG, seed × 343FDh +
+  269EC3h, returning `((seed >> 16) & 7FFFh) mod (max + 1)`, so values 0..max. Stock draws
+  (2, 100) and dodges below 15.0: 15 of 101 values, 14.85 %. A rule draws (2, 999) on the same
+  stream and dodges below percent × 10; the 768 lowest values of 1000 come up once more in 32768
+  draws, so 15 % is 15.1 %. 0 % and 100 % do not draw.
+- **Resolution.** Rule types are marker or proto IDs from the abstract unit type registration;
+  tech and damage type names are resolved on the first test after each data load (a counter
+  raised by `OnDatabaseLoad`), from that machine's database. In a process, scenarios do not reload
+  the data (seen in game: one resolution for two games); a skirmish start does.
+
+**Why it is safe.** The hook keeps the stock frame: it pushes ECX around the C++ call and
+restores it, and the FPU stack is empty at 0x49ACE5 and at each exit. EAX and EDX are written
+before they are read on every way out (the compares load EAX; 0x6A249C pushes and calls; 0x6A24FC
+loads EAX and EDX; 0x49AD0F sets AL). The decision reads only the unit's proto, the hit's damage
+type, the synced tech status and the synced RNG, on the stream and in the order every machine
+uses; the rules are fixed after startup. It runs once per hit, over the few rules, with no
+allocation.
+
+**Observed in game:** 50 % against ranged hits gave 18 of 46 and 28 of 50 dodges, 0 % against
+melee 0 of 57; 30 % `notech` without `YPDodge` 20 of 71; 100 % with `HCExplorerFrench` active
+49 of 49; a rule whose tech was not active let all 15 hits land. Without `dodgeChance`,
+`dodgeAnyUnit` and `dodgeSoundSet` behaved as before.
 
 **`log`** also rewrites the call at `0x49B023` to a wrapper that calls FUN_0049ACAA itself and
 logs the unit when it returns true; the wrapper returns to `0x49B028`, so the caller sees the

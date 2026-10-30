@@ -131,6 +131,19 @@ SITES = [
     ("DodgeTechCheck", 0x6A249C, 10),
     # dodgeAnyUnit log: call 49ACAAh in the damage function and the test al,al after it
     ("DodgeCall", 0x49B023, 7),
+    # dodgeChance, verify only: the dodge test FUN_0049ACAA up to its "not dodged" exit (the frame:
+    # push esi / push ebx = [esi+44h] / push edi, the caller's EDI, then EDI = [world+7Ch]); the
+    # whole roll path 0x6A249C..0x6A2650 (tech, roll 0x407CE7(2, 100) against 15.0, then from
+    # 0x6A24FC the floating text and the sound, which read only ESI, EBX and locals); the caller from
+    # mov edi,[ebp+24h] (the damage info) to the call; the synced RNG, the tech test, the tech by
+    # name and the damage type loader FUN_0052D454 (the list at [db+44h], count [db+48h])
+    ("DodgeTest", 0x49ACAA, 0x6E),
+    ("DodgeRollPath", 0x6A249C, 0x1B5),
+    ("DodgeCaller", 0x49AF98, 0x92),
+    ("SyncRandom", 0x407CE7, 0x40),
+    ("TechActive", 0x94AF27, 0x33),
+    ("TechByName", 0x600BE1, 0x10),
+    ("DamageTypeLoad", 0x52D454, 0x51),
     # dodgeSoundSet: push "PowerEvade", the sound set a dodge plays, and the add esi,14h after it
     ("DodgeSound", 0x6A2628, 8),
     # criticalSoundSet: push "PowerCriticalStrike", played at the attacker, and lea eax,[ebx+14h]
@@ -766,6 +779,80 @@ SITES = [
     # [colony+28h] == the unit (count [edi+18h], indices [edi+14h], colonies [edi+8]); the
     # helper repeats this test
     ("TownStartColonyLoop", 0x7C2407, 0x31),
+    # decimalPopulation: the int parse 0x59A71D(text, int* out) of <PopulationCount> (FUN_005FB8FA,
+    # then [proto+0D8h]) and <PopulationCapAddition> (FUN_005FD6E5, then [proto+0D4h]), up to the
+    # store; the two calls are redirected
+    ("PopCountParse", 0x5FB92E, 0x1E),
+    ("PopCapAddParse", 0x5FD719, 0x1E),
+    # decimalPopulation: the proto effects PopulationCount (case 0x8FA814) and
+    # PopulationCapAddition (case 0x8FA8AB) of the effect switch 0x8F978D call the int effect
+    # FUN_007F899B(rel, int* out, base, float amount, negate), cdecl; both calls are redirected,
+    # and PopulationCount's "result <= 0 -> 1" (mov eax,1 at 0x8FA849) becomes K
+    ("PopCountEffect", 0x8FA835, 0x1D),
+    ("PopCapAddEffect", 0x8FA8CF, 0x1A),
+    ("IntEffect", 0x7F899B, 0x23),
+    # decimalPopulation: the player effect PopulationCap (FUN_008D842B case 14h, and its removal
+    # at 0x8D20AB): fld [esp+X] (the amount) / fnstcw [esp+X], then a truncating fistp; the
+    # amount is scaled in between
+    ("PopCapEffectAdd", 0x8D87AB, 0x08),
+    ("PopCapEffectRemove", 0x8D20AB, 0x08),
+    # decimalPopulation: getCap's shared-team path (GameTeamSharePop): per ally
+    # min(raw, 200, [world+31Ch]), from cmp eax,0C8h to add ebx,eax
+    ("TeamPopCap", 0x679694, 0x26),
+    # decimalPopulation: game start: setCap(getCap() + [player+7Ch] + [world+320h]), from
+    # add eax,ebx / add eax,[esi+320h] to push eax
+    ("StartPopBonus", 0xA0D2D1, 0x09),
+    # decimalPopulation: XS registrations, push impl / push name (the impl is replaced)
+    ("XsAiGetAvailableEconomyPop", 0x72A333, 0x0A),
+    ("XsAiGetAvailableMilitaryPop", 0x72A49B, 0x0A),
+    ("XsAiGetCurrentEconomyPop", 0x72A382, 0x0A),
+    ("XsAiGetEconomyPop", 0x72A3D1, 0x0A),
+    ("XsAiGetMilitaryPop", 0x72A4EA, 0x0A),
+    ("XsAiGetPopNeeds", 0x7319AA, 0x0A),
+    ("XsAiSetEconomyPop", 0x72A420, 0x0A),
+    ("XsAiSetMilitaryPop", 0x72A539, 0x0A),
+    ("XsKbGetPop", 0x885EE5, 0x0A),
+    ("XsKbGetPopCap", 0x885F34, 0x0A),
+    ("XsKbGetPopCapAddition", 0x887BB1, 0x0A),
+    ("XsKbGetPopSlots", 0x887C58, 0x0A),
+    ("XsKbGetPopulationSlotsByQueryID", 0x887DA6, 0x0A),
+    ("XsKbGetPopulationSlotsByUnitTypeID", 0x887CFF, 0x0A),
+    ("XsKbUnitPickGetMaximumPop", 0x88F88A, 0x0A),
+    ("XsKbUnitPickGetMinimumPop", 0x88F768, 0x0A),
+    ("XsKbUnitPickSetMaximumPop", 0x88F7E3, 0x0A),
+    ("XsKbUnitPickSetMinimumPop", 0x88F6C1, 0x0A),
+    ("XsTrPlayerGetPopulation", 0x98C439, 0x0A),
+    # decimalPopulation: the formatText data refs pop (22h), popcap (23h), futurepop (24h) and
+    # totalpop (25h) (FUN_005CFA7C), entries {id, type, name, provider}: mov [esp+2Ch],provider /
+    # call 5ACE63h / test / je / mov edx,[esp+18h] (the id) / ... / mov [edi],edx /
+    # mov eax,[esp+1Ch] (the type: EBX = 2, int, here; 3 is text) / push ecx / lea ecx,[edi+8] /
+    # mov [edi+4],eax
+    ("RefPopReg", 0x5D0B47, 0x2B),
+    ("RefPopCapReg", 0x5D0BC3, 0x2B),
+    ("RefFuturePopReg", 0x5D0C3F, 0x2B),
+    ("RefTotalPopReg", 0x5D0CBB, 0x2B),
+    # decimalPopulation: their stock int providers, bool stdcall(Value*) (they write [value+4])
+    ("RefPopProvider", 0x6F2274, 0x0A),
+    ("RefPopCapProvider", 0x458244, 0x0A),
+    ("RefFuturePopProvider", 0x44CE3A, 0x0A),
+    ("RefTotalPopProvider", 0x45809D, 0x0A),
+    # decimalPopulation: colorizePop (6Ch, 0x6F5736): the argument parse call 6F2A1Dh
+    # (atoi of the text in parentheses, -1 on failure), then getPop + [player+78h] + N > getCap
+    # (red), then the "%s%d%s" format call
+    ("ColorizePopArg", 0x6F576F, 0x08),
+    ("ColorizePopFormat", 0x6F580C, 0x0C),
+    # decimalPopulation: BString sprintf 0x444EFB(dest, fmt, ...), cdecl, and the calls that print
+    # a population: unit help "Population: %d" (0x63F98D, 0x70FF3A, str 11725), the pop costs
+    # "{colorizePop(%d)}" (0x63FEC5, 0x70F58F, str 20395; 0x710651, str 37461 / 20395), the pop
+    # counter's help "%d %s = %d" (0x6F2DB5) and str 18963 with getCap (0x6F2E34)
+    ("BStringFormat", 0x444EFB, 0x14),
+    ("PopFormatHelp", 0x63F98D, 0x08),
+    ("PopFormatHelp2", 0x70FF3A, 0x08),
+    ("PopFormatCost", 0x63FEC5, 0x08),
+    ("PopFormatCost2", 0x70F58F, 0x08),
+    ("PopFormatCost3", 0x710651, 0x08),
+    ("PopFormatCapLine", 0x6F2DB5, 0x08),
+    ("PopFormatCap", 0x6F2E34, 0x08),
 ]
 
 

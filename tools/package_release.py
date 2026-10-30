@@ -149,6 +149,7 @@ Keys
 ignoreRegistryPath            read the game data from the mod folder
 deckCardCount N               decks of more than 25 cards
 basePop N, extraPop N         higher population limits (no 250 cap)
+decimalPopulation [K] [log]   population with decimals (PopulationCount 0.5), steps of 1/K
 noAILimit                     every AI3\\*.personality file in game setup
 customRevolutionBanners       a banner for every XPRevolution<Name> tech
 removeFameRestriction         Fame, XP and shipment costs and icons
@@ -162,6 +163,8 @@ smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt un
 damageOverTime [log] [noticktext]   poison: attacks with <AttachProtoUnit> damage over
                               time (+ AttachMaxStacks, AttachSnare, AttachTickText)
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
+dodgeChance T P [tech X | notech] [ranged | melee | all] [log]   dodge chance P % per
+                              unit type, with a tech (YPDodge by default) and a hit filter
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
 spreadAnyAccuracy [UnitType] [log]   <MaxSpread>/<SpreadFactor> per attack for every miss;
                               marked units scatter every shot (area damage where it lands)
