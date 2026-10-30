@@ -247,7 +247,7 @@ multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-ga
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags in the tactics files or `<ProtoAction>`; the unit type and a `<DamageArea>` on the attacks that should always scatter. | confirmed (single player) |
-| [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech. | Nothing. | confirmed (single player, `Maintain`) |
+| [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. | confirmed (single player) |
 | [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Techs with `<TypeCount>` prerequisites in `techtreey` (stock data has none). | confirmed (single player) |
 | [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | That unit type on the producing buildings in `protoy`, or the name of an existing type or proto. | confirmed (single player) |
 | [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | Nothing. | confirmed (single player) |
@@ -1093,30 +1093,57 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
 *In game:* Both Blood Factories already stand; a BuildingWorkRate 4 tech for player 1 speeds up its existing factory (musketeer counts, top left; 2x speed). [Full video (MP4)](media/liveBuildingWorkRate.mp4).
 
+![liveBuildingWorkRate with TrainPoints in game](media/liveBuildingWorkRate-trainpoints.gif)
+
+*TrainPoints:* Six settlers were queued at 12 s, with Settler `TrainPoints` 25; a test tech sets them to 6.25 at 30 s. The settler in training finishes at once (it already had more than 6.25 points of work) and the five already queued are trained in 6.25 s each; the log lines are at the top (2x speed). In stock all six would take 25 s. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints.mp4).
+
 ```
 liveBuildingWorkRate [log]
 ```
 
-- **How stock behaves:** a building's `<BuildingWorkRate>` (1.0 on every stock proto) scales how
-  fast it trains units, researches techs and spawns the units of its `Maintain` actions. The exe
-  copies the proto's value into the building once, when the building is completed (for a unit
-  with the flag `ForceBuildingData`, when it is created), and the train, research and `Maintain`
-  code read that copy. A tech effect `type='Data' subtype='BuildingWorkRate'` changes only the
-  proto. So the buildings completed after the tech get the new speed, and the ones already
-  standing keep the old one, although their stat panel shows the new value. Loading a saved game
-  copies the value again for completed buildings, so the bug seems to vanish after a save and
-  load.
-- **Effect:** every building and `ForceBuildingData` unit trains, researches and spawns at its
-  proto's current `BuildingWorkRate`. A `BuildingWorkRate` tech therefore applies at once to
-  everything that exists, in both directions (a tech that is removed again, a trigger, any later
-  change of the value). Units without building data already worked this way in stock.
+- **How stock behaves:** two kinds of tech change how fast units are trained, and stock applies
+  both late (WoL request #5, "workrate techs only affect units / buildings created after the
+  tech"):
+  - **`BuildingWorkRate`** (`type='Data' subtype='BuildingWorkRate'`, 15 techs in WoL). A
+    building's `<BuildingWorkRate>` (1.0 on every stock proto) scales how fast it trains units,
+    researches techs and spawns the units of its `Maintain` actions. The exe copies the proto's
+    value into the building once, when the building is completed (for a unit with the flag
+    `ForceBuildingData`, when it is created), and the train, research and `Maintain` code read that
+    copy. The tech changes only the proto. So the buildings completed after the tech get the new
+    speed, and the ones already standing keep the old one, although their stat panel shows the new
+    value. Loading a saved game copies the value again for completed buildings, so the bug seems to
+    vanish after a save and load.
+  - **`TrainPoints`** (`type='Data' subtype='TrainPoints'` on the trained unit, 328 techs in WoL).
+    Each queued unit (or batch) takes the unit's TrainPoints when it is queued and keeps them. A
+    tech therefore misses the unit in training and every unit already in the queue, on old and new
+    buildings alike; only the units queued after the tech train faster. A `Maintain` action takes
+    them when its cycle starts, so the current cycle keeps the old time.
+  - **Already live in stock:** `ResearchPoints` (`type='Data' subtype='ResearchPoints'` on a tech,
+    85 techs in WoL). A research reads them on every tick, so the tech reaches every building, even
+    a research in progress (in game: one at 17 of 30 points finished at once when the tech set
+    7.5). WoL has no `WorkRate` / `WorkRateSpecific` effect with `action='Train'` or `'Research'`.
+- **Effect:**
+  - every building and `ForceBuildingData` unit trains, researches and spawns at its proto's
+    current `BuildingWorkRate`;
+  - a unit in training or in a queue, and the current `Maintain` cycle, take the trained unit's
+    current `TrainPoints` on every tick. The progress already made is kept in points, as it is for
+    research: when the points drop below it, the unit is done at once.
+
+  So both techs apply at once to everything that exists, in both directions (a tech that is
+  removed again, a trigger, any later change of the value). Units without building data already
+  worked this way for `BuildingWorkRate` in stock.
 - **Your mod:** nothing. It works with the techs you have:
 
   ```xml
   <Effect type ='Data' amount ='2.00' subtype ='BuildingWorkRate' relativity ='BasePercent'>
       <Target type ='ProtoUnit'>Stable</Target></Effect>
+  <Effect type ='Data' amount ='0.75' subtype ='TrainPoints' relativity ='BasePercent'>
+      <Target type ='ProtoUnit'>Musketeer</Target></Effect>
   ```
 
+- **`YPForceTrainAtBaseTrainPoints`:** a trainer whose proto has this flag (stock: the Confucian
+  Academy and Summer Palace wonders) trains at the base proto's TrainPoints, which no tech changes
+  (stock rule); the key keeps that rule.
 - **Not covered:** the action rates. `type='Data' subtype='WorkRate'` effects (gathering,
   building, healing, …) and `type='Data2' subtype='WorkRateSpecific'` effects are read live by
   stock already (static reading), so they already reach existing units; this key does not change
@@ -1124,29 +1151,58 @@ liveBuildingWorkRate [log]
 - **Transformed buildings:** a building that changes proto in place (a `TransformUnit` tech) now
   works at the new proto's rate; stock kept the old proto's copy. With stock data there is no
   difference, since every stock proto has 1.0.
-- **`log`:** one line for each building whose speed this key changes, the first time it works at
-  the new rate, and again only if the rate changes later. Use it to check your data, not in a
-  release.
+- **`log`:** one line for each building whose speed this key changes, and for each trainer and
+  unit type whose points it changes, the first time and again only if the values change later.
+  Use it to check your data, not in a release.
 - **Log:** at startup `liveBuildingWorkRate: train, research and Maintain speed follow the
-  proto's current BuildingWorkRate (multiplayer unverified)` (with `log`:
-  `…BuildingWorkRate, every building it changes logged (multiplayer unverified)`); in a game,
-  `hook reached: liveBuildingWorkRate (0x9BFE33)` the first time any building trains, researches
-  or spawns. With `log`: `liveBuildingWorkRate: unit N (Proto, player P) works at
-  BuildingWorkRate 4.000, not its snapshot 1.000`.
+  proto's current BuildingWorkRate, and queued, training and Maintain units their current
+  TrainPoints (multiplayer unverified)` (with `log`: `…TrainPoints, every building and unit it
+  changes logged (multiplayer unverified)`). In a game, `hook reached: liveBuildingWorkRate
+  (0x9BFE33)` the first time any building trains, researches or spawns, `hook reached:
+  liveBuildingWorkRate TrainPoints (0x9EA1FA)` the first time a unit trains, and `hook reached:
+  liveBuildingWorkRate Maintain TrainPoints (0x9E27E4)` the first time a `Maintain` cycle runs.
+  With `log`:
+  - `liveBuildingWorkRate: unit N (Proto, player P) works at BuildingWorkRate 4.000, not its
+    snapshot 1.000`;
+  - `liveBuildingWorkRate: unit N (TownCenter, player 1) trains Settler at TrainPoints 6.250, not
+    the 25.000 it was queued with`;
+  - `liveBuildingWorkRate: unit N (BloodFactory, player 1) spawns Musketeer at 7.500 points per
+    cycle, not the 30.000 its cycle started with`.
 - **Limits:**
-  - with `log`, a unit is logged once per unit ID and pair of rates in a game; a new game starts
-    the list again;
+  - with `log`, a unit is logged once per unit ID (and trained type) and pair of values in a game;
+    a new game starts the list again;
   - whether a building under construction can train or research was not checked. If it can, it
     now uses the proto's rate there, where stock used 1.0. `Maintain` never runs on an unfinished
-    building.
-- **Simulation:** yes. Saved games load with or without the key: the building's copy is still
-  kept and saved as in stock.
-- **Status:** confirmed in single player (2026-10-29). Each of two players got a `BloodFactory`
-  (which spawns musketeers through a `Maintain` action) at 1 s; at 20 s a test tech gave player
-  1's `BloodFactory` `BuildingWorkRate` 4. At 112 s player 1 had 12 musketeers and player 2 had 3.
-  With the key off, both had 3 (the bug). The log showed `works at BuildingWorkRate 4.000, not its
-  snapshot 1.000` for player 1's factory. Training and research use the same code path but were
-  not tested.
+    building;
+  - a queued unit that has not started yet keeps the points it was queued with until it starts
+    (nothing reads them before), so the queue panel may show its old time until then.
+- **Simulation:** yes. Saved games load with or without the key: the building's copy and the
+  queued points are kept and saved as in stock (with the key, the values it last wrote).
+- **Status:** confirmed in single player.
+  - 2026-10-29, `Maintain`: each of two players got a `BloodFactory` (which spawns musketeers
+    through a `Maintain` action) at 1 s; at 20 s a test tech gave player 1's `BloodFactory`
+    `BuildingWorkRate` 4. At 112 s player 1 had 12 musketeers and player 2 had 3. With the key
+    off, both had 3 (the bug).
+  - 2026-10-30, train and research. A scenario: player 1's Town Center and Market placed by the
+    map, a second Town Center and Market created 5 s after the test tech (30 s); the train and
+    research progress read from memory every second.
+    - `BuildingWorkRate` 4 on `TownCenter` and `Market`. Key off: the existing Town Center trained
+      every settler in 25 s, also those queued after the tech; the new one in 6.25 s; the existing
+      Market took 30 s for a research the tech landed in and 20 s for `HuntingDogs` after it, the
+      new Market 7.5 s for `Gangsaw` (30 points). Key on: the settler in training sped up at 30 s
+      and every later one took 6.25 s; the research in progress finished 3.2 s after the tech, and
+      `HuntingDogs` took 5 s.
+    - `TrainPoints` ×0.25 on `Settler` and `Musketeer`. Key off: the three settlers queued before
+      the tech took 25 s each, though two of them started after it; the settlers queued after it
+      took 6.25 s on the old and the new Town Center; the factory's current cycle kept 30 points.
+      Key on: the settler in training finished at the tech and the queued ones took 6.25 s; the
+      cycle took the new 7.5 points at once. The same with `buildingWorkRateAuras`,
+      `noTrainNearEnemyTC` and `maintainWaitForPop` on, and again after loading a game saved
+      before the tech.
+    - `ResearchPoints` ×0.25: live in stock, with or without the key.
+  - An AI skirmish with the key and those three keys on: both AIs trained and built, with no XS
+    error.
+  - `liveBuildingWorkRate foo`: logged as an unexpected argument, the key not applied.
 - **New in this DLL:** not in UHC 1.10. WoL request #5 ([wol-requests.md](wol-requests.md)).
 
 ### techPrereqRecheck

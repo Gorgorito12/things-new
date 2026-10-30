@@ -96,7 +96,9 @@ design below is ours.
 - **Q6 / #19:** ask Punchline, another WoL developer. No action until then.
 - **#5:** the techs that change train and research work rate, and those that change building work
   rate, must apply to buildings that already stand. `liveBuildingWorkRate` covers `BuildingWorkRate`;
-  train and research `WorkRate` techs are to be checked in game.
+  train and research `WorkRate` techs are to be checked in game. Done 2026-10-30 (see the row):
+  `TrainPoints` techs missed the units already queued, now covered by the same key;
+  `ResearchPoints` techs were already live.
 - **#25:** yes. `<ScaleByContainedUnits>1` must also work on AutoGather actions, not only on attacks.
 - **#29, #30, #31:** use DE's names. When a DE name carries "DE" (e.g. the tech flag
   `DECheckBuildLimit`), use it without that prefix.
@@ -130,7 +132,7 @@ Ordered by gameplay impact, then expected effort.
 
 | # | Request | Kind | Notes | Status |
 |---|---|---|---|---|
-| 5 | Workrate techs only affect units / buildings created after the tech; they should be global. | bug | `liveBuildingWorkRate [log]`: a `BuildingWorkRate` tech now reaches the buildings that already stand (a BloodFactory given rate 4 after it was built spawned 12 musketeers in 112 s, against 3 without the key). Action `WorkRate` / `WorkRateSpecific` techs are already live in stock (static reading); ask for a failing tech if those were meant. | confirmed in game (single player) |
+| 5 | Workrate techs only affect units / buildings created after the tech; they should be global. | bug | `liveBuildingWorkRate [log]`. WoL changes train and research speed with three effect forms, measured in game (2026-10-30, a Town Center and Market that already stood and a pair created after the tech; progress read from memory): **`BuildingWorkRate`** (22 effects, 15 techs): stock missed existing buildings (25 s per settler, a research the tech landed in unchanged); with the key they trained in 6.25 s with BuildingWorkRate 4, the settler and the research in progress sped up at once. **`TrainPoints`** (581 effects, 328 techs): stock stores them per queued unit when it is queued, so units queued before the tech kept 25 s even when they started after it, on any building, and a `Maintain` cycle kept its points; the key now refreshes them every tick (in game: the queued settlers took 6.25 s, the one in training finished at once). **`ResearchPoints`** (211 effects, 85 techs): live in stock, also mid-research. No `WorkRate` / `WorkRateSpecific` effect has `action='Train'` or `'Research'`. Also tested with `buildingWorkRateAuras`, `noTrainNearEnemyTC`, `maintainWaitForPop`, a loaded game and an AI skirmish ([modding guide](modding-guide.md#livebuildingworkrate)). | confirmed in game (single player) |
 | 6 | Tech `kb` prereqs on living / dead unit counts are only re-checked when max pop changes (e.g. building houses). Re-check every 1–2 s if it is cheap. | odd logic | `techPrereqRecheck [N] [full] [log]`: techs with `<TypeCount>` prerequisites activated in the same world update as the unit's creation or death, instead of at the next unrelated tech change, for about 4 ms of checks per game minute with 2 such techs. | confirmed in game (single player) |
 | 7 | A building's `Lifespan` starts when the foundation is placed instead of when construction finishes. | bug | `lifespanAfterConstruction [UnitType] [log]`: a marked Outpost (`Lifespan` 20) was held through its construction and died 20 s after it was finished; unmarked, it died as a foundation. | confirmed in game (single player) |
 | 8 | Auto-produced units (factory cannons) restart their train timer when pop-capped, even though nothing was trained. | bug | `maintainWaitForPop [UnitType] [log]`: a capped Ottoman Town Center held its finished settler and spawned it right after two settlers died, where stock waited for a whole new cycle (factory cannons not tested). | confirmed in game (single player) |

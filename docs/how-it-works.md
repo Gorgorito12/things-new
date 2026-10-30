@@ -658,7 +658,7 @@ shot. Not measured with `perfStats`.
 
 ### liveBuildingWorkRate
 
-**The stock mechanism.**
+**The stock mechanism** (BuildingWorkRate).
 - A proto's `BuildingWorkRate` is the float `[proto+D0h]`.
 - A Building, or a unit whose proto has the flag `ForceBuildingData`, gets a building data object
   at `[unit+68h]` from setProto `0x4981F3`. Its init `0x4E5E8F` sets the copy `+28h` to 1.0.
@@ -687,6 +687,31 @@ test eax,eax`. The hook:
 The copy is still written at completion and saved and loaded with the unit; the getter was its
 only other reader.
 
+**TrainPoints, the stock mechanism** (WoL #5's "train work rate"; `engine-symbols.md`, "Train
+points").
+- Every queued unit or batch is its own Train action (the train command FUN_009CE2BE creates one per
+  queue entry). The enqueue FUN_009EAC35 stores the trained proto's TrainPoints in the action,
+  `[action+64h]` = `[playerProto+6Ch]`, once, for its first entry (0x9EB19F..0x9EB1DB). With the
+  trainer's flag `YPForceTrainAtBaseTrainPoints` (9Eh) it takes the database's base proto instead.
+- The update adds `rate × dt` to the progress `[action+68h]` (in points) and calls the fraction
+  function 0x9EA1FA, `[action+6Ch]` = progress / `[action+64h]`; at 1.0 the unit spawns.
+- So a TrainPoints tech reaches only the units queued after it, on any building; the unit in
+  training and the queued ones keep the old points (measured: a settler queued before the tech and
+  started after it still took 25 s).
+- `Maintain` is the same at the scale of a cycle: its start (FUN_009E2829) stores
+  `[action+6Ch]` = count × TrainPoints (base proto's, not multiplied, with flag 9Eh), and the
+  fraction 0x9E27E4 divides `[action+70h]` by it.
+- Research is already live: its fraction 0x9E5F19 divides by the tech's `[entry+18h]` on every tick.
+
+**The TrainPoints hooks.** A 9-byte `jmp` (+ 4 NOP) replaces the head of each fraction function,
+`fld [ecx+64h] / fcomp [0C3755Ch]` (Train) and `fld [ecx+6Ch] / fcomp [0C37468h]` (Maintain). Each
+hook calls `UhcTrainPointsRefresh` / `UhcMaintainPointsRefresh` (stdcall, the action) inside
+`pushad` / `popad`, re-executes the two instructions and continues at 0x9EA203 / 0x9E27ED. The C++
+computes the points with the stock rule (the trainer's player's proto by 0x45311B; the flag test
+0x44D063; the base proto by 0x45316E) and writes them into the action when their bits differ.
+Progress stays in points, so a unit with more progress than the new points is done at once, as a
+research is in stock.
+
 **Why it is safe.**
 - The hook returns with the stock ECX, ESP, EBX, ESI, EDI, EBP, EDX and EFLAGS, and one value on
   the x87 stack, as stock does. Only EAX differs (the proto, where stock left the building data).
@@ -697,6 +722,23 @@ only other reader.
   key changes nothing unless a trigger, a card or a mod changes the value.
 - A building transformed in place (FUN_009C754C keeps its building data and copies nothing) now
   uses the new proto's rate.
+- **The TrainPoints hooks** keep every register (`pushad` / `popad`) and run the stolen `fld` /
+  `fcomp` after the call, so the x87 stack and FPU status are the stock ones at the continuation,
+  whose `fnstsw` / `test` set the flags again. The x87 stack is empty on entry (each function's only
+  caller, 0x9EA4B3 / 0x6AB264, pops its sum first), so the C++ may use it. Both callers rely on
+  ECX surviving the call (the Train update's setState call at 0x9EA4CC, the Maintain spawn call at
+  0x6AB285); it does. No branch targets the 9 replaced bytes (capstone scan; the one rel8 candidate,
+  0x9E278D, is inside `add edi,78h`).
+- One `VerifyAll` checks the getter, its four callers, both fraction functions whole, and the four
+  pieces of stock code whose rule the C++ repeats (`TrainPointsProto`, `TrainPointsSet`,
+  `MaintainPointsProto`, `MaintainPointsSet`, which also pin the three engine calls).
+- The points come from the player's proto (or the base proto), simulation state that is the same on
+  every machine, and are written into the action, which the game saves as in stock. Per tick it is
+  one proto lookup and one flag test per training or `Maintain` action, with no allocation (the log
+  table only with `log`).
+- `maintainWaitForPop` verifies `MaintainCycleDone`, which holds the Maintain call 0x6AB264: the hook
+  is in the callee, so that site stays stock. A cycle it holds at 1.0 can drop below 1.0 when the
+  points grow, and then simply runs on.
 
 ### techPrereqRecheck
 
