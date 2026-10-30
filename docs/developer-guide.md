@@ -110,7 +110,10 @@ python -I tools/testbed.py close                # also deletes the uhc-* scenari
 there:
 - **Commands reach the game only through `perfExecFile`** (`src/features/perf.cpp`): every 30
   frames the DLL runs each line of `<bed>\uhc-exec.txt` as a console command and deletes the
-  file. Posted key presses never reach the console. `deploy` adds the key to the cfg.
+  file. Posted key presses never reach the console. `deploy` adds the key to the cfg. The
+  console has no trigger or AI syscalls: `uiMessageBox("…")` works, but a command that calls
+  `trPlayerGetPopulation`, `kbGetPop` or `trChatSend` does nothing (it does not compile there).
+  Test XS syscalls in an AI skirmish or through a trigger.
 - **The map** is a random map script written to the copy's `RM3` folder. `p<N>=Proto*count@x,z`
   places units of player N (x, z are fractions of the map side); `tech<N>=Name` adds a trigger
   that makes a tech active for player N. A trigger's tech parameter is the tech's **index in

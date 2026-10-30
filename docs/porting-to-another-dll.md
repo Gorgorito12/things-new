@@ -17,7 +17,7 @@ This guide covers these features that are new in this DLL:
     `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`,
     `techRenameEffect`, `noCorpseDopples` and `danceBonusCivs`;
   - Tier 1 and Tier 3: `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
-    `overhealHitpointBars`, `showGatherRate` and `buildingWorkRateAuras`.
+    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras` and `decimalPopulation`.
 
 `bufferedFileReads` is not covered yet. Its design is in
 [how-it-works.md](how-it-works.md#bufferedfilereads), and its code is
@@ -158,6 +158,16 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `StatPanelAutoGatherGate`, `StatPanelRowWriter`, `StatPanelRowFormat`, `DataRefStub`, `DataRefStringEval`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BStringFromId`, `BStringAssign`, `BStringFree` | `0x4D76FF`, `0x69AF7C`, `0x69B02A`, `0x5FDE49`, `0x44A635`, `0x6F49B1`, `0x45EE02`, `0x44CAC4`, `0x60782A`, `0x58EA52`, `0x443BB8`, `0x4010CA` | `0x135`, `0x64`, `0x15D`, 5, `0x64`, `0x41`, `0x35`, `0x46`, `0x22`, `0x19`, `0x0F`, `0x1F` B | — | — | the gate the panel hook mirrors, the row writer and formatter it reuses, the stub and the string evaluator, the current-unit lookup, and the functions the C++ side calls; showGatherRate (also `IsBuilt`, `IsA`) |
 | `ModifyTypeNameTail` | `0x5FE6C7` | `0x1B` B | 6 B at `0x5FE6D7` (`jmp` + 1 NOP) | `F7 D8 1B C0 24 F1` (`neg eax; sbb eax,eax; and al,0F1h`) | tail of the ModifyType parser FUN_005F5645, through the `pop esi; add eax,0Eh; ret` at `0x5FE6DD`; buildingWorkRateAuras name hook |
 | `ModifyTypeNameCompare`, `BwrTrainCallNext`, `BwrGetterTail`, `BwrGatherRateRecord`, `BwrGatherRateRule` | `0x443C10`, `0x9EA418`, `0x9BFE38`, `0x4ECFE9`, `0x69FE53` | `0x10`, `0x0C`, `0x10`, `0x14`, `0x1C` B | — | — | the head of the name compare the hook calls, the Train call's continuation up to its first write of EAX, the getter after its first two instructions, and the GatherRate reader whose rule the factor mirrors; buildingWorkRateAuras (also `SnareCollector`, `SnareModifierSum`, `SnareModifierSumEnd`, `SnareModifierSumTactic`, and the getter head `BuildingWorkRateGetter`, which must be stock or liveBuildingWorkRate's `jmp`) |
+| `PopCountParse`, `PopCapAddParse` | `0x5FB92E`, `0x5FD719` | `0x1E` B each | 5 B at each (call rel32) | `E8 …` (`call 59A71Dh`) | the `%d` parse of `<PopulationCount>` / `<PopulationCapAddition>`; decimalPopulation |
+| `PopCountEffect`, `PopCapAddEffect` | `0x8FA835`, `0x8FA8CF` | `0x1D`, `0x1A` B | 5 B at each (call rel32); 4 B at `0x8FA84A` (imm32, K) | `E8 …` (`call 7F899Bh`); `01 00 00 00` | the int effect calls of the PopulationCount / PopulationCapAddition proto effects, and PopulationCount's floor `mov eax,1`; decimalPopulation |
+| `PopCapEffectAdd`, `PopCapEffectRemove` | `0x8D87AB`, `0x8D20AB` | 8 B each | 8 B at each (`jmp` + 3 NOP) | `D9 44 24 34 D9 7C 24 34`; `D9 44 24 20 D9 7C 24 20` (`fld [esp+X]; fnstcw [esp+X]`) | the amount of the player effect PopulationCap and of its removal; decimalPopulation (continues at `0x8D87B3` / `0x8D20B3`) |
+| `TeamPopCap` | `0x679694` | `0x26` B | `0x24` B at `0x679694` (`jmp` + NOPs) | `3D C8 00 00 00` (`cmp eax,0C8h`) | getCap's shared-team path; decimalPopulation (continues at `0x6796B8`) |
+| `StartPopBonus` | `0xA0D2D1` | 9 B | 8 B at `0xA0D2D1` (`jmp` + 3 NOP) | `03 C3 03 86 20 03 00 00` (`add eax,ebx; add eax,[esi+320h]`) | the game-start cap bonus; decimalPopulation (continues at `0xA0D2D9`) |
+| `Xs*` (19: `XsAiGetAvailableEconomyPop` … `XsTrPlayerGetPopulation`) | see `tools/gen_sites.py` | `0x0A` B each | 4 B at each `+1` (the impl imm32 of `push impl`) | the stock impl addresses | the XS registrations of the population syscalls; decimalPopulation |
+| `RefPopReg`, `RefPopCapReg`, `RefFuturePopReg`, `RefTotalPopReg` | `0x5D0B47`, `0x5D0BC3`, `0x5D0C3F`, `0x5D0CBB` | `0x2B` B each | 4 B at `+4` (provider imm32) and 4 B at `+20h` (`push 3; pop eax; nop`) | the stock provider; `8B 44 24 1C` (`mov eax,[esp+1Ch]`) | the registration of the data refs pop, popcap, futurepop, totalpop; decimalPopulation |
+| `ColorizePopArg`, `ColorizePopFormat` | `0x6F576F`, `0x6F580C` | 8, `0x0C` B | 5 B at each (call rel32) | `E8 …` (`call 6F2A1Dh`, `call 444EFBh`) | colorizePop's argument parse and its print; decimalPopulation |
+| `PopFormatHelp`, `PopFormatHelp2`, `PopFormatCost`, `PopFormatCost2`, `PopFormatCost3`, `PopFormatCapLine`, `PopFormatCap` | `0x63F98D`, `0x70FF3A`, `0x63FEC5`, `0x70F58F`, `0x710651`, `0x6F2DB5`, `0x6F2E34` | 8 B each | 5 B at each (call rel32) | `E8 …` (`call 444EFBh`) | the sprintf calls that print a population; decimalPopulation (**WoL redirects `0x710651`**) |
+| `RefPopProvider`, `RefPopCapProvider`, `RefFuturePopProvider`, `RefTotalPopProvider`, `IntEffect`, `BStringFormat`, `PopLimit` | `0x6F2274`, `0x458244`, `0x44CE3A`, `0x45809D`, `0x7F899B`, `0x444EFB`, `0x4581F3` | `0x0A` ×4, `0x23`, `0x14`, `0x50` B | — (`PopLimit`: basePop's cap hook, see below) | — | the stock functions the wrappers call, and the cap hook decimalPopulation scales; decimalPopulation |
 
 The full expected bytes of every range are in [`src/generated/sites.h`](../src/generated/sites.h),
 generated from the stock exe by [`tools/gen_sites.py`](../tools/gen_sites.py). Two features write
@@ -170,6 +180,9 @@ leaves the Train call to noTrainNearEnemyTC when that key owns it
 of `FirstTcProtoCheck`. No other write falls inside another feature's range (checked with a script
 over `tools/gen_sites.py` and the written addresses, 2026-10-29, again after civFirstTC and
 `GatherPointValid` were added), so any combination of keys can be enabled together.
+decimalPopulation and basePop/extraPop share the cap hook (`PopLimit`): it is written once, by
+basePop/extraPop when they are set, otherwise by decimalPopulation, which is applied after them
+and only sets the scale the hook reads.
 
 **Status for Wars of Liberty: not checked.**
 - None of these addresses appears among the WoL `uhc.dll` sites found so far
@@ -227,6 +240,10 @@ over `tools/gen_sites.py` and the written addresses, 2026-10-29, again after civ
     panel fill, and passes `0x5D31CA` / `0x5D31D1` (the end of the data-ref registration) to a
     helper. None of them overlaps these ranges (dword scan of the DLL), but check that `0x4ED044`
     is still reached with the same entry state in WoL's build;
+  - `decimalPopulation`: a dword scan of WoL's `uhc.dll` and `wol.dll` over its ranges finds
+    WoL's basePop hook at `0x4581F3` (scale it, see the contract) and the call redirections at
+    `0x71063C` / `0x710651` of WoL's `DoubleShipmentsInspectFixFeature` (chain them with the
+    population text wrapper); nothing else;
   - `transformInventory`, `noTrainNearEnemyTC`, `overhealHitpointBars`: not checked against WoL's
     patches. `docs/wol-uhc-map.md` mentions none of their sites;
   - `civFirstTC` and the `FirstTC` keyword of `hcShipmentPointFallback` (`GatherPointValid`): not
@@ -269,6 +286,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/notrainneartc.cpp`](../src/features/notrainneartc.cpp), [`src/hooks/notrainneartc_hooks.asm`](../src/hooks/notrainneartc_hooks.asm) | `noTrainNearEnemyTC`. | unittypes (and `OnDatabaseLoad` for `log`), sites `WorkRateTrainCall`, `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById*`, `UnitById*`, `PlayerIsEnemy`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`; the data symbol `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`; define it yourself as `0x9BFE33` without that feature); your cfg reader (`Config::All`) |
 | [`src/features/overheal.cpp`](../src/features/overheal.cpp), [`src/hooks/overheal_hooks.asm`](../src/hooks/overheal_hooks.asm) | `overhealHitpointBars`. | unittypes, sites `Overheal*`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag`, `IsA`, `IsATrue`, your cfg reader |
 | [`src/features/gatherrate.cpp`](../src/features/gatherrate.cpp), [`src/hooks/gatherrate_hooks.asm`](../src/hooks/gatherrate_hooks.asm) | `showGatherRate`. | unittypes (only with a UnitType), sites `GatherTick*`, `StatPanel*`, `GatherRateStringRef`, `DataRef*`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BString*`, `IsBuilt`, `IsA`, `WriteDword`, your cfg reader |
+| [`src/features/decimalpop.cpp`](../src/features/decimalpop.cpp), [`src/hooks/decimalpop_hooks.asm`](../src/hooks/decimalpop_hooks.asm), and the cap hook in [`src/features/limits.cpp`](../src/features/limits.cpp) / [`src/hooks/limit_hooks.asm`](../src/hooks/limit_hooks.asm) | `decimalPopulation`. | sites `PopCountParse`, `PopCapAddParse`, `PopCountEffect`, `PopCapAddEffect`, `IntEffect`, `PopCapEffect*`, `TeamPopCap`, `StartPopBonus`, `Xs*`, `Ref*`, `ColorizePop*`, `BStringFormat`, `PopFormat*`, `PopLimit`; `WriteCall`, `WriteDword`, `WriteBytes`, `UhcTraceHook`; your cfg reader |
 | [`src/features/bwrauras.cpp`](../src/features/bwrauras.cpp), [`src/hooks/bwraura_hooks.asm`](../src/hooks/bwraura_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `buildingWorkRateAuras`. | sites `ModifyTypeName*`, `Bwr*`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall`, `SnareCollector`, `SnareModifierSum*`, `BuildingWorkRateGetter`; liveBuildingWorkRate's `UhcBwrGetterHook` symbol for the getter-head check (or drop that check); `WriteCall`, `Matches`; your cfg reader |
 
 Every feature also needs `VerifyAll`, `WriteJmp`, `Log` and `TRACE_ONCE`, listed below.
@@ -1107,6 +1125,42 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Stat 40h** is this DLL's number for BuildingWorkRate. Keep it, or agree on another one, if your
   DLL adds its own ModifyTypes.
 
+### decimalPopulation
+
+- **Globals:** `g_uhcPopScale` (K; 1 without the key) and `g_uhcPopStockClamps` (1 when this key
+  installs the cap hook itself), both read by the cap hook of basePop/extraPop
+  (`src/hooks/limit_hooks.asm`).
+- **Cap hook** at `0x4581F3` (basePop's): every limit is in whole population and is multiplied by
+  K: base + extra, the bonus `[player+4F4h]`, and with the stock clamps on, `[world+31Ch]` + extra
+  and 250. **In WoL** this site is WoL's own basePop/extraPop hook
+  (`ExtendLimitsByXmlFeature?`): scale its limits the same way instead of installing this one.
+- **Parse calls** (`0x5FB92E`, `0x5FD719`): `bool __cdecl f(const char* text, int* out)`. The
+  text is ANSI. `out` is the handler's argument slot; `out + 1` holds the proto. Write
+  `round(value × K)` and return true, or return false (the stock error path).
+- **Effect calls** (`0x8FA835`, `0x8FA8CF`): `void __cdecl f(rel, int* out, int base, float
+  amount, negate)` with the stock five arguments; call `0x7F899B` with `round(amount × K)` for
+  relativity 1 (or any value but 0, 2, 3), `amount × K` for 3, and for 2 with relativity 1 and
+  `lround(base × amount − base)`. Write K into the imm32 at `0x8FA84A`.
+- **PopulationCap hooks** (`0x8D87AB`, `0x8D20AB`): `fld [esp+X]; fimul K; frndint; fnstcw
+  [esp+X]`, continue 8 bytes later. X = 34h / 20h.
+- **Team cap** (`0x679694`): EAX = an ally's raw cap; `min(EAX, 200 × K, [world+31Ch] × K)`;
+  ECX, EDX free; continue at `0x6796B8`. **Start bonus** (`0xA0D2D1`): EAX += (EBX +
+  `[ESI+320h]`) × K, keep EBX, EDX free; continue at `0xA0D2D9`.
+- **XS wrappers:** cdecl, two arguments read in place (declare none: a caller may push fewer, and
+  a declared parameter's slot can be reused as scratch); call the stock impl from the site's
+  bytes with both. Getters divide (half away from zero; `kbGetPopSlots` rounds a positive value
+  up; `kbUnitPickGet*` keep negatives); setters multiply a value ≥ 0 (argument 1, or 2 for
+  `kbUnitPickSet*`). Return the stock EAX.
+- **Data refs:** write the wrapper into the provider imm32 (`+4`) and `6A 03 58 90` at `+20h`;
+  the wrapper is `bool __stdcall f(Value*)`: type must be 3; call the stock provider with
+  `{2, 0}`; assign the text to the Value's BString (`0x443BB8`, `-1, -1`).
+- **colorizePop:** `int __cdecl f(BString* arg)`: the number after the first `(` × K, −1 if none.
+- **Format wrappers:** cdecl, arguments read in place: `(dest, format, a0..a3)`; replace the
+  i-th conversion (i = 0, or 1 at `0x6F580C`, 2 at `0x6F2DB5`) with `%s`, pass the text in its
+  slot, call `0x444EFB`. **In WoL** `0x710651` (and `0x71063C`) are redirected by
+  `DoubleShipmentsInspectFixFeature`: call this wrapper from WoL's replacement, or the reverse.
+- **Order:** after basePop/extraPop.
+
 ## 5. Integration rules
 
 - **Keep the cfg keys and their syntax:**
@@ -1138,7 +1192,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `overhealHitpointBars [UnitType ...] [log]` (default `AbstractOverheal`, up to 8 types, one
     line);
   - `showGatherRate [UnitType] [log]` (no default: every unit);
-  - `buildingWorkRateAuras [log]`.
+  - `buildingWorkRateAuras [log]`;
+  - `decimalPopulation [K] [log]`, K from 2 to 1000 (default 10).
 
   The [modding guide](modding-guide.md#5-feature-reference) then applies to your mod as written.
 - **Verify, then write.** Check all of a feature's ranges first, and write nothing if any range

@@ -27,6 +27,7 @@ add_library(UHC SHARED
   src/features/civfirsttc.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
+  src/features/decimalpop.cpp
   src/features/dodge.cpp
   src/features/dopples.cpp
   src/features/fame.cpp
@@ -61,6 +62,7 @@ add_library(UHC SHARED
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
   src/hooks/dance_hooks.asm
+  src/hooks/decimalpop_hooks.asm
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm
   src/hooks/dot_hooks.asm

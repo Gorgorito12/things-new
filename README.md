@@ -17,6 +17,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `ignoreRegistryPath` | Reads the game data from the mod folder instead of the Steam install. | confirmed |
 | `deckCardCount N` | Raises the 25-card deck cap. | confirmed above the level table (see the guide) |
 | `basePop N`, `extraPop N` | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | partly confirmed |
+| `decimalPopulation [K] [log]` | **New.** Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects, in steps of 1/K (default 10). The population counter and the tooltips show the decimals; AI scripts still see whole numbers. | confirmed (single player, also a skirmish vs AI) |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
@@ -118,14 +119,14 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 28 new features: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime`,
+  - 29 new features: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime`,
     `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
     `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
     `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
     `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,
     `danceBonusCivs`, `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
-    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `bufferedFileReads`,
-    `multipleInstances`. Most of them answer Wars of Liberty's requests
+    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras`, `decimalPopulation`,
+    `bufferedFileReads`, `multipleInstances`. Most of them answer Wars of Liberty's requests
     ([docs/wol-requests.md](docs/wol-requests.md)).
 - **In research:**
   - `unlockAllCards` (every card usable from a new home city): paused.
