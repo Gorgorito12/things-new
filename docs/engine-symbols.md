@@ -598,6 +598,23 @@ The in-game measurements read the actions from memory once a second (`docs/moddi
 | `ability` UI command | 0x7DDC52 | partly confirmed | `ability(int record, int unitId, bool doWhenNotSelected)`: the record by index through 0x44E702 (0x7DDCCC); no slot limit. |
 | Proto command entries | `[proto+E8h]`, 6-byte records | scoping | `{word id, byte kind (0 Train, 1 Tech, 2 Command), byte page, byte column}`, appended by 0x5F5F05, which skips its duplicate check for page 11. |
 
+### Player powers and the ceasefire (WoL #14, 2026-10-30)
+
+A power is cast per player, not per unit: the button of any unit only spends the player's charge of
+that power. Evidence: `rea/evidence/age3y-b1a1dab7/ceasefire14-bundle.json` (`ev_87a250ac…` for
+FUN_006ED5F6, `ev_3ffa4dd0…` and `ev_b14fb3f1…` for the two strings), capstone listings, and memory
+reads in game (`ceasefire14/powers.py`).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Power type `CeaseFire` | 19h, registered at 0x526D3A (string 0xBD6344) | confirmed | Next to `GoodFortune` (18h) and `stun` (1Ah). Nothing in the exe compares the caster's proto with the Taj Mahal. The only Taj Mahal reads are the proto name `ypTajMahal` into `[db+5FC4h]` (0x5EF2D1), compared at 0x694A5B with other wonder age-up protos (UI), and the tech names `YPWonderIndianTajMahal…`. |
+| `<alwaysaddtoplayer>` | powers.xml parser FUN_005F230D, 0x5F385C | confirmed | `or dword ptr [power+6Ch], 8` (0x5F3887). Its only reader is the grant below (0x6ED68D). |
+| Grant at game start | FUN_006ED5F6, `bool thiscall(abilityMgr, player*)`, `ret 4` | confirmed (static and in game) | Run once per player from the game start loop (0x6AED32..0x6AED9C, through 0x8D017B). For each ability record: the power is granted when the record has no tech, or its tech is already active (0x94AEF4), or the power has flag 8. Grant = `0x8D43B1(power, rof, now + rof)` and `0x8D75F5(power, 1)`. A record whose tech becomes active later grants nothing, and no tech effect grants it then (`PowerBalloon`, given by HC cards, carries `alwaysaddtoplayer` for this reason). |
+| Recharge list | `[player+3F0h]`, count `[player+3F4h]`, 12-byte entries `{power, rof ms, time ms}` | confirmed (memory) | One entry per power ID: a second record of the same power overwrites the ROF, so the last granted record sets the period of every caster (450 s for `ypPowerCeaseFire`, from the Taj Mahal records). After a cast, `time` = cast time + that ROF. |
+| Charge list | `[player+3E4h]`, count `[player+3E8h]`, 12-byte entries `{power, charges, recharging}` | confirmed (memory) | Found by 0x8D4306 (`entry* thiscall(player, power)`, `ret 4`). Granted with 1 charge; a cast sets `{0, 1}` until the recharge ends. |
+| Use a power | FUN_008D99D1, called from 0x8D9E0B and 0x8D9E6A | partly confirmed | Fails (0x8D9C20) when the player has no charge entry for the power or `charges` ≤ 0 (0x8D9A1D..0x8D9A30). In game the UI then prints string "This ability is not available" and nothing starts. |
+| Ceasefire state | the treaty (no-rush) object; `[obj+4]` end time, `[obj+9]` one-minute warning shown, `[obj+11h]` 1 for a ceasefire | partly confirmed | Its update (cold chunk 0x6776A8..) picks "one minute to the end of the Ceasefire" (69388) or string 46616, and "Ceasefire over" (69391) or 46617, from `[obj+11h]`, with the alert `ui\alerts\treatyend.xml`; the timer text is 69387 (0x8C1671). Sharing the treaty object is the likely reason a ceasefire cast in a Treaty game ends the treaty early (inference). |
+
 ### Lifespan and construction (for `lifespanAfterConstruction`)
 
 | What | Where | Status | Notes |

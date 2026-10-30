@@ -77,6 +77,9 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
 - **Q5 (#14):** any unit can cast a `CeaseFire` power: nothing checks the Taj Mahal. But every caster of `ypPowerCeaseFire` shares one charge per player, with the period of the last ability record granted at game start (the Taj Mahal's 450 s in practice). What exactly fails for you?
   (a) no button; (b) "This ability is not available"; (c) it works but shares the Taj Mahal's charge and 450 s recharge; (d) the effect should not hit everyone; (e) you want a ceasefire with extra effects.
   For (c), the fix is data only: a copy of `ypPowerCeaseFire` per caster, with its own name and `activetime`, plus `<alwaysaddtoplayer>1</alwaysaddtoplayer>` when its ability record has a `<tech>`. Do not add `allowduringnorush`: a ceasefire cast during a Treaty game ends the treaty early.
+  - **Answered and tested in game** (2026-10-30): (b) is what happens to a ceasefire power that no
+    record grants at game start; `ypPowerCeaseFire` itself works from any caster (shared charge,
+    case c). Details and the data fix under "second batch" below.
 - **Q6 (#19):** which dance failed? Its kind (`Training`, `XPTrickle`, `Gathering`, `Regeneration`, `UnitModification` with which ModifyType, or a new kind), the civ, the building (with or without `AbstractFirePit`), and what failed (no effect, a blank tooltip, no button).
   - The four global kinds apply only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`: for any other civ they silently do nothing, although the tooltip shows the bonus. This is now built and confirmed in game as `danceBonusCivs <Civ>…` (Healing Dance tested).
   - Only the first `AbstractFirePit` of a player counts, and a dance building needs `AbstractFirePit` to dance at all. Lifting either is more work.
@@ -93,6 +96,45 @@ design below is ours.
   rates for every target proto that carries that type.
 - **Q5 / #14:** the ceasefire cast by another unit "does not start at all". It needs an in-game
   repro: the static reading found nothing that ties it to the Taj Mahal.
+  - **Repro done (2026-10-30), data only, no DLL key.** In stock (our DLL with only
+    `ignoreRegistryPath`, editor-route scenarios, a Spanish player, a fight of 9 musketeers per
+    side), `ypPowerCeaseFire` given to other casters the way WoL does it (a `<tech>` on the record,
+    the tech made active after the start) **works**: a Town Center (WoL's `towncenter` record)
+    showed the ceasefire timer, and an Explorer (a unit, like WoL's `FurTrader`) froze every HP for
+    20 s, as the stock Taj Mahal did in the control run.
+  - **The failure is reproduced with a power the player never received.** Powers are granted per
+    player once, at game start, from the ability records: a record without a tech, or whose tech is
+    already active, or whose power has `<alwaysaddtoplayer>1</alwaysaddtoplayer>`. A cast spends
+    the player's charge, and with no charge entry it fails. A copy of the ceasefire (`type="CeaseFire"`,
+    another name) named only by tech-gated records shows its button once the tech is active, but
+    a click prints "This ability is not available" and the fight goes on (measured). The same copy
+    with `alwaysaddtoplayer` froze the fight for 20 s, with its own charge and period (120 s from its
+    record; the Taj Mahal kept its charge). `ypPowerCeaseFire` itself never fails this way because
+    the four Taj Mahal records, which have no tech, grant it to every player of every civ.
+  - **Data fix for WoL**, for a caster with its own charge and period: a power per caster in
+    `powers.xml`, a copy of `ypPowerCeaseFire` with its own name and `<alwaysaddtoplayer>1</alwaysaddtoplayer>`
+    (do not add `allowduringnorush`), named by that caster's record:
+
+    ```xml
+    <power name="WOLPowerCeaseFireTC" type="CeaseFire">
+        <displaynameid>62771</displaynameid>
+        <rolloverid>62765</rolloverid>
+        <icon>art\ui\abilities\ability_ceasefire</icon>
+        <minimapeventtime sendalertto="none">1</minimapeventtime>
+        <activetime>20</activetime>
+        <placement forceonmap="1" ally="">full</placement>
+        <soundset type="StartSound" listenertype="All">PowerCeaseFire</soundset>
+        <alwaysaddtoplayer>1</alwaysaddtoplayer>
+    </power>
+    ```
+
+    and in `abilities.xml`, `<towncenter>`: `<ability>WOLPowerCeaseFireTC<rof>450</rof><tech>WOLHCSupportHabsAustria</tech>…`
+    (the same for `furtrader` with a `WOLPowerCeaseFireFurTrader`, `rof` 180). Keeping
+    `ypPowerCeaseFire` on those records also works, but then every caster of a player shares one
+    charge with a 450 s period (the last record granted at game start: the Taj Mahal's).
+  - If WoL's ceasefire still fails after this, the cause is outside the legacy exe and data
+    (WoL's DLL registers its own `BetterCeaseFire` power type, which WoL's data does not use; its
+    other patches were not tested): a save or the exact steps would settle it.
 - **Q6 / #19:** ask Punchline, another WoL developer. No action until then.
 - **#5:** the techs that change train and research work rate, and those that change building work
   rate, must apply to buildings that already stand. `liveBuildingWorkRate` covers `BuildingWorkRate`;
@@ -141,7 +183,7 @@ Ordered by gameplay impact, then expected effort.
 | 11 | `AbstractMine` behaves oddly with gather-rate boosts: plantations have the tag, yet mining techs don't affect them. | odd logic | RE done (static): stock behaves the same. A `WorkRate` effect changes one exact rate key, and a gatherer that has its own rate for `Plantation` never reads its `AbstractMine` rate. Data fix: pair each mining tech with the same effect on `Plantation` (and the other plantation-like buildings), as stock does for `HCRoyalMint`. A DLL option is possible but makes the 100 WoL techs that already pair them apply twice. Question Q4. | RE |
 | 12 | Unit-train hotkeys don't work in buildings added by the mod (forge, gunsmith). | hardcode | `customHotkeyContexts [log]`: a keymap context named `<ProtoName>Accel` becomes that proto's context; three test contexts were registered and turned on when their units were selected, but the key press itself could not be tested. Only units that enter a hotkey context use it (a unit with a `<Train>` list, a fire pit, or the flag `EnterHotkeyContext`). | partly confirmed in game |
 | 13 | Snare spreads to the whole group when one unit is hit. | odd logic | `snareOnlyHitUnit [log]`: a snared musketeer counted 4.0 instead of 2.6 toward its group's pace and the group did not wait for it, per the log (no stock control run). Related: #38. | confirmed in game (single player, from the log) |
-| 14 | Ceasefire is hardcoded to the Indian wonder. | hardcode | RE done (static): nothing in the exe ties `CeaseFire` to the Taj Mahal. Every caster of `ypPowerCeaseFire` shares one charge per player, made at game start from the ability records; the Taj Mahal records give it a 450 s period. Data fix, no DLL: give each other caster its own `CeaseFire` power, with `<alwaysaddtoplayer>1</alwaysaddtoplayer>` when its ability record has a `<tech>`. Question Q5. | RE |
+| 14 | Ceasefire is hardcoded to the Indian wonder. | hardcode | Data fix, no DLL key (2026-10-30). Nothing in the exe ties `CeaseFire` to the Taj Mahal. A power is granted per player at game start (FUN_006ED5F6) from the ability records that have no tech, or an already active one, or whose power has `alwaysaddtoplayer`; a cast spends that player's charge and fails without one ([engine-symbols](engine-symbols.md#player-powers-and-the-ceasefire-wol-14-2026-10-30)). In game: `ypPowerCeaseFire` on a Town Center and on an Explorer, tech-gated as in WoL's data, stopped the fight for 20 s like the Taj Mahal (control), sharing its charge and 450 s period; a separate CeaseFire power named only by tech-gated records printed "This ability is not available" (the reported failure), and worked with its own charge once it had `<alwaysaddtoplayer>1</alwaysaddtoplayer>`. Data recipe in Q5. | confirmed in game (single player, data only) |
 | 15 | Barrage-type ship attacks (floating battery, long range) have a capped projectile count. | hardcode | `broadsideMuzzleLimit N [UnitType] [log]`: with `11 ypTekkousen` the Tekkousen fired from all 10 muzzles per side of its model instead of 6. A count independent of the model (`numberprojectiles`) is not provided. | confirmed in game (single player) |
 | 16 | A unit can have any number of powers (e.g. crackshot), but the UI shows only the first 6: a 7th power enabled for a civ, with the first 6 disabled, gets no button. | hardcode | `abilitySlots N [log]`: with `abilitySlots 8`, an Explorer whose first 6 abilities were locked showed buttons for its 7th and, once its tech was active, its 8th. | confirmed in game (single player) |
 | 17 | Tech rename / redescribe (WoL `enabletechrenameeffect`, effect `SetTechName`) applies globally, not per civ / player. | bug (WoL) | `techRenameEffect [log]` (also read as `enableTechRenameEffect`, with WoL's attributes): a rename showed for player 1 only, and the database's tech data, which the other players see, kept the stock string IDs. See [wol-uhc-map.md](wol-uhc-map.md). | confirmed in game (single player) |
