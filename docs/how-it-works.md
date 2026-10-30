@@ -246,8 +246,9 @@ stay as they are, and only the places where a population enters or leaves change
   now refuses them, which no UI asks for.
 - The format wrappers pass the arguments in the same slots (all 4 bytes), so a format whose
   conversion is missing (a translation) is printed by the stock call unchanged.
-- **Not covered** (scaled values shown as they are): the AI's debug text (0x7167EB) and, if they
-  show one, the post-game statistics. Saved games store the scaled values.
+- **Not covered** (scaled values shown as they are): the post-game timeline's population curves
+  (seen in game: 9 population drawn at 90) and the AI's debug text (0x7167EB). Saved games store
+  the scaled values.
 
 ### noAILimit
 
