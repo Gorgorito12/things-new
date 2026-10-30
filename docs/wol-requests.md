@@ -36,9 +36,33 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
   (b) every shot of a marked unit becomes a miss-with-offset, so it damages whatever is at the landing point;
   (c) the tactics' own `maxspread` / `spreadfactor` per action instead of the fixed 0.25 / 5 (needs parsing new tags: a bigger item);
   (d) `numberprojectiles` working, several pellets per shot (the biggest).
+  - **Answered** by JTMaston (2026-10-30, Discord):
+    - He wants `maxspread` respected whatever the accuracy. With accuracy 1 the shots must spread too.
+    - `numberprojectiles` is not needed (WoL sets it elsewhere).
+    - He believes the game reads `maxspread` or `spreadfactor`, and that the Escopetero's attack uses
+      it.
+    - DE's shotgun model is not relevant to WoL.
+  - **What we see** [O]: neither name is in the legacy exe or in WoL's `uhc.dll` (ASCII and UTF-16, 0/0).
+    The spread of a miss is the hardcoded `min(0.25 × distance, 5)` (engine-symbols.md, "Projectile
+    accuracy and spread"). So the Escopetero (`maxspread` 3, `spreadfactor` 1.5, accuracy 0.41) scatters
+    its misses like any other unit.
+  - [O] In WoL's tactics, 668 actions carry the spread tags with accuracy ≥ 1:
+    - 308 have `InstantBallistics` and 149 have `PerfectAccuracy`: sure hits, so the roll never runs;
+    - 211 have neither. [I] By the roll's formula, `accuracy × 100 − 0.5 × distance`, they can still
+      miss at range.
+  - [I] So the request becomes: parse `MaxSpread` and `SpreadFactor` per action (as `damageOverTime`
+    parses its tags), and apply `min(SpreadFactor × distance, MaxSpread)` to every shot of an action
+    that has them, hits included.
+  - **Open:** whether a scattered hit still damages its target or, like a miss, whatever is where it
+    lands. To be settled in game before choosing.
+  - **Proof offered:** an in-game test where changing `maxspread` changes nothing.
 - **Q2 (#3):** what is `StartingTC`: a unit type, a flag, a name in your data or DLL? The random maps already choose the starting building per civ if their script does; what goes wrong when a civ starts with another building (shipments, AI, Nomad, age-up, defeat, something else)? The part the placement rules read (`FirstTC`) is now `startingTC`.
   - **Answered in part** by WoL's developer Mandos, who redesigned the request: a `<firstTC>` tag per civ in `civs.xml`, substituted where map code places `TownCenter`, not in a Nomad start, and the building is the placementrules' FirstTC. Built as `civFirstTC`, with shipments through `hcShipmentPointFallback FirstTC` and the town starting units (see #3).
   - **Still open:** which of the other `TownCenter` checks matter for WoL: the AI scripts (a tagged AI stays idle), the engine AI's automatic main base, the age-up picker, the start camera, `trPlayerToggleAllowTCSpawning`, the `CoveredWagon` build limit, the water shipment point. They stay stock until WoL says.
+  - JTMaston (2026-10-30): "`startingTC` is a hardcoded tag, used in files like placementrules or
+    civs.xml". [O] `StartingTC` does not appear in WoL's data, DE's data, the legacy exe or WoL's
+    `uhc.dll`. The placementrules token is `FirstTC`, and the town-center proto flag is
+    `StartingColonyBuilding`; both are covered by `startingTC` / `civFirstTC`.
 - **Q3 (#4):** which conversion is it (`ConvertGuardian`, a trigger, a tech, livestock capture) and between which protos? What "breaks": a crash, lost or duplicated resources, a stuck unit? What we found, statically and then in game: a `TransformUnit` effect or a revolution changes a unit's proto but never its resource inventory (stock, not `removeConversionRestriction`), so an XP crate made from a coin crate still pays gold, and a crate made from a pet has no inventory and can never be gathered; converting or capturing such a unit afterwards zeroes the resources its proto does not list. `transformInventory` fixes the transform (confirmed in game). Please confirm that your case is one of these (e.g. `WOLNatAssyrianTWO`, `WOLHCBlueBreed`, `HCCardDogTaxWar`, then a capture); a save or a minimal data set would settle it.
 - **Q4 (#11):** stock works the same way. A `WorkRate` effect on `AbstractMine` changes only the gatherers' `AbstractMine` rate; a gatherer that has its own `Plantation` rate uses that one, so mining techs never reach plantations. Do you want mining techs to boost plantation-like buildings at all?
   - If yes, the data fix is to add, next to each such effect, the same effect with `unittype='Plantation'` (and `OlivePlantation`, `WOLPlantationIroquois`, `Beehive`, …), as stock does for `HCRoyalMint`. We can send the list of mining-only techs and the gatherers that lack a rate for one of these buildings.
@@ -114,7 +138,8 @@ DE parity and extras, in rough order.
 | 38 | `CantBeSlowed` tag (DE). | Marker via `unittypes.*`; related: #13. DE also has `CannotSnare`. Site: 0x4DD201 (ESI target, `[ebp+10h]` attacker; skip → 0x48FA49) ([de-parity](de-parity.md#38-cantbeslowed)). | RE |
 | 39 | `DetonationDeath` (DE). | DE: the flag and `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` ([de-parity](de-parity.md#39-detonationdeath)). | open |
 | 40 | Flag for units and shipments to be trained ahead of the queue. | DE: proto flag `DoNotQueue` (units only). Legacy knows `DoNotQueue` only as a tech flag, with no reader found ([de-parity](de-parity.md#40-train-a-unit-ahead-of-the-queue)). | RE |
-| 41 | Reversible transformations on a timer. | DE: `SwapUnit` power with `<reversible/>` and `<activetime>`. Legacy's `SwapUnit` never swaps back (mutate → 0x9C754C, else destroy and create) ([de-parity](de-parity.md#41-reversible-transformation-on-a-timer)). | RE |
+| 41 | Reversible transformations on a timer. | JTMaston's design (2026-10-30): an attribute `transformspan` (seconds) on the `TransformUnit` effect; when it ends, the surviving units turn back into their previous unit. Legacy's effect apply (0x7FBBAF) transforms in place with 0x9C754C, which keeps the unit ID, so a timer (`worldtick.cpp`) can turn the same IDs back. DE: `SwapUnit` power with `<reversible/>` and `<activetime>`. Legacy's `SwapUnit` never swaps back (mutate → 0x9C754C, else destroy and create) ([de-parity](de-parity.md#41-reversible-transformation-on-a-timer)). | RE |
 | 42 | DE veterancy bonus. | DE: `VeterancyBonus` ranks + `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) ([de-parity](de-parity.md#42-veterancy-bonus)). | open |
 | 43 | `NativePreview` (DE). | DE: a flag on native sockets, part of its socket-build chain, all absent from legacy ([de-parity](de-parity.md#43-nativepreview)). | open |
 | 44 | Rotate buildings by the unit that builds them (AoE4-style visual upgrades / annexes). | Nothing in DE ([de-parity](de-parity.md#44-building-rotated-or-annexed-by-its-builder)). | open |
+| 45 | A protoaction's accuracy modifiable by techs (JTMaston, 2026-10-30). | RE (static, file bytes): legacy registers 193 effect and Data subtype names (pushes at 0x524800..0x526200). They include `TrackRating`, `MaximumRange`, `MinimumRange`, `DamageArea`, `DamageCap` and `HitPercent`, but not `Accuracy`. DE has none either: its guide lists `Accuracy` only as a tactics tag. The field is the action's `+38h` (engine-symbols.md, "Projectile accuracy and spread"). It needs a new Data subtype on ProtoAction targets, built like `TrackRating`'s. Related: #2. | RE |

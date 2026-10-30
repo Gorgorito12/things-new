@@ -456,9 +456,8 @@ counts, is in `requests-findings.md`, Appendix A.
 
 ## Questions for JTMaston
 
-1. **#2.** DE has no spread at all. A shotgun is one instant area hit with a damage cap
-   (`InvisibleProjectile`, `InstantBallistics`, `DamageArea`, `DamageCap`), and legacy already reads
-   all of those. Is that enough, or do you still want one of the options of Q1?
+1. **#2.** *Answered (2026-10-30):* DE's model is not relevant to WoL. He wants `maxspread` respected
+   whatever the accuracy; see wol-requests.md, Q1.
 2. **#29, #30, #31.** Should the keys use DE's names? Those are `UseSharedBuildLimit`,
    `SharedBuildLimitUnit`, `SharedBuildLimitUnitTypes` (with `weight`), `TeamBuildLimit`,
    `SettlerBuildLimit` + `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName`, `TrainBatchSize`
