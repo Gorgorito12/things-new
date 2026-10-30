@@ -866,7 +866,7 @@ damageOverTime [log] [noticktext]
 - **Not done:**
   - no model or effect shows the poison, since X never exists in the world (`AttachTickText`
     shows the ticks as text);
-  - poisons are not saved in saved games, so a loaded game starts without them;
+  - poisons are not saved in saved games, so a loaded game starts without them (tested);
   - the stock `Poison` flag is not used.
 - **`log`** writes every poison, renewal, tick and end to `UHC.log`, and once per attack the
   attacks that deal damage without `<AttachProtoUnit>` (`damage by proto N (Name), action A …:
@@ -944,18 +944,34 @@ damageOverTime [log] [noticktext]
   - **`AttachMaxStacks 3`, `AttachSnare 0.5`, `AttachTickText`:** on a Hussar, the ticks went 5,
     10, 15 as Longbowman arrows added stacks, and back to 10 and 5 as they expired one by one;
     its speed read 3.38 (6.75 × 0.5) while poisoned; the green ticks show in the video above;
-  - **AI:** a 12-minute skirmish (fast speed) between two AI players (Spanish and Portuguese,
-    no teams) and the player, with this data plus the `--ai` data (a 30 s poison on their
-    Musketeers, Skirmishers, Pikemen and Hussars): 49 poisons and 242 ticks between the AIs'
-    units (Pikemen poisoning Crossbowmen and the reverse), no XS error, both AIs kept playing;
-  - `noticktext`: the startup line says the tick texts are off; noTrainNearEnemyTC's warning,
-    which shares the floating text code, still showed in the same game.
+  - **AI:** skirmishes (fast speed) between two AI players (Spanish and Portuguese, no teams)
+    and the player, with this data plus the `--ai` data (a long poison on their Musketeers,
+    Skirmishers, Pikemen and Hussars): in 12 minutes, 49 poisons and 242 ticks between the AIs'
+    units; in another 25-minute game with a 120 s poison, 902 ticks after the attacking unit was
+    gone; no XS error and no crash, both AIs kept playing;
+  - `noticktext`: the startup line says the tick texts are off, and in a filmed fight the
+    poisoned Hussar took its 15-damage ticks with no green number over it; noTrainNearEnemyTC's
+    warning, which shares the floating text code, still showed in another game with this option;
+  - **invalid values** (`dot_testdata.py --bad`): `<AttachMaxStacks>` 0, 101 and `abc`,
+    `<AttachSnare>` -1, 20 and `x`, `<AttachTickText>` `GG0000` and `12345` each logged their
+    "ignored" line at load; the Musketeer carrying them still poisoned with the defaults
+    (`stack 1/1`, no slow, no text); an empty `<AttachTickText></AttachTickText>` took the default
+    green; a Skirmisher with `<AttachMaxStacks>` but no `<AttachProtoUnit>` logged `… but no
+    <AttachProtoUnit>; ignored` on its first hit and poisoned nothing;
+  - **the snare in a group:** three Hussars charging together in formation, with
+    [`snareOnlyHitUnit`](#snareonlyhitunit) `log` on: for the poisoned one that key logged `is
+    snared; it counts 6.750 instead of 3.375 toward its group's pace` and `lags behind its
+    formation slot; its group does not wait for it`, so the poison's slow is a snare for it;
+  - **saved games:** a game saved with a poison running (its attacker already removed) and
+    loaded at once logged `the data was reloaded; 1 running poison(s) dropped`; the Hussar kept
+    its 60.4 hitpoints for the next 25 s instead of dying from the ticks, and the game went on.
 
-  **Not reproduced:** a tick on a unit of an AI army after the attacking unit is gone (the p11 = 0
-  path of [how-it-works](how-it-works.md#damageovertime)). In the AI game no poison outlived its
-  attacker's removal, and units sent by the scenario trigger `Army Deploy` are not in an engine
-  army (their army flag stays clear), so that case was not produced; the attacker-gone path
-  itself ran (above). Multiplayer was not tested either.
+  **Not reproduced:** a tick on a unit of an engine army after the attacking unit is gone (the
+  p11 = 0 path of [how-it-works](how-it-works.md#damageovertime)). No unit ever carried the army
+  flag in the tests (read in memory): not the AIs' military units at minute 26, not units sent by
+  the scenario trigger `Army Deploy`, not units a map put in an army with `rmCreateArmy` /
+  `rmAddUnitsToArmy`. So the attacker-gone ticks (902 in the AI game) never met that case; the
+  guard stays a reading of the code. Multiplayer was not tested either.
 - **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
   proto that carries the duration and the damage.
 
@@ -2222,16 +2238,18 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
   the cfg. A proto name works too.
 - **Choosing what blocks (`near`):** without `near`, only an enemy's first Town Center blocks.
   Each `near <UnitType>` adds a type: a proto name (`near Stable`, `near Barracks`), a stock type
-  (`near AbstractTownCenter` for every Town Center, not only the first; not tested) or a new marker
+  (`near AbstractTownCenter` for every Town Center, not only the first) or a new marker
   that you put on your buildings in `protoy`. As soon as the line has one `near`, only the listed
   entries block: add `near FirstTC` to keep the first Town Center. Up to 4 entries. A building
   blocks only once it is built (a foundation does not; static reading), and while it is alive. A
-  type of moving units is accepted (units always count as built) but was not tested.
+  type of moving units works too (units always count as built): `near Hussar` held a Daimyo
+  while an enemy Hussar stood 17.3 m away.
 - **How the distance is measured:** from the trainer's centre to the nearest edge of the
   blocker's footprint, 0 inside it. It is the engine's own distance, the one the placement rules
   use, so `65` matches the stock 65 m rule. For example, a Stable (3 × 5 m half-sizes) whose
-  centre is 24 m from the Daimyo is 21 m away. For units without such a footprint the engine uses
-  the centre distance minus the unit's radius × 1.41 (static reading).
+  centre is 24 m from the Daimyo is 21 m away. For units without such a footprint (units that can
+  move) the engine uses the centre distance minus the unit's radius × 1.41: a Hussar whose centre
+  was 18.4 m away counted 17.3 m.
 - **Choosing the distance:** `<meters>` is a number above 0 and at most 1000 (decimals allowed).
 - **Which Town Center counts for `FirstTC`:** only each player's first Town Center, not every Town
   Center. A player whose first Town Center was destroyed gives no protection, even if he built
@@ -2309,8 +2327,15 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
     and every WoL key on: the AI went from 15 to 25 units in 2 minutes and started its wonder, no
     XS error.
 
-  Not tested: a `near` type of moving units, a foundation near the trainer, multiplayer, saved
-  games. For such a test, the Daimyo trains only from Age II and needs population room and food.
+  - `noTrainNearEnemyTC 30 near AbstractTownCenter near Hussar log`: held by an enemy Hussar 17.3 m
+    away (a moving type), and in another game by an enemy's second Town Center 22.0 m away (not
+    its first; the first, 150 m away, did not count); each resumed when its blocker was removed,
+    and the 3 queued Ashigaru were trained;
+  - saved games: a game saved with the Daimyo held and loaded again logged `paused training` at
+    once and stayed held until the blockers were removed (the decision keeps no state).
+
+  Not tested: a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
+  from Age II and needs population room and food.
 - **New in this DLL:** not in UHC 1.10. WoL request #27 ([wol-requests.md](wol-requests.md)).
 
 ### overhealHitpointBars

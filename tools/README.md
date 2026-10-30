@@ -102,7 +102,7 @@ the TAD data.
 ## dot_testdata.py
 
 ```
-python -I tools/dot_testdata.py <test folder> [--ai]
+python -I tools/dot_testdata.py <test folder> [--ai | --bad]
 ```
 
 Writes the data the `damageOverTime` tests use into a **test copy** of the game. It refuses any
@@ -117,8 +117,12 @@ folder inside a Steam library. The tables at the top of the script list the case
   - the Falconet (a cannon ball): `UHCPoisonCannon`, 15 Siege for 9 s;
   - the Longbowman: `UHCPoisonStack`, 5 Siege for 6 s, with `<AttachMaxStacks>3`,
     `<AttachSnare>0.5` and `<AttachTickText>40FF40` on its attacks;
-  - with `--ai`, also the Musketeer, Skirmisher, Pikeman and Hussar: `UHCPoisonLong`, 2 Siege for
-    30 s, so that two AI players poison each other's armies.
+  - with `--ai`, also the Musketeer, Skirmisher, Pikeman and Hussar: `UHCPoisonLong`, 1 Siege for
+    120 s, so that two AI players poison each other's armies and the poisons outlive their
+    attackers;
+  - with `--bad`, invalid `<AttachMaxStacks>`, `<AttachSnare>` and `<AttachTickText>` values on the
+    Musketeer's three ranged attacks (and an empty `<AttachTickText>`), and `<AttachMaxStacks>`
+    without `<AttachProtoUnit>` on the Skirmisher, to check the load-time messages.
 - `data\techtreey.xml`: the tech `UHCPoisonArrowUpgrade` (UNOBTAINABLE; doubles
   `UHCPoisonArrow`'s `Attaching` damage), for a trigger to turn on (`tech:UHCPoisonArrowUpgrade`
   in a `testbed.py` map).

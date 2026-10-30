@@ -490,8 +490,14 @@ The DLL ignores that path and adds its own, driven by data.
   whole block (`jne 0x49BC00` at 0x49B929). The damage itself does not depend on it. The
   attacker-gone path ran in game (an attacker removed by the trigger `Destroy`: the ticks went on
   and killed the target), but not on an army unit: units sent by the scenario trigger
-  `Army Deploy` (`trArmyDispatch`) do not get the army flag (bits read in memory), so only an AI
-  game produces that case. With `log`, such a tick line ends with `, army unit`.
+  `Army Deploy` (`trArmyDispatch`) do not get the army flag (bits read in memory), nor do units a
+  map adds with `rmCreateArmy` / `rmAddUnitsToArmy`, nor the two AIs' military units read at
+  minute 26 of a skirmish (902 attacker-gone ticks in that game, none on an army unit). The only
+  writer of the flag is 0x8C2F2D, right after FUN_008C2544 (its one caller); what reaches it was
+  not traced. With `log`, such a tick line ends with `, army unit`.
+- **With snareOnlyHitUnit:** the poison's slow is a timed, exclusive velocity multiply, so that
+  key takes it for a snare: in game it logged the poisoned Hussar of a charging group as snared
+  (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`).
 - **An attacker is "gone"** only when its ID no longer gives a unit. A killed unit keeps its ID
   while its body lies on the ground (trigger `Kill`), so its poisons keep it as the attacker
   until the body disappears; a removed unit (trigger `Destroy`) is gone at once.
@@ -538,7 +544,9 @@ tick text depends on the local player and touches nothing the simulation reads, 
 **What it does not do.**
 - X is never created in the world, so there is no model or effect (the tick text is the only
   marker).
-- Poisons are not saved in saved games.
+- Poisons are not saved in saved games. Loading one reloads the data, which drops the running
+  poisons (seen in game: `the data was reloaded; 1 running poison(s) dropped`, and the unit took
+  no more ticks).
 - The stock Poison flag stays unused.
 
 ### liveBuildingWorkRate
@@ -1508,7 +1516,9 @@ screen in about 0.3 s, while at 0 it stays over the unit. 0x8023AE refuses a tex
   gather point; with the queue empty the same command moved it. So a held trainer leaves only when
   its queue is cancelled; the key does not change that.
 - **Not covered:** players whose FirstTC is dead or never set; refusing the order instead of
-  pausing it; a `near` type of moving units (accepted, not tested).
+  pausing it; a foundation near the trainer. A `near` type of moving units (a Hussar: 17.3 m for
+  18.4 m between centres, the radius branch of the distance), a Town Center that is not the first
+  (`near AbstractTownCenter`) and a saved game loaded with a held trainer were seen in game.
 
 ### overhealHitpointBars
 

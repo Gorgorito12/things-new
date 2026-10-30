@@ -1,9 +1,11 @@
 """Write the damageOverTime test data into a test copy of the game.
 
-Usage: python -I tools/dot_testdata.py <test folder> [--ai]
+Usage: python -I tools/dot_testdata.py <test folder> [--ai | --bad]
 
 --ai also gives common military units (AI_ATTACKERS) a long, weak poison, so that an AI game
 (two AI players fighting) has poisoned army units whose attacker has died and been removed.
+--bad also gives the Musketeer and the Skirmisher the invalid tags of BAD_ATTACKERS, to check the
+load-time messages and that the poison keeps its defaults.
 
 Never point it at the Steam install: it refuses any folder under "steamapps".
 - data\\protoy.xml: each attacker of ATTACKERS gets <AttachProtoUnit> (and the extra tags of its
@@ -46,7 +48,8 @@ ATTACHMENTS = {
 
 RANGED = ("VolleyRangedAttack", "StaggerRangedAttack", "DefendRangedAttack")
 
-# Attacker proto -> (ProtoActions, attachment, extra tags in those ProtoActions).
+# Attacker proto -> (ProtoActions, attachment or None for no <AttachProtoUnit>, extra tags in those
+# ProtoActions: a list for all of them, or a dict by ProtoAction).
 ATTACKERS = {
     "Explorer": (("HandAttack", "VolleyRangedAttack"), "UHCPoisonTest", []),
     "Grenadier": (RANGED, "UHCPoisonGrenade", []),
@@ -59,13 +62,28 @@ ATTACKERS = {
     ]),
 }
 
-# With --ai: a 30 s poison of 2 per second on units every European AI trains.
-AI_ATTACHMENTS = {"UHCPoisonLong": (30, 2, "Siege", 1, "GAIAEnemy", [])}
+# With --ai: a 120 s poison of 1 per second on units every European AI trains, long enough to
+# outlive its attacker's body.
+AI_ATTACHMENTS = {"UHCPoisonLong": (120, 1, "Siege", 1, "GAIAEnemy", [])}
 AI_ATTACKERS = {
     "Musketeer": (RANGED, "UHCPoisonLong", []),
     "Skirmisher": (RANGED, "UHCPoisonLong", []),
     "Pikeman": (("MeleeHandAttack",), "UHCPoisonLong", []),
     "Hussar": (("MeleeHandAttack",), "UHCPoisonLong", []),
+}
+
+# With --bad: values the DLL must reject (each logged and ignored), an empty AttachTickText (the
+# default colour), and optional tags without <AttachProtoUnit>.
+BAD_ATTACKERS = {
+    "Musketeer": (RANGED, "UHCPoisonTest", {
+        "VolleyRangedAttack": ["<AttachMaxStacks>0</AttachMaxStacks>", "<AttachSnare>-1</AttachSnare>",
+                               "<AttachTickText>GG0000</AttachTickText>"],
+        "StaggerRangedAttack": ["<AttachMaxStacks>101</AttachMaxStacks>", "<AttachSnare>20</AttachSnare>",
+                                "<AttachTickText>12345</AttachTickText>"],
+        "DefendRangedAttack": ["<AttachMaxStacks>abc</AttachMaxStacks>", "<AttachSnare>x</AttachSnare>",
+                               "<AttachTickText></AttachTickText>"],
+    }),
+    "Skirmisher": (RANGED, None, ["<AttachMaxStacks>3</AttachMaxStacks>"]),
 }
 
 # Techs: name -> effects (each a Data effect on the Attaching action of an attachment proto).
@@ -109,14 +127,16 @@ def edit_protos(text):
         if unit is None:
             sys.exit(f"dot_testdata: no <Unit name='{attacker}'> in protoy.xml")
         block = unit.group(0)
+        per_action = tags if isinstance(tags, dict) else {action: tags for action in actions}
         for action in actions:
             pa = re.search(r"(<ProtoAction>\s*<Name>" + action + r"</Name>.*?)(\s*</ProtoAction>)", block, re.S)
             if pa is None:
                 sys.exit(f"dot_testdata: {attacker} has no ProtoAction {action}")
-            added = "".join(f"\n\t\t\t{tag}" for tag in [f"<AttachProtoUnit>{attachment}</AttachProtoUnit>", *tags])
+            lines = ([f"<AttachProtoUnit>{attachment}</AttachProtoUnit>"] if attachment else []) + per_action[action]
+            added = "".join(f"\n\t\t\t{line}" for line in lines)
             block = block[:pa.start()] + pa.group(1) + added + pa.group(2) + block[pa.end():]
+            print(f"{attacker}/{action}: {', '.join(lines)}")
         text = text[:unit.start()] + block + text[unit.end():]
-        print(f"{attacker} {'/'.join(actions)} attach {attachment}{' + ' + ', '.join(tags) if tags else ''}")
 
     unit_id = max(int(i) for i in re.findall(r"<Unit id ='(\d+)'", text)) + 1
     dbid = max(int(i) for i in re.findall(r"<DBID>(\d+)</DBID>", text)) + 1
@@ -166,11 +186,13 @@ def edit_techs(text):
 
 
 def main(argv):
-    if len(argv) not in (1, 2) or argv[1:] not in ([], ["--ai"]):
+    if len(argv) not in (1, 2) or argv[1:] not in ([], ["--ai"], ["--bad"]):
         sys.exit(__doc__)
     if argv[1:] == ["--ai"]:
         ATTACHMENTS.update(AI_ATTACHMENTS)
         ATTACKERS.update(AI_ATTACKERS)
+    if argv[1:] == ["--bad"]:
+        ATTACKERS.update(BAD_ATTACKERS)
     folder = pathlib.Path(argv[0]).resolve()
     data = (folder / "data").resolve()
     # Resolved, so a junction or symlink inside the copy cannot lead the writes into Steam.
