@@ -726,6 +726,10 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 
 *2. `AttachMaxStacks`, `AttachSnare` and `AttachTickText`:* three Longbowmen whose arrows attach a 5 Siege poison with up to 3 stacks, a snare to half speed and a green tick text. Two Hussars charge them. The three first arrows put three stacks on one Hussar within a fraction of a second, so each tick deals 15 (`x3` in the overlay) and shows a small green `-15` over its health bar; its speed reads 3.38 instead of 6.75. When the archers are down the stacks expire one by one (10, then 5) and the last tick kills it (2x speed). [Full video (MP4)](media/damageOverTime-stacks.mp4).
 
+![damageOverTime with noticktext and snareOnlyHitUnit](media/damageOverTime-noticktext.gif)
+
+*3. `noticktext`, and the snare in a group:* the same fight with `damageOverTime log noticktext` and `snareOnlyHitUnit log`: three Hussars charge together, the poisoned one takes its 10 and 15-damage ticks with no green number over it, and the overlay shows `snareOnlyHitUnit` treating the poison's slow as a snare (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`) (2x speed). [Full video (MP4)](media/damageOverTime-noticktext.mp4).
+
 ```
 damageOverTime [log] [noticktext]
 ```
