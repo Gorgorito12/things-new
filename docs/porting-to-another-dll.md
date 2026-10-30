@@ -87,6 +87,8 @@ example the search block of `hcShipmentPointFallback`, or the population test of
 | `WorkRateTrainCall` | `0x9EA410` | `0x14` B | 8 B at `0x9EA410` (`jmp` + 3 NOP), noTrainNearEnemyTC only | `8B 4E 10 E8 1B 5A FD FF` (`mov ecx,[esi+10h]; call 9BFE33h`) | the Train update's getter call (FUN_009EA28B), up to its first write of EAX; liveBuildingWorkRate verifies it, noTrainNearEnemyTC hooks it (continuation `0x9EA418`) |
 | `BwrTrainCall` | `0x9EA410` | 8 B | 5 B at `0x9EA413` (a `call` to the wrapper), buildingWorkRateAuras, only while all 8 bytes are stock | `E8 1B 5A FD FF` (`call 9BFE33h`) | the same call, checked on its own: with noTrainNearEnemyTC on, buildingWorkRateAuras leaves it to that key's hook |
 | `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall` | `0x9E65F4`, `0x9D58D1`, `0x6AB23C` | `0x0D`, `0x0D`, `0x14` B | 5 B each at `0x9E65F7`, `0x9D58D4`, `0x6AB23F` (a `call` to the wrapper), buildingWorkRateAuras only | `E8 37 98 FD FF`, `E8 5A A5 FE FF`, `E8 EF 4B 31 00` (`call 9BFE33h`) | the getter's other three callers, each up to its first write of EAX (the hooks return another EAX); liveBuildingWorkRate verifies them |
+| `TrainFrac`, `MaintainFrac` | `0x9EA1FA`, `0x9E27E4` | `0x45` B each | 9 B at each (`jmp` + 4 NOP) | `D9 41 64 D8 1D 5C 75 C3 00` (`fld [ecx+64h]; fcomp [0C3755Ch]`), `D9 41 6C D8 1D 68 74 C3 00` (`fld [ecx+6Ch]; fcomp [0C37468h]`) | the Train and Maintain fraction functions, `void thiscall(action)`, one caller each (0x9EA4B3, 0x6AB264); liveBuildingWorkRate TrainPoints hooks (continuations `0x9EA203`, `0x9E27ED`) |
+| `TrainPointsProto`, `TrainPointsSet`, `MaintainPointsProto`, `MaintainPointsSet` | `0x9EAC3D`, `0x9EB19F`, `0x9E28BD`, `0x9E2A05` | `0x29`, `0x43`, `0x11`, `0x3D` B | — | — | the stock rule the TrainPoints refresh repeats (the player's proto by 0x45311B, flag 9Eh by 0x44D063, the base proto by 0x45316E, `+6Ch`, × count for Maintain); liveBuildingWorkRate |
 | `TechPrereqDirtyCheck` | `0x491A18` | 10 B | 10 B at `0x491A18` (`jmp` + 5 NOP) | `80 7F 10 00 0F 85 B2 7C 07 00` (`cmp byte [edi+10h],0; jne 5096D4h`) | dirty test of a player's tech tree (FUN_004919CE); techPrereqRecheck |
 | `TechPrereqNoPass`, `TechPrereqPassEntry`, `TechPrereqPassLoop`, `TechPrereqEntryUpdate`, `TechPrereqListEval`, `TechPrereqListLoop`, `TypeCountCtor`, `PrereqBaseCtor`, `TypeCountEval`, `TechTemplateFallback`, `TechTemplateLoop`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount` | `0x491A22`, `0x5096D4`, `0x5095A1`, `0x5094EB`, `0x5094B4`, `0x50946A`, `0x8EE860`, `0x6201AA`, `0x8EE8E7`, `0x48050F`, `0x61FE63`, `0x5C400B`, `0x481D3D`, `0x481A87` | 10, 9, `0x77`, `0x51`, `0x24`, `0x4A`, `0x10`, `0x16`, `0x34`, `0x1B`, `0x3C`, `0x19`, `0x19`, `0x0F` B | — | — | the two continuations, the stock re-check and evaluator the check mirrors and calls, the TypeCount layout, the template records, the tech names, the world update's call and step count |
 | `MaintainSpawn` | `0x6AB27D` | `0x2C` B | 6 B at `0x6AB27D` | `8B 56 68 8B 46 64` (`mov edx,[esi+68h]; mov eax,[esi+64h]`) | cycle-complete path of the Maintain update FUN_00492F3E; maintainWaitForPop (continues at `0x6AB283`) |
@@ -271,7 +273,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*` and `GatherPointValid`; with `FirstTC` also `FirstTcSet`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`; your cfg reader |
 
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
-| [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, your cfg reader |
+| [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, `TrainFrac`, `MaintainFrac`, `TrainPoints*`, `MaintainPoints*`, your cfg reader |
 | [`src/features/techprereq.cpp`](../src/features/techprereq.cpp), [`src/hooks/techprereq_hooks.asm`](../src/hooks/techprereq_hooks.asm) | `techPrereqRecheck`. | sites `TechPrereq*`, `TypeCount*`, `PrereqBaseCtor`, `TechTemplate*`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount`; `OnDatabaseLoad` (unittypes); your cfg reader |
 | [`src/features/maintain.cpp`](../src/features/maintain.cpp), [`src/hooks/maintain_hooks.asm`](../src/hooks/maintain_hooks.asm) | `maintainWaitForPop`. | unittypes (and `OnDatabaseLoad` for `log`), sites `Maintain*`, your cfg reader |
 | [`src/features/transform.cpp`](../src/features/transform.cpp), [`src/hooks/transform_hooks.asm`](../src/hooks/transform_hooks.asm) | `transformUpdatesLOS`. | sites `Transform*` and `Los*`, your cfg reader |
@@ -608,6 +610,24 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `buildingWorkRateAuras` and `noTrainNearEnemyTC` later redirect or replace these calls, but their
   hooks still call the getter, so this hook keeps running.
 - **Without a hook:** `74 04` → `EB 04` at `0x9BFE38` gives the same result with no log.
+- **TrainPoints hooks** at `0x9EA1FA` (Train) and `0x9E27E4` (Maintain), the heads of the two
+  fraction functions, `void thiscall(action)`:
+  - entry state: ECX = the action, `[esp]` = the return address (0x9EA4B8 / 0x6AB269), x87 stack
+    empty; the caller reuses ECX after the call;
+  - `pushad`, call the refresh (stdcall, the action), `popad`; re-execute `fld [ecx+64h]; fcomp
+    [0C3755Ch]` (Train) or `fld [ecx+6Ch]; fcomp [0C37468h]` (Maintain); jump to `0x9EA203` /
+    `0x9E27ED` (`fnstsw ax`);
+  - the refresh, Train: skip when the entry count `[a+74h]` ≤ 0; trainer `t = [a+10h]`, player
+    `[t+44h]`, proto ID `[[a+70h]]`; `p = 0x45311B(player, id)` (thiscall), skip when null; points
+    = `[p+6Ch]`; when `0x44D063(t, 9Eh)` (`YPForceTrainAtBaseTrainPoints`) and the database
+    `[[0C66234h]+140h]` gives `b = 0x45316E(db, [p+8])` non-null, points = `[b+6Ch]`; write
+    `[a+64h]` when the bits differ;
+  - Maintain: proto ID `[a+64h]`, count `[a+68h]` (skip when ≤ 0), points = (float)(count ×
+    `[p+6Ch]`) rounded once, or `[b+6Ch]` not multiplied with the flag; write `[a+6Ch]`.
+  - Keep the progress (`[a+68h]` / `[a+70h]`) as it is: a unit already past the new points
+    finishes on that tick, as research does in stock.
+  - `maintainWaitForPop` verifies the Maintain call 0x6AB264 as stock bytes, so hook the callee,
+    not the call.
 
 ### techPrereqRecheck
 
@@ -1359,8 +1379,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **multipleInstances:** confirmed with two copies on one machine, in single player only.
 - **The WoL Tier 2 features** (2026-10-29, single player only; "(multiplayer unverified)" for every
   one that changes the simulation):
-  - **confirmed in game:** `liveBuildingWorkRate` (`Maintain` only; train and research not
-    tested), `techPrereqRecheck`, `maintainWaitForPop` (Ottoman settlers; batches and `SingleUse`
+  - **confirmed in game:** `liveBuildingWorkRate` (`Maintain`; train, research and the
+    TrainPoints refresh on 2026-10-30), `techPrereqRecheck`, `maintainWaitForPop` (Ottoman settlers; batches and `SingleUse`
     not tested), `transformUpdatesLOS` (tech transforms; revolutions not tested),
     `broadsideMuzzleLimit` (normal attack; `PowerBroadside` not tested), `abilitySlots`,
     `wonderPanelSkipAuras`, `lifespanAfterConstruction` (the countdown hold; the

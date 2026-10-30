@@ -497,10 +497,31 @@ No REA session was used for these sections.
 | Completion routine | FUN_006A1F82 | confirmed (the two copies); rest scoping | `void __thiscall(unit, bool notify)`, `ret 4`, 18 callers. Copies BuildingWorkRate (0x6A2089..0x6A2095: `[[unit+68h]+28h] = [[unit+5Ch]+D0h]`) and the LOS (0x6A20B2..0x6A2105, between a visibility remove and add); sets the percent to 1.0 and the full build points; never calls setLifespan. Runs when a building completes, when a `ForceBuildingData` unit is created, and on load for completed buildings (0x9C54B4..0x9C54D3: `[bd+8]` ≥ 1.0, then `call 6A1F82h` with 0). |
 | setProto | FUN_004981F3 | confirmed | `void __thiscall(unit, Proto*)`, `ret 4` (0x498265). Writes `[unit+5Ch]` (0x498212), the visual and the building data (cold 0x6A031B..0x6A0386); not the LOS. 4 callers: 0x49828E (creation), 0x8D1BF0, 0x9C500D (load), 0x9C763F (transform). |
 | BuildingWorkRate getter | 0x9BFE33..0x9BFE47 | confirmed, in game | `float __thiscall(unit)`: `[unit+68h] ? [[unit+68h]+28h] : [[unit+5Ch]+D0h]`; writes only EAX and the flags. Four direct callers, no other reference. |
-| Getter callers | Train 0x9EA413 (FUN_009EA28B), Research 0x9E65F7 (FUN_009E648B), CommandResearch 0x9D58D4 (FUN_009D5843), Maintain 0x6AB23F (cold chunk of FUN_00492F3E) | confirmed (call bytes, vtable slots) | Each is `mov ecx,[esi+10h] / call 9BFE33h` and multiplies the result into its progress. They are slot 3Ch (update) of the action vtables 0xB98388, 0xB98078, 0xB973A8, 0xB97B98. |
+| Getter callers | Train 0x9EA413 (FUN_009EA28B), Research 0x9E65F7 (FUN_009E648B), CommandResearch 0x9D58D4 (FUN_009D5843), Maintain 0x6AB23F (cold chunk of FUN_00492F3E) | confirmed (call bytes, vtable slots); in game for Train, Research (2026-10-30) and Maintain | Each is `mov ecx,[esi+10h] / call 9BFE33h` and multiplies the result into its progress. They are slot 3Ch (update) of the action vtables 0xB98388, 0xB98078, 0xB973A8, 0xB97B98. |
 | Save / load of `+28h` | 0x7AE73D (FUN_007AE672), 0x7AEEAD (FUN_007AEDDD) | confirmed (the two instructions) | Through 0xA3FEB8 / 0x599121, from the unit save and load. |
 | Tech effect case BuildingWorkRate | FUN_008F973F case 5Eh at 0x8FAE7D; the remove twin FUN_008FB01C at 0x8FC16F | 0x8FAE7D confirmed | Computes the new `[playerProto+D0h]` through 0x7F892A and returns; no unit is touched. The Data effect vtable is 0xB9E5A8 (slot 1 parse 0x6205F6, slot 9 apply 0x7F86C0, slot 10 remove 0x7F8705). |
 | Stat panel | 0x6F49B1 (`currentUnitBuildingWorkRate`) | read confirmed | Reads the selected unit's `[[unit+5Ch]+D0h]`. |
+
+### Train points (for `liveBuildingWorkRate`, WoL #5, 2026-10-30)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Proto TrainPoints | `[proto+6Ch]` (float) | confirmed, in game | Tag `<TrainPoints>`; Settler 25. A `type='Data' subtype='TrainPoints'` effect changes the player's copy (a tech ×0.25 read 6.25 there). |
+| Train action | factory type 0Dh (0x48D927(0xD)), vtable 0xB98388 | confirmed, in game | `+10h` trainer unit, `+61h` state, `+64h` the batch's points, `+68h` progress (points), `+6Ch` fraction, `+70h`/`+74h` entries (14h B: `+0` proto ID, `+4`, `+8` cost record, `+10h..+12h` flags) and their count. Slot 34h setState 0x9EB491 (case 0Ah spawns every entry), 3Ch update 0x9EA28B, 5Ch save 0x9EA4D7 (`+64h` at 0x9EA539), load 0x9EC131 (default 100.0 at 0x9EC067). The building's action list is `[[unit+58h]+1Ch]`, count `[[unit+58h]+14h]` (read in game). |
+| Train command | FUN_009CE2BE | confirmed (pseudocode; in game, the points below) | One new Train action per queued unit or batch: 0x48D927(0xD), the enqueue (0x9CE805), the action-manager add 0x494894. A batch-trained proto puts several entries in one action (0x9CE6E7, 0x9CE849). The other caller of the enqueue is 0x8D60EA (FUN_008D5E09). In game, units queued before a TrainPoints tech kept the old points when they started after it, and units queued after it on the same building got the new ones. |
+| Enqueue | FUN_009EAC35, `bool thiscall(action, protoId, count, …)`, `ret 0Ch` | confirmed, in game | Looks up the trainer's player's proto (0x9EAC5F, `call 45311Bh`). For the first entry of an empty action (`cmp [esi+74h],0 / jg`, 0x9EB19F) it stores `[edi+6Ch]` in `[esi+64h]` (0x9EB1B0), or with the trainer's flag 9Eh the base proto's (0x45316E(db, `[edi+8]`), 0x9EB1DB); nothing writes `+64h` again. Sites `TrainPointsProto`, `TrainPointsSet`. |
+| Train fraction | 0x9EA1FA..0x9EA23E, `void thiscall(action)` | confirmed | `[+6Ch]` = `[+68h]` / `[+64h]`, clamped to [0, 1]; 1.0 when the points are below 1e-6 (0xC3755C). Only caller: the update, 0x9EA4B3, after `[+68h]` += rate. Site `TrainFrac`. |
+| Unit flag 9Eh | `YPForceTrainAtBaseTrainPoints` (name 0xBC94D4, parser 0x5F71E6 → `or byte [eax+13h],40h` at 0x5FE5D4) | confirmed | Tested on the trainer with 0x44D063 (`bool thiscall(unit, flag)` on `[[unit+5Ch]+50h]`). The Train enqueue and the Maintain cycle start then take the database's base proto's TrainPoints, which no tech changes. |
+| Maintain cycle start | FUN_009E2829 (Maintain setState), 0x9E28BD..0x9E2A42 | confirmed, in game | Stores the proto ID in `[esi+64h]` (0x9E28C0), the player's proto (0x9E28C7), the count in `[esi+68h]`, then `[esi+6Ch]` = count × `[edi+6Ch]` (0x9E2A05..0x9E2A13), or with flag 9Eh the base proto's `[eax+6Ch]`, not multiplied (0x9E2A3F). Sites `MaintainPointsProto`, `MaintainPointsSet`. |
+| Maintain fraction | 0x9E27E4..0x9E2828 | confirmed | `[+74h]` = `[+70h]` / `[+6Ch]`, as the Train fraction (1e-6 at 0xC37468). Only caller 0x6AB264 (inside site `MaintainCycleDone`). Site `MaintainFrac`. |
+| Research points | status entry `+18h`; research fraction 0x9E5F19 | confirmed, in game | `[action+70h]` = `[action+6Ch]` / `[entry+18h]` on every tick (0x9E5F37): read live, so a ResearchPoints tech reaches a research in progress (stock: one at 17 of 30 points finished when the tech set 7.5). |
+| Console `trainByID` | 0x7DF6AF, registered at 0x540036 with three int parameters | confirmed (code, in game) | The function reads four stack parameters (proto, a byte, unit, player), so a call with the documented three arguments takes the player from beyond them and trained nothing in game. `researchByID` (0x7DF3F9: tech, unit, player) works; `trainInSelected("<Proto>", n)` (0x7DFCCF) works on the selection. |
+
+Evidence (REA, `rea/evidence/age3y-b1a1dab7/workrate5-bundle.json`): the Train update
+`ev_c7977d98…`, its setState `ev_8fb3bc79…`, the train command `ev_5484bbdd…`, `trainByID`
+`ev_f9685330…`, `researchByID` `ev_f9203e82…`; byte checks `cs` in `workrate5_cs.py` / `.txt` there.
+The in-game measurements read the actions from memory once a second (`docs/modding-guide.md`,
+"liveBuildingWorkRate").
 
 ### Tech prerequisites (for `techPrereqRecheck`)
 
@@ -576,6 +597,23 @@ No REA session was used for these sections.
 | Wonder power panel refresh | FUN_004586B1, cold chunk 0x69EC5E..0x69F35E | partly confirmed, in game | For the local player's `AbstractWonder` units and each page-11 command (type 2): GetNth with n = 0 at 0x69EE5D (`push 0` at 0x69EE5B), then `test al,al / je 69F31Bh`, the record re-check `0x44E702` and `test byte [eax+1Dh],1 / jne 69F31Bh`; a button with `ability(recIdx, unitId, true)`. Gadget `uiwonderpowerpanel` (ctor 0x9BCE92, five buttons; scoping). |
 | `ability` UI command | 0x7DDC52 | partly confirmed | `ability(int record, int unitId, bool doWhenNotSelected)`: the record by index through 0x44E702 (0x7DDCCC); no slot limit. |
 | Proto command entries | `[proto+E8h]`, 6-byte records | scoping | `{word id, byte kind (0 Train, 1 Tech, 2 Command), byte page, byte column}`, appended by 0x5F5F05, which skips its duplicate check for page 11. |
+
+### Player powers and the ceasefire (WoL #14, 2026-10-30)
+
+A power is cast per player, not per unit: the button of any unit only spends the player's charge of
+that power. Evidence: `rea/evidence/age3y-b1a1dab7/ceasefire14-bundle.json` (`ev_87a250ac…` for
+FUN_006ED5F6, `ev_3ffa4dd0…` and `ev_b14fb3f1…` for the two strings), capstone listings, and memory
+reads in game (`ceasefire14/powers.py`).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Power type `CeaseFire` | 19h, registered at 0x526D3A (string 0xBD6344) | confirmed | Next to `GoodFortune` (18h) and `stun` (1Ah). Nothing in the exe compares the caster's proto with the Taj Mahal. The only Taj Mahal reads are the proto name `ypTajMahal` into `[db+5FC4h]` (0x5EF2D1), compared at 0x694A5B with other wonder age-up protos (UI), and the tech names `YPWonderIndianTajMahal…`. |
+| `<alwaysaddtoplayer>` | powers.xml parser FUN_005F230D, 0x5F385C | confirmed | `or dword ptr [power+6Ch], 8` (0x5F3887). Its only reader is the grant below (0x6ED68D). |
+| Grant at game start | FUN_006ED5F6, `bool thiscall(abilityMgr, player*)`, `ret 4` | confirmed (static and in game) | Run once per player from the game start loop (0x6AED32..0x6AED9C, through 0x8D017B). For each ability record: the power is granted when the record has no tech, or its tech is already active (0x94AEF4), or the power has flag 8. Grant = `0x8D43B1(power, rof, now + rof)` and `0x8D75F5(power, 1)`. A record whose tech becomes active later grants nothing, and no tech effect grants it then (`PowerBalloon`, given by HC cards, carries `alwaysaddtoplayer` for this reason). |
+| Recharge list | `[player+3F0h]`, count `[player+3F4h]`, 12-byte entries `{power, rof ms, time ms}` | confirmed (memory) | One entry per power ID: a second record of the same power overwrites the ROF, so the last granted record sets the period of every caster (450 s for `ypPowerCeaseFire`, from the Taj Mahal records). After a cast, `time` = cast time + that ROF. |
+| Charge list | `[player+3E4h]`, count `[player+3E8h]`, 12-byte entries `{power, charges, recharging}` | confirmed (memory) | Found by 0x8D4306 (`entry* thiscall(player, power)`, `ret 4`). Granted with 1 charge; a cast sets `{0, 1}` until the recharge ends. |
+| Use a power | FUN_008D99D1, called from 0x8D9E0B and 0x8D9E6A | partly confirmed | Fails (0x8D9C20) when the player has no charge entry for the power or `charges` ≤ 0 (0x8D9A1D..0x8D9A30). In game the UI then prints string "This ability is not available" and nothing starts. |
+| Ceasefire state | the treaty (no-rush) object; `[obj+4]` end time, `[obj+9]` one-minute warning shown, `[obj+11h]` 1 for a ceasefire | partly confirmed | Its update (cold chunk 0x6776A8..) picks "one minute to the end of the Ceasefire" (69388) or string 46616, and "Ceasefire over" (69391) or 46617, from `[obj+11h]`, with the alert `ui\alerts\treatyend.xml`; the timer text is 69387 (0x8C1671). Sharing the treaty object is the likely reason a ceasefire cast in a Treaty game ends the treaty early (inference). |
 
 ### Lifespan and construction (for `lifespanAfterConstruction`)
 

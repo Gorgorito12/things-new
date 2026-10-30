@@ -168,7 +168,8 @@ dodgeChance T P [tech X | notech] [ranged | melee | all] [log]   dodge chance P 
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
 spreadAnyAccuracy [UnitType] [log]   <MaxSpread>/<SpreadFactor> per attack for every miss;
                               marked units scatter every shot (area damage where it lands)
-liveBuildingWorkRate [log]    BuildingWorkRate techs also speed up existing buildings
+liveBuildingWorkRate [log]    BuildingWorkRate techs also speed up existing buildings,
+                              TrainPoints techs units already queued or training
 techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units are
                               created or die, not only at the next house or age-up
 maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit

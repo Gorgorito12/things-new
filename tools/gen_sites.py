@@ -161,6 +161,27 @@ SITES = [
     ("WorkRateResearchCall", 0x9E65F4, 0x0D),         # Research update FUN_009E648B
     ("WorkRateCommandResearchCall", 0x9D58D1, 0x0D),  # CommandResearch update FUN_009D5843
     ("WorkRateMaintainCall", 0x6AB23C, 0x14),         # Maintain update FUN_00492F3E (cold chunk)
+    # liveBuildingWorkRate, TrainPoints: the Train fraction function, void thiscall(action), whose
+    # only caller is the Train update (call at 0x9EA4B3): frac [ecx+6Ch] = progress [ecx+68h] /
+    # points [ecx+64h]. The hook replaces its head, fld [ecx+64h] / fcomp [0C3755Ch] (9 bytes),
+    # and re-executes it
+    ("TrainFrac", 0x9EA1FA, 0x45),
+    # liveBuildingWorkRate, TrainPoints: the rule the hook repeats, verify only. The Train enqueue
+    # FUN_009EAC35 looks up the trainer's player's proto (mov ebx,[[esi+10h]+44h] ... push eax /
+    # mov ecx,ebx / call 45311Bh / mov edi,eax) and, for the first entry of an empty action
+    # (cmp [esi+74h],0 / jg), stores [edi+6Ch] in [esi+64h], or with the trainer flag 9Eh
+    # (YPForceTrainAtBaseTrainPoints, call 44D063h) the base proto's (call 45316Eh) [eax+6Ch]
+    ("TrainPointsProto", 0x9EAC3D, 0x29),
+    ("TrainPointsSet", 0x9EB19F, 0x43),
+    # liveBuildingWorkRate, TrainPoints: the same for Maintain. Its fraction function (only caller
+    # 0x6AB264, inside maintainWaitForPop's MaintainCycleDone, which the head hook leaves stock):
+    # [ecx+74h] = [ecx+70h] / [ecx+6Ch], head fld [ecx+6Ch] / fcomp [0C37468h]; the cycle start
+    # (FUN_009E2829) that stores the proto ID in [esi+64h], looks it up for the trainer's player
+    # and sets [esi+6Ch] = count [esi+68h] x [edi+6Ch], or with flag 9Eh the base proto's
+    # [eax+6Ch] (not multiplied)
+    ("MaintainFrac", 0x9E27E4, 0x45),
+    ("MaintainPointsProto", 0x9E28BD, 0x11),
+    ("MaintainPointsSet", 0x9E2A05, 0x3D),
     # techPrereqRecheck (FUN_004919CE, a player's tech tree update): cmp byte [edi+10h],0 /
     # jne 5096D4h, the dirty test the hook replaces and re-executes
     ("TechPrereqDirtyCheck", 0x491A18, 10),

@@ -140,6 +140,15 @@ there:
   builder, `exec 'tis("<Proto>")'`, then `rclick <x> <y>`. The first real click after the window
   takes the focus is often lost: repeat it. Synthetic key presses (`rkey`) do not reach the
   game's hotkeys, not even the stock Delete.
+- **Training and research from the console** (checked 2026-10-30): `exec
+  'uiLookAtAndSelectUnit(<id>)' 'trainInSelected("Settler", 6)'` queues six units in player 1's
+  building (one queue entry each); `researchByID(<tech index>, <unit id>, <player>)` starts a
+  research for any player. `trainByID` trains nothing: its function reads four parameters for the
+  three it registers. `trTechSetStatus` typed in the console does nothing; use a timed `Set Tech
+  Status` trigger. To time a train or a research, read the building's actions from memory: the
+  action list is `[[unit+58h]+1Ch]` (count `[[unit+58h]+14h]`), a Train action (vtable 0xB98388)
+  has its points at `+64h` and its fraction at `+6Ch`, a Research action (0xB98078) its fraction at
+  `+70h` ([engine-symbols.md](engine-symbols.md), "Train points").
 - **The editor route finishes buildings:** a `PlaceAsFoundation` proto placed by the map is a
   complete building once the scenario is reloaded, so place a foundation in game (see above).
   Scenario players lack their civ's start techs: add `tech1=Age0British` (or the civ's own Age0
