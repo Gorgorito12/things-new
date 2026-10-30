@@ -26,6 +26,7 @@ Outcome ApplyHealNonIdle(const Config& config);
 Outcome ApplySmartHealTargets(const Config& config);
 Outcome ApplyDamageOverTime(const Config& config);
 Outcome ApplyDodge(const Config& config);
+Outcome ApplySpreadAnyAccuracy(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
@@ -66,6 +67,8 @@ inline constexpr Feature kFeatures[] = {
     {"smartHealTargets", ApplySmartHealTargets},
     {"damageOverTime", ApplyDamageOverTime},
     {"dodgeAnyUnit/dodgeSoundSet/criticalSoundSet", ApplyDodge},
+    // After damageOverTime: both read action tags through the shared hook (actiontags.h), in this order.
+    {"spreadAnyAccuracy", ApplySpreadAnyAccuracy},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
@@ -105,6 +108,7 @@ inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgesoundset", "criticalsoundset",
+    "spreadanyaccuracy",
     "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",

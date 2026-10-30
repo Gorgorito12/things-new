@@ -343,7 +343,8 @@ Both lookups go through FUN_00467991, which searches the data folders. Whether t
 |---|---|---|
 | `<Unit>` tag map | FUN_0051CE1D, map at `this+0Ch`, filled through 0x59B738(name, handler) | Called from 0x51DB46 (a second map at `this+C2Ch` is initialized there too). 105 entries: the `protoy` unit tags (`DBID`, `Icon`, `AnimFile`, `MaxHitpoints`, `Flag`, `Lifespan` 0x5FCF4B, `ProtoAction` 0x5FA158, `Armor`, …), followed by action-style tags (`Rate` … `UseBuckets`, including `Poison`). Handler shape: `handler(?, node, target)`, `ret`. Attributes are read with 0x598F37(node, "attr", &out); text is converted with 0x59AC86 (float). |
 | `<ProtoAction>` handler | 0x5FA158 | `edi = target = proto`, `ebx = node`. It looks up the action named by the node's `<Name>` in the proto's action set `[proto+44h]` (0x5F8FDB). If found: `FUN_005F98A0([proto+44h], proto, action, node)`. If the proto has no such action (e.g. no tactics entry), it goes to 0x5FC891 without parsing. |
-| Action parser | FUN_005F98A0 | `thiscall(actionSet, proto, action, node)`. An if-chain of 87 compares `0x443C10(nameStr, L"Tag", 0, -1)` (0 = equal), shared by `.tactics` `<action>` and `protoy` `<ProtoAction>`. In the loop, EDI = child node and ESI = the **address** of its name BString, `[[node+4]+18h] + 4*[node+18h]` (lea at 0x5F993E; 0xD6FC90 when the index is out of range), so the UTF-16 name is `[esi]`; the text is `*(wchar_t**)(node+14h)`. `action[1]` = action name ID (from `<Name>`), `action[2]` = type, `[action+64h]` = flag bytes. The last compare is `ModifyExclusive` (0x5FA10F); an unknown tag falls through 0x5FA11E to the loop increment 0x5FA126 and is silently ignored. Handlers also return to 0x5FA126, so only 0x5FA11E is a safe "unknown tag" hook. At 0x5FA11E the stack holds the return address at `[esp+C0h]` (0x5FA213 when called by the `<ProtoAction>` handler), the proto at `[esp+C4h]` and the action at `[esp+C8h]`. `damageOverTime` hooks it for `<AttachProtoUnit>`. |
+| Action parser | FUN_005F98A0 | `thiscall(actionSet, proto, action, node)`. An if-chain of 87 compares `0x443C10(nameStr, L"Tag", 0, -1)` (0 = equal), shared by `.tactics` `<action>` and `protoy` `<ProtoAction>`. In the loop, EDI = child node and ESI = the **address** of its name BString, `[[node+4]+18h] + 4*[node+18h]` (lea at 0x5F993E; 0xD6FC90 when the index is out of range), so the UTF-16 name is `[esi]`; the text is `*(wchar_t**)(node+14h)`. `action[1]` = action name ID (from `<Name>`), `action[2]` = type, `[action+64h]` = flag bytes. The last compare is `ModifyExclusive` (0x5FA10F); an unknown tag falls through 0x5FA11E to the loop increment 0x5FA126 and is silently ignored. Handlers also return to 0x5FA126, so only 0x5FA11E is a safe "unknown tag" hook. At 0x5FA11E the stack holds the return address at `[esp+C0h]` (0x5FA213 when called by the `<ProtoAction>` handler, 0x5FA623 for a tactics `<action>`), the proto at `[esp+C4h]`, the action at `[esp+C8h]` and the action's node at `[esp+CCh]`. The shared action tag hook (`actiontags.cpp`) hooks it for `damageOverTime` (`<AttachProtoUnit>`) and `spreadAnyAccuracy` (`<MaxSpread>`, `<SpreadFactor>`). |
+| Tactics loader | FUN_005FAA4F, called at 0x5FAD1C by the `<Tactics>` tag handler of a `protoy` unit | `thiscall(actionSet, proto, fileName)`: loads the `.tactics` file into the proto's own action set `[proto+44h]` (created there, 28h B, ctor 0x5F89E2), so every proto that names a file gets its own actions. Each `<action>` goes to FUN_005FA5B3 (`thiscall(actionSet, proto, node, ?)`, `ret 0Ch`): a new 0C4h-byte action with name -1 (0x5FA3EF), appended to `[set+1Ch]`, then parsed by FUN_005F98A0(proto, action, node) at 0x5FA61E (return 0x5FA623). `<Name>` is a child like any other, so `action[1]` is set only when that child is reached; every stock and WoL tactics file has it first. `DBAction` and `Tactic` children are handled in the same loop (`ev_9f259ec8…`, `ev_4013f493…`, `ev_21b51932…`). |
 
 **Stock data.** No tactics file (209 checked) and no `protoy.xml` entry uses `Poison`, `MuteDamage` or `ReflectDamage`. The only "poison" in the data is `NatPoisonArrowFrogs`, an ordinary tech.
 
@@ -402,32 +403,59 @@ hits in two runs, the monk 2 and 0. With `dodgeAnyUnit AbstractNoOne log` (a mar
 has), the Explorer never dodged and the monk dodged 6 times. A first run whose trigger did not
 activate the tech had no dodge at all, monk included: the tech condition holds for both.
 
-## Projectile accuracy and spread (2026-10-28, for WoL request #2)
+## Projectile accuracy and spread (2026-10-28, for WoL request #2; completed 2026-10-30 for `spreadAnyAccuracy`)
 
 Evidence: REA pseudocode `ev_7824a864a13fff8e6d0572f7a502352f6f7d2fb48216ff9d85ec96d84f94eda5`
 (the launch fragment Ghidra calls FUN_004995c7) and
 `ev_6476290bdc5072fe4d2758d1ac4b4e7b7e0da3592a03ff0a76e9b67e5a7b8b05` (0x4A5B7E, 0x4CEF8C,
-0x4A5B02); `cs` for the instruction sequence; hardware read breakpoints on the action fields
-while two groups fought on the test bed (`tools/re/trace_writes.py … --rw`, 2026-10-28).
+0x4A5B02). For `spreadAnyAccuracy` (2026-10-30, bundle
+`rea/evidence/age3y-b1a1dab7/spread-bundle.json`): `ev_ddf1e34f…` (FUN_004995C7 again),
+`ev_2ec57333…` (the projectile update FUN_0049539B), `ev_6d340e7a…` (FUN_0049BE95),
+`ev_741d2ae8…` (FUN_004C4DF8), `ev_75c27083…` (FUN_004A5B02), `ev_43d5ed66…` (FUN_004CB11C),
+`ev_4a79e238…` (the `ballisticPrecalcHits` name). `cs` for the instruction sequences
+(`spread_dis.txt`, `spread_sitecheck.txt` in the same folder). Hardware read breakpoints on the
+action fields while two groups fought on the test bed (`tools/re/trace_writes.py … --rw`,
+2026-10-28). In game with `spreadAnyAccuracy log` (2026-10-30).
+
+**The launch.** FUN_004995C7 is a fragment. In it, `[esp+18h]` is the unit action, whose `+4` is the
+tactics action (EDI in the block); `[esp+0E8h]` is the shooting unit, `[esp+0ECh]` the target unit
+or 0, ESI the new projectile and `[esp+28h]` the impact point. It picks one of four modes and stores
+it in `[projectile+20h]`:
+
+| Mode | When | What the projectile does (FUN_0049539B) |
+|---|---|---|
+| 3, ground shot | The action has `<TargetGround>` (byte `[action+0C0h]`, written at 0x5FCD9E) and `[esp+44h]` < 0 (its meaning not traced): 0x4C4DD9 calls the ground lead FUN_004C4DF8 and stores 3. | It flies to the point and hits no unit in flight. Where it lands, FUN_0049BE95(-1, point) applies the attack: area damage with `DamageArea`, nothing without. Seen in game: Grenadier shots never reached the precalculated block. |
+| 1, sure hit | `InstantBallistics` (bit 22): `jne 4A9455h` at 0x499801 stores 1 and jumps to 0x4998A0, past the roll and the offset. | It hits only its target, which takes the attack (FUN_0049BE95(target)). |
+| 1 or 2, precalculated | `ballisticPrecalcHits` is set and there is a target unit: the block 0x499807..0x499899. | 1: as above. 2: it lands at the offset point and deals **no damage at all**: FUN_0049539B never calls FUN_0049BE95 for mode 2, it only plays the terrain impact FUN_004CB11C. Seen in game: five Longbowmen whose shots were all turned into misses left five musketeers at full HP, and a unit with `DamageArea` 2.5 did no damage either while its shots were misses. |
+| left unset | No target unit, or `ballisticPrecalcHits` off. | The block is skipped (`je 4998A7h` at 0x4997B0 / 0x4997B8) and the flight physics decide (static reading, not tested). |
 
 | What | Where | Notes |
 |---|---|---|
 | Accuracy field | action `+38h` (float) | Written by the `Accuracy` handler 0x5F8CF0 (default 1.0). ROF is `+34h`. |
-| Flags that skip the roll | action flag bytes `[+64h]` | `InstantBallistics` sets bit 22 (`or byte [flags+2],40h`, 0x5F8D2E): the projectile is a sure hit and accuracy is never read. `PerfectAccuracy` sets bit 28 (`or byte [flags+3],10h`, 0x5FCE28): sure hit, no roll. |
-| Precalculated hit | 0x499807..0x499899, inside the projectile launch (`ballisticPrecalcHits`, cfg var `[0xCEFFD4]`, gates the block) | `ebx = 1`; unless bit 28 is set, `ebx = 0x4A5B7E(projectile, accuracy = [edi+38h])` (read at 0x49984E). After 0x4A5B02 (target leading, `TrackRating`), `cmp ebx,2 / je 4CEF7Bh` sends a miss to the offset, then `[projectile+20h] = ebx` at 0x499899. |
-| The roll | FUN_004A5B7E | `int __thiscall(projectile, float accuracy)`: 1 = hit, 2 = miss. `chance = round(accuracy × 100 − 0.5 × d)`, d = 2D distance shooter→target; chance < 1 → miss, > 100 → hit, else uniform 0..100 ≤ chance → hit (RNG 2, `0x4228DF`). A target whose proto has abstract bit 2 always counts as hit on one path. |
-| The spread (miss only) | FUN_004CEF8C, called from 0x4CEF82 | `r = min(0.25 × d, 5.0)`; the impact point's x and z each move by uniform(−r, r). **Hardcoded**: 0.25 and 5.0 are the stock tactics' `spreadfactor` and `maxspread` values, but those tags are not read. |
-| Tags TAD does not parse | — | No string, no handler: `MaxSpread`, `SpreadFactor`, `AccuracyReductionFactor`, `AimBonus`, `UnintentionalDamageMultiplier`, `NumberProjectiles` (case-insensitive search of the exe, ASCII and UTF-16). They survive in tactics files from Age of Mythology. Parsed: `Accuracy`, `PerfectAccuracy`, `InstantBallistics`, `TrackRating`, `NumberBounces`, `Projectile`, `Throw`. |
+| Flags that skip the roll | action flag bytes `[+64h]` | `InstantBallistics` sets bit 22 (`or byte [flags+2],40h`, 0x5F8D2E): a sure hit, accuracy is never read, and the shot never enters the precalculated block. `PerfectAccuracy` sets bit 28 (`or byte [flags+3],10h`, 0x5FCE28): inside the block, `ebx` stays 1 and the roll is skipped. |
+| `ballisticPrecalcHits` | cfg var; name at 0xBE8158 (description "Determines if we precalculate whether or not a projectile hits its target"), registered at 0x573E2B through 0x5734E0; ID at `[0xCEFFD4]`, `[0xCEFFD0]` points to it | Read at 0x49979C: `0x4020C3(0xC66500, id)`, "is the var defined". **On by default:** the game's own `Startup\gamey.cfg` (also `game.cfg` and `gamex.cfg`) has the line `ballisticPrecalcHits` under "Ballistics settings". It is off only if a mod's startup cfg drops that line or a user cfg undefines it. |
+| Precalculated hit | 0x499807..0x499899, inside the projectile launch | `ebx = 1`; unless bit 28 is set, `ebx = 0x4A5B7E(projectile, accuracy = [edi+38h])` (read at 0x49984E); `[projectile+30h] |= 20h`. Then the target lead 0x4A5B02 (`TrackRating` at `[[action+4Ch]]`); if it fails, 0x6A4BC5 sets `ebx = 2` and jumps to the miss stub 0x4CEF7B. Otherwise `cmp ebx,2 / je 4CEF7Bh` (0x499890) sends a miss there. Then `[projectile+20h] = ebx` at 0x499899. |
+| The miss stub | 0x4CEF7B | `lea eax,[esp+28h] / push eax / mov ecx,esi / call 4CEF8Ch / jmp 499899h`. Reached only from 0x499893 and 0x6A4BCA (`cs` scan of every rel8/rel32 branch). |
+| The roll | FUN_004A5B7E | `int __thiscall(projectile, float accuracy)`: 1 = hit, 2 = miss (it also writes 2 to `[projectile+20h]` at 0x4CEF6B). `chance = round(accuracy × 100 − 0.5 × d)`, d = 2D distance shooter→target; chance < 1 → miss, > 100 → hit, else uniform 0..100 ≤ chance → hit (RNG 2, `0x4228DF`). So accuracy 1.0 still misses at range, 8 % of the shots at 16 m; in game some accuracy-1 units logged misses. A target whose proto has abstract bit 2 always counts as hit on one path. |
+| The lead | FUN_004A5B02 (unit target), FUN_004C4DF8 (ground target) | `bool thiscall(projectile, Vector* point, float* time, float trackRating)`. Both move the point to where the target will be, and set `[projectile+94h]` (the 2D distance to it) and `[projectile+9Ch]`. |
+| Projectile | created by 0x4999E3 | `+0` the projectile unit (its `+14h` is the position), `+4` the shooting unit's ID, `+8` the target ID, `+10h` the action, `+20h` the mode above, `+30h` flags, `+70h..+78h` the point it flies to, `+94h` the distance to it, `+0C0h` the launch's `[esp+44h]`. |
+| The spread | FUN_004CEF8C, `bool thiscall(projectile, Vector* point)`, `ret 4`; called only from 0x4CEF82 (no other call, jump or pointer to it, `cs`) | It returns 0 without an offset unless the shooting unit `[projectile+4]` still exists and `[projectile+10h]` is set. d is the 2D distance from the projectile unit to the point, or 1.0 (`[0xB856BC]`) without a projectile unit (0x4E2CF7 → 0x4CF00B). `r = d × 0.25` (`fmul [0BA0AECh]` at 0x4CF00B), clamped to 5.0 (`fcomp [0BA0AF8h]`, then 0x4E2CE3 writes 40A00000h). If r > 1e-6 (0x4CF026), x and z each move by `0x422648(rng 0xC66588, stream 2, -r, r)` (0x4CF054, 0x4CF066). **Hardcoded:** 0.25 and 5.0 are the stock tactics' `spreadfactor` and `maxspread` values, but those tags are not read. `spreadAnyAccuracy` replaces 0x4CF00B..0x4CF025 with the action's values and leaves the draws to the stock code. |
+| The attack applier | FUN_0049BE95, `void thiscall(projectile, int targetId, Vector* point)` | Without a live target it returns at once unless the mode is 3; then it works at the point. With `DamageArea` (byte `[[action+24h]+6]`) > 0, FUN_004C9D89 damages the units around the point; without area it damages only the live target, through TakeDamage (0x49B3D9). The projectile update calls it with the target for a mode-1 hit and with -1 when a mode-3 shot lands. |
+| Tags TAD does not parse | — | No string, no handler: `MaxSpread`, `SpreadFactor`, `AccuracyReductionFactor`, `AimBonus`, `UnintentionalDamageMultiplier`, `NumberProjectiles` (case-insensitive search of the exe, ASCII and UTF-16). They survive in tactics files from Age of Mythology. Parsed: `Accuracy`, `PerfectAccuracy`, `InstantBallistics`, `TrackRating`, `NumberBounces`, `Projectile`, `Throw`, `TargetGround`. `spreadAnyAccuracy` reads `MaxSpread` and `SpreadFactor` through the unknown-tag fall-through. |
 
 **Runtime check (2026-10-28).** Musketeers (`InstantBallistics`) fighting: ROF read ~200 times,
 accuracy never. Crossbowmen (projectile `Arrow`, no `InstantBallistics`): accuracy read at
 0x49984E on every shot, call chain through 0x48F892 / 0x448C6D.
 
-**Consequence for WoL's shotguns.** Their `VolleyRangedAttack` has `accuracy 0.3`,
-`maxspread 5`, `spreadfactor 1.8`, `numberprojectiles 6` and no `InstantBallistics`. In TAD that
-means one projectile per shot that misses most of the time, scattered by the stock
-`min(0.25 × d, 5)`: their `spreadfactor` and the six projectiles do nothing. With accuracy 1 the
-same unit almost never misses, hence "no spread".
+**Consequence for WoL's shotguns.** WoL's tactics files (`C:\WoL-Test\data\tactics`, 622 files,
+counted 2026-10-30) have 647 actions with `maxspread` or `spreadfactor`. 304 of them have
+`InstantBallistics` and 122 `TargetGround` (one has both); the other 222 go through the
+precalculated roll. The current shotgun files are among those 222:
+`wolinfantryrangedescopetero.tactics`, `wolinfantryrangedbacamarteer.tactics`, and the
+`VolleyRangedAttack` of `gw_trenchfighter.tactics`. The older `escopetero.tactics` and
+`trenchsoldier.tactics` use `InstantBallistics`. In stock TAD each shot is one projectile, which
+misses only when the roll fails; a miss is scattered by `min(0.25 × d, 5)` and does no damage.
+Their `spreadfactor` and `numberprojectiles` do nothing.
 
 ## Starting buildings (2026-10-28, partial, for WoL request #3)
 

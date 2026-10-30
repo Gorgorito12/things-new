@@ -3,7 +3,8 @@
 // <Lifespan> seconds the damaged unit then takes, every ROF seconds, the damage of X's
 // ProtoAction "Attaching", computed by the stock TakeDamage (damage type, damage bonuses,
 // armor) and credited to the attacker's player. X is a data definition only: it is never
-// created in the world. The hooks are in hooks/dot_hooks.asm.
+// created in the world. The hooks are in hooks/dot_hooks.asm; the tags are read through the shared
+// action tag hook (actiontags.h) and the tick through the shared world update wrapper (worldtick.h).
 //
 // Optional tags next to <AttachProtoUnit>, in the same attacker <ProtoAction>:
 // - <AttachMaxStacks>N</AttachMaxStacks>: each hit adds a stack, up to N; a tick deals the damage
@@ -28,6 +29,7 @@
 #include <string>
 #include <vector>
 
+#include "../actiontags.h"
 #include "../features.h"
 #include "../floatingtext.h"
 #include "../generated/sites.h"
@@ -503,19 +505,16 @@ void Tick(char* world) {
   }
 }
 
-}  // namespace
-
-extern "C" {
-
-// From the tag hook, for each <ProtoAction> child of protoy.xml the stock parser does not know.
-// tag is the address of the child's tag-name BString (its UTF-16 text is *tag); the child's text
-// is at [node+14h]. [proto+4] is the proto ID, [proto+10h] its name.
-void __stdcall UhcDotProtoActionTag(const wchar_t* const* tag, const char* node, const char* proto,
-                                    const char* action) {
-  if (tag == nullptr || *tag == nullptr) {
+// From the shared action tag hook (actiontags.h), for each child of an action the stock parser does
+// not know; only those of a protoy.xml <ProtoAction> are read. [proto+4] is the proto ID,
+// [proto+10h] its name.
+void DotActionTag(const uhc::ActionTag& tag) {
+  if (tag.source != uhc::ActionSource::kProtoAction) {
     return;
   }
-  const wchar_t* name = *tag;
+  const wchar_t* name = tag.name;
+  const char* proto = tag.proto;
+  const char* action = tag.action;
   const bool attach = _wcsicmp(name, L"AttachProtoUnit") == 0;
   const bool stacks = _wcsicmp(name, L"AttachMaxStacks") == 0;
   const bool snare = _wcsicmp(name, L"AttachSnare") == 0;
@@ -525,7 +524,7 @@ void __stdcall UhcDotProtoActionTag(const wchar_t* const* tag, const char* node,
   }
   const char* protoName = Field<const char*>(proto, 0x10);
   const ActionKey key{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)};
-  const wchar_t* text = Field<const wchar_t*>(node, 0x14);
+  const wchar_t* text = tag.text;
   if (attach) {
     if (text == nullptr || *text == L'\0') {
       uhc::Log(L"damageOverTime: %hs/%ls: empty <AttachProtoUnit>; ignored", protoName, ActionName(key.name));
@@ -571,6 +570,10 @@ void __stdcall UhcDotProtoActionTag(const wchar_t* const* tag, const char* node,
   }
 }
 
+}  // namespace
+
+extern "C" {
+
 float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::int32_t proto, char* action,
                                   std::int32_t attacker, float multiplier, float damage, float cap, std::int32_t a8,
                                   std::int32_t a9, std::int32_t a10, std::int32_t a11, std::int32_t a12,
@@ -606,7 +609,6 @@ void DotWorldTick(char* world, std::int32_t) {
 void* g_uhcDotTakeDamage = reinterpret_cast<void*>(&UhcDotTakeDamage);
 
 void UhcDotTakeDamageHook();
-void UhcDotProtoActionTagHook();
 }
 
 namespace uhc {
@@ -627,13 +629,12 @@ Outcome ApplyDamageOverTime(const Config& config) {
     }
   }
   // The snare and the tick text sites are checked here too, though data decides whether they run.
-  if (!VerifyAll("damageOverTime", {&sites::kDotTakeDamageEntry, &sites::kDotProtoActionTag,
-                                    &sites::kDotProtoActionCall, &sites::kSnareTargetCheck, &sites::kSnareCreate,
+  if (!VerifyAll("damageOverTime", {&sites::kDotTakeDamageEntry, &sites::kSnareTargetCheck, &sites::kSnareCreate,
                                     &sites::kSnareApply}) ||
       !uhc::VerifyFloatingText("damageOverTime") || !OnDatabaseLoad(&ResetForDataLoad)) {
     return Outcome::kFailed;
   }
-  if (!WriteJmp(0x005FA11E, reinterpret_cast<const void*>(&UhcDotProtoActionTagHook), 8) ||
+  if (!AddActionTagHandler(&DotActionTag) ||
       !WriteJmp(sites::kDotTakeDamageEntry.va, reinterpret_cast<const void*>(&UhcDotTakeDamageHook), 6) ||
       !uhc::AddWorldTick(&DotWorldTick)) {
     return Outcome::kFailed;

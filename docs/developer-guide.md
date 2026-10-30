@@ -204,7 +204,9 @@ there:
   client area): main menu "Single player" (341, 1191), "Skirmish" (921, 1191), home city "Play"
   (239, 1527), setup "Play" (635, 1451). Wait about 5 s between the menu clicks and 8–12 s
   before each "Play". After a game, the home city screen sometimes ignores the first click on
-  "Play": take a small screenshot (`shot out.png 4`) and click again. `startRandomGame2` does
+  "Play": take a small screenshot (`shot out.png 4`) and click again. With a 2560×1440 client
+  (`shot` prints the size) the same buttons are at (340, 1068), (920, 1068), (240, 1372) and
+  (640, 1304) (2026-10-30). `startRandomGame2` does
   nothing from the main menu; it works only inside the editor.
 - **A skirmish between two AIs** (for AI-only cases, such as `damageOverTime`'s army units): on
   the setup screen the player count list is at client (2317, 131) and "3 players" at (1911, 267);

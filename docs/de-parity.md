@@ -74,7 +74,7 @@ Sizes, following the Design rule in wol-requests.md:
 
 | # | Request | What DE has | Legacy today | UHC fit |
 |---|---|---|---|---|
-| 2 | Shotgun spread | No spread. A shotgun is one `InstantBallistics` hit on an `InvisibleProjectile` with `DamageArea` and `DamageCap` | Reads all those tags already | **data only** (see #2); spread itself is L |
+| 2 | Shotgun spread | No spread. A shotgun is one `InstantBallistics` hit on an `InvisibleProjectile` with `DamageArea` and `DamageCap` | Reads all those tags already | **data only** (see #2); spread itself: built as `spreadAnyAccuracy` (2026-10-30) |
 | 23 | Decimal population | Nothing; pop counts are integers | — | L, no DE spec |
 | 24 | Negative trickles, debt | `ResourceTrickleRate` with negative amounts, clamped by `Minimum/MaximumResourceTrickleRate`; no debt rule | Has those subtypes; default min 0, max 10; a stockpile never goes below 0 | negative trickle: **data only** (lower the minimum); debt: S–M |
 | 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M |
@@ -123,6 +123,9 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [I] **So the DE way is data only in legacy:** give each shotgun action an area hit with a damage
   cap, as DE does. Option (c) or (d) of question Q1 would have no DE name to follow; WoL's own
   spelling is already in their data.
+- **Built (2026-10-30)** with WoL's spelling, as JTMaston chose: `spreadAnyAccuracy` reads
+  `MaxSpread` and `SpreadFactor` and scatters every shot of marked units
+  ([wol-requests.md](wol-requests.md), #2).
 
 ### #23 Decimal population
 

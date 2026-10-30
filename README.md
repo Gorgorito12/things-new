@@ -27,6 +27,7 @@ patcher loads `UHC.dll` at startup. It is a from-scratch successor to the commun
 | `dodgeAnyUnit [UnitType] [log]` | **New.** Units marked with a unit type can dodge hits like the Japanese monk: no damage, 15 % of the time, while their player has the tech `YPDodge`. Stock allows it only for `ypMonkJapanese`. | confirmed (single player) |
 | `dodgeSoundSet UnitType SoundSet`, `criticalSoundSet UnitType SoundSet` | **New.** Choose the sound set a unit plays when it dodges, or when it lands a critical hit, instead of the stock `PowerEvade` / `PowerCriticalStrike`. | confirmed (single player; the choice is logged, the sound itself was not listened to) |
 | `damageOverTime [log] [noticktext]` | **New.** Poison: an attack that lists `<AttachProtoUnit>X</AttachProtoUnit>` keeps damaging what it hits, with X's `Attaching` action every `ROF` seconds for X's `Lifespan`. Damage type, bonuses, armor and techs on X apply as for any hit; arrows, grenades, cannon balls and area damage poison too. Optional tags on the attack: `<AttachMaxStacks>` (stacks that expire one by one), `<AttachSnare>` (slow) and `<AttachTickText>` (the damage shown over the unit). | confirmed (single player; a tick on an AI army unit after its attacker is gone not reproduced) |
+| `spreadAnyAccuracy [UnitType] [log]` | **New.** `<MaxSpread>` and `<SpreadFactor>` of each attack (tactics or `<ProtoAction>`) set how far its misses land, instead of the hardcoded `min(0.25 × distance, 5)`; stock reads neither tag. Units marked with the unit type scatter every shot that way whatever their accuracy (1.0 and `PerfectAccuracy` too), and each shot deals its area damage where it lands. `InstantBallistics` and `TargetGround` attacks are not covered. | confirmed (single player) |
 | `liveBuildingWorkRate [log]` | **New.** A `BuildingWorkRate` tech (train, research and `Maintain` speed) also speeds up the buildings that already stand. Stock only speeds up the ones completed after the tech. | confirmed (single player, `Maintain`) |
 | `techPrereqRecheck [N] [full] [log]` | **New.** Techs whose prerequisites count units (`<TypeCount>`) react as soon as such units are created or die. Stock re-checks them only at the player's next house, age-up or tech change. | confirmed (single player) |
 | `maintainWaitForPop [UnitType] [log]` | **New.** A marked building whose automatic production (`Maintain`: factory cannons, Ottoman settlers, …) finishes a unit at the population cap keeps it and spawns it as soon as there is room. Stock throws it away and starts the cycle again. | confirmed (single player) |
@@ -118,8 +119,8 @@ yourself, see the [developer guide](docs/developer-guide.md#1-build).
   - 8 of the 23 UHC 1.10 keys: `ignoreRegistryPath`, `deckCardCount`, `basePop`, `extraPop`,
     `noAILimit`, `customRevolutionBanners`, `removeFameRestriction`,
     `removeConversionRestriction`;
-  - 28 new features: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime`,
-    `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `liveBuildingWorkRate`,
+  - 29 new features: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime`,
+    `dodgeAnyUnit` (with `dodgeSoundSet` and `criticalSoundSet`), `spreadAnyAccuracy`, `liveBuildingWorkRate`,
     `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`,
     `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`,
     `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`, `noCorpseDopples`,
