@@ -10,6 +10,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
 | [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
+| [`wol_mining_report.py`](#wol_mining_reportpy) | Lists WoL's mining techs that never reach plantation-like buildings (request #11). |
 | [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
@@ -136,6 +137,18 @@ again from the `.xml.dot-orig` files and compiles the XMB from the result, so it
 the `.XMB.dot-orig` files are only backups. Then enable `damageOverTime log` in the copy's cfg
 and let the Explorer hit something (for an unattended run, see the developer guide, "Driving
 the game unattended").
+
+## wol_mining_report.py
+
+```
+python -I tools/wol_mining_report.py <WoL data folder> > docs/wol-mining-report.md
+```
+
+Reads WoL's `protoy.xml` and `techtreey.xml` (nothing else, no writes) and prints, as Markdown,
+the protos with `AbstractMine` that are not mines, the gatherers with their own rate for one of
+them, and the techs with a `Gather` `WorkRate` effect on `AbstractMine`, grouped by the
+plantation-like keys they do not boost. That is the list for the data fix of WoL request #11
+([wol-requests.md](../docs/wol-requests.md)).
 
 ## protoy_testdata.py
 

@@ -221,6 +221,15 @@ there:
   by a steady trickle, so compare a kill against that rhythm.
 - **Zooming for a video:** `exec "uiLookAtUnit(ID)"`, then `wheel 1280 700 8`, then `record …
   --follow ID`.
+- **Recording the sound:** the shared profile (`NewProfile3.xml`) has the game sound off
+  (`optionsoundonoff` false, `optionsoundlevel` 0), so a test with sound must turn it on and put
+  the file back byte for byte afterwards (the game rewrites the profile when it closes, so restore
+  it after the last close). The capture is the speaker's WASAPI loopback (Python `soundcard`),
+  muxed with the video by ffmpeg; DirectShow has no loopback device on this machine.
+- **No keyboard.** The game reads the keyboard through DirectInput 8 and ignores injected keys
+  (`SendInput` with scan codes, window focused): not even the stock `Delete` works. Hotkey tests
+  need a real key press; console commands (`exec`) are the only unattended input besides the
+  mouse.
 - **Shipments need a skirmish and real clicks.** Scenario players have no home city, so a test of
   shipments (`hcShipmentPointFallback`) runs in a skirmish. Send a card by clicking the home city
   flag (client 667, 1217 on a 2560×1600 client), then a card in its panel. The console cannot set

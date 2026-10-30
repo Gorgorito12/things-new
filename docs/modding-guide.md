@@ -654,7 +654,15 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
 
 ![dodgeAnyUnit in game](media/dodgeAnyUnit.gif)
 
-*In game:* An Explorer with AbstractDodge and the YPDodge tech dodges musketeer shots: each `dodged a hit` line is a shot that did no damage. [Full video (MP4)](media/dodgeAnyUnit.mp4).
+*1. The dodge:* An Explorer with AbstractDodge and the YPDodge tech dodges musketeer shots: each `dodged a hit` line is a shot that did no damage. [Full video (MP4)](media/dodgeAnyUnit.mp4).
+
+![dodgeSoundSet in game](media/dodgeSoundSet-sound.gif)
+
+*2. `dodgeSoundSet AbstractDodge PowerCriticalStrike`, with sound:* the same Explorer against four musketeers; at each `dodged a hit` line it plays the critical-strike sound set instead of the dodge's. The GIF is silent: listen to the [full video with sound (MP4)](media/dodgeSoundSet-sound.mp4).
+
+![dodgeSoundSet control in game](media/dodgeSoundSet-control.gif)
+
+*3. The control, with sound:* the same test with `dodgeAnyUnit log` only, so each dodge plays the stock `PowerEvade`. [Full video with sound (MP4)](media/dodgeSoundSet-control.mp4).
 
 ```
 dodgeAnyUnit [<UnitType>] [log]          default AbstractDodge
@@ -712,7 +720,10 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   time; a Japanese monk next to it dodged as in stock. The floating text was not checked. With a marker no unit had, the
   Explorer never dodged and the monk still did. `dodgeSoundSet` picked the configured set for the
   Explorer, and `criticalSoundSet ypMonkChinese PowerEvade` for a Chinese monk's critical hits
-  (seen in the log; the sound itself was not listened to).
+  (seen in the log). On 2026-10-29 the game's sound was recorded (videos 2 and 3): with
+  `dodgeSoundSet AbstractDodge PowerCriticalStrike` the log showed 6 dodges, each with its
+  `plays sound set PowerCriticalStrike` line, and the control 5 dodges with the stock sound; that
+  the two sounds differ is for a listener to confirm. `criticalSoundSet` was not recorded.
 - **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b
   ([wol-requests.md](wol-requests.md)).
 
@@ -1548,7 +1559,10 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
   refused a Trading Post on a player-owned socket: no foundation, and the message that it must be
   built near a native settlement or trade route. Scenario triggers cannot give build orders, so
   the order path that bypasses that check, WoL's case, was not driven. The code was reviewed
-  adversarially and no defect was found.
+  adversarially and no defect was found. The only stock path that hands the check a socket's exact
+  position is an AI build plan, and the AI builds a Trading Post only through a "claim" mission on
+  a victory-point site that the engine registers from the map's sockets (`aiMain.xs`); driving it
+  needs a skirmish on a map whose player-owned sockets count as such sites, which was not tried.
 - **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)).
 
 ### customHotkeyContexts
@@ -1629,7 +1643,10 @@ customHotkeyContexts [log]
   registered (IDs 151 to 153), and selecting each unit switched to its context, per the log: the
   Sacred Field (no stock context), the Caravanserai (instead of stock context 72, `StableAccel`)
   and the market wagon, not a building (instead of `BuildAccel`). The key press itself was not
-  tested: synthetic key presses do not reach the game's hotkeys.
+  tested: the game reads the keyboard through DirectInput 8 and ignores injected keys
+  (`SendInput` with scan codes, window focused). In the control on 2026-10-29 not even the stock
+  `Delete` deleted a selected Musketeer, and `y` with the Caravanserai selected (its test entry,
+  `uiDeleteSelectedUnit`) did nothing either. Only a real key press can close this.
 - **New in this DLL:** not in UHC 1.10. WoL request #12 ([wol-requests.md](wol-requests.md)).
 
 ### snareOnlyHitUnit
