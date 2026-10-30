@@ -24,8 +24,7 @@ import sys
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-REPO_URL = "https://github.com/Gorgorito12/Unharcoded-AOE3--NEW"
-PATCHER_URL = "https://github.com/danielpereira/AoE3UnHardcoded"
+REPO_URL = "https://github.com/Gorgorito12/tad-engine-extensions"
 
 
 def fail(message):
@@ -121,12 +120,11 @@ Adding it to your mod
 ---------------------
 1. Make your mod folder a complete game folder: a copy of the game's bin folder plus your
    mod's files. Never modify the Steam install.
-2. Patch that folder's age3y.exe once with UHCPatcher.exe, from the Release folder of
-   {PATCHER_URL}
+2. Patch that folder's age3y.exe once with the UHC patcher (UHCPatcher.exe).
    Keep the patcher outside the game folders and drag the exe onto it. The exe must be the
    unmodified Steam exe (SHA-256 b1a1dab7...11d9d). In the dialog, leave the checkboxes as
    they are (they only choose keys for the uhc.cfg you replace next), keep the default config
-   path Startup\\uhc.cfg, and click Apply. The patcher also writes UHC 1.10's own UHC.dll and a
+   path Startup\\uhc.cfg, and click Apply. The patcher also writes its own UHC.dll and a
    new Startup\\uhc.cfg next to the exe.
 3. From this package's UHC-{version} folder, copy UHC.dll next to the exe and the Startup
    folder into the mod folder, replacing the patcher's files. If you run the patcher again
@@ -140,8 +138,8 @@ Adding it to your mod
    from each player's own game install. Players can then start it however they like, because
    UHC.dll makes the exe's folder the working directory. They install nothing else.
 
-A uhc.cfg from UHC 1.10 is read as it is (basePop=500 and // comments are accepted). Its keys
-that this DLL does not implement yet are logged in UHC.log and ignored (guide, section 8).
+A uhc.cfg written by the UHC patcher is read as it is (basePop=500 and // comments are
+accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
 Keys that need data edits use Python tools from the source code (Code > Download ZIP).
 
 Keys

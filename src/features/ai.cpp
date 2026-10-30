@@ -23,7 +23,7 @@ void UhcAiLimitHook();
 namespace uhc {
 namespace {
 
-// Read from the exe rather than hard-coded, so builds patched to another folder (WoL's AI4\)
+// Read from the exe rather than hard-coded, so builds patched to another folder (e.g. AI4\)
 // keep working.
 const auto kAiFolder = reinterpret_cast<const wchar_t*>(0x00BE3A98);        // L"AI3\"
 const auto kPersonalityExt = reinterpret_cast<const wchar_t*>(0x00C0B39C);  // L".personality"

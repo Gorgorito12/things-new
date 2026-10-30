@@ -1,7 +1,7 @@
 // civFirstTC [log]: a civ's <firstTC>Proto</firstTC> in civs.xml replaces the TownCenter that a
 // random map places for its players, and that building is the player's first town center
 // (FirstTC), the unit the placement rules read. A Nomad start (rmGetNomadStart()) keeps the
-// map's units. WoL's design (docs/wol-requests.md, #3).
+// map's units.
 //
 // Four hooks, all simulation-side:
 // - civs.xml: the parser FUN_0052A590 skips a <civ> child tag it does not know at 0x52BB07; the

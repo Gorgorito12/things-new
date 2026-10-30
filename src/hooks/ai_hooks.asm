@@ -1,5 +1,5 @@
 ; Hook for noAILimit. Entered through a jmp written over the stock code; leaves through an
-; explicit jmp to the verified continuation (docs/uhc-address-map.md).
+; explicit jmp to the verified continuation (src/generated/sites.h).
 .686
 .model flat, c
 option casemap :none

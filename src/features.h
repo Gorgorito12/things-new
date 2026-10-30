@@ -96,7 +96,7 @@ inline constexpr Feature kFeatures[] = {
     // After overhealSources: they share the add-HP hook, which the first one writes.
     {"overhealDecay", ApplyOverhealDecay},
     {"showGatherRate", ApplyShowGatherRate},
-    // Last of the WoL keys: it redirects the four calls of the BuildingWorkRate getter, which
+    // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
     {"perfStats/perfAutoExec", ApplyPerfStats},

@@ -2,11 +2,12 @@
 
 The internals of every implemented feature, for modders who want to understand them or rebuild
 them in their own DLL. Addresses are virtual addresses in the stock Steam `age3y.exe`
-(`b1a1dab7…`, see [binaries.md](binaries.md)); they are only valid for that build. The verified
-patch sites are in [uhc-address-map.md](uhc-address-map.md) and the engine functions and object
-offsets in [engine-symbols.md](engine-symbols.md). The practical steps for copying a feature
-into another DLL (sites to check, files, build) are in
-[porting-to-another-dll.md](porting-to-another-dll.md).
+<!-- public: (`b1a1dab7…`); they are only valid for that build. -->
+(`b1a1dab7…`, see [binaries.md](binaries.md)); they are only valid for that build. The verified <!-- private -->
+patch sites are in [uhc-address-map.md](uhc-address-map.md) and the engine functions and object <!-- private -->
+offsets in [engine-symbols.md](engine-symbols.md). The practical steps for copying a feature <!-- private -->
+into another DLL (sites to check, files, build) are in <!-- private -->
+[porting-to-another-dll.md](porting-to-another-dll.md). <!-- private -->
 
 Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` means bytes.
 
@@ -15,7 +16,8 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
 1. **The loader stub.** A UHC-patched exe starts at a 79-byte stub (VA `0xB836BE`) instead of
    the game's entry point. The stub calls `LoadLibraryA("UHC.dll")` and
    `GetProcAddress("_UHCMain@0")`, calls `UHCMain`, then jumps to the original entry point
-   `0x5876AC`. The byte layout is in [binaries.md](binaries.md).
+   `0x5876AC`.
+   The byte layout is in [binaries.md](binaries.md). <!-- private -->
 2. **UHCMain runs before the game initializes.** The C runtime and the game objects do not
    exist yet: the game object pointer `[0xC66234]` is still null. So at startup a feature only
    patches code and prepares its own data. Anything that needs game data is resolved later,
@@ -38,15 +40,16 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
 
    Otherwise it logs `host is not a UHC-patched age3y.exe` and does nothing.
 4. **Working directory.** Right after the host guard, before it reads the cfg, the DLL makes the
-   exe's folder the working directory, as UHC 1.10 does (`UseExeFolderAsWorkingDirectory` in
-   `src/dllmain.cpp`). A mod then
-   starts the same way from a double-click, a shortcut or a launcher, and `ignoreRegistryPath`
+   exe's folder the working directory (`UseExeFolderAsWorkingDirectory` in `src/dllmain.cpp`).
+   UHC 1.10 does the same. <!-- private -->
+   A mod then starts the same way from a double-click, a shortcut or a launcher, and `ignoreRegistryPath`
    reads the mod folder.
 5. **Configuration.** The loader patch stores the config path at `0xC65083` (at most 20 wide
    characters, default `Startup\uhc.cfg`). The DLL resolves it against the exe's folder and
-   parses it (`src/config.cpp`). The parser accepts both `key value …` and UHC 1.10's
-   `key=value` with `//` comments, which is the syntax the UHC 1.10 patcher writes. The DLL then
-   runs every feature in the order of `kFeatures` in `src/features.h`. Each returns
+   parses it (`src/config.cpp`). The parser accepts both `key value …` and the older
+   `key=value` syntax with `//` comments.
+   That older syntax is UHC 1.10's, which its patcher writes. <!-- private -->
+   The DLL then runs every feature in the order of `kFeatures` in `src/features.h`. Each returns
    *not configured*, *applied* or *failed*.
 
 ## 2. Verify, then patch
@@ -76,14 +79,17 @@ The hooks are MASM files in `src/hooks/`.
   re-executes (or deliberately replaces) the instructions it overwrote, then leaves with
   `jmp dword ptr [label]`, where `label` is a data dword holding the absolute continuation
   address.
-- **No relocation.** Nothing is copied to a trampoline. The UHC 1.10 relocator mishandles some
-  relative branches and decodes from the middle of instructions (see the defects in
-  [uhc-address-map.md](uhc-address-map.md)); writing the re-executed instructions by hand
-  avoids that whole class of bugs.
+- **No relocation.** Nothing is copied to a trampoline. An automatic relocator can mishandle
+  relative branches or decode from the middle of an instruction; writing the re-executed
+  instructions by hand avoids that whole class of bugs.
+  <!-- private:begin -->
+  The UHC 1.10 relocator does both (see the defects in [uhc-address-map.md](uhc-address-map.md)).
+  <!-- private:end -->
 - **Choosing a site:**
   - it starts on an instruction boundary;
   - no branch elsewhere in the exe targets the inside of the 5 overwritten bytes (scan all
-    `rel8`/`rel32` branches; see [developer-guide.md](developer-guide.md));
+    `rel8`/`rel32` branches);
+    see [developer-guide.md](developer-guide.md) for the scan. <!-- private -->
   - you know which registers and flags are live at the continuation.
 - **Registers.** Keep ESP balanced, and keep EBX, ESI, EDI and EBP unless the replaced stock
   code set them. Change EAX, ECX or EDX only when the continuation overwrites them before reading
@@ -92,7 +98,8 @@ The hooks are MASM files in `src/hooks/`.
   string compare in the flags.
 - **Calling engine functions.** They are `thiscall`: ECX holds `this`, arguments are pushed right
   to left, and the callee pops them (`ret N`). A `bool` result is in **AL only**: test AL, not
-  EAX. The upper bytes of EAX are garbage, which is upstream's `asianCivs` defect.
+  EAX. The upper bytes of EAX are garbage.
+  Testing EAX is upstream's `asianCivs` defect. <!-- private -->
 - **Calling the DLL's C++ from a hook.** Declare the function `extern "C" __stdcall` and wrap the
   call in `pushad`/`popad` when the hook must preserve registers.
 - **Wrapping a whole function** (`damageOverTime`). A `jmp` over the function's first instructions
@@ -164,7 +171,8 @@ EDX = player data. Stock then:
 The hook keeps steps 1, 2 and 4 with `extraPop` and `basePop`, and drops steps 3 and 5.
 
 A second entry point covers `0x4581FC`: stock jumps there from `0x679611` with ECX = 0 when the
-extra population is negative, and that path skips the first 5 patched bytes. Upstream misses it.
+extra population is negative, and that path skips the first 5 patched bytes.
+Upstream misses it. <!-- private -->
 
 The shared-team-population path (`0x679641`) is not patched.
 
@@ -236,7 +244,8 @@ stay as they are, and only the places where a population enters or leaves change
 **Why it is safe.**
 - Integer data is unchanged in meaning: every value is a multiple of K and every compare is
   between scaled values. Any consumer not listed reads a relative quantity (checked for the 44
-  getter calls; [engine-symbols](engine-symbols.md#population-for-decimalpopulation)).
+  getter calls).
+  The list is in [engine-symbols](engine-symbols.md#population-for-decimalpopulation). <!-- private -->
 - The parse wrappers keep the stock contract: same arguments, bool in AL, the out int written on
   success. The effect wrappers call the stock function with its five arguments. The PopulationCap
   hooks leave the x87 stack as stock does (one value, then the stock `fistp`), and the control
@@ -245,8 +254,9 @@ stay as they are, and only the places where a population enters or leaves change
 - The cap hook keeps every stock clamp when decimalPopulation runs without basePop/extraPop; with
   them, their semantics, in whole population. `g_uhcPopScale` is 1 otherwise, so basePop/extraPop
   alone behave as before (tested: 6 / 300).
-- The text refs are used only as text by the stock and WoL UIs (`formatText`); the int evaluator
+- The text refs are used only as text by the stock UI (`formatText`); the int evaluator
   now refuses them, which no UI asks for.
+  WoL's UI uses them only as text too. <!-- private -->
 - The format wrappers pass the arguments in the same slots (all 4 bytes), so a format whose
   conversion is missing (a translation) is printed by the stock call unchanged.
 - **Not covered** (scaled values shown as they are): the post-game timeline's population curves
@@ -265,7 +275,8 @@ gets the same order. The folder `L"AI3\"` (`0xBE3A98`) and the extension `L".per
 
 The hook replaces the whole range. It stores the DLL's count and table, and also performs two
 initializations that the range contained: `[esp+24h]` = 0 (the loaded-personality counter, used
-as an array index) and `[esp+1Bh]` = 0 (the function's return flag). Upstream skips both.
+as an array index) and `[esp+1Bh]` = 0 (the function's return flag).
+Upstream skips both. <!-- private -->
 
 ### customRevolutionBanners
 
@@ -290,14 +301,15 @@ Three independent parts:
    - Resource indexes: 3 = Fame, 5 = XP, 6 = shipments, 7 = export; stock shows 0, 1, 2 and,
      in the first function, 7.
    - The block passes the line's owner to `0x4539D3`. Stock uses ESI in the first function and
-     **EDI** in the second; upstream uses ESI in both.
+     **EDI** in the second.
+     Upstream uses ESI in both. <!-- private -->
 2. **Home city icons.**
    - At `0x5C1E1F` the hook loads two extra textures through `0x58E3EB`:
      `ui\home_city\xp_hc_icon` and `ui\home_city\fame_hc_icon`.
    - It points slots 3 and 5 of the resource-icon jump table at `0x9A2180` to DLL cases that use
      those textures. Stock sends both slots to the default case, which shows no icon.
    - A texture that failed to load (`-1`) keeps the default case.
-3. **"Fame trickle"** (upstream's name). At `0x51B026`, the imm32 of `push "FavoriteUnit"`
+3. **"Fame trickle".** At `0x51B026`, the imm32 of `push "FavoriteUnit"`
    inside the abstract-unit-type registration (see below) is replaced by the address of
    `"Fame"`. The built-in abstract type with that ID is therefore named `Fame`. How this leads
    to a Fame trickle has not been traced.
@@ -387,7 +399,7 @@ How the sites were found:
 - A hardware-breakpoint trace (`tools/re/trace_exec.py`) showed that heal actions start from
   FUN_009CD865.
 
-The trace is described in [engine-symbols.md](engine-symbols.md), "Unit types and healing".
+The trace is described in [engine-symbols.md](engine-symbols.md), "Unit types and healing". <!-- private -->
 
 ### smartHealTargets
 
@@ -551,7 +563,8 @@ in the simulation.
 - the attack action's event handler (0x48F175) passes `(damage × −0.1, 3.0)` to 0xB1BE43, which is
   `mov al,1; ret 8`.
 
-Nothing is applied. The details are in [engine-symbols.md](engine-symbols.md), "Damage and poison".
+Nothing is applied.
+The details are in [engine-symbols.md](engine-symbols.md), "Damage and poison". <!-- private -->
 The DLL ignores that path and adds its own, driven by data.
 
 **Data.** At load time, the action parser FUN_005F98A0 ends every unknown `<ProtoAction>` child at
@@ -685,9 +698,9 @@ tick text depends on the local player and touches nothing the simulation reads, 
 
 ### spreadAnyAccuracy
 
-**What stock does.** A projectile's fate is decided when it is launched
-([engine-symbols.md](engine-symbols.md), "Projectile accuracy and spread"). With the cfg var
-`ballisticPrecalcHits` (on in the game's own `Startup\gamey.cfg`) and a target unit, the launch
+**What stock does.** A projectile's fate is decided when it is launched.
+The code is mapped in [engine-symbols.md](engine-symbols.md), "Projectile accuracy and spread". <!-- private -->
+With the cfg var `ballisticPrecalcHits` (on in the game's own `Startup\gamey.cfg`) and a target unit, the launch
 rolls the action's accuracy: a hit flies to its target and damages it; a miss is moved by
 uniform(-r, r) on x and z, with a hardcoded `r = min(0.25 × d, 5)`, and **deals no damage at all**
 where it lands. `PerfectAccuracy` skips the roll (a hit). `InstantBallistics` and `TargetGround`
@@ -704,8 +717,9 @@ the key (proto ID `[proto+4]`, action name index `[action+4]`), the key `damageO
   `20 / 2` and its `<ProtoAction>` `3 / 1.5` gave 3 / 1.5).
 - A missing tag keeps the stock value (5.0, 0.25). A value that is not a number from 0 to 100
   (`MaxSpread`) or from 0 to 10 (`SpreadFactor`) is logged and ignored. So is a tag that comes
-  before the action's `<name>` in a tactics file (the action has no name index yet); every stock and
-  WoL file has `<name>` first.
+  before the action's `<name>` in a tactics file (the action has no name index yet); every stock
+  file has `<name>` first.
+  So does every WoL file. <!-- private -->
 - The table is cleared on every data load (`OnDatabaseLoad`), before the protos are read again.
   Every player's copy of a proto and of its actions keeps both numbers of the key.
 
@@ -744,14 +758,17 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
 
 **What it does not cover.**
 - `InstantBallistics` shots (sure hits, 0x4A9455 jumps past the block) and `TargetGround` shots
-  (mode 3 from 0x4C4DD9): they never reach the roll. In WoL's tactics, 304 and 122 of the 647
+  (mode 3 from 0x4C4DD9): they never reach the roll.
+  <!-- private:begin -->
+  In WoL's tactics, 304 and 122 of the 647
   actions with spread tags; the 222 others, including the current shotgun files, are covered
   ([engine-symbols.md](engine-symbols.md), "Consequence for WoL's shotguns").
+  <!-- private:end -->
 - Shots with no target unit, and every shot while `ballisticPrecalcHits` is off (a mod's startup
   cfg could drop it): the block is skipped and the flight physics decide.
 - A marked unit without `<DamageArea>` deals no damage: its ground shots land with nothing to hit
-  (seen in game: marked Longbowmen left every musketeer at full HP). Mark only area attacks, as
-  WoL's shotguns are.
+  (seen in game: marked Longbowmen left every musketeer at full HP). Mark only area attacks.
+  WoL's shotguns are area attacks. <!-- private -->
 - `NumberProjectiles` (one projectile per shot, as in stock); dynamic per-player protos that techs
   create (IDs from 100000 up) do not match the base proto's key and keep the stock values.
 
@@ -1207,8 +1224,9 @@ exact-position test (ESI = socket + 14h, EDI = the building's proto).
 - The UI pre-check and the AI's placement check call the same PLACE, so they agree with the
   command.
 - **Not observed in game:** in the test, the stock interface already refused a Trading Post on a
-  player-owned socket, and triggers cannot give build orders, so the order path WoL reports was not
-  driven.
+  player-owned socket, and triggers cannot give build orders, so the order path that bypasses that
+  check was not driven.
+  That is the path WoL reports. <!-- private -->
 
 ### customHotkeyContexts
 
@@ -1293,7 +1311,8 @@ out of the pace would fall behind and trigger this rule, and the group would sti
 
 **What counts as a snare:** a type-2Ch action with stat 0, operation 2, and both flags 15h and 16h.
 The only other timed creator, `<SpeedBoost>`, is not exclusive, and the auras (exclusive or not)
-have no duration flag, so WoL's exclusive speed auras are not taken for snares.
+have no duration flag, so exclusive speed auras (some mods have them) are not taken for snares.
+WoL has such auras. <!-- private -->
 
 **The velocity without the snares** replays the stock sum over the same actions in the same order,
 skipping the snares: the same operations, the same stop on the first exclusive modifier, the same
@@ -1314,8 +1333,14 @@ copy of the base node, `[node+0]` included. So **every player's node points at t
 NodeData**; only status, cost and research points are per player. The interface reads a tech's texts
 through the player's node.
 
+<!-- public:begin
+**The trap.** Writing `[[node]+8]` and `[[node]+0Ch]` changes the shared NodeData, hence renames
+the tech for every player.
+public:end -->
+<!-- private:begin -->
 **WoL's bug.** WoL's `SetTechName` apply writes `[[node]+8]` and `[[node]+0Ch]`: the shared
 NodeData, hence a global rename.
+<!-- private:end -->
 
 **The fix.** The effect's apply gives the player a private copy of the NodeData and points that
 player's node at it:
@@ -1392,8 +1417,9 @@ takes after a creation. Any other unit re-executes the two `mov`s and continues 
   visibility update runs inside the simulation, for every player, on every machine. Skipping a
   creation also skips its draw on RNG stream 1, which is probably a local stream (inference, not
   verified).
-- **Not covered:** the `MutateDopples` refresh (no stock or WoL proto uses it), the dopples a saved
+- **Not covered:** the `MutateDopples` refresh (no stock proto uses it), the dopples a saved
   game already holds, and the dopple of a live unit that later dies out of sight.
+  No WoL proto uses `MutateDopples` either. <!-- private -->
 
 ### danceBonusCivs
 
@@ -1437,8 +1463,11 @@ count is 0 it answers "not listed".
 - The answer depends only on the cfg list and the data's civ table, so every machine with the same
   cfg decides the same.
 - The native civs pass the stock compares as before, and an unlisted civ runs exactly the stock
-  bytes. Upstream's `nativeCivs` patches the later compares (0x4904B5, 0x4ECD6B, 0x8D47C9), outside
+  bytes.
+  <!-- private:begin -->
+  Upstream's `nativeCivs` patches the later compares (0x4904B5, 0x4ECD6B, 0x8D47C9), outside
   these ranges, so a `nativeCivs` port can share these functions.
+  <!-- private:end -->
 
 ### startingTC
 
@@ -1455,6 +1484,12 @@ rule) and FUN_008CE935 (`distanceatleastfromtype`, the 65 m rule) loop over the 
 `[p+4F0h]`, look the unit up in the world's table with no alive test, and measure with the unit's
 `vtbl+B8h`. AtLeast skips a player with -1; AtMost returns "satisfied" as soon as any player has -1.
 
+<!-- public:begin
+**A dying first town center.** A tech can give `TownCenter` a `Lifespan` and then ship a
+replacement building in the same application. The replacement's addUnit then sees a first town
+center that is still a live unit, so stock keeps it, and it dies a moment later.
+public:end -->
+<!-- private:begin -->
 **WoL's Maori start** (static reading). `Age0Maori` applies `Data Lifespan 0.5 Assign` to
 `TownCenter`, then `FreeHomeCityUnit MaoriPa`. The Lifespan case of the Data effect (FUN_008F973F,
 case 0x8FA939) writes `[proto+ACh]` and calls FUN_00A00505, which runs setLifespan (0x48DCB9) on
@@ -1462,6 +1497,7 @@ each of the player's units of that proto: the live town center gets state bit 3 
 once. FreeHomeCityUnit then creates the Pa at the shipment point, the town center, in the same tech
 application. The Pa's addUnit sees a first town center that is still a live unit, so stock keeps
 it, and the town center dies 0.5 s later.
+<!-- private:end -->
 
 **The hooks** (`hooks/startingtc_hooks.asm`):
 - **Proto hook**, a `jmp` over `cmp eax,[ecx+5E08h]` at 0x506B3B (6 B), in the cold chunk, so only
@@ -1513,7 +1549,8 @@ it, and the town center dies 0.5 s later.
 
 ### civFirstTC
 
-WoL's design (request #3, by WoL's developer Mandos): a civ names its first building in
+WoL's design (request #3, by WoL's developer Mandos). <!-- private -->
+A civ names its first building in
 `civs.xml`, `<firstTC>Proto</firstTC>`; wherever map code places `TownCenter` for its players,
 that proto is placed instead, except in a Nomad start, and it is the `FirstTC` the placement rules
 read.
@@ -2170,8 +2207,9 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   the world), applies the same record test, and assigns `"<name> 0.67/s"` (`%d/s` for a whole
   number) to the Value's BString with 0x443BB8; otherwise it leaves the empty string and returns
   true. The resource's name is `0x58EA52(0x60782A(db, res))`, freed with 0x4010CA. Ids 19h and 1Ah
-  keep the stub (their shared imm32 at 0x5D06E8 is not written): WoL's UI uses
-  `{currentUnitGatherRate(gold)}`.
+  keep the stub (their shared imm32 at 0x5D06E8 is not written), so a UI that uses
+  `{currentUnitGatherRate(gold)}` gets the stock result.
+  WoL's UI uses it. <!-- private -->
 
 **Why it is safe.**
 - The simulation is unchanged: the record hook only reads game memory and writes the DLL's table.
@@ -2256,18 +2294,20 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   same order, and comes from the stock sum (x87, rounded to a float at each step). The product
   base × factor is one IEEE single multiplication. A unit with no stat-40h modifier gets the stock
   value. The log table only decides whether to write a line.
-- It is the last WoL key in `features.h`, so the keys that verify the call sites as stock bytes
-  (liveBuildingWorkRate, noTrainNearEnemyTC) check them before this key rewrites them.
+- It comes after liveBuildingWorkRate and noTrainNearEnemyTC in `features.h`, so those keys,
+  which verify the call sites as stock bytes, check them before this key rewrites them.
+  It is the last WoL key there. <!-- private -->
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
 
 ### bufferedFileReads
 
-**Why it exists.** The game's raw file stream reads with one `ReadFile` per request
-([performance.md](performance.md), §9):
+**Why it exists.** The game's raw file stream reads with one `ReadFile` per request:
 - 0x4683F4 is the read method;
 - 0x599121 reads 4 bytes;
 - 0x43B8FF reads a 16-byte header as four such reads.
+
+The profile is in [performance.md](performance.md), §9. <!-- private -->
 
 The archives (`art\Art*.bar`, `data\Data*.bar`, `sound\*.bar`, `render\*.bar`) are opened at startup
 and stay open, and everything is read through their handles. In a session that is about 10 million
@@ -2320,8 +2360,9 @@ default) with its file offset.
 
 ### multipleInstances
 
-**Why it exists.** The game allows one running copy per machine
-([engine-symbols.md](engine-symbols.md), 0x55A185). At startup it calls
+**Why it exists.** The game allows one running copy per machine (0x55A185).
+[engine-symbols.md](engine-symbols.md) has the details. <!-- private -->
+At startup it calls
 `CreateSemaphoreW(NULL, 1, 1, name)` and then `WaitForSingleObject(h, 0)`. A timeout means another
 copy holds the semaphore, and the game stops with "Only one copy of the game can run at a time". The
 name is `Global\Age3`, so copies in different folders, and even in different sessions, share it. Tests
@@ -2390,6 +2431,7 @@ and watched with `PrintWindow`, and both work without focus.
 
 None of this has been tested over a real network yet.
 
+<!-- private:begin -->
 ## 6. Differences from UHC 1.10
 
 The upstream features implemented here follow the same idea and sites, with these defects
@@ -2402,3 +2444,4 @@ fixed:
 
 The full list of upstream defects, including those in features not implemented yet, is in
 [uhc-address-map.md](uhc-address-map.md).
+<!-- private:end -->

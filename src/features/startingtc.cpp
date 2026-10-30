@@ -7,8 +7,9 @@
 // evaluators FUN_008CE515 / FUN_008CE935). Player::addUnit FUN_0049874F sets it once, while it is
 // still -1, to a unit whose exact proto ID is TownCenter's ([database+5E08h], 0x506B3B). Nothing
 // clears it when that unit dies. A civ that starts with another building has no FirstTC, or a
-// dead one: WoL's Age0Maori gives TownCenter a Lifespan of 0.5 s and then a free MaoriPa in the
-// same tech, so the Pa is added while the town center is still alive and FirstTC stays on it.
+// dead one: e.g. a start tech that gives TownCenter a Lifespan of 0.5 s and then a free
+// replacement building in the same tech, so the replacement is added while the town center is
+// still alive and FirstTC stays on it.
 //
 // Two hooks in addUnit (hooks/startingtc_hooks.asm), for a unit whose proto is of the marker type:
 // - a player with no FirstTC yet takes it, as stock takes a TownCenter;

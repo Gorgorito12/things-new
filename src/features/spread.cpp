@@ -1,5 +1,5 @@
 // spreadAnyAccuracy: per-action <MaxSpread> and <SpreadFactor>, and shots that scatter whatever the
-// accuracy (WoL request #2).
+// accuracy.
 //
 // Stock TAD scatters a projectile only when its precalculated accuracy roll misses: FUN_004CEF8C
 // moves the impact point by uniform(-r, r) on x and z with a hardcoded r = min(0.25 * d, 5.0), d being
@@ -154,7 +154,7 @@ void OnActionTag(const uhc::ActionTag& tag) {
   const ActionKey key{Field<std::int32_t>(tag.proto, 0x04), Field<std::int32_t>(tag.action, 0x04)};
   const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
   if (key.name < 0) {
-    // Only possible in a tactics <action> whose <name> comes later; every stock and WoL file has it
+    // Only possible in a tactics <action> whose <name> comes later; every known file has it
     // first, and the action has no name to key the value by yet.
     if (g_invalidLines < kMaxInvalidLines) {
       ++g_invalidLines;
