@@ -7,6 +7,7 @@ For how the features work inside the engine, see [how-it-works.md](how-it-works.
 the DLL or reverse engineer new features, see [developer-guide.md](developer-guide.md).
 
 Contents:
+- [Latest changes](#latest-changes): what is new, newest first
 - [Adding UHC.dll to your mod](#adding-uhcdll-to-your-mod): start here
 1. [What you need](#1-what-you-need)
 2. [Mod folder layout](#2-mod-folder-layout)
@@ -17,6 +18,40 @@ Contents:
 7. [Multiplayer, saved games and replays](#7-multiplayer-saved-games-and-replays)
 8. [Keys from UHC 1.10 that are not implemented](#8-keys-from-uhc-110-that-are-not-implemented)
 9. [Troubleshooting](#9-troubleshooting)
+
+## Latest changes
+
+Newest first, one line per change: the date, the key (linked to its section) and what changed.
+Each feature section in [section 5](#5-feature-reference) also ends with an **Updated:** line,
+the date of its last edit, so a quick scan shows what is new.
+
+- 2026-11-02: this list and the **Updated:** line of every feature section added. The dates below
+  come from the commit history of this file.
+- 2026-10-30: [`liveBuildingWorkRate`](#livebuildingworkrate): units already queued or in training
+  follow the current `TrainPoints`; train and research tested.
+- 2026-10-30: [`spreadAnyAccuracy`](#spreadanyaccuracy) added. [`damageOverTime`](#damageovertime):
+  the shared action tag hook noted in its log lines.
+- 2026-10-29: [`decimalPopulation`](#decimalpopulation) added; `{pop}` and `{populationHelp}`
+  checked in game. [`basePop`, `extraPop`](#basepop-and-extrapop): how they combine with it.
+- 2026-10-29: [`damageOverTime`](#damageovertime): `AttachMaxStacks`, `AttachSnare` and
+  `AttachTickText`, with the first in-game tests and videos.
+- 2026-10-29: [`noTrainNearEnemyTC`](#notrainnearenemytc): `near <UnitType>` blockers and the
+  warning over held units; the open cases tested.
+- 2026-10-29: [`dodgeChance`](#dodgechance) added.
+- 2026-10-29: [`smartHealTargets`](#smarthealtargets), [`overhealSources`](#overhealsources) and
+  [`overhealDecay`](#overhealdecay) added; [`overhealHitpointBars`](#overhealhitpointbars): the
+  `segment` option, the portrait bar and the Overheal stat row.
+- 2026-10-29: [`civFirstTC`](#civfirsttc) added, and the `FirstTC` keyword of
+  [`hcShipmentPointFallback`](#hcshipmentpointfallback).
+- 2026-10-29: [`startingTC`](#startingtc), [`transformInventory`](#transforminventory),
+  [`noTrainNearEnemyTC`](#notrainnearenemytc), [`overhealHitpointBars`](#overhealhitpointbars),
+  [`showGatherRate`](#showgatherrate) and [`buildingWorkRateAuras`](#buildingworkrateauras)
+  added, with test videos.
+- 2026-10-29: the 14 keys from [`liveBuildingWorkRate`](#livebuildingworkrate) to
+  [`danceBonusCivs`](#dancebonuscivs) documented and tested.
+- 2026-10-28: first version of this guide: the keys up to
+  [`damageOverTime`](#damageovertime), [`bufferedFileReads`](#bufferedfilereads) and
+  [`multipleInstances`](#multipleinstances).
 
 ## Adding UHC.dll to your mod
 
@@ -228,7 +263,9 @@ Feature-specific lines are listed in each section below.
 Each feature that works in game shows a short clip of a test, with the live numbers (game time, hit points, LOS and the feature's own `log` lines) drawn over it by `tools/testbed.py record`, and a link to the full recording.
 
 Each section gives the syntax, what changes in the game, what your mod must provide, how to
-confirm it works, and its test status. "Changes the simulation" means every player in a
+confirm it works, its test status, and (last) the date of its last edit, **Updated:**; the
+newest changes are listed at the top of this guide ([Latest changes](#latest-changes)).
+"Changes the simulation" means every player in a
 multiplayer game needs the same setting (see [section 7](#7-multiplayer-saved-games-and-replays)).
 
 | Key | What it does | Your mod also needs | In-game status |
@@ -294,6 +331,7 @@ ignoreRegistryPath
   of the Steam one, also when the game was started from another folder.
 - **Simulation:** no.
 - **Status:** confirmed.
+- **Updated:** 2026-10-28.
 
 ### deckCardCount
 
@@ -336,6 +374,7 @@ deckCardCount <N>        N from 20 to 10000
   - confirmed with 40 cards for a Japanese home city of level 9999 (past the table);
   - with a raised `homecitylevels.xml`, the engine's level table reads 40 at every level, but
     building a 40-card deck at a normal level has not been tried in game yet.
+- **Updated:** 2026-10-28.
 
 ### basePop and extraPop
 
@@ -364,6 +403,7 @@ extraPop <N>             N from 0 to 10000, stock 50
   the number of houses that could be built.
 - **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
   where the stock 200/250 limits stayed active.
+- **Updated:** 2026-10-29.
 
 ### decimalPopulation
 
@@ -485,6 +525,7 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
   unit information panel calls; that row did not show for a Town Center, and a card on the home
   city screen, outside a game, shows no population).
 - **New in this DLL:** not in UHC 1.10. WoL request #23 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### noAILimit
 
@@ -523,6 +564,7 @@ noAILimit
 - **Simulation:** the list feeds game setup; every player needs the same personality files.
 - **Status:** confirmed: an added personality appeared in game setup and played.
 - **Fixed from UHC 1.10:** upstream leaves two of the function's variables uninitialized.
+- **Updated:** 2026-10-28.
 
 ### customRevolutionBanners
 
@@ -556,6 +598,7 @@ customRevolutionBanners
   other revolutions were not tested.
 - **Fixed from UHC 1.10:** the banner path is bounded; upstream overflows its buffer on long tech
   names.
+- **Updated:** 2026-10-28.
 
 ### removeFameRestriction
 
@@ -582,6 +625,7 @@ Three changes:
 - **Status:** not tested in game.
 - **Fixed from UHC 1.10:** on the second politician screen, upstream passes the wrong object
   as the owner of each cost line.
+- **Updated:** 2026-10-28.
 
 ### removeConversionRestriction
 
@@ -597,6 +641,7 @@ removeConversionRestriction
   in game: a unit with `ConvertGuardian` converts a unit that is not a treasure guardian.
 - **Simulation:** yes.
 - **Status:** not confirmed: one test with the Sioux war chief was inconclusive.
+- **Updated:** 2026-10-28.
 
 ### hcShipmentPointFallback
 
@@ -672,6 +717,7 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     first town center (the owner check);
   - water shipment points were not tested (the key does not change them).
 - **New in this DLL:** not in UHC 1.10.
+- **Updated:** 2026-10-29.
 
 ### healNonIdle
 
@@ -731,6 +777,7 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 - **Status:** confirmed: British surgeons marked with the type healed their explorer during a
   fight through their automatic search. A direct order (right-click) on a fighting unit was not
   verified.
+- **Updated:** 2026-10-29.
 
 ### smartHealTargets
 
@@ -775,6 +822,7 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
   the key on played normally. Multiplayer was not tested.
 - **New in this DLL:** not in UHC 1.10.
 - **New in this DLL:** not in UHC 1.10.
+- **Updated:** 2026-10-29.
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
@@ -839,6 +887,7 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   Explorer never dodged and the monk still did. `dodgeSoundSet` picked the configured set for the
   Explorer, and `criticalSoundSet ypMonkChinese PowerEvade` for a Chinese monk's critical hits
   (seen in the log; the sound itself was not listened to).
+- **Updated:** 2026-10-29.
 
 ### dodgeChance
 
@@ -903,6 +952,7 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 - **New in this DLL:** not in UHC 1.10.
 - **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b
   ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### damageOverTime
 
@@ -1167,6 +1217,7 @@ damageOverTime [log] [noticktext]
   guard stays a reading of the code. Multiplayer was not tested either.
 - **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
   proto that carries the duration and the damage.
+- **Updated:** 2026-10-30.
 
 ### spreadAnyAccuracy
 
@@ -1273,6 +1324,7 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
   Multiplayer, saved games and a loaded game were not tested; the area damage of the ground shots
   was seen on HP, the landing points only on video.
 - **New in this DLL:** not in UHC 1.10. WoL request #2 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-30.
 
 ### liveBuildingWorkRate
 
@@ -1391,6 +1443,7 @@ liveBuildingWorkRate [log]
     error.
   - `liveBuildingWorkRate foo`: logged as an unexpected argument, the key not applied.
 - **New in this DLL:** not in UHC 1.10. WoL request #5 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-30.
 
 ### techPrereqRecheck
 
@@ -1480,6 +1533,7 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
   the Musketeer's death (32.0 s). With the key off they waited for an unrelated tech change at
   70 s. With these 2 techs, the checks cost about 4 ms per game minute (the `log` summary).
 - **New in this DLL:** not in UHC 1.10. WoL request #6 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### maintainWaitForPop
 
@@ -1549,6 +1603,7 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
   two settlers died (`releases its Settler (pop 1, 9 of 10 used)`). With the key off, no settler
   came until the next full cycle. Factory cannons, batches and `SingleUse` spawns were not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #8 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### transformUpdatesLOS
 
@@ -1597,6 +1652,7 @@ transformUpdatesLOS [log]
   Pikemen turned into Rodeleros logged `12 -> 12`. "Change Unit Type" never reached the hook and
   was already right in stock. Revolutions were not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #10 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### broadsideMuzzleLimit
 
@@ -1659,6 +1715,7 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
   muzzles per side, and its ironclad long-range attack has `SingleUsePlayer`, so it keeps 1. A
   projectile count set in the data, independent of the model (`numberprojectiles`), is a
   different and larger change; it is not provided.
+- **Updated:** 2026-10-29.
 
 ### abilitySlots
 
@@ -1712,6 +1769,7 @@ abilitySlots <N> [log]      N from 6 (stock) to 36
   abilities, the first 6 locked by techs: with `abilitySlots 8` the 7th showed a button at once and
   the 8th when its tech was activated; with the key off, no ability button.
 - **New in this DLL:** not in UHC 1.10. WoL request #16 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### wonderPanelSkipAuras
 
@@ -1774,6 +1832,7 @@ wonderPanelSkipAuras [log]
 - **Status:** confirmed in single player (2026-10-29), in the interface: with a test ability added
   after the Toshogu Shrine's aura, the panel showed 2 buttons; with the key off, 1.
 - **New in this DLL:** not in UHC 1.10. WoL request #20 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### lifespanAfterConstruction
 
@@ -1847,6 +1906,7 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
   game. To test it yourself, place the foundation in game: a building placed by a scenario is
   complete once the scenario is loaded.
 - **New in this DLL:** not in UHC 1.10. WoL request #7 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### gaiaSocketsOnly
 
@@ -1901,6 +1961,7 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
   the order path that bypasses that check, WoL's case, was not driven. The code was reviewed
   adversarially and no defect was found.
 - **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### customHotkeyContexts
 
@@ -1982,6 +2043,7 @@ customHotkeyContexts [log]
   and the market wagon, not a building (instead of `BuildAccel`). The key press itself was not
   tested: synthetic key presses do not reach the game's hotkeys.
 - **New in this DLL:** not in UHC 1.10. WoL request #12 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### snareOnlyHitUnit
 
@@ -2028,6 +2090,7 @@ snareOnlyHitUnit [log]
   it`, with the feature's `hook reached` lines. The group's positions were not measured against
   stock.
 - **New in this DLL:** not in UHC 1.10. WoL request #13 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### techRenameEffect
 
@@ -2103,6 +2166,7 @@ enableTechRenameEffect [log]     the same key under WoL's name
   23400, and only player 1's copy had 11070 / 10670. A second effect naming an unknown tech was
   logged and dropped, and the techtree still loaded. Saved games were not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #17 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### noCorpseDopples
 
@@ -2155,6 +2219,7 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
   (3 dead Bison, 3 live Deer) and none for the 3 dead Deer. With the key off, 9 (the 3 dead Deer
   too).
 - **New in this DLL:** not in UHC 1.10. WoL request #18 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### danceBonusCivs
 
@@ -2222,6 +2287,7 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
   90. Training, XPTrickle and Gathering were not tested in game.
 - **New in this DLL:** not in UHC 1.10. WoL request #19, first part
   ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### startingTC
 
@@ -2319,6 +2385,7 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   first town center that is dead or has a pending lifespan (WoL's Maori case).
 - **New in this DLL:** not in UHC 1.10. WoL request #3, the part the placement rules read
   ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### civFirstTC
 
@@ -2460,6 +2527,7 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   than the Market.
 - **New in this DLL:** not in UHC 1.10. WoL request #3 ([wol-requests.md](wol-requests.md)), as
   redesigned by WoL's developer Mandos.
+- **Updated:** 2026-10-29.
 
 ### transformInventory
 
@@ -2553,6 +2621,7 @@ transformInventory [all] [scale] [<UnitType>] [log]
   key off was made. `all`, `scale`, a marker, revolutions and a conversion after a transform were
   not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #4 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### noTrainNearEnemyTC
 
@@ -2692,6 +2761,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
   Not tested: a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
   from Age II and needs population room and food.
 - **New in this DLL:** not in UHC 1.10. WoL request #27 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### overhealHitpointBars
 
@@ -2869,6 +2939,7 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   Not tested: the ObjectInfo panel (an editor panel, `aeditorscreen.cpp`, which did not open with
   the clicks tried), multiplayer.
 - **New in this DLL:** not in UHC 1.10. WoL request #21 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### overhealSources
 
@@ -2933,6 +3004,7 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
   Not tested: powers (`PowerHeal` exists in `powers.xml`, but no TAD unit has it; its heal goes
   through the same add-HP entry, 0x7C378C / 0x8CCA6F), multiplayer.
 - **New in this DLL:** not in UHC 1.10.
+- **Updated:** 2026-10-29.
 
 ### overhealDecay
 
@@ -2994,6 +3066,7 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
   regenerating, did). The AI played normally (its units 12 → 16 in a minute, no XS error). Not
   tested: multiplayer.
 - **New in this DLL:** not in UHC 1.10.
+- **Updated:** 2026-10-29.
 
 ### showGatherRate
 
@@ -3078,6 +3151,7 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   (BerryBush), shown in the stat panel`. Only that case was run: the data ref, other targets,
   whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #28 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### buildingWorkRateAuras
 
@@ -3169,6 +3243,7 @@ buildingWorkRateAuras [log]
   were on in the same run. Train and research speed, the removal of the aura, powers and saved
   games were not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #22 ([wol-requests.md](wol-requests.md)).
+- **Updated:** 2026-10-29.
 
 ### bufferedFileReads
 
@@ -3208,6 +3283,7 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
 - **Status:** confirmed in single player. On a 25-minute save, `verify` checked 7.5 million buffered
   reads against the file and found no mismatch. Not tested in multiplayer.
 - **New in this DLL:** not in UHC 1.10.
+- **Updated:** 2026-10-28.
 
 ### multipleInstances
 
@@ -3244,6 +3320,7 @@ multipleInstances [background]
     focused window. The copy without the key did take the focus when it started.
   - Not tested: three or more copies, multiplayer.
 - **New in this DLL:** not in UHC 1.10.
+- **Updated:** 2026-10-28.
 
 ## 6. Editing the game data
 

@@ -310,7 +310,9 @@ The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_ho
 9. **Document it:**
    - a row in [uhc-address-map.md](uhc-address-map.md), "Beyond upstream";
    - the engine functions in [engine-symbols.md](engine-symbols.md);
-   - a section in [modding-guide.md](modding-guide.md);
+   - a section in [modding-guide.md](modding-guide.md), ending with `- **Updated:** <today>.`,
+     plus a line at the top of its [Latest changes](modding-guide.md#latest-changes) list
+     (date, key, what changed; newest first). Later edits to the section update both;
    - a line in [examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg).
 
 Test data goes in the test copy only. For example, add a marker unit type with
@@ -361,6 +363,12 @@ where it is explained; the rules written nowhere else are spelled out here.
   argument parsing, calculations) gets unit tests that run without the game.
 - [ ] **The AI still plays** after data or combat changes ([CLAUDE.md](../CLAUDE.md#commands),
   "Check the AI after data or combat changes").
+
+**Documentation**
+- [ ] **The modding guide is dated:** the feature's section in
+  [modding-guide.md](modding-guide.md) ends with `- **Updated:** <today>.` (date only), and a line
+  at the top of its [Latest changes](modding-guide.md#latest-changes) list names the key and what
+  changed, in neutral wording ([CLAUDE.md](../CLAUDE.md#layout), "Dating rule").
 
 **Multiplayer**, for every key that changes the simulation (details in
 [how-it-works.md, section 5](how-it-works.md#5-rules-that-keep-multiplayer-deterministic)):

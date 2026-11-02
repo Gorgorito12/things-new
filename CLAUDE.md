@@ -102,7 +102,7 @@ There are no unit tests yet.
   - In the exported `.md` files, hide private text with `<!-- private -->` (end of a line) or a line `<!-- private:begin -->` ... `<!-- private:end -->`, and add public-only text with `<!-- public: TEXT -->` or a line `<!-- public:begin` ... `public:end -->`. Code comments and `examples/Startup/uhc.cfg` have no markers: keep them neutral.
   - Never push anything to the public repo the user has not asked for, and never make this repo public again.
 - Documentation for modders (keep these in step with the code):
-  - `docs/modding-guide.md`: every cfg key, its data/art requirements, log lines and status;
+  - `docs/modding-guide.md`: every cfg key, its data/art requirements, log lines and status. **Dating rule:** every edit to a feature section sets its last bullet `- **Updated:** YYYY-MM-DD.` to today's date (date only, never a time) and adds one line at the top of the "Latest changes" list at the start of the guide (newest first: date, the key linked to its section, what changed). A new section gets both. Keep those lines neutral (they are exported to the public repo);
   - `docs/how-it-works.md`: the internals of each feature;
   - `docs/developer-guide.md`: build, safe test bed, adding a feature, RE workflow;
   - `docs/porting-to-another-dll.md`: rebuilding the beyond-upstream features inside a mod's own DLL (WoL). Update its site table and contracts when a beyond-upstream feature changes or a new one is added.
