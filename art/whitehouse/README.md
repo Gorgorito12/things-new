@@ -1,5 +1,10 @@
 # White House (low-poly building)
 
+> **Moved.** This generator continues as a Blender add-on in the public repository
+> [Gorgorito12/aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) (2026-11-02),
+> where the White House is the first preset. This folder keeps the original one-off script and its
+> outputs; new work goes there.
+
 A low-poly neoclassical government house for the USA "State" building proposal (WoL, 2026-11-02):
 a two-storey block, a portico with four columns and a pediment, steps, a hipped slate roof, a
 cupola and a chimney. The mesh is built from exact primitives, so walls are flat and edges straight,
