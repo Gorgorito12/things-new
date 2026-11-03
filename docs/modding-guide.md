@@ -3324,6 +3324,20 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
 
 *In game:* A TransformUnit tech: the wood crate becomes a food crate that holds food (the panel shows `Alim.: 100`), the musketeer an XP crate with XP. [Full video (MP4)](media/transformInventory.mp4).
 
+<!-- private:begin -->
+![transformInventory in WoL](media/transformInventory-wol.gif)
+
+*In WoL, with `transformInventory log` (Ethiopians, the units selected so the panel shows the
+crate):* WoL's card `HCCardDogTaxWar` turns two `PetWolf` into `CrateofCoin` at 24 s. Each crate
+gets the coin crate's inventory (`inventory created: none -> {0: 100}`), and the panel shows
+`Moneda: 100.0`. [Full video (MP4)](media/transformInventory-wol.mp4).
+
+![transformInventory in WoL, key off](media/transformInventory-wol-control.gif)
+
+*In WoL, key off (the same scene):* the crates have no inventory: the panel shows no coin line, and
+they can never be gathered. [Full video (MP4)](media/transformInventory-wol-control.mp4).
+<!-- private:end -->
+
 ```
 transformInventory [all] [scale] [<UnitType>] [log]
 ```

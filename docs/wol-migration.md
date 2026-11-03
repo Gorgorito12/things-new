@@ -134,7 +134,7 @@ civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the T
 | `techPrereqRecheck` | Ethiopians (Menelik II); test tech `UHCTypeCountDock` (1 Dock, Explorer HP x0.5, appended, restored after), Dock created at 24 s | **done**: 400 to 200 HP in the same update; key off, 400 kept (`techPrereqRecheck-wol*.mp4`). WoL's `WOLEnableInfanteDeMarina` (Age0Spanish, 1 Dock) is the real case, but its unit needs age II and a fort |
 | `maintainWaitForPop` | WoL's `Age0Ottoman` (TC `MaintainSettlersOttoman`), pop 11/10, 2 settlers killed at 70 s (`maintainWaitForPop TownCenter log`) | **done**: held at 62 s, released at once at 70 s; key off, the next settler ~23 s later (`maintainWaitForPop-wol*.mp4`) |
 | `transformUpdatesLOS` | Romanians: WoL's `ShiftingCalarasToVanator` (Calarashi 15 to Vanator 22) at 26 s | **done**: LOS 22 with the key, 15 without (`transformUpdatesLOS-wol*.mp4`). `WOLHCItaliaIrredenta` was tried first: it assigns the new LOS in its own data, so it shows no bug |
-| `transformInventory` | pending | pending |
+| `transformInventory` | Ethiopians: WoL's `HCCardDogTaxWar` turns 2 `PetWolf` into `CrateofCoin` | **done**: `Moneda: 100.0` in the panel with the key, no inventory without (`transformInventory-wol*.mp4`) |
 | `broadsideMuzzleLimit` | a WoL ship with a barrage attack | pending |
 | `abilitySlots`, `wonderPanelSkipAuras` | an explorer with many powers; a Japanese wonder with auras | pending |
 | `lifespanAfterConstruction`, `gaiaSocketsOnly` | a WoL temporary building; a trade/native socket | pending |
