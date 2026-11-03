@@ -255,6 +255,10 @@ there:
   in-game HP bars show what happens, and film a close-up with `--crop 0.4` (40 % of the window,
   enlarged) so the bars are big enough; keep the units close together around the `--frame` unit.
   Check a frame from the middle of the video before sending it.
+- **Edge scrolling moves the camera:** the game scrolls while the cursor sits at a screen edge,
+  and the config values `ScrollSpeed`, `ScrollRateBase` and `ScrollMaxSpeed` set to 0 do not stop
+  it. `record` parks the cursor and keeps it parked; another window taking the foreground on the
+  test monitor can still disturb a video, so agree a slot with other sessions first.
 - **Shipments need a skirmish and real clicks.** Scenario players have no home city, so a test of
   shipments (`hcShipmentPointFallback`) runs in a skirmish. Send a card by clicking the home city
   flag (client 667, 1217 on a 2560×1600 client), then a card in its panel. The console cannot set
