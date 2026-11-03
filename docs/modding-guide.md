@@ -3012,9 +3012,20 @@ enableTechRenameEffect [log]     the same key under WoL's name
 
 ### noCorpseDopples
 
-![noCorpseDopples in game](media/noCorpseDopples.gif)
+<!-- private:begin -->
+![noCorpseDopples in WoL](media/noCorpseDopples-wol.gif)
 
-*In game:* Dead deer leave no frozen copy in the fog of war; the unmarked bison do (1.5x speed). [Full video (MP4)](media/noCorpseDopples.mp4).
+*In WoL, with `noCorpseDopples Deer log` (WoL's own data: its Deer and Bison are `Doppled`):* three
+Rangers watch two herds; at 18 s three deer and three bison are killed, and at 26 s the Rangers walk
+away, so the spot falls into the fog. The dead deer leave no copy (`left player 1's view dead; no
+dopple`); the dead bison, not named by the rule, stay in the fog as frozen carcasses.
+[Full video (MP4)](media/noCorpseDopples-wol.mp4).
+
+![noCorpseDopples in WoL, key off](media/noCorpseDopples-wol-control.gif)
+
+*In WoL, key off (the same scene):* every carcass stays in the fog in its death pose, deer and
+bison alike. [Full video (MP4)](media/noCorpseDopples-wol-control.mp4).
+<!-- private:end -->
 
 ```
 noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
