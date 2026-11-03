@@ -653,6 +653,27 @@ selectionLimit N
   without the key, 50. Video `selectionLimit.mp4`, with `--perf` (no frame over 50 ms).
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
+### enableAllTeams
+
+```
+enableAllTeams
+```
+
+- **Effect:** the single-player game setup offers Team 3 and Team 4 besides Team 1, Team 2 and
+  "?". The multiplayer lobby is not changed yet.
+- **Your data:** none (string IDs 36143 and 36144, `Team 3` / `Team 4`, are in the stock string
+  table).
+- **Log:** `enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby not
+  changed yet)`; `hook reached: enableAllTeams setup list (0x7A0709)`.
+- **Simulation:** it only adds choices; the teams chosen are part of the game setup as usual.
+- **Status:** partly confirmed (2026-11-02, single player): the list shows Team 1–4 and "?", and
+  a skirmish with Team 3 against Team 4 started and played; how the game numbers the teams
+  inside was not read. Video `enableAllTeams.mp4`.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream loads the temporary string's destructor but never calls it
+  (a leak per list fill).
+<!-- private:end -->
+
 ### customRevolutionBanners
 
 ```

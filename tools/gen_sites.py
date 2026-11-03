@@ -60,6 +60,11 @@ SITES = [
     ("SelectionCap6", 0x4FE663, 5),
     ("SelectionCap7", 0x4FEB94, 5),
     ("SelectionCap8", 0x503DCE, 5),
+    # enableAllTeams: push 8D31h ("?"), the last entry of the single-player team list FUN_007A0628
+    ("TeamDropdownSp", 0x7A0709, 5),
+    # enableAllTeams: the Team 2 entry before it, whose frame offsets the hook repeats (verify only):
+    # temporary BString [esp+10h], BString array [esp+14h], int array [esp+20h]
+    ("TeamDropdownBlock", 0x7A06A8, 0x61),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),

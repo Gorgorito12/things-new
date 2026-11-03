@@ -73,7 +73,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | degrades: fire pit, council age-up | pending (dance gates shared with `danceBonusCivs`) |
 | `twoScoutCivs Koreans` | upstream | degrades | pending |
 | `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | pending |
-| `enableAllTeams` | upstream | degrades (teams 3/4) | pending |
+| `enableAllTeams` | upstream | degrades (teams 3/4) | **done** for single player, partly confirmed; MP lobby pending (needs a LAN test) |
 | `wonderCivUnitType Rangatira` | WoL | degrades (Maori age-up) | pending, RE |
 | `marketUnits` | upstream | degrades (trade without a stock Market) | pending |
 | `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | pending |

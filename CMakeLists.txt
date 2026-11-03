@@ -59,6 +59,7 @@ add_library(UHC SHARED
   src/features/spread.cpp
   src/features/startingtc.cpp
   src/features/techprereq.cpp
+  src/features/teams.cpp
   src/features/techrename.cpp
   src/features/transform.cpp
   src/features/transforminv.cpp
@@ -68,6 +69,7 @@ add_library(UHC SHARED
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
   src/hooks/syscall_hooks.asm
+  src/hooks/team_hooks.asm
   src/hooks/broadside_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm

@@ -361,6 +361,18 @@ array) with it before a unit is added (`0x4E0F5F`, `0x4E0F7E`, `0x4E10A5`, `0x4F
 `0x4FEB94`, `0x503DCE`). The DLL rewrites each imm32 after `VerifyAll`; there is no hook. No
 fixed-size buffer was found next to these compares. <!-- private -->Wars of Liberty's DLL patches the same eight bytes to 75 (its memory diff), so 75 is proven by its players.
 
+### enableAllTeams
+
+FUN_007A0628 fills the single-player team list as pairs: a string loaded with `0x58EA52` into a
+temporary BString at `[esp+10h]`, copied (`0x40196F`) into a BString array at `[esp+14h]` grown by
+one (`0x4676E7`), the temporary destroyed (`0x4010CA`), and a team value appended to an int array
+at `[esp+20h]` (`0x401113`): `8D2Dh` → 0, `8D2Eh` → 1, then `8D31h` ("?") → −1. The hook replaces
+`push 8D31h` at `0x7A0709`; inside `pushfd/pushad` it adds `8D2Fh` → 2 and `8D30h` → 3 in the same
+steps (`UhcAddTeamEntries`, given ESP at the site), then re-executes the push and continues at
+`0x7A070E`. The site `TeamDropdownBlock` (the Team 2 entry, verify only) pins the frame offsets.
+The multiplayer slot (a method of another class, FUN_00776702, reached through a vtable) maps
+the list index to a team itself and is not changed.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`
