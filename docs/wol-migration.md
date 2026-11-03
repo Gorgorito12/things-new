@@ -120,7 +120,9 @@ FUN_008F973F before deciding whether a key is needed.
 
 The features made before the migration were filmed in the TAD test copies, several before the
 `--perf` rule. Each is filmed again in `C:\AoE3-UHC-WoLReal` with WoL's data, `--perf`, and a WoL
-civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the TAD one.
+civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF). Once a feature has its WoL
+videos, its TAD GIF and MP4 are deleted (user rule, 2026-11-03). GIFs: 900 px, 10 fps, 2x speed,
+cut to the key moment (the `gif` helper: palettegen full, bayer dither).
 
 | Key | WoL setup (civ / unit) | Status |
 |---|---|---|
@@ -135,7 +137,7 @@ civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the T
 | `maintainWaitForPop` | WoL's `Age0Ottoman` (TC `MaintainSettlersOttoman`), pop 11/10, 2 settlers killed at 70 s (`maintainWaitForPop TownCenter log`) | **done**: held at 62 s, released at once at 70 s; key off, the next settler ~23 s later (`maintainWaitForPop-wol*.mp4`) |
 | `transformUpdatesLOS` | Romanians: WoL's `ShiftingCalarasToVanator` (Calarashi 15 to Vanator 22) at 26 s | **done**: LOS 22 with the key, 15 without (`transformUpdatesLOS-wol*.mp4`). `WOLHCItaliaIrredenta` was tried first: it assigns the new LOS in its own data, so it shows no bug |
 | `transformInventory` | Ethiopians: WoL's `HCCardDogTaxWar` turns 2 `PetWolf` into `CrateofCoin` | **done**: `Moneda: 100.0` in the panel with the key, no inventory without (`transformInventory-wol*.mp4`) |
-| `broadsideMuzzleLimit` | a WoL ship with a barrage attack | pending |
+| `broadsideMuzzleLimit` | Japanese `ypTekkousen` (created in game: a loaded scenario keeps the saved slots) vs 2 `Fluyt`, `ceylon coast` | **done**: 10 slots per side with the key, 6 without; a scan of 17 WoL warships found no other model above 6 per side (`broadsideMuzzleLimit-wol*.mp4`) |
 | `abilitySlots`, `wonderPanelSkipAuras` | an explorer with many powers; a Japanese wonder with auras | pending |
 | `lifespanAfterConstruction`, `gaiaSocketsOnly` | a WoL temporary building; a trade/native socket | pending |
 | `customHotkeyContexts` | a WoL building with its own keymap context | pending |
