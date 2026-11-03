@@ -140,7 +140,8 @@ cut to the key moment (the `gif` helper: palettegen full, bayer dither).
 | `broadsideMuzzleLimit` | Japanese `ypTekkousen` (created in game: a loaded scenario keeps the saved slots) vs 2 `Fluyt`, `ceylon coast` | **done**: 10 slots per side with the key, 6 without; a scan of 17 WoL warships found no other model above 6 per side (`broadsideMuzzleLimit-wol*.mp4`) |
 | `abilitySlots` | Ethiopians: WoL's Explorer (8 abilities), `WOLAbilityHeal` at 24 s and `WOLHCMachiavellianism` at 30 s | **done**: buttons 7 and 8 appear with the key, never without (`abilitySlots-wol*.mp4`) |
 | `wonderPanelSkipAuras` | Korean wonders `wolwkpyongyanggate2` (test: `ypPowerShrineAura` put before its `PowerRighteousArmy` in `abilities.xml`, restored after) and `wolwkpuyonghall2` | **done**: the panel shows Righteous Army with the key, the Puyong Hall's Whirlpool without (`wonderPanelSkipAuras-wol*.mp4`). WoL has no wonder with two abilities in its own data |
-| `lifespanAfterConstruction`, `gaiaSocketsOnly` | a WoL temporary building; a trade/native socket | pending |
+| `lifespanAfterConstruction` | Spanish (`Age0Spanish`): 2 settlers build an Outpost given `Lifespan` 15 (bed protoy, restored after), placed with a real click (`tis("Outpost")` + `rclick`) | **done**: built at 64 s, gone 15 s later; key off, dies as a foundation (`lifespanAfterConstruction-wol*.mp4`). WoL's own `*Maturing` buildings are not built by any unit in protoy |
+| `gaiaSocketsOnly` | pending | pending |
 | `customHotkeyContexts` | a WoL building with its own keymap context | pending |
 | `snareOnlyHitUnit` | a WoL snare attack on a group | pending |
 | `techRenameEffect` | a WoL tech that renames | pending |

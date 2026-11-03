@@ -2627,9 +2627,22 @@ wonderPanelSkipAuras [log]
 
 ### lifespanAfterConstruction
 
-![lifespanAfterConstruction in game](media/lifespanAfterConstruction.gif)
+<!-- private:begin -->
+![lifespanAfterConstruction in WoL](media/lifespanAfterConstruction-wol.gif)
 
-*In game:* An Outpost with a 20 s Lifespan keeps building past 20 s, is finished, then disappears 20 s later (3x speed). [Full video (MP4)](media/lifespanAfterConstruction.mp4).
+*In WoL, with `lifespanAfterConstruction Outpost log` (Spanish, the settlers and the foundation
+selected; 3x speed):* for the test the bed's Outpost gets `<Lifespan>15</Lifespan>` (removed after).
+Two settlers build one: its lifespan waits while it is a foundation (`0 % built; its lifespan
+(15.00 s left) waits`), the Outpost is finished at 64 s, and it comes down 15 s later.
+[Full video (MP4)](media/lifespanAfterConstruction-wol.mp4).
+
+![lifespanAfterConstruction in WoL, key off](media/lifespanAfterConstruction-wol-control.gif)
+
+*In WoL, key off (the same scene):* the countdown runs from the placement, so the foundation dies
+half built 15 s later and leaves rubble. This is what happens to WoL buildings whose Lifespan is
+shorter than their construction (`WOLVillagerMaturing`: Lifespan 10, BuildPoints 15).
+[Full video (MP4)](media/lifespanAfterConstruction-wol-control.mp4).
+<!-- private:end -->
 
 ```
 lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterConstruction
