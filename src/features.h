@@ -62,7 +62,7 @@ inline constexpr Feature kFeatures[] = {
     {"basePop/extraPop", ApplyPopLimit},
     // After basePop/extraPop: it scales their cap hook, and installs it when they did not.
     {"decimalPopulation", ApplyDecimalPopulation},
-    {"noAILimit", ApplyNoAiLimit},
+    {"noAILimit/noAILimitV2", ApplyNoAiLimit},
     {"customRevolutionBanners", ApplyCustomRevolutionBanners},
     {"removeFameRestriction", ApplyRemoveFameRestriction},
     {"hcShipmentPointFallback", ApplyHcShipmentPointFallback},
@@ -110,7 +110,7 @@ inline constexpr Feature kFeatures[] = {
 inline constexpr const char* kHandledKeys[] = {
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "decimalpopulation",
-    "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
+    "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
     "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",

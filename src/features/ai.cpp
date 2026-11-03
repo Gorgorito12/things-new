@@ -1,5 +1,7 @@
 // noAILimit: the AI personality list comes from every personality file in the exe's AI folder
 // instead of the stock table of 11 (or 14 with TAD content). The hook is in hooks/ai_hooks.asm.
+// noAILimitV2 is an alias: other DLLs hook later in the same stock range (0x603C34) to the same
+// effect, and this hook already skips that range.
 #include <windows.h>
 
 #include <algorithm>
@@ -52,8 +54,12 @@ bool EndsWithNoCase(const std::wstring& s, const std::wstring& suffix) {
 }  // namespace
 
 Outcome ApplyNoAiLimit(const Config& config) {
-  if (!config.Has("noAILimit")) {
+  const bool v2 = !config.Has("noAILimit") && config.Has("noAILimitV2");
+  if (!config.Has("noAILimit") && !v2) {
     return Outcome::kNotConfigured;
+  }
+  if (v2) {
+    Log(L"noAILimitV2: read as noAILimit (same personality list from the AI folder)");
   }
   if (!VerifyAll("noAILimit", {&sites::kAiLimit})) {
     return Outcome::kFailed;
