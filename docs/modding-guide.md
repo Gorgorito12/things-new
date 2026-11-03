@@ -1388,26 +1388,17 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 
 ### healNonIdle
 
-![healNonIdle in game](media/healNonIdle.gif)
-
-*1. With the key:* a musketeer exchanges fire with two enemy musketeers while the surgeon behind it heals it: its HP drops with the hits and climbs back during the fight, and it survives (2x speed). [Full video (MP4)](media/healNonIdle.mp4).
-
-![healNonIdle stock, key off](media/healNonIdle-stock.gif)
-
-*2. Stock, key off (the same scene):* before the fight the surgeon heals the idle musketeer (113 to 131 HP); once the musketeer fights, the surgeon stops healing it and it dies at 38 s; the enemy musketeers then kill the surgeon too (2x speed). [Full video (MP4)](media/healNonIdle-stock.mp4).
-
-
 <!-- private:begin -->
 ![healNonIdle in WoL](media/healNonIdle-wol.gif)
 
-*3. In WoL, with `healNonIdle xpMedicineMan` (Iroquois), close-up with the two units selected so
+*In WoL, with `healNonIdle xpMedicineMan` (Iroquois), close-up with the two units selected so
 their HP bars show:* a Tomahawk fights a Musketeer while the medicine man heals it between hits
 (its bar drops with each hit and fills again); it wins and ends at full HP.
 [Full video (MP4)](media/healNonIdle-wol.mp4).
 
 ![healNonIdle in WoL, key off](media/healNonIdle-wol-control.gif)
 
-*4. In WoL, key off (the same scene):* the medicine man does not heal the fighting Tomahawk; its
+*In WoL, key off (the same scene):* the medicine man does not heal the fighting Tomahawk; its
 bar only shrinks and it dies at about 60 s of game time, the Musketeer left at 17 HP.
 [Full video (MP4)](media/healNonIdle-wol-control.mp4).
 <!-- private:end -->
@@ -1462,10 +1453,6 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 
 ### smartHealTargets
 
-![smartHealTargets in game](media/smartHealTargets.gif)
-
-*In game:* four units are hit at once; the surgeon heals the one with the lowest HP ratio first (a settler at 33 %), then 45 %, 70 % and 90 %, where stock starts with the nearest settler at 90 %. The yellow lines show each pick next to stock's. [Full video (MP4)](media/smartHealTargets.mp4).
-
 <!-- private:begin -->
 ![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
 
@@ -1519,10 +1506,6 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
 - **New in this DLL:** not in UHC 1.10.
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
-
-![dodgeAnyUnit in game](media/dodgeAnyUnit.gif)
-
-*In game:* An Explorer with AbstractDodge and the YPDodge tech dodges musketeer shots: each `dodged a hit` line is a shot that did no damage. [Full video (MP4)](media/dodgeAnyUnit.mp4).
 
 ```
 dodgeAnyUnit [<UnitType>] [log]          default AbstractDodge
@@ -1583,10 +1566,6 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   (seen in the log; the sound itself was not listened to).
 
 ### dodgeChance
-
-![dodgeChance in game](media/dodgeChance.gif)
-
-*In game:* `dodgeChance AbstractDodge 50 ranged log` and `dodgeChance AbstractDodge 0 melee`, with `YPDodge` active: two Explorers marked `AbstractDodge` against musketeers and pikemen. Each roll is a log line in the overlay: musket shots are dodged about half the time (`rule 1 (50.0 %): roll 238 -> dodged`, with the stock floating text), pike thrusts never (`rule 2 (0.0 %): roll -1 -> hit`). The Japanese monk, which no rule names, dodges as in stock (2x speed). [Full video (MP4)](media/dodgeChance.mp4).
 
 <!-- private:begin -->
 ![dodgeChance and dodgeAnyUnit in WoL](media/dodge-wol.gif)
@@ -1662,10 +1641,6 @@ One line per rule; several lines add up, and the first rule that matches a hit d
   ([wol-requests.md](wol-requests.md)).
 
 ### damageOverTime
-
-![damageOverTime in game](media/damageOverTime.gif)
-
-*1. The poison:* The Explorer's attack poisons a musketeer: 20 damage every second (the `tick` lines) until it dies. [Full video (MP4)](media/damageOverTime.mp4).
 
 ![damageOverTime stacks, snare and tick text](media/damageOverTime-stacks.gif)
 
@@ -1943,10 +1918,6 @@ damageOverTime [log] [noticktext]
 
 ### spreadAnyAccuracy
 
-![spreadAnyAccuracy in game](media/spreadAnyAccuracy.gif)
-
-*In game:* six Aenna marked with AbstractSpreadAnyAccuracy (accuracy 1.0 in `archer.tactics`; `MaxSpread` 3, `SpreadFactor` 1.5 and `DamageArea` 2.5 in their `<ProtoAction>`) shoot nine musketeers: every shot is logged as a hit made a ground shot at the offset point, and the arrows land around the musketeers and damage them by area. [Full video (MP4)](media/spreadAnyAccuracy.mp4).
-
 <!-- private:begin -->
 ![spreadAnyAccuracy in WoL](media/spreadAnyAccuracy-wol.gif)
 
@@ -2065,10 +2036,6 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 - **New in this DLL:** not in UHC 1.10. WoL request #2 ([wol-requests.md](wol-requests.md)).
 
 ### liveBuildingWorkRate
-
-![liveBuildingWorkRate in game](media/liveBuildingWorkRate.gif)
-
-*In game:* Both Blood Factories already stand; a BuildingWorkRate 4 tech for player 1 speeds up its existing factory (musketeer counts, top left; 2x speed). [Full video (MP4)](media/liveBuildingWorkRate.mp4).
 
 ![liveBuildingWorkRate with TrainPoints in game](media/liveBuildingWorkRate-trainpoints.gif)
 
@@ -2201,10 +2168,6 @@ liveBuildingWorkRate [log]
 
 ### techPrereqRecheck
 
-![techPrereqRecheck in game](media/techPrereqRecheck.gif)
-
-*In game:* A settler appears at 20 s and a musketeer dies at 32 s: the two TypeCount test techs activate at once (Explorer 400 to 200 HP, Pikeman 120 to 60). [Full video (MP4)](media/techPrereqRecheck.mp4).
-
 <!-- private:begin -->
 ![techPrereqRecheck in WoL](media/techPrereqRecheck-wol.gif)
 
@@ -2307,10 +2270,6 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
 
 ### maintainWaitForPop
 
-![maintainWaitForPop in game](media/maintainWaitForPop.gif)
-
-*In game:* An Ottoman Town Center at 10/10 population holds its finished settler and releases it right after two settlers die. [Full video (MP4)](media/maintainWaitForPop.mp4).
-
 <!-- private:begin -->
 ![maintainWaitForPop in WoL](media/maintainWaitForPop-wol.gif)
 
@@ -2392,10 +2351,6 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 
 ### transformUpdatesLOS
 
-![transformUpdatesLOS in game](media/transformUpdatesLOS.gif)
-
-*In game:* Crossbowmen turned into Skirmishers by HCXPTirailleurs take the Skirmisher's LOS 24 (stock: they keep 20). [Full video (MP4)](media/transformUpdatesLOS.mp4).
-
 <!-- private:begin -->
 ![transformUpdatesLOS in WoL](media/transformUpdatesLOS-wol.gif)
 
@@ -2457,9 +2412,21 @@ transformUpdatesLOS [log]
 
 ### broadsideMuzzleLimit
 
-![broadsideMuzzleLimit in game](media/broadsideMuzzleLimit.gif)
+<!-- private:begin -->
+![broadsideMuzzleLimit in WoL](media/broadsideMuzzleLimit-wol.gif)
 
-*In game:* The Tekkousen fires from all 10 muzzles per side of its model (stock: 6). [Full video (MP4)](media/broadsideMuzzleLimit.mp4).
+*In WoL, with `broadsideMuzzleLimit 11 ypTekkousen log` (Japanese, on a water map):* a Tekkousen
+created in the game fights two Fluyts. Its broadside gets all 10 muzzles per side of its model
+(`has 10 right and 10 left muzzle slots (limit 11 per side)`) and sinks both. A scan of 17 WoL
+warships with a limit of 30 found no other model above 6 per side (Battleship, Galleon, Frigate,
+Destroyer 6; Geobukseon, Joukisen, Windjammer 5; Corvette 4; Dreadnought 3).
+[Full video (MP4)](media/broadsideMuzzleLimit-wol.mp4).
+
+![broadsideMuzzleLimit in WoL, key off](media/broadsideMuzzleLimit-wol-control.gif)
+
+*In WoL, key off (the same scene):* stock keeps 6 slots per side, so the Tekkousen fires fewer shots
+per volley. [Full video (MP4)](media/broadsideMuzzleLimit-wol-control.mp4).
+<!-- private:end -->
 
 ```
 broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitType, every ship
@@ -2519,9 +2486,22 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 
 ### abilitySlots
 
-![abilitySlots in game](media/abilitySlots.gif)
+<!-- private:begin -->
+![abilitySlots in WoL](media/abilitySlots-wol.gif)
 
-*In game:* The test Explorer's 7th ability gets a button, and its 8th when its tech activates (the first 6 are locked by techs). [Full video (MP4)](media/abilitySlots.mp4).
+*In WoL, with `abilitySlots 8 log` (Ethiopians; close-up of the selected Explorer's command
+panel):* WoL's Explorer lists 8 abilities in `abilities.xml`. With `Industrialize` active, the
+Habilidades row shows Regen, Sharpshooter and Crackshot. At 24 s `WOLAbilityHeal` turns on and
+ability 7 (PowerHeal) gets a button; at 30 s `WOLHCMachiavellianism` turns on and ability 8
+(Counterintelligence) gets one too (`shows ability 7 of its list ... past the stock 6`).
+[Full video (MP4)](media/abilitySlots-wol.mp4).
+
+![abilitySlots in WoL, key off](media/abilitySlots-wol-control.gif)
+
+*In WoL, key off (the same scene):* the panel asks for the first 6 abilities only, so the two WoL
+powers never get a button although their techs are active.
+[Full video (MP4)](media/abilitySlots-wol-control.mp4).
+<!-- private:end -->
 
 ```
 abilitySlots <N> [log]      N from 6 (stock) to 36
@@ -2572,9 +2552,22 @@ abilitySlots <N> [log]      N from 6 (stock) to 36
 
 ### wonderPanelSkipAuras
 
-![wonderPanelSkipAuras in game](media/wonderPanelSkipAuras.gif)
+<!-- private:begin -->
+![wonderPanelSkipAuras in WoL](media/wonderPanelSkipAuras-wol.gif)
 
-*In game:* The Toshogu Shrine's power, listed after its aura, gets a wonder panel button next to the Giant Buddha's. [Full video (MP4)](media/wonderPanelSkipAuras.mp4).
+*In WoL, with `wonderPanelSkipAuras log` (two Korean wonders; close-up of the bottom left):* for the
+test, the bed's `abilities.xml` lists the passive `ypPowerShrineAura` before the Pyongyang Gate's
+`PowerRighteousArmy` (removed after). The wonder power panel (above the resource counters) shows
+the Righteous Army button: the DLL skips the aura (`shows its ability n=1 in the wonder power
+panel`). [Full video (MP4)](media/wonderPanelSkipAuras-wol.mp4).
+
+![wonderPanelSkipAuras in WoL, key off](media/wonderPanelSkipAuras-wol-control.gif)
+
+*In WoL, key off (the same data):* stock asks only for the Gate's first ability, the aura, and adds
+no button for it, so the panel shows the Puyong Hall's Whirlpool instead. In these WoL runs the
+panel held one button at a time: with WoL's own data it shows the Gate's power and not the Puyong
+Hall's. [Full video (MP4)](media/wonderPanelSkipAuras-wol-control.mp4).
+<!-- private:end -->
 
 ```
 wonderPanelSkipAuras [log]
@@ -2634,9 +2627,22 @@ wonderPanelSkipAuras [log]
 
 ### lifespanAfterConstruction
 
-![lifespanAfterConstruction in game](media/lifespanAfterConstruction.gif)
+<!-- private:begin -->
+![lifespanAfterConstruction in WoL](media/lifespanAfterConstruction-wol.gif)
 
-*In game:* An Outpost with a 20 s Lifespan keeps building past 20 s, is finished, then disappears 20 s later (3x speed). [Full video (MP4)](media/lifespanAfterConstruction.mp4).
+*In WoL, with `lifespanAfterConstruction Outpost log` (Spanish, the settlers and the foundation
+selected; 3x speed):* for the test the bed's Outpost gets `<Lifespan>15</Lifespan>` (removed after).
+Two settlers build one: its lifespan waits while it is a foundation (`0 % built; its lifespan
+(15.00 s left) waits`), the Outpost is finished at 64 s, and it comes down 15 s later.
+[Full video (MP4)](media/lifespanAfterConstruction-wol.mp4).
+
+![lifespanAfterConstruction in WoL, key off](media/lifespanAfterConstruction-wol-control.gif)
+
+*In WoL, key off (the same scene):* the countdown runs from the placement, so the foundation dies
+half built 15 s later and leaves rubble. This is what happens to WoL buildings whose Lifespan is
+shorter than their construction (`WOLVillagerMaturing`: Lifespan 10, BuildPoints 15).
+[Full video (MP4)](media/lifespanAfterConstruction-wol-control.mp4).
+<!-- private:end -->
 
 ```
 lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterConstruction
@@ -2760,6 +2766,22 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 - **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)).
 
 ### customHotkeyContexts
+
+<!-- private:begin -->
+![customHotkeyContexts in WoL](media/customHotkeyContexts-wol.gif)
+
+*In WoL, with `customHotkeyContexts log` (Greeks in age II, the Greek barracks selected):* WoL's own
+`DefaultKeyMapY.xml` maps `o` to `tis("Klepht")` in the context `WOLBarracksGreekAccel`, which the
+exe does not know. The DLL registers it (`registered keymap context WOLBarracksGreekAccel as context
+153`) and turns it on when the barracks is selected; three real presses of `o` queue three Klephts.
+[Full video (MP4)](media/customHotkeyContexts-wol.mp4).
+
+![customHotkeyContexts in WoL, key off](media/customHotkeyContexts-wol-control.gif)
+
+*In WoL, key off (the same scene and key presses):* the context is dropped when the keymap loads,
+so `o` does nothing and no Klepht is queued.
+[Full video (MP4)](media/customHotkeyContexts-wol-control.mp4).
+<!-- private:end -->
 
 ```
 customHotkeyContexts [log]
@@ -3319,10 +3341,6 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   redesigned by WoL's developer Mandos.
 
 ### transformInventory
-
-![transformInventory in game](media/transformInventory.gif)
-
-*In game:* A TransformUnit tech: the wood crate becomes a food crate that holds food (the panel shows `Alim.: 100`), the musketeer an XP crate with XP. [Full video (MP4)](media/transformInventory.mp4).
 
 <!-- private:begin -->
 ![transformInventory in WoL](media/transformInventory-wol.gif)
@@ -3951,10 +3969,6 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 - **New in this DLL:** not in UHC 1.10. WoL request #28 ([wol-requests.md](wol-requests.md)).
 
 ### buildingWorkRateAuras
-
-![buildingWorkRateAuras in game](media/buildingWorkRateAuras.gif)
-
-*In game:* An Explorer aura (BuildingWorkRate x4) speeds up the Blood Factory next to it: 11 musketeers against 2 (2x speed). [Full video (MP4)](media/buildingWorkRateAuras.mp4).
 
 <!-- private:begin -->
 ![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)

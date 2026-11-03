@@ -164,7 +164,7 @@ Done when:
 - **#1:** a non-monk unit with the marker dodges in game, and `UHC.log` shows the hook reached.
 - **#1b:** a configured unit plays its own dodge / critical sound.
 - **#2:** a marked unit with accuracy 1 and `MaxSpread` > 0 visibly spreads its shots. Done
-  (`docs/media/spreadAnyAccuracy.mp4`).
+  (`docs/media/spreadAnyAccuracy-wol.mp4`).
 - **#3:** a civ configured with another building starts with it, and every `StartingTC` check (e.g. shipments, AI) still works.
 - **#4:** the reported conversion no longer breaks; the cause (stock or ours) is written down.
 
