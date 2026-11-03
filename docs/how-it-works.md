@@ -304,6 +304,104 @@ the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-p
 sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
 live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
 
+### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
+
+- **rofFix:** FUN_009CEB5C (an ability or command order on a unit) stores 0 to the unit AI's
+  `[+B8h]` at `0x9CECB4` (10 B) before issuing the order; the key turns that store into NOPs.
+- **stunMovingTargetFix:** in BUnitStunAction's update, state 8 calls the unit's `[vtbl+CCh]`
+  (a target check) and `jne 9E90F9h` (`0x9E909E`) skips `setState(0Ah)` only when it passes; the
+  key makes it `jmp`.
+- **noDamageOnUnbuiltFoundations:** the damage function FUN_0049B3D9 tests the proto flag 9Ch
+  (Invulnerable) at `0x49B3F3` (22 B) and leaves to `0x4CA52B` (no damage). The hook calls a C
+  test: that flag, or a building (abstract index 2) whose `[[unit+68h]+8]` (construction) is at
+  most 1e-6 while the attacking player's byte `[+505h]` is 0 (set by the effect at
+  `0x7FB7E5..0x7FB85B`, which changes that player's diplomacy with every player through
+  `0xA0410F`). Then `0x4CA52B` or the next test at `0x49B40F` (ECX = the proto).
+- **fallenHeroTacticsFix:** `0x4F7389` (thiscall(ai, int tactic), `ret 4`) sets the unit AI's
+  tactic `[ai+A8h]`; four places call it with 0 when the tactic is not 0 already (`0x6AAE6D`,
+  `0x7D8F07`, `0x9D6BE7`, `0x9EBB0B`); the key turns each `push` + `call` into NOPs.
+
+### gatherFix
+
+BUnitGatherAction's update adds the elapsed time `[world+104h]` to `[action+88h]` at `0x4EC8DE`, and
+`doAnimationLooped` (`0x4ECC88`, run when the gather animation loops) adds it again and collects
+the animation's length (`0x4939BD`, the unit's visual `[unit+60h]`) through `collectStuff`
+`0x9DD7B4` or `collectStuff_2` `0x4ECD87` (bit 22 of the action's flags `[+30h]`/`[+34h]`), then
+clears `[action+88h]`. The key jumps over that block (`0x4ECC8E` → `0x4ECCE7`) and replaces the
+update's addition with a C tick: add the time; past the interval `[protoAction+78h]` (0.5 s when it
+is 0), collect the interval through the same function and clear the time; then the update's own
+`pop ebx / pop edi` and its epilogue at `0x4EC8FE`.
+
+### betterfreedynamicunit
+
+A `FreeHomeCityUnit` amount below −1e-6 (`[0xB9FB60]`) is a dynamic count, `-amount ×
+min([world+134h], 15)`, computed in two copies (`0x7FA6D5`, `0x8D8C6F`; the second is the tech
+path, after the home city test `[player+84h]` at `0x8D8C62`). `[world+134h]` is the 2-minute step
+rounded up (4 at 452 s, 5 at 491 s, in game). The hooks at `0x7FA6ED` (61 B, result in
+`[esp+24h]`) and `0x8D8C88` (53 B, result in `[esp+38h]`) replace the computation with
+`-amount × min([world+108h] / 120000, 15)`.
+
+### nowalkfarm
+
+The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each
+time the game time passes `[action+A0h]`; the key turns that call into five NOPs. The first spot
+still comes from the other callers (`0x4ED5E8`, `0x4ED6F4`, `0x50DF53`, `0x6A8E7C`).
+
+### repairWallGlobal
+
+A UI syscall through the registry (`src/syscalls.*`): for each unit in the world table of the local
+player (`[game+3C0h]`) whose proto has abstract index 36h (`AbstractWall`, bit 54), it calls
+`BGame::commandAutoRepair` `0x830AC4(game, player, unitId)`, the call the single-wall repair makes
+at `0x7DEDC3`.
+
+### compatMode
+
+FUN_0054D663 adds each adapter display mode (16 B: width, height, ..., Direct3D format at `+0Ch`)
+with `0x54D605` at `0x54D6D1`. The key redirects that call to a wrapper that also adds an
+X8R8G8B8 (16h) mode as R5G6B5 (17h); `0x545A10` maps the formats to bit depths.
+
+### multiarmor
+
+A proto's armor is the damage type byte `[proto+1D3h]` and the value `[proto+C4h]`; the `<Armor>`
+handler `0x5F5E62` (cdecl `(ctx, node, proto)`, the type name through `0x5F562D` on `ctx`, whose
+damage type list is `[ctx+44h]`/`[+48h]`) writes both at `0x5F5EB7`, and the getter `0x49B323`
+(`unit`, damage type byte) returns the value only for that type (then adds the tactic armor). The
+Data effect subtype Armor is 5Ch: `applyData` (`0x8F973F`) case `0x8FAE52` and `unapplyData`
+(`0x8FB01C`) case `0x8FC144` call `0x7F892A(relativity, &target[C4h], base[C4h], amount, unapply)`.
+
+The key keeps a table per proto pointer (damage type → value, up to 8):
+
+| Site | What it does |
+|---|---|
+| `0x5F5EB7` (12 B) | records each `<Armor>` (and the parse context), then the stock stores |
+| `0x49B32F` (22 B) | `UhcArmorFor(proto, type)`: `[C4h]` for the stock type, else the table's value or 0 |
+| `0x67E011` head (8 B) | the proto copy (per-player clone): copies the table |
+| `0x58633D` head (9 B) | the proto destructor: drops the table |
+| vtable `0xB9E5AC` | `BDataEffect::setData` wrapper: reads `damagetype` (`0x598F37`, `0x402733`, `0x5F55EA`) and keeps it per effect |
+| vtable `0xB9E5C4`, `C8`, `CC`, `D0` | `playerApply` / `playerUnapply` / `protoUnitApply` / `protoUnitUnapply` wrappers: make the effect's damage type current during the stock call |
+| `0x8FAE52`, `0x8FC144` (10 B each) | the Armor cases: for a current type other than the target's stock type, apply `0x7F892A` to the table entry (base value from the base proto) and skip the stock change |
+
+Normal techs reach `applyData` through `playerApply` → `0x8D842B`, without the effect pointer, so
+the type travels in a global that the wrappers set and restore (effects apply on one thread).
+
+### customProtoUnitCommands
+
+`FUN_0052277E` builds the database's name tables. The command types are 129 calls of
+`0x537683(db, id, name)` (thiscall, `ret 8`), from `MarketBuy1` (0) to `RansomExplorerAsian`
+(80h, the call at `0x5269FB`); that function appends to the hashed name list `[db+2648h]` only
+when `id` equals its count `[db+264Ch]`. Every reader goes through that list: the lookup
+`0x5274AB(db, name)` (-1 if absent) for `protounitcommands.xml`, the protos' `<Command>` tags
+(`0x5F60AB`, stored as 6-byte entries `{word id, byte kind 2, byte page, byte column, ...}` in
+`[proto+E8h]`, count `[+ECh]`) and the UI, or the count (`0x97EFFE`).
+
+The `protounitcommands.xml` loader (`FUN_00527090`) keeps one 4Ch-byte record per command type ID
+in `[db+2968h]`, sized at `0x52711D` with a constant (`push 82h / mov ecx,ebx / call 5276EAh`), and
+fills `record[id]` with no bound check; readers stop at that array's count `[+4]`. The key:
+
+- redirects the call at `0x5269FB` to a wrapper that makes it, then registers each listed name
+  not already known with the next ID (`[db+264Ch]`);
+- writes `82h + N` (N listed names) into that `push`, so the records of the new IDs exist.
+
 ### customSyscalls
 
 **The registry** (`src/syscalls.*`). Each syscall module (AI, HC, KB, RM, TR, UI, UI2, XS) is

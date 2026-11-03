@@ -162,4 +162,23 @@ Outcome ApplyFarmingRadius(const Config& config) {
   return Outcome::kApplied;
 }
 
+// nowalkfarm: gatherers stay on the spot they get when they start working a farm. Stock moves them
+// to a new spot around the farm from time to time (call 9DDADEh at 0x6A9067, when the game time
+// passes the action's [+A0h]); the key removes that call. The first spot is still chosen by the
+// other callers.
+Outcome ApplyNoWalkFarm(const Config& config) {
+  if (config.First("nowalkfarm") == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!VerifyAll("nowalkfarm", {&sites::kFarmWalkCall})) {
+    return Outcome::kFailed;
+  }
+  const std::uint8_t nops[5] = {0x90, 0x90, 0x90, 0x90, 0x90};
+  if (!WriteBytes(sites::kFarmWalkCall.va, nops, sizeof nops)) {
+    return Outcome::kFailed;
+  }
+  Log(L"nowalkfarm: farm gatherers keep their first spot");
+  return Outcome::kApplied;
+}
+
 }  // namespace uhc

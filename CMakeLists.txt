@@ -21,6 +21,7 @@ add_library(UHC SHARED
   src/namelists.cpp
   src/syscalls.cpp
   src/unittypes.cpp
+  src/xmllist.cpp
   src/worldtick.cpp
   src/actiontags.cpp
   src/features/abilityslots.cpp
@@ -66,12 +67,23 @@ add_library(UHC SHARED
   src/features/transforminv.cpp
   src/features/typetests.cpp
   src/features/kbsyscalls.cpp
+  src/features/commandtypes.cpp
+  src/features/multiarmor.cpp
+  src/features/freeunits.cpp
+  src/features/repairwall.cpp
+  src/features/compat.cpp
+  src/features/gatherfix.cpp
+  src/features/smallfixes.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
+  src/hooks/armor_hooks.asm
+  src/hooks/freeunit_hooks.asm
+  src/hooks/gather_hooks.asm
+  src/hooks/foundation_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
   src/hooks/unitlist_hooks.asm

@@ -973,6 +973,96 @@ SITES = [
     ("UnitGetSquad", 0x4E2A03, 0x32),
     ("InventoryIsFull", 0x4DC520, 0x3D),
     ("UnitCarryCapacity", 0x494503, 0x10),
+    # customProtoUnitCommands: FUN_0052277E registers the command type names 0..128 in the
+    # database's name table ([db+2648h], count [db+264Ch]) with 0x537683(db, id, name), thiscall,
+    # ret 8, which accepts only id == count; the last call (RansomExplorerAsian, 80h) is at
+    # 0x5269FB. 0x5274AB(db, name), thiscall, ret 4: the name's ID, -1 if absent.
+    ("CmdTypeRegLast", 0x5269FB, 0x05),
+    ("CmdTypeRegister", 0x537683, 0x37),
+    ("CmdTypeLookup", 0x5274AB, 0x34),
+    # customProtoUnitCommands: the protounitcommands.xml loader (FUN_00527090) sizes the record
+    # array [db+2968h] (4Ch-byte records indexed by command type ID, readers bound by its count
+    # [+4]) with push 82h / mov ecx,ebx / call 5276EAh: 130 records for the 129 stock types
+    ("CmdRecordReserve", 0x52711D, 0x05),
+    # multiarmor: a proto keeps one armor, type byte [proto+1D3h] and value [proto+C4h].
+    # The <Armor> tag handler 0x5F5E62 (cdecl(ctx, node, proto); the type name through
+    # 0x5F562D on ctx) stores them at its end: mov [ecx+1D3h],al / mov [ecx+0C4h],edx
+    ("ArmorStore", 0x5F5EB7, 0x0C),
+    # multiarmor: the armor getter 0x49B323 (thiscall(unit, byte damageType, ...), ret 8), EAX =
+    # proto, BL = the damage type: cmp [eax+1D3h],bl / mov [esp+8],0 / jne / mov eax,[eax+0C4h]
+    # (22 B), then mov [esp+8],eax at 0x49B345
+    ("ArmorGetter", 0x49B32F, 0x16),
+    # multiarmor: BProtoUnit destructor 0x58633D (push esi / mov esi,ecx / mov [esi],0B9F404h) and
+    # the proto copy 0x67E011 (thiscall(dst, src, bool), ret 8: sub esp,0Ch / push ebp /
+    # mov ebp,[esp+14h]), which clones a proto for a player
+    ("ProtoDtorHead", 0x58633D, 0x09),
+    ("ProtoCopyHead", 0x67E011, 0x08),
+    # multiarmor: BDataEffect's vtable slots setData (0x6205F6), protoUnitApply (0x7F86C0) and
+    # protoUnitUnapply (0x7F8705); the data subtype Armor is 5Ch, applied through 0x7F892A
+    # (cdecl(byte relativity, float* target, float base, float amount, bool unapply)) on the
+    # effect's amount [+18h] and relativity [+1Ch]
+    ("DataEffectSetDataSlot", 0xB9E5AC, 0x04),
+    ("DataEffectApplySlot", 0xB9E5CC, 0x04),
+    ("DataEffectUnapplySlot", 0xB9E5D0, 0x04),
+    # multiarmor: BDataEffect playerApply (0x7F874A, through 0x8D842B to every target proto's
+    # applyData) and playerUnapply (0x7F877F) slots, and the Armor (5Ch) cases of applyData
+    # 0x8F973F (EDI = target proto, ESI = its base proto, [esp+28h] amount, [esp+2Ch] relativity,
+    # EBP = 0: mov edx,[esp+28h] / mov eax,[esi+0C4h]) and of unapplyData 0x8FB01C (ESI = target,
+    # EDI = base, [esp+24h] amount, [esp+28h] relativity: mov eax,[esp+24h] / mov ecx,[edi+0C4h])
+    ("DataEffectPlayerApplySlot", 0xB9E5C4, 0x04),
+    ("DataEffectPlayerUnapplySlot", 0xB9E5C8, 0x04),
+    ("DataApplyArmorCase", 0x8FAE52, 0x0A),
+    ("DataUnapplyArmorCase", 0x8FC144, 0x0A),
+    ("EffectValueApply", 0x7F892A, 0x10),
+    # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
+    # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
+    # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)
+    ("XmlAttribute", 0x598F37, 0x10),
+    ("XmlText", 0x402733, 0x09),
+    ("DamageTypeLookup", 0x5F55EA, 0x10),
+    # betterfreedynamicunit: a FreeHomeCityUnit amount below -1e-6 ([0B9FB60h]) is a "dynamic"
+    # count: -amount * min([world+134h], 15) (an integer). Two copies, after the jp that skips
+    # them for other amounts: 0x7FA6ED (four nops, then the computation into [esp+24h], up to
+    # 0x7FA72A) and 0x8D8C88 (into [esp+38h], up to 0x8D8CBD)
+    ("FreeDynamicUnit1", 0x7FA6ED, 0x3D),
+    ("FreeDynamicUnit2", 0x8D8C88, 0x35),
+    # nowalkfarm: in the gather action, once the game time passes [action+A0h], mov ecx,esi /
+    # call 9DDADEh picks the gatherer a new spot around the farm (the function farmingRadius
+    # hooks); the other four callers (0x4ED5E8, 0x4ED6F4, 0x50DF53, 0x6A8E7C) place it first
+    ("FarmWalkCall", 0x6A9067, 0x05),
+    # repairWallGlobal: BGame::commandAutoRepair 0x830AC4 (thiscall(game, int player, int unitId),
+    # ret 8; player < 0 means [game+3C0h], the local player), the call the one-wall repair at
+    # 0x7DEDC3 makes
+    ("CommandAutoRepair", 0x830AC4, 0x12),
+    # compatMode: FUN_0054D663 adds each adapter display mode (16 B, its D3D format at +0Ch) to the
+    # renderer's list with push eax / mov ecx,ebp / call 54D605h (thiscall(renderer, mode), ret 4)
+    ("DisplayModeAddCall", 0x54D6D1, 0x05),
+    ("DisplayModeAdd", 0x54D605, 0x12),
+    # gatherFix: BUnitGatherAction's update ends with [action+88h] += [world+104h] (the elapsed time)
+    # then pop ebx / pop edi / ... ret (0x4EC8DE, 32 B up to pop esi at 0x4EC8FE); and
+    # doAnimationLooped 0x4ECC88 collects on each animation loop: cmp byte [esi+61h],5 / jne ... up
+    # to 0x4ECCE7 (89 B), collectStuff 0x9DD7B4 or collectStuff_2 0x4ECD87 (thiscall(action, float))
+    ("GatherTimeAdd", 0x4EC8DE, 0x20),
+    ("GatherAnimLoopCollect", 0x4ECC8E, 0x59),
+    ("GatherCollect", 0x9DD7B4, 0x10),
+    ("GatherCollect2", 0x4ECD87, 0x10),
+    # rofFix: FUN_009CEB5C (an ability/command order on a unit) clears the unit AI's [+B8h] with
+    # mov dword [edi+0B8h],0 before issuing the order
+    ("RofTimerReset", 0x9CECB4, 0x0A),
+    # stunMovingTargetFix: BUnitStunAction's update, state 8: call [eax+0CCh] (the target check) /
+    # test al,al / jne 9E90F9h; on a failed check it ends the action (setState 0Ah)
+    ("StunTargetCheck", 0x9E909E, 0x02),
+    # noDamageOnUnbuiltFoundations: in the damage function FUN_0049B3D9 (thiscall(unit, int
+    # attackerPlayer, ...), ret 34h; ESI = unit, ECX = its proto, the attacker at [esp+94h]), the
+    # proto flag 9Ch (Invulnerable) test: cmp [ecx+54h],9Ch / jbe 49B40Fh / ... / ja 4CA52Bh
+    # (no damage) (22 B)
+    ("DamageInvulnerableTest", 0x49B3F3, 0x16),
+    # fallenHeroTacticsFix: four places reset the unit AI's tactic ([ai+A8h]) to 0 through
+    # 0x4F7389 (thiscall(ai, int tactic), ret 4) when it is not 0 already: push ebx|0 / call 4F7389h
+    ("TacticReset1", 0x6AAE6D, 0x06),
+    ("TacticReset2", 0x7D8F07, 0x07),
+    ("TacticReset3", 0x9D6BE7, 0x07),
+    ("TacticReset4", 0x9EBB0B, 0x07),
 ]
 
 

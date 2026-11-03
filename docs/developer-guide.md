@@ -126,7 +126,8 @@ there:
   then `Menú` again and `Resumen partida` (2373, 83). The `Línea cronológica` tab draws per-player
   curves, chosen in its `Mostrar` list (client 2395, 171).
 - **The map** is a random map script written to the copy's `RM3` folder. `p<N>=Proto*count@x,z`
-  places units of player N (x, z are fractions of the map side); `tech<N>=Name` adds a trigger
+  places units of player N (x, z are fractions of the map side); `tech<N>=Name` (a trigger tech ID is the tech's
+  index in `techtreey.xml`, not counting techs inside comments) adds a trigger
   that makes a tech active for player N. A trigger's tech parameter is the tech's **index in
   `techtreey.xml`**, which `map` looks up: a name such as `cTechYPDodge` compiles to tech 0 with
   no error. The game writes what the triggers compiled to in

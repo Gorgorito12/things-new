@@ -493,6 +493,8 @@ MAP_INFO = """<?xml version = "1.0" encoding = "UTF-8"?>
 def tech_indices(bed):
     """Tech name (lowercase) -> its index in the bed's techtreey.xml, the ID triggers take."""
     text = (bed / "data" / "techtreey.xml").read_text(encoding="utf-8", errors="replace")
+    # The game skips techs inside comments, so they take no index (WoL's techtree has some).
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
     return {name.lower(): i for i, name in enumerate(re.findall(r"<Tech name\s*=\s*'([^']+)'", text))}
 
 

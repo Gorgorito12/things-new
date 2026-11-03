@@ -574,6 +574,234 @@ customAbstractTypes [file]
   `cUnitType<Name>` constants compiled. <!-- private -->In the Wars of Liberty copy, with WoL's own `data\uhc\customabstracttypes.xml`; before it, `aiLoaderStandard.xs` failed on `cUnitTypeAbstractWoLHandCavalry`.
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
+### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
+
+```
+rofFix
+stunMovingTargetFix
+noDamageOnUnbuiltFoundations
+fallenHeroTacticsFix
+```
+
+- **rofFix:** ordering a unit to use an ability or command no longer clears its attack timer, so
+  orders cannot be used to fire sooner.
+- **stunMovingTargetFix:** a stun action is no longer cancelled when its target check fails (a
+  target that moves away).
+- **noDamageOnUnbuiltFoundations:** a building whose construction has not started yet (a
+  foundation just placed) takes no damage, unless the attacker's player is in the state the game
+  sets when an effect changes that player's diplomacy with every other player.
+- **fallenHeroTacticsFix:** a unit keeps the tactic its player chose when it is knocked out,
+  stunned or building; stock resets it to the first tactic.
+- **Log:** one line per key at startup; `noDamageOnUnbuiltFoundations: <Proto> (an unbuilt
+  foundation) took no damage from player N` the first time it applies.
+- **Simulation:** change combat: every player needs the same lines.
+- **Status:** applied and running (2026-11-03): the four load (34 keys applied together), and the damage test runs on every
+  hit with no change to normal damage (a finished House took 20 per shot with the key). Their
+  effects were not seen in a test yet: the trigger that should place a foundation placed none.
+
+### gatherFix
+
+<!-- private:begin -->
+![gatherFix in game](media/gatherFix.gif)
+
+*In game:* settlers on a Mill and on trees; with the key they gather at the rate the data gives.
+[Full video (MP4)](media/gatherFix.mp4).
+<!-- private:end -->
+
+```
+gatherFix
+```
+
+- **Effect:** gatherers collect on a fixed time interval, so the gather rate is the one in the data.
+  Stock collects once per loop of the gather animation, an amount for the animation's length, which
+  makes the real rate depend on the animation.
+- **Log:** `gatherFix: gatherers collect on a fixed interval, ...`; the first collection, `interval
+  I s (protoAction+78h V), collectStuff | collectStuff_2`.
+- **Simulation:** changes gathering: every player needs the same line.
+- **Performance:** a collection every 0.5 s per gatherer. With 40 gatherers: update 0.143 / 0.142
+  ms with / without, no frame over 50 ms, about 10% fewer frames per second (711–733 vs 815).
+- **Status:** confirmed (2026-11-03, single player): in 120 s, 3 settlers on trees (rate 0.5)
+  gathered 179.5 wood with the key (0.50 per second each) and 281.3 without it (0.78), and 4 on a
+  Mill 235.5 food against 367.3. Video `gatherFix.mp4`.
+
+### betterfreedynamicunit
+
+<!-- private:begin -->
+![betterfreedynamicunit in game](media/betterfreedynamicunit.gif)
+
+*In game:* a tech with `amount="-2.00"` free Sheep, set at 3 minutes: 3 Sheep (1.5 two-minute
+steps × 2). [Full video (MP4)](media/betterfreedynamicunit.mp4).
+<!-- private:end -->
+
+```
+betterfreedynamicunit
+```
+
+- **Effect:** "dynamic" free units (a `FreeHomeCityUnit` effect with a negative `amount`) grow
+  smoothly with game time: `-amount × min(time / 2 min, 15)`. Stock uses a whole number of
+  2-minute steps, rounded up (at 3.5 steps it already counts 4).
+- **Your data:** none beyond the negative amounts. The player needs a home city (the free units
+  come from it; scenario players without one get none, with or without the key).
+- **Log:** `betterfreedynamicunit: dynamic free units grow ...`; the first time, `amount A at S
+  steps of 2 min -> N`.
+- **Simulation:** changes how many units arrive: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): the same −2 Sheep tech at 420 s gave 7 Sheep
+  with the key and 8 without; at 180 s, 3 with the key. Video `betterfreedynamicunit.mp4`.
+  In the WoL copy: Argentineans, `Corderos` (−2 Sheep), set by a map trigger. <!-- private -->
+
+### nowalkfarm
+
+<!-- private:begin -->
+![nowalkfarm in game](media/nowalkfarm.gif)
+
+*In game:* four settlers on a Mill keep their spots; without the key (below) each walked 33–47 m
+in a minute, moving to new spots around the field.
+![nowalkfarm off](media/nowalkfarm-control.gif)
+[Full video (MP4)](media/nowalkfarm.mp4), [without the key (MP4)](media/nowalkfarm-control.mp4).
+<!-- private:end -->
+
+```
+nowalkfarm
+```
+
+- **Effect:** gatherers on a farm keep the spot they take when they start; stock moves them to a
+  new spot around the farm from time to time.
+- **Log:** `nowalkfarm: farm gatherers keep their first spot`.
+- **Simulation:** changes where units stand: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): four settlers on a Mill moved 0 m in 60 s
+  with the key and 33–47 m each without it, gathering in both cases. Video `nowalkfarm.mp4`.
+
+### repairWallGlobal
+
+<!-- private:begin -->
+![repairWallGlobal in game](media/repairWallGlobal.gif)
+
+*In game:* three damaged walls (1200 / 1500) back to full a few seconds after one
+`repairWallGlobal()`. [Full video (MP4)](media/repairWallGlobal.mp4).
+<!-- private:end -->
+
+```
+repairWallGlobal
+```
+
+- **Effect:** adds the UI syscall `repairWallGlobal()`, which orders the repair of every wall of
+  the local player (the units of abstract type `AbstractWall`), as the single-wall repair does.
+  Put it in a command: `<command>repairWallGlobal</command>` in a `protounitcommands.xml` entry.
+- **Your data:** the repair costs resources as stock repair does.
+- **Log:** `repairWallGlobal: UI syscall repairWallGlobal() added`; the first call, `hook reached:
+  repairWallGlobal (player P: N wall(s) ordered to repair)`.
+- **Simulation:** sends one game command per wall: safe in multiplayer.
+- **Status:** confirmed (2026-11-03, single player): three walls at 1200 / 1500 went back to 1500
+  after one call; without the key the call did nothing. Video `repairWallGlobal.mp4`.
+
+### compatMode
+
+```
+compatMode
+```
+
+- **Effect:** every 32-bit display mode the graphics card reports is also offered as a 16-bit
+  mode. Current drivers report only 32-bit modes, so the game's list has no 16-bit entry.
+- **Log:** `compatMode: 32-bit display modes are also offered at 16 bits`; at startup, `hook
+  reached: compatMode (0x54D6D1): <W>x<H> also offered at 16 bits`.
+- **Simulation:** display only.
+- **Status:** confirmed (2026-11-03): the hook runs at startup for the adapter's modes and the game
+  starts and plays normally.
+
+### multiarmor
+
+<!-- private:begin -->
+![multiarmor in game](media/multiarmor.gif)
+
+*In game:* a unit with `<Armor type="Hand" value="0.2"/>` and `<Armor type="Ranged" value="0.2"/>`
+under pikemen: each pike hit takes 38 HP (armor 0.2); without the key it took 47.5 (the unit kept
+only its last armor, Ranged). [Full video (MP4)](media/multiarmor.mp4).
+<!-- private:end -->
+
+```
+multiarmor
+```
+
+- **Effect:** a proto keeps one armor per damage type, and an `Armor` tech effect changes the one
+  its `damagetype` names.
+  - Stock keeps one armor per proto: each `<Armor>` replaces the one before, so only the last one
+    counts.
+  - Stock reads no `damagetype` on effects: an `Armor` effect always changes that one armor.
+  - With the key the unit uses the armor of the incoming damage type. An effect whose
+    `damagetype` is the last armor's type, or that has no `damagetype`, works as in stock.
+- **Your data:**
+
+  ```xml
+  <Armor type="Hand" value="0.2000" />
+  <Armor type="Ranged" value="0.2000" />
+  ```
+
+  ```xml
+  <Effect type="Data" amount="0.10" subtype="Armor" damagetype="Siege" relativity="Absolute">
+    <Target type="ProtoUnit">MyShip</Target></Effect>
+  ```
+
+  Up to 8 armors per proto. An effect on a damage type the proto has no armor for starts from 0
+  (so `BasePercent` changes nothing there).
+- **What stays stock:** the unit panel shows the last armor only, and saved games do not keep the
+  other armors' tech changes (a loaded game has their data values).
+- **Log:** `multiarmor: protos keep one armor per damage type; ...`; `multiarmor: <Proto> has N
+  armors` for the first proto with several; `multiarmor: an Armor effect changed damage type T of
+  <Proto> (now V; stock type S kept)` the first time an effect goes to another armor;
+  `unknown damagetype "..."` for a name the game does not know.
+- **Simulation:** changes combat: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): a unit with Hand and Ranged armor 0.2 took 38
+  per pike hit with the key and 47.5 without it. A ship with Ranged 0.4 and Siege 0.3 and a tech
+  with +0.1 Ranged and +0.1 Siege effects: with the key Siege went to 0.4 and Ranged to 0.5; without
+  it Siege went to 0.5. Performance A/B in a battle of 160 units, 60 s each: 1263 / 1289 fps, update
+  0.138 / 0.136 ms, one frame over 50 ms each (no measurable cost). Video `multiarmor.mp4`.
+  In the WoL copy: HonorGuard against Pikemen; gwDreadnought with `GWantitorpedobulge`. <!-- private -->
+
+### customProtoUnitCommands
+
+<!-- private:begin -->
+![customProtoUnitCommands in game](media/customProtoUnitCommands.gif)
+
+*In game:* a unit whose `<Command>` buttons use new command types shows them, their tooltips come
+from `protounitcommands.xml`, and a click runs their command: two transforms into "maturing"
+units, which become a Tradesman and a Bowman about 10 s later. Without the key
+the same unit has no such buttons (top of the still below):
+![customProtoUnitCommands off and on](media/customProtoUnitCommands-control.png)
+[Full video (MP4)](media/customProtoUnitCommands.mp4).
+<!-- private:end -->
+
+```
+customProtoUnitCommands [file]
+```
+
+- **Effect:** every `<CommandType>` name in an XML file becomes a command type, like the
+  compiled-in ones (`MarketBuy1` ... `Tactic32` ... `RansomExplorerAsian`, 129 in all). Entries of
+  `protounitcommands.xml` with that `<name>` and protos' `<Command>` tags with that name are kept
+  instead of dropped, so the button shows and runs its `<command>`.
+- **Your data:** the file (default `data\uhc\customprotounitcommands.xml`):
+
+  ```xml
+  <ProtoUnitCommandTypes>
+    <CommandType>MyTransform</CommandType>
+  </ProtoUnitCommandTypes>
+  ```
+
+  plus a `protounitcommands.xml` entry and a `<Command>` per button, as for stock types. Names are
+  letters, digits and `_`; a name stock already knows is skipped.
+- **Buttons on the tactics page** (`page="9"`) of a building show only for the buildings stock
+  lets switch tactics (Factory, Rice Paddy...); the key does not change that.
+- **Log:** `customProtoUnitCommands: N command type(s) from <file>; M command records`; when the
+  game builds its tables, `customProtoUnitCommands: N command type(s) added (IDs 129..), K already
+  known, R refused`.
+- **Simulation:** changes the data: every player needs the same file.
+- **Status:** confirmed (2026-11-03, single player): with 55 names, a unit whose six transform
+  buttons use new types showed them with their tooltips, and two clicks transformed two units;
+  each became a maturing unit and then the final unit (a Tradesman, a Bowman); without the key the
+  same unit showed none. The game's command records are a fixed array (130):
+  a first build that only added the names showed no button and wrote past that array; the key now
+  enlarges it. Video `customProtoUnitCommands.mp4`.
+  In the WoL copy: Zulu `AFRICANyouth` transforms (Tradesman, Bowman); the maturing unit trains the final unit with a `Maintain` action that the Zulu start tech `Age0zulu` enables. <!-- private -->
+
 ### customSyscalls
 
 <!-- private:begin -->

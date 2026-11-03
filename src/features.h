@@ -67,6 +67,17 @@ Outcome ApplyFarmingRadius(const Config& config);
 Outcome ApplyWonderCivUnitType(const Config& config);
 Outcome ApplyTrainSingleAbstractType(const Config& config);
 Outcome ApplyKbUnitSyscalls(const Config& config);
+Outcome ApplyCustomProtoUnitCommands(const Config& config);
+Outcome ApplyMultiArmor(const Config& config);
+Outcome ApplyBetterFreeDynamicUnit(const Config& config);
+Outcome ApplyNoWalkFarm(const Config& config);
+Outcome ApplyRepairWallGlobal(const Config& config);
+Outcome ApplyCompatMode(const Config& config);
+Outcome ApplyGatherFix(const Config& config);
+Outcome ApplyRofFix(const Config& config);
+Outcome ApplyStunMovingTargetFix(const Config& config);
+Outcome ApplyNoDamageOnUnbuiltFoundations(const Config& config);
+Outcome ApplyFallenHeroTacticsFix(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
@@ -119,6 +130,17 @@ inline constexpr Feature kFeatures[] = {
     {"wonderCivUnitType", ApplyWonderCivUnitType},
     {"trainSingleAbstractType", ApplyTrainSingleAbstractType},
     {"kbUnitSyscalls", ApplyKbUnitSyscalls},
+    {"customProtoUnitCommands", ApplyCustomProtoUnitCommands},
+    {"multiarmor", ApplyMultiArmor},
+    {"betterfreedynamicunit", ApplyBetterFreeDynamicUnit},
+    {"nowalkfarm", ApplyNoWalkFarm},
+    {"repairWallGlobal", ApplyRepairWallGlobal},
+    {"compatMode", ApplyCompatMode},
+    {"gatherFix", ApplyGatherFix},
+    {"rofFix", ApplyRofFix},
+    {"stunMovingTargetFix", ApplyStunMovingTargetFix},
+    {"noDamageOnUnbuiltFoundations", ApplyNoDamageOnUnbuiltFoundations},
+    {"fallenHeroTacticsFix", ApplyFallenHeroTacticsFix},
     {"selectionLimit", ApplySelectionLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
@@ -157,7 +179,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
 }  // namespace uhc

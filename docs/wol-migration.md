@@ -99,19 +99,55 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `marketUnits` | upstream | degrades (trade without a stock Market) | **done**, confirmed (`WOLMarketGreek`; refused without the key) |
 | `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | **done**, names confirmed (Korean monks Yi Sun and Kwon Hwan); 4 protos of WoL's cfg do not exist in its data |
 | `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | cosmetic: placement and animation (the buildings gather anyway in WoL's data) | **done**, confirmed (Iroquois plantation and farm; radius measured). `Fazenda` gets no gatherers: its tactics only modify others |
-| `customProtoUnitCommands` (always on in WoL) | WoL | degrades (41 `<Command>` buttons) | pending, RE |
+| `customProtoUnitCommands` (always on in WoL) | WoL | degrades (55 command types; their `<Command>` buttons on 36 protos are dropped) | **done**, confirmed (Zulu youth: six transform buttons shown and run; none without the key; the maturing units became a Tradesman and a Bowman). WoL's cfg needs the line `customProtoUnitCommands`. The Fazenda's four tactic buttons (`page="9"`) also need the tactics gate (`tacticSwitching`, not in WoL's cfg; WoL's DLL does not patch that gate): check them in the control copy |
 | `selectionLimit 75` | WoL | degrades | **done**, confirmed (75 of 89 Pikemen; 50 without) |
 | `trainSingleAbstractType` | WoL | degrades (`AbstractTrainLimitOne`, 36 protos) | **done**, confirmed (Totenkopf hussars one at a time; a batch without the key) |
-| `multiarmor` | WoL | degrades (32 protos, 76 effects) | pending, RE |
+| `multiarmor` | WoL | degrades (32 protos, 76 effects) | **done**, confirmed (HonorGuard 38 vs 47.5 per pike hit; gwDreadnought + `GWantitorpedobulge`: each effect reaches its armor). Not kept in saved games; the panel shows the last armor |
 | WoL-DLL kb syscalls (`kbUnitGetNumberTargeters`, …) | WoL, always on | blocks the Maori AI (`wolRauparaha`) only | **done**, confirmed (`kbUnitSyscalls`: Te Rauparaha compiles and plays; 6 visible workers on a hunt, 0 with the stock call; without the key `Error 0172` on `kbUnitGetCurrentInventory`). WoL's cfg needs the line `kbUnitSyscalls` (WoL's DLL has them always on) |
 | `enablerandomtecheffect` | WoL | none in current data | pending |
-| `betterfreedynamicunit`, `nowalkfarm`, `repairWallGlobal`, `compatMode` | WoL | degrades | pending, RE |
+| `betterfreedynamicunit` | WoL | degrades (about 55 techs with dynamic free units) | **done**, confirmed (7 vs 8 Sheep at 420 s) |
+| `nowalkfarm` | WoL | cosmetic: gatherers wander around farms | **done**, confirmed (0 m vs 33–47 m per minute) |
+| `repairWallGlobal` | WoL | degrades (the walls' `<command>repairWallGlobal</command>` button does nothing) | **done**, confirmed (three walls repaired) |
+| `compatMode` | WoL | display: no 16-bit modes on current drivers | **done**, confirmed at startup |
 | `attackTypeIcons`, `loadingScreenCount 28`, `flagoverrideeffect`, `optionhighpolycliff`, `alpha2coverage`, `map` / `uhcSyncTrack` | upstream / WoL | cosmetic | pending |
 
 The data scan behind the table (2026-11-02): WoL has 3,634 protos, 10,542 techs and 168 civs;
 nothing in its data keeps the stock exe from loading (unknown types and effects are dropped).
 The subtypes `ROF`, `GathererLimit`, `MinimumRange` and `Bounty` in `Data` effects need a check of
 FUN_008F973F before deciding whether a key is needed.
+
+## WoL's always-on patches (inventory, 2026-11-03)
+
+WoL's DLL changes 287 ranges of the running game (`rea/evidence/wol-uhc-c070d138/wol-memdiff.txt`).
+`attribute.py` there matches them against our sites (76 at sites we patch), `installers.py` finds
+the WoL function that installs each of the other 211, and `rtti_owner.py` names its feature class
+(`installers_named.txt`). The `.rdata` block at 0xB84000 is the import table (filled at load, not a
+patch).
+
+| WoL feature (class) | Patches | What, from the sites | Ours |
+|---|---|---|---|
+| ExtendedDataSubtypes / AdditionalTechEffects (installers 0x10079850, 0x10076180, 0x1007AC70) | 0x525BA0, 0x526D60, 0x5F215C, 0x620C24, 0x622F44, BDataEffect calls 0x7F86FE..0x7F87A8 | new Data effect subtypes (`ROF`, `GathererLimit`, `MinimumRange`, `Bounty` in WoL's data) | pending (next) |
+| GatherFix | 0x4EC8DE, 0x4ECC8E | gathering on a fixed interval (WoL's balance assumes it: stock gathers 56% more on trees) | **done** (`gatherFix`; WoL's cfg needs the line) |
+| ROFFix | 0x9CECB4 | an order clears the unit's attack timer | **done** (`rofFix`), not seen in a test |
+| StunMovingTargetFix | 0x9E909E | a stun ends when the target check fails | **done** (`stunMovingTargetFix`), not seen in a test |
+| FallenHeroTacticsFix | 0x6AAE6D, 0x7D8F07, 0x9D6BE7, 0x9EBB0B | four resets of the unit AI's tactic to 0 | **done** (`fallenHeroTacticsFix`), not seen in a test |
+| NoKnockoutDanceBonusHealFix | 0x679FBA, 0x6A5C35..0x6A5CE2 | NOPs a `0x4802C6` test (0x679FBA) and the `hasPlacer` tests, and replaces `hasSpecificPlacer` with a version that also checks `isSingleUse` (WoL 0x10048E40) | pending (RE) |
+| ModifyActionFix | 0x49F252, 0x9E36D0 | retypes the tactics-driven modifier class 2Ch → 46h (0x9E36D0) and collects both types at 0x49F251 (WoL 0x1004A330 calls the collector for 2Ch and 46h) | pending: our modifier walk (`modifiers.h`) must then take 46h too |
+| DisableEffectOnTechFix | 0x94CE4C, 0x94CEBC | keeps the tech flag bit 1 that 0x94CE4F clears, and sets it again only around the `techStatusActive` call at 0x94CEBB (WoL 0x10049660, 0x10049690) | pending (purpose not clear yet) |
+| DoubleShipmentsInspectFix | 0x71063D, 0x9A652D | marks the load of string 37461 (the shipment cost text, 0x71063C) and wraps 0x9A5658 for another player's view (WoL 0x10047960, 0x10047990) | pending (UI) |
+| NoDamageOnUnbuiltFoundations | 0x49B3F3 | unbuilt foundations take no damage | **done** (`noDamageOnUnbuiltFoundations`), hook reached; not seen (no foundation in the test) |
+| CivSpecificTextTechRollover | 0x4C7481, 0x81A5CB | tech rollover text per civ | pending (cosmetic) |
+| FlagOverride | 11 sites (0x451FAF, 0x4B9ED4, 0x5EE665, ...) | `flagoverrideeffect` | pending (cosmetic key) |
+| HighPolyCliff | 25 calls of `BDataSet::getData` (0x7B6F79..0x7C0B82, 0x82E9CE) | `optionhighpolycliff` | pending (cosmetic key) |
+| MoreLoadingScreens | 0x538A3E, 0x538A59, 0x648D4D | `loadingScreenCount` | pending (cosmetic key) |
+| SyncTracker | 20 sites (0x494D4F, 0x4E237C.., 0x6AE5A8..) | `uhcSyncTrack` | pending (cosmetic key) |
+| BroadsideNoTurn | 0x4C0EB8, 0x4C142C, 0x5030FE, 0x503579 | `unrandomizeBroadsideAttack` (commented out in WoL's cfg) | not needed |
+| ProtoUnitExtension | 0x51D7E0, 0x6206C0, 0x698BFF, 0x69B34F, 0x86FDE4; the proto ctor/dtor/copy calls | extends the proto object (`multiarmor`, ...) | done our way (`multiarmor`) |
+| MPSaveAndRestore, AI debug commands, AdditionalLogging, Temp | 0x7DC13F, 0x7E5B28; 0x5335DD..; 0x5F62B4; 0x67DE5B | multiplayer save, debug | later |
+| Upstream caves (installer 0x1002B580, 0x1002C380) | 0x4904B5, 0x4ECD6B, 0x5126C1, 0x8D0318, 0x8D47C9, 0x8DABA3, 0x77674A; 0x51C945, 0x5C2287, 0x5EE78B, 0x699D31, 0x69B909 | `nativeCivs`, name checks, `enableAllTeams` (MP), `attackTypeIcons` | done our way, except `enableAllTeams` MP and `attackTypeIcons` |
+| Syscall groups (0x10072DB0, 0x1006FC00) | 0x535486, 0x53562E, 0x5B7995, 0x6148C7, 0x627340, 0x96FC7B | registration of its syscalls | done our way (`customSyscalls` registry) |
+| Lobby / ESOC UI | 0x8AC970..0x8BC55A, AMPPlayerSlot ctor/dtor 0x775E36, 0x775FCD | ESOC lobby, observer, diplomacy | ask WoL's team |
+| Not identified yet | 0x404FD5, 0x4060D2 (`BGame::update`), 0x4099BC/0x415587/0x44ED3F (-> 0x4203AB), 0x450B30/0x459C58, 0x4EF2E5 (BUnitBuildAction ctor), 0x511AD9, 0x562AD7, 0x58D9E4, save/load chunks (0x62DCD0, 0x765FC9, 0x83212D, 0x83228A, 0x8329B9, 0x835085), 0x8310A4 / 0x912xxx, BPlayer ctor/dtor calls, 0x6A3C08, 0x6A3C90, 0x7D1727, 0x7DE90E | | to study |
 
 ## Performance
 
@@ -132,6 +168,12 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `gatherFix` | scenario: 4 Settlers on a Mill, 3 on trees; perf A/B with 40 on 4 Mills |
+| `betterfreedynamicunit` | skirmish on a test map (RM4 in My Games, removed after): Argentineans, `Corderos` (−2 Sheep) |
+| `nowalkfarm` | scenario: 4 Settlers on a Mill |
+| `repairWallGlobal` | scenario: 3 WallStraight5 damaged to 1200, resources granted |
+| `multiarmor` | scenario: HonorGuard vs Pikemen; gwDreadnought (sea map) with `GWantitorpedobulge`; perf A/B with 160 units (HonorGuard, WoLVoltigero, Pikeman, Musketeer) |
+| `customProtoUnitCommands` | scenario, player Ethiopians: Zulu `AFRICANyouth` (transforms to Tradesman and Bowman); Brazilian Fazenda (tactics page, not shown) |
 | `kbUnitSyscalls` | AI skirmish: player Australians (Melbourne); AI Maori, personality Te Rauparaha (other personalities moved aside so the random pick is that one; the clicks on the AI slot opened nothing) |
 | `wonderCivUnitType` | Maori (Parihaka): Rangatira, voyages |
 | `trainSingleAbstractType` | Germans (Age0German, age IV): WOLTotenkopfHussar at a Barracks (scenario) |

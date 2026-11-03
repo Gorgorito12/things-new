@@ -874,6 +874,43 @@ movement".
 | `g_uhcBwrTrainGetter` | UHC.dll export (data, C linkage) | — | `void*`, default 0x9BFE33; set to the wrapper when `buildingWorkRateAuras` applies. noTrainNearEnemyTC's Train hook calls through it. |
 
 
+### Free units, farms, walls and display modes (2026-11-03)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Dynamic free unit count | 0x7FA6D5, 0x8D8C6F | confirmed (`cs`) | `amount < -1e-6` → `-amount × min([world+134h], 15)`; 0x8D8C62 skips a player without a home city `[player+84h]`. |
+| Dynamic step | `[world+134h]` | in game | The 2-minute step rounded up: 4 at 452 s, 5 at 491 s. |
+| Farm spot picker | 0x9DDADE, `thiscall(action)` | confirmed (`cs`) | Callers 0x4ED5E8, 0x4ED6F4, 0x50DF53, 0x6A8E7C (first spot) and 0x6A9067 (periodic, when the time passes `[action+A0h]`). |
+| commandAutoRepair | 0x830AC4, `bool thiscall(game, int player, int unitId)`, `ret 8` | confirmed (`cs`; name from another DLL's symbol table) | `player < 0` → `[game+3C0h]` (local player). Single-wall caller 0x7DEDC3. |
+| Display mode add | 0x54D605, `thiscall(renderer, Mode*)`, `ret 4` | confirmed (`cs`) | Called per adapter mode from FUN_0054D663 at 0x54D6D1; the mode's D3D format at `+0Ch`. |
+| Format bit depth | 0x545A10 | confirmed (decompiled) | 14h/15h/16h/1Fh/23h → 32; 17h..1Ah, 1Dh, 1Eh → 16; 1Bh → 8. |
+| AbstractWall | abstract type bit 54 (36h) | in game (`inspect_unittypes.py`) | 39 protos. |
+
+### Armor (for `multiarmor`, 2026-11-03)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Proto armor | `[proto+1D3h]` (damage type byte), `[proto+C4h]` (float) | confirmed (`cs`, in game) | One per proto. |
+| `<Armor>` handler | 0x5F5E62, cdecl `(ctx, node, proto)` | confirmed (`cs`) | Reads `type` and `value`; the type through 0x5F562D (thiscall on ctx); stores at 0x5F5EB7. |
+| Damage type lookup | 0x5F55EA, `thiscall(ctx, name)` → entry, ID at `+8` | confirmed (`cs`) | List `[ctx+44h]`, count `[+48h]`; 0x5F562D returns the ID. |
+| Armor getter | 0x49B323, `float thiscall(unit, byte damageType, ...)`, `ret 8` | confirmed (`cs`) | Value only for the stock type; then the tactic armor of `[unit+58h]` (0x69FEA3). |
+| Proto copy | 0x67E011, `bool thiscall(dst, src, bool)`, `ret 8` | confirmed (`cs`) | Called when a player's proto is cloned (0x8D1B60, 0x8D6576). Named `BProtoUnit` ctor 0x5F7394, dtor 0x58633D in another DLL's symbol table. |
+| BDataEffect | vtable slots 0xB9E5AC `setData` (0x6205F6), 0xB9E5C4 `playerApply` (0x7F874A), 0xB9E5C8 `playerUnapply` (0x7F877F), 0xB9E5CC `protoUnitApply` (0x7F86C0), 0xB9E5D0 `protoUnitUnapply` (0x7F8705) | confirmed (`cs`; names from another DLL's symbol table) | Fields: `+0Ch` subtype, `+18h` amount, `+1Ch` relativity byte. |
+| applyData / unapplyData | 0x8F973F / 0x8FB01C, thiscall on the target proto, `ret 20h` | confirmed (`cs`) | Switch on the subtype (tables 0x8FAFB8/0x8FAF00, 0x8FC23C/0x8FC1A8); Armor = 5Ch at 0x8FAE52 / 0x8FC144. |
+| Effect value | 0x7F892A, cdecl `(byte relativity, float* target, float base, float amount, bool unapply)` | confirmed (`cs`) | 0 Percent (×, ÷), 2 BasePercent, 3 Assign, else Absolute. |
+
+### Command types (for `customProtoUnitCommands`, 2026-11-03)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Name tables builder | FUN_0052277E (0x52277E..0x526E38) | confirmed (`cs`, command part) | Registers the database's enum names; command types 0..128 at 0x5262F2..0x5269FB. |
+| Register a command type name | 0x537683, `bool thiscall(db, int id, const char* name)`, `ret 8` | confirmed (`cs`) | Only when `id == [db+264Ch]`; appends through 0x59F915 to the hashed list `[db+2648h]`. Its neighbours 0x5376BA, 0x5376F1 do the same for other tables (`+5130h`, `+5454h`). |
+| Command type by name | 0x5274AB, `int thiscall(db, const char* name)`, `ret 4` | confirmed (`cs`) | Hash lookup (0x421B73, 0x40295B); -1 if absent. Callers: the protounitcommands.xml loader 0x5274A2 / 0x65A9A2, 0x7D8AFD, 0x7DF0E3, 0x7F03C7, 0x94808F, 0x9AD1C8. |
+| protounitcommands.xml loader | FUN_00527090 | partial (`cs`) | Reserves the record array `[db+2968h]` with `0x5276EA(arr, 82h, 0)` at 0x52711D; 4Ch-byte records indexed by command type ID (the `<name>` lookup gives the index; `+24h` written at 0x65A9B2). |
+| Command records | `[db+2968h]` (array), `[db+296Ch]` (count) | confirmed (readers) | Readers (0x4619F3, 0x695D30, 0x69CAEA, 0x8D283E, 0x9B6E19, ...) compare the ID with the count first. |
+| Proto command list | `[proto+E8h]` (6-byte entries), `[proto+ECh]` (count) | in game (2026-11-03) | `{word id, byte kind (2 = command, 1 = tech), byte page, byte column, byte}`; read at 0x7D8ACD. |
+| Tactic buttons gate | 0x5C161C (FUN_005C13C5), 0x6949CD (FUN_004C55E3) | from the address map (`tacticSwitching`) | The tactics page shows only for the Factory `[db+5E68h]`, Rice Paddy `[db+5E70h]` and a few other cached protos. |
+
 ### KB unit queries (for `kbUnitSyscalls`, 2026-11-03)
 
 The stock KB syscalls share one head (for example `kbUnitGetNumberWorkers` 0x881CC6, registered
