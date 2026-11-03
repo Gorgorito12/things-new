@@ -22,6 +22,7 @@ add_library(UHC SHARED
   src/worldtick.cpp
   src/actiontags.cpp
   src/features/abilityslots.cpp
+  src/features/abstracttypes.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp

@@ -14,6 +14,7 @@ struct Feature {
   Outcome (*apply)(const Config& config);
 };
 
+Outcome ApplyCustomAbstractTypes(const Config& config);
 Outcome ApplyRemoveConversionRestriction(const Config& config);
 Outcome ApplyIgnoreRegistryPath(const Config& config);
 Outcome ApplyDeckCardCount(const Config& config);
@@ -56,6 +57,8 @@ Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 
 inline constexpr Feature kFeatures[] = {
+    // First: its types get their IDs before any other feature requests one.
+    {"customAbstractTypes", ApplyCustomAbstractTypes},
     {"removeConversionRestriction", ApplyRemoveConversionRestriction},
     {"ignoreRegistryPath", ApplyIgnoreRegistryPath},
     {"deckCardCount", ApplyDeckCardCount},
@@ -108,6 +111,7 @@ inline constexpr Feature kFeatures[] = {
 
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
+    "customabstracttypes",
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "decimalpopulation",
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
