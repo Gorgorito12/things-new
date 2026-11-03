@@ -3892,6 +3892,23 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 
 *In game:* An Explorer aura (BuildingWorkRate x4) speeds up the Blood Factory next to it: 11 musketeers against 2 (2x speed). [Full video (MP4)](media/buildingWorkRateAuras.mp4).
 
+<!-- private:begin -->
+![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
+
+*In WoL, with `buildingWorkRateAuras log` (an African civ, the two Town Centers selected so their
+queues show):* both TCs train 10 `AFRICANvillager`; the Explorer next to the left one carries a
+test aura (`UHCBwrAura`: `AutoRangedModify`, `BuildingWorkRate` x3, 10 m, on `TownCenter`, added to
+the bed's `explorer.tactics` and removed after). The left TC works at x3 (`works at x3.000 from
+BuildingWorkRate modifiers`) and trains 8 villagers while the right one trains 2.
+[Full video (MP4)](media/buildingWorkRateAuras-wol.mp4).
+
+![buildingWorkRateAuras in WoL, key off](media/buildingWorkRateAuras-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* stock reads `BuildingWorkRate` as no stat, so the aura
+does nothing: each TC trains 3 villagers.
+[Full video (MP4)](media/buildingWorkRateAuras-wol-control.mp4).
+<!-- private:end -->
+
 ```
 buildingWorkRateAuras [log]
 ```
