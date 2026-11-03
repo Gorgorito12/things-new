@@ -157,6 +157,16 @@ customCheats                  the cheats plugins register work in the chat
 asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders)
 selectionLimit N              a selection holds up to N units (stock 50)
 enableAllTeams                Team 3 and Team 4 in the single-player setup
+twoScoutCivs Civ ...          these civs get the two-hero interface
+nativeCivs Civ ...            these civs count as native civs (dances, council)
+bigButtonCivs, noBigButtonBlds   the native big button for more civs / not on buildings
+enableFarmAnim, enableRectFarmAnim   gatherers work these buildings like a Mill / Rice Paddy
+farmingRadius I X Z ...       per enableFarmAnim entry, the gatherers' area (stock 4.5)
+trainSingleAbstractType [T]   units of type T leave training one at a time
+wonderCivUnitType Proto ...   these units may start a wonder civ's age-up
+kbUnitSyscalls                five KB syscalls for AI scripts (unit inventory, workers)
+marketUnits Proto ...         these buildings count as a Market for trading
+explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)
 customRevolutionBanners       a banner for every XPRevolution<Name> tech
 removeFameRestriction         Fame, XP and shipment costs and icons
 removeConversionRestriction   ConvertGuardian works on any unit

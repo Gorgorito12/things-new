@@ -387,6 +387,136 @@ steps (`UhcAddTeamEntries`, given ESP at the site), then re-executes the push an
 The multiplayer slot (a method of another class, FUN_00776702, reached through a vtable) maps
 the list index to a team itself and is not changed.
 
+### twoScoutCivs
+
+Four tests in the hero interface read a civ (`[esi+1DCh]`, or the value at `[esp+10h]`) and ask
+`0x8D0318` (which caches the civ IDs by name and tells whether the civ is Asian) and whether it is
+the Chinese: Asian and not Chinese means two heroes (Japanese, Indians). Each hook replaces one
+instruction (6 B), asks `UhcIsTwoScoutCiv`, and for a listed civ takes the two-hero branch:
+`0x77EBB2` sets BL = 1 and the frame flags `[esp+0Fh]` = 1, `[esp+0Eh]` = 0 as the stock code
+would, then `0x77EBF6`; `0x77EF29` (after `push ebx`) jumps to `0x77EF68` (`push 1`); `0x77DDD2`
+to `0x77DE16`; `0x77DFF4` to `0x77E039`. Otherwise each re-executes its instruction (the second
+reloads the civ from `[esp+14h]`, pushes it and calls `0x8D0318`) and continues.
+
+### marketUnits
+
+The market trade function checks, before a purchase or sale, that the player owns a `Market`
+(`[db+5E30h]`) or the second market type (`[db+5E60h]`): `0x4C846D` (`int thiscall(kb, player,
+proto, 2, 0)`, a unit count) with ECX = the player's kb `[esi+80h]` and the player ID at
+`[esp+10h]`. The hook replaces `mov edx,[0C66234h]` at `0x7DEF70`; `UhcHasMarketUnit(kb, player)`
+counts each listed proto the same way, and any count above 0 continues at `0x7DEFC3` (trade);
+otherwise the instruction is re-executed and the stock tests run (`0x7DEF76`). Names resolve
+through `ProtoIdList` (`src/namelists.*`, with `0x5A2346`), again when the database or
+`[db+58h]` changes.
+
+### explorerUnits
+
+**Names.** FUN_004702DC builds a unit's display name. At `0x6A012A` (`lea ecx,[eax+18h] / call
+401F47h`, EAX = the home city, `[ebp+8]` = the proto ID, ESI = the database) the hook asks
+`UhcExplorerType(proto)`: -1 re-executes both instructions and continues at `0x6A0132`; Type 1
+jumps to `0x6A0179` (the home city's explorer name, `[hc+18h]`), Type 0 to `0x6A0203` (the path for
+other units), any other Type to `0x6A01B8` (`push 0`: the first hero name, `0x853954`).
+
+**Knockout message.** At `0x50B01F` (`mov edx,[esi+10h] / mov eax,[edx+5Ch]`: the unit, then its
+proto, whose ID is `[proto+4]`) the hook re-executes both loads and asks `UhcExplorerString`; a
+listed proto's string ID is pushed and the code continues at `0x50B039`, where the stock Explorer
+case loads its pushed string (`0x447719`); otherwise it continues at `0x50B025`.
+
+### nativeCivs
+
+- **Civ flag.** At the end of the `civs.xml` loader (`0x52B581`, `lea ecx,[esp+100h]`), stock has
+  just set `[civ+10h] = EBX` for the Iroquois, Sioux and Aztecs (civ object by name `0x52D6FF`);
+  the hook does the same for each listed name, then re-executes the `lea`.
+- **Tests.** `0x51271F` (FUN_00512651, `bool cdecl(civ)`), `0x453D5E` (isNativeCiv's `extended`
+  branch; the hook compares the byte argument as a byte), `0x67B0A5` and `0x8D52AF` re-execute their
+  stock compare with the cached native civ ID and otherwise ask `UhcIsNativeCiv`; a listed civ
+  takes the native branch.
+- **Dances.** The three dance readers that compare the native civ IDs (`0x4904B5`, `0x4ECD6B`,
+  `0x8D47C9`) are the functions `danceBonusCivs` gates at their first compare; `nativeCivs` adds
+  its names to that key's list through `AddDanceCivs` (installing the gates if `danceBonusCivs`
+  is not set), so the XPTrickle dance (`0x4E0DFF`) is covered too.
+- **Council.** In FUN_0081ABFC, at `0x81ADEB` (`cmp [esp+10h],ebx / mov [esp+20h],eax`), the
+  hook stores EAX, asks `UhcNativeCouncilOption(civ = [esp+10h], option civ name = [esi+18Ch]+edi+8)`
+  (`0x443C10`, case ignored): a match adds the option (`0x81AE59`); otherwise EAX is restored, the
+  compare re-executed, and the code continues at `0x81ADF3` with its flags.
+
+### bigButtonCivs and noBigButtonBlds
+
+In FUN_0046188E, `jne 695955h` at `0x461BD8` follows `isNativeCiv(player, true)`: a native player
+goes to `0x695955`, which shows the big button on a unit of abstract type 2; others go to
+`0x461BDE` (none). The hook passes AL, the player (EDI) and the unit (ESI) to `UhcBigButtonPath`:
+neither native nor listed means none; a unit whose proto (`[[unit+5Ch]+8]`) is in
+`noBigButtonBlds` means none; anything else takes the native path.
+
+### enableFarmAnim, enableRectFarmAnim and farmingRadius
+
+The gather code compares a target's proto ID with cached IDs in chains: Mill `[db+5E58h]`, Farm
+`[db+5E5Ch]`, Plantation `[db+5E60h]`, Rice Paddy `[db+607Ch]` and others, each `je` going to the
+branch for that kind. A null proto goes to a cold stub (`or eax,-1`) that jumps back **to the
+compare**, so the compares themselves cannot be hooked; the sites are before or after them:
+
+| Site | Replaced | Listed Mill-like | Listed Rice Paddy-like |
+|---|---|---|---|
+| 1 `0x4EDA85` | `mov edx,[ebp+140h]` | `0x4E3069` with EDX = db, EBX = Mill ID, ECX = ESI, EAX = proto | `0x6A8A55`, EBX = Rice Paddy ID |
+| 2 `0x50DE33` | `jne 4EDD6Ch` | `0x6A8E67` (the equal path) | `0x50DF51`, EBX = Rice Paddy ID, ECX = EDI, EDX = game |
+| 3 `0x73D41A` | `jne 73D427h; mov eax,[eax+5F4Ch]` | `0x73D49B` (both kinds) | same |
+| 4 `0x8CEC9F` | `call 4E2C50h` | `0x8CED20` (both kinds) | same |
+| 5 `0x9DDB79` | `cmp ecx,[eax+5E58h]` | the compare made equal (`cmp eax,eax`), so `sete dl` sets the Mill flag | — |
+| 6 `0x4EE07F`, 7 `0x4EE2FE` | `je 586DFFh` / `je 586E11h` | the `je` target | — |
+| 8 `0x6A8FE1` | `call 44CB0Ah; cmp eax,ebx; jne 6A900Ch` | `0x6A8FEA` | — |
+| R1 `0x9DDD80` | four loads, `cmp ecx,[eax+607Ch]` | — | `0x9DDD9E` (the equal path) |
+| R2 `0x4741F0` | `je 4743DDh` (after `test esi,esi`) | — | `0x689BBE` with `[esp+14h]` = `[ebx+18h]`, EBP = Rice Paddy ID, ECX = EBX, EAX = proto |
+| R3 `0x4EEDB4`, R4 `0x4EEE9E` | `mov ecx,[0C66234h]` | — | `0x4EEE18` / `0x4ED756`, EDX = db, EBP = Rice Paddy ID, ECX = EDI |
+
+The registers listed are the ones stock has on its own branch for a Mill or a Rice Paddy (traced
+from each chain's `je`), so the code after sees what it would see for those buildings. Every other
+proto re-executes the replaced instructions. `UhcFarmKind` answers 1, 2 or 0 through
+`ProtoIdList` (`src/namelists.*`).
+
+**farmingRadius.** At `0x9DE04D` (`mov ecx,[0C0BBE0h]`, the stock 4.5) the gather action draws the
+gatherer's offset twice with the synced random 0x422648 (stream 2, from EBP to X, then to Z, pushed
+at `0x9DE06B` from EDX). For a farm proto with a radius (`[[edi+5Ch]+4]`), the hook makes the
+first draw with its X, stores it at `[esp+14h]` like stock, loads Z into EDX and continues at
+`0x9DE06B`; EAX, ECX and EDX are free there (the draws overwrite them).
+
+### trainSingleAbstractType
+
+The unit-creation function `0x9CE2BE` (thiscall on the unit manager, seven arguments; reached from
+the Train action at `0x9EBF03` and from three other callers) tests the new unit's proto with
+`0x44CAC4` for abstract types 16h, 1, the TownCenter proto, 5Ch and 5Dh (`AbstractMonk`); any of
+them clears BL, which makes the count 1 (`mov edi,1`) instead of the requested count. The key
+redirects the two 5Dh calls (`0x9CE573`, `0x9CE767`) to a wrapper that returns the stock answer or
+the marker type. `0x44CAC4` takes a **bit index** in the proto's abstract-type bitset
+`[proto+30h]`: the unittype ID minus the proto count `[database+19B0h]`, computed at each call.
+(A first build passed the unittype ID; the bound check at `0x44CADE` then always failed.)
+
+### wonderCivUnitType
+
+Two functions decide whether a selected unit may start the age-up: FUN_007E686E (from the age-up
+command) and FUN_007E7A50. For a civ for which isAsianCiv (`0x454ED7`, extended) is true they test
+the unit's proto with `0x44CAC4` for abstract type 16h (`push 16h / mov ecx,proto / call
+44CAC4h` at `0x7E6919` and `0x7E8050`); for other civs they require the TownCenter proto. The key
+redirects those two calls to a wrapper that returns the stock answer or whether the proto ID
+(`[proto+4]`) is listed (`ProtoIdList`).
+
+### kbUnitSyscalls
+
+Five syscalls added to the KB group through the syscall registry (`src/syscalls.*`, the hook on
+the group's first registration at `0x885D14`); no game code is patched. Each is a cdecl function
+that calls engine functions, with "the player" read from `[0xC66664]` as the stock KB syscalls
+do (their common head, for example `0x881CC6`: world, player `0x44CB21`, kb `[player+80h]`):
+
+| Syscall | How |
+|---|---|
+| `kbUnitGetCurrentInventory` | Unit by ID `0x44CC6D`, inventory `[[unit+B4h]+94h]`, ResList get `0x44EFFF` on its `+4` list. |
+| `kbUnitGetInventoryCapacity` | `0x494503` (the unit's proto carry capacity). |
+| `kbUnitIsInventoryFull` | `0x4DC520` on the inventory. |
+| `kbUnitGetNumberWorkersIfSeeable` | The stock kb method `0x86C647` returns the worker count `[unit+98h]` for the player's own units only. This one tests the unit with isSeeable `0x48A9EF` (the visibility mask `[[unit+B4h]+ACh]`, else the explored mask and the proto's under-fog flags), then counts the entries of the worker array `[unit+94h]` (18h bytes, worker ID first) whose worker passes the same test. |
+| `kbUnitGetNumberTargeters` | Walks the player's units (`[player+F8h]`, count `[+FCh]`); for each of abstract index 16h that is not in the unit's worker array, the squad (`0x4E2A03`) `[+1Ch]` object's order list (`+28h`/`+2Ch`), and in each order the target entries (`+1Ch`/`+20h`, 18h bytes, unit ID first). |
+
+Every pointer and count is checked before use (counts above 100,000 are treated as invalid);
+nothing is written.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

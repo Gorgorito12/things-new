@@ -42,7 +42,26 @@ robocopy C:\WoL-Test C:\AoE3-UHC-WoLReal /E /MT:8 /XD avi "History Channel Trail
 - `testbed.py safety record|check wol` checks the Steam WoL folder; the listing of 2026-11-02 is in
   `%TEMP%\uhc-wol-listing.tsv`.
 
+### Which civs to test with
+
+Only civs players can pick in the public game (user, 2026-11-03). **Not public**, kept only in the
+data files: Tawantinsuyu (Incas), Tupinamba (Tupi), XPAztec (Aztecs). Public: WallMapu (Mapuche),
+XPIroquois, XPSioux, Maori, Australians, and every European, Asian, American, Balkan and African
+civ. The local data cannot tell: the civ picker lists a civ when an `AI4\*.personality` declares
+its `<forcedciv>`, Tawantinsuyu has one (`wolTupac`), and an earlier audit of the mod gave XPAztec
+one by hand (`wolMariano`). For native-civ features use WallMapu, the Iroquois or the Sioux. A
+first `nativeCivs` test used Tawantinsuyu (2026-11-02); it was redone with WallMapu.
+
+Tests run on the primary monitor (the user's "monitor 1"): `testbed.py` moves the game window
+there at launch and before each real click (`UHC_TEST_MONITOR` changes it, `monitors` lists them).
+
 ### Driving a skirmish
+
+`python -I tools/testbed.py --bed C:\AoE3-UHC-WoLReal profile hc <Civ>` picks the skirmish home
+city (`LastSelectedSPHC`, game closed); `profile hc` lists the 60 saved ones. Restore
+`sp_Addis Ababa_homecity.xml` after a test (the user's real WoL reads the same profile). In the home
+city screen, "Administrar Metrópolis" opens the card view, whose "Restablecer" button resets the
+city: never click near it.
 
 The profile's home city is the Ethiopians (one of WoL's `asianCivs`). Client coordinates at
 1920 x 1080: main menu "Un jugador" (257, 803), "Escaramuza" (689, 803), home city "Jugar"
@@ -58,6 +77,8 @@ clicks, 10–12 s before each "Jugar", about 55 s for the game to load.
 | `noAILimitV2` | The skirmish loads (52 personalities from `AI4\`, the same table as WoL's DLL, read at 0x603C4F). Next failure: `aiLoaderStandard.xs` does not compile: `cUnitTypeAbstractWoLHandCavalry`. |
 | `customAbstractTypes` | 47 types registered; next failure: `kbGetTechID`. |
 | `customSyscalls` | Both plugins load (17 syscalls, 33 cheats collected). **The AI compiles and plays** (Indians: houses, settlers, monks fighting). Video: `wol-ai-plugins.mp4`, with `--perf` (about 350 fps, 2 frames over 50 ms in 30 s, main thread 93 %). |
+| End of 2026-11-02 | `UHCMain: 23 applied, 0 failed` with WoL's cfg plus the bed's keys; 17 of WoL's keys still "not implemented yet" (29 at the start). Also confirmed in the bed: the restored `dodgeAnyUnit`, `dodgeChance` and `spreadAnyAccuracy` apply again. Next: farms (`enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`), `wonderCivUnitType`, `customProtoUnitCommands`, the Maori AI's kb syscalls. |
+| `kbUnitSyscalls`, 2026-11-03 | **The Maori AI (Te Rauparaha) compiles and plays**: the last AI personality that did not. Its five syscalls are rebuilt on engine functions whose addresses come from the name table inside WoL's DLL (`wol-uhc-map.md`, "Engine symbol table"), each checked in the stock exe. |
 
 ## Keys
 
@@ -69,20 +90,20 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | (`customAbstractTypes`) | WoL, always on | blocks (AI compile); 47 types dropped from ~2,800 `<UnitType>` uses | **done**, confirmed |
 | `customSyscalls wolPlugin.upl wolai.upl` | upstream | blocks (AI compile: `kbGetTechID` ×36 in `aiWoLMain.xs`; 36 `RM4\ESOC_*` maps) | **done**, confirmed |
 | `customCheats` | upstream | cosmetic (33 plugin cheats) | **done**, confirmed (`kill 'em all`: 50 Cannons) |
-| `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | **done**, partly confirmed (wonder list needs a Korean home city: WoL's wonders are `nativeciv="Koreans"`) |
-| `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | degrades: fire pit, council age-up | pending (dance gates shared with `danceBonusCivs`) |
-| `twoScoutCivs Koreans` | upstream | degrades | pending |
-| `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | pending |
+| `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | **done**, confirmed (Koreans: five wonders in the age-up list) |
+| `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | **blocks** for WallMapu (age-up crashes without it: stock code, 0x81A80C) | **done**, confirmed (WallMapu: council list, dances resolved) |
+| `twoScoutCivs Koreans` | upstream | degrades | **done**, not reached in game yet (probably the new home city dialog) |
+| `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | **done**, partly confirmed (hook reached) |
 | `enableAllTeams` | upstream | degrades (teams 3/4) | **done** for single player, partly confirmed; MP lobby pending (needs a LAN test) |
-| `wonderCivUnitType Rangatira` | WoL | degrades (Maori age-up) | pending, RE |
-| `marketUnits` | upstream | degrades (trade without a stock Market) | pending |
-| `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | pending |
-| `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | degrades (gathering on WoL farms) | pending |
+| `wonderCivUnitType Rangatira` | WoL | **blocks** the Maori age-up (their Rangatira cannot start it without the key) | **done**, confirmed (voyage list opens; nothing without the key) |
+| `marketUnits` | upstream | degrades (trade without a stock Market) | **done**, confirmed (`WOLMarketGreek`; refused without the key) |
+| `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | **done**, names confirmed (Korean monks Yi Sun and Kwon Hwan); 4 protos of WoL's cfg do not exist in its data |
+| `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | cosmetic: placement and animation (the buildings gather anyway in WoL's data) | **done**, confirmed (Iroquois plantation and farm; radius measured). `Fazenda` gets no gatherers: its tactics only modify others |
 | `customProtoUnitCommands` (always on in WoL) | WoL | degrades (41 `<Command>` buttons) | pending, RE |
 | `selectionLimit 75` | WoL | degrades | **done**, confirmed (75 of 89 Pikemen; 50 without) |
-| `trainSingleAbstractType` | WoL | degrades (`AbstractTrainLimitOne`, 36 protos) | pending |
+| `trainSingleAbstractType` | WoL | degrades (`AbstractTrainLimitOne`, 36 protos) | **done**, confirmed (Totenkopf hussars one at a time; a batch without the key) |
 | `multiarmor` | WoL | degrades (32 protos, 76 effects) | pending, RE |
-| WoL-DLL kb syscalls (`kbUnitGetNumberTargeters`, …) | WoL, always on | blocks the Maori AI (`wolRauparaha`) only | pending |
+| WoL-DLL kb syscalls (`kbUnitGetNumberTargeters`, …) | WoL, always on | blocks the Maori AI (`wolRauparaha`) only | **done**, confirmed (`kbUnitSyscalls`: Te Rauparaha compiles and plays; 6 visible workers on a hunt, 0 with the stock call; without the key `Error 0172` on `kbUnitGetCurrentInventory`). WoL's cfg needs the line `kbUnitSyscalls` (WoL's DLL has them always on) |
 | `enablerandomtecheffect` | WoL | none in current data | pending |
 | `betterfreedynamicunit`, `nowalkfarm`, `repairWallGlobal`, `compatMode` | WoL | degrades | pending, RE |
 | `attackTypeIcons`, `loadingScreenCount 28`, `flagoverrideeffect`, `optionhighpolycliff`, `alpha2coverage`, `map` / `uhcSyncTrack` | upstream / WoL | cosmetic | pending |
@@ -109,3 +130,12 @@ load-time A/B for `customAbstractTypes`.
 | Test | Civ / unit |
 |---|---|
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
+| `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
+| `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `kbUnitSyscalls` | AI skirmish: player Australians (Melbourne); AI Maori, personality Te Rauparaha (other personalities moved aside so the random pick is that one; the clicks on the AI slot opened nothing) |
+| `wonderCivUnitType` | Maori (Parihaka): Rangatira, voyages |
+| `trainSingleAbstractType` | Germans (Age0German, age IV): WOLTotenkopfHussar at a Barracks (scenario) |
+| farms | XPIroquois: WOLPlantationIroquois, WOLFarmIroquois (scenario); Brazilian Fazenda (not gatherable) |
+| `nativeCivs`, `bigButtonCivs` | WallMapu (Perquenco): Town Center council; control without the key crashes |
+| `selectionLimit` | scenario: 89 Pikemen |
+| `customCheats` | Ethiopians: 50 Cannons |

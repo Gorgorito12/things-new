@@ -57,6 +57,19 @@ Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
+Outcome ApplyTwoScoutCivs(const Config& config);
+Outcome ApplyMarketUnits(const Config& config);
+Outcome ApplyExplorerUnits(const Config& config);
+Outcome ApplyNativeCivs(const Config& config);
+Outcome ApplyBigButton(const Config& config);
+Outcome ApplyFarmAnim(const Config& config);
+Outcome ApplyFarmingRadius(const Config& config);
+Outcome ApplyWonderCivUnitType(const Config& config);
+Outcome ApplyTrainSingleAbstractType(const Config& config);
+Outcome ApplyKbUnitSyscalls(const Config& config);
+// dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
+bool InstallDanceGates(const char* feature);
+bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
@@ -94,6 +107,18 @@ inline constexpr Feature kFeatures[] = {
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
     {"asianCivs", ApplyAsianCivs},
+    {"twoScoutCivs", ApplyTwoScoutCivs},
+    {"marketUnits", ApplyMarketUnits},
+    {"explorerUnits", ApplyExplorerUnits},
+    // After danceBonusCivs: it adds its civs to the dance gates that key installs.
+    {"nativeCivs", ApplyNativeCivs},
+    {"bigButtonCivs/noBigButtonBlds", ApplyBigButton},
+    {"enableFarmAnim/enableRectFarmAnim", ApplyFarmAnim},
+    // After enableFarmAnim: its indices count that key's entries.
+    {"farmingRadius", ApplyFarmingRadius},
+    {"wonderCivUnitType", ApplyWonderCivUnitType},
+    {"trainSingleAbstractType", ApplyTrainSingleAbstractType},
+    {"kbUnitSyscalls", ApplyKbUnitSyscalls},
     {"selectionLimit", ApplySelectionLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
@@ -132,7 +157,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "selectionlimit", "enableallteams",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls",
 };
 
 }  // namespace uhc

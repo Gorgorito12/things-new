@@ -51,6 +51,50 @@ SITES = [
     ("WonderAgeUpCiv", 0x818284, 9),
     # the civ ID by name, int thiscall(database, const char*), -1 if none (verify only)
     ("CivIdByName", 0x58E71F, 0x10),
+    # twoScoutCivs: the hero UI's civ tests (mov eax,[esi+1DCh]; push eax / call 8D0318h after push
+    # ebx; mov ecx,[esi+1DCh]; mov edx,[0C66234h])
+    ("TwoScout1", 0x77EBB2, 6),
+    ("TwoScout2", 0x77EF29, 6),
+    ("TwoScout3", 0x77DDD2, 6),
+    ("TwoScout4", 0x77DFF4, 6),
+    # marketUnits: mov edx,[0C66234h] before the market trade test's Market count (0x4C846D)
+    ("MarketUnits", 0x7DEF70, 6),
+    # explorerUnits: the hero name (lea ecx,[eax+18h] / call 401F47h in FUN_004702DC) and the knockout
+    # message (mov edx,[esi+10h] / mov eax,[edx+5Ch])
+    ("ExplorerName", 0x6A012A, 8),
+    ("ExplorerKnockout", 0x50B01F, 6),
+    # nativeCivs: the civs.xml loader's end (lea ecx,[esp+100h], after it sets [civ+10h] for the
+    # native civs), four native civ tests and the council age-up list's first compare
+    ("NativeCivMark", 0x52B581, 7),
+    ("NativeCivTest2", 0x51271F, 8),
+    ("NativeCivTest4", 0x453D5E, 15),
+    ("NativeCivTest7", 0x67B0A5, 8),
+    ("NativeCivTest9", 0x8D52AF, 6),
+    ("NativeCouncil", 0x81ADEB, 8),
+    # bigButtonCivs / noBigButtonBlds: jne 695955h after isNativeCiv in the command panel FUN_0046188E
+    ("BigButton", 0x461BD8, 6),
+    # enableFarmAnim: the gather code's compares of a target's proto with the cached Mill and farm IDs
+    ("FarmAnim1", 0x4EDA85, 6),    # mov edx,[ebp+140h], before the chain
+    ("FarmAnim2", 0x50DE33, 6),    # jne 4EDD6Ch (then jmp 6A8E67h, the Mill branch)
+    ("FarmAnim3", 0x73D41A, 8),    # jne 73D427h / mov eax,[eax+5F4Ch]
+    ("FarmAnim4", 0x8CEC9F, 5),    # call 4E2C50h, before the proto compares
+    ("FarmAnim5", 0x9DDB79, 6),    # cmp ecx,[eax+5E58h] (the Mill flag)
+    ("FarmAnim6", 0x4EE07F, 6),    # je 586DFFh
+    ("FarmAnim7", 0x4EE2FE, 6),    # je 586E11h
+    ("FarmAnim8", 0x6A8FE1, 9),    # call 44CB0Ah / cmp eax,ebx / jne 6A900Ch
+    # enableRectFarmAnim: the same for the cached Rice Paddy ID [db+607Ch]
+    ("RectFarm1", 0x9DDD80, 0x18), # four loads and cmp ecx,[eax+607Ch]
+    ("RectFarm2", 0x4741F0, 6),    # je 4743DDh after test esi,esi
+    ("RectFarm3", 0x4EEDB4, 6),    # mov ecx,[0C66234h], before the Rice Paddy compare
+    ("RectFarm4", 0x4EEE9E, 6),    # mov ecx,[0C66234h], before the Rice Paddy compare
+    # farmingRadius: mov ecx,[0C0BBE0h], the 4.5 X of the gatherer spread
+    ("FarmRadius", 0x9DE04D, 6),
+    # wonderCivUnitType: call 44CAC4h (is type 16h) in the two wonder age-up placement tests
+    ("WonderAgeUnit1", 0x7E6919, 5),
+    ("WonderAgeUnit2", 0x7E8050, 5),
+    # trainSingleAbstractType: call 44CAC4h (is type 5Dh) in the two train-one-at-a-time tests
+    ("TrainSingle1", 0x9CE573, 5),
+    ("TrainSingle2", 0x9CE767, 5),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),
@@ -918,6 +962,17 @@ SITES = [
     ("PopFormatCost3", 0x710651, 0x08),
     ("PopFormatCapLine", 0x6F2DB5, 0x08),
     ("PopFormatCap", 0x6F2E34, 0x08),
+    # kbUnitSyscalls: engine functions the added kb syscalls call (thiscall, verified heads).
+    # ResList get 0x44EFFF(list, r) -> float; unit isSeeable 0x48A9EF(unit, player) -> bool (the
+    # visibility bit [[unit+B4h]+ACh] & 1<<player, else the explored bit [+B0h] and the proto's
+    # under-fog flags, 0x55F5B2); unit getSquad 0x4E2A03(unit) -> [[world+148h]][[unit+B4h]+14h];
+    # inventory isFull 0x4DC520(inventory) -> bool; unit getCarryCapacity 0x494503(unit, r) ->
+    # float, through [unit+5Ch] (the proto)
+    ("ResListGet", 0x44EFFF, 0x3D),
+    ("UnitIsSeeable", 0x48A9EF, 0x3B),
+    ("UnitGetSquad", 0x4E2A03, 0x32),
+    ("InventoryIsFull", 0x4DC520, 0x3D),
+    ("UnitCarryCapacity", 0x494503, 0x10),
 ]
 
 

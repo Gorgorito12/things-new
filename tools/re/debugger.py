@@ -9,6 +9,7 @@ docs/engine-symbols.md and are only valid for the stock Steam build of age3y.exe
 (SHA-256 b1a1dab7...11d9d) and UHC-patched copies of it.
 """
 import ctypes
+import os
 import ctypes.wintypes as wt
 import struct
 import time
@@ -87,18 +88,41 @@ class _ThreadEntry(ctypes.Structure):
                 ("dwFlags", wt.DWORD)]
 
 
+def _image_path(pid):
+    handle = k32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return ""
+    buf = ctypes.create_unicode_buffer(1024)
+    size = wt.DWORD(len(buf))
+    ok = k32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(size))
+    k32.CloseHandle(handle)
+    return buf.value if ok else ""
+
+
 def find_pid(exe_name="age3y.exe"):
+    """The running game to attach to. Several sessions may run games from different folders at
+    once, so with more than one running the folder must be named: UHC_GAME_DIR (or UHC_TESTBED,
+    the test copy testbed.py uses) selects the copy whose exe lies in that folder. Without it, a
+    second running copy is an error, never a guess."""
     snap = k32.CreateToolhelp32Snapshot(0x2, 0)
     entry = _ProcessEntry()
     entry.dwSize = ctypes.sizeof(entry)
-    pid = None
+    found = []
     ok = k32.Process32FirstW(snap, ctypes.byref(entry))
     while ok:
         if entry.szExeFile.lower() == exe_name.lower():
-            pid = entry.th32ProcessID
+            found.append(entry.th32ProcessID)
         ok = k32.Process32NextW(snap, ctypes.byref(entry))
     k32.CloseHandle(snap)
-    return pid
+    folder = os.environ.get("UHC_GAME_DIR") or os.environ.get("UHC_TESTBED")
+    if folder:
+        want = os.path.normcase(os.path.abspath(os.path.join(folder, exe_name)))
+        found = [pid for pid in found if os.path.normcase(_image_path(pid)) == want]
+    elif len(found) > 1:
+        paths = ", ".join(f"{pid} {_image_path(pid)}" for pid in found)
+        raise SystemExit(f"{len(found)} copies of {exe_name} are running ({paths}); set UHC_GAME_DIR to the "
+                         f"folder of the one to attach to")
+    return found[-1] if found else None
 
 
 def wait_for_pid(deadline, exe_name="age3y.exe"):

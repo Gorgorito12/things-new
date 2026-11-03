@@ -40,6 +40,7 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
   log [--grep RE] [--tail N] UHC.log lines
+  monitors                   the monitors and the one tests use (UHC_TEST_MONITOR)
   safety record|check [wol]  Steam bin listing and the stock age3y.exe hash; with wol, the Steam
                              Wars of Liberty folder (top level, Startup, data, AI4, RM4), its exe
                              and its uhc.dll
@@ -58,6 +59,10 @@ Map spec, one argument each:
                                  point (fractions of the map side); numbers and text as written
   size=<metres>                  map side, default 80
   sea=<SeaType>                  a water map ("sea=ceylon coast", quoted), for ship tests
+
+The game window is moved to the test monitor when it starts and before every real click or
+key: by default the primary monitor (the user's "monitor 1"); UHC_TEST_MONITOR=secondary picks
+the first other monitor, a number N picks the Nth monitor in Windows' order (\\\\.\\DISPLAYN). `monitors` lists them.
 
 Console commands only reach the game through `perfExecFile <bed>\\uhc-exec.txt` in the bed's
 uhc.cfg (posted key presses never reach the console). Without `DontPauseWhenLosingFocus` the game
@@ -364,10 +369,27 @@ def wait_until(predicate, timeout, step=0.5, what="condition"):
     sys.exit(f"testbed: timed out waiting for {what}")
 
 
+def bed_allows_second_copy(bed):
+    """True if the bed's cfg has multipleInstances (the DLL then lets it run beside a copy from
+    another folder)."""
+    cfg = bed / bed_profile(bed)["cfg"]
+    try:
+        lines = cfg.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return False
+    return any(line.split()[:1] and line.split()[0].lower() == "multipleinstances" for line in lines)
+
+
 def launch(bed):
     running = game_processes()
-    if running:  # another copy may belong to another session's test: never run two at once
+    if any(path.lower() == str(bed / "age3y.exe").lower() for _, path in running):
+        sys.exit("testbed: this copy is already running")
+    if running and not bed_allows_second_copy(bed):
+        # Another copy may belong to another session's test: never run two at once unless this
+        # copy's cfg has multipleInstances (and the other session agreed).
         sys.exit("testbed: a game is already running: " + ", ".join(f"pid {p} {path}" for p, path in running))
+    if running:
+        print("testbed: another copy is running; this one starts beside it (multipleInstances)")
     subprocess.Popen([str(bed / "age3y.exe"), "+noIntroCinematics"], cwd=str(bed))
 
     def main_window():
@@ -389,7 +411,8 @@ def launch(bed):
             break
         last = now
     run_commands(bed, ['config("DontPauseWhenLosingFocus")'])
-    print(f"testbed: main menu ready (pid {proc.pid})")
+    place_window(window())
+    print(f"testbed: main menu ready (pid {proc.pid}) on {test_monitor()[0]}")
 
 
 def close(bed):
@@ -1021,6 +1044,72 @@ def posted_click(x, y):
     user32.PostMessageW(hwnd, WM_LBUTTONUP, 0, lp)
 
 
+# --- the test monitor ------------------------------------------------------------------------------
+
+class MONITORINFOEXW(ctypes.Structure):
+    _fields_ = [("cbSize", wt.DWORD), ("rcMonitor", RECT), ("rcWork", RECT), ("dwFlags", wt.DWORD),
+                ("szDevice", wt.WCHAR * 32)]
+
+
+MONITORENUMPROC = ctypes.WINFUNCTYPE(wt.BOOL, wt.HMONITOR, wt.HDC, ctypes.POINTER(RECT), wt.LPARAM)
+user32.EnumDisplayMonitors.argtypes = [wt.HDC, ctypes.c_void_p, MONITORENUMPROC, wt.LPARAM]
+user32.GetMonitorInfoW.argtypes = [wt.HMONITOR, ctypes.POINTER(MONITORINFOEXW)]
+user32.SetWindowPos.argtypes = [wt.HWND, wt.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wt.UINT]
+
+
+def monitors():
+    """(device, primary, work rect) of every monitor, in physical pixels (the script is DPI aware)."""
+    out = []
+
+    def visit(handle, _dc, _rect, _data):
+        info = MONITORINFOEXW()
+        info.cbSize = ctypes.sizeof(info)
+        if user32.GetMonitorInfoW(handle, ctypes.byref(info)):
+            w = info.rcWork
+            out.append((info.szDevice, bool(info.dwFlags & 1), (w.left, w.top, w.right, w.bottom)))
+        return True
+
+    user32.EnumDisplayMonitors(None, None, MONITORENUMPROC(visit), 0)
+    return sorted(out, key=lambda m: m[0])
+
+
+def test_monitor():
+    """The work rect tests use: unset or primary for the primary monitor, secondary for the first
+    other one, or a number N for DISPLAYN."""
+    mons = monitors()
+    choice = os.environ.get("UHC_TEST_MONITOR", "").strip().lower()
+    if choice in ("", "primary"):
+        return next(m for m in mons if m[1])
+    if choice == "secondary":
+        return next((m for m in mons if not m[1]), mons[0])
+    if choice.isdigit():
+        for m in mons:
+            if m[0].upper().endswith(f"DISPLAY{choice}"):
+                return m
+        sys.exit(f"testbed: no monitor DISPLAY{choice}; run `monitors`")
+    sys.exit(f"testbed: UHC_TEST_MONITOR={choice!r}: use primary, secondary or a display number")
+
+
+def place_window(hwnd):
+    """Moves the game window onto the test monitor (top-left of its work area) unless it is there."""
+    device, _primary, (left, top, right, bottom) = test_monitor()
+    rc = RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(rc))
+    cx, cy = (rc.left + rc.right) // 2, (rc.top + rc.bottom) // 2
+    if left <= cx < right and top <= cy < bottom:
+        return
+    # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+    user32.SetWindowPos(hwnd, None, left, top, 0, 0, 0x0001 | 0x0004 | 0x0010)
+    time.sleep(0.3)
+
+
+def show_monitors():
+    chosen = test_monitor()
+    for device, primary, rect in monitors():
+        mark = "  <- tests" if device == chosen[0] else ""
+        print(f"  {device}  {'primary' if primary else '       '}  work area {rect}{mark}")
+
+
 def send(*inputs):
     arr = (INPUT * len(inputs))(*inputs)
     user32.SendInput(len(inputs), arr, ctypes.sizeof(INPUT))
@@ -1028,6 +1117,7 @@ def send(*inputs):
 
 def focus():
     hwnd = window()
+    place_window(hwnd)
     user32.SetForegroundWindow(hwnd)
     time.sleep(0.25)
     if user32.GetForegroundWindow() != hwnd:
@@ -1227,6 +1317,9 @@ def main(argv):
     if not argv:
         sys.exit(__doc__)
     cmd, args = argv[0], argv[1:]
+    if cmd == "monitors":
+        show_monitors()
+        return
     if cmd == "safety":
         mode = next((a for a in args if a in ("record", "check")), "check")
         safety_wol(mode) if "wol" in args else safety(mode)

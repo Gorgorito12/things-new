@@ -576,6 +576,12 @@ customAbstractTypes [file]
 
 ### customSyscalls
 
+<!-- private:begin -->
+![customSyscalls-wol-ai in game](media/customSyscalls-wol-ai.gif)
+
+*In game:* With two plugins loaded, the AI of a mod whose scripts call their syscalls compiles and plays: the counter shows its settlers and houses growing (2x speed), with the performance numbers on top. [Full video (MP4)](media/customSyscalls-wol-ai.mp4).
+<!-- private:end -->
+
 ```
 customSyscalls [file or pattern ...]
 ```
@@ -611,6 +617,12 @@ customSyscalls [file or pattern ...]
 
 ### customCheats
 
+<!-- private:begin -->
+![customCheats in game](media/customCheats.gif)
+
+*In game:* A plugin cheat typed in the chat (second ~4) spawns 50 Cannons; the two frames over 100 ms are the moment the 50 units appear. [Full video (MP4)](media/customCheats.mp4).
+<!-- private:end -->
+
 ```
 customCheats
 ```
@@ -629,6 +641,12 @@ customCheats
 
 ### asianCivs
 
+<!-- private:begin -->
+![asianCivs-koreans in game](media/asianCivs-koreans.gif)
+
+*In game:* A listed civ's two monks get their hero names (explorerUnits), then its villager opens the wonder age-up list with the civ's five wonders. [Full video (MP4)](media/asianCivs-koreans.mp4).
+<!-- private:end -->
+
 ```
 asianCivs Civ [Civ ...] [log]
 ```
@@ -646,15 +664,20 @@ asianCivs Civ [Civ ...] [log]
   `hook reached: asianCivs isAsianCiv (0x454F1D)`, `… civ value (0x8D6AC4)`,
   `… wonder age-up (0x818284)`.
 - **Simulation:** changes what the listed civs may do: every player needs the same line.
-- **Status:** partly confirmed (2026-11-02, single player): five civs resolved and the Asian-civ
-  test ran through the hook in a skirmish; the wonder age-up list has not been opened with a
-  listed civ yet. <!-- private -->In the WoL copy, the test profile's home city is Ethiopian, and WoL's wonders belong to the Koreans.
+- **Status:** confirmed (2026-11-02, single player): five civs resolved, and a listed civ's
+  villager opened the wonder age-up list with its five wonders. Video `asianCivs-koreans.mp4`. <!-- private -->In the WoL copy, the test profile's home city is Ethiopian, and WoL's wonders belong to the Koreans.
 <!-- private:begin -->
 - **Fixed from UHC 1.10:** upstream tests EAX instead of AL after `0x49A2D8` in the wonder list,
   so the "civ has no entry" path (EAX = 0xFFFFFF00) counted as true.
 <!-- private:end -->
 
 ### selectionLimit
+
+<!-- private:begin -->
+![selectionLimit in game](media/selectionLimit.gif)
+
+*In game:* With `selectionLimit 75`, a box over 89 Pikemen selects 75 (the number on the selection icon); without the key it stops at 50. [Full video (MP4)](media/selectionLimit.mp4).
+<!-- private:end -->
 
 ```
 selectionLimit N
@@ -672,6 +695,12 @@ selectionLimit N
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ### enableAllTeams
+
+<!-- private:begin -->
+![enableAllTeams in game](media/enableAllTeams.gif)
+
+*In game:* The setup's team list offers Team 3 and Team 4; player 1 takes Team 3 and the AI Team 4 (1.5x speed). [Full video (MP4)](media/enableAllTeams.mp4).
+<!-- private:end -->
 
 ```
 enableAllTeams
@@ -691,6 +720,257 @@ enableAllTeams
 - **Fixed from UHC 1.10:** upstream loads the temporary string's destructor but never calls it
   (a leak per list fill).
 <!-- private:end -->
+
+### twoScoutCivs
+
+```
+twoScoutCivs Civ [Civ ...]
+```
+
+- **Effect:** the listed civs get the hero interface of the civs that start with two heroes
+  (Japanese and Indians) in the four places the game decides it by civ.
+- **Log:** `twoScoutCivs: N civ(s) get the two-hero UI`; `twoScoutCivs: <Civ> -> civ <ID>` when
+  `civs.xml` is read; `hook reached: twoScoutCivs hero UI 1 (0x77EBB2)` to `... 4 (0x77DFF4)`.
+- **Simulation:** no: interface only.
+- **Status:** implemented, not tested in game (2026-11-02): the four functions did not run during a
+  skirmish, in the home city menus or in its customize screen; they are probably the new home city
+  dialog, which names the heroes.
+
+### marketUnits
+
+<!-- private:begin -->
+![marketUnits in game](media/marketUnits.gif)
+
+*In game:* With only a listed market building, each click buys 100 food (food 200 to 500, gold falling); without the key the same clicks change nothing. [Full video (MP4)](media/marketUnits.mp4).
+<!-- private:end -->
+
+```
+marketUnits Proto [Proto ...]
+```
+
+- **Effect:** owning a unit of a listed proto counts as owning a Market for buying and selling
+  resources (stock requires the `Market` proto or the second market type).
+- **Your data:** the listed buildings need the market's buy and sell commands.
+- **Log:** `marketUnits: N proto(s) count as a Market for trading`; when `protoy.xml` is read,
+  `marketUnits: K of N protos found in the data` (and each unknown name);
+  `hook reached: marketUnits trade test (0x7DEF70)`.
+- **Simulation:** changes who may trade: every player needs the same line.
+- **Status:** confirmed (2026-11-02, single player): with only a `WOLMarketGreek` and 1000 gold,
+  buying food worked (food 0 to 500, gold 1000 to 362); without the key the same clicks changed
+  nothing. Video `marketUnits.mp4`.
+
+### explorerUnits
+
+```
+explorerUnits Proto Type StringID [Proto Type StringID ...]
+```
+
+- **Effect:** listed protos are heroes for two things: their name and their knockout message.
+  `Type` picks the name: 1 the home city's explorer name, 0 the stock path for other units, any
+  other value the first of the home city's hero names (as the second monk of a two-hero civ).
+  `StringID` is the message shown when the unit is knocked out.
+- **Log:** `explorerUnits: N hero proto(s)`; when `protoy.xml` is read, `explorerUnits: K of N
+  protos found in the data` and each unknown name; `hook reached: explorerUnits hero name
+  (0x6A012A)`, `... knockout message (0x50B01F)`; `explorerUnits: needs triples ...` or
+  `bad triple ...` (not applied).
+- **Simulation:** no: names and messages.
+- **Status:** confirmed for names (2026-11-02, single player): a civ's two monks listed with
+  Type 1 and Type 2 were named after the explorer and the first hero name of the home city; the
+  knockout message was not driven. Video `asianCivs-koreans.mp4` (the two monks, then the wonder
+  list).
+
+### nativeCivs
+
+<!-- private:begin -->
+![nativeCivs-mapuche in game](media/nativeCivs-mapuche.gif)
+
+*In game:* A listed native civ's Town Center opens the council age-up list with its five council members; the log lines on top show the civ resolved by the native civ tests and the dance gates. [Full video (MP4)](media/nativeCivs-mapuche.mp4).
+<!-- private:end -->
+
+```
+nativeCivs Civ [Civ ...]
+```
+
+- **Effect:** the listed civs count as native civs: the civ flag the `civs.xml` loader sets for
+  the native civs, the game's native civ tests, the fire pit's Training, XPTrickle, Gathering and
+  Regeneration dances (through the same four gates as `danceBonusCivs`), and the council age-up
+  list, where a listed civ gets the council members whose civ name is its name in the cfg.
+- **Your data:** for the council age-up, entries in `politiciandata.xml` with
+  `nativeciv="<Civ>"` (the stock Iroquois entries are the model).
+- **Log:** `nativeCivs: N civ(s) count as native civs`; `nativeCivs: K of N civ(s) marked native
+  in civs.xml`; `nativeCivs: <Civ> -> civ <ID>` and `danceBonusCivs: <Civ> -> civ <ID>` when
+  `civs.xml` is read; `hook reached: nativeCivs civ flags (0x52B581)`, `... test 2 (0x51271F)`,
+  `... isNativeCiv (0x453D5E)`, `... test 7 (0x67B0A5)`, `... test 9 (0x8D52AF)`,
+  `... council age-up (0x81ADEB)`.
+- **Simulation:** changes what the listed civs may do: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): three civs marked native, every hook ran in
+  a skirmish, the four dance gates resolved them, and a listed civ's Town Center opened the council
+  age-up list with its five council members. Without the key, the same age-up click closed the
+  game: the civ was taken for a European one, and the politician dialog read a gadget it does not
+  have (stock code, 0x81A5FB to 0x81A80C). <!-- private -->Video `nativeCivs-mapuche.mp4`.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream compares a dword where isNativeCiv compares a byte, and its
+  council hook clobbers EAX.
+<!-- private:end -->
+
+### bigButtonCivs and noBigButtonBlds
+
+```
+bigButtonCivs Civ [Civ ...]
+noBigButtonBlds Proto [Proto ...]
+```
+
+- **Effect:** the command panel's big button, which stock gives to native civs, also goes to the
+  listed civs; and neither native nor listed civs get it on a building of a `noBigButtonBlds`
+  proto. Either line may be used alone.
+- **Log:** `bigButtonCivs/noBigButtonBlds: N civ(s) get the native big button, M building proto(s)
+  never show it`; `hook reached: bigButtonCivs command panel (0x461BD8)`.
+- **Simulation:** no: interface only.
+- **Status:** partly confirmed (2026-11-02, single player): the hook ran when a listed civ's
+  Town Center was selected; a building of a listed proto was not checked.
+
+### enableFarmAnim, enableRectFarmAnim and farmingRadius
+
+<!-- private:begin -->
+![enableFarmAnim in game](media/enableFarmAnim.gif)
+
+*In game:* Iroquois gatherers on a listed plantation (Mill-like, front) and a listed farm (Rice
+Paddy-like, right) spread over the fields and use the farming animations; the log lines on top
+are the keys'. [Full video (MP4)](media/enableFarmAnim.mp4). Without the keys
+(left of the still below) the same gatherers stand bunched at one side of each building:
+![enableFarmAnim off and on](media/enableFarmAnim-control.png)
+
+![farmingRadius in game](media/farmingRadius-12.gif)
+
+*In game:* the same plantation with `farmingRadius 3 12.0 12.0`: its four gatherers (HP lines on
+top) range up to 11.9 m from its centre, against about 5 m with the stock 4.5.
+[Full video (MP4)](media/farmingRadius-12.mp4).
+<!-- private:end -->
+
+```
+enableFarmAnim Proto [Proto ...]
+enableRectFarmAnim Proto [Proto ...]
+farmingRadius Index X Z [Index X Z ...]
+```
+
+- **Effect:** gatherers on a building of an `enableFarmAnim` proto are placed and animated as on a
+  Mill (they spread over the area around it); on an `enableRectFarmAnim` proto, as on a Rice
+  Paddy (they work in its rows). `farmingRadius` gives, per `enableFarmAnim` entry (`Index` counts
+  that line's protos from 1), the X and Z extent of that spread (stock 4.5 x 4.5; up to 100).
+- **Your data:** the building still needs a gather action in its tactics (or the data's own way of
+  gathering): these keys change where and how gatherers work, not whether the building can be
+  gathered. A building whose tactics only modify other gatherers (`ModifyGather...`) gets no
+  gatherers.
+- **Log:** `enableFarmAnim/enableRectFarmAnim: N proto(s) work like a Mill, M like a Rice Paddy`;
+  when `protoy.xml` is read, `enableFarmAnim: K of N protos found in the data` (and each unknown
+  name); `farmingRadius: N farm proto(s) get their own gather area`, or `needs enableFarmAnim`,
+  `needs triples ...`, `bad triple ...` (not applied); `hook reached: enableFarmAnim site 1
+  (0x4EDA85)` to `... 8`, `enableRectFarmAnim site 1` to `4`, `farmingRadius (0x9DE04D)`.
+- **Simulation:** changes where gatherers stand (the spread uses the game's synced random
+  numbers): every player needs the same lines.
+- **Status:** confirmed (2026-11-03, single player): with both lists, ten of the twelve placement
+  sites and the radius ran, gatherers spread over a listed plantation and worked inside a listed
+  farm's rows, and without the keys they stood bunched at one side (gathering in both cases);
+  `farmingRadius` 12 widened the spread from about 5 m to 11.9 m. Sites 3 and 8 did not run in
+  that test.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream reloads EBP before site 1 instead of keeping it, jumps to the
+  Mill and Rice Paddy branches without the registers those branches have, and at site 5 skips the
+  Mill flag the code after it reads.
+<!-- private:end -->
+
+### trainSingleAbstractType
+
+<!-- private:begin -->
+![trainSingleAbstractType in game](media/trainSingleAbstractType.gif)
+
+*In game:* three marked hussars queued at once come out one at a time (the unit lines on top grow
+from one to two); without the key the same order brought three out together.
+[Full video (MP4)](media/trainSingleAbstractType.mp4).
+<!-- private:end -->
+
+```
+trainSingleAbstractType [UnitType]
+```
+
+- **Effect:** units of the marker type (default `AbstractTrainLimitOne`) leave a training
+  building one at a time, as monks do in stock, instead of as one batch.
+- **Your data:** `<UnitType>AbstractTrainLimitOne</UnitType>` (or your type) on the protos.
+- **Log:** `trainSingleAbstractType: units of unittype <Type> are trained one at a time`; the
+  first time it applies, `trainSingleAbstractType: <Proto> is trained one at a time`.
+- **Simulation:** changes how units are created: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): a queue of marked hussars produced one, then
+  a second about a minute later; without the key the same queue produced three together (the
+  proto's `BuildLimit` is 3). Video `trainSingleAbstractType.mp4`.
+
+### wonderCivUnitType
+
+<!-- private:begin -->
+![wonderCivUnitType in game](media/wonderCivUnitType.gif)
+
+*In game:* a civ that ages up with wonders and starts without a Town Center: its listed hero opens
+the age-up list (here its voyages); without the key the same click opens nothing.
+[Full video (MP4)](media/wonderCivUnitType.mp4).
+<!-- private:end -->
+
+```
+wonderCivUnitType Proto [Proto ...]
+```
+
+- **Effect:** for a civ that ages up with wonders (stock: the Asian civs; see `asianCivs`), units
+  of the listed protos may start the age-up and place its wonder, besides the units stock accepts
+  (abstract type 16h).
+- **Log:** `wonderCivUnitType: N proto(s) may place the age-up wonder of a wonder civ`; when
+  `protoy.xml` is read, `wonderCivUnitType: K of N protos found in the data`; the first time it
+  applies, `wonderCivUnitType: <Proto> accepted for the wonder age-up`.
+- **Simulation:** changes who may age up: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): the listed hero of a wonder civ with no Town
+  Center opened the age-up list; without the key the same click opened nothing. Video
+  `wonderCivUnitType.mp4`. <!-- private -->In the WoL copy: the Maori Rangatira and their voyages.
+
+### kbUnitSyscalls
+
+<!-- private:begin -->
+![kbUnitSyscalls in game](media/kbUnitSyscalls.gif)
+
+*In game:* an AI script that calls the five syscalls compiles and runs; a test rule prints them in
+the chat for what the AI's villagers gather (here a hunted animal: 6 visible workers, the stock
+call 0) and for its livestock (food 50 of 300, not full).
+[Full video (MP4)](media/kbUnitSyscalls.mp4).
+<!-- private:end -->
+
+```
+kbUnitSyscalls
+```
+
+- **Effect:** adds five KB syscalls for AI scripts, about resource units. "The player" is the AI
+  whose script runs.
+
+  | Syscall | Returns |
+  |---|---|
+  | `float kbUnitGetCurrentInventory(int unitID, int resourceID)` | the amount of that resource the unit holds (a mine's gold, a bush's food, an animal's food) |
+  | `float kbUnitGetInventoryCapacity(int unitID, int resourceID)` | how much of it the unit can hold (its proto's carry capacity) |
+  | `bool kbUnitIsInventoryFull(int unitID)` | the engine's own "inventory full" test (for livestock: fully fattened) |
+  | `int kbUnitGetNumberWorkersIfSeeable(int unitID)` | for a unit the player can see, the number of its gatherers the player can see; 0 if it cannot see the unit. The stock `kbUnitGetNumberWorkers` answers only for the player's own units |
+  | `int kbUnitGetNumberTargeters(int unitID)` | the number of the player's gatherers ordered to the unit that are not working it yet |
+
+  An unknown unit ID gives 0 (inventory), false, or -1 (the two counts).
+- **Your data:** none; AI scripts call the syscalls. A script that calls them fails to compile
+  without the key (`XS: Error 0003: could not compile file ...`).
+- **Log:** `kbUnitSyscalls: 5 kb syscalls added`, then `syscalls: group KB: 5 added, 0 refused`
+  when the game builds its KB syscalls; the first call of each, `hook reached: kbUnitSyscalls
+  <name>`.
+- **Simulation:** reads only; AI scripts run on the host, so only the host needs the line.
+- **Status:** confirmed (2026-11-03, single player, against an AI): an AI script that calls the
+  five syscalls compiled and ran. A test rule printed them every 20 s: a hunted animal's food fell
+  from 207.7 to 62.5 while `kbUnitGetNumberWorkersIfSeeable` gave 6 (the stock
+  `kbUnitGetNumberWorkers` gave 0 for that Gaia unit; game memory showed the same 6 gatherer IDs);
+  the AI's livestock showed food 50 of capacity 300, not full; a mine and a bush at full showed
+  "full". `kbUnitGetNumberTargeters` was reached but gave 0 in that window (every gatherer was
+  already working its target). Without the key the same script did not compile (`Error 0172` on
+  `kbUnitGetCurrentInventory`). Video `kbUnitSyscalls.mp4`: about 1,200 fps on average, longest
+  frame 5–19 ms, no frame over 50 ms. No A/B: without the key the AI does not run at all.
+  In the WoL copy: the Maori personality Te Rauparaha (`_TeRauparaha.xs`, its 38 calls). <!-- private -->
 
 ### customRevolutionBanners
 
