@@ -162,6 +162,7 @@ nativeCivs Civ ...            these civs count as native civs (dances, council)
 bigButtonCivs, noBigButtonBlds   the native big button for more civs / not on buildings
 enableFarmAnim, enableRectFarmAnim   gatherers work these buildings like a Mill / Rice Paddy
 farmingRadius I X Z ...       per enableFarmAnim entry, the gatherers' area (stock 4.5)
+trainSingleAbstractType [T]   units of type T leave training one at a time
 marketUnits Proto ...         these buildings count as a Market for trading
 explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)
 customRevolutionBanners       a banner for every XPRevolution<Name> tech

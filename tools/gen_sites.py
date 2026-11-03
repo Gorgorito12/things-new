@@ -89,6 +89,12 @@ SITES = [
     ("RectFarm4", 0x4EEE9E, 6),    # mov ecx,[0C66234h], before the Rice Paddy compare
     # farmingRadius: mov ecx,[0C0BBE0h], the 4.5 X of the gatherer spread
     ("FarmRadius", 0x9DE04D, 6),
+    # wonderCivUnitType: call 44CAC4h (is type 16h) in the two wonder age-up placement tests
+    ("WonderAgeUnit1", 0x7E6919, 5),
+    ("WonderAgeUnit2", 0x7E8050, 5),
+    # trainSingleAbstractType: call 44CAC4h (is type 5Dh) in the two train-one-at-a-time tests
+    ("TrainSingle1", 0x9CE573, 5),
+    ("TrainSingle2", 0x9CE767, 5),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),

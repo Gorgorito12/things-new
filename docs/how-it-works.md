@@ -479,6 +479,17 @@ at `0x9DE06B` from EDX). For a farm proto with a radius (`[[edi+5Ch]+4]`), the h
 first draw with its X, stores it at `[esp+14h]` like stock, loads Z into EDX and continues at
 `0x9DE06B`; EAX, ECX and EDX are free there (the draws overwrite them).
 
+### trainSingleAbstractType
+
+The unit-creation function `0x9CE2BE` (thiscall on the unit manager, seven arguments; reached from
+the Train action at `0x9EBF03` and from three other callers) tests the new unit's proto with
+`0x44CAC4` for abstract types 16h, 1, the TownCenter proto, 5Ch and 5Dh (`AbstractMonk`); any of
+them clears BL, which makes the count 1 (`mov edi,1`) instead of the requested count. The key
+redirects the two 5Dh calls (`0x9CE573`, `0x9CE767`) to a wrapper that returns the stock answer or
+the marker type. `0x44CAC4` takes a **bit index** in the proto's abstract-type bitset
+`[proto+30h]`: the unittype ID minus the proto count `[database+19B0h]`, computed at each call.
+(A first build passed the unittype ID; the bound check at `0x44CADE` then always failed.)
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

@@ -879,6 +879,30 @@ farmingRadius Index X Z [Index X Z ...]
   Mill flag the code after it reads.
 <!-- private:end -->
 
+### trainSingleAbstractType
+
+<!-- private:begin -->
+![trainSingleAbstractType in game](media/trainSingleAbstractType.gif)
+
+*In game:* three marked hussars queued at once come out one at a time (the unit lines on top grow
+from one to two); without the key the same order brought three out together.
+[Full video (MP4)](media/trainSingleAbstractType.mp4).
+<!-- private:end -->
+
+```
+trainSingleAbstractType [UnitType]
+```
+
+- **Effect:** units of the marker type (default `AbstractTrainLimitOne`) leave a training
+  building one at a time, as monks do in stock, instead of as one batch.
+- **Your data:** `<UnitType>AbstractTrainLimitOne</UnitType>` (or your type) on the protos.
+- **Log:** `trainSingleAbstractType: units of unittype <Type> are trained one at a time`; the
+  first time it applies, `trainSingleAbstractType: <Proto> is trained one at a time`.
+- **Simulation:** changes how units are created: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): a queue of marked hussars produced one, then
+  a second about a minute later; without the key the same queue produced three together (the
+  proto's `BuildLimit` is 3). Video `trainSingleAbstractType.mp4`.
+
 ### customRevolutionBanners
 
 ```

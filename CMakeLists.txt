@@ -64,6 +64,7 @@ add_library(UHC SHARED
   src/features/techrename.cpp
   src/features/transform.cpp
   src/features/transforminv.cpp
+  src/features/typetests.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp

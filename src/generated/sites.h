@@ -149,6 +149,18 @@ inline constexpr Site kRectFarm4{"RectFarm4", 0x004EEE9E, kRectFarm4Bytes, sizeo
 inline constexpr std::uint8_t kFarmRadiusBytes[] = {0x8B, 0x0D, 0xE0, 0xBB, 0xC0, 0x00};
 inline constexpr Site kFarmRadius{"FarmRadius", 0x009DE04D, kFarmRadiusBytes, sizeof(kFarmRadiusBytes)};
 
+inline constexpr std::uint8_t kWonderAgeUnit1Bytes[] = {0xE8, 0xA6, 0x61, 0xC6, 0xFF};
+inline constexpr Site kWonderAgeUnit1{"WonderAgeUnit1", 0x007E6919, kWonderAgeUnit1Bytes, sizeof(kWonderAgeUnit1Bytes)};
+
+inline constexpr std::uint8_t kWonderAgeUnit2Bytes[] = {0xE8, 0x6F, 0x4A, 0xC6, 0xFF};
+inline constexpr Site kWonderAgeUnit2{"WonderAgeUnit2", 0x007E8050, kWonderAgeUnit2Bytes, sizeof(kWonderAgeUnit2Bytes)};
+
+inline constexpr std::uint8_t kTrainSingle1Bytes[] = {0xE8, 0x4C, 0xE5, 0xA7, 0xFF};
+inline constexpr Site kTrainSingle1{"TrainSingle1", 0x009CE573, kTrainSingle1Bytes, sizeof(kTrainSingle1Bytes)};
+
+inline constexpr std::uint8_t kTrainSingle2Bytes[] = {0xE8, 0x58, 0xE3, 0xA7, 0xFF};
+inline constexpr Site kTrainSingle2{"TrainSingle2", 0x009CE767, kTrainSingle2Bytes, sizeof(kTrainSingle2Bytes)};
+
 inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
 inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
 
