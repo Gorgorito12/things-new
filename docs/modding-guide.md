@@ -2205,6 +2205,23 @@ liveBuildingWorkRate [log]
 
 *In game:* A settler appears at 20 s and a musketeer dies at 32 s: the two TypeCount test techs activate at once (Explorer 400 to 200 HP, Pikeman 120 to 60). [Full video (MP4)](media/techPrereqRecheck.mp4).
 
+<!-- private:begin -->
+![techPrereqRecheck in WoL](media/techPrereqRecheck-wol.gif)
+
+*In WoL, with `techPrereqRecheck log` (Ethiopians: the Explorer is Menelik II, selected so his HP
+shows in the panel):* a trigger creates a Dock at 24 s. A test tech (`UHCTypeCountDock`: no research
+time, prerequisite one living Dock, Explorer hit points x0.5; appended to the bed's techtree and
+removed after) is the same pattern as WoL's `WOLEnableInfanteDeMarina`. It activates in the same
+update (`prerequisites now met ... game time 24002 ms`): 400/400 becomes 200/200.
+[Full video (MP4)](media/techPrereqRecheck-wol.mp4).
+
+![techPrereqRecheck in WoL, key off](media/techPrereqRecheck-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Dock stands but nothing re-checks the tech, so the Explorer
+keeps 400 HP (stock waits for a tech change or a house).
+[Full video (MP4)](media/techPrereqRecheck-wol-control.mp4).
+<!-- private:end -->
+
 ```
 techPrereqRecheck [N] [full] [log]       N: check each player every N world updates (default 1)
 ```

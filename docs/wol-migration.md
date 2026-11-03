@@ -131,7 +131,8 @@ civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the T
 | `spreadAnyAccuracy` | 4 `Escopetero` (WoL's own spread tags, no data edit) vs 8 `WOLScytheman` | **done**: every shot logged as a ground shot at r = 3 m; survivors' HP 800 / 562 with the key vs 827 without, so no clear damage change in a melee-range fight (`spreadAnyAccuracy-wol*.mp4`) |
 | `liveBuildingWorkRate` | African civ TC training `AFRICANvillager`; test tech `UHCBwrTest` (BWR x3 on TownCenter, appended to techtreey, restored after) at 30 s | **done**: 13 villagers by 97 s vs 8 without the key (5 at start) (`liveBuildingWorkRate-wol*.mp4`). WoL's own BWR techs did not fit: the Krupp factory's Maintain spawns take minutes, and the daimyos (`WOLHCKazoku`) train nothing in age I |
 | `buildingWorkRateAuras` | African civ, two TCs training `AFRICANvillager`; an Explorer with a test aura (`UHCBwrAura`, BWR x3, 10 m, in `explorer.tactics`, restored after) beside one | **done**: the aura TC trains 8 vs 2 for the other; key off, 3 each (`buildingWorkRateAuras-wol*.mp4`) |
-| `techPrereqRecheck`, `maintainWaitForPop` | Ottomans (auto-produced units), a `TypeCount` tech | pending |
+| `techPrereqRecheck` | Ethiopians (Menelik II); test tech `UHCTypeCountDock` (1 Dock, Explorer HP x0.5, appended, restored after), Dock created at 24 s | **done**: 400 to 200 HP in the same update; key off, 400 kept (`techPrereqRecheck-wol*.mp4`). WoL's `WOLEnableInfanteDeMarina` (Age0Spanish, 1 Dock) is the real case, but its unit needs age II and a fort |
+| `maintainWaitForPop` | pending | pending |
 | `transformUpdatesLOS`, `transformInventory` | a WoL transform (Zulu maturing, wagons) | pending |
 | `broadsideMuzzleLimit` | a WoL ship with a barrage attack | pending |
 | `abilitySlots`, `wonderPanelSkipAuras` | an explorer with many powers; a Japanese wonder with auras | pending |
