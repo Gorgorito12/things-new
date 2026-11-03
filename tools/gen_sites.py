@@ -1038,6 +1038,14 @@ SITES = [
     # renderer's list with push eax / mov ecx,ebp / call 54D605h (thiscall(renderer, mode), ret 4)
     ("DisplayModeAddCall", 0x54D6D1, 0x05),
     ("DisplayModeAdd", 0x54D605, 0x12),
+    # gatherFix: BUnitGatherAction's update ends with [action+88h] += [world+104h] (the elapsed time)
+    # then pop ebx / pop edi / ... ret (0x4EC8DE, 32 B up to pop esi at 0x4EC8FE); and
+    # doAnimationLooped 0x4ECC88 collects on each animation loop: cmp byte [esi+61h],5 / jne ... up
+    # to 0x4ECCE7 (89 B), collectStuff 0x9DD7B4 or collectStuff_2 0x4ECD87 (thiscall(action, float))
+    ("GatherTimeAdd", 0x4EC8DE, 0x20),
+    ("GatherAnimLoopCollect", 0x4ECC8E, 0x59),
+    ("GatherCollect", 0x9DD7B4, 0x10),
+    ("GatherCollect2", 0x4ECD87, 0x10),
 ]
 
 

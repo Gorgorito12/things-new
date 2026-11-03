@@ -154,6 +154,7 @@ customAbstractTypes [file]    abstract unit types from an XML file
 customProtoUnitCommands [file]   command types (buttons) from an XML file
 multiarmor                    one armor per damage type; Armor effects follow damagetype
 betterfreedynamicunit         dynamic free units grow smoothly with game time
+gatherFix                     gather on a fixed interval (the data's rate)
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits

@@ -574,6 +574,31 @@ customAbstractTypes [file]
   `cUnitType<Name>` constants compiled. <!-- private -->In the Wars of Liberty copy, with WoL's own `data\uhc\customabstracttypes.xml`; before it, `aiLoaderStandard.xs` failed on `cUnitTypeAbstractWoLHandCavalry`.
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
+### gatherFix
+
+<!-- private:begin -->
+![gatherFix in game](media/gatherFix.gif)
+
+*In game:* settlers on a Mill and on trees; with the key they gather at the rate the data gives.
+[Full video (MP4)](media/gatherFix.mp4).
+<!-- private:end -->
+
+```
+gatherFix
+```
+
+- **Effect:** gatherers collect on a fixed time interval, so the gather rate is the one in the data.
+  Stock collects once per loop of the gather animation, an amount for the animation's length, which
+  makes the real rate depend on the animation.
+- **Log:** `gatherFix: gatherers collect on a fixed interval, ...`; the first collection, `interval
+  I s (protoAction+78h V), collectStuff | collectStuff_2`.
+- **Simulation:** changes gathering: every player needs the same line.
+- **Performance:** a collection every 0.5 s per gatherer. With 40 gatherers: update 0.143 / 0.142
+  ms with / without, no frame over 50 ms, about 10% fewer frames per second (711–733 vs 815).
+- **Status:** confirmed (2026-11-03, single player): in 120 s, 3 settlers on trees (rate 0.5)
+  gathered 179.5 wood with the key (0.50 per second each) and 281.3 without it (0.78), and 4 on a
+  Mill 235.5 food against 367.3. Video `gatherFix.mp4`.
+
 ### betterfreedynamicunit
 
 <!-- private:begin -->

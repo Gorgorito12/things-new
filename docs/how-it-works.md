@@ -304,6 +304,17 @@ the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-p
 sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
 live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
 
+### gatherFix
+
+BUnitGatherAction's update adds the elapsed time `[world+104h]` to `[action+88h]` at `0x4EC8DE`, and
+`doAnimationLooped` (`0x4ECC88`, run when the gather animation loops) adds it again and collects
+the animation's length (`0x4939BD`, the unit's visual `[unit+60h]`) through `collectStuff`
+`0x9DD7B4` or `collectStuff_2` `0x4ECD87` (bit 22 of the action's flags `[+30h]`/`[+34h]`), then
+clears `[action+88h]`. The key jumps over that block (`0x4ECC8E` → `0x4ECCE7`) and replaces the
+update's addition with a C tick: add the time; past the interval `[protoAction+78h]` (0.5 s when it
+is 0), collect the interval through the same function and clear the time; then the update's own
+`pop ebx / pop edi` and its epilogue at `0x4EC8FE`.
+
 ### betterfreedynamicunit
 
 A `FreeHomeCityUnit` amount below −1e-6 (`[0xB9FB60]`) is a dynamic count, `-amount ×

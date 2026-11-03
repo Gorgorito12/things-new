@@ -26,6 +26,7 @@ public:end -->
 | `decimalPopulation [K] [log]` | **New.** Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects, in steps of 1/K (default 10). The population counter and the tooltips show the decimals; AI scripts still see whole numbers. | confirmed (single player, also a skirmish vs AI) |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
 | `noAILimitV2` | **New.** The same list, hooked later in the same function (for mods whose cfg uses this name). | confirmed (single player) |
+| `gatherFix` | Gatherers collect on a fixed interval, so the gather rate is the data's, not the animation's. | confirmed (single player) |
 | `betterfreedynamicunit` | Dynamic free units grow smoothly with game time (unrounded 2-minute steps). | confirmed (single player) |
 | `nowalkfarm` | Farm gatherers keep their first spot. | confirmed (single player) |
 | `repairWallGlobal` | UI syscall `repairWallGlobal()`: repair every wall of the local player. | confirmed (single player) |

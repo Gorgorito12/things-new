@@ -127,7 +127,7 @@ patch).
 | WoL feature (class) | Patches | What, from the sites | Ours |
 |---|---|---|---|
 | ExtendedDataSubtypes / AdditionalTechEffects (installers 0x10079850, 0x10076180, 0x1007AC70) | 0x525BA0, 0x526D60, 0x5F215C, 0x620C24, 0x622F44, BDataEffect calls 0x7F86FE..0x7F87A8 | new Data effect subtypes (`ROF`, `GathererLimit`, `MinimumRange`, `Bounty` in WoL's data) | pending (next) |
-| GatherFix | 0x4EC8DE, 0x4ECC8E | gathering | pending |
+| GatherFix | 0x4EC8DE, 0x4ECC8E | gathering on a fixed interval (WoL's balance assumes it: stock gathers 56% more on trees) | **done** (`gatherFix`; WoL's cfg needs the line) |
 | ROFFix | 0x9CECB4 | rate of fire | pending |
 | StunMovingTargetFix | 0x9E909E | stun on a moving target | pending |
 | FallenHeroTacticsFix | 0x6AAE6D, 0x7D8F07, 0x9D6BE7, 0x9EBB0B | tactics of a knocked-out hero | pending |
@@ -168,6 +168,7 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `gatherFix` | scenario: 4 Settlers on a Mill, 3 on trees; perf A/B with 40 on 4 Mills |
 | `betterfreedynamicunit` | skirmish on a test map (RM4 in My Games, removed after): Argentineans, `Corderos` (−2 Sheep) |
 | `nowalkfarm` | scenario: 4 Settlers on a Mill |
 | `repairWallGlobal` | scenario: 3 WallStraight5 damaged to 1200, resources granted |
