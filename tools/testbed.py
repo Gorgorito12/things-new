@@ -715,6 +715,7 @@ class PerfReader:
         import perfprobe as P
         self.P, self.pid = P, pid
         self.process = P.k32.OpenProcess(P.PROCESS_ACCESS, False, pid)
+        self.proc = D.Process(pid)
         self.stats = P.open_stats(pid)
         self.threads = {}
         self.t0 = self.last_t = time.perf_counter()
@@ -726,6 +727,8 @@ class PerfReader:
             self.csv.write(",".join(self.COLUMNS) + "\n")
         if self.stats is None:
             print("testbed: --perf: no perfStats mapping (add perfStats to the cfg); fps and frame times are missing")
+        else:
+            self.last_frames = P.read_stats(self.stats)  # also clears the longest frame seen before the recording
         self._cpu(1.0)
 
     def _cpu(self, dt):
@@ -761,9 +764,11 @@ class PerfReader:
         timers = P.game_timers(self.process)
         if timers is not None:
             row["update_ms"], row["render_ms"] = f"{timers[0]:.1f}", f"{timers[1]:.1f}"
+        played = game_time(self.proc)
+        if played is not None:
+            row["game_s"] = f"{played / 1000:.1f}"
         sim = P.sim_clock(self.process)
         if sim is not None:
-            row["game_s"] = f"{sim / 1000:.1f}"
             if self.last_sim is not None and sim >= self.last_sim:
                 row["sim_speed"] = f"{(sim - self.last_sim) / 1000 / dt:.2f}"
         self.last_sim = sim
