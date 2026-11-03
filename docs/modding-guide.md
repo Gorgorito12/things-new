@@ -903,6 +903,31 @@ trainSingleAbstractType [UnitType]
   a second about a minute later; without the key the same queue produced three together (the
   proto's `BuildLimit` is 3). Video `trainSingleAbstractType.mp4`.
 
+### wonderCivUnitType
+
+<!-- private:begin -->
+![wonderCivUnitType in game](media/wonderCivUnitType.gif)
+
+*In game:* a civ that ages up with wonders and starts without a Town Center: its listed hero opens
+the age-up list (here its voyages); without the key the same click opens nothing.
+[Full video (MP4)](media/wonderCivUnitType.mp4).
+<!-- private:end -->
+
+```
+wonderCivUnitType Proto [Proto ...]
+```
+
+- **Effect:** for a civ that ages up with wonders (stock: the Asian civs; see `asianCivs`), units
+  of the listed protos may start the age-up and place its wonder, besides the units stock accepts
+  (abstract type 16h).
+- **Log:** `wonderCivUnitType: N proto(s) may place the age-up wonder of a wonder civ`; when
+  `protoy.xml` is read, `wonderCivUnitType: K of N protos found in the data`; the first time it
+  applies, `wonderCivUnitType: <Proto> accepted for the wonder age-up`.
+- **Simulation:** changes who may age up: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): the listed hero of a wonder civ with no Town
+  Center opened the age-up list; without the key the same click opened nothing. Video
+  `wonderCivUnitType.mp4`. <!-- private -->In the WoL copy: the Maori Rangatira and their voyages.
+
 ### customRevolutionBanners
 
 ```

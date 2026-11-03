@@ -94,7 +94,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `twoScoutCivs Koreans` | upstream | degrades | **done**, not reached in game yet (probably the new home city dialog) |
 | `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | **done**, partly confirmed (hook reached) |
 | `enableAllTeams` | upstream | degrades (teams 3/4) | **done** for single player, partly confirmed; MP lobby pending (needs a LAN test) |
-| `wonderCivUnitType Rangatira` | WoL | degrades (Maori age-up) | pending, RE |
+| `wonderCivUnitType Rangatira` | WoL | **blocks** the Maori age-up (their Rangatira cannot start it without the key) | **done**, confirmed (voyage list opens; nothing without the key) |
 | `marketUnits` | upstream | degrades (trade without a stock Market) | **done**, confirmed (`WOLMarketGreek`; refused without the key) |
 | `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | **done**, names confirmed (Korean monks Yi Sun and Kwon Hwan); 4 protos of WoL's cfg do not exist in its data |
 | `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | cosmetic: placement and animation (the buildings gather anyway in WoL's data) | **done**, confirmed (Iroquois plantation and farm; radius measured). `Fazenda` gets no gatherers: its tactics only modify others |
@@ -131,6 +131,7 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `wonderCivUnitType` | Maori (Parihaka): Rangatira, voyages |
 | `trainSingleAbstractType` | Germans (Age0German, age IV): WOLTotenkopfHussar at a Barracks (scenario) |
 | farms | XPIroquois: WOLPlantationIroquois, WOLFarmIroquois (scenario); Brazilian Fazenda (not gatherable) |
 | `nativeCivs`, `bigButtonCivs` | WallMapu (Perquenco): Town Center council; control without the key crashes |

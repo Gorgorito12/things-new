@@ -490,6 +490,15 @@ the marker type. `0x44CAC4` takes a **bit index** in the proto's abstract-type b
 `[proto+30h]`: the unittype ID minus the proto count `[database+19B0h]`, computed at each call.
 (A first build passed the unittype ID; the bound check at `0x44CADE` then always failed.)
 
+### wonderCivUnitType
+
+Two functions decide whether a selected unit may start the age-up: FUN_007E686E (from the age-up
+command) and FUN_007E7A50. For a civ for which isAsianCiv (`0x454ED7`, extended) is true they test
+the unit's proto with `0x44CAC4` for abstract type 16h (`push 16h / mov ecx,proto / call
+44CAC4h` at `0x7E6919` and `0x7E8050`); for other civs they require the TownCenter proto. The key
+redirects those two calls to a wrapper that returns the stock answer or whether the proto ID
+(`[proto+4]`) is listed (`ProtoIdList`).
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`
