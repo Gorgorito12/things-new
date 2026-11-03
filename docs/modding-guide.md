@@ -7,6 +7,7 @@ For how the features work inside the engine, see [how-it-works.md](how-it-works.
 the DLL or reverse engineer new features, see [developer-guide.md](developer-guide.md).
 
 Contents:
+- [Latest changes](#latest-changes): the newest keys first, with date and time
 - [Adding UHC.dll to your mod](#adding-uhcdll-to-your-mod): start here
 1. [What you need](#1-what-you-need)
 2. [Mod folder layout](#2-mod-folder-layout)
@@ -17,6 +18,42 @@ Contents:
 7. [Multiplayer, saved games and replays](#7-multiplayer-saved-games-and-replays)
 8. [Keys from UHC 1.10 that are not implemented](#8-keys-from-uhc-110-that-are-not-implemented)
 9. [Troubleshooting](#9-troubleshooting)
+
+## Latest changes
+
+Newest first: when each key was added (date and time of its commit), what it does and its
+status. The full details are in the key's section.
+
+| Added | Key | What it does | Status |
+|---|---|---|---|
+| 2026-11-03 11:29 | [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Units keep their tactic when knocked out, stunned or building. | applied, effect not seen yet |
+| 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Orders keep the attack timer; stuns survive a moving target; unbuilt foundations take no damage. | applied, effects not seen yet |
+| 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Gather on a fixed interval: the data's gather rate, not the animation's. | confirmed |
+| 2026-11-03 10:43 | [`betterfreedynamicunit`](#betterfreedynamicunit), [`nowalkfarm`](#nowalkfarm), [`repairWallGlobal`](#repairwallglobal), [`compatMode`](#compatmode) | Dynamic free units grow with time; farmers stay put; repair all walls; 16-bit display modes. | confirmed |
+| 2026-11-03 09:33 | [`multiarmor`](#multiarmor) | One armor per damage type; Armor effects follow `damagetype`. | confirmed |
+| 2026-11-03 08:39 | [`customProtoUnitCommands`](#customprotounitcommands) | Command types (buttons) from an XML file. | confirmed |
+| 2026-11-03 08:16 | [`kbUnitSyscalls`](#kbunitsyscalls) | Five KB syscalls for AI scripts (unit inventory, workers). | confirmed |
+| 2026-11-03 07:31 | [`wonderCivUnitType`](#wondercivunittype) | Listed units may start a wonder civ's age-up. | confirmed |
+| 2026-11-03 07:25 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Marked units leave training one at a time. | confirmed |
+| 2026-11-03 06:49 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill / Rice Paddy gathering on more buildings; gather area per building. | confirmed |
+| 2026-11-02 21:19 | [`nativeCivs`](#nativecivs), [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds) | Native civs (fire pit, council age-up); the native big button for more civs. | confirmed / partly |
+| 2026-11-02 21:10 | [`twoScoutCivs`](#twoscoutcivs), [`marketUnits`](#marketunits), [`explorerUnits`](#explorerunits) | Two-scout civs; units that count as a Market; hero names and KO texts. | partly / confirmed |
+| 2026-11-02 20:47 | [`customCheats`](#customcheats) | Plugin cheats in the game's cheat table. | confirmed |
+| 2026-11-02 20:40 | [`enableAllTeams`](#enableallteams) | Teams 3 and 4 in the setup list (single player). | partly |
+| 2026-11-02 20:33 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units. | confirmed |
+| 2026-11-02 20:27 | [`asianCivs`](#asiancivs) | Listed civs count as Asian (export, consulate, wonders). | confirmed |
+| 2026-11-02 20:13 | [`customSyscalls`](#customsyscalls) | Plugin loader (.upl) and XS syscall registry. | confirmed |
+| 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Abstract unit types from an XML file. | confirmed |
+| 2026-11-02 19:59 | [`noAILimit`](#noailimit) | `noAILimitV2`: the AI personality limit, read as noAILimit. | confirmed |
+| 2026-10-30 10:12 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | MaxSpread / SpreadFactor per action, spread at any accuracy. | confirmed |
+| 2026-10-29 21:24 | [`decimalPopulation`](#decimalpopulation) | Population counts and caps with decimals. | confirmed |
+| 2026-10-29 16:57 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, tech and hit type. | confirmed |
+| 2026-10-29 13:50 | [`overhealDecay`](#overhealdecay) | Overheal decays over time. | confirmed |
+| 2026-10-29 13:37 | [`overhealSources`](#overhealsources) | Only source healers overheal. | confirmed |
+| 2026-10-29 13:19 | [`smartHealTargets`](#smarthealtargets) | Healers pick the best candidate, not the first. | confirmed |
+| 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | First Town Center per civ (`<firstTC>` in civs.xml). | confirmed |
+
+Keys from before 2026-10-29 are listed in [5. Feature reference](#5-feature-reference).
 
 ## Adding UHC.dll to your mod
 
