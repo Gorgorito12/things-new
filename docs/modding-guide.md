@@ -2311,6 +2311,22 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
 
 *In game:* An Ottoman Town Center at 10/10 population holds its finished settler and releases it right after two settlers die. [Full video (MP4)](media/maintainWaitForPop.mp4).
 
+<!-- private:begin -->
+![maintainWaitForPop in WoL](media/maintainWaitForPop-wol.gif)
+
+*In WoL, with `maintainWaitForPop TownCenter log` (WoL's `Age0Ottoman` turns on the TC's
+`MaintainSettlersOttoman`; the TC is selected):* the population is over its cap (11 of 10), so at
+62 s the TC holds its finished settler (`holds a finished Settler (pop 1, 11 of 10 used)`). Two
+settlers die at 70 s and the held one comes out at once (`releases its Settler (pop 1, 9 of 10
+used)`). [Full video (MP4)](media/maintainWaitForPop-wol.mp4).
+
+![maintainWaitForPop in WoL, key off](media/maintainWaitForPop-wol-control.gif)
+
+*In WoL, key off (the same scene):* the cycle that ended at full population is lost; after the
+two deaths at 70 s the next settler needs a whole new cycle and appears about 23 s later.
+[Full video (MP4)](media/maintainWaitForPop-wol-control.mp4).
+<!-- private:end -->
+
 ```
 maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 ```
