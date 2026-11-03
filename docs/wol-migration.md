@@ -116,6 +116,39 @@ nothing in its data keeps the stock exe from loading (unknown types and effects 
 The subtypes `ROF`, `GathererLimit`, `MinimumRange` and `Bounty` in `Data` effects need a check of
 FUN_008F973F before deciding whether a key is needed.
 
+## WoL's always-on patches (inventory, 2026-11-03)
+
+WoL's DLL changes 287 ranges of the running game (`rea/evidence/wol-uhc-c070d138/wol-memdiff.txt`).
+`attribute.py` there matches them against our sites (76 at sites we patch), `installers.py` finds
+the WoL function that installs each of the other 211, and `rtti_owner.py` names its feature class
+(`installers_named.txt`). The `.rdata` block at 0xB84000 is the import table (filled at load, not a
+patch).
+
+| WoL feature (class) | Patches | What, from the sites | Ours |
+|---|---|---|---|
+| ExtendedDataSubtypes / AdditionalTechEffects (installers 0x10079850, 0x10076180, 0x1007AC70) | 0x525BA0, 0x526D60, 0x5F215C, 0x620C24, 0x622F44, BDataEffect calls 0x7F86FE..0x7F87A8 | new Data effect subtypes (`ROF`, `GathererLimit`, `MinimumRange`, `Bounty` in WoL's data) | pending (next) |
+| GatherFix | 0x4EC8DE, 0x4ECC8E | gathering | pending |
+| ROFFix | 0x9CECB4 | rate of fire | pending |
+| StunMovingTargetFix | 0x9E909E | stun on a moving target | pending |
+| FallenHeroTacticsFix | 0x6AAE6D, 0x7D8F07, 0x9D6BE7, 0x9EBB0B | tactics of a knocked-out hero | pending |
+| NoKnockoutDanceBonusHealFix | 0x679FBA, 0x6A5C35..0x6A5CE2 | the dance heal bonus on knocked-out heroes | pending |
+| ModifyActionFix | 0x49F252, 0x9E36D0 | the modifier action type (see `buildingWorkRateAuras`) | pending |
+| DisableEffectOnTechFix | 0x94CE4C, 0x94CEBC | tech effects being disabled | pending |
+| DoubleShipmentsInspectFix | 0x71063D, 0x9A652D | the shipment panel (near `decimalPopulation`'s sites) | pending |
+| NoDamageOnUnbuiltFoundations | 0x49B3F3 | damage to foundations | pending |
+| CivSpecificTextTechRollover | 0x4C7481, 0x81A5CB | tech rollover text per civ | pending (cosmetic) |
+| FlagOverride | 11 sites (0x451FAF, 0x4B9ED4, 0x5EE665, ...) | `flagoverrideeffect` | pending (cosmetic key) |
+| HighPolyCliff | 25 calls of `BDataSet::getData` (0x7B6F79..0x7C0B82, 0x82E9CE) | `optionhighpolycliff` | pending (cosmetic key) |
+| MoreLoadingScreens | 0x538A3E, 0x538A59, 0x648D4D | `loadingScreenCount` | pending (cosmetic key) |
+| SyncTracker | 20 sites (0x494D4F, 0x4E237C.., 0x6AE5A8..) | `uhcSyncTrack` | pending (cosmetic key) |
+| BroadsideNoTurn | 0x4C0EB8, 0x4C142C, 0x5030FE, 0x503579 | `unrandomizeBroadsideAttack` (commented out in WoL's cfg) | not needed |
+| ProtoUnitExtension | 0x51D7E0, 0x6206C0, 0x698BFF, 0x69B34F, 0x86FDE4; the proto ctor/dtor/copy calls | extends the proto object (`multiarmor`, ...) | done our way (`multiarmor`) |
+| MPSaveAndRestore, AI debug commands, AdditionalLogging, Temp | 0x7DC13F, 0x7E5B28; 0x5335DD..; 0x5F62B4; 0x67DE5B | multiplayer save, debug | later |
+| Upstream caves (installer 0x1002B580, 0x1002C380) | 0x4904B5, 0x4ECD6B, 0x5126C1, 0x8D0318, 0x8D47C9, 0x8DABA3, 0x77674A; 0x51C945, 0x5C2287, 0x5EE78B, 0x699D31, 0x69B909 | `nativeCivs`, name checks, `enableAllTeams` (MP), `attackTypeIcons` | done our way, except `enableAllTeams` MP and `attackTypeIcons` |
+| Syscall groups (0x10072DB0, 0x1006FC00) | 0x535486, 0x53562E, 0x5B7995, 0x6148C7, 0x627340, 0x96FC7B | registration of its syscalls | done our way (`customSyscalls` registry) |
+| Lobby / ESOC UI | 0x8AC970..0x8BC55A, AMPPlayerSlot ctor/dtor 0x775E36, 0x775FCD | ESOC lobby, observer, diplomacy | ask WoL's team |
+| Not identified yet | 0x404FD5, 0x4060D2 (`BGame::update`), 0x4099BC/0x415587/0x44ED3F (-> 0x4203AB), 0x450B30/0x459C58, 0x4EF2E5 (BUnitBuildAction ctor), 0x511AD9, 0x562AD7, 0x58D9E4, save/load chunks (0x62DCD0, 0x765FC9, 0x83212D, 0x83228A, 0x8329B9, 0x835085), 0x8310A4 / 0x912xxx, BPlayer ctor/dtor calls, 0x6A3C08, 0x6A3C90, 0x7D1727, 0x7DE90E | | to study |
+
 ## Performance
 
 Rules: [developer-guide.md, section 4](developer-guide.md#4-definition-of-done) (A/B per key with a
