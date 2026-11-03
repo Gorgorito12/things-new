@@ -222,6 +222,8 @@ It needs `perfExecFile <bed>\uhc-exec.txt` in the copy's cfg (`deploy` adds
 it). The method and its pitfalls are in
 [developer-guide.md, "Driving the game unattended"](../docs/developer-guide.md#driving-the-game-unattended).
 
+**Which game the tracers attach to.** The `re/` tracers and `inspect_unittypes.py` attach to the `age3y.exe` whose exe is in `UHC_GAME_DIR` (or `UHC_TESTBED`); with no folder set and more than one copy running they stop with an error instead of picking one, since other sessions may run games beside yours (2026-11-03: a tracer attached to another session's game this way). Example: `set UHC_GAME_DIR=C:\AoE3-UHC-WoLReal`.
+
 ## re/trace_writes.py
 
 ```
