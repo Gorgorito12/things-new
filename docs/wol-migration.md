@@ -125,7 +125,7 @@ civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the T
 | Key | WoL setup (civ / unit) | Status |
 |---|---|---|
 | `healNonIdle` | Iroquois: `xpMedicineMan` heals a `xpTomahawk` fighting a Musketeer (`healNonIdle xpMedicineMan`) | **done**: healed between hits and wins; without the key it dies at 54.5 s (`healNonIdle-wol*.mp4`). The WallMapu `MapucheShaman` does not heal even idle units in WoL |
-| `smartHealTargets` | Sioux medicine man, several wounded braves | pending |
+| `smartHealTargets` | United States: `NAnurse` and four settlers hit to 90/70/45/33 % (`smartHealTargets log`) | **done**: heals 33 % first, then 45, 70, 90 %; without the key it starts with the nearest at 90 % (`smartHealTargets-wol*.mp4`). Filmed with `record --frame` (camera still) |
 | `dodgeAnyUnit`, `dodgeChance` | Koreans or Japanese monks / a WoL light infantry | pending |
 | `damageOverTime` | WallMapu or Iroquois archers with a poison attachment | pending |
 | `spreadAnyAccuracy` | a WoL shotgun / grenade unit | pending |

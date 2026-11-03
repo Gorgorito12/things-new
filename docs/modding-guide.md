@@ -1465,6 +1465,19 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 
 *In game:* four units are hit at once; the surgeon heals the one with the lowest HP ratio first (a settler at 33 %), then 45 %, 70 % and 90 %, where stock starts with the nearest settler at 90 %. The yellow lines show each pick next to stock's. [Full video (MP4)](media/smartHealTargets.mp4).
 
+<!-- private:begin -->
+![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
+
+*In WoL, with `smartHealTargets log` (United States):* four settlers are hit at once (90, 70, 45
+and 33 % HP); the `NAnurse` heals the one at 33 % first (12.2 m away), then 45, 70 and 90 %.
+[Full video (MP4)](media/smartHealTargets-wol.mp4).
+
+![smartHealTargets in WoL, key off](media/smartHealTargets-wol-control.gif)
+
+*In WoL, key off (the same scene):* the nurse starts with the nearest settler at 90 %, while the one
+at 33 % waits at 50 HP. [Full video (MP4)](media/smartHealTargets-wol-control.mp4).
+<!-- private:end -->
+
 ```
 smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
 ```

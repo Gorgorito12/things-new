@@ -208,8 +208,11 @@ live text on every frame:
   than 6 units are counted per proto and player instead);
 - `--log <regex>`: the latest `UHC.log` lines of the current game that match, e.g. a feature's own
   `log` output;
-- `--follow <ID>`: keeps the camera on that unit (a `uiLookAtUnit` every 2 s through
-  `perfExecFile`).
+- `--frame <ID>`: centers the camera on that unit once, at the start, and leaves it still: the
+  default for a scene where the units stay in place;
+- `--follow <ID>`: follows a unit that travels: the camera re-centers (a `uiLookAtUnit` through
+  `perfExecFile`) only once the unit has walked 10 m from the last center, and stops when the
+  unit dies, so the picture does not jump every few seconds.
 - `--perf`: the performance numbers, once a second, at the top: fps, the longest frame of the
   second, frames over 50 ms since the start, simulation speed (game seconds per real second), the
   main thread's CPU, the game's own update and render times and the working set. They are read

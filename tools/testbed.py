@@ -18,13 +18,14 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
                              (--los adds the unit's own line of sight and its proto's)
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
-  record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--follow ID]
+  record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
          [--perf] [--perf-csv <out.csv>]
                              films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
                              1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
                              C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
                              live HP of those units (IDs or proto names) on every frame, --log the
-                             latest UHC.log lines that match, --follow keeps the camera on a unit,
+                             latest UHC.log lines that match, --frame centres the camera on a unit once and keeps it
+                             still, --follow moves it only when that unit walks 10 m off,
                              --perf the performance numbers once a second (fps, longest frame,
                              frames over 50 ms, simulation speed, main-thread CPU, memory; the
                              frame numbers need perfStats in the cfg), --perf-csv also saves them
@@ -75,6 +76,7 @@ parsed once, at startup: after a data edit, close and launch again.
 import ctypes
 import ctypes.wintypes as wt
 import hashlib
+import math
 import os
 import pathlib
 import re
@@ -338,6 +340,9 @@ def process():
 def game_time(proc):
     w = D.world(proc) if proc else 0
     return proc.u32(w + 0x108) if w else None
+
+
+FOLLOW_SLACK = 10.0  # metres a followed unit may walk before the camera moves
 
 
 def exec_file(bed):
@@ -890,15 +895,24 @@ class Overlay:
         self.next_scan = self.next_text = 0.0
 
     def text(self, now):
-        if self.follow is not None and now >= self.next_follow:
-            # Keep the camera on that unit: perfExecFile runs the file within 30 frames. Written
-            # without waiting, so a frame is never held up.
-            self.next_follow = now + 2.0
-            path = exec_file(self.bed)
-            if not path.exists():
-                tmp = path.with_suffix(".tmp")
-                tmp.write_text(f"uiLookAtUnit({self.follow})\r\n", encoding="ascii")
-                os.replace(tmp, path)
+        if self.follow is not None and now >= self.next_follow and self.proc is not None:
+            # Keep that unit in view without moving the camera all the time: re-centre only when
+            # it has walked FOLLOW_SLACK metres from where the camera was last centred, and stop
+            # following once it is gone (no jump to wherever a dead unit's ID leads).
+            # perfExecFile runs the file within 30 frames; written without waiting.
+            self.next_follow = now + 0.5
+            unit = next((u for u in D.units(self.proc) if self.proc.i32(u + 0x10) == self.follow), None)
+            if unit is None or self.proc.f32(unit + 0x64) <= 0:
+                self.follow = None
+            else:
+                pos = (self.proc.f32(unit + 0x14), self.proc.f32(unit + 0x1C))
+                far = self.follow_center is None or math.dist(pos, self.follow_center) > FOLLOW_SLACK
+                path = exec_file(self.bed)
+                if far and not path.exists():
+                    tmp = path.with_suffix(".tmp")
+                    tmp.write_text(f"uiLookAtUnit({self.follow})\r\n", encoding="ascii")
+                    os.replace(tmp, path)
+                    self.follow_center = pos
         perf_lines = self.perf.text(now) if self.perf is not None else []
         if now < self.next_text or self.proc is None:
             return perf_lines + self.lines
@@ -1362,9 +1376,13 @@ def main(argv):
         watch = args[args.index("--watch") + 1].split(",") if "--watch" in args else []
         log_pattern = args[args.index("--log") + 1] if "--log" in args else None
         follow = int(args[args.index("--follow") + 1]) if "--follow" in args else None
+        frame = int(args[args.index("--frame") + 1]) if "--frame" in args else None
         perf_csv = args[args.index("--perf-csv") + 1] if "--perf-csv" in args else None
-        flags = {i for f in ("--watch", "--log", "--follow", "--perf-csv") if f in args
+        flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--perf-csv") if f in args
                  for i in (args.index(f), args.index(f) + 1)}
+        if frame is not None:
+            # Centre the camera on that unit once, before filming, and leave it still.
+            run_commands(bed, [f"uiLookAtUnit({frame})"])
         flags |= {i for i, a in enumerate(args) if a == "--perf"}
         pos = [a for i, a in enumerate(args) if i not in flags]
         perf = None
