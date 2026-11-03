@@ -2396,6 +2396,23 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 
 *In game:* Crossbowmen turned into Skirmishers by HCXPTirailleurs take the Skirmisher's LOS 24 (stock: they keep 20). [Full video (MP4)](media/transformUpdatesLOS.mp4).
 
+<!-- private:begin -->
+![transformUpdatesLOS in WoL](media/transformUpdatesLOS-wol.gif)
+
+*In WoL, with `transformUpdatesLOS log` (Romanians, the units selected):* WoL's
+`ShiftingCalarasToVanator` turns four Calarashi (LOS 15) into Vanatori (LOS 22) at 26 s; they take
+LOS 22 at once (`LOS 15 -> 22`, the panel and the lit area grow).
+[Full video (MP4)](media/transformUpdatesLOS-wol.mp4).
+
+![transformUpdatesLOS in WoL, key off](media/transformUpdatesLOS-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Vanatori keep the Calarashi's LOS 15 (the panel shows 15)
+and the lit area does not change. Some WoL cards work around the bug in their data:
+`WOLHCItaliaIrredenta` (Pikeman 12 to WOLAlpino 28) also assigns LOS 28 to the Alpino, so it is
+right with or without the key; 45 of WoL's transforms have no such line.
+[Full video (MP4)](media/transformUpdatesLOS-wol-control.mp4).
+<!-- private:end -->
+
 ```
 transformUpdatesLOS [log]
 ```
