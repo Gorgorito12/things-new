@@ -2074,6 +2074,23 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
 *TrainPoints:* Six settlers were queued at 12 s, with Settler `TrainPoints` 25; a test tech sets them to 6.25 at 30 s. The settler in training finishes at once (it already had more than 6.25 points of work) and the five already queued are trained in 6.25 s each; the log lines are at the top (2x speed). In stock all six would take 25 s. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints.mp4).
 
+<!-- private:begin -->
+![liveBuildingWorkRate in WoL](media/liveBuildingWorkRate-wol.gif)
+
+*In WoL, with `liveBuildingWorkRate log` (an African civ's Town Center, selected so its queue
+shows):* the TC trains 15 `AFRICANvillager`; at 30 s a test tech (`UHCBwrTest`, BuildingWorkRate x3
+on `TownCenter`, appended to the bed's techtree for the test and removed after) turns on. The
+standing TC works at 3.0 at once (`works at BuildingWorkRate 3.000, not its snapshot 1.000`), the
+queue empties quickly, and it ends with 13 villagers by 97 s (5 at the start).
+[Full video (MP4)](media/liveBuildingWorkRate-wol.mp4).
+
+![liveBuildingWorkRate in WoL, key off](media/liveBuildingWorkRate-wol-control.gif)
+
+*In WoL, key off (the same scene):* stock keeps the TC's snapshot of 1.0, so the tech changes
+nothing for it: 8 villagers by 98 s, the queue still long.
+[Full video (MP4)](media/liveBuildingWorkRate-wol-control.mp4).
+<!-- private:end -->
+
 ```
 liveBuildingWorkRate [log]
 ```

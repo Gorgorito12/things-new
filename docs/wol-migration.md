@@ -129,7 +129,8 @@ civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the T
 | `dodgeAnyUnit`, `dodgeChance` | Japanese villagers (`ypSettlerJapanese`, rule 50 % `notech ranged`), a European `Settler` with `dodgeAnyUnit` (stock 15 %, `YPDodge`), an unmarked `ypSettlerIndian`, vs 3 Musketeers | **done**: 18 of 33 Japanese rolls dodged, 4 dodges for the Settler, the Indian dies first; keys off, nobody dodges (`dodge-wol*.mp4`). Soldiers shoot back and end the fight too soon; villagers do not |
 | `damageOverTime` | Iroquois: 3 `xpAenna` with poison arrows (`dot_testdata.py --wol`, restored after) vs 1 `Landsknecht` | **done**: ticks of 12 (x3 stacks), the last one kills it, 1 archer lost; key off, 2 archers lost (`damageOverTime-wol*.mp4`) |
 | `spreadAnyAccuracy` | 4 `Escopetero` (WoL's own spread tags, no data edit) vs 8 `WOLScytheman` | **done**: every shot logged as a ground shot at r = 3 m; survivors' HP 800 / 562 with the key vs 827 without, so no clear damage change in a melee-range fight (`spreadAnyAccuracy-wol*.mp4`) |
-| `liveBuildingWorkRate`, `buildingWorkRateAuras` | an Asian civ (Japanese, Chinese) production building | pending |
+| `liveBuildingWorkRate` | African civ TC training `AFRICANvillager`; test tech `UHCBwrTest` (BWR x3 on TownCenter, appended to techtreey, restored after) at 30 s | **done**: 13 villagers by 97 s vs 8 without the key (5 at start) (`liveBuildingWorkRate-wol*.mp4`). WoL's own BWR techs did not fit: the Krupp factory's Maintain spawns take minutes, and the daimyos (`WOLHCKazoku`) train nothing in age I |
+| `buildingWorkRateAuras` | pending | pending |
 | `techPrereqRecheck`, `maintainWaitForPop` | Ottomans (auto-produced units), a `TypeCount` tech | pending |
 | `transformUpdatesLOS`, `transformInventory` | a WoL transform (Zulu maturing, wagons) | pending |
 | `broadsideMuzzleLimit` | a WoL ship with a barrage attack | pending |
