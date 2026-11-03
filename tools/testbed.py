@@ -4,11 +4,13 @@ take screenshots, read units and UHC.log, and check that the Steam install was n
 Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
 
   deploy [cfg]               copy build\\Release\\UHC.dll into the bed; with cfg, also copy it as
-                             Startup\\uhc.cfg (perfExecFile is appended when missing)
+                             the cfg the bed's exe reads (Startup\\uhc.cfg, or Startup\\wol.cfg
+                             in the WoL bed; perfExecFile is appended when missing)
   launch                     start age3y.exe +noIntroCinematics and wait for the main menu
   close                      leave the game, close the window, kill it after 30 s
   exec <cmd> [<cmd> ...]     run console commands through perfExecFile and wait until they ran
-  map <name> <spec> ...      write RM3\\<name>.xs/.xml, a test map (spec syntax below)
+  map <name> <spec> ...      write RM3\\<name>.xs/.xml, a test map (spec syntax below); RM4
+                             when the bed's exe reads RM4 (WoL)
   scenario <map> [--seed N]  editor route: generate <map>, save it as scenario uhc-<map>, leave,
                              load it as a game and unpause. Players have no AI.
   wait <seconds>             let that much game time pass (polls the world clock)
@@ -17,11 +19,17 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              (--los adds the unit's own line of sight and its proto's)
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
   record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--follow ID]
+         [--perf] [--perf-csv <out.csv>]
                              films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
                              1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
                              C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
                              live HP of those units (IDs or proto names) on every frame, --log the
-                             latest UHC.log lines that match, --follow keeps the camera on a unit
+                             latest UHC.log lines that match, --follow keeps the camera on a unit,
+                             --perf the performance numbers once a second (fps, longest frame,
+                             frames over 50 ms, simulation speed, main-thread CPU, memory; the
+                             frame numbers need perfStats in the cfg), --perf-csv also saves them
+  profile                    the bed's exe build, cfg path, AI and map folders, My Games folder
+  profile backup             copy the bed's player profiles (Users3\\*.xml) to .bak-uhc-<date>
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
   wheel <x> <y> <steps>      real mouse wheel at a client point (+ zooms in, - out)
@@ -29,7 +37,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
   log [--grep RE] [--tail N] UHC.log lines
-  safety record|check        Steam bin listing and the stock age3y.exe hash
+  safety record|check [wol]  Steam bin listing and the stock age3y.exe hash; with wol, the Steam
+                             Wars of Liberty folder (top level, Startup, data, AI4, RM4), its exe
+                             and its uhc.dll
 
 Map spec, one argument each:
   p<N>=<Proto>*<count>@<x>,<z>   units of player N around (x, z), fractions of the map side
@@ -49,7 +59,8 @@ Map spec, one argument each:
 Console commands only reach the game through `perfExecFile <bed>\\uhc-exec.txt` in the bed's
 uhc.cfg (posted key presses never reach the console). Without `DontPauseWhenLosingFocus` the game
 pauses when it loses focus; `launch` defines it. A scenario is written to the shared
-Documents\\My Games\\Age of Empires 3\\Scenario folder; `close` removes the ones this copy saved
+Documents\\<My Games folder>\\Scenario folder (string 42265 of the bed's stringtabley.xml:
+My Games\\Age of Empires 3, or My Games\\Wars of Liberty in the WoL bed); `close` removes the ones this copy saved
 (listed in <bed>\\uhc-scenarios.txt), never another session's. The data (protoy.xml, ...) is
 parsed once, at startup: after a data edit, close and launch again.
 """
@@ -67,12 +78,22 @@ import time
 import zlib
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "re"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import debugger as D  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 STEAM_BIN = pathlib.Path(r"C:\Program Files (x86)\Steam\steamapps\common\Age Of Empires 3\bin")
 STOCK_SHA256 = "b1a1dab7264d2db72e8f8ae1df1e419eecc223b40db00c9d1013a3bc77611d9d"
-MY_GAMES = pathlib.Path(os.path.expanduser("~")) / "Documents" / "My Games" / "Age of Empires 3"
+DOCUMENTS = pathlib.Path(os.path.expanduser("~")) / "Documents"
+STEAM_WOL = STEAM_BIN.parent / "Wars of Liberty"
+WOL_SHA256 = "0a277f14e08df516fe1abd3fd9f8175b40664f3371793afff507f652d5067726"
+WOL_DLL_SHA256 = "c070d138c2b4ead70ef07f44dae57a6667ffc53b59a178ddade39db48e01efb2"
+# age3y.exe builds a bed may run (docs/binaries.md); any other hash gets a warning.
+KNOWN_EXES = {
+    "d21d0173": "Knights and Barbarians (stock + UHC loader)",
+    "8970565c": "Knights and Barbarians + large-address-aware (set_laa.py)",
+    "0a277f14": "Wars of Liberty (loader, LAA, AI4/RM4, Startup\\wol.cfg)",
+}
 LISTING = pathlib.Path(os.environ.get("TEMP", ".")) / "uhc-steam-listing.tsv"
 WORKER_JOBS = 0xC692E4  # the skinning worker's done count; it moves while the menu animates
 
@@ -147,6 +168,65 @@ def bed_folder(arg):
     if not (bed / "age3y.exe").exists():
         sys.exit(f"testbed: no age3y.exe in {bed}")
     return bed
+
+
+def _exe_wstring(data, offset, limit):
+    return data[offset:offset + 2 * limit].decode("utf-16-le", "replace").split("\0")[0]
+
+
+_PROFILES = {}
+
+
+def bed_profile(bed):
+    """What the bed's exe reads, from its own bytes: the UHC loader's cfg path (VA 0xC65083), the
+    AI folder (0xBE3A98) and the random-map folder (0xBE3AD8), which mods patch (WoL: wol.cfg, AI4,
+    RM4); and the My Games folder, string 42265 (cStringLuaFolder) of the bed's stringtabley.xml."""
+    if bed in _PROFILES:
+        return _PROFILES[bed]
+    data = (bed / "age3y.exe").read_bytes()
+    digest = hashlib.sha256(data).hexdigest()
+    cfg = _exe_wstring(data, 0x865083, 21) or "Startup\\uhc.cfg"
+    ai = _exe_wstring(data, 0x7E3A98, 5).rstrip("\\") or "AI3"
+    rm = _exe_wstring(data, 0x7E3AD8, 5).rstrip("\\") or "RM3"
+    games = "My Games\\Age of Empires 3"
+    table = bed / "data" / "stringtabley.xml"
+    if table.exists():
+        raw = table.read_bytes()
+        text = raw.decode("utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8", "replace")
+        m = re.search(r"""_locID\s*=\s*['"]42265['"][^>]*>([^<]+)<""", text)
+        if m:
+            games = m.group(1).strip().rstrip("\\")
+    profile = {"sha256": digest, "build": KNOWN_EXES.get(digest[:8]), "cfg": cfg, "ai": ai, "rm": rm,
+               "my_games": DOCUMENTS / games}
+    if profile["build"] is None:
+        print(f"testbed: warning: {bed / 'age3y.exe'} is an unknown build ({digest[:8]}); see docs/binaries.md")
+    _PROFILES[bed] = profile
+    return profile
+
+
+def my_games(bed):
+    return bed_profile(bed)["my_games"]
+
+
+def show_profile(bed):
+    p = bed_profile(bed)
+    print(f"testbed: {bed}\n  exe   {p['sha256'][:8]} {p['build'] or 'unknown build'}\n  cfg   {bed / p['cfg']}\n"
+          f"  AI    {bed / p['ai']}\n  maps  {bed / p['rm']}\n  games {p['my_games']}")
+
+
+def profile_backup(bed):
+    users = my_games(bed) / "Users3"
+    stamp = time.strftime("%Y%m%d")
+    files = sorted(users.glob("*.xml")) if users.exists() else []
+    if not files:
+        sys.exit(f"testbed: no profile in {users}")
+    for path in files:
+        target = path.with_name(f"{path.name}.bak-uhc-{stamp}")
+        if target.exists():
+            print(f"testbed: {target} exists; kept")
+            continue
+        shutil.copy2(path, target)
+        print(f"testbed: {path} -> {target}")
 
 
 BED = None  # set by main(); every process and window lookup is limited to this copy's exe
@@ -300,7 +380,7 @@ def remove_own_scenarios(bed):
     record = scenario_record(bed)
     names = record.read_text(encoding="utf-8").split() if record.exists() else []
     for name in names:
-        scn = MY_GAMES / "Scenario" / f"{name}.age3Yscn"
+        scn = my_games(bed) / "Scenario" / f"{name}.age3Yscn"
         if scn.exists():
             scn.unlink()
             print(f"testbed: removed {scn}")
@@ -480,7 +560,7 @@ def write_map(bed, name, specs):
     terrain = SEA_TERRAIN.format(sea=sea) if sea else LAND_TERRAIN
     text = MAP_TEMPLATE.format(size=size, terrain=terrain, players=player_lines, units="\n".join(unit_lines),
                                effects="\n".join(effect_lines))
-    folder = bed / "RM3"
+    folder = bed / bed_profile(bed)["rm"]
     (folder / f"{name}.xs").write_text(text, encoding="utf-8")
     (folder / f"{name}.xml").write_text(MAP_INFO, encoding="utf-8")
     print(f"testbed: wrote {folder / (name + '.xs')} ({len(groups)} unit groups, {len(techs)} techs, "
@@ -490,7 +570,7 @@ def write_map(bed, name, specs):
 def scenario(bed, map_name, seed):
     proc = process() or sys.exit("testbed: the game is not running")
     name = f"uhc-{map_name}"
-    target = MY_GAMES / "Scenario" / f"{name}.age3Yscn"
+    target = my_games(bed) / "Scenario" / f"{name}.age3Yscn"
     target.unlink(missing_ok=True)
     record = scenario_record(bed)
     names = set(record.read_text(encoding="utf-8").split()) if record.exists() else set()
@@ -621,13 +701,116 @@ def ffmpeg_path():
     sys.exit("testbed: record needs ffmpeg (set UHC_FFMPEG, put it on PATH or in C:\\Tools\\ffmpeg)")
 
 
+class PerfReader:
+    """The performance numbers of `record --perf`, read once a second from outside the game with
+    tools/perfprobe.py's readers (no thread is suspended): UHC.dll's perfStats mapping (fps, longest
+    frame, frames over 50 ms), the main thread's CPU, the working set, the game's own update and
+    render averages and the simulation speed. Like perfprobe, it clears perfStats' per-interval
+    longest frame, so do not run perfprobe on the same game at the same time."""
+
+    COLUMNS = ["t", "game_s", "fps", "max_frame_ms", "over50", "over100", "update_ms", "render_ms", "sim_speed",
+               "main_cpu", "process_cpu", "ws_mb", "private_mb"]
+
+    def __init__(self, pid, csv_path=None):
+        import perfprobe as P
+        self.P, self.pid = P, pid
+        self.process = P.k32.OpenProcess(P.PROCESS_ACCESS, False, pid)
+        self.stats = P.open_stats(pid)
+        self.threads = {}
+        self.t0 = self.last_t = time.perf_counter()
+        self.last_frames, self.last_sim, self.over50, self.over100 = None, None, 0, 0
+        self.lines, self.next = [], 0.0
+        self.rows = []
+        self.csv = open(csv_path, "w", encoding="utf-8", newline="") if csv_path else None
+        if self.csv:
+            self.csv.write(",".join(self.COLUMNS) + "\n")
+        if self.stats is None:
+            print("testbed: --perf: no perfStats mapping (add perfStats to the cfg); fps and frame times are missing")
+        self._cpu(1.0)
+
+    def _cpu(self, dt):
+        P, usage = self.P, {}
+        for tid in P.thread_ids(self.pid):
+            if tid not in self.threads:
+                handle = P.k32.OpenThread(P.THREAD_QUERY_INFORMATION, False, tid)
+                times = P.thread_times(handle) if handle else None
+                if times is not None:
+                    self.threads[tid] = {"handle": handle, "created": times[0], "last": times[1]}
+                continue
+            th = self.threads[tid]
+            times = P.thread_times(th["handle"])
+            if times is not None:
+                usage[tid] = (times[1] - th["last"]) / 1e7 / dt * 100
+                th["last"] = times[1]
+        main = min(self.threads, key=lambda t: self.threads[t]["created"]) if self.threads else None
+        return usage.get(main, 0.0), sum(usage.values())
+
+    def text(self, now):
+        if now < self.next:
+            return self.lines
+        self.next = now + 1.0
+        P = self.P
+        dt = max(now - self.last_t, 1e-3)
+        self.last_t = now
+        main_cpu, process_cpu = self._cpu(dt)
+        memory = P.PROCESS_MEMORY_COUNTERS_EX()
+        memory.cb = ctypes.sizeof(memory)
+        P.psapi.GetProcessMemoryInfo(self.process, ctypes.byref(memory), memory.cb)
+        row = {"t": f"{now - self.t0:.1f}", "main_cpu": f"{main_cpu:.0f}", "process_cpu": f"{process_cpu:.0f}",
+               "ws_mb": f"{memory.WorkingSetSize / 2**20:.0f}", "private_mb": f"{memory.PrivateUsage / 2**20:.0f}"}
+        timers = P.game_timers(self.process)
+        if timers is not None:
+            row["update_ms"], row["render_ms"] = f"{timers[0]:.1f}", f"{timers[1]:.1f}"
+        sim = P.sim_clock(self.process)
+        if sim is not None:
+            row["game_s"] = f"{sim / 1000:.1f}"
+            if self.last_sim is not None and sim >= self.last_sim:
+                row["sim_speed"] = f"{(sim - self.last_sim) / 1000 / dt:.2f}"
+        self.last_sim = sim
+        if self.stats is None:
+            self.stats = P.open_stats(self.pid)
+        stats = P.read_stats(self.stats) if self.stats else None
+        if stats:
+            if self.last_frames is not None:
+                row["fps"] = f"{(stats['frames'] - self.last_frames['frames']) / dt:.0f}"
+                self.over50 += stats["over50"] - self.last_frames["over50"]
+                self.over100 += stats["over100"] - self.last_frames["over100"]
+                row["over50"], row["over100"] = str(self.over50), str(self.over100)
+            row["max_frame_ms"] = f"{stats['max_us'] / 1000:.0f}"
+            self.last_frames = stats
+        self.rows.append(row)
+        if self.csv:
+            self.csv.write(",".join(str(row.get(c, "")) for c in self.COLUMNS) + "\n")
+            self.csv.flush()
+        g = row.get
+        self.lines = [
+            f"perf  fps {g('fps', '-')}  frame max {g('max_frame_ms', '-')} ms  >50 ms {g('over50', '-')}"
+            f"  sim {g('sim_speed', '-')}x",
+            f"perf  CPU main {row['main_cpu']}%  update {g('update_ms', '-')} ms  render {g('render_ms', '-')} ms"
+            f"  memory {row['ws_mb']} MB",
+        ]
+        return self.lines
+
+    def close(self):
+        if self.csv:
+            self.csv.close()
+        fps = [float(r["fps"]) for r in self.rows if r.get("fps")]
+        worst = max((float(r["max_frame_ms"]) for r in self.rows if r.get("max_frame_ms")), default=0)
+        cpu = [float(r["main_cpu"]) for r in self.rows]
+        if self.rows:
+            print(f"testbed: perf over {len(self.rows)} s: fps avg {sum(fps) / len(fps) if fps else 0:.0f}, "
+                  f"longest frame {worst:.0f} ms, frames over 50 ms {self.over50}, over 100 ms {self.over100}, "
+                  f"main CPU avg {sum(cpu) / len(cpu):.0f}%")
+
+
 class Overlay:
     """Live text drawn on every recorded frame, so a video shows what the numbers do: the game time,
     the hit points of the watched units (unit IDs or proto names, matched again every second, so new
     units appear and dead ones go) and the latest UHC.log lines that match a pattern."""
 
-    def __init__(self, bed, watch, log_pattern, follow=None):
+    def __init__(self, bed, watch, log_pattern, follow=None, perf=None):
         self.proc = process()
+        self.perf = perf
         self.bed, self.follow, self.next_follow = bed, follow, 0.0
         self.ids = {int(w) for w in watch if w.isdigit()}
         self.protos = [w.lower() for w in watch if not w.isdigit()]
@@ -650,8 +833,9 @@ class Overlay:
                 tmp = path.with_suffix(".tmp")
                 tmp.write_text(f"uiLookAtUnit({self.follow})\r\n", encoding="ascii")
                 os.replace(tmp, path)
+        perf_lines = self.perf.text(now) if self.perf is not None else []
         if now < self.next_text or self.proc is None:
-            return self.lines
+            return perf_lines + self.lines
         proc = self.proc
         if now >= self.next_scan:
             self.next_scan = now + 1.0
@@ -672,9 +856,11 @@ class Overlay:
             los = f", LOS {proc.f32(block + 0x90):.0f}" if block else ""
             lines.append(f"unit {proc.u32(unit + 0x10)} {D.proto_name(proc, proto)} (player {D.unit_player(proc, unit)}): "
                          f"HP {proc.f32(unit + 0x64):.1f} / {proc.f32(proto + 0x98):.0f}{los}")
+        if not self.ids and not self.protos:
+            lines = lines[:1]  # --perf or --log alone: no unit lines
         self.lines = lines + self.log_lines[-4:]
         self.next_text = now + 0.25
-        return self.lines
+        return perf_lines + self.lines
 
     def read_log(self):
         if self.pattern is None or not self.log_path.exists():
@@ -748,6 +934,8 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None):
     finally:
         encoder.stdin.close()
         encoder.wait()
+        if overlay is not None and overlay.perf is not None:
+            overlay.perf.close()
         for obj in (full, small, font):
             gdi32.DeleteObject(obj)
         for dc in (full_dc, small_dc):
@@ -920,8 +1108,9 @@ def deploy(bed, cfg):
         text = pathlib.Path(cfg).read_text(encoding="utf-8")
         if "perfexecfile" not in text.lower():
             text = text.rstrip("\n") + f"\nperfExecFile {exec_file(bed)}\n"
-        (bed / "Startup" / "uhc.cfg").write_text(text, encoding="utf-8")
-        print(f"testbed: wrote {bed / 'Startup' / 'uhc.cfg'}")
+        target = bed / bed_profile(bed)["cfg"]
+        target.write_text(text, encoding="utf-8")
+        print(f"testbed: wrote {target}")
     (bed / "UHC.log").unlink(missing_ok=True)
 
 
@@ -932,6 +1121,43 @@ def steam_listing():
             st = path.stat()
             rows.append(f"{path.relative_to(STEAM_BIN)}\t{st.st_size}\t{st.st_mtime_ns}")
     return rows
+
+
+def wol_listing():
+    rows = []
+    for path in sorted(STEAM_WOL.iterdir()):
+        if path.is_file():
+            st = path.stat()
+            rows.append(f"{path.name}\t{st.st_size}\t{st.st_mtime_ns}")
+    for sub in ("Startup", "data", "AI4", "RM4"):
+        for path in sorted((STEAM_WOL / sub).rglob("*")):
+            if path.is_file():
+                st = path.stat()
+                rows.append(f"{path.relative_to(STEAM_WOL)}\t{st.st_size}\t{st.st_mtime_ns}")
+    return rows
+
+
+def safety_wol(mode):
+    listing = LISTING.with_name("uhc-wol-listing.tsv")
+    for name, want in (("age3y.exe", WOL_SHA256), ("uhc.dll", WOL_DLL_SHA256)):
+        digest = hashlib.sha256((STEAM_WOL / name).read_bytes()).hexdigest()
+        print(f"testbed: Steam WoL {name} {'is' if digest == want else 'is NOT'} the known build ({digest[:8]})")
+        if digest != want:
+            sys.exit(1)
+    rows = wol_listing()
+    if mode == "record":
+        listing.write_text("\n".join(rows), encoding="utf-8")
+        print(f"testbed: recorded {len(rows)} files in {listing}")
+        return
+    before = listing.read_text(encoding="utf-8").splitlines() if listing.exists() else None
+    if before is None:
+        sys.exit("testbed: no recorded WoL listing; run `safety record wol` first")
+    changed = sorted(set(before) ^ set(rows))
+    print(f"testbed: Steam Wars of Liberty {'unchanged' if not changed else 'CHANGED'} ({len(rows)} files)")
+    for row in changed[:20]:
+        print("  ", row)
+    if changed:
+        sys.exit(1)
 
 
 def safety(mode):
@@ -961,12 +1187,15 @@ def main(argv):
         sys.exit(__doc__)
     cmd, args = argv[0], argv[1:]
     if cmd == "safety":
-        safety(args[0] if args else "check")
+        mode = next((a for a in args if a in ("record", "check")), "check")
+        safety_wol(mode) if "wol" in args else safety(mode)
         return
     global BED
     bed = BED = bed_folder(bed_arg)
     if cmd == "deploy":
         deploy(bed, args[0] if args else None)
+    elif cmd == "profile":
+        profile_backup(bed) if args[:1] == ["backup"] else show_profile(bed)
     elif cmd == "launch":
         launch(bed)
     elif cmd == "close":
@@ -992,9 +1221,17 @@ def main(argv):
         watch = args[args.index("--watch") + 1].split(",") if "--watch" in args else []
         log_pattern = args[args.index("--log") + 1] if "--log" in args else None
         follow = int(args[args.index("--follow") + 1]) if "--follow" in args else None
-        flags = {i for f in ("--watch", "--log", "--follow") if f in args for i in (args.index(f), args.index(f) + 1)}
+        perf_csv = args[args.index("--perf-csv") + 1] if "--perf-csv" in args else None
+        flags = {i for f in ("--watch", "--log", "--follow", "--perf-csv") if f in args
+                 for i in (args.index(f), args.index(f) + 1)}
+        flags |= {i for i, a in enumerate(args) if a == "--perf"}
         pos = [a for i, a in enumerate(args) if i not in flags]
-        overlay = Overlay(bed, watch, log_pattern, follow) if watch or log_pattern or follow is not None else None
+        perf = None
+        if "--perf" in args or perf_csv:
+            pid = bed_pid() or sys.exit("testbed: the game is not running")
+            perf = PerfReader(pid, perf_csv)
+        overlay = (Overlay(bed, watch, log_pattern, follow, perf)
+                   if watch or log_pattern or follow is not None or perf else None)
         record(pos[0], float(pos[1]) if len(pos) > 1 else 30.0, int(pos[2]) if len(pos) > 2 else 10,
                int(pos[3]) if len(pos) > 3 else 1280, overlay)
     elif cmd == "click":
