@@ -21,6 +21,7 @@ add_library(UHC SHARED
   src/namelists.cpp
   src/syscalls.cpp
   src/unittypes.cpp
+  src/xmllist.cpp
   src/worldtick.cpp
   src/actiontags.cpp
   src/features/abilityslots.cpp
@@ -66,6 +67,7 @@ add_library(UHC SHARED
   src/features/transforminv.cpp
   src/features/typetests.cpp
   src/features/kbsyscalls.cpp
+  src/features/commandtypes.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp

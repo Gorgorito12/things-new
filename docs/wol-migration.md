@@ -99,7 +99,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `marketUnits` | upstream | degrades (trade without a stock Market) | **done**, confirmed (`WOLMarketGreek`; refused without the key) |
 | `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | **done**, names confirmed (Korean monks Yi Sun and Kwon Hwan); 4 protos of WoL's cfg do not exist in its data |
 | `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | cosmetic: placement and animation (the buildings gather anyway in WoL's data) | **done**, confirmed (Iroquois plantation and farm; radius measured). `Fazenda` gets no gatherers: its tactics only modify others |
-| `customProtoUnitCommands` (always on in WoL) | WoL | degrades (41 `<Command>` buttons) | pending, RE |
+| `customProtoUnitCommands` (always on in WoL) | WoL | degrades (55 command types; their `<Command>` buttons on 36 protos are dropped) | **done**, confirmed (Zulu youth: six transform buttons shown and run; none without the key). WoL's cfg needs the line `customProtoUnitCommands`. The Fazenda's four tactic buttons (`page="9"`) also need the tactics gate (`tacticSwitching`, not in WoL's cfg; WoL's DLL does not patch that gate): check them in the control copy |
 | `selectionLimit 75` | WoL | degrades | **done**, confirmed (75 of 89 Pikemen; 50 without) |
 | `trainSingleAbstractType` | WoL | degrades (`AbstractTrainLimitOne`, 36 protos) | **done**, confirmed (Totenkopf hussars one at a time; a batch without the key) |
 | `multiarmor` | WoL | degrades (32 protos, 76 effects) | pending, RE |
@@ -132,6 +132,7 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `customProtoUnitCommands` | scenario, player Ethiopians: Zulu `AFRICANyouth` (transforms to Tradesman and Bowman); Brazilian Fazenda (tactics page, not shown) |
 | `kbUnitSyscalls` | AI skirmish: player Australians (Melbourne); AI Maori, personality Te Rauparaha (other personalities moved aside so the random pick is that one; the clicks on the AI slot opened nothing) |
 | `wonderCivUnitType` | Maori (Parihaka): Rangatira, voyages |
 | `trainSingleAbstractType` | Germans (Age0German, age IV): WOLTotenkopfHussar at a Barracks (scenario) |

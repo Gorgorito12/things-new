@@ -874,6 +874,18 @@ movement".
 | `g_uhcBwrTrainGetter` | UHC.dll export (data, C linkage) | — | `void*`, default 0x9BFE33; set to the wrapper when `buildingWorkRateAuras` applies. noTrainNearEnemyTC's Train hook calls through it. |
 
 
+### Command types (for `customProtoUnitCommands`, 2026-11-03)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Name tables builder | FUN_0052277E (0x52277E..0x526E38) | confirmed (`cs`, command part) | Registers the database's enum names; command types 0..128 at 0x5262F2..0x5269FB. |
+| Register a command type name | 0x537683, `bool thiscall(db, int id, const char* name)`, `ret 8` | confirmed (`cs`) | Only when `id == [db+264Ch]`; appends through 0x59F915 to the hashed list `[db+2648h]`. Its neighbours 0x5376BA, 0x5376F1 do the same for other tables (`+5130h`, `+5454h`). |
+| Command type by name | 0x5274AB, `int thiscall(db, const char* name)`, `ret 4` | confirmed (`cs`) | Hash lookup (0x421B73, 0x40295B); -1 if absent. Callers: the protounitcommands.xml loader 0x5274A2 / 0x65A9A2, 0x7D8AFD, 0x7DF0E3, 0x7F03C7, 0x94808F, 0x9AD1C8. |
+| protounitcommands.xml loader | FUN_00527090 | partial (`cs`) | Reserves the record array `[db+2968h]` with `0x5276EA(arr, 82h, 0)` at 0x52711D; 4Ch-byte records indexed by command type ID (the `<name>` lookup gives the index; `+24h` written at 0x65A9B2). |
+| Command records | `[db+2968h]` (array), `[db+296Ch]` (count) | confirmed (readers) | Readers (0x4619F3, 0x695D30, 0x69CAEA, 0x8D283E, 0x9B6E19, ...) compare the ID with the count first. |
+| Proto command list | `[proto+E8h]` (6-byte entries), `[proto+ECh]` (count) | in game (2026-11-03) | `{word id, byte kind (2 = command, 1 = tech), byte page, byte column, byte}`; read at 0x7D8ACD. |
+| Tactic buttons gate | 0x5C161C (FUN_005C13C5), 0x6949CD (FUN_004C55E3) | from the address map (`tacticSwitching`) | The tactics page shows only for the Factory `[db+5E68h]`, Rice Paddy `[db+5E70h]` and a few other cached protos. |
+
 ### KB unit queries (for `kbUnitSyscalls`, 2026-11-03)
 
 The stock KB syscalls share one head (for example `kbUnitGetNumberWorkers` 0x881CC6, registered

@@ -574,6 +574,49 @@ customAbstractTypes [file]
   `cUnitType<Name>` constants compiled. <!-- private -->In the Wars of Liberty copy, with WoL's own `data\uhc\customabstracttypes.xml`; before it, `aiLoaderStandard.xs` failed on `cUnitTypeAbstractWoLHandCavalry`.
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
+### customProtoUnitCommands
+
+<!-- private:begin -->
+![customProtoUnitCommands in game](media/customProtoUnitCommands.gif)
+
+*In game:* a unit whose `<Command>` buttons use new command types shows them, their tooltips come
+from `protounitcommands.xml`, and a click runs their command (here two transforms). Without the key
+the same unit has no such buttons (top of the still below):
+![customProtoUnitCommands off and on](media/customProtoUnitCommands-control.png)
+[Full video (MP4)](media/customProtoUnitCommands.mp4).
+<!-- private:end -->
+
+```
+customProtoUnitCommands [file]
+```
+
+- **Effect:** every `<CommandType>` name in an XML file becomes a command type, like the
+  compiled-in ones (`MarketBuy1` ... `Tactic32` ... `RansomExplorerAsian`, 129 in all). Entries of
+  `protounitcommands.xml` with that `<name>` and protos' `<Command>` tags with that name are kept
+  instead of dropped, so the button shows and runs its `<command>`.
+- **Your data:** the file (default `data\uhc\customprotounitcommands.xml`):
+
+  ```xml
+  <ProtoUnitCommandTypes>
+    <CommandType>MyTransform</CommandType>
+  </ProtoUnitCommandTypes>
+  ```
+
+  plus a `protounitcommands.xml` entry and a `<Command>` per button, as for stock types. Names are
+  letters, digits and `_`; a name stock already knows is skipped.
+- **Buttons on the tactics page** (`page="9"`) of a building show only for the buildings stock
+  lets switch tactics (Factory, Rice Paddy...); the key does not change that.
+- **Log:** `customProtoUnitCommands: N command type(s) from <file>; M command records`; when the
+  game builds its tables, `customProtoUnitCommands: N command type(s) added (IDs 129..), K already
+  known, R refused`.
+- **Simulation:** changes the data: every player needs the same file.
+- **Status:** confirmed (2026-11-03, single player): with 55 names, a unit whose six transform
+  buttons use new types showed them with their tooltips, and two clicks transformed two units;
+  without the key the same unit showed none. The game's command records are a fixed array (130):
+  a first build that only added the names showed no button and wrote past that array; the key now
+  enlarges it. Video `customProtoUnitCommands.mp4`.
+  In the WoL copy: Zulu `AFRICANyouth` transforms (Tradesman, Bowman). <!-- private -->
+
 ### customSyscalls
 
 <!-- private:begin -->

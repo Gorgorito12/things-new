@@ -973,6 +973,17 @@ SITES = [
     ("UnitGetSquad", 0x4E2A03, 0x32),
     ("InventoryIsFull", 0x4DC520, 0x3D),
     ("UnitCarryCapacity", 0x494503, 0x10),
+    # customProtoUnitCommands: FUN_0052277E registers the command type names 0..128 in the
+    # database's name table ([db+2648h], count [db+264Ch]) with 0x537683(db, id, name), thiscall,
+    # ret 8, which accepts only id == count; the last call (RansomExplorerAsian, 80h) is at
+    # 0x5269FB. 0x5274AB(db, name), thiscall, ret 4: the name's ID, -1 if absent.
+    ("CmdTypeRegLast", 0x5269FB, 0x05),
+    ("CmdTypeRegister", 0x537683, 0x37),
+    ("CmdTypeLookup", 0x5274AB, 0x34),
+    # customProtoUnitCommands: the protounitcommands.xml loader (FUN_00527090) sizes the record
+    # array [db+2968h] (4Ch-byte records indexed by command type ID, readers bound by its count
+    # [+4]) with push 82h / mov ecx,ebx / call 5276EAh: 130 records for the 129 stock types
+    ("CmdRecordReserve", 0x52711D, 0x05),
 ]
 
 

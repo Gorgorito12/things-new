@@ -304,6 +304,24 @@ the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-p
 sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
 live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
 
+### customProtoUnitCommands
+
+`FUN_0052277E` builds the database's name tables. The command types are 129 calls of
+`0x537683(db, id, name)` (thiscall, `ret 8`), from `MarketBuy1` (0) to `RansomExplorerAsian`
+(80h, the call at `0x5269FB`); that function appends to the hashed name list `[db+2648h]` only
+when `id` equals its count `[db+264Ch]`. Every reader goes through that list: the lookup
+`0x5274AB(db, name)` (-1 if absent) for `protounitcommands.xml`, the protos' `<Command>` tags
+(`0x5F60AB`, stored as 6-byte entries `{word id, byte kind 2, byte page, byte column, ...}` in
+`[proto+E8h]`, count `[+ECh]`) and the UI, or the count (`0x97EFFE`).
+
+The `protounitcommands.xml` loader (`FUN_00527090`) keeps one 4Ch-byte record per command type ID
+in `[db+2968h]`, sized at `0x52711D` with a constant (`push 82h / mov ecx,ebx / call 5276EAh`), and
+fills `record[id]` with no bound check; readers stop at that array's count `[+4]`. The key:
+
+- redirects the call at `0x5269FB` to a wrapper that makes it, then registers each listed name
+  not already known with the next ID (`[db+264Ch]`);
+- writes `82h + N` (N listed names) into that `push`, so the records of the new IDs exist.
+
 ### customSyscalls
 
 **The registry** (`src/syscalls.*`). Each syscall module (AI, HC, KB, RM, TR, UI, UI2, XS) is
