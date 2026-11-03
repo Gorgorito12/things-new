@@ -30,6 +30,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              frame numbers need perfStats in the cfg), --perf-csv also saves them
   profile                    the bed's exe build, cfg path, AI and map folders, My Games folder
   profile backup             copy the bed's player profiles (Users3\\*.xml) to .bak-uhc-<date>
+  profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
+                             or a file name, make it the one a skirmish uses (LastSelectedSPHC;
+                             the game must be closed)
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
   wheel <x> <y> <steps>      real mouse wheel at a client point (+ zooms in, - out)
@@ -206,6 +209,39 @@ def bed_profile(bed):
 
 def my_games(bed):
     return bed_profile(bed)["my_games"]
+
+
+def saved_home_cities(bed):
+    """(file name, civ) of every single-player home city saved in the bed's My Games folder."""
+    out = []
+    for path in sorted((my_games(bed) / "Savegame").glob("sp_*_homecity.xml")):
+        raw = path.read_bytes()
+        text = raw.decode("utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8", "replace")
+        m = re.search(r"<civ>([^<]+)</civ>", text, re.I)
+        out.append((path.name, m.group(1) if m else "?"))
+    return out
+
+
+def profile_hc(bed, choice):
+    users = my_games(bed) / "Users3"
+    cities = saved_home_cities(bed)
+    if not choice:
+        for name, civ in cities:
+            print(f"  {civ:20} {name}")
+        return
+    wanted = [n for n, c in cities if choice.lower() in (n.lower(), c.lower())]
+    if not wanted:
+        sys.exit(f"testbed: no saved home city of civ or file {choice!r} (run `profile hc` for the list)")
+    if bed_pid():
+        sys.exit("testbed: close the game first; it writes the profile when it exits")
+    for path in sorted(users.glob("*.xml")):
+        raw = path.read_bytes()
+        text = raw.decode("utf-16")
+        new, n = re.subn(r"<LastSelectedSPHC>[^<]*</LastSelectedSPHC>",
+                         f"<LastSelectedSPHC>{wanted[0]}</LastSelectedSPHC>", text, count=1)
+        if n:
+            path.write_bytes(new.encode("utf-16"))
+            print(f"testbed: {path.name}: skirmish home city -> {wanted[0]}")
 
 
 def show_profile(bed):
@@ -1200,7 +1236,12 @@ def main(argv):
     if cmd == "deploy":
         deploy(bed, args[0] if args else None)
     elif cmd == "profile":
-        profile_backup(bed) if args[:1] == ["backup"] else show_profile(bed)
+        if args[:1] == ["backup"]:
+            profile_backup(bed)
+        elif args[:1] == ["hc"]:
+            profile_hc(bed, " ".join(args[1:]))
+        else:
+            show_profile(bed)
     elif cmd == "launch":
         launch(bed)
     elif cmd == "close":
