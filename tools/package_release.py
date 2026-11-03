@@ -153,6 +153,10 @@ noAILimitV2                   the same list, hooked later (cfgs that use this na
 customAbstractTypes [file]    abstract unit types from an XML file
 customProtoUnitCommands [file]   command types (buttons) from an XML file
 multiarmor                    one armor per damage type; Armor effects follow damagetype
+betterfreedynamicunit         dynamic free units grow smoothly with game time
+nowalkfarm                    farm gatherers keep their first spot
+repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
+compatMode                    32-bit display modes also offered at 16 bits
                               (default data\\uhc\\customabstracttypes.xml)
 customSyscalls [files]        load .upl plugins and their XS syscalls
 customCheats                  the cheats plugins register work in the chat

@@ -574,6 +574,90 @@ customAbstractTypes [file]
   `cUnitType<Name>` constants compiled. <!-- private -->In the Wars of Liberty copy, with WoL's own `data\uhc\customabstracttypes.xml`; before it, `aiLoaderStandard.xs` failed on `cUnitTypeAbstractWoLHandCavalry`.
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
+### betterfreedynamicunit
+
+<!-- private:begin -->
+![betterfreedynamicunit in game](media/betterfreedynamicunit.gif)
+
+*In game:* a tech with `amount="-2.00"` free Sheep, set at 3 minutes: 3 Sheep (1.5 two-minute
+steps × 2). [Full video (MP4)](media/betterfreedynamicunit.mp4).
+<!-- private:end -->
+
+```
+betterfreedynamicunit
+```
+
+- **Effect:** "dynamic" free units (a `FreeHomeCityUnit` effect with a negative `amount`) grow
+  smoothly with game time: `-amount × min(time / 2 min, 15)`. Stock uses a whole number of
+  2-minute steps, rounded up (at 3.5 steps it already counts 4).
+- **Your data:** none beyond the negative amounts. The player needs a home city (the free units
+  come from it; scenario players without one get none, with or without the key).
+- **Log:** `betterfreedynamicunit: dynamic free units grow ...`; the first time, `amount A at S
+  steps of 2 min -> N`.
+- **Simulation:** changes how many units arrive: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): the same −2 Sheep tech at 420 s gave 7 Sheep
+  with the key and 8 without; at 180 s, 3 with the key. Video `betterfreedynamicunit.mp4`.
+  In the WoL copy: Argentineans, `Corderos` (−2 Sheep), set by a map trigger. <!-- private -->
+
+### nowalkfarm
+
+<!-- private:begin -->
+![nowalkfarm in game](media/nowalkfarm.gif)
+
+*In game:* four settlers on a Mill keep their spots; without the key (below) each walked 33–47 m
+in a minute, moving to new spots around the field.
+![nowalkfarm off](media/nowalkfarm-control.gif)
+[Full video (MP4)](media/nowalkfarm.mp4), [without the key (MP4)](media/nowalkfarm-control.mp4).
+<!-- private:end -->
+
+```
+nowalkfarm
+```
+
+- **Effect:** gatherers on a farm keep the spot they take when they start; stock moves them to a
+  new spot around the farm from time to time.
+- **Log:** `nowalkfarm: farm gatherers keep their first spot`.
+- **Simulation:** changes where units stand: every player needs the same line.
+- **Status:** confirmed (2026-11-03, single player): four settlers on a Mill moved 0 m in 60 s
+  with the key and 33–47 m each without it, gathering in both cases. Video `nowalkfarm.mp4`.
+
+### repairWallGlobal
+
+<!-- private:begin -->
+![repairWallGlobal in game](media/repairWallGlobal.gif)
+
+*In game:* three damaged walls (1200 / 1500) back to full a few seconds after one
+`repairWallGlobal()`. [Full video (MP4)](media/repairWallGlobal.mp4).
+<!-- private:end -->
+
+```
+repairWallGlobal
+```
+
+- **Effect:** adds the UI syscall `repairWallGlobal()`, which orders the repair of every wall of
+  the local player (the units of abstract type `AbstractWall`), as the single-wall repair does.
+  Put it in a command: `<command>repairWallGlobal</command>` in a `protounitcommands.xml` entry.
+- **Your data:** the repair costs resources as stock repair does.
+- **Log:** `repairWallGlobal: UI syscall repairWallGlobal() added`; the first call, `hook reached:
+  repairWallGlobal (player P: N wall(s) ordered to repair)`.
+- **Simulation:** sends one game command per wall: safe in multiplayer.
+- **Status:** confirmed (2026-11-03, single player): three walls at 1200 / 1500 went back to 1500
+  after one call; without the key the call did nothing. Video `repairWallGlobal.mp4`.
+
+### compatMode
+
+```
+compatMode
+```
+
+- **Effect:** every 32-bit display mode the graphics card reports is also offered as a 16-bit
+  mode. Current drivers report only 32-bit modes, so the game's list has no 16-bit entry.
+- **Log:** `compatMode: 32-bit display modes are also offered at 16 bits`; at startup, `hook
+  reached: compatMode (0x54D6D1): <W>x<H> also offered at 16 bits`.
+- **Simulation:** display only.
+- **Status:** confirmed (2026-11-03): the hook runs at startup for the adapter's modes and the game
+  starts and plays normally.
+
 ### multiarmor
 
 <!-- private:begin -->

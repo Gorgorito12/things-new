@@ -304,6 +304,34 @@ the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-p
 sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
 live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
 
+### betterfreedynamicunit
+
+A `FreeHomeCityUnit` amount below −1e-6 (`[0xB9FB60]`) is a dynamic count, `-amount ×
+min([world+134h], 15)`, computed in two copies (`0x7FA6D5`, `0x8D8C6F`; the second is the tech
+path, after the home city test `[player+84h]` at `0x8D8C62`). `[world+134h]` is the 2-minute step
+rounded up (4 at 452 s, 5 at 491 s, in game). The hooks at `0x7FA6ED` (61 B, result in
+`[esp+24h]`) and `0x8D8C88` (53 B, result in `[esp+38h]`) replace the computation with
+`-amount × min([world+108h] / 120000, 15)`.
+
+### nowalkfarm
+
+The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each
+time the game time passes `[action+A0h]`; the key turns that call into five NOPs. The first spot
+still comes from the other callers (`0x4ED5E8`, `0x4ED6F4`, `0x50DF53`, `0x6A8E7C`).
+
+### repairWallGlobal
+
+A UI syscall through the registry (`src/syscalls.*`): for each unit in the world table of the local
+player (`[game+3C0h]`) whose proto has abstract index 36h (`AbstractWall`, bit 54), it calls
+`BGame::commandAutoRepair` `0x830AC4(game, player, unitId)`, the call the single-wall repair makes
+at `0x7DEDC3`.
+
+### compatMode
+
+FUN_0054D663 adds each adapter display mode (16 B: width, height, ..., Direct3D format at `+0Ch`)
+with `0x54D605` at `0x54D6D1`. The key redirects that call to a wrapper that also adds an
+X8R8G8B8 (16h) mode as R5G6B5 (17h); `0x545A10` maps the formats to bit depths.
+
 ### multiarmor
 
 A proto's armor is the damage type byte `[proto+1D3h]` and the value `[proto+C4h]`; the `<Armor>`

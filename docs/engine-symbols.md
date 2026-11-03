@@ -874,6 +874,18 @@ movement".
 | `g_uhcBwrTrainGetter` | UHC.dll export (data, C linkage) | — | `void*`, default 0x9BFE33; set to the wrapper when `buildingWorkRateAuras` applies. noTrainNearEnemyTC's Train hook calls through it. |
 
 
+### Free units, farms, walls and display modes (2026-11-03)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Dynamic free unit count | 0x7FA6D5, 0x8D8C6F | confirmed (`cs`) | `amount < -1e-6` → `-amount × min([world+134h], 15)`; 0x8D8C62 skips a player without a home city `[player+84h]`. |
+| Dynamic step | `[world+134h]` | in game | The 2-minute step rounded up: 4 at 452 s, 5 at 491 s. |
+| Farm spot picker | 0x9DDADE, `thiscall(action)` | confirmed (`cs`) | Callers 0x4ED5E8, 0x4ED6F4, 0x50DF53, 0x6A8E7C (first spot) and 0x6A9067 (periodic, when the time passes `[action+A0h]`). |
+| commandAutoRepair | 0x830AC4, `bool thiscall(game, int player, int unitId)`, `ret 8` | confirmed (`cs`; name from another DLL's symbol table) | `player < 0` → `[game+3C0h]` (local player). Single-wall caller 0x7DEDC3. |
+| Display mode add | 0x54D605, `thiscall(renderer, Mode*)`, `ret 4` | confirmed (`cs`) | Called per adapter mode from FUN_0054D663 at 0x54D6D1; the mode's D3D format at `+0Ch`. |
+| Format bit depth | 0x545A10 | confirmed (decompiled) | 14h/15h/16h/1Fh/23h → 32; 17h..1Ah, 1Dh, 1Eh → 16; 1Bh → 8. |
+| AbstractWall | abstract type bit 54 (36h) | in game (`inspect_unittypes.py`) | 39 protos. |
+
 ### Armor (for `multiarmor`, 2026-11-03)
 
 | What | Where | Status | Notes |

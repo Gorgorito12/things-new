@@ -105,7 +105,10 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `multiarmor` | WoL | degrades (32 protos, 76 effects) | **done**, confirmed (HonorGuard 38 vs 47.5 per pike hit; gwDreadnought + `GWantitorpedobulge`: each effect reaches its armor). Not kept in saved games; the panel shows the last armor |
 | WoL-DLL kb syscalls (`kbUnitGetNumberTargeters`, …) | WoL, always on | blocks the Maori AI (`wolRauparaha`) only | **done**, confirmed (`kbUnitSyscalls`: Te Rauparaha compiles and plays; 6 visible workers on a hunt, 0 with the stock call; without the key `Error 0172` on `kbUnitGetCurrentInventory`). WoL's cfg needs the line `kbUnitSyscalls` (WoL's DLL has them always on) |
 | `enablerandomtecheffect` | WoL | none in current data | pending |
-| `betterfreedynamicunit`, `nowalkfarm`, `repairWallGlobal`, `compatMode` | WoL | degrades | pending, RE |
+| `betterfreedynamicunit` | WoL | degrades (about 55 techs with dynamic free units) | **done**, confirmed (7 vs 8 Sheep at 420 s) |
+| `nowalkfarm` | WoL | cosmetic: gatherers wander around farms | **done**, confirmed (0 m vs 33–47 m per minute) |
+| `repairWallGlobal` | WoL | degrades (the walls' `<command>repairWallGlobal</command>` button does nothing) | **done**, confirmed (three walls repaired) |
+| `compatMode` | WoL | display: no 16-bit modes on current drivers | **done**, confirmed at startup |
 | `attackTypeIcons`, `loadingScreenCount 28`, `flagoverrideeffect`, `optionhighpolycliff`, `alpha2coverage`, `map` / `uhcSyncTrack` | upstream / WoL | cosmetic | pending |
 
 The data scan behind the table (2026-11-02): WoL has 3,634 protos, 10,542 techs and 168 civs;
@@ -132,6 +135,9 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `betterfreedynamicunit` | skirmish on a test map (RM4 in My Games, removed after): Argentineans, `Corderos` (−2 Sheep) |
+| `nowalkfarm` | scenario: 4 Settlers on a Mill |
+| `repairWallGlobal` | scenario: 3 WallStraight5 damaged to 1200, resources granted |
 | `multiarmor` | scenario: HonorGuard vs Pikemen; gwDreadnought (sea map) with `GWantitorpedobulge`; perf A/B with 160 units (HonorGuard, WoLVoltigero, Pikeman, Musketeer) |
 | `customProtoUnitCommands` | scenario, player Ethiopians: Zulu `AFRICANyouth` (transforms to Tradesman and Bowman); Brazilian Fazenda (tactics page, not shown) |
 | `kbUnitSyscalls` | AI skirmish: player Australians (Melbourne); AI Maori, personality Te Rauparaha (other personalities moved aside so the random pick is that one; the clicks on the AI slot opened nothing) |

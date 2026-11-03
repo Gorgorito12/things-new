@@ -69,6 +69,9 @@ add_library(UHC SHARED
   src/features/kbsyscalls.cpp
   src/features/commandtypes.cpp
   src/features/multiarmor.cpp
+  src/features/freeunits.cpp
+  src/features/repairwall.cpp
+  src/features/compat.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp
@@ -76,6 +79,7 @@ add_library(UHC SHARED
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
   src/hooks/armor_hooks.asm
+  src/hooks/freeunit_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
   src/hooks/unitlist_hooks.asm

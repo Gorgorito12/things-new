@@ -26,6 +26,10 @@ public:end -->
 | `decimalPopulation [K] [log]` | **New.** Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects, in steps of 1/K (default 10). The population counter and the tooltips show the decimals; AI scripts still see whole numbers. | confirmed (single player, also a skirmish vs AI) |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
 | `noAILimitV2` | **New.** The same list, hooked later in the same function (for mods whose cfg uses this name). | confirmed (single player) |
+| `betterfreedynamicunit` | Dynamic free units grow smoothly with game time (unrounded 2-minute steps). | confirmed (single player) |
+| `nowalkfarm` | Farm gatherers keep their first spot. | confirmed (single player) |
+| `repairWallGlobal` | UI syscall `repairWallGlobal()`: repair every wall of the local player. | confirmed (single player) |
+| `compatMode` | 32-bit display modes are also offered at 16 bits. | confirmed (startup) |
 | `multiarmor` | A proto keeps one armor per damage type (several `<Armor>` tags), and `Armor` tech effects change the one their `damagetype` names. | confirmed (single player) |
 | `customProtoUnitCommands [file]` | **New.** Every name in an XML file (default `data\uhc\customprotounitcommands.xml`) becomes a command type usable in `protounitcommands.xml` and protos' `<Command>` buttons. | confirmed (single player) |
 | `customAbstractTypes [file]` | **New.** Every name in an XML file (default `data\uhc\customabstracttypes.xml`) becomes an abstract unit type usable in protos, techs and XS. | confirmed (single player) |

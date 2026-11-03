@@ -1020,6 +1020,24 @@ SITES = [
     ("XmlAttribute", 0x598F37, 0x10),
     ("XmlText", 0x402733, 0x09),
     ("DamageTypeLookup", 0x5F55EA, 0x10),
+    # betterfreedynamicunit: a FreeHomeCityUnit amount below -1e-6 ([0B9FB60h]) is a "dynamic"
+    # count: -amount * min([world+134h], 15) (an integer). Two copies, after the jp that skips
+    # them for other amounts: 0x7FA6ED (four nops, then the computation into [esp+24h], up to
+    # 0x7FA72A) and 0x8D8C88 (into [esp+38h], up to 0x8D8CBD)
+    ("FreeDynamicUnit1", 0x7FA6ED, 0x3D),
+    ("FreeDynamicUnit2", 0x8D8C88, 0x35),
+    # nowalkfarm: in the gather action, once the game time passes [action+A0h], mov ecx,esi /
+    # call 9DDADEh picks the gatherer a new spot around the farm (the function farmingRadius
+    # hooks); the other four callers (0x4ED5E8, 0x4ED6F4, 0x50DF53, 0x6A8E7C) place it first
+    ("FarmWalkCall", 0x6A9067, 0x05),
+    # repairWallGlobal: BGame::commandAutoRepair 0x830AC4 (thiscall(game, int player, int unitId),
+    # ret 8; player < 0 means [game+3C0h], the local player), the call the one-wall repair at
+    # 0x7DEDC3 makes
+    ("CommandAutoRepair", 0x830AC4, 0x12),
+    # compatMode: FUN_0054D663 adds each adapter display mode (16 B, its D3D format at +0Ch) to the
+    # renderer's list with push eax / mov ecx,ebp / call 54D605h (thiscall(renderer, mode), ret 4)
+    ("DisplayModeAddCall", 0x54D6D1, 0x05),
+    ("DisplayModeAdd", 0x54D605, 0x12),
 ]
 
 
