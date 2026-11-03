@@ -53,7 +53,7 @@ BANNED = [
     # Names from one mod's data that identify it without naming it.
     r"Maori", r"Mapuche", r"Guatemala", r"alguacil", r"EGYtowncenter", r"Presidio", r"saltpeter",
     r"FloatingBattery", r"uimainnew",
-    r"wol-(?:requests|uhc-map)", r"de-(?:parity|architecture)", r"porting-to-another-dll",
+    r"wol-(?:requests|uhc-map|migration)", r"de-(?:parity|architecture)", r"porting-to-another-dll",
     r"uhc-address-map", r"export_public", r"[A-Za-z]:\\Users\\",
 ]
 # Private docs that code comments may still cite (they name nothing sensitive); a .md link to them

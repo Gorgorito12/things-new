@@ -524,6 +524,174 @@ noAILimit
 - **Status:** confirmed: an added personality appeared in game setup and played.
 - **Fixed from UHC 1.10:** upstream leaves two of the function's variables uninitialized.
 
+### noAILimitV2
+
+```
+noAILimitV2
+```
+
+- **Effect:** the same list as `noAILimit` (every personality file of the exe's AI folder, sorted
+  by file name), installed later in the same stock function: the stock code that builds the
+  built-in list runs, then only its count and table are replaced. For mods whose cfg already
+  uses this name. With both keys, `noAILimit` is used.
+- **Log:** `noAILimitV2: N personalities from <folder>\AI3\*.personality`;
+  `hook reached: noAILimitV2 (0x603C34)`.
+- **Simulation:** as `noAILimit`.
+- **Status:** confirmed (2026-11-02): in a mod copy whose exe reads `AI4\`, the list held the 52
+  personality files of that folder, sorted, with a random personality playing a skirmish.
+  <!-- private -->In the Wars of Liberty copy (`C:\AoE3-UHC-WoLReal`), a hardware breakpoint at 0x603C4F read the same table (52 names, `ai22` first) with WoL's own DLL and with ours; without the key, a random-personality AI got a stock personality WoL does not ship, started with no civ, and the game crashed at 0x7C252C.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
+
+### customAbstractTypes
+
+```
+customAbstractTypes [file]
+```
+
+- **Effect:** every name in the file becomes an abstract unit type, as if it were compiled into the
+  game: protos list it in `<UnitType>`, techs and auras target it, XS scripts use
+  `cUnitType<Name>`. Stock drops any `<UnitType>` that is not on its built-in list, silently. The
+  names get their IDs in file order, before the types other keys add, so their IDs do not depend
+  on the other keys.
+- **Your data:** the file, by default `data\uhc\customabstracttypes.xml` (relative to the game
+  folder; an absolute path works too):
+
+  ```xml
+  <AbstractTypes>
+     <AbstractType stringId="430103">AbstractMyCavalry</AbstractType>  <!-- comment -->
+     <AbstractType>AbstractTrainLimitOne</AbstractType>
+  </AbstractTypes>
+  ```
+
+  A name is letters, digits and `_`. `stringId` is read but not used yet (a display name for the
+  type). A name the game already knows keeps its ID.
+- **Log:** `customAbstractTypes: N abstract types from <file> (M with a stringId, not used yet)`;
+  on each data load, one `unit types: <Name> -> <ID> (bit …), added` line per name;
+  `customAbstractTypes: cannot read <file>`; `<Name> is listed twice`.
+- **Simulation:** changes the data every player loads: everyone needs the same file.
+- **Status:** confirmed (2026-11-02, single player): 47 names registered (IDs 3837–3883), carried
+  by the protos that list them (668 protos for the most used one), and an AI script that uses
+  `cUnitType<Name>` constants compiled. <!-- private -->In the Wars of Liberty copy, with WoL's own `data\uhc\customabstracttypes.xml`; before it, `aiLoaderStandard.xs` failed on `cUnitTypeAbstractWoLHandCavalry`.
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
+
+### customSyscalls
+
+```
+customSyscalls [file or pattern ...]
+```
+
+- **Effect:** loads UHC plugins (`.upl` files) and adds the XS syscalls they register to AI,
+  trigger, random-map and UI scripts. Without arguments it loads every `*.upl` file in the game
+  folder; with arguments, the files or patterns listed, relative to the game folder. A plugin that
+  crashes while it starts is logged and skipped.
+- **Plugins:** a `.upl` is a 32-bit DLL that exports `int UHCPluginMain(UHCPluginInfo*)` (cdecl).
+  `UHCPluginInfo` holds five cdecl function pointers, in this order:
+  `RegisterCheat(text, enabled, callback)`,
+  `RegisterSyscall(group, returnType, name, function, paramCount, comment)` (returns a handle),
+  `SyscallSetParam(handle, index, type, defaultValue)`, `CheatAddResource(playerData, resource,
+  amount, flag)` and `CheatSpawnUnit(playerData, protoName)`. Groups: 0 AI, 1 HC, 2 KB, 3 RM,
+  4 TR, 5 UI, 6 UI2, 7 XS. Types: 1 void, 2 int, 4 float, 8 bool, 16 string, 32 vector. A
+  syscall function is cdecl and takes the XS arguments in order. Existing UHC plugins work
+  unchanged. Cheats go to the game with `customCheats` (below).
+- **Log:** `customSyscalls: <file>: N syscalls, M cheats (UHCPluginMain returned R)`;
+  `customSyscalls: K of L plugin(s) loaded, …`; once per script module,
+  `syscalls: group XS: N added, M refused`; a refused syscall (a name the game already has, a bad
+  type) is named, and the others still register; `hook reached: syscall group XS (0x6257D9)` and
+  the other seven groups.
+- **Simulation:** scripts compiled with these syscalls need them on every player's machine:
+  everyone needs the same plugins.
+- **Status:** confirmed (2026-11-02, single player): two plugins loaded (17 syscalls in the XS,
+  AI and KB groups, 33 cheats collected), and an AI whose scripts call them compiled and played a
+  skirmish. <!-- private -->In the Wars of Liberty copy, with `customSyscalls wolPlugin.upl wolai.upl`: `aiWoLMain.xs` calls `kbGetTechID` 36 times; video `wol-ai-plugins.mp4` (scratchpad, 2026-11-02).
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream's syscall table overflows into the population and deck limits
+  when the list is long, loads plugins by bare file name (directories do not resolve), and stops
+  a whole group at the first refused syscall.
+<!-- private:end -->
+
+### customCheats
+
+```
+customCheats
+```
+
+- **Effect:** the cheats that plugins register (see `customSyscalls`) work in the chat like the
+  stock ones: typed as written (lower case), they run on every player's machine through the
+  game's own cheat command. Plugins load when either `customSyscalls` or `customCheats` is set;
+  without `customSyscalls` their syscalls are ignored.
+- **Log:** `customCheats: N plugin cheat(s) added to the cheat table (M entries)` the first time
+  the table is built; `hook reached: customCheats cheat table (0x551FE6)`.
+- **Simulation:** a cheat runs as a game command, as the stock cheats do; every player needs the
+  same plugins.
+- **Status:** confirmed (2026-11-02, single player): 33 plugin cheats added after the 23 stock
+  ones, and a plugin cheat that spawns 50 Cannons spawned them. Video `customCheats.mp4` (two
+  frames over 100 ms while the 50 units appear). <!-- private -->In the WoL copy, `kill 'em all` from `wolPlugin.upl`.
+
+### asianCivs
+
+```
+asianCivs Civ [Civ ...] [log]
+```
+
+- **Effect:** the listed civs (names from `civs.xml`) count as Asian civs where the game compares a
+  player's civ with the Asian civs: the extended Asian-civ test (consulate, export and the other
+  Asian features that call it), the Asian civs' value branch, and the wonder age-up list. In that
+  list a listed civ gets the wonders whose civ name is its name in the cfg; stock gives a civ that
+  is not Chinese, Japanese or Indian no wonder at all.
+- **Your data:** for the wonder age-up, entries in `politiciandata.xml` with `nativeciv="<Civ>"`
+  and the civ's wonders (the stock Indian entries are the model).
+- **Log:** `asianCivs: N civ(s) count as Asian civs`; when `civs.xml` is read, one
+  `asianCivs: <Civ> -> civ <ID>` line per name (`… is not a civ in civs.xml; ignored` otherwise);
+  with `log`, `asianCivs: <Civ> gets its wonders in the age-up list` once;
+  `hook reached: asianCivs isAsianCiv (0x454F1D)`, `… civ value (0x8D6AC4)`,
+  `… wonder age-up (0x818284)`.
+- **Simulation:** changes what the listed civs may do: every player needs the same line.
+- **Status:** partly confirmed (2026-11-02, single player): five civs resolved and the Asian-civ
+  test ran through the hook in a skirmish; the wonder age-up list has not been opened with a
+  listed civ yet. <!-- private -->In the WoL copy, the test profile's home city is Ethiopian, and WoL's wonders belong to the Koreans.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream tests EAX instead of AL after `0x49A2D8` in the wonder list,
+  so the "civ has no entry" path (EAX = 0xFFFFFF00) counted as true.
+<!-- private:end -->
+
+### selectionLimit
+
+```
+selectionLimit N
+```
+
+- **Effect:** one selection holds up to N units (1 to 200; stock 50), for box selection, double
+  click and control groups alike.
+- **Log:** `selectionLimit: a selection holds up to N units (stock 50)` (`; above 75 not tested`
+  for larger values); `selectionLimit: needs a number from 1 to 200` for a bad value (not
+  applied).
+- **Simulation:** no: it only changes what the local player can select. Players may set it
+  differently.
+- **Status:** confirmed (2026-11-02, single player): with 75, a box over 89 Pikemen selected 75;
+  without the key, 50. Video `selectionLimit.mp4`, with `--perf` (no frame over 50 ms).
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
+
+### enableAllTeams
+
+```
+enableAllTeams
+```
+
+- **Effect:** the single-player game setup offers Team 3 and Team 4 besides Team 1, Team 2 and
+  "?". The multiplayer lobby is not changed yet.
+- **Your data:** none (string IDs 36143 and 36144, `Team 3` / `Team 4`, are in the stock string
+  table).
+- **Log:** `enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby not
+  changed yet)`; `hook reached: enableAllTeams setup list (0x7A0709)`.
+- **Simulation:** it only adds choices; the teams chosen are part of the game setup as usual.
+- **Status:** partly confirmed (2026-11-02, single player): the list shows Team 1–4 and "?", and
+  a skirmish with Team 3 against Team 4 started and played; how the game numbers the teams
+  inside was not read. Video `enableAllTeams.mp4`.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream loads the temporary string's destructor but never calls it
+  (a leak per list fill).
+<!-- private:end -->
+
 ### customRevolutionBanners
 
 ```

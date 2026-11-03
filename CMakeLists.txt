@@ -18,14 +18,18 @@ add_library(UHC SHARED
   src/floatingtext.cpp
   src/log.cpp
   src/patch.cpp
+  src/namelists.cpp
+  src/syscalls.cpp
   src/unittypes.cpp
   src/worldtick.cpp
   src/actiontags.cpp
   src/features/abilityslots.cpp
+  src/features/abstracttypes.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/civfirsttc.cpp
+  src/features/civs.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/decimalpop.cpp
@@ -45,7 +49,9 @@ add_library(UHC SHARED
   src/features/overheal.cpp
   src/features/overhealdecay.cpp
   src/features/overhealsources.cpp
+  src/features/plugins.cpp
   src/features/perf.cpp
+  src/features/selection.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
   src/features/snare.cpp
@@ -53,6 +59,7 @@ add_library(UHC SHARED
   src/features/spread.cpp
   src/features/startingtc.cpp
   src/features/techprereq.cpp
+  src/features/teams.cpp
   src/features/techrename.cpp
   src/features/transform.cpp
   src/features/transforminv.cpp
@@ -61,9 +68,13 @@ add_library(UHC SHARED
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
+  src/hooks/syscall_hooks.asm
+  src/hooks/team_hooks.asm
   src/hooks/broadside_hooks.asm
+  src/hooks/cheat_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
+  src/hooks/civ_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/decimalpop_hooks.asm
   src/hooks/dodge_hooks.asm

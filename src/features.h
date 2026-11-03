@@ -14,6 +14,7 @@ struct Feature {
   Outcome (*apply)(const Config& config);
 };
 
+Outcome ApplyCustomAbstractTypes(const Config& config);
 Outcome ApplyRemoveConversionRestriction(const Config& config);
 Outcome ApplyIgnoreRegistryPath(const Config& config);
 Outcome ApplyDeckCardCount(const Config& config);
@@ -54,22 +55,30 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
+Outcome ApplyPlugins(const Config& config);
+Outcome ApplyAsianCivs(const Config& config);
+Outcome ApplySelectionLimit(const Config& config);
+Outcome ApplyEnableAllTeams(const Config& config);
 
 inline constexpr Feature kFeatures[] = {
+    // First: its types get their IDs before any other feature requests one.
+    {"customAbstractTypes", ApplyCustomAbstractTypes},
     {"removeConversionRestriction", ApplyRemoveConversionRestriction},
     {"ignoreRegistryPath", ApplyIgnoreRegistryPath},
     {"deckCardCount", ApplyDeckCardCount},
     {"basePop/extraPop", ApplyPopLimit},
     // After basePop/extraPop: it scales their cap hook, and installs it when they did not.
     {"decimalPopulation", ApplyDecimalPopulation},
-    {"noAILimit", ApplyNoAiLimit},
+    {"noAILimit/noAILimitV2", ApplyNoAiLimit},
     {"customRevolutionBanners", ApplyCustomRevolutionBanners},
     {"removeFameRestriction", ApplyRemoveFameRestriction},
     {"hcShipmentPointFallback", ApplyHcShipmentPointFallback},
     {"healNonIdle", ApplyHealNonIdle},
     {"smartHealTargets", ApplySmartHealTargets},
     {"damageOverTime", ApplyDamageOverTime},
-
+    {"dodgeAnyUnit/dodgeChance/dodgeSoundSet/criticalSoundSet", ApplyDodge},
+    // After damageOverTime: both read action tags through the shared hook (actiontags.h), in this order.
+    {"spreadAnyAccuracy", ApplySpreadAnyAccuracy},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
@@ -84,6 +93,9 @@ inline constexpr Feature kFeatures[] = {
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
+    {"asianCivs", ApplyAsianCivs},
+    {"selectionLimit", ApplySelectionLimit},
+    {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
     {"civFirstTC", ApplyCivFirstTc},
@@ -102,21 +114,25 @@ inline constexpr Feature kFeatures[] = {
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"multipleInstances", ApplyMultipleInstances},
+    // Last: plugins load once every other hook is in place.
+    {"customSyscalls/customCheats", ApplyPlugins},
 };
 
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
+    "customabstracttypes",
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "decimalpopulation",
-    "noailimit", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
-
+    "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
+    "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
+    "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
     "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "selectionlimit", "enableallteams",
 };
 
 }  // namespace uhc

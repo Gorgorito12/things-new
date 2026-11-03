@@ -5,6 +5,11 @@ For mods that ship **their own `uhc.dll`**, such as Wars of Liberty. The UHC loa
 its own. Replacing its DLL with this one would lose its own features. The way to use this
 project's features is to rebuild them inside the mod's DLL.
 
+**Update, 2026-11-02:** the other direction is now under way: running all of Wars of Liberty on
+this DLL, so WoL can replace its DLL instead of porting ([wol-migration.md](wol-migration.md)).
+This DLL now loads `.upl` plugins (`customSyscalls`), so the sentence above about a plugin loader
+is out of date; this guide stays for mods that keep their own DLL.
+
 This guide covers these features that are new in this DLL:
 - `healNonIdle`, with the extra abstract unit types it relies on;
 - `hcShipmentPointFallback`;

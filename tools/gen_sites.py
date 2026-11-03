@@ -28,6 +28,50 @@ SITES = [
     ("PopLimit", 0x4581F3, 0x50),
     # noAILimit: the hard-coded personality table setup plus the xor eax,eax it continues at
     ("AiLimit", 0x603B0B, 0x146),
+    # noAILimitV2: test al,al / je 658900h (TAD table branch) / the 14-entry count and table
+    # stores, up to the shared continuation xor eax,eax at 0x603C4F
+    ("AiLimitV2", 0x603C34, 0x1B),
+    # customSyscalls: the first stock registration of each syscall module (ESI = the module):
+    # push 1 / push <fn> (7 B), then push <name> / mov ecx,esi / call 624F52h. The UI module's
+    # return-type push comes before its site, so only push <fn> (5 B) is replaced there.
+    ("SyscallAi", 0x7294F4, 7),
+    ("SyscallHc", 0x5B5E08, 7),
+    ("SyscallKb", 0x885D14, 7),
+    ("SyscallRm", 0x60B8BF, 7),
+    ("SyscallTr", 0x988E03, 7),
+    ("SyscallUi", 0x539542, 5),
+    ("SyscallUi2", 0x53575E, 7),
+    ("SyscallXs", 0x6257D9, 7),
+    # asianCivs: the last compare with the cached Asian civ ID [0C6FB88h] in isAsianCiv 0x454ED7
+    # (cmp eax,[0C6FB88h] / je 454F2Ah) and in FUN_008D6A7D (cmp eax,[0C6FB88h] / jne 8D6B0Ch)
+    ("AsianCivCheck", 0x454F1D, 8),
+    ("AsianCivBranch", 0x8D6AC4, 8),
+    # asianCivs: the wonder age-up list FUN_0081807A, call 49A2D8h (is Indian) / test al,al /
+    # je 8182EBh, after push 1 / mov ecx,ebp
+    ("WonderAgeUpCiv", 0x818284, 9),
+    # the civ ID by name, int thiscall(database, const char*), -1 if none (verify only)
+    ("CivIdByName", 0x58E71F, 0x10),
+    # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
+    ("SelectionCap1", 0x4E0BEE, 5),
+    ("SelectionCap2", 0x4E0F5F, 5),
+    ("SelectionCap3", 0x4E0F7E, 5),
+    ("SelectionCap4", 0x4E10A5, 5),
+    ("SelectionCap5", 0x4FC457, 5),
+    ("SelectionCap6", 0x4FE663, 5),
+    ("SelectionCap7", 0x4FEB94, 5),
+    ("SelectionCap8", 0x503DCE, 5),
+    # enableAllTeams: push 8D31h ("?"), the last entry of the single-player team list FUN_007A0628
+    ("TeamDropdownSp", 0x7A0709, 5),
+    # enableAllTeams: the Team 2 entry before it, whose frame offsets the hook repeats (verify only):
+    # temporary BString [esp+10h], BString array [esp+14h], int array [esp+20h]
+    ("TeamDropdownBlock", 0x7A06A8, 0x61),
+    # customCheats: the epilogue of the cheat table build FUN_005515F1 (pop edi / pop esi / pop ebx /
+    # add esp,10h), then its ret
+    ("CheatTableEnd", 0x551FE6, 6),
+    # customCheats: the last stock entry's store before it ({id, enabled, BString, fn}, 16 B) and the
+    # cheat text encryption, void cdecl(const char* text, char* out, int size) (verify only)
+    ("CheatTableEntry", 0x551FAF, 0x37),
+    ("CheatEncrypt", 0x513F73, 0x13),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),

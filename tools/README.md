@@ -190,6 +190,15 @@ no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wa
 `units`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
 docstring lists their arguments.
 
+Paths come from the copy's own exe and data (`profile` prints them): the cfg the UHC loader reads
+(VA 0xC65083: `Startup\uhc.cfg`, or `Startup\wol.cfg` in a Wars of Liberty copy), the AI and
+random-map folders (`AI3`/`RM3`, or `AI4`/`RM4`), and the `My Games` folder (string 42265 of the
+copy's `stringtabley.xml`). `deploy` writes the cfg there, `map` writes into that map folder and
+`scenario` saves into that `My Games` folder. `profile backup` copies the player profiles
+(`Users3\*.xml`, UTF-16) to `.bak-uhc-<date>` before a first run. `safety record|check wol`
+checks the Steam Wars of Liberty folder (exe, `uhc.dll`, top level, `Startup`, `data`, `AI4`,
+`RM4`) the same way `safety` checks Steam's `bin`.
+
 `record <out.mp4> [seconds] [fps] [width]` films the window to an MP4 in real time, with ffmpeg
 (`UHC_FFMPEG`, `PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`). It first brings the game window to the
 front, since the game stops drawing while another window has the foreground. Options that draw
@@ -201,6 +210,13 @@ live text on every frame:
   `log` output;
 - `--follow <ID>`: keeps the camera on that unit (a `uiLookAtUnit` every 2 s through
   `perfExecFile`).
+- `--perf`: the performance numbers, once a second, at the top: fps, the longest frame of the
+  second, frames over 50 ms since the start, simulation speed (game seconds per real second), the
+  main thread's CPU, the game's own update and render times and the working set. They are read
+  from outside the game with `perfprobe.py`'s readers; fps and frame times need `perfStats` in the
+  cfg. It clears perfStats' per-second longest frame, so do not run `perfprobe.py` at the same
+  time. `--perf-csv <out.csv>` also saves one row per second (it implies `--perf`); a summary
+  line is printed at the end.
 
 It needs `perfExecFile <bed>\uhc-exec.txt` in the copy's cfg (`deploy` adds
 it). The method and its pitfalls are in

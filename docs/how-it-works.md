@@ -278,6 +278,115 @@ initializations that the range contained: `[esp+24h]` = 0 (the loaded-personalit
 as an array index) and `[esp+1Bh]` = 0 (the function's return flag).
 Upstream skips both. <!-- private -->
 
+### noAILimitV2
+
+The same list as `noAILimit`, installed at `0x603C34..0x603C4E` instead: the TAD-flag test
+(`test al,al / je 658900h`), the 14-entry address (`lea eax,[esp+0BCh]`) and the stores of the
+count (14 at `[esp+40h]`) and the table (`[esp+50h]`). The stock range before it runs unchanged,
+so both initializations above happen in stock code. The stack is the same as at `0x603C4F` (the
+`push 2` at `0x603B42` is popped by `add esp,8` at `0x603C31`). The hook stores the count and
+table and jumps to `0x603C4F` (`xor eax,eax`); EAX is the only register the replaced range sets,
+and the continuation clears it.
+
+<!-- private:begin -->
+Wars of Liberty's DLL patches the same 27 bytes with `lea eax,[esp+40h] / lea edx,[esp+50h] /
+push eax / push edx / call <its DLL>` and NOPs (its memory diff, `wol-memdiff.txt`); a hardware
+breakpoint at `0x603C4F` read the same 52 names in the same order with its DLL and with ours.
+<!-- private:end -->
+
+### customAbstractTypes
+
+A thin reader over `unittypes.*`: it parses the `<AbstractType>` elements of the file (tag
+names in any case, comments skipped, names limited to letters, digits and `_`, duplicates
+dropped) and calls `RequestAbstractUnitType` for each name, in file order. It is the first entry
+of `kFeatures`, so these names get the first IDs after the stock list on every database load;
+the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-proto bitsets are
+sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
+live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
+
+### customSyscalls
+
+**The registry** (`src/syscalls.*`). Each syscall module (AI, HC, KB, RM, TR, UI, UI2, XS) is
+built by one function that registers its stock syscalls in sequence; the hook sits on the first
+one, where ESI is the module, and replaces its pushes (`push 1 / push <fn>`, 7 B; the UI
+module's `push 1` comes before its site, so 5 B there). Inside `pushfd/pushad`, it calls
+`UhcRegisterSyscallGroup(group, module)`, then re-executes the pushes and jumps to the
+`push <name>` that follows. For each queued syscall of the group: register (`0x624F52`, thiscall
+`(name, fn, retType)`), one setter per parameter (`0x62505B` int, `0x625079` float, `0x62506A`
+bool, `0x624E3F` string, `0x62734A` vector), the comment (`0x624E56`) and end (`0x6250B0`).
+
+**Why a failure skips only one syscall:** `0x624F52` refuses a name the module already has
+(`0x624ED8`) or a bad type before it allocates the pending entry `[module+18h]`, so nothing is
+pending after a refusal; a later failure leaves a pending entry, which `0xA44C0B` frees (it
+tests `[module+18h]` for null first), as the stock error paths do. The next registration then
+starts clean. Upstream stops the whole group at the first refusal. <!-- private -->
+
+**The loader** (`features/plugins.cpp`). Each listed file or pattern is resolved against the exe
+folder and loaded by full path (`LoadLibraryExW`, `LOAD_WITH_ALTERED_SEARCH_PATH`).
+`UHCPluginMain` is called with a static `UHCPluginInfo` (plugins may keep the pointer: some
+store it for their cheats) inside `__try/__except`. The call is cdecl: the plugins checked
+end `UHCPluginMain` with a plain `ret`, and call the table's functions with the caller cleaning
+the stack (`add esp,…` after each call). `RegisterSyscall` returns a pointer into the registry's
+`std::deque` (stable), or to a dummy entry for a refused call, so a plugin that passes the result
+to `SyscallSetParam` without checking cannot crash; defaults are copied when `SyscallSetParam`
+is called. `CheatAddResource` forwards to the thiscall `0x49A98A`; `CheatSpawnUnit` is the
+engine function `0x7B4F03` itself. Plugins load last in `kFeatures`, after every other hook.
+
+### customCheats
+
+FUN_005515F1 builds the cheat table `0xD65600` (`{entries, count, capacity}`, 16-byte entries
+`{id, enabled, BString text, fn}`) for each game: 23 stock entries, each text an encrypted
+literal. The chat check (FUN_00513FA7) narrows the typed text (`0x402733`), encrypts it with
+`0x513F73` (`void cdecl(const char* text, char* out, int size)`) and compares it with each entry's
+text; a match sends the entry's index as a game command (`0x7B4E63`, type 2Ch), which calls the
+entry's function with the player data on every machine. The hook replaces the build's epilogue
+(`pop edi/esi/ebx; add esp,10h` at `0x551FE6`), and `UhcAppendCheats` appends one entry per plugin
+cheat: the text encrypted with `0x513F73` itself (so no cipher table is copied), widened byte by
+byte into a BString (`0x401A12`), the table grown with `0x5ACE63`, the text assigned (`0x40196F`),
+the temporary destroyed (`0x4010CA`), ID 24 + k (after the stock IDs, as other UHC DLLs number
+them), then the epilogue runs and the hook jumps to the `ret` at `0x551FEC`.
+
+### asianCivs
+
+The game caches civ IDs by name in globals `0xC6FB48..0xC6FB8C` (FUN_008D0318). Three functions
+compare a player's first civ (`[[player+20h]]`, or −1) with them; each hook replaces the last
+compare with `[0C6FB88h]` and its branch, re-executes the compare, and otherwise calls
+`UhcIsListedAsianCiv(civ)` with ECX and EDX saved:
+- `0x454F1D` in isAsianCiv `0x454ED7` (`bool thiscall(player, bool extended)`; the site is only
+  reached with `extended` set): true continues at `0x454F2A` (`mov al,1`), false at `0x454F25`.
+- `0x8D6AC4` in FUN_008D6A7D: true at `0x8D6ACC` (it tests EDX, the civ count, and reloads EAX),
+  false at `0x8D6B0C`.
+- `0x818284` in the wonder age-up list FUN_0081807A, after `push 1 / mov ecx,ebp`: the hook calls
+  `0x49A2D8` itself (is Indian, `ret 4`) and tests AL; an Indian player continues at `0x81828D`
+  (the stock "Indians" compare). For any other player, inside `pushad`,
+  `UhcAsianWonderOption(player = EBP, &option civ name = [esi+18Ch]+edi+8)` compares the
+  option's civ name BString with the cfg name of the player's civ through `0x443C10` (flag 0,
+  case ignored): a match adds the option (`0x8182A9`), anything else skips it (`0x8182EB`).
+
+Names resolve through `CivIdList` (`src/namelists.*`), with `0x58E71F` (civ ID by name), on the
+first call after `civs.xml` is read and again when the database pointer or `[database+28h]`
+changes, so no hook on the caching functions FUN_008D0318 and FUN_008DABA3 is needed.
+
+### selectionLimit
+
+The 50-unit cap is the immediate of `mov eax,32h` at eight places: the getter `0x4E0BEE`
+(`mov eax,32h / ret`) and seven compares of a selection list's count (`[list+24h]`, a growable
+array) with it before a unit is added (`0x4E0F5F`, `0x4E0F7E`, `0x4E10A5`, `0x4FC457`, `0x4FE663`,
+`0x4FEB94`, `0x503DCE`). The DLL rewrites each imm32 after `VerifyAll`; there is no hook. No
+fixed-size buffer was found next to these compares. <!-- private -->Wars of Liberty's DLL patches the same eight bytes to 75 (its memory diff), so 75 is proven by its players.
+
+### enableAllTeams
+
+FUN_007A0628 fills the single-player team list as pairs: a string loaded with `0x58EA52` into a
+temporary BString at `[esp+10h]`, copied (`0x40196F`) into a BString array at `[esp+14h]` grown by
+one (`0x4676E7`), the temporary destroyed (`0x4010CA`), and a team value appended to an int array
+at `[esp+20h]` (`0x401113`): `8D2Dh` → 0, `8D2Eh` → 1, then `8D31h` ("?") → −1. The hook replaces
+`push 8D31h` at `0x7A0709`; inside `pushfd/pushad` it adds `8D2Fh` → 2 and `8D30h` → 3 in the same
+steps (`UhcAddTeamEntries`, given ESP at the site), then re-executes the push and continues at
+`0x7A070E`. The site `TeamDropdownBlock` (the Team 2 entry, verify only) pins the frame offsets.
+The multiplayer slot (a method of another class, FUN_00776702, reached through a vtable) maps
+the list index to a team itself and is not changed.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`
