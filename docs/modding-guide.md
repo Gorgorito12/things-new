@@ -782,9 +782,9 @@ explorerUnits Proto Type StringID [Proto Type StringID ...]
 ### nativeCivs
 
 <!-- private:begin -->
-![nativeCivs-inca in game](media/nativeCivs-inca.gif)
+![nativeCivs-mapuche in game](media/nativeCivs-mapuche.gif)
 
-*In game:* A listed native civ's Town Center opens the council age-up list with its five council members; the log lines on top show the civs marked native and the dance gates resolving them. [Full video (MP4)](media/nativeCivs-inca.mp4).
+*In game:* A listed native civ's Town Center opens the council age-up list with its five council members; the log lines on top show the civ resolved by the native civ tests and the dance gates. [Full video (MP4)](media/nativeCivs-mapuche.mp4).
 <!-- private:end -->
 
 ```
@@ -803,9 +803,11 @@ nativeCivs Civ [Civ ...]
   `... isNativeCiv (0x453D5E)`, `... test 7 (0x67B0A5)`, `... test 9 (0x8D52AF)`,
   `... council age-up (0x81ADEB)`.
 - **Simulation:** changes what the listed civs may do: every player needs the same line.
-- **Status:** confirmed (2026-11-02, single player): three civs marked native, every hook ran in
+- **Status:** confirmed (2026-11-03, single player): three civs marked native, every hook ran in
   a skirmish, the four dance gates resolved them, and a listed civ's Town Center opened the council
-  age-up list with its five council members. Video `nativeCivs-inca.mp4`.
+  age-up list with its five council members. Without the key, the same age-up click closed the
+  game: the civ was taken for a European one, and the politician dialog read a gadget it does not
+  have (stock code, 0x81A5FB to 0x81A80C). <!-- private -->Video `nativeCivs-mapuche.mp4`.
 <!-- private:begin -->
 - **Fixed from UHC 1.10:** upstream compares a dword where isNativeCiv compares a byte, and its
   council hook clobbers EAX.

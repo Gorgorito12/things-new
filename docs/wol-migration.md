@@ -42,6 +42,19 @@ robocopy C:\WoL-Test C:\AoE3-UHC-WoLReal /E /MT:8 /XD avi "History Channel Trail
 - `testbed.py safety record|check wol` checks the Steam WoL folder; the listing of 2026-11-02 is in
   `%TEMP%\uhc-wol-listing.tsv`.
 
+### Which civs to test with
+
+Only civs players can pick in the public game (user, 2026-11-03). **Not public**, kept only in the
+data files: Tawantinsuyu (Incas), Tupinamba (Tupi), XPAztec (Aztecs). Public: WallMapu (Mapuche),
+XPIroquois, XPSioux, Maori, Australians, and every European, Asian, American, Balkan and African
+civ. The local data cannot tell: the civ picker lists a civ when an `AI4\*.personality` declares
+its `<forcedciv>`, Tawantinsuyu has one (`wolTupac`), and an earlier audit of the mod gave XPAztec
+one by hand (`wolMariano`). For native-civ features use WallMapu, the Iroquois or the Sioux. A
+first `nativeCivs` test used Tawantinsuyu (2026-11-02); it was redone with WallMapu.
+
+Tests run on the primary monitor (the user's "monitor 1"): `testbed.py` moves the game window
+there at launch and before each real click (`UHC_TEST_MONITOR` changes it, `monitors` lists them).
+
 ### Driving a skirmish
 
 `python -I tools/testbed.py --bed C:\AoE3-UHC-WoLReal profile hc <Civ>` picks the skirmish home
@@ -77,7 +90,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `customSyscalls wolPlugin.upl wolai.upl` | upstream | blocks (AI compile: `kbGetTechID` ×36 in `aiWoLMain.xs`; 36 `RM4\ESOC_*` maps) | **done**, confirmed |
 | `customCheats` | upstream | cosmetic (33 plugin cheats) | **done**, confirmed (`kill 'em all`: 50 Cannons) |
 | `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | **done**, confirmed (Koreans: five wonders in the age-up list) |
-| `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | degrades: fire pit, council age-up | **done**, confirmed (Tawantinsuyu: council list, dances resolved) |
+| `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | **blocks** for WallMapu (age-up crashes without it: stock code, 0x81A80C) | **done**, confirmed (WallMapu: council list, dances resolved) |
 | `twoScoutCivs Koreans` | upstream | degrades | **done**, not reached in game yet (probably the new home city dialog) |
 | `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | **done**, partly confirmed (hook reached) |
 | `enableAllTeams` | upstream | degrades (teams 3/4) | **done** for single player, partly confirmed; MP lobby pending (needs a LAN test) |
@@ -118,6 +131,6 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
-| `nativeCivs`, `bigButtonCivs` | Tawantinsuyu (Cuzco): Town Center council |
+| `nativeCivs`, `bigButtonCivs` | WallMapu (Perquenco): Town Center council; control without the key crashes |
 | `selectionLimit` | scenario: 89 Pikemen |
 | `customCheats` | Ethiopians: 50 Cannons |
