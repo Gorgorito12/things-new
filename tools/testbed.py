@@ -19,7 +19,7 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              (--los adds the unit's own line of sight and its proto's)
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
   record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
-         [--select ID|Proto,...] [--crop F[@cx,cy]] [--zoom N] [--perf] [--perf-csv <out.csv>]
+         [--select ID|Proto,...] [--crop F[@cx,cy]] [--hover X,Y] [--zoom N] [--perf] [--perf-csv <out.csv>]
                              films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
                              1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
                              C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
@@ -1265,13 +1265,17 @@ def real_drag(x1, y1, x2, y2, steps=12):
     time.sleep(0.2)
 
 
+PARK_AT = None  # record --hover: client point the cursor is parked on instead
+
+
 def park_cursor():
     """Puts the cursor in the top right of the play area: away from the units (no tooltip) and from
-    the screen edges (a cursor at an edge scrolls the camera)."""
+    the screen edges (a cursor at an edge scrolls the camera). With record --hover, on that client
+    point instead (a button whose tooltip the video should show)."""
     hwnd = window()
     rc = RECT()
     user32.GetClientRect(hwnd, ctypes.byref(rc))
-    pt = POINT(rc.right * 7 // 8, rc.bottom // 6)
+    pt = POINT(*PARK_AT) if PARK_AT else POINT(rc.right * 7 // 8, rc.bottom // 6)
     user32.ClientToScreen(hwnd, ctypes.byref(pt))
     user32.SetCursorPos(pt.x, pt.y)
     return pt.x, pt.y
@@ -1464,6 +1468,9 @@ def main(argv):
         frame = int(args[args.index("--frame") + 1]) if "--frame" in args else None
         select = args[args.index("--select") + 1].split(",") if "--select" in args else []
         zoom = int(args[args.index("--zoom") + 1]) if "--zoom" in args else 0
+        if "--hover" in args:  # --hover x,y: keep the cursor on that client point (a tooltip)
+            global PARK_AT
+            PARK_AT = tuple(int(v) for v in args[args.index("--hover") + 1].split(","))
         crop = None
         if "--crop" in args:  # --crop F[@cx,cy]: film that fraction of the window around (cx, cy)
             spec = args[args.index("--crop") + 1]
@@ -1471,7 +1478,7 @@ def main(argv):
             cx, cy = (float(v) for v in at.split(",")) if at else (0.5, 0.43)
             crop = (float(frac), cx, cy)
         perf_csv = args[args.index("--perf-csv") + 1] if "--perf-csv" in args else None
-        flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--select", "--zoom", "--crop", "--perf-csv")
+        flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--select", "--zoom", "--crop", "--hover", "--perf-csv")
                  if f in args for i in (args.index(f), args.index(f) + 1)}
         look = frame if frame is not None else follow
         ids = []

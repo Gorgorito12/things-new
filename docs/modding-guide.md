@@ -2924,9 +2924,22 @@ snareOnlyHitUnit [log]
 
 ### techRenameEffect
 
-![techRenameEffect in game](media/techRenameEffect.gif)
+<!-- private:begin -->
+![techRenameEffect in WoL](media/techRenameEffect-wol.gif)
 
-*In game:* Player 1's Hunting Dogs shows Gangsaw's name and text; its effect is still Hunting Dogs'. [Full video (MP4)](media/techRenameEffect.mp4).
+*In WoL, with `techRenameEffect log` (Ethiopians; the cursor rests on the Town Center's GW button
+so its rollover stays on screen):* a test tech (`UHCRenameTest`, appended to the bed's techtree and
+removed after) carries `<Effect type='SetTechName' tech='GreatWarButton' newName='11070'
+newRolloverTextID='10670'/>` and turns on at 22 s. The button's name changes from "Declarar Guerra
+Total" to "Sierra de tajo" and its rollover to Gangsaw's; cost and effect stay those of
+`GreatWarButton`. [Full video (MP4)](media/techRenameEffect-wol.mp4).
+
+![techRenameEffect in WoL, key off](media/techRenameEffect-wol-control.gif)
+
+*In WoL, key off (both `techRenameEffect` and WoL's `enableTechRenameEffect` line removed from the
+cfg):* the game drops the `SetTechName` effect, and the button keeps "Declarar Guerra Total".
+[Full video (MP4)](media/techRenameEffect-wol-control.mp4).
+<!-- private:end -->
 
 ```
 techRenameEffect [log]

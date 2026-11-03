@@ -230,6 +230,8 @@ live text on every frame:
   title-bar click of `focus()` used to leave it there). `record` parks it in the top right of the
   play area before filming, puts it back there every frame if anything moves it, and then centres
   the camera again on the `--frame` / `--follow` unit; the last line says how often that happened.
+- `--hover <x>,<y>`: parks the cursor on that client point instead (a command panel button), so
+  the button's rollover stays on screen for the whole video; the cursor guard keeps it there.
 - `--zoom <N>`: N mouse-wheel steps in before filming, then the cursor is parked in the top right
   of the play area. The game eases the camera back to its default height in about 20 s (seen in
   WoL, 2026-11-03), so a zoomed video drifts: prefer the default height for a still picture.

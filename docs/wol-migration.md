@@ -144,7 +144,7 @@ cut to the key moment (the `gif` helper: palettegen full, bayer dither).
 | `gaiaSocketsOnly` | none | **not filmed**: the case it fixes is an AI build plan given a player-owned socket; the UI refuses that placement by itself and neither the console nor scenario triggers can give the order. Needs an AI skirmish whose script builds on such a socket |
 | `customHotkeyContexts` | Greeks (`Age0Greeks`, `Player : SetAge` 1): `WOLBarracksGreek` selected, 3 real `o` presses (WoL's `WOLBarracksGreekAccel` maps `o` to Klepht) | **done**: 3 Klephts queued with the key, none without (`customHotkeyContexts-wol*.mp4`) |
 | `snareOnlyHitUnit` | British: 6 `Redcoat` marching (Move From Area) vs 1 `Uhlan` (`handCavalry.tactics` snare), map 160 m | **done**: the group arrives at 50 s with the key, ~54 s without; mean position 123 vs 117 m at 41-42 s (`snareOnlyHitUnit-wol*.mp4`, samples in `rea/evidence/age3y-b1a1dab7/snareOnlyHitUnit-wol-groupx-*.txt`) |
-| `techRenameEffect` | a WoL tech that renames | pending |
+| `techRenameEffect` | Ethiopians: test tech `UHCRenameTest` (`SetTechName` on `GreatWarButton`, appended, restored after) at 22 s; `record --hover` keeps the GW button's rollover on screen | **done**: "Declarar Guerra Total" becomes "Sierra de tajo"; key off (also without WoL's `enabletechrenameeffect` line, the same key), unchanged (`techRenameEffect-wol*.mp4`). WoL's data has no `SetTechName` effect today |
 | `noCorpseDopples` | WoL hunts | pending |
 | `danceBonusCivs`, `nativeCivs` dances | WallMapu fire pit | pending |
 | `startingTC`, `civFirstTC` | a WoL civ with its own first TC | pending |
