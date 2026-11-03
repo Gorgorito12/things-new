@@ -1588,6 +1588,21 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 
 *In game:* `dodgeChance AbstractDodge 50 ranged log` and `dodgeChance AbstractDodge 0 melee`, with `YPDodge` active: two Explorers marked `AbstractDodge` against musketeers and pikemen. Each roll is a log line in the overlay: musket shots are dodged about half the time (`rule 1 (50.0 %): roll 238 -> dodged`, with the stock floating text), pike thrusts never (`rule 2 (0.0 %): roll -1 -> hit`). The Japanese monk, which no rule names, dodges as in stock (2x speed). [Full video (MP4)](media/dodgeChance.mp4).
 
+<!-- private:begin -->
+![dodgeChance and dodgeAnyUnit in WoL](media/dodge-wol.gif)
+
+*In WoL, with `dodgeChance ypSettlerJapanese 50 notech ranged log` and `dodgeAnyUnit Settler log`
+(`YPDodge` active), close-up with the villagers selected so their HP bars show:* three musketeers
+shoot four villagers that do not shoot back. The two Japanese settlers dodge 18 of their 33 rolls
+(`roll … -> dodged`), the European settler dodges 4 hits at the stock 15 %, and the unmarked Indian
+settler, which never dodges, dies first. [Full video (MP4)](media/dodge-wol.mp4).
+
+![dodge in WoL, keys off](media/dodge-wol-control.gif)
+
+*In WoL, keys off (the same scene):* no villager dodges; every hit takes HP off the bars and all
+four are dead before 73 s of game time. [Full video (MP4)](media/dodge-wol-control.mp4).
+<!-- private:end -->
+
 ```
 dodgeChance <UnitType> <percent> [tech <TechName> | notech] [ranged | melee | all] [log]
 ```
