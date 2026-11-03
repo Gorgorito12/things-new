@@ -592,7 +592,7 @@ customSyscalls [file or pattern ...]
   amount, flag)` and `CheatSpawnUnit(playerData, protoName)`. Groups: 0 AI, 1 HC, 2 KB, 3 RM,
   4 TR, 5 UI, 6 UI2, 7 XS. Types: 1 void, 2 int, 4 float, 8 bool, 16 string, 32 vector. A
   syscall function is cdecl and takes the XS arguments in order. Existing UHC plugins work
-  unchanged. Cheats are collected for `customCheats`, which is not implemented yet.
+  unchanged. Cheats go to the game with `customCheats` (below).
 - **Log:** `customSyscalls: <file>: N syscalls, M cheats (UHCPluginMain returned R)`;
   `customSyscalls: K of L plugin(s) loaded, …`; once per script module,
   `syscalls: group XS: N added, M refused`; a refused syscall (a name the game already has, a bad
@@ -608,6 +608,24 @@ customSyscalls [file or pattern ...]
   when the list is long, loads plugins by bare file name (directories do not resolve), and stops
   a whole group at the first refused syscall.
 <!-- private:end -->
+
+### customCheats
+
+```
+customCheats
+```
+
+- **Effect:** the cheats that plugins register (see `customSyscalls`) work in the chat like the
+  stock ones: typed as written (lower case), they run on every player's machine through the
+  game's own cheat command. Plugins load when either `customSyscalls` or `customCheats` is set;
+  without `customSyscalls` their syscalls are ignored.
+- **Log:** `customCheats: N plugin cheat(s) added to the cheat table (M entries)` the first time
+  the table is built; `hook reached: customCheats cheat table (0x551FE6)`.
+- **Simulation:** a cheat runs as a game command, as the stock cheats do; every player needs the
+  same plugins.
+- **Status:** confirmed (2026-11-02, single player): 33 plugin cheats added after the 23 stock
+  ones, and a plugin cheat that spawns 50 Cannons spawned them. Video `customCheats.mp4` (two
+  frames over 100 ms while the 50 units appear). <!-- private -->In the WoL copy, `kill 'em all` from `wolPlugin.upl`.
 
 ### asianCivs
 

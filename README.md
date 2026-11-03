@@ -28,6 +28,7 @@ public:end -->
 | `noAILimitV2` | **New.** The same list, hooked later in the same function (for mods whose cfg uses this name). | confirmed (single player) |
 | `customAbstractTypes [file]` | **New.** Every name in an XML file (default `data\uhc\customabstracttypes.xml`) becomes an abstract unit type usable in protos, techs and XS. | confirmed (single player) |
 | `customSyscalls [files]` | Loads `.upl` plugins and adds their XS syscalls. | confirmed (single player, AI skirmish) |
+| `customCheats` | The cheats plugins register work in the chat. | confirmed (single player) |
 | `selectionLimit N` | **New.** A selection holds up to N units (stock 50). | confirmed (single player) |
 | `enableAllTeams` | Team 3 and Team 4 in the single-player game setup. | partly confirmed |
 | `asianCivs Civ ...` | Listed civs count as Asian civs (consulate, export, wonder age-up). | partly confirmed |

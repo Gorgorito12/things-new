@@ -65,6 +65,13 @@ SITES = [
     # enableAllTeams: the Team 2 entry before it, whose frame offsets the hook repeats (verify only):
     # temporary BString [esp+10h], BString array [esp+14h], int array [esp+20h]
     ("TeamDropdownBlock", 0x7A06A8, 0x61),
+    # customCheats: the epilogue of the cheat table build FUN_005515F1 (pop edi / pop esi / pop ebx /
+    # add esp,10h), then its ret
+    ("CheatTableEnd", 0x551FE6, 6),
+    # customCheats: the last stock entry's store before it ({id, enabled, BString, fn}, 16 B) and the
+    # cheat text encryption, void cdecl(const char* text, char* out, int size) (verify only)
+    ("CheatTableEntry", 0x551FAF, 0x37),
+    ("CheatEncrypt", 0x513F73, 0x13),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),

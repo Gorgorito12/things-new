@@ -153,6 +153,7 @@ noAILimitV2                   the same list, hooked later (cfgs that use this na
 customAbstractTypes [file]    abstract unit types from an XML file
                               (default data\\uhc\\customabstracttypes.xml)
 customSyscalls [files]        load .upl plugins and their XS syscalls
+customCheats                  the cheats plugins register work in the chat
 asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders)
 selectionLimit N              a selection holds up to N units (stock 50)
 enableAllTeams                Team 3 and Team 4 in the single-player setup

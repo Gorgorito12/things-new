@@ -332,6 +332,20 @@ to `SyscallSetParam` without checking cannot crash; defaults are copied when `Sy
 is called. `CheatAddResource` forwards to the thiscall `0x49A98A`; `CheatSpawnUnit` is the
 engine function `0x7B4F03` itself. Plugins load last in `kFeatures`, after every other hook.
 
+### customCheats
+
+FUN_005515F1 builds the cheat table `0xD65600` (`{entries, count, capacity}`, 16-byte entries
+`{id, enabled, BString text, fn}`) for each game: 23 stock entries, each text an encrypted
+literal. The chat check (FUN_00513FA7) narrows the typed text (`0x402733`), encrypts it with
+`0x513F73` (`void cdecl(const char* text, char* out, int size)`) and compares it with each entry's
+text; a match sends the entry's index as a game command (`0x7B4E63`, type 2Ch), which calls the
+entry's function with the player data on every machine. The hook replaces the build's epilogue
+(`pop edi/esi/ebx; add esp,10h` at `0x551FE6`), and `UhcAppendCheats` appends one entry per plugin
+cheat: the text encrypted with `0x513F73` itself (so no cipher table is copied), widened byte by
+byte into a BString (`0x401A12`), the table grown with `0x5ACE63`, the text assigned (`0x40196F`),
+the temporary destroyed (`0x4010CA`), ID 24 + k (after the stock IDs, as other UHC DLLs number
+them), then the epilogue runs and the hook jumps to the `ret` at `0x551FEC`.
+
 ### asianCivs
 
 The game caches civ IDs by name in globals `0xC6FB48..0xC6FB8C` (FUN_008D0318). Three functions

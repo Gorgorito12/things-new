@@ -115,7 +115,7 @@ inline constexpr Feature kFeatures[] = {
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"multipleInstances", ApplyMultipleInstances},
     // Last: plugins load once every other hook is in place.
-    {"customSyscalls", ApplyPlugins},
+    {"customSyscalls/customCheats", ApplyPlugins},
 };
 
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
@@ -132,7 +132,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances", "customsyscalls", "asiancivs", "selectionlimit", "enableallteams",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "selectionlimit", "enableallteams",
 };
 
 }  // namespace uhc

@@ -71,6 +71,7 @@ add_library(UHC SHARED
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
   src/hooks/broadside_hooks.asm
+  src/hooks/cheat_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
   src/hooks/civ_hooks.asm

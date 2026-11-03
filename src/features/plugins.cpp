@@ -17,7 +17,13 @@
 // float and bool by value, string and vector through the pointer). The Syscall reference is
 // opaque to plugins; a plugin may keep `info` for later calls, so it lives as long as the game.
 //
-// Cheats are collected here for customCheats, which is not implemented yet.
+// customCheats adds the cheats plugins register to the game's cheat table (0xD65600: 16-byte
+// entries {id, enabled, BString text, void(__stdcall*)(void* playerData)}), at the end of the
+// function that builds it (FUN_005515F1, rebuilt for each game). The table holds each text
+// encrypted: the chat check encrypts what was typed with 0x513F73 and compares, so the DLL
+// encrypts each plugin text with that same function. A typed cheat sends the entry's index as a
+// game command (0x7B4E63), which calls the entry's function on every machine. Plugins load if
+// either key is set; their syscalls reach the game only with customSyscalls.
 #include <windows.h>
 
 #include <cstdint>
@@ -26,7 +32,9 @@
 #include <vector>
 
 #include "../features.h"
+#include "../generated/sites.h"
 #include "../log.h"
+#include "../patch.h"
 #include "../syscalls.h"
 
 namespace {
@@ -120,6 +128,59 @@ const PluginInfo g_info = {PluginRegisterCheat, PluginRegisterSyscall, PluginSys
 
 using PluginMain = int(__cdecl*)(const PluginInfo*);
 
+bool g_cheatsLogged = false;
+
+}  // namespace
+
+extern "C" {
+void UhcCheatTableHook();
+
+// Called at the end of the cheat table build (hooks/cheat_hooks.asm), after the stock entries.
+void __stdcall UhcAppendCheats() {
+  using Encrypt = void(__cdecl*)(const char* text, char* out, int size);
+  using BStringInit = void(__thiscall*)(void* bstring, const wchar_t* text);
+  using Grow = bool(__thiscall*)(void* array, int count, bool exact);
+  using Assign = void(__thiscall*)(void* destination, const void* source);
+  using Free = void(__thiscall*)(void* bstring);
+  const auto encrypt = reinterpret_cast<Encrypt>(0x00513F73);
+  const auto init = reinterpret_cast<BStringInit>(0x00401A12);
+  const auto grow = reinterpret_cast<Grow>(0x005ACE63);
+  const auto assign = reinterpret_cast<Assign>(0x0040196F);
+  const auto freeString = reinterpret_cast<Free>(0x004010CA);
+  auto* const table = reinterpret_cast<char*>(0x00D65600);  // {entries, count, capacity}
+
+  int added = 0;
+  for (std::size_t k = 0; k < g_cheats.size(); ++k) {
+    const PluginCheat& cheat = g_cheats[k];
+    char encrypted[256] = {};
+    encrypt(cheat.text.c_str(), encrypted, sizeof(encrypted) - 1);
+    wchar_t wide[256] = {};
+    for (std::size_t i = 0; i + 1 < 256 && encrypted[i] != '\0'; ++i) {
+      wide[i] = static_cast<unsigned char>(encrypted[i]);
+    }
+    void* text = nullptr;  // a BString is one pointer
+    init(&text, wide);
+    const std::int32_t count = *reinterpret_cast<std::int32_t*>(table + 4);
+    if (grow(table, count + 1, false)) {
+      char* entry = *reinterpret_cast<char**>(table) + count * 16;
+      *reinterpret_cast<std::int32_t*>(entry) = 24 + static_cast<std::int32_t>(k);  // after the stock IDs
+      *reinterpret_cast<std::int32_t*>(entry + 4) = cheat.enabled ? 1 : 0;
+      assign(entry + 8, &text);
+      *reinterpret_cast<void(__stdcall**)(void*)>(entry + 12) = cheat.fn;
+      ++added;
+    }
+    freeString(&text);
+  }
+  if (!g_cheatsLogged) {
+    g_cheatsLogged = true;
+    uhc::Log(L"customCheats: %d plugin cheat(s) added to the cheat table (%d entries)", added,
+             *reinterpret_cast<std::int32_t*>(table + 4));
+  }
+}
+}
+
+namespace {
+
 // No C++ objects here, so a fault in a plugin can be caught with SEH.
 bool CallPluginMain(PluginMain main, int* result, DWORD* code) {
   __try {
@@ -190,15 +251,27 @@ namespace uhc {
 
 Outcome ApplyPlugins(const Config& config) {
   const Config::Args* args = config.First("customSyscalls");
-  if (args == nullptr) {
+  const bool cheats = config.Has("customCheats");
+  if (args == nullptr && !cheats) {
     return Outcome::kNotConfigured;
   }
-  if (!InstallSyscallHooks("customSyscalls")) {
+  if (args != nullptr && !InstallSyscallHooks("customSyscalls")) {
     return Outcome::kFailed;
   }
+  if (cheats) {
+    if (!VerifyAll("customCheats", {&sites::kCheatTableEnd, &sites::kCheatTableEntry, &sites::kCheatEncrypt})) {
+      return Outcome::kFailed;
+    }
+    if (!WriteJmp(sites::kCheatTableEnd.va, reinterpret_cast<const void*>(&UhcCheatTableHook),
+                  sites::kCheatTableEnd.size)) {
+      return Outcome::kFailed;
+    }
+  }
   std::vector<std::wstring> patterns;
-  for (const std::string& a : *args) {
-    patterns.emplace_back(a.begin(), a.end());
+  if (args != nullptr) {
+    for (const std::string& a : *args) {
+      patterns.emplace_back(a.begin(), a.end());
+    }
   }
   if (patterns.empty()) {
     patterns.push_back(L"*.upl");
@@ -229,9 +302,9 @@ Outcome ApplyPlugins(const Config& config) {
     Log(L"customSyscalls: no plugin loaded (%d file(s) found)", found);
     return Outcome::kFailed;
   }
-  Log(L"customSyscalls: %d of %d plugin(s) loaded, %zu syscalls queued, %zu cheats collected (cheats need "
-      L"customCheats, not implemented yet)",
-      loaded, found, SyscallCount(), g_cheats.size());
+  Log(L"customSyscalls: %d of %d plugin(s) loaded, %zu syscalls %ls, %zu cheats %ls", loaded, found,
+      SyscallCount(), args != nullptr ? L"queued" : L"ignored (no customSyscalls line)", g_cheats.size(),
+      cheats ? L"for customCheats" : L"ignored (no customCheats line)");
   return Outcome::kApplied;
 }
 
