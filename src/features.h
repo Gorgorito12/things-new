@@ -57,6 +57,9 @@ Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
+Outcome ApplyTwoScoutCivs(const Config& config);
+Outcome ApplyMarketUnits(const Config& config);
+Outcome ApplyExplorerUnits(const Config& config);
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
@@ -94,6 +97,9 @@ inline constexpr Feature kFeatures[] = {
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
     {"asianCivs", ApplyAsianCivs},
+    {"twoScoutCivs", ApplyTwoScoutCivs},
+    {"marketUnits", ApplyMarketUnits},
+    {"explorerUnits", ApplyExplorerUnits},
     {"selectionLimit", ApplySelectionLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
@@ -132,7 +138,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "selectionlimit", "enableallteams",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "selectionlimit", "enableallteams",
 };
 
 }  // namespace uhc

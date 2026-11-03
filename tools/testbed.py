@@ -364,10 +364,27 @@ def wait_until(predicate, timeout, step=0.5, what="condition"):
     sys.exit(f"testbed: timed out waiting for {what}")
 
 
+def bed_allows_second_copy(bed):
+    """True if the bed's cfg has multipleInstances (the DLL then lets it run beside a copy from
+    another folder)."""
+    cfg = bed / bed_profile(bed)["cfg"]
+    try:
+        lines = cfg.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return False
+    return any(line.split()[:1] and line.split()[0].lower() == "multipleinstances" for line in lines)
+
+
 def launch(bed):
     running = game_processes()
-    if running:  # another copy may belong to another session's test: never run two at once
+    if any(path.lower() == str(bed / "age3y.exe").lower() for _, path in running):
+        sys.exit("testbed: this copy is already running")
+    if running and not bed_allows_second_copy(bed):
+        # Another copy may belong to another session's test: never run two at once unless this
+        # copy's cfg has multipleInstances (and the other session agreed).
         sys.exit("testbed: a game is already running: " + ", ".join(f"pid {p} {path}" for p, path in running))
+    if running:
+        print("testbed: another copy is running; this one starts beside it (multipleInstances)")
     subprocess.Popen([str(bed / "age3y.exe"), "+noIntroCinematics"], cwd=str(bed))
 
     def main_window():

@@ -387,6 +387,41 @@ steps (`UhcAddTeamEntries`, given ESP at the site), then re-executes the push an
 The multiplayer slot (a method of another class, FUN_00776702, reached through a vtable) maps
 the list index to a team itself and is not changed.
 
+### twoScoutCivs
+
+Four tests in the hero interface read a civ (`[esi+1DCh]`, or the value at `[esp+10h]`) and ask
+`0x8D0318` (which caches the civ IDs by name and tells whether the civ is Asian) and whether it is
+the Chinese: Asian and not Chinese means two heroes (Japanese, Indians). Each hook replaces one
+instruction (6 B), asks `UhcIsTwoScoutCiv`, and for a listed civ takes the two-hero branch:
+`0x77EBB2` sets BL = 1 and the frame flags `[esp+0Fh]` = 1, `[esp+0Eh]` = 0 as the stock code
+would, then `0x77EBF6`; `0x77EF29` (after `push ebx`) jumps to `0x77EF68` (`push 1`); `0x77DDD2`
+to `0x77DE16`; `0x77DFF4` to `0x77E039`. Otherwise each re-executes its instruction (the second
+reloads the civ from `[esp+14h]`, pushes it and calls `0x8D0318`) and continues.
+
+### marketUnits
+
+The market trade function checks, before a purchase or sale, that the player owns a `Market`
+(`[db+5E30h]`) or the second market type (`[db+5E60h]`): `0x4C846D` (`int thiscall(kb, player,
+proto, 2, 0)`, a unit count) with ECX = the player's kb `[esi+80h]` and the player ID at
+`[esp+10h]`. The hook replaces `mov edx,[0C66234h]` at `0x7DEF70`; `UhcHasMarketUnit(kb, player)`
+counts each listed proto the same way, and any count above 0 continues at `0x7DEFC3` (trade);
+otherwise the instruction is re-executed and the stock tests run (`0x7DEF76`). Names resolve
+through `ProtoIdList` (`src/namelists.*`, with `0x5A2346`), again when the database or
+`[db+58h]` changes.
+
+### explorerUnits
+
+**Names.** FUN_004702DC builds a unit's display name. At `0x6A012A` (`lea ecx,[eax+18h] / call
+401F47h`, EAX = the home city, `[ebp+8]` = the proto ID, ESI = the database) the hook asks
+`UhcExplorerType(proto)`: -1 re-executes both instructions and continues at `0x6A0132`; Type 1
+jumps to `0x6A0179` (the home city's explorer name, `[hc+18h]`), Type 0 to `0x6A0203` (the path for
+other units), any other Type to `0x6A01B8` (`push 0`: the first hero name, `0x853954`).
+
+**Knockout message.** At `0x50B01F` (`mov edx,[esi+10h] / mov eax,[edx+5Ch]`: the unit, then its
+proto, whose ID is `[proto+4]`) the hook re-executes both loads and asks `UhcExplorerString`; a
+listed proto's string ID is pushed and the code continues at `0x50B039`, where the stock Explorer
+case loads its pushed string (`0x447719`); otherwise it continues at `0x50B025`.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

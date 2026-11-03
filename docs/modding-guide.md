@@ -646,9 +646,8 @@ asianCivs Civ [Civ ...] [log]
   `hook reached: asianCivs isAsianCiv (0x454F1D)`, `… civ value (0x8D6AC4)`,
   `… wonder age-up (0x818284)`.
 - **Simulation:** changes what the listed civs may do: every player needs the same line.
-- **Status:** partly confirmed (2026-11-02, single player): five civs resolved and the Asian-civ
-  test ran through the hook in a skirmish; the wonder age-up list has not been opened with a
-  listed civ yet. <!-- private -->In the WoL copy, the test profile's home city is Ethiopian, and WoL's wonders belong to the Koreans.
+- **Status:** confirmed (2026-11-02, single player): five civs resolved, and a listed civ's
+  villager opened the wonder age-up list with its five wonders. Video `asianCivs-koreans.mp4`. <!-- private -->In the WoL copy, the test profile's home city is Ethiopian, and WoL's wonders belong to the Koreans.
 <!-- private:begin -->
 - **Fixed from UHC 1.10:** upstream tests EAX instead of AL after `0x49A2D8` in the wonder list,
   so the "civ has no entry" path (EAX = 0xFFFFFF00) counted as true.
@@ -691,6 +690,58 @@ enableAllTeams
 - **Fixed from UHC 1.10:** upstream loads the temporary string's destructor but never calls it
   (a leak per list fill).
 <!-- private:end -->
+
+### twoScoutCivs
+
+```
+twoScoutCivs Civ [Civ ...]
+```
+
+- **Effect:** the listed civs get the hero interface of the civs that start with two heroes
+  (Japanese and Indians) in the four places the game decides it by civ.
+- **Log:** `twoScoutCivs: N civ(s) get the two-hero UI`; `twoScoutCivs: <Civ> -> civ <ID>` when
+  `civs.xml` is read; `hook reached: twoScoutCivs hero UI 1 (0x77EBB2)` to `... 4 (0x77DFF4)`.
+- **Simulation:** no: interface only.
+- **Status:** implemented, not tested in game (2026-11-02): the four functions did not run during a
+  skirmish, in the home city menus or in its customize screen; they are probably the new home city
+  dialog, which names the heroes.
+
+### marketUnits
+
+```
+marketUnits Proto [Proto ...]
+```
+
+- **Effect:** owning a unit of a listed proto counts as owning a Market for buying and selling
+  resources (stock requires the `Market` proto or the second market type).
+- **Your data:** the listed buildings need the market's buy and sell commands.
+- **Log:** `marketUnits: N proto(s) count as a Market for trading`; when `protoy.xml` is read,
+  `marketUnits: K of N protos found in the data` (and each unknown name);
+  `hook reached: marketUnits trade test (0x7DEF70)`.
+- **Simulation:** changes who may trade: every player needs the same line.
+- **Status:** confirmed (2026-11-02, single player): with only a `WOLMarketGreek` and 1000 gold,
+  buying food worked (food 0 to 500, gold 1000 to 362); without the key the same clicks changed
+  nothing. Video `marketUnits.mp4`.
+
+### explorerUnits
+
+```
+explorerUnits Proto Type StringID [Proto Type StringID ...]
+```
+
+- **Effect:** listed protos are heroes for two things: their name and their knockout message.
+  `Type` picks the name: 1 the home city's explorer name, 0 the stock path for other units, any
+  other value the first of the home city's hero names (as the second monk of a two-hero civ).
+  `StringID` is the message shown when the unit is knocked out.
+- **Log:** `explorerUnits: N hero proto(s)`; when `protoy.xml` is read, `explorerUnits: K of N
+  protos found in the data` and each unknown name; `hook reached: explorerUnits hero name
+  (0x6A012A)`, `... knockout message (0x50B01F)`; `explorerUnits: needs triples ...` or
+  `bad triple ...` (not applied).
+- **Simulation:** no: names and messages.
+- **Status:** confirmed for names (2026-11-02, single player): a civ's two monks listed with
+  Type 1 and Type 2 were named after the explorer and the first hero name of the home city; the
+  knockout message was not driven. Video `asianCivs-koreans.mp4` (the two monks, then the wonder
+  list).
 
 ### customRevolutionBanners
 

@@ -1,3 +1,4 @@
+// twoScoutCivs Civ ...: the listed civs get the hero UI of the two-hero civs (Japanese, Indians).
 // asianCivs Civ ...: the listed civs count as Asian civs (consulate and export, the Asian civs'
 // values, the wonder age-up) for the stock tests that compare a player's first civ with the
 // cached Asian civ IDs, and in the wonder age-up list a listed civ gets the wonders whose civ name
@@ -18,6 +19,7 @@ uhc::CivIdList g_asianCivs;
 std::vector<std::wstring> g_asianWide;  // the cfg names, for the wonder option compare
 bool g_asianLog = false;
 bool g_wonderLogged = false;
+uhc::CivIdList g_twoScoutCivs;
 
 }  // namespace
 
@@ -25,6 +27,12 @@ extern "C" {
 void UhcAsianCivCheckHook();
 void UhcAsianCivBranchHook();
 void UhcWonderAgeUpHook();
+void UhcTwoScout1Hook();
+void UhcTwoScout2Hook();
+void UhcTwoScout3Hook();
+void UhcTwoScout4Hook();
+
+bool __stdcall UhcIsTwoScoutCiv(std::int32_t civ) { return g_twoScoutCivs.IndexOf(civ) >= 0; }
 
 bool __stdcall UhcIsListedAsianCiv(std::int32_t civ) { return g_asianCivs.IndexOf(civ) >= 0; }
 
@@ -81,6 +89,36 @@ Outcome ApplyAsianCivs(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"asianCivs: %zu civ(s) count as Asian civs; civ IDs are logged when civs.xml is read", names.size());
+  return Outcome::kApplied;
+}
+
+Outcome ApplyTwoScoutCivs(const Config& config) {
+  const Config::Args* args = config.First("twoScoutCivs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (args->empty()) {
+    Log(L"twoScoutCivs: no civ listed");
+    return Outcome::kFailed;
+  }
+  if (!VerifyAll("twoScoutCivs", {&sites::kTwoScout1, &sites::kTwoScout2, &sites::kTwoScout3, &sites::kTwoScout4,
+                                  &sites::kCivIdByName})) {
+    return Outcome::kFailed;
+  }
+  g_twoScoutCivs.Set("twoScoutCivs", *args);
+  const struct {
+    const Site* site;
+    void (*hook)();
+  } hooks[] = {{&sites::kTwoScout1, &UhcTwoScout1Hook},
+               {&sites::kTwoScout2, &UhcTwoScout2Hook},
+               {&sites::kTwoScout3, &UhcTwoScout3Hook},
+               {&sites::kTwoScout4, &UhcTwoScout4Hook}};
+  for (const auto& h : hooks) {
+    if (!WriteJmp(h.site->va, reinterpret_cast<const void*>(h.hook), h.site->size)) {
+      return Outcome::kFailed;
+    }
+  }
+  Log(L"twoScoutCivs: %zu civ(s) get the two-hero UI; civ IDs are logged when civs.xml is read", args->size());
   return Outcome::kApplied;
 }
 

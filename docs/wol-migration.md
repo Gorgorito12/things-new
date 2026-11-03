@@ -69,14 +69,14 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | (`customAbstractTypes`) | WoL, always on | blocks (AI compile); 47 types dropped from ~2,800 `<UnitType>` uses | **done**, confirmed |
 | `customSyscalls wolPlugin.upl wolai.upl` | upstream | blocks (AI compile: `kbGetTechID` ×36 in `aiWoLMain.xs`; 36 `RM4\ESOC_*` maps) | **done**, confirmed |
 | `customCheats` | upstream | cosmetic (33 plugin cheats) | **done**, confirmed (`kill 'em all`: 50 Cannons) |
-| `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | **done**, partly confirmed (wonder list needs a Korean home city: WoL's wonders are `nativeciv="Koreans"`) |
+| `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | **done**, confirmed (Koreans: five wonders in the age-up list) |
 | `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | degrades: fire pit, council age-up | pending (dance gates shared with `danceBonusCivs`) |
-| `twoScoutCivs Koreans` | upstream | degrades | pending |
+| `twoScoutCivs Koreans` | upstream | degrades | **done**, not reached in game yet (probably the new home city dialog) |
 | `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | pending |
 | `enableAllTeams` | upstream | degrades (teams 3/4) | **done** for single player, partly confirmed; MP lobby pending (needs a LAN test) |
 | `wonderCivUnitType Rangatira` | WoL | degrades (Maori age-up) | pending, RE |
-| `marketUnits` | upstream | degrades (trade without a stock Market) | pending |
-| `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | pending |
+| `marketUnits` | upstream | degrades (trade without a stock Market) | **done**, confirmed (`WOLMarketGreek`; refused without the key) |
+| `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | **done**, names confirmed (Korean monks Yi Sun and Kwon Hwan); 4 protos of WoL's cfg do not exist in its data |
 | `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | degrades (gathering on WoL farms) | pending |
 | `customProtoUnitCommands` (always on in WoL) | WoL | degrades (41 `<Command>` buttons) | pending, RE |
 | `selectionLimit 75` | WoL | degrades | **done**, confirmed (75 of 89 Pikemen; 50 without) |
@@ -109,3 +109,7 @@ load-time A/B for `customAbstractTypes`.
 | Test | Civ / unit |
 |---|---|
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
+| `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
+| `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `selectionLimit` | scenario: 89 Pikemen |
+| `customCheats` | Ethiopians: 50 Cannons |

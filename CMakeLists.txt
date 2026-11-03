@@ -63,6 +63,7 @@ add_library(UHC SHARED
   src/features/techrename.cpp
   src/features/transform.cpp
   src/features/transforminv.cpp
+  src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp
   src/hooks/abilityslot_hooks.asm
@@ -70,6 +71,7 @@ add_library(UHC SHARED
   src/hooks/ai_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
+  src/hooks/unitlist_hooks.asm
   src/hooks/broadside_hooks.asm
   src/hooks/cheat_hooks.asm
   src/hooks/bwraura_hooks.asm

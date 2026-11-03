@@ -31,7 +31,10 @@ public:end -->
 | `customCheats` | The cheats plugins register work in the chat. | confirmed (single player) |
 | `selectionLimit N` | **New.** A selection holds up to N units (stock 50). | confirmed (single player) |
 | `enableAllTeams` | Team 3 and Team 4 in the single-player game setup. | partly confirmed |
-| `asianCivs Civ ...` | Listed civs count as Asian civs (consulate, export, wonder age-up). | partly confirmed |
+| `asianCivs Civ ...` | Listed civs count as Asian civs (consulate, export, wonder age-up). | confirmed (single player) |
+| `twoScoutCivs Civ ...` | Listed civs get the two-hero interface. | not tested in game |
+| `marketUnits Proto ...` | Listed buildings count as a Market for trading. | confirmed (single player) |
+| `explorerUnits Proto Type StringID ...` | Listed protos get hero names and their own knockout message. | partly confirmed (names) |
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
 | `removeConversionRestriction` | `ConvertGuardian` may target any unit. | not confirmed |

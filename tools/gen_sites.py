@@ -51,6 +51,18 @@ SITES = [
     ("WonderAgeUpCiv", 0x818284, 9),
     # the civ ID by name, int thiscall(database, const char*), -1 if none (verify only)
     ("CivIdByName", 0x58E71F, 0x10),
+    # twoScoutCivs: the hero UI's civ tests (mov eax,[esi+1DCh]; push eax / call 8D0318h after push
+    # ebx; mov ecx,[esi+1DCh]; mov edx,[0C66234h])
+    ("TwoScout1", 0x77EBB2, 6),
+    ("TwoScout2", 0x77EF29, 6),
+    ("TwoScout3", 0x77DDD2, 6),
+    ("TwoScout4", 0x77DFF4, 6),
+    # marketUnits: mov edx,[0C66234h] before the market trade test's Market count (0x4C846D)
+    ("MarketUnits", 0x7DEF70, 6),
+    # explorerUnits: the hero name (lea ecx,[eax+18h] / call 401F47h in FUN_004702DC) and the knockout
+    # message (mov edx,[esi+10h] / mov eax,[edx+5Ch])
+    ("ExplorerName", 0x6A012A, 8),
+    ("ExplorerKnockout", 0x50B01F, 6),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),

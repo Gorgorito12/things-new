@@ -68,6 +68,27 @@ inline constexpr Site kWonderAgeUpCiv{"WonderAgeUpCiv", 0x00818284, kWonderAgeUp
 inline constexpr std::uint8_t kCivIdByNameBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x57, 0x8B, 0xF9, 0x0F, 0x84, 0xD2, 0xAA, 0x0C, 0x00};
 inline constexpr Site kCivIdByName{"CivIdByName", 0x0058E71F, kCivIdByNameBytes, sizeof(kCivIdByNameBytes)};
 
+inline constexpr std::uint8_t kTwoScout1Bytes[] = {0x8B, 0x86, 0xDC, 0x01, 0x00, 0x00};
+inline constexpr Site kTwoScout1{"TwoScout1", 0x0077EBB2, kTwoScout1Bytes, sizeof(kTwoScout1Bytes)};
+
+inline constexpr std::uint8_t kTwoScout2Bytes[] = {0x50, 0xE8, 0xE9, 0x13, 0x15, 0x00};
+inline constexpr Site kTwoScout2{"TwoScout2", 0x0077EF29, kTwoScout2Bytes, sizeof(kTwoScout2Bytes)};
+
+inline constexpr std::uint8_t kTwoScout3Bytes[] = {0x8B, 0x8E, 0xDC, 0x01, 0x00, 0x00};
+inline constexpr Site kTwoScout3{"TwoScout3", 0x0077DDD2, kTwoScout3Bytes, sizeof(kTwoScout3Bytes)};
+
+inline constexpr std::uint8_t kTwoScout4Bytes[] = {0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kTwoScout4{"TwoScout4", 0x0077DFF4, kTwoScout4Bytes, sizeof(kTwoScout4Bytes)};
+
+inline constexpr std::uint8_t kMarketUnitsBytes[] = {0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kMarketUnits{"MarketUnits", 0x007DEF70, kMarketUnitsBytes, sizeof(kMarketUnitsBytes)};
+
+inline constexpr std::uint8_t kExplorerNameBytes[] = {0x8D, 0x48, 0x18, 0xE8, 0x15, 0x1E, 0xD6, 0xFF};
+inline constexpr Site kExplorerName{"ExplorerName", 0x006A012A, kExplorerNameBytes, sizeof(kExplorerNameBytes)};
+
+inline constexpr std::uint8_t kExplorerKnockoutBytes[] = {0x8B, 0x56, 0x10, 0x8B, 0x42, 0x5C};
+inline constexpr Site kExplorerKnockout{"ExplorerKnockout", 0x0050B01F, kExplorerKnockoutBytes, sizeof(kExplorerKnockoutBytes)};
+
 inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
 inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
 

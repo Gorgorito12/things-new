@@ -9,6 +9,7 @@ include common.inc
 
 UhcIsListedAsianCiv PROTO STDCALL civ:DWORD
 UhcAsianWonderOption PROTO STDCALL player:DWORD, optionCiv:DWORD
+UhcIsTwoScoutCiv PROTO STDCALL civ:DWORD
 
 .data
 asianCheckTrue    dd 00454F2Ah   ; mov al,1 / ret 4
@@ -19,6 +20,15 @@ isIndianCiv       dd 0049A2D8h   ; bool thiscall(player, bool)
 wonderIndianTest  dd 0081828Dh   ; compare the option's civ with "Indians"
 wonderAddOption   dd 008182A9h   ; add the option
 wonderSkipOption  dd 008182EBh   ; next option
+twoScout1Listed   dd 0077EBF6h   ; test bl,bl (the Asian, not Chinese branch)
+twoScout1Stock    dd 0077EBB8h   ; push eax / call 8D0318h
+twoScout2Listed   dd 0077EF68h   ; push 1
+twoScout2Stock    dd 0077EF2Fh   ; after call 8D0318h
+civTest8D0318     dd 008D0318h   ; bool cdecl(civ): caches the civ IDs, is the civ Asian
+twoScout3Listed   dd 0077DE16h   ; lea ecx,[esp+30h] (the two-hero branch)
+twoScout3Stock    dd 0077DDD8h   ; push ecx / call 8D0318h
+twoScout4Listed   dd 0077E039h   ; lea ecx,[esp+10h] (the Japanese / Indian branch)
+twoScout4Stock    dd 0077DFFAh   ; mov ecx,[edx+140h]
 
 .code
 
@@ -86,5 +96,83 @@ skip:
 indian:
     jmp wonderIndianTest
 UhcWonderAgeUpHook ENDP
+
+; twoScoutCivs: four tests in the hero UI (FUN_0077EB91, FUN_0077DBFE and a third function) on the
+; civ at [esi+1DCh] (or [esp+10h]) choose between the two-hero civs (Japanese and Indians: Asian
+; and not Chinese) and the others. A listed civ takes the two-hero branch.
+
+; 0x77EBB2: mov eax,[esi+1DCh] (6 B). Listed: BL = 1 and the flags [esp+0Fh] = 1 (Asian),
+; [esp+0Eh] = 0 (not Chinese), as the stock code would store them, then 0x77EBF6.
+UhcTwoScout1Hook PROC
+    TRACE_ONCE "twoScoutCivs hero UI 1 (0x77EBB2)"
+    push ecx
+    push edx
+    push dword ptr [esi+1DCh]
+    call UhcIsTwoScoutCiv
+    pop edx
+    pop ecx
+    test al, al
+    jz stock1
+    mov bl, 1
+    mov byte ptr [esp+0Fh], 1
+    mov byte ptr [esp+0Eh], 0
+    jmp twoScout1Listed
+stock1:
+    mov eax, dword ptr [esi+1DCh]
+    jmp twoScout1Stock
+UhcTwoScout1Hook ENDP
+
+; 0x77EF29: push eax / call 8D0318h (6 B), after push ebx; the civ is EAX = [esp+14h] here.
+UhcTwoScout2Hook PROC
+    TRACE_ONCE "twoScoutCivs hero UI 2 (0x77EF29)"
+    push ecx
+    push edx
+    push eax
+    call UhcIsTwoScoutCiv
+    pop edx
+    pop ecx
+    test al, al
+    jz stock2
+    jmp twoScout2Listed
+stock2:
+    mov eax, dword ptr [esp+14h]
+    push eax
+    call civTest8D0318
+    jmp twoScout2Stock
+UhcTwoScout2Hook ENDP
+
+; 0x77DDD2: mov ecx,[esi+1DCh] (6 B).
+UhcTwoScout3Hook PROC
+    TRACE_ONCE "twoScoutCivs hero UI 3 (0x77DDD2)"
+    push eax
+    push edx
+    push dword ptr [esi+1DCh]
+    call UhcIsTwoScoutCiv
+    test al, al
+    pop edx
+    pop eax
+    jz stock3
+    jmp twoScout3Listed
+stock3:
+    mov ecx, dword ptr [esi+1DCh]
+    jmp twoScout3Stock
+UhcTwoScout3Hook ENDP
+
+; 0x77DFF4: mov edx,[0C66234h] (6 B).
+UhcTwoScout4Hook PROC
+    TRACE_ONCE "twoScoutCivs hero UI 4 (0x77DFF4)"
+    push eax
+    push ecx
+    push dword ptr [esi+1DCh]
+    call UhcIsTwoScoutCiv
+    test al, al
+    pop ecx
+    pop eax
+    jz stock4
+    jmp twoScout4Listed
+stock4:
+    mov edx, dword ptr ds:[0C66234h]
+    jmp twoScout4Stock
+UhcTwoScout4Hook ENDP
 
 END
