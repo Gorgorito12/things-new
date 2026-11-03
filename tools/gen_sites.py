@@ -984,6 +984,42 @@ SITES = [
     # array [db+2968h] (4Ch-byte records indexed by command type ID, readers bound by its count
     # [+4]) with push 82h / mov ecx,ebx / call 5276EAh: 130 records for the 129 stock types
     ("CmdRecordReserve", 0x52711D, 0x05),
+    # multiarmor: a proto keeps one armor, type byte [proto+1D3h] and value [proto+C4h].
+    # The <Armor> tag handler 0x5F5E62 (cdecl(ctx, node, proto); the type name through
+    # 0x5F562D on ctx) stores them at its end: mov [ecx+1D3h],al / mov [ecx+0C4h],edx
+    ("ArmorStore", 0x5F5EB7, 0x0C),
+    # multiarmor: the armor getter 0x49B323 (thiscall(unit, byte damageType, ...), ret 8), EAX =
+    # proto, BL = the damage type: cmp [eax+1D3h],bl / mov [esp+8],0 / jne / mov eax,[eax+0C4h]
+    # (22 B), then mov [esp+8],eax at 0x49B345
+    ("ArmorGetter", 0x49B32F, 0x16),
+    # multiarmor: BProtoUnit destructor 0x58633D (push esi / mov esi,ecx / mov [esi],0B9F404h) and
+    # the proto copy 0x67E011 (thiscall(dst, src, bool), ret 8: sub esp,0Ch / push ebp /
+    # mov ebp,[esp+14h]), which clones a proto for a player
+    ("ProtoDtorHead", 0x58633D, 0x09),
+    ("ProtoCopyHead", 0x67E011, 0x08),
+    # multiarmor: BDataEffect's vtable slots setData (0x6205F6), protoUnitApply (0x7F86C0) and
+    # protoUnitUnapply (0x7F8705); the data subtype Armor is 5Ch, applied through 0x7F892A
+    # (cdecl(byte relativity, float* target, float base, float amount, bool unapply)) on the
+    # effect's amount [+18h] and relativity [+1Ch]
+    ("DataEffectSetDataSlot", 0xB9E5AC, 0x04),
+    ("DataEffectApplySlot", 0xB9E5CC, 0x04),
+    ("DataEffectUnapplySlot", 0xB9E5D0, 0x04),
+    # multiarmor: BDataEffect playerApply (0x7F874A, through 0x8D842B to every target proto's
+    # applyData) and playerUnapply (0x7F877F) slots, and the Armor (5Ch) cases of applyData
+    # 0x8F973F (EDI = target proto, ESI = its base proto, [esp+28h] amount, [esp+2Ch] relativity,
+    # EBP = 0: mov edx,[esp+28h] / mov eax,[esi+0C4h]) and of unapplyData 0x8FB01C (ESI = target,
+    # EDI = base, [esp+24h] amount, [esp+28h] relativity: mov eax,[esp+24h] / mov ecx,[edi+0C4h])
+    ("DataEffectPlayerApplySlot", 0xB9E5C4, 0x04),
+    ("DataEffectPlayerUnapplySlot", 0xB9E5C8, 0x04),
+    ("DataApplyArmorCase", 0x8FAE52, 0x0A),
+    ("DataUnapplyArmorCase", 0x8FC144, 0x0A),
+    ("EffectValueApply", 0x7F892A, 0x10),
+    # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
+    # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
+    # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)
+    ("XmlAttribute", 0x598F37, 0x10),
+    ("XmlText", 0x402733, 0x09),
+    ("DamageTypeLookup", 0x5F55EA, 0x10),
 ]
 
 

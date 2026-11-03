@@ -874,6 +874,19 @@ movement".
 | `g_uhcBwrTrainGetter` | UHC.dll export (data, C linkage) | — | `void*`, default 0x9BFE33; set to the wrapper when `buildingWorkRateAuras` applies. noTrainNearEnemyTC's Train hook calls through it. |
 
 
+### Armor (for `multiarmor`, 2026-11-03)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Proto armor | `[proto+1D3h]` (damage type byte), `[proto+C4h]` (float) | confirmed (`cs`, in game) | One per proto. |
+| `<Armor>` handler | 0x5F5E62, cdecl `(ctx, node, proto)` | confirmed (`cs`) | Reads `type` and `value`; the type through 0x5F562D (thiscall on ctx); stores at 0x5F5EB7. |
+| Damage type lookup | 0x5F55EA, `thiscall(ctx, name)` → entry, ID at `+8` | confirmed (`cs`) | List `[ctx+44h]`, count `[+48h]`; 0x5F562D returns the ID. |
+| Armor getter | 0x49B323, `float thiscall(unit, byte damageType, ...)`, `ret 8` | confirmed (`cs`) | Value only for the stock type; then the tactic armor of `[unit+58h]` (0x69FEA3). |
+| Proto copy | 0x67E011, `bool thiscall(dst, src, bool)`, `ret 8` | confirmed (`cs`) | Called when a player's proto is cloned (0x8D1B60, 0x8D6576). Named `BProtoUnit` ctor 0x5F7394, dtor 0x58633D in another DLL's symbol table. |
+| BDataEffect | vtable slots 0xB9E5AC `setData` (0x6205F6), 0xB9E5C4 `playerApply` (0x7F874A), 0xB9E5C8 `playerUnapply` (0x7F877F), 0xB9E5CC `protoUnitApply` (0x7F86C0), 0xB9E5D0 `protoUnitUnapply` (0x7F8705) | confirmed (`cs`; names from another DLL's symbol table) | Fields: `+0Ch` subtype, `+18h` amount, `+1Ch` relativity byte. |
+| applyData / unapplyData | 0x8F973F / 0x8FB01C, thiscall on the target proto, `ret 20h` | confirmed (`cs`) | Switch on the subtype (tables 0x8FAFB8/0x8FAF00, 0x8FC23C/0x8FC1A8); Armor = 5Ch at 0x8FAE52 / 0x8FC144. |
+| Effect value | 0x7F892A, cdecl `(byte relativity, float* target, float base, float amount, bool unapply)` | confirmed (`cs`) | 0 Percent (×, ÷), 2 BasePercent, 3 Assign, else Absolute. |
+
 ### Command types (for `customProtoUnitCommands`, 2026-11-03)
 
 | What | Where | Status | Notes |

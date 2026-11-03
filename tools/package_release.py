@@ -152,6 +152,7 @@ noAILimit                     every AI3\\*.personality file in game setup
 noAILimitV2                   the same list, hooked later (cfgs that use this name)
 customAbstractTypes [file]    abstract unit types from an XML file
 customProtoUnitCommands [file]   command types (buttons) from an XML file
+multiarmor                    one armor per damage type; Armor effects follow damagetype
                               (default data\\uhc\\customabstracttypes.xml)
 customSyscalls [files]        load .upl plugins and their XS syscalls
 customCheats                  the cheats plugins register work in the chat

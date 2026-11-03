@@ -68,12 +68,14 @@ add_library(UHC SHARED
   src/features/typetests.cpp
   src/features/kbsyscalls.cpp
   src/features/commandtypes.cpp
+  src/features/multiarmor.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
+  src/hooks/armor_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
   src/hooks/unitlist_hooks.asm

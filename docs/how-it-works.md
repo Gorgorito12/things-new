@@ -304,6 +304,30 @@ the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-p
 sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
 live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
 
+### multiarmor
+
+A proto's armor is the damage type byte `[proto+1D3h]` and the value `[proto+C4h]`; the `<Armor>`
+handler `0x5F5E62` (cdecl `(ctx, node, proto)`, the type name through `0x5F562D` on `ctx`, whose
+damage type list is `[ctx+44h]`/`[+48h]`) writes both at `0x5F5EB7`, and the getter `0x49B323`
+(`unit`, damage type byte) returns the value only for that type (then adds the tactic armor). The
+Data effect subtype Armor is 5Ch: `applyData` (`0x8F973F`) case `0x8FAE52` and `unapplyData`
+(`0x8FB01C`) case `0x8FC144` call `0x7F892A(relativity, &target[C4h], base[C4h], amount, unapply)`.
+
+The key keeps a table per proto pointer (damage type → value, up to 8):
+
+| Site | What it does |
+|---|---|
+| `0x5F5EB7` (12 B) | records each `<Armor>` (and the parse context), then the stock stores |
+| `0x49B32F` (22 B) | `UhcArmorFor(proto, type)`: `[C4h]` for the stock type, else the table's value or 0 |
+| `0x67E011` head (8 B) | the proto copy (per-player clone): copies the table |
+| `0x58633D` head (9 B) | the proto destructor: drops the table |
+| vtable `0xB9E5AC` | `BDataEffect::setData` wrapper: reads `damagetype` (`0x598F37`, `0x402733`, `0x5F55EA`) and keeps it per effect |
+| vtable `0xB9E5C4`, `C8`, `CC`, `D0` | `playerApply` / `playerUnapply` / `protoUnitApply` / `protoUnitUnapply` wrappers: make the effect's damage type current during the stock call |
+| `0x8FAE52`, `0x8FC144` (10 B each) | the Armor cases: for a current type other than the target's stock type, apply `0x7F892A` to the table entry (base value from the base proto) and skip the stock change |
+
+Normal techs reach `applyData` through `playerApply` → `0x8D842B`, without the effect pointer, so
+the type travels in a global that the wrappers set and restore (effects apply on one thread).
+
 ### customProtoUnitCommands
 
 `FUN_0052277E` builds the database's name tables. The command types are 129 calls of

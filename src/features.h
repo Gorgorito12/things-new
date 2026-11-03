@@ -68,6 +68,7 @@ Outcome ApplyWonderCivUnitType(const Config& config);
 Outcome ApplyTrainSingleAbstractType(const Config& config);
 Outcome ApplyKbUnitSyscalls(const Config& config);
 Outcome ApplyCustomProtoUnitCommands(const Config& config);
+Outcome ApplyMultiArmor(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
@@ -121,6 +122,7 @@ inline constexpr Feature kFeatures[] = {
     {"trainSingleAbstractType", ApplyTrainSingleAbstractType},
     {"kbUnitSyscalls", ApplyKbUnitSyscalls},
     {"customProtoUnitCommands", ApplyCustomProtoUnitCommands},
+    {"multiarmor", ApplyMultiArmor},
     {"selectionLimit", ApplySelectionLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
@@ -159,7 +161,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor",
 };
 
 }  // namespace uhc

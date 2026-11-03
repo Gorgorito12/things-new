@@ -1193,4 +1193,49 @@ inline constexpr Site kCmdTypeLookup{"CmdTypeLookup", 0x005274AB, kCmdTypeLookup
 inline constexpr std::uint8_t kCmdRecordReserveBytes[] = {0x68, 0x82, 0x00, 0x00, 0x00};
 inline constexpr Site kCmdRecordReserve{"CmdRecordReserve", 0x0052711D, kCmdRecordReserveBytes, sizeof(kCmdRecordReserveBytes)};
 
+inline constexpr std::uint8_t kArmorStoreBytes[] = {0x88, 0x81, 0xD3, 0x01, 0x00, 0x00, 0x89, 0x91, 0xC4, 0x00, 0x00, 0x00};
+inline constexpr Site kArmorStore{"ArmorStore", 0x005F5EB7, kArmorStoreBytes, sizeof(kArmorStoreBytes)};
+
+inline constexpr std::uint8_t kArmorGetterBytes[] = {0x38, 0x98, 0xD3, 0x01, 0x00, 0x00, 0xC7, 0x44, 0x24, 0x08, 0x00, 0x00, 0x00, 0x00, 0x75, 0x0A, 0x8B, 0x80, 0xC4, 0x00, 0x00, 0x00};
+inline constexpr Site kArmorGetter{"ArmorGetter", 0x0049B32F, kArmorGetterBytes, sizeof(kArmorGetterBytes)};
+
+inline constexpr std::uint8_t kProtoDtorHeadBytes[] = {0x56, 0x8B, 0xF1, 0xC7, 0x06, 0x04, 0xF4, 0xB9, 0x00};
+inline constexpr Site kProtoDtorHead{"ProtoDtorHead", 0x0058633D, kProtoDtorHeadBytes, sizeof(kProtoDtorHeadBytes)};
+
+inline constexpr std::uint8_t kProtoCopyHeadBytes[] = {0x83, 0xEC, 0x0C, 0x55, 0x8B, 0x6C, 0x24, 0x14};
+inline constexpr Site kProtoCopyHead{"ProtoCopyHead", 0x0067E011, kProtoCopyHeadBytes, sizeof(kProtoCopyHeadBytes)};
+
+inline constexpr std::uint8_t kDataEffectSetDataSlotBytes[] = {0xF6, 0x05, 0x62, 0x00};
+inline constexpr Site kDataEffectSetDataSlot{"DataEffectSetDataSlot", 0x00B9E5AC, kDataEffectSetDataSlotBytes, sizeof(kDataEffectSetDataSlotBytes)};
+
+inline constexpr std::uint8_t kDataEffectApplySlotBytes[] = {0xC0, 0x86, 0x7F, 0x00};
+inline constexpr Site kDataEffectApplySlot{"DataEffectApplySlot", 0x00B9E5CC, kDataEffectApplySlotBytes, sizeof(kDataEffectApplySlotBytes)};
+
+inline constexpr std::uint8_t kDataEffectUnapplySlotBytes[] = {0x05, 0x87, 0x7F, 0x00};
+inline constexpr Site kDataEffectUnapplySlot{"DataEffectUnapplySlot", 0x00B9E5D0, kDataEffectUnapplySlotBytes, sizeof(kDataEffectUnapplySlotBytes)};
+
+inline constexpr std::uint8_t kDataEffectPlayerApplySlotBytes[] = {0x4A, 0x87, 0x7F, 0x00};
+inline constexpr Site kDataEffectPlayerApplySlot{"DataEffectPlayerApplySlot", 0x00B9E5C4, kDataEffectPlayerApplySlotBytes, sizeof(kDataEffectPlayerApplySlotBytes)};
+
+inline constexpr std::uint8_t kDataEffectPlayerUnapplySlotBytes[] = {0x7F, 0x87, 0x7F, 0x00};
+inline constexpr Site kDataEffectPlayerUnapplySlot{"DataEffectPlayerUnapplySlot", 0x00B9E5C8, kDataEffectPlayerUnapplySlotBytes, sizeof(kDataEffectPlayerUnapplySlotBytes)};
+
+inline constexpr std::uint8_t kDataApplyArmorCaseBytes[] = {0x8B, 0x54, 0x24, 0x28, 0x8B, 0x86, 0xC4, 0x00, 0x00, 0x00};
+inline constexpr Site kDataApplyArmorCase{"DataApplyArmorCase", 0x008FAE52, kDataApplyArmorCaseBytes, sizeof(kDataApplyArmorCaseBytes)};
+
+inline constexpr std::uint8_t kDataUnapplyArmorCaseBytes[] = {0x8B, 0x44, 0x24, 0x24, 0x8B, 0x8F, 0xC4, 0x00, 0x00, 0x00};
+inline constexpr Site kDataUnapplyArmorCase{"DataUnapplyArmorCase", 0x008FC144, kDataUnapplyArmorCaseBytes, sizeof(kDataUnapplyArmorCaseBytes)};
+
+inline constexpr std::uint8_t kEffectValueApplyBytes[] = {0x8B, 0x44, 0x24, 0x08, 0x85, 0xC0, 0x74, 0x68, 0x0F, 0xB6, 0x4C, 0x24, 0x04, 0x83, 0xE9, 0x00};
+inline constexpr Site kEffectValueApply{"EffectValueApply", 0x007F892A, kEffectValueApplyBytes, sizeof(kEffectValueApplyBytes)};
+
+inline constexpr std::uint8_t kXmlAttributeBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x8D, 0x44, 0x24, 0x04, 0x50, 0x52, 0xE8, 0x23, 0xFF, 0xFF, 0xFF, 0x84};
+inline constexpr Site kXmlAttribute{"XmlAttribute", 0x00598F37, kXmlAttributeBytes, sizeof(kXmlAttributeBytes)};
+
+inline constexpr std::uint8_t kXmlTextBytes[] = {0x51, 0x55, 0x8B, 0xE9, 0x8B, 0x45, 0x00, 0x85, 0xC0};
+inline constexpr Site kXmlText{"XmlText", 0x00402733, kXmlTextBytes, sizeof(kXmlTextBytes)};
+
+inline constexpr std::uint8_t kDamageTypeLookupBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x57, 0x8B, 0xF9, 0x0F, 0x84, 0x1E, 0x3C, 0x06, 0x00};
+inline constexpr Site kDamageTypeLookup{"DamageTypeLookup", 0x005F55EA, kDamageTypeLookupBytes, sizeof(kDamageTypeLookupBytes)};
+
 }  // namespace uhc::sites
