@@ -431,7 +431,7 @@ case loads its pushed string (`0x447719`); otherwise it continues at `0x50B025`.
   branch; the hook compares the byte argument as a byte), `0x67B0A5` and `0x8D52AF` re-execute their
   stock compare with the cached native civ ID and otherwise ask `UhcIsNativeCiv`; a listed civ
   takes the native branch.
-- **Dances.** The three dance readers upstream patches for natives (`0x4904B5`, `0x4ECD6B`,
+- **Dances.** The three dance readers that compare the native civ IDs (`0x4904B5`, `0x4ECD6B`,
   `0x8D47C9`) are the functions `danceBonusCivs` gates at their first compare; `nativeCivs` adds
   its names to that key's list through `AddDanceCivs` (installing the gates if `danceBonusCivs`
   is not set), so the XPTrickle dance (`0x4E0DFF`) is covered too.
