@@ -51,6 +51,7 @@ add_library(UHC SHARED
   src/features/overhealsources.cpp
   src/features/plugins.cpp
   src/features/perf.cpp
+  src/features/selection.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
   src/features/snare.cpp

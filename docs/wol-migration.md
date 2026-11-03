@@ -79,7 +79,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | pending |
 | `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | degrades (gathering on WoL farms) | pending |
 | `customProtoUnitCommands` (always on in WoL) | WoL | degrades (41 `<Command>` buttons) | pending, RE |
-| `selectionLimit 75` | WoL | degrades | pending |
+| `selectionLimit 75` | WoL | degrades | **done**, confirmed (75 of 89 Pikemen; 50 without) |
 | `trainSingleAbstractType` | WoL | degrades (`AbstractTrainLimitOne`, 36 protos) | pending |
 | `multiarmor` | WoL | degrades (32 protos, 76 effects) | pending, RE |
 | WoL-DLL kb syscalls (`kbUnitGetNumberTargeters`, …) | WoL, always on | blocks the Maori AI (`wolRauparaha`) only | pending |

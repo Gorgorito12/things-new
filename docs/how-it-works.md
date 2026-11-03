@@ -353,6 +353,14 @@ Names resolve through `CivIdList` (`src/namelists.*`), with `0x58E71F` (civ ID b
 first call after `civs.xml` is read and again when the database pointer or `[database+28h]`
 changes, so no hook on the caching functions FUN_008D0318 and FUN_008DABA3 is needed.
 
+### selectionLimit
+
+The 50-unit cap is the immediate of `mov eax,32h` at eight places: the getter `0x4E0BEE`
+(`mov eax,32h / ret`) and seven compares of a selection list's count (`[list+24h]`, a growable
+array) with it before a unit is added (`0x4E0F5F`, `0x4E0F7E`, `0x4E10A5`, `0x4FC457`, `0x4FE663`,
+`0x4FEB94`, `0x503DCE`). The DLL rewrites each imm32 after `VerifyAll`; there is no hook. No
+fixed-size buffer was found next to these compares. <!-- private -->Wars of Liberty's DLL patches the same eight bytes to 75 (its memory diff), so 75 is proven by its players.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

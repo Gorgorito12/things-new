@@ -68,6 +68,30 @@ inline constexpr Site kWonderAgeUpCiv{"WonderAgeUpCiv", 0x00818284, kWonderAgeUp
 inline constexpr std::uint8_t kCivIdByNameBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x57, 0x8B, 0xF9, 0x0F, 0x84, 0xD2, 0xAA, 0x0C, 0x00};
 inline constexpr Site kCivIdByName{"CivIdByName", 0x0058E71F, kCivIdByNameBytes, sizeof(kCivIdByNameBytes)};
 
+inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
+
+inline constexpr std::uint8_t kSelectionCap2Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap2{"SelectionCap2", 0x004E0F5F, kSelectionCap2Bytes, sizeof(kSelectionCap2Bytes)};
+
+inline constexpr std::uint8_t kSelectionCap3Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap3{"SelectionCap3", 0x004E0F7E, kSelectionCap3Bytes, sizeof(kSelectionCap3Bytes)};
+
+inline constexpr std::uint8_t kSelectionCap4Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap4{"SelectionCap4", 0x004E10A5, kSelectionCap4Bytes, sizeof(kSelectionCap4Bytes)};
+
+inline constexpr std::uint8_t kSelectionCap5Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap5{"SelectionCap5", 0x004FC457, kSelectionCap5Bytes, sizeof(kSelectionCap5Bytes)};
+
+inline constexpr std::uint8_t kSelectionCap6Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap6{"SelectionCap6", 0x004FE663, kSelectionCap6Bytes, sizeof(kSelectionCap6Bytes)};
+
+inline constexpr std::uint8_t kSelectionCap7Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap7{"SelectionCap7", 0x004FEB94, kSelectionCap7Bytes, sizeof(kSelectionCap7Bytes)};
+
+inline constexpr std::uint8_t kSelectionCap8Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
+inline constexpr Site kSelectionCap8{"SelectionCap8", 0x00503DCE, kSelectionCap8Bytes, sizeof(kSelectionCap8Bytes)};
+
 inline constexpr std::uint8_t kRevBannerBytes[] = {0x75, 0x23, 0x68, 0xC8, 0xEC, 0xC0, 0x00, 0x8D, 0x4C, 0x24, 0x48, 0xE8, 0x36, 0x72, 0xBE, 0xFF, 0x8D, 0x44, 0x24, 0x44, 0x50, 0x8B, 0xCD, 0xE8, 0x3B, 0xE0, 0xE1, 0xFF, 0x8D, 0x4C, 0x24, 0x44, 0xE8, 0xD9, 0x68, 0xBE, 0xFF, 0x8B, 0x55, 0x00};
 inline constexpr Site kRevBanner{"RevBanner", 0x0081A7CC, kRevBannerBytes, sizeof(kRevBannerBytes)};
 

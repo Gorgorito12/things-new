@@ -636,6 +636,23 @@ asianCivs Civ [Civ ...] [log]
   so the "civ has no entry" path (EAX = 0xFFFFFF00) counted as true.
 <!-- private:end -->
 
+### selectionLimit
+
+```
+selectionLimit N
+```
+
+- **Effect:** one selection holds up to N units (1 to 200; stock 50), for box selection, double
+  click and control groups alike.
+- **Log:** `selectionLimit: a selection holds up to N units (stock 50)` (`; above 75 not tested`
+  for larger values); `selectionLimit: needs a number from 1 to 200` for a bad value (not
+  applied).
+- **Simulation:** no: it only changes what the local player can select. Players may set it
+  differently.
+- **Status:** confirmed (2026-11-02, single player): with 75, a box over 89 Pikemen selected 75;
+  without the key, 50. Video `selectionLimit.mp4`, with `--perf` (no frame over 50 ms).
+- **New in this DLL:** not in UHC 1.10. <!-- private -->
+
 ### customRevolutionBanners
 
 ```

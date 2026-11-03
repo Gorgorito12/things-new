@@ -51,6 +51,15 @@ SITES = [
     ("WonderAgeUpCiv", 0x818284, 9),
     # the civ ID by name, int thiscall(database, const char*), -1 if none (verify only)
     ("CivIdByName", 0x58E71F, 0x10),
+    # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
+    ("SelectionCap1", 0x4E0BEE, 5),
+    ("SelectionCap2", 0x4E0F5F, 5),
+    ("SelectionCap3", 0x4E0F7E, 5),
+    ("SelectionCap4", 0x4E10A5, 5),
+    ("SelectionCap5", 0x4FC457, 5),
+    ("SelectionCap6", 0x4FE663, 5),
+    ("SelectionCap7", 0x4FEB94, 5),
+    ("SelectionCap8", 0x503DCE, 5),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),
