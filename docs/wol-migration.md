@@ -141,8 +141,8 @@ cut to the key moment (the `gif` helper: palettegen full, bayer dither).
 | `abilitySlots` | Ethiopians: WoL's Explorer (8 abilities), `WOLAbilityHeal` at 24 s and `WOLHCMachiavellianism` at 30 s | **done**: buttons 7 and 8 appear with the key, never without (`abilitySlots-wol*.mp4`) |
 | `wonderPanelSkipAuras` | Korean wonders `wolwkpyongyanggate2` (test: `ypPowerShrineAura` put before its `PowerRighteousArmy` in `abilities.xml`, restored after) and `wolwkpuyonghall2` | **done**: the panel shows Righteous Army with the key, the Puyong Hall's Whirlpool without (`wonderPanelSkipAuras-wol*.mp4`). WoL has no wonder with two abilities in its own data |
 | `lifespanAfterConstruction` | Spanish (`Age0Spanish`): 2 settlers build an Outpost given `Lifespan` 15 (bed protoy, restored after), placed with a real click (`tis("Outpost")` + `rclick`) | **done**: built at 64 s, gone 15 s later; key off, dies as a foundation (`lifespanAfterConstruction-wol*.mp4`). WoL's own `*Maturing` buildings are not built by any unit in protoy |
-| `gaiaSocketsOnly` | pending | pending |
-| `customHotkeyContexts` | a WoL building with its own keymap context | pending |
+| `gaiaSocketsOnly` | none | **not filmed**: the case it fixes is an AI build plan given a player-owned socket; the UI refuses that placement by itself and neither the console nor scenario triggers can give the order. Needs an AI skirmish whose script builds on such a socket |
+| `customHotkeyContexts` | Greeks (`Age0Greeks`, `Player : SetAge` 1): `WOLBarracksGreek` selected, 3 real `o` presses (WoL's `WOLBarracksGreekAccel` maps `o` to Klepht) | **done**: 3 Klephts queued with the key, none without (`customHotkeyContexts-wol*.mp4`) |
 | `snareOnlyHitUnit` | a WoL snare attack on a group | pending |
 | `techRenameEffect` | a WoL tech that renames | pending |
 | `noCorpseDopples` | WoL hunts | pending |

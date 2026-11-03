@@ -2767,6 +2767,22 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 
 ### customHotkeyContexts
 
+<!-- private:begin -->
+![customHotkeyContexts in WoL](media/customHotkeyContexts-wol.gif)
+
+*In WoL, with `customHotkeyContexts log` (Greeks in age II, the Greek barracks selected):* WoL's own
+`DefaultKeyMapY.xml` maps `o` to `tis("Klepht")` in the context `WOLBarracksGreekAccel`, which the
+exe does not know. The DLL registers it (`registered keymap context WOLBarracksGreekAccel as context
+153`) and turns it on when the barracks is selected; three real presses of `o` queue three Klephts.
+[Full video (MP4)](media/customHotkeyContexts-wol.mp4).
+
+![customHotkeyContexts in WoL, key off](media/customHotkeyContexts-wol-control.gif)
+
+*In WoL, key off (the same scene and key presses):* the context is dropped when the keymap loads,
+so `o` does nothing and no Klepht is queued.
+[Full video (MP4)](media/customHotkeyContexts-wol-control.mp4).
+<!-- private:end -->
+
 ```
 customHotkeyContexts [log]
 ```
