@@ -351,7 +351,7 @@ compare with `[0C6FB88h]` and its branch, re-executes the compare, and otherwise
 
 Names resolve through `CivIdList` (`src/namelists.*`), with `0x58E71F` (civ ID by name), on the
 first call after `civs.xml` is read and again when the database pointer or `[database+28h]`
-changes, so upstream's resolution hooks on FUN_008D0318 and FUN_008DABA3 are not needed.
+changes, so no hook on the caching functions FUN_008D0318 and FUN_008DABA3 is needed.
 
 ### customRevolutionBanners
 
