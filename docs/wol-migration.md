@@ -44,6 +44,12 @@ robocopy C:\WoL-Test C:\AoE3-UHC-WoLReal /E /MT:8 /XD avi "History Channel Trail
 
 ### Driving a skirmish
 
+`python -I tools/testbed.py --bed C:\AoE3-UHC-WoLReal profile hc <Civ>` picks the skirmish home
+city (`LastSelectedSPHC`, game closed); `profile hc` lists the 60 saved ones. Restore
+`sp_Addis Ababa_homecity.xml` after a test (the user's real WoL reads the same profile). In the home
+city screen, "Administrar Metrópolis" opens the card view, whose "Restablecer" button resets the
+city: never click near it.
+
 The profile's home city is the Ethiopians (one of WoL's `asianCivs`). Client coordinates at
 1920 x 1080: main menu "Un jugador" (257, 803), "Escaramuza" (689, 803), home city "Jugar"
 (181, 1029), setup "Jugar" (477, 979); the map list opens at (1557, 437) and "Mapas ESOC" is
@@ -58,6 +64,7 @@ clicks, 10–12 s before each "Jugar", about 55 s for the game to load.
 | `noAILimitV2` | The skirmish loads (52 personalities from `AI4\`, the same table as WoL's DLL, read at 0x603C4F). Next failure: `aiLoaderStandard.xs` does not compile: `cUnitTypeAbstractWoLHandCavalry`. |
 | `customAbstractTypes` | 47 types registered; next failure: `kbGetTechID`. |
 | `customSyscalls` | Both plugins load (17 syscalls, 33 cheats collected). **The AI compiles and plays** (Indians: houses, settlers, monks fighting). Video: `wol-ai-plugins.mp4`, with `--perf` (about 350 fps, 2 frames over 50 ms in 30 s, main thread 93 %). |
+| End of 2026-11-02 | `UHCMain: 23 applied, 0 failed` with WoL's cfg plus the bed's keys; 17 of WoL's keys still "not implemented yet" (29 at the start). Also confirmed in the bed: the restored `dodgeAnyUnit`, `dodgeChance` and `spreadAnyAccuracy` apply again. Next: farms (`enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`), `wonderCivUnitType`, `customProtoUnitCommands`, the Maori AI's kb syscalls. |
 
 ## Keys
 
