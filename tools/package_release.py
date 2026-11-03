@@ -153,6 +153,7 @@ noAILimitV2                   the same list, hooked later (cfgs that use this na
 customAbstractTypes [file]    abstract unit types from an XML file
                               (default data\\uhc\\customabstracttypes.xml)
 customSyscalls [files]        load .upl plugins and their XS syscalls
+asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders)
 customRevolutionBanners       a banner for every XPRevolution<Name> tech
 removeFameRestriction         Fame, XP and shipment costs and icons
 removeConversionRestriction   ConvertGuardian works on any unit

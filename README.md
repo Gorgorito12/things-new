@@ -28,6 +28,7 @@ public:end -->
 | `noAILimitV2` | **New.** The same list, hooked later in the same function (for mods whose cfg uses this name). | confirmed (single player) |
 | `customAbstractTypes [file]` | **New.** Every name in an XML file (default `data\uhc\customabstracttypes.xml`) becomes an abstract unit type usable in protos, techs and XS. | confirmed (single player) |
 | `customSyscalls [files]` | Loads `.upl` plugins and adds their XS syscalls. | confirmed (single player, AI skirmish) |
+| `asianCivs Civ ...` | Listed civs count as Asian civs (consulate, export, wonder age-up). | partly confirmed |
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
 | `removeConversionRestriction` | `ConvertGuardian` may target any unit. | not confirmed |

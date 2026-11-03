@@ -609,6 +609,33 @@ customSyscalls [file or pattern ...]
   a whole group at the first refused syscall.
 <!-- private:end -->
 
+### asianCivs
+
+```
+asianCivs Civ [Civ ...] [log]
+```
+
+- **Effect:** the listed civs (names from `civs.xml`) count as Asian civs where the game compares a
+  player's civ with the Asian civs: the extended Asian-civ test (consulate, export and the other
+  Asian features that call it), the Asian civs' value branch, and the wonder age-up list. In that
+  list a listed civ gets the wonders whose civ name is its name in the cfg; stock gives a civ that
+  is not Chinese, Japanese or Indian no wonder at all.
+- **Your data:** for the wonder age-up, entries in `politiciandata.xml` with `nativeciv="<Civ>"`
+  and the civ's wonders (the stock Indian entries are the model).
+- **Log:** `asianCivs: N civ(s) count as Asian civs`; when `civs.xml` is read, one
+  `asianCivs: <Civ> -> civ <ID>` line per name (`… is not a civ in civs.xml; ignored` otherwise);
+  with `log`, `asianCivs: <Civ> gets its wonders in the age-up list` once;
+  `hook reached: asianCivs isAsianCiv (0x454F1D)`, `… civ value (0x8D6AC4)`,
+  `… wonder age-up (0x818284)`.
+- **Simulation:** changes what the listed civs may do: every player needs the same line.
+- **Status:** partly confirmed (2026-11-02, single player): five civs resolved and the Asian-civ
+  test ran through the hook in a skirmish; the wonder age-up list has not been opened with a
+  listed civ yet. <!-- private -->In the WoL copy, the test profile's home city is Ethiopian, and WoL's wonders belong to the Koreans.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream tests EAX instead of AL after `0x49A2D8` in the wonder list,
+  so the "civ has no entry" path (EAX = 0xFFFFFF00) counted as true.
+<!-- private:end -->
+
 ### customRevolutionBanners
 
 ```

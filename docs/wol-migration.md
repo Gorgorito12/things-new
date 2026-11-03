@@ -69,7 +69,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | (`customAbstractTypes`) | WoL, always on | blocks (AI compile); 47 types dropped from ~2,800 `<UnitType>` uses | **done**, confirmed |
 | `customSyscalls wolPlugin.upl wolai.upl` | upstream | blocks (AI compile: `kbGetTechID` ×36 in `aiWoLMain.xs`; 36 `RM4\ESOC_*` maps) | **done**, confirmed |
 | `customCheats` | upstream | cosmetic (33 plugin cheats) | next: site 0x551FE6, cheat-string encoding |
-| `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | pending |
+| `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | **done**, partly confirmed (wonder list needs a Korean home city: WoL's wonders are `nativeciv="Koreans"`) |
 | `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | degrades: fire pit, council age-up | pending (dance gates shared with `danceBonusCivs`) |
 | `twoScoutCivs Koreans` | upstream | degrades | pending |
 | `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | pending |

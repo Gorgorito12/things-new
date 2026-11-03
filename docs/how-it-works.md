@@ -332,6 +332,27 @@ to `SyscallSetParam` without checking cannot crash; defaults are copied when `Sy
 is called. `CheatAddResource` forwards to the thiscall `0x49A98A`; `CheatSpawnUnit` is the
 engine function `0x7B4F03` itself. Plugins load last in `kFeatures`, after every other hook.
 
+### asianCivs
+
+The game caches civ IDs by name in globals `0xC6FB48..0xC6FB8C` (FUN_008D0318). Three functions
+compare a player's first civ (`[[player+20h]]`, or −1) with them; each hook replaces the last
+compare with `[0C6FB88h]` and its branch, re-executes the compare, and otherwise calls
+`UhcIsListedAsianCiv(civ)` with ECX and EDX saved:
+- `0x454F1D` in isAsianCiv `0x454ED7` (`bool thiscall(player, bool extended)`; the site is only
+  reached with `extended` set): true continues at `0x454F2A` (`mov al,1`), false at `0x454F25`.
+- `0x8D6AC4` in FUN_008D6A7D: true at `0x8D6ACC` (it tests EDX, the civ count, and reloads EAX),
+  false at `0x8D6B0C`.
+- `0x818284` in the wonder age-up list FUN_0081807A, after `push 1 / mov ecx,ebp`: the hook calls
+  `0x49A2D8` itself (is Indian, `ret 4`) and tests AL; an Indian player continues at `0x81828D`
+  (the stock "Indians" compare). For any other player, inside `pushad`,
+  `UhcAsianWonderOption(player = EBP, &option civ name = [esi+18Ch]+edi+8)` compares the
+  option's civ name BString with the cfg name of the player's civ through `0x443C10` (flag 0,
+  case ignored): a match adds the option (`0x8182A9`), anything else skips it (`0x8182EB`).
+
+Names resolve through `CivIdList` (`src/namelists.*`), with `0x58E71F` (civ ID by name), on the
+first call after `civs.xml` is read and again when the database pointer or `[database+28h]`
+changes, so upstream's resolution hooks on FUN_008D0318 and FUN_008DABA3 are not needed.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`
