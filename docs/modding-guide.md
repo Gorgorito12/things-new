@@ -928,6 +928,50 @@ wonderCivUnitType Proto [Proto ...]
   Center opened the age-up list; without the key the same click opened nothing. Video
   `wonderCivUnitType.mp4`. <!-- private -->In the WoL copy: the Maori Rangatira and their voyages.
 
+### kbUnitSyscalls
+
+<!-- private:begin -->
+![kbUnitSyscalls in game](media/kbUnitSyscalls.gif)
+
+*In game:* an AI script that calls the five syscalls compiles and runs; a test rule prints them in
+the chat for what the AI's villagers gather (here a hunted animal: 6 visible workers, the stock
+call 0) and for its livestock (food 50 of 300, not full).
+[Full video (MP4)](media/kbUnitSyscalls.mp4).
+<!-- private:end -->
+
+```
+kbUnitSyscalls
+```
+
+- **Effect:** adds five KB syscalls for AI scripts, about resource units. "The player" is the AI
+  whose script runs.
+
+  | Syscall | Returns |
+  |---|---|
+  | `float kbUnitGetCurrentInventory(int unitID, int resourceID)` | the amount of that resource the unit holds (a mine's gold, a bush's food, an animal's food) |
+  | `float kbUnitGetInventoryCapacity(int unitID, int resourceID)` | how much of it the unit can hold (its proto's carry capacity) |
+  | `bool kbUnitIsInventoryFull(int unitID)` | the engine's own "inventory full" test (for livestock: fully fattened) |
+  | `int kbUnitGetNumberWorkersIfSeeable(int unitID)` | for a unit the player can see, the number of its gatherers the player can see; 0 if it cannot see the unit. The stock `kbUnitGetNumberWorkers` answers only for the player's own units |
+  | `int kbUnitGetNumberTargeters(int unitID)` | the number of the player's gatherers ordered to the unit that are not working it yet |
+
+  An unknown unit ID gives 0 (inventory), false, or -1 (the two counts).
+- **Your data:** none; AI scripts call the syscalls. A script that calls them fails to compile
+  without the key (`XS: Error 0003: could not compile file ...`).
+- **Log:** `kbUnitSyscalls: 5 kb syscalls added`, then `syscalls: group KB: 5 added, 0 refused`
+  when the game builds its KB syscalls; the first call of each, `hook reached: kbUnitSyscalls
+  <name>`.
+- **Simulation:** reads only; AI scripts run on the host, so only the host needs the line.
+- **Status:** confirmed (2026-11-03, single player, against an AI): an AI script that calls the
+  five syscalls compiled and ran. A test rule printed them every 20 s: a hunted animal's food fell
+  from 207.7 to 62.5 while `kbUnitGetNumberWorkersIfSeeable` gave 6 (the stock
+  `kbUnitGetNumberWorkers` gave 0 for that Gaia unit; game memory showed the same 6 gatherer IDs);
+  the AI's livestock showed food 50 of capacity 300, not full; a mine and a bush at full showed
+  "full". `kbUnitGetNumberTargeters` was reached but gave 0 in that window (every gatherer was
+  already working its target). Without the key the same script did not compile (`Error 0172` on
+  `kbUnitGetCurrentInventory`). Video `kbUnitSyscalls.mp4`: about 1,200 fps on average, longest
+  frame 5–19 ms, no frame over 50 ms. No A/B: without the key the AI does not run at all.
+  In the WoL copy: the Maori personality Te Rauparaha (`_TeRauparaha.xs`, its 38 calls). <!-- private -->
+
 ### customRevolutionBanners
 
 ```

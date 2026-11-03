@@ -35,6 +35,7 @@ public:end -->
 | `nativeCivs Civ ...` | Listed civs count as native civs (fire pit dances, council age-up). | confirmed (single player) |
 | `bigButtonCivs Civ ...`, `noBigButtonBlds Proto ...` | The native big button for more civs; never on the listed buildings. | partly confirmed |
 | `enableFarmAnim Proto ...`, `enableRectFarmAnim Proto ...`, `farmingRadius Index X Z ...` | Gatherers on listed buildings are placed and animated as on a Mill or a Rice Paddy, over an area per building. | confirmed (single player) |
+| `kbUnitSyscalls` | Five KB syscalls for AI scripts: a unit's inventory, capacity, "full" test, visible workers and gatherers on their way. | confirmed (single player, AI script) |
 | `wonderCivUnitType Proto ...` | Listed units may start a wonder civ's age-up. | confirmed (single player) |
 | `trainSingleAbstractType [UnitType]` | Units of the marker type leave training one at a time, not as a batch. | confirmed (single player) |
 | `twoScoutCivs Civ ...` | Listed civs get the two-hero interface. | not tested in game |

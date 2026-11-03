@@ -962,6 +962,17 @@ SITES = [
     ("PopFormatCost3", 0x710651, 0x08),
     ("PopFormatCapLine", 0x6F2DB5, 0x08),
     ("PopFormatCap", 0x6F2E34, 0x08),
+    # kbUnitSyscalls: engine functions the added kb syscalls call (thiscall, verified heads).
+    # ResList get 0x44EFFF(list, r) -> float; unit isSeeable 0x48A9EF(unit, player) -> bool (the
+    # visibility bit [[unit+B4h]+ACh] & 1<<player, else the explored bit [+B0h] and the proto's
+    # under-fog flags, 0x55F5B2); unit getSquad 0x4E2A03(unit) -> [[world+148h]][[unit+B4h]+14h];
+    # inventory isFull 0x4DC520(inventory) -> bool; unit getCarryCapacity 0x494503(unit, r) ->
+    # float, through [unit+5Ch] (the proto)
+    ("ResListGet", 0x44EFFF, 0x3D),
+    ("UnitIsSeeable", 0x48A9EF, 0x3B),
+    ("UnitGetSquad", 0x4E2A03, 0x32),
+    ("InventoryIsFull", 0x4DC520, 0x3D),
+    ("UnitCarryCapacity", 0x494503, 0x10),
 ]
 
 

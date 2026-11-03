@@ -65,6 +65,7 @@ add_library(UHC SHARED
   src/features/transform.cpp
   src/features/transforminv.cpp
   src/features/typetests.cpp
+  src/features/kbsyscalls.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp

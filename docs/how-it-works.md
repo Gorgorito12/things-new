@@ -499,6 +499,24 @@ the unit's proto with `0x44CAC4` for abstract type 16h (`push 16h / mov ecx,prot
 redirects those two calls to a wrapper that returns the stock answer or whether the proto ID
 (`[proto+4]`) is listed (`ProtoIdList`).
 
+### kbUnitSyscalls
+
+Five syscalls added to the KB group through the syscall registry (`src/syscalls.*`, the hook on
+the group's first registration at `0x885D14`); no game code is patched. Each is a cdecl function
+that calls engine functions, with "the player" read from `[0xC66664]` as the stock KB syscalls
+do (their common head, for example `0x881CC6`: world, player `0x44CB21`, kb `[player+80h]`):
+
+| Syscall | How |
+|---|---|
+| `kbUnitGetCurrentInventory` | Unit by ID `0x44CC6D`, inventory `[[unit+B4h]+94h]`, ResList get `0x44EFFF` on its `+4` list. |
+| `kbUnitGetInventoryCapacity` | `0x494503` (the unit's proto carry capacity). |
+| `kbUnitIsInventoryFull` | `0x4DC520` on the inventory. |
+| `kbUnitGetNumberWorkersIfSeeable` | The stock kb method `0x86C647` returns the worker count `[unit+98h]` for the player's own units only. This one tests the unit with isSeeable `0x48A9EF` (the visibility mask `[[unit+B4h]+ACh]`, else the explored mask and the proto's under-fog flags), then counts the entries of the worker array `[unit+94h]` (18h bytes, worker ID first) whose worker passes the same test. |
+| `kbUnitGetNumberTargeters` | Walks the player's units (`[player+F8h]`, count `[+FCh]`); for each of abstract index 16h that is not in the unit's worker array, the squad (`0x4E2A03`) `[+1Ch]` object's order list (`+28h`/`+2Ch`), and in each order the target entries (`+1Ch`/`+20h`, 18h bytes, unit ID first). |
+
+Every pointer and count is checked before use (counts above 100,000 are treated as invalid);
+nothing is written.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

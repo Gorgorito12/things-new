@@ -78,6 +78,7 @@ clicks, 10–12 s before each "Jugar", about 55 s for the game to load.
 | `customAbstractTypes` | 47 types registered; next failure: `kbGetTechID`. |
 | `customSyscalls` | Both plugins load (17 syscalls, 33 cheats collected). **The AI compiles and plays** (Indians: houses, settlers, monks fighting). Video: `wol-ai-plugins.mp4`, with `--perf` (about 350 fps, 2 frames over 50 ms in 30 s, main thread 93 %). |
 | End of 2026-11-02 | `UHCMain: 23 applied, 0 failed` with WoL's cfg plus the bed's keys; 17 of WoL's keys still "not implemented yet" (29 at the start). Also confirmed in the bed: the restored `dodgeAnyUnit`, `dodgeChance` and `spreadAnyAccuracy` apply again. Next: farms (`enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`), `wonderCivUnitType`, `customProtoUnitCommands`, the Maori AI's kb syscalls. |
+| `kbUnitSyscalls`, 2026-11-03 | **The Maori AI (Te Rauparaha) compiles and plays**: the last AI personality that did not. Its five syscalls are rebuilt on engine functions whose addresses come from the name table inside WoL's DLL (`wol-uhc-map.md`, "Engine symbol table"), each checked in the stock exe. |
 
 ## Keys
 
@@ -102,7 +103,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `selectionLimit 75` | WoL | degrades | **done**, confirmed (75 of 89 Pikemen; 50 without) |
 | `trainSingleAbstractType` | WoL | degrades (`AbstractTrainLimitOne`, 36 protos) | **done**, confirmed (Totenkopf hussars one at a time; a batch without the key) |
 | `multiarmor` | WoL | degrades (32 protos, 76 effects) | pending, RE |
-| WoL-DLL kb syscalls (`kbUnitGetNumberTargeters`, …) | WoL, always on | blocks the Maori AI (`wolRauparaha`) only | pending |
+| WoL-DLL kb syscalls (`kbUnitGetNumberTargeters`, …) | WoL, always on | blocks the Maori AI (`wolRauparaha`) only | **done**, confirmed (`kbUnitSyscalls`: Te Rauparaha compiles and plays; 6 visible workers on a hunt, 0 with the stock call; without the key `Error 0172` on `kbUnitGetCurrentInventory`). WoL's cfg needs the line `kbUnitSyscalls` (WoL's DLL has them always on) |
 | `enablerandomtecheffect` | WoL | none in current data | pending |
 | `betterfreedynamicunit`, `nowalkfarm`, `repairWallGlobal`, `compatMode` | WoL | degrades | pending, RE |
 | `attackTypeIcons`, `loadingScreenCount 28`, `flagoverrideeffect`, `optionhighpolycliff`, `alpha2coverage`, `map` / `uhcSyncTrack` | upstream / WoL | cosmetic | pending |
@@ -131,6 +132,7 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `kbUnitSyscalls` | AI skirmish: player Australians (Melbourne); AI Maori, personality Te Rauparaha (other personalities moved aside so the random pick is that one; the clicks on the AI slot opened nothing) |
 | `wonderCivUnitType` | Maori (Parihaka): Rangatira, voyages |
 | `trainSingleAbstractType` | Germans (Age0German, age IV): WOLTotenkopfHussar at a Barracks (scenario) |
 | farms | XPIroquois: WOLPlantationIroquois, WOLFarmIroquois (scenario); Brazilian Fazenda (not gatherable) |

@@ -149,8 +149,20 @@ There are also lobby/UI overrides: ESOC `BMPESOGameList`, `BMPLANBrowserDialog`,
 | Observer | `trClearObserverOwnedObjects`, `rmIsObserverMode` |
 | Map variants and events | `rmIsSummerVariant`, `rmIsWinterVariant`, `rmIsSpecialEventVariant`, `rmIsUnexpectedEventsVariant`, `rmGetMapVariant`, `rmActivateRandomEvents` |
 | Misc commands | `setSquadModeByIndex`, `reloadAllSounds`, `setFastPlaybackFactor`, `saveUnresponsiveGame` (`saveonoos`), `activate/deactivateAprilFoolsTextures` |
-| kb queries | `kbUnitIsInventoryFull`, `kbUnitGetCurrentInventory`, `kbUnitGetInventoryCapacity`, `kbUnitGetNumberTargeters`, `kbUnitGetNumberWorkersIfSeeable` |
+| kb queries | `kbUnitIsInventoryFull`, `kbUnitGetCurrentInventory`, `kbUnitGetInventoryCapacity`, `kbUnitGetNumberTargeters`, `kbUnitGetNumberWorkersIfSeeable` (registered at 0x1004F21E.. with group 2; rebuilt in our DLL as `kbUnitSyscalls`, 2026-11-03) |
 | AI plans | `trCreateDefendPlan2` |
+
+### Engine symbol table
+
+The DLL resolves its imports from `Bang.dll` (the delay-load notify hook 0x1000F9D0 answers that
+name; the lookup 0x1006CA00 hashes the mangled name with FNV-1a into a table) from **1,218 pairs of
+mangled name and stock exe address** that its code builds at startup (`push name / ... / mov
+[ebp-93BCh],addr / call`). `rea/evidence/wol-uhc-c070d138/wolsyms.py` extracts them to
+`wolsyms.txt` (sorted by name order in the code). Spot checks against the stock exe matched:
+`BWorld::getUnitByID` 0x44CC6D, `BWorld::getPlayer` 0x44CB21, `BProtoUnit::isAbstractType`
+0x44CAC4, `BUnit::isSeeable` 0x48A9EF, `BUnit::getSquad` 0x4E2A03,
+`BResourceInventory::isFull` 0x4DC520, `BUnit::getCarryCapacity` 0x494503. Treat the names as
+hints: check each address with `cs` before relying on it, and record it in `engine-symbols.md`.
 
 ## Runtime patch list (memory diff, 2026-10-28)
 

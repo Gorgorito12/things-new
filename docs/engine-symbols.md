@@ -874,6 +874,27 @@ movement".
 | `g_uhcBwrTrainGetter` | UHC.dll export (data, C linkage) | — | `void*`, default 0x9BFE33; set to the wrapper when `buildingWorkRateAuras` applies. noTrainNearEnemyTC's Train hook calls through it. |
 
 
+### KB unit queries (for `kbUnitSyscalls`, 2026-11-03)
+
+The stock KB syscalls share one head (for example `kbUnitGetNumberWorkers` 0x881CC6, registered
+at 0x8879E6 with `push 2 / push fn / push name / mov ecx,esi / call 624F52h`): world
+`[[C66234h]+13Ch]` non-null, player `0x44CB21([C66664h])`, its kb `[player+80h]`, then a kb method
+with the unit ID. Player by ID and Unit by ID are in "Home city gather point"; the inventory and
+ResList get in "Resource inventories".
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| kb getNumberWorkers | 0x86C647, `thiscall(kb, int unitId)` | confirmed (`cs`) | Returns `[unit+98h]` only when the unit's owner `[[unit+44h]]` is the kb's player `[kb+10h]`; else 0. |
+| Unit worker array | `[unit+94h]` (pointer), `[unit+98h]` (count) | confirmed (0x86C647); entry layout inference | 18h-byte entries whose first dword is a worker's unit ID (the layout another DLL's code walks; not traced in the exe). |
+| kb unit record | 0x470CC4, `thiscall(kb, int unitId)` | confirmed (`cs`) | `[kb+18h][[[unit+B4h]+8]]` if that index is below `[kb+1Ch]`: the AI's record of the unit, null if it never knew it. |
+| `kbUnitVisible` | 0x88596E (registered at 0x88E79C) | confirmed (`cs`) | True when `[[unit+B4h]+ACh] & (1 << [C66664h])`: the per-player visibility mask. |
+| Unit isSeeable | 0x48A9EF, `bool thiscall(unit, int player)`, `ret 4` | confirmed (head, `cs`); cold path scoping | The visibility mask above; else (0x55F5B2) the explored mask `[+B0h]` and the proto's under-fog flags `[[proto+50h]+1] & 1` (proto `[unit+5Ch]`). Site `UnitIsSeeable`. |
+| Unit getSquad | 0x4E2A03, `thiscall(unit)` | confirmed (`cs`) | `[[world+148h]][[unit+B4h]+14h]` if that index is below `[world+14Ch]`, else 0 (0x470CB5). Site `UnitGetSquad`. |
+| Squad orders | `[squad+1Ch]` → `+28h` pointer array, `+2Ch` count; each element `+1Ch` array of 18h-byte entries, `+20h` count | inference | The path `kbUnitGetNumberTargeters` walks; the first dword of an entry is a target unit ID. Seen in another DLL's code, not traced in the exe. |
+| Resource inventory isFull | 0x4DC520, `bool thiscall(inventory)` | head confirmed | Inventory `[[unit+B4h]+94h]`; starts with the unit lookup of its `+0` unit ID. Site `InventoryIsFull`. |
+| Unit getCarryCapacity | 0x494503, `float thiscall(unit, int r)`, `ret 4` | confirmed (`cs`) | `0x4944E5([unit+5Ch], r)`: the proto's capacity. Site `UnitCarryCapacity`. |
+| Player unit list | `[player+F8h]` (unit IDs), `[player+FCh]` (count) | inference; in game (counts) | The list `kbUnitGetNumberTargeters` walks. |
+
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
