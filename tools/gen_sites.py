@@ -28,6 +28,9 @@ SITES = [
     ("PopLimit", 0x4581F3, 0x50),
     # noAILimit: the hard-coded personality table setup plus the xor eax,eax it continues at
     ("AiLimit", 0x603B0B, 0x146),
+    # noAILimitV2: test al,al / je 658900h (TAD table branch) / the 14-entry count and table
+    # stores, up to the shared continuation xor eax,eax at 0x603C4F
+    ("AiLimitV2", 0x603C34, 0x1B),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),

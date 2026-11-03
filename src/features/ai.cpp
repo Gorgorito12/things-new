@@ -1,7 +1,8 @@
 // noAILimit: the AI personality list comes from every personality file in the exe's AI folder
 // instead of the stock table of 11 (or 14 with TAD content). The hook is in hooks/ai_hooks.asm.
-// noAILimitV2 is an alias: other DLLs hook later in the same stock range (0x603C34) to the same
-// effect, and this hook already skips that range.
+// noAILimitV2 gives the same list from the same folder, but hooks where the Wars of Liberty DLL's
+// key does (0x603C34): the stock range before it runs unchanged and only the count and table
+// stores are replaced. With both keys, noAILimit wins.
 #include <windows.h>
 
 #include <algorithm>
@@ -20,6 +21,7 @@ std::int32_t g_uhcPersonalityCount = 0;
 const wchar_t* const* g_uhcPersonalities = nullptr;
 
 void UhcAiLimitHook();
+void UhcAiLimitV2Hook();
 }
 
 namespace uhc {
@@ -58,10 +60,8 @@ Outcome ApplyNoAiLimit(const Config& config) {
   if (!config.Has("noAILimit") && !v2) {
     return Outcome::kNotConfigured;
   }
-  if (v2) {
-    Log(L"noAILimitV2: read as noAILimit (same personality list from the AI folder)");
-  }
-  if (!VerifyAll("noAILimit", {&sites::kAiLimit})) {
+  const char* const key = v2 ? "noAILimitV2" : "noAILimit";
+  if (!VerifyAll(key, {v2 ? &sites::kAiLimitV2 : &sites::kAiLimit})) {
     return Outcome::kFailed;
   }
   const std::wstring folder(kAiFolder, wcsnlen_s(kAiFolder, kMaxExeString));
@@ -82,7 +82,7 @@ Outcome ApplyNoAiLimit(const Config& config) {
     FindClose(search);
   }
   if (g_names.empty()) {
-    Log(L"noAILimit: no personality files match %ls; keeping the stock list", pattern.c_str());
+    Log(L"%hs: no personality files match %ls; keeping the stock list", key, pattern.c_str());
     return Outcome::kFailed;
   }
   // Directory order differs between file systems; sort so every machine gets the same list.
@@ -95,10 +95,13 @@ Outcome ApplyNoAiLimit(const Config& config) {
   g_uhcPersonalities = g_table.data();
   g_uhcPersonalityCount = static_cast<std::int32_t>(g_table.size());
 
-  if (!WriteJmp(sites::kAiLimit.va, reinterpret_cast<const void*>(&UhcAiLimitHook), 5)) {
+  const bool written = v2 ? WriteJmp(sites::kAiLimitV2.va, reinterpret_cast<const void*>(&UhcAiLimitV2Hook),
+                                     sites::kAiLimitV2.size)
+                          : WriteJmp(sites::kAiLimit.va, reinterpret_cast<const void*>(&UhcAiLimitHook), 5);
+  if (!written) {
     return Outcome::kFailed;
   }
-  Log(L"noAILimit: %d personalities from %ls", g_uhcPersonalityCount, pattern.c_str());
+  Log(L"%hs: %d personalities from %ls", key, g_uhcPersonalityCount, pattern.c_str());
   return Outcome::kApplied;
 }
 
