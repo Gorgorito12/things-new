@@ -1046,6 +1046,17 @@ SITES = [
     ("GatherAnimLoopCollect", 0x4ECC8E, 0x59),
     ("GatherCollect", 0x9DD7B4, 0x10),
     ("GatherCollect2", 0x4ECD87, 0x10),
+    # rofFix: FUN_009CEB5C (an ability/command order on a unit) clears the unit AI's [+B8h] with
+    # mov dword [edi+0B8h],0 before issuing the order
+    ("RofTimerReset", 0x9CECB4, 0x0A),
+    # stunMovingTargetFix: BUnitStunAction's update, state 8: call [eax+0CCh] (the target check) /
+    # test al,al / jne 9E90F9h; on a failed check it ends the action (setState 0Ah)
+    ("StunTargetCheck", 0x9E909E, 0x02),
+    # noDamageOnUnbuiltFoundations: in the damage function FUN_0049B3D9 (thiscall(unit, int
+    # attackerPlayer, ...), ret 34h; ESI = unit, ECX = its proto, the attacker at [esp+94h]), the
+    # proto flag 9Ch (Invulnerable) test: cmp [ecx+54h],9Ch / jbe 49B40Fh / ... / ja 4CA52Bh
+    # (no damage) (22 B)
+    ("DamageInvulnerableTest", 0x49B3F3, 0x16),
 ]
 
 

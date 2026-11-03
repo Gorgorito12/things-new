@@ -304,6 +304,20 @@ the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-p
 sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
 live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
 
+### rofFix, stunMovingTargetFix and noDamageOnUnbuiltFoundations
+
+- **rofFix:** FUN_009CEB5C (an ability or command order on a unit) stores 0 to the unit AI's
+  `[+B8h]` at `0x9CECB4` (10 B) before issuing the order; the key turns that store into NOPs.
+- **stunMovingTargetFix:** in BUnitStunAction's update, state 8 calls the unit's `[vtbl+CCh]`
+  (a target check) and `jne 9E90F9h` (`0x9E909E`) skips `setState(0Ah)` only when it passes; the
+  key makes it `jmp`.
+- **noDamageOnUnbuiltFoundations:** the damage function FUN_0049B3D9 tests the proto flag 9Ch
+  (Invulnerable) at `0x49B3F3` (22 B) and leaves to `0x4CA52B` (no damage). The hook calls a C
+  test: that flag, or a building (abstract index 2) whose `[[unit+68h]+8]` (construction) is at
+  most 1e-6 while the attacking player's byte `[+505h]` is 0 (set by the effect at
+  `0x7FB7E5..0x7FB85B`, which changes that player's diplomacy with every player through
+  `0xA0410F`). Then `0x4CA52B` or the next test at `0x49B40F` (ECX = the proto).
+
 ### gatherFix
 
 BUnitGatherAction's update adds the elapsed time `[world+104h]` to `[action+88h]` at `0x4EC8DE`, and

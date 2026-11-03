@@ -128,14 +128,14 @@ patch).
 |---|---|---|---|
 | ExtendedDataSubtypes / AdditionalTechEffects (installers 0x10079850, 0x10076180, 0x1007AC70) | 0x525BA0, 0x526D60, 0x5F215C, 0x620C24, 0x622F44, BDataEffect calls 0x7F86FE..0x7F87A8 | new Data effect subtypes (`ROF`, `GathererLimit`, `MinimumRange`, `Bounty` in WoL's data) | pending (next) |
 | GatherFix | 0x4EC8DE, 0x4ECC8E | gathering on a fixed interval (WoL's balance assumes it: stock gathers 56% more on trees) | **done** (`gatherFix`; WoL's cfg needs the line) |
-| ROFFix | 0x9CECB4 | rate of fire | pending |
-| StunMovingTargetFix | 0x9E909E | stun on a moving target | pending |
+| ROFFix | 0x9CECB4 | an order clears the unit's attack timer | **done** (`rofFix`), not seen in a test |
+| StunMovingTargetFix | 0x9E909E | a stun ends when the target check fails | **done** (`stunMovingTargetFix`), not seen in a test |
 | FallenHeroTacticsFix | 0x6AAE6D, 0x7D8F07, 0x9D6BE7, 0x9EBB0B | tactics of a knocked-out hero | pending |
 | NoKnockoutDanceBonusHealFix | 0x679FBA, 0x6A5C35..0x6A5CE2 | the dance heal bonus on knocked-out heroes | pending |
 | ModifyActionFix | 0x49F252, 0x9E36D0 | the modifier action type (see `buildingWorkRateAuras`) | pending |
 | DisableEffectOnTechFix | 0x94CE4C, 0x94CEBC | tech effects being disabled | pending |
 | DoubleShipmentsInspectFix | 0x71063D, 0x9A652D | the shipment panel (near `decimalPopulation`'s sites) | pending |
-| NoDamageOnUnbuiltFoundations | 0x49B3F3 | damage to foundations | pending |
+| NoDamageOnUnbuiltFoundations | 0x49B3F3 | unbuilt foundations take no damage | **done** (`noDamageOnUnbuiltFoundations`), hook reached; not seen (no foundation in the test) |
 | CivSpecificTextTechRollover | 0x4C7481, 0x81A5CB | tech rollover text per civ | pending (cosmetic) |
 | FlagOverride | 11 sites (0x451FAF, 0x4B9ED4, 0x5EE665, ...) | `flagoverrideeffect` | pending (cosmetic key) |
 | HighPolyCliff | 25 calls of `BDataSet::getData` (0x7B6F79..0x7C0B82, 0x82E9CE) | `optionhighpolycliff` | pending (cosmetic key) |

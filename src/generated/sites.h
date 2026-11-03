@@ -1268,4 +1268,13 @@ inline constexpr Site kGatherCollect{"GatherCollect", 0x009DD7B4, kGatherCollect
 inline constexpr std::uint8_t kGatherCollect2Bytes[] = {0x83, 0xEC, 0x1C, 0x56, 0x57, 0x8B, 0x3D, 0x34, 0x62, 0xC6, 0x00, 0x80, 0xBF, 0x3A, 0x0B, 0x00};
 inline constexpr Site kGatherCollect2{"GatherCollect2", 0x004ECD87, kGatherCollect2Bytes, sizeof(kGatherCollect2Bytes)};
 
+inline constexpr std::uint8_t kRofTimerResetBytes[] = {0xC7, 0x87, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+inline constexpr Site kRofTimerReset{"RofTimerReset", 0x009CECB4, kRofTimerResetBytes, sizeof(kRofTimerResetBytes)};
+
+inline constexpr std::uint8_t kStunTargetCheckBytes[] = {0x75, 0x59};
+inline constexpr Site kStunTargetCheck{"StunTargetCheck", 0x009E909E, kStunTargetCheckBytes, sizeof(kStunTargetCheckBytes)};
+
+inline constexpr std::uint8_t kDamageInvulnerableTestBytes[] = {0x81, 0x79, 0x54, 0x9C, 0x00, 0x00, 0x00, 0x76, 0x13, 0x8B, 0x41, 0x50, 0x8A, 0x50, 0x13, 0x83, 0xE2, 0x10, 0x89, 0x54, 0x24, 0x08};
+inline constexpr Site kDamageInvulnerableTest{"DamageInvulnerableTest", 0x0049B3F3, kDamageInvulnerableTestBytes, sizeof(kDamageInvulnerableTestBytes)};
+
 }  // namespace uhc::sites

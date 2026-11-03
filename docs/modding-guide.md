@@ -574,6 +574,28 @@ customAbstractTypes [file]
   `cUnitType<Name>` constants compiled. <!-- private -->In the Wars of Liberty copy, with WoL's own `data\uhc\customabstracttypes.xml`; before it, `aiLoaderStandard.xs` failed on `cUnitTypeAbstractWoLHandCavalry`.
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
+### rofFix, stunMovingTargetFix and noDamageOnUnbuiltFoundations
+
+```
+rofFix
+stunMovingTargetFix
+noDamageOnUnbuiltFoundations
+```
+
+- **rofFix:** ordering a unit to use an ability or command no longer clears its attack timer, so
+  orders cannot be used to fire sooner.
+- **stunMovingTargetFix:** a stun action is no longer cancelled when its target check fails (a
+  target that moves away).
+- **noDamageOnUnbuiltFoundations:** a building whose construction has not started yet (a
+  foundation just placed) takes no damage, unless the attacker's player is in the state the game
+  sets when an effect changes that player's diplomacy with every other player.
+- **Log:** one line per key at startup; `noDamageOnUnbuiltFoundations: <Proto> (an unbuilt
+  foundation) took no damage from player N` the first time it applies.
+- **Simulation:** change combat: every player needs the same lines.
+- **Status:** applied and running (2026-11-03): the three load, and the damage test runs on every
+  hit with no change to normal damage (a finished House took 20 per shot with the key). Their
+  effects were not seen in a test yet: the trigger that should place a foundation placed none.
+
 ### gatherFix
 
 <!-- private:begin -->
