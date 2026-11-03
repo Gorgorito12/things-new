@@ -55,6 +55,7 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
+Outcome ApplyPlugins(const Config& config);
 
 inline constexpr Feature kFeatures[] = {
     // First: its types get their IDs before any other feature requests one.
@@ -107,6 +108,8 @@ inline constexpr Feature kFeatures[] = {
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"multipleInstances", ApplyMultipleInstances},
+    // Last: plugins load once every other hook is in place.
+    {"customSyscalls", ApplyPlugins},
 };
 
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
@@ -123,7 +126,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances",
+    "perffilelog", "multipleinstances", "customsyscalls",
 };
 
 }  // namespace uhc

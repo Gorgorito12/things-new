@@ -18,6 +18,7 @@ add_library(UHC SHARED
   src/floatingtext.cpp
   src/log.cpp
   src/patch.cpp
+  src/syscalls.cpp
   src/unittypes.cpp
   src/worldtick.cpp
   src/actiontags.cpp
@@ -46,6 +47,7 @@ add_library(UHC SHARED
   src/features/overheal.cpp
   src/features/overhealdecay.cpp
   src/features/overhealsources.cpp
+  src/features/plugins.cpp
   src/features/perf.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -62,6 +64,7 @@ add_library(UHC SHARED
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
+  src/hooks/syscall_hooks.asm
   src/hooks/broadside_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm

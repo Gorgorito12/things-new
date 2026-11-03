@@ -31,6 +31,17 @@ SITES = [
     # noAILimitV2: test al,al / je 658900h (TAD table branch) / the 14-entry count and table
     # stores, up to the shared continuation xor eax,eax at 0x603C4F
     ("AiLimitV2", 0x603C34, 0x1B),
+    # customSyscalls: the first stock registration of each syscall module (ESI = the module):
+    # push 1 / push <fn> (7 B), then push <name> / mov ecx,esi / call 624F52h. The UI module's
+    # return-type push comes before its site, so only push <fn> (5 B) is replaced there.
+    ("SyscallAi", 0x7294F4, 7),
+    ("SyscallHc", 0x5B5E08, 7),
+    ("SyscallKb", 0x885D14, 7),
+    ("SyscallRm", 0x60B8BF, 7),
+    ("SyscallTr", 0x988E03, 7),
+    ("SyscallUi", 0x539542, 5),
+    ("SyscallUi2", 0x53575E, 7),
+    ("SyscallXs", 0x6257D9, 7),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),
