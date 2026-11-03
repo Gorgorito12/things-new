@@ -1277,4 +1277,16 @@ inline constexpr Site kStunTargetCheck{"StunTargetCheck", 0x009E909E, kStunTarge
 inline constexpr std::uint8_t kDamageInvulnerableTestBytes[] = {0x81, 0x79, 0x54, 0x9C, 0x00, 0x00, 0x00, 0x76, 0x13, 0x8B, 0x41, 0x50, 0x8A, 0x50, 0x13, 0x83, 0xE2, 0x10, 0x89, 0x54, 0x24, 0x08};
 inline constexpr Site kDamageInvulnerableTest{"DamageInvulnerableTest", 0x0049B3F3, kDamageInvulnerableTestBytes, sizeof(kDamageInvulnerableTestBytes)};
 
+inline constexpr std::uint8_t kTacticReset1Bytes[] = {0x53, 0xE8, 0x16, 0xC5, 0xE4, 0xFF};
+inline constexpr Site kTacticReset1{"TacticReset1", 0x006AAE6D, kTacticReset1Bytes, sizeof(kTacticReset1Bytes)};
+
+inline constexpr std::uint8_t kTacticReset2Bytes[] = {0x6A, 0x00, 0xE8, 0x7B, 0xE4, 0xD1, 0xFF};
+inline constexpr Site kTacticReset2{"TacticReset2", 0x007D8F07, kTacticReset2Bytes, sizeof(kTacticReset2Bytes)};
+
+inline constexpr std::uint8_t kTacticReset3Bytes[] = {0x6A, 0x00, 0xE8, 0x9B, 0x07, 0xB2, 0xFF};
+inline constexpr Site kTacticReset3{"TacticReset3", 0x009D6BE7, kTacticReset3Bytes, sizeof(kTacticReset3Bytes)};
+
+inline constexpr std::uint8_t kTacticReset4Bytes[] = {0x6A, 0x00, 0xE8, 0x77, 0xB8, 0xB0, 0xFF};
+inline constexpr Site kTacticReset4{"TacticReset4", 0x009EBB0B, kTacticReset4Bytes, sizeof(kTacticReset4Bytes)};
+
 }  // namespace uhc::sites

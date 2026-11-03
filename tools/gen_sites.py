@@ -1057,6 +1057,12 @@ SITES = [
     # proto flag 9Ch (Invulnerable) test: cmp [ecx+54h],9Ch / jbe 49B40Fh / ... / ja 4CA52Bh
     # (no damage) (22 B)
     ("DamageInvulnerableTest", 0x49B3F3, 0x16),
+    # fallenHeroTacticsFix: four places reset the unit AI's tactic ([ai+A8h]) to 0 through
+    # 0x4F7389 (thiscall(ai, int tactic), ret 4) when it is not 0 already: push ebx|0 / call 4F7389h
+    ("TacticReset1", 0x6AAE6D, 0x06),
+    ("TacticReset2", 0x7D8F07, 0x07),
+    ("TacticReset3", 0x9D6BE7, 0x07),
+    ("TacticReset4", 0x9EBB0B, 0x07),
 ]
 
 

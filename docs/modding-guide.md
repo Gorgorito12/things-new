@@ -574,12 +574,13 @@ customAbstractTypes [file]
   `cUnitType<Name>` constants compiled. <!-- private -->In the Wars of Liberty copy, with WoL's own `data\uhc\customabstracttypes.xml`; before it, `aiLoaderStandard.xs` failed on `cUnitTypeAbstractWoLHandCavalry`.
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
-### rofFix, stunMovingTargetFix and noDamageOnUnbuiltFoundations
+### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
 
 ```
 rofFix
 stunMovingTargetFix
 noDamageOnUnbuiltFoundations
+fallenHeroTacticsFix
 ```
 
 - **rofFix:** ordering a unit to use an ability or command no longer clears its attack timer, so
@@ -589,10 +590,12 @@ noDamageOnUnbuiltFoundations
 - **noDamageOnUnbuiltFoundations:** a building whose construction has not started yet (a
   foundation just placed) takes no damage, unless the attacker's player is in the state the game
   sets when an effect changes that player's diplomacy with every other player.
+- **fallenHeroTacticsFix:** a unit keeps the tactic its player chose when it is knocked out,
+  stunned or building; stock resets it to the first tactic.
 - **Log:** one line per key at startup; `noDamageOnUnbuiltFoundations: <Proto> (an unbuilt
   foundation) took no damage from player N` the first time it applies.
 - **Simulation:** change combat: every player needs the same lines.
-- **Status:** applied and running (2026-11-03): the three load, and the damage test runs on every
+- **Status:** applied and running (2026-11-03): the four load (34 keys applied together), and the damage test runs on every
   hit with no change to normal damage (a finished House took 20 per shot with the key). Their
   effects were not seen in a test yet: the trigger that should place a foundation placed none.
 

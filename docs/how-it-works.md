@@ -304,7 +304,7 @@ the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-p
 sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
 live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
 
-### rofFix, stunMovingTargetFix and noDamageOnUnbuiltFoundations
+### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
 
 - **rofFix:** FUN_009CEB5C (an ability or command order on a unit) stores 0 to the unit AI's
   `[+B8h]` at `0x9CECB4` (10 B) before issuing the order; the key turns that store into NOPs.
@@ -317,6 +317,9 @@ live in a `std::deque`, which never moves an element (the registration keeps a p
   most 1e-6 while the attacking player's byte `[+505h]` is 0 (set by the effect at
   `0x7FB7E5..0x7FB85B`, which changes that player's diplomacy with every player through
   `0xA0410F`). Then `0x4CA52B` or the next test at `0x49B40F` (ECX = the proto).
+- **fallenHeroTacticsFix:** `0x4F7389` (thiscall(ai, int tactic), `ret 4`) sets the unit AI's
+  tactic `[ai+A8h]`; four places call it with 0 when the tactic is not 0 already (`0x6AAE6D`,
+  `0x7D8F07`, `0x9D6BE7`, `0x9EBB0B`); the key turns each `push` + `call` into NOPs.
 
 ### gatherFix
 

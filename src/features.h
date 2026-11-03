@@ -77,6 +77,7 @@ Outcome ApplyGatherFix(const Config& config);
 Outcome ApplyRofFix(const Config& config);
 Outcome ApplyStunMovingTargetFix(const Config& config);
 Outcome ApplyNoDamageOnUnbuiltFoundations(const Config& config);
+Outcome ApplyFallenHeroTacticsFix(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
@@ -139,6 +140,7 @@ inline constexpr Feature kFeatures[] = {
     {"rofFix", ApplyRofFix},
     {"stunMovingTargetFix", ApplyStunMovingTargetFix},
     {"noDamageOnUnbuiltFoundations", ApplyNoDamageOnUnbuiltFoundations},
+    {"fallenHeroTacticsFix", ApplyFallenHeroTacticsFix},
     {"selectionLimit", ApplySelectionLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
@@ -177,7 +179,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
 }  // namespace uhc

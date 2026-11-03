@@ -6,6 +6,10 @@
 // stunMovingTargetFix: a stun action (BUnitStunAction's update, state 8) ends when its target
 //   check fails (jne at 0x9E909E skips setState(0Ah) only on success), so a target that moves
 //   escapes the stun. The key makes that jne a jmp, so the action goes on.
+// fallenHeroTacticsFix: four places reset a unit AI's tactic to 0 (0x4F7389(0) when [ai+A8h] is
+//   not 0): 0x6AAE6D, 0x7D8F07, 0x9D6BE7 (in BUnitBuildAction::setState's area) and 0x9EBB0B
+//   (BUnitStunAction::setState's area), so a hero knocked out or stunned loses the tactic its
+//   player chose. The key removes the four calls (with their push).
 // noDamageOnUnbuiltFoundations: the damage function (FUN_0049B3D9) gives no damage to a unit
 //   whose proto has flag 9Ch (Invulnerable), tested at 0x49B3F3. The key also gives none to a
 //   building (abstract index 2) whose construction [[unit+68h]+8] has not started (at most
@@ -72,6 +76,25 @@ Outcome ApplyNoDamageOnUnbuiltFoundations(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"noDamageOnUnbuiltFoundations: foundations whose construction has not started take no damage");
+  return Outcome::kApplied;
+}
+
+Outcome ApplyFallenHeroTacticsFix(const Config& config) {
+  if (config.First("fallenHeroTacticsFix") == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  const Site* resets[] = {&sites::kTacticReset1, &sites::kTacticReset2, &sites::kTacticReset3, &sites::kTacticReset4};
+  if (!VerifyAll("fallenHeroTacticsFix", {resets[0], resets[1], resets[2], resets[3]})) {
+    return Outcome::kFailed;
+  }
+  for (const Site* site : resets) {
+    std::uint8_t nops[8];
+    std::memset(nops, 0x90, sizeof nops);
+    if (!WriteBytes(site->va, nops, site->size)) {
+      return Outcome::kFailed;
+    }
+  }
+  Log(L"fallenHeroTacticsFix: units keep their tactic when knocked out, stunned or building");
   return Outcome::kApplied;
 }
 

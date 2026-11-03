@@ -130,11 +130,11 @@ patch).
 | GatherFix | 0x4EC8DE, 0x4ECC8E | gathering on a fixed interval (WoL's balance assumes it: stock gathers 56% more on trees) | **done** (`gatherFix`; WoL's cfg needs the line) |
 | ROFFix | 0x9CECB4 | an order clears the unit's attack timer | **done** (`rofFix`), not seen in a test |
 | StunMovingTargetFix | 0x9E909E | a stun ends when the target check fails | **done** (`stunMovingTargetFix`), not seen in a test |
-| FallenHeroTacticsFix | 0x6AAE6D, 0x7D8F07, 0x9D6BE7, 0x9EBB0B | tactics of a knocked-out hero | pending |
-| NoKnockoutDanceBonusHealFix | 0x679FBA, 0x6A5C35..0x6A5CE2 | the dance heal bonus on knocked-out heroes | pending |
-| ModifyActionFix | 0x49F252, 0x9E36D0 | the modifier action type (see `buildingWorkRateAuras`) | pending |
-| DisableEffectOnTechFix | 0x94CE4C, 0x94CEBC | tech effects being disabled | pending |
-| DoubleShipmentsInspectFix | 0x71063D, 0x9A652D | the shipment panel (near `decimalPopulation`'s sites) | pending |
+| FallenHeroTacticsFix | 0x6AAE6D, 0x7D8F07, 0x9D6BE7, 0x9EBB0B | four resets of the unit AI's tactic to 0 | **done** (`fallenHeroTacticsFix`), not seen in a test |
+| NoKnockoutDanceBonusHealFix | 0x679FBA, 0x6A5C35..0x6A5CE2 | NOPs a `0x4802C6` test (0x679FBA) and the `hasPlacer` tests, and replaces `hasSpecificPlacer` with a version that also checks `isSingleUse` (WoL 0x10048E40) | pending (RE) |
+| ModifyActionFix | 0x49F252, 0x9E36D0 | retypes the tactics-driven modifier class 2Ch → 46h (0x9E36D0) and collects both types at 0x49F251 (WoL 0x1004A330 calls the collector for 2Ch and 46h) | pending: our modifier walk (`modifiers.h`) must then take 46h too |
+| DisableEffectOnTechFix | 0x94CE4C, 0x94CEBC | keeps the tech flag bit 1 that 0x94CE4F clears, and sets it again only around the `techStatusActive` call at 0x94CEBB (WoL 0x10049660, 0x10049690) | pending (purpose not clear yet) |
+| DoubleShipmentsInspectFix | 0x71063D, 0x9A652D | marks the load of string 37461 (the shipment cost text, 0x71063C) and wraps 0x9A5658 for another player's view (WoL 0x10047960, 0x10047990) | pending (UI) |
 | NoDamageOnUnbuiltFoundations | 0x49B3F3 | unbuilt foundations take no damage | **done** (`noDamageOnUnbuiltFoundations`), hook reached; not seen (no foundation in the test) |
 | CivSpecificTextTechRollover | 0x4C7481, 0x81A5CB | tech rollover text per civ | pending (cosmetic) |
 | FlagOverride | 11 sites (0x451FAF, 0x4B9ED4, 0x5EE665, ...) | `flagoverrideeffect` | pending (cosmetic key) |
