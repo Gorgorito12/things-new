@@ -7,6 +7,7 @@ For how the features work inside the engine, see [how-it-works.md](how-it-works.
 the DLL or reverse engineer new features, see [developer-guide.md](developer-guide.md).
 
 Contents:
+- [Latest changes](#latest-changes): the newest keys first, with date and time
 - [Adding UHC.dll to your mod](#adding-uhcdll-to-your-mod): start here
 1. [What you need](#1-what-you-need)
 2. [Mod folder layout](#2-mod-folder-layout)
@@ -17,6 +18,42 @@ Contents:
 7. [Multiplayer, saved games and replays](#7-multiplayer-saved-games-and-replays)
 8. [Keys from UHC 1.10 that are not implemented](#8-keys-from-uhc-110-that-are-not-implemented)
 9. [Troubleshooting](#9-troubleshooting)
+
+## Latest changes
+
+Newest first: when each key was added (date and time of its commit), what it does and its
+status. The full details are in the key's section.
+
+| Added | Key | What it does | Status |
+|---|---|---|---|
+| 2026-11-03 11:29 | [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Units keep their tactic when knocked out, stunned or building. | applied, effect not seen yet |
+| 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Orders keep the attack timer; stuns survive a moving target; unbuilt foundations take no damage. | applied, effects not seen yet |
+| 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Gather on a fixed interval: the data's gather rate, not the animation's. | confirmed |
+| 2026-11-03 10:43 | [`betterfreedynamicunit`](#betterfreedynamicunit), [`nowalkfarm`](#nowalkfarm), [`repairWallGlobal`](#repairwallglobal), [`compatMode`](#compatmode) | Dynamic free units grow with time; farmers stay put; repair all walls; 16-bit display modes. | confirmed |
+| 2026-11-03 09:33 | [`multiarmor`](#multiarmor) | One armor per damage type; Armor effects follow `damagetype`. | confirmed |
+| 2026-11-03 08:39 | [`customProtoUnitCommands`](#customprotounitcommands) | Command types (buttons) from an XML file. | confirmed |
+| 2026-11-03 08:16 | [`kbUnitSyscalls`](#kbunitsyscalls) | Five KB syscalls for AI scripts (unit inventory, workers). | confirmed |
+| 2026-11-03 07:31 | [`wonderCivUnitType`](#wondercivunittype) | Listed units may start a wonder civ's age-up. | confirmed |
+| 2026-11-03 07:25 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Marked units leave training one at a time. | confirmed |
+| 2026-11-03 06:49 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill / Rice Paddy gathering on more buildings; gather area per building. | confirmed |
+| 2026-11-02 21:19 | [`nativeCivs`](#nativecivs), [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds) | Native civs (fire pit, council age-up); the native big button for more civs. | confirmed / partly |
+| 2026-11-02 21:10 | [`twoScoutCivs`](#twoscoutcivs), [`marketUnits`](#marketunits), [`explorerUnits`](#explorerunits) | Two-scout civs; units that count as a Market; hero names and KO texts. | partly / confirmed |
+| 2026-11-02 20:47 | [`customCheats`](#customcheats) | Plugin cheats in the game's cheat table. | confirmed |
+| 2026-11-02 20:40 | [`enableAllTeams`](#enableallteams) | Teams 3 and 4 in the setup list (single player). | partly |
+| 2026-11-02 20:33 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units. | confirmed |
+| 2026-11-02 20:27 | [`asianCivs`](#asiancivs) | Listed civs count as Asian (export, consulate, wonders). | confirmed |
+| 2026-11-02 20:13 | [`customSyscalls`](#customsyscalls) | Plugin loader (.upl) and XS syscall registry. | confirmed |
+| 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Abstract unit types from an XML file. | confirmed |
+| 2026-11-02 19:59 | [`noAILimit`](#noailimit) | `noAILimitV2`: the AI personality limit, read as noAILimit. | confirmed |
+| 2026-10-30 10:12 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | MaxSpread / SpreadFactor per action, spread at any accuracy. | confirmed |
+| 2026-10-29 21:24 | [`decimalPopulation`](#decimalpopulation) | Population counts and caps with decimals. | confirmed |
+| 2026-10-29 16:57 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, tech and hit type. | confirmed |
+| 2026-10-29 13:50 | [`overhealDecay`](#overhealdecay) | Overheal decays over time. | confirmed |
+| 2026-10-29 13:37 | [`overhealSources`](#overhealsources) | Only source healers overheal. | confirmed |
+| 2026-10-29 13:19 | [`smartHealTargets`](#smarthealtargets) | Healers pick the best candidate, not the first. | confirmed |
+| 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | First Town Center per civ (`<firstTC>` in civs.xml). | confirmed |
+
+Keys from before 2026-10-29 are listed in [5. Feature reference](#5-feature-reference).
 
 ## Adding UHC.dll to your mod
 
@@ -1359,6 +1396,21 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 
 *2. Stock, key off (the same scene):* before the fight the surgeon heals the idle musketeer (113 to 131 HP); once the musketeer fights, the surgeon stops healing it and it dies at 38 s; the enemy musketeers then kill the surgeon too (2x speed). [Full video (MP4)](media/healNonIdle-stock.mp4).
 
+
+<!-- private:begin -->
+![healNonIdle in WoL](media/healNonIdle-wol.gif)
+
+*3. In WoL, with `healNonIdle xpMedicineMan` (Iroquois), close-up with the two units selected so
+their HP bars show:* a Tomahawk fights a Musketeer while the medicine man heals it between hits
+(its bar drops with each hit and fills again); it wins and ends at full HP.
+[Full video (MP4)](media/healNonIdle-wol.mp4).
+
+![healNonIdle in WoL, key off](media/healNonIdle-wol-control.gif)
+
+*4. In WoL, key off (the same scene):* the medicine man does not heal the fighting Tomahawk; its
+bar only shrinks and it dies at about 60 s of game time, the Musketeer left at 17 HP.
+[Full video (MP4)](media/healNonIdle-wol-control.mp4).
+<!-- private:end -->
 ```
 healNonIdle [<UnitType>]      default AbstractHealNonIdle
 ```
@@ -1413,6 +1465,20 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 ![smartHealTargets in game](media/smartHealTargets.gif)
 
 *In game:* four units are hit at once; the surgeon heals the one with the lowest HP ratio first (a settler at 33 %), then 45 %, 70 % and 90 %, where stock starts with the nearest settler at 90 %. The yellow lines show each pick next to stock's. [Full video (MP4)](media/smartHealTargets.mp4).
+
+<!-- private:begin -->
+![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
+
+*In WoL, with `smartHealTargets log` (United States), close-up with the units selected so their
+HP bars show:* four settlers are hit at once (90, 70, 45 and 33 % HP); the `NAnurse` heals the one
+at 33 % first (8.2 m away), then 45, 70 and 90 %. [Full video (MP4)](media/smartHealTargets-wol.mp4).
+
+![smartHealTargets in WoL, key off](media/smartHealTargets-wol-control.gif)
+
+*In WoL, key off (the same scene):* the nurse takes the first settler the query returns, the one
+at 45 % 4 m away, while the one at 33 % waits at 50 HP; the settlers at 70 and 90 % wait too.
+[Full video (MP4)](media/smartHealTargets-wol-control.mp4).
+<!-- private:end -->
 
 ```
 smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
@@ -1522,6 +1588,21 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 
 *In game:* `dodgeChance AbstractDodge 50 ranged log` and `dodgeChance AbstractDodge 0 melee`, with `YPDodge` active: two Explorers marked `AbstractDodge` against musketeers and pikemen. Each roll is a log line in the overlay: musket shots are dodged about half the time (`rule 1 (50.0 %): roll 238 -> dodged`, with the stock floating text), pike thrusts never (`rule 2 (0.0 %): roll -1 -> hit`). The Japanese monk, which no rule names, dodges as in stock (2x speed). [Full video (MP4)](media/dodgeChance.mp4).
 
+<!-- private:begin -->
+![dodgeChance and dodgeAnyUnit in WoL](media/dodge-wol.gif)
+
+*In WoL, with `dodgeChance ypSettlerJapanese 50 notech ranged log` and `dodgeAnyUnit Settler log`
+(`YPDodge` active), close-up with the villagers selected so their HP bars show:* three musketeers
+shoot four villagers that do not shoot back. The two Japanese settlers dodge 18 of their 33 rolls
+(`roll … -> dodged`), the European settler dodges 4 hits at the stock 15 %, and the unmarked Indian
+settler, which never dodges, dies first. [Full video (MP4)](media/dodge-wol.mp4).
+
+![dodge in WoL, keys off](media/dodge-wol-control.gif)
+
+*In WoL, keys off (the same scene):* no villager dodges; every hit takes HP off the bars and all
+four are dead before 73 s of game time. [Full video (MP4)](media/dodge-wol-control.mp4).
+<!-- private:end -->
+
 ```
 dodgeChance <UnitType> <percent> [tech <TechName> | notech] [ranged | melee | all] [log]
 ```
@@ -1593,6 +1674,22 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 ![damageOverTime with noticktext and snareOnlyHitUnit](media/damageOverTime-noticktext.gif)
 
 *3. `noticktext`, and the snare in a group:* the same fight with `damageOverTime log noticktext` and `snareOnlyHitUnit log`: three Hussars charge together, the poisoned one takes its 10 and 15-damage ticks with no green number over it, and the overlay shows `snareOnlyHitUnit` treating the poison's slow as a snare (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`) (2x speed). [Full video (MP4)](media/damageOverTime-noticktext.mp4).
+
+<!-- private:begin -->
+![damageOverTime in WoL](media/damageOverTime-wol.gif)
+
+*In WoL, with `damageOverTime log` (Iroquois), close-up with the archers selected:* three Aenna
+whose arrows carry a poison (4 Ranged a second for 8 s, up to 3 stacks, green tick text, written by
+`dot_testdata.py --wol`) meet a charging Landsknecht. With three stacks each tick takes 12 (the
+green numbers over it and the `tick … (x3)` lines), and the last tick kills it at 40.2 s; one
+archer is lost. [Full video (MP4)](media/damageOverTime-wol.mp4).
+
+![damageOverTime in WoL, key off](media/damageOverTime-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the arrows do only their own damage; the
+Landsknecht reaches the archers, kills two of them and falls at about 42 s.
+[Full video (MP4)](media/damageOverTime-wol-control.mp4).
+<!-- private:end -->
 
 ```
 damageOverTime [log] [noticktext]
@@ -1850,6 +1947,23 @@ damageOverTime [log] [noticktext]
 
 *In game:* six Aenna marked with AbstractSpreadAnyAccuracy (accuracy 1.0 in `archer.tactics`; `MaxSpread` 3, `SpreadFactor` 1.5 and `DamageArea` 2.5 in their `<ProtoAction>`) shoot nine musketeers: every shot is logged as a hit made a ground shot at the offset point, and the arrows land around the musketeers and damage them by area. [Full video (MP4)](media/spreadAnyAccuracy.mp4).
 
+<!-- private:begin -->
+![spreadAnyAccuracy in WoL](media/spreadAnyAccuracy-wol.gif)
+
+*In WoL, with `spreadAnyAccuracy Escopetero log`, close-up with the Escopeteros selected:* four
+Escopeteros (WoL's own data: accuracy 0.41, `maxspread` 3 and `spreadfactor` 1.5 in their tactics,
+`DamageArea` 1) shoot eight charging Scythemen. Every shot, hits included, is logged as made a
+ground shot at a point up to 3 m away, and it hurts whoever stands within 1 m of it.
+[Full video (MP4)](media/spreadAnyAccuracy-wol.mp4).
+
+![spreadAnyAccuracy in WoL, key off](media/spreadAnyAccuracy-wol-control.gif)
+
+*In WoL, key off (the same scene):* stock: the 59 % of shots that miss do no damage, the hits damage
+their target. In this melee-range fight the total damage is about the same either way: seven
+Scythemen survive with 827 HP without the key, and with it 800 and 562 HP in two runs (one with all
+eight alive). [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
+<!-- private:end -->
+
 ```
 spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 ```
@@ -1959,6 +2073,23 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 ![liveBuildingWorkRate with TrainPoints in game](media/liveBuildingWorkRate-trainpoints.gif)
 
 *TrainPoints:* Six settlers were queued at 12 s, with Settler `TrainPoints` 25; a test tech sets them to 6.25 at 30 s. The settler in training finishes at once (it already had more than 6.25 points of work) and the five already queued are trained in 6.25 s each; the log lines are at the top (2x speed). In stock all six would take 25 s. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints.mp4).
+
+<!-- private:begin -->
+![liveBuildingWorkRate in WoL](media/liveBuildingWorkRate-wol.gif)
+
+*In WoL, with `liveBuildingWorkRate log` (an African civ's Town Center, selected so its queue
+shows):* the TC trains 15 `AFRICANvillager`; at 30 s a test tech (`UHCBwrTest`, BuildingWorkRate x3
+on `TownCenter`, appended to the bed's techtree for the test and removed after) turns on. The
+standing TC works at 3.0 at once (`works at BuildingWorkRate 3.000, not its snapshot 1.000`), the
+queue empties quickly, and it ends with 13 villagers by 97 s (5 at the start).
+[Full video (MP4)](media/liveBuildingWorkRate-wol.mp4).
+
+![liveBuildingWorkRate in WoL, key off](media/liveBuildingWorkRate-wol-control.gif)
+
+*In WoL, key off (the same scene):* stock keeps the TC's snapshot of 1.0, so the tech changes
+nothing for it: 8 villagers by 98 s, the queue still long.
+[Full video (MP4)](media/liveBuildingWorkRate-wol-control.mp4).
+<!-- private:end -->
 
 ```
 liveBuildingWorkRate [log]
@@ -2074,6 +2205,23 @@ liveBuildingWorkRate [log]
 
 *In game:* A settler appears at 20 s and a musketeer dies at 32 s: the two TypeCount test techs activate at once (Explorer 400 to 200 HP, Pikeman 120 to 60). [Full video (MP4)](media/techPrereqRecheck.mp4).
 
+<!-- private:begin -->
+![techPrereqRecheck in WoL](media/techPrereqRecheck-wol.gif)
+
+*In WoL, with `techPrereqRecheck log` (Ethiopians: the Explorer is Menelik II, selected so his HP
+shows in the panel):* a trigger creates a Dock at 24 s. A test tech (`UHCTypeCountDock`: no research
+time, prerequisite one living Dock, Explorer hit points x0.5; appended to the bed's techtree and
+removed after) is the same pattern as WoL's `WOLEnableInfanteDeMarina`. It activates in the same
+update (`prerequisites now met ... game time 24002 ms`): 400/400 becomes 200/200.
+[Full video (MP4)](media/techPrereqRecheck-wol.mp4).
+
+![techPrereqRecheck in WoL, key off](media/techPrereqRecheck-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Dock stands but nothing re-checks the tech, so the Explorer
+keeps 400 HP (stock waits for a tech change or a house).
+[Full video (MP4)](media/techPrereqRecheck-wol-control.mp4).
+<!-- private:end -->
+
 ```
 techPrereqRecheck [N] [full] [log]       N: check each player every N world updates (default 1)
 ```
@@ -2163,6 +2311,22 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
 
 *In game:* An Ottoman Town Center at 10/10 population holds its finished settler and releases it right after two settlers die. [Full video (MP4)](media/maintainWaitForPop.mp4).
 
+<!-- private:begin -->
+![maintainWaitForPop in WoL](media/maintainWaitForPop-wol.gif)
+
+*In WoL, with `maintainWaitForPop TownCenter log` (WoL's `Age0Ottoman` turns on the TC's
+`MaintainSettlersOttoman`; the TC is selected):* the population is over its cap (11 of 10), so at
+62 s the TC holds its finished settler (`holds a finished Settler (pop 1, 11 of 10 used)`). Two
+settlers die at 70 s and the held one comes out at once (`releases its Settler (pop 1, 9 of 10
+used)`). [Full video (MP4)](media/maintainWaitForPop-wol.mp4).
+
+![maintainWaitForPop in WoL, key off](media/maintainWaitForPop-wol-control.gif)
+
+*In WoL, key off (the same scene):* the cycle that ended at full population is lost; after the
+two deaths at 70 s the next settler needs a whole new cycle and appears about 23 s later.
+[Full video (MP4)](media/maintainWaitForPop-wol-control.mp4).
+<!-- private:end -->
+
 ```
 maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 ```
@@ -2231,6 +2395,23 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 ![transformUpdatesLOS in game](media/transformUpdatesLOS.gif)
 
 *In game:* Crossbowmen turned into Skirmishers by HCXPTirailleurs take the Skirmisher's LOS 24 (stock: they keep 20). [Full video (MP4)](media/transformUpdatesLOS.mp4).
+
+<!-- private:begin -->
+![transformUpdatesLOS in WoL](media/transformUpdatesLOS-wol.gif)
+
+*In WoL, with `transformUpdatesLOS log` (Romanians, the units selected):* WoL's
+`ShiftingCalarasToVanator` turns four Calarashi (LOS 15) into Vanatori (LOS 22) at 26 s; they take
+LOS 22 at once (`LOS 15 -> 22`, the panel and the lit area grow).
+[Full video (MP4)](media/transformUpdatesLOS-wol.mp4).
+
+![transformUpdatesLOS in WoL, key off](media/transformUpdatesLOS-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Vanatori keep the Calarashi's LOS 15 (the panel shows 15)
+and the lit area does not change. Some WoL cards work around the bug in their data:
+`WOLHCItaliaIrredenta` (Pikeman 12 to WOLAlpino 28) also assigns LOS 28 to the Alpino, so it is
+right with or without the key; 45 of WoL's transforms have no such line.
+[Full video (MP4)](media/transformUpdatesLOS-wol-control.mp4).
+<!-- private:end -->
 
 ```
 transformUpdatesLOS [log]
@@ -3143,6 +3324,20 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
 
 *In game:* A TransformUnit tech: the wood crate becomes a food crate that holds food (the panel shows `Alim.: 100`), the musketeer an XP crate with XP. [Full video (MP4)](media/transformInventory.mp4).
 
+<!-- private:begin -->
+![transformInventory in WoL](media/transformInventory-wol.gif)
+
+*In WoL, with `transformInventory log` (Ethiopians, the units selected so the panel shows the
+crate):* WoL's card `HCCardDogTaxWar` turns two `PetWolf` into `CrateofCoin` at 24 s. Each crate
+gets the coin crate's inventory (`inventory created: none -> {0: 100}`), and the panel shows
+`Moneda: 100.0`. [Full video (MP4)](media/transformInventory-wol.mp4).
+
+![transformInventory in WoL, key off](media/transformInventory-wol-control.gif)
+
+*In WoL, key off (the same scene):* the crates have no inventory: the panel shows no coin line, and
+they can never be gathered. [Full video (MP4)](media/transformInventory-wol-control.mp4).
+<!-- private:end -->
+
 ```
 transformInventory [all] [scale] [<UnitType>] [log]
 ```
@@ -3760,6 +3955,23 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 ![buildingWorkRateAuras in game](media/buildingWorkRateAuras.gif)
 
 *In game:* An Explorer aura (BuildingWorkRate x4) speeds up the Blood Factory next to it: 11 musketeers against 2 (2x speed). [Full video (MP4)](media/buildingWorkRateAuras.mp4).
+
+<!-- private:begin -->
+![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
+
+*In WoL, with `buildingWorkRateAuras log` (an African civ, the two Town Centers selected so their
+queues show):* both TCs train 10 `AFRICANvillager`; the Explorer next to the left one carries a
+test aura (`UHCBwrAura`: `AutoRangedModify`, `BuildingWorkRate` x3, 10 m, on `TownCenter`, added to
+the bed's `explorer.tactics` and removed after). The left TC works at x3 (`works at x3.000 from
+BuildingWorkRate modifiers`) and trains 8 villagers while the right one trains 2.
+[Full video (MP4)](media/buildingWorkRateAuras-wol.mp4).
+
+![buildingWorkRateAuras in WoL, key off](media/buildingWorkRateAuras-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* stock reads `BuildingWorkRate` as no stat, so the aura
+does nothing: each TC trains 3 villagers.
+[Full video (MP4)](media/buildingWorkRateAuras-wol-control.mp4).
+<!-- private:end -->
 
 ```
 buildingWorkRateAuras [log]

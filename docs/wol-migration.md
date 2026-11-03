@@ -116,6 +116,42 @@ nothing in its data keeps the stock exe from loading (unknown types and effects 
 The subtypes `ROF`, `GathererLimit`, `MinimumRange` and `Bounty` in `Data` effects need a check of
 FUN_008F973F before deciding whether a key is needed.
 
+## Re-recording the earlier features in WoL (from 2026-11-03)
+
+The features made before the migration were filmed in the TAD test copies, several before the
+`--perf` rule. Each is filmed again in `C:\AoE3-UHC-WoLReal` with WoL's data, `--perf`, and a WoL
+civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the TAD one.
+
+| Key | WoL setup (civ / unit) | Status |
+|---|---|---|
+| `healNonIdle` | Iroquois: `xpMedicineMan` heals a `xpTomahawk` fighting a Musketeer (`healNonIdle xpMedicineMan`) | **done**: healed between hits and wins; without the key it dies at about 60 s (`healNonIdle-wol*.mp4`, redone 2026-11-03 with `--select` and `--crop 0.45`). The WallMapu `MapucheShaman` does not heal even idle units in WoL |
+| `smartHealTargets` | United States: `NAnurse` and four settlers hit to 90/70/45/33 % (`smartHealTargets log`) | **done**: heals 33 % first, then 45, 70, 90 %; without the key it starts with the query's first, at 45 % (`smartHealTargets-wol*.mp4`). Filmed with `record --frame 1 --select Settler,NAnurse --crop 0.4` (still camera, HP bars, close-up) |
+| `dodgeAnyUnit`, `dodgeChance` | Japanese villagers (`ypSettlerJapanese`, rule 50 % `notech ranged`), a European `Settler` with `dodgeAnyUnit` (stock 15 %, `YPDodge`), an unmarked `ypSettlerIndian`, vs 3 Musketeers | **done**: 18 of 33 Japanese rolls dodged, 4 dodges for the Settler, the Indian dies first; keys off, nobody dodges (`dodge-wol*.mp4`). Soldiers shoot back and end the fight too soon; villagers do not |
+| `damageOverTime` | Iroquois: 3 `xpAenna` with poison arrows (`dot_testdata.py --wol`, restored after) vs 1 `Landsknecht` | **done**: ticks of 12 (x3 stacks), the last one kills it, 1 archer lost; key off, 2 archers lost (`damageOverTime-wol*.mp4`) |
+| `spreadAnyAccuracy` | 4 `Escopetero` (WoL's own spread tags, no data edit) vs 8 `WOLScytheman` | **done**: every shot logged as a ground shot at r = 3 m; survivors' HP 800 / 562 with the key vs 827 without, so no clear damage change in a melee-range fight (`spreadAnyAccuracy-wol*.mp4`) |
+| `liveBuildingWorkRate` | African civ TC training `AFRICANvillager`; test tech `UHCBwrTest` (BWR x3 on TownCenter, appended to techtreey, restored after) at 30 s | **done**: 13 villagers by 97 s vs 8 without the key (5 at start) (`liveBuildingWorkRate-wol*.mp4`). WoL's own BWR techs did not fit: the Krupp factory's Maintain spawns take minutes, and the daimyos (`WOLHCKazoku`) train nothing in age I |
+| `buildingWorkRateAuras` | African civ, two TCs training `AFRICANvillager`; an Explorer with a test aura (`UHCBwrAura`, BWR x3, 10 m, in `explorer.tactics`, restored after) beside one | **done**: the aura TC trains 8 vs 2 for the other; key off, 3 each (`buildingWorkRateAuras-wol*.mp4`) |
+| `techPrereqRecheck` | Ethiopians (Menelik II); test tech `UHCTypeCountDock` (1 Dock, Explorer HP x0.5, appended, restored after), Dock created at 24 s | **done**: 400 to 200 HP in the same update; key off, 400 kept (`techPrereqRecheck-wol*.mp4`). WoL's `WOLEnableInfanteDeMarina` (Age0Spanish, 1 Dock) is the real case, but its unit needs age II and a fort |
+| `maintainWaitForPop` | WoL's `Age0Ottoman` (TC `MaintainSettlersOttoman`), pop 11/10, 2 settlers killed at 70 s (`maintainWaitForPop TownCenter log`) | **done**: held at 62 s, released at once at 70 s; key off, the next settler ~23 s later (`maintainWaitForPop-wol*.mp4`) |
+| `transformUpdatesLOS` | Romanians: WoL's `ShiftingCalarasToVanator` (Calarashi 15 to Vanator 22) at 26 s | **done**: LOS 22 with the key, 15 without (`transformUpdatesLOS-wol*.mp4`). `WOLHCItaliaIrredenta` was tried first: it assigns the new LOS in its own data, so it shows no bug |
+| `transformInventory` | Ethiopians: WoL's `HCCardDogTaxWar` turns 2 `PetWolf` into `CrateofCoin` | **done**: `Moneda: 100.0` in the panel with the key, no inventory without (`transformInventory-wol*.mp4`) |
+| `broadsideMuzzleLimit` | a WoL ship with a barrage attack | pending |
+| `abilitySlots`, `wonderPanelSkipAuras` | an explorer with many powers; a Japanese wonder with auras | pending |
+| `lifespanAfterConstruction`, `gaiaSocketsOnly` | a WoL temporary building; a trade/native socket | pending |
+| `customHotkeyContexts` | a WoL building with its own keymap context | pending |
+| `snareOnlyHitUnit` | a WoL snare attack on a group | pending |
+| `techRenameEffect` | a WoL tech that renames | pending |
+| `noCorpseDopples` | WoL hunts | pending |
+| `danceBonusCivs`, `nativeCivs` dances | WallMapu fire pit | pending |
+| `startingTC`, `civFirstTC` | a WoL civ with its own first TC | pending |
+| `noTrainNearEnemyTC` | a WoL TC with enemy units near | pending |
+| `overhealHitpointBars`, `overhealSources`, `overhealDecay` | WoL infantry with overheal | pending |
+| `showGatherRate` | a WoL gatherer | pending |
+| `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
+| `decimalPopulation`, `basePop` / `extraPop`, `deckCardCount` | WoL units with decimal pop; a big deck | pending |
+| `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |
+| `bufferedFileReads`, `multipleInstances` | load time; two copies | pending |
+
 ## WoL's always-on patches (inventory, 2026-11-03)
 
 WoL's DLL changes 287 ranges of the running game (`rea/evidence/wol-uhc-c070d138/wol-memdiff.txt`).
@@ -162,6 +198,13 @@ Pending: the A/B baseline against the control (`perfprobe.py`, 120 s, same scena
 load-time A/B for `customAbstractTypes`.
 
 ## Civs used in tests
+
+Enemy units rotate too (user rule, 2026-11-03): no more `Musketeer` as the opposing unit. Use
+WoL's own infantry, a different one each test, from the public civs: ranged `WOLLineInfantry`,
+`Redcoat`, `WOLJaeger`, `Grenzer`, `Highlander`, `WOLRegular`, `WOLForeignLegion`, `GreenJacket`,
+`Sarbaz`, `Jawan`, `WOLFlankeur`, `Seimen`, `WOLRanger`; melee `WOLLandwehr`, `WOLScytheman`,
+`WOLPicket`, `Landsknecht`, `Doppelsoldner`, `Azap`. The healNonIdle and dodge videos of
+2026-11-03 still use Musketeers.
 
 | Test | Civ / unit |
 |---|---|

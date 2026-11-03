@@ -125,8 +125,13 @@ The first run keeps the four files as `*.pop-before`; every run starts again fro
 ## dot_testdata.py
 
 ```
-python -I tools/dot_testdata.py <test folder> [--ai | --bad]
+python -I tools/dot_testdata.py <test folder> [--ai | --bad | --wol | --restore]
 ```
+
+`--wol` writes only the Iroquois Aenna's poison arrows (`UHCPoisonArrowWoL`, 4 Ranged a second for
+8 s, up to 3 stacks, green tick text) into a copy of a mod that reads its data loose: only
+`protoy.xml` (kept first as `protoy.xml.dot-orig`) and the tactics file, no XMB and no techs.
+`--restore` copies every `*.dot-orig` back and removes the tactics files.
 
 Writes the data the `damageOverTime` tests use into a **test copy** of the game. It refuses any
 folder inside a Steam library. The tables at the top of the script list the cases:
@@ -208,8 +213,26 @@ live text on every frame:
   than 6 units are counted per proto and player instead);
 - `--log <regex>`: the latest `UHC.log` lines of the current game that match, e.g. a feature's own
   `log` output;
-- `--follow <ID>`: keeps the camera on that unit (a `uiLookAtUnit` every 2 s through
-  `perfExecFile`).
+- `--frame <ID>`: centers the camera on that unit once, at the start, and leaves it still: the
+  default for a scene where the units stay in place;
+- `--follow <ID>`: follows a unit that travels: the camera re-centers (a `uiLookAtUnit` through
+  `perfExecFile`) only once the unit has walked 10 m from the last center, and stops when the
+  unit dies, so the picture does not jump every few seconds.
+- `--select <IDs or proto names>`: keeps those units (player 1's) selected for the whole video,
+  so the game draws their HP bars and the selection panel; they are selected again when a new
+  matching unit appears (a dead one leaves the selection by itself). The game selects one unit
+  per `uiLookAtAndSelectUnit`, so the selection is collected in number group 9.
+- `--crop <F>[@cx,cy]`: films only that fraction of the window (0.4 = 40 % of its width and
+  height) around `cx,cy` (window fractions, default `0.5,0.43`, the middle of the play area),
+  enlarged to the video size: a close-up of the units with the camera untouched. The overlay
+  text is drawn after the crop, so it stays the same size.
+- The cursor: a cursor at a screen edge scrolls the camera while the game has the focus (the
+  title-bar click of `focus()` used to leave it there). `record` parks it in the top right of the
+  play area before filming, puts it back there every frame if anything moves it, and then centres
+  the camera again on the `--frame` / `--follow` unit; the last line says how often that happened.
+- `--zoom <N>`: N mouse-wheel steps in before filming, then the cursor is parked in the top right
+  of the play area. The game eases the camera back to its default height in about 20 s (seen in
+  WoL, 2026-11-03), so a zoomed video drifts: prefer the default height for a still picture.
 - `--perf`: the performance numbers, once a second, at the top: fps, the longest frame of the
   second, frames over 50 ms since the start, simulation speed (game seconds per real second), the
   main thread's CPU, the game's own update and render times and the working set. They are read

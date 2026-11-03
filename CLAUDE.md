@@ -71,7 +71,7 @@ Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\
 - `C:\WoL-Test` is the control with WoL's own DLL (A/B runs, memory probes); never touch Steam's `Wars of Liberty` folder (`testbed.py safety check wol`);
 - the profile is shared with the user's real WoL (backup `NewProfile3.xml.bak-uhc-20261102`); use ESOC maps in skirmishes (the `*NEW*` maps are broken).
 
-**Every test video shows performance, and tests vary the civ** (user rules, 2026-11-02; [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done)): record with `testbed.py record --perf` (the cfg carries `perfStats`), A/B every hot-path key with `perfprobe.py`, and pick the civ and unit that fit the feature (poison on native archers, ...), noting them in the feature's doc.
+**Every test video shows the feature on screen** (the units it acts on selected with `record --select`, so their HP bars show, in a close-up with `--crop 0.4`; user rule 2026-11-03), **shows performance, and tests vary the civ** (user rules, 2026-11-02; [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done)): record with `testbed.py record --perf` (the cfg carries `perfStats`), A/B every hot-path key with `perfprobe.py`, and pick the civ and unit that fit the feature (poison on native archers, ...), noting them in the feature's doc.
 
 **Check the AI after data or combat changes.** Start a skirmish against an AI (clicks: `docs/developer-guide.md`, "Driving the game unattended"). The dialog `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error behind it.
 
@@ -79,7 +79,7 @@ There are no unit tests yet.
 
 **Definition of done.** Every new or changed feature meets the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done) before it is reported as done.
 
-**Unattended in-game tests.** `python -I tools/testbed.py` plays a test with no clicks: `deploy` (DLL + cfg), `map` (a random map with the units and techs you name), `launch`, `scenario` (editor route: generate, save, reload as a game), `wait`, `log`, `units`, `shot`, `close`. Once a feature works, `record <out.mp4>` films about 30 s of it for the user (ffmpeg from `C:\Tools\ffmpeg`); it brings the window to the front first, and `--watch <IDs or protos>` (live HP and LOS of those units), `--log <regex>` (the feature's `UHC.log` lines) and `--follow <ID>` (the camera stays on a unit) draw live stats on the video. It drives the console through `perfExecFile`. Method and pitfalls: `docs/developer-guide.md`, "Driving the game unattended". Other Claude sessions may test in their own copies (e.g. `C:\AoE3-UHC-Poison`) with real mouse input: never run two games at once unless yours has `multipleInstances background` in its cfg and the other session agreed (the game itself refuses a second copy otherwise), and stop yours when one asks.
+**Unattended in-game tests.** `python -I tools/testbed.py` plays a test with no clicks: `deploy` (DLL + cfg), `map` (a random map with the units and techs you name), `launch`, `scenario` (editor route: generate, save, reload as a game), `wait`, `log`, `units`, `shot`, `close`. Once a feature works, `record <out.mp4>` films about 30 s of it for the user (ffmpeg from `C:\Tools\ffmpeg`); it brings the window to the front first, and `--watch <IDs or protos>` (live HP and LOS of those units), `--log <regex>` (the feature's `UHC.log` lines) `--frame <ID>` (centers once, the camera stays still) and `--follow <ID>` (re-centers on a travelling unit after 10 m) draw live stats on the video. It drives the console through `perfExecFile`. Method and pitfalls: `docs/developer-guide.md`, "Driving the game unattended". Other Claude sessions may test in their own copies (e.g. `C:\AoE3-UHC-Poison`) with real mouse input: never run two games at once unless yours has `multipleInstances background` in its cfg and the other session agreed (the game itself refuses a second copy otherwise), and stop yours when one asks.
 
 ## Layout
 
@@ -111,7 +111,7 @@ There are no unit tests yet.
   - In the exported `.md` files, hide private text with `<!-- private -->` (end of a line) or a line `<!-- private:begin -->` ... `<!-- private:end -->`, and add public-only text with `<!-- public: TEXT -->` or a line `<!-- public:begin` ... `public:end -->`. Code comments and `examples/Startup/uhc.cfg` have no markers: keep them neutral.
   - Never push anything to the public repo the user has not asked for, and never make this repo public again.
 - Documentation for modders (keep these in step with the code):
-  - `docs/modding-guide.md`: every cfg key, its data/art requirements, log lines and status;
+  - `docs/modding-guide.md`: every cfg key, its data/art requirements, log lines and status; add each new key at the top of its "Latest changes" table (date and time of the commit, newest first);
   - `docs/how-it-works.md`: the internals of each feature;
   - `docs/developer-guide.md`: build, safe test bed, adding a feature, RE workflow;
   - `docs/porting-to-another-dll.md`: rebuilding the beyond-upstream features inside a mod's own DLL (WoL). Update its site table and contracts when a beyond-upstream feature changes or a new one is added.

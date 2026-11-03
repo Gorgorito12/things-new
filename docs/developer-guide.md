@@ -246,7 +246,19 @@ there:
   ([engine-symbols.md](engine-symbols.md), "Player resources"); entry 5 is XP, which also rises
   by a steady trickle, so compare a kill against that rhythm.
 - **Zooming for a video:** `exec "uiLookAtUnit(ID)"`, then `wheel 1280 700 8`, then `record …
-  --follow ID`.
+  --frame ID`. The game eases a wheel zoom back to the default height in about 20 s, so the picture
+  drifts while it does: for a still video stay at the default height. Keep the camera still:
+  `--frame` for units that stay in place, `--follow` only for a unit that travels (it re-centers
+  after 10 m, not on a timer).
+- **Show the interaction in the picture, not only in the overlay text:** keep the units the
+  feature acts on selected for the whole video (`record … --select Settler,NAnurse`), so their
+  in-game HP bars show what happens, and film a close-up with `--crop 0.4` (40 % of the window,
+  enlarged) so the bars are big enough; keep the units close together around the `--frame` unit.
+  Check a frame from the middle of the video before sending it.
+- **Edge scrolling moves the camera:** the game scrolls while the cursor sits at a screen edge,
+  and the config values `ScrollSpeed`, `ScrollRateBase` and `ScrollMaxSpeed` set to 0 do not stop
+  it. `record` parks the cursor and keeps it parked; another window taking the foreground on the
+  test monitor can still disturb a video, so agree a slot with other sessions first.
 - **Shipments need a skirmish and real clicks.** Scenario players have no home city, so a test of
   shipments (`hcShipmentPointFallback`) runs in a skirmish. Send a card by clicking the home city
   flag (client 667, 1217 on a 2560×1600 client), then a card in its panel. The console cannot set
