@@ -139,7 +139,7 @@ cut to the key moment (the `gif` helper: palettegen full, bayer dither).
 | `transformInventory` | Ethiopians: WoL's `HCCardDogTaxWar` turns 2 `PetWolf` into `CrateofCoin` | **done**: `Moneda: 100.0` in the panel with the key, no inventory without (`transformInventory-wol*.mp4`) |
 | `broadsideMuzzleLimit` | Japanese `ypTekkousen` (created in game: a loaded scenario keeps the saved slots) vs 2 `Fluyt`, `ceylon coast` | **done**: 10 slots per side with the key, 6 without; a scan of 17 WoL warships found no other model above 6 per side (`broadsideMuzzleLimit-wol*.mp4`) |
 | `abilitySlots` | Ethiopians: WoL's Explorer (8 abilities), `WOLAbilityHeal` at 24 s and `WOLHCMachiavellianism` at 30 s | **done**: buttons 7 and 8 appear with the key, never without (`abilitySlots-wol*.mp4`) |
-| `wonderPanelSkipAuras` | pending | pending |
+| `wonderPanelSkipAuras` | Korean wonders `wolwkpyongyanggate2` (test: `ypPowerShrineAura` put before its `PowerRighteousArmy` in `abilities.xml`, restored after) and `wolwkpuyonghall2` | **done**: the panel shows Righteous Army with the key, the Puyong Hall's Whirlpool without (`wonderPanelSkipAuras-wol*.mp4`). WoL has no wonder with two abilities in its own data |
 | `lifespanAfterConstruction`, `gaiaSocketsOnly` | a WoL temporary building; a trade/native socket | pending |
 | `customHotkeyContexts` | a WoL building with its own keymap context | pending |
 | `snareOnlyHitUnit` | a WoL snare attack on a group | pending |

@@ -2552,9 +2552,22 @@ abilitySlots <N> [log]      N from 6 (stock) to 36
 
 ### wonderPanelSkipAuras
 
-![wonderPanelSkipAuras in game](media/wonderPanelSkipAuras.gif)
+<!-- private:begin -->
+![wonderPanelSkipAuras in WoL](media/wonderPanelSkipAuras-wol.gif)
 
-*In game:* The Toshogu Shrine's power, listed after its aura, gets a wonder panel button next to the Giant Buddha's. [Full video (MP4)](media/wonderPanelSkipAuras.mp4).
+*In WoL, with `wonderPanelSkipAuras log` (two Korean wonders; close-up of the bottom left):* for the
+test, the bed's `abilities.xml` lists the passive `ypPowerShrineAura` before the Pyongyang Gate's
+`PowerRighteousArmy` (removed after). The wonder power panel (above the resource counters) shows
+the Righteous Army button: the DLL skips the aura (`shows its ability n=1 in the wonder power
+panel`). [Full video (MP4)](media/wonderPanelSkipAuras-wol.mp4).
+
+![wonderPanelSkipAuras in WoL, key off](media/wonderPanelSkipAuras-wol-control.gif)
+
+*In WoL, key off (the same data):* stock asks only for the Gate's first ability, the aura, and adds
+no button for it, so the panel shows the Puyong Hall's Whirlpool instead. In these WoL runs the
+panel held one button at a time: with WoL's own data it shows the Gate's power and not the Puyong
+Hall's. [Full video (MP4)](media/wonderPanelSkipAuras-wol-control.mp4).
+<!-- private:end -->
 
 ```
 wonderPanelSkipAuras [log]
