@@ -18,6 +18,7 @@ add_library(UHC SHARED
   src/floatingtext.cpp
   src/log.cpp
   src/patch.cpp
+  src/namelists.cpp
   src/syscalls.cpp
   src/unittypes.cpp
   src/worldtick.cpp
@@ -28,6 +29,7 @@ add_library(UHC SHARED
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/civfirsttc.cpp
+  src/features/civs.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/decimalpop.cpp
@@ -68,6 +70,7 @@ add_library(UHC SHARED
   src/hooks/broadside_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
+  src/hooks/civ_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/decimalpop_hooks.asm
   src/hooks/dodge_hooks.asm

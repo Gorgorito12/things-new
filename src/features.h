@@ -56,6 +56,7 @@ Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
+Outcome ApplyAsianCivs(const Config& config);
 
 inline constexpr Feature kFeatures[] = {
     // First: its types get their IDs before any other feature requests one.
@@ -90,6 +91,7 @@ inline constexpr Feature kFeatures[] = {
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
+    {"asianCivs", ApplyAsianCivs},
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
     {"civFirstTC", ApplyCivFirstTc},
@@ -126,7 +128,7 @@ inline constexpr const char* kHandledKeys[] = {
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
-    "perffilelog", "multipleinstances", "customsyscalls",
+    "perffilelog", "multipleinstances", "customsyscalls", "asiancivs",
 };
 
 }  // namespace uhc

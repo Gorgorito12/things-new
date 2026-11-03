@@ -42,6 +42,15 @@ SITES = [
     ("SyscallUi", 0x539542, 5),
     ("SyscallUi2", 0x53575E, 7),
     ("SyscallXs", 0x6257D9, 7),
+    # asianCivs: the last compare with the cached Asian civ ID [0C6FB88h] in isAsianCiv 0x454ED7
+    # (cmp eax,[0C6FB88h] / je 454F2Ah) and in FUN_008D6A7D (cmp eax,[0C6FB88h] / jne 8D6B0Ch)
+    ("AsianCivCheck", 0x454F1D, 8),
+    ("AsianCivBranch", 0x8D6AC4, 8),
+    # asianCivs: the wonder age-up list FUN_0081807A, call 49A2D8h (is Indian) / test al,al /
+    # je 8182EBh, after push 1 / mov ecx,ebp
+    ("WonderAgeUpCiv", 0x818284, 9),
+    # the civ ID by name, int thiscall(database, const char*), -1 if none (verify only)
+    ("CivIdByName", 0x58E71F, 0x10),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),
