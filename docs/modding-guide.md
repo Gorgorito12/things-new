@@ -2864,9 +2864,23 @@ customHotkeyContexts [log]
 
 ### snareOnlyHitUnit
 
-![snareOnlyHitUnit in game](media/snareOnlyHitUnit.gif)
+<!-- private:begin -->
+![snareOnlyHitUnit in WoL](media/snareOnlyHitUnit-wol.gif)
 
-*In game:* A hussar snares musketeers of a marching group; the group keeps its pace (the camera follows the group). [Full video (MP4)](media/snareOnlyHitUnit.mp4).
+*In WoL, with `snareOnlyHitUnit log` (British, the camera follows the group):* six Redcoats march
+east in one group while an Uhlan chases and lances them (`handCavalry.tactics`, a
+`TargetSpeedBoost` attack). Each snared Redcoat counts at its full speed toward the group's pace
+(`counts 4.000 instead of 2.600 toward its group's pace`): it falls back alone while the others go
+on, and the group reaches the end of the map (151 m) at 50 s of game time.
+[Full video (MP4)](media/snareOnlyHitUnit-wol.mp4).
+
+![snareOnlyHitUnit in WoL, key off](media/snareOnlyHitUnit-wol-control.gif)
+
+*In WoL, key off (the same scene):* every snare slows the whole group to the snared unit's pace, so
+it stays together and arrives at about 54 s; at 41-42 s its mean position is 117 m against 123 m
+with the key (sampled once a second).
+[Full video (MP4)](media/snareOnlyHitUnit-wol-control.mp4).
+<!-- private:end -->
 
 ```
 snareOnlyHitUnit [log]

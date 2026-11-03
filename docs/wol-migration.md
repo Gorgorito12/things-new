@@ -143,7 +143,7 @@ cut to the key moment (the `gif` helper: palettegen full, bayer dither).
 | `lifespanAfterConstruction` | Spanish (`Age0Spanish`): 2 settlers build an Outpost given `Lifespan` 15 (bed protoy, restored after), placed with a real click (`tis("Outpost")` + `rclick`) | **done**: built at 64 s, gone 15 s later; key off, dies as a foundation (`lifespanAfterConstruction-wol*.mp4`). WoL's own `*Maturing` buildings are not built by any unit in protoy |
 | `gaiaSocketsOnly` | none | **not filmed**: the case it fixes is an AI build plan given a player-owned socket; the UI refuses that placement by itself and neither the console nor scenario triggers can give the order. Needs an AI skirmish whose script builds on such a socket |
 | `customHotkeyContexts` | Greeks (`Age0Greeks`, `Player : SetAge` 1): `WOLBarracksGreek` selected, 3 real `o` presses (WoL's `WOLBarracksGreekAccel` maps `o` to Klepht) | **done**: 3 Klephts queued with the key, none without (`customHotkeyContexts-wol*.mp4`) |
-| `snareOnlyHitUnit` | a WoL snare attack on a group | pending |
+| `snareOnlyHitUnit` | British: 6 `Redcoat` marching (Move From Area) vs 1 `Uhlan` (`handCavalry.tactics` snare), map 160 m | **done**: the group arrives at 50 s with the key, ~54 s without; mean position 123 vs 117 m at 41-42 s (`snareOnlyHitUnit-wol*.mp4`, samples in `rea/evidence/age3y-b1a1dab7/snareOnlyHitUnit-wol-groupx-*.txt`) |
 | `techRenameEffect` | a WoL tech that renames | pending |
 | `noCorpseDopples` | WoL hunts | pending |
 | `danceBonusCivs`, `nativeCivs` dances | WallMapu fire pit | pending |
