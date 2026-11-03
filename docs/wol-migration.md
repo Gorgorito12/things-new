@@ -196,6 +196,13 @@ load-time A/B for `customAbstractTypes`.
 
 ## Civs used in tests
 
+Enemy units rotate too (user rule, 2026-11-03): no more `Musketeer` as the opposing unit. Use
+WoL's own infantry, a different one each test, from the public civs: ranged `WOLLineInfantry`,
+`Redcoat`, `WOLJaeger`, `Grenzer`, `Highlander`, `WOLRegular`, `WOLForeignLegion`, `GreenJacket`,
+`Sarbaz`, `Jawan`, `WOLFlankeur`, `Seimen`, `WOLRanger`; melee `WOLLandwehr`, `WOLScytheman`,
+`WOLPicket`, `Landsknecht`, `Doppelsoldner`, `Azap`. The healNonIdle and dodge videos of
+2026-11-03 still use Musketeers.
+
 | Test | Civ / unit |
 |---|---|
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
