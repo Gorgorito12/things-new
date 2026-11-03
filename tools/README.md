@@ -213,6 +213,17 @@ live text on every frame:
 - `--follow <ID>`: follows a unit that travels: the camera re-centers (a `uiLookAtUnit` through
   `perfExecFile`) only once the unit has walked 10 m from the last center, and stops when the
   unit dies, so the picture does not jump every few seconds.
+- `--select <IDs or proto names>`: keeps those units (player 1's) selected for the whole video,
+  so the game draws their HP bars and the selection panel; they are selected again when a new
+  matching unit appears (a dead one leaves the selection by itself). The game selects one unit
+  per `uiLookAtAndSelectUnit`, so the selection is collected in number group 9.
+- `--crop <F>[@cx,cy]`: films only that fraction of the window (0.4 = 40 % of its width and
+  height) around `cx,cy` (window fractions, default `0.5,0.43`, the middle of the play area),
+  enlarged to the video size: a close-up of the units with the camera untouched. The overlay
+  text is drawn after the crop, so it stays the same size.
+- `--zoom <N>`: N mouse-wheel steps in before filming, then the cursor is parked in the top right
+  of the play area. The game eases the camera back to its default height in about 20 s (seen in
+  WoL, 2026-11-03), so a zoomed video drifts: prefer the default height for a still picture.
 - `--perf`: the performance numbers, once a second, at the top: fps, the longest frame of the
   second, frames over 50 ms since the start, simulation speed (game seconds per real second), the
   main thread's CPU, the game's own update and render times and the working set. They are read

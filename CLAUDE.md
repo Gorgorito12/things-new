@@ -71,7 +71,7 @@ Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\
 - `C:\WoL-Test` is the control with WoL's own DLL (A/B runs, memory probes); never touch Steam's `Wars of Liberty` folder (`testbed.py safety check wol`);
 - the profile is shared with the user's real WoL (backup `NewProfile3.xml.bak-uhc-20261102`); use ESOC maps in skirmishes (the `*NEW*` maps are broken).
 
-**Every test video shows performance, and tests vary the civ** (user rules, 2026-11-02; [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done)): record with `testbed.py record --perf` (the cfg carries `perfStats`), A/B every hot-path key with `perfprobe.py`, and pick the civ and unit that fit the feature (poison on native archers, ...), noting them in the feature's doc.
+**Every test video shows the feature on screen** (the units it acts on selected with `record --select`, so their HP bars show, in a close-up with `--crop 0.4`; user rule 2026-11-03), **shows performance, and tests vary the civ** (user rules, 2026-11-02; [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done)): record with `testbed.py record --perf` (the cfg carries `perfStats`), A/B every hot-path key with `perfprobe.py`, and pick the civ and unit that fit the feature (poison on native archers, ...), noting them in the feature's doc.
 
 **Check the AI after data or combat changes.** Start a skirmish against an AI (clicks: `docs/developer-guide.md`, "Driving the game unattended"). The dialog `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error behind it.
 
