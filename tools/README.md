@@ -226,6 +226,10 @@ live text on every frame:
   height) around `cx,cy` (window fractions, default `0.5,0.43`, the middle of the play area),
   enlarged to the video size: a close-up of the units with the camera untouched. The overlay
   text is drawn after the crop, so it stays the same size.
+- The cursor: a cursor at a screen edge scrolls the camera while the game has the focus (the
+  title-bar click of `focus()` used to leave it there). `record` parks it in the top right of the
+  play area before filming, puts it back there every frame if anything moves it, and then centres
+  the camera again on the `--frame` / `--follow` unit; the last line says how often that happened.
 - `--zoom <N>`: N mouse-wheel steps in before filming, then the cursor is parked in the top right
   of the play area. The game eases the camera back to its default height in about 20 s (seen in
   WoL, 2026-11-03), so a zoomed video drifts: prefer the default height for a still picture.

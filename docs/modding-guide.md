@@ -1947,6 +1947,23 @@ damageOverTime [log] [noticktext]
 
 *In game:* six Aenna marked with AbstractSpreadAnyAccuracy (accuracy 1.0 in `archer.tactics`; `MaxSpread` 3, `SpreadFactor` 1.5 and `DamageArea` 2.5 in their `<ProtoAction>`) shoot nine musketeers: every shot is logged as a hit made a ground shot at the offset point, and the arrows land around the musketeers and damage them by area. [Full video (MP4)](media/spreadAnyAccuracy.mp4).
 
+<!-- private:begin -->
+![spreadAnyAccuracy in WoL](media/spreadAnyAccuracy-wol.gif)
+
+*In WoL, with `spreadAnyAccuracy Escopetero log`, close-up with the Escopeteros selected:* four
+Escopeteros (WoL's own data: accuracy 0.41, `maxspread` 3 and `spreadfactor` 1.5 in their tactics,
+`DamageArea` 1) shoot eight charging Scythemen. Every shot, hits included, is logged as made a
+ground shot at a point up to 3 m away, and it hurts whoever stands within 1 m of it.
+[Full video (MP4)](media/spreadAnyAccuracy-wol.mp4).
+
+![spreadAnyAccuracy in WoL, key off](media/spreadAnyAccuracy-wol-control.gif)
+
+*In WoL, key off (the same scene):* stock: the 59 % of shots that miss do no damage, the hits damage
+their target. In this melee-range fight the total damage is about the same either way: seven
+Scythemen survive with 827 HP without the key, and with it 800 and 562 HP in two runs (one with all
+eight alive). [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
+<!-- private:end -->
+
 ```
 spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 ```

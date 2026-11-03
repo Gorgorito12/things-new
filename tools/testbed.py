@@ -1058,12 +1058,24 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None):
     total, written, captured = int(seconds * fps), 0, 0
     proc = process()
     game_start = game_time(proc) if proc else None
+    # Guard the camera: a cursor moved by someone else to a screen edge scrolls it. Put the cursor
+    # back on its parked spot, and centre again on the framed unit, whenever it moves.
+    parked, cursor, moved = park_cursor(), POINT(), 0
     t0 = time.perf_counter()
     try:
         while written < total:
             delay = t0 + written / fps - time.perf_counter()
             if delay > 0:
                 time.sleep(delay)
+            user32.GetCursorPos(ctypes.byref(cursor))
+            if (cursor.x, cursor.y) != parked:
+                user32.SetCursorPos(*parked)
+                moved += 1
+                look = overlay.look if overlay is not None else None
+                if look is not None and overlay.bed is not None and not exec_file(overlay.bed).exists():
+                    tmp = exec_file(overlay.bed).with_suffix(".tmp")
+                    tmp.write_text(f"uiLookAtUnit({look})\r\n", encoding="ascii")
+                    os.replace(tmp, exec_file(overlay.bed))
             frame = grab()
             captured += 1
             due = min(total, max(written + 1, int((time.perf_counter() - t0) * fps) + 1))
@@ -1083,7 +1095,8 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None):
     game = f", game time {game_start} -> {game_end} ms" if game_start is not None and game_end is not None else ""
     size = os.path.getsize(path) / 1e6 if os.path.exists(path) else 0
     print(f"testbed: {path}: {seconds:g} s at {fps} fps, {ow}x{oh}, {captured} frames captured "
-          f"({written - captured} repeated){game}, {size:.1f} MB, ffmpeg exit {encoder.returncode}")
+          f"({written - captured} repeated){game}, {size:.1f} MB, ffmpeg exit {encoder.returncode}"
+          + (f"; the cursor was moved {moved} time(s) and put back" if moved else ""))
 
 
 WM_KEYDOWN, WM_KEYUP, WM_CHAR = 0x100, 0x101, 0x102
@@ -1208,6 +1221,8 @@ def focus():
         time.sleep(0.05)
         send(up)
         time.sleep(0.3)
+        # Left on the title bar, the cursor sits at the screen's top edge and scrolls the camera.
+        park_cursor()
     return hwnd
 
 
@@ -1248,6 +1263,18 @@ def real_drag(x1, y1, x2, y2, steps=12):
     up.u.mi = MOUSEINPUT(0, 0, 0, 0x0004, 0, 0)
     send(up)
     time.sleep(0.2)
+
+
+def park_cursor():
+    """Puts the cursor in the top right of the play area: away from the units (no tooltip) and from
+    the screen edges (a cursor at an edge scrolls the camera)."""
+    hwnd = window()
+    rc = RECT()
+    user32.GetClientRect(hwnd, ctypes.byref(rc))
+    pt = POINT(rc.right * 7 // 8, rc.bottom // 6)
+    user32.ClientToScreen(hwnd, ctypes.byref(pt))
+    user32.SetCursorPos(pt.x, pt.y)
+    return pt.x, pt.y
 
 
 def real_wheel(cx, cy, steps):
@@ -1463,16 +1490,15 @@ def main(argv):
             rc = RECT()
             user32.GetClientRect(window(), ctypes.byref(rc))
             real_wheel(rc.right // 2, rc.bottom // 2, zoom)
-            # Park the cursor away from the units and the screen edges (no tooltip, no edge scroll).
-            pt = POINT(rc.right * 7 // 8, rc.bottom // 6)
-            user32.ClientToScreen(window(), ctypes.byref(pt))
-            user32.SetCursorPos(pt.x, pt.y)
+            park_cursor()
             # The game smooths the zoom: the camera keeps moving for a few seconds. Let it settle,
             # then centre again so the picture is still from the first frame.
             time.sleep(4.0)
             if look is not None:
                 run_commands(bed, [f"uiLookAtUnit({look})"])
             time.sleep(0.5)
+        # A cursor left at a screen edge scrolls the camera while the game has the focus: park it.
+        park_cursor()
         flags |= {i for i, a in enumerate(args) if a == "--perf"}
         pos = [a for i, a in enumerate(args) if i not in flags]
         perf = None
