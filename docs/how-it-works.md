@@ -278,6 +278,60 @@ initializations that the range contained: `[esp+24h]` = 0 (the loaded-personalit
 as an array index) and `[esp+1Bh]` = 0 (the function's return flag).
 Upstream skips both. <!-- private -->
 
+### noAILimitV2
+
+The same list as `noAILimit`, installed at `0x603C34..0x603C4E` instead: the TAD-flag test
+(`test al,al / je 658900h`), the 14-entry address (`lea eax,[esp+0BCh]`) and the stores of the
+count (14 at `[esp+40h]`) and the table (`[esp+50h]`). The stock range before it runs unchanged,
+so both initializations above happen in stock code. The stack is the same as at `0x603C4F` (the
+`push 2` at `0x603B42` is popped by `add esp,8` at `0x603C31`). The hook stores the count and
+table and jumps to `0x603C4F` (`xor eax,eax`); EAX is the only register the replaced range sets,
+and the continuation clears it.
+
+<!-- private:begin -->
+Wars of Liberty's DLL patches the same 27 bytes with `lea eax,[esp+40h] / lea edx,[esp+50h] /
+push eax / push edx / call <its DLL>` and NOPs (its memory diff, `wol-memdiff.txt`); a hardware
+breakpoint at `0x603C4F` read the same 52 names in the same order with its DLL and with ours.
+<!-- private:end -->
+
+### customAbstractTypes
+
+A thin reader over `unittypes.*`: it parses the `<AbstractType>` elements of the file (tag
+names in any case, comments skipped, names limited to letters, digits and `_`, duplicates
+dropped) and calls `RequestAbstractUnitType` for each name, in file order. It is the first entry
+of `kFeatures`, so these names get the first IDs after the stock list on every database load;
+the hook at the end of FUN_0051A5DC (`0x51BA31`) registers them before the per-proto bitsets are
+sized, so `<UnitType>` entries, tech targets and XS `cUnitType<Name>` constants see them. The IDs
+live in a `std::deque`, which never moves an element (the registration keeps a pointer to each).
+
+### customSyscalls
+
+**The registry** (`src/syscalls.*`). Each syscall module (AI, HC, KB, RM, TR, UI, UI2, XS) is
+built by one function that registers its stock syscalls in sequence; the hook sits on the first
+one, where ESI is the module, and replaces its pushes (`push 1 / push <fn>`, 7 B; the UI
+module's `push 1` comes before its site, so 5 B there). Inside `pushfd/pushad`, it calls
+`UhcRegisterSyscallGroup(group, module)`, then re-executes the pushes and jumps to the
+`push <name>` that follows. For each queued syscall of the group: register (`0x624F52`, thiscall
+`(name, fn, retType)`), one setter per parameter (`0x62505B` int, `0x625079` float, `0x62506A`
+bool, `0x624E3F` string, `0x62734A` vector), the comment (`0x624E56`) and end (`0x6250B0`).
+
+**Why a failure skips only one syscall:** `0x624F52` refuses a name the module already has
+(`0x624ED8`) or a bad type before it allocates the pending entry `[module+18h]`, so nothing is
+pending after a refusal; a later failure leaves a pending entry, which `0xA44C0B` frees (it
+tests `[module+18h]` for null first), as the stock error paths do. The next registration then
+starts clean. Upstream stops the whole group at the first refusal. <!-- private -->
+
+**The loader** (`features/plugins.cpp`). Each listed file or pattern is resolved against the exe
+folder and loaded by full path (`LoadLibraryExW`, `LOAD_WITH_ALTERED_SEARCH_PATH`).
+`UHCPluginMain` is called with a static `UHCPluginInfo` (plugins may keep the pointer: some
+store it for their cheats) inside `__try/__except`. The call is cdecl: the plugins checked
+end `UHCPluginMain` with a plain `ret`, and call the table's functions with the caller cleaning
+the stack (`add esp,…` after each call). `RegisterSyscall` returns a pointer into the registry's
+`std::deque` (stable), or to a dummy entry for a refused call, so a plugin that passes the result
+to `SyscallSetParam` without checking cannot crash; defaults are copied when `SyscallSetParam`
+is called. `CheatAddResource` forwards to the thiscall `0x49A98A`; `CheatSpawnUnit` is the
+engine function `0x7B4F03` itself. Plugins load last in `kFeatures`, after every other hook.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

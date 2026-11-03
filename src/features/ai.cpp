@@ -1,8 +1,8 @@
 // noAILimit: the AI personality list comes from every personality file in the exe's AI folder
 // instead of the stock table of 11 (or 14 with TAD content). The hook is in hooks/ai_hooks.asm.
-// noAILimitV2 gives the same list from the same folder, but hooks where the Wars of Liberty DLL's
-// key does (0x603C34): the stock range before it runs unchanged and only the count and table
-// stores are replaced. With both keys, noAILimit wins.
+// noAILimitV2 gives the same list from the same folder but hooks later, at 0x603C34, as other
+// DLLs' key of that name does: the stock range before it runs unchanged and only the count and
+// table stores are replaced. With both keys, noAILimit wins.
 #include <windows.h>
 
 #include <algorithm>

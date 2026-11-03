@@ -352,9 +352,22 @@ where it is explained; the rules written nowhere else are spelled out here.
   cleared ([data-load callbacks](how-it-works.md#3-hook-conventions)) and never leaks from one
   game into the next; what saved games do not keep is documented
   ([modding guide, section 7](modding-guide.md#7-multiplayer-saved-games-and-replays)).
-- [ ] **Performance:** a hook on a hot path (per unit, per tick) is O(1) or close: no allocation
-  per tick, no walk over every unit of the world. Measured with `perfStats` on a large game, before
-  and after ([performance.md](performance.md#benchmark-harness)).
+- [ ] **Performance:** a hook on a hot path (per unit, per tick, data load, script syscalls,
+  per-frame UI) is O(1) or close: no allocation per tick, no walk over every unit of the world.
+  Measured A/B, with and without the key, in the same scenario for 60–120 s with
+  `tools/perfprobe.py` (the cfg carries `perfStats`): no measurable rise in frames over 50 ms or
+  in main-thread CPU (about 1 % is noise), and data load (launch to menu, `loadScenario` to
+  unpause) at most 5 % slower. The numbers go into the feature's doc, in the table format of
+  [performance.md](performance.md#benchmark-harness) section 8.
+- [ ] **Videos show performance:** every recording made for the user uses `testbed.py record
+  --perf` (fps, longest frame, frames over 50 ms, simulation speed, main-thread CPU, memory on
+  every frame), besides `--watch`, `--log` and `--follow` for the feature itself.
+- [ ] **Vary the civilization:** tests and videos do not always use the same civ. Pick the civ and
+  unit that fit the feature (poison on native archers, healing on a native healer, farm features
+  on a plantation civ, two-hero features on a civ with monks); with no such fit, rotate European,
+  native and Asian civs. The unmarked control unit stays from the same civ or a standard one, so
+  the comparison is clean. The civ and unit of each test are noted in the feature's doc, so the
+  next test picks another.
 - [ ] **Regression:** after a change to a shared hook, the neighbouring features still log
   `applied` and their `hook reached` lines.
 - [ ] **Unit tests:** there is no test target yet. Once there is one, pure C++ logic (cfg and

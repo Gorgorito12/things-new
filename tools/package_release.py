@@ -149,6 +149,10 @@ deckCardCount N               decks of more than 25 cards
 basePop N, extraPop N         higher population limits (no 250 cap)
 decimalPopulation [K] [log]   population with decimals (PopulationCount 0.5), steps of 1/K
 noAILimit                     every AI3\\*.personality file in game setup
+noAILimitV2                   the same list, hooked later (cfgs that use this name)
+customAbstractTypes [file]    abstract unit types from an XML file
+                              (default data\\uhc\\customabstracttypes.xml)
+customSyscalls [files]        load .upl plugins and their XS syscalls
 customRevolutionBanners       a banner for every XPRevolution<Name> tech
 removeFameRestriction         Fame, XP and shipment costs and icons
 removeConversionRestriction   ConvertGuardian works on any unit

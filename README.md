@@ -25,6 +25,9 @@ public:end -->
 | `basePop N`, `extraPop N` | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | partly confirmed |
 | `decimalPopulation [K] [log]` | **New.** Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects, in steps of 1/K (default 10). The population counter and the tooltips show the decimals; AI scripts still see whole numbers. | confirmed (single player, also a skirmish vs AI) |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
+| `noAILimitV2` | **New.** The same list, hooked later in the same function (for mods whose cfg uses this name). | confirmed (single player) |
+| `customAbstractTypes [file]` | **New.** Every name in an XML file (default `data\uhc\customabstracttypes.xml`) becomes an abstract unit type usable in protos, techs and XS. | confirmed (single player) |
+| `customSyscalls [files]` | Loads `.upl` plugins and adds their XS syscalls. | confirmed (single player, AI skirmish) |
 | `customRevolutionBanners` | A banner for every `XPRevolution<Name>` tech. | partly confirmed |
 | `removeFameRestriction` | Fame, XP and shipment costs on politician screens; Fame and XP icons on cards. | not tested in game |
 | `removeConversionRestriction` | `ConvertGuardian` may target any unit. | not confirmed |
