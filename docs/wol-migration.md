@@ -138,7 +138,8 @@ cut to the key moment (the `gif` helper: palettegen full, bayer dither).
 | `transformUpdatesLOS` | Romanians: WoL's `ShiftingCalarasToVanator` (Calarashi 15 to Vanator 22) at 26 s | **done**: LOS 22 with the key, 15 without (`transformUpdatesLOS-wol*.mp4`). `WOLHCItaliaIrredenta` was tried first: it assigns the new LOS in its own data, so it shows no bug |
 | `transformInventory` | Ethiopians: WoL's `HCCardDogTaxWar` turns 2 `PetWolf` into `CrateofCoin` | **done**: `Moneda: 100.0` in the panel with the key, no inventory without (`transformInventory-wol*.mp4`) |
 | `broadsideMuzzleLimit` | Japanese `ypTekkousen` (created in game: a loaded scenario keeps the saved slots) vs 2 `Fluyt`, `ceylon coast` | **done**: 10 slots per side with the key, 6 without; a scan of 17 WoL warships found no other model above 6 per side (`broadsideMuzzleLimit-wol*.mp4`) |
-| `abilitySlots`, `wonderPanelSkipAuras` | an explorer with many powers; a Japanese wonder with auras | pending |
+| `abilitySlots` | Ethiopians: WoL's Explorer (8 abilities), `WOLAbilityHeal` at 24 s and `WOLHCMachiavellianism` at 30 s | **done**: buttons 7 and 8 appear with the key, never without (`abilitySlots-wol*.mp4`) |
+| `wonderPanelSkipAuras` | pending | pending |
 | `lifespanAfterConstruction`, `gaiaSocketsOnly` | a WoL temporary building; a trade/native socket | pending |
 | `customHotkeyContexts` | a WoL building with its own keymap context | pending |
 | `snareOnlyHitUnit` | a WoL snare attack on a group | pending |

@@ -2486,9 +2486,22 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 
 ### abilitySlots
 
-![abilitySlots in game](media/abilitySlots.gif)
+<!-- private:begin -->
+![abilitySlots in WoL](media/abilitySlots-wol.gif)
 
-*In game:* The test Explorer's 7th ability gets a button, and its 8th when its tech activates (the first 6 are locked by techs). [Full video (MP4)](media/abilitySlots.mp4).
+*In WoL, with `abilitySlots 8 log` (Ethiopians; close-up of the selected Explorer's command
+panel):* WoL's Explorer lists 8 abilities in `abilities.xml`. With `Industrialize` active, the
+Habilidades row shows Regen, Sharpshooter and Crackshot. At 24 s `WOLAbilityHeal` turns on and
+ability 7 (PowerHeal) gets a button; at 30 s `WOLHCMachiavellianism` turns on and ability 8
+(Counterintelligence) gets one too (`shows ability 7 of its list ... past the stock 6`).
+[Full video (MP4)](media/abilitySlots-wol.mp4).
+
+![abilitySlots in WoL, key off](media/abilitySlots-wol-control.gif)
+
+*In WoL, key off (the same scene):* the panel asks for the first 6 abilities only, so the two WoL
+powers never get a button although their techs are active.
+[Full video (MP4)](media/abilitySlots-wol-control.mp4).
+<!-- private:end -->
 
 ```
 abilitySlots <N> [log]      N from 6 (stock) to 36
