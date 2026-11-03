@@ -448,6 +448,37 @@ goes to `0x695955`, which shows the big button on a unit of abstract type 2; oth
 neither native nor listed means none; a unit whose proto (`[[unit+5Ch]+8]`) is in
 `noBigButtonBlds` means none; anything else takes the native path.
 
+### enableFarmAnim, enableRectFarmAnim and farmingRadius
+
+The gather code compares a target's proto ID with cached IDs in chains: Mill `[db+5E58h]`, Farm
+`[db+5E5Ch]`, Plantation `[db+5E60h]`, Rice Paddy `[db+607Ch]` and others, each `je` going to the
+branch for that kind. A null proto goes to a cold stub (`or eax,-1`) that jumps back **to the
+compare**, so the compares themselves cannot be hooked; the sites are before or after them:
+
+| Site | Replaced | Listed Mill-like | Listed Rice Paddy-like |
+|---|---|---|---|
+| 1 `0x4EDA85` | `mov edx,[ebp+140h]` | `0x4E3069` with EDX = db, EBX = Mill ID, ECX = ESI, EAX = proto | `0x6A8A55`, EBX = Rice Paddy ID |
+| 2 `0x50DE33` | `jne 4EDD6Ch` | `0x6A8E67` (the equal path) | `0x50DF51`, EBX = Rice Paddy ID, ECX = EDI, EDX = game |
+| 3 `0x73D41A` | `jne 73D427h; mov eax,[eax+5F4Ch]` | `0x73D49B` (both kinds) | same |
+| 4 `0x8CEC9F` | `call 4E2C50h` | `0x8CED20` (both kinds) | same |
+| 5 `0x9DDB79` | `cmp ecx,[eax+5E58h]` | the compare made equal (`cmp eax,eax`), so `sete dl` sets the Mill flag | — |
+| 6 `0x4EE07F`, 7 `0x4EE2FE` | `je 586DFFh` / `je 586E11h` | the `je` target | — |
+| 8 `0x6A8FE1` | `call 44CB0Ah; cmp eax,ebx; jne 6A900Ch` | `0x6A8FEA` | — |
+| R1 `0x9DDD80` | four loads, `cmp ecx,[eax+607Ch]` | — | `0x9DDD9E` (the equal path) |
+| R2 `0x4741F0` | `je 4743DDh` (after `test esi,esi`) | — | `0x689BBE` with `[esp+14h]` = `[ebx+18h]`, EBP = Rice Paddy ID, ECX = EBX, EAX = proto |
+| R3 `0x4EEDB4`, R4 `0x4EEE9E` | `mov ecx,[0C66234h]` | — | `0x4EEE18` / `0x4ED756`, EDX = db, EBP = Rice Paddy ID, ECX = EDI |
+
+The registers listed are the ones stock has on its own branch for a Mill or a Rice Paddy (traced
+from each chain's `je`), so the code after sees what it would see for those buildings. Every other
+proto re-executes the replaced instructions. `UhcFarmKind` answers 1, 2 or 0 through
+`ProtoIdList` (`src/namelists.*`).
+
+**farmingRadius.** At `0x9DE04D` (`mov ecx,[0C0BBE0h]`, the stock 4.5) the gather action draws the
+gatherer's offset twice with the synced random 0x422648 (stream 2, from EBP to X, then to Z, pushed
+at `0x9DE06B` from EDX). For a farm proto with a radius (`[[edi+5Ch]+4]`), the hook makes the
+first draw with its X, stores it at `[esp+14h]` like stock, loads Z into EDX and continues at
+`0x9DE06B`; EAX, ECX and EDX are free there (the draws overwrite them).
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

@@ -110,6 +110,45 @@ inline constexpr Site kNativeCouncil{"NativeCouncil", 0x0081ADEB, kNativeCouncil
 inline constexpr std::uint8_t kBigButtonBytes[] = {0x0F, 0x85, 0x77, 0x3D, 0x23, 0x00};
 inline constexpr Site kBigButton{"BigButton", 0x00461BD8, kBigButtonBytes, sizeof(kBigButtonBytes)};
 
+inline constexpr std::uint8_t kFarmAnim1Bytes[] = {0x8B, 0x95, 0x40, 0x01, 0x00, 0x00};
+inline constexpr Site kFarmAnim1{"FarmAnim1", 0x004EDA85, kFarmAnim1Bytes, sizeof(kFarmAnim1Bytes)};
+
+inline constexpr std::uint8_t kFarmAnim2Bytes[] = {0x0F, 0x85, 0x33, 0xFF, 0xFD, 0xFF};
+inline constexpr Site kFarmAnim2{"FarmAnim2", 0x0050DE33, kFarmAnim2Bytes, sizeof(kFarmAnim2Bytes)};
+
+inline constexpr std::uint8_t kFarmAnim3Bytes[] = {0x75, 0x0B, 0x8B, 0x80, 0x4C, 0x5F, 0x00, 0x00};
+inline constexpr Site kFarmAnim3{"FarmAnim3", 0x0073D41A, kFarmAnim3Bytes, sizeof(kFarmAnim3Bytes)};
+
+inline constexpr std::uint8_t kFarmAnim4Bytes[] = {0xE8, 0xAC, 0x3F, 0xC1, 0xFF};
+inline constexpr Site kFarmAnim4{"FarmAnim4", 0x008CEC9F, kFarmAnim4Bytes, sizeof(kFarmAnim4Bytes)};
+
+inline constexpr std::uint8_t kFarmAnim5Bytes[] = {0x3B, 0x88, 0x58, 0x5E, 0x00, 0x00};
+inline constexpr Site kFarmAnim5{"FarmAnim5", 0x009DDB79, kFarmAnim5Bytes, sizeof(kFarmAnim5Bytes)};
+
+inline constexpr std::uint8_t kFarmAnim6Bytes[] = {0x0F, 0x84, 0x7A, 0x8D, 0x09, 0x00};
+inline constexpr Site kFarmAnim6{"FarmAnim6", 0x004EE07F, kFarmAnim6Bytes, sizeof(kFarmAnim6Bytes)};
+
+inline constexpr std::uint8_t kFarmAnim7Bytes[] = {0x0F, 0x84, 0x0D, 0x8B, 0x09, 0x00};
+inline constexpr Site kFarmAnim7{"FarmAnim7", 0x004EE2FE, kFarmAnim7Bytes, sizeof(kFarmAnim7Bytes)};
+
+inline constexpr std::uint8_t kFarmAnim8Bytes[] = {0xE8, 0x24, 0x3B, 0xDA, 0xFF, 0x3B, 0xC3, 0x75, 0x22};
+inline constexpr Site kFarmAnim8{"FarmAnim8", 0x006A8FE1, kFarmAnim8Bytes, sizeof(kFarmAnim8Bytes)};
+
+inline constexpr std::uint8_t kRectFarm1Bytes[] = {0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x4F, 0x5C, 0x8B, 0x82, 0x40, 0x01, 0x00, 0x00, 0x8B, 0x49, 0x04, 0x3B, 0x88, 0x7C, 0x60, 0x00, 0x00};
+inline constexpr Site kRectFarm1{"RectFarm1", 0x009DDD80, kRectFarm1Bytes, sizeof(kRectFarm1Bytes)};
+
+inline constexpr std::uint8_t kRectFarm2Bytes[] = {0x0F, 0x84, 0xE7, 0x01, 0x00, 0x00};
+inline constexpr Site kRectFarm2{"RectFarm2", 0x004741F0, kRectFarm2Bytes, sizeof(kRectFarm2Bytes)};
+
+inline constexpr std::uint8_t kRectFarm3Bytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kRectFarm3{"RectFarm3", 0x004EEDB4, kRectFarm3Bytes, sizeof(kRectFarm3Bytes)};
+
+inline constexpr std::uint8_t kRectFarm4Bytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kRectFarm4{"RectFarm4", 0x004EEE9E, kRectFarm4Bytes, sizeof(kRectFarm4Bytes)};
+
+inline constexpr std::uint8_t kFarmRadiusBytes[] = {0x8B, 0x0D, 0xE0, 0xBB, 0xC0, 0x00};
+inline constexpr Site kFarmRadius{"FarmRadius", 0x009DE04D, kFarmRadiusBytes, sizeof(kFarmRadiusBytes)};
+
 inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
 inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
 

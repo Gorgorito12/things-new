@@ -73,6 +73,22 @@ SITES = [
     ("NativeCouncil", 0x81ADEB, 8),
     # bigButtonCivs / noBigButtonBlds: jne 695955h after isNativeCiv in the command panel FUN_0046188E
     ("BigButton", 0x461BD8, 6),
+    # enableFarmAnim: the gather code's compares of a target's proto with the cached Mill and farm IDs
+    ("FarmAnim1", 0x4EDA85, 6),    # mov edx,[ebp+140h], before the chain
+    ("FarmAnim2", 0x50DE33, 6),    # jne 4EDD6Ch (then jmp 6A8E67h, the Mill branch)
+    ("FarmAnim3", 0x73D41A, 8),    # jne 73D427h / mov eax,[eax+5F4Ch]
+    ("FarmAnim4", 0x8CEC9F, 5),    # call 4E2C50h, before the proto compares
+    ("FarmAnim5", 0x9DDB79, 6),    # cmp ecx,[eax+5E58h] (the Mill flag)
+    ("FarmAnim6", 0x4EE07F, 6),    # je 586DFFh
+    ("FarmAnim7", 0x4EE2FE, 6),    # je 586E11h
+    ("FarmAnim8", 0x6A8FE1, 9),    # call 44CB0Ah / cmp eax,ebx / jne 6A900Ch
+    # enableRectFarmAnim: the same for the cached Rice Paddy ID [db+607Ch]
+    ("RectFarm1", 0x9DDD80, 0x18), # four loads and cmp ecx,[eax+607Ch]
+    ("RectFarm2", 0x4741F0, 6),    # je 4743DDh after test esi,esi
+    ("RectFarm3", 0x4EEDB4, 6),    # mov ecx,[0C66234h], before the Rice Paddy compare
+    ("RectFarm4", 0x4EEE9E, 6),    # mov ecx,[0C66234h], before the Rice Paddy compare
+    # farmingRadius: mov ecx,[0C0BBE0h], the 4.5 X of the gatherer spread
+    ("FarmRadius", 0x9DE04D, 6),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),

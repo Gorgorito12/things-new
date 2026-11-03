@@ -829,6 +829,56 @@ noBigButtonBlds Proto [Proto ...]
 - **Status:** partly confirmed (2026-11-02, single player): the hook ran when a listed civ's
   Town Center was selected; a building of a listed proto was not checked.
 
+### enableFarmAnim, enableRectFarmAnim and farmingRadius
+
+<!-- private:begin -->
+![enableFarmAnim in game](media/enableFarmAnim.gif)
+
+*In game:* Iroquois gatherers on a listed plantation (Mill-like, front) and a listed farm (Rice
+Paddy-like, right) spread over the fields and use the farming animations; the log lines on top
+are the keys'. [Full video (MP4)](media/enableFarmAnim.mp4). Without the keys
+(left of the still below) the same gatherers stand bunched at one side of each building:
+![enableFarmAnim off and on](media/enableFarmAnim-control.png)
+
+![farmingRadius in game](media/farmingRadius-12.gif)
+
+*In game:* the same plantation with `farmingRadius 3 12.0 12.0`: its four gatherers (HP lines on
+top) range up to 11.9 m from its centre, against about 5 m with the stock 4.5.
+[Full video (MP4)](media/farmingRadius-12.mp4).
+<!-- private:end -->
+
+```
+enableFarmAnim Proto [Proto ...]
+enableRectFarmAnim Proto [Proto ...]
+farmingRadius Index X Z [Index X Z ...]
+```
+
+- **Effect:** gatherers on a building of an `enableFarmAnim` proto are placed and animated as on a
+  Mill (they spread over the area around it); on an `enableRectFarmAnim` proto, as on a Rice
+  Paddy (they work in its rows). `farmingRadius` gives, per `enableFarmAnim` entry (`Index` counts
+  that line's protos from 1), the X and Z extent of that spread (stock 4.5 x 4.5; up to 100).
+- **Your data:** the building still needs a gather action in its tactics (or the data's own way of
+  gathering): these keys change where and how gatherers work, not whether the building can be
+  gathered. A building whose tactics only modify other gatherers (`ModifyGather...`) gets no
+  gatherers.
+- **Log:** `enableFarmAnim/enableRectFarmAnim: N proto(s) work like a Mill, M like a Rice Paddy`;
+  when `protoy.xml` is read, `enableFarmAnim: K of N protos found in the data` (and each unknown
+  name); `farmingRadius: N farm proto(s) get their own gather area`, or `needs enableFarmAnim`,
+  `needs triples ...`, `bad triple ...` (not applied); `hook reached: enableFarmAnim site 1
+  (0x4EDA85)` to `... 8`, `enableRectFarmAnim site 1` to `4`, `farmingRadius (0x9DE04D)`.
+- **Simulation:** changes where gatherers stand (the spread uses the game's synced random
+  numbers): every player needs the same lines.
+- **Status:** confirmed (2026-11-03, single player): with both lists, ten of the twelve placement
+  sites and the radius ran, gatherers spread over a listed plantation and worked inside a listed
+  farm's rows, and without the keys they stood bunched at one side (gathering in both cases);
+  `farmingRadius` 12 widened the spread from about 5 m to 11.9 m. Sites 3 and 8 did not run in
+  that test.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream reloads EBP before site 1 instead of keeping it, jumps to the
+  Mill and Rice Paddy branches without the registers those branches have, and at site 5 skips the
+  Mill flag the code after it reads.
+<!-- private:end -->
+
 ### customRevolutionBanners
 
 ```

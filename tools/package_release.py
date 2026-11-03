@@ -160,6 +160,8 @@ enableAllTeams                Team 3 and Team 4 in the single-player setup
 twoScoutCivs Civ ...          these civs get the two-hero interface
 nativeCivs Civ ...            these civs count as native civs (dances, council)
 bigButtonCivs, noBigButtonBlds   the native big button for more civs / not on buildings
+enableFarmAnim, enableRectFarmAnim   gatherers work these buildings like a Mill / Rice Paddy
+farmingRadius I X Z ...       per enableFarmAnim entry, the gatherers' area (stock 4.5)
 marketUnits Proto ...         these buildings count as a Market for trading
 explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)
 customRevolutionBanners       a banner for every XPRevolution<Name> tech

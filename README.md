@@ -34,6 +34,7 @@ public:end -->
 | `asianCivs Civ ...` | Listed civs count as Asian civs (consulate, export, wonder age-up). | confirmed (single player) |
 | `nativeCivs Civ ...` | Listed civs count as native civs (fire pit dances, council age-up). | confirmed (single player) |
 | `bigButtonCivs Civ ...`, `noBigButtonBlds Proto ...` | The native big button for more civs; never on the listed buildings. | partly confirmed |
+| `enableFarmAnim Proto ...`, `enableRectFarmAnim Proto ...`, `farmingRadius Index X Z ...` | Gatherers on listed buildings are placed and animated as on a Mill or a Rice Paddy, over an area per building. | confirmed (single player) |
 | `twoScoutCivs Civ ...` | Listed civs get the two-hero interface. | not tested in game |
 | `marketUnits Proto ...` | Listed buildings count as a Market for trading. | confirmed (single player) |
 | `explorerUnits Proto Type StringID ...` | Listed protos get hero names and their own knockout message. | partly confirmed (names) |

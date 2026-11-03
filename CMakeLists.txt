@@ -36,6 +36,7 @@ add_library(UHC SHARED
   src/features/dodge.cpp
   src/features/dopples.cpp
   src/features/fame.cpp
+  src/features/farms.cpp
   src/features/fileio.cpp
   src/features/gatherrate.cpp
   src/features/heal.cpp
@@ -78,6 +79,7 @@ add_library(UHC SHARED
   src/hooks/civfirsttc_hooks.asm
   src/hooks/civ_hooks.asm
   src/hooks/dance_hooks.asm
+  src/hooks/farm_hooks.asm
   src/hooks/decimalpop_hooks.asm
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm

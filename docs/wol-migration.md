@@ -97,7 +97,7 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `wonderCivUnitType Rangatira` | WoL | degrades (Maori age-up) | pending, RE |
 | `marketUnits` | upstream | degrades (trade without a stock Market) | **done**, confirmed (`WOLMarketGreek`; refused without the key) |
 | `explorerUnits` (40 triples) | upstream | degrades (hero names, KO text) | **done**, names confirmed (Korean monks Yi Sun and Kwon Hwan); 4 protos of WoL's cfg do not exist in its data |
-| `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | degrades (gathering on WoL farms) | pending |
+| `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius` | upstream | cosmetic: placement and animation (the buildings gather anyway in WoL's data) | **done**, confirmed (Iroquois plantation and farm; radius measured). `Fazenda` gets no gatherers: its tactics only modify others |
 | `customProtoUnitCommands` (always on in WoL) | WoL | degrades (41 `<Command>` buttons) | pending, RE |
 | `selectionLimit 75` | WoL | degrades | **done**, confirmed (75 of 89 Pikemen; 50 without) |
 | `trainSingleAbstractType` | WoL | degrades (`AbstractTrainLimitOne`, 36 protos) | pending |
@@ -131,6 +131,7 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| farms | XPIroquois: WOLPlantationIroquois, WOLFarmIroquois (scenario); Brazilian Fazenda (not gatherable) |
 | `nativeCivs`, `bigButtonCivs` | WallMapu (Perquenco): Town Center council; control without the key crashes |
 | `selectionLimit` | scenario: 89 Pikemen |
 | `customCheats` | Ethiopians: 50 Cannons |
