@@ -1675,6 +1675,22 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 
 *3. `noticktext`, and the snare in a group:* the same fight with `damageOverTime log noticktext` and `snareOnlyHitUnit log`: three Hussars charge together, the poisoned one takes its 10 and 15-damage ticks with no green number over it, and the overlay shows `snareOnlyHitUnit` treating the poison's slow as a snare (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`) (2x speed). [Full video (MP4)](media/damageOverTime-noticktext.mp4).
 
+<!-- private:begin -->
+![damageOverTime in WoL](media/damageOverTime-wol.gif)
+
+*In WoL, with `damageOverTime log` (Iroquois), close-up with the archers selected:* three Aenna
+whose arrows carry a poison (4 Ranged a second for 8 s, up to 3 stacks, green tick text, written by
+`dot_testdata.py --wol`) meet a charging Landsknecht. With three stacks each tick takes 12 (the
+green numbers over it and the `tick … (x3)` lines), and the last tick kills it at 40.2 s; one
+archer is lost. [Full video (MP4)](media/damageOverTime-wol.mp4).
+
+![damageOverTime in WoL, key off](media/damageOverTime-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the arrows do only their own damage; the
+Landsknecht reaches the archers, kills two of them and falls at about 42 s.
+[Full video (MP4)](media/damageOverTime-wol-control.mp4).
+<!-- private:end -->
+
 ```
 damageOverTime [log] [noticktext]
 ```

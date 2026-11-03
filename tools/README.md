@@ -125,8 +125,13 @@ The first run keeps the four files as `*.pop-before`; every run starts again fro
 ## dot_testdata.py
 
 ```
-python -I tools/dot_testdata.py <test folder> [--ai | --bad]
+python -I tools/dot_testdata.py <test folder> [--ai | --bad | --wol | --restore]
 ```
+
+`--wol` writes only the Iroquois Aenna's poison arrows (`UHCPoisonArrowWoL`, 4 Ranged a second for
+8 s, up to 3 stacks, green tick text) into a copy of a mod that reads its data loose: only
+`protoy.xml` (kept first as `protoy.xml.dot-orig`) and the tactics file, no XMB and no techs.
+`--restore` copies every `*.dot-orig` back and removes the tactics files.
 
 Writes the data the `damageOverTime` tests use into a **test copy** of the game. It refuses any
 folder inside a Steam library. The tables at the top of the script list the cases:
