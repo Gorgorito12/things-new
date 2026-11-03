@@ -576,6 +576,12 @@ customAbstractTypes [file]
 
 ### customSyscalls
 
+<!-- private:begin -->
+![customSyscalls-wol-ai in game](media/customSyscalls-wol-ai.gif)
+
+*In game:* With two plugins loaded, the AI of a mod whose scripts call their syscalls compiles and plays: the counter shows its settlers and houses growing (2x speed), with the performance numbers on top. [Full video (MP4)](media/customSyscalls-wol-ai.mp4).
+<!-- private:end -->
+
 ```
 customSyscalls [file or pattern ...]
 ```
@@ -611,6 +617,12 @@ customSyscalls [file or pattern ...]
 
 ### customCheats
 
+<!-- private:begin -->
+![customCheats in game](media/customCheats.gif)
+
+*In game:* A plugin cheat typed in the chat (second ~4) spawns 50 Cannons; the two frames over 100 ms are the moment the 50 units appear. [Full video (MP4)](media/customCheats.mp4).
+<!-- private:end -->
+
 ```
 customCheats
 ```
@@ -628,6 +640,12 @@ customCheats
   frames over 100 ms while the 50 units appear). <!-- private -->In the WoL copy, `kill 'em all` from `wolPlugin.upl`.
 
 ### asianCivs
+
+<!-- private:begin -->
+![asianCivs-koreans in game](media/asianCivs-koreans.gif)
+
+*In game:* A listed civ's two monks get their hero names (explorerUnits), then its villager opens the wonder age-up list with the civ's five wonders. [Full video (MP4)](media/asianCivs-koreans.mp4).
+<!-- private:end -->
 
 ```
 asianCivs Civ [Civ ...] [log]
@@ -655,6 +673,12 @@ asianCivs Civ [Civ ...] [log]
 
 ### selectionLimit
 
+<!-- private:begin -->
+![selectionLimit in game](media/selectionLimit.gif)
+
+*In game:* With `selectionLimit 75`, a box over 89 Pikemen selects 75 (the number on the selection icon); without the key it stops at 50. [Full video (MP4)](media/selectionLimit.mp4).
+<!-- private:end -->
+
 ```
 selectionLimit N
 ```
@@ -671,6 +695,12 @@ selectionLimit N
 - **New in this DLL:** not in UHC 1.10. <!-- private -->
 
 ### enableAllTeams
+
+<!-- private:begin -->
+![enableAllTeams in game](media/enableAllTeams.gif)
+
+*In game:* The setup's team list offers Team 3 and Team 4; player 1 takes Team 3 and the AI Team 4 (1.5x speed). [Full video (MP4)](media/enableAllTeams.mp4).
+<!-- private:end -->
 
 ```
 enableAllTeams
@@ -708,6 +738,12 @@ twoScoutCivs Civ [Civ ...]
 
 ### marketUnits
 
+<!-- private:begin -->
+![marketUnits in game](media/marketUnits.gif)
+
+*In game:* With only a listed market building, each click buys 100 food (food 200 to 500, gold falling); without the key the same clicks change nothing. [Full video (MP4)](media/marketUnits.mp4).
+<!-- private:end -->
+
 ```
 marketUnits Proto [Proto ...]
 ```
@@ -744,6 +780,12 @@ explorerUnits Proto Type StringID [Proto Type StringID ...]
   list).
 
 ### nativeCivs
+
+<!-- private:begin -->
+![nativeCivs-inca in game](media/nativeCivs-inca.gif)
+
+*In game:* A listed native civ's Town Center opens the council age-up list with its five council members; the log lines on top show the civs marked native and the dance gates resolving them. [Full video (MP4)](media/nativeCivs-inca.mp4).
+<!-- private:end -->
 
 ```
 nativeCivs Civ [Civ ...]
