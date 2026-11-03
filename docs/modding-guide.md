@@ -1396,6 +1396,20 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 
 *2. Stock, key off (the same scene):* before the fight the surgeon heals the idle musketeer (113 to 131 HP); once the musketeer fights, the surgeon stops healing it and it dies at 38 s; the enemy musketeers then kill the surgeon too (2x speed). [Full video (MP4)](media/healNonIdle-stock.mp4).
 
+
+<!-- private:begin -->
+![healNonIdle in WoL](media/healNonIdle-wol.gif)
+
+*3. In WoL, with `healNonIdle xpMedicineMan` (Iroquois):* a Tomahawk fights a Musketeer while the
+medicine man heals it between hits (127 to 146.8 HP, a hit to 125, back to 150); it wins.
+[Full video (MP4)](media/healNonIdle-wol.mp4).
+
+![healNonIdle in WoL, key off](media/healNonIdle-wol-control.gif)
+
+*4. In WoL, key off (the same scene):* the medicine man does not heal the fighting Tomahawk; it
+loses 23 HP per hit and dies at 54.5 s, the Musketeer left at 36 HP.
+[Full video (MP4)](media/healNonIdle-wol-control.mp4).
+<!-- private:end -->
 ```
 healNonIdle [<UnitType>]      default AbstractHealNonIdle
 ```

@@ -116,6 +116,39 @@ nothing in its data keeps the stock exe from loading (unknown types and effects 
 The subtypes `ROF`, `GathererLimit`, `MinimumRange` and `Bounty` in `Data` effects need a check of
 FUN_008F973F before deciding whether a key is needed.
 
+## Re-recording the earlier features in WoL (from 2026-11-03)
+
+The features made before the migration were filmed in the TAD test copies, several before the
+`--perf` rule. Each is filmed again in `C:\AoE3-UHC-WoLReal` with WoL's data, `--perf`, and a WoL
+civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF), next to the TAD one.
+
+| Key | WoL setup (civ / unit) | Status |
+|---|---|---|
+| `healNonIdle` | Iroquois: `xpMedicineMan` heals a `xpTomahawk` fighting a Musketeer (`healNonIdle xpMedicineMan`) | **done**: healed between hits and wins; without the key it dies at 54.5 s (`healNonIdle-wol*.mp4`). The WallMapu `MapucheShaman` does not heal even idle units in WoL |
+| `smartHealTargets` | Sioux medicine man, several wounded braves | pending |
+| `dodgeAnyUnit`, `dodgeChance` | Koreans or Japanese monks / a WoL light infantry | pending |
+| `damageOverTime` | WallMapu or Iroquois archers with a poison attachment | pending |
+| `spreadAnyAccuracy` | a WoL shotgun / grenade unit | pending |
+| `liveBuildingWorkRate`, `buildingWorkRateAuras` | an Asian civ (Japanese, Chinese) production building | pending |
+| `techPrereqRecheck`, `maintainWaitForPop` | Ottomans (auto-produced units), a `TypeCount` tech | pending |
+| `transformUpdatesLOS`, `transformInventory` | a WoL transform (Zulu maturing, wagons) | pending |
+| `broadsideMuzzleLimit` | a WoL ship with a barrage attack | pending |
+| `abilitySlots`, `wonderPanelSkipAuras` | an explorer with many powers; a Japanese wonder with auras | pending |
+| `lifespanAfterConstruction`, `gaiaSocketsOnly` | a WoL temporary building; a trade/native socket | pending |
+| `customHotkeyContexts` | a WoL building with its own keymap context | pending |
+| `snareOnlyHitUnit` | a WoL snare attack on a group | pending |
+| `techRenameEffect` | a WoL tech that renames | pending |
+| `noCorpseDopples` | WoL hunts | pending |
+| `danceBonusCivs`, `nativeCivs` dances | WallMapu fire pit | pending |
+| `startingTC`, `civFirstTC` | a WoL civ with its own first TC | pending |
+| `noTrainNearEnemyTC` | a WoL TC with enemy units near | pending |
+| `overhealHitpointBars`, `overhealSources`, `overhealDecay` | WoL infantry with overheal | pending |
+| `showGatherRate` | a WoL gatherer | pending |
+| `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
+| `decimalPopulation`, `basePop` / `extraPop`, `deckCardCount` | WoL units with decimal pop; a big deck | pending |
+| `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |
+| `bufferedFileReads`, `multipleInstances` | load time; two copies | pending |
+
 ## WoL's always-on patches (inventory, 2026-11-03)
 
 WoL's DLL changes 287 ranges of the running game (`rea/evidence/wol-uhc-c070d138/wol-memdiff.txt`).
