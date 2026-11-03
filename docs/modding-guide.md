@@ -3075,9 +3075,21 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 
 ### danceBonusCivs
 
-![danceBonusCivs in game](media/danceBonusCivs.gif)
+<!-- private:begin -->
+![danceBonusCivs in WoL](media/danceBonusCivs-wol.gif)
 
-*In game:* A Spanish (non-native) fire pit's Regeneration dance heals musketeers from 120 to 150 HP (2x speed). [Full video (MP4)](media/danceBonusCivs.mp4).
+*In WoL, with `danceBonusCivs Ethiopians log` (Ethiopians, the Town Center selected so its queue
+shows):* ten settlers do WoL's Fertility Dance (`FertilityDance`, a `Training` dance, turned on for
+the test by an appended tech, removed after) at a fire pit while the TC trains villagers. The
+Ethiopian TC gets the dance's train bonus (`reads its fire pit's Training dances`): 5 villagers
+trained by 77 s of game time. [Full video (MP4)](media/danceBonusCivs-wol.mp4).
+
+![danceBonusCivs in WoL, key off](media/danceBonusCivs-wol-control.gif)
+
+*In WoL, key off (the same scene):* the settlers dance but the bonus applies only to the native
+civs, so the TC trains at its normal rate: 2 villagers by 82 s.
+[Full video (MP4)](media/danceBonusCivs-wol-control.mp4).
+<!-- private:end -->
 
 ```
 danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lines add up
