@@ -743,6 +743,48 @@ explorerUnits Proto Type StringID [Proto Type StringID ...]
   knockout message was not driven. Video `asianCivs-koreans.mp4` (the two monks, then the wonder
   list).
 
+### nativeCivs
+
+```
+nativeCivs Civ [Civ ...]
+```
+
+- **Effect:** the listed civs count as native civs: the civ flag the `civs.xml` loader sets for
+  the native civs, the game's native civ tests, the fire pit's Training, XPTrickle, Gathering and
+  Regeneration dances (through the same four gates as `danceBonusCivs`), and the council age-up
+  list, where a listed civ gets the council members whose civ name is its name in the cfg.
+- **Your data:** for the council age-up, entries in `politiciandata.xml` with
+  `nativeciv="<Civ>"` (the stock Iroquois entries are the model).
+- **Log:** `nativeCivs: N civ(s) count as native civs`; `nativeCivs: K of N civ(s) marked native
+  in civs.xml`; `nativeCivs: <Civ> -> civ <ID>` and `danceBonusCivs: <Civ> -> civ <ID>` when
+  `civs.xml` is read; `hook reached: nativeCivs civ flags (0x52B581)`, `... test 2 (0x51271F)`,
+  `... isNativeCiv (0x453D5E)`, `... test 7 (0x67B0A5)`, `... test 9 (0x8D52AF)`,
+  `... council age-up (0x81ADEB)`.
+- **Simulation:** changes what the listed civs may do: every player needs the same line.
+- **Status:** confirmed (2026-11-02, single player): three civs marked native, every hook ran in
+  a skirmish, the four dance gates resolved them, and a listed civ's Town Center opened the council
+  age-up list with its five council members. Video `nativeCivs-inca.mp4`.
+<!-- private:begin -->
+- **Fixed from UHC 1.10:** upstream compares a dword where isNativeCiv compares a byte, and its
+  council hook clobbers EAX.
+<!-- private:end -->
+
+### bigButtonCivs and noBigButtonBlds
+
+```
+bigButtonCivs Civ [Civ ...]
+noBigButtonBlds Proto [Proto ...]
+```
+
+- **Effect:** the command panel's big button, which stock gives to native civs, also goes to the
+  listed civs; and neither native nor listed civs get it on a building of a `noBigButtonBlds`
+  proto. Either line may be used alone.
+- **Log:** `bigButtonCivs/noBigButtonBlds: N civ(s) get the native big button, M building proto(s)
+  never show it`; `hook reached: bigButtonCivs command panel (0x461BD8)`.
+- **Simulation:** no: interface only.
+- **Status:** partly confirmed (2026-11-02, single player): the hook ran when a listed civ's
+  Town Center was selected; a building of a listed proto was not checked.
+
 ### customRevolutionBanners
 
 ```

@@ -70,9 +70,9 @@ Status words as in the README. "Blocks" = WoL does not load or its AI does not p
 | `customSyscalls wolPlugin.upl wolai.upl` | upstream | blocks (AI compile: `kbGetTechID` ×36 in `aiWoLMain.xs`; 36 `RM4\ESOC_*` maps) | **done**, confirmed |
 | `customCheats` | upstream | cosmetic (33 plugin cheats) | **done**, confirmed (`kill 'em all`: 50 Cannons) |
 | `asianCivs Egyptians Ethiopians Koreans Zulu Maori` | upstream | degrades: export, consulate, wonder age-up for those civs | **done**, confirmed (Koreans: five wonders in the age-up list) |
-| `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | degrades: fire pit, council age-up | pending (dance gates shared with `danceBonusCivs`) |
+| `NativeCivs Tupinamba WallMapu Tawantinsuyu` | upstream | degrades: fire pit, council age-up | **done**, confirmed (Tawantinsuyu: council list, dances resolved) |
 | `twoScoutCivs Koreans` | upstream | degrades | **done**, not reached in game yet (probably the new home city dialog) |
-| `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | pending |
+| `bigButtonCivs`, `noBigButtonBlds` | upstream | degrades | **done**, partly confirmed (hook reached) |
 | `enableAllTeams` | upstream | degrades (teams 3/4) | **done** for single player, partly confirmed; MP lobby pending (needs a LAN test) |
 | `wonderCivUnitType Rangatira` | WoL | degrades (Maori age-up) | pending, RE |
 | `marketUnits` | upstream | degrades (trade without a stock Market) | **done**, confirmed (`WOLMarketGreek`; refused without the key) |
@@ -111,5 +111,6 @@ load-time A/B for `customAbstractTypes`.
 | AI skirmish, `customSyscalls` | player: Ethiopians; AI: Indians (Bahadur Shah) |
 | `asianCivs` wonders, `explorerUnits` names | Koreans (Hanseong): villager, WOLMonkKorean, WOLMonkKorean2 |
 | `marketUnits` | scenario: WOLMarketGreek (Greek market) |
+| `nativeCivs`, `bigButtonCivs` | Tawantinsuyu (Cuzco): Town Center council |
 | `selectionLimit` | scenario: 89 Pikemen |
 | `customCheats` | Ethiopians: 50 Cannons |

@@ -63,6 +63,16 @@ SITES = [
     # message (mov edx,[esi+10h] / mov eax,[edx+5Ch])
     ("ExplorerName", 0x6A012A, 8),
     ("ExplorerKnockout", 0x50B01F, 6),
+    # nativeCivs: the civs.xml loader's end (lea ecx,[esp+100h], after it sets [civ+10h] for the
+    # native civs), four native civ tests and the council age-up list's first compare
+    ("NativeCivMark", 0x52B581, 7),
+    ("NativeCivTest2", 0x51271F, 8),
+    ("NativeCivTest4", 0x453D5E, 15),
+    ("NativeCivTest7", 0x67B0A5, 8),
+    ("NativeCivTest9", 0x8D52AF, 6),
+    ("NativeCouncil", 0x81ADEB, 8),
+    # bigButtonCivs / noBigButtonBlds: jne 695955h after isNativeCiv in the command panel FUN_0046188E
+    ("BigButton", 0x461BD8, 6),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),

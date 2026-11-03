@@ -158,6 +158,8 @@ asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders
 selectionLimit N              a selection holds up to N units (stock 50)
 enableAllTeams                Team 3 and Team 4 in the single-player setup
 twoScoutCivs Civ ...          these civs get the two-hero interface
+nativeCivs Civ ...            these civs count as native civs (dances, council)
+bigButtonCivs, noBigButtonBlds   the native big button for more civs / not on buildings
 marketUnits Proto ...         these buildings count as a Market for trading
 explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)
 customRevolutionBanners       a banner for every XPRevolution<Name> tech

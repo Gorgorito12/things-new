@@ -191,6 +191,49 @@ bool __stdcall UhcDanceCivAllowed(std::int32_t kind, const char* player, std::in
 
 namespace uhc {
 
+namespace {
+bool g_gatesInstalled = false;
+}  // namespace
+
+// The four dance gates, installed once (danceBonusCivs and nativeCivs share them).
+bool InstallDanceGates(const char* feature) {
+  if (g_gatesInstalled) {
+    return true;
+  }
+  if (!VerifyAll(feature, {&sites::kDanceTrainGate, &sites::kDanceTrainBranch, &sites::kDanceXpGate,
+                           &sites::kDanceXpBranch, &sites::kDanceGatherGate, &sites::kDanceGatherBranch,
+                           &sites::kDanceRegenGate, &sites::kDanceRegenBranch})) {
+    return false;
+  }
+  // Each jmp replaces the 6-byte cmp eax,[0C6FB50h] (XPIroquois), the first native compare.
+  struct Gate {
+    std::uint32_t va;
+    void (*hook)();
+  };
+  const Gate gates[] = {
+      {0x008D47AB, &UhcDanceTrainHook},
+      {0x004E0DFF, &UhcDanceXpHook},
+      {0x004ECD53, &UhcDanceGatherHook},
+      {0x0049048B, &UhcDanceRegenHook},
+  };
+  for (const Gate& gate : gates) {
+    if (!WriteJmp(gate.va, reinterpret_cast<const void*>(gate.hook), 6)) {
+      return false;
+    }
+  }
+  g_gatesInstalled = true;
+  return true;
+}
+
+bool AddDanceCivs(const std::vector<std::string>& names, const char* feature) {
+  if (!InstallDanceGates(feature)) {
+    return false;
+  }
+  g_civNames.insert(g_civNames.end(), names.begin(), names.end());
+  g_resolvedDatabase = nullptr;  // resolve again with the new names
+  return true;
+}
+
 Outcome ApplyDanceBonusCivs(const Config& config) {
   const std::vector<Config::Args>* lines = config.All("danceBonusCivs");
   if (lines == nullptr) {
@@ -215,27 +258,8 @@ Outcome ApplyDanceBonusCivs(const Config& config) {
   }
   g_log = log;
 
-  if (!VerifyAll("danceBonusCivs", {&sites::kDanceTrainGate, &sites::kDanceTrainBranch, &sites::kDanceXpGate,
-                                    &sites::kDanceXpBranch, &sites::kDanceGatherGate, &sites::kDanceGatherBranch,
-                                    &sites::kDanceRegenGate, &sites::kDanceRegenBranch})) {
+  if (!InstallDanceGates("danceBonusCivs")) {
     return Outcome::kFailed;
-  }
-
-  // Each jmp replaces the 6-byte cmp eax,[0C6FB50h] (XPIroquois), the first native compare.
-  struct Gate {
-    std::uint32_t va;
-    void (*hook)();
-  };
-  const Gate gates[] = {
-      {0x008D47AB, &UhcDanceTrainHook},
-      {0x004E0DFF, &UhcDanceXpHook},
-      {0x004ECD53, &UhcDanceGatherHook},
-      {0x0049048B, &UhcDanceRegenHook},
-  };
-  for (const Gate& gate : gates) {
-    if (!WriteJmp(gate.va, reinterpret_cast<const void*>(gate.hook), 6)) {
-      return Outcome::kFailed;
-    }
   }
   Log(L"danceBonusCivs: civs %hs get the fire pit's Training, XPTrickle, Gathering and Regeneration dances like "
       L"the native civs%ls (multiplayer unverified)",

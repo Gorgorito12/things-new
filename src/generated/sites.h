@@ -89,6 +89,27 @@ inline constexpr Site kExplorerName{"ExplorerName", 0x006A012A, kExplorerNameByt
 inline constexpr std::uint8_t kExplorerKnockoutBytes[] = {0x8B, 0x56, 0x10, 0x8B, 0x42, 0x5C};
 inline constexpr Site kExplorerKnockout{"ExplorerKnockout", 0x0050B01F, kExplorerKnockoutBytes, sizeof(kExplorerKnockoutBytes)};
 
+inline constexpr std::uint8_t kNativeCivMarkBytes[] = {0x8D, 0x8C, 0x24, 0x00, 0x01, 0x00, 0x00};
+inline constexpr Site kNativeCivMark{"NativeCivMark", 0x0052B581, kNativeCivMarkBytes, sizeof(kNativeCivMarkBytes)};
+
+inline constexpr std::uint8_t kNativeCivTest2Bytes[] = {0x3B, 0x05, 0x58, 0xFB, 0xC6, 0x00, 0x74, 0x03};
+inline constexpr Site kNativeCivTest2{"NativeCivTest2", 0x0051271F, kNativeCivTest2Bytes, sizeof(kNativeCivTest2Bytes)};
+
+inline constexpr std::uint8_t kNativeCivTest4Bytes[] = {0x80, 0x7C, 0x24, 0x04, 0x00, 0x74, 0x08, 0x3B, 0x05, 0x5C, 0xFB, 0xC6, 0x00, 0x74, 0x05};
+inline constexpr Site kNativeCivTest4{"NativeCivTest4", 0x00453D5E, kNativeCivTest4Bytes, sizeof(kNativeCivTest4Bytes)};
+
+inline constexpr std::uint8_t kNativeCivTest7Bytes[] = {0x3B, 0x05, 0x58, 0xFB, 0xC6, 0x00, 0x74, 0x0E};
+inline constexpr Site kNativeCivTest7{"NativeCivTest7", 0x0067B0A5, kNativeCivTest7Bytes, sizeof(kNativeCivTest7Bytes)};
+
+inline constexpr std::uint8_t kNativeCivTest9Bytes[] = {0x0F, 0x84, 0xFF, 0x00, 0x00, 0x00};
+inline constexpr Site kNativeCivTest9{"NativeCivTest9", 0x008D52AF, kNativeCivTest9Bytes, sizeof(kNativeCivTest9Bytes)};
+
+inline constexpr std::uint8_t kNativeCouncilBytes[] = {0x39, 0x5C, 0x24, 0x10, 0x89, 0x44, 0x24, 0x20};
+inline constexpr Site kNativeCouncil{"NativeCouncil", 0x0081ADEB, kNativeCouncilBytes, sizeof(kNativeCouncilBytes)};
+
+inline constexpr std::uint8_t kBigButtonBytes[] = {0x0F, 0x85, 0x77, 0x3D, 0x23, 0x00};
+inline constexpr Site kBigButton{"BigButton", 0x00461BD8, kBigButtonBytes, sizeof(kBigButtonBytes)};
+
 inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
 inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
 

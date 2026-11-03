@@ -422,6 +422,32 @@ proto, whose ID is `[proto+4]`) the hook re-executes both loads and asks `UhcExp
 listed proto's string ID is pushed and the code continues at `0x50B039`, where the stock Explorer
 case loads its pushed string (`0x447719`); otherwise it continues at `0x50B025`.
 
+### nativeCivs
+
+- **Civ flag.** At the end of the `civs.xml` loader (`0x52B581`, `lea ecx,[esp+100h]`), stock has
+  just set `[civ+10h] = EBX` for the Iroquois, Sioux and Aztecs (civ object by name `0x52D6FF`);
+  the hook does the same for each listed name, then re-executes the `lea`.
+- **Tests.** `0x51271F` (FUN_00512651, `bool cdecl(civ)`), `0x453D5E` (isNativeCiv's `extended`
+  branch; the hook compares the byte argument as a byte), `0x67B0A5` and `0x8D52AF` re-execute their
+  stock compare with the cached native civ ID and otherwise ask `UhcIsNativeCiv`; a listed civ
+  takes the native branch.
+- **Dances.** The three dance readers upstream patches for natives (`0x4904B5`, `0x4ECD6B`,
+  `0x8D47C9`) are the functions `danceBonusCivs` gates at their first compare; `nativeCivs` adds
+  its names to that key's list through `AddDanceCivs` (installing the gates if `danceBonusCivs`
+  is not set), so the XPTrickle dance (`0x4E0DFF`) is covered too.
+- **Council.** In FUN_0081ABFC, at `0x81ADEB` (`cmp [esp+10h],ebx / mov [esp+20h],eax`), the
+  hook stores EAX, asks `UhcNativeCouncilOption(civ = [esp+10h], option civ name = [esi+18Ch]+edi+8)`
+  (`0x443C10`, case ignored): a match adds the option (`0x81AE59`); otherwise EAX is restored, the
+  compare re-executed, and the code continues at `0x81ADF3` with its flags.
+
+### bigButtonCivs and noBigButtonBlds
+
+In FUN_0046188E, `jne 695955h` at `0x461BD8` follows `isNativeCiv(player, true)`: a native player
+goes to `0x695955`, which shows the big button on a unit of abstract type 2; others go to
+`0x461BDE` (none). The hook passes AL, the player (EDI) and the unit (ESI) to `UhcBigButtonPath`:
+neither native nor listed means none; a unit whose proto (`[[unit+5Ch]+8]`) is in
+`noBigButtonBlds` means none; anything else takes the native path.
+
 ### customRevolutionBanners
 
 In FUN_0081A2B8, stock compares the revolution tech name with `"XPRevolutionOHiggins"`

@@ -10,6 +10,10 @@ include common.inc
 UhcIsListedAsianCiv PROTO STDCALL civ:DWORD
 UhcAsianWonderOption PROTO STDCALL player:DWORD, optionCiv:DWORD
 UhcIsTwoScoutCiv PROTO STDCALL civ:DWORD
+UhcIsNativeCiv PROTO STDCALL civ:DWORD
+UhcBigButtonPath PROTO STDCALL native:DWORD, player:DWORD, unit:DWORD
+UhcMarkNativeCivs PROTO STDCALL database:DWORD, value:DWORD
+UhcNativeCouncilOption PROTO STDCALL civ:DWORD, optionCiv:DWORD
 
 .data
 asianCheckTrue    dd 00454F2Ah   ; mov al,1 / ret 4
@@ -29,6 +33,19 @@ twoScout3Listed   dd 0077DE16h   ; lea ecx,[esp+30h] (the two-hero branch)
 twoScout3Stock    dd 0077DDD8h   ; push ecx / call 8D0318h
 twoScout4Listed   dd 0077E039h   ; lea ecx,[esp+10h] (the Japanese / Indian branch)
 twoScout4Stock    dd 0077DFFAh   ; mov ecx,[edx+140h]
+nativeMarkReturn  dd 0052B588h   ; call 59992Ch
+native2True       dd 0051272Ah   ; mov al,1 / ret
+native2False      dd 00512727h   ; xor al,al / ret
+native4True       dd 00453D72h   ; mov al,1 / ret 4
+native4False      dd 00453D6Dh   ; xor al,al / ret 4
+native7True       dd 0067B0BBh
+native7False      dd 0067B0ADh
+native9True       dd 008D53B4h
+native9False      dd 008D52B5h
+councilAdd        dd 0081AE59h   ; add the option
+councilStock      dd 0081ADF3h   ; jne 81AE11h (with the stock compare's flags)
+bigButtonNative   dd 00695955h   ; the native civs' path (big button if the unit is of type 2)
+bigButtonNone     dd 00461BDEh   ; no big button
 
 .code
 
@@ -174,5 +191,123 @@ stock4:
     mov edx, dword ptr ds:[0C66234h]
     jmp twoScout4Stock
 UhcTwoScout4Hook ENDP
+
+; --- nativeCivs ------------------------------------------------------------------------------
+
+; Tests EAX against the listed native civs with ECX and EDX preserved; ZF clear if listed.
+NATIVE_TEST MACRO
+    push ecx
+    push edx
+    push eax
+    call UhcIsNativeCiv
+    pop edx
+    pop ecx
+    test al, al
+ENDM
+
+; 0x52B581, the end of the civs.xml loader: lea ecx,[esp+100h] (7 B). EDI = the database, EBX =
+; the value the loader stores at [civ+10h] for the stock native civs.
+UhcNativeCivMarkHook PROC
+    TRACE_ONCE "nativeCivs civ flags (0x52B581)"
+    pushad
+    push ebx
+    push edi
+    call UhcMarkNativeCivs
+    popad
+    lea ecx, [esp+100h]
+    jmp nativeMarkReturn
+UhcNativeCivMarkHook ENDP
+
+; 0x51271F in FUN_00512651 (bool cdecl(civ), EAX = civ): cmp eax,[0C6FB58h] / je 51272Ah (8 B).
+UhcNativeCivTest2Hook PROC
+    TRACE_ONCE "nativeCivs test 2 (0x51271F)"
+    cmp eax, dword ptr ds:[0C6FB58h]
+    je yes2
+    NATIVE_TEST
+    jnz yes2
+    jmp native2False
+yes2:
+    jmp native2True
+UhcNativeCivTest2Hook ENDP
+
+; 0x453D5E in isNativeCiv (0x453D37, bool thiscall(player, bool extended)): cmp byte [esp+4],0 /
+; je 453D6Dh / cmp eax,[0C6FB5Ch] / je 453D72h (15 B). The byte is compared as a byte.
+UhcNativeCivTest4Hook PROC
+    TRACE_ONCE "nativeCivs isNativeCiv (0x453D5E)"
+    cmp byte ptr [esp+4], 0
+    je listed4
+    cmp eax, dword ptr ds:[0C6FB5Ch]
+    je yes4
+listed4:
+    NATIVE_TEST
+    jnz yes4
+    jmp native4False
+yes4:
+    jmp native4True
+UhcNativeCivTest4Hook ENDP
+
+; 0x67B0A5 (FUN_00490960's loop): cmp eax,[0C6FB58h] / je 67B0BBh (8 B).
+UhcNativeCivTest7Hook PROC
+    TRACE_ONCE "nativeCivs test 7 (0x67B0A5)"
+    cmp eax, dword ptr ds:[0C6FB58h]
+    je yes7
+    NATIVE_TEST
+    jnz yes7
+    jmp native7False
+yes7:
+    jmp native7True
+UhcNativeCivTest7Hook ENDP
+
+; 0x8D52AF in FUN_008D51D0: je 8D53B4h (6 B), after cmp eax,[0C6FB58h].
+UhcNativeCivTest9Hook PROC
+    TRACE_ONCE "nativeCivs test 9 (0x8D52AF)"
+    je yes9
+    NATIVE_TEST
+    jnz yes9
+    jmp native9False
+yes9:
+    jmp native9True
+UhcNativeCivTest9Hook ENDP
+
+; 0x81ADEB in the council age-up list FUN_0081ABFC: cmp [esp+10h],ebx / mov [esp+20h],eax (8 B).
+; [esp+10h] = the player's civ, ESI = the UI object, EDI = the option's offset in [esi+18Ch].
+UhcNativeCouncilHook PROC
+    TRACE_ONCE "nativeCivs council age-up (0x81ADEB)"
+    mov dword ptr [esp+20h], eax
+    pushad
+    mov eax, dword ptr [esi+18Ch]
+    lea eax, [eax+edi+8]
+    push eax
+    push dword ptr [esp+34h]        ; [esp+10h] before pushad (32 B) and the push above
+    call UhcNativeCouncilOption
+    mov dword ptr [esp+28], eax     ; EAX's slot in the pushad frame
+    popad
+    test al, al
+    jnz addOption
+    mov eax, dword ptr [esp+20h]    ; EAX as the stock code left it
+    cmp dword ptr [esp+10h], ebx
+    jmp councilStock
+addOption:
+    jmp councilAdd
+UhcNativeCouncilHook ENDP
+
+; 0x461BD8 in the command panel FUN_0046188E: jne 695955h (6 B) after isNativeCiv(EDI = the
+; player, true) and test al,al; ESI = the selected unit.
+UhcBigButtonHook PROC
+    TRACE_ONCE "bigButtonCivs command panel (0x461BD8)"
+    pushad
+    movzx eax, al
+    push esi
+    push edi
+    push eax
+    call UhcBigButtonPath
+    mov dword ptr [esp+28], eax     ; EAX's slot in the pushad frame
+    popad
+    test eax, eax
+    jnz native
+    jmp bigButtonNone
+native:
+    jmp bigButtonNative
+UhcBigButtonHook ENDP
 
 END

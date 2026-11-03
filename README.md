@@ -32,6 +32,8 @@ public:end -->
 | `selectionLimit N` | **New.** A selection holds up to N units (stock 50). | confirmed (single player) |
 | `enableAllTeams` | Team 3 and Team 4 in the single-player game setup. | partly confirmed |
 | `asianCivs Civ ...` | Listed civs count as Asian civs (consulate, export, wonder age-up). | confirmed (single player) |
+| `nativeCivs Civ ...` | Listed civs count as native civs (fire pit dances, council age-up). | confirmed (single player) |
+| `bigButtonCivs Civ ...`, `noBigButtonBlds Proto ...` | The native big button for more civs; never on the listed buildings. | partly confirmed |
 | `twoScoutCivs Civ ...` | Listed civs get the two-hero interface. | not tested in game |
 | `marketUnits Proto ...` | Listed buildings count as a Market for trading. | confirmed (single player) |
 | `explorerUnits Proto Type StringID ...` | Listed protos get hero names and their own knockout message. | partly confirmed (names) |
