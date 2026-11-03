@@ -580,7 +580,8 @@ customAbstractTypes [file]
 ![customProtoUnitCommands in game](media/customProtoUnitCommands.gif)
 
 *In game:* a unit whose `<Command>` buttons use new command types shows them, their tooltips come
-from `protounitcommands.xml`, and a click runs their command (here two transforms). Without the key
+from `protounitcommands.xml`, and a click runs their command (here two transforms into "maturing"
+units). Without the key
 the same unit has no such buttons (top of the still below):
 ![customProtoUnitCommands off and on](media/customProtoUnitCommands-control.png)
 [Full video (MP4)](media/customProtoUnitCommands.mp4).
@@ -615,7 +616,7 @@ customProtoUnitCommands [file]
   without the key the same unit showed none. The game's command records are a fixed array (130):
   a first build that only added the names showed no button and wrote past that array; the key now
   enlarges it. Video `customProtoUnitCommands.mp4`.
-  In the WoL copy: Zulu `AFRICANyouth` transforms (Tradesman, Bowman). <!-- private -->
+  In the WoL copy: Zulu `AFRICANyouth` transforms (Tradesman, Bowman). Each becomes a maturing unit that should train the final unit with a `Maintain` action before its 10 s `Lifespan` ends; in this scenario (Ethiopian player with `Age0zulu`) it vanished without one, with our DLL and with WoL's own (control copy), so that part is data, not this key. <!-- private -->
 
 ### customSyscalls
 
