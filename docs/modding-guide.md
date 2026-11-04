@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 17:21 | [`unitResourceAuras`](#unitresourceauras) | Added. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Wednesday 2026-11-04 17:03 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | Added. `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. |
 | Wednesday 2026-11-04 16:29 | [`workRateByAbstractType`](#workratebyabstracttype) | Added. A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. |
 | Wednesday 2026-11-04 15:18 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
@@ -2990,6 +2991,8 @@ autoGatherScaleByContained
   argument: `FAILED`.
 
 #### unitResourceAuras
+
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Wednesday 2026-11-04 17:21
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
