@@ -78,6 +78,7 @@ add_library(UHC SHARED
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/workrate.cpp
+  src/features/workratetype.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
@@ -123,6 +124,7 @@ add_library(UHC SHARED
   src/hooks/unittype_hooks.asm
   src/hooks/wonderpanel_hooks.asm
   src/hooks/workrate_hooks.asm
+  src/hooks/workratetype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
   src/version.rc

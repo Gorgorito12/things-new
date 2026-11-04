@@ -1023,6 +1023,15 @@ SITES = [
     ("DataApplyArmorCase", 0x8FAE52, 0x0A),
     ("DataUnapplyArmorCase", 0x8FC144, 0x0A),
     ("EffectValueApply", 0x7F892A, 0x10),
+    # workRateByAbstractType: the head of the WorkRate case (Data subtype 3) of applyData, mov edi,[edi+44h]
+    # / cmp edi,ebp, and the je it continues at; the same in unapplyData with ESI. No branch lands inside.
+    ("WorkRateApplyCase", 0x8F987C, 11),
+    ("WorkRateUnapplyCase", 0x8FB11A, 11),
+    # workRateByAbstractType, verify only: action by ID in a proto's action set, the rate list's getter
+    # (0.0 for no entry) and setter
+    ("ActionById", 0x48D22E, 0x10),
+    ("ActionRateGet", 0x49EBB3, 0x10),
+    ("ActionRateSet", 0x5FA2FC, 0x10),
     # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
     # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
     # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)

@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `workRateByAbstractType` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
@@ -1204,6 +1204,21 @@ Check it in the game: with `showGatherRate`, select one gathering villager: `Foo
 to Resists; it goes when the villager stops, and with two villagers selected. With
 `overhealHitpointBars stat`, select a marked unit above its 100 %: `Overheal: 15/30`. The log shows
 `hook reached: unit panel row (0x699456)`.
+
+### workRateByAbstractType
+
+Code: [gathering](porting-code/gathering.md#workratebyabstracttype).
+
+- **Sites:** two 5-byte `jmp`s, at `0x8F987C` (`8B 7F 44 3B FD`: `mov edi,[edi+44h]; cmp edi,ebp`, continue at
+  `0x8F9881`) and `0x8FB11A` (`8B 76 44 3B F5`: `mov esi,[esi+44h]; cmp esi,ebp`, continue at `0x8FB11F`). No
+  range of WoL's DLL overlaps them.
+- **In the hook:** the target proto, its base proto, and from the frame the action, key, amount and
+  relativity. See the comments in the assembly for the offsets, which differ by 4 in the second site.
+- **Data:** WoL must decide about the techs that name both types: see the [modding
+  guide](modding-guide.md#workratebyabstracttype).
+
+Check it in the game: with `showGatherRate`, select a villager on an `OlivePlantation` and activate
+`Amalgamation`: the rate goes from 0.28 to 0.34.
 
 ### showGatherRate
 

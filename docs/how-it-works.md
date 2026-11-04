@@ -2479,6 +2479,30 @@ Musketeer` decayed 3 HP/s (2 % of 150); `2% 1 Pikeman` left the Musketeer at 165
 against the AI (home city world present), a marked Explorer stayed at its 100 % (180) while
 regenerating; without the key it reached 220.
 
+### workRateByAbstractType
+
+An action's rates are a list of `{unittype ID, rate, -1}` (`[action+0Ch]`, count `[action+10h]`, 0Ch bytes
+each). The lookup 0x487C45(target) returns the entry of the target's own proto (`[[target+5Ch]+8]`) if there
+is one, else the first entry whose abstract type the target carries. The Data effect subtype WorkRate (3) is
+case 0x8F987C of applyData and 0x8FB11A of unapplyData: it reads the one entry the effect names with
+0x49EBB3, computes it with 0x7F892A, using the base proto's entry as the base, and writes it with 0x5FA2FC.
+
+The hooks sit at the head of both cases and call `UhcWorkRateByType(proto, baseProto, actionId, key, amount,
+relativity, unapply)`. If `key` is a listed type, the function looks up the action in both protos' sets
+(0x48D22E) and repeats the stock computation for each proto of the type that has an entry of its own. The
+protos of a type are found once per database, with 0x44D7FA, at the first such effect: their types are not
+read yet at the database load callback.
+
+**Why it is safe.**
+- The head of each case is `mov r32,[r32+44h] / cmp r32,ebp` (5 B). The jump table is the only way in: no
+  branch lands in those bytes. The hook re-executes them, so the flags are the stock ones at the continuation,
+  the `je` at 0x8F9881 / 0x8FB11F. The registers are saved around the call and the x87 stack is empty there.
+- An entry with no rate is skipped, so no entry is ever added.
+- The order of the list of protos is by ID, and nothing depends on the local player, so the result is the
+  same on every machine.
+- Tech effects are re-applied through applyData when a game loads, on protos rebuilt from the base, so the
+  rates are correct after a load and nothing is stored in the DLL.
+
 ### showGatherRate
 
 With the minimized interface (`optionminimizedui`) the stat panel fill returns at its start. The hook

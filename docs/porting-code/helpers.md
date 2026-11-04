@@ -1289,6 +1289,21 @@ inline constexpr Site kDataUnapplyArmorCase{"DataUnapplyArmorCase", 0x008FC144, 
 inline constexpr std::uint8_t kEffectValueApplyBytes[] = {0x8B, 0x44, 0x24, 0x08, 0x85, 0xC0, 0x74, 0x68, 0x0F, 0xB6, 0x4C, 0x24, 0x04, 0x83, 0xE9, 0x00};
 inline constexpr Site kEffectValueApply{"EffectValueApply", 0x007F892A, kEffectValueApplyBytes, sizeof(kEffectValueApplyBytes)};
 
+inline constexpr std::uint8_t kWorkRateApplyCaseBytes[] = {0x8B, 0x7F, 0x44, 0x3B, 0xFD, 0x0F, 0x84, 0x6D, 0x16, 0x00, 0x00};
+inline constexpr Site kWorkRateApplyCase{"WorkRateApplyCase", 0x008F987C, kWorkRateApplyCaseBytes, sizeof(kWorkRateApplyCaseBytes)};
+
+inline constexpr std::uint8_t kWorkRateUnapplyCaseBytes[] = {0x8B, 0x76, 0x44, 0x3B, 0xF5, 0x0F, 0x84, 0x75, 0x10, 0x00, 0x00};
+inline constexpr Site kWorkRateUnapplyCase{"WorkRateUnapplyCase", 0x008FB11A, kWorkRateUnapplyCaseBytes, sizeof(kWorkRateUnapplyCaseBytes)};
+
+inline constexpr std::uint8_t kActionByIdBytes[] = {0x8B, 0x51, 0x20, 0x53, 0x56, 0x33, 0xC0, 0x85, 0xD2, 0x57, 0x0F, 0x8E, 0x9E, 0x0A, 0x20, 0x00};
+inline constexpr Site kActionById{"ActionById", 0x0048D22E, kActionByIdBytes, sizeof(kActionByIdBytes)};
+
+inline constexpr std::uint8_t kActionRateGetBytes[] = {0x8B, 0x51, 0x10, 0x56, 0x33, 0xC0, 0x85, 0xD2, 0x57, 0x7E, 0x1B, 0x8B, 0x71, 0x0C, 0x8B, 0x7C};
+inline constexpr Site kActionRateGet{"ActionRateGet", 0x0049EBB3, kActionRateGetBytes, sizeof(kActionRateGetBytes)};
+
+inline constexpr std::uint8_t kActionRateSetBytes[] = {0x83, 0xEC, 0x0C, 0x55, 0x8B, 0x6C, 0x24, 0x14, 0x56, 0x8B, 0x71, 0x10, 0x33, 0xC0, 0x85, 0xF6};
+inline constexpr Site kActionRateSet{"ActionRateSet", 0x005FA2FC, kActionRateSetBytes, sizeof(kActionRateSetBytes)};
+
 inline constexpr std::uint8_t kXmlAttributeBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x8D, 0x44, 0x24, 0x04, 0x50, 0x52, 0xE8, 0x23, 0xFF, 0xFF, 0xFF, 0x84};
 inline constexpr Site kXmlAttribute{"XmlAttribute", 0x00598F37, kXmlAttributeBytes, sizeof(kXmlAttributeBytes)};
 
@@ -1756,6 +1771,7 @@ Outcome ApplyDamageOverTime(const Config& config);
 Outcome ApplyDodge(const Config& config);
 Outcome ApplySpreadAnyAccuracy(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
+Outcome ApplyWorkRateByAbstractType(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1830,6 +1846,7 @@ inline constexpr Feature kFeatures[] = {
     // After damageOverTime: both read action tags through the shared hook (actiontags.h), in this order.
     {"spreadAnyAccuracy", ApplySpreadAnyAccuracy},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
+    {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1899,7 +1916,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",

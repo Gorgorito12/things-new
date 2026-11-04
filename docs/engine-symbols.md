@@ -854,6 +854,17 @@ the Gathering dance (FUN_004ECD39) in "Dances".
 | Data-ref evaluators | vtable 0xB9EA48: +4 0xAB9544 (color), +8 0x44A25A (string), +0Ch 0xAB94A2 (int), +10h 0xAB9400 (float) | confirmed | `thiscall(this, id, arg, out*)`, `ret 0Ch`. The typed ones call `[entry+0Ch]` only when the registered type is theirs; the string one dispatches on it (jump table 0x44A40C: 1 → 0x44A31D, 2 → 0x44A2C8, 3 → 0x44A635, 4 → 0x44A391). Each sets `Value.type` to the registered type, `[0C6DF7Ch]` = arg during the call (0 after), and checks the vfunc `[[0C66244h]]+4Ch` first. Type 3: Value `{3, BString 0}`, copied out with 0x40196F on true (site `DataRefStringEval`). |
 | Data refs' current unit | `[[[0C67310h]+920h]+13Ch]` | confirmed (0x6F49B1) | A unit ID, looked up in `[[0C66234h]+13Ch]` (ID & 3FFFFh, stored ID must match). Other providers use other notions (0x6F5931: 0x4051B6 / 0x930041). Site `CurrentUnitRef`. |
 
+### Action rates (for `workRateByAbstractType`, WoL #11, 2026-11-04)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Rate list | `[action+0Ch]`, count `[action+10h]`, entries of 0Ch B | confirmed (`cs`, in game) | `+0` unittype ID (proto or abstract), `+4` float rate, `+8` −1 when added by the setter. |
+| Rate lookup | 0x487C45, `float thiscall(action, target unit)`, `ret 4` | confirmed (`cs`) | The entry of `[[target+5Ch]+8]` returns at once (0x67C93A); else the first entry whose type the target carries (0x44D7FA); none: 0. Called by the gather tick (0x4ECEDD, 0x4ECFD1) and the heal tick. |
+| Rate getter / setter | 0x49EBB3 `float thiscall(action, key)`, `ret 4`; 0x5FA2FC `thiscall(action, key, float)`, `ret 8` | confirmed (`cs`, in game) | Exact key only. The getter returns 0 for no entry; the setter adds an entry when the rate is above 1e-6. |
+| Action by ID | 0x48D22E, `thiscall(action set [proto+44h], id)` | confirmed (`cs`) | Returns 0 for none. |
+| WorkRate effect | applyData case 3, 0x8F987C; unapplyData 0x8FB11A | confirmed (`cs`, in game) | Subtype 3 (registered at 0x524D38). Frame in applyData: action `[esp+20h]`, key `[esp+24h]`, amount `[esp+28h]`, relativity `[esp+2Ch]`, EDI target proto, ESI base proto, EBP 0. In unapplyData −4 each, ESI and EDI swapped. |
+| Effect removal | FUN_0094DCB2 (a tech's effects, every entry) → FUN_007F8168 → vtable +28h | confirmed (`cs`), in game | Two callers: the TechStatus effect's general unapply 0x7F8D8E, and 0x8EA9FA. `trTechSetStatus` does not remove effects. At a scenario's start `Age0Egyptian`'s `WorkRate` on `All` (×0.8) is applied and removed for each player. |
+
 ### Building work rate auras (for `buildingWorkRateAuras`)
 
 The getter 0x9BFE33 and its four callers are in "Building work rate"; the modifier action, its

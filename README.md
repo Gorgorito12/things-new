@@ -27,7 +27,7 @@ Every key, with what it needs and how far it was tested, is in the
 | **Civs** | `asianCivs`, `nativeCivs`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`, `danceBonusCivs`, `wonderCivUnitType`, `startingTC`, `civFirstTC`, `customRevolutionBanners`, `removeFameRestriction` |
 | **Healing and hit points** | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` |
 | **Combat** | `multiarmor`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `rofFix`, `stunMovingTargetFix`, `noDamageOnUnbuiltFoundations`, `fallenHeroTacticsFix`, `removeConversionRestriction` |
-| **Gathering and farms** | `gatherFix`, `showGatherRate`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits` |
+| **Gathering and farms** | `gatherFix`, `showGatherRate`, `workRateByAbstractType`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits` |
 | **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback` |
 | **Techs and transforms** | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` |
 | **Interface** | `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples` |

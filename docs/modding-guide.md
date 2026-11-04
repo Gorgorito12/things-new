@@ -2750,6 +2750,7 @@ Resources, gatherers, and what pays for them.
 |---|---|---|---|---|
 | [`gatherFix`](#gatherfix) | Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. WoL's balance assumes it. | always on | Nothing. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
+| [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -2876,6 +2877,64 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   interface: the row in the unit panel, gone when the villager stops and with two villagers selected,
   and the data ref. In the normal interface, on the stock game (2026-10-29): the row under the HP row.
   Other targets, whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
+
+#### workRateByAbstractType
+
+![workRateByAbstractType in WoL](media/workRateByAbstractType-wol.gif)
+
+*In WoL, with `showGatherRate` and `workRateByAbstractType log=MuslimSettler` (Ethiopians, an
+`OlivePlantation`, WoL's own mining techs):* `Amalgamation`, `HCSilversmith` and `HCIronmonger` each add
+20 %, and the villager's rate in the panel goes from 0.28 to 0.34, 0.39 and 0.45 coin per second.
+[Full video (MP4)](media/workRateByAbstractType-wol.mp4).
+
+![workRateByAbstractType in WoL, key off](media/workRateByAbstractType-wol-control.gif)
+
+*In WoL, key off (the same scene):* the three techs change nothing here, and the rate stays at 0.28.
+[Full video (MP4)](media/workRateByAbstractType-wol-control.mp4).
+
+```
+workRateByAbstractType [UnitType ...] [log | log=<Proto>]
+```
+
+- **Why (JTMaston's #11):** a unit's rate for a target is its rate for that exact proto if it has one,
+  and only if not, its rate for an abstract type of the target. A `WorkRate` effect changes the one rate it
+  names. A villager has its own `Plantation` rate, so a mining tech never reached a Plantation, although the
+  Plantation carries `AbstractMine`.
+- **Effect:** when a `WorkRate` effect names a listed type (default `AbstractMine`, up to 8), the same
+  change goes to every rate the unit has for a proto of that type, with the same relativity and amount.
+  Removing the effect takes it back. A unit with no rate of its own for that proto is left alone: it already
+  reads the abstract rate.
+- **Each player's rates:** the change is made on the player whose tech it is.
+- **WoL also needs a data decision.** Of WoL's 177 techs with a `WorkRate` effect on `AbstractMine`, 75 name
+  no other proto of that type: those are the ones the key fixes. The other 102 already name `Plantation`,
+  `OlivePlantation` or another such proto, and with the key they count **twice** on it while it carries
+  `AbstractMine` (`ImpExcessiveTaxation`, ×1.5 twice: a Settler's `Plantation` rate goes 0.35 → 0.525 →
+  0.70). JTMaston's plan is to take the tag off the plantations; then those buildings keep exactly the techs
+  that name them, and the key serves the buildings that keep the tag.
+
+  <details>
+  <summary>The 102 techs that name both</summary>
+
+  `Age0Dutch`, `CapitolDualMonarchy`, `ChurchCodeNapoleon`, `ChurchEconmediaManor`, `EarthCeremony`, `EarthGiftCeremony`, `EUpoliticianDutchUK`, `EUpoliticianFrenchUK`, `HCAycinenaWykeTreaty`, `HCBerthierRifle`, `HCCardGeologicalSurvey`, `HCCasadeMoneda`, `HCEconomicTheoryChile`, `HCEGYFRANCE1`, `HCEGYFRANCE10`, `HCEGYFRANCE11`, `HCEGYFRANCE12`, `HCEGYFRANCE13`, `HCEGYFRANCE14`, `HCEGYFRANCE15`, `HCEGYFRANCE16`, `HCEGYFRANCE17`, `HCEGYFRANCE18`, `HCEGYFRANCE19`, `HCEGYFRANCE2`, `HCEGYFRANCE20`, `HCEGYFRANCE21`, `HCEGYFRANCE22`, `HCEGYFRANCE23`, `HCEGYFRANCE24`, `HCEGYFRANCE25`, `HCEGYFRANCE26`, `HCEGYFRANCE27`, `HCEGYFRANCE28`, `HCEGYFRANCE29`, `HCEGYFRANCE3`, `HCEGYFRANCE30`, `HCEGYFRANCE4`, `HCEGYFRANCE5`, `HCEGYFRANCE6`, `HCEGYFRANCE7`, `HCEGYFRANCE8`, `HCEGYFRANCE9`, `HCEUEconomicTheoryAH`, `HCEURoyalMintAH`, `HCExtractivism`, `HCGuilds`, `HCLlanquihueArtisans`, `HCMinieBall`, `HCRoyalMint`, `HCRoyalMintChile`, `HCShipAfricanAskaris1Egypt`, `HCShipAfricanAskaris2Egypt`, `HCShipAfricanAskaris3Egypt`, `HCShipAfricanAskaris4Egypt`, `HCShipAfricanEscortEgypt1`, `HCShipAfricanEscortEgypt2`, `HCShipAfricanEscortEgypt3`, `HCShipAfricanEscortEgypt4`, `HCShipConsulateFrench1`, `HCShipConsulateFrench2`, `HCShipConsulateFrench3`, `HCShipConsulateFrench4`, `HCVillaCosmopolis`, `HCXPEconomicTheory`, `ImmigrantMetaStuff`, `ImpExcessiveTaxation`, `ImpExcessiveTributeNative`, `MapucheIronmonger`, `MapucheRoyalMint`, `MapucheSilversmith`, `MEPerCourtFR1`, `MEPerCourtFR2`, `MEPerCourtFR3`, `NAtechUSAuniquetechunion07`, `NAtechUSAuniquetechunion08`, `NAtexaco04`, `NatXPKlamathWorkEthos`, `NatXPNavajoCraftsmanship`, `TicketOfLeave`, `WhipSlaves`, `WhipSlaves2`, `WhipSlaves3`, `WhipSlaves4`, `WhipSlaves5`, `WOLHCAntwerpDiamondDistrict`, `WOLHCEconomicTheoryDanish`, `WOLHCGumbootDance`, `WOLHCHermitKingdom`, `WOLHCQueteletIndex`, `WOLHCRoyalMintDanish`, `WOLNatJadidONE`, `ypBigConsulateFrench`, `ypBigConsulateSPCFrench`, `ypBigSequesterInitialClone1`, `ypBigSequesterInitialFrench`, `ypBigSequesterRemoveClone1`, `YPHCChonindoTeam`, `YPHCEconomicTheoryAsia`, `YPHCRoyalMintIndians`, `ypImpExcessiveTributeAsian`, `YPNatSufiFasting`
+
+  </details>
+
+- **Log:** `workRateByAbstractType: applied`, `hook reached: workRateByAbstractType apply (0x8F987C)`, and at
+  the first such effect `AbstractMine has 33 protos`. With `log=<Proto>`, each change to that unit's rates,
+  `MuslimSettler, rate for OlivePlantation (through AbstractMine): 0.280 -> 0.336`. Plain `log` writes every
+  unit's, up to 2000 lines: for debugging only, it stalled the game about 3 s per tech in WoL.
+- **Arguments:** a proto name is ignored with a log line the first time an effect names it; an unknown name
+  is registered as a type with no protos. More than 8 types, or `log=` with no proto: not applied.
+- **Simulation:** changes gathering: every player needs the same line.
+- **Saved games:** the rates are rebuilt on load through the same effects, so they load right, and no effect
+  counts twice (a Settler's `Plantation` rate was 0.42 before and after, in a new process, and the next tech
+  took it to 0.49). The game needs the same line.
+- **Performance:** it runs only when a tech applies, never per unit or per tick. In the filmed scene, without
+  `log`: longest frame 10 ms against 13 ms for the control, no frame over 50 ms in either.
+- **Status:** confirmed (single player, on WoL): the rates above; a real removal, `Age0Egyptian` at game
+  start with `workRateByAbstractType All`, took 0.536 back to 0.670; with `AbstractMine` taken off `Plantation`
+  in `protoy.xml`, 32 protos and no change to its rate; a skirmish against the AI, which played on (16 to 24
+  units in 120 s of game time). Multiplayer not tested.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 
