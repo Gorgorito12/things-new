@@ -121,15 +121,16 @@ FUN_008F973F before deciding whether a key is needed.
 The features made before the migration were filmed in the TAD test copies, several before the
 `--perf` rule. Each is filmed again in `C:\AoE3-UHC-WoLReal` with WoL's data, `--perf`, and a WoL
 civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF). Once a feature has its WoL
-videos, its TAD GIF and MP4 are deleted (user rule, 2026-11-03). GIFs: 900 px, 10 fps, 2x speed,
-cut to the key moment (the `gif` helper: palettegen full, bayer dither).
+videos, its TAD GIF and MP4 are deleted (user rule, 2026-11-03). Filming (2026-11-04): camera height
+by console, `record --background --crop 960x640 --master`, GIF from the lossless master at native
+pixels, 2x speed, 10 fps, cut to the key moment.
 
 | Key | WoL setup (civ / unit) | Status |
 |---|---|---|
-| `healNonIdle` | Iroquois: `xpMedicineMan` heals a `xpTomahawk` fighting a Musketeer (`healNonIdle xpMedicineMan`) | **done**: healed between hits and wins; without the key it dies at about 60 s (`healNonIdle-wol*.mp4`, redone 2026-11-03 with `--select` and `--crop 0.45`). The WallMapu `MapucheShaman` does not heal even idle units in WoL |
-| `smartHealTargets` | United States: `NAnurse` and four settlers hit to 90/70/45/33 % (`smartHealTargets log`) | **done**: heals 33 % first, then 45, 70, 90 %; without the key it starts with the query's first, at 45 % (`smartHealTargets-wol*.mp4`). Filmed with `record --frame 1 --select Settler,NAnurse --crop 0.4` (still camera, HP bars, close-up) |
-| `dodgeAnyUnit`, `dodgeChance` | Japanese villagers (`ypSettlerJapanese`, rule 50 % `notech ranged`), a European `Settler` with `dodgeAnyUnit` (stock 15 %, `YPDodge`), an unmarked `ypSettlerIndian`, vs 3 Musketeers | **done**: 18 of 33 Japanese rolls dodged, 4 dodges for the Settler, the Indian dies first; keys off, nobody dodges (`dodge-wol*.mp4`). Soldiers shoot back and end the fight too soon; villagers do not |
-| `damageOverTime` | Iroquois: 3 `xpAenna` with poison arrows (`dot_testdata.py --wol`, restored after) vs 1 `Landsknecht` | **done**: ticks of 12 (x3 stacks), the last one kills it, 1 archer lost; key off, 2 archers lost (`damageOverTime-wol*.mp4`) |
+| `healNonIdle` | Iroquois: `xpMedicineMan` heals a `xpTomahawk` fighting a `WOLLineInfantry` (`healNonIdle xpMedicineMan`) | **done**: healed between hits and wins; without the key it dies at about 57 s (`healNonIdle-wol*.mp4`). The WallMapu `MapucheShaman` does not heal even idle units in WoL |
+| `smartHealTargets` | United States: `NAnurse` and four settlers hit to 90/70/45/33 % (`smartHealTargets log`) | **done**: heals 33 % first, then 45, 70, 90 %; without the key it starts with the query's first, at 45 % (`smartHealTargets-wol*.mp4`). |
+| `dodgeAnyUnit`, `dodgeChance` | Japanese villagers (`ypSettlerJapanese`, rule 50 % `notech ranged`), a European `Settler` with `dodgeAnyUnit` (stock 15 %, `YPDodge`), an unmarked `ypSettlerIndian`, vs 3 `Redcoat` | **done**: 18 of 31 Japanese rolls dodged, the Settler dodges at 15 %, the Indian dies first; keys off, nobody dodges (`dodge-wol*.mp4`). Soldiers shoot back and end the fight too soon; villagers do not |
+| `damageOverTime` | Iroquois: 3 `xpAenna` with poison arrows (`dot_testdata.py --wol`, restored after) vs 1 `Landsknecht` | **done**: ticks of 12 (x3 stacks), the last one kills it at 36 s, no archer lost; key off, it lives until 45 s, 1 archer lost (`damageOverTime-wol*.mp4`) |
 | `spreadAnyAccuracy` | 4 `Escopetero` (WoL's own spread tags, no data edit) vs 8 `WOLScytheman` | **done**: every shot logged as a ground shot at r = 3 m; survivors' HP 800 / 562 with the key vs 827 without, so no clear damage change in a melee-range fight (`spreadAnyAccuracy-wol*.mp4`) |
 | `liveBuildingWorkRate` | African civ TC training `AFRICANvillager`; test tech `UHCBwrTest` (BWR x3 on TownCenter, appended to techtreey, restored after) at 30 s | **done**: 13 villagers by 97 s vs 8 without the key (5 at start) (`liveBuildingWorkRate-wol*.mp4`). WoL's own BWR techs did not fit: the Krupp factory's Maintain spawns take minutes, and the daimyos (`WOLHCKazoku`) train nothing in age I |
 | `buildingWorkRateAuras` | African civ, two TCs training `AFRICANvillager`; an Explorer with a test aura (`UHCBwrAura`, BWR x3, 10 m, in `explorer.tactics`, restored after) beside one | **done**: the aura TC trains 8 vs 2 for the other; key off, 3 each (`buildingWorkRateAuras-wol*.mp4`) |
@@ -207,8 +208,7 @@ Enemy units rotate too (user rule, 2026-11-03): no more `Musketeer` as the oppos
 WoL's own infantry, a different one each test, from the public civs: ranged `WOLLineInfantry`,
 `Redcoat`, `WOLJaeger`, `Grenzer`, `Highlander`, `WOLRegular`, `WOLForeignLegion`, `GreenJacket`,
 `Sarbaz`, `Jawan`, `WOLFlankeur`, `Seimen`, `WOLRanger`; melee `WOLLandwehr`, `WOLScytheman`,
-`WOLPicket`, `Landsknecht`, `Doppelsoldner`, `Azap`. The healNonIdle and dodge videos of
-2026-11-03 still use Musketeers.
+`WOLPicket`, `Landsknecht`, `Doppelsoldner`, `Azap`.
 
 | Test | Civ / unit |
 |---|---|

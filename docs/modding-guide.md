@@ -29,6 +29,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 07:20 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed (automatic healing) |
+| Wednesday 2026-11-04 07:20 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | confirmed (single player) |
+| Wednesday 2026-11-04 07:20 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | confirmed (single player) |
+| Wednesday 2026-11-04 07:20 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | confirmed (single player) |
+| Wednesday 2026-11-04 07:20 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | confirmed (single player) |
 | Wednesday 2026-11-04 06:59 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | confirmed |
 | Tuesday 2026-11-03 16:37 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | confirmed (single player, Healing Dance) |
 | Tuesday 2026-11-03 16:16 | [`noCorpseDopples`](#nocorpsedopples) | Filmed in WoL, with a control. A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. | confirmed (single player) |
@@ -45,11 +50,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Tuesday 2026-11-03 14:14 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | confirmed (single player) |
 | Tuesday 2026-11-03 14:08 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | confirmed (single player, `Maintain`) |
 | Tuesday 2026-11-03 13:59 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | confirmed (single player) |
-| Tuesday 2026-11-03 13:50 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | confirmed (single player) |
-| Tuesday 2026-11-03 13:26 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | confirmed (single player) |
-| Tuesday 2026-11-03 13:07 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | confirmed (single player) |
-| Tuesday 2026-11-03 13:07 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | confirmed (single player) |
-| Tuesday 2026-11-03 13:00 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed (automatic healing) |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | applied, effects not seen yet |
 | Tuesday 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Added. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | confirmed |
 | Tuesday 2026-11-03 10:43 | [`compatMode`](#compatmode) | Added. Offers every 32-bit display mode as a 16-bit mode too. | confirmed |
@@ -1796,21 +1796,22 @@ Who heals, whom, and how far.
 
 #### healNonIdle
 
-**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Tuesday 2026-11-03 13:00 <!-- private -->
+**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 07:20 <!-- private -->
 <!-- public: **Added:** Wednesday 2026-10-28 12:48 -->
 
 <!-- private:begin -->
 ![healNonIdle in WoL](media/healNonIdle-wol.gif)
 
-*In WoL, with `healNonIdle xpMedicineMan` (Iroquois), close-up with the two units selected so
-their HP bars show:* a Tomahawk fights a Musketeer while the medicine man heals it between hits
-(its bar drops with each hit and fills again); it wins and ends at full HP.
+*In WoL, with `healNonIdle xpMedicineMan` (Iroquois; the two units are selected):* a Tomahawk fights
+a `WOLLineInfantry` while the medicine man heals it between hits: its bar drops with each hit and
+fills again. It wins and ends at full HP.
 [Full video (MP4)](media/healNonIdle-wol.mp4).
 
 ![healNonIdle in WoL, key off](media/healNonIdle-wol-control.gif)
 
-*In WoL, key off (the same scene):* the medicine man does not heal the fighting Tomahawk; its
-bar only shrinks and it dies at about 60 s of game time, the Musketeer left at 17 HP.
+*In WoL, key off (the same scene):* the medicine man does not heal the fighting Tomahawk; its bar
+only shrinks and it dies at about 57 s of game time, the enemy left at 51 HP. The medicine man is
+next.
 [Full video (MP4)](media/healNonIdle-wol-control.mp4).
 <!-- private:end -->
 ```
@@ -1870,9 +1871,10 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 <!-- private:begin -->
 ![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
 
-*In WoL, with `smartHealTargets log` (United States), close-up with the units selected so their
-HP bars show:* four settlers are hit at once (90, 70, 45 and 33 % HP); the `NAnurse` heals the one
-at 33 % first (8.2 m away), then 45, 70 and 90 %. [Full video (MP4)](media/smartHealTargets-wol.mp4).
+*In WoL, with `smartHealTargets log` (United States; the units are selected, so their HP bars show):*
+four settlers are hit at once (90, 70, 45 and 33 % HP); the `NAnurse` heals the one at 33 % first
+(8.2 m away), then 45, 70 and 90 %.
+[Full video (MP4)](media/smartHealTargets-wol.mp4).
 
 ![smartHealTargets in WoL, key off](media/smartHealTargets-wol-control.gif)
 
@@ -2297,7 +2299,7 @@ multiarmor
 
 #### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
-**Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Tuesday 2026-11-03 13:07 <!-- private -->
+**Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Wednesday 2026-11-04 07:20 <!-- private -->
 <!-- public: **Added:** Wednesday 2026-10-28 19:12 -->
 
 ```
@@ -2360,22 +2362,23 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 
 #### dodgeChance
 
-**Added:** Thursday 2026-10-29 16:57 · **Filmed in WoL:** Tuesday 2026-11-03 13:07 <!-- private -->
+**Added:** Thursday 2026-10-29 16:57 · **Filmed in WoL:** Wednesday 2026-11-04 07:20 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 16:57 -->
 
 <!-- private:begin -->
 ![dodgeChance and dodgeAnyUnit in WoL](media/dodge-wol.gif)
 
 *In WoL, with `dodgeChance ypSettlerJapanese 50 notech ranged log` and `dodgeAnyUnit Settler log`
-(`YPDodge` active), close-up with the villagers selected so their HP bars show:* three musketeers
-shoot four villagers that do not shoot back. The two Japanese settlers dodge 18 of their 33 rolls
-(`roll … -> dodged`), the European settler dodges 4 hits at the stock 15 %, and the unmarked Indian
-settler, which never dodges, dies first. [Full video (MP4)](media/dodge-wol.mp4).
+(`YPDodge` active; the villagers are selected):* three Redcoats shoot four villagers that do not
+shoot back. The two Japanese settlers dodge 18 of their 31 rolls, the European settler dodges at the
+stock 15 %, and the unmarked Indian settler, which never dodges, dies first.
+[Full video (MP4)](media/dodge-wol.mp4).
 
 ![dodge in WoL, keys off](media/dodge-wol-control.gif)
 
 *In WoL, keys off (the same scene):* no villager dodges; every hit takes HP off the bars and all
-four are dead before 73 s of game time. [Full video (MP4)](media/dodge-wol-control.mp4).
+four are dead before 65 s of game time.
+[Full video (MP4)](media/dodge-wol-control.mp4).
 <!-- private:end -->
 
 ```
@@ -2438,7 +2441,7 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 
 #### damageOverTime
 
-**Added:** Wednesday 2026-10-28 16:34 · **Filmed in WoL:** Tuesday 2026-11-03 13:26 <!-- private -->
+**Added:** Wednesday 2026-10-28 16:34 · **Filmed in WoL:** Wednesday 2026-11-04 07:20 <!-- private -->
 <!-- public: **Added:** Wednesday 2026-10-28 16:34 -->
 
 ![damageOverTime stacks, snare and tick text](media/damageOverTime-stacks.gif)
@@ -2452,16 +2455,16 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 <!-- private:begin -->
 ![damageOverTime in WoL](media/damageOverTime-wol.gif)
 
-*In WoL, with `damageOverTime log` (Iroquois), close-up with the archers selected:* three Aenna
-whose arrows carry a poison (4 Ranged a second for 8 s, up to 3 stacks, green tick text, written by
+*In WoL, with `damageOverTime log` (Iroquois; the archers are selected):* three Aenna whose arrows
+carry a poison (4 Ranged a second for 8 s, up to 3 stacks, green tick text, written by
 `dot_testdata.py --wol`) meet a charging Landsknecht. With three stacks each tick takes 12 (the
-green numbers over it and the `tick … (x3)` lines), and the last tick kills it at 40.2 s; one
-archer is lost. [Full video (MP4)](media/damageOverTime-wol.mp4).
+green numbers over it, the `(x3)` lines), and the last tick kills it at 36 s; no archer dies.
+[Full video (MP4)](media/damageOverTime-wol.mp4).
 
 ![damageOverTime in WoL, key off](media/damageOverTime-wol-control.gif)
 
-*In WoL, key off (the same data and scene):* the arrows do only their own damage; the
-Landsknecht reaches the archers, kills two of them and falls at about 42 s.
+*In WoL, key off (the same data and scene):* the arrows do only their own damage; the Landsknecht
+lives until about 45 s, kills one archer and leaves another at 7 HP.
 [Full video (MP4)](media/damageOverTime-wol-control.mp4).
 <!-- private:end -->
 
@@ -2717,16 +2720,16 @@ damageOverTime [log] [noticktext]
 
 #### spreadAnyAccuracy
 
-**Added:** Friday 2026-10-30 10:12 · **Filmed in WoL:** Tuesday 2026-11-03 13:50 <!-- private -->
+**Added:** Friday 2026-10-30 10:12 · **Filmed in WoL:** Wednesday 2026-11-04 07:20 <!-- private -->
 <!-- public: **Added:** Friday 2026-10-30 10:12 -->
 
 <!-- private:begin -->
 ![spreadAnyAccuracy in WoL](media/spreadAnyAccuracy-wol.gif)
 
-*In WoL, with `spreadAnyAccuracy Escopetero log`, close-up with the Escopeteros selected:* four
-Escopeteros (WoL's own data: accuracy 0.41, `maxspread` 3 and `spreadfactor` 1.5 in their tactics,
-`DamageArea` 1) shoot eight charging Scythemen. Every shot, hits included, is logged as made a
-ground shot at a point up to 3 m away, and it hurts whoever stands within 1 m of it.
+*In WoL, with `spreadAnyAccuracy Escopetero log` (the Escopeteros are selected):* four Escopeteros
+(WoL's own data: accuracy 0.41, `maxspread` 3 and `spreadfactor` 1.5 in their tactics, `DamageArea`
+1) shoot eight charging Scythemen. Every shot, hits included, is logged as made a ground shot at a
+point up to 3 m away, and it hurts whoever stands within 1 m of it.
 [Full video (MP4)](media/spreadAnyAccuracy-wol.mp4).
 
 ![spreadAnyAccuracy in WoL, key off](media/spreadAnyAccuracy-wol-control.gif)

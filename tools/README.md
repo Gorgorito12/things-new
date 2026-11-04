@@ -228,7 +228,7 @@ live text on every frame:
   copy in the background set it before the game loads:
   `exec 'configSetFloat("minZoom", 15)' 'configSetFloat("normalZoom", 27)'`, then `scenario`.
 - `--crop <W>x<H>[@cx,cy]`: films that many window pixels around `cx,cy` (window fractions, default
-  `0.49,0.34`) one to one, never enlarged: the only way to keep the game's own sharpness. Give a
+  `0.49,0.47`, where `uiLookAtUnit` puts a unit) one to one, never enlarged: the only way to keep the game's own sharpness. Give a
   panel its own centre (`--crop 960x640@0.72,0.8`). The overlay is drawn after the crop.
 - `--master <out.mkv>`: also writes a lossless copy, the source for GIFs. Unchanged frames stay
   identical in it, so a still camera costs little; an MP4 as source smears colour and text, and

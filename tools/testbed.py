@@ -353,7 +353,7 @@ def game_time(proc):
 
 
 FOLLOW_SLACK = 10.0  # metres a followed unit may walk before the camera moves
-CROP_CENTRE = (0.49, 0.34)  # where uiLookAtUnit puts a unit at close range, in window fractions
+CROP_CENTRE = (0.49, 0.47)  # where uiLookAtUnit puts a unit, in window fractions
 
 
 def exec_file(bed):
