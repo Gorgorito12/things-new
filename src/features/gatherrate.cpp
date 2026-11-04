@@ -128,6 +128,8 @@ const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
 const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
 const auto kBStringFormat = reinterpret_cast<BStringFormatFn>(0x00444EFB);
 const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
+using CurrentSelectionFn = const char*(__cdecl*)();  // reads globals only; the stock callers' ECX is unused
+const auto kCurrentSelection = reinterpret_cast<CurrentSelectionFn>(0x00453B28);
 using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t stringId);
 using BStringAssignFn = void(__thiscall*)(BString* self, const BString* source, std::int32_t, std::int32_t);
 using BStringFreeFn = void(__thiscall*)(BString* self);
@@ -336,9 +338,13 @@ bool __stdcall UhcGatherPanelRow(const char* unit, const char* selection, std::i
 }
 
 // From the unit panel hook at 0x699456, the minimized interface's rate gadgets. Same gate as the
-// stat panel row, except the selection: the stock block before it does not look at one either.
+// stat panel row: one selected unit, whose rate is the number the panel shows.
 void __stdcall UhcGatherUnitPanel(const char* panel, const char* unit) {
   if (panel == nullptr || unit == nullptr) {
+    return;
+  }
+  const char* selection = kCurrentSelection();
+  if (selection == nullptr || Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0) {
     return;
   }
   const char* proto = Field<const char*>(unit, 0x5C);
@@ -457,7 +463,7 @@ Outcome ApplyShowGatherRate(const Config& config) {
                   &sites::kResourceNameId, &sites::kBStringFromId, &sites::kBStringAssign, &sites::kBStringFree,
                   &sites::kIsBuilt, &sites::kIsA, &sites::kUnitPanelRateRow, &sites::kUnitPanelAfterRate,
                   &sites::kBStringFormat, &sites::kResourceIconText, &sites::kGadgetRef, &sites::kGadgetRelease,
-                  &sites::kBStringFromWide})) {
+                  &sites::kBStringFromWide, &sites::kCurrentSelectionGroup})) {
     return Outcome::kFailed;
   }
   if (g_useMarker && !RequestAbstractUnitType(g_markerName.c_str(), &g_markerType)) {

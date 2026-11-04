@@ -805,6 +805,8 @@ SITES = [
     # ... and its join point, mov edi,[esp+54h] / mov ecx,edi, the hook
     ("UnitPanelAfterRate", 0x699456, 0x06),
     ("ResourceIconText", 0x706EFB, 0x10),
+    # ... the current selection, from the UI globals only (the stat panel fill's [ebp+8])
+    ("CurrentSelectionGroup", 0x453B28, 0x21),
     # showGatherRate (FUN_005CFA7C, data-ref registration): mov dword ptr [esp+2Ch],5FDE49h, the
     # provider of id 68h currentUnitGatherRateString (type 3); the imm32 at 0x5D2D3C is replaced
     ("GatherRateStringRef", 0x5D2D38, 8),
