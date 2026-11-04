@@ -42,7 +42,7 @@ There are no unit tests. Every copy of the game, with its data and how to drive 
 
 Rules:
 - **Read `UHC.log` next to the exe:** `applied` / `FAILED`, and `hook reached: …`. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
-- **Every test video shows the feature on screen:** the units it acts on selected (`record --select`), a still camera (`--frame`), `--perf`, `normalZoom` set by console before the game loads, `--crop` at native pixels, the GIF made from `--master`, never enlarged. Vary the civ, public civs only, and film a control with the key off. A/B every hot-path key with `perfprobe.py`.
+- **Every test video shows the feature on screen:** the units it acts on selected (`record --select`), a still camera (`--frame`), `--perf`, `normalZoom` set by console before the game loads, `--crop` at native pixels, `--master` into `rea/media-masters/`, and the GIF from `tools/make_gifs.py` (800 px, 8 fps, 12 s, 4 MB; cuts in `tools/gifs.txt`). Vary the civ, public civs only, and film a control with the key off. A/B every hot-path key with `perfprobe.py`.
 - **Check the AI after data or combat changes.** `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error.
 - **Definition of done:** the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done), before a feature is reported as done.
 - **Never run two games at once** unless yours has `multipleInstances background` and the other session agreed. Stop yours when one asks. Stop a tracer with Ctrl+C, never by killing it.

@@ -126,8 +126,8 @@ The features made before the migration were filmed in the TAD test copies, sever
 `--perf` rule. Each is filmed again in `C:\AoE3-UHC-WoLReal` with WoL's data, `--perf`, and a WoL
 civ that fits it; the video is `docs/media/<key>-wol.mp4` (+ GIF). Once a feature has its WoL
 videos, its TAD GIF and MP4 are deleted (user rule, 2026-11-03). Filming (2026-11-04): camera height
-by console, `record --background --crop 960x640 --master`, GIF from the lossless master at native
-pixels, 2x speed, 10 fps, cut to the key moment.
+by console, `record --background --crop 960x640 --master`, GIF from the lossless master with
+`tools/make_gifs.py`.
 
 | Key | WoL setup (civ / unit) | Status |
 |---|---|---|

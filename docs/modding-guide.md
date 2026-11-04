@@ -2102,6 +2102,22 @@ multiarmor
 
 **Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
+![dodgeAnyUnit and the sound keys in WoL](media/dodgeAnyUnit-wol.gif)
+
+*In WoL, with `dodgeAnyUnit Settler log`, `dodgeSoundSet Settler PowerCriticalStrike` and `criticalSoundSet
+ypMonkChinese PowerEvade` (`YPDodge` active; the units selected):* three `WOLJaeger` fight three settlers
+and a Chinese monk. The settlers dodge at the exe's 15 %: 3 hits in this run (`dodged a hit`). Each dodge
+plays the critical's sound set and each of the monk's critical hits the dodge's, swapped so that the log
+shows the choice (`plays sound set PowerCriticalStrike`, 3 times, and `plays sound set PowerEvade`, 6
+times). A GIF has no sound: the log is what shows it. [Full video (MP4)](media/dodgeAnyUnit-wol.mp4).
+
+![dodgeAnyUnit in WoL, keys off](media/dodgeAnyUnit-wol-control.gif)
+
+*In WoL, keys off (the same scene):* no settler dodges, and no sound set is logged.
+[Full video (MP4)](media/dodgeAnyUnit-wol-control.mp4).
+
+**Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+
 ```
 dodgeAnyUnit [<UnitType>] [log]          default AbstractDodge
 dodgeSoundSet <UnitType> <SoundSet>      one line per unit type; the first match wins
@@ -2143,12 +2159,11 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   `dodgeSoundSet: unit N (Proto) plays sound set S`.
 - **Simulation:** `dodgeAnyUnit` yes (a dodged hit does no damage; it also adds a unit type, which
   changes the unit type count). The sound keys no.
-- **Status:** confirmed in single player. In WoL (2026-11-04), with `dodgeAnyUnit Settler`: the video
-  under [dodgeChance](#dodgechance), a European settler dodging at 15 %. On the stock game (2026-10-28), a
-  marked Explorer dodged 5 hits of four attackers in 30 s, a Japanese monk next to it still dodged, and
-  with a marker no unit had the Explorer never dodged. `dodgeSoundSet` and `criticalSoundSet` picked the
-  configured sets, in the log; the sound itself was not listened to, and the floating text was not
-  checked.
+- **Status:** confirmed in single player. In WoL (2026-11-04): settlers dodging at 15 %, and both sound
+  keys picking their set, in the log; without the keys, nothing. On the stock game (2026-10-28), a marked
+  Explorer dodged 5 hits of four attackers in 30 s, a Japanese monk next to it still dodged, and with a
+  marker no unit had the Explorer never dodged. The sound itself was not listened to, and the floating
+  text was not checked.
 
 #### dodgeChance
 
@@ -2560,15 +2575,15 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
 *In WoL, with `broadsideMuzzleLimit 11 ypTekkousen log` (Japanese, on a water map):* a Tekkousen
 created in the game fights two Fluyts. Its broadside gets all 10 muzzles per side of its model
-(`has 10 right and 10 left muzzle slots (limit 11 per side)`) and sinks both. A scan of 17 WoL
+(`has 10 right and 10 left muzzle slots (limit 11 per side)`), and it sinks both, with 110 HP left. A scan of 17 WoL
 warships with a limit of 30 found no other model above 6 per side (Battleship, Galleon, Frigate,
 Destroyer 6; Geobukseon, Joukisen, Windjammer 5; Corvette 4; Dreadnought 3).
 [Full video (MP4)](media/broadsideMuzzleLimit-wol.mp4).
 
 ![broadsideMuzzleLimit in WoL, key off](media/broadsideMuzzleLimit-wol-control.gif)
 
-*In WoL, key off (the same scene):* the exe keeps 6 slots per side, so the Tekkousen fires fewer shots
-per volley. [Full video (MP4)](media/broadsideMuzzleLimit-wol-control.mp4).
+*In WoL, key off (the same scene):* the exe keeps 6 slots per side, so the Tekkousen fires fewer shots per
+volley, and it sinks first, at about 47 s of game time. [Full video (MP4)](media/broadsideMuzzleLimit-wol-control.mp4).
 
 ```
 broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitType, every ship
