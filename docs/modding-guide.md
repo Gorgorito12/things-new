@@ -1882,13 +1882,16 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=
   - **In WoL (2026-11-04):** a marked Tomahawk at `180/150` with `Overheal: 30/30` in the unit panel and the
     end of WoL's portrait bar in the overheal colour, which shrinks with the decay and is gone at
     `150/150`; a damaged unmarked Aenna selected in between shows its normal bar; without the keys,
-    `180/180` and no row.
+    `180/180` and no row. A Tomahawk hit from `180/150` to `110/150` goes back to WoL's normal bar, 73 %
+    green with its dark background, and at `60/150` to the yellow one. With three marked Tomahawks
+    selected, the bar shows their average overheal; when one falls below its 100 % (80, 180, 180) it
+    shows the group's normal bar, 84 % green, with no overheal, although the other two still have it.
   - **On the stock game (2026-10-29), normal interface:** fresh units at `150/150` with a full bar, the
     orange segment and text, `segment=40C0FF`, a `Hitpoints` tech (`189/174 (150+24)`), an allied
     player's units, the aura case
     above, and a skirmish against the AI.
-  - **Not tested:** the portrait bar in the normal interface since it moved to the game's own bar, a
-    group with several marked units, the ObjectInfo panel, multiplayer.
+  - **Not tested:** the portrait bar in the normal interface since it moved to the game's own bar, the
+    ObjectInfo panel, multiplayer.
 
 #### overhealSources
 
