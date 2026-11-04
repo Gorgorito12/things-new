@@ -101,7 +101,7 @@ def anchor(title):
 
 
 def read(rel):
-    return (REPO / rel).read_bytes().decode("utf-8").replace("\r\n", "\n").rstrip("\n")
+    return re.sub(r"\r*\n", "\n", (REPO / rel).read_bytes().decode("utf-8")).rstrip()
 
 
 def site_table():
@@ -111,7 +111,7 @@ def site_table():
         sizes[m.group(1)] = m.group(2).count(",") + 1
     table = {}
     for m in re.finditer(r'Site (k\w+)\{"(\w+)", 0x([0-9A-Fa-f]+), (k\w+), sizeof', text):
-        table[m.group(1)] = (m.group(2), int(m.group(3), 16), sizes[m.group(4)])
+        table[m.group(1)] = (int(m.group(3), 16), m.group(2), sizes[m.group(4)])
     return table
 
 
@@ -130,7 +130,7 @@ def sites_used(files, table):
     for rel in files:
         if rel.endswith(".cpp"):
             names |= set(re.findall(r"sites::(k\w+)", read(rel)))
-    return [table[n] for n in sorted(names, key=lambda n: table[n][1]) if n in table]
+    return sorted(table[n] for n in names if n in table)
 
 
 def section_text(page, title, files, table):
@@ -143,7 +143,7 @@ def section_text(page, title, files, table):
             out += [f"Besides the core helpers, it needs: {links}.", ""]
         sites = sites_used(files, table)
         if sites:
-            out += ["Sites: " + ", ".join(f"`{n}` `0x{va:X}` ({size} B)" for n, va, size in sites) + ".", ""]
+            out += ["Sites: " + ", ".join(f"`{n}` `0x{va:X}` ({size} B)" for va, n, size in sites) + ".", ""]
     for rel in files:
         code = read(rel)
         fence = "````" if "```" in code else "```"
