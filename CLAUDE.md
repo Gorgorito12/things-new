@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose
 
-Reverse engineer Age of Empires III: The Asian Dynasties (`age3y.exe`) with REA, and build a **new `UHC.dll`** that drops into the existing UHC loader. It is a successor to the community UnHardCoded patch ([danielpereira/AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded)). Before adding features, verify every site upstream patches against the stock exe; that work is tracked in `docs/uhc-address-map.md`.
+things-new (GitHub: `Gorgorito12/things-new`, formerly `Unharcoded-AOE3--NEW`; the local folder keeps its old name, because Claude's memory, the worktrees and `.claude/workflows/` depend on that path).
+
+Reverse engineer Age of Empires III: The Asian Dynasties (`age3y.exe`) with REA, and build a **new `UHC.dll`** that drops into the existing loader. It succeeds the community patch ([danielpereira/AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded)). Before adding features, verify every site the original patches against the stock exe; that work is tracked in `docs/uhc-address-map.md`.
 
 All binary analysis goes through the REA MCP server (`mcp__rea__*`, deferred tools: load them with ToolSearch). Load the `reverse-engineer-anything` skill before the first REA call.
 
@@ -15,126 +17,71 @@ CMake and MSVC come from VS 2026 (`C:\Program Files\Microsoft Visual Studio\18\I
 ```
 cmake -S . -B build -G "Visual Studio 18 2026" -A Win32   # must be Win32; x64 fails on purpose
 cmake --build build --config Release                      # -> build\Release\UHC.dll
-dumpbin /exports build\Release\UHC.dll                    # must list _UHCMain@0
-```
-
-```
+dumpbin -exports build\Release\UHC.dll                    # must list _UHCMain@0 (in Git Bash, "/exports" is mangled)
 python -I tools/gen_sites.py "<Steam>\Age Of Empires 3\bin\age3y.exe"   # regenerates src/generated/sites.h
 ```
 
 Add a site to the `SITES` list in `tools/gen_sites.py` and regenerate before a feature uses it. The script refuses any exe that is not the stock build.
 
-### Test bed
+Before the commit of every new key, changed `src/` or new test video:
 
-`C:\AoE3-UHC-Test` is a robocopy of the Steam `bin\` folder, with two changes:
-- `age3y.exe` is replaced by the Knights and Barbarians exe (stock + UHC loader, `d21d0173…`);
-- `UHC.dll` is our build, next to `Startup\uhc.cfg`.
+```
+python -I tools/guide_dates.py      # the day, date and time of each feature in the modding guide (a new video counts as new)
+python -I tools/porting_code.py     # docs/porting-code/*.md from src/; a new key goes in its PAGES
+python -I tools/export_public.py --check
+```
 
-To test:
-1. Copy `build\Release\UHC.dll` there.
-2. Launch `age3y.exe` from any folder: the DLL makes the exe's folder the working directory (UHC 1.10 does the same), and `ignoreRegistryPath` makes the game read the copy's data. Loose files in the copy's `data\` override the archives (verified with `homecitylevels.xml`).
-3. Read `UHC.log` next to the exe. It shows:
-   - each feature as `applied` / `FAILED`;
-   - the keys not implemented yet;
-   - `hook reached: …` the first time the game runs each hook. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
+## Testing
 
-**Shared profile.** The copy shares the user profile with the normal game: `Documents\My Games\Age of Empires 3\Users3\NewProfile3.xml`. This file is UTF-16.
-- Its first run reset `optiongrfxres` to `800 x 600`. It was restored to `1920 x 1080` on 2026-10-28; the backup is `NewProfile3.xml.bak-uhc-20261028`.
-- Check that setting if the resolution changes again.
+There are no unit tests. Every copy of the game, with its data and how to drive it, is in [`docs/developer-guide.md`, section 2](docs/developer-guide.md#2-a-safe-test-bed). The main ones:
 
-**Test data.** `data\` holds both `protoy.xml` and the compiled `protoy.xml.XMB`. The game loads the XMB unless the XML is newer (FUN_00599A7D compares the file times; `docs/engine-symbols.md`, "Damage and poison"), so keep both in step. In the copy both carry `AbstractHealNonIdle` on `Surgeon`, `ypMonkIndian` and `ypMonkIndian2`:
-- the XMB was edited with `python -I tools/xmbedit.py add-unittype <in.XMB> <out.XMB> <unit> AbstractHealNonIdle …` (it skips units that already have the type and warns about unknown unit names);
-- the XML was edited by hand;
-- the originals are `protoy.xml.uhc-orig` and `protoy.xml.XMB.uhc-orig`.
+- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`). `C:\WoL-Test` is the control with WoL's DLL.
+- `C:\AoE3-UHC-Test`, and private copies per feature (`-Poison`, `-WoL`, `-Spread`).
 
-`tools/xmbedit.py from-xml <in.xml> <out.xmb> --compress` compiles an edited XML; compiling the stock `protoy.xml` gives the stock XMB document byte for byte (decompressed).
+`python -I tools/testbed.py` plays a test with no clicks: `deploy`, `map`, `launch`, `scenario`, `wait`, `log`, `units`, `shot`, `close`, `record`. The console cannot start a skirmish: a test that needs a home city or cheats takes real clicks ([`docs/wol-migration.md`, "Skirmish route"](docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)).
 
-**Second test copy.** `C:\AoE3-UHC-Poison` is a robocopy of the test bed (2026-10-28) for `damageOverTime`, so tests do not disturb `C:\AoE3-UHC-Test`, which other sessions use:
-- its cfg is `ignoreRegistryPath` and `damageOverTime log`;
-- its `protoy.xml`, `techtreey.xml` and their XMB are regenerated by `python -I tools/dot_testdata.py C:\AoE3-UHC-Poison [--ai]` from the `.xml.dot-orig` files (the XMB is compiled from the result; the `.XMB.dot-orig` files are only backups): one attachment proto per weapon, from unit 1463 on (the Explorer's `UHCPoisonTest`: Lifespan 10, `Attaching` 20 Ranged every 1 s, `GAIAEnemy`; the Grenadier, Crossbowman, Falconet and Longbowman cases and the tech `UHCPoisonArrowUpgrade` are listed in `tools/README.md`; `--ai` adds a long poison to common units for AI-vs-AI games);
-- `data\tactics\uhcpoisontest.tactics` (+ `.xmb`) declares the `Attaching` action. Keep `<tactic>Normal<action …>` on one line: in a tactics XML read without its `.xmb`, an LF line break after a tactic name defines the XS constant `cTacticNormal` twice, and the AI scripts stop compiling (`docs/modding-guide.md`, "Tactics files").
-
-Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\AoE3-UHC-Poison` when no other `age3y.exe` is running.
-
-**WoL Tier 2 copy.** `C:\AoE3-UHC-WoL` is a private copy for the WoL tests (Tier 2, then the Tier 1 and 3 features, 2026-10-29), with edited data; pass `--bed C:\AoE3-UHC-WoL` to `testbed.py`:
-- `protoy`: `House`, `Outpost` and `Barracks` with `Lifespan` 20 and `PlaceAsFoundation`; `AlphaFadeLifespan` on `Barracks`; `AbstractLifespanAfterConstruction` on `House` and `Barracks`; `Deer` and `Bison` `Doppled`; `AbstractStartingTC` on `Market`; `AbstractOverheal` and `MaxHitpoints` 165 on `Musketeer`; `MaxHitpoints` 132 on `Pikeman` (the unmarked control);
-- `techtreey`: `BuildingWorkRate` 4 on `BloodFactory` inside `YPHCBakufu`; the techs `UHCTestTypeCountCreate`, `UHCTestTypeCountDeath`, `UHCRenameTest` and `UHCInvTransformTest` (six `TransformUnit` effects for `transformInventory`) appended at the end (so stock tech indices are unchanged);
-- loose `data\abilities\abilities.xml`, `data\DefaultKeyMapY.xml`, `data\tactics\firepit.tactics`, and `data\tactics\explorer.tactics.xmb` (the Explorer carries `UHCBwrAura`, an `AutoRangedModify` with `ModifyType` `BuildingWorkRate`, ×4, 40 m, on `BloodFactory`; delete the file to restore stock);
-- for `decimalPopulation` (2026-10-29), written by `python -I tools/pop_testdata.py C:\AoE3-UHC-WoL` (`--restore` undoes it; the files before it are kept as `*.pop-before`): `PopulationCount` 1.5 on `Settler`, `Crossbowman` and `Hussar`, 0.5 on `Pikeman`, `PopulationCapAddition` 7.5 on `Manor`, and the techs `UHCPopCountTest`, `UHCPopCapTest`, `UHCPopCapBig` and `UHCPopPercentTest` (indices 2553–2556) appended;
-- the originals are kept as `*.wol-orig` / `*.testdata-orig`.
-
-**Spread copy.** `C:\AoE3-UHC-Spread` is the private `spreadAnyAccuracy` test copy (2026-10-30): its `protoy` carries `AbstractSpreadAnyAccuracy` and spread / area / bad values on Longbowman, Grenadier, xpAenna, ypChuKoNu, Musketeer, Skirmisher (and an `<AttachProtoUnit>` on Crossbowman), written by `tools/protoy_testdata.py`; `data\tactics\archer.tactics.xmb` sets `maxspread` 20 / `spreadfactor` 2. The originals are `*.spread-orig`. For WoL #5 (2026-10-30) the `*.spread-orig` files were restored, and `techtreey.xml` (+ XMB, compiled with `xmbedit.py from-xml --compress`) got three test techs appended: `UHCWr5Train` (TrainPoints x0.25 on Settler and Musketeer), `UHCWr5Research` (ResearchPoints x0.25 on PlacerMines, HuntingDogs, Gangsaw), `UHCWr5Bwr` (BuildingWorkRate x4 on TownCenter and Market); the originals are `techtreey.xml*.wr5-orig`. In such a scenario, `trainByID` trains nothing (its function reads four parameters, `docs/engine-symbols.md`, "Train points"): queue units with `uiLookAtAndSelectUnit(<id>)` + `trainInSelected("<Proto>", <n>)` (player 1 only); `researchByID(<tech>, <unit>, <player>)` works for any player; `trTechSetStatus` from the console does nothing (use an `at<s>=Set Tech Status` trigger). For WoL #14 (2026-10-30) the `*.wr5-orig` files were restored too (the copy now has no test techs), and the ceasefire tests used loose `data\abilities\abilities.xml` / `powers.xml` (+ `.xmb`), deleted afterwards (copies and scripts in `rea/evidence/age3y-b1a1dab7/ceasefire14/`). Cast an ability from the console with `uiLookAtAndSelectUnit(<id>)` + `ability(<record>, <id>, true)` (`record` counts `<ability>` entries over the whole `abilities.xml` from 0); `ability(<record>, <id>)` alone, with nothing selected, did nothing.
-
-**Real WoL copy (2026-11-02).** `C:\AoE3-UHC-WoLReal` is a copy of the Wars of Liberty mod (from `C:\WoL-Test`) running **our** `UHC.dll`, for the WoL migration ([`docs/wol-migration.md`](docs/wol-migration.md): bed, skirmish clicks, progress, key table). Pass `--bed C:\AoE3-UHC-WoLReal`:
-- WoL's exe reads `Startup\wol.cfg` (not `uhc.cfg`), `AI4\`, `RM4\` and `My Games\Wars of Liberty`; `testbed.py profile` prints them and `deploy`/`map`/`scenario` follow them;
-- WoL's DLL is kept as `uhc.dll.wol-orig`; `wolai.upl`/`wolPlugin.upl` are WoL's binaries, loaded by `customSyscalls` in the bed, never shipped;
-- `C:\WoL-Test` is the control with WoL's own DLL (A/B runs, memory probes); never touch Steam's `Wars of Liberty` folder (`testbed.py safety check wol`);
-- the profile is shared with the user's real WoL (backup `NewProfile3.xml.bak-uhc-20261102`); use ESOC maps in skirmishes (the `*NEW*` maps are broken).
-- it runs in WoL's original English (2026-11-04: `data\stringtabley.xml` from `translations\_originals`, the user's Spanish one kept as `.es-la`); the profile has `optionminimizedui` on, so the exe skips the stat panel fill FUN_004D70ED: a feature that adds a row there must also cover the unit panel (see `showGatherRate`'s hook at 0x699456).
-
-**Every test video shows the feature on screen** (the units it acts on selected with `record --select`, so their HP bars show; sharp: `normalZoom` set by console before the game loads, `--crop 960x640` at native pixels, the GIF made from `--master`, never enlarged; user rules 2026-11-03), **shows performance, and tests vary the civ** (user rules, 2026-11-02; [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done)): record with `testbed.py record --perf` (the cfg carries `perfStats`), A/B every hot-path key with `perfprobe.py`, and pick the civ and unit that fit the feature (poison on native archers, ...), noting them in the feature's doc.
-
-**Check the AI after data or combat changes.** Start a skirmish against an AI (clicks: `docs/developer-guide.md`, "Driving the game unattended"). The dialog `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error behind it.
-
-There are no unit tests yet.
-
-**Definition of done.** Every new or changed feature meets the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done) before it is reported as done.
-
-**Unattended in-game tests.** `python -I tools/testbed.py` plays a test with no clicks: `deploy` (DLL + cfg), `map` (a random map with the units and techs you name), `launch`, `scenario` (editor route: generate, save, reload as a game), `wait`, `log`, `units`, `shot`, `close`. Once a feature works, `record <out.mp4>` films about 30 s of it for the user (ffmpeg from `C:\Tools\ffmpeg`); it brings the window to the front first, and `--watch <IDs or protos>` (live HP and LOS of those units), `--log <regex>` (the feature's `UHC.log` lines) `--frame <ID>` (centers once, the camera stays still) and `--follow <ID>` (re-centers on a travelling unit after 10 m) draw live stats on the video. It drives the console through `perfExecFile`. Method and pitfalls: `docs/developer-guide.md`, "Driving the game unattended". Other Claude sessions may test in their own copies (e.g. `C:\AoE3-UHC-Poison`) with real mouse input: never run two games at once unless yours has `multipleInstances background` in its cfg and the other session agreed (the game itself refuses a second copy otherwise), and stop yours when one asks.
+Rules:
+- **Read `UHC.log` next to the exe:** `applied` / `FAILED`, and `hook reached: …`. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
+- **Every test video shows the feature on screen:** the units it acts on selected (`record --select`), a still camera (`--frame`), `--perf`, `normalZoom` set by console before the game loads, `--crop` at native pixels, the GIF made from `--master`, never enlarged. Vary the civ, public civs only, and film a control with the key off. A/B every hot-path key with `perfprobe.py`.
+- **Check the AI after data or combat changes.** `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error.
+- **Definition of done:** the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done), before a feature is reported as done.
+- **Never run two games at once** unless yours has `multipleInstances background` and the other session agreed. Stop yours when one asks. Stop a tracer with Ctrl+C, never by killing it.
+- **Never modify the Steam install.** Test on copies only. `testbed.py safety check wol` checks Steam's WoL folder.
 
 ## Layout
 
-- `src/`: the DLL.
-  - `dllmain.cpp`: host guard, config load, then the feature loop.
-  - `config.*`: the `uhc.cfg` parser. Keys are case-insensitive.
-  - `patch.*`: patch helpers. `VerifyAll` checks the stock bytes before any write.
-  - `features.h`: the registry and the handled keys.
-  - `features/*.cpp`: one apply function per key group.
-  - `hooks/*.asm`: MASM hooks.
-  - `generated/sites.h`: the expected bytes, written by `tools/gen_sites.py`.
-  - `unittypes.*`: extra abstract unit types that features request. Stock only knows the abstract types compiled into the exe and drops any other `<UnitType>`.
-  - `modifiers.h`: the read-only walk over a unit's stat-modifier actions (type 2Ch, in the stock collector's order), shared by `snareOnlyHitUnit` and `buildingWorkRateAuras`.
+- `src/`: the DLL. `dllmain.cpp` (host guard, config load, the feature loop), `config.*` (the cfg parser; keys are case-insensitive), `patch.*` (`VerifyAll` checks the stock bytes before any write), `features.h` (the registry and the handled keys), `features/*.cpp` (one apply function per key group), `hooks/*.asm` (MASM hooks), `generated/sites.h`.
+- **Hooks never relocate instructions.** Each one re-executes or replaces the stock code itself and leaves through an explicit `jmp` to the verified continuation.
+- **Shared hooks: add to them, never a second `jmp` at their site:**
+  - `AddWorldTick` (`worldtick.*`, 0x481A57);
+  - `AddActionTagHandler` (`actiontags.*`, 0x5FA11E);
+  - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
+  - `AddSyscall` (`syscalls.*`, the group sites);
+  - `floatingtext.*`, `modifiers.h` (the read-only walk over a unit's modifiers), `unittypes.*` (extra abstract types).
+- **Order in `kFeatures` matters:** `customAbstractTypes` first, `customSyscalls` last; `noTrainNearEnemyTC` after `liveBuildingWorkRate`; `buildingWorkRateAuras` last of the WoL keys (the two share `g_uhcBwrTrainGetter`); `civFirstTC` after `startingTC` (they share the hook at 0x506B3B); `overhealSources` and `overhealDecay` after `overhealHitpointBars`; `decimalPopulation` after `basePop`/`extraPop`; `spreadAnyAccuracy` after `damageOverTime`. Hook the callee where `maintainWaitForPop` verifies the call 0x6AB264.
+- `docs/`:
+  - `modding-guide.md`: for WoL's modders, private; a new key gets a row in its theme's table in section 5 and its section there;
+  - `porting-to-another-dll.md` and `porting-code/*.md` (generated): adding the features to WoL's DLL;
+  - `how-it-works.md`: the internals of each feature, exported;
+  - `developer-guide.md`: build, test beds, adding a feature, RE workflow;
+  - `uhc-address-map.md`, `engine-symbols.md`, `binaries.md`: sites, names and hashes, with a status per row;
+  - `wol-migration.md`, `wol-requests.md`, `wol-uhc-map.md`: WoL's progress, requests and DLL; pick the next item in the first two;
+  - `de-parity.md`, `de-architecture.md`: how DE does it. Read-only install, no DE code or data in the repo or the DLL.
+- `examples/Startup/uhc.cfg`: every implemented key, commented; the release template is generated from it.
+- `README.md`: short. Key status lives in the modding guide.
+- `tools/`: usage in `tools/README.md`.
+- `reference/AoE3UnHardcoded/` (gitignored): the original. **It has no license:** read it for addresses and behavior, never copy its code. Zydis (MIT) is the only clearly reusable dependency.
+- `rea/` (gitignored): snapshots and evidence, named `<target>-<sha8>`.
+- **Version:** only in `project(UHC VERSION x.y.z)` in `CMakeLists.txt`. `python -I tools/package_release.py` builds `dist/UHC-x.y.z.zip`; the user uploads it (`docs/developer-guide.md`, section 7). A new key also goes in the key list of `README.txt` inside that script.
 
-  Hooks never relocate instructions. Each one re-executes or replaces the stock code itself and leaves through an explicit `jmp` to the verified continuation. Implemented so far:
-  - `removeConversionRestriction`, `ignoreRegistryPath`, `deckCardCount`, `basePop`/`extraPop` (M2);
-  - `noAILimit`, `customRevolutionBanners`, `removeFameRestriction` (M3);
-  - WoL migration (`docs/wol-migration.md`): `noAILimitV2` (WoL's hook point 0x603C34), `customAbstractTypes` (`data\uhc\customabstracttypes.xml` through `unittypes.*`, first in `kFeatures`), `customSyscalls` (`.upl` plugins, last in `kFeatures`; `src/syscalls.*` is the XS syscall registry: add a native syscall with `AddSyscall`, never a second hook on the group sites);
-  - beyond upstream: `hcShipmentPointFallback`, `healNonIdle`, `smartHealTargets`, `damageOverTime` (with `AttachMaxStacks`, `AttachSnare`, `AttachTickText`; the tick text and noTrainNearEnemyTC's warning share `floatingtext.cpp`), `dodgeAnyUnit` / `dodgeChance` / `dodgeSoundSet` / `criticalSoundSet`, `spreadAnyAccuracy` (WoL #2: `<MaxSpread>` / `<SpreadFactor>` per action, marked units' shots become ground shots at the offset point; after `damageOverTime` in `kFeatures`, the two read action tags through the shared hook of `actiontags.cpp` at 0x5FA11E: add a handler with `AddActionTagHandler`, never a second `jmp` there), `bufferedFileReads`, `multipleInstances` (`docs/uhc-address-map.md`, "Beyond upstream");
-  - WoL Tier 2 (`docs/wol-requests.md`): `liveBuildingWorkRate` (#5: the BuildingWorkRate getter, and the heads of the Train and Maintain fraction functions 0x9EA1FA / 0x9E27E4, which refresh the queued TrainPoints; hook the callee, since `maintainWaitForPop` verifies the call 0x6AB264), `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect` (alias `enableTechRenameEffect`), `noCorpseDopples`, `danceBonusCivs`;
-  - WoL Tier 1 and 3: `startingTC` (#3, the FirstTC part), `civFirstTC` (#3 as Mandos redesigned it: `<firstTC>` per civ in `civs.xml`; after `startingTC` in `kFeatures`, the two share the FirstTC proto hook at 0x506B3B), `transformInventory` (#4), `overhealHitpointBars` (#21; `overhealSources` and `overhealDecay` build on its types and reference, applied after it, and share the add-HP hook at 0x4823A3), `buildingWorkRateAuras` (#22), `noTrainNearEnemyTC` (#27; `near` types through the spatial query 0x4A1C55, and a warning through the dodge's floating text 0x8023AE), `showGatherRate` (#28), `decimalPopulation` (#23; fixed point ×K: after `basePop`/`extraPop` in `kFeatures`, it scales their cap hook at 0x4581F3 through `g_uhcPopScale` in `limits.cpp`, and installs it with the stock clamps when they are not set). Keep their order in `kFeatures`: `noTrainNearEnemyTC` after `liveBuildingWorkRate`, `buildingWorkRateAuras` last of the WoL keys; the two share `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`, called by noTrainNearEnemyTC's Train hook).
+## Two repos
 
-  `damageOverTime` wraps two whole functions (TakeDamage, and the world update through the shared `worldtick.cpp`, which `overhealDecay` also uses: add a tick with `AddWorldTick`, never a second `jmp` at 0x481A57): the `jmp` at the entry leads to a `__fastcall` C++ wrapper with the stock thiscall frame, which calls the stock body through a MASM trampoline that re-executes the stolen prologue.
+This repo is **private** and holds everything. The public repo `Gorgorito12/tad-engine-extensions` gets an export of an allowlist of files, never this history, and changes flow one way.
 
-  `customCheats` waits for the plugin loader (M6): upstream registers cheats only from `.upl` plugins.
-- `README.md`, `LICENSE` (MIT): the entry point, exported to the public repo. The README's feature table keeps one honest in-game status per key; update it with every feature.
-- **Two repos (2026-10-30).** This repo is **private** and holds everything. Since 2026-11-04 `docs/modding-guide.md` is written for WoL and is **not exported**: the public repo keeps the copy it has (`KEEP_IN_CLONE` in the script). The public repo is `Gorgorito12/tad-engine-extensions`: it gets an export of an allowlist of files, never this history, and changes flow one way (never pull or merge it back). The UHC team asked for discretion (fear of a cease and desist), so the public text names no WoL, DE, upstream / AoE3UnHardcoded / UHC 1.10 or Knights and Barbarians, and links no private doc.
-  - `python -I tools/export_public.py --check` must pass; `--out <public clone>` writes the export, then commit and push the clone by hand. The allowlist (`INCLUDE`) and the banned patterns live in that script, which is itself never exported.
-  - In the exported `.md` files, hide private text with `<!-- private -->` (end of a line) or a line `<!-- private:begin -->` ... `<!-- private:end -->`, and add public-only text with `<!-- public: TEXT -->` or a line `<!-- public:begin` ... `public:end -->`. Code comments and `examples/Startup/uhc.cfg` have no markers: keep them neutral.
-  - Never push anything to the public repo the user has not asked for, and never make this repo public again.
-- Documentation for modders (keep these in step with the code):
-  - `docs/modding-guide.md`: written for WoL's modders (2026-11-04), private: every cfg key, with WoL's data, files and interface, its data/art requirements, log lines and status; a new key gets a row in its theme's table in section 5 and its section there; `python -I tools/guide_dates.py`, before the commit of every new key or test video, writes each feature's day, date and time and the "Latest changes" table from git (a new test video counts as new);
-  - `docs/how-it-works.md`: the internals of each feature;
-  - `docs/developer-guide.md`: build, safe test bed, adding a feature, RE workflow;
-  - `docs/porting-to-another-dll.md`: rebuilding the features inside WoL's own DLL: sites, what collides with WoL's patches (from `wol-memdiff.txt`), contracts. A new key gets a row in its table and a contract section. Its code is in `docs/porting-code/*.md`, generated from `src/`: add the key's files to `PAGES` in `tools/porting_code.py`, and run `python -I tools/porting_code.py` in every commit that changes `src/`.
-- `examples/Startup/uhc.cfg`: every implemented key, commented. Add new keys here too: the release template is generated from it.
-- **Version and releases.** The version lives only in `project(UHC VERSION x.y.z)` in `CMakeLists.txt`; CMake generates `build/generated/version.h` from `src/version.h.in` for `dllmain.cpp` (first log line `UHC.dll x.y.z`) and `src/version.rc` (file properties). `python -I tools/package_release.py` builds `dist/UHC-x.y.z.zip` (gitignored) after a Release build; the user uploads it to the public repo's GitHub Releases. Procedure: `docs/developer-guide.md`, section 7. When adding a key, also update the key list of `README.txt` inside `package_release.py`.
-- `tools/`: `gen_sites.py`, `package_release.py`, `bar.py` (BAR archives), `xmbedit.py` (XMB check / to-xml / from-xml / add-unittype), the test data writers `dot_testdata.py` and `pop_testdata.py`, and `re/` (a ctypes debugger: `trace_writes.py`, `trace_exec.py`, `trace_xs.py`, `inspect_unittypes.py`). Usage: `tools/README.md`. Stop a tracer with Ctrl+C, never by killing it: a breakpoint left behind crashes the game.
-- `docs/binaries.md`: hashes of every `age3y.exe` / `UHC.dll` build in the install, the loader stub layout, and what each mod's exe patches.
-- `docs/uhc-address-map.md`: every upstream patch site, with a verification status per row.
-- `docs/engine-symbols.md`: functions, globals, IAT slots and object offsets named by upstream, with a status per row.
-- `docs/wol-requests.md`: WoL's feature requests in priority order; pick the next item to work on here.
-- `docs/wol-migration.md`: running all of WoL on this DLL (decided 2026-11-02): the real-WoL bed, progress and the key table; pick the next WoL key here.
-- `docs/de-parity.md`: how AoE3 DE implements those requests (data interface, meaning, legacy status, UHC cost), from DE's official modding guide (`AoE3DE\ModDocumentation`), DE's data and its plaintext code; `docs/de-architecture.md` is DE's threading and loading. DE work keeps that page's rules: read-only install, the code protection is not studied, no DE code or data in the repo or the DLL. Evidence in `rea/evidence/aoe3de-31fad98f/`.
-- `docs/wol-uhc-map.md`: WoL's `uhc.dll`. It covers:
-  - identity, libraries and patch mechanisms (upstream fake-instruction caves plus `remod::trackable_memory_patch`);
-  - a cross-check of the upstream caves;
-  - per-cfg-key candidate sites;
-  - the 54 `*Feature` classes.
-- `reference/AoE3UnHardcoded/` (gitignored): shallow clone of upstream. **It has no license.** Read it for addresses and behavior, but never copy its code into `src/`. Zydis (MIT) is the only clearly reusable dependency.
-- `rea/` (gitignored): REA snapshots (`rea/snapshots/`) and exported evidence bundles (`rea/evidence/`).
-  - Both are named `<target>-<sha8>`, e.g. `age3y-b1a1dab7`, `wol-uhc-c070d138`.
-  - Each evidence folder also holds the capstone/pefile scripts and their outputs that back the `cs` evidence in `docs/`.
-  - Those scripts need a venv with `capstone` 5.0.6 and `pefile`, which is not part of the repo.
+- The UHC team asked for discretion (fear of a cease and desist), so the public text names no WoL, DE, upstream / AoE3UnHardcoded / UHC 1.10 or Knights and Barbarians, and links no private doc.
+- `docs/modding-guide.md` is **not exported**: the public repo keeps the copy it has (`KEEP_IN_CLONE`).
+- `python -I tools/export_public.py --check` must pass; `--out <public clone>` writes the export, then commit and push the clone by hand. Never push anything public the user has not asked for, and never make this repo public.
+- In exported `.md` files, hide text with `<!-- private -->` (end of a line) or a line `<!-- private:begin -->` ... `<!-- private:end -->`, and add public text with `<!-- public: TEXT -->` or `<!-- public:begin` ... `public:end -->`. Code comments and `examples/Startup/uhc.cfg` have no markers: keep them neutral.
 
 ## Target
 
@@ -147,46 +94,32 @@ There are no unit tests yet.
 
 Without ASLR, static VAs are the runtime addresses. For `.text`, `.rdata` and `.data`, file offset = VA − `0x400000`. `.rsrc` is shifted by another `0x14000`.
 
-## UHC loader contract
+## Loader contract
 
-A UHC exe is the stock exe with the Authenticode certificate stripped (hence 11,591,680 B) plus a byte patch. **The import table is unchanged.**
+A loader exe is the stock exe with the Authenticode certificate stripped (hence 11,591,680 B) plus a byte patch. **The import table is unchanged.**
 
 - The entry point is redirected to a stub at VA `0xB836BE`. The stub calls `LoadLibraryA("UHC.dll")`, then `GetProcAddress("_UHCMain@0")`, calls that function, then jumps to the original EP. If either step fails, it shows a MessageBox and exits.
 - `UHCMain` therefore runs **before the game's own startup code**. It must be `extern "C" __declspec(dllexport) void __stdcall`.
-- The config path is a wide string of at most 20 chars at VA `0xC65083`, default `Startup\uhc.cfg`.
+- The config path is a wide string of at most 20 chars at VA `0xC65083`: `Startup\uhc.cfg`, or `Startup\wol.cfg` in WoL's exe.
 - Fixed addresses are only valid in this build. `src/dllmain.cpp` checks ImageBase, TimeDateStamp, SizeOfImage and the `"UHC.dll"` string before touching any of them; keep that guard.
 
 Full byte layout: `docs/binaries.md`.
 
-## REA setup on this machine (configured 2026-10-27)
+## REA
 
-- Provider: Ghidra 12.1.4 at `C:\Tools\ghidra_12.1.4_PUBLIC`, with JDK 21 at `C:\Tools\jdk-21.0.12.1+1`. Neither is on PATH and no global env vars are set.
-  - REA 6.7.0 accepts only Ghidra 12.1.x; do not upgrade to 12.2.
-  - On Windows, REA finds Java only through `JAVA_HOME`.
-- The env lives in `~/.claude.json` under `mcpServers.rea`:
-  - `env`: `GHIDRA_INSTALL_DIR`, `JAVA_HOME`, `REA_ANALYSIS_PROVIDER=ghidra`, `REA_GHIDRA_STARTUP_TIMEOUT_MS=1800000`, `GHIDRA_HEADLESS_MAXMEM=8G`
-  - plus a per-server `"timeout": 2400000`
-  - If `binary_session` shows Ghidra unavailable, check that block first. To check outside MCP, set the same variables in a shell and run `rea doctor --provider ghidra --json`.
-- The Windows "P0" Ghidra mode is read-only:
-  - `annotate_native_function`, `set_address_name` and comments are unavailable, so record names and findings in `docs/` instead.
-  - The Ghidra project is deleted on `close_binary`; a new MCP session re-analyzes from scratch. The first analysis of the 11.6 MB exe can take 15–30 minutes. Never cancel it: cancelling discards the database.
-- `binary_session {}` output (~70 KB) overflows the tool result and is saved to a file. `jq` is not installed, so parse it with `python -I`.
+Setup (2026-10-27): Ghidra 12.1.4 at `C:\Tools\ghidra_12.1.4_PUBLIC`, JDK 21 at `C:\Tools\jdk-21.0.12.1+1`. Neither is on PATH. REA 6.7.0 accepts only Ghidra 12.1.x. The env lives in `~/.claude.json` under `mcpServers.rea`; if `binary_session` shows Ghidra unavailable, check that block first.
 
-## Working with REA
-
-- Open the stock exe with `open_binary` and `provider_id: "ghidra"`, using the path above. Then use focused tools: `search_strings`, `search_procedures`, `analyze_function`, `procedure_pseudo_code`, `procedure_assembly`, `read_function_instructions`, `xrefs`, `procedure_callers` / `procedure_callees`, `resolve_containing_procedure`, `read_bytes`.
-- Run REA calls sequentially in one session. Don't fan REA work out to parallel agents, since they share one MCP server and one target.
-- For large results, request `detail: "summary"` where supported, then page the retained Evidence with `inspect_analysis_view` instead of re-running the analysis.
-- Before finishing: export with `export_evidence_bundle` to `rea/evidence/`, then `close_binary` with `snapshot_path` `rea/snapshots/age3y-b1a1dab7.json` (absolute path). Pass the same `snapshot_path` to `open_binary` later to replay cached queries.
-- Recording results in the `docs/` tables:
-  - Status is `unverified` → `confirmed` / `mismatch`. Fill in the Evidence ID and containing function.
-  - Keep observed facts, inferences and unknowns distinct. Pseudocode is analysis output, not source.
+- Open the stock exe with `open_binary` and `provider_id: "ghidra"`. The first analysis takes 15–30 minutes: never cancel it. The Windows mode is read-only, and the project is deleted on `close_binary`, so record names and findings in `docs/`.
+- Run REA calls sequentially in one session: they share one server and one target.
+- For large results, use `detail: "summary"`, then page the Evidence with `inspect_analysis_view`.
+- Before finishing: `export_evidence_bundle` to `rea/evidence/`, then `close_binary` with `snapshot_path` `rea/snapshots/age3y-b1a1dab7.json` (absolute). Pass the same path to `open_binary` later.
+- `docs/` tables: status `unverified` → `confirmed` / `mismatch`, with the Evidence ID and containing function. Keep observed facts, inferences and unknowns distinct. Pseudocode is analysis output, not source.
 
 ## Pitfalls
 
-- `age3.exe` (vanilla) and `age3x.exe` (The WarChiefs) sit next to `age3y.exe`. TAD data uses the `y` suffix (`protoy.xml`, `techtreey.xml`, `stringtabley.xml`, `DataPY.bar`; compiled XML is `.xml.xmb`).
-- Mod folders inside the install ship their own `age3y.exe`. Check the SHA-256 before trusting any address; known builds are listed in `docs/binaries.md`.
-- WoL's `uhc.dll` implements options that are not in upstream (e.g. `noAILimitV2`); only its binary is available. Its exe also patches `AI3`→`AI4`, `RM3`→`RM4`, `eso.com`→`age3.us`, and sets LAA.
-- Upstream has known defects; the list is in `docs/uhc-address-map.md`. Don't reproduce them, notably the `customSyscalls` table overflow.
-- **MASM object names.** Don't give a `.asm` file the same base name as a `.cpp` (for example `limits.asm` and `limits.cpp`). CMake then puts the object in a subfolder that `ml.exe` doesn't create, and the build fails with A1000.
-- Never modify anything in the Steam install. The sibling `AoE3-Mod-Launcher` project uses a folder with a stock `age3y.exe` as the clean clone source for mods. Test on copies only.
+- `age3.exe` and `age3x.exe` sit next to `age3y.exe`. TAD data uses the `y` suffix (`protoy.xml`, `techtreey.xml`).
+- Mod folders ship their own `age3y.exe`: check the SHA-256 before trusting an address (`docs/binaries.md`).
+- WoL's `uhc.dll` has options that are not in the original; only its binary is available. Its exe patches `AI3`→`AI4`, `RM3`→`RM4`, `eso.com`→`age3.us`, and sets LAA.
+- The original has known defects (`docs/uhc-address-map.md`). Don't reproduce them, notably the `customSyscalls` table overflow.
+- Don't give a `.asm` file the same base name as a `.cpp`: `ml.exe` fails with A1000.
+- A tactics file with LF line endings and a line break after a tactic name defines `cTacticNormal` twice, and the AI stops compiling.

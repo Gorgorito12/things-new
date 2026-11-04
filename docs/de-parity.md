@@ -3,7 +3,7 @@
 WoL's requests ([wol-requests.md](wol-requests.md)) include many mechanics that the Definitive Edition
 already has (Tier 4 is "DE parity"). This page records, for each one, how DE does it: the data
 interface, its meaning, how DE's own data uses it, what the legacy exe knows today, and what a
-UHC.dll version would cost. The threading and loading study of DE is a separate page,
+version in this DLL would cost. The threading and loading study of DE is a separate page,
 [de-architecture.md](de-architecture.md).
 
 **Target.** `AoE3DE\AoE3DE_s.exe`, Steam build 25969874, SHA-256 `31fad98f…` (the build of
@@ -12,7 +12,7 @@ de-architecture.md; checked again on 2026-10-30). Legacy is the stock `age3y.exe
 **Rules followed.** The same as de-architecture.md:
 - the DE install was only read;
 - the code protection was not studied or bypassed, so encrypted functions stay unknown;
-- no DE code or data is copied into UHC.dll or into this repository. This page paraphrases, and
+- no DE code or data is copied into this DLL or into this repository. This page paraphrases, and
   quotes only tag names, page numbers, counts and short values.
 
 Every statement is **[O]** observed (a file, a listing, a byte search) or **[I]** inferred.
@@ -72,7 +72,7 @@ Sizes, following the Design rule in wol-requests.md:
 - **M**: a new value in a parser legacy already has, or a cfg mapping, plus a hook.
 - **L**: new XML parsing with numbers or lists, or a new subsystem.
 
-| # | Request | What DE has | Legacy today | UHC fit |
+| # | Request | What DE has | Legacy today | DLL fit |
 |---|---|---|---|---|
 | 2 | Shotgun spread | No spread. A shotgun is one `InstantBallistics` hit on an `InvisibleProjectile` with `DamageArea` and `DamageCap` | Reads all those tags already | **data only** (see #2); spread itself: built as `spreadAnyAccuracy` (2026-10-30) |
 | 23 | Decimal population | Nothing; pop counts are integers | — | L, no DE spec |
@@ -197,7 +197,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] 17 protos have the flag (Settler, Coureur, `ypSettlerAsian`, `deSettlerAfrican`…), and 19
   have the type. 26 civs set `SettlerProtoName`. The Coureur keeps its own `BuildLimit` 80, which
   the flag overrides.
-- [I] For UHC:
+- [I] For this DLL:
   - `LogicalTypeSettlerBuildLimit` can be an abstract type registered by `unittypes.*`;
   - the flag can be a marker;
   - `SettlerProtoName` can be read from `civs.xml` the way `civFirstTC` reads `<firstTC>`.

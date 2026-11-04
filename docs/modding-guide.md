@@ -104,7 +104,7 @@ does not have yet ([section 8](#8-wols-keys-that-are-not-implemented)), so WoL k
 the code of the features it wants. [porting-to-another-dll.md](porting-to-another-dll.md) has that
 code, with the patch sites, the expected bytes and how to check each one.
 
-**2. Run WoL on this project's `UHC.dll` (the way to try a feature).** Every video in this guide was
+**2. Run WoL on this project's DLL (the way to try a feature).** Every video in this guide was
 filmed like this, on a copy of WoL. It takes five minutes, and it is how to see a feature working
 before porting it:
 
@@ -152,15 +152,15 @@ list is in [wol-migration.md](wol-migration.md#wols-always-on-patches-inventory-
 ## 1. What you need
 
 - **A complete WoL folder.** WoL's `age3y.exe` has the SHA-256 `0a277f14e08df516…`: it is the stock
-  game with the UHC loader and WoL's own patches (`AI3` to `AI4`, `RM3` to `RM4`, large address
+  game with the loader and WoL's own patches (`AI3` to `AI4`, `RM3` to `RM4`, large address
   aware). The DLL checks the exe at startup and does nothing if the build is different.
 - **To port a feature:** WoL's DLL source, and [porting-to-another-dll.md](porting-to-another-dll.md).
-- **To try a feature on this DLL:** the `UHC.dll` of this repository. It needs Visual Studio with the
+- **To try a feature on this DLL:** the DLL of this repository. It needs Visual Studio with the
   C++ tools and CMake ([developer-guide.md](developer-guide.md#1-build)).
 - **Python 3 and the `tools/` folder** only if you edit XMB or BAR files
   ([section 6](#6-editing-the-game-data)). WoL's data is plain XML, so most keys need neither.
 
-### Getting an exe with the UHC loader
+### Getting an exe with the loader
 
 You don't need to: WoL's exe already has it. The loader calls `_UHCMain@0` in `UHC.dll` before the
 game's own startup code, and reads the path of the cfg from the exe, which in WoL's exe is
@@ -223,7 +223,7 @@ of WoL's own file as it is.
 | `UHC.dll x.y.z` | The version of the DLL that wrote this run. Always the first line of a run. |
 | `UHCMain: working directory <folder>` | The DLL made the exe's folder the working directory ([section 2](#2-wols-folder)). |
 | `UHCMain: <path>, N keys` | The cfg was read; N distinct keys. |
-| `UHCMain: host is not a UHC-patched age3y.exe; doing nothing` | Wrong exe. See [section 1](#getting-an-exe-with-the-uhc-loader). |
+| `UHCMain: host is not a UHC-patched age3y.exe; doing nothing` | Wrong exe. See [section 1](#getting-an-exe-with-the-loader). |
 | `UHCMain: cannot read <path> (error N); no features applied` | The cfg is missing or unreadable. |
 | `<feature>: applied` | The feature patched the game. |
 | `<feature>: FAILED` | It did not. The line before says why (bad arguments, or the next row). |
@@ -447,7 +447,7 @@ extraPop <N>             N from 0 to 10000, 50 in the exe
 - **Status:** confirmed in single player, in WoL (2026-11-04): the cap reads 300 with `basePop 300`, and 200
   without it. On the stock game a skirmish went past 200 with `basePop 300`. Not tested in WoL: a
   player's real population above 200, and `extraPop` above 50.
-- **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
+- **Fixed from the original DLL:** upstream missed the path taken when the extra population is negative,
   where the stock 200/250 limits stayed active.
 
 #### decimalPopulation
@@ -644,7 +644,7 @@ noAILimit
   `hook reached: noAILimit (0x603B0B)`.
 - **Simulation:** the list feeds game setup; every player needs the same personality files.
 - **Status:** confirmed on the stock game: an added personality appeared in game setup and played.
-- **Fixed from UHC 1.10:** upstream leaves two of the function's variables uninitialized.
+- **Fixed from the original DLL:** upstream leaves two of the function's variables uninitialized.
 
 #### noAILimitV2
 
@@ -691,7 +691,7 @@ enableAllTeams
 - **Status:** partly confirmed (2026-11-02, single player): the list shows Team 1–4 and "?", and
   a skirmish with Team 3 against Team 4 started and played; how the game numbers the teams inside was not
   read.
-- **Fixed from UHC 1.10:** upstream loads the temporary string's destructor but never calls it
+- **Fixed from the original DLL:** upstream loads the temporary string's destructor but never calls it
   (a leak per list fill).
 
 ### New data and scripting
@@ -990,7 +990,7 @@ customSyscalls [file or pattern ...]
 
 - **In WoL without it:** the AI does not compile (`aiWoLMain.xs` calls `kbGetTechID` 36 times), and 36
   `RM4\ESOC_*` maps need it too.
-- **Effect:** loads UHC plugins (`.upl` files) and adds the XS syscalls they register to AI, trigger,
+- **Effect:** loads plugins (`.upl` files) and adds the XS syscalls they register to AI, trigger,
   random-map and UI scripts. Without arguments it loads every `*.upl` file in the game folder; with
   arguments, the files or patterns listed, relative to the game folder. A plugin that crashes while it
   starts is logged and skipped. `wol.cfg` has `customSyscalls wolPlugin.upl wolai.upl`.
@@ -1012,7 +1012,7 @@ customSyscalls [file or pattern ...]
   everyone needs the same plugins.
 - **Status:** confirmed (2026-11-02, single player, on WoL): both plugins loaded (17 syscalls in the XS,
   AI and KB groups, 33 cheats collected), and WoL's AI compiled and played a skirmish.
-- **Fixed from UHC 1.10:** upstream's syscall table overflows into the population and deck limits
+- **Fixed from the original DLL:** upstream's syscall table overflows into the population and deck limits
   when the list is long, loads plugins by bare file name (directories do not resolve), and stops
   a whole group at the first refused syscall.
 
@@ -1140,7 +1140,7 @@ asianCivs Civ [Civ ...] [log]
 - **Simulation:** changes what the listed civs may do: every player needs the same line.
 - **Status:** confirmed (single player, a skirmish on WoL): the five civs resolved, and a Korean villager
   opened the wonder age-up list with its five wonders; without the key, nothing opens.
-- **Fixed from UHC 1.10:** upstream tests EAX instead of AL after `0x49A2D8` in the wonder list,
+- **Fixed from the original DLL:** upstream tests EAX instead of AL after `0x49A2D8` in the wonder list,
   so the "civ has no entry" path (EAX = 0xFFFFFF00) counted as true.
 
 #### nativeCivs
@@ -1175,7 +1175,7 @@ nativeCivs Civ [Civ ...]
 - **Status:** confirmed (2026-11-03, single player): the three civs marked native, every hook ran in a
   skirmish, the four dance gates resolved them, and the WallMapu Town Center opened the council age-up
   list with its five council members. Without the key, the same click closed the game.
-- **Fixed from UHC 1.10:** upstream compares a dword where isNativeCiv compares a byte, and its
+- **Fixed from the original DLL:** upstream compares a dword where isNativeCiv compares a byte, and its
   council hook clobbers EAX.
 
 #### twoScoutCivs
@@ -1591,7 +1591,7 @@ customRevolutionBanners
 - **Simulation:** no (interface only).
 - **Status:** partly confirmed, on the stock game: the hook runs and the O'Higgins banner still shows.
   WoL's banners were not tested with this DLL.
-- **Fixed from UHC 1.10:** the banner path is bounded; upstream overflows its buffer on long tech
+- **Fixed from the original DLL:** the banner path is bounded; upstream overflows its buffer on long tech
   names.
 
 #### removeFameRestriction
@@ -1619,7 +1619,7 @@ Three changes:
   `fame icon case`, `XP icon case`).
 - **Simulation:** the unit type rename changes game data; give every player the same setting.
 - **Status:** not tested in game, on any game.
-- **Fixed from UHC 1.10:** on the second politician screen, upstream passes the wrong object
+- **Fixed from the original DLL:** on the second politician screen, upstream passes the wrong object
   as the owner of each cost line.
 
 ### Healing and hit points
@@ -2906,7 +2906,7 @@ farmingRadius Index X Z [Index X Z ...]
   `WOLFarmIroquois`, and without the keys they stood bunched at one side (gathering in both cases);
   `farmingRadius` 12 widened the spread from about 5 m to 11.9 m. Sites 3 and 8 did not run in
   that test.
-- **Fixed from UHC 1.10:** upstream reloads EBP before site 1 instead of keeping it, jumps to the
+- **Fixed from the original DLL:** upstream reloads EBP before site 1 instead of keeping it, jumps to the
   Mill and Rice Paddy branches without the registers those branches have, and at site 5 skips the
   Mill flag the code after it reads.
 

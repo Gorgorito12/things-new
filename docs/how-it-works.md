@@ -1,4 +1,4 @@
-# How UHC.dll works
+# How it works
 
 The internals of every implemented feature, for modders who want to understand them or rebuild
 them in their own DLL. Addresses are virtual addresses in the stock Steam `age3y.exe`
@@ -41,14 +41,14 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    Otherwise it logs `host is not a UHC-patched age3y.exe` and does nothing.
 4. **Working directory.** Right after the host guard, before it reads the cfg, the DLL makes the
    exe's folder the working directory (`UseExeFolderAsWorkingDirectory` in `src/dllmain.cpp`).
-   UHC 1.10 does the same. <!-- private -->
+   The original DLL does the same. <!-- private -->
    A mod then starts the same way from a double-click, a shortcut or a launcher, and `ignoreRegistryPath`
    reads the mod folder.
 5. **Configuration.** The loader patch stores the config path at `0xC65083` (at most 20 wide
    characters, default `Startup\uhc.cfg`). The DLL resolves it against the exe's folder and
    parses it (`src/config.cpp`). The parser accepts both `key value …` and the older
    `key=value` syntax with `//` comments.
-   That older syntax is UHC 1.10's, which its patcher writes. <!-- private -->
+   That older syntax is the original DLL's, which its patcher writes. <!-- private -->
    The DLL then runs every feature in the order of `kFeatures` in `src/features.h`. Each returns
    *not configured*, *applied* or *failed*.
 
@@ -83,7 +83,7 @@ The hooks are MASM files in `src/hooks/`.
   relative branches or decode from the middle of an instruction; writing the re-executed
   instructions by hand avoids that whole class of bugs.
   <!-- private:begin -->
-  The UHC 1.10 relocator does both (see the defects in [uhc-address-map.md](uhc-address-map.md)).
+  The original DLL's relocator does both (see the defects in [uhc-address-map.md](uhc-address-map.md)).
   <!-- private:end -->
 - **Choosing a site:**
   - it starts on an instruction boundary;
@@ -245,7 +245,7 @@ stay as they are, and only the places where a population enters or leaves change
 - Integer data is unchanged in meaning: every value is a multiple of K and every compare is
   between scaled values. Any consumer not listed reads a relative quantity (checked for the 44
   getter calls).
-  The list is in [engine-symbols](engine-symbols.md#population-for-decimalpopulation). <!-- private -->
+  The sites are in `src/features/decimalpop.cpp`.
 - The parse wrappers keep the stock contract: same arguments, bool in AL, the out int written on
   success. The effect wrappers call the stock function with its five arguments. The PopulationCap
   hooks leave the x87 stack as stock does (one value, then the stock `fistp`), and the control
@@ -441,7 +441,7 @@ entry's function with the player data on every machine. The hook replaces the bu
 (`pop edi/esi/ebx; add esp,10h` at `0x551FE6`), and `UhcAppendCheats` appends one entry per plugin
 cheat: the text encrypted with `0x513F73` itself (so no cipher table is copied), widened byte by
 byte into a BString (`0x401A12`), the table grown with `0x5ACE63`, the text assigned (`0x40196F`),
-the temporary destroyed (`0x4010CA`), ID 24 + k (after the stock IDs, as other UHC DLLs number
+the temporary destroyed (`0x4010CA`), ID 24 + k (after the stock IDs, as other DLLs for this loader number
 them), then the epilogue runs and the hook jumps to the `ret` at `0x551FEC`.
 
 ### asianCivs
@@ -2775,7 +2775,7 @@ and watched with `PrintWindow`, and both work without focus.
 None of this has been tested over a real network yet.
 
 <!-- private:begin -->
-## 6. Differences from UHC 1.10
+## 6. Differences from the original DLL
 
 The upstream features implemented here follow the same idea and sites, with these defects
 fixed:

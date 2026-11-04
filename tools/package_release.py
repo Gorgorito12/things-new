@@ -13,7 +13,7 @@ The zip holds one folder, UHC-<version>/, with:
   Startup/uhc.cfg    examples/Startup/uhc.cfg with every key commented out (stock behavior)
   LICENSE.txt
   README.txt         the quick start for modders
-The game exe is not included: each modder patches their own copy with the UHC patcher.
+The game exe is not included: each modder patches their own copy with the loader's patcher.
 An existing zip is kept unless --force is given. The SHA-256 of the zip and the DLL are printed.
 """
 import hashlib
@@ -111,7 +111,7 @@ def readme(version):
 =====================================================================
 
 UHC.dll removes hard-coded limits of the game and adds new engine features. A mod turns each
-feature on in Startup\\uhc.cfg. It needs the Steam version of TAD and the UHC loader.
+feature on in Startup\\uhc.cfg. It needs the Steam version of TAD and the loader.
 
 Full guide:  {REPO_URL}/blob/main/docs/modding-guide.md
 Downloads:   {REPO_URL}/releases
@@ -120,7 +120,7 @@ Adding it to your mod
 ---------------------
 1. Make your mod folder a complete game folder: a copy of the game's bin folder plus your
    mod's files. Never modify the Steam install.
-2. Patch that folder's age3y.exe once with the UHC patcher (UHCPatcher.exe).
+2. Patch that folder's age3y.exe once with UHCPatcher.exe.
    Keep the patcher outside the game folders and drag the exe onto it. The exe must be the
    unmodified Steam exe (SHA-256 b1a1dab7...11d9d). In the dialog, leave the checkboxes as
    they are (they only choose keys for the uhc.cfg you replace next), keep the default config
@@ -138,7 +138,7 @@ Adding it to your mod
    from each player's own game install. Players can then start it however they like, because
    UHC.dll makes the exe's folder the working directory. They install nothing else.
 
-A uhc.cfg written by the UHC patcher is read as it is (basePop=500 and // comments are
+A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
 Keys that need data edits use Python tools from the source code (Code > Download ZIP).
 

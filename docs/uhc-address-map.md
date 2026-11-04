@@ -1,4 +1,4 @@
-# UHC address map
+# Address map of the original DLL
 
 Every site upstream AoE3UnHardcoded (v1.10, `reference/AoE3UnHardcoded/DLL`) patches in `age3y.exe`.
 Target: stock Steam build `b1a1dab7…11d9d` (see [binaries.md](binaries.md)). Upstream checks only the

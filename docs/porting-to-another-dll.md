@@ -593,7 +593,7 @@ A tool for testing: WoL's players don't need it, so it has no code page. Its cod
   `Global\Age3`) gets `-` and an FNV-1a hash of the exe's lowercase folder appended. Every other
   call passes through unchanged.
 - **`background`** installs a `WH_CBT` hook for the calling thread. It must run on the game's main
-  thread, before the game creates its first window: the UHC loader's `UHCMain` does. A DLL that
+  thread, before the game creates its first window: the loader's `UHCMain` does. A DLL that
   initializes elsewhere must target the main thread's ID instead. The hook creates top-level windows
   with `hwndInsertAfter = HWND_BOTTOM`, wraps their window procedure to keep that z-order, and
   refuses every `HCBT_ACTIVATE`.
