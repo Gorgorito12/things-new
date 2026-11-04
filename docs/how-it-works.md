@@ -2518,6 +2518,31 @@ ST0 by the factor, with the attack code's rule.
 bytes. Every caller gets the same rate: the update 0x48D16E, both panels (0x6992BD, 0x69B005), and the two that
 look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simulation state only.
 
+### unitResourceAuras
+
+An `AutoRangedModify` action's update is FUN_009D033E, `void thiscall(action)`, a vtable slot with no direct caller.
+It gives each unit the scan 0x9CFF9A finds a modifier. The scan uses the action's range `[action+24h]` and fills a
+dynamic list `{data, count, capacity}`; the filter 0x9D0238 then keeps the owner's units (or allies, with a tactic flag)
+that are alive, built and of the wanted type.
+
+`AddModifyType` makes `UnitResource` stat 41h, stored in the tactics action's byte `[+B8h]`. The hook replaces the
+update's first instruction: with another stat it re-executes it and goes on at 0x9D0343; with 41h it calls
+`UhcUnitResourceAura(action)` and returns, so no modifier is made. The helper:
+
+- reads `<ModifyAmount>`, `<ModifyTargetLimit>` and `<TargetGaia>`, unknown to the exe, through `AddActionTagHandler`,
+  by `{proto ID, action name}`;
+- computes the seconds since the owner's last update from `[world+108h]`, at most 5;
+- runs the stock scan, with its own filter: `[tactics+9Ch]` abstract index or `[tactics+9Eh]` proto ID, owner or Gaia,
+  an inventory `[[unit+B4h]+94h]` with a resource: `[inventory+10h]`, else the largest (0x4DBEC1);
+- takes `min(amount, have)` as the gather tick does: 0x49A5E6(inventory, resource, −take), then the state check
+  0x482152, which kills a unit with `DieAtZeroResources` at zero, unless the proto has flag 24h;
+- pays 0x49A98A(player, resource, take × `[player+37Ch]`, 0).
+
+**Why it is safe.** The hook sits at a function entry and reads only the action. Targets are looked up by ID on each
+step, so one that dies in the loop is not touched again; the list belongs to the helper. The order of the scan, the
+game clock and an ID-ordered map make the result the same on every machine. Stat 41h reaches no stock reader in an
+aura: the update does not run; in a power's `<unitModify>` the name is accepted and has no effect.
+
 ### showGatherRate
 
 With the minimized interface (`optionminimizedui`) the stat panel fill returns at its start. The hook
@@ -2638,11 +2663,11 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   (0x9EA413), Research (0x9E65F7), CommandResearch (0x9D58D4) and Maintain (0x6AB23F).
 
 **The hooks** (`hooks/bwraura_hooks.asm`).
-1. **Name, 0x5FE6D7** (6 bytes, `jmp` + 1 NOP over `neg / sbb / and`). EAX = the `AutoGatherRate`
-   compare, ESI = the name. On a match EAX stays 0. Otherwise the hook compares the name with
-   L"BuildingWorkRate" through the same 0x443C10 call (`push -1 / push 0 / push name / mov
-   ecx,esi`): a match gives EAX = 40h − 0Eh, anything else −0Fh. It continues at 0x5FE6DD, so the
-   tail returns 0Eh, 40h or −1. Stat 40h is new: no stock code produces it, the recompute skips
+1. **Name, 0x5FE6D7** (6 bytes, `jmp` + 1 NOP over `neg / sbb / and`; `hooks/modifytype_hooks.asm`,
+   shared through `AddModifyType`). EAX = the `AutoGatherRate` compare, ESI = the name. On a match
+   EAX stays 0. Otherwise the helper compares the name with each registered one through the same
+   0x443C10 call (flag 0, n −1): a match gives EAX = stat − 0Eh, anything else −0Fh. It continues at
+   0x5FE6DD, so the tail returns 0Eh, 40h or −1. Stat 40h is new: no stock code produces it, the recompute skips
    it, the save writes `[+64h]` as an int, and the aura tooltip (switch on stat − 1, cases 0..5)
    takes its default case.
 2. **Rate, the calls of 0x9BFE33** (their rel32 points to `UhcBwrAuraCall`). The wrapper has the

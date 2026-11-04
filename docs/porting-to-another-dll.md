@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
@@ -1230,6 +1230,18 @@ Code: [gathering](porting-code/gathering.md#autogatherscalebycontained).
 
 Check it in the game: add the tag to an AutoGather action of a building that can garrison, select it and put two
 units inside: the rate row doubles.
+
+### unitResourceAuras
+
+Code: [gathering](porting-code/gathering.md#unitresourceauras). It needs `AddActionTagHandler` and `AddModifyType`
+from the [helpers](porting-code/helpers.md).
+
+- **Sites:** a 5-byte `jmp` at `0x9D033E` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`), continue at `0x9D0343`. It does not
+  overlap WoL's DLL. The name hook at `0x5FE6D7` is the one `buildingWorkRateAuras` uses; with both keys there is one
+  `jmp` and one list of names.
+- **Data:** none: `AreaGatherTree` is already in `sawmill.tactics`.
+
+Check it in the game: a `WOLSawmill` among trees, with `log`: a line about every 3 s per tree, for at most 5 trees.
 
 ### showGatherRate
 

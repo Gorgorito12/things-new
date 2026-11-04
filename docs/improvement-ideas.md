@@ -22,7 +22,7 @@ These come up in several sections below. Building them once makes the later item
   - `AddTechEffectType`: a new `<Effect type=…>`, as `techRenameEffect` did for `SetTechName`
     (register hook 0x524CB5, factory 0x62146F). Needed by #37 `SetNextResearchFree`, DE's
     `ProtoUnitFlag` / `SetActionFlag`, #41 timed transforms, `AddUnitType` below.
-  - `AddModifyType`: a new aura `<ModifyType>`, as `buildingWorkRateAuras` did for
+  - `AddModifyType` (built 2026-11-04, `modifytypes.*`): a new aura `<ModifyType>`, as `buildingWorkRateAuras` did for
     `BuildingWorkRate` (stat 0x40). Needed by `UnitResource` (#26, the Torp), `Lifespan`,
     accuracy, snare resistance, cost discounts, heal rate, conversion resistance.
 - **`AddUnitType` / `RemoveUnitType` tech effect.** Adds or removes an abstract type on a

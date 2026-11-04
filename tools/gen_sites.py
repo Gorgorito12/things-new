@@ -1035,6 +1035,17 @@ SITES = [
     # autoGatherScaleByContained: the entry of the AutoGather rate getter, push ecx / push ebx /
     # mov ebx,[esp+0Ch], and the test ebx,ebx it continues at. No branch lands inside.
     ("AutoGatherRateEntry", 0x49EBE4, 8),
+    # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
+    ("UnitResourceAuraEntry", 0x9D033E, 8),
+    # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
+    # (thiscall(inventory, resource, float)), unit state check, main resource of a unit, dead test,
+    # add resource to a player
+    ("AuraScan", 0x9CFF9A, 0x10),
+    ("InventoryAdd", 0x49A5E6, 0x10),
+    ("CheckState", 0x482152, 0x10),
+    ("MainResource", 0x4DBEC1, 0x10),
+    ("UnitIsDead", 0x4802C6, 0x10),
+    ("PlayerAddResource", 0x49A98A, 0x10),
     # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
     # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
     # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)

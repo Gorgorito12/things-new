@@ -26,6 +26,7 @@ PAGES = {
         "Extra abstract unit types": ["src/unittypes.h", "src/unittypes.cpp", "src/hooks/unittype_hooks.asm"],
         "World tick": ["src/worldtick.h", "src/worldtick.cpp", "src/hooks/worldtick_hooks.asm"],
         "Action tags": ["src/actiontags.h", "src/actiontags.cpp", "src/hooks/actiontag_hooks.asm"],
+        "Modify types": ["src/modifytypes.h", "src/modifytypes.cpp", "src/hooks/modifytype_hooks.asm"],
         "Floating text": ["src/floatingtext.h", "src/floatingtext.cpp"],
         "Modifier walk": ["src/modifiers.h"],
         "Unit panel row (the minimized interface)": ["src/unitpanel.h", "src/unitpanel.cpp", "src/hooks/unitpanelrow_hooks.asm"],
@@ -65,6 +66,7 @@ PAGES = {
         "showGatherRate": ["src/features/gatherrate.cpp", "src/hooks/gatherrate_hooks.asm"],
         "workRateByAbstractType": ["src/features/workratetype.cpp", "src/hooks/workratetype_hooks.asm"],
         "autoGatherScaleByContained": ["src/features/gatherscale.cpp", "src/hooks/gatherscale_hooks.asm"],
+        "unitResourceAuras": ["src/features/unitresource.cpp", "src/hooks/unitresource_hooks.asm"],
     }),
     "buildings": ("Buildings and training", {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],
@@ -91,7 +93,7 @@ PAGES = {
 HELPER_OF = {
     "generated/sites.h": "site-table", "site.h": "site-table", "patch.h": "patching", "log.h": "log",
     "config.h": "cfg-reader", "features.h": "results", "unittypes.h": "extra-abstract-unit-types",
-    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "floatingtext.h": "floating-text",
+    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "floatingtext.h": "floating-text",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
     "namelists.h": "name-lists",
 }

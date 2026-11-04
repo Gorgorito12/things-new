@@ -233,6 +233,7 @@ showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
+unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

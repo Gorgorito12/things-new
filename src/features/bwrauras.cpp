@@ -34,10 +34,10 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../modifiers.h"
+#include "../modifytypes.h"
 #include "../patch.h"
 
 extern "C" {
-void UhcBwrModifyTypeHook();
 void UhcBwrAuraCall();
 void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
 }
@@ -47,7 +47,6 @@ namespace {
 // Engine layout (docs/engine-symbols.md, "Building work rate auras").
 constexpr std::int32_t kStatBuildingWorkRate = 0x40;  // the new ModifyType stat, as in bwraura_hooks.asm
 constexpr float kMinFactor = 1.0e-6f;  // 0xB9FB64: a smaller sum counts as no modifier (0x69FE56)
-constexpr std::uint32_t kNameTailHook = 0x005FE6D7;  // neg eax / sbb eax,eax / and al,0F1h (6 B)
 constexpr std::uint32_t kTrainCall = 0x009EA413;     // call 9BFE33h in the Train update
 
 // The four callers of the getter: the address of the call and the return address it pushes.
@@ -225,7 +224,7 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
   // through g_uhcBwrTrainGetter. The other three calls are redirected either way.
   const bool trainCallStock = Matches(sites::kBwrTrainCall);
   g_log = log;
-  if (!WriteJmp(kNameTailHook, reinterpret_cast<const void*>(&UhcBwrModifyTypeHook), 6)) {
+  if (!AddModifyType(L"BuildingWorkRate", kStatBuildingWorkRate)) {
     return Outcome::kFailed;
   }
   for (const Caller& caller : kCallers) {

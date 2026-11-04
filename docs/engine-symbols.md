@@ -875,6 +875,17 @@ the Gathering dance (FUN_004ECD39) in "Dances".
 | Contained count | `[unit+74h]` | confirmed, in game | 2, 4 and 6 units inside gave those factors. Not to be confused with the worker array `[unit+98h]`. |
 | AutoGather rate getter | 0x49EBE4, `float thiscall(action, int resource)`, `ret 4` | confirmed (`cs`, in game) | `[action+4]` tactics action, `[action+10h]` unit. Five callers: 0x48D16E (the update, × elapsed), 0x6992BD and 0x69B005 (panels), 0x69D232, 0x9CFE1E. Adds the rate of units on a shrine (`AbstractShrine`, 0x58) to its result. |
 
+### Resource auras (for `unitResourceAuras`, WoL #26, 2026-11-04)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Aura update | FUN_009D033E, `void thiscall(action)`, plain `ret` (0x9D06FF) | confirmed (`cs`, in game) | No direct caller: a vtable slot. In WoL's Sawmill it runs about every 3 s (a take of 0.05/s measured 0.14–0.16). |
+| Aura scan | 0x9CFF9A, `thiscall(action, IdList*)`, `ret 4` | confirmed (`cs`, in game) | Range `[action+24h]` from the unit's position (0x4A1C55), else a contained-unit path. |
+| Aura filter | 0x9D0238, `bool thiscall(action, target)`, `ret 4` | confirmed (`cs`) | Not the owner; the same player, or allies with tactic flag bit 32; alive (vtable +A4h), not dead (0x4802C6), built; `[tactics+9Ch]` abstract index, `[tactics+9Eh]` proto ID; neither: abstract 10h. |
+| Inventory add | 0x49A5E6, `bool thiscall(inventory, resource, float)`, `ret 8` | confirmed (`cs`, in game) | The gather tick passes −amount / the action's ratio (0x4ED124). |
+| Gather payment | 0x49A98A(player, resource, amount, 0) | confirmed (`cs`, in game) | After `× [player+37Ch]`. Zero when `[player+338h]` is set. Resource 5 also calls 0x9C02C0. |
+| Endless resource | proto flag 24h, tested at 0x4ED062 | confirmed (`cs`) | The tick skips the drain and 0x482152. |
+
 ### Building work rate auras (for `buildingWorkRateAuras`)
 
 The getter 0x9BFE33 and its four callers are in "Building work rate"; the modifier action, its
@@ -886,7 +897,7 @@ movement".
 | ModifyType name → stat | FUN_005F5645, `int cdecl(BString*)` | tail and callers confirmed; name table scoping | Compares through 0x443C10 (case ignored); Speed 0, MaxHP 1, Damage 2, MovingDamage 3, Bounty 4, SiegeDamage 5, UnitDamage 6, LOS 7, Armor 8, GatherRate 0Bh, AbilityROF 0Ch, ROF 0Dh, AutoGatherRate 0Eh, else −1 (the cold returns of 3, 7, 8, 0Ch and 0Dh at 0x67D730..0x67D752 confirmed). Tail 0x5FE6C7..0x5FE6E1: `neg eax / sbb eax,eax / and al,0F1h / pop esi / add eax,0Eh / ret` (site `ModifyTypeNameTail`). ESI = the name throughout. With `buildingWorkRateAuras`, `BuildingWorkRate` → 40h (in game). |
 | ModifyType callers | 0x5FC8AE (tactics tag, dispatch 0x5F9FD0); 0x5F3EFA (powers `<unitModify>`, FUN_005F3E97) | confirmed (call sites); rest scoping | Tactics: `mov [ebp+0B8h],al` with no check (default 0FFh at 0x5FA4E7). Powers: `mov ebp,eax / test ebp,ebp / jl` → error 1233h; stores {stat, op, amount} in `[obj+128h]`, applied by 0x8EE18E → 0x4DD22D. |
 | Tactics ModifyType byte | `[tacticAction+B8h]` (signed byte) | scoping | Read by 0x9D064C (aura apply), 0x9D7696 (second applier), 0x9E3727 (init of class 0xB97C78) and 0x9D6F40 (aura tooltip: `stat − 1` ≤ 5, else default). `<ModifyMultiplier>` → `[+ACh]`, `<ModifyProtoID>` → `[+9Eh]`, `<ModifyAbstractType>` → `[+9Ch]`. |
-| Aura apply | FUN_009D033E, call 0x4DD22D at 0x9D0670; filter 0x9D0238; scan 0x9CFF9A → 0x4A1C55 | scoping; in game for a completed building | `0x4DD22D(target, stat, mult, −1f, −1f, 0, 2, 0 ms, −1, −1, exclusive)`. Filter: not the owner, same player unless tactic flag 20h, alive, complete (0x44DDB4), ModifyProtoID / ModifyAbstractType. Runs only when the multiplier is > 1e-6 and the owner is complete. Keeps {target ID, modifier ID} at `[ua+68h]`. In game, an Explorer's aura reached a completed BloodFactory. |
+| Aura apply | FUN_009D033E, call 0x4DD22D at 0x9D0670; filter 0x9D0238; scan 0x9CFF9A → 0x4A1C55 ("Resource auras", below in this file's order, has their signatures) | confirmed for a completed building, in game | `0x4DD22D(target, stat, mult, −1f, −1f, 0, 2, 0 ms, −1, −1, exclusive)`. Filter: not the owner, same player unless tactic flag 20h, alive, complete (0x44DDB4), ModifyProtoID / ModifyAbstractType. Runs only when the multiplier is > 1e-6 and the owner is complete. Keeps {target ID, modifier ID} at `[ua+68h]`. In game, an Explorer's aura reached a completed BloodFactory. |
 | Modifier action classes | vtable 0xB97C08 (ctor 0x4DDA01, from 0x4B3D9E); vtable 0xB97C78 (ctor 0x9E36CC, factory case 46h) | scoping | Both carry runtime type 2Ch. WoL's ModifyActionFix retypes the second to 46h (0x9E36D0) and replaces the collector call 0x49F251. |
 | Collector call | 0x49F23C..0x49F251 in FUN_0049F1BA | confirmed | Clears the count `[0CF071Ch]`, then `mov ecx,[edi+58h] / push 0CF0718h / push 1 / push 2Ch / add ecx,14h / call 49F1A0h`; then per-stat helpers from 0x49F26A. |
 | GatherRate helper | 0x4B3B75 | confirmed | `[esp] = 1.0f`, `0x4B3C7D(&v, list, 0Bh)`; stores v only when it matched (cold 0x6A8972). The model for stat 40h. |

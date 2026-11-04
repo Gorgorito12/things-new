@@ -25,6 +25,7 @@ add_library(UHC SHARED
   src/worldtick.cpp
   src/unitpanel.cpp
   src/actiontags.cpp
+  src/modifytypes.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/ai.cpp
@@ -80,6 +81,7 @@ add_library(UHC SHARED
   src/features/workrate.cpp
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
+  src/features/unitresource.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
@@ -127,6 +129,8 @@ add_library(UHC SHARED
   src/hooks/workrate_hooks.asm
   src/hooks/workratetype_hooks.asm
   src/hooks/gatherscale_hooks.asm
+  src/hooks/unitresource_hooks.asm
+  src/hooks/modifytype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
   src/version.rc

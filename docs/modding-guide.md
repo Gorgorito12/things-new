@@ -2754,6 +2754,7 @@ Resources, gatherers, and what pays for them.
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
+| [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -2987,6 +2988,66 @@ autoGatherScaleByContained
   the tag, for 60 s: update 0.1 ms with and without, longest frame 10 and 9 ms, no frame over 50 ms in either.
 - **Status:** confirmed (single player, on WoL): the rates above; 6 inside with `<damagefactorcap>3`: 0.75/s; an
   argument: `FAILED`.
+
+#### unitResourceAuras
+
+![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
+
+*In WoL, with `unitResourceAuras log` (Ethiopians, WoL's own `WOLSawmill` and its `AreaGatherTree`, no data
+change):* the Sawmill takes 0.05 wood per second from each of 5 trees, 0.25 wood/s on top of its AutoGather; the log
+shows a take about every 3 s and the trees going down. [Full video (MP4)](media/unitResourceAuras-wol.mp4).
+
+![unitResourceAuras in WoL, trees used up](media/unitResourceAuras-depleted-wol.gif)
+
+*In WoL, the same aura with a test `<modifyamount>40`:* each tree in range gives 40 wood per second, and it goes
+when its 300 wood are out. [Full video (MP4)](media/unitResourceAuras-depleted-wol.mp4).
+
+![unitResourceAuras in WoL, key off](media/unitResourceAuras-wol-control.gif)
+
+*In WoL, key off (the first scene):* only the AutoGather works: 107 wood at 62 s of game time, and the trees keep
+their wood. [Full video (MP4)](media/unitResourceAuras-wol-control.mp4).
+
+```
+unitResourceAuras [log]
+```
+
+- **In WoL today:** WoL's `sawmill.tactics` has DE's `AreaGatherTree` aura, on `WOLSawmill` and `WOLSawmillSwedish`,
+  and the exe reads it as nothing: `UnitResource`, `ModifyAmount`, `ModifyTargetLimit` and `TargetGaia` are unknown
+  to it.
+- **Effect:** on each update of the aura, about every 3 s, each unit in range gives its owner `<ModifyAmount>` per
+  second of its main resource:
+
+  ```xml
+  <action>
+      <name stringid="91720">AreaGatherTree</name>
+      <type>AutoRangedModify</type>
+      <modifyabstracttype>Tree</modifyabstracttype>   <!-- or modifyprotoid -->
+      <targetgaia>1</targetgaia>                      <!-- Gaia's units too; without it, only the owner's -->
+      <active>1</active>
+      <maxrange>6.2</maxrange>
+      <persistent>1</persistent>
+      <modifytype>UnitResource</modifytype>
+      <modifyamount>0.05</modifyamount>               <!-- per target, per second -->
+      <modifytargetlimit>5</modifytargetlimit>        <!-- at most this many targets; no tag: all -->
+  </action>
+  ```
+
+  A tree with no wood left goes, as when villagers finish it. The payment follows the player's gather multiplier.
+  A target with an endless resource pays and is not drained, as in gathering.
+- **Not covered:** `<ForceUpdateMode>` and `<DoNotIgnoreDead>` are read as nothing (dead targets with resources count
+  anyway). The aura's rate does not show in the panels: DE's `ShowUnitResourceActionRates` is not built. Other
+  players' units are never targets.
+- **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
+  `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
+  resource 1 from unit 2 (TreeNewEngland), 299.1 left`.
+- **Simulation:** changes gathering: every player needs the same line.
+- **Saved games:** the rest of the state is the game's; the time of each aura's last update restarts on a load, which
+  loses at most one update. Tested in a new process: the takes went on from the saved amounts.
+- **Performance:** the hook runs a few instructions on every aura update, and the work only on these auras. In the
+  filmed scene, longest frame 7 ms without `log`, no frame over 50 ms.
+- **Status:** confirmed (single player, on WoL): the rates above; with a limit of 2, two trees at a time, and new ones
+  as they went; without `<targetgaia>`, nothing from Gaia's trees; an argument: `FAILED`. `buildingWorkRateAuras`,
+  which now shares the name hook, still gives its x3. An AI that builds Sawmills and multiplayer were not tested.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 
@@ -3324,9 +3385,7 @@ buildingWorkRateAuras [log]
   every change of a unit's factor logged (multiplayer unverified)`), and, with
   `noTrainNearEnemyTC`, `buildingWorkRateAuras: the Train call at 0x009EA410 is already hooked
   (noTrainNearEnemyTC); Train speed gets the factor only through that hook's call of
-  g_uhcBwrTrainGetter`. While the data loads, `hook reached: buildingWorkRateAuras (0x5FE6D7)` and,
-  once a tactics file uses the name, `hook reached: buildingWorkRateAuras ModifyType
-  BuildingWorkRate (0x5FE6D7)`; in a game, `hook reached: buildingWorkRateAuras (calls of
+  g_uhcBwrTrainGetter`. While the data loads, `hook reached: ModifyType names (0x5FE6D7)`; in a game, `hook reached: buildingWorkRateAuras (calls of
   0x9BFE33)` (the first train, research or `Maintain` tick) and `hook reached:
   buildingWorkRateAuras: a unit with modifiers (calls of 0x9BFE33)`. With `log`:
   `buildingWorkRateAuras: unit N (BloodFactory, player 1) works at x4.000 from BuildingWorkRate
