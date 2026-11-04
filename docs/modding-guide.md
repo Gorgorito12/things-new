@@ -29,6 +29,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | confirmed (single player, also a skirmish vs AI) |
 | Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | confirmed (single player, UI; the data ref not tested) |
 | Wednesday 2026-11-04 09:04 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | confirmed (single player, UI) |
@@ -79,7 +80,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 20:27 | [`asianCivs`](#asiancivs) | Added. The listed civs count as Asian civs: consulate, export and wonders. | confirmed |
 | Monday 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Added. Turns every name in an XML file into an abstract unit type that protos, techs, auras and XS scripts can use. | confirmed |
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. The same list as `noAILimit`, installed later in the same stock function. | confirmed |
-| Thursday 2026-10-29 21:24 | [`decimalPopulation`](#decimalpopulation) | Added. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | confirmed (single player, also a skirmish vs AI) |
 | Thursday 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | Added. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | confirmed (single player; Nomad start not tested) |
 | Thursday 2026-10-29 10:35 | [`startingTC`](#startingtc) | Added. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | confirmed from the log and memory (single player) |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (TradingPost, or a mod's) be placed only on a socket that Gaia owns, as the placement preview already shows. | not tested in game |
@@ -564,19 +564,27 @@ extraPop <N>             N from 0 to 10000, stock 50
 
 #### decimalPopulation
 
-**Added:** Thursday 2026-10-29 21:24
+**Added:** Thursday 2026-10-29 21:24 · **Filmed in WoL:** Wednesday 2026-11-04 09:59 <!-- private -->
+<!-- public: **Added:** Thursday 2026-10-29 21:24 -->
 
-![decimalPopulation in game](media/decimalPopulation.gif)
+<!-- private:begin -->
+![decimalPopulation in WoL](media/decimalPopulation-wol.gif)
 
-*1. `decimalPopulation 10 log`:* in the test data a Settler costs 1.5 population, a Pikeman 0.5, and a Manor gives 7.5. At 16.5 / 17.5 the Town Center refuses a Settler ("No hay más espacio de población para Colono") and its tooltip shows the cost `1.5` in red. A test tech at 35 s (the log lines at the top: Crossbowman 1.5 → 2, Town Center 10 → 12.5) makes room for two Settlers (20 / 20 with the queue), and a `PopulationCap` +2.5 at 56 s for one more (21.5 / 22.5). [Full video (MP4)](media/decimalPopulation.mp4).
+*In WoL, with `decimalPopulation 10 log` (Ethiopians, the Town Center selected):* in the bed's data, for
+the test, a villager costs 1.5 population and a house gives 7.5. The panel reads `17.5 / 17.5` with 11
+villagers and the Explorer, and the next villager in the queue waits: there is no room for 1.5.
+[Full video (MP4)](media/decimalPopulation-wol.mp4).
 
-![decimalPopulation control in game](media/decimalPopulation-control.gif)
+![decimalPopulation in WoL, key off](media/decimalPopulation-wol-control.gif)
 
-*2. The control, without the key:* the same data read by stock. `%d` drops the decimals: the Settler costs 1, the Pikemen nothing, the Manor gives 7 (9 / 17), and the Settlers train. [Full video (MP4)](media/decimalPopulation-control.mp4).
+*In WoL, key off (the same data):* stock drops the decimals: a villager costs 1 and the house gives 7,
+so the panel reads `14 / 17` with 13 villagers and the queue goes on.
+[Full video (MP4)](media/decimalPopulation-wol-control.mp4).
+<!-- private:end -->
 
 ![decimalPopulation and the population limits](media/decimalPopulation-caps.png)
 
-*3. The limits:* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at stock's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
+*The limits:* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at stock's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
 
 ```
 decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in steps of 1/K

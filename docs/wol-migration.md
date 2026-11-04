@@ -153,7 +153,8 @@ pixels, 2x speed, 10 fps, cut to the key moment.
 | `overhealHitpointBars`, `overhealSources`, `overhealDecay` | Iroquois: `xpTomahawk` marked, 150 of 180 HP, `xpMedicineMan` source healer (bed protoy, restored after), `xpAenna` unmarked; `overhealDecay 2 3` | **done**: hit, healed to 180, the healer dies at 62 s, back to 150 (`overhealHitpointBars-wol*.mp4`) |
 | `showGatherRate` | Ethiopian villager on berries | **done**: `Food (icon): 0.67/s` in WoL's unit panel with no data change. With `optionminimizedui`, the user's setting, the exe skips the stat panel fill, so since 2026-11-04 the key also writes the unit panel's rate gadgets (hook 0x699456). The normal interface (TAD copy) still gets the stat panel row. With several units selected no rate shows, in both interfaces (`showGatherRate-wol*.mp4`) |
 | `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
-| `decimalPopulation`, `basePop` / `extraPop`, `deckCardCount` | WoL units with decimal pop; a big deck | pending |
+| `decimalPopulation` | Ethiopians: `AFRICANvillager` 1.5, `HouseAfrican` +7.5 (bed protoy, restored after) | **done**: `17.5 / 17.5`, queue waits; key off, `14 / 17`, queue goes on (`decimalPopulation-wol*.mp4`) |
+| `basePop` / `extraPop`, `deckCardCount` | a big population; a big deck | pending |
 | `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |
 | `bufferedFileReads`, `multipleInstances` | load time; two copies | pending |
 
