@@ -29,17 +29,17 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 10:29 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | confirmed (single player, UI) |
+| Wednesday 2026-11-04 10:29 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | confirmed |
+| Wednesday 2026-11-04 10:29 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | confirmed |
 | Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | confirmed (single player, also a skirmish vs AI) |
 | Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | confirmed (single player, UI; the data ref not tested) |
-| Wednesday 2026-11-04 09:04 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | confirmed (single player, UI) |
-| Wednesday 2026-11-04 09:04 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | confirmed |
-| Wednesday 2026-11-04 09:04 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | confirmed |
 | Wednesday 2026-11-04 08:32 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Lets a keymap context named `<ProtoName>Accel` hold the unit hotkeys of that proto (a new building, or a stock one the exe has no context for). | confirmed (single player) |
 | Wednesday 2026-11-04 08:32 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
 | Wednesday 2026-11-04 08:32 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | confirmed (single player) |
 | Wednesday 2026-11-04 08:11 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | confirmed (single player, Healing Dance) |
-| Wednesday 2026-11-04 08:11 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | confirmed from the log (single player) |
+| Wednesday 2026-11-04 08:11 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | confirmed (single player) |
 | Wednesday 2026-11-04 08:11 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | confirmed (single player) |
 | Wednesday 2026-11-04 08:11 | [`transformUpdatesLOS`](#transformupdateslos) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | confirmed (single player) |
 | Wednesday 2026-11-04 08:11 | [`transformInventory`](#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | confirmed (single player) |
@@ -138,7 +138,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-10-29 06:39 | [`techRenameEffect`](#techrenameeffect) | Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
 | Thursday 2026-10-29 06:39 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | confirmed (single player, Healing Dance) |
 | Thursday 2026-10-29 06:39 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | confirmed (single player) |
-| Thursday 2026-10-29 06:39 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | confirmed from the log (single player) |
+| Thursday 2026-10-29 06:39 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | confirmed (single player) |
 | Thursday 2026-10-29 06:39 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | confirmed (single player) |
 | Thursday 2026-10-29 06:39 | [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | confirmed (single player) |
 | Thursday 2026-10-29 06:39 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | confirmed (single player) |
@@ -1931,37 +1931,26 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
 
 #### overhealHitpointBars
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 10:29 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 10:35 -->
 
 <!-- private:begin -->
 ![overheal in WoL](media/overhealHitpointBars-wol.gif)
 
-*In WoL, with `overhealHitpointBars segment log`, `overhealSources log` and `overhealDecay 2 3 log`
-(Iroquois; all three units selected):* for the test the Tomahawk is marked and has `MaxHitpoints`
-180 over its 150, and the medicine man is a source healer (bed data, removed after). The Tomahawk is
-hit, the medicine man heals it past its 100 % to 180 (the extra part of the bar), and when he is
-killed at 62 s the Tomahawk loses 2 HP a second back to 150. The Aenna next to it, not marked, stops
-at 110. [Full video (MP4)](media/overhealHitpointBars-wol.mp4).
+*In WoL, with `overhealHitpointBars segment stat log`, `overhealSources log` and `overhealDecay 2 3 log`
+(Iroquois; the Tomahawk selected):* for the test the Tomahawk is marked and has `MaxHitpoints` 180 over
+its 150, and the medicine man is a source healer (bed data, removed after). It is hit, the medicine man
+heals it past its 100 %, and the panel reads `180/150` and, in orange, `Overheal: 30/30`. When he is
+killed at 62 s it loses 2 HP a second back to 150, and the row goes. The Aenna next to it, not marked,
+stops at 110.
+[Full video (MP4)](media/overhealHitpointBars-wol.mp4).
 
 ![overheal in WoL, keys off](media/overhealHitpointBars-wol-control.gif)
 
-*In WoL, keys off (the same data and scene):* the bar and the panel count the 180 as the 100 %, and
-nothing brings the Tomahawk back down after the healer dies: it stays at 180.
+*In WoL, keys off (the same data and scene):* the panel counts the 180 as the 100 % (`180/180`), there
+is no row, and nothing brings the Tomahawk back down after the healer dies.
 [Full video (MP4)](media/overhealHitpointBars-wol-control.mp4).
 <!-- private:end -->
-
-![overhealHitpointBars segment in game](media/overhealHitpointBars-segment.gif)
-
-*2. `segment`, the floating bars:* A marked Musketeer takes damage (white `92/150`), a Surgeon heals it, and above 150 an orange segment appears over the right end of its full bar, with an orange `165/150`; the unmarked Pikeman keeps the stock bar. [Full video (MP4)](media/overhealHitpointBars-segment.mp4).
-
-![overhealHitpointBars portrait bar, stat row and aura](media/overhealHitpointBars-portrait.gif)
-
-*3. `segment stat`, the portrait bar, the Overheal row and an aura* (the unit panel and its "Unit information" panel; the UI data has the overheal gadget below): the selected marked Musketeer starts at `165/150`: the bar under its portrait is green with the orange overheal at its right end, and the new row reads `Overheal 15/15` in orange. A hit takes it below its 100 %: the portrait shows the stock bar (green, then yellow at the second hit) and `Overheal 0/15`; the Surgeon heals it back and the orange end returns. Halfway, a Golden Pavilion whose tactic has the `UnitHitpointsIncrease2` aura (MaxHP x1.1) appears: the max goes from 165 to 181.5 and the 100 % follows it, from 150 to 165, so the text reads `181/165 (150+15)` and the row `Overheal 16/16` (2x speed). [Full video (MP4)](media/overhealHitpointBars-portrait.mp4).
-
-![overhealHitpointBars in the minimized UI](media/overhealHitpointBars-minimized.gif)
-
-*4. The minimized UI* (the game option "minimized interface", `optionminimizedui`): its HP text (`unitHitPointsValue`) takes the 100 % too: `120/150` while the Surgeon heals, `165/150`, then `181/165` under the same aura. It stays white: that text gadget prints the colour markup as text, so it is not coloured. That layout has no portrait bar and no Overheal row (3x speed). [Full video (MP4)](media/overhealHitpointBars-minimized.mp4).
 
 ```
 overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log]   default AbstractOverheal; up to 8 types
@@ -2002,6 +1991,9 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
     stock bar is full, that bar is drawn over it, its mask (green) on the left and its background
     (the overheal colour) on the right end, (HP − 100 %) / 100 % of its width (the average of the
     selected units). Below 100 % the stock green / yellow / red bar shows, as without the key.
+- **`stat` in the minimized interface:** that interface has no stat panel. The row goes in the unit
+  panel, in the same gadgets as `showGatherRate`, with one unit selected and only while it has
+  overheal: `Overheal: 30/30`.
 - **`stat`**: the unit's "Unit information" panel (the stat rows next to the portrait) gets a row
   right after the HP row for a marked unit: `Overheal 15/15`, the HP above its 100 % and the most
   it can have (max − 100 %), truncated like the HP row, so `165/150` gives `15/15`. With
@@ -2124,16 +2116,33 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
 
 #### overhealSources
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-04 10:29 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 13:37 -->
 
-![overhealSources with a healing building](media/overhealSources-building.gif)
+<!-- private:begin -->
+![overhealSources in WoL](media/overhealSources-wol.gif)
 
-*2. A healing building, then an idle surgeon:* a Manor with `HCXPFlorenceNightingale` heals the marked Musketeer from 90 to 150 and stops there (the log line `a heal of unit 1 (Musketeer) stops at its 100 % 150.0`), and the unmarked Pikeman to 132 / 132. At second 60 a surgeon appears next to the Musketeer at 150 and stays idle (2x speed). [Full video (MP4)](media/overhealSources-building.mp4).
+*In WoL, with `overhealSources log` (a `NAnurse` next to the marked Tomahawk, selected):* the Tomahawk
+is hit at 24 s. The nurse is not a source healer: she heals it to `150/150` and stops (`a heal of unit 1
+stops at its 100 %`). At 52 s a source medicine man appears, and the panel climbs to `179/150`, with
+`Overheal: 29/30`. [Full video (MP4)](media/overhealSources-wol.mp4).
 
-![overhealSources with the Regeneration dance](media/overhealSources-dance.gif)
+![overhealSources in WoL, key off](media/overhealSources-wol-control.gif)
 
-*3. An area heal that is not a building, the Regeneration dance:* three settlers dance at a fire pit whose tactic has `RegenAllUnits` (`danceBonusCivs` lets the Spanish player use it). It heals every idle unit: the two marked Musketeers go from 90 to 150 and stop there (the log line `a heal of unit 4 (Musketeer) stops at its 100 % 150.0`), the two unmarked Pikemen from 80 to 132, their max (2x speed). [Full video (MP4)](media/overhealSources-dance.mp4).
+*In WoL, key off (the same scene):* the nurse herself heals it past its 100 %.
+[Full video (MP4)](media/overhealSources-wol-control.mp4).
+
+![overhealSources with the Regeneration dance in WoL](media/overhealSources-dance-wol.gif)
+
+*In WoL, an area heal, the Regeneration dance (Ethiopian fire pit, `danceBonusCivs Ethiopians`; the
+tactic is turned on for the test):* it heals the marked Tomahawk to `150/150` and stops there, because
+a dance is not a source. [Full video (MP4)](media/overhealSources-dance-wol.mp4).
+
+![overhealSources with the dance in WoL, key off](media/overhealSources-dance-wol-control.gif)
+
+*In WoL, key off (the same scene):* the dance takes it to `180/150`, `Overheal: 30/30`.
+[Full video (MP4)](media/overhealSources-dance-wol-control.mp4).
+<!-- private:end -->
 
 ```
 overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 types
@@ -2187,16 +2196,21 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 
 #### overhealDecay
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-04 10:29 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 13:50 -->
 
-![overhealDecay in a skirmish](media/overhealDecay-skirmish.gif)
+<!-- private:begin -->
+![overhealDecay in WoL](media/overhealDecay-wol.gif)
 
-*2. A skirmish against the AI, against regeneration:* `overhealDecay 2 1` with the British Explorer marked for the test (its 100 % is 180 and its max 220 in this game). Explorers regenerate: the decay takes back what it regenerates above 180, so it stays at `180/180`, `Overheal 0/40`, and its portrait bar is green (2x speed). [Full video (MP4)](media/overhealDecay-skirmish.mp4).
+*In WoL, with `overhealDecay 2 1 log` (Menelik II marked for the test, 400 of 480 HP):* Explorers
+regenerate, and the decay takes back what goes above the 100 %: he stays at `400/400`, with no row.
+[Full video (MP4)](media/overhealDecay-wol.mp4).
 
-![overhealDecay skirmish control, key off](media/overhealDecay-skirmish-control.gif)
+![overhealDecay in WoL, key off](media/overhealDecay-wol-control.gif)
 
-*3. Control, the same skirmish without `overhealDecay`:* the Explorer regenerates past its 100 %, from 190 to 210 in these 30 s (`197/180`, `Overheal 17/40` in orange, the orange end on the portrait bar), up to 220 (2x speed). [Full video (MP4)](media/overhealDecay-skirmish-control.mp4).
+*In WoL, key off (the same scene):* he regenerates past his 100 %, and the panel climbs with it:
+`447/400`, `Overheal: 47/80`, on the way to 480. [Full video (MP4)](media/overhealDecay-wol-control.mp4).
+<!-- private:end -->
 
 ```
 overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
@@ -2258,7 +2272,7 @@ Attacks, armor, and what a hit does.
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags in the tactics files or `<ProtoAction>`; the unit type and a `<DamageArea>` on the attacks that should always scatter. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side; for a new marker, that type on the ships in `protoy`. | confirmed (single player) |
-| [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. | confirmed from the log (single player) |
+| [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | Nothing. | not confirmed |
 
@@ -2989,7 +3003,9 @@ snareOnlyHitUnit [log]
   stock: while a unit is snared, its later speed modifiers are ignored and several snares do not
   stack; the key keeps that. The value and duration (0.65, 3 s) stay as in stock.
 - **Simulation:** yes.
-- **Status:** confirmed from the log in single player (2026-10-29), with no stock control run: a
+- **Status:** confirmed in single player. In WoL (2026-11-04), six Redcoats harassed by an Uhlan reached the
+  end of the map at 50 s with the key and about 54 s without, positions sampled once a second.
+- **Earlier test:** confirmed from the log in single player (2026-10-29), with no stock control run: a
   hussar snaring members of a group of 6 musketeers produced `is snared; it counts 4.000 instead of
   2.600 toward its group's pace` and `lags behind its formation slot; its group does not wait for
   it`, with the feature's `hook reached` lines. The group's positions were not measured against
@@ -3180,8 +3196,9 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 - **Status:** confirmed in single player (2026-10-29), in the interface: a Settler gathering a
   `BerryBush` got a new row `Alim. (icon): 0.67/s` right under its HP row, and the log showed
   `showGatherRate: unit 0 (Settler) of player 1 gathers Alim. (resource 2) at 0.670/s from unit 1
-  (BerryBush), shown in the stat panel`. Only that case was run: the data ref, other targets,
-  whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
+  (BerryBush), shown in the stat panel`. In WoL (2026-11-04), with the minimized interface: the row
+  in the unit panel, gone when the villager stops and with two villagers selected, and the data ref.
+  Other targets, whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #28 ([wol-requests.md](wol-requests.md)).
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius

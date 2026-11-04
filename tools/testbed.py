@@ -20,7 +20,7 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
   record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
          [--select ID|Proto,...] [--close Z] [--crop WxH[@cx,cy]] [--hover X,Y] [--master <out.mkv>]
-         [--background] [--perf] [--perf-csv <out.csv>]
+         [--background] [--log-top] [--perf] [--perf-csv <out.csv>]
                              films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
                              1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
                              C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
@@ -353,6 +353,7 @@ def game_time(proc):
 
 
 FOLLOW_SLACK = 10.0  # metres a followed unit may walk before the camera moves
+LOG_BOTTOM = 1.0  # record --log-top: where the log lines end, as a fraction of the picture's height
 CROP_CENTRE = (0.49, 0.47)  # where uiLookAtUnit puts a unit, in window fractions
 
 
@@ -1062,7 +1063,9 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None, mast
             for i, line in enumerate(overlay.text(time.perf_counter())):
                 gdi32.TextOutW(small_dc, 8, text_top + i * (line_height + 2), line, len(line))
             for i, line in enumerate(reversed(overlay.bottom)):
-                gdi32.TextOutW(small_dc, 8, oh - (i + 1) * (line_height + 2) - 4, line, len(line))
+                # Above the game's bottom panel when the picture shows it (--log-top).
+                base = int(oh * LOG_BOTTOM)
+                gdi32.TextOutW(small_dc, 8, base - (i + 1) * (line_height + 2) - 4, line, len(line))
         gdi32.GetDIBits(small_dc, small, 0, oh, buf, bmi, 0)
         return buf.raw
 
@@ -1500,7 +1503,10 @@ def main(argv):
         time.sleep(1.0)
         if "--hover" in args:  # --hover x,y: the only filming option that moves the cursor
             hover(*(int(v) for v in args[args.index("--hover") + 1].split(",")))
-        flags |= {i for i, a in enumerate(args) if a in ("--perf", "--background")}
+        flags |= {i for i, a in enumerate(args) if a in ("--perf", "--background", "--log-top")}
+        if "--log-top" in args:  # the feature shows in the game's bottom panel: keep the text off it
+            global LOG_BOTTOM
+            LOG_BOTTOM = 0.62
         pos = [a for i, a in enumerate(args) if i not in flags]
         perf = None
         if "--perf" in args or perf_csv:

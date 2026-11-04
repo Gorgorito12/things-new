@@ -233,6 +233,7 @@ live text on every frame:
 - `--master <out.mkv>`: also writes a lossless copy, the source for GIFs. Unchanged frames stay
   identical in it, so a still camera costs little; an MP4 as source smears colour and text, and
   its noise makes the GIF grow.
+- `--log-top`: draws the `--log` lines above the game's bottom panel, for a feature that shows in it.
 - `--background`: leaves the focus alone. For a copy with `multipleInstances background`: it needs
   no window in front, so a test can run while somebody uses the PC.
 - `--hover <x>,<y>`: rests the cursor on a client point (a command panel button), so the button's

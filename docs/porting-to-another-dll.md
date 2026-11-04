@@ -33,6 +33,10 @@ notice. For the user side of each feature (cfg syntax, data edits, log lines), s
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
 
+The features filmed in WoL have their videos in the [modding guide](modding-guide.md#5-feature-reference),
+next to each key; they show what the port must do on WoL's own data and interface. Which ones, and
+which are not, is in [section 7](#7-what-is-not-verified).
+
 Contents:
 1. [Check that you can use the sites](#1-check-that-you-can-use-the-sites)
 2. [What to copy](#2-what-to-copy)
@@ -298,6 +302,7 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/transforminv.cpp`](../src/features/transforminv.cpp), [`src/hooks/transforminv_hooks.asm`](../src/hooks/transforminv_hooks.asm) | `transformInventory`. | unittypes (only with a UnitType), sites `TransformInvHook`, `TransformProtoLookup`, `TransformKbRemove`, `TransformPushProto`, `TransformKbReAdd`, `Inventory*`, `ResList*`, `IsA`, your cfg reader |
 | [`src/features/notrainneartc.cpp`](../src/features/notrainneartc.cpp), [`src/hooks/notrainneartc_hooks.asm`](../src/hooks/notrainneartc_hooks.asm) | `noTrainNearEnemyTC`. | unittypes (and `OnDatabaseLoad` for `log`), sites `WorkRateTrainCall`, `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById*`, `UnitById*`, `PlayerIsEnemy`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`; the data symbol `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`; define it yourself as `0x9BFE33` without that feature); your cfg reader (`Config::All`) |
 | [`src/features/overheal.cpp`](../src/features/overheal.cpp), [`src/hooks/overheal_hooks.asm`](../src/hooks/overheal_hooks.asm) | `overhealHitpointBars`. | unittypes, sites `Overheal*`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag`, `IsA`, `IsATrue`, your cfg reader |
+| [`src/unitpanel.cpp`](../src/unitpanel.cpp), [`src/unitpanel.h`](../src/unitpanel.h), [`src/hooks/unitpanelrow_hooks.asm`](../src/hooks/unitpanelrow_hooks.asm) | The row of the minimized interface, shared by `showGatherRate` and `overhealHitpointBars stat`; the code is in [section 4](#unit-panel-row-the-minimized-interface). | |
 | [`src/features/gatherrate.cpp`](../src/features/gatherrate.cpp), [`src/hooks/gatherrate_hooks.asm`](../src/hooks/gatherrate_hooks.asm) | `showGatherRate`. | unittypes (only with a UnitType), sites `GatherTick*`, `StatPanel*`, `GatherRateStringRef`, `DataRef*`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BString*`, `IsBuilt`, `IsA`, `WriteDword`, your cfg reader |
 | [`src/features/decimalpop.cpp`](../src/features/decimalpop.cpp), [`src/hooks/decimalpop_hooks.asm`](../src/hooks/decimalpop_hooks.asm), and the cap hook in [`src/features/limits.cpp`](../src/features/limits.cpp) / [`src/hooks/limit_hooks.asm`](../src/hooks/limit_hooks.asm) | `decimalPopulation`. | sites `PopCountParse`, `PopCapAddParse`, `PopCountEffect`, `PopCapAddEffect`, `IntEffect`, `PopCapEffect*`, `TeamPopCap`, `StartPopBonus`, `Xs*`, `Ref*`, `ColorizePop*`, `BStringFormat`, `PopFormat*`, `PopLimit`; `WriteCall`, `WriteDword`, `WriteBytes`, `UhcTraceHook`; your cfg reader |
 | [`src/features/bwrauras.cpp`](../src/features/bwrauras.cpp), [`src/hooks/bwraura_hooks.asm`](../src/hooks/bwraura_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `buildingWorkRateAuras`. | sites `ModifyTypeName*`, `Bwr*`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall`, `SnareCollector`, `SnareModifierSum*`, `BuildingWorkRateGetter`; liveBuildingWorkRate's `UhcBwrGetterHook` symbol for the getter-head check (or drop that check); `WriteCall`, `Matches`; your cfg reader |
@@ -1085,6 +1090,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `0x447F7B(manager, handle)` (show: on top). Manager = `[[0C66244h]+44h]`. Redo the stolen
     pair; → `0x4C83E8`. The gadget comes from the mod's UI data (background = overheal colour,
     mask = HP colour; a progress bar needs a background to be drawn).
+- **`stat` in WoL's interface:** the hook below never runs there. The row goes through the
+  [unit panel row](#unit-panel-row-the-minimized-interface).
 - **`stat`**: `0x4D76DB` (9 B, `mov edi,2; mov [esp+2Ch],edi`): redo both, then for a marked unit
   `[esp+38h]` write row EDI of panel `[esp+50h]` as the Group Health branch (0x69A9D3) does
   (gadgets `[panel+174h+EDI*4]` / `[panel+198h+EDI*4]` through 0x4C519C; vtable +84h with
@@ -1132,8 +1139,311 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   reference × % / 100).
 - **Never** below the reference, never the real clock, never pointer order.
 
+### Unit panel row (the minimized interface)
+
+**Why WoL needs it.** WoL plays with the minimized interface (`optionminimizedui`). With that option
+the exe returns from the stat panel fill FUN_004D70ED at `0x4D7261`, before any row, so everything
+that adds a stat panel row (`showGatherRate`, `overhealHitpointBars stat`) shows nothing. The unit
+panel keeps one row of its own, the AutoGather rate, in the gadgets `unitResourceRateLabel` and
+`unitResourceRateValue` of `uiunitselectionmin.xml`. This code writes that row. It needs no change to
+the mod's data.
+
+- **Hook** at `0x699456` (6 B, `jmp` + 1 NOP): stock bytes `8B 7C 24 54 8B CF` (`mov edi,[esp+54h];
+  mov ecx,edi`), the join point after the stock AutoGather block. Entry: `[esp+50h]` = the panel,
+  `[esp+54h]` = the unit. Re-execute the two instructions and jump to `0x69945C`.
+- **Gadgets:** `[panel+33Ch]` label, `[panel+340h]` value, as handles for `0x4C519C`. A null gadget
+  means an interface without that row (the normal one): write nothing.
+- **Selection:** `0x453B28` returns the current selection from the UI globals alone. Require count
+  `[+14h]` = 1 and byte `[+21h]` = 0, as the stat panel's rows do: with a group the panel shows the
+  first unit, and its rate would read as the group's.
+- **Hiding:** nothing to do. The panel hides these gadgets each time it fills, so the row goes away
+  by itself when a writer stops writing.
+- **Order:** one row, several keys: the last key added is asked first, so a gathering unit shows its
+  rate. In `kFeatures`, `overhealHitpointBars` comes before `showGatherRate`.
+- **Add a row with `AddUnitPanelRow`, never a second `jmp` at `0x699456`.**
+
+`src/unitpanel.h`:
+
+```cpp
+// One hook after the unit panel's own AutoGather rate (0x699456), shared by every key that writes in
+// that row of the minimized interface (showGatherRate, overhealHitpointBars stat): with
+// optionminimizedui the exe skips the stat panel fill, and these two gadgets are the row it has left.
+#pragma once
+
+namespace uhc {
+
+// Called while one unit is selected, for that unit. Writes the row and returns true, or returns
+// false to leave it to the next key. The last key added is asked first.
+using UnitPanelRow = bool(__stdcall*)(const char* panel, const char* unit);
+
+// The row's text, in the style of the stock AutoGather row; false if this interface has no such gadgets.
+bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* value);
+
+// Writes the hook the first time (after checking the site's stock bytes) and adds row.
+bool AddUnitPanelRow(UnitPanelRow row);
+
+}  // namespace uhc
+```
+
+`src/unitpanel.cpp`:
+
+```cpp
+#include "unitpanel.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+namespace {
+
+constexpr std::size_t kMaxRows = 4;
+
+// [panel+33Ch] unitResourceRateLabel, [panel+340h] unitResourceRateValue, and the styles of the
+// stock row (vtable +84h), then the text (+80h) and the refresh (+54h).
+constexpr std::uint32_t kPanelRateLabel = 0x33C;
+constexpr std::uint32_t kPanelRateValue = 0x340;
+constexpr std::uint32_t kLabelStyle = 0x00D6F5D0;
+constexpr std::uint32_t kValueStyle = 0x00C6657C;
+
+struct BString {
+  wchar_t* text;
+};
+
+using GadgetRefFn = std::int32_t*(__thiscall*)(std::int32_t* ref, std::int32_t handle);  // ref: handle, gadget
+using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
+using GadgetStyleFn = void(__thiscall*)(void* gadget, std::uint32_t style);
+using GadgetTextFn = void(__thiscall*)(void* gadget, const BString* text);
+using GadgetUpdateFn = void(__thiscall*)(void* gadget);
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+using CurrentSelectionFn = const char*(__cdecl*)();  // reads globals only; the stock callers' ECX is unused
+const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
+const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kCurrentSelection = reinterpret_cast<CurrentSelectionFn>(0x00453B28);
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+template <typename Fn>
+Fn VirtualAt(void* object, std::uint32_t offset) {
+  return *reinterpret_cast<Fn*>(*reinterpret_cast<char**>(object) + offset);
+}
+
+// The gadget behind a handle; the reference is released at once, as stock does.
+void* PanelGadget(const char* panel, std::uint32_t field) {
+  std::int32_t ref[2] = {0, 0};
+  std::int32_t* result = kGadgetRef(ref, Field<std::int32_t>(panel, field));
+  void* gadget = reinterpret_cast<void*>(static_cast<std::intptr_t>(result[1]));
+  if (gadget != nullptr) {
+    kGadgetRelease(result[0]);
+  }
+  return gadget;
+}
+
+void SetGadget(void* gadget, std::uint32_t style, const wchar_t* text) {
+  BString value{nullptr};
+  kBStringFromWide(&value, text);
+  VirtualAt<GadgetStyleFn>(gadget, 0x84)(gadget, style);
+  VirtualAt<GadgetTextFn>(gadget, 0x80)(gadget, &value);
+  VirtualAt<GadgetUpdateFn>(gadget, 0x54)(gadget);
+  kBStringFree(&value);
+}
+
+uhc::UnitPanelRow g_rows[kMaxRows] = {};
+std::size_t g_rowCount = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" {
+void UhcUnitPanelHook();  // hooks/unitpanelrow_hooks.asm
+
+// From the hook at 0x699456. One unit selected, as the stat panel's rows ask: with a group the panel
+// shows the first unit, and its numbers would read as the group's.
+void __stdcall UhcUnitPanelRows(const char* panel, const char* unit) {
+  if (panel == nullptr || unit == nullptr) {
+    return;
+  }
+  const char* selection = kCurrentSelection();
+  if (selection == nullptr || Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0) {
+    return;
+  }
+  for (std::size_t i = g_rowCount; i > 0; --i) {
+    if (g_rows[i - 1](panel, unit)) {
+      return;
+    }
+  }
+}
+}
+
+namespace uhc {
+
+bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* value) {
+  void* labelGadget = PanelGadget(panel, kPanelRateLabel);
+  void* valueGadget = PanelGadget(panel, kPanelRateValue);
+  if (labelGadget == nullptr || valueGadget == nullptr) {
+    return false;
+  }
+  SetGadget(labelGadget, kLabelStyle, label);
+  SetGadget(valueGadget, kValueStyle, value);
+  return true;
+}
+
+bool AddUnitPanelRow(UnitPanelRow row) {
+  if (g_rowCount == kMaxRows) {
+    Log(L"unit panel: more than %u rows", static_cast<unsigned>(kMaxRows));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("unit panel", {&sites::kUnitPanelRateRow, &sites::kUnitPanelAfterRate, &sites::kCurrentSelectionGroup,
+                                  &sites::kGadgetRef, &sites::kGadgetRelease, &sites::kBStringFromWide,
+                                  &sites::kBStringFree}) ||
+        !WriteJmp(sites::kUnitPanelAfterRate.va, reinterpret_cast<const void*>(&UhcUnitPanelHook), 6)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_rows[g_rowCount++] = row;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+`src/hooks/unitpanelrow_hooks.asm`:
+
+```asm
+; The unit panel's shared row (unitpanel.cpp). Entered through a jmp written over the stock code.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcUnitPanelRows PROTO STDCALL panel:DWORD, unit:DWORD
+
+.data
+unitPanelNext   dd 0069945Ch    ; call 4826B5h: the unit panel goes on, after the stolen load
+
+.code
+
+; Replaces 0x699456..0x69945B (mov edi,[esp+54h] / mov ecx,edi) in the unit panel's cold part, the
+; join point after its own AutoGather rate row ([esp+50h] = the panel, [esp+54h] = the unit). The
+; stat panel fill does not run with the minimized interface; this is where that interface's row
+; is written. Nothing else changes.
+UhcUnitPanelHook PROC
+    TRACE_ONCE "unit panel row (0x699456)"
+    pushad
+    push dword ptr [esp+20h+54h]        ; the unit
+    push dword ptr [esp+24h+50h]        ; the panel
+    call UhcUnitPanelRows
+    popad
+    mov edi, dword ptr [esp+54h]        ; stolen 0x699456
+    mov ecx, edi                        ; stolen 0x69945A
+    jmp unitPanelNext
+UhcUnitPanelHook ENDP
+
+END
+```
+
+The row of `showGatherRate`, in `src/features/gatherrate.cpp`; add it at the end of the key's apply
+function with `AddUnitPanelRow(&UhcGatherUnitPanel)`:
+
+```cpp
+// The minimized interface's row (unitpanel.cpp). Same gate as the stat panel row.
+bool __stdcall UhcGatherUnitPanel(const char* panel, const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || !kIsBuilt(unit) || !kProtoFlag(proto, kShowAutoGatherRate)) {
+    return false;
+  }
+  if (g_useMarker && (g_markerType < 0 || !kProtoIsType(proto, g_markerType))) {
+    return false;
+  }
+  const char* world = World();
+  const char* database = Database();
+  Rate rate{};
+  if (!CurrentRate(world, database, unit, &rate)) {
+    return false;
+  }
+  BString name{nullptr};
+  const std::int32_t stringId = kResourceNameId(database, rate.resource);
+  if (stringId >= 0) {
+    kBStringFromId(&name, stringId);
+  }
+  BString labelText{nullptr};
+  kBStringFormat(&labelText, kRateLabelFormat, name.text == nullptr ? L"?" : name.text,
+                 kResourceIcon(database, rate.resource));
+  wchar_t text[32];
+  const float whole = std::floor(rate.perSecond);
+  if (rate.perSecond - whole <= kWholeEpsilon) {
+    swprintf_s(text, L"%d/s", static_cast<int>(whole));
+  } else {
+    swprintf_s(text, L"%.2f/s", static_cast<double>(rate.perSecond));
+  }
+  const bool written = uhc::SetUnitPanelRow(panel, labelText.text == nullptr ? L"" : labelText.text, text);
+  kBStringFree(&labelText);
+  kBStringFree(&name);
+  if (written && g_log) {
+    LogShown(world, database, unit, rate, kStatPanel);
+  }
+  return written;
+}
+```
+
+The row of `overhealHitpointBars stat`, in `src/features/overheal.cpp`; add it after the `stat` hook
+with `AddUnitPanelRow(&UhcOverhealUnitPanel)`:
+
+```cpp
+// The minimized interface's row (unitpanel.cpp): the same numbers as the stat row, which that
+// interface never fills. It shows for a marked unit once it has overheal: the row is shared.
+bool __stdcall UhcOverhealUnitPanel(const char* panel, const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+    return false;
+  }
+  const int reference = static_cast<int>(UhcOverhealReferenceOf(unit));
+  const int hp = static_cast<int>(Field<float>(unit, 0x64));
+  const int maxHp = static_cast<int>(kMaxHitpoints(unit));
+  if (hp <= reference || maxHp <= reference) {
+    return false;
+  }
+  wchar_t text[96];
+  if (g_uhcOverhealTextColor != 0) {
+    swprintf_s(text, L"<color=%.2f, %.2f, %.2f>%d/%d</color>", ((g_segmentColour >> 16) & 0xFF) / 255.0,
+               ((g_segmentColour >> 8) & 0xFF) / 255.0, (g_segmentColour & 0xFF) / 255.0, hp - reference,
+               maxHp - reference);
+  } else {
+    swprintf_s(text, L"%d/%d", hp - reference, maxHp - reference);
+  }
+  wchar_t label[96];
+  if (g_statLabelId >= 0) {
+    BString name;
+    kBStringFromId(&name, g_statLabelId);
+    swprintf_s(label, L"%ls:", name.text == nullptr ? L"" : name.text);
+    kBStringFree(&name);
+  } else {
+    swprintf_s(label, L"%ls:", g_statLabel.c_str());
+  }
+  return uhc::SetUnitPanelRow(panel, label, text);
+}
+```
+
+Check it in the game: with `showGatherRate`, select one gathering villager: `Food (icon): 0.67/s` next
+to Resists; it goes when the villager stops, and with two villagers selected. With
+`overhealHitpointBars stat`, select a marked unit above its 100 %: `Overheal: 15/30`. The log shows
+`hook reached: unit panel row (0x699456)`.
+
 ### showGatherRate
 
+- **WoL's interface:** the panel hook below writes the stat panel, which the minimized interface
+  never fills. Add the [unit panel row](#unit-panel-row-the-minimized-interface) too.
 - **Globals:** `g_uhcGatherRecords` (4000h records of 20h bytes: `+0` gatherer ID, written last;
   `+4` action; `+8` resource; `+0Ch` target ID; `+10h` float rate; `+14h` float elapsed; `+18h`
   game time), `g_uhcGatherRowPending`, `g_uhcGatherRowRes`, `g_uhcGatherRowRate` (float).
@@ -1363,8 +1673,27 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ## 7. What is not verified
 
-- **Wars of Liberty:** no feature has been run with WoL's exe or next to WoL's DLL
-  ([section 1](#1-check-that-you-can-use-the-sites)).
+- **Wars of Liberty (updated 2026-11-04):** the features below ran on WoL's exe and data, with this
+  DLL replacing WoL's in a test copy, single player, each with a run without its key. None has run
+  next to WoL's own DLL, so a clash with its patches can only be read from
+  [section 1](#1-check-that-you-can-use-the-sites).
+  - **Filmed, with the key off as control:** `healNonIdle`, `smartHealTargets`, `dodgeAnyUnit`,
+    `dodgeChance`, `damageOverTime`, `spreadAnyAccuracy`, `liveBuildingWorkRate`,
+    `buildingWorkRateAuras`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`,
+    `transformInventory`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`,
+    `lifespanAfterConstruction`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`,
+    `noCorpseDopples`, `danceBonusCivs`, `noTrainNearEnemyTC`, `showGatherRate`, `decimalPopulation`
+    and the three overheal keys.
+  - **Partly:** `noTrainNearEnemyTC` was filmed with an enemy unit as the blocker (`near`). The enemy
+    first Town Center case was not, because player 2's buildings do not last in the test scenarios
+    (cause not found). `snareOnlyHitUnit`'s gain was measured in one run each way: the group arrived
+    at 50 s with the key and about 54 s without.
+  - **Test data, not WoL's own:** poison, the test techs and auras, the Outpost's lifespan, the
+    aura before a wonder's power, and overheal's `MaxHitpoints` were added to the test copy for the
+    video and removed after. WoL's data has no `SetTechName` effect, no wonder with two abilities and
+    no overheal yet.
+  - **Not filmed in WoL yet:** `startingTC`, `civFirstTC`, `hcShipmentPointFallback`,
+    `gaiaSocketsOnly`, `multipleInstances`.
 - **Multiplayer, saved games and replays:** untested for every feature.
 - **hcShipmentPointFallback:**
   - `FirstTC` was confirmed in game with `civFirstTC` only; with `startingTC`, and the owner check
@@ -1391,22 +1720,21 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `broadsideMuzzleLimit` (normal attack; `PowerBroadside` not tested), `abilitySlots`,
     `wonderPanelSkipAuras`, `lifespanAfterConstruction` (the countdown hold; the
     `AlphaFadeLifespan` fade-out hold not checked), `techRenameEffect` (saved games not tested),
-    `noCorpseDopples`, `danceBonusCivs` (Regeneration only);
-  - **confirmed from the log only:** `snareOnlyHitUnit` (no stock control run; the group's
-    positions were not measured);
-  - **partly confirmed:** `customHotkeyContexts` (registration and context switch; no key press);
+    `noCorpseDopples`, `danceBonusCivs` (Regeneration; Training in WoL, 2026-11-04; XPTrickle and Gathering not tested);
+  - **confirmed in game, 2026-11-04 in WoL:** `snareOnlyHitUnit` (positions sampled with and without
+    the key), `customHotkeyContexts` (real key presses queued the units; without the key, nothing);
   - **not tested in game:** `gaiaSocketsOnly`. The stock interface already refused a player's
     socket in the test, and the order path that bypasses it (WoL's case) was not driven.
 - **The WoL Tier 1 and Tier 3 features** (2026-10-29, single player only, all 21 WoL keys on
   together):
-  - **confirmed in game:** `transformInventory` (six `TransformUnit` cases; `all`, `scale`, a
-    marker, revolutions and a conversion afterwards not tested; no key-off run),
+  - **confirmed in game:** `transformInventory` (six `TransformUnit` cases, and WoL's `HCCardDogTaxWar` with a key-off run;
+    `all`, `scale`, a marker, revolutions and a conversion afterwards not tested),
     `noTrainNearEnemyTC` (pause near an enemy Town Center or a `near` Stable, resume when it died,
     the warning with its default, UTF-8 and string-table texts; a trainer with a queue does not
     move in stock, so walking away does not happen), `buildingWorkRateAuras` (`Maintain`; train, research and powers not tested);
   - **confirmed in the interface:** `overhealHitpointBars` (the unit panel's text and bar; the
     floating and group bars not compared on their own), `showGatherRate` (the stat panel row for
-    berries; the data ref not tested);
+    berries; in WoL, 2026-11-04, the data ref and the unit panel row);
   - **confirmed from the log and memory:** `startingTC` (a marked building became the first town
     center of a player without one); the replacement of a dead or expiring first town center
     (WoL's Maori case) and the placement effect were not driven. The other `TownCenter` checks
