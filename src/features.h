@@ -30,6 +30,9 @@ Outcome ApplyDamageOverTime(const Config& config);
 Outcome ApplyDodge(const Config& config);
 Outcome ApplySpreadAnyAccuracy(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
+Outcome ApplyWorkRateByAbstractType(const Config& config);
+Outcome ApplyAutoGatherScaleByContained(const Config& config);
+Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -104,6 +107,9 @@ inline constexpr Feature kFeatures[] = {
     // After damageOverTime: both read action tags through the shared hook (actiontags.h), in this order.
     {"spreadAnyAccuracy", ApplySpreadAnyAccuracy},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
+    {"workRateByAbstractType", ApplyWorkRateByAbstractType},
+    {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
+    {"unitResourceAuras", ApplyUnitResourceAuras},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -173,7 +179,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",

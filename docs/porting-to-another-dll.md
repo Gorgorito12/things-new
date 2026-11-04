@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
@@ -1113,15 +1113,14 @@ Code: [healing](porting-code/healing.md#overhealhitpointbars).
   - These depend on the renderer's vertex layout (verified as the whole loop, site
     `HpBarRenderLoop`) and on the marker player ID never being a real player.
   - `0x4C83DF` (9 B, `lea ecx,[esp+70h]; call 4010CAh`), the portrait bar's tail: `[esp+50h]` =
-    panel, `[esp+78h]` = group (FPU empty). Look up `unitselectionpanel-unitHealthBarOverheal`
-    with `0xAB7C2F(panel, &handle, &BString name, 1)` (a real BString from 0x401A12, freed with
-    0x4010CA) once per panel and green handle `[panel+310h]`; if the handle is above
-    `[0C672C0h]`: `0x448F13(manager, handle)` (hide); then, when `[group+1Ch]` ≥ 0.999 and the
-    group's average min((HP − reference) / reference, 1) is above 0 (IDs `[group+10h]`, count
-    `[group+14h]`): `bar = 0x44B8B8(handle)`, `0x40431B(handle)`, `0x590772(bar, 1 − share)`,
-    `0x447F7B(manager, handle)` (show: on top). Manager = `[[0C66244h]+44h]`. Redo the stolen
-    pair; → `0x4C83E8`. The gadget comes from the mod's UI data (background = overheal colour,
-    mask = HP colour; a progress bar needs a background to be drawn).
+    panel, `[esp+78h]` = group (FPU empty). Work on WoL's own green bar, `handle = [panel+310h]`; add no
+    gadget. When `[group+1Ch]` ≥ 0.999 and the group's average min((HP − reference) / reference, 1) is
+    above 0 (IDs `[group+10h]`, count `[group+14h]`): `bar = 0x44B8B8(handle)`, `0x40431B(handle)`,
+    then `background = [bar+140h]`, and the first time call its vtable +7Ch, `thiscall(background,
+    &BString texture, -1)`, with the overheal texture; `0x590772(bar, 1 − share)`. When the overheal
+    ends, the same call with `ui\ingame\ui_health_bar`. Reset that state when the panel or its handle
+    changes. Don't call the setter `0x5CAF02`: it creates a drawable with no size. Redo the stolen pair;
+    → `0x4C83E8`.
 - **`stat` in WoL's interface:** the hook below never runs there. The row goes through the
   [unit panel row](#unit-panel-row-the-minimized-interface).
 - **`stat`**: `0x4D76DB` (9 B, `mov edi,2; mov [esp+2Ch],edi`): redo both, then for a marked unit
@@ -1205,6 +1204,44 @@ Check it in the game: with `showGatherRate`, select one gathering villager: `Foo
 to Resists; it goes when the villager stops, and with two villagers selected. With
 `overhealHitpointBars stat`, select a marked unit above its 100 %: `Overheal: 15/30`. The log shows
 `hook reached: unit panel row (0x699456)`.
+
+### workRateByAbstractType
+
+Code: [gathering](porting-code/gathering.md#workratebyabstracttype).
+
+- **Sites:** two 5-byte `jmp`s, at `0x8F987C` (`8B 7F 44 3B FD`: `mov edi,[edi+44h]; cmp edi,ebp`, continue at
+  `0x8F9881`) and `0x8FB11A` (`8B 76 44 3B F5`: `mov esi,[esi+44h]; cmp esi,ebp`, continue at `0x8FB11F`). No
+  range of WoL's DLL overlaps them.
+- **In the hook:** the target proto, its base proto, and from the frame the action, key, amount and
+  relativity. See the comments in the assembly for the offsets, which differ by 4 in the second site.
+- **Data:** WoL must decide about the techs that name both types: see the [modding
+  guide](modding-guide.md#workratebyabstracttype).
+
+Check it in the game: with `showGatherRate`, select a villager on an `OlivePlantation` and activate
+`Amalgamation`: the rate goes from 0.28 to 0.34.
+
+### autoGatherScaleByContained
+
+Code: [gathering](porting-code/gathering.md#autogatherscalebycontained).
+
+- **Site:** a 6-byte `jmp` at `0x49EBE4` (`51 53 8B 5C 24 0C`: `push ecx; push ebx; mov ebx,[esp+0Ch]`), continue at
+  `0x49EBEA`. No range of WoL's DLL overlaps it.
+- **In the hook:** only the assembly; there is no C++ logic but the key.
+
+Check it in the game: add the tag to an AutoGather action of a building that can garrison, select it and put two
+units inside: the rate row doubles.
+
+### unitResourceAuras
+
+Code: [gathering](porting-code/gathering.md#unitresourceauras). It needs `AddActionTagHandler` and `AddModifyType`
+from the [helpers](porting-code/helpers.md).
+
+- **Sites:** a 5-byte `jmp` at `0x9D033E` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`), continue at `0x9D0343`. It does not
+  overlap WoL's DLL. The name hook at `0x5FE6D7` is the one `buildingWorkRateAuras` uses; with both keys there is one
+  `jmp` and one list of names.
+- **Data:** none: `AreaGatherTree` is already in `sawmill.tactics`.
+
+Check it in the game: a `WOLSawmill` among trees, with `log`: a line about every 3 s per tree, for at most 5 trees.
 
 ### showGatherRate
 
@@ -1346,7 +1383,7 @@ Code: [population](porting-code/population.md#decimalpopulation).
   - `noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC]... [nowarn | warn=<text> |
     warn=<stringID>] [log]`, meters above 0 and at most 1000, up to 4 `near`, one line (default
     `AbstractDaimyo`, `near FirstTC`, the warning on);
-  - `overhealHitpointBars [UnitType ...] [log]` (default `AbstractOverheal`, up to 8 types, one
+  - `overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=Label]] [log]` (default `AbstractOverheal`, up to 8 types, one
     line);
   - `showGatherRate [UnitType] [log]` (no default: every unit);
   - `buildingWorkRateAuras [log]`;

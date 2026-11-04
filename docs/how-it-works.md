@@ -2294,8 +2294,8 @@ reference is coloured the same.
   the bar's area. A tint, not a mod texture such as `hpbar_overheal`: the queue is one draw call
   with one texture bound, and a second texture would need a second pass inside the renderer;
   `segment=RRGGBB` lets a mod choose the colour. The selection panel's bar is not changed: its
-  three colours are three UI gadgets (`[panel+310h]`, `+314h`, `+318h`), so the overheal is a
-  fourth one in the UI data ("The portrait bar", below). The minimized UI's `unitHitPointsValue`
+  three colours are three UI gadgets (`[panel+310h]`, `+314h`, `+318h`), and the overheal shows on the
+  green one ("The portrait bar", below). The minimized UI's `unitHitPointsValue`
   (0x698B63) is formatted the same way, but its gadget prints the markup as text (seen in game:
   `<color=1.00, 0.55, 0.00>181/165</color>`), so it is left plain; so is ObjectInfo (0x9AFA8B,
   0x9AFAA5), the scenario editor's panel.
@@ -2310,7 +2310,7 @@ reference is coloured the same.
   (+15 %) gave `189/174 (150+24)` in light blue through the cold split format (0x69A9C0), and an
   allied player 2's Musketeer had its yellow bar with the light-blue segment.
 
-**The portrait bar** (with `segment`, when the UI data has the gadget).
+**The portrait bar** (with `segment`).
 - *Stock.* At panel creation (0x9BAEE5..0x9BAF6C) the panel looks up its gadgets by name with
   0xAB7C2F, `thiscall(panel, int* handle, BString* name, 1)`, `ret 0Ch` (0x402733 narrows the name,
   0x433812 searches the panel's gadgets; no match writes `[0C672C0h]`, the "no gadget" handle;
@@ -2326,18 +2326,18 @@ reference is coloured the same.
   background (0x5CAF02) only when both `progressBarBackground` and `progressBarBackgroundSize` are
   given, and the mask (0x5CD0F5) as a second drawable; with no background nothing is drawn (seen
   in game).
-- *The hook* at 0x4C83DF (`lea ecx,[esp+70h] / call 4010CAh`, 9 B, after the colour bar was shown;
-  same stack level as 0x4C82E6): `UhcOverhealPortrait(panel, group)` looks the fourth gadget up by
-  name once per panel (again when the panel or its green handle changes), then hides it
-  (`gadgetUnreal`); if the group's average `[group+1Ch]` is ≥ 0.999 (every unit at or above its
-  100 %) and the average of min((HP − reference) / reference, 1) over the group's units (IDs
-  `[group+10h]`, count `[group+14h]`; 0 for an unmarked unit) is above 0, it fills it with
-  1 − that share and shows it again. Showing a hidden gadget puts it above its siblings; showing a
-  visible one does not move it (seen in game: never hidden, the gadget stayed above the green bar
-  with its empty fill, all orange), hence the hide first. Stock never hides a gadget it does not
-  know, so the key hides it on every refresh without overheal. Then the stolen free, → 0x4C83E8.
-  The minimized UI (`optionminimizedui`, profile option 49h, read through 0x402CE9 at 0x4C8233 and
-  0x661E03) takes the cold path 0x6987D7 and its own layout, which has no bar.
+- *The hook* at 0x4C83DF (`lea ecx,[esp+70h] / call 4010CAh`, 9 B, after the colour bar was shown; same
+  stack level as 0x4C82E6): `UhcOverhealPortrait(panel, group)` works on the game's green bar
+  `[panel+310h]`, adding no gadget. If `[group+1Ch]` is ≥ 0.999 (every unit at or above its 100 %) and the
+  average of min((HP − reference) / reference, 1) over the group's units (IDs `[group+10h]`, count
+  `[group+14h]`; 0 for an unmarked unit) is above 0, it fills the bar with 1 − that share, and the right end
+  shows the bar's background drawable `[bar+140h]`. The first time, it gives that drawable the overheal
+  texture through its vtable +7Ch, `thiscall(drawable, BString* name, -1)`, as the setter 0x5CAF02 does. It
+  must not call 0x5CAF02 itself: that creates a new drawable, with no size, and nothing shows. When the
+  overheal ends it puts `ui\ingame\ui_health_bar` back, the texture of the three bars in the UI data.
+  Then the stolen free, → 0x4C83E8. The minimized UI (`optionminimizedui`, profile option 49h, read through
+  0x402CE9 at 0x4C8233 and 0x661E03) has these bars too, and a later pass raises the colour bar, so a
+  gadget added in the UI data stays under it.
 - *Observed in game:* a Musketeer at 165/150 had the bar 90 % green, 10 % orange; damaged, the
   stock bar showed; healed back, the orange end returned; selecting the Surgeon, a Pavilion, a
   mine or a tree after it showed their stock bar.
@@ -2479,6 +2479,70 @@ Musketeer` decayed 3 HP/s (2 % of 150); `2% 1 Pikeman` left the Musketeer at 165
 against the AI (home city world present), a marked Explorer stayed at its 100 % (180) while
 regenerating; without the key it reached 220.
 
+### workRateByAbstractType
+
+An action's rates are a list of `{unittype ID, rate, -1}` (`[action+0Ch]`, count `[action+10h]`, 0Ch bytes
+each). The lookup 0x487C45(target) returns the entry of the target's own proto (`[[target+5Ch]+8]`) if there
+is one, else the first entry whose abstract type the target carries. The Data effect subtype WorkRate (3) is
+case 0x8F987C of applyData and 0x8FB11A of unapplyData: it reads the one entry the effect names with
+0x49EBB3, computes it with 0x7F892A, using the base proto's entry as the base, and writes it with 0x5FA2FC.
+
+The hooks sit at the head of both cases and call `UhcWorkRateByType(proto, baseProto, actionId, key, amount,
+relativity, unapply)`. If `key` is a listed type, the function looks up the action in both protos' sets
+(0x48D22E) and repeats the stock computation for each proto of the type that has an entry of its own. The
+protos of a type are found once per database, with 0x44D7FA, at the first such effect: their types are not
+read yet at the database load callback.
+
+**Why it is safe.**
+- The head of each case is `mov r32,[r32+44h] / cmp r32,ebp` (5 B). The jump table is the only way in: no
+  branch lands in those bytes. The hook re-executes them, so the flags are the stock ones at the continuation,
+  the `je` at 0x8F9881 / 0x8FB11F. The registers are saved around the call and the x87 stack is empty there.
+- An entry with no rate is skipped, so no entry is ever added.
+- The order of the list of protos is by ID, and nothing depends on the local player, so the result is the
+  same on every machine.
+- Tech effects are re-applied through applyData when a game loads, on protos rebuilt from the base, so the
+  rates are correct after a load and nothing is stored in the DLL.
+
+### autoGatherScaleByContained
+
+The tactics flag `ScaleByContainedUnits` is bit 18 of the action's flag bytes (`[+64h]`, bit count `[+68h]`, set
+at 0x5FEE1A). The attack code reads it at 0x4996C7: the multiplier is the unit's contained count `[unit+74h]`
+(0x6A4B83), and if it is above DamageFactorCap `[+48h]` and that is above 0, the cap (0x4996E8..0x49970A). The stat
+panel reads it too. The AutoGather rate getter 0x49EBE4, `float thiscall(action, resource)`, does not.
+
+The hook replaces the getter's first three instructions. Without the flag it re-executes them and goes on at
+0x49EBEA. With it, it calls the getter's body, so that the body's `ret 4` comes back to the hook, and multiplies
+ST0 by the factor, with the attack code's rule.
+
+**Why it is safe.** The hook sits at a function entry, so EAX, ECX and EDX are free. No branch lands in the six
+bytes. Every caller gets the same rate: the update 0x48D16E, both panels (0x6992BD, 0x69B005), and the two that
+look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simulation state only.
+
+### unitResourceAuras
+
+An `AutoRangedModify` action's update is FUN_009D033E, `void thiscall(action)`, a vtable slot with no direct caller.
+It gives each unit the scan 0x9CFF9A finds a modifier. The scan uses the action's range `[action+24h]` and fills a
+dynamic list `{data, count, capacity}`; the filter 0x9D0238 then keeps the owner's units (or allies, with a tactic flag)
+that are alive, built and of the wanted type.
+
+`AddModifyType` makes `UnitResource` stat 41h, stored in the tactics action's byte `[+B8h]`. The hook replaces the
+update's first instruction: with another stat it re-executes it and goes on at 0x9D0343; with 41h it calls
+`UhcUnitResourceAura(action)` and returns, so no modifier is made. The helper:
+
+- reads `<ModifyAmount>`, `<ModifyTargetLimit>` and `<TargetGaia>`, unknown to the exe, through `AddActionTagHandler`,
+  by `{proto ID, action name}`;
+- computes the seconds since the owner's last update from `[world+108h]`, at most 5;
+- runs the stock scan, with its own filter: `[tactics+9Ch]` abstract index or `[tactics+9Eh]` proto ID, owner or Gaia,
+  an inventory `[[unit+B4h]+94h]` with a resource: `[inventory+10h]`, else the largest (0x4DBEC1);
+- takes `min(amount, have)` as the gather tick does: 0x49A5E6(inventory, resource, −take), then the state check
+  0x482152, which kills a unit with `DieAtZeroResources` at zero, unless the proto has flag 24h;
+- pays 0x49A98A(player, resource, take × `[player+37Ch]`, 0).
+
+**Why it is safe.** The hook sits at a function entry and reads only the action. Targets are looked up by ID on each
+step, so one that dies in the loop is not touched again; the list belongs to the helper. The order of the scan, the
+game clock and an ID-ordered map make the result the same on every machine. Stat 41h reaches no stock reader in an
+aura: the update does not run; in a power's `<unitModify>` the name is accepted and has no effect.
+
 ### showGatherRate
 
 With the minimized interface (`optionminimizedui`) the stat panel fill returns at its start. The hook
@@ -2599,11 +2663,11 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   (0x9EA413), Research (0x9E65F7), CommandResearch (0x9D58D4) and Maintain (0x6AB23F).
 
 **The hooks** (`hooks/bwraura_hooks.asm`).
-1. **Name, 0x5FE6D7** (6 bytes, `jmp` + 1 NOP over `neg / sbb / and`). EAX = the `AutoGatherRate`
-   compare, ESI = the name. On a match EAX stays 0. Otherwise the hook compares the name with
-   L"BuildingWorkRate" through the same 0x443C10 call (`push -1 / push 0 / push name / mov
-   ecx,esi`): a match gives EAX = 40h − 0Eh, anything else −0Fh. It continues at 0x5FE6DD, so the
-   tail returns 0Eh, 40h or −1. Stat 40h is new: no stock code produces it, the recompute skips
+1. **Name, 0x5FE6D7** (6 bytes, `jmp` + 1 NOP over `neg / sbb / and`; `hooks/modifytype_hooks.asm`,
+   shared through `AddModifyType`). EAX = the `AutoGatherRate` compare, ESI = the name. On a match
+   EAX stays 0. Otherwise the helper compares the name with each registered one through the same
+   0x443C10 call (flag 0, n −1): a match gives EAX = stat − 0Eh, anything else −0Fh. It continues at
+   0x5FE6DD, so the tail returns 0Eh, 40h or −1. Stat 40h is new: no stock code produces it, the recompute skips
    it, the save writes `[+64h]` as an int, and the aura tooltip (switch on stat − 1, cases 0..5)
    takes its default case.
 2. **Rate, the calls of 0x9BFE33** (their rel32 points to `UhcBwrAuraCall`). The wrapper has the

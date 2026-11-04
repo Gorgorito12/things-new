@@ -100,3 +100,12 @@ wonderCivUnitType-wol 2 14 2
 wonderCivUnitType-wol-control 2 14 2
 wonderPanelSkipAuras-wol 2 16 2
 wonderPanelSkipAuras-wol-control 2 16 2
+overhealHitpointBars-damage-wol 20 26 2
+autoGatherScaleByContained-wol 2 36 3
+autoGatherScaleByContained-wol-control 2 36 3
+unitResourceAuras-depleted-wol 2 36 3
+unitResourceAuras-wol 2 36 3
+unitResourceAuras-wol-control 2 36 3
+workRateByAbstractType-wol 2 36 3
+workRateByAbstractType-wol-control 2 36 3
+overhealHitpointBars-group-wol 34 26 3

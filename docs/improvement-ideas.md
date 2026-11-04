@@ -22,7 +22,7 @@ These come up in several sections below. Building them once makes the later item
   - `AddTechEffectType`: a new `<Effect type=…>`, as `techRenameEffect` did for `SetTechName`
     (register hook 0x524CB5, factory 0x62146F). Needed by #37 `SetNextResearchFree`, DE's
     `ProtoUnitFlag` / `SetActionFlag`, #41 timed transforms, `AddUnitType` below.
-  - `AddModifyType`: a new aura `<ModifyType>`, as `buildingWorkRateAuras` did for
+  - `AddModifyType` (built 2026-11-04, `modifytypes.*`): a new aura `<ModifyType>`, as `buildingWorkRateAuras` did for
     `BuildingWorkRate` (stat 0x40). Needed by `UnitResource` (#26, the Torp), `Lifespan`,
     accuracy, snare resistance, cost discounts, heal rate, conversion resistance.
 - **`AddUnitType` / `RemoveUnitType` tech effect.** Adds or removes an abstract type on a
@@ -314,8 +314,6 @@ First: moving while held and `refuse`.
 - **Percentage techs leave a full unit at 99 %:** scale the reference by the same factor, as the
   key already does for auras. *small*
 - **Minimized UI text stays white** (the gadget prints markup as text): colour by property. *small*
-- **Portrait bar needs a 4th UI gadget:** create it at screen load from the DLL, or keep the log
-  warning. *medium*
 - **Group Health above 100 %** as an option. *small*
 - **Techs that raise only the max** (`MaxHitpointsOnly` / `OverhealCapacity` subtype): today
   `Hitpoints` raises initial and max together, so no tech can widen the overheal room. *small with

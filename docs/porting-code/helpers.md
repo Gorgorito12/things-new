@@ -15,6 +15,7 @@ Contents:
 - [Extra abstract unit types](#extra-abstract-unit-types)
 - [World tick](#world-tick)
 - [Action tags](#action-tags)
+- [Modify types](#modify-types)
 - [Floating text](#floating-text)
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
@@ -1289,6 +1290,45 @@ inline constexpr Site kDataUnapplyArmorCase{"DataUnapplyArmorCase", 0x008FC144, 
 inline constexpr std::uint8_t kEffectValueApplyBytes[] = {0x8B, 0x44, 0x24, 0x08, 0x85, 0xC0, 0x74, 0x68, 0x0F, 0xB6, 0x4C, 0x24, 0x04, 0x83, 0xE9, 0x00};
 inline constexpr Site kEffectValueApply{"EffectValueApply", 0x007F892A, kEffectValueApplyBytes, sizeof(kEffectValueApplyBytes)};
 
+inline constexpr std::uint8_t kWorkRateApplyCaseBytes[] = {0x8B, 0x7F, 0x44, 0x3B, 0xFD, 0x0F, 0x84, 0x6D, 0x16, 0x00, 0x00};
+inline constexpr Site kWorkRateApplyCase{"WorkRateApplyCase", 0x008F987C, kWorkRateApplyCaseBytes, sizeof(kWorkRateApplyCaseBytes)};
+
+inline constexpr std::uint8_t kWorkRateUnapplyCaseBytes[] = {0x8B, 0x76, 0x44, 0x3B, 0xF5, 0x0F, 0x84, 0x75, 0x10, 0x00, 0x00};
+inline constexpr Site kWorkRateUnapplyCase{"WorkRateUnapplyCase", 0x008FB11A, kWorkRateUnapplyCaseBytes, sizeof(kWorkRateUnapplyCaseBytes)};
+
+inline constexpr std::uint8_t kActionByIdBytes[] = {0x8B, 0x51, 0x20, 0x53, 0x56, 0x33, 0xC0, 0x85, 0xD2, 0x57, 0x0F, 0x8E, 0x9E, 0x0A, 0x20, 0x00};
+inline constexpr Site kActionById{"ActionById", 0x0048D22E, kActionByIdBytes, sizeof(kActionByIdBytes)};
+
+inline constexpr std::uint8_t kActionRateGetBytes[] = {0x8B, 0x51, 0x10, 0x56, 0x33, 0xC0, 0x85, 0xD2, 0x57, 0x7E, 0x1B, 0x8B, 0x71, 0x0C, 0x8B, 0x7C};
+inline constexpr Site kActionRateGet{"ActionRateGet", 0x0049EBB3, kActionRateGetBytes, sizeof(kActionRateGetBytes)};
+
+inline constexpr std::uint8_t kActionRateSetBytes[] = {0x83, 0xEC, 0x0C, 0x55, 0x8B, 0x6C, 0x24, 0x14, 0x56, 0x8B, 0x71, 0x10, 0x33, 0xC0, 0x85, 0xF6};
+inline constexpr Site kActionRateSet{"ActionRateSet", 0x005FA2FC, kActionRateSetBytes, sizeof(kActionRateSetBytes)};
+
+inline constexpr std::uint8_t kAutoGatherRateEntryBytes[] = {0x51, 0x53, 0x8B, 0x5C, 0x24, 0x0C, 0x85, 0xDB};
+inline constexpr Site kAutoGatherRateEntry{"AutoGatherRateEntry", 0x0049EBE4, kAutoGatherRateEntryBytes, sizeof(kAutoGatherRateEntryBytes)};
+
+inline constexpr std::uint8_t kUnitResourceAuraEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x10};
+inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E, kUnitResourceAuraEntryBytes, sizeof(kUnitResourceAuraEntryBytes)};
+
+inline constexpr std::uint8_t kAuraScanBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x96, 0x00, 0x00, 0x00, 0x56, 0x8B};
+inline constexpr Site kAuraScan{"AuraScan", 0x009CFF9A, kAuraScanBytes, sizeof(kAuraScanBytes)};
+
+inline constexpr std::uint8_t kInventoryAddBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x53, 0x8B, 0xD9, 0x8B, 0x13, 0x85, 0xD2, 0x8B, 0x88, 0x3C, 0x01};
+inline constexpr Site kInventoryAdd{"InventoryAdd", 0x0049A5E6, kInventoryAddBytes, sizeof(kInventoryAddBytes)};
+
+inline constexpr std::uint8_t kCheckStateBytes[] = {0x83, 0xEC, 0x64, 0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x5C, 0x85, 0xC0, 0x0F, 0x84, 0x4A, 0x0A, 0x22};
+inline constexpr Site kCheckState{"CheckState", 0x00482152, kCheckStateBytes, sizeof(kCheckStateBytes)};
+
+inline constexpr std::uint8_t kMainResourceBytes[] = {0x51, 0x57, 0x8B, 0xF9, 0x8B, 0x87, 0xB4, 0x00, 0x00, 0x00, 0x83, 0xB8, 0x94, 0x00, 0x00, 0x00};
+inline constexpr Site kMainResource{"MainResource", 0x004DBEC1, kMainResourceBytes, sizeof(kMainResourceBytes)};
+
+inline constexpr std::uint8_t kUnitIsDeadBytes[] = {0x8B, 0x49, 0x58, 0x85, 0xC9, 0x75, 0xE6, 0x90, 0x90, 0x90, 0x90, 0x32, 0xC0, 0xC3, 0x8B, 0x41};
+inline constexpr Site kUnitIsDead{"UnitIsDead", 0x004802C6, kUnitIsDeadBytes, sizeof(kUnitIsDeadBytes)};
+
+inline constexpr std::uint8_t kPlayerAddResourceBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x55, 0x8B, 0xE9, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x80};
+inline constexpr Site kPlayerAddResource{"PlayerAddResource", 0x0049A98A, kPlayerAddResourceBytes, sizeof(kPlayerAddResourceBytes)};
+
 inline constexpr std::uint8_t kXmlAttributeBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x8D, 0x44, 0x24, 0x04, 0x50, 0x52, 0xE8, 0x23, 0xFF, 0xFF, 0xFF, 0x84};
 inline constexpr Site kXmlAttribute{"XmlAttribute", 0x00598F37, kXmlAttributeBytes, sizeof(kXmlAttributeBytes)};
 
@@ -1756,6 +1796,9 @@ Outcome ApplyDamageOverTime(const Config& config);
 Outcome ApplyDodge(const Config& config);
 Outcome ApplySpreadAnyAccuracy(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
+Outcome ApplyWorkRateByAbstractType(const Config& config);
+Outcome ApplyAutoGatherScaleByContained(const Config& config);
+Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1830,6 +1873,9 @@ inline constexpr Feature kFeatures[] = {
     // After damageOverTime: both read action tags through the shared hook (actiontags.h), in this order.
     {"spreadAnyAccuracy", ApplySpreadAnyAccuracy},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
+    {"workRateByAbstractType", ApplyWorkRateByAbstractType},
+    {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
+    {"unitResourceAuras", ApplyUnitResourceAuras},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1899,7 +1945,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
@@ -2359,6 +2405,129 @@ dispatch:
 next:
     jmp nextChild
 UhcActionTagHook ENDP
+
+END
+```
+
+## Modify types
+
+### src/modifytypes.h
+
+```cpp
+// One hook on the tail of the ModifyType name parser FUN_005F5645 (0x5FE6D7), shared by every key
+// that adds a name to <ModifyType>: a single jmp, whichever of those keys are on.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// Makes `name` (static text; case ignored, like every stock name) read as `stat`. The stock stats
+// are 0..8 and 0Bh..0Eh; the keys use 40h and up. Writes the hook the first time, after checking
+// the stock bytes.
+bool AddModifyType(const wchar_t* name, std::int32_t stat);
+
+}  // namespace uhc
+```
+
+### src/modifytypes.cpp
+
+```cpp
+#include "modifytypes.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcModifyTypeHook();  // hooks/modifytype_hooks.asm
+
+namespace {
+
+constexpr std::size_t kMaxTypes = 16;
+constexpr std::uint32_t kNameTailHook = 0x005FE6D7;  // neg eax / sbb eax,eax / and al,0F1h (6 B)
+constexpr std::int32_t kTailAdds = 0x0E;             // the tail adds 0Eh to what the hook leaves in EAX
+
+using CompareFn = std::int32_t(__thiscall*)(const void* name, const wchar_t* text, std::int32_t flag, std::int32_t n);
+const auto kCompare = reinterpret_cast<CompareFn>(0x00443C10);
+
+struct ModifyType {
+  const wchar_t* name;
+  std::int32_t stat;
+};
+
+ModifyType g_types[kMaxTypes] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+// From the hook, for a name that is none of the stock ones. The tail returns EAX + 0Eh.
+extern "C" std::int32_t __stdcall UhcModifyTypeByName(const void* name) {
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (kCompare(name, g_types[i].name, 0, -1) == 0) {
+      return g_types[i].stat - kTailAdds;
+    }
+  }
+  return -1 - kTailAdds;
+}
+
+namespace uhc {
+
+bool AddModifyType(const wchar_t* name, std::int32_t stat) {
+  if (g_count == kMaxTypes) {
+    Log(L"modify types: no room for %ls", name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("modify types", {&sites::kModifyTypeNameTail, &sites::kModifyTypeNameCompare}) ||
+        !WriteJmp(kNameTailHook, reinterpret_cast<const void*>(&UhcModifyTypeHook), 6)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_types[g_count++] = {name, stat};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/modifytype_hooks.asm
+
+```asm
+; The shared hook for new ModifyType names (src/modifytypes.h). Entered through a jmp written over
+; the stock code; it leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcModifyTypeByName PROTO STDCALL nameString:DWORD
+
+.data
+nameTailNext    dd 005FE6DDh    ; pop esi / add eax,0Eh / ret: FUN_005F5645 returns EAX + 0Eh
+
+.code
+
+; Replaces 0x5FE6D7..0x5FE6DC (neg eax / sbb eax,eax / and al,0F1h) in FUN_005F5645, the
+; ModifyType name -> stat parser, after its last compare. EAX = that compare's result for
+; "AutoGatherRate" (0: the same name), ESI = the name (BString*), [esp] = the ESI the function
+; saved. Stock turns EAX into 0 (a match) or -0Fh and the tail adds 0Eh: stat 0Eh, or -1 for an
+; unknown name. The hook keeps a match; for any other name the helper returns the stat - 0Eh, or
+; -0Fh. ECX, EDX and the flags are dead at the tail, which sets the flags, and its two callers read
+; only EAX.
+UhcModifyTypeHook PROC
+    TRACE_ONCE "ModifyType names (0x5FE6D7)"
+    test eax, eax
+    je done                         ; "AutoGatherRate": EAX = 0, the tail returns 0Eh
+    push esi
+    call UhcModifyTypeByName
+done:
+    jmp nameTailNext
+UhcModifyTypeHook ENDP
 
 END
 ```
