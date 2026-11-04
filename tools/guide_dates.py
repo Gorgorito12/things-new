@@ -23,7 +23,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 GUIDE = ROOT / "docs" / "modding-guide.md"
 SECTION_5, SECTION_6 = "## 5. Feature reference", "## 6. Editing the game data"
 LATEST = "## Latest changes"
-NEXT_AFTER_LATEST = "## Adding UHC.dll to your mod"
+NEXT_AFTER_LATEST = "## Adding these features to WoL"
 
 # A key whose video is not named after it.
 VIDEO_ALIASES = {"dodgeanyunit": "dodge", "dodgechance": "dodge", "overhealsources": "overhealhitpointbars",
