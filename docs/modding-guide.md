@@ -1765,6 +1765,20 @@ stops at 110.
 is no row, and nothing brings the Tomahawk back down after the healer dies.
 [Full video (MP4)](media/overhealHitpointBars-wol-control.mp4).
 
+![overheal, then damage below 100 %, in WoL](media/overhealHitpointBars-damage-wol.gif)
+
+*In WoL, damage after the overheal (the same keys, no `overhealDecay`; the Tomahawk selected):* at
+`180/150` the end of the portrait bar has the overheal colour. A hit takes it to `110/150`: WoL's normal
+bar comes back, 73 % green on its dark background. At `60/150` it is the yellow bar.
+[Full video (MP4)](media/overhealHitpointBars-damage-wol.mp4).
+
+![overheal in a group, in WoL](media/overhealHitpointBars-group-wol.gif)
+
+*In WoL, a group (three marked Tomahawks selected):* at 180 each the portrait bar shows their average
+overheal. When one is hit down to 80 the bar is the group's normal one, 84 % green, with no overheal
+colour, although the other two still have it: the colour shows only while every selected unit is at or
+above its 100 %. [Full video (MP4)](media/overhealHitpointBars-group-wol.mp4).
+
 ```
 overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=<Label>]] [log]   default AbstractOverheal; up to 8 types
 ```

@@ -100,3 +100,5 @@ wonderCivUnitType-wol 2 14 2
 wonderCivUnitType-wol-control 2 14 2
 wonderPanelSkipAuras-wol 2 16 2
 wonderPanelSkipAuras-wol-control 2 16 2
+overhealHitpointBars-damage-wol 20 26 2
+overhealHitpointBars-group-wol 34 26 3
