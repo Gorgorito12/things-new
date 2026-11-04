@@ -2,8 +2,8 @@
 
 Working notes, 2026-11-02. One section per feature key, written when the question "can X be
 improved?" came up, from the limits recorded in `modding-guide.md`, the sites in
-`engine-symbols.md` and the DE comparison in `de-parity.md`. Nothing here is built; each section
-ends with what to do first. This file is private (it names WoL and upstream) and is not in the
+`engine-symbols.md` and the DE comparison in `de-parity.md`. None of it was built when written, and it
+was not revisited after: check the modding guide first. Each section ends with what to do first. This file is private (it names WoL and upstream) and is not in the
 public export allowlist.
 
 Status words: **data** = no DLL change; **small / medium / large** = DLL work; **RE** = needs

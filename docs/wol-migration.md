@@ -4,11 +4,15 @@
 
 ## Goal
 
-Wars of Liberty (WoL) runs entirely on this repo's DLL, so WoL can replace its closed
-`uhc.dll` (`c070d138`, [wol-uhc-map.md](wol-uhc-map.md)) with ours. Decided with the user on
-2026-11-02. The order: first what keeps WoL from loading or playing, then what degrades play,
-then cosmetics, then WoL's always-on fixes and multiplayer. The other direction (WoL rebuilds
-our features inside its DLL) stays documented in [porting-to-another-dll.md](porting-to-another-dll.md).
+Two ways, both open (2026-11-04):
+- **WoL keeps its DLL** (`uhc.dll`, `c070d138`, [wol-uhc-map.md](wol-uhc-map.md)) and takes the code of
+  the features it wants: [porting-to-another-dll.md](porting-to-another-dll.md). This is what the
+  modding guide tells WoL's modders.
+- **WoL runs entirely on this repo's DLL.** Decided with the user on 2026-11-02, and how every video is
+  filmed. It cannot ship yet: the guide's section 8 and the inventory below list what is missing.
+
+The order for that second way: first what keeps WoL from loading or playing, then what degrades play,
+then cosmetics, then WoL's always-on fixes and multiplayer.
 
 Pick the next key from the table below.
 

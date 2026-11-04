@@ -245,7 +245,7 @@ stay as they are, and only the places where a population enters or leaves change
 - Integer data is unchanged in meaning: every value is a multiple of K and every compare is
   between scaled values. Any consumer not listed reads a relative quantity (checked for the 44
   getter calls).
-  The list is in [engine-symbols](engine-symbols.md#population-for-decimalpopulation). <!-- private -->
+  The sites are in `src/features/decimalpop.cpp`.
 - The parse wrappers keep the stock contract: same arguments, bool in AL, the out int written on
   success. The effect wrappers call the stock function with its five arguments. The PopulationCap
   hooks leave the x87 stack as stock does (one value, then the stock `fistp`), and the control
