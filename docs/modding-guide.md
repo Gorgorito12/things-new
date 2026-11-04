@@ -1938,8 +1938,8 @@ at 110. [Full video (MP4)](media/overhealHitpointBars-wol.mp4).
 
 ![overheal in WoL, keys off](media/overhealHitpointBars-wol-control.gif)
 
-*In WoL, keys off (the same data and scene):* the bar counts the 180 as the 100 %, so a fresh
-Tomahawk looks wounded, and nothing brings it back down after the healer dies.
+*In WoL, keys off (the same data and scene):* the bar and the panel count the 180 as the 100 %, and
+nothing brings the Tomahawk back down after the healer dies: it stays at 180.
 [Full video (MP4)](media/overhealHitpointBars-wol-control.mp4).
 <!-- private:end -->
 
