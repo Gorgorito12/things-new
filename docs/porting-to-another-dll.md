@@ -1452,17 +1452,15 @@ Code: [population](porting-code/population.md#decimalpopulation).
     `buildingWorkRateAuras`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`,
     `transformInventory`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`,
     `lifespanAfterConstruction`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`,
-    `noCorpseDopples`, `danceBonusCivs`, `noTrainNearEnemyTC`, `showGatherRate`, `decimalPopulation`
-    and the three overheal keys.
-  - **Partly:** `noTrainNearEnemyTC` was filmed with an enemy unit as the blocker (`near`). The enemy
-    first Town Center case was not, because player 2's buildings do not last in the test scenarios
-    (cause not found). `snareOnlyHitUnit`'s gain was measured in one run each way: the group arrived
+    `noCorpseDopples`, `danceBonusCivs`, `noTrainNearEnemyTC`, `startingTC`, `showGatherRate`,
+    `decimalPopulation` and the three overheal keys.
+  - **Partly:** `snareOnlyHitUnit`'s gain was measured in one run each way: the group arrived
     at 50 s with the key and about 54 s without.
   - **Test data, not WoL's own:** poison, the test techs and auras, the Outpost's lifespan, the
     aura before a wonder's power, and overheal's `MaxHitpoints` were added to the test copy for the
     video and removed after. WoL's data has no `SetTechName` effect, no wonder with two abilities and
     no overheal yet.
-  - **Not filmed in WoL yet:** `startingTC`, `civFirstTC`, `hcShipmentPointFallback`,
+  - **Not filmed in WoL yet:** `civFirstTC`, `hcShipmentPointFallback`,
     `gaiaSocketsOnly`, `multipleInstances`.
 - **Multiplayer, saved games and replays:** untested for every feature.
 - **hcShipmentPointFallback:**
@@ -1502,10 +1500,9 @@ Code: [population](porting-code/population.md#decimalpopulation).
   - **confirmed in the interface:** `overhealHitpointBars` (the unit panel's text and bar; the
     floating and group bars not compared on their own), `showGatherRate` (the stat panel row for
     berries; in WoL, 2026-11-04, the data ref and the unit panel row);
-  - **confirmed from the log and memory:** `startingTC` (a marked building became the first town
-    center of a player without one); the replacement of a dead or expiring first town center
-    (WoL's Maori case) and the placement effect were not driven. The other `TownCenter` checks
-    are not covered (question Q2 in [wol-requests.md](wol-requests.md)).
+  - **confirmed in game:** `startingTC` (a marked building became the first town center of a player
+    without one, and in WoL the `MaoriPa` replaced a dead `TownCenter`); a pending lifespan and the
+    placement effect were not driven. The other `TownCenter` checks are not covered (question Q2 in [wol-requests.md](wol-requests.md)).
 - **civFirstTC** (2026-10-29, single player): confirmed in game on a test map (editor route) and
   in skirmishes on Mongolia: the substitution, the first town center, the town starting units
   (with `StartingColonyBuilding` and `<starttypes>`), an untagged AI keeping its Town Center, and

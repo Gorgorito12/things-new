@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 11:13 | [`startingTC`](#startingtc) | Filmed in WoL, with a control. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
 | Wednesday 2026-11-04 10:29 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
 | Wednesday 2026-11-04 10:29 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
 | Wednesday 2026-11-04 10:29 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
@@ -82,7 +83,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Added. Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | The file. |
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. Shows WoL's 52 `AI4\*.personality` files in game setup. | The personality files. |
 | Thursday 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | Added. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
-| Thursday 2026-10-29 10:35 | [`startingTC`](#startingtc) | Added. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | Nothing. |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. |
@@ -1283,7 +1283,21 @@ wonderCivUnitType Proto [Proto ...]
 
 #### startingTC
 
-**Added:** Thursday 2026-10-29 10:35
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 11:13
+
+![startingTC in WoL](media/startingTC-wol.gif)
+
+*In WoL, with `startingTC MaoriPa log` and `noTrainNearEnemyTC 40 log` (Japanese Daimyo selected, Maori
+enemy; the fog is off for the video):* the Maori `Age0Maori` start: the enemy's `TownCenter` dies at once
+and the `MaoriPa` replaces it (`unit 8 (MaoriPa) replaces player 2's first town center 7 (TownCenter),
+which is dead`). So the Daimyo, 18 m from the Pa, cannot train: its 3 Kihei wait until the Pa falls at
+58 s of game time. [Full video (MP4)](media/startingTC-wol.mp4).
+
+![startingTC in WoL, key off](media/startingTC-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Maori's first town center stays the dead `TownCenter`, so the Pa
+protects nothing, and the 3 Kihei train next to it (`trains: nothing to keep away from`).
+[Full video (MP4)](media/startingTC-wol-control.mp4).
 
 ```
 startingTC [<UnitType>] [log]          default AbstractStartingTC
@@ -1370,11 +1384,13 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
     would.
 - **Simulation:** yes: the first town center decides where buildings may be placed. Every player
   needs the same line and the same data. It also adds a unit type when the name is new.
-- **Status:** confirmed from the log and memory in single player, on the stock game (2026-10-29): a
-  `Market` marked `AbstractStartingTC` and created for player 2, who had no Town Center, became his
-  first town center (`[player+4F0h]` read 3, where the exe leaves -1). Not driven in game: the visible
-  effect on placement (the 65 m refusal), and the replacement of a first town center that is dead or
-  has a pending lifespan, which is the Maori case. Not filmed in WoL yet.
+- **Status:** confirmed in single player. In WoL (2026-11-04), the Maori case: a `MaoriPa` replaced the
+  dead `TownCenter` of a player with `Age0Maori`, and `noTrainNearEnemyTC` measured from the Pa; without
+  the key the Pa was no first town center. In a scenario the Pa is placed by the map, because the free
+  `MaoriPa` of `Age0Maori` comes from the home city, which a scenario player lacks. On the stock game
+  (2026-10-29): a marked `Market` for a player with no Town Center became his first town center. Not
+  driven in game: the visible effect on placement (the 65 m refusal), and a pending lifespan: in the test
+  the town center was already dead.
 
 #### civFirstTC
 
@@ -3241,17 +3257,21 @@ dies at 48 s (`resumed training`), and then the Kihei come out.
 time, with the enemy still next to the Daimyo.
 [Full video (MP4)](media/noTrainNearEnemyTC-wol-control.mp4).
 
-![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)
+![noTrainNearEnemyTC near a Stable, with the warning](media/noTrainNearEnemyTC-near-wol.gif)
 
-*On the stock game (not filmed in WoL yet), near an enemy's first Town Center:* a Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
+*In WoL, `near Stable` and the warning, with `noTrainNearEnemyTC 40 near Stable near FirstTC log`:* the
+Daimyo stands 23 m from the edge of an enemy Stable with 3 Kihei queued. The queue does not move, and
+every 8 s of game time the red text "Too close to the enemy: training paused" appears over it. The Stable
+is destroyed, the log reads `resumed training`, and the Kihei are trained.
+[Full video (MP4)](media/noTrainNearEnemyTC-near-wol.mp4).
 
-![noTrainNearEnemyTC near a Stable, with the warning](media/noTrainNearEnemyTC-near.gif)
+![noTrainNearEnemyTC with its own warning text](media/noTrainNearEnemyTC-warn-wol.gif)
 
-*On the stock game (not filmed in WoL yet), `near Stable` and the warning:* `noTrainNearEnemyTC 40 near Stable near FirstTC log`, the camera on the Daimyo. It stands 21 m from the edge of an enemy Stable with 5 Ashigaru queued: the queue does not move, and every 8 s of game time the red text "Too close to the enemy: training paused" appears over it (the overlay shows each `warning shown` line). The Stable is destroyed at 75 s: the log reads `resumed training`, now with the enemy Town Center 138.6 m away as the nearest, and the Ashigaru are trained (2x speed). [Full video (MP4)](media/noTrainNearEnemyTC-near.mp4).
+*In WoL, your own text:* with `warn=Too_close,_send_it_back!`, the same held Daimyo shows that text.
+[Full video (MP4)](media/noTrainNearEnemyTC-warn-wol.mp4).
 
-![noTrainNearEnemyTC with its own warning text](media/noTrainNearEnemyTC-warn.gif)
-
-*On the stock game (not filmed in WoL yet), your own text:* with `warn=¡Demasiado_cerca!`, the same held Daimyo shows "¡Demasiado cerca!" (1.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC-warn.mp4).
+The enemy's first Town Center is filmed in [`startingTC`](#startingtc): the Pa that replaces it blocks the
+Daimyo.
 
 ```
 noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | warn=<text> | warn=<stringID>] [log]
@@ -3350,13 +3370,13 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 - **Status:** confirmed in single player.
   - **In WoL (2026-11-04):** `noTrainNearEnemyTC 40 near Settler`: a Daimyo held with an enemy unit
     12.1 m away, which resumed when the unit died; without the key the 3 Kihei were out by 40 s.
-  - **On the stock game (2026-10-29):** a first Town Center 34.1 m away, a Stable's edge at 21.0 m,
-    `nowarn`, `warn=` as text and as a string ID, four bad lines (each logged, the key `FAILED`), an
-    enemy's second Town Center and a moving Hussar as `near` types, a saved game loaded with the
-    Daimyo held, and a skirmish against a Japanese AI with no XS error.
-  - **Not tested:** a foundation near the trainer, the near-a-Town-Center case in WoL (in the test
-    scenes, player 2's buildings do not last), multiplayer. For such a test, the Daimyo trains only from
-    Age II and needs population room and food.
+  - **In WoL (2026-11-04):** an enemy Stable's edge at 23.0 m, with 7 warnings, and the first town center
+    through `startingTC` (a `MaoriPa` at 18.0 m).
+  - **On the stock game (2026-10-29):** `nowarn`, `warn=` as a string ID, four bad lines (each logged, the
+    key `FAILED`), an enemy's second Town Center and a moving Hussar as `near` types, a saved game loaded
+    with the Daimyo held, and a skirmish against a Japanese AI with no XS error.
+  - **Not tested:** a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
+    from Age II and needs population room and food.
 
 #### lifespanAfterConstruction
 

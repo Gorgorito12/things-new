@@ -90,12 +90,13 @@ BAD_ATTACKERS = {
     "Skirmisher": (RANGED, None, ["<AttachMaxStacks>3</AttachMaxStacks>"]),
 }
 
-# With --wol: the Iroquois archer's poison arrows, 4 Ranged a second for 8 s, up to 3 stacks, with
-# the green tick text.
+# With --wol: the Iroquois archer's poison arrows, 4 Ranged a second for 8 s, up to 3 stacks, half
+# speed, with the green tick text.
 WOL_ATTACHMENTS = {"UHCPoisonArrowWoL": (8, 4, "Ranged", 1, "GAIAEnemy", [])}
 WOL_ATTACKERS = {
     "xpAenna": (RANGED, "UHCPoisonArrowWoL", [
         "<AttachMaxStacks>3</AttachMaxStacks>",
+        "<AttachSnare>0.5</AttachSnare>",
         "<AttachTickText>40FF40</AttachTickText>",
     ]),
 }
