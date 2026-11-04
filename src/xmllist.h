@@ -1,6 +1,6 @@
 // Small readers for the name-list files in data\uhc (customabstracttypes.xml,
 // customprotounitcommands.xml): a root element holding one element per name, e.g.
-//   <AbstractTypes><AbstractType stringId="430103">AbstractWoLCavalry</AbstractType></AbstractTypes>
+//   <AbstractTypes><AbstractType stringId="430103">AbstractLightCavalry</AbstractType></AbstractTypes>
 // Comments are skipped; tag names match in any case.
 #pragma once
 

@@ -11,7 +11,7 @@
 // makes the getter return the proto's value, as stock already does for a unit without building
 // data. The copy is still written and saved, so saved games load with or without the key.
 //
-// TrainPoints (WoL #5, second part). Every queued unit (or batch) is its own Train action, and the
+// TrainPoints (second part). Every queued unit (or batch) is its own Train action, and the
 // enqueue (0x9EB19F) stores the trained proto's TrainPoints in the action ([action+64h]) once, when
 // the unit is queued; a Maintain cycle stores count x TrainPoints ([action+6Ch]) when it starts
 // (0x9E2A05). A TrainPoints tech therefore misses every unit already queued or in training, on old

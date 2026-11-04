@@ -4,7 +4,7 @@
 //
 // File format (default data\uhc\customabstracttypes.xml, relative to the exe's folder):
 //   <AbstractTypes>
-//     <AbstractType stringId="430103">AbstractWoLCavalry</AbstractType>  <!-- comment -->
+//     <AbstractType stringId="430103">AbstractLightCavalry</AbstractType>  <!-- comment -->
 //     <AbstractType>AbstractTrainLimitOne</AbstractType>
 //   </AbstractTypes>
 // Names are registered in file order, before the types other features request, so their IDs do
