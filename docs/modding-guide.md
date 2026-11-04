@@ -29,8 +29,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | confirmed (single player, UI; the data ref not tested) |
-| Wednesday 2026-11-04 09:20 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
 | Wednesday 2026-11-04 09:04 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | confirmed (single player, UI) |
 | Wednesday 2026-11-04 09:04 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | confirmed |
 | Wednesday 2026-11-04 09:04 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | confirmed |
@@ -3673,8 +3673,24 @@ trainSingleAbstractType [UnitType]
 
 #### noTrainNearEnemyTC
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:20 <!-- private -->
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:54 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 10:35 -->
+
+<!-- private:begin -->
+![noTrainNearEnemyTC in WoL](media/noTrainNearEnemyTC-wol.gif)
+
+*In WoL, with `noTrainNearEnemyTC 40 near Settler log` (Japanese, the Daimyo selected so its queue
+shows):* a Daimyo queues 3 Kihei with an enemy unit 12.1 m away (`near` also takes moving units). The
+queue stays paused (`paused training: player 2's unit 7 (Settler) is 12.1 m away`) until that unit
+dies at 48 s (`resumed training`), and then the Kihei come out.
+[Full video (MP4)](media/noTrainNearEnemyTC-wol.mp4).
+
+![noTrainNearEnemyTC in WoL, key off](media/noTrainNearEnemyTC-wol-control.gif)
+
+*In WoL, key off (the same scene):* nothing holds the queue: the 3 Kihei are out by 40 s of game
+time, with the enemy still next to the Daimyo.
+[Full video (MP4)](media/noTrainNearEnemyTC-wol-control.mp4).
+<!-- private:end -->
 
 ![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)
 
