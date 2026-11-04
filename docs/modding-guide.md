@@ -30,45 +30,48 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 12:48 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. |
+| Wednesday 2026-11-04 12:48 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
+| Wednesday 2026-11-04 12:48 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. |
+| Wednesday 2026-11-04 12:48 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
+| Wednesday 2026-11-04 12:48 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
+| Wednesday 2026-11-04 12:48 | [`multiarmor`](#multiarmor) | Filmed in WoL, with a control. A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | Several `<Armor>` lines on the protos. |
+| Wednesday 2026-11-04 12:48 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. |
+| Wednesday 2026-11-04 12:48 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
+| Wednesday 2026-11-04 12:48 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. |
+| Wednesday 2026-11-04 12:48 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. |
+| Wednesday 2026-11-04 12:48 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
+| Wednesday 2026-11-04 12:48 | [`gatherFix`](#gatherfix) | Filmed in WoL, with a control. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | Nothing. |
+| Wednesday 2026-11-04 12:48 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Filmed in WoL, with a control. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
+| Wednesday 2026-11-04 12:48 | [`nowalkfarm`](#nowalkfarm) | Filmed in WoL, with a control. Gatherers on a farm keep the spot they take. | Nothing. |
+| Wednesday 2026-11-04 12:48 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
+| Wednesday 2026-11-04 12:48 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
+| Wednesday 2026-11-04 12:48 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
+| Wednesday 2026-11-04 12:48 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Filmed in WoL, with a control. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
+| Wednesday 2026-11-04 12:48 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
+| Wednesday 2026-11-04 12:48 | [`repairWallGlobal`](#repairwallglobal) | Filmed in WoL, with a control. A UI syscall that repairs every wall of the local player. | A button or hotkey that calls `repairWallGlobal()`. |
+| Wednesday 2026-11-04 12:48 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. |
+| Wednesday 2026-11-04 12:48 | [`transformUpdatesLOS`](#transformupdateslos) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | Nothing. |
+| Wednesday 2026-11-04 12:48 | [`transformInventory`](#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. |
+| Wednesday 2026-11-04 12:48 | [`abilitySlots`](#abilityslots) | Filmed in WoL, with a control. Lets the command panel show up to N abilities per unit instead of 6. | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. |
+| Wednesday 2026-11-04 12:48 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | Filmed in WoL, with a control. The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. |
+| Wednesday 2026-11-04 12:48 | [`noCorpseDopples`](#nocorpsedopples) | Filmed in WoL, with a control. A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. |
+| Wednesday 2026-11-04 11:29 | [`basePop`](#basepop-and-extrapop), [`extraPop`](#basepop-and-extrapop) | Filmed in WoL, with a control. Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | Enough population buildings: 20 houses of 10 give 200 today. |
+| Wednesday 2026-11-04 11:29 | [`civFirstTC`](#civfirsttc) | Filmed in WoL, with a control. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
+| Wednesday 2026-11-04 11:13 | [`startingTC`](#startingtc) | Filmed in WoL, with a control. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
 | Wednesday 2026-11-04 10:29 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
 | Wednesday 2026-11-04 10:29 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
 | Wednesday 2026-11-04 10:29 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. |
 | Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos (20 protos carry `AbstractDaimyo`); with a new marker, that type on the trainers or on the blocking buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
-| Wednesday 2026-11-04 08:32 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. |
-| Wednesday 2026-11-04 08:32 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
-| Wednesday 2026-11-04 08:32 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
-| Wednesday 2026-11-04 08:11 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. |
-| Wednesday 2026-11-04 08:11 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
-| Wednesday 2026-11-04 08:11 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
-| Wednesday 2026-11-04 08:11 | [`transformUpdatesLOS`](#transformupdateslos) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | Nothing. |
-| Wednesday 2026-11-04 08:11 | [`transformInventory`](#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. |
-| Wednesday 2026-11-04 08:11 | [`abilitySlots`](#abilityslots) | Filmed in WoL, with a control. Lets the command panel show up to N abilities per unit instead of 6. | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. |
-| Wednesday 2026-11-04 08:11 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | Filmed in WoL, with a control. The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. |
-| Wednesday 2026-11-04 08:11 | [`noCorpseDopples`](#nocorpsedopples) | Filmed in WoL, with a control. A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. |
-| Wednesday 2026-11-04 07:31 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
-| Wednesday 2026-11-04 07:31 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
-| Wednesday 2026-11-04 07:31 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. |
-| Wednesday 2026-11-04 07:20 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
-| Wednesday 2026-11-04 07:20 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. |
-| Wednesday 2026-11-04 07:20 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
-| Wednesday 2026-11-04 07:20 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. |
-| Wednesday 2026-11-04 07:20 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. |
-| Wednesday 2026-11-04 06:59 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
 | Tuesday 2026-11-03 14:51 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | Nothing. |
-| Tuesday 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Added. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | Nothing. |
 | Tuesday 2026-11-03 10:43 | [`compatMode`](#compatmode) | Added. Offers every 32-bit display mode as a 16-bit mode too. | Nothing. |
-| Tuesday 2026-11-03 10:43 | [`nowalkfarm`](#nowalkfarm) | Added. Gatherers on a farm keep the spot they take. | Nothing. |
 | Tuesday 2026-11-03 10:43 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Added. Dynamic free units grow smoothly with game time, not in 2-minute steps. | Nothing. |
-| Tuesday 2026-11-03 10:43 | [`repairWallGlobal`](#repairwallglobal) | Added. A UI syscall that repairs every wall of the local player. | A button or hotkey that calls `repairWallGlobal()`. |
-| Tuesday 2026-11-03 09:33 | [`multiarmor`](#multiarmor) | Added. A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | Several `<Armor>` lines on the protos. |
 | Tuesday 2026-11-03 08:39 | [`customProtoUnitCommands`](#customprotounitcommands) | Added. Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | The file, and the `<Command>` lines that use them. |
 | Tuesday 2026-11-03 08:16 | [`kbUnitSyscalls`](#kbunitsyscalls) | Added. Five KB syscalls for AI scripts: a unit's inventory, its workers and its targeters. | AI scripts that call them. |
 | Tuesday 2026-11-03 07:25 | [`wonderCivUnitType`](#wondercivunittype) | Added. `Rangatira` may start the Maori age-up. | Nothing. |
-| Tuesday 2026-11-03 07:25 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Added. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
-| Tuesday 2026-11-03 06:49 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Added. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
 | Monday 2026-11-02 21:22 | [`customSyscalls`](#customsyscalls) | Filmed in WoL, with a control. Loads `wolPlugin.upl` and `wolai.upl` and adds the XS syscalls they register. | The plugins. |
 | Monday 2026-11-02 21:19 | [`nativeCivs`](#nativecivs) | Added. WallMapu, Tupinamba and Tawantinsuyu count as native civs: fire pit, dances and council age-up. | Those civs' data. |
 | Monday 2026-11-02 21:19 | [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds), [`noBigButtonBlds`](#bigbuttoncivs-and-nobigbuttonblds) | Added. Gives the command panel's big button to the listed civs, and takes it from the listed buildings. | Nothing. |
@@ -81,14 +84,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 20:27 | [`asianCivs`](#asiancivs) | Added. Egyptians, Ethiopians, Koreans, Zulu and Maori count as Asian civs: consulate, export and wonders. | Those civs' data. |
 | Monday 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Added. Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | The file. |
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. Shows WoL's 52 `AI4\*.personality` files in game setup. | The personality files. |
-| Thursday 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | Added. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
-| Thursday 2026-10-29 10:35 | [`startingTC`](#startingtc) | Added. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | Nothing. |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. |
 | Wednesday 2026-10-28 12:48 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Added. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
 | Wednesday 2026-10-28 10:56 | [`ignoreRegistryPath`](#ignoreregistrypath) | Added. Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | Nothing. |
-| Wednesday 2026-10-28 10:56 | [`basePop`](#basepop-and-extrapop), [`extraPop`](#basepop-and-extrapop) | Added. Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | Enough population buildings: 20 houses of 10 give 200 today. |
 | Wednesday 2026-10-28 10:56 | [`deckCardCount`](#deckcardcount) | Added. Raises the 25-card deck cap. | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). |
 | Wednesday 2026-10-28 10:56 | [`noAILimit`](#noailimit) | Added. Shows every `AI4\*.personality` file in game setup. | The personality files. |
 | Wednesday 2026-10-28 10:56 | [`customRevolutionBanners`](#customrevolutionbanners) | Added. Shows a banner for each of WoL's 29 `XPRevolution<Name>` techs, not only O'Higgins. | A banner texture per revolution. |
@@ -400,7 +400,7 @@ Caps that are fixed in the exe.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
-| [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | partly confirmed |
+| [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | confirmed |
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -410,11 +410,21 @@ Caps that are fixed in the exe.
 
 #### basePop and extraPop
 
-**Added:** Wednesday 2026-10-28 10:56
+**Added:** Wednesday 2026-10-28 10:56 · **Filmed in WoL:** Wednesday 2026-11-04 11:29
+
+![basePop in WoL](media/basePop-wol.gif)
+
+*In WoL, with `basePop 300` (three `BloodFactory`, +100 population each, for the test):* the counter reads
+`6 / 300`. [Full video (MP4)](media/basePop-wol.mp4).
+
+![basePop in WoL, key off](media/basePop-wol-control.gif)
+
+*In WoL, key off (the same scene):* the exe stops the cap at 200: `6 / 200`.
+[Full video (MP4)](media/basePop-wol-control.mp4).
 
 ```
-basePop <N>              N from 0 to 10000, stock 200
-extraPop <N>             N from 0 to 10000, stock 50
+basePop <N>              N from 0 to 10000, 200 in the exe
+extraPop <N>             N from 0 to 10000, 50 in the exe
 ```
 
 - **In WoL today:** `wol.cfg` does not set these keys, so the exe's limits apply. The cap is what the
@@ -434,8 +444,9 @@ extraPop <N>             N from 0 to 10000, stock 50
   `basePop/extraPop: expected integers from 0 to 10000`;
   `hook reached: basePop/extraPop/decimalPopulation (0x4581F3)`.
 - **Simulation:** yes.
-- **Status:** partly confirmed, on the stock game: a skirmish went past 200 with `basePop 300`; the
-  limit reached was the number of houses that could be built. Not filmed in WoL yet.
+- **Status:** confirmed in single player, in WoL (2026-11-04): the cap reads 300 with `basePop 300`, and 200
+  without it. On the stock game a skirmish went past 200 with `basePop 300`. Not tested in WoL: a
+  player's real population above 200, and `extraPop` above 50.
 - **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
   where the stock 200/250 limits stayed active.
 
@@ -774,7 +785,7 @@ customProtoUnitCommands [file]
 
 #### customHotkeyContexts
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![customHotkeyContexts in WoL](media/customHotkeyContexts-wol.gif)
 
@@ -867,21 +878,20 @@ customHotkeyContexts [log]
 
 #### techRenameEffect
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![techRenameEffect in WoL](media/techRenameEffect-wol.gif)
 
 *In WoL, with `techRenameEffect log` (Ethiopians; the cursor rests on the Town Center's GW button
 so its rollover stays on screen):* a test tech (`UHCRenameTest`, appended to the bed's techtree and
 removed after) carries `<Effect type='SetTechName' tech='GreatWarButton' newName='11070'
-newRolloverTextID='10670'/>` and turns on at 22 s. The button takes Gangsaw's name and rollover (the
-video is in Spanish: "Declarar Guerra Total" becomes "Sierra de tajo"); cost and effect stay those of
-`GreatWarButton`. [Full video (MP4)](media/techRenameEffect-wol.mp4).
+newRolloverTextID='10670'/>` and turns on at 22 s. "Declare Total War" becomes "Gang Saw", with its
+rollover; cost and effect stay those of `GreatWarButton`. [Full video (MP4)](media/techRenameEffect-wol.mp4).
 
 ![techRenameEffect in WoL, key off](media/techRenameEffect-wol-control.gif)
 
 *In WoL, key off (both `techRenameEffect` and WoL's `enableTechRenameEffect` line removed from the
-cfg):* the game drops the `SetTechName` effect, and the button keeps its name.
+cfg):* the game drops the `SetTechName` effect, and the button stays "Declare Total War".
 [Full video (MP4)](media/techRenameEffect-wol-control.mp4).
 
 ```
@@ -1182,7 +1192,7 @@ noBigButtonBlds Proto [Proto ...]
 
 #### danceBonusCivs
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![danceBonusCivs in WoL](media/danceBonusCivs-wol.gif)
 
@@ -1283,7 +1293,21 @@ wonderCivUnitType Proto [Proto ...]
 
 #### startingTC
 
-**Added:** Thursday 2026-10-29 10:35
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 11:13
+
+![startingTC in WoL](media/startingTC-wol.gif)
+
+*In WoL, with `startingTC MaoriPa log` and `noTrainNearEnemyTC 40 log` (Japanese Daimyo selected, Maori
+enemy; the fog is off for the video):* the Maori `Age0Maori` start: the enemy's `TownCenter` dies at once
+and the `MaoriPa` replaces it (`unit 8 (MaoriPa) replaces player 2's first town center 7 (TownCenter),
+which is dead`). So the Daimyo, 18 m from the Pa, cannot train: its 3 Kihei wait until the Pa falls at
+58 s of game time. [Full video (MP4)](media/startingTC-wol.mp4).
+
+![startingTC in WoL, key off](media/startingTC-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Maori's first town center stays the dead `TownCenter`, so the Pa
+protects nothing, and the 3 Kihei train next to it (`trains: nothing to keep away from`).
+[Full video (MP4)](media/startingTC-wol-control.mp4).
 
 ```
 startingTC [<UnitType>] [log]          default AbstractStartingTC
@@ -1370,19 +1394,30 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
     would.
 - **Simulation:** yes: the first town center decides where buildings may be placed. Every player
   needs the same line and the same data. It also adds a unit type when the name is new.
-- **Status:** confirmed from the log and memory in single player, on the stock game (2026-10-29): a
-  `Market` marked `AbstractStartingTC` and created for player 2, who had no Town Center, became his
-  first town center (`[player+4F0h]` read 3, where the exe leaves -1). Not driven in game: the visible
-  effect on placement (the 65 m refusal), and the replacement of a first town center that is dead or
-  has a pending lifespan, which is the Maori case. Not filmed in WoL yet.
+- **Status:** confirmed in single player. In WoL (2026-11-04), the Maori case: a `MaoriPa` replaced the
+  dead `TownCenter` of a player with `Age0Maori`, and `noTrainNearEnemyTC` measured from the Pa; without
+  the key the Pa was no first town center. In a scenario the Pa is placed by the map, because the free
+  `MaoriPa` of `Age0Maori` comes from the home city, which a scenario player lacks. On the stock game
+  (2026-10-29): a marked `Market` for a player with no Town Center became his first town center. Not
+  driven in game: the visible effect on placement (the 65 m refusal), and a pending lifespan: in the test
+  the town center was already dead.
 
 #### civFirstTC
 
-**Added:** Thursday 2026-10-29 12:03
+**Added:** Thursday 2026-10-29 12:03 · **Filmed in WoL:** Wednesday 2026-11-04 11:29
 
-![civFirstTC in game](media/civFirstTC.gif)
+![civFirstTC in WoL](media/civFirstTC-wol.gif)
 
-*On the stock game (not filmed in WoL yet):* a skirmish start on the map Mongolia: player 1, whose civ has `<firstTC>Market</firstTC>`, starts with a Market where the map puts the Town Center; then the Market is selected, with its 6 starting Settlers. The Iroquois AI, whose civ has no tag, keeps its Town Center. [Full video (MP4)](media/civFirstTC.mp4).
+*In WoL, with `civFirstTC log` (Ethiopians with `<firstTC>EGYtowncenterCARAVAN</firstTC>` in `civs.xml`, for
+the test, removed after):* the test map places a `TownCenter` for player 1, and the player gets the
+caravan instead, which is its first town center (`unit 0 (EGYtowncenterCARAVAN) is player 1's first town
+center (FirstTC)`). No town starting units come, because this proto has no `StartingColonyBuilding`.
+[Full video (MP4)](media/civFirstTC-wol.mp4).
+
+![civFirstTC in WoL, key off](media/civFirstTC-wol-control.gif)
+
+*In WoL, key off (the same data and map):* the exe ignores the tag: the same map places the `TownCenter`,
+and its town starting units appear. [Full video (MP4)](media/civFirstTC-wol-control.mp4).
 
 ```
 civFirstTC [log]
@@ -1494,7 +1529,9 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   all game state. Every machine needs the same line, `civs.xml`, `placementrules\colonies.xml`
   and `protoy`. A recorded game generates its map again when it is played back, so playback needs
   them too. The key adds no unit type.
-- **Status:** confirmed in single player, on the stock game (2026-10-29), with `<firstTC>Market</firstTC>`:
+- **Status:** confirmed in single player. In WoL (2026-11-04), the Ethiopians with `EGYtowncenterCARAVAN`: the
+  substitution and the first town center, on a test map. On the stock game (2026-10-29), with
+  `<firstTC>Market</firstTC>`:
   - a test map that places a `TownCenter` for both players: the tagged civ got a Market, which became
     its first town center, and the other kept its `TownCenter`;
   - a skirmish on Mongolia, with the Market in `colonies.xml` `<starttypes>`: without
@@ -1504,8 +1541,8 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
     tag kept its Town Center and played normally, and a shipment landed at player 1's Market
     ([hcShipmentPointFallback](#hcshipmentpointfallback)).
 
-  Not tested: WoL's civs and buildings, a Nomad start, multiplayer, recorded games, the `no colony` log
-  line, and any building other than the Market.
+  Not tested: a skirmish in WoL, the town starting units at a WoL building, WoL's AI with the tag, a Nomad
+  start, multiplayer, recorded games, the `no colony` log line.
 
 #### customRevolutionBanners
 
@@ -1571,7 +1608,7 @@ Who heals, whom, and how far.
 
 #### healNonIdle
 
-**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 07:20
+**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![healNonIdle in WoL](media/healNonIdle-wol.gif)
 
@@ -1583,7 +1620,7 @@ fills again. It wins and ends at full HP.
 ![healNonIdle in WoL, key off](media/healNonIdle-wol-control.gif)
 
 *In WoL, key off (the same scene):* the medicine man does not heal the fighting Tomahawk; its bar
-only shrinks and it dies at about 57 s of game time, the enemy left at 51 HP. The medicine man is
+only shrinks and it dies at about 57 s of game time, the enemy left at 70 HP. The medicine man is
 next.
 [Full video (MP4)](media/healNonIdle-wol-control.mp4).
 
@@ -1628,7 +1665,7 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 
 #### smartHealTargets
 
-**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-04 06:59
+**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
 
@@ -1982,7 +2019,7 @@ Attacks, armor, and what a hit does.
 
 #### multiarmor
 
-**Added:** Tuesday 2026-11-03 09:33
+**Added:** Tuesday 2026-11-03 09:33 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![multiarmor in game](media/multiarmor.gif)
 
@@ -2030,7 +2067,7 @@ multiarmor
 
 #### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
-**Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Wednesday 2026-11-04 07:20
+**Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ```
 dodgeAnyUnit [<UnitType>] [log]          default AbstractDodge
@@ -2082,7 +2119,7 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 
 #### dodgeChance
 
-**Added:** Thursday 2026-10-29 16:57 · **Filmed in WoL:** Wednesday 2026-11-04 07:20
+**Added:** Thursday 2026-10-29 16:57 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![dodgeChance and dodgeAnyUnit in WoL](media/dodge-wol.gif)
 
@@ -2154,29 +2191,26 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 
 #### damageOverTime
 
-**Added:** Wednesday 2026-10-28 16:34 · **Filmed in WoL:** Wednesday 2026-11-04 07:20
-
-![damageOverTime stacks, snare and tick text](media/damageOverTime-stacks.gif)
-
-*On the stock game (not filmed in WoL yet), `AttachMaxStacks`, `AttachSnare` and `AttachTickText`:* three Longbowmen whose arrows attach a 5 Siege poison with up to 3 stacks, a snare to half speed and a green tick text. Two Hussars charge them. The three first arrows put three stacks on one Hussar within a fraction of a second, so each tick deals 15 (`x3` in the overlay) and shows a small green `-15` over its health bar; its speed reads 3.38 instead of 6.75. When the archers are down the stacks expire one by one (10, then 5) and the last tick kills it (2x speed). [Full video (MP4)](media/damageOverTime-stacks.mp4).
-
-![damageOverTime with noticktext and snareOnlyHitUnit](media/damageOverTime-noticktext.gif)
-
-*On the stock game (not filmed in WoL yet), `noticktext`, and the snare in a group:* the same fight with `damageOverTime log noticktext` and `snareOnlyHitUnit log`: three Hussars charge together, the poisoned one takes its 10 and 15-damage ticks with no green number over it, and the overlay shows `snareOnlyHitUnit` treating the poison's slow as a snare (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`) (2x speed). [Full video (MP4)](media/damageOverTime-noticktext.mp4).
+**Added:** Wednesday 2026-10-28 16:34 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![damageOverTime in WoL](media/damageOverTime-wol.gif)
 
 *In WoL, with `damageOverTime log` (Iroquois; the archers are selected):* three Aenna whose arrows
-carry a poison (4 Ranged a second for 8 s, up to 3 stacks, green tick text, written by
+carry a poison (4 Ranged a second for 8 s, up to 3 stacks, half speed, green tick text, written by
 `dot_testdata.py --wol`) meet a charging Landsknecht. With three stacks each tick takes 12 (the
-green numbers over it, the `(x3)` lines), and the last tick kills it at 36 s; no archer dies.
+green numbers over it, the `(x3)` lines), the poison halves its speed (`speed 2.25`), and the last tick
+kills it at about 40 s of game time, after it killed one archer.
 [Full video (MP4)](media/damageOverTime-wol.mp4).
 
 ![damageOverTime in WoL, key off](media/damageOverTime-wol-control.gif)
 
-*In WoL, key off (the same data and scene):* the arrows do only their own damage; the Landsknecht
-lives until about 45 s, kills one archer and leaves another at 7 HP.
-[Full video (MP4)](media/damageOverTime-wol-control.mp4).
+*In WoL, key off (the same data and scene):* the arrows do only their own damage; the Landsknecht kills
+all three archers and lives, with 4 HP. [Full video (MP4)](media/damageOverTime-wol-control.mp4).
+
+![damageOverTime in WoL with noticktext](media/damageOverTime-noticktext-wol.gif)
+
+*In WoL, with `damageOverTime log noticktext`:* the same fight, with the same ticks, and no green numbers
+over the unit. [Full video (MP4)](media/damageOverTime-noticktext-wol.mp4).
 
 ```
 damageOverTime [log] [noticktext]
@@ -2353,9 +2387,10 @@ damageOverTime [log] [noticktext]
 - **Simulation:** yes. Every player needs the same data and the same key; `noticktext` only
   changes what that player sees and may differ.
 - **Status:** confirmed in single player.
-  - **In WoL (2026-11-04):** three Aenna with a poison of 4 Ranged a second for 8 s, up to 3 stacks and
-    a green tick text (`tools/dot_testdata.py --wol`): ticks of 12 at three stacks killed a Landsknecht
-    at 36 s; without the key it lived to about 45 s.
+  - **In WoL (2026-11-04):** three Aenna with a poison of 4 Ranged a second for 8 s, up to 3 stacks, half
+    speed and a green tick text (`tools/dot_testdata.py --wol`): ticks of 12 at three stacks killed a
+    Landsknecht at about 40 s of game time; without the key it killed all three archers. `noticktext`
+    took the numbers off.
   - **On the stock game (2026-10-28 and 29),** with `tools/dot_testdata.py`:
     - hand attacks, instant shots, flying arrows, grenades (one poisoned all four units it hit) and
       cannon balls; Gaia units too;
@@ -2364,8 +2399,7 @@ damageOverTime [log] [noticktext]
     - a removed attacker: the ticks went on and killed the unit, and the kill gave the attacker's
       player its XP bounty. A unit that is only killed keeps its ID while its body lies there, so the
       attacker counts as gone once the body disappears;
-    - `AttachMaxStacks 3`, `AttachSnare 0.5`, `AttachTickText` and `noticktext`, as in the videos, and
-      invalid values (`dot_testdata.py --bad`), each logged and ignored;
+    - invalid values (`dot_testdata.py --bad`), each logged and ignored;
     - AI: in 12 minutes, 49 poisons and 242 ticks between two AIs; in a 25-minute game with a 120 s
       poison, 902 ticks after the attacker was gone; no XS error and no crash;
     - saved games: a game saved with a poison running loaded without it (`the data was reloaded; 1
@@ -2377,7 +2411,7 @@ damageOverTime [log] [noticktext]
 
 #### spreadAnyAccuracy
 
-**Added:** Friday 2026-10-30 10:12 · **Filmed in WoL:** Wednesday 2026-11-04 07:20
+**Added:** Friday 2026-10-30 10:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![spreadAnyAccuracy in WoL](media/spreadAnyAccuracy-wol.gif)
 
@@ -2390,9 +2424,8 @@ point up to 3 m away, and it hurts whoever stands within 1 m of it.
 ![spreadAnyAccuracy in WoL, key off](media/spreadAnyAccuracy-wol-control.gif)
 
 *In WoL, key off (the same scene):* the 59 % of shots that miss do no damage, the hits damage their
-target. In this melee-range fight the total damage is about the same either way: seven
-Scythemen survive with 827 HP without the key, and with it 800 and 562 HP in two runs (one with all
-eight alive). [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
+target. In this melee-range fight the total damage is about the same either way, with or without the
+key. [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
 
 ```
 spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
@@ -2557,7 +2590,7 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 
 #### snareOnlyHitUnit
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![snareOnlyHitUnit in WoL](media/snareOnlyHitUnit-wol.gif)
 
@@ -2672,7 +2705,7 @@ Resources, gatherers, and what pays for them.
 
 #### gatherFix
 
-**Added:** Tuesday 2026-11-03 11:15
+**Added:** Tuesday 2026-11-03 11:15 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![gatherFix in game](media/gatherFix.gif)
 
@@ -2789,7 +2822,7 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 
-**Added:** Tuesday 2026-11-03 06:49
+**Added:** Tuesday 2026-11-03 06:49 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![enableFarmAnim in game](media/enableFarmAnim.gif)
 
@@ -2838,7 +2871,7 @@ farmingRadius Index X Z [Index X Z ...]
 
 #### nowalkfarm
 
-**Added:** Tuesday 2026-11-03 10:43
+**Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![nowalkfarm in game](media/nowalkfarm.gif)
 
@@ -2925,11 +2958,7 @@ How buildings train, spawn, live and get replaced.
 
 #### liveBuildingWorkRate
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 07:31
-
-![liveBuildingWorkRate with TrainPoints in game](media/liveBuildingWorkRate-trainpoints.gif)
-
-*On the stock game (not filmed in WoL yet), `TrainPoints`:* six settlers were queued at 12 s, with Settler `TrainPoints` 25; a test tech sets them to 6.25 at 30 s. The settler in training finishes at once (it already had more than 6.25 points of work) and the five already queued are trained in 6.25 s each; the log lines are at the top (2x speed). Without the key all six would take 25 s. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints.mp4).
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![liveBuildingWorkRate in WoL](media/liveBuildingWorkRate-wol.gif)
 
@@ -2937,14 +2966,26 @@ How buildings train, spawn, live and get replaced.
 shows):* the TC trains 15 `AFRICANvillager`; at 30 s a test tech (`UHCBwrTest`, BuildingWorkRate x3
 on `TownCenter`, appended to the bed's techtree for the test and removed after) turns on. The
 standing TC works at 3.0 at once (`works at BuildingWorkRate 3.000, not its snapshot 1.000`), and
-it has 13 villagers by 94 s (5 at the start).
+it has 12 villagers by 92 s (5 at the start).
 [Full video (MP4)](media/liveBuildingWorkRate-wol.mp4).
 
 ![liveBuildingWorkRate in WoL, key off](media/liveBuildingWorkRate-wol-control.gif)
 
 *In WoL, key off (the same scene):* the exe keeps the TC's snapshot of 1.0, so the tech changes nothing
-for it: 8 villagers by 96 s, the queue still long.
+for it: 8 villagers by 92 s, the queue still long.
 [Full video (MP4)](media/liveBuildingWorkRate-wol-control.mp4).
+
+![liveBuildingWorkRate with TrainPoints in WoL](media/liveBuildingWorkRate-trainpoints-wol.gif)
+
+*In WoL, `TrainPoints`:* six `AFRICANvillager` are queued with their `TrainPoints` of 25, and a test tech
+sets them to 6.25 at 30 s (`trains AFRICANvillager at TrainPoints 6.250, not the 25.000 it was queued
+with`). The one in training finishes at once, and the others take 6.25 s each.
+[Full video (MP4)](media/liveBuildingWorkRate-trainpoints-wol.mp4).
+
+![liveBuildingWorkRate with TrainPoints in WoL, key off](media/liveBuildingWorkRate-trainpoints-wol-control.gif)
+
+*In WoL, key off (the same scene):* the queue keeps the 25 points it took, so the tech reaches no villager
+already queued: 8 units against 11 at the end. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints-wol-control.mp4).
 
 ```
 liveBuildingWorkRate [log]
@@ -3023,19 +3064,18 @@ liveBuildingWorkRate [log]
 - **Simulation:** yes. Saved games load with or without the key: the building's copy and the queued
   points are kept and saved as always (with the key, the values it last wrote).
 - **Status:** confirmed in single player.
-  - **In WoL (2026-11-04), `BuildingWorkRate` x3 on `TownCenter`:** the standing TC had 13 villagers by
-    94 s, and 8 by 96 s without the key.
+  - **In WoL (2026-11-04):** `BuildingWorkRate` x3 on `TownCenter`: the standing TC had 12 villagers by
+    92 s, and 8 without the key. `TrainPoints` ×0.25 on `AFRICANvillager`: 11 units against 8.
   - **On the stock game (2026-10-29 and 30):** `Maintain`, 12 units against 3 with `BuildingWorkRate` 4
     on one player's factory, 3 and 3 without the key; `BuildingWorkRate` on train and research, a
     research in progress finishing 3.2 s after the tech; `TrainPoints` ×0.25, the unit in training
     done at the tech, the queued ones in 6.25 s, a `Maintain` cycle taking the new points at once, also
     after loading a game saved before the tech. An AI skirmish played with no XS error. A bad argument
     logged the error, and the key was not applied.
-  - **Not filmed in WoL yet:** `TrainPoints`.
 
 #### buildingWorkRateAuras
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 07:31
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
 
@@ -3132,7 +3172,7 @@ buildingWorkRateAuras [log]
 
 #### maintainWaitForPop
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![maintainWaitForPop in WoL](media/maintainWaitForPop-wol.gif)
 
@@ -3200,7 +3240,7 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 
 #### trainSingleAbstractType
 
-**Added:** Tuesday 2026-11-03 07:25
+**Added:** Tuesday 2026-11-03 07:25 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![trainSingleAbstractType in game](media/trainSingleAbstractType.gif)
 
@@ -3241,17 +3281,21 @@ dies at 48 s (`resumed training`), and then the Kihei come out.
 time, with the enemy still next to the Daimyo.
 [Full video (MP4)](media/noTrainNearEnemyTC-wol-control.mp4).
 
-![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)
+![noTrainNearEnemyTC near a Stable, with the warning](media/noTrainNearEnemyTC-near-wol.gif)
 
-*On the stock game (not filmed in WoL yet), near an enemy's first Town Center:* a Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
+*In WoL, `near Stable` and the warning, with `noTrainNearEnemyTC 40 near Stable near FirstTC log`:* the
+Daimyo stands 23 m from the edge of an enemy Stable with 3 Kihei queued. The queue does not move, and
+every 8 s of game time the red text "Too close to the enemy: training paused" appears over it. The Stable
+is destroyed, the log reads `resumed training`, and the Kihei are trained.
+[Full video (MP4)](media/noTrainNearEnemyTC-near-wol.mp4).
 
-![noTrainNearEnemyTC near a Stable, with the warning](media/noTrainNearEnemyTC-near.gif)
+![noTrainNearEnemyTC with its own warning text](media/noTrainNearEnemyTC-warn-wol.gif)
 
-*On the stock game (not filmed in WoL yet), `near Stable` and the warning:* `noTrainNearEnemyTC 40 near Stable near FirstTC log`, the camera on the Daimyo. It stands 21 m from the edge of an enemy Stable with 5 Ashigaru queued: the queue does not move, and every 8 s of game time the red text "Too close to the enemy: training paused" appears over it (the overlay shows each `warning shown` line). The Stable is destroyed at 75 s: the log reads `resumed training`, now with the enemy Town Center 138.6 m away as the nearest, and the Ashigaru are trained (2x speed). [Full video (MP4)](media/noTrainNearEnemyTC-near.mp4).
+*In WoL, your own text:* with `warn=Too_close,_send_it_back!`, the same held Daimyo shows that text.
+[Full video (MP4)](media/noTrainNearEnemyTC-warn-wol.mp4).
 
-![noTrainNearEnemyTC with its own warning text](media/noTrainNearEnemyTC-warn.gif)
-
-*On the stock game (not filmed in WoL yet), your own text:* with `warn=¡Demasiado_cerca!`, the same held Daimyo shows "¡Demasiado cerca!" (1.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC-warn.mp4).
+The enemy's first Town Center is filmed in [`startingTC`](#startingtc): the Pa that replaces it blocks the
+Daimyo.
 
 ```
 noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | warn=<text> | warn=<stringID>] [log]
@@ -3350,17 +3394,17 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 - **Status:** confirmed in single player.
   - **In WoL (2026-11-04):** `noTrainNearEnemyTC 40 near Settler`: a Daimyo held with an enemy unit
     12.1 m away, which resumed when the unit died; without the key the 3 Kihei were out by 40 s.
-  - **On the stock game (2026-10-29):** a first Town Center 34.1 m away, a Stable's edge at 21.0 m,
-    `nowarn`, `warn=` as text and as a string ID, four bad lines (each logged, the key `FAILED`), an
-    enemy's second Town Center and a moving Hussar as `near` types, a saved game loaded with the
-    Daimyo held, and a skirmish against a Japanese AI with no XS error.
-  - **Not tested:** a foundation near the trainer, the near-a-Town-Center case in WoL (in the test
-    scenes, player 2's buildings do not last), multiplayer. For such a test, the Daimyo trains only from
-    Age II and needs population room and food.
+  - **In WoL (2026-11-04):** an enemy Stable's edge at 23.0 m, with 7 warnings, and the first town center
+    through `startingTC` (a `MaoriPa` at 18.0 m).
+  - **On the stock game (2026-10-29):** `nowarn`, `warn=` as a string ID, four bad lines (each logged, the
+    key `FAILED`), an enemy's second Town Center and a moving Hussar as `near` types, a saved game loaded
+    with the Daimyo held, and a skirmish against a Japanese AI with no XS error.
+  - **Not tested:** a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
+    from Age II and needs population room and food.
 
 #### lifespanAfterConstruction
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![lifespanAfterConstruction in WoL](media/lifespanAfterConstruction-wol.gif)
 
@@ -3490,7 +3534,7 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 
 #### repairWallGlobal
 
-**Added:** Tuesday 2026-11-03 10:43
+**Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![repairWallGlobal in game](media/repairWallGlobal.gif)
 
@@ -3593,7 +3637,7 @@ What happens when a tech activates or a unit changes proto.
 
 #### techPrereqRecheck
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 07:31
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![techPrereqRecheck in WoL](media/techPrereqRecheck-wol.gif)
 
@@ -3692,7 +3736,7 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
 
 #### transformUpdatesLOS
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![transformUpdatesLOS in WoL](media/transformUpdatesLOS-wol.gif)
 
@@ -3749,14 +3793,14 @@ transformUpdatesLOS [log]
 
 #### transformInventory
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![transformInventory in WoL](media/transformInventory-wol.gif)
 
 *In WoL, with `transformInventory log` (Ethiopians, the units selected so the panel shows the
 crate):* WoL's card `HCCardDogTaxWar` turns two `PetWolf` into `CrateofCoin` at 24 s. Each crate
 gets the coin crate's inventory (`inventory created: none -> {0: 100}`), and the panel shows
-`Moneda: 100.0`. [Full video (MP4)](media/transformInventory-wol.mp4).
+`Coin: 100.0`. [Full video (MP4)](media/transformInventory-wol.mp4).
 
 ![transformInventory in WoL, key off](media/transformInventory-wol-control.gif)
 
@@ -3851,7 +3895,7 @@ What the panels and the fog of war show.
 
 #### abilitySlots
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![abilitySlots in WoL](media/abilitySlots-wol.gif)
 
@@ -3915,7 +3959,7 @@ abilitySlots <N> [log]      N from 6 (the exe's value) to 36
 
 #### wonderPanelSkipAuras
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![wonderPanelSkipAuras in WoL](media/wonderPanelSkipAuras-wol.gif)
 
@@ -4006,7 +4050,7 @@ explorerUnits Proto Type StringID [Proto Type StringID ...]
 
 #### noCorpseDopples
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:11
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![noCorpseDopples in WoL](media/noCorpseDopples-wol.gif)
 

@@ -148,13 +148,15 @@ pixels, 2x speed, 10 fps, cut to the key moment.
 | `techRenameEffect` | Ethiopians: test tech `UHCRenameTest` (`SetTechName` on `GreatWarButton`, appended, restored after) at 22 s; `record --hover` keeps the GW button's rollover on screen | **done**: "Declarar Guerra Total" becomes "Sierra de tajo"; key off (also without WoL's `enabletechrenameeffect` line, the same key), unchanged (`techRenameEffect-wol*.mp4`). WoL's data has no `SetTechName` effect today |
 | `noCorpseDopples` | WoL's own `Doppled` Deer and Bison (no data edit), 3 `WOLRanger` watch then leave; `noCorpseDopples Deer log` | **done**: dead deer vanish into the fog, dead bison stay; key off, all stay (`noCorpseDopples-wol*.mp4`) |
 | `danceBonusCivs` | Ethiopians: 10 settlers do the `FertilityDance` (enabled by an appended test tech, restored after) while the TC trains `AFRICANvillager` | **done**: 4 trained by 65 s with the key, 2 without (`danceBonusCivs-wol*.mp4`) |
-| `startingTC`, `civFirstTC` | a WoL civ with its own first TC | pending |
-| `noTrainNearEnemyTC` | Japanese `ypDaimyoMototada` (age III, `YPAge0JapaneseUnits`) training Kihei, an enemy `Settler` 12 m away killed at 48 s (`near Settler`) | **done for `near` units**: paused, resumed when it dies; key off, trained at once (`noTrainNearEnemyTC-wol*.mp4`). **FirstTC not filmed in WoL:** in this bed's scenarios player 2's buildings do not last (a `TownCenter` is rubble at once, a `Stable` and a `Barracks` are gone by the first check; cause not found, player 2's civ may be Maori, whose `Age0Maori` gives TC a 0.5 s Lifespan). The TAD videos of FirstTC, `near Stable` and the warning stay in the guide |
+| `startingTC` | Japanese `ypDaimyoMototada` against the Maori: player 2 of a scenario has `Age0Maori`, so its `TownCenter` dies at once; `MaoriPa` placed by the map (`startingTC MaoriPa`, `noTrainNearEnemyTC 40`), fog off | **done**: the Pa replaces the dead TC, the Daimyo holds at 18 m until it falls; without the key it trains (`startingTC-wol*.mp4`) |
+| `civFirstTC` | Ethiopians with `<firstTC>EGYtowncenterCARAVAN</firstTC>` (bed `civs.xml`, restored after), a test map that places `TownCenter` | **done** on a test map: the caravan instead of the TC, FirstTC; no town starting units, the flag is not on it (`civFirstTC-wol*.mp4`). A skirmish is pending |
+| `noTrainNearEnemyTC` | Japanese `ypDaimyoMototada` (age III, `YPAge0JapaneseUnits`) training Kihei, an enemy `Settler` 12 m away killed at 48 s (`near Settler`); `near Stable` with the warning and a text of its own (`-near-wol`, `-warn-wol`); FirstTC in `startingTC-wol` | **done for `near` units**: paused, resumed when it dies; key off, trained at once (`noTrainNearEnemyTC-wol*.mp4`). **FirstTC not filmed in WoL:** in this bed's scenarios player 2's buildings do not last (a `TownCenter` is rubble at once, a `Stable` and a `Barracks` are gone by the first check; cause not found, player 2's civ may be Maori, whose `Age0Maori` gives TC a 0.5 s Lifespan). The TAD videos of FirstTC, `near Stable` and the warning stay in the guide |
 | `overhealHitpointBars`, `overhealSources`, `overhealDecay` | Iroquois: `xpTomahawk` marked, 150 of 180 HP, `xpMedicineMan` source healer (bed protoy, restored after), `xpAenna` unmarked; `overhealDecay 2 3` | **done**: hit, healed to 180, `Overheal: 30/30` in the unit panel (the `stat` row, through `unitpanel.cpp`), the healer dies at 62 s, back to 150; a nurse and the Regeneration dance stop at 150, 180 without the key; Menelik stays at 400, 447 and rising without the key (`overheal*-wol*.mp4`). The portrait bar needs a fourth bar gadget in `uiunitselectionmin.xml`, so WoL's interface does not show that part |
 | `showGatherRate` | Ethiopian villager on berries | **done**: `Food (icon): 0.67/s` in WoL's unit panel with no data change. With `optionminimizedui`, the user's setting, the exe skips the stat panel fill, so since 2026-11-04 the key also writes the unit panel's rate gadgets (hook 0x699456). The normal interface (TAD copy) still gets the stat panel row. With several units selected no rate shows, in both interfaces (`showGatherRate-wol*.mp4`) |
 | `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
 | `decimalPopulation` | Ethiopians: `AFRICANvillager` 1.5, `HouseAfrican` +7.5 (bed protoy, restored after) | **done**: `17.5 / 17.5`, queue waits; key off, `14 / 17`, queue goes on (`decimalPopulation-wol*.mp4`) |
-| `basePop` / `extraPop`, `deckCardCount` | a big population; a big deck | pending |
+| `basePop` / `extraPop` | three `BloodFactory` (+100 each) | **done**: `6 / 300`, `6 / 200` without the key (`basePop-wol*.mp4`) |
+| `deckCardCount` | a big deck | pending |
 | `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |
 | `bufferedFileReads`, `multipleInstances` | load time; two copies | pending |
 
@@ -205,12 +207,13 @@ load-time A/B for `customAbstractTypes`.
 
 ## Language of the bed
 
-Since 2026-11-04 the bed runs in WoL's original English, so new videos are in English:
+Since 2026-11-04 the bed runs in WoL's original English, so the videos are in English:
 `data\stringtabley.xml` is `translations\_originals\stringtabley.xml` (md5 `33fa355c…`, the same file as
-Steam's WoL). The user's Spanish one is kept as `data\stringtabley.xml.es-la`. Videos filmed before that
-date show the Spanish interface, and their captions quote it.
+Steam's WoL). The user's Spanish one is kept as `data\stringtabley.xml.es-la`. The earlier takes were filmed again in English that day.
 
 ## Civs used in tests
+
+**Scenario player 2 has `Age0Maori`:** its `TownCenter` gets `Lifespan` 0.5 and dies at once, and other buildings stay (2026-11-04). That was the "player 2's buildings do not last" of the earlier notes. Console `fog()` and `blackmap()` turn the fog off, so that an enemy building shows on video.
 
 Enemy units rotate too (user rule, 2026-11-03): no more `Musketeer` as the opposing unit. Use
 WoL's own infantry, a different one each test, from the public civs: ranged `WOLLineInfantry`,
