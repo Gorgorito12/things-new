@@ -151,7 +151,7 @@ pixels, 2x speed, 10 fps, cut to the key moment.
 | `startingTC`, `civFirstTC` | a WoL civ with its own first TC | pending |
 | `noTrainNearEnemyTC` | a WoL TC with enemy units near | pending |
 | `overhealHitpointBars`, `overhealSources`, `overhealDecay` | Iroquois: `xpTomahawk` marked, 150 of 180 HP, `xpMedicineMan` source healer (bed protoy, restored after), `xpAenna` unmarked; `overhealDecay 2 3` | **done**: hit, healed to 180, the healer dies at 62 s, back to 150 (`overhealHitpointBars-wol*.mp4`) |
-| `showGatherRate` | Ethiopian villager on berries; test line in `uiunitselectionmin.xml` | **done, through the data ref**: `Food 0.67/s`. With `optionminimizedui`, the user's setting, the exe skips the stat panel fill, so the row needs that line in WoL's interface file (`showGatherRate-wol*.mp4`) |
+| `showGatherRate` | Ethiopian villager on berries | **done**: `Food (icon): 0.67/s` in WoL's unit panel with no data change. With `optionminimizedui`, the user's setting, the exe skips the stat panel fill, so since 2026-11-04 the key also writes the unit panel's rate gadgets (hook 0x699456). The normal interface (TAD copy) still gets the stat panel row. With a group selected, it shows the first unit's rate (`showGatherRate-wol*.mp4`) |
 | `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
 | `decimalPopulation`, `basePop` / `extraPop`, `deckCardCount` | WoL units with decimal pop; a big deck | pending |
 | `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |

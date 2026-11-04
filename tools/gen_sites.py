@@ -798,6 +798,13 @@ SITES = [
     # showGatherRate: the row formatter, "%s (<icon=...>):" and "%.2f/s" or "%d/s", the row
     # count add [esp+2Ch],1 and the jmp 4D7834h back
     ("StatPanelRowFormat", 0x69B02A, 0x15D),
+    # showGatherRate, the minimized interface (the stat panel fill above returns at 0x4D7261 there):
+    # the unit panel's own AutoGather rate, gadgets [[esp+50h]+33Ch/340h] (unitResourceRateLabel
+    # and unitResourceRateValue), label "%s (<icon>):" through 0x706EFB and 0x444EFB (verify only)
+    ("UnitPanelRateRow", 0x69922D, 0x6C),
+    # ... and its join point, mov edi,[esp+54h] / mov ecx,edi, the hook
+    ("UnitPanelAfterRate", 0x699456, 0x06),
+    ("ResourceIconText", 0x706EFB, 0x10),
     # showGatherRate (FUN_005CFA7C, data-ref registration): mov dword ptr [esp+2Ch],5FDE49h, the
     # provider of id 68h currentUnitGatherRateString (type 3); the imm32 at 0x5D2D3C is replaced
     ("GatherRateStringRef", 0x5D2D38, 8),

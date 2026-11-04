@@ -29,11 +29,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | confirmed (single player, UI; the data ref not tested) |
+| Wednesday 2026-11-04 09:20 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
 | Wednesday 2026-11-04 09:04 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | confirmed (single player, UI) |
 | Wednesday 2026-11-04 09:04 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | confirmed |
 | Wednesday 2026-11-04 09:04 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | confirmed |
-| Wednesday 2026-11-04 09:04 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | confirmed (single player, UI; the data ref not tested) |
-| Wednesday 2026-11-04 09:04 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
 | Wednesday 2026-11-04 08:32 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Lets a keymap context named `<ProtoName>Accel` hold the unit hotkeys of that proto (a new building, or a stock one the exe has no context for). | confirmed (single player) |
 | Wednesday 2026-11-04 08:32 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
 | Wednesday 2026-11-04 08:32 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | confirmed (single player) |
@@ -3074,20 +3074,19 @@ gatherFix
 
 #### showGatherRate
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:20 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 10:35 -->
 
 <!-- private:begin -->
 ![showGatherRate in WoL](media/showGatherRate-wol.gif)
 
-*In WoL, with `showGatherRate log` (Ethiopians, in the minimized interface):* a villager gathers
-berries. A test line with `{currentUnitGatherRateString}` in the bed's `uiunitselectionmin.xml`
-(removed after) shows `Food 0.67/s`, in yellow above the player's name.
+*In WoL, with `showGatherRate log` (Ethiopians, in the minimized interface, no data change):* a
+villager gathers berries, and the unit panel shows `Food (icon): 0.67/s` in WoL's own rate gadgets.
 [Full video (MP4)](media/showGatherRate-wol.mp4).
 
 ![showGatherRate in WoL, key off](media/showGatherRate-wol-control.gif)
 
-*In WoL, key off (the same interface file):* the data ref stays empty, so the line shows nothing.
+*In WoL, key off (the same scene):* the panel shows no rate.
 [Full video (MP4)](media/showGatherRate-wol-control.mp4).
 <!-- private:end -->
 
@@ -3131,11 +3130,13 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   rules (selection size, `DoNotShowAutoGatherRate`). `{currentUnitGatherRate}` (whole number) and
   `{currentUnitGatherRateFloat}` are **not** changed: WoL's `uimainnew.xml` already uses
   `{currentUnitGatherRate(gold)}` in a tooltip, and they keep failing as in stock.
-- **Minimized interface:** with the game option `optionminimizedui` on, the stat panel's fill stops
-  at its start (0x4D725C), so the exe writes no rows at all and no gather row appears, here or for
-  the stock AutoGather rate. That panel comes from `uiunitselectionmin.xml`: show the rate there,
-  with a `formatText` gadget holding `{currentUnitGatherRateString}` and a `datarefreshrate`.
-- **Your data:** nothing for the normal interface. A mod whose stat panel has fewer rows (WoL's `uiunitstatpanel3.xml` has
+- **Minimized interface:** with the game option `optionminimizedui` on, the exe does not fill the
+  stat panel at all. The rate then goes in the unit panel's own rate gadgets,
+  `unitselectionpanel-unitResourceRateLabel` and `...RateValue` of `uiunitselectionmin.xml`, the
+  ones stock uses for AutoGather units, with the same text: `Food (icon): 0.67/s`. A file without
+  those gadgets shows no rate there; `{currentUnitGatherRateString}` still works in any gadget. With
+  several units selected this panel shows the rate of the first one, which stock also describes.
+- **Your data:** nothing. A mod whose stat panel has fewer rows (WoL's `uiunitstatpanel3.xml` has
   5) loses its last row while the gather row is shown: the row goes right after HP and the rows
   after it move down. Such a mod may prefer the data ref and a `<UnitType>` that no unit has.
 - **Limits:**
@@ -3158,6 +3159,8 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   unit type, when the data loads, `unit types: X -> <ID> …`. In a game:
   `hook reached: showGatherRate record (0x4ED044)` (the first gather loop of any unit),
   `hook reached: showGatherRate panel (0x4D7834)` (the first stat panel fill),
+  `hook reached: showGatherRate unit panel (0x699456)` (the first unit panel fill of the minimized
+  interface),
   `hook reached: showGatherRate row value (0x69AFE0)` (the first rate row, this one or a stock
   AutoGather row), and `hook reached: showGatherRate data ref (0x5D2D3C)` (the first time a gadget
   reads the data ref). With `log`: `showGatherRate: unit N (Settler) of player 1 gathers Alim.
@@ -3670,7 +3673,7 @@ trainSingleAbstractType [UnitType]
 
 #### noTrainNearEnemyTC
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:20 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 10:35 -->
 
 ![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)

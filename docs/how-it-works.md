@@ -2481,6 +2481,12 @@ regenerating; without the key it reached 220.
 
 ### showGatherRate
 
+With the minimized interface (`optionminimizedui`) the stat panel fill returns at its start. The hook
+at 0x699456, after the unit panel's own AutoGather rate block, then writes the same label and value
+in that block's gadgets, `[panel+33Ch]` and `[panel+340h]`, through their vtable (+84h style, +80h
+text, +54h refresh). The panel hides them again when it is refilled. The normal interface has no
+such gadgets, so the hook writes nothing there.
+
 **The stock rate rows.** The stat panel (`uiunitstatpanel3`; 9 label/value rows `StackLabel%d` /
 `StackValue%d`, bound to `[panel+174h+i*4]` / `[panel+198h+i*4]` by 0x9BBAD1) is filled by
 FUN_004D70ED, split into a hot part and a cold part (0x698A00..0x69C800). The row counter is
