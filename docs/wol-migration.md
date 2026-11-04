@@ -150,8 +150,8 @@ pixels, 2x speed, 10 fps, cut to the key moment.
 | `danceBonusCivs` | Ethiopians: 10 settlers do the `FertilityDance` (enabled by an appended test tech, restored after) while the TC trains `AFRICANvillager` | **done**: 4 trained by 65 s with the key, 2 without (`danceBonusCivs-wol*.mp4`) |
 | `startingTC`, `civFirstTC` | a WoL civ with its own first TC | pending |
 | `noTrainNearEnemyTC` | a WoL TC with enemy units near | pending |
-| `overhealHitpointBars`, `overhealSources`, `overhealDecay` | WoL infantry with overheal | pending |
-| `showGatherRate` | a WoL gatherer | pending |
+| `overhealHitpointBars`, `overhealSources`, `overhealDecay` | Iroquois: `xpTomahawk` marked, 150 of 180 HP, `xpMedicineMan` source healer (bed protoy, restored after), `xpAenna` unmarked; `overhealDecay 2 3` | **done**: hit, healed to 180, the healer dies at 62 s, back to 150 (`overhealHitpointBars-wol*.mp4`) |
+| `showGatherRate` | Ethiopian villager on berries; test line in `uiunitselectionmin.xml` | **done, through the data ref**: `Food 0.67/s`. With `optionminimizedui`, the user's setting, the exe skips the stat panel fill, so the row needs that line in WoL's interface file (`showGatherRate-wol*.mp4`) |
 | `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
 | `decimalPopulation`, `basePop` / `extraPop`, `deckCardCount` | WoL units with decimal pop; a big deck | pending |
 | `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |
@@ -201,6 +201,13 @@ hot path, `--perf` in every video, vary the civ).
 
 Pending: the A/B baseline against the control (`perfprobe.py`, 120 s, same scenario), and the
 load-time A/B for `customAbstractTypes`.
+
+## Language of the bed
+
+Since 2026-11-04 the bed runs in WoL's original English, so new videos are in English:
+`data\stringtabley.xml` is `translations\_originals\stringtabley.xml` (md5 `33fa355c…`, the same file as
+Steam's WoL). The user's Spanish one is kept as `data\stringtabley.xml.es-la`. Videos filmed before that
+date show the Spanish interface, and their captions quote it.
 
 ## Civs used in tests
 

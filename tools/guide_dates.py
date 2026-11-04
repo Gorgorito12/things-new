@@ -27,7 +27,8 @@ LATEST = "## Latest changes"
 NEXT_AFTER_LATEST = "## Adding UHC.dll to your mod"
 
 # A key whose video is not named after it.
-VIDEO_ALIASES = {"dodgeanyunit": "dodge", "dodgechance": "dodge"}
+VIDEO_ALIASES = {"dodgeanyunit": "dodge", "dodgechance": "dodge", "overhealsources": "overhealhitpointbars",
+                 "overhealdecay": "overhealhitpointbars"}
 
 
 def git(*args):
