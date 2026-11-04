@@ -22,7 +22,7 @@ public:end -->
 |---|---|---|
 | `ignoreRegistryPath` | Reads the game data from the mod folder instead of the Steam install. | confirmed |
 | `deckCardCount N` | Raises the 25-card deck cap. | confirmed above the level table (see the guide) |
-| `basePop N`, `extraPop N` | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | partly confirmed |
+| `basePop N`, `extraPop N` | Raises the population caps (stock 200 and 50) and removes the 250 hard cap. | confirmed |
 | `decimalPopulation [K] [log]` | **New.** Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects, in steps of 1/K (default 10). The population counter and the tooltips show the decimals; AI scripts still see whole numbers. | confirmed (single player, also a skirmish vs AI) |
 | `noAILimit` | Lists every `AI3\*.personality` file in game setup. | confirmed |
 | `noAILimitV2` | **New.** The same list, hooked later in the same function (for mods whose cfg uses this name). | confirmed (single player) |

@@ -153,12 +153,12 @@ pixels, 2x speed, 10 fps, cut to the key moment.
 | `noTrainNearEnemyTC` | Japanese `ypDaimyoMototada` (age III, `YPAge0JapaneseUnits`) training Kihei, an enemy `Settler` 12 m away killed at 48 s (`near Settler`); `near Stable` with the warning and a text of its own (`-near-wol`, `-warn-wol`); FirstTC in `startingTC-wol` | **done for `near` units**: paused, resumed when it dies; key off, trained at once (`noTrainNearEnemyTC-wol*.mp4`). **FirstTC not filmed in WoL:** in this bed's scenarios player 2's buildings do not last (a `TownCenter` is rubble at once, a `Stable` and a `Barracks` are gone by the first check; cause not found, player 2's civ may be Maori, whose `Age0Maori` gives TC a 0.5 s Lifespan). The TAD videos of FirstTC, `near Stable` and the warning stay in the guide |
 | `overhealHitpointBars`, `overhealSources`, `overhealDecay` | Iroquois: `xpTomahawk` marked, 150 of 180 HP, `xpMedicineMan` source healer (bed protoy, restored after), `xpAenna` unmarked; `overhealDecay 2 3` | **done**: hit, healed to 180, `Overheal: 30/30` in the unit panel (the `stat` row, through `unitpanel.cpp`), the healer dies at 62 s, back to 150; a nurse and the Regeneration dance stop at 150, 180 without the key; Menelik stays at 400, 447 and rising without the key (`overheal*-wol*.mp4`). The portrait bar needs a fourth bar gadget in `uiunitselectionmin.xml`, so WoL's interface does not show that part |
 | `showGatherRate` | Ethiopian villager on berries | **done**: `Food (icon): 0.67/s` in WoL's unit panel with no data change. With `optionminimizedui`, the user's setting, the exe skips the stat panel fill, so since 2026-11-04 the key also writes the unit panel's rate gadgets (hook 0x699456). The normal interface (TAD copy) still gets the stat panel row. With several units selected no rate shows, in both interfaces (`showGatherRate-wol*.mp4`) |
-| `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
+| `hcShipmentPointFallback` | Ethiopian skirmish on a test map: TC killed at 180 s, `HCShipFoodCrates3` at 195 s, a `houseafrican` | **done**: the crates land at the house; none without the key (`hcShipmentPointFallback-wol*.mp4`) |
 | `decimalPopulation` | Ethiopians: `AFRICANvillager` 1.5, `HouseAfrican` +7.5 (bed protoy, restored after) | **done**: `17.5 / 17.5`, queue waits; key off, `14 / 17`, queue goes on (`decimalPopulation-wol*.mp4`) |
 | `basePop` / `extraPop` | three `BloodFactory` (+100 each) | **done**: `6 / 300`, `6 / 200` without the key (`basePop-wol*.mp4`) |
-| `deckCardCount` | a big deck | pending |
-| `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |
-| `bufferedFileReads`, `multipleInstances` | load time; two copies | pending |
+| `deckCardCount` | a big deck | **not filmed**: it needs a home city of high level, and the bed's home cities are the user's real ones |
+| `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | **not filmed**: a Spanish skirmish in Age IV listed no revolution at the TC, so the banner hook did not run; WoL has no Fame or XP icons; the conversion was not driven |
+| `bufferedFileReads`, `multipleInstances` | load time; two copies | not filmed: nothing to see on screen. `multipleInstances background` ran under most videos |
 
 ## WoL's always-on patches (inventory, 2026-11-03)
 
@@ -204,6 +204,15 @@ hot path, `--perf` in every video, vary the civ).
 
 Pending: the A/B baseline against the control (`perfprobe.py`, 120 s, same scenario), and the
 load-time A/B for `customAbstractTypes`.
+
+## Skirmish route for videos (2026-11-04)
+
+The console cannot start a skirmish, so a test that needs a home city or cheats takes real clicks: Single
+Player (257, 803), Skirmish (689, 803), the home city's Play (181, 1029), the setup's Play (477, 979), at
+1920 x 1080, with `multipleInstances` off. `profile hc <Civ>` chooses the civ. On a test map with triggers:
+`map uhcsheep ...`, copy `RM4\uhcsheep.xs` and `.xml` to `My Games\Wars of Liberty\RM4\uhc-sheep.*`, and
+click (1440, 403) in the setup; delete the copies after. In a skirmish, game time runs about twice as fast
+as a scenario's. Cheats do not run in a scenario.
 
 ## Language of the bed
 

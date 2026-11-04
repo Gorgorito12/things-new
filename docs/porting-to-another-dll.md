@@ -1461,7 +1461,7 @@ Code: [population](porting-code/population.md#decimalpopulation).
     video and removed after. WoL's data has no `SetTechName` effect, no wonder with two abilities and
     no overheal yet.
   - **Filmed on a test map only:** `civFirstTC`, the substitution and the first town center.
-  - **Not filmed in WoL yet:** `hcShipmentPointFallback`,
+  - **Not filmed in WoL:**
     `gaiaSocketsOnly`, `multipleInstances`.
 - **Multiplayer, saved games and replays:** untested for every feature.
 - **hcShipmentPointFallback:**

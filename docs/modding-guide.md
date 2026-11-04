@@ -30,26 +30,39 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 13:58 | [`selectionLimit`](#selectionlimit) | Filmed in WoL, with a control. A selection holds up to N units (50 in the exe). | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`enableAllTeams`](#enableallteams) | Filmed in WoL, with a control. Teams 3 and 4 in the single-player game setup. | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`customProtoUnitCommands`](#customprotounitcommands) | Filmed in WoL, with a control. Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | The file, and the `<Command>` lines that use them. |
+| Wednesday 2026-11-04 13:58 | [`customSyscalls`](#customsyscalls) | Filmed in WoL, with a control. Loads `wolPlugin.upl` and `wolai.upl` and adds the XS syscalls they register. | The plugins. |
+| Wednesday 2026-11-04 13:58 | [`customCheats`](#customcheats) | Filmed in WoL, with a control. The cheats of WoL's plugins work in the chat. | `customSyscalls`, and plugins that register cheats. |
+| Wednesday 2026-11-04 13:58 | [`kbUnitSyscalls`](#kbunitsyscalls) | Filmed in WoL, with a control. Five KB syscalls for AI scripts: a unit's inventory, its workers and its targeters. | AI scripts that call them. |
+| Wednesday 2026-11-04 13:58 | [`asianCivs`](#asiancivs) | Filmed in WoL, with a control. Egyptians, Ethiopians, Koreans, Zulu and Maori count as Asian civs: consulate, export and wonders. | Those civs' data. |
+| Wednesday 2026-11-04 13:58 | [`nativeCivs`](#nativecivs) | Filmed in WoL, with a control. WallMapu, Tupinamba and Tawantinsuyu count as native civs: fire pit, dances and council age-up. | Those civs' data. |
+| Wednesday 2026-11-04 13:58 | [`wonderCivUnitType`](#wondercivunittype) | Filmed in WoL, with a control. `Rangatira` may start the Maori age-up. | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`multiarmor`](#multiarmor) | Filmed in WoL, with a control. A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | Several `<Armor>` lines on the protos. |
+| Wednesday 2026-11-04 13:58 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
+| Wednesday 2026-11-04 13:58 | [`gatherFix`](#gatherfix) | Filmed in WoL, with a control. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Filmed in WoL, with a control. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`nowalkfarm`](#nowalkfarm) | Filmed in WoL, with a control. Gatherers on a farm keep the spot they take. | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Filmed in WoL, with a control. Dynamic free units grow smoothly with game time, not in 2-minute steps. | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`marketUnits`](#marketunits) | Filmed in WoL, with a control. Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | Nothing. |
+| Wednesday 2026-11-04 13:58 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Filmed in WoL, with a control. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
+| Wednesday 2026-11-04 13:58 | [`repairWallGlobal`](#repairwallglobal) | Filmed in WoL, with a control. A UI syscall that repairs every wall of the local player. | A button or hotkey that calls `repairWallGlobal()`. |
+| Wednesday 2026-11-04 13:58 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Filmed in WoL, with a control. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
 | Wednesday 2026-11-04 12:48 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. |
 | Wednesday 2026-11-04 12:48 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
 | Wednesday 2026-11-04 12:48 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. |
 | Wednesday 2026-11-04 12:48 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
 | Wednesday 2026-11-04 12:48 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
-| Wednesday 2026-11-04 12:48 | [`multiarmor`](#multiarmor) | Filmed in WoL, with a control. A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | Several `<Armor>` lines on the protos. |
 | Wednesday 2026-11-04 12:48 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. |
 | Wednesday 2026-11-04 12:48 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
 | Wednesday 2026-11-04 12:48 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. |
 | Wednesday 2026-11-04 12:48 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. |
 | Wednesday 2026-11-04 12:48 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
-| Wednesday 2026-11-04 12:48 | [`gatherFix`](#gatherfix) | Filmed in WoL, with a control. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | Nothing. |
-| Wednesday 2026-11-04 12:48 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Filmed in WoL, with a control. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
-| Wednesday 2026-11-04 12:48 | [`nowalkfarm`](#nowalkfarm) | Filmed in WoL, with a control. Gatherers on a farm keep the spot they take. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Wednesday 2026-11-04 12:48 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
-| Wednesday 2026-11-04 12:48 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Filmed in WoL, with a control. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
 | Wednesday 2026-11-04 12:48 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
-| Wednesday 2026-11-04 12:48 | [`repairWallGlobal`](#repairwallglobal) | Filmed in WoL, with a control. A UI syscall that repairs every wall of the local player. | A button or hotkey that calls `repairWallGlobal()`. |
 | Wednesday 2026-11-04 12:48 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. |
 | Wednesday 2026-11-04 12:48 | [`transformUpdatesLOS`](#transformupdateslos) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`transformInventory`](#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. |
@@ -65,29 +78,16 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. |
 | Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos (20 protos carry `AbstractDaimyo`); with a new marker, that type on the trainers or on the blocking buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
-| Tuesday 2026-11-03 14:51 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | Nothing. |
 | Tuesday 2026-11-03 10:43 | [`compatMode`](#compatmode) | Added. Offers every 32-bit display mode as a 16-bit mode too. | Nothing. |
-| Tuesday 2026-11-03 10:43 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Added. Dynamic free units grow smoothly with game time, not in 2-minute steps. | Nothing. |
-| Tuesday 2026-11-03 08:39 | [`customProtoUnitCommands`](#customprotounitcommands) | Added. Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | The file, and the `<Command>` lines that use them. |
-| Tuesday 2026-11-03 08:16 | [`kbUnitSyscalls`](#kbunitsyscalls) | Added. Five KB syscalls for AI scripts: a unit's inventory, its workers and its targeters. | AI scripts that call them. |
-| Tuesday 2026-11-03 07:25 | [`wonderCivUnitType`](#wondercivunittype) | Added. `Rangatira` may start the Maori age-up. | Nothing. |
-| Monday 2026-11-02 21:22 | [`customSyscalls`](#customsyscalls) | Filmed in WoL, with a control. Loads `wolPlugin.upl` and `wolai.upl` and adds the XS syscalls they register. | The plugins. |
-| Monday 2026-11-02 21:19 | [`nativeCivs`](#nativecivs) | Added. WallMapu, Tupinamba and Tawantinsuyu count as native civs: fire pit, dances and council age-up. | Those civs' data. |
 | Monday 2026-11-02 21:19 | [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds), [`noBigButtonBlds`](#bigbuttoncivs-and-nobigbuttonblds) | Added. Gives the command panel's big button to the listed civs, and takes it from the listed buildings. | Nothing. |
 | Monday 2026-11-02 21:10 | [`twoScoutCivs`](#twoscoutcivs) | Added. The Koreans get the interface of the civs that start with two heroes. | A second hero. |
-| Monday 2026-11-02 21:10 | [`marketUnits`](#marketunits) | Added. Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | Nothing. |
 | Monday 2026-11-02 21:10 | [`explorerUnits`](#explorerunits) | Added. WoL's listed protos (40 triples) get a hero's name and knockout message. | The string IDs. |
-| Monday 2026-11-02 20:47 | [`customCheats`](#customcheats) | Added. The cheats of WoL's plugins work in the chat. | `customSyscalls`, and plugins that register cheats. |
-| Monday 2026-11-02 20:40 | [`enableAllTeams`](#enableallteams) | Added. Teams 3 and 4 in the single-player game setup. | Nothing. |
-| Monday 2026-11-02 20:33 | [`selectionLimit`](#selectionlimit) | Added. A selection holds up to N units (50 in the exe). | Nothing. |
-| Monday 2026-11-02 20:27 | [`asianCivs`](#asiancivs) | Added. Egyptians, Ethiopians, Koreans, Zulu and Maori count as Asian civs: consulate, export and wonders. | Those civs' data. |
 | Monday 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Added. Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | The file. |
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. Shows WoL's 52 `AI4\*.personality` files in game setup. | The personality files. |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | Nothing. |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. |
-| Wednesday 2026-10-28 12:48 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Added. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
 | Wednesday 2026-10-28 10:56 | [`ignoreRegistryPath`](#ignoreregistrypath) | Added. Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | Nothing. |
 | Wednesday 2026-10-28 10:56 | [`deckCardCount`](#deckcardcount) | Added. Raises the 25-card deck cap. | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). |
 | Wednesday 2026-10-28 10:56 | [`noAILimit`](#noailimit) | Added. Shows every `AI4\*.personality` file in game setup. | The personality files. |
@@ -581,11 +581,16 @@ deckCardCount <N>        N from 20 to 10000
 
 #### selectionLimit
 
-**Added:** Monday 2026-11-02 20:33
+**Added:** Monday 2026-11-02 20:33 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![selectionLimit in game](media/selectionLimit.gif)
+![selectionLimit in WoL](media/selectionLimit-wol.gif)
 
-*In WoL:* with `selectionLimit 75`, a box over 89 Pikemen selects 75 (the number on the selection icon); without the key it stops at 50. [Full video (MP4)](media/selectionLimit.mp4).
+*In WoL:* with `selectionLimit 75`, a box over 78 Pikemen selects 75 (the number on the selection icon).
+[Full video (MP4)](media/selectionLimit-wol.mp4).
+
+![selectionLimit in WoL, key off](media/selectionLimit-wol-control.gif)
+
+*In WoL, key off (the same scene):* the same box stops at 50. [Full video (MP4)](media/selectionLimit-wol-control.mp4).
 
 ```
 selectionLimit N
@@ -598,8 +603,8 @@ selectionLimit N
   applied).
 - **Simulation:** no: it only changes what the local player can select. Players may set it
   differently.
-- **Status:** confirmed (2026-11-02, single player): with 75, a box over 89 Pikemen selected 75;
-  without the key, 50. Video `selectionLimit.mp4`, with `--perf` (no frame over 50 ms).
+- **Status:** confirmed (single player, on WoL): with 75, a box over 78 Pikemen selected 75; without the
+  key, 50.
 
 #### noAILimit
 
@@ -663,11 +668,15 @@ noAILimitV2
 
 #### enableAllTeams
 
-**Added:** Monday 2026-11-02 20:40
+**Added:** Monday 2026-11-02 20:40 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![enableAllTeams in game](media/enableAllTeams.gif)
+![enableAllTeams in WoL](media/enableAllTeams-wol.gif)
 
-*In WoL:* the setup's team list offers Team 3 and Team 4; player 1 takes Team 3 and the AI Team 4 (1.5x speed). [Full video (MP4)](media/enableAllTeams.mp4).
+*In WoL:* the setup's team list offers Team 1 to 4. [Full video (MP4)](media/enableAllTeams-wol.mp4).
+
+![enableAllTeams in WoL, key off](media/enableAllTeams-wol-control.gif)
+
+*In WoL, key off (the same screen):* only Team 1 and Team 2. [Full video (MP4)](media/enableAllTeams-wol-control.mp4).
 
 ```
 enableAllTeams
@@ -680,8 +689,8 @@ enableAllTeams
   changed yet)`; `hook reached: enableAllTeams setup list (0x7A0709)`.
 - **Simulation:** it only adds choices; the teams chosen are part of the game setup as usual.
 - **Status:** partly confirmed (2026-11-02, single player): the list shows Team 1–4 and "?", and
-  a skirmish with Team 3 against Team 4 started and played; how the game numbers the teams
-  inside was not read. Video `enableAllTeams.mp4`.
+  a skirmish with Team 3 against Team 4 started and played; how the game numbers the teams inside was not
+  read.
 - **Fixed from UHC 1.10:** upstream loads the temporary string's destructor but never calls it
   (a leak per list fill).
 
@@ -737,16 +746,19 @@ customAbstractTypes [file]
 
 #### customProtoUnitCommands
 
-**Added:** Tuesday 2026-11-03 08:39
+**Added:** Tuesday 2026-11-03 08:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![customProtoUnitCommands in game](media/customProtoUnitCommands.gif)
+![customProtoUnitCommands in WoL](media/customProtoUnitCommands-wol.gif)
 
-*In WoL (Zulu `AFRICANyouth`):* the unit's `<Command>` buttons use WoL's command types. Their tooltips
-come from `protounitcommands.xml`, and a click runs their command: two transforms into "maturing"
-units, which become a Tradesman and a Bowman about 10 s later. Without the key the same unit has no
-such buttons (top of the still below):
-![customProtoUnitCommands off and on](media/customProtoUnitCommands-control.png)
-[Full video (MP4)](media/customProtoUnitCommands.mp4).
+*In WoL (Zulu `AFRICANyouth`):* the unit's `<Command>` buttons use WoL's command types. Their tooltips come
+from `protounitcommands.xml`, and a real click on each runs its command: two transforms into "maturing"
+units, which become a Tradesman and a Bowman about 10 s later.
+[Full video (MP4)](media/customProtoUnitCommands-wol.mp4).
+
+![customProtoUnitCommands in WoL, key off](media/customProtoUnitCommands-wol-control.gif)
+
+*In WoL, key off (the same scene):* the same unit has no such buttons, and the clicks do nothing.
+[Full video (MP4)](media/customProtoUnitCommands-wol-control.mp4).
 
 ```
 customProtoUnitCommands [file]
@@ -780,8 +792,7 @@ customProtoUnitCommands [file]
   became a maturing unit and then the final unit (a Tradesman, a Bowman). The maturing unit trains the
   final unit with a `Maintain` action that the Zulu start tech `Age0zulu` enables. Without the key the
   same unit showed none. The game's command records are a fixed array (130), and a first build that
-  only added the names showed no button and wrote past it; the key enlarges the array. Video
-  `customProtoUnitCommands.mp4`.
+  only added the names showed no button and wrote past it; the key enlarges the array.
 
 #### customHotkeyContexts
 
@@ -965,11 +976,13 @@ enableTechRenameEffect [log]     the same key under WoL's name
 
 #### customSyscalls
 
-**Added:** Monday 2026-11-02 20:13 · **Filmed in WoL:** Monday 2026-11-02 21:22
+**Added:** Monday 2026-11-02 20:13 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![customSyscalls-wol-ai in game](media/customSyscalls-wol-ai.gif)
+![customSyscalls in WoL](media/customSyscalls-wol.gif)
 
-*In WoL:* with `customSyscalls wolPlugin.upl wolai.upl`, WoL's AI compiles and plays: the counter shows its settlers and houses growing (2x speed), with the performance numbers on top. [Full video (MP4)](media/customSyscalls-wol-ai.mp4).
+*In WoL (a skirmish against the AI):* with `customSyscalls wolPlugin.upl wolai.upl`, WoL's AI compiles and
+plays: no XS error, and it gathers and trains from the start.
+[Full video (MP4)](media/customSyscalls-wol.mp4).
 
 ```
 customSyscalls [file or pattern ...]
@@ -1005,11 +1018,16 @@ customSyscalls [file or pattern ...]
 
 #### customCheats
 
-**Added:** Monday 2026-11-02 20:47
+**Added:** Monday 2026-11-02 20:47 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![customCheats in game](media/customCheats.gif)
+![customCheats in WoL](media/customCheats-wol.gif)
 
-*In WoL:* `kill 'em all`, a cheat of `wolPlugin.upl` typed in the chat (second ~4), spawns 50 Cannons; the two frames over 100 ms are the moment the 50 units appear. [Full video (MP4)](media/customCheats.mp4).
+*In WoL (a skirmish):* `kill 'em all`, a cheat of `wolPlugin.upl` typed in the chat, spawns 50 Cannons.
+[Full video (MP4)](media/customCheats-wol.mp4).
+
+![customCheats in WoL, key off](media/customCheats-wol-control.gif)
+
+*In WoL, key off (the same scene):* the same text does nothing. [Full video (MP4)](media/customCheats-wol-control.mp4).
 
 ```
 customCheats
@@ -1023,20 +1041,19 @@ customCheats
   the table is built; `hook reached: customCheats cheat table (0x551FE6)`.
 - **Simulation:** a cheat runs as a game command, as the game's own cheats do; every player needs the
   same plugins.
-- **Status:** confirmed (2026-11-02, single player, on WoL): 33 plugin cheats added after the exe's 23,
-  and `kill 'em all` spawned 50 Cannons. Video `customCheats.mp4` (two frames over 100 ms while the 50
-  units appear).
+- **Status:** confirmed (single player, on WoL): 33 plugin cheats added after the exe's 23, and `kill 'em
+  all` spawned 50 Cannons in a skirmish; none without the key. Cheats do not run in a scenario.
 
 #### kbUnitSyscalls
 
-**Added:** Tuesday 2026-11-03 08:16
+**Added:** Tuesday 2026-11-03 08:16 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![kbUnitSyscalls in game](media/kbUnitSyscalls.gif)
+![kbUnitSyscalls in WoL](media/kbUnitSyscalls-wol.gif)
 
 *In WoL (the Maori AI Te Rauparaha):* its script calls the five syscalls, compiles and plays; a test rule
-prints them in the chat for what the AI's villagers gather (here a hunted animal: 6 visible workers,
-the exe's `kbUnitGetNumberWorkers` 0) and for its livestock (food 50 of 300, not full).
-[Full video (MP4)](media/kbUnitSyscalls.mp4).
+prints them in the chat for what the AI's villagers gather and for its livestock. Without the key this
+AI does not compile (`Error 0172`), so there is no control video.
+[Full video (MP4)](media/kbUnitSyscalls-wol.mp4).
 
 ```
 kbUnitSyscalls
@@ -1068,8 +1085,7 @@ kbUnitSyscalls
   `kbUnitGetNumberWorkersIfSeeable` gave 6 (`kbUnitGetNumberWorkers` gave 0 for that Gaia unit; game
   memory showed the same 6 gatherer IDs); the AI's livestock showed food 50 of capacity 300, not full; a
   mine and a bush at full showed "full". `kbUnitGetNumberTargeters` was reached but gave 0 in that
-  window (every gatherer was already working its target). Video `kbUnitSyscalls.mp4`: about 1,200 fps
-  on average, no frame over 50 ms.
+  window (every gatherer was already working its target).
 
 ### Civs
 
@@ -1083,18 +1099,25 @@ What the exe decides by civ.
 | [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds), [`noBigButtonBlds`](#bigbuttoncivs-and-nobigbuttonblds) | Gives the command panel's big button to the listed civs, and takes it from the listed buildings. | **in `wol.cfg`** | Nothing. | partly confirmed |
 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | **new** | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player) |
 | [`wonderCivUnitType`](#wondercivunittype) | `Rangatira` may start the Maori age-up. Without it, the Maori cannot age up. | **in `wol.cfg`** | Nothing. | confirmed |
-| [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed from the log and memory (single player) |
+| [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | **new** | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for each of WoL's 29 `XPRevolution<Name>` techs, not only O'Higgins. | **in `wol.cfg`** | A banner texture per revolution. | partly confirmed |
 | [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | **in `wol.cfg`** | Two icon textures. | not tested in game |
 
 #### asianCivs
 
-**Added:** Monday 2026-11-02 20:27
+**Added:** Monday 2026-11-02 20:27 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![asianCivs-koreans in game](media/asianCivs-koreans.gif)
+![asianCivs in WoL](media/asianCivs-wol.gif)
 
-*In WoL (Koreans):* the two Korean monks get their hero names (`explorerUnits`), then the villager opens the wonder age-up list with the Koreans' five wonders. [Full video (MP4)](media/asianCivs-koreans.mp4).
+*In WoL (a Korean skirmish):* the two Korean monks show their hero names (`explorerUnits`), then a real
+click on the villager's age-up button opens the list with the Koreans' five wonders.
+[Full video (MP4)](media/asianCivs-wol.mp4).
+
+![asianCivs in WoL, key off](media/asianCivs-wol-control.gif)
+
+*In WoL, key off (the same scene):* the same click opens nothing.
+[Full video (MP4)](media/asianCivs-wol-control.mp4).
 
 ```
 asianCivs Civ [Civ ...] [log]
@@ -1115,18 +1138,20 @@ asianCivs Civ [Civ ...] [log]
   `hook reached: asianCivs isAsianCiv (0x454F1D)`, `… civ value (0x8D6AC4)`,
   `… wonder age-up (0x818284)`.
 - **Simulation:** changes what the listed civs may do: every player needs the same line.
-- **Status:** confirmed (2026-11-02, single player): the five civs resolved, and a Korean villager
-  opened the wonder age-up list with its five wonders. Video `asianCivs-koreans.mp4`.
+- **Status:** confirmed (single player, a skirmish on WoL): the five civs resolved, and a Korean villager
+  opened the wonder age-up list with its five wonders; without the key, nothing opens.
 - **Fixed from UHC 1.10:** upstream tests EAX instead of AL after `0x49A2D8` in the wonder list,
   so the "civ has no entry" path (EAX = 0xFFFFFF00) counted as true.
 
 #### nativeCivs
 
-**Added:** Monday 2026-11-02 21:19
+**Added:** Monday 2026-11-02 21:19 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![nativeCivs-mapuche in game](media/nativeCivs-mapuche.gif)
+![nativeCivs in WoL](media/nativeCivs-wol.gif)
 
-*In WoL (WallMapu):* the Town Center opens the council age-up list with its five council members; the log lines on top show the civ resolved by the native civ tests and the dance gates. [Full video (MP4)](media/nativeCivs-mapuche.mp4).
+*In WoL (a WallMapu skirmish):* the Town Center opens the council age-up list with its five council
+members. There is no video without the key: the same click closes the game.
+[Full video (MP4)](media/nativeCivs-wol.mp4).
 
 ```
 nativeCivs Civ [Civ ...]
@@ -1149,8 +1174,7 @@ nativeCivs Civ [Civ ...]
 - **Simulation:** changes what the listed civs may do: every player needs the same line.
 - **Status:** confirmed (2026-11-03, single player): the three civs marked native, every hook ran in a
   skirmish, the four dance gates resolved them, and the WallMapu Town Center opened the council age-up
-  list with its five council members. Without the key, the same click closed the game. Video
-  `nativeCivs-mapuche.mp4`.
+  list with its five council members. Without the key, the same click closed the game.
 - **Fixed from UHC 1.10:** upstream compares a dword where isNativeCiv compares a byte, and its
   council hook clobbers EAX.
 
@@ -1268,13 +1292,17 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
 
 #### wonderCivUnitType
 
-**Added:** Tuesday 2026-11-03 07:25
+**Added:** Tuesday 2026-11-03 07:25 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![wonderCivUnitType in game](media/wonderCivUnitType.gif)
+![wonderCivUnitType in WoL](media/wonderCivUnitType-wol.gif)
 
-*In WoL (Maori):* the Maori age up with voyages and start without a Town Center. The `Rangatira` opens
-the age-up list; without the key the same click opens nothing.
-[Full video (MP4)](media/wonderCivUnitType.mp4).
+*In WoL (a Maori skirmish):* the Maori age up with voyages and start without a Town Center. The
+`Rangatira` opens the age-up list. [Full video (MP4)](media/wonderCivUnitType-wol.mp4).
+
+![wonderCivUnitType in WoL, key off](media/wonderCivUnitType-wol-control.gif)
+
+*In WoL, key off (the same scene):* the same click opens nothing.
+[Full video (MP4)](media/wonderCivUnitType-wol-control.mp4).
 
 ```
 wonderCivUnitType Proto [Proto ...]
@@ -1289,7 +1317,7 @@ wonderCivUnitType Proto [Proto ...]
   applies, `wonderCivUnitType: <Proto> accepted for the wonder age-up`.
 - **Simulation:** changes who may age up: every player needs the same line.
 - **Status:** confirmed (2026-11-03, single player): the Maori Rangatira opened the age-up list; without
-  the key the same click opened nothing. Video `wonderCivUnitType.mp4`.
+  the key the same click opened nothing.
 
 #### startingTC
 
@@ -2019,13 +2047,18 @@ Attacks, armor, and what a hit does.
 
 #### multiarmor
 
-**Added:** Tuesday 2026-11-03 09:33 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Tuesday 2026-11-03 09:33 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![multiarmor in game](media/multiarmor.gif)
+![multiarmor in WoL](media/multiarmor-wol.gif)
 
 *In WoL:* a `HonorGuard`, with `<Armor type="Hand" value="0.2"/>` and `<Armor type="Ranged" value="0.2"/>`,
-under pikemen: each pike hit takes 38 HP (armor 0.2); without the key it took 47.5 (the unit kept only
-its last armor, Ranged). [Full video (MP4)](media/multiarmor.mp4).
+under three Pikemen. Its Hand armor counts, so it lasts longer and leaves a Pikeman at 33 HP.
+[Full video (MP4)](media/multiarmor-wol.mp4).
+
+![multiarmor in WoL, key off](media/multiarmor-wol-control.gif)
+
+*In WoL, key off (the same scene):* the unit keeps only its last armor, Ranged, and falls sooner, with that
+Pikeman at 56 HP. [Full video (MP4)](media/multiarmor-wol-control.mp4).
 
 ```
 multiarmor
@@ -2063,7 +2096,7 @@ multiarmor
   key and 47.5 without it. `gwDreadnought`, with `GWantitorpedobulge` (+0.1 Ranged, +0.1 Siege effects):
   with the key Siege went to 0.4 and Ranged to 0.5; without it Siege went to 0.5. Performance A/B in a
   battle of 160 units, 60 s each: 1263 / 1289 fps, update 0.138 / 0.136 ms, one frame over 50 ms each
-  (no measurable cost). Video `multiarmor.mp4`.
+  (no measurable cost).
 
 #### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
@@ -2125,14 +2158,15 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 
 *In WoL, with `dodgeChance ypSettlerJapanese 50 notech ranged log` and `dodgeAnyUnit Settler log`
 (`YPDodge` active; the villagers are selected):* three Redcoats shoot four villagers that do not
-shoot back. The two Japanese settlers dodge 18 of their 31 rolls, the European settler dodges at the
+shoot back. The two Japanese settlers dodge 15 of their 27 rolls, the European settler dodges at the
 exe's 15 %, and the unmarked Indian settler, which never dodges, dies first.
 [Full video (MP4)](media/dodge-wol.mp4).
 
 ![dodge in WoL, keys off](media/dodge-wol-control.gif)
 
-*In WoL, keys off (the same scene):* no villager dodges; every hit takes HP off the bars and all
-four are dead before 65 s of game time.
+*In WoL, keys off (the same scene):* no villager dodges; every hit takes HP off the bars and all four are
+dead before 60 s of game time. With so few shots the time they last varies from run to run; the rolls
+are what the rule sets.
 [Full video (MP4)](media/dodge-wol-control.mp4).
 
 ```
@@ -2179,7 +2213,7 @@ One line per rule; several lines add up, and the first rule that matches a hit d
   matches, the same on every machine. A rule's type that the data does not define adds a unit
   type: load saved games and replays with the same cfg.
 - **Status:** confirmed in single player. In WoL (2026-11-04): `dodgeChance ypSettlerJapanese 50 notech
-  ranged` gave 18 dodges in 31 rolls, and nobody dodged without the keys. On the stock game (2026-10-29):
+  ranged` gave 15 dodges in 27 rolls, and nobody dodged without the keys. On the stock game (2026-10-29):
   - 50 % `ranged`: 18 dodges in 46 rolls, then 28 in 50; 0 % `melee`: 0 in 57;
   - 30 % `notech`, `YPDodge` not active: 20 in 71;
   - 100 % with an active tech: 49 of 49; a rule whose tech was not active: 15 hits, no dodge;
@@ -2520,7 +2554,7 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
 #### broadsideMuzzleLimit
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 14:51
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![broadsideMuzzleLimit in WoL](media/broadsideMuzzleLimit-wol.gif)
 
@@ -2705,12 +2739,17 @@ Resources, gatherers, and what pays for them.
 
 #### gatherFix
 
-**Added:** Tuesday 2026-11-03 11:15 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Tuesday 2026-11-03 11:15 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![gatherFix in game](media/gatherFix.gif)
+![gatherFix in WoL](media/gatherFix-wol.gif)
 
-*In WoL:* settlers on a Mill and on trees; with the key they gather at the rate the data gives.
-[Full video (MP4)](media/gatherFix.mp4).
+*In WoL, with `gatherFix`:* four settlers on a Mill and three on trees gather at the rate the data gives:
+167 food and 128 wood at 92 s of game time. [Full video (MP4)](media/gatherFix-wol.mp4).
+
+![gatherFix in WoL, key off](media/gatherFix-wol-control.gif)
+
+*In WoL, key off (the same scene):* the rate follows the animation: 222 food and 153 wood at the same
+time. [Full video (MP4)](media/gatherFix-wol-control.mp4).
 
 ```
 gatherFix
@@ -2725,9 +2764,9 @@ gatherFix
 - **Simulation:** changes gathering: every player needs the same line.
 - **Performance:** a collection every 0.5 s per gatherer. With 40 gatherers: update 0.143 / 0.142
   ms with / without, no frame over 50 ms, about 10% fewer frames per second (711–733 vs 815).
-- **Status:** confirmed (2026-11-03, single player, on WoL): in 120 s, 3 settlers on trees (rate 0.5)
-  gathered 179.5 wood with the key (0.50 per second each) and 281.3 without it (0.78), and 4 on a Mill
-  235.5 food against 367.3. Video `gatherFix.mp4`.
+- **Status:** confirmed (single player, on WoL): in 120 s, 3 settlers on trees (rate 0.5) gathered 179.5
+  wood with the key (0.50 per second each) and 281.3 without it (0.78), and 4 on a Mill 235.5 food against
+  367.3.
 
 #### showGatherRate
 
@@ -2822,21 +2861,23 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 
-**Added:** Tuesday 2026-11-03 06:49 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Tuesday 2026-11-03 06:49 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![enableFarmAnim in game](media/enableFarmAnim.gif)
+![enableFarmAnim in WoL](media/enableFarmAnim-wol.gif)
 
-*In WoL (Iroquois):* gatherers on a listed plantation (Mill-like, front) and a listed farm (Rice
-Paddy-like, right) spread over the fields and use the farming animations; the log lines on top
-are the keys'. [Full video (MP4)](media/enableFarmAnim.mp4). Without the keys
-(left of the still below) the same gatherers stand bunched at one side of each building:
-![enableFarmAnim off and on](media/enableFarmAnim-control.png)
+*In WoL (Iroquois):* gatherers on `WOLFarmIroquois`, listed in `enableRectFarmAnim`, work inside its rows
+with the farming animations; the log lines are the keys'. [Full video (MP4)](media/enableFarmAnim-wol.mp4).
 
-![farmingRadius in game](media/farmingRadius-12.gif)
+![enableFarmAnim in WoL, keys off](media/enableFarmAnim-wol-control.gif)
 
-*In WoL:* the same plantation with `farmingRadius 3 12.0 12.0`: its four gatherers (HP lines on top) range
-up to 11.9 m from its centre, against about 5 m with the exe's 4.5.
-[Full video (MP4)](media/farmingRadius-12.mp4).
+*In WoL, keys off (the same scene):* the same gatherers stand bunched at one side of the building.
+[Full video (MP4)](media/enableFarmAnim-wol-control.mp4).
+
+![farmingRadius in WoL](media/farmingRadius-wol.gif)
+
+*In WoL:* a plantation with `farmingRadius 3 12.0 12.0`: its gatherers spread far from it, up to 11.9 m
+from its centre when measured, against about 5 m with the exe's 4.5.
+[Full video (MP4)](media/farmingRadius-wol.mp4).
 
 ```
 enableFarmAnim Proto [Proto ...]
@@ -2871,14 +2912,16 @@ farmingRadius Index X Z [Index X Z ...]
 
 #### nowalkfarm
 
-**Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![nowalkfarm in game](media/nowalkfarm.gif)
+![nowalkfarm in WoL](media/nowalkfarm-wol.gif)
 
-*In WoL:* four settlers on a Mill keep their spots; without the key (below) each walked 33–47 m
-in a minute, moving to new spots around the field.
-![nowalkfarm off](media/nowalkfarm-control.gif)
-[Full video (MP4)](media/nowalkfarm.mp4), [without the key (MP4)](media/nowalkfarm-control.mp4).
+*In WoL:* the settlers on a Mill keep their spots. [Full video (MP4)](media/nowalkfarm-wol.mp4).
+
+![nowalkfarm in WoL, key off](media/nowalkfarm-wol-control.gif)
+
+*In WoL, key off (the same scene):* each one walks to new spots around the field: 33 to 47 m in a minute
+when measured. [Full video (MP4)](media/nowalkfarm-wol-control.mp4).
 
 ```
 nowalkfarm
@@ -2888,17 +2931,22 @@ nowalkfarm
   spot around the farm from time to time. `wol.cfg` has this line.
 - **Log:** `nowalkfarm: farm gatherers keep their first spot`.
 - **Simulation:** changes where units stand: every player needs the same line.
-- **Status:** confirmed (2026-11-03, single player): four settlers on a Mill moved 0 m in 60 s
-  with the key and 33–47 m each without it, gathering in both cases. Video `nowalkfarm.mp4`.
+- **Status:** confirmed (single player, on WoL): four settlers on a Mill moved 0 m in 60 s with the key and
+  33–47 m each without it, gathering in both cases.
 
 #### betterfreedynamicunit
 
-**Added:** Tuesday 2026-11-03 10:43
+**Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![betterfreedynamicunit in game](media/betterfreedynamicunit.gif)
+![betterfreedynamicunit in WoL](media/betterfreedynamicunit-wol.gif)
 
-*In WoL (Argentineans, `Corderos`):* a tech with `amount="-2.00"` free Sheep, set at 3 minutes: 3 Sheep (1.5 two-minute
-steps × 2). [Full video (MP4)](media/betterfreedynamicunit.mp4).
+*In WoL (an Argentinean skirmish, on a test map whose trigger turns on `Corderos`, −2 Sheep, at 205 s):* 3
+Sheep, from 1.71 two-minute steps × 2 (`-> 3.417`). [Full video (MP4)](media/betterfreedynamicunit-wol.mp4).
+
+![betterfreedynamicunit in WoL, key off](media/betterfreedynamicunit-wol-control.gif)
+
+*In WoL, key off (the same scene):* the exe rounds up to 2 steps: 4 Sheep.
+[Full video (MP4)](media/betterfreedynamicunit-wol-control.mp4).
 
 ```
 betterfreedynamicunit
@@ -2912,17 +2960,21 @@ betterfreedynamicunit
 - **Log:** `betterfreedynamicunit: dynamic free units grow ...`; the first time, `amount A at S
   steps of 2 min -> N`.
 - **Simulation:** changes how many units arrive: every player needs the same line.
-- **Status:** confirmed (2026-11-03, single player, on WoL): `Corderos` (−2 Sheep), set by a map trigger,
-  at 420 s gave 7 Sheep with the key and 8 without; at 180 s, 3 with the key. Video
-  `betterfreedynamicunit.mp4`.
+- **Status:** confirmed (single player, on WoL): `Corderos` (−2 Sheep), set by a map trigger, at 205 s gave
+  3 Sheep with the key and 4 without; at 420 s, 7 and 8.
 
 #### marketUnits
 
-**Added:** Monday 2026-11-02 21:10
+**Added:** Monday 2026-11-02 21:10 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![marketUnits in game](media/marketUnits.gif)
+![marketUnits in WoL](media/marketUnits-wol.gif)
 
-*In WoL (`WOLMarketGreek`):* with only that market building, each click buys 100 food (food 200 to 500, gold falling); without the key the same clicks change nothing. [Full video (MP4)](media/marketUnits.mp4).
+*In WoL (`WOLMarketGreek`):* with only that market building, three clicks buy 300 food (gold 1000 to 621).
+[Full video (MP4)](media/marketUnits-wol.mp4).
+
+![marketUnits in WoL, key off](media/marketUnits-wol-control.gif)
+
+*In WoL, key off (the same scene):* the same clicks change nothing. [Full video (MP4)](media/marketUnits-wol-control.mp4).
 
 ```
 marketUnits Proto [Proto ...]
@@ -2936,9 +2988,8 @@ marketUnits Proto [Proto ...]
   `marketUnits: K of N protos found in the data` (and each unknown name);
   `hook reached: marketUnits trade test (0x7DEF70)`.
 - **Simulation:** changes who may trade: every player needs the same line.
-- **Status:** confirmed (2026-11-02, single player): with only a `WOLMarketGreek` and 1000 gold,
-  buying food worked (food 0 to 500, gold 1000 to 362); without the key the same clicks changed
-  nothing. Video `marketUnits.mp4`.
+- **Status:** confirmed (single player, on WoL): with only a `WOLMarketGreek` and 1000 gold, buying food
+  worked (food 0 to 300, gold 1000 to 621); without the key the same clicks changed nothing.
 
 ### Buildings and training
 
@@ -3240,13 +3291,17 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 
 #### trainSingleAbstractType
 
-**Added:** Tuesday 2026-11-03 07:25 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Tuesday 2026-11-03 07:25 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![trainSingleAbstractType in game](media/trainSingleAbstractType.gif)
+![trainSingleAbstractType in WoL](media/trainSingleAbstractType-wol.gif)
 
-*In WoL (Germans):* three `WOLTotenkopfHussar` queued at once come out one at a time (the unit lines on top
-grow from one to two); without the key the same order brought three out together.
-[Full video (MP4)](media/trainSingleAbstractType.mp4).
+*In WoL (Germans):* three `WOLTotenkopfHussar` queued at once come out one at a time, the Barracks' queue
+keeps the rest. [Full video (MP4)](media/trainSingleAbstractType-wol.mp4).
+
+![trainSingleAbstractType in WoL, key off](media/trainSingleAbstractType-wol-control.gif)
+
+*In WoL, key off (the same scene):* the same order brings the three out together.
+[Full video (MP4)](media/trainSingleAbstractType-wol-control.mp4).
 
 ```
 trainSingleAbstractType [UnitType]
@@ -3261,7 +3316,7 @@ trainSingleAbstractType [UnitType]
 - **Simulation:** changes how units are created: every player needs the same line.
 - **Status:** confirmed (2026-11-03, single player, on WoL): a queue of `WOLTotenkopfHussar` produced one,
   then a second about a minute later; without the key the same queue produced three together (the
-  proto's `BuildLimit` is 3). Video `trainSingleAbstractType.mp4`.
+  proto's `BuildLimit` is 3).
 
 #### noTrainNearEnemyTC
 
@@ -3534,12 +3589,17 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 
 #### repairWallGlobal
 
-**Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![repairWallGlobal in game](media/repairWallGlobal.gif)
+![repairWallGlobal in WoL](media/repairWallGlobal-wol.gif)
 
-*In WoL:* three damaged walls (1200 / 1500) back to full a few seconds after one
-`repairWallGlobal()`. [Full video (MP4)](media/repairWallGlobal.mp4).
+*In WoL:* three damaged walls (600 / 1500) are back at full a few seconds after one `repairWallGlobal()`.
+[Full video (MP4)](media/repairWallGlobal-wol.mp4).
+
+![repairWallGlobal in WoL, key off](media/repairWallGlobal-wol-control.gif)
+
+*In WoL, key off (the same scene):* the call does nothing, and the walls stay at 600.
+[Full video (MP4)](media/repairWallGlobal-wol-control.mp4).
 
 ```
 repairWallGlobal
@@ -3553,16 +3613,23 @@ repairWallGlobal
 - **Log:** `repairWallGlobal: UI syscall repairWallGlobal() added`; the first call, `hook reached:
   repairWallGlobal (player P: N wall(s) ordered to repair)`.
 - **Simulation:** sends one game command per wall: safe in multiplayer.
-- **Status:** confirmed (2026-11-03, single player, on WoL): three `WallStraight5` at 1200 / 1500 went back to 1500
-  after one call; without the key the call did nothing. Video `repairWallGlobal.mp4`.
+- **Status:** confirmed (single player, on WoL): three `WallStraight5` at 600 / 1500 went back to 1500 after
+  one call; without the key the call did nothing.
 
 #### hcShipmentPointFallback
 
-**Added:** Wednesday 2026-10-28 12:48
+**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
-![hcShipmentPointFallback in game](media/hcShipmentPointFallback.gif)
+![hcShipmentPointFallback in WoL](media/hcShipmentPointFallback-wol.gif)
 
-*On the stock game (not filmed in WoL yet):* no Town Center on the map: the food crates of a home city card land beside player 1's Market, its first town center (made by [`civFirstTC`](#civfirsttc)), through `hcShipmentPointFallback FirstTC`. [Full video (MP4)](media/hcShipmentPointFallback.mp4).
+*In WoL (an Ethiopian skirmish, on a test map with triggers), with `hcShipmentPointFallback houseafrican`:*
+the Town Center falls at 180 s, and a shipment of food crates, `HCShipFoodCrates3`, lands beside the
+player's house. [Full video (MP4)](media/hcShipmentPointFallback-wol.mp4).
+
+![hcShipmentPointFallback in WoL, key off](media/hcShipmentPointFallback-wol-control.gif)
+
+*In WoL, key off (the same scene):* a house is not one of the exe's 10 types, so there is no shipment
+point, and nothing arrives. [Full video (MP4)](media/hcShipmentPointFallback-wol-control.mp4).
 
 ```
 hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entries
@@ -3617,10 +3684,10 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 - **Simulation:** yes. Every choice reads only game state, so every machine with the same cfg
   picks the same building. Every player needs the same line (and the same `startingTC` or
   `civFirstTC` line).
-- **Status:** confirmed in single player, on the stock game; not filmed in WoL yet.
-  - Proto names: after deleting the Town Center, the point moved to a listed building and shipments
-    arrived there.
-  - `FirstTC` with `civFirstTC` (2026-10-29): with no Town Center on the map, a card of 300 food landed
+- **Status:** confirmed in single player.
+  - Proto names, in WoL (2026-11-04): with the Town Center dead, a shipment landed at a `houseafrican`, and
+    nothing arrived without the key.
+  - `FirstTC` with `civFirstTC`, on the stock game (2026-10-29): with no Town Center on the map, a card of 300 food landed
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
