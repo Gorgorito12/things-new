@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `workRateByAbstractType` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
@@ -1219,6 +1219,17 @@ Code: [gathering](porting-code/gathering.md#workratebyabstracttype).
 
 Check it in the game: with `showGatherRate`, select a villager on an `OlivePlantation` and activate
 `Amalgamation`: the rate goes from 0.28 to 0.34.
+
+### autoGatherScaleByContained
+
+Code: [gathering](porting-code/gathering.md#autogatherscalebycontained).
+
+- **Site:** a 6-byte `jmp` at `0x49EBE4` (`51 53 8B 5C 24 0C`: `push ecx; push ebx; mov ebx,[esp+0Ch]`), continue at
+  `0x49EBEA`. No range of WoL's DLL overlaps it.
+- **In the hook:** only the assembly; there is no C++ logic but the key.
+
+Check it in the game: add the tag to an AutoGather action of a building that can garrison, select it and put two
+units inside: the rate row doubles.
 
 ### showGatherRate
 

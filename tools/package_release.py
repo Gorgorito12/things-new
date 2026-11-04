@@ -232,6 +232,7 @@ overhealDecay R[%] [D] [UnitType ...] [log]   overheal above InitialHitpoints de
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
+autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

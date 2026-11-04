@@ -2752,6 +2752,7 @@ Resources, gatherers, and what pays for them.
 | [`gatherFix`](#gatherfix) | Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. WoL's balance assumes it. | always on | Nothing. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
+| [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -2938,6 +2939,51 @@ workRateByAbstractType [UnitType ...] [log | log=<Proto>]
   start with `workRateByAbstractType All`, took 0.536 back to 0.670; with `AbstractMine` taken off `Plantation`
   in `protoy.xml`, 32 protos and no change to its rate; a skirmish against the AI, which played on (16 to 24
   units in 120 s of game time). Multiplayer not tested.
+
+#### autoGatherScaleByContained
+
+![autoGatherScaleByContained in WoL](media/autoGatherScaleByContained-wol.gif)
+
+*In WoL, with `autoGatherScaleByContained` (Ethiopians; a test AutoGather of 0.25 gold on a Blockhouse, with
+the tag):* the villagers go in one by one and the panel's rate follows: 0.50/s with 2 inside, 1/s with 4.
+When they leave, the row goes and the gold stops at 20. [Full video (MP4)](media/autoGatherScaleByContained-wol.mp4).
+
+![autoGatherScaleByContained in WoL, key off](media/autoGatherScaleByContained-wol-control.gif)
+
+*In WoL, key off (the same scene):* the rate is 0.25/s with anyone or no one inside.
+[Full video (MP4)](media/autoGatherScaleByContained-wol-control.mp4).
+
+```
+autoGatherScaleByContained
+```
+
+- **In WoL today:** `<ScaleByContainedUnits>` is read only by attacks. An AutoGather action accepts the tag and
+  ignores it. `<ActiveIfContainsUnits>`, which WoL's `barn.tactics` uses, is on or off and no more.
+- **Effect:** an AutoGather action with the tag multiplies its rate by the units inside, as an attack multiplies
+  its damage, at most `<DamageFactorCap>` when the action has one. With nobody inside the rate is 0, also as in
+  an attack. The rate rows of the panels show the result.
+
+  ```xml
+  <action>
+      <name stringid="43295">AutoGather</name>
+      <type>AutoGather</type>
+      <active>1</active>
+      <persistent>1</persistent>
+      <Rate type ='Gold'>0.25</Rate>
+      <scalebycontainedunits>1</scalebycontainedunits>
+      <damagefactorcap>3</damagefactorcap>
+  </action>
+  ```
+
+- **Not covered:** the rest of JTMaston's #25, rate of fire. WoL has no AutoGather action with the tag today, so the
+  key changes nothing until one is added.
+- **Log:** `autoGatherScaleByContained: applied`, `hook reached: autoGatherScaleByContained (0x49EBE4)`.
+- **Simulation:** changes gathering: every player needs the same line.
+- **Saved games:** nothing to keep: the rate is computed from the units inside.
+- **Performance:** runs on every AutoGather update, a few instructions without the tag. With 40 Blockhouses with
+  the tag, for 60 s: update 0.1 ms with and without, longest frame 10 and 9 ms, no frame over 50 ms in either.
+- **Status:** confirmed (single player, on WoL): the rates above; 6 inside with `<damagefactorcap>3`: 0.75/s; an
+  argument: `FAILED`.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 

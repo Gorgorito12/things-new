@@ -1304,6 +1304,9 @@ inline constexpr Site kActionRateGet{"ActionRateGet", 0x0049EBB3, kActionRateGet
 inline constexpr std::uint8_t kActionRateSetBytes[] = {0x83, 0xEC, 0x0C, 0x55, 0x8B, 0x6C, 0x24, 0x14, 0x56, 0x8B, 0x71, 0x10, 0x33, 0xC0, 0x85, 0xF6};
 inline constexpr Site kActionRateSet{"ActionRateSet", 0x005FA2FC, kActionRateSetBytes, sizeof(kActionRateSetBytes)};
 
+inline constexpr std::uint8_t kAutoGatherRateEntryBytes[] = {0x51, 0x53, 0x8B, 0x5C, 0x24, 0x0C, 0x85, 0xDB};
+inline constexpr Site kAutoGatherRateEntry{"AutoGatherRateEntry", 0x0049EBE4, kAutoGatherRateEntryBytes, sizeof(kAutoGatherRateEntryBytes)};
+
 inline constexpr std::uint8_t kXmlAttributeBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x8D, 0x44, 0x24, 0x04, 0x50, 0x52, 0xE8, 0x23, 0xFF, 0xFF, 0xFF, 0x84};
 inline constexpr Site kXmlAttribute{"XmlAttribute", 0x00598F37, kXmlAttributeBytes, sizeof(kXmlAttributeBytes)};
 
@@ -1772,6 +1775,7 @@ Outcome ApplyDodge(const Config& config);
 Outcome ApplySpreadAnyAccuracy(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
 Outcome ApplyWorkRateByAbstractType(const Config& config);
+Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1847,6 +1851,7 @@ inline constexpr Feature kFeatures[] = {
     {"spreadAnyAccuracy", ApplySpreadAnyAccuracy},
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
+    {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1916,7 +1921,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",

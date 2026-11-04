@@ -865,6 +865,16 @@ the Gathering dance (FUN_004ECD39) in "Dances".
 | WorkRate effect | applyData case 3, 0x8F987C; unapplyData 0x8FB11A | confirmed (`cs`, in game) | Subtype 3 (registered at 0x524D38). Frame in applyData: action `[esp+20h]`, key `[esp+24h]`, amount `[esp+28h]`, relativity `[esp+2Ch]`, EDI target proto, ESI base proto, EBP 0. In unapplyData −4 each, ESI and EDI swapped. |
 | Effect removal | FUN_0094DCB2 (a tech's effects, every entry) → FUN_007F8168 → vtable +28h | confirmed (`cs`), in game | Two callers: the TechStatus effect's general unapply 0x7F8D8E, and 0x8EA9FA. `trTechSetStatus` does not remove effects. At a scenario's start `Age0Egyptian`'s `WorkRate` on `All` (×0.8) is applied and removed for each player. |
 
+### Garrison scaling (for `autoGatherScaleByContained`, WoL #25, 2026-11-04)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| ActiveIfContainsUnits / ScaleByContainedUnits | parser 0x5F9A7B / 0x5F9ABB; bits 17 / 18 of the flag bytes, set at 0x5FEDD3 / 0x5FEE1A | confirmed (`cs`) | Read through `[tacticsAction+64h]`, bit count `[+68h]`. |
+| DamageFactorCap | `[tacticsAction+48h]`, set at 0x5FEDF4 | confirmed (`cs`) | |
+| Attack multiplier | 0x4996C7, 0x6A4B83..0x6A4B91, 0x4996E8..0x49970A | confirmed (`cs`) | `fild [unit+74h]`, then the cap when above the cap and the cap is above 0. |
+| Contained count | `[unit+74h]` | confirmed, in game | 2, 4 and 6 units inside gave those factors. Not to be confused with the worker array `[unit+98h]`. |
+| AutoGather rate getter | 0x49EBE4, `float thiscall(action, int resource)`, `ret 4` | confirmed (`cs`, in game) | `[action+4]` tactics action, `[action+10h]` unit. Five callers: 0x48D16E (the update, × elapsed), 0x6992BD and 0x69B005 (panels), 0x69D232, 0x9CFE1E. Adds the rate of units on a shrine (`AbstractShrine`, 0x58) to its result. |
+
 ### Building work rate auras (for `buildingWorkRateAuras`)
 
 The getter 0x9BFE33 and its four callers are in "Building work rate"; the modifier action, its

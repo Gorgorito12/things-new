@@ -1032,6 +1032,9 @@ SITES = [
     ("ActionById", 0x48D22E, 0x10),
     ("ActionRateGet", 0x49EBB3, 0x10),
     ("ActionRateSet", 0x5FA2FC, 0x10),
+    # autoGatherScaleByContained: the entry of the AutoGather rate getter, push ecx / push ebx /
+    # mov ebx,[esp+0Ch], and the test ebx,ebx it continues at. No branch lands inside.
+    ("AutoGatherRateEntry", 0x49EBE4, 8),
     # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
     # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
     # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)

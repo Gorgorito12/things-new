@@ -2503,6 +2503,21 @@ read yet at the database load callback.
 - Tech effects are re-applied through applyData when a game loads, on protos rebuilt from the base, so the
   rates are correct after a load and nothing is stored in the DLL.
 
+### autoGatherScaleByContained
+
+The tactics flag `ScaleByContainedUnits` is bit 18 of the action's flag bytes (`[+64h]`, bit count `[+68h]`, set
+at 0x5FEE1A). The attack code reads it at 0x4996C7: the multiplier is the unit's contained count `[unit+74h]`
+(0x6A4B83), and if it is above DamageFactorCap `[+48h]` and that is above 0, the cap (0x4996E8..0x49970A). The stat
+panel reads it too. The AutoGather rate getter 0x49EBE4, `float thiscall(action, resource)`, does not.
+
+The hook replaces the getter's first three instructions. Without the flag it re-executes them and goes on at
+0x49EBEA. With it, it calls the getter's body, so that the body's `ret 4` comes back to the hook, and multiplies
+ST0 by the factor, with the attack code's rule.
+
+**Why it is safe.** The hook sits at a function entry, so EAX, ECX and EDX are free. No branch lands in the six
+bytes. Every caller gets the same rate: the update 0x48D16E, both panels (0x6992BD, 0x69B005), and the two that
+look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simulation state only.
+
 ### showGatherRate
 
 With the minimized interface (`optionminimizedui`) the stat panel fill returns at its start. The hook
