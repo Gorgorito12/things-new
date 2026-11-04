@@ -207,10 +207,9 @@ load-time A/B for `customAbstractTypes`.
 
 ## Language of the bed
 
-Since 2026-11-04 the bed runs in WoL's original English, so new videos are in English:
+Since 2026-11-04 the bed runs in WoL's original English, so the videos are in English:
 `data\stringtabley.xml` is `translations\_originals\stringtabley.xml` (md5 `33fa355c…`, the same file as
-Steam's WoL). The user's Spanish one is kept as `data\stringtabley.xml.es-la`. Videos filmed before that
-date show the Spanish interface, and their captions quote it.
+Steam's WoL). The user's Spanish one is kept as `data\stringtabley.xml.es-la`. The earlier takes were filmed again in English that day.
 
 ## Civs used in tests
 
