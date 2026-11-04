@@ -34,14 +34,14 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 10:29 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
 | Wednesday 2026-11-04 10:29 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. |
-| Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos; with a new marker, that type on the trainers (or on the blocking buildings) in `protoy`. |
+| Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos (20 protos carry `AbstractDaimyo`); with a new marker, that type on the trainers or on the blocking buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
 | Wednesday 2026-11-04 08:32 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. |
 | Wednesday 2026-11-04 08:32 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
 | Wednesday 2026-11-04 08:32 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
 | Wednesday 2026-11-04 08:11 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. |
 | Wednesday 2026-11-04 08:11 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
-| Wednesday 2026-11-04 08:11 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | That unit type on the producing buildings in `protoy`, or the name of an existing type or proto. |
+| Wednesday 2026-11-04 08:11 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 08:11 | [`transformUpdatesLOS`](#transformupdateslos) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | Nothing. |
 | Wednesday 2026-11-04 08:11 | [`transformInventory`](#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. |
 | Wednesday 2026-11-04 08:11 | [`abilitySlots`](#abilityslots) | Filmed in WoL, with a control. Lets the command panel show up to N abilities per unit instead of 6. | Units with more than 6 abilities in `abilities.xml`. |
@@ -67,7 +67,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Tuesday 2026-11-03 08:39 | [`customProtoUnitCommands`](#customprotounitcommands) | Added. Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | The file, and the `<Command>` lines that use them. |
 | Tuesday 2026-11-03 08:16 | [`kbUnitSyscalls`](#kbunitsyscalls) | Added. Five KB syscalls for AI scripts: a unit's inventory, its workers and its targeters. | AI scripts that call them. |
 | Tuesday 2026-11-03 07:25 | [`wonderCivUnitType`](#wondercivunittype) | Added. `Rangatira` may start the Maori age-up. | Nothing. |
-| Tuesday 2026-11-03 07:25 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Added. Marked units leave a training building one at a time, not as a batch. | That unit type on the protos. |
+| Tuesday 2026-11-03 07:25 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Added. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
 | Tuesday 2026-11-03 06:49 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Added. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
 | Monday 2026-11-02 21:22 | [`customSyscalls`](#customsyscalls) | Filmed in WoL, with a control. Loads `wolPlugin.upl` and `wolai.upl` and adds the XS syscalls they register. | The plugins. |
 | Monday 2026-11-02 21:19 | [`nativeCivs`](#nativecivs) | Added. WallMapu, Tupinamba and Tawantinsuyu count as native civs: fire pit, dances and council age-up. | Those civs' data. |
@@ -83,10 +83,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. Shows WoL's 52 `AI4\*.personality` files in game setup. | The personality files. |
 | Thursday 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | Added. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
 | Thursday 2026-10-29 10:35 | [`startingTC`](#startingtc) | Added. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
-| Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (TradingPost, or a mod's) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy`. |
+| Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | Nothing. |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. |
-| Wednesday 2026-10-28 12:48 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Added. When the building holding the shipment point dies and none of the 10 stock fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
+| Wednesday 2026-10-28 12:48 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Added. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
 | Wednesday 2026-10-28 10:56 | [`ignoreRegistryPath`](#ignoreregistrypath) | Added. Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | Nothing. |
 | Wednesday 2026-10-28 10:56 | [`basePop`](#basepop-and-extrapop), [`extraPop`](#basepop-and-extrapop) | Added. Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | Enough population buildings: 20 houses of 10 give 200 today. |
 | Wednesday 2026-10-28 10:56 | [`deckCardCount`](#deckcardcount) | Added. Raises the 25-card deck cap. | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). |
@@ -2915,13 +2915,13 @@ How buildings train, spawn, live and get replaced.
 |---|---|---|---|---|
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | **new** | Nothing. | confirmed (single player) |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
-| [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | **new** | That unit type on the producing buildings in `protoy`, or the name of an existing type or proto. | confirmed (single player) |
-| [`trainSingleAbstractType`](#trainsingleabstracttype) | Marked units leave a training building one at a time, not as a batch. | **in `wol.cfg`** | That unit type on the protos. | confirmed |
-| [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | **new** | Nothing for the Daimyos; with a new marker, that type on the trainers (or on the blocking buildings) in `protoy`. | confirmed (single player) |
+| [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | **new** | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. | confirmed (single player) |
+| [`trainSingleAbstractType`](#trainsingleabstracttype) | Marked units leave a training building one at a time, not as a batch. | **in `wol.cfg`** | `AbstractTrainLimitOne` on the protos (36 have it). | confirmed |
+| [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | **new** | Nothing for the Daimyos (20 protos carry `AbstractDaimyo`); with a new marker, that type on the trainers or on the blocking buildings in `protoy.xml`. | confirmed (single player) |
 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | **new** | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). | confirmed (single player) |
-| [`gaiaSocketsOnly`](#gaiasocketsonly) | Lets a socketed building (TradingPost, or a mod's) be placed only on a socket that Gaia owns, as the placement preview already shows. | **new** | Nothing for the global rule; with a new marker, that type on the sockets in `protoy`. | not tested in game |
+| [`gaiaSocketsOnly`](#gaiasocketsonly) | Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | **new** | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. | not tested in game |
 | [`repairWallGlobal`](#repairwallglobal) | A UI syscall that repairs every wall of the local player. | **in `wol.cfg`** | A button or hotkey that calls `repairWallGlobal()`. | confirmed |
-| [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the 10 stock fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | **new** | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
+| [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | **new** | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
 
 #### liveBuildingWorkRate
 
@@ -2929,7 +2929,7 @@ How buildings train, spawn, live and get replaced.
 
 ![liveBuildingWorkRate with TrainPoints in game](media/liveBuildingWorkRate-trainpoints.gif)
 
-*TrainPoints:* Six settlers were queued at 12 s, with Settler `TrainPoints` 25; a test tech sets them to 6.25 at 30 s. The settler in training finishes at once (it already had more than 6.25 points of work) and the five already queued are trained in 6.25 s each; the log lines are at the top (2x speed). In stock all six would take 25 s. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints.mp4).
+*On the stock game (not filmed in WoL yet), `TrainPoints`:* six settlers were queued at 12 s, with Settler `TrainPoints` 25; a test tech sets them to 6.25 at 30 s. The settler in training finishes at once (it already had more than 6.25 points of work) and the five already queued are trained in 6.25 s each; the log lines are at the top (2x speed). Without the key all six would take 25 s. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints.mp4).
 
 ![liveBuildingWorkRate in WoL](media/liveBuildingWorkRate-wol.gif)
 
@@ -2942,35 +2942,32 @@ it has 13 villagers by 94 s (5 at the start).
 
 ![liveBuildingWorkRate in WoL, key off](media/liveBuildingWorkRate-wol-control.gif)
 
-*In WoL, key off (the same scene):* stock keeps the TC's snapshot of 1.0, so the tech changes
-nothing for it: 8 villagers by 96 s, the queue still long.
+*In WoL, key off (the same scene):* the exe keeps the TC's snapshot of 1.0, so the tech changes nothing
+for it: 8 villagers by 96 s, the queue still long.
 [Full video (MP4)](media/liveBuildingWorkRate-wol-control.mp4).
 
 ```
 liveBuildingWorkRate [log]
 ```
 
-- **How stock behaves:** two kinds of tech change how fast units are trained, and stock applies
-  both late (WoL request #5, "workrate techs only affect units / buildings created after the
-  tech"):
-  - **`BuildingWorkRate`** (`type='Data' subtype='BuildingWorkRate'`, 15 techs in WoL). A
-    building's `<BuildingWorkRate>` (1.0 on every stock proto) scales how fast it trains units,
-    researches techs and spawns the units of its `Maintain` actions. The exe copies the proto's
-    value into the building once, when the building is completed (for a unit with the flag
-    `ForceBuildingData`, when it is created), and the train, research and `Maintain` code read that
-    copy. The tech changes only the proto. So the buildings completed after the tech get the new
-    speed, and the ones already standing keep the old one, although their stat panel shows the new
-    value. Loading a saved game copies the value again for completed buildings, so the bug seems to
-    vanish after a save and load.
-  - **`TrainPoints`** (`type='Data' subtype='TrainPoints'` on the trained unit, 328 techs in WoL).
-    Each queued unit (or batch) takes the unit's TrainPoints when it is queued and keeps them. A
-    tech therefore misses the unit in training and every unit already in the queue, on old and new
-    buildings alike; only the units queued after the tech train faster. A `Maintain` action takes
-    them when its cycle starts, so the current cycle keeps the old time.
-  - **Already live in stock:** `ResearchPoints` (`type='Data' subtype='ResearchPoints'` on a tech,
-    85 techs in WoL). A research reads them on every tick, so the tech reaches every building, even
-    a research in progress (in game: one at 17 of 30 points finished at once when the tech set
-    7.5). WoL has no `WorkRate` / `WorkRateSpecific` effect with `action='Train'` or `'Research'`.
+- **In WoL today:** two kinds of tech change how fast units are trained, and the exe applies both late
+  (WoL request #5, "workrate techs only affect units / buildings created after the tech"):
+  - **`BuildingWorkRate`** (`type='Data' subtype='BuildingWorkRate'`, 15 techs in WoL). A building's
+    `<BuildingWorkRate>` scales how fast it trains units, researches techs and spawns the units of its
+    `Maintain` actions. The exe copies the proto's value into the building once, when the building is
+    completed (for a unit with the flag `ForceBuildingData`, when it is created), and the train,
+    research and `Maintain` code read that copy. The tech changes only the proto. So the buildings
+    completed after the tech get the new speed, and the ones already standing keep the old one,
+    although their panel shows the new value. Loading a saved game copies the value again for completed
+    buildings, so the bug seems to vanish after a save and load.
+  - **`TrainPoints`** (`type='Data' subtype='TrainPoints'` on the trained unit, 328 techs in WoL). Each
+    queued unit (or batch) takes the unit's TrainPoints when it is queued and keeps them. A tech
+    therefore misses the unit in training and every unit already in the queue, on old and new buildings
+    alike; only the units queued after the tech train faster. A `Maintain` action takes them when its
+    cycle starts, so the current cycle keeps the old time.
+  - **Already live:** `ResearchPoints` (`type='Data' subtype='ResearchPoints'` on a tech, 85 techs in
+    WoL). A research reads them on every tick, so the tech reaches every building, even a research in
+    progress. WoL has no `WorkRate` / `WorkRateSpecific` effect with `action='Train'` or `'Research'`.
 - **Effect:**
   - every building and `ForceBuildingData` unit trains, researches and spawns at its proto's
     current `BuildingWorkRate`;
@@ -2978,28 +2975,26 @@ liveBuildingWorkRate [log]
     current `TrainPoints` on every tick. The progress already made is kept in points, as it is for
     research: when the points drop below it, the unit is done at once.
 
-  So both techs apply at once to everything that exists, in both directions (a tech that is
-  removed again, a trigger, any later change of the value). Units without building data already
-  worked this way for `BuildingWorkRate` in stock.
-- **Your mod:** nothing. It works with the techs you have:
+  So both techs apply at once to everything that exists, in both directions (a tech that is removed
+  again, a trigger, any later change of the value). Units without building data already worked this way
+  for `BuildingWorkRate`.
+- **WoL needs:** nothing. It works with the techs WoL has:
 
   ```xml
   <Effect type ='Data' amount ='2.00' subtype ='BuildingWorkRate' relativity ='BasePercent'>
       <Target type ='ProtoUnit'>Stable</Target></Effect>
   <Effect type ='Data' amount ='0.75' subtype ='TrainPoints' relativity ='BasePercent'>
-      <Target type ='ProtoUnit'>Musketeer</Target></Effect>
+      <Target type ='ProtoUnit'>WOLLineInfantry</Target></Effect>
   ```
 
-- **`YPForceTrainAtBaseTrainPoints`:** a trainer whose proto has this flag (stock: the Confucian
-  Academy and Summer Palace wonders) trains at the base proto's TrainPoints, which no tech changes
-  (stock rule); the key keeps that rule.
-- **Not covered:** the action rates. `type='Data' subtype='WorkRate'` effects (gathering,
-  building, healing, …) and `type='Data2' subtype='WorkRateSpecific'` effects are read live by
-  stock already (static reading), so they already reach existing units; this key does not change
-  them.
-- **Transformed buildings:** a building that changes proto in place (a `TransformUnit` tech) now
-  works at the new proto's rate; stock kept the old proto's copy. With stock data there is no
-  difference, since every stock proto has 1.0.
+- **`YPForceTrainAtBaseTrainPoints`:** a trainer whose proto has this flag (the Confucian Academy and
+  Summer Palace wonders) trains at the base proto's TrainPoints, which no tech changes; the key keeps
+  that rule.
+- **Not covered:** the action rates. `type='Data' subtype='WorkRate'` effects (gathering, building,
+  healing, …) and `type='Data2' subtype='WorkRateSpecific'` effects are read live already (static
+  reading), so they already reach existing units; this key does not change them.
+- **Transformed buildings:** a building that changes proto in place (a `TransformUnit` tech) now works at
+  the new proto's rate; the exe kept the old proto's copy.
 - **`log`:** one line for each building whose speed this key changes, and for each trainer and
   unit type whose points it changes, the first time and again only if the values change later.
   Use it to check your data, not in a release.
@@ -3021,38 +3016,22 @@ liveBuildingWorkRate [log]
   - with `log`, a unit is logged once per unit ID (and trained type) and pair of values in a game;
     a new game starts the list again;
   - whether a building under construction can train or research was not checked. If it can, it
-    now uses the proto's rate there, where stock used 1.0. `Maintain` never runs on an unfinished
+    now uses the proto's rate there, where the exe used 1.0. `Maintain` never runs on an unfinished
     building;
   - a queued unit that has not started yet keeps the points it was queued with until it starts
     (nothing reads them before), so the queue panel may show its old time until then.
-- **Simulation:** yes. Saved games load with or without the key: the building's copy and the
-  queued points are kept and saved as in stock (with the key, the values it last wrote).
+- **Simulation:** yes. Saved games load with or without the key: the building's copy and the queued
+  points are kept and saved as always (with the key, the values it last wrote).
 - **Status:** confirmed in single player.
-  - 2026-10-29, `Maintain`: each of two players got a `BloodFactory` (which spawns musketeers
-    through a `Maintain` action) at 1 s; at 20 s a test tech gave player 1's `BloodFactory`
-    `BuildingWorkRate` 4. At 112 s player 1 had 12 musketeers and player 2 had 3. With the key
-    off, both had 3 (the bug).
-  - 2026-10-30, train and research. A scenario: player 1's Town Center and Market placed by the
-    map, a second Town Center and Market created 5 s after the test tech (30 s); the train and
-    research progress read from memory every second.
-    - `BuildingWorkRate` 4 on `TownCenter` and `Market`. Key off: the existing Town Center trained
-      every settler in 25 s, also those queued after the tech; the new one in 6.25 s; the existing
-      Market took 30 s for a research the tech landed in and 20 s for `HuntingDogs` after it, the
-      new Market 7.5 s for `Gangsaw` (30 points). Key on: the settler in training sped up at 30 s
-      and every later one took 6.25 s; the research in progress finished 3.2 s after the tech, and
-      `HuntingDogs` took 5 s.
-    - `TrainPoints` ×0.25 on `Settler` and `Musketeer`. Key off: the three settlers queued before
-      the tech took 25 s each, though two of them started after it; the settlers queued after it
-      took 6.25 s on the old and the new Town Center; the factory's current cycle kept 30 points.
-      Key on: the settler in training finished at the tech and the queued ones took 6.25 s; the
-      cycle took the new 7.5 points at once. The same with `buildingWorkRateAuras`,
-      `noTrainNearEnemyTC` and `maintainWaitForPop` on, and again after loading a game saved
-      before the tech.
-    - `ResearchPoints` ×0.25: live in stock, with or without the key.
-  - An AI skirmish with the key and those three keys on: both AIs trained and built, with no XS
-    error.
-  - `liveBuildingWorkRate foo`: logged as an unexpected argument, the key not applied.
-- **New in this DLL:** not in UHC 1.10. WoL request #5 ([wol-requests.md](wol-requests.md)).
+  - **In WoL (2026-11-04), `BuildingWorkRate` x3 on `TownCenter`:** the standing TC had 13 villagers by
+    94 s, and 8 by 96 s without the key.
+  - **On the stock game (2026-10-29 and 30):** `Maintain`, 12 units against 3 with `BuildingWorkRate` 4
+    on one player's factory, 3 and 3 without the key; `BuildingWorkRate` on train and research, a
+    research in progress finishing 3.2 s after the tech; `TrainPoints` ×0.25, the unit in training
+    done at the tech, the queued ones in 6.25 s, a `Maintain` cycle taking the new points at once, also
+    after loading a game saved before the tech. An AI skirmish played with no XS error. A bad argument
+    logged the error, and the key was not applied.
+  - **Not filmed in WoL yet:** `TrainPoints`.
 
 #### buildingWorkRateAuras
 
@@ -3069,29 +3048,31 @@ BuildingWorkRate modifiers`) and trains 7 villagers while the right one trains 2
 
 ![buildingWorkRateAuras in WoL, key off](media/buildingWorkRateAuras-wol-control.gif)
 
-*In WoL, key off (the same data and scene):* stock reads `BuildingWorkRate` as no stat, so the aura
-does nothing: each TC trains 2 villagers.
+*In WoL, key off (the same data and scene):* the exe reads `BuildingWorkRate` as no stat, so the aura does
+nothing: each TC trains 2 villagers.
 [Full video (MP4)](media/buildingWorkRateAuras-wol-control.mp4).
 
 ```
 buildingWorkRateAuras [log]
 ```
 
-- **How stock behaves:** an aura (a tactics action of type `AutoRangedModify`) changes one stat of
-  the units in range, named by `<ModifyType>`. The exe knows 13 names: `Speed`, `MaxHP`, `Damage`,
-  `MovingDamage`, `Bounty`, `SiegeDamage`, `UnitDamage`, `LOS`, `Armor`, `GatherRate`,
-  `AbilityROF`, `ROF` and `AutoGatherRate` (case is ignored). Any other name is read as "no stat"
-  without an error, and the aura does nothing. `BuildingWorkRate`, the speed at which a building
-  trains units, researches techs and spawns its `Maintain` units, is not one of them.
+- **In WoL today:** an aura (a tactics action of type `AutoRangedModify`) changes one stat of the units in
+  range, named by `<ModifyType>`. The exe knows 13 names: `Speed`, `MaxHP`, `Damage`, `MovingDamage`,
+  `Bounty`, `SiegeDamage`, `UnitDamage`, `LOS`, `Armor`, `GatherRate`, `AbilityROF`, `ROF` and
+  `AutoGatherRate` (case is ignored). Any other name is read as "no stat" without an error, and the aura
+  does nothing. `BuildingWorkRate`, the speed at which a building trains units, researches techs and
+  spawns its `Maintain` units, is not one of them. `alguacil.tactics` already has such an aura
+  (`GuatemalaAura`, `EscuelaPolitecnica`, 1.20), but it is `<active>0</active>` and no tech turns it on.
+  Five tactics use `GATHER` (`GatherRate` is meant), two use `Hitpoints` (`MaxHP` is meant) and one uses
+  `UnitResource`, which is no stat: those auras do nothing today, with or without this key.
 - **Effect:** `BuildingWorkRate` becomes a valid `<ModifyType>`. A unit that a modifier with it
   reaches trains, researches and spawns its `Maintain` units at its normal rate times the
   modifier's `<ModifyMultiplier>`. The factor starts at 1.0, like `GatherRate`: several auras
   multiply each other, and an aura with `<ModifyExclusive>1</ModifyExclusive>` stops the ones
-  after it, as for every stock stat.
-- **Your mod:** an `AutoRangedModify` action with the new name, in the tactics file of the unit
-  that carries the aura, listed in each of its tactics. Pick the buildings with `<ModifyProtoID>`
-  or `<ModifyAbstractType>`. For example, an aura like the one of the in-game test, on the
-  Explorer:
+  after it, as for every other stat.
+- **WoL needs:** an `AutoRangedModify` action with the new name, in the tactics file of the unit that
+  carries the aura, listed in each of its tactics. Pick the buildings with `<ModifyProtoID>` or
+  `<ModifyAbstractType>`. For example, the aura of the test, in `data\tactics\explorer.tactics`:
 
   ```xml
   <action>
@@ -3099,16 +3080,16 @@ buildingWorkRateAuras [log]
       <type>AutoRangedModify</type>
       <active>1</active>
       <persistent>1</persistent>
-      <maxrange>40</maxrange>
-      <modifyprotoid>BloodFactory</modifyprotoid>
+      <maxrange>10</maxrange>
+      <modifyprotoid>TownCenter</modifyprotoid>
       <modifytype>BuildingWorkRate</modifytype>
-      <modifymultiplier>4.0</modifymultiplier>
+      <modifymultiplier>3.0</modifymultiplier>
   </action>
   ```
 
   and, in each of the unit's tactics, the action on the tactic name's line:
-  `<tactic>Volley<action>UHCBwrAura</action>…`. Ship the tactics file compiled
-  ([Tactics files](#tactics-files)). The aura reaches only its owner's own units (unless its
+  `<tactic>Volley<action>UHCBwrAura</action>…` ([tactics files](#tactics-files)). The aura reaches only
+  its owner's own units (unless its
   tactics action allows other players) and only finished ones (static reading). A power's
   `<unitModify apply='Multiply' amount='1.5'>BuildingWorkRate</unitModify>` works too (static
   reading, not tested).
@@ -3134,29 +3115,20 @@ buildingWorkRateAuras [log]
   `CommandResearch`, `Maintain`, or `through g_uhcBwrTrainGetter` for the Train call when
   `noTrainNearEnemyTC` owns it.
 - **Limits:**
-  - only train, research and `Maintain` speed. Build, repair and heal speed come from each
-    action's own rate and are not covered. `GatherRate` and `AutoGatherRate` auras already work in
-    stock;
-  - the stat panel still shows the proto's `BuildingWorkRate`, and the aura's tooltip has no line
+  - only train, research and `Maintain` speed. Build, repair and heal speed come from each action's own
+    rate and are not covered;
+  - the panel still shows the proto's `BuildingWorkRate`, and the aura's tooltip has no line
     for this stat;
   - with `log`, a unit is logged once per unit ID and factor in a session, so a unit of a later
     game with the same ID and factor is not logged again;
   - the value 0x40 that stands for the new stat is this DLL's choice. Another DLL that adds its own
     `ModifyType`s must not use it.
-- **WoL data** (static scan): `alguacil.tactics` already has such an aura (`GuatemalaAura`,
-  `EscuelaPolitecnica`, 1.20), but it is `<active>0</active>` and no tech turns it on. Five
-  tactics use `GATHER` (`GatherRate` is meant), two use `Hitpoints` (`MaxHP` is meant) and one
-  uses `UnitResource`, which is no stat: stock reads all three as unknown, so those auras do
-  nothing, with or without this DLL.
 - **Simulation:** yes. A saved game keeps the modifier's stat; loading it without the key ignores
   it.
-- **Status:** confirmed in single player (2026-10-29), with an aura on the Explorer (multiplier
-  4.0, range 40, `ModifyProtoID` `BloodFactory`): player 1's BloodFactory logged `works at x4.000
-  from BuildingWorkRate modifiers (Maintain)` and spawned 11 musketeers, while player 2's factory,
-  without the aura, spawned 2 in the same time. `liveBuildingWorkRate` and `noTrainNearEnemyTC`
-  were on in the same run. Train and research speed, the removal of the aura, powers and saved
-  games were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #22 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player. In WoL (2026-11-04), `Train`: an Explorer's aura x3 on a Town
+  Center, 7 villagers against 2 at the TC out of range; without the key, 2 and 2. On the stock game
+  (2026-10-29), `Maintain`: 11 units against 2, with `liveBuildingWorkRate` and `noTrainNearEnemyTC` on in
+  the same run. Research speed, the removal of the aura, powers and saved games were not tested.
 
 #### maintainWaitForPop
 
@@ -3180,48 +3152,37 @@ two deaths at 70 s the next settler needs a whole new cycle and appears about 23
 maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 ```
 
-- **How stock behaves:** some buildings produce units on their own, through a `Maintain` action
-  in their tactics file: the factory's `SpawnCannon`, the Ottoman Town Center's settlers, the
-  dock's `SpawnBoat`, the native trading posts' warriors, and many more in WoL. The building fills
-  a timer: `<rate type="X">n</rate>` gives the unit X and n units per cycle, and the cycle costs
-  n × X's `TrainPoints` at the building's work rate. When the timer is full, the game tries to
-  spawn the units. A unit that does not fit in the player's population is not created, and the
-  game does not check whether anything was spawned:
-  - a normal action starts the next cycle from zero, so after a house is built the next unit
-    comes a whole cycle later;
+- **In WoL today:** some buildings produce units on their own, through a `Maintain` action in their
+  tactics file: the factory's `SpawnCannon`, the Ottoman Town Center's settlers, the dock's `SpawnBoat`,
+  the native trading posts' warriors, and many more. The building fills a timer: `<rate type="X">n</rate>`
+  gives the unit X and n units per cycle, and the cycle costs n × X's `TrainPoints` at the building's
+  work rate. When the timer is full, the game tries to spawn the units. A unit that does not fit in the
+  player's population is not created, and the game does not check whether anything was spawned:
+  - a normal action starts the next cycle from zero, so after a house is built the next unit comes a
+    whole cycle later;
   - a `SingleUse` action (dock boats, native warriors) ends, so its units are lost.
 - **Effect:** for a building whose proto is of `<UnitType>`, a cycle that ends while the first
   unit does not fit is **held**: the timer stays full and no new cycle starts. The unit spawns on
   the first game update with room (a unit dies, a house is finished, a tech raises the cap). A
-  held `SingleUse` action waits instead of ending. Any other building behaves as in stock.
-- **"Does not fit"** is exactly the stock test that would have refused the unit: its
+  held `SingleUse` action waits instead of ending. Any other building behaves as before.
+- **"Does not fit"** is exactly the exe's test that would have refused the unit: its
   `PopulationCount` against the player's current population and cap, with `AllowOverPopCap` and
   `AlwaysAllowOverPopCap`, and with the cap set by `basePop` / `extraPop`. A unit with no
   population cost is never held. After a revolution, settlers and coureurs are tested as
   `xpColonialMilitia`, as the game spawns them.
-- **Which buildings:** the marker goes on the **producing building**, not on the produced unit.
-  - The default `AbstractMaintainWaitForPop` is registered by the DLL, like `healNonIdle`'s
-    marker; list it on the buildings you want and edit `protoy.xml` and its XMB as described
-    there:
-
-    ```xml
-    <Unit id ='348' name ='Factory'>
-        ...
-        <UnitType>AbstractMaintainWaitForPop</UnitType>
-    ```
-
-  - An existing type or proto name works with no data change: `maintainWaitForPop Factory` covers
-    factories only, `maintainWaitForPop Building` every building.
-- **Balance:** this is a gameplay change. With `Building`, a housed Ottoman player gets the next
-  free settler as soon as a house is up, instead of a whole cycle later. Mark only the buildings
-  you mean.
-- **Limits** (stock behavior kept):
-  - batches (`<rate>` above 1): a cycle is held only while its **first** unit does not fit. When
-    there is room for some but not all, the stock spawn creates what fits and drops the rest;
-  - `AbstractMonk` spawns: stock may reuse an existing unit without testing the population, so
-    they are never held;
-  - a cycle that spawns nothing for another reason (the build limit, no room to place the unit)
-    still restarts as in stock.
+- **Which buildings:** the marker goes on the **producing building**, not on the produced unit. An
+  existing type or proto name works with no data change: `maintainWaitForPop TownCenter` (the video),
+  `maintainWaitForPop Factory`, or `maintainWaitForPop Building` for every building. To choose them one
+  by one, list the default `AbstractMaintainWaitForPop` on the buildings in `data\protoy.xml`.
+- **Balance:** this is a gameplay change. With `TownCenter`, a housed Ottoman player gets the next free
+  settler as soon as a house is up, instead of a whole cycle later. Mark only the buildings you mean.
+- **Limits** (the exe's rules, kept):
+  - batches (`<rate>` above 1): a cycle is held only while its **first** unit does not fit. When there
+    is room for some but not all, the spawn creates what fits and drops the rest;
+  - `AbstractMonk` spawns: the exe may reuse an existing unit without testing the population, so they
+    are never held;
+  - a cycle that spawns nothing for another reason (the build limit, no room to place the unit) still
+    restarts.
 - **`log`:** one line when a building starts holding a unit and one when it releases it.
 - **Log:** at startup `maintainWaitForPop: buildings of unittype X keep a finished Maintain unit
   until there is population room (multiplayer unverified)` (with `log`: `…room, holds and releases
@@ -3229,14 +3190,13 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
   `hook reached: maintainWaitForPop (0x6AB27D)` the first time any `Maintain` cycle ends. With
   `log`: `maintainWaitForPop: unit N (TownCenter) holds a finished Settler (pop 1, 10 of 10 used)`
   and `maintainWaitForPop: unit N (TownCenter) releases its Settler (pop 1, 9 of 10 used)`.
-- **Saved games:** a held cycle is saved as a full timer, with no extra data. Loaded without the
-  key, it behaves as in stock.
+- **Saved games:** a held cycle is saved as a full timer, with no extra data. Loaded without the key, it
+  behaves as a normal cycle.
 - **Simulation:** yes. It may also add a unit type, which changes the unit type count.
-- **Status:** confirmed in single player (2026-10-29), with an Ottoman Town Center (the tech
-  `Age0Ottoman` gives it its settler `Maintain` action) at 10 of 10 population. It held its
-  finished settler (`holds a finished Settler (pop 1, 10 of 10 used)`) and released it right after
-  two settlers died (`releases its Settler (pop 1, 9 of 10 used)`). With the key off, no settler
-  came until the next full cycle. Factory cannons, batches and `SingleUse` spawns were not tested.
+- **Status:** confirmed in single player, in WoL (2026-11-04) with an Ottoman Town Center (`Age0Ottoman`
+  gives it `MaintainSettlersOttoman`): it held its finished settler and released it right after two
+  settlers died; without the key, the next settler came about 23 s later. Factory cannons, batches and
+  `SingleUse` spawns were not tested.
 - **New in this DLL:** not in UHC 1.10. WoL request #8 ([wol-requests.md](wol-requests.md)).
 
 #### trainSingleAbstractType
@@ -3245,22 +3205,23 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 
 ![trainSingleAbstractType in game](media/trainSingleAbstractType.gif)
 
-*In game:* three marked hussars queued at once come out one at a time (the unit lines on top grow
-from one to two); without the key the same order brought three out together.
+*In WoL (Germans):* three `WOLTotenkopfHussar` queued at once come out one at a time (the unit lines on top
+grow from one to two); without the key the same order brought three out together.
 [Full video (MP4)](media/trainSingleAbstractType.mp4).
 
 ```
 trainSingleAbstractType [UnitType]
 ```
 
-- **Effect:** units of the marker type (default `AbstractTrainLimitOne`) leave a training
-  building one at a time, as monks do in stock, instead of as one batch.
-- **Your data:** `<UnitType>AbstractTrainLimitOne</UnitType>` (or your type) on the protos.
+- **Effect:** units of the marker type (default `AbstractTrainLimitOne`) leave a training building one at
+  a time, as monks do, instead of as one batch. `wol.cfg` has this line.
+- **WoL needs:** `<UnitType>AbstractTrainLimitOne</UnitType>` on the protos (36 have it), and the name in
+  `data\uhc\customabstracttypes.xml`.
 - **Log:** `trainSingleAbstractType: units of unittype <Type> are trained one at a time`; the
   first time it applies, `trainSingleAbstractType: <Proto> is trained one at a time`.
 - **Simulation:** changes how units are created: every player needs the same line.
-- **Status:** confirmed (2026-11-03, single player): a queue of marked hussars produced one, then
-  a second about a minute later; without the key the same queue produced three together (the
+- **Status:** confirmed (2026-11-03, single player, on WoL): a queue of `WOLTotenkopfHussar` produced one,
+  then a second about a minute later; without the key the same queue produced three together (the
   proto's `BuildLimit` is 3). Video `trainSingleAbstractType.mp4`.
 
 #### noTrainNearEnemyTC
@@ -3283,50 +3244,48 @@ time, with the enemy still next to the Daimyo.
 
 ![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)
 
-*1. Near an enemy's first Town Center:* A Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
+*On the stock game (not filmed in WoL yet), near an enemy's first Town Center:* a Daimyo 34 m from an enemy Town Center pauses its queue, then resumes when the Town Center dies (2.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC.mp4).
 
 ![noTrainNearEnemyTC near a Stable, with the warning](media/noTrainNearEnemyTC-near.gif)
 
-*2. `near Stable` and the warning:* `noTrainNearEnemyTC 40 near Stable near FirstTC log`, the camera on the Daimyo. It stands 21 m from the edge of an enemy Stable with 5 Ashigaru queued: the queue does not move, and every 8 s of game time the red text "Too close to the enemy: training paused" appears over it (the overlay shows each `warning shown` line). The Stable is destroyed at 75 s: the log reads `resumed training`, now with the enemy Town Center 138.6 m away as the nearest, and the Ashigaru are trained (2x speed). [Full video (MP4)](media/noTrainNearEnemyTC-near.mp4).
+*On the stock game (not filmed in WoL yet), `near Stable` and the warning:* `noTrainNearEnemyTC 40 near Stable near FirstTC log`, the camera on the Daimyo. It stands 21 m from the edge of an enemy Stable with 5 Ashigaru queued: the queue does not move, and every 8 s of game time the red text "Too close to the enemy: training paused" appears over it (the overlay shows each `warning shown` line). The Stable is destroyed at 75 s: the log reads `resumed training`, now with the enemy Town Center 138.6 m away as the nearest, and the Ashigaru are trained (2x speed). [Full video (MP4)](media/noTrainNearEnemyTC-near.mp4).
 
 ![noTrainNearEnemyTC with its own warning text](media/noTrainNearEnemyTC-warn.gif)
 
-*3. Your own text:* with `warn=¡Demasiado_cerca!`, the same held Daimyo shows "¡Demasiado cerca!" (1.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC-warn.mp4).
+*On the stock game (not filmed in WoL yet), your own text:* with `warn=¡Demasiado_cerca!`, the same held Daimyo shows "¡Demasiado cerca!" (1.5x speed). [Full video (MP4)](media/noTrainNearEnemyTC-warn.mp4).
 
 ```
 noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | warn=<text> | warn=<stringID>] [log]
     default AbstractDaimyo, near FirstTC, the English warning; up to 4 near; one line
 ```
 
-- **How stock behaves:** each player remembers his first Town Center, the `FirstTC` of the
-  placement rules (see [`startingTC`](#startingtc)). The stock rule
-  `distanceatleastfromtype player=enemy distance=65 FirstTC` keeps buildings 65 m away from an
-  enemy's first Town Center. Nothing limits a unit that trains: a Daimyo or the Shogun can walk
-  into the enemy base and train an army next to his Town Center.
+- **In WoL today:** each player remembers his first Town Center, the `FirstTC` of the placement rules (see
+  [`startingTC`](#startingtc)). The rule `distanceatleastfromtype player=enemy distance=65 FirstTC` keeps
+  buildings 65 m away from an enemy's first Town Center. Nothing limits a unit that trains: a Daimyo or
+  the Shogun can walk into the enemy base and train an army next to his Town Center.
 - **Effect:** a unit whose proto is of `<UnitType>` does not train while an enemy's first Town
   Center, or an enemy's unit of a `near` type, is alive and less than `<meters>` away. Its queue
   keeps the progress it has, and goes on as soon as nothing is that close any more (the blocker is
-  destroyed). Nothing is refunded or cancelled, and the order is accepted as in stock. "Enemy" is
+  destroyed). Nothing is refunded or cancelled, and the order is accepted as always. "Enemy" is
   the stance of the blocker's owner toward the trainer's player, as for `player=enemy` in the
   placement rules: your own and your allies' buildings never block, nor do Gaia's (natives,
   treasures).
-- **Choosing the trainers:** the default `AbstractDaimyo` is a stock type that the Daimyos and the
-  Shogun already have, so it needs no data change. In WoL it also covers `MapucheWarchief`, the
-  `WOLGensui*` units, `EGYtowncenterCARAVAN`, `EGYbarracks3CARAVAN` and `DummyGather` (static scan
-  of WoL's `protoy`). To pick the trainers yourself, give them a new marker (for example
-  `AbstractNoTrainNearEnemyTC`) in `protoy.xml` and its XMB, as for `healNonIdle`, and name it in
-  the cfg. A proto name works too.
+- **Choosing the trainers:** the default `AbstractDaimyo` is a type that the Daimyos and the Shogun
+  already have, so it needs no data change. In WoL it also covers `MapucheWarchief`, the `WOLGensui*`
+  units, `EGYtowncenterCARAVAN`, `EGYbarracks3CARAVAN` and `DummyGather`: 20 protos in all. To pick the
+  trainers yourself, give them a new marker (for example `AbstractNoTrainNearEnemyTC`) in `protoy.xml`, and
+  name it in the cfg. A proto name works too.
 - **Choosing what blocks (`near`):** without `near`, only an enemy's first Town Center blocks.
-  Each `near <UnitType>` adds a type: a proto name (`near Stable`, `near Barracks`), a stock type
-  (`near AbstractTownCenter` for every Town Center, not only the first) or a new marker
-  that you put on your buildings in `protoy`. As soon as the line has one `near`, only the listed
+  Each `near <UnitType>` adds a type: a proto name (`near Stable`, `near Barracks`), a unit type
+  (`near AbstractTownCenter` for every Town Center, not only the first) or a new marker that you put on
+  the buildings in `protoy.xml`. As soon as the line has one `near`, only the listed
   entries block: add `near FirstTC` to keep the first Town Center. Up to 4 entries. A building
   blocks only once it is built (a foundation does not; static reading), and while it is alive. A
   type of moving units works too (units always count as built): `near Hussar` held a Daimyo
   while an enemy Hussar stood 17.3 m away.
 - **How the distance is measured:** from the trainer's centre to the nearest edge of the
   blocker's footprint, 0 inside it. It is the engine's own distance, the one the placement rules
-  use, so `65` matches the stock 65 m rule. For example, a Stable (3 × 5 m half-sizes) whose
+  use, so `65` matches the 65 m rule. For example, a Stable (3 × 5 m half-sizes) whose
   centre is 24 m from the Daimyo is 21 m away. For units without such a footprint (units that can
   move) the engine uses the centre distance minus the unit's radius × 1.41: a Hussar whose centre
   was 18.4 m away counted 17.3 m.
@@ -3339,17 +3298,16 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
   with this key). `near AbstractTownCenter` covers every Town Center instead.
 - **The warning:** while one of your units is held, a red text appears over it, at most once every
   8 s of game time per unit, and only on your own screen: other players see nothing, not even for
-  units they can see. It is the stock dodge's floating text ("¡Esquiva!" uses it) without its rise,
-  so it stays over the unit for about 1.5 s. `warn=<text>` replaces the English default "Too close
-  to the enemy: training paused": `_` stands for a space, at most 127 characters, UTF-8 (else the
-  Windows code page). `warn=<number>` takes that string from the string table (`warn=63950` shows
-  the stock "Dodge!" in the game's language), so a mod can translate its own text in
+  units they can see. It is the dodge's floating text without its rise, so it stays over the unit for
+  about 1.5 s. `warn=<text>` replaces the English default "Too close to the enemy: training paused": `_`
+  stands for a space, at most 127 characters, UTF-8 (else the Windows code page). `warn=<number>` takes
+  that string from the string table (`warn=63950` shows "Dodge!"), so a language can translate it in
   `stringtabley.xml`. `nowarn` turns it off.
-- **A held trainer stays where it is.** In stock, a Daimyo with units in its queue does not move: a
-  right-click on the ground sets its gather point, and move orders (a trigger, the console's
-  `uiMoveAllMilitaryAtPointer`) are ignored until the queue is empty (seen in game). So a held
-  Daimyo waits until the blocker is destroyed, or until the player cancels the queue (stock refund),
-  moves it away and queues again.
+- **A held trainer stays where it is.** A Daimyo with units in its queue does not move: a right-click on
+  the ground sets its gather point, and move orders (a trigger, the console's
+  `uiMoveAllMilitaryAtPointer`) are ignored until the queue is empty (seen in game). So a held Daimyo
+  waits until the blocker is destroyed, or until the player cancels the queue (with a refund), moves it
+  away and queues again.
 - **With other keys:** with [`buildingWorkRateAuras`](#buildingworkrateauras), a trainer out of
   range trains at its aura-boosted rate, and with `liveBuildingWorkRate` at its proto's current
   rate: this key's hook calls the same getter.
@@ -3383,40 +3341,23 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 - **Limits:**
   - training pauses; the command is not refused, and the interface still shows the queue (its
     progress bar stops);
-  - a held trainer does not walk away with its queue (stock, above);
+  - a held trainer does not walk away with its queue (above);
   - `FirstTC` is only the first Town Center (see above);
   - the AI does not know about the rule: it may queue units in a Daimyo that stands near an enemy
     building and wait.
 - **Simulation:** yes. Every player needs the same meters, trainer type and `near` entries; a new
   marker name adds a unit type. `nowarn` and `warn=` only change what the local player sees and may
   differ.
-- **Status:** confirmed in single player (2026-10-29), in a test map (no AI) unless noted:
-  - `noTrainNearEnemyTC 65 log` (with every WoL key on): a `ypDaimyoKiyomasa` 34.1 m from player
-    2's first Town Center made no progress on 2 `ypAshigaru`, and trained both once the Town Center
-    was killed (`resumed training: no enemy FirstTC` in that version of the log). The same test
-    with `nowarn`: paused at 34.1 m, no warning line, resumed when the Town Center died;
-  - `noTrainNearEnemyTC 40 near Stable near FirstTC log`, with `liveBuildingWorkRate` and
-    `buildingWorkRateAuras`: paused 21.0 m from a Stable's edge (Town Center 138.6 m away), 9
-    warnings 8 s apart, all 5 Ashigaru trained once the Stable was killed; walked next to the enemy
-    Town Center, it paused again (`player 2's unit 1 (TownCenter) is 6.4 m away`) with 1 Ashigaru
-    queued (video 2);
-  - `warn=¡Demasiado_cerca!` and `warn=63950` showed "¡Demasiado cerca!" and "¡Esquiva!" (video 3);
-  - four bad lines (`near` with no type, 5 `near`, `warn=` empty, a 140-character text): one log
-    line each, the key `FAILED`, the game normal;
-  - AI: a skirmish against a Japanese AI with this key (`near Barracks near Stable near FirstTC`)
-    and every WoL key on: the AI went from 15 to 25 units in 2 minutes and started its wonder, no
-    XS error.
-
-  - `noTrainNearEnemyTC 30 near AbstractTownCenter near Hussar log`: held by an enemy Hussar 17.3 m
-    away (a moving type), and in another game by an enemy's second Town Center 22.0 m away (not
-    its first; the first, 150 m away, did not count); each resumed when its blocker was removed,
-    and the 3 queued Ashigaru were trained;
-  - saved games: a game saved with the Daimyo held and loaded again logged `paused training` at
-    once and stayed held until the blockers were removed (the decision keeps no state).
-
-  Not tested: a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
-  from Age II and needs population room and food.
-- **New in this DLL:** not in UHC 1.10. WoL request #27 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player.
+  - **In WoL (2026-11-04):** `noTrainNearEnemyTC 40 near Settler`: a Daimyo held with an enemy unit
+    12.1 m away, which resumed when the unit died; without the key the 3 Kihei were out by 40 s.
+  - **On the stock game (2026-10-29):** a first Town Center 34.1 m away, a Stable's edge at 21.0 m,
+    `nowarn`, `warn=` as text and as a string ID, four bad lines (each logged, the key `FAILED`), an
+    enemy's second Town Center and a moving Hussar as `near` types, a saved game loaded with the
+    Daimyo held, and a skirmish against a Japanese AI with no XS error.
+  - **Not tested:** a foundation near the trainer, the near-a-Town-Center case in WoL (in the test
+    scenes, player 2's buildings do not last), multiplayer. For such a test, the Daimyo trains only from
+    Age II and needs population room and food.
 
 #### lifespanAfterConstruction
 
@@ -3441,35 +3382,32 @@ shorter than their construction (`WOLVillagerMaturing`: Lifespan 10, BuildPoints
 lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterConstruction
 ```
 
-- **How stock behaves:** `<Lifespan>` (seconds) is a countdown that starts when the unit is
-  created. A building is created when its foundation is placed, so the countdown runs while the
-  building is under construction, and nothing restarts it when the construction ends. A building
-  whose Lifespan is shorter than its construction dies as a foundation; any other one lives
-  Lifespan minus its construction time once built. With `<Flag>AlphaFadeLifespan</Flag>`, the
-  fade-out before the end runs on its own timer from placement too, and its end kills the unit by
-  itself. No stock building has a Lifespan; mods such as WoL use it (its `*Maturing` buildings).
+- **In WoL today:** `<Lifespan>` (seconds) is a countdown that starts when the unit is created. A
+  building is created when its foundation is placed, so the countdown runs while the building is under
+  construction, and nothing restarts it when the construction ends. A building whose Lifespan is
+  shorter than its construction dies as a foundation, as `WOLVillagerMaturing` would (Lifespan 10,
+  BuildPoints 15); any other one lives Lifespan minus its construction time once built. With
+  `<Flag>AlphaFadeLifespan</Flag>`, which 38 of WoL's protos have, the fade-out before the end runs on its
+  own timer from placement too, and its end kills the unit by itself.
 - **Effect:** for a unit whose proto is of `<UnitType>`, the countdown and the lifespan fade-out do
-  not advance while the unit is not fully built. When the construction is finished, both run from
-  their full values as in stock: the building lives `Lifespan` seconds after it is finished. Any
-  other unit, and every unit that is already built, behaves as in stock.
-- **Marking the buildings:** the protos also need a `<Lifespan>`:
+  not advance while the unit is not fully built. When the construction is finished, both run from their
+  full values: the building lives `Lifespan` seconds after it is finished. Any other unit, and every unit
+  that is already built, behaves as before.
+- **WoL needs:** a `<Lifespan>` on the protos, and an existing type or proto name in the cfg, with no data
+  change: `lifespanAfterConstruction WOLVillagerMaturing` covers that proto, `lifespanAfterConstruction
+  Building` every building. To choose them one by one, list the marker in `data\protoy.xml`:
 
   ```xml
-  <Unit id ='293' name ='House'>
+  <Unit name ='WOLVillagerMaturing'>
       ...
-      <Lifespan>20</Lifespan>
+      <Lifespan>10</Lifespan>
       <UnitType>AbstractLifespanAfterConstruction</UnitType>
   ```
-
-  The marker is registered by the DLL, like `healNonIdle`'s; edit `protoy.xml` and its XMB as
-  described there. An existing type or proto name works too, with no data change:
-  `lifespanAfterConstruction Outpost` covers outposts only, `lifespanAfterConstruction Building`
-  every building.
 - **"Built"** means the unit has no construction data, or its build percent is at least 100 %.
   Units that are not buildings (projectiles, rubble, …) are always built, so a marker on them
   changes nothing.
-- **Destroyed or deleted foundations** are never held: once the unit is dying, its corpse fades
-  and is removed as in stock.
+- **Destroyed or deleted foundations** are never held: once the unit is dying, its corpse fades and is
+  removed as usual.
 - **A Lifespan set during construction** (a tech with a `Lifespan` data effect, or a trigger) also
   waits for the construction.
 - **`log`:** one line the first time each unit's countdown is held, one when its fade-out is held,
@@ -3488,21 +3426,17 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
     time T ms)`, or, instead of `is built; its lifespan starts`: `is dying; its lifespan runs as in
     stock`, `lost the marker unittype; its lifespan runs` or `is no longer held; its lifespan runs`.
 - **Limits:**
-  - `FadeInOnCreation` together with `AlphaFadeLifespan` (a stock limitation): the creation
-    fade-in reuses the lifespan fade's timer, so in stock such a unit dies right after its fade-in.
-    With this key a marked building with both flags dies when its construction ends. Do not
+  - `FadeInOnCreation` together with `AlphaFadeLifespan`: the creation fade-in reuses the lifespan fade's
+    timer, so without the key such a unit dies right after its fade-in. With this key a marked building with both flags dies when its construction ends. Do not
     combine the two flags on a marked building;
   - the hold lasts while the unit is not fully built: if a building's percent dropped below 100 %
     again, its countdown would stop again.
 - **Simulation:** yes. It may also add a unit type, which changes the unit type count.
-- **Status:** confirmed in single player (2026-10-29), with `lifespanAfterConstruction Outpost log`
-  and test data (Outpost `Lifespan` 20, 50 build points, `PlaceAsFoundation`). An Outpost placed by
-  a settler at 19.5 s was held through its construction, finished at 70.5 s (`its lifespan starts
-  with 20.00 s left`) and died at about 90 s. In the control, an unmarked Outpost died at 20 s,
-  still under construction (the bug). The `AlphaFadeLifespan` fade-out hold was not checked in
-  game. To test it yourself, place the foundation in game: a building placed by a scenario is
-  complete once the scenario is loaded.
-- **New in this DLL:** not in UHC 1.10. WoL request #7 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player, in WoL (2026-11-04), with `lifespanAfterConstruction Outpost
+  log` and `<Lifespan>15</Lifespan>` on the Outpost: held through its construction, finished at 59 s, down
+  15 s later; without the key the foundation died half built. The `AlphaFadeLifespan` fade-out hold was
+  not checked in game. To test it yourself, place the foundation in game: a building placed by a
+  scenario is complete once the scenario is loaded.
 
 #### gaiaSocketsOnly
 
@@ -3512,30 +3446,26 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
 gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the rule
 ```
 
-- **How stock behaves:** a building with `<SocketUnitType>` (stock: `TradingPost`,
-  `ypTradingPostAsian`) must stand exactly on a socket unit of that type. Only the placement
-  preview checks the socket's owner: the building snaps onto a socket only if Gaia owns it, so a
-  socket a player owns shows red. The check that decides (run when the order executes, on every
-  machine, and before it by the UI and the AI) never reads the owner. According to the static
-  reading, an order that carries the socket's exact position (an AI build plan) therefore builds
-  on a player's socket; WoL reports this with its saltpeter sockets. Stock data never shows it,
-  because every stock socket has the flag `ForceToGaia` (it is created for Gaia).
-- **Effect:** when a socketed building is placed, a socket that a player owns no longer counts.
-  The order fails as if there were no socket. The rule also covers the socket's owner himself, as
-  the stock preview does. Gaia sockets behave as in stock, and so does the preview.
-- **`<UnitType>`:** only sockets whose proto is of that type (or that proto name) follow the rule;
-  every other socket keeps the stock behavior. Use it to apply the rule to your own sockets only,
-  for example a marker on the saltpeter socket:
+- **In WoL today:** a building with `<SocketUnitType>` (`TradePostSocket` or `AIStart` in WoL's data) must
+  stand exactly on a socket unit of that type. Only the placement preview checks the socket's owner: the
+  building snaps onto a socket only if Gaia owns it, so a socket a player owns shows red. The check that
+  decides (run when the order executes, on every machine, and before it by the UI and the AI) never reads
+  the owner. According to the static reading, an order that carries the socket's exact position (an AI
+  build plan) therefore builds on a player's socket: WoL reports this with its saltpeter sockets. A socket
+  with the flag `ForceToGaia` never shows it, because it is created for Gaia.
+- **Effect:** when a socketed building is placed, a socket that a player owns no longer counts. The order
+  fails as if there were no socket. The rule also covers the socket's owner himself, as the preview does.
+  Gaia sockets and the preview do not change.
+- **`<UnitType>`:** only sockets whose proto is of that type (or that proto name) follow the rule. Use it
+  to apply the rule to one kind of socket, for example a marker on the saltpeter socket:
 
   ```xml
-  <Unit id ='…' name ='SaltpeterSocket'>
+  <Unit name ='ypSPCSaltpeterSocket'>
       ...
       <UnitType>AbstractGaiaOnlySocket</UnitType>
   ```
 
-  The marker is registered by the DLL, like `healNonIdle`'s; edit `protoy.xml` and its XMB as
-  described there. Without a unit type, in stock data the rule only matters for
-  `ypTradingPostCapture` and `AIStart`, the two socket-typed protos without `ForceToGaia`.
+  The marker is registered by the DLL.
 - **Not covered:** placement that skips this check or runs it without a player's knowledge: the
   scenario editor, units created by triggers or random map scripts, and the in-place
   transformation of a unit into a socketed building.
@@ -3553,11 +3483,11 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
   a socketed building is checked exactly on a socket (any owner). With `log`:
   `gaiaSocketsOnly: refused TradingPost for player 1 on socket N (Proto), owned by player 2`.
 - **Simulation:** yes. With a new marker it also adds a unit type.
-- **Status:** implemented, not tested in game. In the test (2026-10-29) the stock interface itself
-  refused a Trading Post on a player-owned socket: no foundation, and the message that it must be
-  built near a native settlement or trade route. Scenario triggers cannot give build orders, so
-  the order path that bypasses that check, WoL's case, was not driven. The code was reviewed
-  adversarially and no defect was found.
+- **Status:** implemented, not tested in game. In the test (2026-10-29, on the stock game) the interface
+  itself refused a Trading Post on a player-owned socket: no foundation, and the message that it must be
+  built near a native settlement or trade route. Scenario triggers cannot give build orders, so the order
+  path that bypasses that check, WoL's case, was not driven: it needs a game against an AI that builds
+  on a socket. The code was reviewed and no defect was found.
 - **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)).
 
 #### repairWallGlobal
@@ -3566,7 +3496,7 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 
 ![repairWallGlobal in game](media/repairWallGlobal.gif)
 
-*In game:* three damaged walls (1200 / 1500) back to full a few seconds after one
+*In WoL:* three damaged walls (1200 / 1500) back to full a few seconds after one
 `repairWallGlobal()`. [Full video (MP4)](media/repairWallGlobal.mp4).
 
 ```
@@ -3574,13 +3504,14 @@ repairWallGlobal
 ```
 
 - **Effect:** adds the UI syscall `repairWallGlobal()`, which orders the repair of every wall of
-  the local player (the units of abstract type `AbstractWall`), as the single-wall repair does.
-  Put it in a command: `<command>repairWallGlobal</command>` in a `protounitcommands.xml` entry.
-- **Your data:** the repair costs resources as stock repair does.
+  the local player (the units of abstract type `AbstractWall`), as the single-wall repair does. WoL's walls
+  have it in a command: `<command>repairWallGlobal</command>` in a `protounitcommands.xml` entry.
+  `wol.cfg` has this line. Without it the button does nothing.
+- **WoL needs:** nothing. The repair costs resources as any repair does.
 - **Log:** `repairWallGlobal: UI syscall repairWallGlobal() added`; the first call, `hook reached:
   repairWallGlobal (player P: N wall(s) ordered to repair)`.
 - **Simulation:** sends one game command per wall: safe in multiplayer.
-- **Status:** confirmed (2026-11-03, single player): three walls at 1200 / 1500 went back to 1500
+- **Status:** confirmed (2026-11-03, single player, on WoL): three `WallStraight5` at 1200 / 1500 went back to 1500
   after one call; without the key the call did nothing. Video `repairWallGlobal.mp4`.
 
 #### hcShipmentPointFallback
@@ -3589,39 +3520,36 @@ repairWallGlobal
 
 ![hcShipmentPointFallback in game](media/hcShipmentPointFallback.gif)
 
-*In game:* No Town Center on the map: the food crates of a home city card land beside player 1's Market, its first town center (made by [`civFirstTC`](#civfirsttc)), through `hcShipmentPointFallback FirstTC`. [Full video (MP4)](media/hcShipmentPointFallback.mp4).
+*On the stock game (not filmed in WoL yet):* no Town Center on the map: the food crates of a home city card land beside player 1's Market, its first town center (made by [`civFirstTC`](#civfirsttc)), through `hcShipmentPointFallback FirstTC`. [Full video (MP4)](media/hcShipmentPointFallback.mp4).
 
 ```
 hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entries
 ```
 
-- **How stock behaves:** home city shipments arrive at the player's shipment point, a building
+- **In WoL today:** home city shipments arrive at the player's shipment point, a building
   (usually the Town Center). The game keeps that point while the building is alive and built.
   When it is destroyed or deleted, the game moves the point to the first alive, built building of
   the player among 10 fixed types, in this order: `TownCenter`, `Outpost`, `FortFrontier`,
   `WarHut`, `Blockhouse`, `NoblesHut`, any `AbstractAgraFort`, any `AbstractDaimyo`, `ypCastle`,
-  `ypVillage`. If none of those is left, there is no shipment point (a `FreeHomeCityUnit` effect,
-  for example, then creates nothing).
-- **Effect:** after that stock list, the entries are tried in cfg order.
-  - A **proto name:** the first alive building of the player of that proto that passes the same
-    checks as stock becomes the point. When there are several, the stock unit query order
-    decides, so every machine picks the same one.
-  - **`FirstTC`** (any case): the player's first town center, the unit the placement rules call
-    `FirstTC`. It becomes the point when it still belongs to the player and passes the same
-    checks as stock (alive, built). A first town center that was converted or captured is
-    skipped: the game never clears `FirstTC`, so it can belong to another player.
-- **`FirstTC` needs `startingTC` or `civFirstTC`:** stock makes only a `TownCenter` a first town
-  center, and the stock list already tries every `TownCenter` first, so without
-  [`startingTC`](#startingtc) or [`civFirstTC`](#civfirsttc) the keyword finds nothing new (the
-  key is still applied, with a warning in the log). With one of them, another building, for
-  example the Market a civ starts with instead of a Town Center, is the player's `FirstTC` and
-  receives the shipments. Without this key, a player whose buildings are none of the 10 stock
-  types has no shipment point at all (read from the stock search; not tested in game).
-- **Your mod:** list proto names exactly as in `protoy.xml`, and `FirstTC` where it should be
-  tried, e.g. `hcShipmentPointFallback Barracks Stable ArtilleryDepot Market Church`, or for WoL
-  `hcShipmentPointFallback FirstTC Barracks Market` (with `startingTC` or `civFirstTC`). A proto
-  named `FirstTC` cannot be listed: the keyword wins.
-- **The point then stays:** as in stock, once a building is the point it stays the point while
+  `ypVillage`. If none of those is left, there is no shipment point (a `FreeHomeCityUnit` effect, for
+  example, then creates nothing). WoL's civs that start with a `MaoriPa`, a `Presidio` or a colony
+  building are in that case when it dies (read from the exe's search; not tested in game).
+- **Effect:** after that list, the entries are tried in cfg order.
+  - A **proto name:** the first alive building of the player of that proto that passes the same checks
+    becomes the point. When there are several, the unit query's order decides, so every machine picks
+    the same one.
+  - **`FirstTC`** (any case): the player's first town center, the unit the placement rules call `FirstTC`.
+    It becomes the point when it still belongs to the player and passes the same checks (alive, built). A
+    first town center that was converted or captured is skipped: the game never clears `FirstTC`, so it
+    can belong to another player.
+- **`FirstTC` needs `startingTC` or `civFirstTC`:** the exe makes only a `TownCenter` a first town center,
+  and its list already tries every `TownCenter` first, so without [`startingTC`](#startingtc) or
+  [`civFirstTC`](#civfirsttc) the keyword finds nothing new (the key is still applied, with a warning in
+  the log).
+- **WoL needs:** proto names exactly as in `protoy.xml`, and `FirstTC` where it should be tried, e.g.
+  `hcShipmentPointFallback FirstTC MaoriPa Presidio Barracks Market`. A proto named `FirstTC` cannot be
+  listed: the keyword wins.
+- **The point then stays:** once a building is the point it stays the point while
   it is alive and built, even if a Town Center is built later. The player can still move the flag.
 - **Not affected:** the water shipment point and the consulate's drop point (`ypConsulate`) are
   chosen by other code.
@@ -3647,18 +3575,13 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 - **Simulation:** yes. Every choice reads only game state, so every machine with the same cfg
   picks the same building. Every player needs the same line (and the same `startingTC` or
   `civFirstTC` line).
-- **Status:**
-  - proto names: confirmed: after deleting the Town Center, the point moved to a listed building
-    and shipments arrived there;
-  - `FirstTC`: confirmed in single player (2026-10-29) with `civFirstTC`. In a skirmish where
-    player 1's civ started with a Market instead of a Town Center, a card of 300 food sent with no
-    Town Center on the map logged `hcShipmentPointFallback: player 1's shipment point -> unit 148
-    (Market), its first town center (FirstTC)`; the point `[hc+18Ch]` read 148 in memory, and
-    three `CrateofFood` landed beside the Market (food 200 → 500). It also ran with
-    `noTrainNearEnemyTC 65 log` on. Not tested: `FirstTC` with `startingTC`, and a converted
-    first town center (the owner check);
-  - water shipment points were not tested (the key does not change them).
-- **New in this DLL:** not in UHC 1.10.
+- **Status:** confirmed in single player, on the stock game; not filmed in WoL yet.
+  - Proto names: after deleting the Town Center, the point moved to a listed building and shipments
+    arrived there.
+  - `FirstTC` with `civFirstTC` (2026-10-29): with no Town Center on the map, a card of 300 food landed
+    beside the Market (`[hc+18Ch]` read its unit).
+  - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
+    key does not change them).
 
 ### Techs and transforms
 
