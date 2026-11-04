@@ -44,12 +44,12 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 08:11 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 08:11 | [`transformUpdatesLOS`](#transformupdateslos) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | Nothing. |
 | Wednesday 2026-11-04 08:11 | [`transformInventory`](#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. |
-| Wednesday 2026-11-04 08:11 | [`abilitySlots`](#abilityslots) | Filmed in WoL, with a control. Lets the command panel show up to N abilities per unit instead of 6. | Units with more than 6 abilities in `abilities.xml`. |
+| Wednesday 2026-11-04 08:11 | [`abilitySlots`](#abilityslots) | Filmed in WoL, with a control. Lets the command panel show up to N abilities per unit instead of 6. | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. |
 | Wednesday 2026-11-04 08:11 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | Filmed in WoL, with a control. The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. |
-| Wednesday 2026-11-04 08:11 | [`noCorpseDopples`](#nocorpsedopples) | Filmed in WoL, with a control. A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. | `<Flag>Doppled</Flag>` on those protos, and the unit type in the cfg (`Huntable` needs no data change). |
+| Wednesday 2026-11-04 08:11 | [`noCorpseDopples`](#nocorpsedopples) | Filmed in WoL, with a control. A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. |
 | Wednesday 2026-11-04 07:31 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
 | Wednesday 2026-11-04 07:31 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
-| Wednesday 2026-11-04 07:31 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Techs with `<TypeCount>` prerequisites in `techtreey` (stock data has none). |
+| Wednesday 2026-11-04 07:31 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. |
 | Wednesday 2026-11-04 07:20 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
 | Wednesday 2026-11-04 07:20 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. |
 | Wednesday 2026-11-04 07:20 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
@@ -74,7 +74,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 21:19 | [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds), [`noBigButtonBlds`](#bigbuttoncivs-and-nobigbuttonblds) | Added. Gives the command panel's big button to the listed civs, and takes it from the listed buildings. | Nothing. |
 | Monday 2026-11-02 21:10 | [`twoScoutCivs`](#twoscoutcivs) | Added. The Koreans get the interface of the civs that start with two heroes. | A second hero. |
 | Monday 2026-11-02 21:10 | [`marketUnits`](#marketunits) | Added. Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | Nothing. |
-| Monday 2026-11-02 21:10 | [`explorerUnits`](#explorerunits) | Added. Listed protos get a hero's name and knockout message. | The string IDs. |
+| Monday 2026-11-02 21:10 | [`explorerUnits`](#explorerunits) | Added. WoL's listed protos (40 triples) get a hero's name and knockout message. | The string IDs. |
 | Monday 2026-11-02 20:47 | [`customCheats`](#customcheats) | Added. The cheats of WoL's plugins work in the chat. | `customSyscalls`, and plugins that register cheats. |
 | Monday 2026-11-02 20:40 | [`enableAllTeams`](#enableallteams) | Added. Teams 3 and 4 in the single-player game setup. | Nothing. |
 | Monday 2026-11-02 20:33 | [`selectionLimit`](#selectionlimit) | Added. A selection holds up to N units (50 in the exe). | Nothing. |
@@ -250,7 +250,7 @@ The tables have a column, **WoL's DLL**:
 | **in WoL's DLL** | WoL's DLL has it, but WoL's cfg does not use it. |
 | **always on** | WoL's DLL does it with no cfg line. This DLL needs the line. |
 | **new** | WoL's DLL does not have it. Its code is in the [porting guide](porting-to-another-dll.md). |
-| **for tests** | A tool for testing a mod. Don't port it. |
+| **for tests** | A tool for testing. Don't port it. |
 
 The features are grouped by what they change. Each group starts with a table of its keys;
 each feature's section starts with the day, date and time it was added. [Latest changes](#latest-changes) lists them all by date.
@@ -574,7 +574,7 @@ deckCardCount <N>        N from 20 to 10000
 
 ![selectionLimit in game](media/selectionLimit.gif)
 
-*In game:* With `selectionLimit 75`, a box over 89 Pikemen selects 75 (the number on the selection icon); without the key it stops at 50. [Full video (MP4)](media/selectionLimit.mp4).
+*In WoL:* with `selectionLimit 75`, a box over 89 Pikemen selects 75 (the number on the selection icon); without the key it stops at 50. [Full video (MP4)](media/selectionLimit.mp4).
 
 ```
 selectionLimit N
@@ -656,7 +656,7 @@ noAILimitV2
 
 ![enableAllTeams in game](media/enableAllTeams.gif)
 
-*In game:* The setup's team list offers Team 3 and Team 4; player 1 takes Team 3 and the AI Team 4 (1.5x speed). [Full video (MP4)](media/enableAllTeams.mp4).
+*In WoL:* the setup's team list offers Team 3 and Team 4; player 1 takes Team 3 and the AI Team 4 (1.5x speed). [Full video (MP4)](media/enableAllTeams.mp4).
 
 ```
 enableAllTeams
@@ -3197,7 +3197,6 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
   gives it `MaintainSettlersOttoman`): it held its finished settler and released it right after two
   settlers died; without the key, the next settler came about 23 s later. Factory cannons, batches and
   `SingleUse` spawns were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #8 ([wol-requests.md](wol-requests.md)).
 
 #### trainSingleAbstractType
 
@@ -3488,7 +3487,6 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
   built near a native settlement or trade route. Scenario triggers cannot give build orders, so the order
   path that bypasses that check, WoL's case, was not driven: it needs a game against an AI that builds
   on a socket. The code was reviewed and no defect was found.
-- **New in this DLL:** not in UHC 1.10. WoL request #9 ([wol-requests.md](wol-requests.md)).
 
 #### repairWallGlobal
 
@@ -3589,7 +3587,7 @@ What happens when a tech activates or a unit changes proto.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
-| [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | **new** | Techs with `<TypeCount>` prerequisites in `techtreey` (stock data has none). | confirmed (single player) |
+| [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | **new** | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. | confirmed (single player) |
 | [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | **new** | Nothing. | confirmed (single player) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | **new** | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
 
@@ -3609,38 +3607,37 @@ update (`prerequisites now met ... game time 24002 ms`): 400/400 becomes 200/200
 ![techPrereqRecheck in WoL, key off](media/techPrereqRecheck-wol-control.gif)
 
 *In WoL, key off (the same scene):* the Dock stands but nothing re-checks the tech, so the Explorer
-keeps 400 HP (stock waits for a tech change or a house).
+keeps 400 HP (the exe waits for a tech change or a house).
 [Full video (MP4)](media/techPrereqRecheck-wol-control.mp4).
 
 ```
 techPrereqRecheck [N] [full] [log]       N: check each player every N world updates (default 1)
 ```
 
-- **How stock behaves:** the game evaluates a tech's `<Prereqs>` only when the player's tech tree
-  is marked for a re-check: when one of the player's techs changes status (researched, activated,
+- **In WoL today:** the game evaluates a tech's `<Prereqs>` only when the player's tech tree is marked for a re-check: when one of the player's techs changes status (researched, activated,
   made obtainable, a shipment), at an age-up, at a home city level-up, and when the player's
   population cap changes (a house is built or destroyed). Creating or killing any other unit never
   does. A `<TypeCount>` prerequisite counts the player's units, so it is noticed late: a tech with
-  `<TypeCount unit='Dock' count='1' state='noneState aliveState' operator='gte'/>` waits for the
-  player's next house after the first dock is built. Stock data has no `<TypeCount>`; WoL has 12
-  in 9 techs.
-- **Effect:** on every world update (or every N), for each tech with a `<TypeCount>`
-  prerequisite, the DLL evaluates the tech's prerequisites for each player exactly as the stock
-  re-check does, and compares the result with the one the game cached. On a difference it starts
-  the stock re-check at once. What follows is the stock re-check, the same as after a house:
+  `<TypeCount unit='Dock' count='1' state='noneState aliveState' operator='gte'/>`, the pattern of
+  WoL's `WOLEnableInfanteDeMarina`, waits for the player's next house after the first dock is built. WoL
+  has 12 `<TypeCount>` prerequisites in 9 techs.
+- **Effect:** on every world update (or every N), for each tech with a `<TypeCount>` prerequisite, the
+  DLL evaluates the tech's prerequisites for each player exactly as the exe's re-check does, and
+  compares the result with the one the game cached. On a difference it starts the exe's re-check at
+  once, the same as after a house:
   - a tech with no research time (`<ResearchPoints>0</ResearchPoints>`) whose prerequisites are now
     met activates;
   - a `Volatile` tech activates or deactivates;
   - the AI's tech list and the UI are updated.
 
-  Techs without `<TypeCount>` are not checked by the DLL, but the stock re-check it starts
-  re-evaluates them too.
+  Techs without `<TypeCount>` are not checked by the DLL, but the re-check it starts re-evaluates them
+  too.
 - **`N`:** each player is checked every N world updates, offset by its player number so the
   players' checks are spread out. A larger N costs less and reacts later.
-- **`full`:** for measurements only. It starts the stock re-check of every tech for each player
-  every N updates, whether anything changed or not. The stock re-check walks every tech, so use a
-  large N (e.g. 60) on a big techtree.
-- **Writing `<TypeCount>`** (from the stock XML handler, static reading):
+- **`full`:** for measurements only. It starts the exe's re-check of every tech for each player every N
+  updates, whether anything changed or not. That re-check walks every tech, and WoL has 10,552, so use a
+  large N (e.g. 60).
+- **Writing `<TypeCount>`** (from the exe's XML handler, static reading):
   - all four attributes are required: `unit`, `count`, `operator`, `state`. Without one, the game
     drops the prerequisite with an error;
   - `state` is a list of words. It starts as "any state"; `noneState` clears it, then
@@ -3650,7 +3647,7 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
   - `count` is read as an integer.
 
   ```xml
-  <Tech name ='MyDockBonus' type ='Normal'>
+  <Tech name ='WOLEnableInfanteDeMarina' type ='Normal'>
       <DBID>…</DBID>
       <ResearchPoints>0.0000</ResearchPoints>
       <Status>OBTAINABLE</Status>
@@ -3685,15 +3682,13 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
   - only `<TypeCount>` prerequisites are watched; `<Culture>` and `<Civilization>` prerequisites
     after a civilization change are not;
   - a tech that is not relevant to the player yet (unobtainable and not named by its civ's techs)
-    has no status entry. Neither stock nor the DLL evaluates it until a status change creates one.
-- **Simulation:** yes: techs activate earlier than in stock. Every player needs the same setting,
-  N included. The check reads only game state and the world's step count.
-- **Status:** confirmed in single player (2026-10-29). Two test techs with `<TypeCount>`
-  prerequisites and no research time, one met when the player has a live Settler and one when he
-  has no live Musketeer, activated in the same world update as the Settler's creation (20.0 s) and
-  the Musketeer's death (32.0 s). With the key off they waited for an unrelated tech change at
-  70 s. With these 2 techs, the checks cost about 4 ms per game minute (the `log` summary).
-- **New in this DLL:** not in UHC 1.10. WoL request #6 ([wol-requests.md](wol-requests.md)).
+    has no status entry. Nothing evaluates it until a status change creates one.
+- **Simulation:** yes: techs activate earlier. Every player needs the same setting, N included. The check reads only game state and the world's step count.
+- **Status:** confirmed in single player. In WoL (2026-11-04), a test tech with one living Dock as its
+  prerequisite activated in the same update as the Dock (24 s); without the key it never did in that
+  scene. On the stock game (2026-10-29), with two test techs, a unit's creation and a unit's death each
+  activated theirs at once, for about 4 ms per game minute. The cost with WoL's 9 techs was not
+  measured.
 
 #### transformUpdatesLOS
 
@@ -3718,43 +3713,39 @@ right with or without the key; 45 of WoL's transforms have no such line.
 transformUpdatesLOS [log]
 ```
 
-- **How stock behaves:** each unit has its own line of sight. The game copies it from the proto's
-  `<LOS>` when the unit is created, when a building is finished, and when a tech changes that
-  proto's LOS. A tech effect `<Effect type ='TransformUnit' fromprotoid ='A' toprotoid ='B'>` and a
-  revolution change living units into another proto in place: the unit keeps its ID, HP ratio
-  and orders, but also keeps A's LOS. Stock TAD has four such pairs with different LOS values:
-  `HCXPTirailleurs` (Crossbowman 20 → Skirmisher 24), `HCXPEveningStar` (xpAxeRider 12 →
-  xpRifleRider 15), `YPHCBannerReforms` (ypChuKoNu 20 → ypArquebusier 24) and
-  `YPHCSepoyRebellion` (ypSettlerIndian 14 → ypSepoy 16). A revolution turns Settlers (14) into
-  xpColonialMilitia (18). The old LOS stays until something resets it, for example a later tech
-  that changes B's LOS, so the bug looks random.
+- **In WoL today:** each unit has its own line of sight. The game copies it from the proto's `<LOS>` when
+  the unit is created, when a building is finished, and when a tech changes that proto's LOS. A tech
+  effect `<Effect type ='TransformUnit' fromprotoid ='A' toprotoid ='B'>` and a revolution change living
+  units into another proto in place: the unit keeps its ID, HP ratio and orders, but also keeps A's LOS.
+  So `ShiftingCalarasToVanator` leaves the Vanatori at the Calarashi's LOS 15 instead of 22, and a
+  revolution leaves its Settlers at 14 instead of the `xpColonialMilitia`'s 18. The old LOS stays until
+  something resets it, for example a later tech that changes B's LOS, so the bug looks random. Some
+  cards work around it in their data (see the video); 45 of WoL's transforms do not.
 - **Effect:** the transformed unit takes the LOS of its player's copy of B, so LOS techs that
   player already has for B count. The fog of war around it and everything else that reads its LOS
   use the new value from the moment it changes.
 - **Units that keep their own LOS:** a unit whose LOS is not its old proto's at the moment of the
-  transform keeps it. Stock gives some units a LOS of their own on purpose: a foundation under
-  construction and a knocked-out hero (6). One case is kept by mistake: a unit converted from
-  another player keeps the LOS of its former owner's copy of the proto (stock does not update it
-  on conversion), so if the two players' LOS techs for that proto differ, a later transform leaves
+  transform keeps it. The exe gives some units a LOS of their own on purpose: a foundation under
+  construction and a knocked-out hero (6). One case is kept by mistake: a unit converted from another
+  player keeps the LOS of its former owner's copy of the proto (the exe does not update it on
+  conversion), so if the two players' LOS techs for that proto differ, a later transform leaves
   that unit's LOS alone too. With `log` these units show up as `keeps its own LOS`.
-- **Not affected (already right in stock):** transforms that replace the unit with a new unit,
+- **Not affected (already right):** transforms that replace the unit with a new unit,
   such as walls into gates, and the trigger effect "Change Unit Type" (`trUnitChangeProtoUnit`),
   which takes another path: in game the unit kept its ID and already had the new proto's LOS.
-- **Your mod:** nothing. The key covers every in-place transform; there is no per-unit marker.
+- **WoL needs:** nothing. The key covers every in-place transform; there is no per-unit marker.
 - **`log`:** one line per unit transformed in place. A tech that transforms many units writes one
   line for each.
 - **Log:** at startup `transformUpdatesLOS: units transformed in place (TransformUnit, revolution)
   take their new proto's LOS (multiplayer unverified)` (with `log`: `…LOS, every transform logged
   (multiplayer unverified)`); in a game, `hook reached: transformUpdatesLOS (0x9C763F)` the first
-  time a unit is transformed in place. With `log`: `transformUpdatesLOS: unit N (Crossbowman ->
-  Skirmisher) LOS 20 -> 24`, or `transformUpdatesLOS: unit N (A -> B) keeps its own LOS 6 (its
+  time a unit is transformed in place. With `log`: `transformUpdatesLOS: unit N (Calarashi ->
+  Vanator) LOS 15 -> 22`, or `transformUpdatesLOS: unit N (A -> B) keeps its own LOS 6 (its
   proto's is 18)`.
 - **Simulation:** yes: line of sight decides what a player sees and what units can target.
-- **Status:** confirmed in single player (2026-10-29). Four Crossbowmen turned into Skirmishers by
-  `HCXPTirailleurs` got LOS 24, the Skirmisher's; with the key off they kept 20 (the bug).
-  Pikemen turned into Rodeleros logged `12 -> 12`. "Change Unit Type" never reached the hook and
-  was already right in stock. Revolutions were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #10 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player, in WoL (2026-11-04): four Calarashi turned into Vanatori by
+  `ShiftingCalarasToVanator` got LOS 22; without the key they kept 15. "Change Unit Type" never reached
+  the hook and was already right. Revolutions were not tested.
 
 #### transformInventory
 
@@ -3776,42 +3767,40 @@ they can never be gathered. [Full video (MP4)](media/transformInventory-wol-cont
 transformInventory [all] [scale] [<UnitType>] [log]
 ```
 
-- **How stock behaves:** a unit that holds resources (a crate, a herdable, a mine, a tree) has
-  its own resource inventory. The game fills it from the proto's `<InitialResource>` when the unit
-  is created, and gatherers take from that inventory, not from the proto. A tech effect
-  `<Effect type ='TransformUnit' fromprotoid ='A' toprotoid ='B'>` and a revolution change living
-  units into another proto in place, but never touch the inventory: the unit keeps A's resource
-  types and amounts, or has none at all. Stock TAD never hits this (none of its 7 `TransformUnit`
-  effects involves an inventory). WoL has 64 such effects (static scan of its techtree):
+- **In WoL today:** a unit that holds resources (a crate, a herdable, a mine, a tree) has its own resource
+  inventory. The game fills it from the proto's `<InitialResource>` when the unit is created, and
+  gatherers take from that inventory, not from the proto. A tech effect `<Effect type ='TransformUnit'
+  fromprotoid ='A' toprotoid ='B'>` and a revolution change living units into another proto in place, but
+  never touch the inventory: the unit keeps A's resource types and amounts, or has none at all. WoL has
+  64 such effects (static scan of its techtree):
   - `CrateofCoin` → `CrateofXP` (`WOLNatAssyrianTWO`): the "XP crate" still holds 100 gold;
   - `MerinoRam` → `Cow` (`WOLHCBlueBreed`): the cow holds the ram's gold;
   - a pet or a priest → a crate (`HCCardDogTaxWar`, `WOLHCOrganizedSecularism`): the crate has no
     inventory, so it can never be gathered and never empties;
-  - a later conversion or capture of such a unit makes it worse: the owner change rescales each
-    resource by the proto's `InitialResource` and zeroes every type the proto does not list. A
-    gold-holding XP crate that changes owner ends up with nothing.
+  - a later conversion or capture of such a unit makes it worse: the owner change rescales each resource
+    by the proto's `InitialResource` and zeroes every type the proto does not list. A gold-holding XP
+    crate that changes owner ends up with nothing.
 - **Effect:** when the old and new protos list different resource types in `<InitialResource>`,
   the unit gets the new proto's `InitialResource` (its player's copy, so that player's
   `InventoryAmount` techs count), as if it had just been created. A unit that had no inventory
-  gets one. A unit whose two protos list the same types keeps its inventory, as in stock: a
-  fattened goat turned into a cow keeps its food.
+  gets one. A unit whose two protos list the same types keeps its inventory: a fattened goat turned into a
+  cow keeps its food.
 - **`all`:** also rebuilds units whose protos list the same types (a `ypGoatFat` with 300 food
   turned into a `Cow` gets the cow's 50), and removes the inventory of a unit whose new proto has
-  no resources at all (as the trigger "Change Unit Type" does). Without `all`, such a unit keeps
-  its old inventory, as in stock.
+  no resources at all (as the trigger "Change Unit Type" does). Without `all`, such a unit keeps its old
+  inventory.
 - **`scale`:** the new amounts are scaled by the fraction of the old `InitialResource` the unit
   still held: a coin crate half gathered becomes half an XP crate. A unit that held more than its
   old `InitialResource` (fattened) gets the full new amounts.
-- **`<UnitType>`:** only transforms into protos of that type are changed; any other transform
-  behaves as in stock. A new name is registered as a marker unit type (like `healNonIdle`'s); a
-  stock type or a proto name works too (`transformInventory AbstractResourceCrate`). Without a
-  type, every in-place transform is covered.
-- **Your mod:** nothing, unless you use a marker. The key covers every `TransformUnit` effect and
-  revolution. The trigger effect "Change Unit Type" and `uiTransformSelectedUnit` (WoL's
-  `*Maturing`) already give the new proto's resources in stock and are not changed.
-- **Gatherers:** a unit already gathering a target whose resource type changes keeps gathering the
-  old type; that amount is now 0, so it stops at its next gather tick and must be re-tasked. In
-  stock it would keep collecting the old resource.
+- **`<UnitType>`:** only transforms into protos of that type are changed. A new name is registered as a
+  marker unit type (like `healNonIdle`'s); an existing type or a proto name works too
+  (`transformInventory AbstractResourceCrate`). Without a type, every in-place transform is covered.
+- **WoL needs:** nothing, unless you use a marker. The key covers every `TransformUnit` effect and
+  revolution. The trigger effect "Change Unit Type" and `uiTransformSelectedUnit` (the `*Maturing` units)
+  already give the new proto's resources and are not changed.
+- **Gatherers:** a unit already gathering a target whose resource type changes keeps gathering the old
+  type; that amount is now 0, so it stops at its next gather tick and must be re-tasked. Without the key
+  it would keep collecting the old resource.
 - **`log`:** one line per unit transformed in place that holds or receives resources. A tech that
   transforms many units writes one line for each.
 - **Log:** at startup `transformInventory: units transformed in place (TransformUnit, revolution)
@@ -3822,10 +3811,10 @@ transformInventory [all] [scale] [<UnitType>] [log]
   when the data loads, `unit types: X -> <ID> …`. In a game, `hook reached: transformInventory
   (0x9C7625)` the first time any unit is transformed in place. With `log`:
   - `transformInventory: unit N (Sheep -> CrateofCoin) inventory rebuilt: {2: 53.6} -> {0: 100}`;
-  - `transformInventory: unit N (Musketeer -> CrateofXP) inventory created: none -> {5: 100}`;
+  - `transformInventory: unit N (PetWolf -> CrateofCoin) inventory created: none -> {0: 100}`;
   - `transformInventory: unit N (ypGoatFat -> Cow) keeps its inventory {2: 300} (same resource
     types)`;
-  - `transformInventory: unit N (ypCrateofCoin1 -> Pikeman) keeps its inventory {0: 100} (the new
+  - `transformInventory: unit N (ypCrateofCoin1 -> Settler) keeps its inventory {0: 100} (the new
     proto has no resources; "all" frees it)`;
   - with `all`: `transformInventory: unit N (A -> B) inventory freed: {0: 100} -> none`;
   - with `scale`: `… inventory rebuilt: {1: 80} -> {2: 80} (scaled by 0.8)`;
@@ -3842,22 +3831,12 @@ transformInventory [all] [scale] [<UnitType>] [log]
 - **Limits:** units that a saved game already holds with a mismatched inventory are not fixed when
   it loads; only their next transform fixes them. Callers of the in-place transform other than
   `TransformUnit` and the revolution (construction objects and a few internal ones) are covered
-  too; their stock data was not surveyed.
-- **Status:** confirmed in single player (2026-10-29), with a test tech `UHCInvTransformTest` of
-  six `TransformUnit` effects:
-  - a Sheep holding 53.6 food became a `CrateofCoin` with 100 gold;
-  - a `CrateofWood` (100 wood) became a `CrateofFood` with 100 food, which the game's panel then
-    showed (`Alim.: 100`);
-  - a Musketeer (no inventory) became a `CrateofXP` with a new inventory of 100 XP;
-  - a `ypGoatFat` (300 food) became a `Cow` and kept its food (same resource types);
-  - a `ypCrateofCoin1` (100 gold) became a Pikeman and kept its inventory, without `all` (the log
-    says `all` frees it);
-  - Crossbowman → Skirmisher: no inventory on either side, nothing logged.
-
-  The stock behavior (the inventory is never rebuilt) comes from static analysis; no run with the
-  key off was made. `all`, `scale`, a marker, revolutions and a conversion after a transform were
-  not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #4 ([wol-requests.md](wol-requests.md)).
+  too; WoL's data was not surveyed for them.
+- **Status:** confirmed in single player. In WoL (2026-11-04), `HCCardDogTaxWar` turned two `PetWolf` into
+  `CrateofCoin` with 100 coin each; without the key the crates had no inventory. On the stock game
+  (2026-10-29), a test tech covered a change of resource type, a unit with no inventory, a unit with the
+  same types (kept) and a new proto with no resources (kept without `all`). `all`, `scale`, a marker,
+  revolutions and a conversion after a transform were not tested.
 
 ### Interface
 
@@ -3865,10 +3844,10 @@ What the panels and the fog of war show.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
-| [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Units with more than 6 abilities in `abilities.xml`. | confirmed (single player, UI) |
+| [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
-| [`explorerUnits`](#explorerunits) | Listed protos get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
-| [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | `<Flag>Doppled</Flag>` on those protos, and the unit type in the cfg (`Huntable` needs no data change). | confirmed (single player) |
+| [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
+| [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
 
 #### abilitySlots
 
@@ -3877,8 +3856,8 @@ What the panels and the fog of war show.
 ![abilitySlots in WoL](media/abilitySlots-wol.gif)
 
 *In WoL, with `abilitySlots 8 log` (Ethiopians; close-up of the selected Explorer's command
-panel):* WoL's Explorer lists 8 abilities in `abilities.xml`. With `Industrialize` active, the
-Habilidades row shows Regen, Sharpshooter and Crackshot. At 24 s `WOLAbilityHeal` turns on and
+panel):* WoL's Explorer lists 8 abilities in `abilities.xml`. With `Industrialize` active, the Abilities
+row shows Regen, Sharpshooter and Crackshot. At 24 s `WOLAbilityHeal` turns on and
 ability 7 (PowerHeal) gets a button; at 30 s `WOLHCMachiavellianism` turns on and ability 8
 (Counterintelligence) gets one too (`shows ability 7 of its list ... past the stock 6`).
 [Full video (MP4)](media/abilitySlots-wol.mp4).
@@ -3890,11 +3869,11 @@ powers never get a button although their techs are active.
 [Full video (MP4)](media/abilitySlots-wol-control.mp4).
 
 ```
-abilitySlots <N> [log]      N from 6 (stock) to 36
+abilitySlots <N> [log]      N from 6 (the exe's value) to 36
 ```
 
-- **How stock behaves:** a unit's abilities (powers such as Sharpshooter or Crackshot) are listed
-  per proto in `data\abilities\abilities.xml`; a proto shows them on the Abilities page of its
+- **In WoL today:** a unit's abilities (powers such as Sharpshooter or Crackshot) are listed per proto in
+  `data\abilities\abilities.xml`; a proto shows them on the Abilities page of its
   command panel through `<Command page ='11' column ='0'>Abilities</Command>`. The panel asks for
   the first 6 abilities of the unit's list, and only those:
   - an ability whose `<tech>` is not active, or whose `<age>` is not the player's age, gets no
@@ -3907,10 +3886,10 @@ abilitySlots <N> [log]      N from 6 (stock) to 36
 - **Effect:** the panel asks for the first N abilities of the list. A unit with 6 abilities or
   fewer looks exactly as before. Enabled abilities past the 6th get buttons; a page with more than
   6 buttons wraps to the next row, as Train and Tech pages already do. The panel still has 6 rows
-  of 6 buttons: whatever does not fit is not drawn, as in stock.
-- **Your mod:** use N at least the length of the longest ability list in your `abilities.xml`
-  (WoL's explorer has 8). A larger N costs a little: each refresh of the panel scans the whole
-  ability list once per extra slot.
+  of 6 buttons: whatever does not fit is not drawn.
+- **WoL needs:** N at least the length of the longest ability list in `abilities.xml`: the Explorer has 8.
+  A larger N costs a little: each refresh of the panel scans the whole ability list (471 entries) once
+  per extra slot.
 - **Existing data:** abilities that were silently dropped at position 7 or later now appear. In
   WoL, the 7th ability of `ypMonkJapanese`, `ypMonkJapanese2` and `ypMonkChinese` is an
   `AlwaysDisabledInGrid` aura (scoping, not tested): with the key it shows as a greyed button once
@@ -3927,14 +3906,12 @@ abilitySlots <N> [log]      N from 6 (stock) to 36
   recharging ability. A bad value: `abilitySlots: expected an integer from 6 to 36, then
   optionally log; feature not applied`.
 - **Simulation:** no. Only the local command panel changes; a click sends the same
-  `ability(record, unit)` command as a stock button. Players may set it differently (static
+  `ability(record, unit)` command as any other button. Players may set it differently (static
   reading; not tested in multiplayer).
 - **Limits:** the second row of a wrapped Abilities page may have no page label, or a stale one
   (not checked). The wonder power panel is separate: see `wonderPanelSkipAuras`.
-- **Status:** confirmed in single player (2026-10-29), in the interface. A test Explorer with 8
-  abilities, the first 6 locked by techs: with `abilitySlots 8` the 7th showed a button at once and
-  the 8th when its tech was activated; with the key off, no ability button.
-- **New in this DLL:** not in UHC 1.10. WoL request #16 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player, in the interface, in WoL (2026-11-04): abilities 7 and 8 of the
+  Explorer got buttons when their techs turned on, and none without the key.
 
 #### wonderPanelSkipAuras
 
@@ -3950,7 +3927,7 @@ panel`). [Full video (MP4)](media/wonderPanelSkipAuras-wol.mp4).
 
 ![wonderPanelSkipAuras in WoL, key off](media/wonderPanelSkipAuras-wol-control.gif)
 
-*In WoL, key off (the same data):* stock asks only for the Gate's first ability, the aura, and adds
+*In WoL, key off (the same data):* the exe asks only for the Gate's first ability, the aura, and adds
 no button for it, so the panel shows the Puyong Hall's Whirlpool instead. In these WoL runs the
 panel held one button at a time: with WoL's own data it shows the Gate's power and not the Puyong
 Hall's. [Full video (MP4)](media/wonderPanelSkipAuras-wol-control.mp4).
@@ -3959,23 +3936,20 @@ Hall's. [Full video (MP4)](media/wonderPanelSkipAuras-wol-control.mp4).
 wonderPanelSkipAuras [log]
 ```
 
-- **How stock behaves:** the Asian wonders' global powers sit in the wonder power panel, a row of
-  up to five buttons that is always on screen. For each wonder of the local player with
-  `<Command page='11' column='1'>Abilities</Command>`, the panel asks for the wonder's **first**
-  ability in `abilities.xml` and nothing else. It adds no button when that ability is
-  `<alwaysdisabledingrid>true</alwaysdisabledingrid>`, as every stock passive aura is
-  (`ypPowerShrineAura`, …), or is not available yet (its `<tech>` is not active, or its `<age>` is
-  not the player's). So a power listed after an aura (for example a power added to the Toshogu
-  Shrine) never gets a panel button, although the selected wonder's command panel shows both
-  abilities.
-- **Effect:** the panel tries the wonder's abilities in file order (up to 8) and shows the first
-  one that is available and is not `alwaysdisabledingrid`. A wonder whose first ability already
-  qualifies is shown exactly as in stock, so with stock data nothing changes: every stock wonder
-  has a single ability. The button does what a command panel button does
-  (`ability(<record>, <unit>, true)`).
-- **Your data:** the wonder's proto must be an `AbstractWonder` with
-  `<Command page='11' column='1'>Abilities</Command>`. In `abilities.xml`, list the power after the
-  aura under the proto's lowercase name:
+- **In WoL today:** the wonders' global powers sit in the wonder power panel, a row of up to five buttons
+  that is always on screen. For each wonder of the local player with `<Command page='11'
+  column='1'>Abilities</Command>`, the panel asks for the wonder's **first** ability in `abilities.xml`
+  and nothing else. It adds no button when that ability is
+  `<alwaysdisabledingrid>true</alwaysdisabledingrid>`, as the passive auras are (`ypPowerShrineAura`, …),
+  or is not available yet (its `<tech>` is not active, or its `<age>` is not the player's). So a power
+  listed after an aura never gets a panel button, although the selected wonder's command panel shows
+  both abilities.
+- **Effect:** the panel tries the wonder's abilities in file order (up to 8) and shows the first one that
+  is available and is not `alwaysdisabledingrid`. A wonder whose first ability already qualifies is shown
+  as before. The button does what a command panel button does (`ability(<record>, <unit>, true)`).
+- **WoL needs:** the wonder's proto must be an `AbstractWonder` (116 protos in WoL) with `<Command page='11'
+  column='1'>Abilities</Command>`. In `data\abilities\abilities.xml`, list the power after the aura under
+  the proto's lowercase name:
 
   ```xml
   <ypwjtoshogushrine2>
@@ -3986,19 +3960,15 @@ wonderPanelSkipAuras [log]
   </ypwjtoshogushrine2>
   ```
 
-  The stock file is inside `Data3.bar`: extract it with `tools\bar.py`, convert it with
-  `xmbedit.py to-xml`, and ship the edited `data\abilities\abilities.xml` with an
-  `abilities.xml.xmb` compiled from it ([section 6](#6-editing-the-game-data)). **Every child of a
-  proto element must be `<ability>`:** any other tag makes the whole file fail to load, and then no
-  unit has abilities (static reading).
+  **Every child of a proto element must be `<ability>`:** any other tag makes the whole file fail to load,
+  and then no unit has abilities (static reading).
 - **Limits:** one panel button per `Abilities` command, so a wonder still shows a single global
   power; only `AbstractWonder` units appear in the panel; only the first 8 abilities of a wonder
   are tried.
 - **Without the key** (not tested): listing the power *before* the aura, or marking the aura
-  `<nevershowingrid>true</nevershowingrid>` (which also hides its icon from the command panel),
-  should give the power its panel button in stock.
-- **`log`:** one line the first time in a game the panel shows each ability that stock would not
-  have shown (an ability past the first).
+  `<nevershowingrid>true</nevershowingrid>` (which also hides its icon from the command panel), should
+  give the power its panel button.
+- **`log`:** one line the first time in a game the panel shows an ability past the first.
 - **Log:** at startup `wonderPanelSkipAuras: the wonder power panel shows a wonder's first
   available ability that is not a passive aura (AlwaysDisabledInGrid) (UI only)` (with `log`:
   `…(AlwaysDisabledInGrid), each ability it shows past the first logged once (UI only)`); in a
@@ -4007,9 +3977,9 @@ wonderPanelSkipAuras [log]
   the wonder power panel (record R, power P)`, where K counts from 0.
 - **Simulation:** no. Only what the panel shows changes; the button sends the same command a
   command panel button sends. Players may set it differently (not tested in multiplayer).
-- **Status:** confirmed in single player (2026-10-29), in the interface: with a test ability added
-  after the Toshogu Shrine's aura, the panel showed 2 buttons; with the key off, 1.
-- **New in this DLL:** not in UHC 1.10. WoL request #20 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player, in the interface. In WoL (2026-11-04), as in the videos. On the
+  stock game (2026-10-29), with a test ability after the Toshogu Shrine's aura, the panel showed 2
+  buttons, and 1 with the key off.
 
 #### explorerUnits
 
@@ -4019,18 +3989,19 @@ wonderPanelSkipAuras [log]
 explorerUnits Proto Type StringID [Proto Type StringID ...]
 ```
 
-- **Effect:** listed protos are heroes for two things: their name and their knockout message.
-  `Type` picks the name: 1 the home city's explorer name, 0 the stock path for other units, any
-  other value the first of the home city's hero names (as the second monk of a two-hero civ).
-  `StringID` is the message shown when the unit is knocked out.
+- **Effect:** listed protos are heroes for two things: their name and their knockout message. `Type` picks
+  the name: 1 the home city's explorer name, 0 the exe's path for other units, any other value the first
+  of the home city's hero names (as the second monk of a two-hero civ). `StringID` is the message shown
+  when the unit is knocked out. `wol.cfg` has 40 triples, such as `NatAgha 1 2040083`; 4 of its protos do
+  not exist in WoL's data.
 - **Log:** `explorerUnits: N hero proto(s)`; when `protoy.xml` is read, `explorerUnits: K of N
   protos found in the data` and each unknown name; `hook reached: explorerUnits hero name
   (0x6A012A)`, `... knockout message (0x50B01F)`; `explorerUnits: needs triples ...` or
   `bad triple ...` (not applied).
 - **Simulation:** no: names and messages.
-- **Status:** confirmed for names (2026-11-02, single player): a civ's two monks listed with
-  Type 1 and Type 2 were named after the explorer and the first hero name of the home city; the
-  knockout message was not driven. Video `asianCivs-koreans.mp4` (the two monks, then the wonder
+- **Status:** confirmed for names (2026-11-02, single player, on WoL): the Koreans' `WOLMonkKorean` and
+  `WOLMonkKorean2` were named after the explorer and the first hero name of the home city; the knockout
+  message was not driven. Video `asianCivs-koreans.mp4` (the two monks, then the wonder
   list).
 
 #### noCorpseDopples
@@ -4054,23 +4025,20 @@ bison alike. [Full video (MP4)](media/noCorpseDopples-wol-control.mp4).
 noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 ```
 
-- **How stock behaves:** a *dopple* is the copy of a unit that a player keeps seeing in the fog of
-  war after the unit left his view. Only protos with `<Flag>Doppled</Flag>` get one (stock:
-  buildings, mines, trees, …). The game makes it when the unit leaves the player's view, for him
-  and for the players who share his vision, and removes it only when the player sees the unit or
-  the spot again. It never asks whether the unit is alive. Stock hunts use
-  `VisibleUnderFogOnlyAfterSeen` instead. A mod that makes its hunts `Doppled`, so that a herd
-  stays where it was last seen (WoL does this for most of its hunts), also gets corpse dopples: a
-  carcass that still holds food when it leaves a player's view stays in his fog in its death pose,
-  long after it was eaten or abandoned, until he looks at the spot again.
+- **In WoL today:** a *dopple* is the copy of a unit that a player keeps seeing in the fog of war after the
+  unit left his view. Only protos with `<Flag>Doppled</Flag>` get one: 1,076 in WoL, buildings, mines,
+  trees and most of its hunts, so that a herd stays where it was last seen. The game makes it when the
+  unit leaves the player's view, for him and for the players who share his vision, and removes it only
+  when the player sees the unit or the spot again. It never asks whether the unit is alive. So a carcass
+  that still holds food when it leaves a player's view stays in his fog in its death pose, long after
+  it was eaten or abandoned, until he looks at the spot again.
 - **Effect:** a unit whose proto is of `<UnitType>` and that is not alive (0 hitpoints, killed)
   gets no dopple when it leaves a player's view, for any player: it simply disappears into the
   fog. A live unit of that type is still doppled. A carcass that is fully gathered was never
   doppled: the game takes it out of the world before it decays.
-- **Choosing the units:** `noCorpseDopples Huntable` covers every hunt with no data change
-  (`Huntable` is a built-in type). A proto name works too (`noCorpseDopples Deer`). With the
-  default marker, or any new name, add it to the protos and edit `protoy.xml` and its XMB as for
-  `healNonIdle`. Units without `<Flag>Doppled</Flag>` have no dopples anyway.
+- **WoL needs:** nothing: `noCorpseDopples Huntable` covers every hunt (`Huntable` is a built-in type). A
+  proto name works too (`noCorpseDopples Deer`). With the default marker, or any new name, add it to the
+  protos in `data\protoy.xml`.
 - **Do not mark livestock** or other `DoppleOnlyWhenDead` protos: that flag exists to leave a
   corpse dopple, and the key removes it.
 - **`log`:** one line per dopple it skips, up to 1000 lines per session.
@@ -4085,16 +4053,14 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
     shows the live animal until he looks at the spot again. Removing dopples when a unit leaves
     the world would fix that; it is not implemented;
   - a saved game made without the key keeps the corpse dopples it already had;
-  - `MutateDopples` protos (none in stock or WoL data) refresh their dopples through another path
+  - `MutateDopples` protos (none in WoL's data) refresh their dopples through another path
     that the key does not cover.
 - **Simulation:** probably not, but unverified. Dopples belong to the game state, which every
   machine keeps the same way; the key only reads that state (unit types, hitpoints). Give every
   player the same setting. With a new marker it also adds a unit type.
-- **Status:** confirmed in single player (2026-10-29), with `noCorpseDopples Deer log` and Deer and
-  Bison given `<Flag>Doppled</Flag>` in the test data: after leaving them, player 1 kept 6 dopples
-  (3 dead Bison, 3 live Deer) and none for the 3 dead Deer. With the key off, 9 (the 3 dead Deer
-  too).
-- **New in this DLL:** not in UHC 1.10. WoL request #18 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player, in WoL (2026-11-04), with `noCorpseDopples Deer log` on WoL's own
+  data: the dead deer left no copy, and the dead bison, not named, stayed in the fog. Without the key,
+  all of them stayed.
 
 ## 6. Editing the game data
 
