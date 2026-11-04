@@ -1460,7 +1460,8 @@ Code: [population](porting-code/population.md#decimalpopulation).
     aura before a wonder's power, and overheal's `MaxHitpoints` were added to the test copy for the
     video and removed after. WoL's data has no `SetTechName` effect, no wonder with two abilities and
     no overheal yet.
-  - **Not filmed in WoL yet:** `civFirstTC`, `hcShipmentPointFallback`,
+  - **Filmed on a test map only:** `civFirstTC`, the substitution and the first town center.
+  - **Not filmed in WoL yet:** `hcShipmentPointFallback`,
     `gaiaSocketsOnly`, `multipleInstances`.
 - **Multiplayer, saved games and replays:** untested for every feature.
 - **hcShipmentPointFallback:**

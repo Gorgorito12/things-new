@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 11:29 | [`basePop`](#basepop-and-extrapop), [`extraPop`](#basepop-and-extrapop) | Filmed in WoL, with a control. Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | Enough population buildings: 20 houses of 10 give 200 today. |
+| Wednesday 2026-11-04 11:29 | [`civFirstTC`](#civfirsttc) | Filmed in WoL, with a control. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
 | Wednesday 2026-11-04 11:13 | [`startingTC`](#startingtc) | Filmed in WoL, with a control. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
 | Wednesday 2026-11-04 10:29 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
 | Wednesday 2026-11-04 10:29 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
@@ -82,13 +84,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 20:27 | [`asianCivs`](#asiancivs) | Added. Egyptians, Ethiopians, Koreans, Zulu and Maori count as Asian civs: consulate, export and wonders. | Those civs' data. |
 | Monday 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Added. Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | The file. |
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. Shows WoL's 52 `AI4\*.personality` files in game setup. | The personality files. |
-| Thursday 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | Added. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | Nothing. |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. |
 | Wednesday 2026-10-28 12:48 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Added. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
 | Wednesday 2026-10-28 10:56 | [`ignoreRegistryPath`](#ignoreregistrypath) | Added. Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | Nothing. |
-| Wednesday 2026-10-28 10:56 | [`basePop`](#basepop-and-extrapop), [`extraPop`](#basepop-and-extrapop) | Added. Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | Enough population buildings: 20 houses of 10 give 200 today. |
 | Wednesday 2026-10-28 10:56 | [`deckCardCount`](#deckcardcount) | Added. Raises the 25-card deck cap. | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). |
 | Wednesday 2026-10-28 10:56 | [`noAILimit`](#noailimit) | Added. Shows every `AI4\*.personality` file in game setup. | The personality files. |
 | Wednesday 2026-10-28 10:56 | [`customRevolutionBanners`](#customrevolutionbanners) | Added. Shows a banner for each of WoL's 29 `XPRevolution<Name>` techs, not only O'Higgins. | A banner texture per revolution. |
@@ -400,7 +400,7 @@ Caps that are fixed in the exe.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
-| [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | partly confirmed |
+| [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | confirmed |
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -410,11 +410,21 @@ Caps that are fixed in the exe.
 
 #### basePop and extraPop
 
-**Added:** Wednesday 2026-10-28 10:56
+**Added:** Wednesday 2026-10-28 10:56 · **Filmed in WoL:** Wednesday 2026-11-04 11:29
+
+![basePop in WoL](media/basePop-wol.gif)
+
+*In WoL, with `basePop 300` (three `BloodFactory`, +100 population each, for the test):* the counter reads
+`6 / 300`. [Full video (MP4)](media/basePop-wol.mp4).
+
+![basePop in WoL, key off](media/basePop-wol-control.gif)
+
+*In WoL, key off (the same scene):* the exe stops the cap at 200: `6 / 200`.
+[Full video (MP4)](media/basePop-wol-control.mp4).
 
 ```
-basePop <N>              N from 0 to 10000, stock 200
-extraPop <N>             N from 0 to 10000, stock 50
+basePop <N>              N from 0 to 10000, 200 in the exe
+extraPop <N>             N from 0 to 10000, 50 in the exe
 ```
 
 - **In WoL today:** `wol.cfg` does not set these keys, so the exe's limits apply. The cap is what the
@@ -434,8 +444,9 @@ extraPop <N>             N from 0 to 10000, stock 50
   `basePop/extraPop: expected integers from 0 to 10000`;
   `hook reached: basePop/extraPop/decimalPopulation (0x4581F3)`.
 - **Simulation:** yes.
-- **Status:** partly confirmed, on the stock game: a skirmish went past 200 with `basePop 300`; the
-  limit reached was the number of houses that could be built. Not filmed in WoL yet.
+- **Status:** confirmed in single player, in WoL (2026-11-04): the cap reads 300 with `basePop 300`, and 200
+  without it. On the stock game a skirmish went past 200 with `basePop 300`. Not tested in WoL: a
+  player's real population above 200, and `extraPop` above 50.
 - **Fixed from UHC 1.10:** upstream missed the path taken when the extra population is negative,
   where the stock 200/250 limits stayed active.
 
@@ -1394,11 +1405,20 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
 
 #### civFirstTC
 
-**Added:** Thursday 2026-10-29 12:03
+**Added:** Thursday 2026-10-29 12:03 · **Filmed in WoL:** Wednesday 2026-11-04 11:29
 
-![civFirstTC in game](media/civFirstTC.gif)
+![civFirstTC in WoL](media/civFirstTC-wol.gif)
 
-*On the stock game (not filmed in WoL yet):* a skirmish start on the map Mongolia: player 1, whose civ has `<firstTC>Market</firstTC>`, starts with a Market where the map puts the Town Center; then the Market is selected, with its 6 starting Settlers. The Iroquois AI, whose civ has no tag, keeps its Town Center. [Full video (MP4)](media/civFirstTC.mp4).
+*In WoL, with `civFirstTC log` (Ethiopians with `<firstTC>EGYtowncenterCARAVAN</firstTC>` in `civs.xml`, for
+the test, removed after):* the test map places a `TownCenter` for player 1, and the player gets the
+caravan instead, which is its first town center (`unit 0 (EGYtowncenterCARAVAN) is player 1's first town
+center (FirstTC)`). No town starting units come, because this proto has no `StartingColonyBuilding`.
+[Full video (MP4)](media/civFirstTC-wol.mp4).
+
+![civFirstTC in WoL, key off](media/civFirstTC-wol-control.gif)
+
+*In WoL, key off (the same data and map):* the exe ignores the tag: the same map places the `TownCenter`,
+and its town starting units appear. [Full video (MP4)](media/civFirstTC-wol-control.mp4).
 
 ```
 civFirstTC [log]
@@ -1510,7 +1530,9 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   all game state. Every machine needs the same line, `civs.xml`, `placementrules\colonies.xml`
   and `protoy`. A recorded game generates its map again when it is played back, so playback needs
   them too. The key adds no unit type.
-- **Status:** confirmed in single player, on the stock game (2026-10-29), with `<firstTC>Market</firstTC>`:
+- **Status:** confirmed in single player. In WoL (2026-11-04), the Ethiopians with `EGYtowncenterCARAVAN`: the
+  substitution and the first town center, on a test map. On the stock game (2026-10-29), with
+  `<firstTC>Market</firstTC>`:
   - a test map that places a `TownCenter` for both players: the tagged civ got a Market, which became
     its first town center, and the other kept its `TownCenter`;
   - a skirmish on Mongolia, with the Market in `colonies.xml` `<starttypes>`: without
@@ -1520,8 +1542,8 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
     tag kept its Town Center and played normally, and a shipment landed at player 1's Market
     ([hcShipmentPointFallback](#hcshipmentpointfallback)).
 
-  Not tested: WoL's civs and buildings, a Nomad start, multiplayer, recorded games, the `no colony` log
-  line, and any building other than the Market.
+  Not tested: a skirmish in WoL, the town starting units at a WoL building, WoL's AI with the tag, a Nomad
+  start, multiplayer, recorded games, the `no colony` log line.
 
 #### customRevolutionBanners
 
@@ -2943,10 +2965,6 @@ How buildings train, spawn, live and get replaced.
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 07:31
 
-![liveBuildingWorkRate with TrainPoints in game](media/liveBuildingWorkRate-trainpoints.gif)
-
-*On the stock game (not filmed in WoL yet), `TrainPoints`:* six settlers were queued at 12 s, with Settler `TrainPoints` 25; a test tech sets them to 6.25 at 30 s. The settler in training finishes at once (it already had more than 6.25 points of work) and the five already queued are trained in 6.25 s each; the log lines are at the top (2x speed). Without the key all six would take 25 s. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints.mp4).
-
 ![liveBuildingWorkRate in WoL](media/liveBuildingWorkRate-wol.gif)
 
 *In WoL, with `liveBuildingWorkRate log` (an African civ's Town Center, selected so its queue
@@ -2961,6 +2979,18 @@ it has 13 villagers by 94 s (5 at the start).
 *In WoL, key off (the same scene):* the exe keeps the TC's snapshot of 1.0, so the tech changes nothing
 for it: 8 villagers by 96 s, the queue still long.
 [Full video (MP4)](media/liveBuildingWorkRate-wol-control.mp4).
+
+![liveBuildingWorkRate with TrainPoints in WoL](media/liveBuildingWorkRate-trainpoints-wol.gif)
+
+*In WoL, `TrainPoints`:* six `AFRICANvillager` are queued with their `TrainPoints` of 25, and a test tech
+sets them to 6.25 at 30 s (`trains AFRICANvillager at TrainPoints 6.250, not the 25.000 it was queued
+with`). The one in training finishes at once, and the others take 6.25 s each.
+[Full video (MP4)](media/liveBuildingWorkRate-trainpoints-wol.mp4).
+
+![liveBuildingWorkRate with TrainPoints in WoL, key off](media/liveBuildingWorkRate-trainpoints-wol-control.gif)
+
+*In WoL, key off (the same scene):* the queue keeps the 25 points it took, so the tech reaches no villager
+already queued: 8 units against 11 at the end. [Full video (MP4)](media/liveBuildingWorkRate-trainpoints-wol-control.mp4).
 
 ```
 liveBuildingWorkRate [log]
@@ -3039,15 +3069,14 @@ liveBuildingWorkRate [log]
 - **Simulation:** yes. Saved games load with or without the key: the building's copy and the queued
   points are kept and saved as always (with the key, the values it last wrote).
 - **Status:** confirmed in single player.
-  - **In WoL (2026-11-04), `BuildingWorkRate` x3 on `TownCenter`:** the standing TC had 13 villagers by
-    94 s, and 8 by 96 s without the key.
+  - **In WoL (2026-11-04):** `BuildingWorkRate` x3 on `TownCenter`: the standing TC had 13 villagers by
+    94 s, and 8 by 96 s without the key. `TrainPoints` ×0.25 on `AFRICANvillager`: 11 units against 8.
   - **On the stock game (2026-10-29 and 30):** `Maintain`, 12 units against 3 with `BuildingWorkRate` 4
     on one player's factory, 3 and 3 without the key; `BuildingWorkRate` on train and research, a
     research in progress finishing 3.2 s after the tech; `TrainPoints` ×0.25, the unit in training
     done at the tech, the queued ones in 6.25 s, a `Maintain` cycle taking the new points at once, also
     after loading a game saved before the tech. An AI skirmish played with no XS error. A bad argument
     logged the error, and the key was not applied.
-  - **Not filmed in WoL yet:** `TrainPoints`.
 
 #### buildingWorkRateAuras
 
