@@ -3135,7 +3135,7 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   `unitselectionpanel-unitResourceRateLabel` and `...RateValue` of `uiunitselectionmin.xml`, the
   ones stock uses for AutoGather units, with the same text: `Food (icon): 0.67/s`. A file without
   those gadgets shows no rate there; `{currentUnitGatherRateString}` still works in any gadget. With
-  several units selected this panel shows the rate of the first one, which stock also describes.
+  several units selected this panel shows the rate of the first one (seen with two villagers).
 - **Your data:** nothing. A mod whose stat panel has fewer rows (WoL's `uiunitstatpanel3.xml` has
   5) loses its last row while the gather row is shown: the row goes right after HP and the rows
   after it move down. Such a mod may prefer the data ref and a `<UnitType>` that no unit has.
