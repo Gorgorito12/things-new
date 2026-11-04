@@ -139,6 +139,15 @@ Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\
 - it runs in WoL's original English (2026-11-04: `data\stringtabley.xml` from `translations\_originals`, the user's Spanish one kept as `.es-la`); the profile has `optionminimizedui` on, so the exe skips the stat panel fill FUN_004D70ED: a feature that adds a row there must also cover the unit panel (see `showGatherRate`'s hook at 0x699456).
 
 
+### GIFs
+
+Every GIF follows one standard: 800 px wide, 8 fps, at most 12 s and 4 MB. `tools/make_gifs.py` makes
+them from the lossless masters of `record --master`, kept in `rea/media-masters/` (gitignored), with the
+cut of each one in `tools/gifs.txt`. A new video: move its `.mkv` there, add a line to that table, run
+`python -I tools/make_gifs.py <name>`. `--check` fails on any GIF out of the standard. A GIF over 4 MB is
+retried with fewer frames and colours, then with a shorter cut, and the script names it: check that its
+caption still holds.
+
 ### Driving the game unattended
 
 `tools/testbed.py` plays a test with no clicks: it starts the copy, builds a small map with the
