@@ -35,7 +35,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 10:29 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. |
 | Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos; with a new marker, that type on the trainers (or on the blocking buildings) in `protoy`. |
-| Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget in your UI. |
+| Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
 | Wednesday 2026-11-04 08:32 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. |
 | Wednesday 2026-11-04 08:32 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
 | Wednesday 2026-11-04 08:32 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
@@ -68,12 +68,12 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Tuesday 2026-11-03 08:16 | [`kbUnitSyscalls`](#kbunitsyscalls) | Added. Five KB syscalls for AI scripts: a unit's inventory, its workers and its targeters. | AI scripts that call them. |
 | Tuesday 2026-11-03 07:25 | [`wonderCivUnitType`](#wondercivunittype) | Added. `Rangatira` may start the Maori age-up. | Nothing. |
 | Tuesday 2026-11-03 07:25 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Added. Marked units leave a training building one at a time, not as a batch. | That unit type on the protos. |
-| Tuesday 2026-11-03 06:49 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Added. Mill and Rice Paddy gathering on more buildings, and a gather area per building. | Nothing. |
+| Tuesday 2026-11-03 06:49 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Added. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
 | Monday 2026-11-02 21:22 | [`customSyscalls`](#customsyscalls) | Filmed in WoL, with a control. Loads `wolPlugin.upl` and `wolai.upl` and adds the XS syscalls they register. | The plugins. |
 | Monday 2026-11-02 21:19 | [`nativeCivs`](#nativecivs) | Added. WallMapu, Tupinamba and Tawantinsuyu count as native civs: fire pit, dances and council age-up. | Those civs' data. |
 | Monday 2026-11-02 21:19 | [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds), [`noBigButtonBlds`](#bigbuttoncivs-and-nobigbuttonblds) | Added. Gives the command panel's big button to the listed civs, and takes it from the listed buildings. | Nothing. |
 | Monday 2026-11-02 21:10 | [`twoScoutCivs`](#twoscoutcivs) | Added. The Koreans get the interface of the civs that start with two heroes. | A second hero. |
-| Monday 2026-11-02 21:10 | [`marketUnits`](#marketunits) | Added. Owning a unit of a listed proto counts as owning a Market. | Nothing. |
+| Monday 2026-11-02 21:10 | [`marketUnits`](#marketunits) | Added. Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | Nothing. |
 | Monday 2026-11-02 21:10 | [`explorerUnits`](#explorerunits) | Added. Listed protos get a hero's name and knockout message. | The string IDs. |
 | Monday 2026-11-02 20:47 | [`customCheats`](#customcheats) | Added. The cheats of WoL's plugins work in the chat. | `customSyscalls`, and plugins that register cheats. |
 | Monday 2026-11-02 20:40 | [`enableAllTeams`](#enableallteams) | Added. Teams 3 and 4 in the single-player game setup. | Nothing. |
@@ -2663,12 +2663,12 @@ Resources, gatherers, and what pays for them.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
-| [`gatherFix`](#gatherfix) | Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | always on | Nothing. | confirmed |
-| [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget in your UI. | confirmed (single player, UI; the data ref not tested) |
-| [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on more buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`gatherFix`](#gatherfix) | Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. WoL's balance assumes it. | always on | Nothing. | confirmed |
+| [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
+| [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
-| [`marketUnits`](#marketunits) | Owning a unit of a listed proto counts as owning a Market. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`marketUnits`](#marketunits) | Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | **in `wol.cfg`** | Nothing. | confirmed |
 
 #### gatherFix
 
@@ -2676,24 +2676,25 @@ Resources, gatherers, and what pays for them.
 
 ![gatherFix in game](media/gatherFix.gif)
 
-*In game:* settlers on a Mill and on trees; with the key they gather at the rate the data gives.
+*In WoL:* settlers on a Mill and on trees; with the key they gather at the rate the data gives.
 [Full video (MP4)](media/gatherFix.mp4).
 
 ```
 gatherFix
 ```
 
+- **In WoL today:** WoL's DLL does this always, so `wol.cfg` has no line for it. This DLL needs the line,
+  and without it WoL's economy is wrong: the exe collects once per loop of the gather animation, an
+  amount for the animation's length, which makes the real rate depend on the animation.
 - **Effect:** gatherers collect on a fixed time interval, so the gather rate is the one in the data.
-  Stock collects once per loop of the gather animation, an amount for the animation's length, which
-  makes the real rate depend on the animation.
 - **Log:** `gatherFix: gatherers collect on a fixed interval, ...`; the first collection, `interval
   I s (protoAction+78h V), collectStuff | collectStuff_2`.
 - **Simulation:** changes gathering: every player needs the same line.
 - **Performance:** a collection every 0.5 s per gatherer. With 40 gatherers: update 0.143 / 0.142
   ms with / without, no frame over 50 ms, about 10% fewer frames per second (711–733 vs 815).
-- **Status:** confirmed (2026-11-03, single player): in 120 s, 3 settlers on trees (rate 0.5)
-  gathered 179.5 wood with the key (0.50 per second each) and 281.3 without it (0.78), and 4 on a
-  Mill 235.5 food against 367.3. Video `gatherFix.mp4`.
+- **Status:** confirmed (2026-11-03, single player, on WoL): in 120 s, 3 settlers on trees (rate 0.5)
+  gathered 179.5 wood with the key (0.50 per second each) and 281.3 without it (0.78), and 4 on a Mill
+  235.5 food against 367.3. Video `gatherFix.mp4`.
 
 #### showGatherRate
 
@@ -2714,33 +2715,33 @@ villager gathers berries, and the unit panel shows `Food (icon): 0.67/s` in WoL'
 showGatherRate [<UnitType>] [log]      no UnitType: every unit
 ```
 
-- **How stock behaves:** the stat panel (the rows next to the selected unit's portrait,
-  `uiunitstatpanel3`, up to 9 rows) shows a rate per second only for **AutoGather** units, such as
-  a Bank: right after the HP row, a row `Food (icon): 0.67/s`, or `8/s` for a whole number. A
-  villager has no such row: its rate exists only inside the gather code, which runs once per
-  gather animation loop, multiplies the rate by the loop's time and adds the result to the
-  stockpile. The data refs `currentUnitGatherRate`, `currentUnitGatherRateFloat` and
-  `currentUnitGatherRateString` exist in the exe but always fail (their provider is an empty
-  stub).
-- **Effect:** when **one** unit is selected and it is gathering (berries, a hunt, a tree, a mine,
-  a farm, a crate, a sheep, …), the stat panel gets one more row after the HP row (and after a
-  stock AutoGather row, if the unit has one), in the stock style: `Food (icon): 0.67/s`. The rate
-  is the one the game used for the unit's last gather loop: the proto's gather rate for that
-  target type with techs and work-rate modifiers, the Gathering dance and the player's gather
+- **In WoL today:** with WoL's minimized interface (`optionminimizedui`) the exe never fills the stat
+  panel. The unit panel has one rate row, the gadgets `unitselectionpanel-unitResourceRateLabel` and
+  `...RateValue` of `data\uiunitselectionmin.xml`, and writes it only for **AutoGather** units, such as a
+  Bank. A villager has no such row: its rate exists only inside the gather code. The data refs
+  `currentUnitGatherRate`, `currentUnitGatherRateFloat` and `currentUnitGatherRateString` exist in the
+  exe but always fail (their provider is an empty stub), and WoL's `uimainnew.xml` uses
+  `{currentUnitGatherRate(gold)}` in a tooltip.
+- **Effect:** when **one** unit is selected and it is gathering (berries, a hunt, a tree, a mine, a farm,
+  a crate, a sheep, …), the unit panel's rate row shows `Food (icon): 0.67/s`, or `8/s` for a whole
+  number. The rate is the one the game used for the unit's last gather loop: the proto's gather rate
+  for that target type with techs and work-rate modifiers, the Gathering dance and the player's gather
   multiplier. It is the amount per second the stockpile receives while the unit gathers. The row
-  appears after the unit's first gather loop (about 1 to 2 s after it starts) and goes away as
-  soon as the unit does something else, or at most 2.5 s (two loops for slow animations) after
-  its last loop. The label is the resource's name from the string table, as in the stock row
-  (`Alim.` in the Spanish game).
+  appears after the unit's first gather loop (about 1 to 2 s after it starts) and goes away as soon as
+  the unit does something else, or at most 2.5 s after its last loop. The label is the resource's name
+  from the string table.
+- **The normal interface:** with `optionminimizedui` off, the same row goes in the stat panel
+  (`uiunitstatpanel3`), right after the HP row. WoL's panel has 5 rows, so its last row drops out while
+  the gather row shows.
 - **`<UnitType>`:** only units whose proto is of that unit type (or that proto) get the row. A
   new name is registered as an abstract unit type, like `healNonIdle`'s marker. A name that no
   unit has turns the row off and keeps the data ref.
-- **Hiding the row for a proto:** `<Flag>DoNotShowAutoGatherRate</Flag>`, the stock flag that
-  hides the stock AutoGather row, hides this row too.
-- **The data ref, for your own UI:** `{currentUnitGatherRateString}` in a `formatText` gadget
-  returns `Food 0.67/s` (`Food 8/s` for a whole number) for the data refs' current unit (the one
-  the stock refs such as `{currentUnitLOS}` show), and an empty string when that unit is not
-  gathering. Give the gadget a `datarefreshrate`, as WoL does for `{currentUnitLOS}`:
+- **Hiding the row for a proto:** `<Flag>DoNotShowAutoGatherRate</Flag>`, the exe's flag for the
+  AutoGather row, hides this row too. No proto in WoL has it.
+- **The data ref, for WoL's own gadgets:** `{currentUnitGatherRateString}` in a `formatText` gadget
+  returns `Food 0.67/s` (`Food 8/s` for a whole number) for the data refs' current unit (the one refs
+  such as `{currentUnitLOS}` show), and an empty string when that unit is not gathering. Give the gadget
+  a `datarefreshrate`, as WoL does for `{currentUnitLOS}`:
 
   ```xml
   <gadget name="myGatherRate" type="formatText" datarefreshrate=".5" ...>Gather: {currentUnitGatherRateString}</gadget>
@@ -2748,30 +2749,22 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 
   The data ref works for any unit, with or without `<UnitType>`, and ignores the stat panel's
   rules (selection size, `DoNotShowAutoGatherRate`). `{currentUnitGatherRate}` (whole number) and
-  `{currentUnitGatherRateFloat}` are **not** changed: WoL's `uimainnew.xml` already uses
-  `{currentUnitGatherRate(gold)}` in a tooltip, and they keep failing as in stock.
-- **Minimized interface:** with the game option `optionminimizedui` on, the exe does not fill the
-  stat panel at all. The rate then goes in the unit panel's own rate gadgets,
-  `unitselectionpanel-unitResourceRateLabel` and `...RateValue` of `uiunitselectionmin.xml`, the
-  ones stock uses for AutoGather units, with the same text: `Food (icon): 0.67/s`. A file without
-  those gadgets shows no rate there; `{currentUnitGatherRateString}` still works in any gadget. As in
-  the normal interface, the rate shows only with one unit selected.
-- **Your data:** nothing. A mod whose stat panel has fewer rows (WoL's `uiunitstatpanel3.xml` has
-  5) loses its last row while the gather row is shown: the row goes right after HP and the rows
-  after it move down. Such a mod may prefer the data ref and a `<UnitType>` that no unit has.
+  `{currentUnitGatherRateFloat}` are **not** changed: they keep failing.
+- **WoL needs:** nothing. A file without those gadgets shows no rate; the data ref still works in any
+  gadget.
 - **Limits:**
-  - one selected unit only (the stock rule for the AutoGather row); nothing for a group;
-  - the stock AutoGather row's other conditions apply too: a building must be finished, and the
-    selection must pass a stock test whose meaning is not known (a selection byte; possibly units
-    the player does not own);
+  - one selected unit only (the exe's rule for the AutoGather row); nothing for a group, where the panel
+    shows the first unit and its rate would read as the group's;
+  - the AutoGather row's other conditions apply too: a building must be finished, and the selection must
+    pass a test whose meaning is not known (a selection byte; possibly units the player does not own);
   - gathering into the unit's own inventory (`<addresourcestoinventory>`, for example herd animals
     fattening at a pen) runs other code and gets no row;
   - a target of type `AbstractShrine` and a defeated player give nothing, so they show no row;
   - the rate is that of the last gather loop: a tech researched during a loop shows from the next
     loop on;
-  - the row follows the stat panel's own refresh.
-- **`log`:** one line the first time a unit's rate for a resource is shown in the stat panel, and
-  one the first time the data ref returns it. A new game starts the list again.
+  - the row follows the panel's own refresh.
+- **`log`:** one line the first time a unit's rate for a resource is shown in the panel, and one the
+  first time the data ref returns it. A new game starts the list again.
 - **Log:** at startup `showGatherRate: the stat panel shows the gather rate per second of a
   selected gathering unit, and {currentUnitGatherRateString} returns it (UI only)` (with a unit
   type: `…of a selected unit of unittype X, and {currentUnitGatherRateString} returns it for any
@@ -2779,23 +2772,20 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   unit type, when the data loads, `unit types: X -> <ID> …`. In a game:
   `hook reached: showGatherRate record (0x4ED044)` (the first gather loop of any unit),
   `hook reached: showGatherRate panel (0x4D7834)` (the first stat panel fill),
-  `hook reached: showGatherRate unit panel (0x699456)` (the first unit panel fill of the minimized
-  interface),
-  `hook reached: showGatherRate row value (0x69AFE0)` (the first rate row, this one or a stock
-  AutoGather row), and `hook reached: showGatherRate data ref (0x5D2D3C)` (the first time a gadget
-  reads the data ref). With `log`: `showGatherRate: unit N (Settler) of player 1 gathers Alim.
-  (resource 2) at 0.670/s from unit T (BerryBush), shown in the stat panel` (or `…, shown in the
-  data ref currentUnitGatherRateString`).
+  `hook reached: unit panel row (0x699456)` (the first unit panel fill of the minimized interface, the
+  hook it shares with `overhealHitpointBars stat`),
+  `hook reached: showGatherRate row value (0x69AFE0)` (the first rate row, this one or an AutoGather
+  row), and `hook reached: showGatherRate data ref (0x5D2D3C)` (the first time a gadget
+  reads the data ref). With `log`: `showGatherRate: unit N (AFRICANvillager) of player 1 gathers Food
+  (resource 2) at 0.670/s from unit T (BerryBush), shown in the stat panel` (or `…, shown in the data
+  ref currentUnitGatherRateString`).
 - **Simulation:** no. The hook in the gather code copies the rate into the DLL's memory and writes
   nothing in the game; everything else is the interface. Players may set it differently (not
   tested in multiplayer).
-- **Status:** confirmed in single player (2026-10-29), in the interface: a Settler gathering a
-  `BerryBush` got a new row `Alim. (icon): 0.67/s` right under its HP row, and the log showed
-  `showGatherRate: unit 0 (Settler) of player 1 gathers Alim. (resource 2) at 0.670/s from unit 1
-  (BerryBush), shown in the stat panel`. In WoL (2026-11-04), with the minimized interface: the row
-  in the unit panel, gone when the villager stops and with two villagers selected, and the data ref.
+- **Status:** confirmed in single player, in the interface. In WoL (2026-11-04), with the minimized
+  interface: the row in the unit panel, gone when the villager stops and with two villagers selected,
+  and the data ref. In the normal interface, on the stock game (2026-10-29): the row under the HP row.
   Other targets, whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #28 ([wol-requests.md](wol-requests.md)).
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 
@@ -2803,7 +2793,7 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 
 ![enableFarmAnim in game](media/enableFarmAnim.gif)
 
-*In game:* Iroquois gatherers on a listed plantation (Mill-like, front) and a listed farm (Rice
+*In WoL (Iroquois):* gatherers on a listed plantation (Mill-like, front) and a listed farm (Rice
 Paddy-like, right) spread over the fields and use the farming animations; the log lines on top
 are the keys'. [Full video (MP4)](media/enableFarmAnim.mp4). Without the keys
 (left of the still below) the same gatherers stand bunched at one side of each building:
@@ -2811,8 +2801,8 @@ are the keys'. [Full video (MP4)](media/enableFarmAnim.mp4). Without the keys
 
 ![farmingRadius in game](media/farmingRadius-12.gif)
 
-*In game:* the same plantation with `farmingRadius 3 12.0 12.0`: its four gatherers (HP lines on
-top) range up to 11.9 m from its centre, against about 5 m with the stock 4.5.
+*In WoL:* the same plantation with `farmingRadius 3 12.0 12.0`: its four gatherers (HP lines on top) range
+up to 11.9 m from its centre, against about 5 m with the exe's 4.5.
 [Full video (MP4)](media/farmingRadius-12.mp4).
 
 ```
@@ -2824,11 +2814,12 @@ farmingRadius Index X Z [Index X Z ...]
 - **Effect:** gatherers on a building of an `enableFarmAnim` proto are placed and animated as on a
   Mill (they spread over the area around it); on an `enableRectFarmAnim` proto, as on a Rice
   Paddy (they work in its rows). `farmingRadius` gives, per `enableFarmAnim` entry (`Index` counts
-  that line's protos from 1), the X and Z extent of that spread (stock 4.5 x 4.5; up to 100).
-- **Your data:** the building still needs a gather action in its tactics (or the data's own way of
-  gathering): these keys change where and how gatherers work, not whether the building can be
-  gathered. A building whose tactics only modify other gatherers (`ModifyGather...`) gets no
-  gatherers.
+  that line's protos from 1), the X and Z extent of that spread (4.5 x 4.5 in the exe; up to 100). WoL's
+  lines are `enableFarmAnim Fazenda OlivePlantation WOLPlantationIroquois WOLPasture Fountain`,
+  `enableRectFarmAnim WOLFarmIroquois` and `farmingRadius 1 10.0 10.0 5 2.0 2.0`.
+- **WoL needs:** the building still needs a gather action in its tactics: these keys change where and how
+  gatherers work, not whether the building can be gathered. A building whose tactics only modify other
+  gatherers (`ModifyGather...`), as `Fazenda.tactics` does, gets no gatherers.
 - **Log:** `enableFarmAnim/enableRectFarmAnim: N proto(s) work like a Mill, M like a Rice Paddy`;
   when `protoy.xml` is read, `enableFarmAnim: K of N protos found in the data` (and each unknown
   name); `farmingRadius: N farm proto(s) get their own gather area`, or `needs enableFarmAnim`,
@@ -2836,9 +2827,9 @@ farmingRadius Index X Z [Index X Z ...]
   (0x4EDA85)` to `... 8`, `enableRectFarmAnim site 1` to `4`, `farmingRadius (0x9DE04D)`.
 - **Simulation:** changes where gatherers stand (the spread uses the game's synced random
   numbers): every player needs the same lines.
-- **Status:** confirmed (2026-11-03, single player): with both lists, ten of the twelve placement
-  sites and the radius ran, gatherers spread over a listed plantation and worked inside a listed
-  farm's rows, and without the keys they stood bunched at one side (gathering in both cases);
+- **Status:** confirmed (2026-11-03, single player, on WoL): with both lists, ten of the twelve placement
+  sites and the radius ran, gatherers spread over `WOLPlantationIroquois` and worked inside the rows of
+  `WOLFarmIroquois`, and without the keys they stood bunched at one side (gathering in both cases);
   `farmingRadius` 12 widened the spread from about 5 m to 11.9 m. Sites 3 and 8 did not run in
   that test.
 - **Fixed from UHC 1.10:** upstream reloads EBP before site 1 instead of keeping it, jumps to the
@@ -2851,7 +2842,7 @@ farmingRadius Index X Z [Index X Z ...]
 
 ![nowalkfarm in game](media/nowalkfarm.gif)
 
-*In game:* four settlers on a Mill keep their spots; without the key (below) each walked 33–47 m
+*In WoL:* four settlers on a Mill keep their spots; without the key (below) each walked 33–47 m
 in a minute, moving to new spots around the field.
 ![nowalkfarm off](media/nowalkfarm-control.gif)
 [Full video (MP4)](media/nowalkfarm.mp4), [without the key (MP4)](media/nowalkfarm-control.mp4).
@@ -2860,8 +2851,8 @@ in a minute, moving to new spots around the field.
 nowalkfarm
 ```
 
-- **Effect:** gatherers on a farm keep the spot they take when they start; stock moves them to a
-  new spot around the farm from time to time.
+- **Effect:** gatherers on a farm keep the spot they take when they start; the exe moves them to a new
+  spot around the farm from time to time. `wol.cfg` has this line.
 - **Log:** `nowalkfarm: farm gatherers keep their first spot`.
 - **Simulation:** changes where units stand: every player needs the same line.
 - **Status:** confirmed (2026-11-03, single player): four settlers on a Mill moved 0 m in 60 s
@@ -2873,24 +2864,24 @@ nowalkfarm
 
 ![betterfreedynamicunit in game](media/betterfreedynamicunit.gif)
 
-*In game:* a tech with `amount="-2.00"` free Sheep, set at 3 minutes: 3 Sheep (1.5 two-minute
+*In WoL (Argentineans, `Corderos`):* a tech with `amount="-2.00"` free Sheep, set at 3 minutes: 3 Sheep (1.5 two-minute
 steps × 2). [Full video (MP4)](media/betterfreedynamicunit.mp4).
 
 ```
 betterfreedynamicunit
 ```
 
-- **Effect:** "dynamic" free units (a `FreeHomeCityUnit` effect with a negative `amount`) grow
-  smoothly with game time: `-amount × min(time / 2 min, 15)`. Stock uses a whole number of
-  2-minute steps, rounded up (at 3.5 steps it already counts 4).
-- **Your data:** none beyond the negative amounts. The player needs a home city (the free units
-  come from it; scenario players without one get none, with or without the key).
+- **Effect:** "dynamic" free units (a `FreeHomeCityUnit` effect with a negative `amount`, about 55 techs
+  in WoL) grow smoothly with game time: `-amount × min(time / 2 min, 15)`. The exe uses a whole number
+  of 2-minute steps, rounded up (at 3.5 steps it already counts 4). `wol.cfg` has this line.
+- **WoL needs:** nothing beyond the negative amounts. The player needs a home city (the free units come
+  from it; scenario players without one get none, with or without the key).
 - **Log:** `betterfreedynamicunit: dynamic free units grow ...`; the first time, `amount A at S
   steps of 2 min -> N`.
 - **Simulation:** changes how many units arrive: every player needs the same line.
-- **Status:** confirmed (2026-11-03, single player): the same −2 Sheep tech at 420 s gave 7 Sheep
-  with the key and 8 without; at 180 s, 3 with the key. Video `betterfreedynamicunit.mp4`.
-  In the WoL copy: Argentineans, `Corderos` (−2 Sheep), set by a map trigger.
+- **Status:** confirmed (2026-11-03, single player, on WoL): `Corderos` (−2 Sheep), set by a map trigger,
+  at 420 s gave 7 Sheep with the key and 8 without; at 180 s, 3 with the key. Video
+  `betterfreedynamicunit.mp4`.
 
 #### marketUnits
 
@@ -2898,15 +2889,16 @@ betterfreedynamicunit
 
 ![marketUnits in game](media/marketUnits.gif)
 
-*In game:* With only a listed market building, each click buys 100 food (food 200 to 500, gold falling); without the key the same clicks change nothing. [Full video (MP4)](media/marketUnits.mp4).
+*In WoL (`WOLMarketGreek`):* with only that market building, each click buys 100 food (food 200 to 500, gold falling); without the key the same clicks change nothing. [Full video (MP4)](media/marketUnits.mp4).
 
 ```
 marketUnits Proto [Proto ...]
 ```
 
 - **Effect:** owning a unit of a listed proto counts as owning a Market for buying and selling
-  resources (stock requires the `Market` proto or the second market type).
-- **Your data:** the listed buildings need the market's buy and sell commands.
+  resources (the exe requires the `Market` proto or the second market type). `wol.cfg` lists
+  `EGYmarketCARAVAN`, `WOLMarketGreek`, `WOLMarketIroquois`, `Basilica`, `NAstore`, `SoukCaravan` and more.
+- **WoL needs:** the listed buildings need the market's buy and sell commands.
 - **Log:** `marketUnits: N proto(s) count as a Market for trading`; when `protoy.xml` is read,
   `marketUnits: K of N protos found in the data` (and each unknown name);
   `hook reached: marketUnits trade test (0x7DEF70)`.
