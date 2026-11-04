@@ -1,5 +1,5 @@
 // unitResourceAuras: an AutoRangedModify action with <ModifyType>UnitResource</ModifyType> gathers
-// from the units around it, for its owner, with DE's tags.
+// from the units around it, for its owner.
 //
 // Stock: an aura gives each unit in range a modifier (FUN_009D033E). UnitResource is not one of the
 // names of the parser, and <ModifyAmount>, <ModifyTargetLimit> and <TargetGaia> are unknown tags.
