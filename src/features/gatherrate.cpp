@@ -34,6 +34,7 @@
 
 #include "../features.h"
 #include "../generated/sites.h"
+#include "../unitpanel.h"
 #include "../log.h"
 #include "../patch.h"
 #include "../unittypes.h"
@@ -72,7 +73,6 @@ void UhcGatherRecordHook();
 void UhcGatherPanelHook();
 void UhcGatherRowValueHook();
 void UhcGatherRateRefHook();
-void UhcGatherUnitPanelHook();
 }
 
 namespace {
@@ -108,28 +108,11 @@ struct BString {
   wchar_t* text;
 };
 
-// The unit panel's gadgets: a handle through 0x4C519C, the styles of the stock AutoGather row
-// (vtable +84h), the text (+80h), the refresh (+54h).
-constexpr std::uint32_t kPanelRateLabel = 0x33C;
-constexpr std::uint32_t kPanelRateValue = 0x340;
-constexpr std::uint32_t kLabelStyle = 0x00D6F5D0;
-constexpr std::uint32_t kValueStyle = 0x00C6657C;
 const wchar_t* const kRateLabelFormat = reinterpret_cast<const wchar_t*>(0x00C36580);  // "%s (<icon=...>):"
-using GadgetRefFn = std::int32_t*(__thiscall*)(std::int32_t* ref, std::int32_t handle);  // ref: handle, gadget
-using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
-using GadgetStyleFn = void(__thiscall*)(void* gadget, std::uint32_t style);
-using GadgetTextFn = void(__thiscall*)(void* gadget, const BString* text);
-using GadgetUpdateFn = void(__thiscall*)(void* gadget);
-using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
 using BStringFormatFn = void(__cdecl*)(BString* out, const wchar_t* format, ...);
 using ResourceIconFn = const wchar_t*(__thiscall*)(const char* database, std::int32_t resource);
-const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
-const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
-const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
 const auto kBStringFormat = reinterpret_cast<BStringFormatFn>(0x00444EFB);
 const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
-using CurrentSelectionFn = const char*(__cdecl*)();  // reads globals only; the stock callers' ECX is unused
-const auto kCurrentSelection = reinterpret_cast<CurrentSelectionFn>(0x00453B28);
 using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t stringId);
 using BStringAssignFn = void(__thiscall*)(BString* self, const BString* source, std::int32_t, std::int32_t);
 using BStringFreeFn = void(__thiscall*)(BString* self);
@@ -249,28 +232,6 @@ std::wstring ResourceName(const char* database, std::int32_t resource) {
   return copy;
 }
 
-template <typename Fn>
-Fn VirtualAt(void* object, std::uint32_t offset) {
-  return *reinterpret_cast<Fn*>(*reinterpret_cast<char**>(object) + offset);
-}
-
-// The gadget behind a handle in the unit panel; the reference is released at once, as stock does.
-void* PanelGadget(const char* panel, std::uint32_t field) {
-  std::int32_t ref[2] = {0, 0};
-  std::int32_t* result = kGadgetRef(ref, Field<std::int32_t>(panel, field));
-  void* gadget = reinterpret_cast<void*>(static_cast<std::intptr_t>(result[1]));
-  if (gadget != nullptr) {
-    kGadgetRelease(result[0]);
-  }
-  return gadget;
-}
-
-void SetPanelGadget(void* gadget, std::uint32_t style, const BString* text) {
-  VirtualAt<GadgetStyleFn>(gadget, 0x84)(gadget, style);
-  VirtualAt<GadgetTextFn>(gadget, 0x80)(gadget, text);
-  VirtualAt<GadgetUpdateFn>(gadget, 0x54)(gadget);
-}
-
 // Logged (unit ID, resource, where) triples, for the world and game time they were logged in.
 enum Where : std::uint64_t { kStatPanel = 0, kDataRef = 1 };
 std::unordered_set<std::uint64_t> g_logged;
@@ -337,33 +298,20 @@ bool __stdcall UhcGatherPanelRow(const char* unit, const char* selection, std::i
   return true;
 }
 
-// From the unit panel hook at 0x699456, the minimized interface's rate gadgets. Same gate as the
-// stat panel row: one selected unit, whose rate is the number the panel shows.
-void __stdcall UhcGatherUnitPanel(const char* panel, const char* unit) {
-  if (panel == nullptr || unit == nullptr) {
-    return;
-  }
-  const char* selection = kCurrentSelection();
-  if (selection == nullptr || Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0) {
-    return;
-  }
+// The minimized interface's row (unitpanel.cpp). Same gate as the stat panel row.
+bool __stdcall UhcGatherUnitPanel(const char* panel, const char* unit) {
   const char* proto = Field<const char*>(unit, 0x5C);
   if (proto == nullptr || !kIsBuilt(unit) || !kProtoFlag(proto, kShowAutoGatherRate)) {
-    return;
+    return false;
   }
   if (g_useMarker && (g_markerType < 0 || !kProtoIsType(proto, g_markerType))) {
-    return;
+    return false;
   }
   const char* world = World();
   const char* database = Database();
   Rate rate{};
   if (!CurrentRate(world, database, unit, &rate)) {
-    return;
-  }
-  void* label = PanelGadget(panel, kPanelRateLabel);
-  void* value = PanelGadget(panel, kPanelRateValue);
-  if (label == nullptr || value == nullptr) {
-    return;  // this interface has no such gadgets
+    return false;
   }
   BString name{nullptr};
   const std::int32_t stringId = kResourceNameId(database, rate.resource);
@@ -380,16 +328,13 @@ void __stdcall UhcGatherUnitPanel(const char* panel, const char* unit) {
   } else {
     swprintf_s(text, L"%.2f/s", static_cast<double>(rate.perSecond));
   }
-  BString valueText{nullptr};
-  kBStringFromWide(&valueText, text);
-  SetPanelGadget(label, kLabelStyle, &labelText);
-  SetPanelGadget(value, kValueStyle, &valueText);
-  kBStringFree(&valueText);
+  const bool written = uhc::SetUnitPanelRow(panel, labelText.text == nullptr ? L"" : labelText.text, text);
   kBStringFree(&labelText);
   kBStringFree(&name);
-  if (g_log) {
+  if (written && g_log) {
     LogShown(world, database, unit, rate, kStatPanel);
   }
+  return written;
 }
 
 // The provider of currentUnitGatherRateString (id 68h, registered as a string), bool(Value*),
@@ -461,9 +406,7 @@ Outcome ApplyShowGatherRate(const Config& config) {
                   &sites::kStatPanelRowFormat, &sites::kGatherRateStringRef, &sites::kDataRefStub,
                   &sites::kDataRefStringEval, &sites::kCurrentUnitRef, &sites::kProtoFlag, &sites::kIsAbstractIndex,
                   &sites::kResourceNameId, &sites::kBStringFromId, &sites::kBStringAssign, &sites::kBStringFree,
-                  &sites::kIsBuilt, &sites::kIsA, &sites::kUnitPanelRateRow, &sites::kUnitPanelAfterRate,
-                  &sites::kBStringFormat, &sites::kResourceIconText, &sites::kGadgetRef, &sites::kGadgetRelease,
-                  &sites::kBStringFromWide, &sites::kCurrentSelectionGroup})) {
+                  &sites::kIsBuilt, &sites::kIsA, &sites::kBStringFormat, &sites::kResourceIconText})) {
     return Outcome::kFailed;
   }
   if (g_useMarker && !RequestAbstractUnitType(g_markerName.c_str(), &g_markerType)) {
@@ -476,7 +419,7 @@ Outcome ApplyShowGatherRate(const Config& config) {
       !WriteJmp(sites::kGatherTickRate.va + 0x1A, reinterpret_cast<const void*>(&UhcGatherRecordHook), 8) ||
       !WriteDword(sites::kGatherRateStringRef.va + 4, provider) ||
       !WriteJmp(sites::kStatPanelAfterAutoGather.va, reinterpret_cast<const void*>(&UhcGatherPanelHook), 7) ||
-      !WriteJmp(sites::kUnitPanelAfterRate.va, reinterpret_cast<const void*>(&UhcGatherUnitPanelHook), 6)) {
+      !AddUnitPanelRow(&UhcGatherUnitPanel)) {
     return Outcome::kFailed;
   }
   if (g_useMarker) {

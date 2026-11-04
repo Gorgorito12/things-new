@@ -8,8 +8,7 @@ Each feature section of "5. Feature reference" (a "#### key" heading) gets, righ
   is not committed yet counts as "now", so run this before the commit that adds it.
 
 "## Latest changes" lists every section, newest first. Its table holds the latest change of each
-section: a new test video counts as new. The public version of the table (between <!-- public:begin
-and public:end -->) has only the Added dates, and every line that names a test video stays private.
+section: a new test video counts as new.
 
 What each row says comes from the index tables of section 5: the first sentence of "What it does",
 and "In-game status". --check only reports what would change. This script is never exported.
@@ -24,7 +23,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 GUIDE = ROOT / "docs" / "modding-guide.md"
 SECTION_5, SECTION_6 = "## 5. Feature reference", "## 6. Editing the game data"
 LATEST = "## Latest changes"
-NEXT_AFTER_LATEST = "## Adding UHC.dll to your mod"
+NEXT_AFTER_LATEST = "## Adding these features to WoL"
 
 # A key whose video is not named after it.
 VIDEO_ALIASES = {"dodgeanyunit": "dodge", "dodgechance": "dodge", "overhealsources": "overhealhitpointbars",
@@ -116,11 +115,10 @@ def update(text):
         added = min(found)
         filmed = [videos[s] for s in (VIDEO_ALIASES.get(k.lower(), k.lower()) for k in keys) if s in videos]
         filmed = max(filmed) if filmed else None
-        rest = re.sub(r"\A\n?(\*\*Added:\*\*[^\n]*\n|<!-- public: \*\*Added:\*\*[^\n]*\n)+", "", rest)
+        rest = re.sub(r"\A\n?(\*\*Added:\*\*[^\n]*\n)+", "", rest)
         rest = rest.lstrip("\n")
         if filmed is not None:
-            lines = (f"**Added:** {stamp(added)} · **Filmed in WoL:** {stamp(filmed)} <!-- private -->\n"
-                     f"<!-- public: **Added:** {stamp(added)} -->\n")
+            lines = f"**Added:** {stamp(added)} · **Filmed in WoL:** {stamp(filmed)}\n"
         else:
             lines = f"**Added:** {stamp(added)}\n"
         out.append(f"#### {heading}\n\n{lines}\n{rest}")
@@ -129,25 +127,18 @@ def update(text):
         entries.append((added, filmed, link, first_sentence(what), status))
     text = text[:start] + "".join(out) + text[end:]
 
-    private, public = [], []
+    rows_out = []
     for added, filmed, link, what, status in sorted(entries, key=lambda e: e[1] or e[0], reverse=True):
         if filmed is not None and filmed > added:
-            private.append(f"| {stamp(filmed)} | {link} | Filmed in WoL, with a control. {what} | {status} |")
+            rows_out.append(f"| {stamp(filmed)} | {link} | Filmed in WoL, with a control. {what} | {status} |")
         else:
-            private.append(f"| {stamp(added)} | {link} | Added. {what} | {status} |")
-    for added, filmed, link, what, status in sorted(entries, key=lambda e: e[0], reverse=True):
-        public.append(f"| {stamp(added)} | {link} | {what} | {status} |")
+            rows_out.append(f"| {stamp(added)} | {link} | Added. {what} | {status} |")
     block = "\n".join([
         LATEST, "",
         "Every feature, newest first, with the day, date and time of its latest change (the commit's",
         "local time). The details are in the feature's section, under its heading.", "",
-        "<!-- private:begin -->",
         "A new test video counts as a change: a feature filmed again in WoL moves back to the top.", "",
-        "| Date and time | Key | What changed | Status |", "|---|---|---|---|", *private,
-        "<!-- private:end -->",
-        "<!-- public:begin",
-        "| Added | Key | What it does | Status |", "|---|---|---|---|", *public,
-        "public:end -->", "", "",
+        "| Date and time | Key | What changed | Status |", "|---|---|---|---|", *rows_out, "", "",
     ])
     first, last = text.index(LATEST), text.index(NEXT_AFTER_LATEST)
     return text[:first] + block + text[last:]

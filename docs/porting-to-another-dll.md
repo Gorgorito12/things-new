@@ -1,42 +1,41 @@
-# Porting features to another UHC DLL
+# Porting the features to WoL's DLL
 
-For mods that ship **their own `uhc.dll`**, such as Wars of Liberty. The UHC loader loads one
-`UHC.dll`, and this project has no plugin loader yet, so such a mod cannot run this DLL next to
-its own. Replacing its DLL with this one would lose its own features. The way to use this
-project's features is to rebuild them inside the mod's DLL.
-
-**Update, 2026-11-02:** the other direction is now under way: running all of Wars of Liberty on
-this DLL, so WoL can replace its DLL instead of porting ([wol-migration.md](wol-migration.md)).
-This DLL now loads `.upl` plugins (`customSyscalls`), so the sentence above about a plugin loader
-is out of date; this guide stays for mods that keep their own DLL.
-
-This guide covers these features that are new in this DLL:
-- `healNonIdle`, with the extra abstract unit types it relies on;
-- `hcShipmentPointFallback`;
-- `damageOverTime`;
-- `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet` and `criticalSoundSet`;
-- `multipleInstances`;
-- the features built for WoL's requests ([wol-requests.md](wol-requests.md)):
-  - Tier 2: `liveBuildingWorkRate`, `techPrereqRecheck`, `maintainWaitForPop`,
-    `transformUpdatesLOS`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`,
-    `lifespanAfterConstruction`, `gaiaSocketsOnly`, `customHotkeyContexts`, `snareOnlyHitUnit`,
-    `techRenameEffect`, `noCorpseDopples` and `danceBonusCivs`;
-  - Tier 1 and Tier 3: `startingTC`, `civFirstTC`, `transformInventory`, `noTrainNearEnemyTC`,
-    `overhealHitpointBars`, `showGatherRate`, `buildingWorkRateAuras` and `decimalPopulation`.
-
-`bufferedFileReads` is not covered yet. Its design is in
-[how-it-works.md](how-it-works.md#bufferedfilereads), and its code is
-[`src/features/fileio.cpp`](../src/features/fileio.cpp).
-
-The code is under the [MIT license](../LICENSE): copy it into your DLL, keeping the license
-notice. For the user side of each feature (cfg syntax, data edits, log lines), see the
+How to add these features to Wars of Liberty's own `uhc.dll`, with their code. WoL's DLL has features
+this project does not have yet, so WoL keeps its DLL and takes the code of the features it wants. For
+what each feature does in WoL (the `wol.cfg` line, the data, the log, the videos), see the
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
+
+This page covers every key the modding guide marks **new**, 34 keys in all:
+
+| Theme | Keys | Code |
+|---|---|---|
+| Game files | `bufferedFileReads` | [game-files](porting-code/game-files.md) |
+| Population | `decimalPopulation` | [population](porting-code/population.md) |
+| Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
+| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
+| Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
+| Gathering | `showGatherRate` | [gathering](porting-code/gathering.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
+| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
+| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
+| What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
+
+The code pages are the code itself, C++ and MASM, generated from `src/` with `tools/porting_code.py`, so
+they cannot drift from what ran in the videos. They are separate pages because GitHub stops showing a
+Markdown file of about 512 KB. The code is under the [MIT license](../LICENSE): copy it into WoL's DLL,
+keeping the license notice.
+
+**What has not been done:** none of this has been built inside WoL's DLL. We only have its binary, not
+its source, so what this page says about `remod` and `IUHCConfig` comes from reading the binary. Every
+feature ran on WoL's exe and data with this project's DLL in place of WoL's
+([section 7](#7-what-is-not-verified)), never next to WoL's own code.
 
 Contents:
 1. [Check that you can use the sites](#1-check-that-you-can-use-the-sites)
 2. [What to copy](#2-what-to-copy)
-3. [Building the hooks in your project](#3-building-the-hooks-in-your-project)
+3. [Building the hooks in WoL's DLL](#3-building-the-hooks-in-wols-dll)
 4. [Each feature's contract](#4-each-features-contract)
 5. [Integration rules](#5-integration-rules)
 6. [Data and testing](#6-data-and-testing)
@@ -44,19 +43,18 @@ Contents:
 
 ## 1. Check that you can use the sites
 
-All addresses are virtual addresses in the stock Steam `age3y.exe` (`b1a1dab7…`) plus the UHC
-loader. They are only valid for that build, so any patched exe must be built from it.
+All addresses are virtual addresses in WoL's `age3y.exe` (`0a277f14…`), which are the same as in the
+stock Steam exe (`b1a1dab7…`): WoL's exe is the stock exe plus the loader, LAA and four string patches
+([binaries.md](binaries.md#extra-patches-in-the-wars-of-liberty-exe)), and none of those patches falls
+inside the ranges below.
 
-**The exe.** The Wars of Liberty exe (`0a277f14…`) is the stock exe plus the loader, LAA and four
-string patches ([binaries.md](binaries.md#extra-patches-in-the-wars-of-liberty-exe)). None of
-those patches falls inside the ranges below.
-
-**Your DLL.** Each hook writes a 5-byte `jmp` (NOP-padded where it covers more), the rel32 of a
+**The ranges.** Each hook writes a 5-byte `jmp` (NOP-padded where it covers more), the rel32 of a
 `call`, or a single constant, and relies on stock code around it: the instructions it
 re-executes, the code it jumps back to, and the stock code its C++ side mirrors or calls (for
 example the search block of `hcShipmentPointFallback`, or the population test of
 `maintainWaitForPop`). Rows with "—" in the Written column are such verify-only ranges.
-**Nothing else may patch these ranges**, neither your DLL nor any other tool:
+**Nothing else may patch these ranges**, neither WoL's DLL nor any other tool, unless the section below
+says so:
 
 | Site | VA | Length | Written | Stock bytes at the written VA | Role |
 |---|---|---|---|---|---|
@@ -199,78 +197,46 @@ decimalPopulation and basePop/extraPop share the cap hook (`PopLimit`): it is wr
 basePop/extraPop when they are set, otherwise by decimalPopulation, which is applied after them
 and only sets the scale the hook reads.
 
-**Status for Wars of Liberty: not checked.**
-- None of these addresses appears among the WoL `uhc.dll` sites found so far
-  ([wol-uhc-map.md](wol-uhc-map.md)). That map is a first pass, though: many WoL features have no
-  traced sites.
-- The only known WoL patch in the same functions is FameTrickle at `0x51B026`, inside
-  FUN_0051A5DC. It is outside the `AbstractTypesEnd` range and only renames a built-in type, so
-  the two are compatible.
-- WoL's `ProtoUnitExtensionFeature` and `ExtendedDataSubtypesFeature` may touch unit type
-  registration; check them first.
-- `damageOverTime` hooks the entries of TakeDamage and of the world update, two places a mod
-  DLL with its own combat or simulation features may also patch. Whether WoL does was not
-  checked.
-- The dodge sites (`Dodge*`, `CriticalSound`, and the continuations `0x49ACEB`, `0x49B028`,
-  `0x6A262D`, `0x6A2A9F`): none of these addresses appears as a 32-bit value in WoL's `uhc.dll`
-  or `wol.dll` (byte search, 2026-10-28). That rules out absolute references, not every patch.
-- The WoL Tier 2 sites, from the scoping passes of 2026-10-29 (byte searches of WoL's `uhc.dll`
-  and `wol.dll`, and a memory diff of WoL's `uhc.dll` taken at the main menu; patches WoL's DLL
-  applies later, in a game, are not excluded):
-  - `liveBuildingWorkRate`: WoL hooks the Data effect calls (`0x7F86FE`, `0x7F8743`, `0x7F8778`,
-    `0x7F87A8`), three calls in the proto copy-on-write (`0x8D1B3B`, `0x8D1B61`, `0x8D1B79`) and the
-    Armor case `0x8FAE57`; none is inside these ranges. WoL owns the effect pipeline that writes
-    `[proto+D0h]`, though: if it moves BuildingWorkRate elsewhere, the getter reads the wrong field;
-  - `maintainWaitForPop`: WoL's exe is byte-identical over the `Maintain*` ranges, and the memory
-    diff does not overlap them;
-  - `broadsideMuzzleLimit`: no WoL patch in `0x5033AA..0x503560` or `0x6A8236..0x6A825D`; its
-    nearby `BroadsideNoTurn` patches (`0x4C0EB8`, `0x5030FE`) are outside these ranges;
-  - `gaiaSocketsOnly`, `noCorpseDopples`, `wonderPanelSkipAuras`: no overlap with the memory diff,
-    and none of their sites or continuations appears as a 32-bit value in WoL's DLLs;
-  - `customHotkeyContexts`: WoL's DLL has no `Accel` string and patches none of these ranges; its
-    upstream `tacticSwitching` cave at `0x5C161C` is in FUN_005C13C5, which this feature does not
-    touch. WoL's `DefaultKeyMapY.xml` already names its new contexts `<ProtoName>Accel`;
-  - `danceBonusCivs`: WoL's `NativeCivs` (upstream's caves at `0x4904B5`, `0x4ECD6B`, `0x8D47C9`,
-    each ending before the next range here) and its `danceCiv` key (interface calls at `0x4551D0`,
-    `0x6440F0`, `0x64414C`, `0x6441B8`) do not overlap. WoL also NOPs `0x679FBA` (the regeneration
-    knock-out bypass) and the WarChiefRansom revive call at `0x9D6BE7`; a DLL that replaces WoL's
-    loses those unless it ports them too;
-  - `techRenameEffect`: WoL's own `RandomTech` and `SetTechName` effects use the same factory
-    default case `0x62146F`; merge the two instead of installing a second `jmp` (see the contract);
-  - `techPrereqRecheck`, `transformUpdatesLOS`, `abilitySlots`, `lifespanAfterConstruction`,
-    `snareOnlyHitUnit`: not checked against WoL's patches. The upstream `BigButton` site
-    `0x461BD8` is in the command panel function but outside the `abilitySlots` ranges.
-- The WoL Tier 1 and Tier 3 sites (same method, 2026-10-29):
-  - `startingTC`: WoL's `age3y.exe` is byte-identical over these ranges, and no hook site or
-    continuation appears as a 32-bit value in WoL's `uhc.dll` or `wol.dll` (its `uhc.dll` holds
-    0x44D019, the alive function, as a value, which is not a site);
-  - `buildingWorkRateAuras`: WoL's memory diff does not touch the name parser
-    (`0x5F5645..0x5FE6E1`), the four getter calls or the getter. Its `ModifyActionFix` retypes the
-    tactics-driven modifier class (`0x9E36D0`: 2Ch → 46h) and replaces the collector call at
-    `0x49F251`, so inside WoL's DLL the factor must walk types 2Ch **and** 46h (see the contract).
-    `snareOnlyHitUnit`'s replay of the velocity sum walks the same lists, so it may need the same
-    change (not checked);
-  - `showGatherRate`: WoL's `uhc.dll` builds patches at `0x4EC8DE` and `0x4ECC8E` (inside the
-    Gather action; `0x4ECC8E` is doAnimationLooped's state test), one at `0x4D7880` in the stat
-    panel fill, and passes `0x5D31CA` / `0x5D31D1` (the end of the data-ref registration) to a
-    helper. None of them overlaps these ranges (dword scan of the DLL), but check that `0x4ED044`
-    is still reached with the same entry state in WoL's build;
-  - `decimalPopulation`: a dword scan of WoL's `uhc.dll` and `wol.dll` over its ranges finds
-    WoL's basePop hook at `0x4581F3` (scale it, see the contract) and the call redirections at
-    `0x71063C` / `0x710651` of WoL's `DoubleShipmentsInspectFixFeature` (chain them with the
-    population text wrapper); nothing else;
-  - `transformInventory`, `noTrainNearEnemyTC`, `overhealHitpointBars`: not checked against WoL's
-    patches. `docs/wol-uhc-map.md` mentions none of their sites;
-  - `civFirstTC` and the `FirstTC` keyword of `hcShipmentPointFallback` (`GatherPointValid`): not
-    checked against WoL's patches. Check `CivTagUnknown` (the civs.xml parser) and `RmPlaceCall`
-    (random map placement) first: a mod DLL that adds civ tags or map syscalls may patch the same
-    places.
+**Status for WoL's DLL (2026-11-04).** `rea/evidence/wol-uhc-c070d138/wol-memdiff.txt` lists the 287 ranges
+WoL's DLL had changed in the running game, 30 s after start, with WoL's own `wol.cfg`. Every site of the
+new keys was compared with that list:
 
-**The reliable check is at runtime.** Port the `VerifyAll` step (below) and run it after your
-DLL has applied all its own patches. A range that another patch changed then makes the feature
+| Key | Overlap | What to do |
+|---|---|---|
+| `decimalPopulation` | `PopFormatCost3`: WoL patches `0x710652` (4 B), the `call` at `0x710651`. This is `DoubleShipmentsInspectFixFeature`, which also marks `0x71063C`. | Chain them: call WoL's wrapper from the population text wrapper. Also scale WoL's basePop hook at `0x4581F3` (see the contract). |
+| `techRenameEffect` | `TechRenameEffectParse` (`0x6205C9`, 4 B) and `TechRenameRegister` (`0x524CB1`, 4 B): WoL's own `SetTechName` and `RandomTech`. | Don't install a second hook. Change WoL's effect (see the contract). |
+| Extra abstract unit types | `AbstractTypesEnd`: WoL patches `0x51BA2B` (4 B). The hook itself, at `0x51BA31`, is not touched. | Start the verified range at `0x51BA2F`, or use WoL's own registration (see the contract). |
+
+No other new key overlaps: none of their sites, and none of the addresses their code writes directly,
+is in the list. That covers `transformInventory`, `noTrainNearEnemyTC`, the overheal keys,
+`techPrereqRecheck`, `transformUpdatesLOS`, `abilitySlots`, `lifespanAfterConstruction`,
+`snareOnlyHitUnit`, `civFirstTC`, `showGatherRate` and the unit panel row. `bufferedFileReads` writes in
+the import table, which the list shows as a whole because Windows fills it at load: check that no other
+code wraps those six imports.
+
+The list has limits:
+- it shows what was patched 30 s after start, so a patch WoL's DLL applies later, in a game, is not in
+  it;
+- it shows bytes, not meaning. A feature can avoid every patch and still depend on what a WoL patch
+  changes.
+
+Three such dependencies are known:
+- `buildingWorkRateAuras` and `snareOnlyHitUnit`: WoL's `ModifyActionFix` retypes the tactics-driven
+  modifier class (`0x9E36D0`: 2Ch → 46h) and replaces the collector call at `0x49F251`, so inside WoL's DLL
+  the walk over modifiers must take types 2Ch **and** 46h (see the contract). This does not show on this
+  DLL, which lacks that fix;
+- `liveBuildingWorkRate`: WoL owns the effect pipeline that writes `[proto+D0h]`. If it moves
+  BuildingWorkRate elsewhere, the getter reads the wrong field;
+- `danceBonusCivs`: WoL's `NativeCivs` caves at `0x4904B5`, `0x4ECD6B` and `0x8D47C9` end before these
+  ranges, and its `danceCiv` key is interface only. They do not overlap, but read the two side by side.
+
+**The reliable check is at runtime.** Port the `VerifyAll` step ([helpers](#helpers-you-need)) and run it
+after WoL's DLL has applied all its own patches. A range that another patch changed then makes the feature
 log a mismatch and refuse to apply, instead of corrupting the game.
 
 ## 2. What to copy
+
+Each key's page has the code of every file below, the helpers it needs and its sites.
 
 | Files | What they are | Needs |
 |---|---|---|
@@ -298,38 +264,37 @@ log a mismatch and refuse to apply, instead of corrupting the game.
 | [`src/features/transforminv.cpp`](../src/features/transforminv.cpp), [`src/hooks/transforminv_hooks.asm`](../src/hooks/transforminv_hooks.asm) | `transformInventory`. | unittypes (only with a UnitType), sites `TransformInvHook`, `TransformProtoLookup`, `TransformKbRemove`, `TransformPushProto`, `TransformKbReAdd`, `Inventory*`, `ResList*`, `IsA`, your cfg reader |
 | [`src/features/notrainneartc.cpp`](../src/features/notrainneartc.cpp), [`src/hooks/notrainneartc_hooks.asm`](../src/hooks/notrainneartc_hooks.asm) | `noTrainNearEnemyTC`. | unittypes (and `OnDatabaseLoad` for `log`), sites `WorkRateTrainCall`, `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById*`, `UnitById*`, `PlayerIsEnemy`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`; the data symbol `g_uhcBwrTrainGetter` (defined in `bwrauras.cpp`; define it yourself as `0x9BFE33` without that feature); your cfg reader (`Config::All`) |
 | [`src/features/overheal.cpp`](../src/features/overheal.cpp), [`src/hooks/overheal_hooks.asm`](../src/hooks/overheal_hooks.asm) | `overhealHitpointBars`. | unittypes, sites `Overheal*`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag`, `IsA`, `IsATrue`, your cfg reader |
+| [`src/unitpanel.cpp`](../src/unitpanel.cpp), [`src/unitpanel.h`](../src/unitpanel.h), [`src/hooks/unitpanelrow_hooks.asm`](../src/hooks/unitpanelrow_hooks.asm) | The row of the minimized interface, shared by `showGatherRate` and `overhealHitpointBars stat`; the code is in [section 4](#unit-panel-row-the-minimized-interface). | |
 | [`src/features/gatherrate.cpp`](../src/features/gatherrate.cpp), [`src/hooks/gatherrate_hooks.asm`](../src/hooks/gatherrate_hooks.asm) | `showGatherRate`. | unittypes (only with a UnitType), sites `GatherTick*`, `StatPanel*`, `GatherRateStringRef`, `DataRef*`, `CurrentUnitRef`, `ProtoFlag`, `IsAbstractIndex`, `ResourceNameId`, `BString*`, `IsBuilt`, `IsA`, `WriteDword`, your cfg reader |
 | [`src/features/decimalpop.cpp`](../src/features/decimalpop.cpp), [`src/hooks/decimalpop_hooks.asm`](../src/hooks/decimalpop_hooks.asm), and the cap hook in [`src/features/limits.cpp`](../src/features/limits.cpp) / [`src/hooks/limit_hooks.asm`](../src/hooks/limit_hooks.asm) | `decimalPopulation`. | sites `PopCountParse`, `PopCapAddParse`, `PopCountEffect`, `PopCapAddEffect`, `IntEffect`, `PopCapEffect*`, `TeamPopCap`, `StartPopBonus`, `Xs*`, `Ref*`, `ColorizePop*`, `BStringFormat`, `PopFormat*`, `PopLimit`; `WriteCall`, `WriteDword`, `WriteBytes`, `UhcTraceHook`; your cfg reader |
 | [`src/features/bwrauras.cpp`](../src/features/bwrauras.cpp), [`src/hooks/bwraura_hooks.asm`](../src/hooks/bwraura_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `buildingWorkRateAuras`. | sites `ModifyTypeName*`, `Bwr*`, `WorkRateResearchCall`, `WorkRateCommandResearchCall`, `WorkRateMaintainCall`, `SnareCollector`, `SnareModifierSum*`, `BuildingWorkRateGetter`; liveBuildingWorkRate's `UhcBwrGetterHook` symbol for the getter-head check (or drop that check); `WriteCall`, `Matches`; your cfg reader |
 
-Every feature also needs `VerifyAll`, `WriteJmp`, `Log` and `TRACE_ONCE`, listed below.
+### Helpers you need
 
-Support code they use, small enough to copy or to map onto your own helpers:
-- [`src/site.h`](../src/site.h) and the matching `Site` entries of `src/generated/sites.h`.
-- [`src/patch.h`](../src/patch.h), [`src/patch.cpp`](../src/patch.cpp):
-  - `VerifyAll` compares live memory with the expected bytes;
-  - `WriteJmp` writes `jmp rel32` and NOP-fills the rest, through `VirtualProtect` and
-    `FlushInstructionCache`;
-  - `WriteCall` writes a 5-byte `call rel32`, `WriteDword` one dword, `WriteBytes` raw bytes;
-    `Matches` checks one site without logging (buildingWorkRateAuras uses it for the Train call).
+Every feature uses a few small helpers, all in the [helpers page](porting-code/helpers.md). They depend on
+nothing else, so you can copy them as they are. Or keep WoL's own, as the table says. The functions in the
+right column come from reading the binary: the names may differ in the source, and this mapping was not
+compiled.
 
-  If your DLL has its own patch library (WoL uses `remod`), keep the check before every write.
-- [`src/log.h`](../src/log.h), [`src/log.cpp`](../src/log.cpp): `Log` (printf-style, wide) and
-  `UhcTraceHook`, which `TRACE_ONCE` calls. Point them at your own logger if you like.
-- [`src/hooks/common.inc`](../src/hooks/common.inc): the `TRACE_ONCE` macro. Optional: delete
-  the `TRACE_ONCE` lines if you do not want the "hook reached" log lines.
-- [`src/config.h`](../src/config.h): `Config::First(key)` returns the key's first line of
-  arguments as a list of strings, or null when the key is absent. `broadsideMuzzleLimit`,
-  `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys also use `Config::All(key)`
-  (every line), and `abilitySlots` uses `Config::Int(key)`. Replace these calls with your own cfg
-  reader.
-- [`src/unittypes.h`](../src/unittypes.h): besides `RequestAbstractUnitType`,
-  `OnDatabaseLoad(callback)` calls a feature on every data load, from the same hook.
+| This project | What it does | In WoL's DLL |
+|---|---|---|
+| `Site`, `sites.h` | Name, address and expected stock bytes of each range. | Nothing like it: copy the table, or the entries of the features you port. |
+| `VerifyAll` | Compares live memory with the expected bytes, logs a mismatch and refuses. | Nothing like it was seen. **Keep it,** and call it before every write. |
+| `Matches` | Checks one site without logging. | The same. |
+| `WriteJmp` | Writes `jmp rel32`, and NOPs up to the length. | `remod::trackable_memory_patch` writes bytes: `VirtualProtect`, then `memcpy`. Build the 5 bytes, `E9` and `target - (va + 5)`, and the NOPs. |
+| `WriteCall` | Writes a 5-byte `call rel32`. | The same, with `E8`. |
+| `WriteDword`, `WriteBytes` | Write a constant. | `BasicMemoryPatch<int>` / `<char>`. |
+| `Log`, `UhcTraceHook` | Printf-style log, and the `hook reached` line. | spdlog. `Log` takes wide strings, so point it at your logger. |
+| `TRACE_ONCE` (`common.inc`) | The `hook reached` line of each hook. | Optional: delete those lines if you don't want them. |
+| `Config::First`, `All`, `Int` | The key's first line, every line, or an integer. | `IUHCConfig`. `broadsideMuzzleLimit`, `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys read every line; `abilitySlots` an integer. |
+| `Apply…` returning `Outcome` | One function per key. | `BaseFeature`: put the body in the feature's install method. |
+| `RequestAbstractUnitType`, `OnDatabaseLoad` | Registers a type, and calls a feature on every data load. | [See below](#extra-abstract-unit-types). |
+| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
 
-The `Apply…` functions return `Outcome` from [`src/features.h`](../src/features.h). Replace it
-with your own result type.
+A `trackable_memory_patch` restores its bytes when it is destroyed, so keep the patch objects alive for the
+life of the game.
 
-## 3. Building the hooks in your project
+## 3. Building the hooks in WoL's DLL
 
 - **x86 only.** The game is a 32-bit process.
 - **MASM.** The hooks are `.asm` files for `ml.exe`, with `.model flat, c`. The C++ side declares
@@ -355,30 +320,32 @@ with your own result type.
     `FirstTcProtoHookInstalled` from `startingtc.cpp`;
   - civFirstTC's map placement wrapper `UhcRmPlaceObjectDef` is a `__fastcall` C++ function that
     `WriteCall` targets directly; no MASM is involved.
-- **Build setup:**
+- **Build setup:** WoL's DLL is built with MSVC 14.16 (VS 2017 15.9):
+  - a Visual Studio project: enable **Build Dependencies → Build Customizations → masm**, then add the
+    `.asm` files;
   - CMake: `project(... LANGUAGES CXX ASM_MASM)`, as in this repository's `CMakeLists.txt`.
-  - A Visual Studio project: enable **Build Dependencies → Build Customizations → masm**, then
-    add the `.asm` files.
   - With `/SAFESEH` (the x86 default), pass `/safeseh` to `ml.exe` too.
-- **Object names.** Don't give a `.asm` file the same base name as a `.cpp`: CMake then puts the
-  object in a subfolder that `ml.exe` doesn't create, and the build fails with A1000.
+- **Object names.** With CMake, don't give a `.asm` file the same base name as a `.cpp`: the object goes in
+  a subfolder that `ml.exe` doesn't create, and the build fails with A1000.
 - **Inline assembly instead of MASM** also works (`__declspec(naked)` functions; MSVC x86 only).
   Keep two things:
   - continuations and engine calls go through absolute addresses stored in data
     (`jmp dword ptr [label]`, `call dword ptr [label]`);
   - each hook re-executes the stolen instructions exactly as the `.asm` comments say.
-- **A relocatable DLL is fine** (WoL's uses DYNAMIC_BASE). The exe has no ASLR, so its addresses
-  are fixed, and the DLL's own symbols are relocated by the loader.
+- **A relocatable DLL is fine:** WoL's uses DYNAMIC_BASE. The exe has no ASLR, so its addresses are fixed,
+  and the DLL's own symbols are relocated by the loader.
 
 ## 4. Each feature's contract
 
-What each hook expects and must preserve. The `.asm` files repeat this in their comments; the
-reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
+What each hook expects and must preserve. The `.asm` files repeat this in their comments; the reasoning is
+in [how-it-works.md](how-it-works.md#4-the-features). Each section starts with a link to its code.
 
 ### Extra abstract unit types
 
-- **Why:** TAD registers a fixed list of abstract unit types, compiled into the exe. Any other
-  `<UnitType>` in `protoy.xml` is dropped silently. `healNonIdle` needs its marker
+Code: [helpers](porting-code/helpers.md#extra-abstract-unit-types).
+
+- **Why:** the exe registers a fixed list of abstract unit types, compiled into it. Any other `<UnitType>`
+  in `protoy.xml` is dropped silently. `healNonIdle` needs its marker
   (`AbstractHealNonIdle` by default) to exist as a type, and so does every other key that takes a
   `<UnitType>` when it is given a new name.
 - **API:** `RequestAbstractUnitType(name, &id)`. The first call installs the hook at `0x51BA31`.
@@ -389,13 +356,18 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `table = database+190h` and `id = [database+194h]`. IDs must be dense;
   - it writes the ID to the caller's variable on every load;
   - it then re-executes `pop edi; pop esi; mov al,1; pop ebx` and jumps to `0x51BA36`.
-- **If your DLL can already register unit types**, use your mechanism and skip this one. Two
-  conditions:
+- **In WoL's DLL:** it reads `data\uhc\customabstracttypes.xml` always, through a patch at `0x51BA2B`, just
+  before this hook. So:
+  - the hook can stay: its `jmp` at `0x51BA31` does not touch WoL's patch, and it runs after it. Start the
+    `AbstractTypesEnd` range at `0x51BA2F`, or `VerifyAll` refuses;
+  - or use WoL's registration, and skip this one. Then add each marker name to that file. Two conditions:
   - the name must be registered before the protos load, so the proto loader sets its bit;
   - its ID must reach the feature's variable (`g_uhcHealNonIdleType`, `g_uhcLifespanType`, …) on
     every data load.
 
 ### healNonIdle
+
+Code: [healing](porting-code/healing.md#healnonidle).
 
 - **Global:** `g_uhcHealNonIdleType`, the marker's unit type ID. It may also hold a proto ID.
   While it is -1, both hooks run the stock code.
@@ -417,6 +389,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### smartHealTargets
 
+Code: [healing](porting-code/healing.md#smarthealtargets).
+
 - **Globals:** `g_uhcSmartHealTypes[8]` (type or proto IDs, -1 until the data loads),
   `g_uhcSmartHealTypeCount`; the search state (healer, best and first candidate, count) is private
   to `smartheal.cpp`.
@@ -433,6 +407,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **Coexists** with `healNonIdle` (0x9CD9C7, same loop, other site).
 
 ### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
+
+Code: [combat](porting-code/combat.md#dodgeanyunit-dodgesoundset-and-criticalsoundset).
 
 - **Global:** `g_uhcDodgeType`, the marker's unit type ID (or a proto ID). While it is -1 the
   proto hook runs the stock code.
@@ -466,6 +442,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     name, and draw only for chances strictly between 0 and 100 %, so every machine draws the same.
 
 ### hcShipmentPointFallback
+
+Code: [buildings](porting-code/buildings.md#hcshipmentpointfallback).
 
 - **Globals:** `g_uhcGatherFallbackTypes[64]` (proto IDs; -1 = skip, -2 = `FirstTC`) and
   `g_uhcGatherFallbackCount`.
@@ -503,6 +481,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   applies the key.
 
 ### damageOverTime
+
+Code: [combat](porting-code/combat.md#damageovertime).
 
 - **State, all in `damageovertime.cpp`:**
   - the attachments read from the data, keyed by (attacker proto ID, action name index): X's
@@ -552,11 +532,13 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `vtbl+A4h` (alive), `vtbl+90h` (can move), `0x4DD22D` (the snare), the floating text of
   `floatingtext.cpp`; for the log only, `vtbl+34h` (speed) and the army flag 37h. The layouts read (unit, world, player, action set, action, the
   action-name table) are listed in [engine-symbols.md](engine-symbols.md), "Damage and poison".
-- **If your DLL already hooks TakeDamage or the world update,** call this feature's logic from
+- **If WoL's DLL already hooks TakeDamage or the world update,** call this feature's logic from
   your own wrapper instead of installing a second `jmp` at the same entry: `VerifyAll` would
   refuse the second patch anyway.
 
 ### spreadAnyAccuracy
+
+Code: [combat](porting-code/combat.md#spreadanyaccuracy).
 
 - **State, all in `spread.cpp`:** the values read from the data, a `std::map` keyed by (proto ID
   `[proto+4]`, action name index `[action+4]`) of `SpreadFactor` and `MaxSpread` (default 0.25 and
@@ -583,13 +565,30 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `0x4CF026` (the stock `r > 1e-6` test and the two draws). The x87 stack is empty on leaving.
 - **Engine calls:** 0x44D7FA (is-a) and the stock FUN_004CEF8C; reads the action-name table for the
   log.
-- **If your DLL already reads action tags at 0x5FA11E,** add these two tags to your handler instead
+- **If WoL's DLL already reads action tags at 0x5FA11E,** add these two tags to your handler instead
   of a second hook; if it changes the launch at 0x499890 or the miss offset, merge the logic there.
+
+### bufferedFileReads
+
+Code: [game-files](porting-code/game-files.md#bufferedfilereads).
+
+- **IAT hooks:** six KERNEL32 slots of the exe: `CreateFileA` `0xB842A4`, `CreateFileW` `0xB84304`, `ReadFile`
+  `0xB8424C`, `SetFilePointer` `0xB84244`, `CloseHandle` `0xB84330`, `DuplicateHandle` `0xB843A0`. Each slot
+  must still hold the address `GetProcAddress` gives for that function, or nothing is written. If WoL's DLL
+  wraps one of these imports, chain the two.
+- **What is buffered:** a handle opened for reading only, without `FILE_FLAG_OVERLAPPED` or
+  `FILE_FLAG_NO_BUFFERING`, on a disk file. Every other handle passes through.
+- **Must preserve:** the game receives the same bytes, and the position it sees is the one it asked for. The
+  `verify` argument checks this against the file.
+- **Why it can differ between players:** it changes how the bytes are fetched, not which bytes.
+- **The design:** [how-it-works.md](how-it-works.md#bufferedfilereads).
 
 ### multipleInstances
 
+A tool for testing: WoL's players don't need it, so it has no code page. Its code is `src/features/instances.cpp`.
+
 - **IAT hook** on `CreateSemaphoreW`, slot `0xB843F0`. The slot must hold the `GetProcAddress`
-  address when the feature applies; if your DLL also wraps that import, chain the two.
+  address when the feature applies; if WoL's DLL also wraps that import, chain the two.
 - **Only the call with return address `0x55A18B`** (the single-instance check, stock name
   `Global\Age3`) gets `-` and an FNV-1a hash of the exe's lowercase folder appended. Every other
   call passes through unchanged.
@@ -600,6 +599,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   refuses every `HCBT_ACTIVATE`.
 
 ### liveBuildingWorkRate
+
+Code: [buildings](porting-code/buildings.md#livebuildingworkrate).
 
 - **Global:** `g_uhcBwrLog`, 1 with `log`. Without `log` the hook calls nothing.
 - **Getter hook** at `0x9BFE33`, the entry of `float thiscall(unit)`:
@@ -637,6 +638,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### techPrereqRecheck
 
+Code: [techs](porting-code/techs.md#techprereqrecheck).
+
 - **State, all in `techprereq.cpp`:** N, `full`, `log`; the IDs of the techs with a TypeCount
   prerequisite (ascending), rebuilt on the first check after each data load (`OnDatabaseLoad`);
   the log counters.
@@ -658,6 +661,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `[def+1Ch][0..byte def+20h)`.
 
 ### maintainWaitForPop
+
+Code: [buildings](porting-code/buildings.md#maintainwaitforpop).
 
 - **Global:** the marker's unit type ID (or a proto ID), set on each data load; while it is -1 the
   predicate answers "not blocked".
@@ -681,6 +686,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### transformUpdatesLOS
 
+Code: [techs](porting-code/techs.md#transformupdateslos).
+
 - **Hook** at `0x9C763F`, replacing `call 4981F3h` (setProto, `thiscall(unit, Proto*)`, `ret 4`):
   - entry state: ESI = ECX = the unit, `[esp]` = the new proto, `[unit+5Ch]` = the old proto. The
     unit is off the visibility map (`0x9C7570`) and goes back on it at `0x9C7730`;
@@ -692,6 +699,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   LOS cache (`0x9C768D`) and the visibility add (`0x9C7730`) must both see the new value.
 
 ### broadsideMuzzleLimit
+
+Code: [combat](porting-code/combat.md#broadsidemuzzlelimit).
 
 - **Globals:** `g_uhcBroadsideLimit` (N), `g_uhcBroadsideAll` (1 = every ship),
   `g_uhcBroadsideType` (the marker's ID; while it is -1 and `All` is 0, the hook keeps 6),
@@ -710,6 +719,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### abilitySlots
 
+Code: [interface](porting-code/interface.md#abilityslots).
+
 - **The patch:** one dword, N − 1 at `0x695BD3` (the imm32 of `mov edi,5`). Keep N − 1 ≥ 1 (the
   loop is a do-while: 0 would run about 4 billion times), N ≥ 6 so stock abilities are not hidden,
   and N ≤ 36 (the grid).
@@ -722,6 +733,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     dead at the hook.
 
 ### wonderPanelSkipAuras
+
+Code: [interface](porting-code/interface.md#wonderpanelskipauras).
 
 - **Global:** `g_uhcWonderPanelLog`, nonzero with `log`.
 - **Call redirect** at `0x69EE5D`: the hook must be a drop-in for `0x6EE5CC`,
@@ -737,6 +750,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   for n > 0; it logs once per record.
 
 ### lifespanAfterConstruction
+
+Code: [buildings](porting-code/buildings.md#lifespanafterconstruction).
 
 - **Globals:** `g_uhcLifespanType` (the marker's ID or a proto ID; while it is -1 both hooks run
   the stock code), `g_uhcLifespanLog`, and `g_uhcLifespanHeldCount` (log only: logged held units
@@ -762,6 +777,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### gaiaSocketsOnly
 
+Code: [buildings](porting-code/buildings.md#gaiasocketsonly).
+
 - **Globals:** the mode (every socket, or marker) and the marker's ID; in marker mode, while the ID
   is -1 the rule never applies.
 - **Hook** at `0x508CC1`, in PLACE (FUN_0050703D, `ret 2Ch`):
@@ -776,6 +793,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     EDI, EBP and ESP (the frame offsets are ESP-relative). The x87 stack is empty there.
 
 ### customHotkeyContexts
+
+Code: [data](porting-code/data.md#customhotkeycontexts).
 
 - **State:** a list of added contexts `{proto name, context name, ID}` and the manager they belong
   to (`[[[0xC66244]+74h]+34h]` when they were registered). The selection hooks act only while the
@@ -799,6 +818,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   leaves contexts that are never on, or on and switched off.
 
 ### snareOnlyHitUnit
+
+Code: [combat](porting-code/combat.md#snareonlyhitunit).
 
 - **Snare test:** walk the unit's actions `[[unit+58h]+14h]` (`{count +0, data +8}`; children at
   `[+40h]`, depth first, parent first) and take the first action with byte `[+60h]` = 2Ch,
@@ -824,6 +845,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### techRenameEffect
 
+Code: [data](porting-code/data.md#techrenameeffect).
+
 - **Globals:** `g_uhcTechRenameType`, SetTechName's effect type ID (-1 until the database init
   ran; while it is -1 the factory hook runs the stock code). The DLL vtable (17 slots) is filled
   before the hooks are written.
@@ -841,12 +864,14 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **The apply** reads `[player+0]`, calls `0x8D0005(player, tech)`, keeps one 34h-byte copy per
   (player ID, tech ID) that is never freed or moved, refreshes it from `[node]` whenever `[node]`
   is not the copy, writes the IDs that are not -1, then sets `[node+0]`.
-- **If your DLL already creates extra effect types** (WoL's `RandomTech` and `SetTechName` use the
+- **If WoL's DLL already creates extra effect types** (WoL's `RandomTech` and `SetTechName` use the
   same factory default case), merge this into your factory hook: `VerifyAll` refuses a second
   patch. WoL's own `SetTechName` can be fixed in place by replacing its apply with the
   copy-and-repoint logic.
 
 ### noCorpseDopples
+
+Code: [interface](porting-code/interface.md#nocorpsedopples).
 
 - **Globals:** `g_uhcNoCorpseDoppleType` (the marker's ID or a proto ID; while it is -1 the hook
   runs the stock code) and `g_uhcNoCorpseDoppleLog`.
@@ -860,6 +885,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - otherwise: `mov eax,[esp+2Ch]; mov ecx,[esp+54h]; jmp 495355h`.
 
 ### danceBonusCivs
+
+Code: [civs](porting-code/civs.md#dancebonuscivs).
 
 - **Helper:** `bool __stdcall UhcDanceCivAllowed(int kind, player*, int civ)`, true if `civ` is
   listed. It resolves the cfg names with `0x58E71F(database, name)` on the first call for each
@@ -879,6 +906,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   upstream misses.
 
 ### startingTC
+
+Code: [civs](porting-code/civs.md#startingtc).
 
 - **Globals:** `g_uhcStartingTcType` (the marker's ID or a proto ID; while it is -1 both hooks run
   the stock code) and `g_uhcStartingTcLog`.
@@ -913,6 +942,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   other); write it only once, and verify `FirstTcProtoCheck` only while it is still stock.
 
 ### civFirstTC
+
+Code: [civs](porting-code/civs.md#civfirsttc).
 
 - **State** (`civfirsttc.cpp`): the tags by civ ID (the civ object each was read for, its text,
   and the resolved proto with the proto array it was resolved in); `g_uhcCivFirstTcOn`, 1 once the
@@ -967,6 +998,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### transformInventory
 
+Code: [techs](porting-code/techs.md#transforminventory).
+
 - **Hook** at `0x9C7625`, replacing `mov eax,[esi+58h] / test eax,eax / je 9C763Ch` (7 B):
   - entry state: ESI = the unit, EBP = the player's copy of the new proto, `[esi+5Ch]` = the old
     proto, x87 stack empty. The unit has left the other players' knowledge bases (0x9C75FE) and
@@ -990,6 +1023,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   in this feature, since that feature may have written its `jmp` there.
 
 ### noTrainNearEnemyTC
+
+Code: [buildings](porting-code/buildings.md#notrainnearenemytc).
 
 - **Globals:** `g_uhcNoTrainType` (the marker's ID; while it is -1 the hook runs the stock code),
   and the pointer `g_uhcBwrTrainGetter` it calls (owned by buildingWorkRateAuras; `0x9BFE33` by
@@ -1026,6 +1061,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   and only sets the pointer.
 
 ### overhealHitpointBars
+
+Code: [healing](porting-code/healing.md#overhealhitpointbars).
 
 - **Globals:** `g_uhcOverhealTypes[8]` (marker or proto IDs, -1 until the data loads; a -1 entry is
   skipped), `g_uhcOverhealTypeCount` (entries in use) and `g_uhcOverhealLog`.
@@ -1085,6 +1122,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `0x447F7B(manager, handle)` (show: on top). Manager = `[[0C66244h]+44h]`. Redo the stolen
     pair; → `0x4C83E8`. The gadget comes from the mod's UI data (background = overheal colour,
     mask = HP colour; a progress bar needs a background to be drawn).
+- **`stat` in WoL's interface:** the hook below never runs there. The row goes through the
+  [unit panel row](#unit-panel-row-the-minimized-interface).
 - **`stat`**: `0x4D76DB` (9 B, `mov edi,2; mov [esp+2Ch],edi`): redo both, then for a marked unit
   `[esp+38h]` write row EDI of panel `[esp+50h]` as the Group Health branch (0x69A9D3) does
   (gadgets `[panel+174h+EDI*4]` / `[panel+198h+EDI*4]` through 0x4C519C; vtable +84h with
@@ -1095,6 +1134,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   `int UhcOverhealMarked(proto)`.
 
 ### overhealSources
+
+Code: [healing](porting-code/healing.md#overhealsources).
 
 - **Needs** overhealHitpointBars' types and helpers (above); apply it after that key.
 - **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount`, `g_uhcOverhealAllow`.
@@ -1115,6 +1156,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### overhealDecay
 
+Code: [healing](porting-code/healing.md#overhealdecay).
+
 - **Needs** overhealHitpointBars' helpers; apply after overhealSources (they share the add-HP hook,
   and the second one must not verify bytes the first already replaced).
 - **Gain:** the add-HP hook calls `g_overhealGain(unit, restartDelay)` (set by this key) for a
@@ -1132,8 +1175,43 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   reference × % / 100).
 - **Never** below the reference, never the real clock, never pointer order.
 
+### Unit panel row (the minimized interface)
+
+Code: [helpers](porting-code/helpers.md#unit-panel-row-the-minimized-interface); the two rows are `UhcGatherUnitPanel` in
+[`gathering`](porting-code/gathering.md) and `UhcOverhealUnitPanel` in [`healing`](porting-code/healing.md).
+
+**Why WoL needs it.** WoL plays with the minimized interface (`optionminimizedui`). With that option
+the exe returns from the stat panel fill FUN_004D70ED at `0x4D7261`, before any row, so everything
+that adds a stat panel row (`showGatherRate`, `overhealHitpointBars stat`) shows nothing. The unit
+panel keeps one row of its own, the AutoGather rate, in the gadgets `unitResourceRateLabel` and
+`unitResourceRateValue` of `uiunitselectionmin.xml`. This code writes that row. It needs no change to
+the mod's data.
+
+- **Hook** at `0x699456` (6 B, `jmp` + 1 NOP): stock bytes `8B 7C 24 54 8B CF` (`mov edi,[esp+54h];
+  mov ecx,edi`), the join point after the stock AutoGather block. Entry: `[esp+50h]` = the panel,
+  `[esp+54h]` = the unit. Re-execute the two instructions and jump to `0x69945C`.
+- **Gadgets:** `[panel+33Ch]` label, `[panel+340h]` value, as handles for `0x4C519C`. A null gadget
+  means an interface without that row (the normal one): write nothing.
+- **Selection:** `0x453B28` returns the current selection from the UI globals alone. Require count
+  `[+14h]` = 1 and byte `[+21h]` = 0, as the stat panel's rows do: with a group the panel shows the
+  first unit, and its rate would read as the group's.
+- **Hiding:** nothing to do. The panel hides these gadgets each time it fills, so the row goes away
+  by itself when a writer stops writing.
+- **Order:** one row, several keys: the last key added is asked first, so a gathering unit shows its
+  rate. In `kFeatures`, `overhealHitpointBars` comes before `showGatherRate`.
+- **Add a row with `AddUnitPanelRow`, never a second `jmp` at `0x699456`.**
+
+Check it in the game: with `showGatherRate`, select one gathering villager: `Food (icon): 0.67/s` next
+to Resists; it goes when the villager stops, and with two villagers selected. With
+`overhealHitpointBars stat`, select a marked unit above its 100 %: `Overheal: 15/30`. The log shows
+`hook reached: unit panel row (0x699456)`.
+
 ### showGatherRate
 
+Code: [gathering](porting-code/gathering.md#showgatherrate).
+
+- **WoL's interface:** the panel hook below writes the stat panel, which the minimized interface
+  never fills. Add the [unit panel row](#unit-panel-row-the-minimized-interface) too.
 - **Globals:** `g_uhcGatherRecords` (4000h records of 20h bytes: `+0` gatherer ID, written last;
   `+4` action; `+8` resource; `+0Ch` target ID; `+10h` float rate; `+14h` float elapsed; `+18h`
   game time), `g_uhcGatherRowPending`, `g_uhcGatherRowRes`, `g_uhcGatherRowRate` (float).
@@ -1169,6 +1247,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ### buildingWorkRateAuras
 
+Code: [buildings](porting-code/buildings.md#buildingworkrateauras).
+
 - **Globals:** `g_uhcBwrTrainGetter` (exported data, `void*`, default `0x9BFE33`): set it to the
   wrapper when the feature applies. A hook that replaces the Train call at `0x9EA410` (this DLL's
   noTrainNearEnemyTC) must call through it.
@@ -1201,6 +1281,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   DLL adds its own ModifyTypes.
 
 ### decimalPopulation
+
+Code: [population](porting-code/population.md#decimalpopulation).
 
 - **Globals:** `g_uhcPopScale` (K; 1 without the key) and `g_uhcPopStockClamps` (1 when this key
   installs the cap hook itself), both read by the cap hook of basePop/extraPop
@@ -1270,7 +1352,7 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
   - `buildingWorkRateAuras [log]`;
   - `decimalPopulation [K] [log]`, K from 2 to 1000 (default 10).
 
-  The [modding guide](modding-guide.md#5-feature-reference) then applies to your mod as written.
+  The [modding guide](modding-guide.md#5-feature-reference) then applies as written.
 - **Verify, then write.** Check all of a feature's ranges first, and write nothing if any range
   differs.
 - **Order.** Apply the features in the order of `kFeatures` in
@@ -1314,9 +1396,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ## 6. Data and testing
 
-- **Data.** Mark each healer with `<UnitType>AbstractHealNonIdle</UnitType>` in both
-  `data\protoy.xml` and `data\protoy.xml.XMB`. For the XMB, `tools/xmbedit.py add-unittype` does
-  it ([modding guide, section 6](modding-guide.md#6-editing-the-game-data)).
+- **Data.** WoL's data is plain XML: each section of the [modding guide](modding-guide.md#5-feature-reference)
+  says what its key needs, and an existing type or proto name in the cfg needs no edit.
 - **Log.** If you kept `Log` and `TRACE_ONCE`, the lines to expect are listed per key in the
   [modding guide](modding-guide.md#5-feature-reference):
   - at startup, `applied`;
@@ -1324,13 +1405,13 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `unit types: AbstractHealNonIdle -> <ID> (…), added`;
   - in game, the `hook reached` line of each feature hook.
 - **In game:**
-  - **healNonIdle:** marked surgeons heal an explorer while it fights.
+  - **healNonIdle:** with `healNonIdle xpMedicineMan`, a medicine man heals a Tomahawk while it fights.
   - **hcShipmentPointFallback:** delete every Town Center (and every other stock fallback
     building) and send a shipment. It must arrive at the first listed building that still
     stands. With `civFirstTC` (or `startingTC`) and `hcShipmentPointFallback FirstTC`, a player
     whose first town center is a Market and who has no Town Center receives a shipment at the
     Market (the log names it as FirstTC).
-  - **civFirstTC:** give a civ `<firstTC>Market</firstTC>` in `civs.xml`, the Market
+  - **civFirstTC:** give a civ `<firstTC>Market</firstTC>` in `data\civs.xml`, the Market
     `<Flag>StartingColonyBuilding</Flag>` and a `<type maxcount="1">Market</type>` in the
     `<starttypes>` of `placementrules\colonies.xml`, then start a skirmish as that civ: the map's
     Town Center is a Market, and the starting Settlers stand at it. A skirmish against an AI of
@@ -1338,23 +1419,22 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     for the skirmish and for sending a card
     ([developer guide](developer-guide.md#driving-the-game-unattended)).
   - **damageOverTime:** with the data of the
-    [modding guide](modding-guide.md#damageovertime) and `damageOverTime log`, hit a unit once
-    and pull back. The log must show one `tick` line per ROF with the hitpoints falling. Then
-    start a skirmish against an AI and check that the AI plays. A tactics file shipped as XML
-    with a line break after a tactic name stops the AI scripts from compiling
-    ([modding guide, "Tactics files"](modding-guide.md#tactics-files)).
+    [modding guide](modding-guide.md#damageovertime) and `damageOverTime log`, hit a unit once and pull
+    back. The log must show one `tick` line per ROF with the hitpoints falling. Then start a skirmish
+    against an AI and check that the AI plays. A tactics file with a line break after a tactic name
+    stops the AI scripts from compiling ([modding guide, "Tactics files"](modding-guide.md#tactics-files)).
   - **dodgeAnyUnit:** mark a non-monk unit, make `YPDodge` active for its player, and let enemies
     shoot it. With `dodgeAnyUnit … log`, about one hit in seven logs
-    `dodgeAnyUnit: unit N (Proto) dodged a hit`; a Japanese monk still dodges as in stock.
+    `dodgeAnyUnit: unit N (Proto) dodged a hit`; a Japanese monk still dodges.
     `tools/testbed.py` builds such a fight with no clicks
     ([developer guide](developer-guide.md#driving-the-game-unattended)).
   - **dodgeChance:** with `dodgeChance <marker> 50 ranged log` and `dodgeChance <marker> 0 melee`,
     about half of the musket shots and none of the pike thrusts on a marked unit log `roll … ->
     dodged`; a rule with `notech` dodges without `YPDodge`, one with an unknown tech logs `rule
     disabled`.
-  - **The WoL features:** the test that confirmed each one, with its data, is in its
-    "Status" in the [modding guide](modding-guide.md#5-feature-reference). For each, run the same
-    test with and without the key: the stock run must show the bug. Two pitfalls from these tests:
+  - **The other features:** the test that confirmed each one, with its data, is in its "Status" in the
+    [modding guide](modding-guide.md#5-feature-reference). For each, run the same test with and without
+    the key: the run without it must show the bug. Two pitfalls from these tests:
     scenario triggers cannot give build or work orders (use real clicks for placing foundations,
     `lifespanAfterConstruction` and `gaiaSocketsOnly`), and synthetic key presses do not reach the
     game's hotkeys (`customHotkeyContexts`).
@@ -1363,8 +1443,27 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 
 ## 7. What is not verified
 
-- **Wars of Liberty:** no feature has been run with WoL's exe or next to WoL's DLL
-  ([section 1](#1-check-that-you-can-use-the-sites)).
+- **In WoL (updated 2026-11-04):** the features below ran on WoL's exe and data, with this project's DLL
+  replacing WoL's in a test copy, single player, each with a run without its key. None has run next to
+  WoL's own DLL, so a clash with its patches can only be read from
+  [section 1](#1-check-that-you-can-use-the-sites).
+  - **Filmed, with the key off as control:** `healNonIdle`, `smartHealTargets`, `dodgeAnyUnit`,
+    `dodgeChance`, `damageOverTime`, `spreadAnyAccuracy`, `liveBuildingWorkRate`,
+    `buildingWorkRateAuras`, `techPrereqRecheck`, `maintainWaitForPop`, `transformUpdatesLOS`,
+    `transformInventory`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`,
+    `lifespanAfterConstruction`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`,
+    `noCorpseDopples`, `danceBonusCivs`, `noTrainNearEnemyTC`, `showGatherRate`, `decimalPopulation`
+    and the three overheal keys.
+  - **Partly:** `noTrainNearEnemyTC` was filmed with an enemy unit as the blocker (`near`). The enemy
+    first Town Center case was not, because player 2's buildings do not last in the test scenarios
+    (cause not found). `snareOnlyHitUnit`'s gain was measured in one run each way: the group arrived
+    at 50 s with the key and about 54 s without.
+  - **Test data, not WoL's own:** poison, the test techs and auras, the Outpost's lifespan, the
+    aura before a wonder's power, and overheal's `MaxHitpoints` were added to the test copy for the
+    video and removed after. WoL's data has no `SetTechName` effect, no wonder with two abilities and
+    no overheal yet.
+  - **Not filmed in WoL yet:** `startingTC`, `civFirstTC`, `hcShipmentPointFallback`,
+    `gaiaSocketsOnly`, `multipleInstances`.
 - **Multiplayer, saved games and replays:** untested for every feature.
 - **hcShipmentPointFallback:**
   - `FirstTC` was confirmed in game with `civFirstTC` only; with `startingTC`, and the owner check
@@ -1375,12 +1474,9 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **dodgeAnyUnit / dodgeSoundSet / criticalSoundSet:** confirmed in single player only; the
   sound sets were checked in the log, not by ear. The unit's rollover text about dodging (if any)
   still names only the Japanese monks (0x6AB049, not traced).
-- **damageOverTime:** confirmed in single player only, with hand attacks, instant shots,
-  arrows, grenades, cannon balls and area damage, `DamageBonus` and a tech on X, X's DamageFlags
-  after a conversion, an attacker removed, kill XP, and the three optional tags. The game loads
-  `protoy.xml.XMB` unless `protoy.xml` is newer
-  ([modding guide, section 6](modding-guide.md#6-editing-the-game-data)), so keep both in step.
-  A tick on an AI army unit after the attacking unit is gone (the p11 = 0 path) comes from the
+- **damageOverTime:** confirmed in single player only, with hand attacks, instant shots, arrows, grenades,
+  cannon balls and area damage, `DamageBonus` and a tech on X, X's DamageFlags after a conversion, an
+  attacker removed, kill XP, and the three optional tags. A tick on an AI army unit after the attacking unit is gone (the p11 = 0 path) comes from the
   code; the attacker-gone path ran in game, but not on an army unit.
 - **multipleInstances:** confirmed with two copies on one machine, in single player only.
 - **The WoL Tier 2 features** (2026-10-29, single player only; "(multiplayer unverified)" for every
@@ -1391,22 +1487,21 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
     `broadsideMuzzleLimit` (normal attack; `PowerBroadside` not tested), `abilitySlots`,
     `wonderPanelSkipAuras`, `lifespanAfterConstruction` (the countdown hold; the
     `AlphaFadeLifespan` fade-out hold not checked), `techRenameEffect` (saved games not tested),
-    `noCorpseDopples`, `danceBonusCivs` (Regeneration only);
-  - **confirmed from the log only:** `snareOnlyHitUnit` (no stock control run; the group's
-    positions were not measured);
-  - **partly confirmed:** `customHotkeyContexts` (registration and context switch; no key press);
+    `noCorpseDopples`, `danceBonusCivs` (Regeneration; Training in WoL, 2026-11-04; XPTrickle and Gathering not tested);
+  - **confirmed in game, 2026-11-04 in WoL:** `snareOnlyHitUnit` (positions sampled with and without
+    the key), `customHotkeyContexts` (real key presses queued the units; without the key, nothing);
   - **not tested in game:** `gaiaSocketsOnly`. The stock interface already refused a player's
     socket in the test, and the order path that bypasses it (WoL's case) was not driven.
 - **The WoL Tier 1 and Tier 3 features** (2026-10-29, single player only, all 21 WoL keys on
   together):
-  - **confirmed in game:** `transformInventory` (six `TransformUnit` cases; `all`, `scale`, a
-    marker, revolutions and a conversion afterwards not tested; no key-off run),
+  - **confirmed in game:** `transformInventory` (six `TransformUnit` cases, and WoL's `HCCardDogTaxWar` with a key-off run;
+    `all`, `scale`, a marker, revolutions and a conversion afterwards not tested),
     `noTrainNearEnemyTC` (pause near an enemy Town Center or a `near` Stable, resume when it died,
     the warning with its default, UTF-8 and string-table texts; a trainer with a queue does not
     move in stock, so walking away does not happen), `buildingWorkRateAuras` (`Maintain`; train, research and powers not tested);
   - **confirmed in the interface:** `overhealHitpointBars` (the unit panel's text and bar; the
     floating and group bars not compared on their own), `showGatherRate` (the stat panel row for
-    berries; the data ref not tested);
+    berries; in WoL, 2026-11-04, the data ref and the unit panel row);
   - **confirmed from the log and memory:** `startingTC` (a marked building became the first town
     center of a player without one); the replacement of a dead or expiring first town center
     (WoL's Maori case) and the placement effect were not driven. The other `TownCenter` checks
@@ -1414,8 +1509,8 @@ reasoning is in [how-it-works.md](how-it-works.md#4-the-features).
 - **civFirstTC** (2026-10-29, single player): confirmed in game on a test map (editor route) and
   in skirmishes on Mongolia: the substitution, the first town center, the town starting units
   (with `StartingColonyBuilding` and `<starttypes>`), an untagged AI keeping its Town Center, and
-  a shipment to the building through `hcShipmentPointFallback FirstTC`. Not tested: a Nomad start
-  (TAD's skirmish setup offers none), multiplayer, recorded games, the `no colony` log path. Not
+  a shipment to the building through `hcShipmentPointFallback FirstTC`. Not tested: a Nomad start, WoL's
+  civs and buildings, multiplayer, recorded games, the `no colony` log path. Not
   covered: AI scripts that expect a Town Center (a tagged AI stayed idle), the engine AI's
   automatic base, the age-up picker, the start camera, the `Maintain` spawn gate, the water
   shipment point.

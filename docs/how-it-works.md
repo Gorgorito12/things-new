@@ -1171,7 +1171,7 @@ test eax,eax`. The hook:
 The copy is still written at completion and saved and loaded with the unit; the getter was its
 only other reader.
 
-**TrainPoints, the stock mechanism** (WoL #5's "train work rate"; `engine-symbols.md`, "Train
+**TrainPoints, the stock mechanism** (`engine-symbols.md`, "Train
 points").
 - Every queued unit or batch is its own Train action (the train command FUN_009CE2BE creates one per
   queue entry). The enqueue FUN_009EAC35 stores the trained proto's TrainPoints in the action,

@@ -23,6 +23,7 @@ add_library(UHC SHARED
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/unitpanel.cpp
   src/actiontags.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
@@ -123,6 +124,7 @@ add_library(UHC SHARED
   src/hooks/wonderpanel_hooks.asm
   src/hooks/workrate_hooks.asm
   src/hooks/worldtick_hooks.asm
+  src/hooks/unitpanelrow_hooks.asm
   src/version.rc
 )
 target_compile_definitions(UHC PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)

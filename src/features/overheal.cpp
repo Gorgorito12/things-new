@@ -56,6 +56,7 @@
 
 #include "../features.h"
 #include "../generated/sites.h"
+#include "../unitpanel.h"
 #include "../log.h"
 #include "../patch.h"
 #include "../unittypes.h"
@@ -496,6 +497,39 @@ bool __stdcall UhcOverhealStatRow(const char* panel, const char* unit, std::int3
   }
   return true;
 }
+
+// The minimized interface's row (unitpanel.cpp): the same numbers as the stat row, which that
+// interface never fills. It shows for a marked unit once it has overheal: the row is shared.
+bool __stdcall UhcOverhealUnitPanel(const char* panel, const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+    return false;
+  }
+  const int reference = static_cast<int>(UhcOverhealReferenceOf(unit));
+  const int hp = static_cast<int>(Field<float>(unit, 0x64));
+  const int maxHp = static_cast<int>(kMaxHitpoints(unit));
+  if (hp <= reference || maxHp <= reference) {
+    return false;
+  }
+  wchar_t text[96];
+  if (g_uhcOverhealTextColor != 0) {
+    swprintf_s(text, L"<color=%.2f, %.2f, %.2f>%d/%d</color>", ((g_segmentColour >> 16) & 0xFF) / 255.0,
+               ((g_segmentColour >> 8) & 0xFF) / 255.0, (g_segmentColour & 0xFF) / 255.0, hp - reference,
+               maxHp - reference);
+  } else {
+    swprintf_s(text, L"%d/%d", hp - reference, maxHp - reference);
+  }
+  wchar_t label[96];
+  if (g_statLabelId >= 0) {
+    BString name;
+    kBStringFromId(&name, g_statLabelId);
+    swprintf_s(label, L"%ls:", name.text == nullptr ? L"" : name.text);
+    kBStringFree(&name);
+  } else {
+    swprintf_s(label, L"%ls:", g_statLabel.c_str());
+  }
+  return uhc::SetUnitPanelRow(panel, label, text);
+}
 }
 
 namespace uhc {
@@ -619,6 +653,9 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
   }
   // mov edi,2 / mov [esp+2Ch],edi: the row counter after the HP row.
   if (g_statRow && !WriteJmp(0x004D76DB, reinterpret_cast<const void*>(&UhcOverhealStatRowHook), 9)) {
+    return Outcome::kFailed;
+  }
+  if (g_statRow && !AddUnitPanelRow(&UhcOverhealUnitPanel)) {
     return Outcome::kFailed;
   }
 

@@ -13,6 +13,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`pop_testdata.py`](#pop_testdatapy) | Writes the `decimalPopulation` test data into a test copy of the game. |
 | [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
 | `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` from git; run it before the commit of a new key or test video. | <!-- private -->
+| `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
@@ -233,6 +234,7 @@ live text on every frame:
 - `--master <out.mkv>`: also writes a lossless copy, the source for GIFs. Unchanged frames stay
   identical in it, so a still camera costs little; an MP4 as source smears colour and text, and
   its noise makes the GIF grow.
+- `--log-top`: draws the `--log` lines above the game's bottom panel, for a feature that shows in it.
 - `--background`: leaves the focus alone. For a copy with `multipleInstances background`: it needs
   no window in front, so a test can run while somebody uses the PC.
 - `--hover <x>,<y>`: rests the cursor on a client point (a command panel button), so the button's

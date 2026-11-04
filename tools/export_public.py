@@ -18,7 +18,7 @@ What the export does:
     .md link points to a file or a heading anchor that is not exported.
 
 --check builds the export in memory and only reports. --out empties the target folder (all but
-its .git) and writes the export there; commit and push it by hand. The script itself, CLAUDE.md
+its .git and KEEP_IN_CLONE) and writes the export there; commit and push it by hand. The script itself, CLAUDE.md
 and the private docs are never exported: this file's BANNED list alone would name what the
 public repo leaves out.
 """
@@ -37,7 +37,6 @@ INCLUDE = [
     "README.md",
     "src",
     "examples",
-    "docs/modding-guide.md",
     "docs/how-it-works.md",
     "tools/bar.py",
     "tools/gen_sites.py",
@@ -45,8 +44,12 @@ INCLUDE = [
     "tools/xmbedit.py",
 ]
 
+# Written for one mod since 2026-11-04, so no longer exported. The public clone keeps what it has at
+# these paths: --out leaves them alone and links to them count as exported.
+KEEP_IN_CLONE = ("docs/modding-guide.md", "docs/media")
+
 BANNED = [
-    r"\bWoL\b", r"Wars of Liberty", r"\bMandos\b", r"\bMaston\b",
+    r"\bWoL\b", r"(?-i:WoL)", r"Wars of Liberty", r"\bMandos\b", r"\bMaston\b",
     r"\bDE\b", r"AoE3DE", r"Definitive Edition", r"World'?s Edge",
     r"Pereira", r"Un-?har(?:d)?coded", r"\bupstream\b", r"UHC 1\.\d",
     r"Knights and Barbarians", r"Cosas_magicas",
@@ -167,6 +170,8 @@ def build():
                 file_part, _, anchor = target.partition("#")
                 dest = rel if not file_part else (
                     (ROOT / rel).parent.joinpath(file_part).resolve().relative_to(ROOT).as_posix())
+                if dest in KEEP_IN_CLONE:
+                    continue
                 if dest not in out and not any(k.startswith(dest + "/") for k in out):
                     problems.append(f"{rel}:{n}: link to a file that is not exported: {target}")
                 elif anchor and dest in anchors and anchor not in anchors[dest]:
@@ -179,6 +184,20 @@ def build():
                 if m:
                     problems.append(f"{rel}:{n}: banned '{m.group(0)}': {line.strip()[:120]}")
     return out, problems
+
+
+def empty(folder, target):
+    """Deletes what is in folder, but for .git, KEEP_IN_CLONE and the folders that lead to them."""
+    for child in folder.iterdir():
+        rel = child.relative_to(target).as_posix()
+        if rel == ".git" or rel in KEEP_IN_CLONE:
+            continue
+        if child.is_dir() and any(k.startswith(rel + "/") for k in KEEP_IN_CLONE):
+            empty(child, target)
+        elif child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
 
 
 def main():
@@ -201,9 +220,7 @@ def main():
         sys.exit("export_public: --out must be outside this repository")
     if not (target / ".git").is_dir():
         sys.exit(f"export_public: {target} is not a git clone")
-    for child in target.iterdir():
-        if child.name != ".git":
-            shutil.rmtree(child) if child.is_dir() else child.unlink()
+    empty(target, target)
     for rel, content in out.items():
         dest = target / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
