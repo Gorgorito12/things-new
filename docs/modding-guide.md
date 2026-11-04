@@ -29,6 +29,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 06:59 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | confirmed |
 | Tuesday 2026-11-03 16:37 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | confirmed (single player, Healing Dance) |
 | Tuesday 2026-11-03 16:16 | [`noCorpseDopples`](#nocorpsedopples) | Filmed in WoL, with a control. A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. | confirmed (single player) |
 | Tuesday 2026-11-03 15:59 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
@@ -49,7 +50,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Tuesday 2026-11-03 13:07 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | confirmed (single player) |
 | Tuesday 2026-11-03 13:07 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | confirmed (single player) |
 | Tuesday 2026-11-03 13:00 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed (automatic healing) |
-| Tuesday 2026-11-03 12:56 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | confirmed |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | applied, effects not seen yet |
 | Tuesday 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Added. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | confirmed |
 | Tuesday 2026-11-03 10:43 | [`compatMode`](#compatmode) | Added. Offers every 32-bit display mode as a 16-bit mode too. | confirmed |
@@ -1864,7 +1864,7 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 
 #### smartHealTargets
 
-**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Tuesday 2026-11-03 12:56 <!-- private -->
+**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-04 06:59 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 13:19 -->
 
 <!-- private:begin -->

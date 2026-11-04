@@ -19,7 +19,8 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              (--los adds the unit's own line of sight and its proto's)
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
   record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
-         [--select ID|Proto,...] [--crop F[@cx,cy]] [--hover X,Y] [--zoom N] [--perf] [--perf-csv <out.csv>]
+         [--select ID|Proto,...] [--close Z] [--crop WxH[@cx,cy]] [--hover X,Y] [--master <out.mkv>]
+         [--background] [--perf] [--perf-csv <out.csv>]
                              films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
                              1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
                              C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
@@ -28,10 +29,13 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              still, --follow moves it only when that unit walks 10 m off,
                              --select keeps those units (yours) selected for the whole video, so
                              their HP bars show on screen (re-selected when new ones appear),
-                             --crop F films only that fraction of the window (around cx,cy,
-                             default 0.5,0.43: the play area's middle), enlarged: a close-up
-                             with the camera untouched, --zoom N zooms in N wheel steps (the
-                             game eases it back in ~20 s),
+                             --close Z brings the camera that close by console (normalZoom; the
+                             game's default is 65, 22 is a close-up), --crop WxH films that many
+                             window pixels around cx,cy (default the middle of the action) one
+                             to one, never enlarged, --hover X,Y rests the cursor on a button
+                             so its tooltip shows (the only option that moves the cursor),
+                             --master also writes a lossless file, the source for GIFs,
+                             --background leaves the focus alone,
                              --perf the performance numbers once a second (fps, longest frame,
                              frames over 50 ms, simulation speed, main-thread CPU, memory; the
                              frame numbers need perfStats in the cfg), --perf-csv also saves them
@@ -349,6 +353,7 @@ def game_time(proc):
 
 
 FOLLOW_SLACK = 10.0  # metres a followed unit may walk before the camera moves
+CROP_CENTRE = (0.49, 0.34)  # where uiLookAtUnit puts a unit at close range, in window fractions
 
 
 def exec_file(bed):
@@ -926,7 +931,7 @@ class Overlay:
         data = self.log_path.read_bytes() if self.log_path.exists() else b""
         start = data.rfind(b"loadScenario(")
         self.log_pos = data.rfind(b"\n", 0, start) + 1 if start >= 0 else len(data)
-        self.log_lines, self.units, self.lines = [], [], []
+        self.log_lines, self.units, self.lines, self.bottom = [], [], [], []
         self.next_scan = self.next_text = 0.0
 
     def text(self, now):
@@ -985,7 +990,9 @@ class Overlay:
                          f"HP {proc.f32(unit + 0x64):.1f} / {proc.f32(proto + 0x98):.0f}{los}")
         if not self.ids and not self.protos:
             lines = lines[:1]  # --perf or --log alone: no unit lines
-        self.lines = lines + self.log_lines[-4:]
+        self.lines = lines
+        # Without the feature's name: the frame only has room for what it says.
+        self.bottom = [re.sub(r"^\w+: ", "", line) for line in self.log_lines[-4:]]
         self.next_text = now + 0.25
         return perf_lines + self.lines
 
@@ -1003,28 +1010,32 @@ class Overlay:
                            if self.pattern.search(line)]
 
 
-def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None):
+def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None, master=None, background=False):
     """Films the game window to an H.264 MP4 in real time, with PrintWindow like `shot` (it works
     while the window is covered). A frame that takes longer than 1/fps to capture is repeated, so
     the video keeps the game's real speed. With an Overlay, its text is drawn on every frame.
-    crop = (fraction, cx, cy): film only that fraction of the window, centred on (cx, cy) (window
-    fractions), enlarged to the video size: a close-up without zooming the game's camera."""
+    crop = (width, height, cx, cy): film that many window pixels around (cx, cy) (window fractions),
+    one to one: never enlarged, so the picture stays as sharp as the game draws it.
+    master: also write this lossless file, the source for GIFs (an MP4 smears colour and detail).
+    background: leave the focus alone (a copy with multipleInstances background)."""
     ffmpeg = ffmpeg_path()
     # The game stops drawing while another window has the foreground (PrintWindow then returns
     # black frames), so bring it to the front first and give it a moment to draw again.
-    hwnd = focus()
+    hwnd = window() if background else focus()
     time.sleep(1.0)
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
     w, h = rc.right - rc.left, rc.bottom - rc.top
     sx, sy, sw, sh = 0, 0, w, h
     if crop is not None:
-        frac, cx, cy = crop
-        sw, sh = max(64, int(w * frac)), max(64, int(h * frac))
+        cw, ch, cx, cy = crop
+        sw, sh = min(cw, w) // 2 * 2, min(ch, h) // 2 * 2
         sx = min(max(0, int(cx * w - sw / 2)), w - sw)
         sy = min(max(0, int(cy * h - sh / 2)), h - sh)
-    ow = min(width, w) // 2 * 2
-    oh = round(h * ow / w / 2) * 2
+        ow, oh = sw, sh
+    else:
+        ow = min(width, w) // 2 * 2
+        oh = round(h * ow / w / 2) * 2
     screen = user32.GetDC(None)
     full_dc, small_dc = gdi32.CreateCompatibleDC(screen), gdi32.CreateCompatibleDC(screen)
     full, small = gdi32.CreateCompatibleBitmap(screen, w, h), gdi32.CreateCompatibleBitmap(screen, ow, oh)
@@ -1034,7 +1045,8 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None):
     gdi32.SetBrushOrgEx(small_dc, 0, 0, None)
     bmi = ctypes.create_string_buffer(struct.pack("<IiiHHIIiiII", 40, ow, -oh, 1, 32, 0, 0, 0, 0, 0, 0) + b"\0" * 16)
     buf = ctypes.create_string_buffer(ow * oh * 4)
-    line_height = max(14, oh // 48)
+    line_height = max(15, oh // 48)
+    text_top = 6 if crop is not None else oh // 18
     font = gdi32.CreateFontW(-line_height, 0, 0, 0, 700, 0, 0, 0, 0, 0, 0, 5, 0, "Consolas")  # bold, ClearType
     gdi32.SelectObject(small_dc, font)
     gdi32.SetBkMode(small_dc, 2)                 # OPAQUE: each line on a black band
@@ -1046,36 +1058,27 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None):
         gdi32.StretchBlt(small_dc, 0, 0, ow, oh, full_dc, sx, sy, sw, sh, 0x00CC0020)  # SRCCOPY
         if overlay is not None:
             for i, line in enumerate(overlay.text(time.perf_counter())):
-                gdi32.TextOutW(small_dc, 8, oh // 18 + i * (line_height + 2), line, len(line))
+                gdi32.TextOutW(small_dc, 8, text_top + i * (line_height + 2), line, len(line))
+            for i, line in enumerate(reversed(overlay.bottom)):
+                gdi32.TextOutW(small_dc, 8, oh - (i + 1) * (line_height + 2) - 4, line, len(line))
         gdi32.GetDIBits(small_dc, small, 0, oh, buf, bmi, 0)
         return buf.raw
 
-    encoder = subprocess.Popen(
-        [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra",
-         "-s", f"{ow}x{oh}", "-framerate", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "veryfast",
-         "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)],
-        stdin=subprocess.PIPE)
+    command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra",
+               "-s", f"{ow}x{oh}", "-framerate", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "medium",
+               "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)]
+    if master:
+        command += ["-c:v", "libx264rgb", "-preset", "ultrafast", "-qp", "0", str(master)]
+    encoder = subprocess.Popen(command, stdin=subprocess.PIPE)
     total, written, captured = int(seconds * fps), 0, 0
     proc = process()
     game_start = game_time(proc) if proc else None
-    # Guard the camera: a cursor moved by someone else to a screen edge scrolls it. Put the cursor
-    # back on its parked spot, and centre again on the framed unit, whenever it moves.
-    parked, cursor, moved = park_cursor(), POINT(), 0
     t0 = time.perf_counter()
     try:
         while written < total:
             delay = t0 + written / fps - time.perf_counter()
             if delay > 0:
                 time.sleep(delay)
-            user32.GetCursorPos(ctypes.byref(cursor))
-            if (cursor.x, cursor.y) != parked:
-                user32.SetCursorPos(*parked)
-                moved += 1
-                look = overlay.look if overlay is not None else None
-                if look is not None and overlay.bed is not None and not exec_file(overlay.bed).exists():
-                    tmp = exec_file(overlay.bed).with_suffix(".tmp")
-                    tmp.write_text(f"uiLookAtUnit({look})\r\n", encoding="ascii")
-                    os.replace(tmp, exec_file(overlay.bed))
             frame = grab()
             captured += 1
             due = min(total, max(written + 1, int((time.perf_counter() - t0) * fps) + 1))
@@ -1095,8 +1098,7 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None):
     game = f", game time {game_start} -> {game_end} ms" if game_start is not None and game_end is not None else ""
     size = os.path.getsize(path) / 1e6 if os.path.exists(path) else 0
     print(f"testbed: {path}: {seconds:g} s at {fps} fps, {ow}x{oh}, {captured} frames captured "
-          f"({written - captured} repeated){game}, {size:.1f} MB, ffmpeg exit {encoder.returncode}"
-          + (f"; the cursor was moved {moved} time(s) and put back" if moved else ""))
+          f"({written - captured} repeated){game}, {size:.1f} MB, ffmpeg exit {encoder.returncode}")
 
 
 WM_KEYDOWN, WM_KEYUP, WM_CHAR = 0x100, 0x101, 0x102
@@ -1212,6 +1214,8 @@ def focus():
         # click on the title bar activates the window without sending a click into the game.
         rc = RECT()
         user32.GetWindowRect(hwnd, ctypes.byref(rc))
+        before = POINT()
+        user32.GetCursorPos(ctypes.byref(before))
         user32.SetCursorPos((rc.left + rc.right) // 2, rc.top + 10)
         time.sleep(0.1)
         down, up = INPUT(type=0), INPUT(type=0)
@@ -1221,8 +1225,7 @@ def focus():
         time.sleep(0.05)
         send(up)
         time.sleep(0.3)
-        # Left on the title bar, the cursor sits at the screen's top edge and scrolls the camera.
-        park_cursor()
+        user32.SetCursorPos(before.x, before.y)  # it is the user's cursor: give it back
     return hwnd
 
 
@@ -1265,20 +1268,12 @@ def real_drag(x1, y1, x2, y2, steps=12):
     time.sleep(0.2)
 
 
-PARK_AT = None  # record --hover: client point the cursor is parked on instead
-
-
-def park_cursor():
-    """Puts the cursor in the top right of the play area: away from the units (no tooltip) and from
-    the screen edges (a cursor at an edge scrolls the camera). With record --hover, on that client
-    point instead (a button whose tooltip the video should show)."""
+def hover(cx, cy):
+    """Rests the cursor on a client point (record --hover: a button whose tooltip the video shows)."""
     hwnd = window()
-    rc = RECT()
-    user32.GetClientRect(hwnd, ctypes.byref(rc))
-    pt = POINT(*PARK_AT) if PARK_AT else POINT(rc.right * 7 // 8, rc.bottom // 6)
+    pt = POINT(cx, cy)
     user32.ClientToScreen(hwnd, ctypes.byref(pt))
     user32.SetCursorPos(pt.x, pt.y)
-    return pt.x, pt.y
 
 
 def real_wheel(cx, cy, steps):
@@ -1467,20 +1462,29 @@ def main(argv):
         follow = int(args[args.index("--follow") + 1]) if "--follow" in args else None
         frame = int(args[args.index("--frame") + 1]) if "--frame" in args else None
         select = args[args.index("--select") + 1].split(",") if "--select" in args else []
-        zoom = int(args[args.index("--zoom") + 1]) if "--zoom" in args else 0
-        if "--hover" in args:  # --hover x,y: keep the cursor on that client point (a tooltip)
-            global PARK_AT
-            PARK_AT = tuple(int(v) for v in args[args.index("--hover") + 1].split(","))
+        camera = float(args[args.index("--close") + 1]) if "--close" in args else None
+        master = args[args.index("--master") + 1] if "--master" in args else None
         crop = None
-        if "--crop" in args:  # --crop F[@cx,cy]: film that fraction of the window around (cx, cy)
+        if "--crop" in args:  # --crop WxH[@cx,cy]: film those window pixels around (cx, cy), 1:1
             spec = args[args.index("--crop") + 1]
-            frac, _, at = spec.partition("@")
-            cx, cy = (float(v) for v in at.split(",")) if at else (0.5, 0.43)
-            crop = (float(frac), cx, cy)
+            size, _, at = spec.partition("@")
+            cw, ch = (int(v) for v in size.split("x"))
+            cx, cy = (float(v) for v in at.split(",")) if at else CROP_CENTRE
+            crop = (cw, ch, cx, cy)
         perf_csv = args[args.index("--perf-csv") + 1] if "--perf-csv" in args else None
-        flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--select", "--zoom", "--crop", "--hover", "--perf-csv")
+        flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--select", "--close", "--crop", "--hover",
+                             "--master", "--perf-csv")
                  if f in args for i in (args.index(f), args.index(f) + 1)}
         look = frame if frame is not None else follow
+        # With the camera locked the cursor can do what it likes: an edge no longer scrolls it, and
+        # uiLookAtUnit still moves it. So filming never needs the mouse, whoever is using it.
+        run_commands(bed, ['configSetInt("cameraMovementLock", 1)', 'config("cameraMovementLock")'])
+        if camera is not None:
+            # The camera eases to normalZoom on its own: this zooms in with no mouse wheel.
+            run_commands(bed, ['configSetFloat("zoomSpeed", 20)', f'configSetFloat("minZoom", {min(camera, 27):g})',
+                               f'configSetFloat("normalZoom", {camera:g})']
+                         + ([f"uiLookAtUnit({look})"] if look is not None else []))
+            time.sleep(3.0)
         ids = []
         if select:
             # Select them before filming (the Overlay keeps the selection up to date).
@@ -1491,22 +1495,10 @@ def main(argv):
         elif look is not None:
             # Centre the camera on that unit once, before filming, and leave it still.
             run_commands(bed, [f"uiLookAtUnit({look})"])
-        if zoom:
-            # Centre first, then zoom with the cursor on the centred unit (the middle of the window):
-            # the wheel zooms towards the cursor, so the units stay in the middle of the picture.
-            rc = RECT()
-            user32.GetClientRect(window(), ctypes.byref(rc))
-            real_wheel(rc.right // 2, rc.bottom // 2, zoom)
-            park_cursor()
-            # The game smooths the zoom: the camera keeps moving for a few seconds. Let it settle,
-            # then centre again so the picture is still from the first frame.
-            time.sleep(4.0)
-            if look is not None:
-                run_commands(bed, [f"uiLookAtUnit({look})"])
-            time.sleep(0.5)
-        # A cursor left at a screen edge scrolls the camera while the game has the focus: park it.
-        park_cursor()
-        flags |= {i for i, a in enumerate(args) if a == "--perf"}
+        time.sleep(1.0)
+        if "--hover" in args:  # --hover x,y: the only filming option that moves the cursor
+            hover(*(int(v) for v in args[args.index("--hover") + 1].split(",")))
+        flags |= {i for i, a in enumerate(args) if a in ("--perf", "--background")}
         pos = [a for i, a in enumerate(args) if i not in flags]
         perf = None
         if "--perf" in args or perf_csv:
@@ -1517,7 +1509,7 @@ def main(argv):
         if overlay is not None:
             overlay.selected = set(ids)
         record(pos[0], float(pos[1]) if len(pos) > 1 else 30.0, int(pos[2]) if len(pos) > 2 else 10,
-               int(pos[3]) if len(pos) > 3 else 1280, overlay, crop)
+               int(pos[3]) if len(pos) > 3 else 1280, overlay, crop, master, "--background" in args)
     elif cmd == "click":
         posted_click(int(args[0]), int(args[1]))
     elif cmd == "rclick":

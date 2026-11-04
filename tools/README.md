@@ -223,19 +223,22 @@ live text on every frame:
   so the game draws their HP bars and the selection panel; they are selected again when a new
   matching unit appears (a dead one leaves the selection by itself). The game selects one unit
   per `uiLookAtAndSelectUnit`, so the selection is collected in number group 9.
-- `--crop <F>[@cx,cy]`: films only that fraction of the window (0.4 = 40 % of its width and
-  height) around `cx,cy` (window fractions, default `0.5,0.43`, the middle of the play area),
-  enlarged to the video size: a close-up of the units with the camera untouched. The overlay
-  text is drawn after the crop, so it stays the same size.
-- The cursor: a cursor at a screen edge scrolls the camera while the game has the focus (the
-  title-bar click of `focus()` used to leave it there). `record` parks it in the top right of the
-  play area before filming, puts it back there every frame if anything moves it, and then centres
-  the camera again on the `--frame` / `--follow` unit; the last line says how often that happened.
-- `--hover <x>,<y>`: parks the cursor on that client point instead (a command panel button), so
-  the button's rollover stays on screen for the whole video; the cursor guard keeps it there.
-- `--zoom <N>`: N mouse-wheel steps in before filming, then the cursor is parked in the top right
-  of the play area. The game eases the camera back to its default height in about 20 s (seen in
-  WoL, 2026-11-03), so a zoomed video drifts: prefer the default height for a still picture.
+- `--close <Z>`: brings the camera to height Z by console (`normalZoom`; the game's default is 65,
+  and 27 frames a small group). The camera eases there only while the window is active, so for a
+  copy in the background set it before the game loads:
+  `exec 'configSetFloat("minZoom", 15)' 'configSetFloat("normalZoom", 27)'`, then `scenario`.
+- `--crop <W>x<H>[@cx,cy]`: films that many window pixels around `cx,cy` (window fractions, default
+  `0.49,0.34`) one to one, never enlarged: the only way to keep the game's own sharpness. Give a
+  panel its own centre (`--crop 960x640@0.72,0.8`). The overlay is drawn after the crop.
+- `--master <out.mkv>`: also writes a lossless copy, the source for GIFs. Unchanged frames stay
+  identical in it, so a still camera costs little; an MP4 as source smears colour and text, and
+  its noise makes the GIF grow.
+- `--background`: leaves the focus alone. For a copy with `multipleInstances background`: it needs
+  no window in front, so a test can run while somebody uses the PC.
+- `--hover <x>,<y>`: rests the cursor on a client point (a command panel button), so the button's
+  rollover stays on screen. It is the only `record` option that moves the cursor.
+- The cursor: `record` sets `cameraMovementLock`, so a cursor at a screen edge no longer scrolls
+  the camera (`uiLookAtUnit` still moves it). It never moves the mouse, except for `--hover`.
 - `--perf`: the performance numbers, once a second, at the top: fps, the longest frame of the
   second, frames over 50 ms since the start, simulation speed (game seconds per real second), the
   main thread's CPU, the game's own update and render times and the working set. They are read
