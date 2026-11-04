@@ -423,7 +423,7 @@ Contract: [overhealHitpointBars](../porting-to-another-dll.md#overhealhitpointba
 
 Besides the core helpers, it needs: [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `DynamicVbFull` `0x40A689` (25 B), `DynamicVbLock` `0x40A6A2` (69 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `ProgressGadget` `0x44B8B8` (35 B), `IsA` `0x44D7FA` (105 B), `IsATrue` `0x44F139` (5 B), `HpBarRenderStart` `0x45C4AF` (63 B), `HpBarRenderLoop` `0x45C60B` (1415 B), `HealthRatio` `0x45F295` (72 B), `OverhealBarRatio` `0x45FAA7` (17 B), `OverhealSegmentQueue` `0x45FB3F` (50 B), `HpBarQueue` `0x45FB71` (111 B), `MaxHitpointsGetter` `0x480408` (38 B), `OverhealGroupRatio` `0x4C5012` (15 B), `GadgetRef` `0x4C519C` (27 B), `OverhealPortraitTail` `0x4C82E6` (258 B), `OverhealStatMax` `0x4D7560` (81 B), `OverhealStatBase` `0x4D75DA` (69 B), `OverhealTextStat` `0x4D7647` (21 B), `OverhealStatRow` `0x4D76DB` (9 B), `BStringFromId` `0x58EA52` (25 B), `ProgressFill` `0x590772` (73 B), `InitialHitpointsTag` `0x5F5CE3` (6 B), `MaxHitpointsTag` `0x5F5D39` (6 B), `OverhealPanelMax` `0x698B18` (38 B), `OverhealPortraitColours` `0x69A614` (22 B), `OverhealTextStatSplit` `0x69A9B0` (27 B), `GroupHealthRow` `0x69A9D3` (316 B), `OverhealInfoProto` `0x9AF33B` (25 B), `OverhealInfoBase` `0x9AFA07` (45 B), `OverhealInfoMax` `0x9AFA34` (35 B), `HealthBarGadgets` `0x9BAEE5` (135 B), `GadgetByName` `0xAB7C2F` (38 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `DynamicVbFull` `0x40A689` (25 B), `DynamicVbLock` `0x40A6A2` (69 B), `ProgressGadget` `0x44B8B8` (35 B), `IsA` `0x44D7FA` (105 B), `IsATrue` `0x44F139` (5 B), `HpBarRenderStart` `0x45C4AF` (63 B), `HpBarRenderLoop` `0x45C60B` (1415 B), `HealthRatio` `0x45F295` (72 B), `OverhealBarRatio` `0x45FAA7` (17 B), `OverhealSegmentQueue` `0x45FB3F` (50 B), `HpBarQueue` `0x45FB71` (111 B), `MaxHitpointsGetter` `0x480408` (38 B), `OverhealGroupRatio` `0x4C5012` (15 B), `GadgetRef` `0x4C519C` (27 B), `OverhealPortraitTail` `0x4C82E6` (258 B), `OverhealStatMax` `0x4D7560` (81 B), `OverhealStatBase` `0x4D75DA` (69 B), `OverhealTextStat` `0x4D7647` (21 B), `OverhealStatRow` `0x4D76DB` (9 B), `BStringFromId` `0x58EA52` (25 B), `ProgressFill` `0x590772` (73 B), `InitialHitpointsTag` `0x5F5CE3` (6 B), `MaxHitpointsTag` `0x5F5D39` (6 B), `OverhealPanelMax` `0x698B18` (38 B), `OverhealPortraitColours` `0x69A614` (22 B), `OverhealTextStatSplit` `0x69A9B0` (27 B), `GroupHealthRow` `0x69A9D3` (316 B), `OverhealInfoProto` `0x9AF33B` (25 B), `OverhealInfoBase` `0x9AFA07` (45 B), `OverhealInfoMax` `0x9AFA34` (35 B), `HealthBarGadgets` `0x9BAEE5` (135 B).
 
 ### src/features/overheal.cpp
 
@@ -548,19 +548,15 @@ struct BString {
 };
 
 // UI gadgets (docs/engine-symbols.md, "Hit points").
-constexpr std::uint32_t kUiHolder = 0x00C66244;      // +44h the gadget manager
-constexpr std::uint32_t kNoGadget = 0x00C672C0;      // the handle of no gadget; valid ones are above it
 constexpr std::uint32_t kLabelStyle = 0x00D6F5D0;    // the Group Health row's label style (vtable +84h)
 constexpr std::uint32_t kValueStyle = 0x00C6657C;    // its value style
 constexpr std::int32_t kStatPanelRows = 9;           // StackLabel/StackValue 0..8 (0x9BBAD1)
-constexpr wchar_t kPortraitGadget[] = L"unitselectionpanel-unitHealthBarOverheal";
+constexpr wchar_t kBarBackground[] = L"ui\\ingame\\ui_health_bar";  // the bars' background in the UI data
 
-using GadgetByNameFn = std::int32_t*(__thiscall*)(char* panel, std::int32_t* handle, const BString* name,
-                                                  std::int32_t flag);
 using ProgressGadgetFn = char*(__cdecl*)(std::int32_t handle);
 using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
 using ProgressFillFn = void(__thiscall*)(char* bar, float fill);
-using GadgetVisibleFn = void(__thiscall*)(char* manager, std::int32_t handle);  // gadgetReal / gadgetUnreal
+using DrawableTextureFn = void(__thiscall*)(void* drawable, const BString* texture, std::int32_t unused);
 using GadgetRefFn = std::int32_t*(__thiscall*)(std::int32_t* ref, std::int32_t handle);  // ref: handle, gadget
 using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
 using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t stringId);
@@ -570,12 +566,9 @@ using MaxHitpointsFn = float(__thiscall*)(const char* unit);
 using GadgetStyleFn = void(__thiscall*)(char* gadget, const void* style);
 using GadgetTextFn = void(__thiscall*)(char* gadget, const BString* text);
 using GadgetUpdateFn = void(__thiscall*)(char* gadget);
-const auto kGadgetByName = reinterpret_cast<GadgetByNameFn>(0x00AB7C2F);
 const auto kProgressGadget = reinterpret_cast<ProgressGadgetFn>(0x0044B8B8);
 const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
 const auto kProgressFill = reinterpret_cast<ProgressFillFn>(0x00590772);
-const auto kGadgetShow = reinterpret_cast<GadgetVisibleFn>(0x00447F7B);
-const auto kGadgetHide = reinterpret_cast<GadgetVisibleFn>(0x00448F13);
 const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
 const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
 const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
@@ -607,9 +600,9 @@ const char* UnitById(const char* world, std::int32_t id) {
 // green bar has another handle).
 const char* g_portraitPanel = nullptr;
 std::int32_t g_portraitGreen = 0;
-std::int32_t g_portraitHandle = 0;
-bool g_portraitLogged = false;
+bool g_portraitBackground = false;  // the green bar has the overheal texture now
 bool g_portraitFillLogged = false;
+std::wstring g_portraitTexture = L"ui\\ingame\\ingame_ui_health_yellow";
 
 // The stat row: its label (a literal, or a string table ID when g_statLabelId >= 0).
 bool g_statRow = false;
@@ -617,7 +610,6 @@ std::wstring g_statLabel = L"Overheal";
 std::int32_t g_statLabelId = -1;
 bool g_statLogged = false;
 
-bool ValidHandle(std::int32_t handle) { return handle > *reinterpret_cast<const std::int32_t*>(kNoGadget); }
 
 // Sets a stat row gadget's text as the Group Health row does: the style, the text, the update
 // (vtable +84h, +80h, +54h), then an empty help text ([gadget+68h]).
@@ -798,14 +790,11 @@ void __stdcall UhcOverhealSegmentVertices(const char* world, std::int32_t offset
   }
 }
 
-// From the portrait hook (0x4C83DF), after the selection panel filled and showed the group's colour
-// bar (gadgetReal, 0x447F7B): the UI data's overheal gadget, if it has one, is shown only while the
-// group has an overheal and its stock bar is full. Then it is hidden and shown again (gadgetUnreal
-// 0x448F13, gadgetReal), which puts it above the colour bar (showing a gadget that is already
-// visible does not move it), and filled with 1 - the group's average overheal share ((HP - 100 %) /
-// 100 %, at most 1; 0 for a unit at or below its 100 % or unmarked): the mask (the HP colour) from
-// the left, the background (the overheal colour) on the right. Otherwise it is hidden: stock never
-// hides a gadget it does not know. The group: unit IDs [group+10h], count [group+14h]
+// From the portrait hook (0x4C83DF), after the selection panel filled the group's colour bar. While
+// the group has an overheal the green bar, the game's own gadget, shows it: the mask (green) stops at
+// 1 - the group's average overheal share ((HP - 100 %) / 100 %, at most 1; 0 for a unit at or below
+// its 100 % or unmarked), and the rest shows the bar's background, whose texture is the overheal one
+// while it lasts (vtable +7Ch of the bar's drawable [bar+140h], as the game's setter 0x5CAF02 calls it). The group: unit IDs [group+10h], count [group+14h]
 // (FUN_004C4FB5).
 void __stdcall UhcOverhealPortrait(char* panel, const char* group) {
   if (panel == nullptr || group == nullptr) {
@@ -815,72 +804,66 @@ void __stdcall UhcOverhealPortrait(char* panel, const char* group) {
   if (panel != g_portraitPanel || green != g_portraitGreen) {
     g_portraitPanel = panel;
     g_portraitGreen = green;
-    BString name;
-    kBStringFromWide(&name, kPortraitGadget);
-    std::int32_t handle = *reinterpret_cast<const std::int32_t*>(kNoGadget);
-    kGadgetByName(panel, &handle, &name, 1);
-    kBStringFree(&name);
-    g_portraitHandle = handle;
-    if (!g_portraitLogged) {
-      g_portraitLogged = true;
-      uhc::Log(ValidHandle(handle)
-                   ? L"overhealHitpointBars: the UI has %ls: the portrait bar shows the overheal (logged once)"
-                   : L"overhealHitpointBars: the UI has no %ls: the portrait bar stays stock (logged once)",
-               kPortraitGadget);
-    }
+    g_portraitBackground = false;  // a new gadget has the UI data's background
   }
-  if (!ValidHandle(g_portraitHandle)) {
-    return;
-  }
-  const char* holder = *reinterpret_cast<const char* const*>(kUiHolder);
-  char* manager = holder == nullptr ? nullptr : Field<char*>(holder, 0x44);
-  if (manager == nullptr) {
-    return;
-  }
-  kGadgetHide(manager, g_portraitHandle);
+  float share = 0.0f;
+  std::int32_t units = 0;
   // The stock bar is full only when every unit of the group is at or above its 100 % (the average
   // of the ratios, each clamped to 1).
-  if (!(Field<float>(group, 0x1C) >= 0.999f)) {
-    return;
-  }
-  const char* world = GameWorld();
-  const auto* ids = Field<const std::int32_t*>(group, 0x10);
-  const std::int32_t count = Field<std::int32_t>(group, 0x14);
-  float sum = 0.0f;
-  std::int32_t units = 0;
-  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
-    const char* unit = UnitById(world, ids[i]);
-    if (unit == nullptr) {
-      continue;
+  if (Field<float>(group, 0x1C) >= 0.999f) {
+    const char* world = GameWorld();
+    const auto* ids = Field<const std::int32_t*>(group, 0x10);
+    const std::int32_t count = Field<std::int32_t>(group, 0x14);
+    float sum = 0.0f;
+    for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+      const char* unit = UnitById(world, ids[i]);
+      if (unit == nullptr) {
+        continue;
+      }
+      ++units;
+      const char* proto = Field<const char*>(unit, 0x5C);
+      if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+        continue;
+      }
+      const float reference = UhcOverhealReferenceOf(unit);
+      const float hp = Field<float>(unit, 0x64);
+      if (reference > 1e-6f && hp > reference) {
+        const float part = (hp - reference) / reference;
+        sum += part < 1.0f ? part : 1.0f;
+      }
     }
-    ++units;
-    const char* proto = Field<const char*>(unit, 0x5C);
-    if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
-      continue;
-    }
-    const float reference = UhcOverhealReferenceOf(unit);
-    const float hp = Field<float>(unit, 0x64);
-    if (reference > 1e-6f && hp > reference) {
-      const float share = (hp - reference) / reference;
-      sum += share < 1.0f ? share : 1.0f;
-    }
+    share = units > 0 ? sum / static_cast<float>(units) : 0.0f;
   }
-  const float share = units > 0 ? sum / static_cast<float>(units) : 0.0f;
-  if (!(share > 0.0f)) {
-    return;
+  const bool overheal = share > 0.0f;
+  if (!overheal && !g_portraitBackground) {
+    return;  // the bar is as the game left it
   }
-  char* bar = kProgressGadget(g_portraitHandle);
+  char* bar = kProgressGadget(green);
   if (bar == nullptr) {
     return;
   }
-  kGadgetRelease(g_portraitHandle);
+  kGadgetRelease(green);
+  void* background = Field<void*>(bar, 0x140);  // the bar's drawable: it keeps its size, only the texture changes
+  if (background == nullptr) {
+    return;
+  }
+  if (overheal != g_portraitBackground) {
+    BString texture;
+    kBStringFromWide(&texture, overheal ? g_portraitTexture.c_str() : kBarBackground);
+    const auto setTexture = reinterpret_cast<DrawableTextureFn>((*reinterpret_cast<void***>(background))[0x7C / 4]);
+    setTexture(background, &texture, -1);
+    kBStringFree(&texture);
+    g_portraitBackground = overheal;
+  }
+  if (!overheal) {
+    return;
+  }
   kProgressFill(bar, 1.0f - share);  // the mask (the HP part) from the left, the background shows the rest
   if (g_uhcOverhealLog != 0 && !g_portraitFillLogged) {
     g_portraitFillLogged = true;
     uhc::Log(L"overhealHitpointBars: the portrait bar shows an overheal of %.1f %% of the bar (%d units; logged once)",
              static_cast<double>(share * 100.0f), units);
   }
-  kGadgetShow(manager, g_portraitHandle);
 }
 
 // From the stat row hook (0x4D76DB, right after the HP row; row = the next free row): writes the
@@ -988,6 +971,8 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
         }
         g_segmentColour = 0xFF000000u | static_cast<std::uint32_t>(rgb);
       }
+    } else if (_strnicmp(arg.c_str(), "bar=", 4) == 0 && arg.size() > 4) {
+      g_portraitTexture.assign(arg.begin() + 4, arg.end());
     } else if (_strnicmp(arg.c_str(), "stat", 4) == 0 && (arg.size() == 4 || arg[4] == '=')) {
       g_statRow = true;
       if (arg.size() > 4 && !ParseLabel(arg.substr(5), &g_statLabel, &g_statLabelId)) {
@@ -1022,8 +1007,8 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
                              &sites::kHpBarRenderLoop, &sites::kDynamicVbLock, &sites::kDynamicVbFull,
                              &sites::kOverhealTextStat, &sites::kOverhealTextStatSplit,
                              &sites::kOverhealPortraitTail, &sites::kOverhealPortraitColours,
-                             &sites::kHealthBarGadgets, &sites::kGadgetByName, &sites::kProgressGadget,
-                             &sites::kGadgetRelease, &sites::kProgressFill, &sites::kGadgetShow, &sites::kGadgetHide,
+                             &sites::kHealthBarGadgets, &sites::kProgressGadget,
+                             &sites::kGadgetRelease, &sites::kProgressFill,
                              &sites::kBStringFromWide, &sites::kBStringFree})) {
     return Outcome::kFailed;
   }

@@ -1113,15 +1113,14 @@ Code: [healing](porting-code/healing.md#overhealhitpointbars).
   - These depend on the renderer's vertex layout (verified as the whole loop, site
     `HpBarRenderLoop`) and on the marker player ID never being a real player.
   - `0x4C83DF` (9 B, `lea ecx,[esp+70h]; call 4010CAh`), the portrait bar's tail: `[esp+50h]` =
-    panel, `[esp+78h]` = group (FPU empty). Look up `unitselectionpanel-unitHealthBarOverheal`
-    with `0xAB7C2F(panel, &handle, &BString name, 1)` (a real BString from 0x401A12, freed with
-    0x4010CA) once per panel and green handle `[panel+310h]`; if the handle is above
-    `[0C672C0h]`: `0x448F13(manager, handle)` (hide); then, when `[group+1Ch]` ≥ 0.999 and the
-    group's average min((HP − reference) / reference, 1) is above 0 (IDs `[group+10h]`, count
-    `[group+14h]`): `bar = 0x44B8B8(handle)`, `0x40431B(handle)`, `0x590772(bar, 1 − share)`,
-    `0x447F7B(manager, handle)` (show: on top). Manager = `[[0C66244h]+44h]`. Redo the stolen
-    pair; → `0x4C83E8`. The gadget comes from the mod's UI data (background = overheal colour,
-    mask = HP colour; a progress bar needs a background to be drawn).
+    panel, `[esp+78h]` = group (FPU empty). Work on WoL's own green bar, `handle = [panel+310h]`; add no
+    gadget. When `[group+1Ch]` ≥ 0.999 and the group's average min((HP − reference) / reference, 1) is
+    above 0 (IDs `[group+10h]`, count `[group+14h]`): `bar = 0x44B8B8(handle)`, `0x40431B(handle)`,
+    then `background = [bar+140h]`, and the first time call its vtable +7Ch, `thiscall(background,
+    &BString texture, -1)`, with the overheal texture; `0x590772(bar, 1 − share)`. When the overheal
+    ends, the same call with `ui\ingame\ui_health_bar`. Reset that state when the panel or its handle
+    changes. Don't call the setter `0x5CAF02`: it creates a drawable with no size. Redo the stolen pair;
+    → `0x4C83E8`.
 - **`stat` in WoL's interface:** the hook below never runs there. The row goes through the
   [unit panel row](#unit-panel-row-the-minimized-interface).
 - **`stat`**: `0x4D76DB` (9 B, `mov edi,2; mov [esp+2Ch],edi`): redo both, then for a marked unit
@@ -1346,7 +1345,7 @@ Code: [population](porting-code/population.md#decimalpopulation).
   - `noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC]... [nowarn | warn=<text> |
     warn=<stringID>] [log]`, meters above 0 and at most 1000, up to 4 `near`, one line (default
     `AbstractDaimyo`, `near FirstTC`, the warning on);
-  - `overhealHitpointBars [UnitType ...] [log]` (default `AbstractOverheal`, up to 8 types, one
+  - `overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=Label]] [log]` (default `AbstractOverheal`, up to 8 types, one
     line);
   - `showGatherRate [UnitType] [log]` (no default: every unit);
   - `buildingWorkRateAuras [log]`;

@@ -314,8 +314,6 @@ First: moving while held and `refuse`.
 - **Percentage techs leave a full unit at 99 %:** scale the reference by the same factor, as the
   key already does for auras. *small*
 - **Minimized UI text stays white** (the gadget prints markup as text): colour by property. *small*
-- **Portrait bar needs a 4th UI gadget:** create it at screen load from the DLL, or keep the log
-  warning. *medium*
 - **Group Health above 100 %** as an option. *small*
 - **Techs that raise only the max** (`MaxHitpointsOnly` / `OverhealCapacity` subtype): today
   `Hitpoints` raises initial and max together, so no tech can widen the overheal room. *small with

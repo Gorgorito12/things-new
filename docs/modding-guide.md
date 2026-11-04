@@ -30,6 +30,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 15:18 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
+| Wednesday 2026-11-04 15:18 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
+| Wednesday 2026-11-04 15:18 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Wednesday 2026-11-04 13:58 | [`selectionLimit`](#selectionlimit) | Filmed in WoL, with a control. A selection holds up to N units (50 in the exe). | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`enableAllTeams`](#enableallteams) | Filmed in WoL, with a control. Teams 3 and 4 in the single-player game setup. | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`customProtoUnitCommands`](#customprotounitcommands) | Filmed in WoL, with a control. Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | The file, and the `<Command>` lines that use them. |
@@ -72,9 +75,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 11:29 | [`basePop`](#basepop-and-extrapop), [`extraPop`](#basepop-and-extrapop) | Filmed in WoL, with a control. Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | Enough population buildings: 20 houses of 10 give 200 today. |
 | Wednesday 2026-11-04 11:29 | [`civFirstTC`](#civfirsttc) | Filmed in WoL, with a control. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
 | Wednesday 2026-11-04 11:13 | [`startingTC`](#startingtc) | Filmed in WoL, with a control. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
-| Wednesday 2026-11-04 10:29 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
-| Wednesday 2026-11-04 10:29 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Wednesday 2026-11-04 10:29 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. |
 | Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos (20 protos carry `AbstractDaimyo`); with a new marker, that type on the trainers or on the blocking buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
@@ -1746,15 +1746,16 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
 
 #### overhealHitpointBars
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 10:29
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 15:18
 
 ![overheal in WoL](media/overhealHitpointBars-wol.gif)
 
 *In WoL, with `overhealHitpointBars segment stat log`, `overhealSources log` and `overhealDecay 2 3 log`
 (Iroquois; the Tomahawk selected):* for the test the Tomahawk is marked and has `MaxHitpoints` 180 over
 its 150, and the medicine man is a source healer (bed data, removed after). It is hit, the medicine man
-heals it past its 100 %, and the panel reads `180/150` and, in orange, `Overheal: 30/30`. When he is
-killed at 62 s it loses 2 HP a second back to 150, and the row goes. The Aenna next to it, not marked,
+heals it past its 100 %, and the panel reads `180/150` and, in orange, `Overheal: 30/30`, and the end of
+the bar under the portrait changes colour. When he is killed at 62 s it loses 2 HP a second back to 150,
+and the row and the colour go. The Aenna next to it, not marked,
 stops at 110.
 [Full video (MP4)](media/overhealHitpointBars-wol.mp4).
 
@@ -1765,7 +1766,7 @@ is no row, and nothing brings the Tomahawk back down after the healer dies.
 [Full video (MP4)](media/overhealHitpointBars-wol-control.mp4).
 
 ```
-overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log]   default AbstractOverheal; up to 8 types
+overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=<Label>]] [log]   default AbstractOverheal; up to 8 types
 ```
 
 - **In WoL today:** a unit is created with its proto's `<InitialHitpoints>` and can be healed up to
@@ -1796,11 +1797,10 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   - `segment=RRGGBB` sets another colour (hex, e.g. `segment=40C0FF`).
   - The floating bar is drawn in the player's colour, so the segment sits next to it.
   - No data change is needed beyond the marker for these.
-  - The bar under the selected unit's portrait shows the overheal too, when the UI data has a
-    fourth bar for it (below, "The portrait bar"): while the selected units have overheal and the green
-    bar is full, that bar is drawn over it, its mask (green) on the left and its background (the
-    overheal colour) on the right end, (HP − 100 %) / 100 % of its width (the average of the selected
-    units). Below 100 % the green / yellow / red bar shows, as without the key.
+  - The bar under the selected unit's portrait shows the overheal too, on the game's own green bar:
+    while the selected units have overheal, the green part ends earlier and the right end shows the
+    overheal, (HP − 100 %) / 100 % of its width (the average of the selected units). Below 100 % the
+    green, yellow or red bar shows as without the key.
 - **`stat`:** in WoL's minimized interface (`optionminimizedui`), which has no stat panel, the row goes in
   the unit panel, in the gadgets `unitResourceRateLabel` and `unitResourceRateValue` that
   `showGatherRate` also uses, with one unit selected and only while it has overheal: `Overheal: 30/30`,
@@ -1835,25 +1835,11 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   `181/165 (150+15)`, `Overheal 15/15` to `16/16`). In a skirmish, an Explorer marked for a test (400 /
   440 in the data) showed `180/180` and `Overheal 0/40`: a start-of-game effect lowers both values by
   the same amount, and the reference follows it.
-- **The portrait bar (UI data).** WoL's selection panel looks up its bars by name in
-  `data\uiunitselectionmin.xml`: three `progressBar` gadgets at the same place,
-  `unitselectionpanel-unitHealthBarGreen`, `…Yellow` and `…Red`, of which it shows one. With `segment`, the
-  key looks up a fourth, `unitselectionpanel-unitHealthBarOverheal`, and shows, fills and hides it
-  itself. Without it, the portrait bar stays as it is (the log says which), which is why the videos
-  above show no orange there. To have it, add this after the `…Red` gadget of that file (and of
-  `uiunitselection.xml`, for the normal interface): the same `size1024`, a higher `z`, the overheal
-  colour as its background and the HP colour as its mask. A progress bar draws nothing without a
-  background:
-
-  ```xml
-  <gadget name="unitselectionpanel-unitHealthBarOverheal" type="progressBar" size1024="342 759 412 766"
-          z="111" progressbarbackground="ui\ingame\uhc_health_overheal" progressbarbackgroundsize="104 8"
-          progressbarmask="ui\ingame\ingame_ui_health_green"/>
-  ```
-
-  The background texture is yours: the tests used a 16 x 8 DXT1 orange gradient,
-  `art\ui\ingame\uhc_health_overheal.ddt` (`ui\ingame\ingame_ui_health_yellow` works too). The gadget
-  was tested in the normal interface of the stock game, and not yet in WoL's file.
+- **The portrait bar needs no data change.** It is WoL's `unitselectionpanel-unitHealthBarGreen`. While
+  there is overheal the DLL changes the texture of that bar's background and shortens its green part,
+  and puts the background back when the overheal ends. The default texture is the game's
+  `ui\ingame\ingame_ui_health_yellow`. `bar=<texture>` chooses another (a path with no extension), for
+  example your own orange DDT.
 - **`log`:** one line for the first unit of each proto whose reference differs from its max (once
   per proto name in a session).
 - **Log:** at startup `overhealHitpointBars: HP bars and HP texts of units of unittype X take
@@ -1872,9 +1858,7 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   ever has more bars than the vertex buffer holds (about 9,700), `… bars do not fit in the vertex
   buffer …: this frame's K overheal segments were dropped (logged once)`. A wrong colour stops the
   key: `overhealHitpointBars: segment=…: expected segment or segment=RRGGBB (hex); feature not
-  applied`. The portrait bar: `hook reached: overhealHitpointBars portrait bar (0x4C83DF)`, then
-  `overhealHitpointBars: the UI has unitselectionpanel-unitHealthBarOverheal: the portrait bar
-  shows the overheal (logged once)` or `the UI has no …: the portrait bar stays stock`; with `log`,
+  applied`. The portrait bar: `hook reached: overhealHitpointBars portrait bar (0x4C83DF)`; with `log`,
   `the portrait bar shows an overheal of 10.0 % of the bar (1 units; logged once)`.
   With `stat`: the startup line adds `an overheal stat row labelled 'Overheal'` (or `labelled by
   string N`); in a game `hook reached: overhealHitpointBars stat row (0x4D76DB)`; with `log`,
@@ -1883,7 +1867,6 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
   for a space, or a string table ID); feature not applied`.
 - **Limits:**
   - without `segment` the floating bar stops at 100 %;
-  - the portrait bar needs the fourth gadget in the UI data (above);
   - in the minimized interface `unitHitPointsValue` prints colour markup as text (seen in game), so the
     HP text stays white and only the `stat` row is coloured. The ObjectInfo panel (the scenario
     editor's) is not coloured either;
@@ -1892,21 +1875,24 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
     HP shown in tech and card rollovers;
   - whether the multi-selection stack buttons draw their own HP bars was not established.
 - **Simulation:** no. Only display code is hooked (floating bars, the selection's group, three HP
-  texts, the portrait bar's gadget, the stat row); every game rule reads the real max. Players may set it differently. A new marker name
+  texts, the portrait bar, the stat row); every game rule reads the real max. Players may set it differently. A new marker name
   adds a unit type, which changes the unit type count: load saved games and replays with the same
   cfg.
 - **Status:** confirmed in single player.
-  - **In WoL (2026-11-04):** a marked Tomahawk at `180/150` with `Overheal: 30/30` in the unit panel; an
-    unmarked Aenna at its own max; without the keys, `180/180` and no row.
+  - **In WoL (2026-11-04):** a marked Tomahawk at `180/150` with `Overheal: 30/30` in the unit panel and the
+    end of WoL's portrait bar in the overheal colour, which shrinks with the decay and is gone at
+    `150/150`; a damaged unmarked Aenna selected in between shows its normal bar; without the keys,
+    `180/180` and no row.
   - **On the stock game (2026-10-29), normal interface:** fresh units at `150/150` with a full bar, the
     orange segment and text, `segment=40C0FF`, a `Hitpoints` tech (`189/174 (150+24)`), an allied
-    player's units, the portrait bar with the fourth gadget (90 % green, 10 % orange), the aura case
+    player's units, the aura case
     above, and a skirmish against the AI.
-  - **Not tested:** the portrait bar in WoL's interface, the ObjectInfo panel, multiplayer.
+  - **Not tested:** the portrait bar in the normal interface since it moved to the game's own bar, a
+    group with several marked units, the ObjectInfo panel, multiplayer.
 
 #### overhealSources
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-04 10:29
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-04 15:18
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
 
@@ -1975,7 +1961,7 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 
 #### overhealDecay
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-04 10:29
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-04 15:18
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 
