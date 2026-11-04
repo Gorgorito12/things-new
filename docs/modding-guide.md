@@ -29,6 +29,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 07:31 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | confirmed (single player) |
+| Wednesday 2026-11-04 07:31 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | confirmed (single player, `Maintain`) |
+| Wednesday 2026-11-04 07:31 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | confirmed (single player) |
 | Wednesday 2026-11-04 07:20 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | confirmed (automatic healing) |
 | Wednesday 2026-11-04 07:20 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | confirmed (single player) |
 | Wednesday 2026-11-04 07:20 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | confirmed (single player) |
@@ -47,9 +50,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Tuesday 2026-11-03 14:34 | [`transformInventory`](#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | confirmed (single player) |
 | Tuesday 2026-11-03 14:30 | [`transformUpdatesLOS`](#transformupdateslos) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | confirmed (single player) |
 | Tuesday 2026-11-03 14:23 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | confirmed (single player) |
-| Tuesday 2026-11-03 14:14 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | confirmed (single player) |
-| Tuesday 2026-11-03 14:08 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | confirmed (single player, `Maintain`) |
-| Tuesday 2026-11-03 13:59 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | confirmed (single player) |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | applied, effects not seen yet |
 | Tuesday 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Added. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | confirmed |
 | Tuesday 2026-11-03 10:43 | [`compatMode`](#compatmode) | Added. Offers every 32-bit display mode as a 16-bit mode too. | confirmed |
@@ -3296,7 +3296,7 @@ How buildings train, spawn, live and get replaced.
 
 #### liveBuildingWorkRate
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 13:59 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 07:31 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 ![liveBuildingWorkRate with TrainPoints in game](media/liveBuildingWorkRate-trainpoints.gif)
@@ -3309,14 +3309,14 @@ How buildings train, spawn, live and get replaced.
 *In WoL, with `liveBuildingWorkRate log` (an African civ's Town Center, selected so its queue
 shows):* the TC trains 15 `AFRICANvillager`; at 30 s a test tech (`UHCBwrTest`, BuildingWorkRate x3
 on `TownCenter`, appended to the bed's techtree for the test and removed after) turns on. The
-standing TC works at 3.0 at once (`works at BuildingWorkRate 3.000, not its snapshot 1.000`), the
-queue empties quickly, and it ends with 13 villagers by 97 s (5 at the start).
+standing TC works at 3.0 at once (`works at BuildingWorkRate 3.000, not its snapshot 1.000`), and
+it has 13 villagers by 94 s (5 at the start).
 [Full video (MP4)](media/liveBuildingWorkRate-wol.mp4).
 
 ![liveBuildingWorkRate in WoL, key off](media/liveBuildingWorkRate-wol-control.gif)
 
 *In WoL, key off (the same scene):* stock keeps the TC's snapshot of 1.0, so the tech changes
-nothing for it: 8 villagers by 98 s, the queue still long.
+nothing for it: 8 villagers by 96 s, the queue still long.
 [Full video (MP4)](media/liveBuildingWorkRate-wol-control.mp4).
 <!-- private:end -->
 
@@ -3430,23 +3430,23 @@ liveBuildingWorkRate [log]
 
 #### buildingWorkRateAuras
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Tuesday 2026-11-03 14:08 <!-- private -->
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 07:31 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 10:35 -->
 
 <!-- private:begin -->
 ![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
 
-*In WoL, with `buildingWorkRateAuras log` (an African civ, the two Town Centers selected so their
-queues show):* both TCs train 10 `AFRICANvillager`; the Explorer next to the left one carries a
-test aura (`UHCBwrAura`: `AutoRangedModify`, `BuildingWorkRate` x3, 10 m, on `TownCenter`, added to
-the bed's `explorer.tactics` and removed after). The left TC works at x3 (`works at x3.000 from
-BuildingWorkRate modifiers`) and trains 8 villagers while the right one trains 2.
+*In WoL, with `buildingWorkRateAuras log` (an African civ, the two Town Centers selected):* both TCs
+train 10 `AFRICANvillager`; the Explorer next to the left one carries a test aura (`UHCBwrAura`:
+`AutoRangedModify`, `BuildingWorkRate` x3, 10 m, on `TownCenter`, added to the bed's
+`explorer.tactics` and removed after). The left TC works at x3 (`works at x3.000 from
+BuildingWorkRate modifiers`) and trains 7 villagers while the right one trains 2.
 [Full video (MP4)](media/buildingWorkRateAuras-wol.mp4).
 
 ![buildingWorkRateAuras in WoL, key off](media/buildingWorkRateAuras-wol-control.gif)
 
 *In WoL, key off (the same data and scene):* stock reads `BuildingWorkRate` as no stat, so the aura
-does nothing: each TC trains 3 villagers.
+does nothing: each TC trains 2 villagers.
 [Full video (MP4)](media/buildingWorkRateAuras-wol-control.mp4).
 <!-- private:end -->
 
@@ -4045,7 +4045,7 @@ What happens when a tech activates or a unit changes proto.
 
 #### techPrereqRecheck
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 14:14 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 07:31 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 <!-- private:begin -->
