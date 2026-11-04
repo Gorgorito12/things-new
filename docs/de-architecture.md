@@ -1,7 +1,7 @@
 # What AoE3 DE does with threads and loading, compared with legacy
 
 The question behind this page: the Definitive Edition shares its engine lineage with the 2007 game.
-Does it use more cores, and how? If it does, could legacy copy the ideas through UHC.dll? The legacy side
+Does it use more cores, and how? If it does, could legacy copy the ideas through this DLL? The legacy side
 is in [performance.md](performance.md) §9–§10. The game mechanics DE adds over legacy, for WoL's
 requests, are in [de-parity.md](de-parity.md).
 
@@ -12,7 +12,7 @@ requests, are in [de-parity.md](de-parity.md).
 
 **Rules followed.**
 - The installed copy was read and run offline only.
-- No DE code or data is copied into UHC.dll; only architectural facts are reused.
+- No DE code or data is copied into this DLL; only architectural facts are reused.
 - The code protection (below) was not studied or bypassed.
 - Every statement is marked **[O]** observed (bytes, a listing, or a runtime measurement) or **[I]** inferred.
   Unknowns are listed as such.

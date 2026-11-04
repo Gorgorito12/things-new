@@ -1,6 +1,6 @@
 # Developer guide
 
-How to build `UHC.dll`, test it safely, add a feature, and reverse engineer `age3y.exe` the way
+How to build the DLL, test it safely, add a feature, and reverse engineer `age3y.exe` the way
 this project did. For using the DLL in a mod, see [modding-guide.md](modding-guide.md); for the
 internals of each feature, [how-it-works.md](how-it-works.md).
 
@@ -51,7 +51,7 @@ Never modify the Steam install. Work on a copy:
 1. **Copy the game folder**, e.g.
    `robocopy "<Steam>\steamapps\common\Age Of Empires 3\bin" C:\AoE3-UHC-Test /E`.
 2. **Replace the copy's `age3y.exe`** with a UHC-patched exe
-   ([modding guide, section 1](modding-guide.md#getting-an-exe-with-the-uhc-loader)).
+   ([modding guide, section 1](modding-guide.md#getting-an-exe-with-the-loader)).
 3. **Copy `build\Release\UHC.dll`** next to it, and `examples\Startup\uhc.cfg` into its
    `Startup\` folder.
 4. **Start it** any way you like: a double-click, or from PowerShell:
@@ -60,7 +60,7 @@ Never modify the Steam install. Work on a copy:
    Start-Process -FilePath C:\AoE3-UHC-Test\age3y.exe
    ```
 
-   `UHC.dll` makes the exe's folder the working directory, and the log's second line,
+   The DLL makes the exe's folder the working directory, and the log's second line,
    `UHCMain: working directory …`, confirms it.
 
 5. **Read `UHC.log`** next to the exe. Delete it before each run: it is appended.

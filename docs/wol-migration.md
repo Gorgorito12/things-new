@@ -4,7 +4,7 @@
 
 ## Goal
 
-Wars of Liberty (WoL) runs entirely on this repo's `UHC.dll`, so WoL can replace its closed
+Wars of Liberty (WoL) runs entirely on this repo's DLL, so WoL can replace its closed
 `uhc.dll` (`c070d138`, [wol-uhc-map.md](wol-uhc-map.md)) with ours. Decided with the user on
 2026-11-02. The order: first what keeps WoL from loading or playing, then what degrades play,
 then cosmetics, then WoL's always-on fixes and multiplayer. The other direction (WoL rebuilds

@@ -33,7 +33,7 @@ GPU the game uses. It was written for the "late-game lag and stutter" investigat
 - **Measured in a late 8-AI game (§8):** the main thread runs at about 95 % of one core, 77 % of it in the game's own code.
   The GPU sits at 10–13 % even at 4K.
   - DXVK lowers FPS by 28 %.
-  - Skinning and Direct3D are too small a share for a UHC feature to win much.
+  - Skinning and Direct3D are too small a share for a DLL feature to win much.
 - **Split of a late-game frame (§9, stack sampling):** update (simulation) 43.5 %, render 55.6 %. The game's
   own timers agree: 4.3 ms and 5.4 ms per frame.
   - The simulation must stay on one thread for multiplayer.
@@ -284,7 +284,7 @@ These are files on disk, read 2026-10-28 by a read-only pass.
 
 **2026-10-28 13:25, first sample.**
 - Run: `tools/perfprobe.py`, 15 s, against a test-bed instance (`C:\AoE3-UHC-Test`, PID 4308) that was
-  already running. On screen was an unknown scene, the profile was Low shaders, and UHC.dll had no `perfStats`,
+  already running. On screen was an unknown scene, the profile was Low shaders, and the DLL had no `perfStats`,
   so there are no frame times.
 - This is a single sample, not the benchmark. It is kept because it already answers one question.
 
@@ -611,12 +611,12 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 
 | Lever | Kind | Status |
 |---|---|---|
-| Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | UHC feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
+| Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | DLL feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
 | The stutters' remaining work: granny building newly loaded models and animations | — | Open. It is CPU work on the main thread. Preloading would trade memory and load time for it. |
-| Moving render-side work to other threads | UHC feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. |
-| More skinning workers (`deformWorkers`), plus letting them help during the flush | UHC feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
-| Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | UHC feature, opt-in | Not built. d3d9.dll is about 3 % of the main thread. Back buffers only matter with vsync on. |
-| Frame-time statistics and device logging (`perfStats`) | UHC feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
+| Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. |
+| More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
+| Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Not built. d3d9.dll is about 3 % of the main thread. Back buffers only matter with vsync on. |
+| Frame-time statistics and device logging (`perfStats`) | DLL feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
 | DXVK | wrapper | Measured: −28 % FPS in a late game. FPU state kept (0x007F). Not recommended. |

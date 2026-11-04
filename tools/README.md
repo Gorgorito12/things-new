@@ -197,7 +197,7 @@ no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wa
 `units`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
 docstring lists their arguments.
 
-Paths come from the copy's own exe and data (`profile` prints them): the cfg the UHC loader reads
+Paths come from the copy's own exe and data (`profile` prints them): the cfg the loader reads
 (VA 0xC65083: `Startup\uhc.cfg`, or `Startup\wol.cfg` in a Wars of Liberty copy), the AI and
 random-map folders (`AI3`/`RM3`, or `AI4`/`RM4`), and the `My Games` folder (string 42265 of the
 copy's `stringtabley.xml`). `deploy` writes the cfg there, `map` writes into that map folder and
@@ -313,7 +313,7 @@ python -I tools/re/inspect_unittypes.py --list-abstract
 
 Reads the running game's unit type table without attaching a debugger. It prints a name's ID,
 whether it is a proto or an abstract type, and the protos that carry an abstract type. Use it to
-confirm that a `<UnitType>` you added to `protoy.xml`, or one that `UHC.dll` registers, really
+confirm that a `<UnitType>` you added to `protoy.xml`, or one that the DLL registers, really
 loaded.
 
 ```

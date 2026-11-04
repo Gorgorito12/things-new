@@ -2,7 +2,7 @@
 
 ## What this is
 
-A map of WoL's closed-source UHC build: what it adds beyond upstream AoE3UnHardcoded, and which `age3y.exe` addresses each cfg key touches.
+A map of WoL's closed-source DLL: what it adds beyond upstream AoE3UnHardcoded, and which `age3y.exe` addresses each cfg key touches.
 
 **First pass, 2026-10-28.** Every patch site the DLL encodes upstream-style is listed exactly. For the WoL-only keys, the addresses are **candidates**:
 - they are age3y constants found in each key's handler function;
