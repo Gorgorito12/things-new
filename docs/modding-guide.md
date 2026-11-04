@@ -29,6 +29,14 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | confirmed (single player, UI; the data ref not tested) |
+| Wednesday 2026-11-04 09:20 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
+| Wednesday 2026-11-04 09:04 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | confirmed (single player, UI) |
+| Wednesday 2026-11-04 09:04 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | confirmed |
+| Wednesday 2026-11-04 09:04 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | confirmed |
+| Wednesday 2026-11-04 08:32 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Lets a keymap context named `<ProtoName>Accel` hold the unit hotkeys of that proto (a new building, or a stock one the exe has no context for). | confirmed (single player) |
+| Wednesday 2026-11-04 08:32 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
+| Wednesday 2026-11-04 08:32 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | confirmed (single player) |
 | Wednesday 2026-11-04 08:11 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | confirmed (single player, Healing Dance) |
 | Wednesday 2026-11-04 08:11 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | confirmed from the log (single player) |
 | Wednesday 2026-11-04 08:11 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | confirmed (single player) |
@@ -46,9 +54,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 07:20 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | confirmed (single player) |
 | Wednesday 2026-11-04 07:20 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | confirmed (single player) |
 | Wednesday 2026-11-04 06:59 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | confirmed |
-| Tuesday 2026-11-03 15:59 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
-| Tuesday 2026-11-03 15:37 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Lets a keymap context named `<ProtoName>Accel` hold the unit hotkeys of that proto (a new building, or a stock one the exe has no context for). | confirmed (single player) |
-| Tuesday 2026-11-03 15:17 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | confirmed (single player) |
 | Tuesday 2026-11-03 14:51 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | confirmed (single player) |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | applied, effects not seen yet |
 | Tuesday 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Added. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | confirmed |
@@ -75,13 +80,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 20:04 | [`customAbstractTypes`](#customabstracttypes) | Added. Turns every name in an XML file into an abstract unit type that protos, techs, auras and XS scripts can use. | confirmed |
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. The same list as `noAILimit`, installed later in the same stock function. | confirmed |
 | Thursday 2026-10-29 21:24 | [`decimalPopulation`](#decimalpopulation) | Added. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | confirmed (single player, also a skirmish vs AI) |
-| Thursday 2026-10-29 13:50 | [`overhealDecay`](#overhealdecay) | Added. The HP of those units above `InitialHitpoints` goes back down to it over time. | confirmed |
-| Thursday 2026-10-29 13:37 | [`overhealSources`](#overhealsources) | Added. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | confirmed |
 | Thursday 2026-10-29 12:03 | [`civFirstTC`](#civfirsttc) | Added. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | confirmed (single player; Nomad start not tested) |
 | Thursday 2026-10-29 10:35 | [`startingTC`](#startingtc) | Added. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | confirmed from the log and memory (single player) |
-| Thursday 2026-10-29 10:35 | [`overhealHitpointBars`](#overhealhitpointbars) | Added. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | confirmed (single player, UI) |
-| Thursday 2026-10-29 10:35 | [`showGatherRate`](#showgatherrate) | Added. Shows a gathering unit's rate per second in the stat panel, and through the data ref `{currentUnitGatherRateString}`. | confirmed (single player, UI; the data ref not tested) |
-| Thursday 2026-10-29 10:35 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Added. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | confirmed (single player) |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (TradingPost, or a mod's) be placed only on a socket that Gaia owns, as the placement preview already shows. | not tested in game |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | confirmed (two copies, single player) |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | confirmed (single player) |
@@ -940,7 +940,7 @@ customProtoUnitCommands [file]
 
 #### customHotkeyContexts
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 15:37 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 <!-- private:begin -->
@@ -1041,7 +1041,7 @@ customHotkeyContexts [log]
 
 #### techRenameEffect
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 15:59 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 <!-- private:begin -->
@@ -1923,11 +1923,25 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
 
 #### overhealHitpointBars
 
-**Added:** Thursday 2026-10-29 10:35
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+<!-- public: **Added:** Thursday 2026-10-29 10:35 -->
 
-![overhealHitpointBars in game](media/overhealHitpointBars.gif)
+<!-- private:begin -->
+![overheal in WoL](media/overhealHitpointBars-wol.gif)
 
-*1. The 100 %:* A marked musketeer (150 HP of 165 max) shows a full bar and 150/150; the overlay shows the real maximum. [Full video (MP4)](media/overhealHitpointBars.mp4).
+*In WoL, with `overhealHitpointBars segment log`, `overhealSources log` and `overhealDecay 2 3 log`
+(Iroquois; all three units selected):* for the test the Tomahawk is marked and has `MaxHitpoints`
+180 over its 150, and the medicine man is a source healer (bed data, removed after). The Tomahawk is
+hit, the medicine man heals it past its 100 % to 180 (the extra part of the bar), and when he is
+killed at 62 s the Tomahawk loses 2 HP a second back to 150. The Aenna next to it, not marked, stops
+at 110. [Full video (MP4)](media/overhealHitpointBars-wol.mp4).
+
+![overheal in WoL, keys off](media/overhealHitpointBars-wol-control.gif)
+
+*In WoL, keys off (the same data and scene):* the bar and the panel count the 180 as the 100 %, and
+nothing brings the Tomahawk back down after the healer dies: it stays at 180.
+[Full video (MP4)](media/overhealHitpointBars-wol-control.mp4).
+<!-- private:end -->
 
 ![overhealHitpointBars segment in game](media/overhealHitpointBars-segment.gif)
 
@@ -2102,11 +2116,8 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [stat[=<Label>]] [log] 
 
 #### overhealSources
 
-**Added:** Thursday 2026-10-29 13:37
-
-![overhealSources in game](media/overhealSources.gif)
-
-*1. A surgeon and a source monk:* a marked Musketeer (150 / 165) is hit to 90; the surgeon heals it back to 150 and stops; at second 75 an Indian monk marked `AbstractOverhealer` appears and takes it to 165 (the orange segment). The unmarked Pikeman is healed to its max, as in stock. [Full video (MP4)](media/overhealSources.mp4).
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+<!-- public: **Added:** Thursday 2026-10-29 13:37 -->
 
 ![overhealSources with a healing building](media/overhealSources-building.gif)
 
@@ -2168,11 +2179,8 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 
 #### overhealDecay
 
-**Added:** Thursday 2026-10-29 13:50
-
-![overhealDecay in game](media/overhealDecay.gif)
-
-*1. After the healer dies:* `overhealDecay 2 3`. A source monk keeps a marked Musketeer at 165 (when it slips, the monk heals it back); at second 60 the monk is killed, and the Musketeer loses about 2 HP per second and stops at 150, its 100 %. [Full video (MP4)](media/overhealDecay.mp4).
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-04 09:04 <!-- private -->
+<!-- public: **Added:** Thursday 2026-10-29 13:50 -->
 
 ![overhealDecay in a skirmish](media/overhealDecay-skirmish.gif)
 
@@ -3066,11 +3074,21 @@ gatherFix
 
 #### showGatherRate
 
-**Added:** Thursday 2026-10-29 10:35
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:20 <!-- private -->
+<!-- public: **Added:** Thursday 2026-10-29 10:35 -->
 
-![showGatherRate in game](media/showGatherRate.gif)
+<!-- private:begin -->
+![showGatherRate in WoL](media/showGatherRate-wol.gif)
 
-*In game:* A settler gathering berries: the info panel row `Alim.: 0.67/s`. [Full video (MP4)](media/showGatherRate.mp4).
+*In WoL, with `showGatherRate log` (Ethiopians, in the minimized interface, no data change):* a
+villager gathers berries, and the unit panel shows `Food (icon): 0.67/s` in WoL's own rate gadgets.
+[Full video (MP4)](media/showGatherRate-wol.mp4).
+
+![showGatherRate in WoL, key off](media/showGatherRate-wol-control.gif)
+
+*In WoL, key off (the same scene):* the panel shows no rate.
+[Full video (MP4)](media/showGatherRate-wol-control.mp4).
+<!-- private:end -->
 
 ```
 showGatherRate [<UnitType>] [log]      no UnitType: every unit
@@ -3112,6 +3130,12 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   rules (selection size, `DoNotShowAutoGatherRate`). `{currentUnitGatherRate}` (whole number) and
   `{currentUnitGatherRateFloat}` are **not** changed: WoL's `uimainnew.xml` already uses
   `{currentUnitGatherRate(gold)}` in a tooltip, and they keep failing as in stock.
+- **Minimized interface:** with the game option `optionminimizedui` on, the exe does not fill the
+  stat panel at all. The rate then goes in the unit panel's own rate gadgets,
+  `unitselectionpanel-unitResourceRateLabel` and `...RateValue` of `uiunitselectionmin.xml`, the
+  ones stock uses for AutoGather units, with the same text: `Food (icon): 0.67/s`. A file without
+  those gadgets shows no rate there; `{currentUnitGatherRateString}` still works in any gadget. As in
+  the normal interface, the rate shows only with one unit selected.
 - **Your data:** nothing. A mod whose stat panel has fewer rows (WoL's `uiunitstatpanel3.xml` has
   5) loses its last row while the gather row is shown: the row goes right after HP and the rows
   after it move down. Such a mod may prefer the data ref and a `<UnitType>` that no unit has.
@@ -3135,6 +3159,8 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   unit type, when the data loads, `unit types: X -> <ID> …`. In a game:
   `hook reached: showGatherRate record (0x4ED044)` (the first gather loop of any unit),
   `hook reached: showGatherRate panel (0x4D7834)` (the first stat panel fill),
+  `hook reached: showGatherRate unit panel (0x699456)` (the first unit panel fill of the minimized
+  interface),
   `hook reached: showGatherRate row value (0x69AFE0)` (the first rate row, this one or a stock
   AutoGather row), and `hook reached: showGatherRate data ref (0x5D2D3C)` (the first time a gadget
   reads the data ref). With `log`: `showGatherRate: unit N (Settler) of player 1 gathers Alim.
@@ -3647,7 +3673,8 @@ trainSingleAbstractType [UnitType]
 
 #### noTrainNearEnemyTC
 
-**Added:** Thursday 2026-10-29 10:35
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:20 <!-- private -->
+<!-- public: **Added:** Thursday 2026-10-29 10:35 -->
 
 ![noTrainNearEnemyTC in game](media/noTrainNearEnemyTC.gif)
 
@@ -3788,7 +3815,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 
 #### lifespanAfterConstruction
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 15:17 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 <!-- private:begin -->
@@ -3797,7 +3824,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 *In WoL, with `lifespanAfterConstruction Outpost log` (Spanish, the settlers and the foundation
 selected; 3x speed):* for the test the bed's Outpost gets `<Lifespan>15</Lifespan>` (removed after).
 Two settlers build one: its lifespan waits while it is a foundation (`0 % built; its lifespan
-(15.00 s left) waits`), the Outpost is finished at 64 s, and it comes down 15 s later.
+(15.00 s left) waits`), the Outpost is finished at 59 s, and it comes down 15 s later.
 [Full video (MP4)](media/lifespanAfterConstruction-wol.mp4).
 
 ![lifespanAfterConstruction in WoL, key off](media/lifespanAfterConstruction-wol-control.gif)

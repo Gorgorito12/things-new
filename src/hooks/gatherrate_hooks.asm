@@ -14,6 +14,7 @@ EXTERNDEF g_uhcGatherRowRate:DWORD        ; that row's rate per second (float)
 
 UhcGatherPanelRow PROTO STDCALL unit:DWORD, selection:DWORD, row:DWORD
 UhcGatherRateRef PROTO STDCALL value:DWORD
+UhcGatherUnitPanel PROTO STDCALL panel:DWORD, unit:DWORD
 
 ; Record layout, shared with features/gatherrate.cpp (GatherRecord).
 REC_UNIT        EQU 00h     ; the gatherer's unit ID
@@ -29,6 +30,7 @@ gatherTickNext  dd 004ED04Ch    ; fcomp [esp+1Ch]: the amount against what the t
 panelNext       dd 004D783Bh    ; test ecx,ecx / je 4D784Eh, after the stolen proto load
 rowWriter       dd 0069AF7Ch    ; the stock row writer: the label and value gadgets of row EBX
 agLoopNext      dd 0069AFE6h    ; mov edx,[ecx+140h]: the stock AutoGather resource loop
+unitPanelNext   dd 0069945Ch    ; call 4826B5h: the unit panel goes on, after the stolen load
 rowFormat       dd 0069B02Ah    ; the stock row formatter: ESI/EDI gadgets, EBX resource, [esp+1Ch] rate
 
 .code
@@ -120,6 +122,22 @@ addRow:
     mov ebx, dword ptr [esp+2Ch]        ; the row, as the stock path sets EBX for the writer
     jmp rowWriter
 UhcGatherPanelHook ENDP
+
+; Replaces 0x699456..0x69945B (mov edi,[esp+54h] / mov ecx,edi) in the unit panel's cold part, the
+; join point after its own AutoGather rate row ([esp+50h] = the panel, [esp+54h] = the unit). The
+; stat panel fill does not run with the minimized interface; this is where that interface's rate
+; gadgets are written. The C function writes them for a gathering unit; nothing else changes.
+UhcGatherUnitPanelHook PROC
+    TRACE_ONCE "showGatherRate unit panel (0x699456)"
+    pushad
+    push dword ptr [esp+20h+54h]        ; the unit
+    push dword ptr [esp+24h+50h]        ; the panel
+    call UhcGatherUnitPanel
+    popad
+    mov edi, dword ptr [esp+54h]        ; stolen 0x699456
+    mov ecx, edi                        ; stolen 0x69945A
+    jmp unitPanelNext
+UhcGatherUnitPanelHook ENDP
 
 ; Replaces 0x69AFE0 (mov ecx,[0C66234h]) in the stat panel fill's cold part, the start of the
 ; AutoGather resource loop, reached only by fall-through once the row's gadgets are resolved

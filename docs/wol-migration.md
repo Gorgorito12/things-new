@@ -141,7 +141,7 @@ pixels, 2x speed, 10 fps, cut to the key moment.
 | `broadsideMuzzleLimit` | Japanese `ypTekkousen` (created in game: a loaded scenario keeps the saved slots) vs 2 `Fluyt`, `ceylon coast` | **done**: 10 slots per side with the key, 6 without; a scan of 17 WoL warships found no other model above 6 per side (`broadsideMuzzleLimit-wol*.mp4`) |
 | `abilitySlots` | Ethiopians: WoL's Explorer (8 abilities), `WOLAbilityHeal` at 24 s and `WOLHCMachiavellianism` at 30 s | **done**: buttons 7 and 8 appear with the key, never without (`abilitySlots-wol*.mp4`) |
 | `wonderPanelSkipAuras` | Korean wonders `wolwkpyongyanggate2` (test: `ypPowerShrineAura` put before its `PowerRighteousArmy` in `abilities.xml`, restored after) and `wolwkpuyonghall2` | **done**: the panel shows Righteous Army with the key, the Puyong Hall's Whirlpool without (`wonderPanelSkipAuras-wol*.mp4`). WoL has no wonder with two abilities in its own data |
-| `lifespanAfterConstruction` | Spanish (`Age0Spanish`): 2 settlers build an Outpost given `Lifespan` 15 (bed protoy, restored after), placed with a real click (`tis("Outpost")` + `rclick`) | **done**: built at 64 s, gone 15 s later; key off, dies as a foundation (`lifespanAfterConstruction-wol*.mp4`). WoL's own `*Maturing` buildings are not built by any unit in protoy |
+| `lifespanAfterConstruction` | Spanish (`Age0Spanish`): 2 settlers build an Outpost given `Lifespan` 15 (bed protoy, restored after), placed with a real click (`tis("Outpost")` + `rclick`) | **done**: built at 59 s, gone 15 s later; key off, dies as a foundation (`lifespanAfterConstruction-wol*.mp4`). WoL's own `*Maturing` buildings are not built by any unit in protoy |
 | `gaiaSocketsOnly` | none | **not filmed**: the case it fixes is an AI build plan given a player-owned socket; the UI refuses that placement by itself and neither the console nor scenario triggers can give the order. Needs an AI skirmish whose script builds on such a socket |
 | `customHotkeyContexts` | Greeks (`Age0Greeks`, `Player : SetAge` 1): `WOLBarracksGreek` selected, 3 real `o` presses (WoL's `WOLBarracksGreekAccel` maps `o` to Klepht) | **done**: 3 Klephts queued with the key, none without (`customHotkeyContexts-wol*.mp4`) |
 | `snareOnlyHitUnit` | British: 6 `Redcoat` marching (Move From Area) vs 1 `Uhlan` (`handCavalry.tactics` snare), map 160 m | **done**: the group arrives at 50 s with the key, ~54 s without; mean position 123 vs 117 m at 41-42 s (`snareOnlyHitUnit-wol*.mp4`, samples in `rea/evidence/age3y-b1a1dab7/snareOnlyHitUnit-wol-groupx-*.txt`) |
@@ -150,8 +150,8 @@ pixels, 2x speed, 10 fps, cut to the key moment.
 | `danceBonusCivs` | Ethiopians: 10 settlers do the `FertilityDance` (enabled by an appended test tech, restored after) while the TC trains `AFRICANvillager` | **done**: 4 trained by 65 s with the key, 2 without (`danceBonusCivs-wol*.mp4`) |
 | `startingTC`, `civFirstTC` | a WoL civ with its own first TC | pending |
 | `noTrainNearEnemyTC` | a WoL TC with enemy units near | pending |
-| `overhealHitpointBars`, `overhealSources`, `overhealDecay` | WoL infantry with overheal | pending |
-| `showGatherRate` | a WoL gatherer | pending |
+| `overhealHitpointBars`, `overhealSources`, `overhealDecay` | Iroquois: `xpTomahawk` marked, 150 of 180 HP, `xpMedicineMan` source healer (bed protoy, restored after), `xpAenna` unmarked; `overhealDecay 2 3` | **done**: hit, healed to 180, the healer dies at 62 s, back to 150 (`overhealHitpointBars-wol*.mp4`) |
+| `showGatherRate` | Ethiopian villager on berries | **done**: `Food (icon): 0.67/s` in WoL's unit panel with no data change. With `optionminimizedui`, the user's setting, the exe skips the stat panel fill, so since 2026-11-04 the key also writes the unit panel's rate gadgets (hook 0x699456). The normal interface (TAD copy) still gets the stat panel row. With several units selected no rate shows, in both interfaces (`showGatherRate-wol*.mp4`) |
 | `hcShipmentPointFallback` | a WoL shipment with its gather point lost | pending |
 | `decimalPopulation`, `basePop` / `extraPop`, `deckCardCount` | WoL units with decimal pop; a big deck | pending |
 | `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | pending |
@@ -201,6 +201,13 @@ hot path, `--perf` in every video, vary the civ).
 
 Pending: the A/B baseline against the control (`perfprobe.py`, 120 s, same scenario), and the
 load-time A/B for `customAbstractTypes`.
+
+## Language of the bed
+
+Since 2026-11-04 the bed runs in WoL's original English, so new videos are in English:
+`data\stringtabley.xml` is `translations\_originals\stringtabley.xml` (md5 `33fa355c…`, the same file as
+Steam's WoL). The user's Spanish one is kept as `data\stringtabley.xml.es-la`. Videos filmed before that
+date show the Spanish interface, and their captions quote it.
 
 ## Civs used in tests
 
