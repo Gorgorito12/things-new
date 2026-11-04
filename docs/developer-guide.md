@@ -189,7 +189,9 @@ there:
   when the monitor turns off from inactivity, after which its graphics device stays lost until
   the game restarts. For a long unattended session keep the display on first, e.g. a background
   `python -I -c "import ctypes,time; ctypes.windll.kernel32.SetThreadExecutionState(0x80000003);
-  time.sleep(10800)"`, and restart the game if the frames are already black. A window covering the
+  time.sleep(10800)"`, and restart the game if the frames are already black. That call does not wake a
+  monitor that is already off: a zero-distance mouse event every 20 s does, without moving the
+  cursor (`user32.mouse_event(1, 0, 0, 0, 0)`). Then restart the game. A window covering the
   game on its monitor (a terminal) has the same effect, and `focus()`'s title-bar click then lands
   on that window: run `front` after `launch` (it keeps the game above every window and focuses
   it). Do not move the game to a monitor with another DPI scale: its HUD still draws, but the 3D

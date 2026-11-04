@@ -943,7 +943,9 @@ class Overlay:
             self.next_follow = now + 0.5
             unit = next((u for u in D.units(self.proc) if self.proc.i32(u + 0x10) == self.follow), None)
             if unit is None or self.proc.f32(unit + 0x64) <= 0:
-                self.follow = None
+                # Gone: go on with another --select unit, or stop (no jump to a dead unit's ID).
+                alive = matching_units(self.proc, self.select_ids, self.select_protos, 1)
+                self.follow = self.proc.i32(alive[0] + 0x10) if alive else None
             else:
                 pos = (self.proc.f32(unit + 0x14), self.proc.f32(unit + 0x1C))
                 far = self.follow_center is None or math.dist(pos, self.follow_center) > FOLLOW_SLACK

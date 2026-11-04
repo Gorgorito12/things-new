@@ -217,8 +217,8 @@ live text on every frame:
 - `--frame <ID>`: centers the camera on that unit once, at the start, and leaves it still: the
   default for a scene where the units stay in place;
 - `--follow <ID>`: follows a unit that travels: the camera re-centers (a `uiLookAtUnit` through
-  `perfExecFile`) only once the unit has walked 10 m from the last center, and stops when the
-  unit dies, so the picture does not jump every few seconds.
+  `perfExecFile`) only once the unit has walked 10 m from the last center, so the picture does
+  not jump every few seconds. If the unit dies it goes on with another `--select` unit, or stops.
 - `--select <IDs or proto names>`: keeps those units (player 1's) selected for the whole video,
   so the game draws their HP bars and the selection panel; they are selected again when a new
   matching unit appears (a dead one leaves the selection by itself). The game selects one unit
