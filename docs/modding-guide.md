@@ -29,6 +29,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 08:32 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Lets a keymap context named `<ProtoName>Accel` hold the unit hotkeys of that proto (a new building, or a stock one the exe has no context for). | confirmed (single player) |
+| Wednesday 2026-11-04 08:32 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
+| Wednesday 2026-11-04 08:32 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | confirmed (single player) |
 | Wednesday 2026-11-04 08:11 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which stock applies only to the native civs. | confirmed (single player, Healing Dance) |
 | Wednesday 2026-11-04 08:11 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | confirmed from the log (single player) |
 | Wednesday 2026-11-04 08:11 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | confirmed (single player) |
@@ -46,9 +49,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 07:20 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | confirmed (single player) |
 | Wednesday 2026-11-04 07:20 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | confirmed (single player) |
 | Wednesday 2026-11-04 06:59 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | confirmed |
-| Tuesday 2026-11-03 15:59 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. Adds the tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | confirmed (single player) |
-| Tuesday 2026-11-03 15:37 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Lets a keymap context named `<ProtoName>Accel` hold the unit hotkeys of that proto (a new building, or a stock one the exe has no context for). | confirmed (single player) |
-| Tuesday 2026-11-03 15:17 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | confirmed (single player) |
 | Tuesday 2026-11-03 14:51 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | confirmed (single player) |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | applied, effects not seen yet |
 | Tuesday 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Added. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | confirmed |
@@ -940,7 +940,7 @@ customProtoUnitCommands [file]
 
 #### customHotkeyContexts
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 15:37 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 <!-- private:begin -->
@@ -1041,7 +1041,7 @@ customHotkeyContexts [log]
 
 #### techRenameEffect
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 15:59 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 <!-- private:begin -->
@@ -3788,7 +3788,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 
 #### lifespanAfterConstruction
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Tuesday 2026-11-03 15:17 <!-- private -->
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 08:32 <!-- private -->
 <!-- public: **Added:** Thursday 2026-10-29 06:39 -->
 
 <!-- private:begin -->
@@ -3797,7 +3797,7 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 *In WoL, with `lifespanAfterConstruction Outpost log` (Spanish, the settlers and the foundation
 selected; 3x speed):* for the test the bed's Outpost gets `<Lifespan>15</Lifespan>` (removed after).
 Two settlers build one: its lifespan waits while it is a foundation (`0 % built; its lifespan
-(15.00 s left) waits`), the Outpost is finished at 64 s, and it comes down 15 s later.
+(15.00 s left) waits`), the Outpost is finished at 59 s, and it comes down 15 s later.
 [Full video (MP4)](media/lifespanAfterConstruction-wol.mp4).
 
 ![lifespanAfterConstruction in WoL, key off](media/lifespanAfterConstruction-wol-control.gif)
