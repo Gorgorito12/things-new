@@ -69,7 +69,7 @@ public:end -->
 | `wonderPanelSkipAuras [log]` | **New.** The wonder power panel shows a wonder's first available ability that is not a passive aura, so a global power listed after an aura gets its button. | confirmed (single player, UI) |
 | `lifespanAfterConstruction [UnitType] [log]` | **New.** A marked building starts its `<Lifespan>` when its construction is finished, not when the foundation is placed. | confirmed (single player) |
 | `gaiaSocketsOnly [UnitType] [log]` | **New.** A socketed building (`TradingPost`, or a mod's) may only be placed on a socket that Gaia owns, as the red placement preview already shows. | not tested in game |
-| `customHotkeyContexts [log]` | **New.** A keymap context named `<ProtoName>Accel` becomes that proto's hotkey context, for buildings the exe has no context for (a mod's, or the Sacred Field). | partly confirmed (contexts registered and switched; key presses not tested) |
+| `customHotkeyContexts [log]` | **New.** A keymap context named `<ProtoName>Accel` becomes that proto's hotkey context, for buildings the exe has no context for (a mod's, or the Sacred Field). | confirmed (single player) |
 | `snareOnlyHitUnit [log]` | **New.** A snared unit (`<TargetSpeedBoost>`) no longer slows the group it moves with; only the hit unit slows. | confirmed from the log (single player) |
 | `techRenameEffect [log]` | **New.** The tech effect `SetTechName` gives a tech new texts for the players the effect reaches, and only for them. The alias key `enableTechRenameEffect` is read too. | confirmed (single player) |
 | `noCorpseDopples [UnitType] [log]` | **New.** A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | confirmed (single player) |
