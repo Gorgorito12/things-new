@@ -51,12 +51,12 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 07:31 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Wednesday 2026-11-04 07:31 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Techs with `<TypeCount>` prerequisites in `techtreey` (stock data has none). |
 | Wednesday 2026-11-04 07:20 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
-| Wednesday 2026-11-04 07:20 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy`, and `YPDodge` active for their players. |
-| Wednesday 2026-11-04 07:20 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | That unit type on the units in `protoy`, and the rule's tech active for their players unless `notech`. |
-| Wednesday 2026-11-04 07:20 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. |
-| Wednesday 2026-11-04 07:20 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags in the tactics files or `<ProtoAction>`; the unit type and a `<DamageArea>` on the attacks that should always scatter. |
+| Wednesday 2026-11-04 07:20 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. |
+| Wednesday 2026-11-04 07:20 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
+| Wednesday 2026-11-04 07:20 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. |
+| Wednesday 2026-11-04 07:20 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. |
 | Wednesday 2026-11-04 06:59 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
-| Tuesday 2026-11-03 14:51 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side; for a new marker, that type on the ships in `protoy`. |
+| Tuesday 2026-11-03 14:51 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Tuesday 2026-11-03 11:26 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Added. Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | Nothing. |
 | Tuesday 2026-11-03 11:15 | [`gatherFix`](#gatherfix) | Added. Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. | Nothing. |
 | Tuesday 2026-11-03 10:43 | [`compatMode`](#compatmode) | Added. Offers every 32-bit display mode as a 16-bit mode too. | Nothing. |
@@ -1970,12 +1970,12 @@ Attacks, armor, and what a hit does.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
-| [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy`, and `YPDodge` active for their players. | confirmed (single player) |
+| [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
-| [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | That unit type on the units in `protoy`, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
-| [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | **new** | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy`, and a small tactics file. | confirmed (single player) |
-| [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<MaxSpread>` and `<SpreadFactor>` per attack (stock ignores them) for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | **new** | The tags in the tactics files or `<ProtoAction>`; the unit type and a `<DamageArea>` on the attacks that should always scatter. | confirmed (single player) |
-| [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side; for a new marker, that type on the ships in `protoy`. | confirmed (single player) |
+| [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
+| [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | **new** | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. | confirmed (single player) |
+| [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | **new** | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. | confirmed (single player) |
+| [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
@@ -1986,22 +1986,22 @@ Attacks, armor, and what a hit does.
 
 ![multiarmor in game](media/multiarmor.gif)
 
-*In game:* a unit with `<Armor type="Hand" value="0.2"/>` and `<Armor type="Ranged" value="0.2"/>`
-under pikemen: each pike hit takes 38 HP (armor 0.2); without the key it took 47.5 (the unit kept
-only its last armor, Ranged). [Full video (MP4)](media/multiarmor.mp4).
+*In WoL:* a `HonorGuard`, with `<Armor type="Hand" value="0.2"/>` and `<Armor type="Ranged" value="0.2"/>`,
+under pikemen: each pike hit takes 38 HP (armor 0.2); without the key it took 47.5 (the unit kept only
+its last armor, Ranged). [Full video (MP4)](media/multiarmor.mp4).
 
 ```
 multiarmor
 ```
 
-- **Effect:** a proto keeps one armor per damage type, and an `Armor` tech effect changes the one
-  its `damagetype` names.
-  - Stock keeps one armor per proto: each `<Armor>` replaces the one before, so only the last one
-    counts.
-  - Stock reads no `damagetype` on effects: an `Armor` effect always changes that one armor.
-  - With the key the unit uses the armor of the incoming damage type. An effect whose
-    `damagetype` is the last armor's type, or that has no `damagetype`, works as in stock.
-- **Your data:**
+- **In WoL today:** `wol.cfg` has this line, and 32 protos and 76 tech effects depend on it. Without it,
+  the exe keeps one armor per proto: each `<Armor>` replaces the one before, so only the last one
+  counts. It also reads no `damagetype` on effects: an `Armor` effect always changes that one armor.
+- **Effect:** a proto keeps one armor per damage type, and an `Armor` tech effect changes the one its
+  `damagetype` names. The unit uses the armor of the incoming damage type. An effect whose `damagetype`
+  is the last armor's type, or that has no `damagetype`, works as in the exe.
+- **WoL needs:** several `<Armor>` lines on the proto, as `HonorGuard` has, and `damagetype` on the
+  effects:
 
   ```xml
   <Armor type="Hand" value="0.2000" />
@@ -2009,25 +2009,24 @@ multiarmor
   ```
 
   ```xml
-  <Effect type="Data" amount="0.10" subtype="Armor" damagetype="Siege" relativity="Absolute">
-    <Target type="ProtoUnit">MyShip</Target></Effect>
+  <Effect type='Data' amount='1.50' subtype='Armor' damagetype='Ranged' relativity='BasePercent'>
+    <Target type='ProtoUnit'>AbstractLightInfantry</Target></Effect>
   ```
 
-  Up to 8 armors per proto. An effect on a damage type the proto has no armor for starts from 0
-  (so `BasePercent` changes nothing there).
-- **What stays stock:** the unit panel shows the last armor only, and saved games do not keep the
+  Up to 8 armors per proto. An effect on a damage type the proto has no armor for starts from 0 (so
+  `BasePercent` changes nothing there).
+- **What stays as it is:** the unit panel shows the last armor only, and saved games do not keep the
   other armors' tech changes (a loaded game has their data values).
 - **Log:** `multiarmor: protos keep one armor per damage type; ...`; `multiarmor: <Proto> has N
   armors` for the first proto with several; `multiarmor: an Armor effect changed damage type T of
   <Proto> (now V; stock type S kept)` the first time an effect goes to another armor;
   `unknown damagetype "..."` for a name the game does not know.
 - **Simulation:** changes combat: every player needs the same line.
-- **Status:** confirmed (2026-11-03, single player): a unit with Hand and Ranged armor 0.2 took 38
-  per pike hit with the key and 47.5 without it. A ship with Ranged 0.4 and Siege 0.3 and a tech
-  with +0.1 Ranged and +0.1 Siege effects: with the key Siege went to 0.4 and Ranged to 0.5; without
-  it Siege went to 0.5. Performance A/B in a battle of 160 units, 60 s each: 1263 / 1289 fps, update
-  0.138 / 0.136 ms, one frame over 50 ms each (no measurable cost). Video `multiarmor.mp4`.
-  In the WoL copy: HonorGuard against Pikemen; gwDreadnought with `GWantitorpedobulge`.
+- **Status:** confirmed (2026-11-03, single player, on WoL): `HonorGuard` took 38 per pike hit with the
+  key and 47.5 without it. `gwDreadnought`, with `GWantitorpedobulge` (+0.1 Ranged, +0.1 Siege effects):
+  with the key Siege went to 0.4 and Ranged to 0.5; without it Siege went to 0.5. Performance A/B in a
+  battle of 160 units, 60 s each: 1263 / 1289 fps, update 0.138 / 0.136 ms, one frame over 50 ms each
+  (no measurable cost). Video `multiarmor.mp4`.
 
 #### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
@@ -2039,39 +2038,29 @@ dodgeSoundSet <UnitType> <SoundSet>      one line per unit type; the first match
 criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match wins
 ```
 
-- **How stock behaves:** a hit can be dodged (it does no damage) only when the target is a
-  Japanese monk: the exe compares the target's proto with `ypMonkJapanese`, `ypMonkJapanese2`
-  and `ypMonkJapanese3`. The dodge then needs the tech `YPDodge` to be active for the target's
-  player (stock activates it with `ypMonasteryJapaneseCombat`), and happens on 15 % of the hits.
-  A dodge shows a floating text and plays the sound set `PowerEvade`; a critical hit (an attack
-  with `<HitPercentType>CriticalAttack</HitPercentType>`, e.g. the Chinese monk's) plays
-  `PowerCriticalStrike`. Both sound sets are the same for every unit.
-- **Effect of `dodgeAnyUnit`:** units whose proto is of `<UnitType>` can dodge too, through the
-  same stock code: the `YPDodge` tech of their player, the 15 % roll, the floating text and the
-  sound are unchanged. The Japanese monks keep dodging as in stock.
-- **Giving units the dodge:** add the marker to their protos, and make `YPDodge` active for the
-  players who should have it, from a tech of that civ (for example a starting tech, or a home
-  city card):
-
-  ```xml
-  <Unit id ='288' name ='Explorer'>
-      ...
-      <UnitType>AbstractDodge</UnitType>
-  ```
+- **In WoL today:** a hit can be dodged (it does no damage) only when the target is a Japanese monk: the
+  exe compares the target's proto with `ypMonkJapanese`, `ypMonkJapanese2` and `ypMonkJapanese3`. The
+  dodge then needs the tech `YPDodge` to be active for the target's player (`ypMonasteryJapaneseCombat`
+  activates it), and happens on 15 % of the hits. A dodge shows a floating text and plays the sound set
+  `PowerEvade`; a critical hit (an attack with `<HitPercentType>CriticalAttack</HitPercentType>`, e.g.
+  the Chinese monk's) plays `PowerCriticalStrike`. Both sound sets are the same for every unit.
+- **Effect of `dodgeAnyUnit`:** units whose proto is of `<UnitType>` can dodge too, through the same
+  code: the `YPDodge` tech of their player, the 15 % roll, the floating text and the sound are
+  unchanged. The Japanese monks keep dodging.
+- **WoL needs:** a type or proto name in the cfg (`dodgeAnyUnit Settler`, `dodgeAnyUnit AbstractInfantry`)
+  needs no data change, or put the marker `AbstractDodge` on the protos. Then make `YPDodge` active for
+  the players who should have it, from a tech of that civ, such as its `Age0<Civ>` tech or a home city
+  card:
 
   ```xml
   <Effect type ='TechStatus' status ='active'>YPDodge</Effect>
   ```
 
-  The marker is registered by the DLL, like `healNonIdle`'s; edit `protoy.xml` and its XMB as
-  described there. An existing type or proto name works too (`dodgeAnyUnit AbstractInfantry`),
-  with no data change.
-- **Effect of `dodgeSoundSet` / `criticalSoundSet`:** a unit of `<UnitType>` (a unit type, which
-  may be a marker, or a proto name) plays `<SoundSet>` instead of the stock set: when it dodges,
-  for `dodgeSoundSet`; when it lands a critical hit, for `criticalSoundSet` (the sound belongs to
-  the attacker). `<SoundSet>` is the name of a sound set of the game's sound data
-  (`soundsetsy.xml` in TAD). A unit that matches no line keeps the stock sound. These two keys
-  work with or without `dodgeAnyUnit`.
+- **Effect of `dodgeSoundSet` / `criticalSoundSet`:** a unit of `<UnitType>` (a unit type, which may be a
+  marker, or a proto name) plays `<SoundSet>` instead of the usual set: when it dodges, for
+  `dodgeSoundSet`; when it lands a critical hit, for `criticalSoundSet` (the sound belongs to the
+  attacker). `<SoundSet>` is the name of a sound set of the game's sound data (`soundsetsy.xml`). A unit
+  that matches no line keeps the usual sound. These two keys work with or without `dodgeAnyUnit`.
 - **`log`:** writes one line per dodge, and, while `dodgeAnyUnit … log` is set, one line per
   dodge or critical sound with the set it played. Use it to check your data, not in a release:
   a long game writes many lines.
@@ -2084,12 +2073,12 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   `dodgeSoundSet: unit N (Proto) plays sound set S`.
 - **Simulation:** `dodgeAnyUnit` yes (a dodged hit does no damage; it also adds a unit type, which
   changes the unit type count). The sound keys no.
-- **Status:** confirmed in single player (test bed, 2026-10-28): an Explorer with
-  `AbstractDodge`, with `YPDodge` active, dodged 5 of the hits of four musketeers in 30 s of game
-  time; a Japanese monk next to it dodged as in stock. The floating text was not checked. With a marker no unit had, the
-  Explorer never dodged and the monk still did. `dodgeSoundSet` picked the configured set for the
-  Explorer, and `criticalSoundSet ypMonkChinese PowerEvade` for a Chinese monk's critical hits
-  (seen in the log; the sound itself was not listened to).
+- **Status:** confirmed in single player. In WoL (2026-11-04), with `dodgeAnyUnit Settler`: the video
+  under [dodgeChance](#dodgechance), a European settler dodging at 15 %. On the stock game (2026-10-28), a
+  marked Explorer dodged 5 hits of four attackers in 30 s, a Japanese monk next to it still dodged, and
+  with a marker no unit had the Explorer never dodged. `dodgeSoundSet` and `criticalSoundSet` picked the
+  configured sets, in the log; the sound itself was not listened to, and the floating text was not
+  checked.
 
 #### dodgeChance
 
@@ -2100,7 +2089,7 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 *In WoL, with `dodgeChance ypSettlerJapanese 50 notech ranged log` and `dodgeAnyUnit Settler log`
 (`YPDodge` active; the villagers are selected):* three Redcoats shoot four villagers that do not
 shoot back. The two Japanese settlers dodge 18 of their 31 rolls, the European settler dodges at the
-stock 15 %, and the unmarked Indian settler, which never dodges, dies first.
+exe's 15 %, and the unmarked Indian settler, which never dodges, dies first.
 [Full video (MP4)](media/dodge-wol.mp4).
 
 ![dodge in WoL, keys off](media/dodge-wol-control.gif)
@@ -2115,27 +2104,28 @@ dodgeChance <UnitType> <percent> [tech <TechName> | notech] [ranged | melee | al
 
 One line per rule; several lines add up, and the first rule that matches a hit decides.
 
-- **How stock behaves:** only the three Japanese monks dodge, on 15 % of the hits (15 of the
-  101 values of the roll), while their player has `YPDodge` ([dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset)).
+- **In WoL today:** only the three Japanese monks dodge, on 15 % of the hits (15 of the 101 values of the
+  roll), while their player has `YPDodge` ([dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset)).
 - **Effect:** each hit on a unit is matched against the rules, in cfg order. A rule matches
-  when the unit's proto is of `<UnitType>` (a marker, a stock type or a proto name) and, with
+  when the unit's proto is of `<UnitType>` (a marker, an existing type or a proto name) and, with
   `ranged` or `melee`, when the hit's damage type is `Ranged` or `Hand` (of `damagetypes.xml`;
   `all`, the default, matches every hit, `Siege` included). The first matching rule decides:
-  - its tech must be active for the unit's player: `YPDodge` by default, as stock;
+  - its tech must be active for the unit's player: `YPDodge` by default;
     `tech <TechName>` another tech; `notech` none. Otherwise the hit lands;
   - the hit is then dodged with `<percent>` % chance: 0 to 100, one decimal at most (`12.5`),
     drawn from the game's synced random numbers. 0 % and 100 % draw nothing;
-  - a dodge is the stock dodge: no damage, the floating text, the dodge sound
-    (`dodgeSoundSet` still picks it).
+  - a dodge is the exe's dodge: no damage, the floating text, the dodge sound (`dodgeSoundSet` still
+    picks it).
 
-  A rule's units dodge with or without `dodgeAnyUnit`. A hit that no rule matches keeps the
-  other keys' behaviour: a unit with `dodgeAnyUnit`'s marker gets the stock 15 % with
-  `YPDodge`, a Japanese monk the stock dodge, any other unit no dodge.
+  A rule's units dodge with or without `dodgeAnyUnit`. A hit that no rule matches keeps the other keys'
+  behaviour: a unit with `dodgeAnyUnit`'s marker gets 15 % with `YPDodge`, a Japanese monk its usual
+  dodge, any other unit no dodge.
 - **Per damage type:** `dodgeChance X 40 ranged` then `dodgeChance X 10 melee` gives 40 % against
   ranged hits and 10 % against melee hits; siege hits match neither and fall back as above.
   `dodgeChance X 0 melee` alone stops marked units from dodging melee hits.
-- **Data:** the unit type on the units, as for [dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset),
-  and the rule's tech active for their players (none with `notech`).
+- **WoL needs:** a type or proto name in the rule, or a marker on the units, as for
+  [dodgeAnyUnit](#dodgeanyunit-dodgesoundset-and-criticalsoundset), and the rule's tech active for their
+  players (none with `notech`).
 - **`log`** (on any line): once per data load, each rule's resolved tech and damage type; then
   one line per roll: `dodgeChance: unit N (Explorer), rule 1 (50.0 %): roll 238 -> dodged` (the
   roll is 0..999 and dodges below the percent × 10; −1 when nothing is drawn), or `… rule 2: tech
@@ -2147,25 +2137,20 @@ One line per rule; several lines add up, and the first rule that matches a hit d
   key, and the other dodge keys with it: `dodgeChance: expected "dodgeChance <UnitType> <percent
   0-100> …" (bad percent 150); feature not applied` or `dodgeChance X: unexpected argument …`,
   then `dodgeAnyUnit/dodgeChance/dodgeSoundSet/criticalSoundSet: FAILED`.
-- **Simulation:** yes, every player needs the same lines. The rolls use the stream of the game's
-  synced random numbers that the stock dodge uses, only for hits that a rule between 0 and 100 %
+- **Simulation:** yes, every player needs the same lines. The rolls use the stream of the game's synced
+  random numbers that the exe's dodge uses, only for hits that a rule between 0 and 100 %
   matches, the same on every machine. A rule's type that the data does not define adds a unit
   type: load saved games and replays with the same cfg.
-- **Status:** confirmed in single player (2026-10-29):
-  - 50 % `ranged`: 18 dodges in 46 rolls, then 28 in 50 in a second game; 0 % `melee`: 0 in 57;
+- **Status:** confirmed in single player. In WoL (2026-11-04): `dodgeChance ypSettlerJapanese 50 notech
+  ranged` gave 18 dodges in 31 rolls, and nobody dodged without the keys. On the stock game (2026-10-29):
+  - 50 % `ranged`: 18 dodges in 46 rolls, then 28 in 50; 0 % `melee`: 0 in 57;
   - 30 % `notech`, `YPDodge` not active: 20 in 71;
-  - 100 % with `tech HCExplorerFrench`, active: 49 of 49 (the Explorers stayed at full HP); a
-    monk rule whose tech was not active: 15 hits, no dodge, no fall back to the stock dodge;
-  - an unknown tech: logged, the rule disabled; bad lines (`150`, `12.25`, `-5`, an unknown word,
-    no percent, `tech` with no name): logged, the key not applied, the game normal;
-  - with `dodgeAnyUnit log` and `dodgeSoundSet`, the dodges of the rules logged `dodged a hit`
-    and played the configured set; without `dodgeChance` those keys behaved as before;
+  - 100 % with an active tech: 49 of 49; a rule whose tech was not active: 15 hits, no dodge;
+  - an unknown tech: logged, the rule disabled; bad lines (`150`, `12.25`, `-5`, an unknown word, no
+    percent, `tech` with no name): logged, the key not applied, the game normal;
   - a skirmish against the AI with these keys on played normally.
 
-  Not tested: multiplayer, siege hits, damage types other than the stock three.
-- **New in this DLL:** not in UHC 1.10.
-- **New in this DLL:** not in UHC 1.10. WoL request #1 and #1b
-  ([wol-requests.md](wol-requests.md)).
+  Not tested: multiplayer, siege hits.
 
 #### damageOverTime
 
@@ -2173,11 +2158,11 @@ One line per rule; several lines add up, and the first rule that matches a hit d
 
 ![damageOverTime stacks, snare and tick text](media/damageOverTime-stacks.gif)
 
-*2. `AttachMaxStacks`, `AttachSnare` and `AttachTickText`:* three Longbowmen whose arrows attach a 5 Siege poison with up to 3 stacks, a snare to half speed and a green tick text. Two Hussars charge them. The three first arrows put three stacks on one Hussar within a fraction of a second, so each tick deals 15 (`x3` in the overlay) and shows a small green `-15` over its health bar; its speed reads 3.38 instead of 6.75. When the archers are down the stacks expire one by one (10, then 5) and the last tick kills it (2x speed). [Full video (MP4)](media/damageOverTime-stacks.mp4).
+*On the stock game (not filmed in WoL yet), `AttachMaxStacks`, `AttachSnare` and `AttachTickText`:* three Longbowmen whose arrows attach a 5 Siege poison with up to 3 stacks, a snare to half speed and a green tick text. Two Hussars charge them. The three first arrows put three stacks on one Hussar within a fraction of a second, so each tick deals 15 (`x3` in the overlay) and shows a small green `-15` over its health bar; its speed reads 3.38 instead of 6.75. When the archers are down the stacks expire one by one (10, then 5) and the last tick kills it (2x speed). [Full video (MP4)](media/damageOverTime-stacks.mp4).
 
 ![damageOverTime with noticktext and snareOnlyHitUnit](media/damageOverTime-noticktext.gif)
 
-*3. `noticktext`, and the snare in a group:* the same fight with `damageOverTime log noticktext` and `snareOnlyHitUnit log`: three Hussars charge together, the poisoned one takes its 10 and 15-damage ticks with no green number over it, and the overlay shows `snareOnlyHitUnit` treating the poison's slow as a snare (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`) (2x speed). [Full video (MP4)](media/damageOverTime-noticktext.mp4).
+*On the stock game (not filmed in WoL yet), `noticktext`, and the snare in a group:* the same fight with `damageOverTime log noticktext` and `snareOnlyHitUnit log`: three Hussars charge together, the poisoned one takes its 10 and 15-damage ticks with no green number over it, and the overlay shows `snareOnlyHitUnit` treating the poison's slow as a snare (`counts 6.750 instead of 3.375 toward its group's pace`, `lags behind its formation slot`) (2x speed). [Full video (MP4)](media/damageOverTime-noticktext.mp4).
 
 ![damageOverTime in WoL](media/damageOverTime-wol.gif)
 
@@ -2197,8 +2182,8 @@ lives until about 45 s, kills one archer and leaves another at 7 HP.
 damageOverTime [log] [noticktext]
 ```
 
-- **How stock behaves:** TAD has no damage over time. The exe still contains Age of Mythology's
-  poison, but the function that would apply it is empty, so nothing happens.
+- **In WoL today:** there is no damage over time. The exe still contains Age of Mythology's poison, but
+  the function that would apply it is empty, so nothing happens.
 - **Effect:** an attack whose `<ProtoAction>` lists `<AttachProtoUnit>X</AttachProtoUnit>` poisons
   every unit it damages.
   - For X's `<Lifespan>` seconds, the unit takes the damage of X's `Attaching` action every `ROF`
@@ -2211,29 +2196,27 @@ damageOverTime [log] [noticktext]
   - Another hit by the same player renews the duration and keeps the tick timer (with
     `<AttachMaxStacks>`, it adds a stack instead; see below).
   - Poisons from different players, or from different attachment protos, run side by side.
-  - It works with every kind of attack tested: hand attacks, instant shots, flying arrows,
-    grenades and cannon balls, and area damage (one grenade poisoned all four musketeers it
-    hit).
-- **Your mod**, three pieces:
+  - It works with every kind of attack tested: hand attacks, instant shots, flying arrows, grenades
+    and cannon balls, and area damage (one grenade poisoned all four units it hit).
+- **WoL needs** three pieces:
   1. **The attacks.** Add the tag inside the attacker's existing `<ProtoAction>` blocks in
      `protoy.xml`:
 
      ```xml
      <ProtoAction>
-         <Name>VolleyRangedAttack</Name>
+         <Name>StaggerRangedAttack</Name>
          ...
-         <AttachProtoUnit>PoisonDart</AttachProtoUnit>
+         <AttachProtoUnit>PoisonArrow</AttachProtoUnit>
      </ProtoAction>
      ```
 
      - The game reads a `<ProtoAction>` only when its `<Name>` is its first child and names an
        action of the unit's tactics file. It skips any other block without a message, and the
        tag with it.
-     - A unit has one attack per stance, and each needs its own tag. Use the `<Name>`s of the
-       unit's existing blocks. The Skirmisher, for example, has no `RangedAttack`. Its ranged
-       attacks are `VolleyRangedAttack`, `StaggerRangedAttack` and `DefendRangedAttack`, and its
-       melee attacks are `VolleyHandAttack`, `StaggerHandAttack`, `DefendHandAttack` and
-       `MeleeHandAttack`.
+     - A unit has one attack per stance, and each needs its own tag. Use the `<Name>`s of the unit's
+       existing blocks. `xpAenna` (`archer.tactics`), for example, has no `RangedAttack`: its ranged
+       attacks are `StaggerRangedAttack`, `DefendRangedAttack` and others, and its melee attacks are
+       `MeleeHandAttack`, `DefendHandAttack` and `StaggerHandAttack`.
      - The load-time line `<Unit>/<Action> attaches <X>` in `UHC.log` lists every tag the game
        read.
 
@@ -2241,8 +2224,8 @@ damageOverTime [log] [noticktext]
      created in the world.
 
      ```xml
-     <Unit id ='1463' name ='PoisonDart'>
-         <DBID>2142</DBID>
+     <Unit id ='6055515' name ='PoisonArrow'>
+         <DBID>6055515</DBID>
          <Lifespan>6.0</Lifespan>
          <Tactics>uhcattachment.tactics</Tactics>
          <ProtoAction>
@@ -2256,9 +2239,8 @@ damageOverTime [log] [noticktext]
      </Unit>
      ```
 
-     - `id`: unit IDs in `protoy.xml` are numbered in order, so a new unit at the end takes the
-       last ID plus one (1463 in stock TAD). `DBID`: any value that no other unit uses (2142 is
-       free in stock).
+     - `id` and `DBID`: WoL's IDs are not in order. Any value that no other unit uses works: the
+       largest in WoL's `protoy.xml` is 6055514 for both, and the test used the next one.
      - `Lifespan` is the duration in seconds and `ROF` the seconds between ticks, so a poison
        deals Lifespan ÷ ROF ticks, rounded down (6 here).
      - `DamageFlags` says whose units the ticks hurt: `GAIA`, `Self`, `Ally` and `Enemy`,
@@ -2270,10 +2252,9 @@ damageOverTime [log] [noticktext]
        - its `Lifespan` (`subtype ='Lifespan'`), from the next hit;
        - the damage of its `Attaching` action, from the next tick:
          `<Effect type ='Data' action ='Attaching' amount ='1.25' subtype ='Damage'
-         relativity ='BasePercent'><Target type ='ProtoUnit'>PoisonDart</Target></Effect>`.
+         relativity ='BasePercent'><Target type ='ProtoUnit'>PoisonArrow</Target></Effect>`.
 
-       TAD has no tech effect for ROF, so the tick interval is always the `<ROF>` of the data.
-       Techs on X were not tested in game.
+       This DLL has no tech effect for ROF, so the tick interval is always the `<ROF>` of the data.
   3. **A tactics file for X.** The game ignores a `<ProtoAction>` whose name is not an action in
      the proto's tactics file, so X needs one with an action named `Attaching`. Save
      [examples/data/tactics/uhcattachment.tactics](../examples/data/tactics/uhcattachment.tactics)
@@ -2290,20 +2271,16 @@ damageOverTime [log] [noticktext]
      </tactics>
      ```
 
-     Keep `<tactic>Normal` and its `<action>` on one line, as here, or ship the compiled
-     `uhcattachment.tactics.xmb` next to the file. A line break after the tactic name can break
-     every AI player in the game ([tactics files](#tactics-files)).
-
-  After editing `protoy.xml`, make sure the game reads it rather than an older
-  `protoy.xml.XMB` ([section 6](#6-editing-the-game-data)).
+     Keep `<tactic>Normal` and its `<action>` on one line, as here. A line break after the tactic
+     name can break every AI player in the game ([tactics files](#tactics-files)).
 - **Optional tags**, in the same attacker `<ProtoAction>` as `<AttachProtoUnit>` (each one changes
   only the poisons of that attack; without them the poison is the one above):
 
   ```xml
   <ProtoAction>
-      <Name>VolleyRangedAttack</Name>
+      <Name>StaggerRangedAttack</Name>
       ...
-      <AttachProtoUnit>PoisonDart</AttachProtoUnit>
+      <AttachProtoUnit>PoisonArrow</AttachProtoUnit>
       <AttachMaxStacks>3</AttachMaxStacks>
       <AttachSnare>0.5</AttachSnare>
       <AttachTickText>40FF40</AttachTickText>
@@ -2318,23 +2295,22 @@ damageOverTime [log] [noticktext]
     (15, 10, 5 in the tests). N = 1 is the poison without the tag. When attacks with different N
     hit the same unit with the same X, the last hit's N counts.
   - **`<AttachSnare>F</AttachSnare>`** (a number from 0 to 10): while poisoned, a unit that can
-    move goes at F times its speed. It is the stock snare of `<TargetSpeedBoost>` (a speed
-    modifier that multiplies), with F instead of 0.65; it starts with the poison, is renewed at
-    every tick, and ends a quarter of a second after the last tick. Like the stock snare, only
-    the first snare counts when several apply, and [`snareOnlyHitUnit`](#snareonlyhitunit) treats
+    move goes at F times its speed. It is the snare of `<TargetSpeedBoost>` (a speed modifier that
+    multiplies), with F instead of 0.65; it starts with the poison, is renewed at every tick, and ends
+    a quarter of a second after the last tick. Only the first snare counts when several apply, and [`snareOnlyHitUnit`](#snareonlyhitunit) treats
     it as a snare. Buildings are not slowed.
   - **`<AttachTickText>RRGGBB</AttachTickText>`** (a colour in hex; empty for green 40FF40): each
-    tick shows the damage it dealt, for example `-15`, over the unit in that colour. It is the
-    floating text of the stock dodge, without its rise, and only the player whose screen shows
-    the unit sees it. `damageOverTime noticktext` in a player's `uhc.cfg` turns all tick texts
-    off for that player; it changes nothing else.
+    tick shows the damage it dealt, for example `-15`, over the unit in that colour. It is the floating
+    text of the dodge, without its rise, and only the player whose screen shows the unit sees it.
+    `damageOverTime noticktext` in a player's `wol.cfg` turns all tick texts off for that player; it
+    changes nothing else.
 
   A value the DLL cannot read is logged and that tag is ignored.
 - **Not done:**
   - no model or effect shows the poison, since X never exists in the world (`AttachTickText`
     shows the ticks as text);
   - poisons are not saved in saved games, so a loaded game starts without them (tested);
-  - the stock `Poison` flag is not used.
+  - the exe's `Poison` flag is not used.
 - **`log`** writes every poison, renewal, tick and end to `UHC.log`, and once per attack the
   attacks that deal damage without `<AttachProtoUnit>` (`damage by proto N (Name), action A …:
   no <AttachProtoUnit> there`, at most 200 a session), which tells you the name the game uses for
@@ -2372,76 +2348,32 @@ damageOverTime [log] [noticktext]
     (0x481A57)` (the world update wrapper, shared with `overhealDecay`).
 - **Check:** hit a unit once and pull back. Its hitpoints keep dropping by one tick every ROF
   seconds. In the tests, poisoned guardians and animals sometimes jumped back to full hitpoints,
-  most likely when they went back to their spot. That is stock behavior (not traced), and it can
-  hide the poison; the `log` lines show the ticks anyway.
+  most likely when they went back to their spot. The exe does that (not traced), and it can hide the
+  poison; the `log` lines show the ticks anyway.
 - **Simulation:** yes. Every player needs the same data and the same key; `noticktext` only
   changes what that player sees and may differ.
-- **Status:** confirmed in single player, by hand and with the unattended test
-  ([developer-guide.md](developer-guide.md#driving-the-game-unattended)). With the Explorer's
-  `HandAttack` and `VolleyRangedAttack` attaching a 20-damage, 1-second, 10-second poison:
-  - against Musketeers, each tick took exactly 20 hitpoints every 1000 ms of game time;
-  - leaving a game with a poison running dropped it when the next game started, a scenario or a
-    skirmish (the `another game started` line);
-  - lions, macaques and wandering horsemen (Gaia) took 20 damage per tick, 14 against the
-    horsemen's ranged armor;
-  - each hit renewed the poison, and several units died from the poison alone;
-  - the AI's explorer poisoned units too, since the data applies to every player;
-  - skirmishes started after a poison game, in the same session, had working AI players;
-  - X's tactics file worked as XML alone, without its `.xmb`, in the one-line form above.
-
-  Then, on 2026-10-29, with the data of `tools/dot_testdata.py` (one X per weapon, test maps
-  without AI):
-  - **area damage and a flying grenade:** one Grenadier grenade poisoned all four musketeers it
-    hit (10 Siege per tick each, renewed by the next grenades, three of them died of it);
-  - **flying arrows:** a Crossbowman's arrow poisoned a musketeer, 4.80 per tick (6 Hand less its
-    20 % hand armor); Longbowman arrows too;
-  - **a cannon ball:** a Falconet's shot poisoned the musketeer it did not kill, 15 per tick;
-  - **`DamageBonus` on X:** the arrow's X (triple damage against `AbstractCavalry`) dealt 18 per
-    tick to a Hussar and 4.80 to a musketeer;
-  - **a tech on X:** a tech doubling the damage of X's `Attaching` action, turned on in the
-    middle of the poison, took the next ticks from 18 to 36 (Hussar) and from 4.80 to 9.60
-    (musketeer);
-  - **DamageFlags:** with X set to `Enemy`, a poisoned musketeer converted to the attacker's side
-    (trigger `Convert`) took 0.00 per tick from then on, also after the attacker died;
-  - **attacker gone:** an Explorer removed (trigger `Destroy`) after its hit: the ticks went on
-    (`attacker gone`) and killed the musketeer. A unit that is only killed keeps its ID while its
-    body lies there, so the attacker counts as gone only once the body disappears;
-  - **kill and XP credit:** that musketeer, killed by a tick after its attacker was removed, gave
-    player 1 its 10 XP bounty (the XP rose by 14 in that second, against 4 from the steady XP
-    trickle; read in memory, `[player+230h]`, entry 5);
-  - **`AttachMaxStacks 3`, `AttachSnare 0.5`, `AttachTickText`:** on a Hussar, the ticks went 5,
-    10, 15 as Longbowman arrows added stacks, and back to 10 and 5 as they expired one by one;
-    its speed read 3.38 (6.75 × 0.5) while poisoned; the green ticks show in the video above;
-  - **AI:** skirmishes (fast speed) between two AI players (Spanish and Portuguese, no teams)
-    and the player, with this data plus the `--ai` data (a long poison on their Musketeers,
-    Skirmishers, Pikemen and Hussars): in 12 minutes, 49 poisons and 242 ticks between the AIs'
-    units; in another 25-minute game with a 120 s poison, 902 ticks after the attacking unit was
-    gone; no XS error and no crash, both AIs kept playing;
-  - `noticktext`: the startup line says the tick texts are off, and in a filmed fight the
-    poisoned Hussar took its 15-damage ticks with no green number over it; noTrainNearEnemyTC's
-    warning, which shares the floating text code, still showed in another game with this option;
-  - **invalid values** (`dot_testdata.py --bad`): `<AttachMaxStacks>` 0, 101 and `abc`,
-    `<AttachSnare>` -1, 20 and `x`, `<AttachTickText>` `GG0000` and `12345` each logged their
-    "ignored" line at load; the Musketeer carrying them still poisoned with the defaults
-    (`stack 1/1`, no slow, no text); an empty `<AttachTickText></AttachTickText>` took the default
-    green; a Skirmisher with `<AttachMaxStacks>` but no `<AttachProtoUnit>` logged `… but no
-    <AttachProtoUnit>; ignored` on its first hit and poisoned nothing;
-  - **the snare in a group:** three Hussars charging together in formation, with
-    [`snareOnlyHitUnit`](#snareonlyhitunit) `log` on: for the poisoned one that key logged `is
-    snared; it counts 6.750 instead of 3.375 toward its group's pace` and `lags behind its
-    formation slot; its group does not wait for it`, so the poison's slow is a snare for it;
-  - **saved games:** a game saved with a poison running (its attacker already removed) and
-    loaded at once logged `the data was reloaded; 1 running poison(s) dropped`; the Hussar kept
-    its 60.4 hitpoints for the next 25 s instead of dying from the ticks, and the game went on.
-
-  **Not reproduced:** a tick on a unit of an engine army after the attacking unit is gone (the
-  p11 = 0 path of [how-it-works](how-it-works.md#damageovertime)). No unit ever carried the army
-  flag in the tests (read in memory): not the AIs' military units at minute 26, not units sent by
-  the scenario trigger `Army Deploy`, not units a map put in an army with `rmCreateArmy` /
-  `rmAddUnitsToArmy`. So the attacker-gone ticks (902 in the AI game) never met that case; the
-  guard stays a reading of the code. Multiplayer was not tested either.
-- **New in this DLL:** not in UHC 1.10. It is a DE-style poison: the attack names an attachment
-  proto that carries the duration and the damage.
+- **Status:** confirmed in single player.
+  - **In WoL (2026-11-04):** three Aenna with a poison of 4 Ranged a second for 8 s, up to 3 stacks and
+    a green tick text (`tools/dot_testdata.py --wol`): ticks of 12 at three stacks killed a Landsknecht
+    at 36 s; without the key it lived to about 45 s.
+  - **On the stock game (2026-10-28 and 29),** with `tools/dot_testdata.py`:
+    - hand attacks, instant shots, flying arrows, grenades (one poisoned all four units it hit) and
+      cannon balls; Gaia units too;
+    - `DamageBonus` on X (18 a tick on a Hussar, 4.80 on infantry), a tech on X (from 18 to 36), and
+      `DamageFlags`: a poisoned unit converted to the attacker's side took 0.00 per tick;
+    - a removed attacker: the ticks went on and killed the unit, and the kill gave the attacker's
+      player its XP bounty. A unit that is only killed keeps its ID while its body lies there, so the
+      attacker counts as gone once the body disappears;
+    - `AttachMaxStacks 3`, `AttachSnare 0.5`, `AttachTickText` and `noticktext`, as in the videos, and
+      invalid values (`dot_testdata.py --bad`), each logged and ignored;
+    - AI: in 12 minutes, 49 poisons and 242 ticks between two AIs; in a 25-minute game with a 120 s
+      poison, 902 ticks after the attacker was gone; no XS error and no crash;
+    - saved games: a game saved with a poison running loaded without it (`the data was reloaded; 1
+      running poison(s) dropped`).
+  - **Not tested:** poison in an AI game of WoL, multiplayer.
+  - **Not reproduced:** a tick on a unit of an engine army after the attacking unit is gone (the p11 = 0
+    path of [how-it-works](how-it-works.md#damageovertime)). No unit carried the army flag in any test,
+    so that guard stays a reading of the code.
 
 #### spreadAnyAccuracy
 
@@ -2457,8 +2389,8 @@ point up to 3 m away, and it hurts whoever stands within 1 m of it.
 
 ![spreadAnyAccuracy in WoL, key off](media/spreadAnyAccuracy-wol-control.gif)
 
-*In WoL, key off (the same scene):* stock: the 59 % of shots that miss do no damage, the hits damage
-their target. In this melee-range fight the total damage is about the same either way: seven
+*In WoL, key off (the same scene):* the 59 % of shots that miss do no damage, the hits damage their
+target. In this melee-range fight the total damage is about the same either way: seven
 Scythemen survive with 827 HP without the key, and with it 800 and 562 HP in two runs (one with all
 eight alive). [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
 
@@ -2466,26 +2398,27 @@ eight alive). [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
 spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 ```
 
-- **How stock behaves:** each ranged shot that is not `InstantBallistics` rolls its `Accuracy` when
-  it is fired (the roll also counts the distance, so even accuracy 1.0 misses about 8 % of the shots
-  at 16 m). A hit flies to its target and damages it. A miss lands at a random point up to `r` away
-  on each axis, with `r = min(0.25 × distance, 5)` for every unit, and **deals no damage at all**,
-  not even with `<DamageArea>`. The `<maxspread>` and `<spreadfactor>` lines of the tactics files
-  are ignored: the exe has no code for them.
+- **In WoL today:** each ranged shot that is not `InstantBallistics` rolls its `Accuracy` when it is
+  fired (the roll also counts the distance, so even accuracy 1.0 misses about 8 % of the shots at 16 m).
+  A hit flies to its target and damages it. A miss lands at a random point up to `r` away on each axis,
+  with `r = min(0.25 × distance, 5)` for every unit, and **deals no damage at all**, not even with
+  `<DamageArea>`. The `<maxspread>` and `<spreadfactor>` lines of WoL's tactics files (317 files, 647
+  actions) are ignored: the exe has no code for them.
 - **Effect:**
   - Every action reads **`<MaxSpread>`** (a number from 0 to 100, in metres) and
-    **`<SpreadFactor>`** (a number from 0 to 10), in a tactics file's `<action>` or in a `protoy`
-    `<ProtoAction>` (a `<ProtoAction>` overrides the tactics file). Without a tag the stock value
-    stays (5 and 0.25).
+    **`<SpreadFactor>`** (a number from 0 to 10), in a tactics file's `<action>` or in a `protoy.xml`
+    `<ProtoAction>` (a `<ProtoAction>` overrides the tactics file). Without a tag the exe's value stays
+    (5 and 0.25).
   - **Every miss** of every unit uses its action's values: `r = min(SpreadFactor × distance,
-    MaxSpread)`. The random draws are the stock ones; only `r` changes.
+    MaxSpread)`. The random draws are the exe's; only `r` changes. So the key changes every miss of
+    WoL's 647 actions at once, with their current values: check the balance.
   - **Units of `<UnitType>`** scatter every shot that rolls, whatever the accuracy (1.0 and
     `PerfectAccuracy` included): each shot lands at the offset point as a **ground shot** (what
     grenades and mortars fire) and deals its attack where it lands. With `<DamageArea>` the units
     within that radius of the point take the damage, the target included when it is close enough;
     without `<DamageArea>` the shot hits nothing.
-  - Unmarked units keep the stock hits; only their misses change.
-- **Your data:**
+  - Unmarked units keep their hits; only their misses change.
+- **WoL needs:**
 
   ```xml
   <!-- data\tactics\<file>.tactics, in the <action> (keep <name> first) -->
@@ -2511,16 +2444,15 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
   Mark only units whose attack has `<DamageArea>`, such as shotguns: a marked attack without area
   does no damage. The marker is registered by the DLL, like `healNonIdle`'s; an existing type or
   proto name works too (`spreadAnyAccuracy Escopetero`).
-- **Not covered** (these shots never reach the code; they behave as in stock):
+- **Not covered** (these shots never reach the code, and stay as they are):
   - actions with `<InstantBallistics>` (sure hits: most muskets) or `<TargetGround>` (grenades,
     mortars). Of WoL's 647 actions with spread tags, 304 and 122; the current shotgun files
     (`wolinfantryrangedescopetero`, `wolinfantryrangedbacamarteer`, the trench fighter's volley)
     are covered;
   - shots at the ground with no target unit, and every shot when the startup cfg does not define
-    `ballisticPrecalcHits` (the game's own `Startup\gamey.cfg` defines it; keep that line if your mod
-    ships its own startup cfg);
+    `ballisticPrecalcHits` (`Startup\gamey.cfg` defines it; keep that line);
   - `<NumberProjectiles>`: a shot is still one projectile.
-- **`log`:** one line per value that differs from the stock 5 / 0.25 (the first 200 per data load),
+- **`log`:** one line per value that differs from the exe's 5 / 0.25 (the first 200 per data load),
   and the first 5 offset shots of each attack (at most 100): who shot, a miss or a marked shot, `r`
   and the values used. Invalid values are logged with or without `log`.
 - **Log:**
@@ -2528,7 +2460,7 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
     and 0.25) and every miss uses them; units of unittype X scatter every precalculated shot
     (multiplayer unverified)` (with `log`: `…; values and shots logged …`);
   - while the data loads, `unit types: X -> <ID> …`, `hook reached: action tag (0x5FA11E)` and,
-    for each invalid value, `spreadAnyAccuracy: Musketeer/VolleyRangedAttack (protoy):
+    for each invalid value, `spreadAnyAccuracy: Escopetero/VolleyRangedAttack (protoy):
     <MaxSpread>abc</MaxSpread> is not a number from 0 to 100; ignored` (or `… before the action's
     <name>; ignored (put <name> first)`); with `log`, `spreadAnyAccuracy:
     Crossbowman/VolleyRangedAttack (tactics): MaxSpread 20.00`;
@@ -2541,26 +2473,17 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
     a miss, r = 20.00 m (SpreadFactor 2.00, MaxSpread 20.00)`.
 - **Simulation:** yes (where shots land and what they damage; it also adds a unit type, which
   changes the unit type count).
-- **Status:** confirmed in single player (test bed, 2026-10-30), in fights of five units against
-  musketeers:
-  - the values: read from a loose `archer.tactics` (20 / 2) and from `<ProtoAction>` lines, which
-    overrode the file (3 / 1.5); invalid values (`abc`, `-1`, `1000`, `2x`, `-3`) logged and ignored;
-  - misses: unmarked Crossbowmen missed with `r = 20 m`, unmarked Chu Ko Nu with the stock
-    `0.25 × d`;
-  - marked units: every shot of Longbowmen with accuracy 1 (and in another run with
-    `PerfectAccuracy`) became a ground shot with `r = 3 m`, and the musketeers they shot kept full
-    HP (no `DamageArea`); stock Longbowmen won the same fight. Marked Aenna with `DamageArea` 2.5
-    killed their musketeers by area hits. A marked unit with `MaxSpread` 0 hit its targets by area
-    at the target's point;
-  - marked Grenadiers (`TargetGround`) behaved as in stock, never reaching the hooks;
-  - without the key, nothing was logged and the Longbowmen hit as in stock; with a bad argument the
-    key logged `FAILED` and the game ran;
-  - a skirmish against two AIs with the key and `damageOverTime` on played normally (the AI
-    gathered, built, chatted), and the data reload at its start read the values again.
-
-  Multiplayer, saved games and a loaded game were not tested; the area damage of the ground shots
-  was seen on HP, the landing points only on video.
-- **New in this DLL:** not in UHC 1.10. WoL request #2 ([wol-requests.md](wol-requests.md)).
+- **Status:** confirmed in single player.
+  - **In WoL (2026-11-04):** WoL's own Escopeteros, as in the videos. The total damage in that fight at
+    melee range is about the same with and without the key.
+  - **On the stock game (2026-10-30):** values read from a tactics file (20 / 2) and from `<ProtoAction>`
+    lines, which overrode the file (3 / 1.5); invalid values (`abc`, `-1`, `1000`, `2x`, `-3`) logged and
+    ignored; unmarked misses with `r = 20 m`, and with the default `0.25 × d`; marked archers with
+    accuracy 1 or `PerfectAccuracy`, every shot a ground shot; marked archers with `DamageArea` 2.5
+    killed by area hits, and without it hit nothing; marked Grenadiers (`TargetGround`) never reached
+    the hooks; a skirmish against two AIs played normally.
+  - **Not tested:** multiplayer, saved games. The area damage of the ground shots was seen on HP, the
+    landing points only on video.
 
 #### broadsideMuzzleLimit
 
@@ -2577,36 +2500,35 @@ Destroyer 6; Geobukseon, Joukisen, Windjammer 5; Corvette 4; Dreadnought 3).
 
 ![broadsideMuzzleLimit in WoL, key off](media/broadsideMuzzleLimit-wol-control.gif)
 
-*In WoL, key off (the same scene):* stock keeps 6 slots per side, so the Tekkousen fires fewer shots
+*In WoL, key off (the same scene):* the exe keeps 6 slots per side, so the Tekkousen fires fewer shots
 per volley. [Full video (MP4)](media/broadsideMuzzleLimit-wol-control.mp4).
 
 ```
 broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitType, every ship
 ```
 
-- **How stock behaves:** most ships' attacks are `BroadsideAttack` actions in their tactics file:
-  the normal ranged attack of the TAD warships (the Tekkousen uses `frigate.tactics`), the action
-  of the `PowerBroadside` ability, and the ironclad's long-range shot. When such an action is set
-  up, each muzzle of the ship's model gets a firing slot; the muzzles are the model's MuzzleR
-  (right) and MuzzleL (left) attach points. The exe keeps at most **6 slots per side**, and only
-  **1** when the attack has `<SingleUsePlayer>`. A volley fires one projectile per slot on the side
-  that faces the target, so a stock ship fires at most 6 shots per side whatever its model has.
-  The Tekkousen's model has 10 muzzles per side, and 4 of them never fire. `<NumberProjectiles>`
-  is not read at all in TAD.
+- **In WoL today:** most ships' attacks are `BroadsideAttack` actions in their tactics file: the normal
+  ranged attack of the warships (the Tekkousen uses `frigate.tactics`), the action of the
+  `PowerBroadside` ability, and the ironclad's long-range shot. When such an action is set up, each
+  muzzle of the ship's model gets a firing slot; the muzzles are the model's MuzzleR (right) and MuzzleL
+  (left) attach points. The exe keeps at most **6 slots per side**, and only **1** when the attack has
+  `<SingleUsePlayer>`. A volley fires one projectile per slot on the side that faces the target, so a
+  ship fires at most 6 shots per side whatever its model has. The Tekkousen's model has 10 muzzles per
+  side, and 4 of them never fire. `<NumberProjectiles>` is not read at all.
 - **Effect:** for the matched ships the limit becomes N.
   - The model still decides how many muzzles there are: a model with 5 per side fires 5 whatever N
     is.
   - `SingleUsePlayer` attacks keep 1 per side, and ships that do not match keep 6.
   - N below 6 lowers the limit.
-- **Choosing the ships:** `<UnitType>` can be a proto name (`broadsideMuzzleLimit 11
-  ypTekkousen`), a stock unit type (`AbstractWarShip`), or a new marker, which the DLL registers
-  like `healNonIdle`'s (list it on the ships in `protoy.xml` and its XMB). With no `<UnitType>`,
-  every ship gets the limit. The exe only gives muzzle slots to units of the built-in type `Ship`.
+- **Choosing the ships:** `<UnitType>` can be a proto name (`broadsideMuzzleLimit 11 ypTekkousen`), an
+  existing unit type (`AbstractWarShip`), or a new marker, which the DLL registers like `healNonIdle`'s.
+  With no `<UnitType>`, every ship gets the limit. The exe only gives muzzle slots to units of the built-in type `Ship`.
 - **Which attacks:** every `BroadsideAttack` action of a matched ship, its normal attack as well as
   the ability's. In continuous fire, more slots mean a longer rotation over more muzzles: the rate
   stays about one shot per `ROF`. A single-volley ability (`PowerBroadside`) fires all its slots
   once, so it gains the most. Attacks of type `Attack` never use muzzle slots.
-- **Your mod:** a ship model with more than 6 muzzle attach points per side. Two stock quirks stay:
+- **WoL needs:** a ship model with more than 6 muzzle attach points per side. Of 17 WoL warships scanned,
+  only the Tekkousen has them (see the video). Two rules of the exe stay:
   - the right side drives both schedules: the left side fires at most as many shots as the right
     side has slots, and a model with no MuzzleR point never fires its broadside;
   - each slot waits a random 0.25 to 1.75 × `ROF` after the previous one (sync RNG).
@@ -2627,14 +2549,11 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
   line.
 - **Simulation:** yes: more projectiles, and one more sync-RNG draw per extra slot and volley. A
   new marker also adds a unit type.
-- **Status:** confirmed in single player (2026-10-29) with `broadsideMuzzleLimit 11 ypTekkousen
+- **Status:** confirmed in single player, in WoL (2026-11-03) with `broadsideMuzzleLimit 11 ypTekkousen
   log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. The
-  `PowerBroadside` ability and `SingleUsePlayer` attacks were not tested.
-- **New in this DLL:** not in UHC 1.10. WoL request #15 ([wol-requests.md](wol-requests.md)).
-  According to the scoping (not tested), WoL's FloatingBattery and Battleship models have 7
-  muzzles per side, and its ironclad long-range attack has `SingleUsePlayer`, so it keeps 1. A
-  projectile count set in the data, independent of the model (`numberprojectiles`), is a
-  different and larger change; it is not provided.
+  `PowerBroadside` ability and `SingleUsePlayer` attacks were not tested. WoL's ironclad long-range
+  attack has `SingleUsePlayer`, so it keeps 1. A projectile count set in the data, independent of the
+  model (`numberprojectiles`), is a different and larger change; it is not provided.
 
 #### snareOnlyHitUnit
 
@@ -2660,21 +2579,20 @@ with the key (sampled once a second).
 snareOnlyHitUnit [log]
 ```
 
-- **How stock behaves:** an attack whose tactics action has
-  `<TargetSpeedBoost>1</TargetSpeedBoost>` snares its target: the target's speed is multiplied by
-  0.65 for 3 seconds. Stock TAD gives it to most melee attacks; WoL uses it on many more. A unit
-  that moves in a group (several units ordered together) does not use its own speed: the group
+- **In WoL today:** an attack whose tactics action has `<TargetSpeedBoost>1</TargetSpeedBoost>` snares its
+  target: the target's speed is multiplied by 0.65 for 3 seconds. WoL gives it to most melee attacks and
+  many more. A unit that moves in a group (several units ordered together) does not use its own speed: the group
   moves at the speed of its slowest member. One snared unit therefore slows its whole group to
   0.65× for 3 s.
 - **Effect:** the group's pace ignores the snare: a snared member counts with the speed it would
   have without it (other speed modifiers, such as auras, still count). While the snare lasts, the
   snared member also no longer makes the group wait when it falls behind its place in the
   formation. Only the hit unit slows down.
-- **After the snare:** the stock rule for stragglers applies again. If the unit is then more than
+- **After the snare:** the exe's rule for stragglers applies again. If the unit is then more than
   2 m behind its place, the group moves at 0.83× its speed until the unit is back, as for a unit
   that got stuck. A unit snared again and again keeps falling behind while the group goes on.
-- **Your mod:** nothing. Every `<TargetSpeedBoost>` attack is covered, and only those: the
-  attacker's own `<SpeedBoost>`, speed auras and techs keep their stock effect on the group.
+- **WoL needs:** nothing. Every `<TargetSpeedBoost>` attack is covered, and only those: the attacker's own
+  `<SpeedBoost>`, speed auras and techs still act on the group.
 - **`log`:** one line per snare and unit when the snare is left out of the group's pace, and one
   when the snared unit falls behind without making the group wait.
 - **Log:** at startup `snareOnlyHitUnit: a snared unit (TargetSpeedBoost) no longer slows its
@@ -2682,21 +2600,15 @@ snareOnlyHitUnit [log]
   unverified)` (with `log`: `…lasts, every snared member logged (multiplayer unverified)`); in a
   game, `hook reached: snareOnlyHitUnit (0x4FD3FD)` (the first time any group recomputes its
   speed), and `(0x4FA17D)`, `(0x6AA514)` or `(0x6AA56A)` the first time a member falls more than
-  2 m behind its place. With `log`: `snareOnlyHitUnit: unit N (Musketeer) is snared; it counts
-  4.000 instead of 2.600 toward its group's pace` and `snareOnlyHitUnit: unit N (Musketeer) is
+  2 m behind its place. With `log`: `snareOnlyHitUnit: unit N (Redcoat) is snared; it counts
+  4.000 instead of 2.600 toward its group's pace` and `snareOnlyHitUnit: unit N (Redcoat) is
   snared and lags behind its formation slot; its group does not wait for it (0x4FA17D)`.
-- **Limits:** a unit that is not in a group already slowed alone in stock. A snare is exclusive in
-  stock: while a unit is snared, its later speed modifiers are ignored and several snares do not
-  stack; the key keeps that. The value and duration (0.65, 3 s) stay as in stock.
+- **Limits:** a unit that is not in a group already slowed alone. A snare is exclusive: while a unit is
+  snared, its later speed modifiers are ignored and several snares do not stack; the key keeps that.
+  The value and duration (0.65, 3 s) do not change.
 - **Simulation:** yes.
 - **Status:** confirmed in single player. In WoL (2026-11-04), six Redcoats harassed by an Uhlan reached the
   end of the map at 50 s with the key and about 54 s without, positions sampled once a second.
-- **Earlier test:** confirmed from the log in single player (2026-10-29), with no stock control run: a
-  hussar snaring members of a group of 6 musketeers produced `is snared; it counts 4.000 instead of
-  2.600 toward its group's pace` and `lags behind its formation slot; its group does not wait for
-  it`, with the feature's `hook reached` lines. The group's positions were not measured against
-  stock.
-- **New in this DLL:** not in UHC 1.10. WoL request #13 ([wol-requests.md](wol-requests.md)).
 
 #### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
 
@@ -2709,6 +2621,9 @@ noDamageOnUnbuiltFoundations
 fallenHeroTacticsFix
 ```
 
+WoL's DLL does these four always, so `wol.cfg` has no lines for them. This DLL needs the lines, and with
+them WoL plays as it does with its own DLL.
+
 - **rofFix:** ordering a unit to use an ability or command no longer clears its attack timer, so
   orders cannot be used to fire sooner.
 - **stunMovingTargetFix:** a stun action is no longer cancelled when its target check fails (a
@@ -2717,13 +2632,13 @@ fallenHeroTacticsFix
   foundation just placed) takes no damage, unless the attacker's player is in the state the game
   sets when an effect changes that player's diplomacy with every other player.
 - **fallenHeroTacticsFix:** a unit keeps the tactic its player chose when it is knocked out,
-  stunned or building; stock resets it to the first tactic.
+  stunned or building; the exe resets it to the first tactic.
 - **Log:** one line per key at startup; `noDamageOnUnbuiltFoundations: <Proto> (an unbuilt
   foundation) took no damage from player N` the first time it applies.
 - **Simulation:** change combat: every player needs the same lines.
-- **Status:** applied and running (2026-11-03): the four load (34 keys applied together), and the damage test runs on every
-  hit with no change to normal damage (a finished House took 20 per shot with the key). Their
-  effects were not seen in a test yet: the trigger that should place a foundation placed none.
+- **Status:** applied and running in WoL (2026-11-03): the four load, and the damage test runs on every
+  hit with no change to normal damage (a finished House took 20 per shot with the key). Their effects
+  were not seen in a test yet: the trigger that should place a foundation placed none.
 
 #### removeConversionRestriction
 
@@ -2733,14 +2648,14 @@ fallenHeroTacticsFix
 removeConversionRestriction
 ```
 
-- **Effect:** the `ConvertGuardian` action, which converts treasure guardians, may target any
-  unit. Stock checks a unit flag that only treasure guardians have.
-- **Who has the action:** explorers, war chiefs and some cavalry list it in their tactics, and a
-  tech enables it (for example the `HCXPMorningStar` card).
+- **Effect:** the `ConvertGuardian` action, which converts treasure guardians, may target any unit. The
+  exe checks a unit flag that only treasure guardians have. `wol.cfg` has this line.
+- **Who has the action:** explorers, war chiefs and some cavalry list it in their tactics (59 uses in
+  WoL's tactics files), and a tech enables it (for example the `HCXPMorningStar` card).
 - **Check:** this key writes no `hook reached` line, because it only removes one branch. Check it
   in game: a unit with `ConvertGuardian` converts a unit that is not a treasure guardian.
 - **Simulation:** yes.
-- **Status:** not confirmed: one test with the Sioux war chief was inconclusive.
+- **Status:** not confirmed: one test with the Sioux war chief, on the stock game, was inconclusive.
 
 ### Gathering and farms
 
