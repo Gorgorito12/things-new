@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 09:33 | [`doNotQueue`](#donotqueue) | Added. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
+| Thursday 2026-11-05 09:33 | [`nextResearchFree`](#nextresearchfree) | Added. A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 08:01 | [`resourceDebt`](#resourcedebt) | Filmed in WoL, with a control. Only trickles and the rates of units may take a stockpile below 0. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. |
 | Thursday 2026-11-05 07:53 | [`trainBatchSize`](#trainbatchsize) | Added. `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | The tag on the protos that want it. |
 | Thursday 2026-11-05 07:36 | [`costEscalationTechs`](#costescalationtechs) | Added. A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | The `Data` effects in `techtreey.xml`. |
@@ -4030,7 +4032,7 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 
 #### doNotQueue
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 09:33
 
 ![doNotQueue in WoL](media/doNotQueue-wol.gif)
 
@@ -4079,7 +4081,7 @@ doNotQueue [log]
 
 #### nextResearchFree
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 09:33
 
 ![nextResearchFree in WoL](media/nextResearchFree-wol.gif)
 
