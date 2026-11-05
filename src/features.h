@@ -133,7 +133,6 @@ inline constexpr Feature kFeatures[] = {
     {"pillageGold", ApplyPillageGold},
     {"veterancyBonus", ApplyVeterancyBonus},
     {"hcTargetTechs", ApplyHcTargetTechs},
-    {"detonationDeath", ApplyDetonationDeath},
     {"accuracyTechs", ApplyAccuracyTechs},
     {"cratePriority", ApplyCratePriority},
     {"sharedBuildLimit", ApplySharedBuildLimit},
@@ -195,6 +194,9 @@ inline constexpr Feature kFeatures[] = {
     {"overhealSources", ApplyOverhealSources},
     // After overhealSources: they share the add-HP hook, which the first one writes.
     {"overhealDecay", ApplyOverhealDecay},
+    // After overhealDecay: its threshold uses the same add-HP hook, and overhealSources verifies the
+    // stock bytes of that entry.
+    {"detonationDeath", ApplyDetonationDeath},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},

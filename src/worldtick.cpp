@@ -8,7 +8,7 @@
 
 namespace {
 
-constexpr std::size_t kMaxTicks = 4;
+constexpr std::size_t kMaxTicks = 8;
 
 using WorldUpdateFn = bool(__fastcall*)(char* world, void* unused, std::int32_t a, std::int32_t deltaMs);
 

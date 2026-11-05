@@ -137,6 +137,10 @@ cantBeSlowed-wol 0 12 1
 cantBeSlowed-wol-control 0 12 1
 cantBeSlowed-cannotsnare-wol 3 12 1
 cantBeSlowed-cannotsnare-wol-control 3 12 1
+detonationDeath-threshold-wol 2 12 1
+detonationDeath-threshold-wol-control 2 12 1
+detonationDeath-command-wol 3 12 1
+detonationDeath-command-wol-control 3 12 1
 killBountyTechs-wol 0 12 1
 killBountyTechs-wol-control 0 12 1
 resourceBounty-wol 0 12 1

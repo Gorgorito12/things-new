@@ -3641,9 +3641,9 @@ END
 
 Contract: [detonationDeath](../porting-to-another-dll.md#detonationdeath).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `DetonationKillCall` `0x493D8F` (5 B), `DetonationAreaHead` `0x4C9D89` (10 B).
+Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationKillCall` `0x493D8F` (5 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/detonation.cpp
 
@@ -3660,9 +3660,29 @@ Sites: `DetonationKillCall` `0x493D8F` (5 B), `DetonationAreaHead` `0x4C9D89` (1
 //
 // The action is the player's copy, so a tech that changes its damage counts. The names are read once and
 // are the same for every player.
+//
+// The three other tags (the names of another edition of the game):
+// - <DetonationCommand>Name</DetonationCommand>: the unit detonates when it is deleted. The modder gives
+//   the proto a command of that name wired to the console command uiDeleteSelectedUnit (the stock Delete
+//   does the same), so the button and the Delete key both send the synced delete command (type 7),
+//   whose executor FUN_007CCF7F sets the unit's HP to 0 through 0x4820A1 (flag 1) for most protos, or
+//   asks the kill queue with flags 1 0 0 for a proto with flag 0Dh. The two calls are wrapped: the first
+//   fires the blast before the setter, the second marks the unit as deleted so the kill handler's wrapper
+//   knows the kill is a delete. Without the tag a delete gives no blast.
+// - <DetonationHitpointThreshold>Ratio</DetonationHitpointThreshold>: when a loss of HP leaves the unit
+//   at or under that share of its max HP, it detonates by itself: the shared add-HP hook of
+//   overhealSources (0x4823A3, which TakeDamage's subtraction 0x49B822 reaches) reports every loss, and
+//   the unit's kill is asked from the queue with the combat flags, so the drain fires the blast.
+// - <DetonationHitpointDecay>HP per second</DetonationHitpointDecay>: with a threshold, the unit does
+//   not die at once but loses that many HP per second of game time from the threshold on, through the
+//   HP setter, and detonates when it reaches 0 (or when anything else kills it). Healed back over the
+//   threshold, it stops decaying until the next loss. The decaying units are kept by unit ID (the same
+//   order on every machine) and forgotten on a new game and a data load; a saved game does not keep them.
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
+#include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 
@@ -3671,6 +3691,14 @@ Sites: `DetonationKillCall` `0x493D8F` (5 B), `DetonationAreaHead` `0x4C9D89` (1
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+namespace uhc {
+extern void (*g_hpLoss)(const char* unit, float amount);  // overhealsources.cpp
+bool InstallOverhealAddHook();
+bool OverhealAddHookInstalled();
+}  // namespace uhc
 
 namespace {
 
@@ -3696,6 +3724,16 @@ using AreaFn = void(__thiscall*)(const char* world, std::int32_t unit, char* act
                                  std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t* hit, std::uint32_t flag,
                                  const void* offset);
 const auto kArea = reinterpret_cast<AreaFn>(0x004C9D89);
+using KillAskFn = void(__thiscall*)(char* unit, std::int32_t a, std::int32_t b, std::int32_t c);
+const auto kKillAsk = reinterpret_cast<KillAskFn>(0x004B4DC2);
+using SetHpFn = void(__thiscall*)(char* unit, float value, std::int32_t flag);
+const auto kSetHp = reinterpret_cast<SetHpFn>(0x004820A1);
+using MaxHpFn = float(__thiscall*)(const char* unit);
+const auto kMaxHp = reinterpret_cast<MaxHpFn>(0x00480408);
+using IsAliveFn = bool(__thiscall*)(const char* unit);
+constexpr std::uint32_t kDeleteSetHpCall = 0x007CD0CF;
+constexpr std::uint32_t kDeleteKillCall = 0x007CD0DC;
+constexpr std::size_t kUnitContainer = 0x6C;  // -1 when the unit is not inside another
 
 struct Detonation {
   std::wstring name;
@@ -3708,6 +3746,38 @@ struct Detonation {
 std::unordered_map<std::int32_t, Detonation> g_protos;  // by proto ID; the map's shape is fixed after the load
 bool g_log = false;
 int g_logLines = 0;
+
+struct Decay {
+  float perSecond;
+  std::uint32_t lastMs;  // game time of the last step applied
+};
+std::set<std::int32_t> g_deleting;    // unit IDs the delete executor sent to the kill queue
+std::set<std::int32_t> g_asked;       // unit IDs whose kill the threshold asked, until the handler runs
+std::map<std::int32_t, Decay> g_decay;  // by unit ID
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
+
+bool IsAlive(const char* unit) { return (*reinterpret_cast<IsAliveFn const* const*>(unit))[0xA4 / 4](unit); }
+
+const char* World() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  return game == nullptr ? nullptr : *reinterpret_cast<const char* const*>(game + 0x13C);
+}
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= *reinterpret_cast<const std::int32_t*>(world + 0x10)) {
+    return nullptr;
+  }
+  char* unit = (*reinterpret_cast<char* const* const*>(world + 0x0C))[id & 0x3FFFF];
+  return unit != nullptr && *reinterpret_cast<const std::int32_t*>(unit + 0x10) == id ? unit : nullptr;
+}
+
+void Forget(char*) {
+  g_deleting.clear();
+  g_asked.clear();
+  g_decay.clear();
+}
 
 bool Bit(const char* owner, std::size_t array, std::uint32_t bit) {
   const auto* bits = *reinterpret_cast<const std::uint8_t* const*>(owner + array);
@@ -3821,7 +3891,7 @@ bool __cdecl ReadDecay(void*, const char* node, char* proto) {
   return true;
 }
 
-void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, bool deleted) {
   const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
   if (proto == nullptr) {
     return;
@@ -3829,6 +3899,14 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
   const std::int32_t protoId = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
   const auto found = g_protos.find(protoId);
   if (found == g_protos.end() || found->second.action == -1 || Bit(unit, kUnitState, kDeadBit)) {
+    return;
+  }
+  if (deleted && found->second.command.empty()) {
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"detonationDeath: unit %d, proto %d: deleted without a DetonationCommand, no blast",
+               *reinterpret_cast<std::int32_t*>(unit + kUnitId), protoId);
+    }
     return;
   }
   const char* game = Game();
@@ -3846,15 +3924,135 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
         Bit(action, kActionFlags, kAreaFlagBit) ? 1 : 0, reinterpret_cast<const void*>(kZeroVector));
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
-             protoId, static_cast<double>(position[0]), static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF);
+    uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u%ls", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
+             protoId, static_cast<double>(position[0]), static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF,
+             deleted ? L" (a delete)" : L"");
   }
 }
 
 // Replaces the drain's call of the kill handler.
 void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
-  Detonate(unit, a, b, c);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + kUnitId);
+  const bool deleted = g_deleting.erase(id) > 0;
+  g_asked.erase(id);
+  g_decay.erase(id);
+  Detonate(unit, a, b, c, deleted);
   kKill(unit, a, b, c);
+}
+
+// Replaces the delete executor's call of the HP setter (a proto without flag 0Dh): the blast first,
+// while the unit is whole.
+void __fastcall DeleteSetHp(char* unit, void*, float value, std::int32_t flag) {
+  Detonate(unit, 1, 0, 0, true);
+  kSetHp(unit, value, flag);
+}
+
+// Replaces the delete executor's ask of the kill queue (a proto with flag 0Dh): the handler's wrapper
+// then knows the kill is a delete.
+void __fastcall DeleteKill(char* unit, void*, std::int32_t a, std::int32_t b, std::int32_t c) {
+  g_deleting.insert(*reinterpret_cast<const std::int32_t*>(unit + kUnitId));
+  kKillAsk(unit, a, b, c);
+}
+
+// The threshold: from the shared add-HP hook, for every loss, before it is applied.
+void HpLoss(const char* unit, float amount) {
+  const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
+  if (proto == nullptr || g_protos.empty()) {
+    return;
+  }
+  const auto found = g_protos.find(*reinterpret_cast<const std::int32_t*>(proto + kProtoId));
+  if (found == g_protos.end() || found->second.threshold < 0.0f || found->second.action == -1) {
+    return;
+  }
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + kUnitId);
+  if (Bit(unit, kUnitState, kDeadBit) || !IsAlive(unit) ||
+      *reinterpret_cast<const std::int32_t*>(unit + kUnitContainer) >= 0 || g_asked.count(id) != 0) {
+    return;
+  }
+  const float after = *reinterpret_cast<const float*>(unit + 0x64) + amount;
+  const float max = kMaxHp(unit);
+  if (after < 1e-6f || !(max > 0.0f) || after / max > found->second.threshold) {
+    return;  // the killing blow's own path, or still above the threshold
+  }
+  if (found->second.decay > 0.0f) {
+    const char* world = World();
+    if (world == nullptr || g_decay.count(id) != 0) {
+      return;
+    }
+    g_decay[id] = Decay{found->second.decay, *reinterpret_cast<const std::uint32_t*>(world + 0x108)};
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"detonationDeath: unit %d, proto %d: HP %.1f of %.1f (%.0f %%) under the threshold %.0f %%: loses %.2f HP a "
+               L"second from here",
+               id, found->first, static_cast<double>(after), static_cast<double>(max),
+               static_cast<double>(after / max * 100.0f), static_cast<double>(found->second.threshold * 100.0f),
+               static_cast<double>(found->second.decay));
+    }
+    return;
+  }
+  g_asked.insert(id);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"detonationDeath: unit %d, proto %d: HP %.1f of %.1f (%.0f %%) under the threshold %.0f %%: kill queued", id,
+             found->first, static_cast<double>(after), static_cast<double>(max),
+             static_cast<double>(after / max * 100.0f), static_cast<double>(found->second.threshold * 100.0f));
+  }
+  kKillAsk(const_cast<char*>(unit), 0, 0, 0);
+}
+
+// The decay: after each world update of the game world, by game time; a new game forgets every unit.
+void Tick(char* world, std::int32_t) {
+  if (world != World()) {
+    return;
+  }
+  const std::uint32_t now = *reinterpret_cast<const std::uint32_t*>(world + 0x108);
+  const std::uint32_t step = *reinterpret_cast<const std::uint32_t*>(world + 0xF8);
+  const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;
+  if (!sameGame) {
+    Forget(nullptr);
+    g_world = world;
+  }
+  g_lastTime = now;
+  g_lastStep = step;
+  for (auto it = g_decay.begin(); it != g_decay.end();) {
+    char* unit = UnitById(world, it->first);
+    if (unit == nullptr || !IsAlive(unit) || Bit(unit, kUnitState, kDeadBit)) {
+      it = g_decay.erase(it);
+      continue;
+    }
+    const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
+    const auto found = proto == nullptr ? g_protos.end() : g_protos.find(*reinterpret_cast<const std::int32_t*>(proto + kProtoId));
+    const float hp = *reinterpret_cast<const float*>(unit + 0x64);
+    const float max = kMaxHp(unit);
+    if (found == g_protos.end() || found->second.threshold < 0.0f || !(max > 0.0f) || hp / max > found->second.threshold) {
+      if (g_log && g_logLines < kMaxLogLines && found != g_protos.end()) {
+        ++g_logLines;
+        uhc::Log(L"detonationDeath: unit %d is back over its threshold (HP %.1f): the decay stops", it->first,
+                 static_cast<double>(hp));
+      }
+      it = g_decay.erase(it);
+      continue;
+    }
+    const std::uint32_t elapsed = now - it->second.lastMs;
+    it->second.lastMs = now;
+    if (elapsed == 0) {
+      ++it;
+      continue;
+    }
+    const float value = hp - it->second.perSecond * static_cast<float>(elapsed) * 0.001f;
+    if (value < 1e-6f) {
+      if (g_log && g_logLines < kMaxLogLines) {
+        ++g_logLines;
+        uhc::Log(L"detonationDeath: unit %d decayed to 0: kill queued", it->first);
+      }
+      g_asked.insert(it->first);
+      it = g_decay.erase(it);
+      kKillAsk(unit, 0, 0, 0);
+      continue;
+    }
+    kSetHp(unit, value, 0);
+    ++it;
+  }
 }
 
 }  // namespace
@@ -3873,15 +4071,24 @@ Outcome ApplyDetonationDeath(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("detonationDeath", {&sites::kDetonationKillCall, &sites::kDetonationAreaHead}) ||
+  // overhealSources or overhealDecay may already have written the add-HP hook: its bytes are then ours.
+  const Site* addEntry = OverhealAddHookInstalled() ? &sites::kHpSetter : &sites::kOverhealAddEntry;
+  if (!VerifyAll("detonationDeath", {&sites::kDetonationKillCall, &sites::kDetonationAreaHead, addEntry, &sites::kHpSetter,
+                                     &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot, &sites::kKillQueueAsk,
+                                     &sites::kDeleteSetHpCall, &sites::kDeleteKillCall, &sites::kDetonationTakeDamageHp}) ||
       !AddProtoTagHandler("DetonationProtoAction", &ReadDetonation) ||
       !AddProtoTagHandler("DetonationCommand", &ReadCommand) ||
       !AddProtoTagHandler("DetonationHitpointThreshold", &ReadThreshold) ||
-      !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) ||
-      !WriteCall(kKillCall, reinterpret_cast<const void*>(&Kill))) {
+      !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) || !OnDatabaseLoad(&Forget) ||
+      !WriteCall(kKillCall, reinterpret_cast<const void*>(&Kill)) ||
+      !WriteCall(kDeleteSetHpCall, reinterpret_cast<const void*>(&DeleteSetHp)) ||
+      !WriteCall(kDeleteKillCall, reinterpret_cast<const void*>(&DeleteKill)) || !InstallOverhealAddHook() ||
+      !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
   }
-  Log(L"detonationDeath: the proto tag DetonationProtoAction is on");
+  g_hpLoss = &HpLoss;
+  Log(L"detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold and "
+      L"DetonationHitpointDecay are on (multiplayer unverified)");
   return Outcome::kApplied;
 }
 

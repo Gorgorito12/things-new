@@ -95,7 +95,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 36 | Cards that hit enemies / all | No tech flag. `CreatePower` → a timed power of type `EnemyEffect` / `TeamEffect` | Absent (`GeneralEffect` exists) | L |
 | 37 | `NextResearchIsFree` | Flag on a building proto, set by subtype `SetNextResearchFree` | Absent; a research is paid at one site when it is queued | M |
 | 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S**; both built as types (`cantBeSlowed`, 2026-11-05) |
-| 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L |
+| 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L ; the flag's four tags built in `detonationDeath` (2026-11-05) |
 | 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` exists only as a tech flag, and no code reading it was found | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
 | 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons not |
@@ -403,6 +403,16 @@ engine-symbols.md, "DE parity sites". All of this is static reading; nothing was
 - **#29, #30 build limits.** [O] Every check (train queue, Maintain, build, AI, UI: 50 calls) goes
   through one limit getter (0x4C7B5F) and one count function (0x4C7BC5). [I] A shared or team
   limit belongs there.
+- **#39 the delete (2026-11-05).** [O] The stock Delete button and the Delete key run the console command
+  `uiDeleteSelectedUnit` (handler 0x7E5197, registered at 0x52F5C6; the `exec` crash at 0x7E51C8 is a null UI
+  pointer `[0xC66244]+74h→+34h→+1874h`, read before the selection, so the console route only works with the
+  interface up). With one unit selected it calls FUN_0082F1E3, which builds the synced command of type 7 (constructor
+  FUN_007D5949, vtable 0xB87E30) with the unit's ID and sends it; several units go through a confirmation dialog
+  first. The executor is slot 21 of that vtable, FUN_007CCF7F: for a proto with flag 0Dh it asks the kill queue
+  0x4B4DC2 with flags 1 0 0 (0x7CD0DC); for any other it sets the HP to 0 through 0x4820A1 with flag 1 (0x7CD0CF),
+  whose death check 0x482152 goes to FUN_004B4F2F, not through the queue; a command with byte `+8Ch` set goes to
+  0x4726B2 instead. [I] So a delete reaches the kill handler's wrapper only for flag-0Dh protos; `detonationDeath`
+  wraps the two calls.
 - **#37 research cost.** [O] A research is paid once, when it is queued (0x9E67E1; a second path at
   0x9D54CF). The paid cost is copied to the action, [I] for the refund on cancel. [I] "Next
   research is free" skips that payment and copies a zero cost.

@@ -2146,11 +2146,57 @@ detonationDeath [log]
 - **Chains:** a unit that dies from a blast fires too, later in the same pass of the game's kill queue, not inside the blast.
 - **Friendly fire:** `DamageFlags` decides it, as on any attack. {FF}
 - **Techs:** the action is the player's copy, so a tech that changes its damage counts.
-- **From DE, not built:** `DetonationCommand` (a command that replaces delete), `DetonationHitpointThreshold` (the command fires
+- **The other three tags (2026-11-05):**
+  - `<DetonationCommand>Name</DetonationCommand>`: the unit detonates when it is **deleted**. Give the proto a command of
+    that name whose `<command>` in `protounitcommands.xml` is `uiDeleteSelectedUnit`, the same console command the stock
+    Delete button and the Delete key run (register the name with `customProtoUnitCommands`); the button and the key then
+    both detonate the unit. Without this tag a delete gives no blast, whatever the other tags say. The name is not
+    checked against the proto's commands: the tag only says that a delete detonates.
+  - `<DetonationHitpointThreshold>Ratio</DetonationHitpointThreshold>` (0 to 1): when a loss of hit points leaves the unit at
+    or under that share of its max HP (the modifiers counted), it detonates by itself: it is killed as if by the blow,
+    and the blast fires. A unit inside another does not; the blow that kills it outright goes the normal way.
+  - `<DetonationHitpointDecay>HP per second</DetonationHitpointDecay>`: with a threshold, the unit does not die at once:
+    from the threshold on it loses that many HP per second of game time, through the game's HP setter (the damage
+    visuals follow), and detonates when it reaches 0, or earlier if anything kills it. Healed back over the threshold,
+    the decay stops until the next loss takes it under again. Not kept in a saved game: after a load the unit decays
+    again from its next loss under the threshold.
+
+  Only `<DetonationProtoAction>` is needed for any of them: a threshold or a command without it does nothing.
   at an HP ratio) and `DetonationHitpointDecay`. Without the threshold, one tag is the whole of it: there is no flag to set.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `detonationDeath: the proto tag DetonationProtoAction is on`, and with `log`: `detonationDeath: proto 294 fires Build` and
+- **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold and DetonationHitpointDecay are on`, with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
+- **Performance:** every loss of hit points asks the tag table once (a map lookup by proto ID), and the decay walks only
+  the decaying units each world update. Measured with `perfprobe.py` (60 s, 30 Pikemen against 30, no tag on them): key on 1467 fps, main thread 79 %, longest frame 2.5 s (the load) and no frame over 50 ms after it; key off 1444 fps, 81 %, 3.7 s. With 30 Musketeers of 4000 HP against 30 that carry a threshold and a decay of 100 HP/s the game ran at 640 fps against 1461 and the render time tripled: that is the decaying units themselves (the HP setter's damage visuals on 30 units every update), not the hook, which runs on untagged units at no measurable cost.
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
+![detonationDeath threshold and decay in WoL](media/detonationDeath-threshold-wol.gif)
+
+*In WoL, with the key (a Musketeer of 4000 HP, threshold 0.25, decay 100, a trigger that takes 76 % of its HP):* from
+960 HP it loses 100 a second and detonates at 0. [Full video (MP4)](media/detonationDeath-threshold-wol.mp4).
+
+![detonationDeath threshold and decay in WoL, key off](media/detonationDeath-threshold-wol-control.gif)
+
+*In WoL, key off (the same data):* it stays at 960 HP. [Full video (MP4)](media/detonationDeath-threshold-wol-control.mp4).
+
+![detonationDeath command in WoL](media/detonationDeath-command-wol.gif)
+
+*In WoL, with the key (the same Musketeer, `<DetonationCommand>`, the Delete key):* the blast line, `kill flags 1 0 0
+(a delete)`. [Full video (MP4)](media/detonationDeath-command-wol.mp4).
+
+![detonationDeath command in WoL, key off](media/detonationDeath-command-wol-control.gif)
+
+*In WoL, key off (the same data):* the Delete key removes it with no line.
+[Full video (MP4)](media/detonationDeath-command-wol-control.mp4).
+
+- **Tested in WoL (2026-11-05, the three tags):** a Grenadier with `MusketVolleyRangedAttack` and threshold 0.5 under three
+  Pikemen: `HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, then the blast with flags 0 0 0, and the unit
+  gone; with the key off it fought on and died at 0. A Musketeer of 4000 HP with threshold 0.25 and decay 100, taken to
+  960 HP by a trigger: 236.7 HP two seconds later, `decayed to 0: kill queued`, the blast; with the key off it stayed at
+  960. The same Musketeer with `<DetonationCommand>Detonate</DetonationCommand>`, selected by console and the real
+  Delete key: the blast line `kill flags 1 0 0 (a delete)` and the unit gone; a Grenadier without the command, deleted
+  the same way: `deleted without a DetonationCommand, no blast`, dead. Not tested: a proto with the stock flag 0Dh (the
+  kill-queue branch of the delete), a delete from the command panel's button (the same console command), the decay
+  across a saved game, a unit healed back over the threshold, multiplayer. The blasts of these WoL actions have no
+  `<DamageArea>`, so they hit nothing: the log lines are the proof.
 - **Tested in WoL (2026-11-05):**
   - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
   - A kill by trigger, combat with 6 `Pikeman`, an expired `Lifespan`: each killed the enemy `Coureur` around it.

@@ -1028,6 +1028,18 @@ inline constexpr Site kDetonationKillCall{"DetonationKillCall", 0x00493D8F, kDet
 inline constexpr std::uint8_t kDetonationAreaHeadBytes[] = {0x8B, 0x44, 0x24, 0x20, 0x81, 0xEC, 0xF8, 0x0F, 0x00, 0x00};
 inline constexpr Site kDetonationAreaHead{"DetonationAreaHead", 0x004C9D89, kDetonationAreaHeadBytes, sizeof(kDetonationAreaHeadBytes)};
 
+inline constexpr std::uint8_t kDeleteSetHpCallBytes[] = {0xE8, 0xCD, 0x4F, 0xCB, 0xFF};
+inline constexpr Site kDeleteSetHpCall{"DeleteSetHpCall", 0x007CD0CF, kDeleteSetHpCallBytes, sizeof(kDeleteSetHpCallBytes)};
+
+inline constexpr std::uint8_t kDeleteKillCallBytes[] = {0xE8, 0xE1, 0x7C, 0xCE, 0xFF};
+inline constexpr Site kDeleteKillCall{"DeleteKillCall", 0x007CD0DC, kDeleteKillCallBytes, sizeof(kDeleteKillCallBytes)};
+
+inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
+inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
+
+inline constexpr std::uint8_t kDetonationTakeDamageHpBytes[] = {0xE8, 0x7C, 0x6B, 0xFE, 0xFF};
+inline constexpr Site kDetonationTakeDamageHp{"DetonationTakeDamageHp", 0x0049B822, kDetonationTakeDamageHpBytes, sizeof(kDetonationTakeDamageHpBytes)};
+
 inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
 inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
 

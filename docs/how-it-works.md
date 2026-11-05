@@ -907,6 +907,22 @@ in the simulation.
 
 ### detonationDeath
 
+**The three other tags (2026-11-05).** The delete: the stock Delete button and key run the console command
+`uiDeleteSelectedUnit`, whose handler builds the synced command of type 7 for the selected unit; its executor
+FUN_007CCF7F (slot 21 of the command's vtable 0xB87E30) kills the unit in one of two ways, both wrapped by a call
+rewrite: `0x4820A1(0, 1)` at 0x7CD0CF for most protos (the wrapper fires the blast first, while the unit is whole, with
+kill flags 1 0 0 for the log) and `0x4B4DC2(1, 0, 0)` at 0x7CD0DC for a proto with flag 0Dh (the wrapper notes the unit
+ID, and the kill handler's wrapper reads it to tell a delete from a trigger's kill, which has the same flags). A proto
+without `<DetonationCommand>` gets no blast on a delete; the stock `uiDeleteSelectedUnit` from `exec` crashes on a null
+UI pointer before the selection, so the test used the real Delete key. The threshold: `overhealsources.cpp`'s hook at
+0x4823A3 now reports every loss (`g_hpLoss`) before it is applied, and `detonationDeath` compares the HP after it with
+the max HP of 0x480408 (modifiers counted); at or under the threshold it asks the kill queue with the combat flags once
+(a set of unit IDs until the handler runs), so the drain fires the blast exactly as for a killing blow; with a decay it
+only arms the unit. The decay: a `std::map` by unit ID walked after each world update (`AddWorldTick`, now 8 slots),
+by game time; the HP setter with flag 0 applies each step, the kill queue the end; a unit back over the threshold, dead,
+gone or inside another is dropped; a new game or a data load forgets everything. `detonationDeath` moved after
+`overhealDecay` in `kFeatures`, because `overhealSources` verifies the raw bytes of the add-HP entry.
+
 Every death goes through one queue. TakeDamage, a lifespan, a trigger's kill and the rest ask 0x4B4DC2, which appends the unit and
 three flag bytes to the world's list at `[world+8DCh]`, and the drain 0x493D46 calls the kill handler 0x4B4F70 from one single
 call, 0x493D8F. `Destroy` does not pass there. The key wraps that call, so it runs before the handler sets the dead bit,

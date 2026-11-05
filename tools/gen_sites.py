@@ -866,6 +866,15 @@ SITES = [
     # the area damage, verify only
     ("DetonationKillCall", 0x493D8F, 5),
     ("DetonationAreaHead", 0x4C9D89, 10),
+    # detonationDeath, the delete command: in its executor FUN_007CCF7F (slot 21 of the type-7 command's
+    # vtable 0xB87E30) the call of the HP setter 0x4820A1 with (0, 1) for a proto without flag 0Dh, and the
+    # call of the kill queue 0x4B4DC2 with (1, 0, 0) for one with it; ESI = the unit at both
+    ("DeleteSetHpCall", 0x7CD0CF, 5),
+    ("DeleteKillCall", 0x7CD0DC, 5),
+    # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
+    ("KillQueueAsk", 0x4B4DC2, 8),
+    # TakeDamage's subtraction through the add-HP entry 0x4823A3, verify only
+    ("DetonationTakeDamageHp", 0x49B822, 5),
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),
