@@ -28,6 +28,7 @@ set(UHC_SOURCES
   src/modifytypes.cpp
   src/transformcalls.cpp
   src/prototags.cpp
+  src/civtags.cpp
   src/techsubtypes.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp

@@ -85,9 +85,9 @@ Sizes, following the Design rule in wol-requests.md:
 | 24 | Negative trickles, debt | `ResourceTrickleRate` with negative amounts, clamped by `Minimum/MaximumResourceTrickleRate`; no debt rule | Has those subtypes; default min 0, max 10; a stockpile never goes below 0 | negative trickle: **data only** (lower the minimum); debt: S–M |
 | 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M |
 | 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Polish Torp) | Absent; WoL's `sawmill.tactics` already carries DE's aura | M |
-| 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L |
-| 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M |
-| 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M |
+| 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L; all five names read as elements (2026-11-05) |
+| 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M; the three names built in `sharedBuildLimit` (2026-11-05) |
+| 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M; the three names read as elements (2026-11-05) |
 | 32 | Economic aura per resource | Modify types `NaturalFoodGatherRate`, `TreeGatherRate`, `MineGatherRate`, `FarmingGatherRate` (by target class) | Absent (`GatherRate` only) | M |
 | 33 | Crate gather priority | Nothing; auto-crate-gather by flag only | Hardcoded per civ in two places (Dutch: coin first; Ottomans and Indians: wood first) | M (a per-civ cfg order) |
 | 34 | Kill bounty by techs | Subtype `KillBounty`; `Bounty resourcetype`; `BountyResourceOverride` / `BountyResourceExtra` / `BountySpecificBonus` | Absent; WoL's DLL has a `KillBounty` string | M |
@@ -413,7 +413,7 @@ So the cfg keys and markers can keep DE's names where DE has one:
 
 | # | Our key | DE counterpart | Note |
 |---|---|---|---|
-| 1 | `dodgeAnyUnit` (`AbstractDodge`) | flag `CanDodgeAttacks` + `DodgeChance` (guide p8, p18); subtypes `EnableDodge`, `DodgeChance` | DE keeps the Japanese-monk path and adds the flag for other units |
+| 1 | `dodgeAnyUnit` (`AbstractDodge`) | flag `CanDodgeAttacks` + `DodgeChance` (guide p8, p18); subtypes `EnableDodge`, `DodgeChance` | DE keeps the Japanese-monk path and adds the flag for other units. Both names read as proto elements since 2026-11-05 |
 | 1b | `dodgeSoundSet`, `criticalSoundSet` | proto `DodgeSoundSet`, `DodgeMessageID`; tactics `HitPercentSoundSet` | DE's parser: fn 0x101DEF0 |
 | 3 | `startingTC`, `civFirstTC` | tactics flag `FirstTC` (an aura only on the first TC); no per-civ start tag | |
 | 5, 22 | `liveBuildingWorkRate`, `buildingWorkRateAuras` | modify type `BuildingWorkRate` (guide p35), the same spelling as ours; also `TrainingRate`, `ResearchRate` | |

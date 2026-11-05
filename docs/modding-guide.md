@@ -183,6 +183,13 @@ stay exactly as they are. Our code is a `dinput8.dll` with its own folder:
   [wol-uhc-map.md](wol-uhc-map.md#running-beside-wols-dll-dinput8dll-2026-11-05).
 - **`decimalPopulation`:** one cost line stays K times too large, because WoL's DLL holds it. The rest works.
 - **Every player needs the same files,** as with `wol.cfg`: the keys change the simulation.
+- **Tested in WoL (2026-11-05, the other edition's names):** the Ethiopians with `<SettlerProtoName>AFRICANvillager</SettlerProtoName>`,
+  the villager with `<SettlerBuildLimit>1</SettlerBuildLimit>`, `BuildLimit` 10 and the type
+  `LogicalTypeSettlerBuildLimit`, which `Settler` and `Coureur` also carried. With 5 villagers, 2 Settlers and a Coureur
+  the log said `sharedBuildLimit: proto 1842: limit of -1, 3 protos count, own weight 1, the civ's settler limit` and
+  `player 1, proto 1842: room 7 of 10 (stock 10)`, and a console order for 3 villagers trained 2 of them (5 alive, room for 7), in three Train actions of 1 (DontTrainInBatches: `3 asked, in pieces of 1`); with the keys off the same order trained all 3 (8 villagers).
+  The Cow with `<UseSharedBuildLimit>` and `<SharedBuildLimitUnitTypes weight="2">Sheep</SharedBuildLimitUnitTypes>`
+  loaded with no error (not driven in game).
 - **Tested in WoL (2026-11-05):** `hcTargetTechs` and `transformSpan` by effect with a control, a skirmish against a
   German AI, and removal. Multiplayer and saved games are not tested.
 
@@ -2243,6 +2250,12 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
 - **Effect of `dodgeAnyUnit`:** units whose proto is of `<UnitType>` can dodge too, through the same
   code: the `YPDodge` tech of their player, the 15 % roll, the floating text and the sound are
   unchanged. The Japanese monks keep dodging.
+- **The other edition's proto tags (2026-11-05):** with `dodgeAnyUnit` on, a proto with
+  `<CanDodgeAttacks>1</CanDodgeAttacks>` dodges every kind of hit with the percent of `<DodgeChance>P</DodgeChance>` (15
+  if absent), no tech needed, as a `dodgeChance X P notech all` rule would; the tags are tested before the cfg rules
+  and need no marker type. They are elements, not `<Flag>` entries. With `log`, every roll of such a unit:
+  `dodgeChance: unit 7 (Pikeman), CanDodgeAttacks (50.0 %): roll 312 -> dodged`. In WoL (2026-11-05) four Pikemen with
+  the tags at 50 % under four Musketeers rolled 197 times and dodged 106.
 - **WoL needs:** a type or proto name in the cfg (`dodgeAnyUnit Settler`, `dodgeAnyUnit AbstractInfantry`)
   needs no data change, or put the marker `AbstractDodge` on the protos. Then make `YPDodge` active for
   the players who should have it, from a tech of that civ, such as its `Age0<Civ>` tech or a home city
@@ -4560,10 +4573,19 @@ sharedBuildLimit [log]
   the proto itself. `weight="N"` is how much each of them counts, default 1. If the type does not reach the proto
   itself, the proto still counts, with weight 1. Queued units count, as stock counts its own.
 - **`<TeamBuildLimit>1</TeamBuildLimit>`:** the same units of the player's allies count too.
+- **`<UseSharedBuildLimit>1</UseSharedBuildLimit>`** (2026-11-05): the other edition's flag, as an element. Accepted and
+  shown in the log; the lists alone are enough, so data written without it works as before.
+- **`<SharedBuildLimitUnitTypes weight="N">Type</SharedBuildLimitUnitTypes>`:** the plural spelling of
+  `<SharedBuildLimitUnitType>`, read the same way.
+- **`<SettlerBuildLimit>1</SettlerBuildLimit>`** (#30 with the other edition's names, 2026-11-05): the proto's limit is
+  the one of its civ's settler, which civs.xml names per civ with `<SettlerProtoName>Proto</SettlerProtoName>` (a child
+  of `<civ>`, like `<firstTC>`), and every unit of the type `LogicalTypeSettlerBuildLimit` counts toward it with weight
+  1, besides what `<SharedBuildLimitUnitType>` lists. A civ without the tag keeps the proto's own limit; the type does
+  not exist in the stock data: `customAbstractTypes` is not needed, the key registers it.
 - **Tag each proto that must stop:** a tag acts on the proto that carries it. `OutpostWagon` with the limit of `Outpost`
   stops the wagons once the Outposts are all there, and leaves `Outpost` untagged, or the last wagon, which counts
   until it builds, would forbid its own Outpost.
-- **#30's civ tag is not needed:** the limit per civ is the proto's limit as the civ's techs leave it, and the type is
+- **#30 without the civ tag:** the limit per civ is the proto's limit as the civ's techs leave it, and the type is
   in the data. WoL has no `AbstractWoLSettler` yet: `customAbstractTypes` registers it.
 - **The tooltip:** "Build Limit: 15 out of 15" is the whole group, and the limit, in the units of the proto: with weight 2 and
   limit 6 it says "out of 3". The button turns red when the proto does not fit.
@@ -4575,7 +4597,7 @@ sharedBuildLimit [log]
   the limit, with or without the key: a stock `BuildLimit` of 6 went from 6 to 14 with the `HCShipPikemen1` tech set by a
   trigger. The units stay, and training stops until the group is back under the limit.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `sharedBuildLimit: the proto tags are on`, `hook reached: sharedBuildLimit limit (0x4C7B5F)`, and with `log`:
+- **Log:** `sharedBuildLimit: the proto tags are on, and the civ tag SettlerProtoName`, `hook reached: sharedBuildLimit limit (0x4C7B5F)`, `hook reached: civ tags civs.xml (0x52BB07)`, `sharedBuildLimit: civ 1 (Ethiopians): its settler is AFRICANvillager (SettlerProtoName)`, and with `log`:
   `sharedBuildLimit: proto 295: limit of 2182, 2 protos count, own weight 2`, and at each change `sharedBuildLimit: player 1,
   proto 295: room 2 of 6 (stock -1)`. Room is what the proto's own count is compared with.
 - **Performance:** on and off, twice each, with the selected TC's proto in a group of 110 protos: 635–641 fps on, 640–649
@@ -4727,8 +4749,13 @@ trainBatchSize [log]
   batch, so the key asks for it in pieces, and each piece pays as usual: 5 at 119.2 charged 596.
 - **Above the default:** with 8, eight clicks share one action. A Shift+click still asks for 5.
 - **A tech cannot change the tag:** it is read once and is the same for every player.
+- **The flags of the other edition, as elements (2026-11-05):** `<DontTrainInBatches>1</DontTrainInBatches>` is a
+  `TrainBatchSize` of 1 (an explicit `<TrainBatchSize>` wins, whatever the order), and
+  `<ForceBatchTrain>1</ForceBatchTrain>` is read and changes nothing: the multi-block trains it affects do not exist
+  here. Both are elements, not `<Flag>` entries: the stock flag parser drops a flag name it does not know. With `log`:
+  `trainBatchSize: proto 1842 has DontTrainInBatches: one per action`.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and the same data.
-- **Log:** `trainBatchSize: the proto tag TrainBatchSize is on`, `hook reached: proto tags (0x51DB0F)`, `trainBatchSize
+- **Log:** `trainBatchSize: the proto tags TrainBatchSize, DontTrainInBatches and ForceBatchTrain are on`, `hook reached: proto tags (0x51DB0F)`, `trainBatchSize
   limit (0x9CE645)`, and with `log`: `trainBatchSize: proto 2182 has 2` and `trainBatchSize: proto 2182 queues up to 2 per
   action (stock 5)`. A value below 1 is logged and ignored.
 - **Tested in WoL (2026-11-05):**

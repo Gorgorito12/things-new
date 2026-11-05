@@ -2984,6 +2984,16 @@ which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is
 hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
 in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
 
+### Civ tags (civtags.*)
+
+A `<civ>` child that civs.xml's parser FUN_0052A590 does not know reaches 0x52BB07, where `civFirstTC` used to read
+`<firstTC>` alone. `civtags.cpp` owns that hook now: `AddCivTagHandler(name, handler)` writes it once (checking
+`CivTagUnknown` and `CivTagNextNode`) and keeps a table of up to 8 names; the asm proc (`UhcCivTagsHook`, in
+`civfirsttc_hooks.asm`) calls `UhcCivTagDispatch(node, civ)`, which compares the element name with each registered one,
+case ignored, calls the handler with the civ, its ID and the text, and goes to the next child; an unknown name runs
+the stock path. `civFirstTC` registers `firstTC` and `sharedBuildLimit` registers `SettlerProtoName`, in `kFeatures`
+order, so whichever comes first installs the hook and the other only adds its name.
+
 ### trainBatchSize
 
 The routine that queues units in a building reads its limit from one call, 0x8D051B at 0x9CE645: the player's `[+2ACh]`

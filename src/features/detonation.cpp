@@ -50,6 +50,9 @@ const auto kArea = reinterpret_cast<AreaFn>(0x004C9D89);
 struct Detonation {
   std::wstring name;
   std::int32_t action = -2;  // -2: not looked up yet, -1: the proto has no action of that name
+  std::wstring command;      // <DetonationCommand>: the proto command that detonates (a delete)
+  float threshold = -1.0f;   // <DetonationHitpointThreshold>: the HP ratio that detonates by itself
+  float decay = -1.0f;       // <DetonationHitpointDecay>: HP lost per second under the threshold
 };
 
 std::unordered_map<std::int32_t, Detonation> g_protos;  // by proto ID; the map's shape is fixed after the load
@@ -111,6 +114,63 @@ bool __cdecl ReadDetonation(void*, const char* node, char* proto) {
   return true;
 }
 
+const wchar_t* NodeText(const char* node) { return *reinterpret_cast<const wchar_t* const*>(node + 0x14); }
+
+bool __cdecl ReadCommand(void*, const char* node, char* proto) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  if (text == nullptr || text[0] == L'\0') {
+    uhc::Log(L"detonationDeath: proto %d: <DetonationCommand> names no command, ignored", id);
+    return true;
+  }
+  g_protos[id].command = text;
+  if (g_log) {
+    uhc::Log(L"detonationDeath: proto %d detonates on its command %ls (a delete)", id, text);
+  }
+  return true;
+}
+
+bool ReadRatio(const char* node, char* proto, const wchar_t* tag, float* out, float low, float high) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  wchar_t* end = nullptr;
+  const double value = text == nullptr ? -1.0 : std::wcstod(text, &end);
+  if (text == nullptr || end == text || !(value >= low) || !(value <= high)) {
+    uhc::Log(L"detonationDeath: proto %d: <%ls> needs a number from %g to %g, ignored", id, tag, static_cast<double>(low),
+             static_cast<double>(high));
+    return true;
+  }
+  *out = static_cast<float>(value);
+  return true;
+}
+
+bool __cdecl ReadThreshold(void*, const char* node, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  float value = -1.0f;
+  ReadRatio(node, proto, L"DetonationHitpointThreshold", &value, 0.0f, 1.0f);
+  if (value >= 0.0f) {
+    g_protos[id].threshold = value;
+    if (g_log) {
+      uhc::Log(L"detonationDeath: proto %d detonates at %.0f %% of its hit points", id, static_cast<double>(value * 100.0f));
+    }
+  }
+  return true;
+}
+
+bool __cdecl ReadDecay(void*, const char* node, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  float value = -1.0f;
+  ReadRatio(node, proto, L"DetonationHitpointDecay", &value, 0.0f, 1.0e6f);
+  if (value >= 0.0f) {
+    g_protos[id].decay = value;
+    if (g_log) {
+      uhc::Log(L"detonationDeath: proto %d loses %.2f hit points a second under its threshold", id,
+               static_cast<double>(value));
+    }
+  }
+  return true;
+}
+
 void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
   const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
   if (proto == nullptr) {
@@ -165,6 +225,9 @@ Outcome ApplyDetonationDeath(const Config& config) {
   }
   if (!VerifyAll("detonationDeath", {&sites::kDetonationKillCall, &sites::kDetonationAreaHead}) ||
       !AddProtoTagHandler("DetonationProtoAction", &ReadDetonation) ||
+      !AddProtoTagHandler("DetonationCommand", &ReadCommand) ||
+      !AddProtoTagHandler("DetonationHitpointThreshold", &ReadThreshold) ||
+      !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) ||
       !WriteCall(kKillCall, reinterpret_cast<const void*>(&Kill))) {
     return Outcome::kFailed;
   }

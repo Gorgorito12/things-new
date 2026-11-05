@@ -731,7 +731,9 @@ END
 
 Contract: [civFirstTC](../porting-to-another-dll.md#civfirsttc).
 
-Sites: `CivById` `0x405C2E` (24 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `ProtoById` `0x45316E` (30 B), `CivOfPlayer` `0x4539D3` (16 B), `ProtoFlag` `0x45EE02` (53 B), `FirstTcChunk` `0x506B2A` (17 B), `FirstTcProtoCheck` `0x506B3B` (17 B), `CivTagNextNode` `0x52B43D` (20 B), `CivTagUnknown` `0x52BAFA` (32 B), `ProtoByName` `0x5A2346` (32 B), `TownStartQuery` `0x679AC1` (21 B), `TownStartSpawn` `0x679B50` (26 B), `FirstTcSet` `0x67ABD4` (14 B), `TownStartColonyLoop` `0x7C2407` (49 B), `RmNomadStart` `0x90B683` (25 B), `RmItemFootprint` `0x924B1D` (158 B), `RmPlace` `0x925936` (111 B), `RmPlaceCall` `0x925F45` (14 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Besides the core helpers, it needs: [`civtags.h`](helpers.md#civ-tags).
+
+Sites: `CivById` `0x405C2E` (24 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `ProtoById` `0x45316E` (30 B), `CivOfPlayer` `0x4539D3` (16 B), `ProtoFlag` `0x45EE02` (53 B), `FirstTcChunk` `0x506B2A` (17 B), `FirstTcProtoCheck` `0x506B3B` (17 B), `ProtoByName` `0x5A2346` (32 B), `TownStartQuery` `0x679AC1` (21 B), `TownStartSpawn` `0x679B50` (26 B), `FirstTcSet` `0x67ABD4` (14 B), `TownStartColonyLoop` `0x7C2407` (49 B), `RmNomadStart` `0x90B683` (25 B), `RmItemFootprint` `0x924B1D` (158 B), `RmPlace` `0x925936` (111 B), `RmPlaceCall` `0x925F45` (14 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/civfirsttc.cpp
 
@@ -771,6 +773,8 @@ Sites: `CivById` `0x405C2E` (24 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+
+#include "../civtags.h"
 
 namespace uhc {
 bool FirstTcProtoHookInstalled();  // features/startingtc.cpp
@@ -952,24 +956,9 @@ struct Saved {
 extern "C" {
 std::int32_t g_uhcCivFirstTcOn = 0;  // 1 with civFirstTC; read by the shared FirstTC proto hook
 
-// From the civs.xml hook: true if the node is <firstTC> (then it is consumed).
-bool __stdcall UhcCivFirstTcTag(const char* node, const char* civ) {
-  // The element name, as the parser's compare chain reads it: [[node+4]+18h][[node+18h]].
-  const std::int32_t index = Field<std::int32_t>(node, 0x18);
-  const char* names = Field<const char*>(node, 0x04);
-  if (index < 0 || names == nullptr || index >= Field<std::int32_t>(names, 0x1C)) {
-    return false;
-  }
-  const wchar_t* tag = Field<const wchar_t* const*>(names, 0x18)[index];
-  if (tag == nullptr || _wcsicmp(tag, L"firstTC") != 0) {
-    return false;
-  }
-  const std::int32_t civId = Field<std::int32_t>(civ, 0x08);
-  const wchar_t* text = Field<const wchar_t*>(node, 0x14);
+// From the civ tags registry (civtags.cpp), for a <firstTC> child of a <civ>.
+void ReadFirstTc(const char* civ, std::int32_t civId, const wchar_t* text) {
   const std::string name = text == nullptr ? std::string() : Narrow(text);
-  if (civId < 0 || civId >= 0x10000) {
-    return true;
-  }
   if (civId >= static_cast<std::int32_t>(g_tags.size())) {
     g_tags.resize(civId + 1);
   }
@@ -979,7 +968,6 @@ bool __stdcall UhcCivFirstTcTag(const char* node, const char* civ) {
   } else {
     uhc::Log(L"civFirstTC: civ %d (%hs) starts with %hs instead of TownCenter", civId, CivName(civ), name.c_str());
   }
-  return true;
 }
 
 // From the shared FirstTC proto hook, for a unit added to a player with no FirstTC: true if its
@@ -1100,7 +1088,6 @@ std::int32_t __fastcall UhcRmPlaceObjectDef(char* def, void*, std::int32_t playe
   return placed;
 }
 
-void UhcCivFirstTcTagHook();
 void UhcCivFirstTcTownHook();
 }
 
@@ -1123,7 +1110,7 @@ Outcome ApplyCivFirstTc(const Config& config) {
   // startingTC, applied first, may already have written 0x506B3B: its bytes are then ours.
   const Site* protoCheck = FirstTcProtoHookInstalled() ? &sites::kFirstTcChunk : &sites::kFirstTcProtoCheck;
   if (!VerifyAll("civFirstTC",
-                 {&sites::kCivTagUnknown, &sites::kCivTagNextNode, &sites::kCivById, &sites::kCivOfPlayer,
+                 {&sites::kCivById, &sites::kCivOfPlayer,
                   &sites::kProtoByName, &sites::kProtoById, &sites::kProtoFlag, &sites::kRmPlaceCall,
                   &sites::kRmPlace, &sites::kRmItemFootprint, &sites::kRmNomadStart, &sites::kTownStartQuery,
                   &sites::kTownStartSpawn, &sites::kTownStartColonyLoop, &sites::kFirstTcChunk, protoCheck,
@@ -1136,9 +1123,8 @@ Outcome ApplyCivFirstTc(const Config& config) {
     g_uhcCivFirstTcOn = 0;
     return Outcome::kFailed;
   }
-  // Replaces xor edi,edi / cmp dword ptr [ebx+80h],edi at 0x52BB07; the hook re-executes both.
-  // The parse runs after UHCMain, so every tag is seen.
-  if (!WriteJmp(0x0052BB07, reinterpret_cast<const void*>(&UhcCivFirstTcTagHook), 8)) {
+  // The civs.xml hook (civtags.cpp) runs after UHCMain, so every tag is seen.
+  if (!AddCivTagHandler("firstTC", &ReadFirstTc)) {
     return Outcome::kFailed;
   }
   if (!WriteCall(0x00925F4C, reinterpret_cast<const void*>(&UhcRmPlaceObjectDef))) {
@@ -1170,7 +1156,7 @@ option casemap :none
 
 include common.inc
 
-UhcCivFirstTcTag PROTO STDCALL node:DWORD, civ:DWORD   ; true: the node was <firstTC>
+UhcCivTagDispatch PROTO STDCALL node:DWORD, civ:DWORD  ; civtags.cpp; true: a registered tag, consumed
 UhcCivFirstTcTownProto PROTO STDCALL player:DWORD      ; the proto for the town units, or -1
 
 .data
@@ -1182,15 +1168,16 @@ townQueryResume dd 00679ACEh    ; push ebp / push esi / mov esi,[edi+80h]: the q
 
 ; Replaces 0x52BB07..0x52BB0E (xor edi,edi / cmp dword ptr [ebx+80h],edi) in the civs.xml
 ; parser FUN_0052A590: a child tag of <civ> that matched none of the stock names. ESI = the node,
-; EBX = database, [esp+10h] = the civ. UhcCivFirstTcTag reads a <firstTC> tag and the hook goes to
-; the next child, as every stock handler does; any other tag runs the stock path (the resource
-; names, then a silent skip). 0x52B43D reads only the stack.
-UhcCivFirstTcTagHook PROC
-    TRACE_ONCE "civFirstTC civs.xml (0x52BB07)"
+; EBX = database, [esp+10h] = the civ. UhcCivTagDispatch (civtags.cpp, shared by civFirstTC and
+; sharedBuildLimit) reads a registered tag and the hook goes to the next child, as every stock
+; handler does; any other tag runs the stock path (the resource names, then a silent skip).
+; 0x52B43D reads only the stack.
+UhcCivTagsHook PROC
+    TRACE_ONCE "civ tags civs.xml (0x52BB07)"
     pushad
     push dword ptr [esp+30h]        ; the civ: [esp+10h] at entry, +20h for pushad
     push esi                        ; the node
-    call UhcCivFirstTcTag
+    call UhcCivTagDispatch
     mov dword ptr [esp+1Ch], eax    ; popad's EAX slot
     popad
     test al, al
@@ -1200,7 +1187,7 @@ UhcCivFirstTcTagHook PROC
     jmp civTagResume
 nextChild:
     jmp civTagNext
-UhcCivFirstTcTagHook ENDP
+UhcCivTagsHook ENDP
 
 ; Replaces 0x679AC8..0x679ACD (mov ebx,[ecx+5E08h]) in FUN_0049039A, which gives the civ's
 ; <townstartingunit> units to the first built unit of proto EBX (stock: TownCenter) when a colony

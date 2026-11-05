@@ -34,6 +34,8 @@
 #include "../log.h"
 #include "../patch.h"
 
+#include "../civtags.h"
+
 namespace uhc {
 bool FirstTcProtoHookInstalled();  // features/startingtc.cpp
 bool InstallFirstTcProtoHook();
@@ -214,24 +216,9 @@ struct Saved {
 extern "C" {
 std::int32_t g_uhcCivFirstTcOn = 0;  // 1 with civFirstTC; read by the shared FirstTC proto hook
 
-// From the civs.xml hook: true if the node is <firstTC> (then it is consumed).
-bool __stdcall UhcCivFirstTcTag(const char* node, const char* civ) {
-  // The element name, as the parser's compare chain reads it: [[node+4]+18h][[node+18h]].
-  const std::int32_t index = Field<std::int32_t>(node, 0x18);
-  const char* names = Field<const char*>(node, 0x04);
-  if (index < 0 || names == nullptr || index >= Field<std::int32_t>(names, 0x1C)) {
-    return false;
-  }
-  const wchar_t* tag = Field<const wchar_t* const*>(names, 0x18)[index];
-  if (tag == nullptr || _wcsicmp(tag, L"firstTC") != 0) {
-    return false;
-  }
-  const std::int32_t civId = Field<std::int32_t>(civ, 0x08);
-  const wchar_t* text = Field<const wchar_t*>(node, 0x14);
+// From the civ tags registry (civtags.cpp), for a <firstTC> child of a <civ>.
+void ReadFirstTc(const char* civ, std::int32_t civId, const wchar_t* text) {
   const std::string name = text == nullptr ? std::string() : Narrow(text);
-  if (civId < 0 || civId >= 0x10000) {
-    return true;
-  }
   if (civId >= static_cast<std::int32_t>(g_tags.size())) {
     g_tags.resize(civId + 1);
   }
@@ -241,7 +228,6 @@ bool __stdcall UhcCivFirstTcTag(const char* node, const char* civ) {
   } else {
     uhc::Log(L"civFirstTC: civ %d (%hs) starts with %hs instead of TownCenter", civId, CivName(civ), name.c_str());
   }
-  return true;
 }
 
 // From the shared FirstTC proto hook, for a unit added to a player with no FirstTC: true if its
@@ -362,7 +348,6 @@ std::int32_t __fastcall UhcRmPlaceObjectDef(char* def, void*, std::int32_t playe
   return placed;
 }
 
-void UhcCivFirstTcTagHook();
 void UhcCivFirstTcTownHook();
 }
 
@@ -385,7 +370,7 @@ Outcome ApplyCivFirstTc(const Config& config) {
   // startingTC, applied first, may already have written 0x506B3B: its bytes are then ours.
   const Site* protoCheck = FirstTcProtoHookInstalled() ? &sites::kFirstTcChunk : &sites::kFirstTcProtoCheck;
   if (!VerifyAll("civFirstTC",
-                 {&sites::kCivTagUnknown, &sites::kCivTagNextNode, &sites::kCivById, &sites::kCivOfPlayer,
+                 {&sites::kCivById, &sites::kCivOfPlayer,
                   &sites::kProtoByName, &sites::kProtoById, &sites::kProtoFlag, &sites::kRmPlaceCall,
                   &sites::kRmPlace, &sites::kRmItemFootprint, &sites::kRmNomadStart, &sites::kTownStartQuery,
                   &sites::kTownStartSpawn, &sites::kTownStartColonyLoop, &sites::kFirstTcChunk, protoCheck,
@@ -398,9 +383,8 @@ Outcome ApplyCivFirstTc(const Config& config) {
     g_uhcCivFirstTcOn = 0;
     return Outcome::kFailed;
   }
-  // Replaces xor edi,edi / cmp dword ptr [ebx+80h],edi at 0x52BB07; the hook re-executes both.
-  // The parse runs after UHCMain, so every tag is seen.
-  if (!WriteJmp(0x0052BB07, reinterpret_cast<const void*>(&UhcCivFirstTcTagHook), 8)) {
+  // The civs.xml hook (civtags.cpp) runs after UHCMain, so every tag is seen.
+  if (!AddCivTagHandler("firstTC", &ReadFirstTc)) {
     return Outcome::kFailed;
   }
   if (!WriteCall(0x00925F4C, reinterpret_cast<const void*>(&UhcRmPlaceObjectDef))) {

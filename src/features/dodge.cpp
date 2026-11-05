@@ -23,6 +23,11 @@
 // caller's EDI (FUN_0048649F, 0x49AF98..0x49B023): its index in damagetypes.xml. Tech and damage
 // type names are resolved on the first test after each data load, so every machine resolves the
 // same names from the same data; an unknown name is logged and disables its rule.
+//
+// The proto tags <CanDodgeAttacks>1</CanDodgeAttacks> and <DodgeChance>percent</DodgeChance> (the
+// names another edition of the game uses) mark a proto in the data instead of the cfg: with the
+// first, the unit dodges every hit type with the percent of the second (15 if absent), no tech
+// needed; they are read with dodgeAnyUnit on and come before the cfg rules.
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -34,7 +39,10 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../prototags.h"
 #include "../unittypes.h"
+
+#include <unordered_map>
 
 namespace {
 
@@ -79,6 +87,12 @@ struct ChanceRule {
   std::int32_t damageType = -1;
   bool disabled = false;
 };
+
+struct ProtoDodge {
+  bool enabled = false;         // <CanDodgeAttacks>
+  std::int32_t permille = 150;  // <DodgeChance>, percent x 10
+};
+std::unordered_map<std::int32_t, ProtoDodge> g_protoDodge;  // by proto ID; the load writes it
 
 // Never resized after the features are applied: the hooks read them from the game thread.
 std::vector<SoundRule> g_dodgeSounds;
@@ -252,6 +266,47 @@ void Resolve(ChanceRule& rule, std::size_t index) {
   }
 }
 
+// The synced roll over [0, 999], below permille: dodged. 0 % and 100 % roll nothing.
+std::int32_t Roll(const char* unit, std::int32_t permille, const wchar_t* label, bool log) {
+  std::int32_t roll = -1;
+  bool dodged = permille >= 1000;
+  if (permille > 0 && permille < 1000) {
+    roll = kSyncRandom(kSyncRng, 2, 999);
+    dodged = roll < permille;
+  }
+  if (log) {
+    uhc::Log(L"dodgeChance: unit %d (%hs), %ls (%.1f %%): roll %d -> %ls", Field<std::int32_t>(unit, 0x10),
+             ProtoName(unit), label, permille / 10.0, roll, dodged ? L"dodged" : L"hit");
+  }
+  return dodged ? kDodged : kNotDodged;
+}
+
+bool __cdecl ReadCanDodgeAttacks(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  g_protoDodge[id].enabled = text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+  if (g_log) {
+    uhc::Log(L"dodgeAnyUnit: proto %d %ls (CanDodgeAttacks)", id, g_protoDodge[id].enabled ? L"can dodge" : L"cannot dodge");
+  }
+  return true;
+}
+
+bool __cdecl ReadDodgeChance(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  wchar_t* end = nullptr;
+  const double percent = text == nullptr ? -1.0 : std::wcstod(text, &end);
+  if (text == nullptr || end == text || !(percent >= 0.0) || !(percent <= 100.0)) {
+    uhc::Log(L"dodgeAnyUnit: proto %d: <DodgeChance> needs a percent from 0 to 100, ignored", id);
+    return true;
+  }
+  g_protoDodge[id].permille = static_cast<std::int32_t>(std::lround(percent * 10.0));
+  if (g_log) {
+    uhc::Log(L"dodgeAnyUnit: proto %d dodges %.1f %% (DodgeChance)", id, percent);
+  }
+  return true;
+}
+
 // The matched rule decides: its tech, then the synced roll over [0, 999]. 0 % and 100 % roll
 // nothing.
 std::int32_t RollRule(const char* unit, const ChanceRule& rule, std::size_t index) {
@@ -269,18 +324,9 @@ std::int32_t RollRule(const char* unit, const ChanceRule& rule, std::size_t inde
       return kNotDodged;
     }
   }
-  std::int32_t roll = -1;
-  bool dodged = rule.permille >= 1000;
-  if (rule.permille > 0 && rule.permille < 1000) {
-    roll = kSyncRandom(kSyncRng, 2, 999);
-    dodged = roll < rule.permille;
-  }
-  if (g_chanceLog) {
-    uhc::Log(L"dodgeChance: unit %d (%hs), rule %u (%.1f %%): roll %d -> %ls", Field<std::int32_t>(unit, 0x10),
-             ProtoName(unit), static_cast<unsigned>(index + 1), rule.permille / 10.0, roll,
-             dodged ? L"dodged" : L"hit");
-  }
-  return dodged ? kDodged : kNotDodged;
+  wchar_t label[24];
+  swprintf_s(label, L"rule %u", static_cast<unsigned>(index + 1));
+  return Roll(unit, rule.permille, label, g_chanceLog);
 }
 
 bool RequestRuleTypes(std::vector<SoundRule>* rules) {
@@ -310,6 +356,12 @@ std::int32_t __stdcall UhcDodgeDecide(const char* unit, const char* damageInfo) 
     return kStockCompares;
   }
   const std::int32_t damageType = damageInfo == nullptr ? -1 : Field<std::uint8_t>(damageInfo, 5);
+  if (!g_protoDodge.empty()) {
+    const auto tagged = g_protoDodge.find(Field<std::int32_t>(proto, 8));
+    if (tagged != g_protoDodge.end() && tagged->second.enabled) {
+      return Roll(unit, tagged->second.permille, L"CanDodgeAttacks", g_chanceLog || g_log);
+    }
+  }
   for (std::size_t i = 0; i < g_chanceRules.size(); ++i) {
     ChanceRule& rule = g_chanceRules[i];
     if (rule.generation != g_generation) {
@@ -378,9 +430,15 @@ Outcome ApplyDodge(const Config& config) {
                                   &sites::kDodgeSound, &sites::kCriticalSound})) {
     return Outcome::kFailed;
   }
-  if (chance && !VerifyAll("dodgeChance", {&sites::kDodgeTest, &sites::kDodgeRollPath, &sites::kDodgeCaller,
-                                           &sites::kSyncRandom, &sites::kTechActive, &sites::kTechByName,
-                                           &sites::kDamageTypeLoad, &sites::kIsA})) {
+  // The cfg rules and the proto tags both roll: the roll's sites are checked for either.
+  if ((chance || dodge != nullptr) &&
+      !VerifyAll("dodgeChance", {&sites::kDodgeTest, &sites::kDodgeRollPath, &sites::kDodgeCaller,
+                                 &sites::kSyncRandom, &sites::kTechActive, &sites::kTechByName,
+                                 &sites::kDamageTypeLoad, &sites::kIsA})) {
+    return Outcome::kFailed;
+  }
+  if (dodge != nullptr && (!AddProtoTagHandler("CanDodgeAttacks", &ReadCanDodgeAttacks) ||
+                           !AddProtoTagHandler("DodgeChance", &ReadDodgeChance))) {
     return Outcome::kFailed;
   }
 

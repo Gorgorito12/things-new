@@ -62,6 +62,7 @@ Rules:
   - `AddModifyType` (`modifytypes.*`, 0x5FE6D7);
   - `AddTechSubtype` and `AddTechActionSubtype` (`techsubtypes.*`, the call 0x6206D7, 0x8F978D, 0x8FB051);
   - `AddProtoTagHandler` (`prototags.*`, 0x51DB0F);
+  - `AddCivTagHandler` (`civtags.*`, the civs.xml unknown-tag path 0x52BB07; `civFirstTC` and `sharedBuildLimit` read their civ tags there);
   - `AddTransformObserver` (`transformcalls.*`, the seven calls of 0x9C754C); a key's own transform calls `TransformUnit`;
   - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
   - `AddSyscall` (`syscalls.*`, the group sites);

@@ -1,5 +1,6 @@
 // trainBatchSize: <TrainBatchSize>N</TrainBatchSize> in a proto limits how many of it share one Train
-// action.
+// action. <DontTrainInBatches>1</DontTrainInBatches> is a size of 1 (an explicit size wins), and
+// <ForceBatchTrain> is read and does nothing: the trains it changes elsewhere do not exist here.
 //
 // Stock takes the limit from one call, 0x8D051B (0x9CE645, in the routine that queues units in a
 // building): the player's [+2ACh] when a tech set it, else the database's default of [+178h]. The routine
@@ -35,8 +36,15 @@ using QueueFn = bool(__thiscall*)(void* building, std::int32_t a, std::int32_t b
 const auto kQueue = reinterpret_cast<QueueFn>(0x009CE2BE);
 
 std::unordered_map<std::int32_t, std::int32_t> g_sizes;  // filled while protos load, read-only after
+std::unordered_map<std::int32_t, bool> g_explicit;        // protos whose size came from <TrainBatchSize>
 bool g_log = false;
 int g_logLines = 0;
+
+// A flag written as an element: absent text or anything but 0 is on.
+bool FlagOn(const char* node) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  return text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+}
 
 bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
   const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
@@ -47,8 +55,32 @@ bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
     return true;
   }
   g_sizes[id] = size;
+  g_explicit[id] = true;
   if (g_log) {
     uhc::Log(L"trainBatchSize: proto %d has %d", id, size);
+  }
+  return true;
+}
+
+bool __cdecl ReadDontTrainInBatches(void*, const char* node, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (!FlagOn(node)) {
+    return true;
+  }
+  if (g_explicit.count(id) == 0) {
+    g_sizes[id] = 1;
+  }
+  if (g_log) {
+    uhc::Log(L"trainBatchSize: proto %d has DontTrainInBatches: one per action%ls", id,
+             g_explicit.count(id) == 0 ? L"" : L" (its TrainBatchSize wins)");
+  }
+  return true;
+}
+
+bool __cdecl ReadForceBatchTrain(void*, const char* node, char* proto) {
+  if (g_log && FlagOn(node)) {
+    uhc::Log(L"trainBatchSize: proto %d has ForceBatchTrain, which changes nothing in this engine",
+             *reinterpret_cast<const std::int32_t*>(proto + 8));
   }
   return true;
 }
@@ -106,6 +138,8 @@ Outcome ApplyTrainBatchSize(const Config& config) {
   if (!VerifyAll("trainBatchSize", {&sites::kTrainBatchLimitCall, &sites::kTrainBatchProtoArg, &sites::kTrainQueueCall1,
                                     &sites::kTrainQueueCall2, &sites::kTrainQueueCall3, &sites::kTrainQueueCall4}) ||
       !AddProtoTagHandler("TrainBatchSize", &ReadTrainBatchSize) ||
+      !AddProtoTagHandler("DontTrainInBatches", &ReadDontTrainInBatches) ||
+      !AddProtoTagHandler("ForceBatchTrain", &ReadForceBatchTrain) ||
       !WriteJmp(kLimitCall, reinterpret_cast<const void*>(&UhcTrainBatchHook), 5)) {
     return Outcome::kFailed;
   }
@@ -114,7 +148,7 @@ Outcome ApplyTrainBatchSize(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  Log(L"trainBatchSize: the proto tag TrainBatchSize is on");
+  Log(L"trainBatchSize: the proto tags TrainBatchSize, DontTrainInBatches and ForceBatchTrain are on");
   return Outcome::kApplied;
 }
 
