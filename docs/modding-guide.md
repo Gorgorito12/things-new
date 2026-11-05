@@ -30,10 +30,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 08:01 | [`resourceDebt`](#resourcedebt) | Filmed in WoL, with a control. Only trickles and the rates of units may take a stockpile below 0. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. |
 | Thursday 2026-11-05 07:53 | [`trainBatchSize`](#trainbatchsize) | Added. `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | The tag on the protos that want it. |
 | Thursday 2026-11-05 07:36 | [`costEscalationTechs`](#costescalationtechs) | Added. A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | The `Data` effects in `techtreey.xml`. |
 | Wednesday 2026-11-04 18:04 | [`resourceGatherAuras`](#resourcegatherauras) | Added. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
-| Wednesday 2026-11-04 18:04 | [`resourceDebt`](#resourcedebt) | Added. A stockpile may go below 0, for negative trickles. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`. |
 | Wednesday 2026-11-04 17:21 | [`unitResourceAuras`](#unitresourceauras) | Added. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Wednesday 2026-11-04 17:03 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | Added. `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. |
 | Wednesday 2026-11-04 16:29 | [`workRateByAbstractType`](#workratebyabstracttype) | Added. A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. |
@@ -2764,7 +2764,7 @@ Resources, gatherers, and what pays for them.
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
-| [`resourceDebt`](#resourcedebt) | A stockpile may go below 0, for negative trickles. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`. | confirmed |
+| [`resourceDebt`](#resourcedebt) | Only trickles and the rates of units may take a stockpile below 0. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -3117,26 +3117,48 @@ resourceGatherAuras [log]
 
 #### resourceDebt
 
-**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Wednesday 2026-11-04 18:04
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 08:01
 
 ![resourceDebt in WoL](media/resourceDebt-wol.gif)
 
-*In WoL, with `resourceDebt Food` (Ethiopians, a test tech with a food trickle of −10/s):* the food goes below 0: −110
-at 88 s, −250 at 103 s. Gold, which is not listed, stays at 0 when a trigger takes 50.
+*In WoL, with `resourceDebt Food Gold` (Ethiopians, a test tech with a food trickle of −10/s):* a trigger takes 150 gold of 100
+and the gold stops at 0. A tech takes 300 food of the little left and the food stops at 0. Only the trickle goes below 0: −20,
+then −80. A trigger then gives 400 food, which pays the debt and leaves 239, and the trickle takes it below 0 again.
 [Full video (MP4)](media/resourceDebt-wol.mp4).
 
 ![resourceDebt in WoL, key off](media/resourceDebt-wol-control.gif)
 
-*In WoL, key off (the same scene):* the food stops at 0. [Full video (MP4)](media/resourceDebt-wol-control.mp4).
+*In WoL, key off (the same scene):* the food stops at 0 at every step. [Full video (MP4)](media/resourceDebt-wol-control.mp4).
+
+![resourceDebt in WoL, a unit with a negative AutoGather](media/resourceDebt-autogather-wol.gif)
+
+*In WoL, with `resourceDebt Gold` (a test tech gives a Bank an AutoGather of −10 gold):* the gold goes from 100 to −208, −440 and
+−560. [Full video (MP4)](media/resourceDebt-autogather-wol.mp4).
+
+![resourceDebt in WoL, a negative AutoGather, key off](media/resourceDebt-autogather-wol-control.gif)
+
+*In WoL, key off (the same scene):* stock ignores a negative AutoGather and the gold stays at 100.
+[Full video (MP4)](media/resourceDebt-autogather-wol-control.mp4).
 
 ```
 resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
 ```
 
-- **In WoL today:** a negative trickle drains a stockpile, and it stops at 0. JTMaston's #24 asks for debt. He did not
-  answer what a debt should do, so this is our design: nothing more than the number.
-- **Effect:** the listed stockpiles may go below 0. The trickle needs both effects, as without the key: the rate is
-  clamped to `MinimumResourceTrickleRate`, 0 by default.
+- **In WoL today:** a negative trickle drains a stockpile, and it stops at 0. JTMaston's #24 asks for debt, with no penalties.
+- **What may go below 0 (JTMaston's rule, 2026-11-05):** only these three, for the listed resources:
+
+  | Source | Stock | With the key |
+  |---|---|---|
+  | Global trickle: `ResourceTrickleRate` by tech on the player | Drains, stops at 0 | Goes below 0 |
+  | A unit's AutoGather with a negative rate | Does nothing: the rate reads 0 | Drains and goes below 0 |
+  | A gatherer whose rate turns negative | The gathering ends | Goes on, and drains |
+
+- **Everything else stops at 0:** tech effects, triggers, XS, costs, shipments and any other caller. A tech can never leave a
+  player negative: a tech that took 100000 gold left 0, a trigger that took 100000 wood left 0.
+- **Already in debt:** that floor is the debt itself. A tech that took 300 food at −80 left −80, a trigger that took 300 at −140
+  left −140, so nothing but the three sources digs deeper. An income pays the debt, it does not wipe it: a tech that gave
+  40 food at −180 left −140.
+- **The trickle** needs both effects, as without the key: the rate is clamped to `MinimumResourceTrickleRate`, 0 by default.
 
   ```xml
   <Effect type ='Data' amount ='-20.00' subtype ='MinimumResourceTrickleRate' resource ='Food' relativity ='Absolute'>
@@ -3145,22 +3167,26 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
       <Target type ='Player' /></Effect>
   ```
 
-- **In debt:** a cost is compared with the stockpile, so nothing can be paid until it is above the cost again. With food at
-  −140, an order to train was refused: no queue, no population, no charge. The panel shows the negative number.
-- **Any reduction counts:** with the key, a trigger or an effect that takes more than the stockpile also leaves a debt
-  of that resource.
-- **Shared resources:** with the team option on, the add divides the amount among the teammates, each with its own floor at
-  0, which the key also lifts. Tested on the player alone (the game ran that path, and the food reached −1261); the real
-  split between two allies was not tested, because the test maps hold 2 players.
-- **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no error, between
-  −3.6 and −20.7 food, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers
-  kept working.
-- **Log:** `resourceDebt: stockpiles of Food may go below 0 (multiplayer unverified)`, `hook reached: resourceDebt add
-  (0x679A0E)`, `resourceDebt set (0x6798F4)`, and `resourceDebt shared add (0x6799D4)`. With `log`, the first 200 sums below
-  0: `resourceDebt: player 2, resource 2 at -13.0`. An unknown resource: `FAILED`.
+- **A unit:** a negative `<Rate>` in the AutoGather action of the proto, or a tech that sets it. The building must have the
+  action enabled. WoL's `saqueo` has −15 of each resource, but its `saqueo.tactics` is not in the data, so it has no action and
+  drains nothing, with or without the key.
+- **A gatherer:** a `WorkRate` tech that turns the rate negative while the unit gathers. It drained 1 food per tick in the test.
+  A negative rate from the start was not seen to begin gathering, so this path needs the action already running.
+- **In debt:** a cost is compared with the stockpile, so nothing can be paid until it is above the cost again. At −1060 food an
+  order to train did nothing: 11 units 34 s later, against one more villager in the same scene with food. No penalties.
+- **Shared resources:** with the team option on, the add divides the amount among the teammates, each with its own floor, by the
+  same rule. The hook on that path was checked in the code but this version did not run it in game. The version before ran
+  it on one player; the real split between two allies was never tested.
+- **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no XS error, its food
+  around −15, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers kept working.
+- **Log:** `resourceDebt: trickles and unit rates may take Food below 0 (multiplayer unverified)`, and `hook reached: resourceDebt
+  add (0x679A0E)`, `set (0x6798F4)`, `shared add (0x6799D4)`, `AutoGather rate (0x49EE07)`, `AutoGather gate (0x48D186)` and `gather
+  gate (0x4ED03E)`. With `log`, the first 200 values below 0, with the caller:
+  `resourceDebt: player 1, resource 2, from 0x004E0CFE: -80.0`, and `(held by the floor)` when the floor changed it. Resources: 0
+  gold, 1 wood, 2 food. An unknown resource: `FAILED`.
 - **Simulation:** every player needs the same line.
-- **Saved games:** a debt saved at −80 loaded at −100, two seconds of trickle later.
-- **Performance:** runs only when a sum falls below 0.
+- **Saved games:** a game saved in debt loaded at −3220, with the debt intact and the floors working.
+- **Performance:** runs only when a sum falls below 0, plus one test for each AutoGather amount and gather rate under 1e-6.
 - **Status:** confirmed (single player, on WoL): the rates above, the refused order, the saved game, an AI in debt, the shared
   path on one player. Two allies sharing a debt and multiplayer not tested.
 

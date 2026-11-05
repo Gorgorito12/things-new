@@ -235,7 +235,7 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
-resourceDebt [Food] [Wood] [Gold] [log]   stockpiles may go below 0
+resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
