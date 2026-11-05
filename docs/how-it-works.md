@@ -2744,6 +2744,37 @@ Value is `{3, BString}` with an empty BString (0x44A635).
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
 
+### doNotQueue
+
+A unit's action list `[manager+14h]` (`+0` count, `+8` pointers) holds all its actions: in a Barracks 16 fixed ones (idle,
+types 29, 68 and 34) and then the Train actions. `[manager+24h]`, the current action, was the idle one while a Train action
+ran, so a building's queue is not the current action: the list order is. The first Train or Research in the list has the
+state 14h and advances. The action add 0x494894 appends, and the queue routine calls it at 0x9CE81A. The hook calls it and
+then moves the new action before the first Train or Research of the list, behind those of a tagged proto.
+
+The action that was first keeps its state and progress: it no longer advances until the tagged one leaves the list, as the
+two timings of the guide show. The list is saved in order.
+
+The tech flag of the same name is bit 1Ah. Its reader is the Research action's slot 58h, 0x9E5EAD (slot 58h of the Train
+action just returns 1), called only from 0x9CA1F0 when the world byte `[world+6910h]` is set.
+
+Shipments have no such list, as far as a static reading goes: the send (0x8577D2, 0x858299) pays and starts the card.
+`[hc+4D8h]`, with the count at `+4DCh`, refuses a card while it is not empty (0x858301, 0x85A7C7; 0x855F8F for the AI), but
+it is the `Blockade` effect's: 0x85C09C adds the IDs, called at 0x7FBA2D for the other players.
+
+### nextResearchFree
+
+A research is paid when its action starts: 0x8D946A at 0x9E67E1 (the Research action, EBP) and at 0x9D54CF (CommandResearch,
+ESI). Each action then copies the cost for a cancel's refund (0x480A73 at 0x9E68A0, to `+74h`, and at 0x9D5548, to `+7Ch`).
+
+The effect is a subtype through `AddTechSubtype`, which adds its amount to a count kept by the player's copy of the proto.
+Both payment calls go to a helper that reads the proto from the action's unit (`[[action+10h]+5Ch]`). With a count above 0 it
+takes one, returns true and leaves a mark, and the wrapper of the copy that follows empties the action's cost with
+0x4E2617, so a cancel refunds nothing. The count is forgotten when a database loads (`OnDatabaseLoad`), because a new game
+can reuse the address of a proto. It is not saved, and a load applies the effects again.
+
+- **Observed in game:** see the tests in the modding guide.
+
 ### trainBatchSize
 
 The routine that queues units in a building reads its limit from one call, 0x8D051B at 0x9CE645: the player's `[+2ACh]`

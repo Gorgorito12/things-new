@@ -847,6 +847,14 @@ SITES = [
     # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
     ("TrainBatchLimitCall", 0x9CE645, 5),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
+    # doNotQueue: the queue routine's call of the action add 0x494894
+    ("TrainQueueAddCall", 0x9CE81A, 5),
+    # nextResearchFree: the payment 0x8D946A and the copy of the cost 0x480A73 into the action, in the
+    # starts of the Research (EBP = the action) and CommandResearch (ESI = the action) actions
+    ("ResearchPayCall", 0x9E67E1, 5),
+    ("CommandResearchPayCall", 0x9D54CF, 5),
+    ("ResearchCostCopyCall", 0x9E68A0, 5),
+    ("CommandResearchCostCopyCall", 0x9D5548, 5),
     # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
     # arg 3 the proto ID, arg 4 the count
     ("TrainQueueCall1", 0x7560B5, 5),

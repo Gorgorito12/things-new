@@ -77,6 +77,8 @@ PAGES = {
         "buildingWorkRateAuras": ["src/features/bwrauras.cpp", "src/hooks/bwraura_hooks.asm"],
         "costEscalationTechs": ["src/features/costescalation.cpp"],
         "trainBatchSize": ["src/features/trainbatch.cpp", "src/hooks/trainbatch_hooks.asm"],
+        "doNotQueue": ["src/features/donotqueue.cpp"],
+        "nextResearchFree": ["src/features/freeresearch.cpp", "src/hooks/freeresearch_hooks.asm"],
         "maintainWaitForPop": ["src/features/maintain.cpp", "src/hooks/maintain_hooks.asm"],
         "noTrainNearEnemyTC": ["src/features/notrainneartc.cpp", "src/hooks/notrainneartc_hooks.asm"],
         "lifespanAfterConstruction": ["src/features/lifespan.cpp", "src/hooks/lifespan_hooks.asm"],

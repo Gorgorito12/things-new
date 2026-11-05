@@ -3331,6 +3331,8 @@ How buildings train, spawn, live and get replaced.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | **new** | Nothing. | confirmed (single player) |
+| [`doNotQueue`](#donotqueue) | `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | **new** | The tag on the protos that want it. | confirmed |
+| [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
@@ -4025,6 +4027,101 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
+
+#### doNotQueue
+
+**Added:** — · **Filmed in WoL:** —
+
+![doNotQueue in WoL](media/doNotQueue-wol.gif)
+
+*In WoL, with the key (Ethiopians, `<DoNotQueue/>` on `Pikeman`):* with two batches of `WOLLandwehr` in the Barracks, a batch
+of Pikemen jumps to the first place of the queue, and comes out first. The Landwehr that was training waits with its
+progress. [Full video (MP4)](media/doNotQueue-wol.mp4).
+
+![doNotQueue in WoL, key off](media/doNotQueue-wol-control.gif)
+
+*In WoL, key off (the same data):* the Pikemen wait at the end of the queue. The game skips the tag it does not know.
+[Full video (MP4)](media/doNotQueue-wol-control.mp4).
+
+```
+doNotQueue [log]
+```
+
+```xml
+<Unit name="Pikeman">
+    <DoNotQueue/>
+</Unit>
+```
+
+- **In WoL today:** a unit waits behind all that is queued in its building. JTMaston's #40.
+- **Effect:** a tagged unit goes to the first place of the queue, also ahead of a research.
+- **What was training** stops and keeps its progress: it goes on when the tagged unit is done. In the test, 2 Pikemen took
+  26 s and the first batch of Landwehr came out 26 s later than without the key. If you want the running item to finish
+  first, this is not it.
+- **Several tagged units** keep their order among them.
+- **Cost, cancel:** nothing changes: a batch of 5 was paid when queued, and its cancel gave back the 300.
+- **Shipments are not covered.** A static reading found no queue of cards to reorder: the send (0x8577D2, 0x858299) pays and
+  starts the card at once, and the list that refuses a card, `[hc+4D8h]`, is the `Blockade` effect's. What a flag on a card
+  should do has to be decided first.
+- **The tech flag `DoNotQueue`** is another thing: it has a stock reader, a method of the Research action, used only under a
+  world setting that is not known yet. WoL's 16 techs with it are not changed by this key.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and the same data.
+- **Log:** `doNotQueue: the proto tag DoNotQueue is on`, `hook reached: proto tags (0x51DB0F)`, and with `log`:
+  `doNotQueue: proto 295 has the tag`, and `doNotQueue: proto 295 goes from place 19 to place 16 of 20` for each move.
+- **Tested in WoL (2026-11-05):**
+  - 3 batches of 5 `WOLLandwehr` then 2 Pikemen: the Pikemen came out at 45 s and the first Landwehr at 60 s. Key off: the
+    first Landwehr at 34 s, and the Pikemen after all of them.
+  - A batch of 5 ahead of a running research and a batch of Landwehr: first in the queue, and the research kept its progress.
+  - Its cancel gave back the 300 it cost. The queue kept its order through a saved game, and the Pikemen came out first.
+  - A skirmish with a European AI (`wolOtto`) with `Settler` and `Musketeer` tagged: it compiled and had 19 units at 120 s, but
+    no tagged unit found anything to pass, so the move itself did not run for the AI.
+  - Not tested: a building with a Maintain, multiplayer.
+
+#### nextResearchFree
+
+**Added:** — · **Filmed in WoL:** —
+
+![nextResearchFree in WoL](media/nextResearchFree-wol.gif)
+
+*In WoL, with the key (Ethiopians, a test tech and two test researches of 300 wood at the Market):* the first research takes
+no wood and the second takes 300. [Full video (MP4)](media/nextResearchFree-wol.mp4).
+
+![nextResearchFree in WoL, key off](media/nextResearchFree-wol-control.gif)
+
+*In WoL, key off (the same data):* the effect is dropped and both researches take 300.
+[Full video (MP4)](media/nextResearchFree-wol-control.mp4).
+
+```
+nextResearchFree [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.00' subtype ='NextResearchIsFree' relativity ='Absolute'>
+    <Target type ='ProtoUnit'>Market</Target></Effect>
+```
+
+- **In WoL today:** nothing does this. JTMaston's #37. DE's name for the subtype, `SetNextResearchFree`, works too.
+- **Effect:** the next research started in a building of that proto, for that player, costs nothing. `amount` is how many
+  researches; `relativity` is required by the game and not used.
+- **One count per proto:** two Markets of a player share it, and it does not reach another proto.
+- **No resources needed:** with 0 wood the button starts the research. The button and its tooltip still show the normal
+  price.
+- **Cancel:** the free research gives nothing back, and the free turn is spent. A paid one refunds as usual.
+- **Saved games:** the count is not saved. A load applies the tech again, so an unused turn stays, but **a spent one comes
+  back**.
+- **Removal:** taking the effect away takes that many turns from the count, down to 0. Not tested in game.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Log:** `nextResearchFree: the Data subtype NextResearchIsFree is on`, `hook reached: nextResearchFree research
+  (0x9E67E1)`, and with `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444: a free research, 0 left`.
+- **Tested in WoL (2026-11-05):**
+  - One turn, three researches of 300 wood: 2000, 2000, 1700, 1400, and a cancel of the third gave back 300. Key off: 2000,
+    1700, 1400, 1100.
+  - With 0 wood: by the real button and by console it started. Its cancel left 0, and the next research was refused for
+    lack of 300 wood.
+  - A saved game with the turn unused: free after the load. With the turn spent and the research still running: the count
+    came back to 1, and a second research asked for by console did not start and logged nothing (not understood).
+  - A skirmish with a European AI with the key on compiled and played; it did not use the effect.
+  - Not tested: `CommandResearch` (0x9D54CF: its hook was not reached), an AI using the effect, a type as target, multiplayer.
 
 #### trainBatchSize
 

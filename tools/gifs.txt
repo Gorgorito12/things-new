@@ -119,3 +119,7 @@ costEscalationTechs-wol 2 42 3
 costEscalationTechs-wol-control 2 42 3
 trainBatchSize-wol 2 36 3
 trainBatchSize-wol-control 2 36 3
+doNotQueue-wol 2 46 3
+doNotQueue-wol-control 2 46 3
+nextResearchFree-wol 2 30 3
+nextResearchFree-wol-control 2 30 3

@@ -303,7 +303,8 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 
 - [O] DE's proto flag `DoNotQueue`: the unit is not held by the building's queue (guide p18).
   19 protos have it: 17 builders or wagons, and the two Yoruba riders (cavalry with no build
-  action). Legacy has a tech flag of the same name, which WoL uses on 16 techs.
+  action). Legacy has a tech flag of the same name, which WoL uses on 16 techs, read by the Research action's
+  slot 58h, 0x9E5EAD, only under the world byte `[world+6910h]`.
 - [O] Nothing in DE orders shipments.
 
 ### #41 Reversible transformation on a timer

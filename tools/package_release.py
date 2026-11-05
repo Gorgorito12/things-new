@@ -238,6 +238,8 @@ resourceGatherAuras [log]     ModifyType names for one kind of target or one res
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
+doNotQueue [log]              <DoNotQueue/> trains a proto ahead of what waits in the building
+nextResearchFree [log]        a Data tech effect makes a building's next research free
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
