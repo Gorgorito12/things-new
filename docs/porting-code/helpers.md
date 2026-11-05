@@ -1040,6 +1040,15 @@ inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10
 inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
 inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
 
+inline constexpr std::uint8_t kTeamBountyPayBytes[] = {0x8B, 0x4C, 0x24, 0x14, 0x8B, 0x16};
+inline constexpr Site kTeamBountyPay{"TeamBountyPay", 0x0049BDAB, kTeamBountyPayBytes, sizeof(kTeamBountyPayBytes)};
+
+inline constexpr std::uint8_t kBountyTagHandlerBytes[] = {0x79, 0x5D, 0x5F, 0x00};
+inline constexpr Site kBountyTagHandler{"BountyTagHandler", 0x0051D669, kBountyTagHandlerBytes, sizeof(kBountyTagHandlerBytes)};
+
+inline constexpr std::uint8_t kBountyKillBranchBytes[] = {0x8B, 0x4C, 0x24, 0x28, 0x51};
+inline constexpr Site kBountyKillBranch{"BountyKillBranch", 0x004D4E0C, kBountyKillBranchBytes, sizeof(kBountyKillBranchBytes)};
+
 inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
 inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
 
@@ -1856,6 +1865,10 @@ Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
 Outcome ApplyCostEscalationTechs(const Config& config);
 Outcome ApplyTrainBatchSize(const Config& config);
+Outcome ApplyKillBountyTechs(const Config& config);
+Outcome ApplyTeamKillBounty(const Config& config);
+Outcome ApplyResourceBounty(const Config& config);
+Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1935,6 +1948,9 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
+    {"killBountyTechs", ApplyKillBountyTechs},
+    {"teamKillBounty", ApplyTeamKillBounty},
+    {"resourceBounty", ApplyResourceBounty},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1945,6 +1961,8 @@ inline constexpr Feature kFeatures[] = {
     {"gaiaSocketsOnly", ApplyGaiaSocketsOnly},
     {"customHotkeyContexts", ApplyCustomHotkeyContexts},
     {"snareOnlyHitUnit", ApplySnareOnlyHitUnit},
+    // After damageOverTime and snareOnlyHitUnit: both verify the stock bytes of the site it writes.
+    {"cantBeSlowed", ApplyCantBeSlowed},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
@@ -2007,7 +2025,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",

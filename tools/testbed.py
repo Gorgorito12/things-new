@@ -11,8 +11,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   exec <cmd> [<cmd> ...]     run console commands through perfExecFile and wait until they ran
   map <name> <spec> ...      write RM3\\<name>.xs/.xml, a test map (spec syntax below); RM4
                              when the bed's exe reads RM4 (WoL)
-  scenario <map> [--seed N]  editor route: generate <map>, save it as scenario uhc-<map>, leave,
-                             load it as a game and unpause. Players have no AI.
+  scenario <map> [--seed N] [--players N]   editor route: generate <map>, save it as scenario
+                             uhc-<map>, leave, load it as a game and unpause. Players have no AI.
+                             With 3 players the map makes two teams, unlike a skirmish on a test map.
   wait <seconds>             let that much game time pass (polls the world clock)
   state                      process, window, world and game time
   units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
@@ -743,7 +744,7 @@ def write_map(bed, name, specs):
           f"{len(timed)} timed effects)")
 
 
-def scenario(bed, map_name, seed):
+def scenario(bed, map_name, seed, players=2):
     proc = process() or sys.exit("testbed: the game is not running")
     name = f"uhc-{map_name}"
     target = my_games(bed) / "Scenario" / f"{name}.age3Yscn"
@@ -760,7 +761,7 @@ def scenario(bed, map_name, seed):
                        "startRandomGame(true)"])
     wait_until(lambda: D.world(proc), 120, 1, "the scenario editor")
     time.sleep(5)
-    run_commands(bed, [f'startRandomGame2("{map_name}", 2, {seed}, "", false, 2, 1, 0, false)'])
+    run_commands(bed, [f'startRandomGame2("{map_name}", {players}, {seed}, "", false, 2, 1, 0, false)'])
     time.sleep(10)
     run_commands(bed, [f'saveScenario("{name}")'])
     wait_until(lambda: target.exists() and target.stat().st_size > 0, 60, 1, f"{target}")
@@ -1530,7 +1531,7 @@ def main(argv):
         write_map(bed, args[0], args[1:])
     elif cmd == "scenario":
         seed = int(args[args.index("--seed") + 1]) if "--seed" in args else 1234
-        scenario(bed, args[0], seed)
+        scenario(bed, args[0], seed, int(args[args.index("--players") + 1]) if "--players" in args else 2)
     elif cmd == "wait":
         wait_game_time(float(args[0]))
     elif cmd == "state":

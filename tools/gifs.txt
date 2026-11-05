@@ -119,3 +119,11 @@ costEscalationTechs-wol 2 42 3
 costEscalationTechs-wol-control 2 42 3
 trainBatchSize-wol 2 36 3
 trainBatchSize-wol-control 2 36 3
+cantBeSlowed-wol 0 12 1
+cantBeSlowed-wol-control 0 12 1
+killBountyTechs-wol 0 12 1
+killBountyTechs-wol-control 0 12 1
+resourceBounty-wol 0 12 1
+resourceBounty-wol-control 0 12 1
+teamKillBounty-wol 0 12 1
+teamKillBounty-wol-control 0 12 1

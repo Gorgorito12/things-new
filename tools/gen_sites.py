@@ -841,6 +841,13 @@ SITES = [
     # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
     # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
     ("DataSubtypeLookupCall", 0x6206D7, 5),
+    # teamKillBounty: FUN_0049BD52's mov ecx,[esp+14h] / mov edx,[esi], the amount and the killer's ID for
+    # the team's XP routine 0x49BDC0
+    ("TeamBountyPay", 0x49BDAB, 6),
+    # resourceBounty: the handler the tag table's builder registers for <Bounty> (mov [esp+10h],5F5D79h, its
+    # immediate), and the head of TakeDamage's kill branch, mov ecx,[esp+28h] / push ecx
+    ("BountyTagHandler", 0x51D669, 4),
+    ("BountyKillBranch", 0x4D4E0C, 5),
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),

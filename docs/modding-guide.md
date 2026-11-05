@@ -2054,6 +2054,8 @@ Attacks, armor, and what a hit does.
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | **new** | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. | confirmed (single player) |
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | **new** | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
+| [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
+| [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
@@ -2650,6 +2652,41 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
   attack has `SingleUsePlayer`, so it keeps 1. A projectile count set in the data, independent of the
   model (`numberprojectiles`), is a different and larger change; it is not provided.
 
+#### cantBeSlowed
+
+**Added:** — · **Filmed in WoL:** —
+
+![cantBeSlowed in WoL](media/cantBeSlowed-wol.gif)
+
+*In WoL, with `cantBeSlowed` (Ethiopians, a marked `Halberdier` and an unmarked `Skirmisher` of the same speed, two Uhlans
+on each):* the Halberdier walks away and the Skirmisher falls behind. [Full video (MP4)](media/cantBeSlowed-wol.mp4).
+
+![cantBeSlowed in WoL, key off](media/cantBeSlowed-wol-control.gif)
+
+*In WoL, key off (the same data):* both are snared and walk level. [Full video (MP4)](media/cantBeSlowed-wol-control.mp4).
+
+```
+cantBeSlowed [log]
+```
+
+```xml
+<Unit name="Halberdier">
+    <UnitType>CantBeSlowed</UnitType>
+</Unit>
+```
+
+- **In WoL today:** every `TargetSpeedBoost` attack slows its target to 0.65 of its speed for 3 s. JTMaston's #38.
+- **Effect:** a unit whose proto has the type `CantBeSlowed` is not snared. The hit still does its damage. A
+  `damageOverTime` poison with `<AttachSnare>` does not slow it either.
+- **What it does not cover:** a speed aura or tech, which are not snares. DE's `CannotSnare`, on the attacker, is not built.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Log:** `cantBeSlowed: the abstract type CantBeSlowed is on`, `hook reached: cantBeSlowed (0x4DD201)`, and with `log`
+  `cantBeSlowed: proto 316 ignores a snare`.
+- **Tested in WoL (2026-11-05):** a Halberdier and a Skirmisher of speed 4 with 4000 HP, 58 m apart, walking off with two
+  Uhlans on each. With the key the Halberdier was 19.5 m ahead at the first reading, and the log shows 16 snares ignored.
+  With the key off it was 4.5 m ahead, and no line. A marked Halberdier under three archers with `<AttachSnare>` logged
+  19 snares ignored in 20 s. Not tested: multiplayer.
+
 #### snareOnlyHitUnit
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
@@ -2704,6 +2741,92 @@ snareOnlyHitUnit [log]
 - **Simulation:** yes.
 - **Status:** confirmed in single player. In WoL (2026-11-04), six Redcoats harassed by an Uhlan reached the
   end of the map at 50 s with the key and about 54 s without, positions sampled once a second.
+
+#### killBountyTechs, resourceBounty and teamKillBounty
+
+**Added:** — · **Filmed in WoL:** —
+
+![killBountyTechs in WoL](media/killBountyTechs-wol.gif)
+
+*In WoL, with `killBountyTechs` (Ethiopians, a test tech sets the bounty of the enemy's `Settler` to 100):* each kill
+shows +100. [Full video (MP4)](media/killBountyTechs-wol.mp4).
+
+![killBountyTechs in WoL, key off](media/killBountyTechs-wol-control.gif)
+
+*In WoL, key off (the same scene):* each kill shows the data's +10. [Full video (MP4)](media/killBountyTechs-wol-control.mp4).
+
+![resourceBounty in WoL](media/resourceBounty-wol.gif)
+
+*In WoL, with `resourceBounty` (`<Bounty resourcetype="Wood">30</Bounty>` on `Pikeman`):* each kill adds 30 wood.
+[Full video (MP4)](media/resourceBounty-wol.mp4).
+
+![resourceBounty in WoL, key off](media/resourceBounty-wol-control.gif)
+
+*In WoL, key off (the same data):* no wood; the stock game reads that tag's number as XP.
+[Full video (MP4)](media/resourceBounty-wol-control.mp4).
+
+![teamKillBounty in WoL](media/teamKillBounty-wol.gif)
+
+*In WoL, with `teamKillBounty` (`Dragoon` marked, the human and an ally against a third player):* the log says each
+kill paid 2 players. [Full video (MP4)](media/teamKillBounty-wol.mp4).
+
+![teamKillBounty in WoL, key off](media/teamKillBounty-wol-control.gif)
+
+*In WoL, key off (the same scene):* each kill pays 1 player. [Full video (MP4)](media/teamKillBounty-wol-control.mp4).
+
+```
+killBountyTechs [log]
+resourceBounty [log]
+teamKillBounty [log]
+```
+
+```xml
+<!-- techtreey.xml -->
+<Effect type ='Data' amount ='1.50' subtype ='KillBounty' relativity ='Percent'>
+    <Target type ='ProtoUnit'>Settler</Target></Effect>
+
+<!-- protoy.xml -->
+<Unit name="Dragoon">
+    <Bounty>17</Bounty>
+    <Bounty resourcetype="Gold">50</Bounty>
+    <UnitType>TeamKillBounty</UnitType>
+</Unit>
+```
+
+- **In WoL today:** `<Bounty>` is a fixed amount of XP, for the killer alone. WoL's data already has 10 effects with
+  `subtype='Bounty'`, which the stock game drops: the subtype does not exist. JTMaston's #34 and #35.
+- **`killBountyTechs`:** the subtypes `KillBounty`, DE's name, and `Bounty` change a proto's `<Bounty>`, with every
+  relativity, on one proto or an abstract type. **Turning the key on also turns on those 10 effects in WoL's data.**
+- **Whose tech:** the value is in the copy of the **victim's** owner. A tech changes what the enemy gets for killing
+  that player's units. A tech cannot change what its own player gets for kills: that is the `Bounty` aura.
+- **`resourceBounty`:** `<Bounty resourcetype="Gold">N</Bounty>` pays N of that resource at the kill, beside the XP of a
+  plain `<Bounty>`, and a proto can have several. It reads any resource name of the data.
+  - A tech does not change it: `KillBounty` is the XP. The `Bounty` aura does not reach it either.
+  - Killing your own unit pays nothing.
+  - With the key off the tag's number is read as **XP**, and the last `<Bounty>` of the proto wins.
+- **`teamKillBounty`:** a victim whose proto has the type `TeamKillBounty` pays its XP, and with `resourceBounty` its
+  resources, to the killer's whole team. **Each member gets the full amount;** it is not split. The floating text shows
+  on the killer's side only.
+- **Multiplayer:** they change the simulation: every player needs the same setting and data.
+- **Log:** `killBountyTechs: the Data subtypes KillBounty and Bounty are on`, `hook reached: tech subtype apply
+  (0x8F978D)`, `resourceBounty (0x4D4E0C)`, `teamKillBounty (0x49BDAB)`. With `log`: `killBountyTechs: proto 294,
+  relativity 3, amount 100: 10 -> 100`, `resourceBounty: proto 295 killed: 30 of resource 1 to 1 player(s)`,
+  `teamKillBounty: proto 324: 34 XP to the killer's whole team`. A `resourcetype` that is no resource is logged and ignored.
+- **Tested in WoL (2026-11-05), reading each player's XP and resources in memory, in a 3-player scenario (two teams):**
+  - One kill each: `Assign` 100 paid 100, `Percent` 3 on 8 paid 24, `BasePercent` 2 on 8 with `subtype='Bounty'` paid 16,
+    `Absolute` 50 on 12 paid 62.
+  - An abstract target: `Percent` 2 on `AbstractCavalry` reached each cavalry proto, and a Hussar paid 40.
+  - Removal: 15 → 22.5 → 15 through `Age0Egyptian`.
+  - Saved game: after a load the five kills paid the same.
+  - Team: a marked Hussar paid 40 XP to the killer and to the ally; a marked Dragoon 34 XP and 50 gold to each; an
+    unmarked Pikeman 24 XP and 30 wood to the killer alone.
+  - The keys on with no data: the stock 10, 8, 8, 12 and 20, to the killer alone.
+  - A skirmish with a European AI (`wolOtto`), the keys on, and so WoL's 10 `subtype='Bounty'` effects active: the AI
+    compiled and had 16 units at 120 s.
+  - Cost, with `cantBeSlowed` too: 70 Uhlans against 70 marked Halberdiers, on and off twice, with another copy running.
+    The game's update stayed at 0.13 ms, and the fight ended the same way, 6 to 8 Halberdiers left. Frames came out 3 to 7%
+    lower in the runs with the keys, with the scenes not identical, so read that as noise until a cleaner run.
+  - Not tested: multiplayer, a kill by a building or a ship, a `Bounty` aura beside `teamKillBounty`.
 
 #### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
 
@@ -3178,7 +3301,8 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
   same rule. Tested on 2026-11-05 in a 3-player skirmish, the human and a British AI against a German AI, with a trickle of
   −20/s in the two AIs' start techs: both allies went into debt with the same number (−4.6), then the team's income paid
   it, and the lone German reached −150 and stalled at 6 units. The floor of the shared path with the key off was not
-  shown: that run ended at 3 food. A test map cannot do this: it starts with 2 players whatever the profile says.
+  shown: that run ended at 3 food. A skirmish on a test map cannot do this: it starts with 2 players whatever the
+  profile says. `testbed.py scenario <map> --players 3` makes two teams, without the AI.
 - **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no XS error, its food
   around −15, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers kept working.
 - **Log:** `resourceDebt: trickles and unit rates may take Food below 0 (multiplayer unverified)`, and `hook reached: resourceDebt

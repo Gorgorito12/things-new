@@ -37,6 +37,10 @@ Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
 Outcome ApplyCostEscalationTechs(const Config& config);
 Outcome ApplyTrainBatchSize(const Config& config);
+Outcome ApplyKillBountyTechs(const Config& config);
+Outcome ApplyTeamKillBounty(const Config& config);
+Outcome ApplyResourceBounty(const Config& config);
+Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -116,6 +120,9 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
+    {"killBountyTechs", ApplyKillBountyTechs},
+    {"teamKillBounty", ApplyTeamKillBounty},
+    {"resourceBounty", ApplyResourceBounty},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -126,6 +133,8 @@ inline constexpr Feature kFeatures[] = {
     {"gaiaSocketsOnly", ApplyGaiaSocketsOnly},
     {"customHotkeyContexts", ApplyCustomHotkeyContexts},
     {"snareOnlyHitUnit", ApplySnareOnlyHitUnit},
+    // After damageOverTime and snareOnlyHitUnit: both verify the stock bytes of the site it writes.
+    {"cantBeSlowed", ApplyCantBeSlowed},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
@@ -188,7 +197,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
