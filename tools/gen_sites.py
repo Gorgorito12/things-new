@@ -847,6 +847,12 @@ SITES = [
     # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
     ("TrainBatchLimitCall", 0x9CE645, 5),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
+    # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
+    # arg 3 the proto ID, arg 4 the count
+    ("TrainQueueCall1", 0x7560B5, 5),
+    ("TrainQueueCall2", 0x7CAF6E, 5),
+    ("TrainQueueCall3", 0x7D797A, 5),
+    ("TrainQueueCall4", 0x9EBF03, 5),
     ("DataApplySwitch", 0x8F978D, 9),
     ("DataUnapplySwitch", 0x8FB051, 9),
     # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not

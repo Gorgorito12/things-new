@@ -233,7 +233,9 @@ with one, the AI barely grew (4 units against 26).
 **The AI's civ.** Use a European AI: it is WoL's best prepared. A random AI takes a random personality, and the personality's
 `<forcedciv>` wins over `gameplayer2civ` in the profile. So before launching, `python -I tools/ai_personality.py
 C:\AoE3-UHC-WoLReal wolOtto` (Germans; also `wolVictoria` British, `wolNapoleon` French, `wolIsabel` Spanish), and
-`restore` after closing the game. Not `wolOscar`: with it the game fell at 0x7C252C on starting a skirmish (2026-11-05).
+`restore` after closing the game. Leave one personality per AI, each of a civ the human does not have: the game fell at
+0x7C252C on starting a skirmish with `wolOscar` and a Swedish human, and with two AIs and one personality. A 3-player game
+needs a normal map: a test map starts with 2 players whatever the profile says.
 
 ## Language of the bed
 

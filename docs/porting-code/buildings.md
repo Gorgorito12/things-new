@@ -759,7 +759,7 @@ Contract: [trainBatchSize](../porting-to-another-dll.md#trainbatchsize).
 
 Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
 
-Sites: `TrainBatchLimitCall` `0x9CE645` (5 B), `TrainBatchProtoArg` `0x9CE6DE` (4 B).
+Sites: `TrainQueueCall1` `0x7560B5` (5 B), `TrainQueueCall2` `0x7CAF6E` (5 B), `TrainQueueCall3` `0x7D797A` (5 B), `TrainBatchLimitCall` `0x9CE645` (5 B), `TrainBatchProtoArg` `0x9CE6DE` (4 B), `TrainQueueCall4` `0x9EBF03` (5 B).
 
 ### src/features/trainbatch.cpp
 
@@ -770,8 +770,12 @@ Sites: `TrainBatchLimitCall` `0x9CE645` (5 B), `TrainBatchProtoArg` `0x9CE6DE` (
 // Stock takes the limit from one call, 0x8D051B (0x9CE645, in the routine that queues units in a
 // building): the player's [+2ACh] when a tech set it, else the database's default of [+178h]. The routine
 // then fills the last Train action up to the limit and opens a new one for the rest. The hook keeps that
-// call and replaces its result for a proto with the tag. Values are read once, kept by proto ID, and
-// are the same for every player. The hook is in hooks/trainbatch_hooks.asm.
+// call and replaces its result for a proto with the tag.
+//
+// The new action takes all that remains, whatever the limit, so a Shift+click of 5 is one action of 5.
+// So the routine's four calls go through a wrapper that asks for more than the tag allows in pieces of
+// that size, and each piece is queued and paid by the stock routine. Values are read once, kept by proto
+// ID, and are the same for every player. The hook is in hooks/trainbatch_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
@@ -789,7 +793,12 @@ extern "C" void UhcTrainBatchHook();
 namespace {
 
 constexpr std::uint32_t kLimitCall = 0x009CE645;
+constexpr std::uint32_t kQueueCalls[] = {0x007560B5, 0x007CAF6E, 0x007D797A, 0x009EBF03};
 constexpr int kMaxLogLines = 200;
+
+using QueueFn = bool(__thiscall*)(void* building, std::int32_t a, std::int32_t b, std::int32_t proto,
+                                  std::int32_t count, std::int32_t c, std::int32_t d, std::int32_t e);
+const auto kQueue = reinterpret_cast<QueueFn>(0x009CE2BE);
 
 std::unordered_map<std::int32_t, std::int32_t> g_sizes;  // filled while protos load, read-only after
 bool g_log = false;
@@ -808,6 +817,27 @@ bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
     uhc::Log(L"trainBatchSize: proto %d has %d", id, size);
   }
   return true;
+}
+
+// Replaces the calls of the queue routine.
+bool __fastcall Queue(void* building, void*, std::int32_t a, std::int32_t b, std::int32_t proto, std::int32_t count,
+                      std::int32_t c, std::int32_t d, std::int32_t e) {
+  const auto found = g_sizes.find(proto);
+  if (found == g_sizes.end() || count <= found->second) {
+    return kQueue(building, a, b, proto, count, c, d, e);
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"trainBatchSize: proto %d: %d asked, in pieces of %d", proto, count, found->second);
+  }
+  bool queued = false;
+  for (std::int32_t left = count; left > 0; left -= found->second) {
+    if (!kQueue(building, a, b, proto, left < found->second ? left : found->second, c, d, e)) {
+      break;
+    }
+    queued = true;
+  }
+  return queued;
 }
 
 }  // namespace
@@ -839,10 +869,16 @@ Outcome ApplyTrainBatchSize(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("trainBatchSize", {&sites::kTrainBatchLimitCall, &sites::kTrainBatchProtoArg}) ||
+  if (!VerifyAll("trainBatchSize", {&sites::kTrainBatchLimitCall, &sites::kTrainBatchProtoArg, &sites::kTrainQueueCall1,
+                                    &sites::kTrainQueueCall2, &sites::kTrainQueueCall3, &sites::kTrainQueueCall4}) ||
       !AddProtoTagHandler("TrainBatchSize", &ReadTrainBatchSize) ||
       !WriteJmp(kLimitCall, reinterpret_cast<const void*>(&UhcTrainBatchHook), 5)) {
     return Outcome::kFailed;
+  }
+  for (const std::uint32_t call : kQueueCalls) {
+    if (!WriteCall(call, reinterpret_cast<const void*>(&Queue))) {
+      return Outcome::kFailed;
+    }
   }
   Log(L"trainBatchSize: the proto tag TrainBatchSize is on");
   return Outcome::kApplied;

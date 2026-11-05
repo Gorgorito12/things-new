@@ -3175,8 +3175,10 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
 - **In debt:** a cost is compared with the stockpile, so nothing can be paid until it is above the cost again. At −1060 food an
   order to train did nothing: 11 units 34 s later, against one more villager in the same scene with food. No penalties.
 - **Shared resources:** with the team option on, the add divides the amount among the teammates, each with its own floor, by the
-  same rule. The hook on that path was checked in the code but this version did not run it in game. The version before ran
-  it on one player; the real split between two allies was never tested.
+  same rule. Tested on 2026-11-05 in a 3-player skirmish, the human and a British AI against a German AI, with a trickle of
+  −20/s in the two AIs' start techs: both allies went into debt with the same number (−4.6), then the team's income paid
+  it, and the lone German reached −150 and stalled at 6 units. The floor of the shared path with the key off was not
+  shown: that run ended at 3 food. A test map cannot do this: it starts with 2 players whatever the profile says.
 - **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no XS error, its food
   around −15, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers kept working.
 - **Log:** `resourceDebt: trickles and unit rates may take Food below 0 (multiplayer unverified)`, and `hook reached: resourceDebt
@@ -4053,8 +4055,9 @@ trainBatchSize [log]
 - **Effect:** a proto with the tag uses its number instead. A value from 1 is accepted; 1 means no batches. Each click
   fills the last action of that proto up to the limit, and the rest opens a new one, as stock does with its number.
 - **Precedence:** the tag beats the tech: a proto with the tag ignores `PlayerSpecificTrainLimitPerAction`.
-- **Above the default:** a value above 5 lets more units share an action, but a Shift+click still asks for what the game
-  asks for. Not tested.
+- **Shift+click:** the batch respects the tag: with 2 it queues 2, 2 and 1. Stock would make one action of the whole
+  batch, so the key asks for it in pieces, and each piece pays as usual: 5 at 119.2 charged 596.
+- **Above the default:** with 8, eight clicks share one action. A Shift+click still asks for 5.
 - **A tech cannot change the tag:** it is read once and is the same for every player.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and the same data.
 - **Log:** `trainBatchSize: the proto tag TrainBatchSize is on`, `hook reached: proto tags (0x51DB0F)`, `trainBatchSize
@@ -4062,9 +4065,10 @@ trainBatchSize [log]
   action (stock 5)`. A value below 1 is logged and ignored.
 - **Tested in WoL (2026-11-05):**
   - 2 on `WOLLandwehr`: five clicks queued 2, 2 and 1. Key off: one action of 5.
+  - A real Shift+click with 2: 2, 2 and 1, and 596 food.
+  - 8, beside `PlayerSpecificTrainLimitPerAction` at 3: one action of 8; the log says `queues up to 8 per action (stock 3)`.
   - A skirmish with a European AI (`wolOtto`) with the key on: it trained through the hook and had 16 units at 120 s.
-  - Not tested: a value above 5, a Shift+click batch (our test tool cannot hold Shift in a background copy),
-    `PlayerSpecificTrainLimitPerAction` beside the tag, multiplayer.
+  - Not tested: multiplayer.
 
 #### costEscalationTechs
 
@@ -4111,7 +4115,8 @@ costEscalationTechs [log]
   - `Percent` 1.05 on top gave 1.26: 756 at 10 alive and 1200 at 12.
   - A skirmish with a European AI (`wolVictoria`) with the key on: the AI compiled and had 12 units at 90 s.
   - A Shift+click of 5 on 1.015 and 9 alive charged 429, from 20000 to 19571.
-  - Not tested: `BasePercent` and `Absolute` (the stock function handles them), multiplayer.
+  - `BasePercent` 1.10 then `Absolute` 0.05 on 1.015: the cost at 3 alive was 119, which is 75 × 1.1665³.
+  - Not tested: multiplayer.
 
 ### Techs and transforms
 

@@ -1049,6 +1049,18 @@ inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kT
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
 
+inline constexpr std::uint8_t kTrainQueueCall1Bytes[] = {0xE8, 0x04, 0x82, 0x27, 0x00};
+inline constexpr Site kTrainQueueCall1{"TrainQueueCall1", 0x007560B5, kTrainQueueCall1Bytes, sizeof(kTrainQueueCall1Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall2Bytes[] = {0xE8, 0x4B, 0x33, 0x20, 0x00};
+inline constexpr Site kTrainQueueCall2{"TrainQueueCall2", 0x007CAF6E, kTrainQueueCall2Bytes, sizeof(kTrainQueueCall2Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall3Bytes[] = {0xE8, 0x3F, 0x69, 0x1F, 0x00};
+inline constexpr Site kTrainQueueCall3{"TrainQueueCall3", 0x007D797A, kTrainQueueCall3Bytes, sizeof(kTrainQueueCall3Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall4Bytes[] = {0xE8, 0xB6, 0x23, 0xFE, 0xFF};
+inline constexpr Site kTrainQueueCall4{"TrainQueueCall4", 0x009EBF03, kTrainQueueCall4Bytes, sizeof(kTrainQueueCall4Bytes)};
+
 inline constexpr std::uint8_t kDataApplySwitchBytes[] = {0x83, 0xF8, 0x63, 0x0F, 0x87, 0x5E, 0x17, 0x00, 0x00};
 inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApplySwitchBytes, sizeof(kDataApplySwitchBytes)};
 

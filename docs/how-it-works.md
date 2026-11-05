@@ -2751,6 +2751,10 @@ when set, else the database's `[+178h]`. It then walks the Train actions and fil
 limit (0x9CE6C7..0x9CE6E7). The hook keeps the call and replaces its result for a proto with the tag. The proto ID is the
 routine's `[esp+30h]`, the same value it pushes at 0x9CE6DE.
 
+That limit only fills an existing action: a new action takes all that remains, so a Shift+click of 5 stays one action of
+5 at any limit. So the four calls of the routine (0x7560B5, 0x7CAF6E, 0x7D797A, 0x9EBF03) go through a wrapper that
+asks for more than the tag allows in pieces of that size. Each piece runs the stock routine, which charges it.
+
 New proto tags go through `prototags.*`, shared by the keys that add one. The builder FUN_0051CE1D fills two tables with
 0x59B738(name, &handler): the protos' at its object's `+0Ch`, and from 0x51D807 a second one at `+0C2Ch`. So at its tail
 ESI is the second: the hook takes the first from EDI. It runs at startup, after `UHCMain`, so the keys only have to
