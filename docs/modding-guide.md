@@ -30,9 +30,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Thursday 2026-11-05 14:10 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
-| Thursday 2026-11-05 14:10 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
-| Thursday 2026-11-05 14:10 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
+| Thursday 2026-11-05 14:06 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
+| Thursday 2026-11-05 14:06 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
+| Thursday 2026-11-05 14:06 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -3406,7 +3406,7 @@ autoGatherScaleByContained
 
 #### unitResourceAuras
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Thursday 2026-11-05 14:10
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Thursday 2026-11-05 14:06
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
@@ -3482,7 +3482,7 @@ unitResourceAuras [log]
 
 #### resourceGatherAuras
 
-**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 14:10
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 14:06
 
 ![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
 
@@ -3936,7 +3936,7 @@ liveBuildingWorkRate [log]
 
 #### buildingWorkRateAuras
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Thursday 2026-11-05 14:10
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Thursday 2026-11-05 14:06
 
 ![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
 
@@ -5496,7 +5496,8 @@ as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the file
   they are: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and `frightpower.xml`, `effects\chiefpower\chiefpower.xml`,
   `effects\me_auras\aura_warlord.xml`, among others.
 - **Tested in WoL (2026-11-05),** with a Town Center in the game: each ring in its colour, on infantry, cavalry, trees, Town
-  Centers, a Barracks and a House; off when the aura's owner dies; no flicker in 220 frames of a master. Saved games, multiplayer
+  Centers, a Barracks and a House; off when the aura's owner dies; no flicker in 220 frames of a master; off a villager sent from
+  the mine to a tree; and beside WoL's own DLL. Saved games, multiplayer
   and hilly ground were not tested. How long a ring stays after its aura was not timed: the 2 s above is the particle's life.
 
 More about the tools: [tools/README.md](../tools/README.md).

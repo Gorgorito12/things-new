@@ -13,6 +13,7 @@ The zip holds one folder, UHC-<version>/, with:
   Startup/uhc.cfg    examples/Startup/uhc.cfg with every key commented out (stock behavior)
   beside-another-dll/dinput8.dll              the same code, for a game that keeps another UHC.dll
   beside-another-dll/engine-ext/engine-ext.cfg  the same template, for that DLL
+  art/effects/uhc_rings/  the aura rings of tools/rings, for a game's art folder
   LICENSE.txt
   README.txt         the quick start for modders
 The game exe is not included: each modder patches their own copy with the loader's patcher.
@@ -109,7 +110,7 @@ def template_cfg(version, title=None):
     lines = [
         title or f"# Startup\\uhc.cfg template for UHC.dll {version}.",
         "# Every key is commented out, so the game behaves as stock until you enable one: remove",
-        "# the \"# \" in front of a key line. Keep the other comment lines as they are.",
+        "# the \"#\" in front of a key line. Keep the other comment lines as they are.",
         "#",
     ]
     active = 0
@@ -148,7 +149,7 @@ Adding it to your mod
 3. From this package's UHC-{version} folder, copy UHC.dll next to the exe and the Startup
    folder into the mod folder, replacing the patcher's files. If you run the patcher again
    later, keep a copy of your own uhc.cfg first, then copy UHC.dll and your uhc.cfg back.
-4. In Startup\\uhc.cfg, remove the "# " in front of ignoreRegistryPath (always needed in a mod
+4. In Startup\\uhc.cfg, remove the "#" in front of ignoreRegistryPath (always needed in a mod
    folder) and of the keys you want. Some keys need data or art from your mod: see the guide.
 5. Start the mod's age3y.exe. UHC.log appears next to it: its first line is "UHC.dll {version}",
    and every key you enabled says "applied".
@@ -162,11 +163,18 @@ A game that must keep another UHC.dll
 If your game's loader runs a UHC.dll you do not want to replace, use the beside-another-dll
 folder instead. Nothing of that game changes: not its exe, its UHC.dll, its cfg or data\\uhc.
 1. Copy what is in beside-another-dll (dinput8.dll and the engine-ext folder) next to the exe.
-2. In engine-ext\\engine-ext.cfg, remove the "# " in front of the keys you want. Data files
+2. In engine-ext\\engine-ext.cfg, remove the "#" in front of the keys you want. Data files
    that keys read by default go in engine-ext\\ too.
 3. Start the game. engine-ext\\engine-ext.log says "applied" or "FAILED" for each key. A key
    fails, and changes nothing, when the other DLL already patched a place it needs.
 To remove it, delete dinput8.dll and the engine-ext folder.
+
+Aura rings
+----------
+art\\effects\\uhc_rings holds coloured rings that show which units an aura is working on. They
+are data: copy that folder to the game's art\\effects and name one in an aura, with
+<modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
+<modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -311,6 +319,8 @@ def main(argv):
         z.writestr(f"{top}/beside-another-dll/dinput8.dll", proxy)
         z.writestr(f"{top}/beside-another-dll/engine-ext/engine-ext.cfg",
                    template_cfg(version, f"# engine-ext\\engine-ext.cfg template for dinput8.dll {version}."))
+        for ring in sorted((ROOT / "tools" / "rings").glob("ring_*")):
+            z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
         z.writestr(f"{top}/LICENSE.txt", license_text)
         z.writestr(f"{top}/README.txt", readme(version))
     print(f"wrote {out.relative_to(ROOT)}")

@@ -227,6 +227,7 @@ JTMaston's request: keep WoL's `uhc.dll`, `Startup\wol.cfg` and `data\uhc` as th
 | `hcTargetTechs`: player 1 gets a tech with `HCTargetEnemy`, `Hussar` HP ×0.5 | player 1: 352, player 2: 176 | player 1: 176, player 2: 352 |
 | `transformSpan`: 6 `Pikeman`, `transformspan='20'` to `Rodelero` | `Pikeman` again 20 s later | still `Rodelero` 46 s later |
 | Skirmish: one European AI, `wolOtto`, 4 min | Runs. The AI's XS calls reach our hooks (`aiSetEconomyPop`, `kbGetPop`), it built a `Manor`, 24 units, score 78 | not run |
+| Rings: `resourceGatherAuras`, `unitResourceAuras log`, `buildingWorkRateAuras log`, an Explorer with gold and work rings, a Sawmill with `ring_wood`, 8 villagers | 5 applied, 0 failed, both ring hooks reached (0x9D0584, 0x9D06DC). Each ring in its colour. The miners lose the ring when sent to a tree at 34 s. Town Center `x3.000`. Hashes of `uhc.dll`, `wol.cfg` and the tactics unchanged | not run |
 | Removing `dinput8.dll` and `engine-ext\` | Game reaches WoL's main menu, hashes unchanged, no `engine-ext` created | |
 
 `Error 0003`: none in `Age3Log.txt`, but that file is shared with other games and was rewritten by a later start, so the proof that the AI compiled is its XS calls and its base.

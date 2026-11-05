@@ -659,6 +659,8 @@ Modders download a zip, so they never need a compiler. The version has a single 
    UHC-x.y.z\
        UHC.dll
        Startup\uhc.cfg     examples/Startup/uhc.cfg with every key commented out
+       beside-another-dll\ dinput8.dll and engine-ext\engine-ext.cfg, for a game that keeps another UHC.dll
+       art\effects\uhc_rings\  the aura rings of tools/rings
        README.txt          the modder's quick start
        LICENSE.txt
    ```
