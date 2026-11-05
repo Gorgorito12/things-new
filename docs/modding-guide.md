@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 10:21 | [`detonationDeath`](#detonationdeath) | Added. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | The tag, and an action with `DamageArea`. |
+| Thursday 2026-11-05 10:21 | [`hcTargetTechs`](#hctargettechs) | Added. The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | The flag on the techs that want it. |
 | Thursday 2026-11-05 09:26 | [`sharedBuildLimit`](#sharedbuildlimit) | Added. Protos share a build limit: by unit type, with weights, or across a team. | The tags on the protos that share. |
 | Thursday 2026-11-05 09:22 | [`accuracyTechs`](#accuracytechs) | Added. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 09:22 | [`cratePriority`](#cratepriority) | Added. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -2065,7 +2067,7 @@ Attacks, armor, and what a hit does.
 
 #### detonationDeath
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 10:21
 
 ![detonationDeath in WoL](media/detonationDeath-wol.gif)
 
@@ -4358,7 +4360,7 @@ What happens when a tech activates or a unit changes proto.
 
 #### hcTargetTechs
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 10:21
 
 ![hcTargetTechs in WoL](media/hcTargetTechs-wol.gif)
 
