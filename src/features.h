@@ -37,6 +37,7 @@ Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
 Outcome ApplyCostEscalationTechs(const Config& config);
 Outcome ApplyTrainBatchSize(const Config& config);
+Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
@@ -129,6 +130,7 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
+    {"pillageGold", ApplyPillageGold},
     {"veterancyBonus", ApplyVeterancyBonus},
     {"hcTargetTechs", ApplyHcTargetTechs},
     {"detonationDeath", ApplyDetonationDeath},
@@ -215,7 +217,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",

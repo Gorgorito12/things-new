@@ -890,6 +890,9 @@ SITES = [
     ("BuildCountTooltip2", 0x70F5EF, 5),
     ("PlayerProtoEntry", 0x45311B, 8),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
+    # pillageGold: TakeDamage's call of 0x49BD52, on every hit with an attacking player, and the
+    # instructions that load its arguments: EBX the player [esp+20h], and the frame it relies on
+    ("PillageHitCall", 0x49B72B, 22),
     # doNotQueue: the queue routine's call of the action add 0x494894
     ("TrainQueueAddCall", 0x9CE81A, 5),
     # nextResearchFree: the payment 0x8D946A and the copy of the cost 0x480A73 into the action, in the

@@ -1076,6 +1076,9 @@ inline constexpr Site kPlayerProtoEntry{"PlayerProtoEntry", 0x0045311B, kPlayerP
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
 
+inline constexpr std::uint8_t kPillageHitCallBytes[] = {0x8B, 0xAC, 0x24, 0xAC, 0x00, 0x00, 0x00, 0x8B, 0x5C, 0x24, 0x20, 0x50, 0x51, 0x52, 0x55, 0x8B, 0xCB, 0xE8, 0x11, 0x06, 0x00, 0x00};
+inline constexpr Site kPillageHitCall{"PillageHitCall", 0x0049B72B, kPillageHitCallBytes, sizeof(kPillageHitCallBytes)};
+
 inline constexpr std::uint8_t kTrainQueueAddCallBytes[] = {0xE8, 0x75, 0x60, 0xAC, 0xFF};
 inline constexpr Site kTrainQueueAddCall{"TrainQueueAddCall", 0x009CE81A, kTrainQueueAddCallBytes, sizeof(kTrainQueueAddCallBytes)};
 

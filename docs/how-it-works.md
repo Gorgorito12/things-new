@@ -2983,6 +2983,29 @@ number and there is nothing to save.
 - **Observed in game:** five clicks with 2 logged `queues up to 2 per action (stock 5)` five times and showed a queue
   of 2, 2 and 1.
 
+### pillageGold
+
+TakeDamage FUN_0049B3D9 calls FUN_0049BD52 at 0x49B73C on every hit with an attacking player, whether it kills or not.
+`damageOverTime` holds the entry of TakeDamage, and this call needs no second hook there: its frame has it all. `[esp+20h]`
+the attacker's player, also in EBX by then, `[esp+28h]` its unit, null when it has died, `[esp+0A8h]` the action, and ESI the
+unit hit. The hook replaces the call: it runs the steal with the registers saved, then jumps to the stock function, so
+the return address of the original call is the one that function sees.
+
+`[action+4]` is the index of the action's name, the same for a proto action and a tactics action, so `(proto [proto+4],
+name)` is the key of the map of `<PillageAmount>`, which the load fills through `AddActionTagHandler`. That index is -1
+until `<Name>` is read, so the tag must come after it. A map that only the load writes, with nothing to save. It is
+cleared on a new database, since the data is read again when a game loads.
+
+The test order goes from cheap to dear: the map, the is-a test 0x44D7FA with `AbstractCanPillage`, the victim's is-a test
+with `Building`, the relation `[player+1D4h+4*id]`, where 2 is enemy, as the filter 0x49AEE0 reads it. The stockpile is read
+through 0x44EFFF on `player+230h`, then two calls of the add 0x49A98A, one with `-take` and one with `+take`. The add
+applies no multiplier: `[player+37Ch]` belongs to its gather caller. Reading first keeps the victim from going below 0 by
+itself, and a victim in debt gives nothing, with `resourceDebt` too.
+
+- **Observed in game:** 66 hits of 5 from 3 Pikemen. Each line's before and after chain exactly, and the two stockpiles
+  always add up to the 1000 of the start.
+- **Not tested:** shared resources, where the add takes its path 0x67993B: amount / teammates, to each.
+
 ### costEscalationTechs
 
 `<CostEscalation>` is stored by the handler 0xA1119D in the proto's `+78h`, default 1 (the proto's cost container is at
