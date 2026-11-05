@@ -9,32 +9,35 @@
 			<notshadowcaster/>
 			<logic type="UnitType">
 				<none>
-					<assetreference type="GrannyModel">
-						<file>effects\ypack_auras\aura_econ</file>
-						<replacetexture>
-							<from>effects\ypack_auras\aura_econ</from>
-							<to>effects\uhc_rings\ring_wood</to>
-						</replacetexture>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_unit.particle</file>
 					</assetreference>
 				</none>
 				<abstractcavalry>
-					<assetreference type="GrannyModel">
-						<file>effects\ypack_auras\aura_econ_cav</file>
-						<replacetexture>
-							<from>effects\ypack_auras\aura_econ</from>
-							<to>effects\uhc_rings\ring_wood</to>
-						</replacetexture>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_cavalry.particle</file>
 					</assetreference>
 				</abstractcavalry>
 				<abstractartillery>
-					<assetreference type="GrannyModel">
-						<file>effects\ypack_auras\aura_econ_cav</file>
-						<replacetexture>
-							<from>effects\ypack_auras\aura_econ</from>
-							<to>effects\uhc_rings\ring_wood</to>
-						</replacetexture>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_cavalry.particle</file>
 					</assetreference>
 				</abstractartillery>
+				<abstracttowncenter>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_large.particle</file>
+					</assetreference>
+				</abstracttowncenter>
+				<abstracthouse>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_small.particle</file>
+					</assetreference>
+				</abstracthouse>
+				<building>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_medium.particle</file>
+					</assetreference>
+				</building>
 			</logic>
 		</component>
 		<anim>

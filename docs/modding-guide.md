@@ -30,6 +30,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 14:10 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
+| Thursday 2026-11-05 14:10 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
+| Thursday 2026-11-05 14:10 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -45,8 +48,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-05 08:01 | [`resourceDebt`](#resourcedebt) | Filmed in WoL, with a control. Only trickles and the rates of units may take a stockpile below 0. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. |
 | Thursday 2026-11-05 07:53 | [`trainBatchSize`](#trainbatchsize) | Added. `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | The tag on the protos that want it. |
 | Thursday 2026-11-05 07:36 | [`costEscalationTechs`](#costescalationtechs) | Added. A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | The `Data` effects in `techtreey.xml`. |
-| Wednesday 2026-11-04 18:04 | [`resourceGatherAuras`](#resourcegatherauras) | Added. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
-| Wednesday 2026-11-04 17:21 | [`unitResourceAuras`](#unitresourceauras) | Added. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Wednesday 2026-11-04 17:03 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | Added. `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. |
 | Wednesday 2026-11-04 16:29 | [`workRateByAbstractType`](#workratebyabstracttype) | Added. A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. |
 | Wednesday 2026-11-04 15:18 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
@@ -82,7 +83,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 12:48 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. |
 | Wednesday 2026-11-04 12:48 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
-| Wednesday 2026-11-04 12:48 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Wednesday 2026-11-04 12:48 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 12:48 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
 | Wednesday 2026-11-04 12:48 | [`techPrereqRecheck`](#techprereqrecheck) | Filmed in WoL, with a control. Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. |
@@ -3406,73 +3406,36 @@ autoGatherScaleByContained
 
 #### unitResourceAuras
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Wednesday 2026-11-04 17:21
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Thursday 2026-11-05 14:10
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
-*In WoL, with `unitResourceAuras log` (Ethiopians, WoL's own `WOLSawmill` and its `AreaGatherTree`, no data
-change):* the Sawmill takes 0.05 wood per second from each of 5 trees, 0.25 wood/s on top of its AutoGather; the log
-shows a take about every 3 s and the trees going down. [Full video (MP4)](media/unitResourceAuras-wol.mp4).
+*In WoL, with `unitResourceAuras log` (Ethiopians, WoL's own `WOLSawmill` and its `AreaGatherTree`, with
+[`ring_wood.xml`](#aura-rings) in its `<modelattachment>`):* the 5 trees the Sawmill takes from wear the amber ring, and the others
+in range do not. It takes 0.05 wood per second from each, 0.25 wood/s on top of its AutoGather; the log shows a take about every
+3 s and the trees going down. [Full video (MP4)](media/unitResourceAuras-wol.mp4).
 
 ![unitResourceAuras in WoL, trees used up](media/unitResourceAuras-depleted-wol.gif)
 
-*In WoL, the same aura with a test `<modifyamount>40`:* each tree in range gives 40 wood per second, and it goes
-when its 300 wood are out. [Full video (MP4)](media/unitResourceAuras-depleted-wol.mp4).
+*In WoL, the same aura with a test `<modifyamount>15`:* each ringed tree gives 15 wood per second. It goes when its 300 wood are
+out, and its ring with it, and the next tree takes the ring: 7 trees in all, until none is left in range.
+[Full video (MP4)](media/unitResourceAuras-depleted-wol.mp4).
 
 ![unitResourceAuras in WoL, key off](media/unitResourceAuras-wol-control.gif)
 
-*In WoL, key off (the first scene):* only the AutoGather works: 107 wood at 62 s of game time, and the trees keep
-their wood. [Full video (MP4)](media/unitResourceAuras-wol-control.mp4).
-
-![unitResourceAuras in WoL, the rings](media/unitResourceRings-wol.gif)
-
-*In WoL, the rings, with `econpower.xml` in the `<modelattachment>` of `AreaGatherTree` (Ethiopians):* the 4 trees in range
-show the ring at their feet, and they lose it when the Sawmill is destroyed. [Full video (MP4)](media/unitResourceRings-wol.mp4).
-
-![unitResourceAuras in WoL, the wood ring](media/unitResourceRings-wood-wol.gif)
-
-*The same scene with `ring_wood.xml`, an amber ring for gathering wood.* [Full video (MP4)](media/unitResourceRings-wood-wol.mp4).
-
-![unitResourceAuras in WoL, the rings, key off](media/unitResourceRings-wol-control.gif)
-
-*In WoL, key off (the same data):* no ring and no gathering. [Full video (MP4)](media/unitResourceRings-wol-control.mp4).
+*In WoL, key off (the first scene, the same data):* only the AutoGather works: 136 wood at 78 s of game time, the trees keep their
+wood and no tree has a ring. [Full video (MP4)](media/unitResourceAuras-wol-control.mp4).
 
 ```
 unitResourceAuras [log]
 ```
 
-- **The ring:** `<modelattachment>` on an `AutoRangedModify` action hangs a model on each unit the aura affects, as Karni
-  Mata's `EconomicAuraKM` does with `effects\ypack_auras\econpower.xml`. Normal auras need only the data. A `UnitResource`
-  aura does not run the stock update, so the key hangs the model itself: on the units that gave resources in that update,
-  and it takes it off when they stop, when the aura's owner dies, or at the limit of `<ModifyTargetLimit>`. A target in two
-  auras keeps its ring until the last one lets go.
-- **A colour for each action:** the colour is the model, so a ring can say what the aura does. `tools/make_rings.py` draws
-  these in `tools/rings/`; copy them to `art/effects/uhc_rings/`, and no DLL key is needed for them:
-
-  ![The seven rings in WoL](media/rings-palette.png)
-
-  Each ring has two tones, its colour at the rim fading to a lighter one, and is 70% opaque, so the ground shows through.
-  The photo shows six: the amber one is in the video above.
-
-  | Ring | Colour | For | `<modelattachment>` |
-  |---|---|---|---|
-  | wood | amber | gathering wood | `effects\uhc_rings\ring_wood.xml` |
-  | food | red | gathering food | `effects\uhc_rings\ring_food.xml` |
-  | gold | yellow | gathering gold | `effects\uhc_rings\ring_gold.xml` |
-  | work | green | gathers or works faster | `effects\uhc_rings\ring_work.xml` |
-  | damage | magenta | damage | `effects\uhc_rings\ring_damage.xml` |
-  | heal | white | hit points, healing | `effects\uhc_rings\ring_heal.xml` |
-  | speed | blue | moves faster | `effects\uhc_rings\ring_speed.xml` |
-
-  With `<modelattachmentbone>bonethatdoesntexist</modelattachmentbone>`, as `EconomicAuraKM` has it. The ring uses the mesh
-  of `aura_econ` and draws its own texture through `<replacetexture>`, so cavalry gets its wider ring too. A new colour is one
-  line in `RINGS` in the script. WoL's own rings: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and `frightpower.xml`,
-  `effects\chiefpower\chiefpower.xml`, `effects\me_auras\aura_warlord.xml`, among others.
-- **Tested in WoL (2026-11-05):** `ring_wood.xml` on `AreaGatherTree`: amber rings at the feet of the trees, and off when the
-  Sawmill died. The rings through stock auras, with no key, on infantry and cavalry.
+- **The ring:** a `UnitResource` aura does not run the stock update, so the key hangs the [aura's ring](#aura-rings) itself: on
+  the units that gave resources in that update, and it takes it off when they stop, when the aura's owner dies, or at the limit
+  of `<ModifyTargetLimit>`. A target in two auras keeps its ring until the last one lets go.
 - **WoL's data today shows no ring:** `sawmill.tactics` names `effects\ypack_auras\torpgatherpower.xml`, which is in no folder
-  and no `.bar` of WoL. The log says so once: `the action 692 has a <ModelAttachment> that is not in the game`. Ship that
-  model or name another one.
+  and no `.bar` of WoL. The log says so once: `the action 692 has a <ModelAttachment> that is not in the game`. Name
+  `effects\uhc_rings\ring_wood.xml` there, as these videos do, or ship that model.
 - **Rings, tested in WoL (2026-11-05):** with `econpower.xml`, one model per tree and no repeats; off when the Sawmill dies;
   back once per tree after loading a saved game, and off again when the Sawmill dies after the load. WoL's data: no repeats,
   one line in the log. With 9 Sawmills and 29 rings or more (the log stops at 200 lines): update 0.12 ms with rings and
@@ -3519,18 +3482,19 @@ unitResourceAuras [log]
 
 #### resourceGatherAuras
 
-**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Wednesday 2026-11-04 18:04
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 14:10
 
 ![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
 
-*In WoL, with `showGatherRate` and `resourceGatherAuras` (Ethiopians; a test aura `MineGatherRate` ×2 on the Explorer,
-40 m):* eight settlers gather a mine, trees, berries and a Mill. The selected miner's rate is 1.20 coin/s, and at 77 s
-the player has 179 gold; wood (73) and food (170) go as in the control.
-[Full video (MP4)](media/resourceGatherAuras-wol.mp4).
+*In WoL, with `showGatherRate` and `resourceGatherAuras` (Ethiopians; a test aura `MineGatherRate` ×2 with
+[`ring_gold.xml`](#aura-rings) on the Explorer, 40 m):* eight settlers gather a mine, trees, berries and a Mill, all in range. Only
+the two at the mine wear the ring. The selected miner's rate is 1.20 coin/s, and at 68 s the player has 157 gold; wood (63) and
+food (148) go as in the control. [Full video (MP4)](media/resourceGatherAuras-wol.mp4).
 
 ![resourceGatherAuras in WoL, key off](media/resourceGatherAuras-wol-control.gif)
 
-*In WoL, key off (the same scene):* 0.60 coin/s, and 88 gold, 72 wood and 167 food at 76 s.
+*In WoL, key off (the same scene):* 0.60 coin/s, and 78 gold, 62 wood and 146 food at 67 s. The exe does not know the name, so the
+aura does nothing, and it still hangs its ring on all eight: the ring alone proves nothing.
 [Full video (MP4)](media/resourceGatherAuras-wol-control.mp4).
 
 ```
@@ -3558,6 +3522,9 @@ resourceGatherAuras [log]
   ```
 
   A name by target and one by resource multiply each other.
+- **The ring:** an [aura's ring](#aura-rings) follows the bonus. With this key, on one of the seven names, it is only on a unit
+  gathering what the name fits: a `MineGatherRate` aura leaves a villager cutting wood without one, and a villager who changes
+  task gets or loses it at the aura's next update, about every 3 s.
 - **Not covered:** AutoGather rates; `<ModifyType>AutoGatherRate</ModifyType>` still reaches all of them. The stat panel's
   `GatherRate` line does not change; `showGatherRate` shows the real rate.
 - **Log:** `resourceGatherAuras: applied`, `hook reached: resourceGatherAuras (0x4ED02A)`; with `log`, the first 200
@@ -3566,10 +3533,14 @@ resourceGatherAuras [log]
 - **Simulation:** changes gathering: every player needs the same line.
 - **Saved games:** nothing to keep: the modifiers are the game's.
 - **Performance:** one more call per gather tick. With 30 gatherers under the aura, for 60 s: update 0.1 ms with and
-  without, longest frame 8 and 9 ms, no frame over 50 ms in either.
+  without, longest frame 8 and 9 ms, no frame over 50 ms in either. With the ring, 15 at a mine and 15 at trees under one aura,
+  `perfprobe.py`, two runs of 60 s each way, with the gold at 2089 with the key and 1037 without: update 0.18 ms in all four,
+  747 and 756 fps with, 746 and 749 without, no frame over 50 ms.
 - **Status:** confirmed (single player, on WoL): each of the seven names gave its factor, from the log, on a mine, trees,
   berries and a Mill. In a skirmish with the five keys of this batch on, the AI as Germans played on (16 to 25 units in
-  150 s of game time). Multiplayer not tested.
+  150 s of game time). The ring (2026-11-05): a villager sent from the mine to a tree lost it, and the factors in the log were
+  only on the mine. In a skirmish with a ringed aura on every Explorer, the AI as Germans went from 13 to 19 units in 168 s, with
+  the ring hooks reached. Multiplayer not tested.
 
 #### resourceDebt
 
@@ -3965,21 +3936,21 @@ liveBuildingWorkRate [log]
 
 #### buildingWorkRateAuras
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Thursday 2026-11-05 14:10
 
 ![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
 
 *In WoL, with `buildingWorkRateAuras log` (an African civ, the two Town Centers selected):* both TCs
-train 10 `AFRICANvillager`; the Explorer next to the left one carries a test aura (`UHCBwrAura`:
-`AutoRangedModify`, `BuildingWorkRate` x3, 10 m, on `TownCenter`, added to the bed's
-`explorer.tactics` and removed after). The left TC works at x3 (`works at x3.000 from
-BuildingWorkRate modifiers`) and trains 7 villagers while the right one trains 2.
+train 10 `AFRICANvillager`; the Explorer next to the left one carries a test aura (`AutoRangedModify`, `BuildingWorkRate` x3, 10 m,
+on `TownCenter`, with [`ring_work.xml`](#aura-rings), added to the bed's `explorer.tactics` and removed after). The ring is around
+the left TC and not the right one. The left TC works at x3 (`works at x3.000 from BuildingWorkRate modifiers`) and trains 7
+villagers while the right one trains 2. The 5 villagers that start beside the left TC are the civ's own, and are not counted.
 [Full video (MP4)](media/buildingWorkRateAuras-wol.mp4).
 
 ![buildingWorkRateAuras in WoL, key off](media/buildingWorkRateAuras-wol-control.gif)
 
 *In WoL, key off (the same data and scene):* the exe reads `BuildingWorkRate` as no stat, so the aura does
-nothing: each TC trains 2 villagers.
+nothing: each TC trains 2 villagers. The ring is there all the same: the game hangs it on what the aura reaches.
 [Full video (MP4)](media/buildingWorkRateAuras-wol-control.mp4).
 
 ```
@@ -5442,6 +5413,91 @@ matters:
   fixing a file.
 - **Extra action tags:** with [`spreadAnyAccuracy`](#spreadanyaccuracy), an `<action>` also reads
   `<maxspread>` and `<spreadfactor>`. Keep its `<name>` as the first child, as WoL's files do.
+
+### Aura rings
+
+A ring on the ground tells the player which units an aura is working on, as the one Karni Mata puts around the Indian
+villagers. It is only data: the game hangs a model on each unit an aura reaches, and takes it off when the unit leaves. No key
+is needed for the ring, though [`resourceGatherAuras`](#resourcegatherauras), [`unitResourceAuras`](#unitresourceauras) and
+[`buildingWorkRateAuras`](#buildingworkrateauras) use it.
+
+![The seven rings in WoL](media/rings-palette.png)
+
+**1. Install the rings.** Copy every file of `tools/rings/` to `art\effects\uhc_rings\` in the game folder, and restart the game.
+`tools/make_rings.py` draws them: no pixel and no mesh comes from a game.
+
+**2. Put one on an aura.** Two tags on an `AutoRangedModify` action. A complete aura, in a unit's `.tactics` file:
+
+```xml
+<action>
+	<name>MinersAura</name>
+	<type>AutoRangedModify</type>
+	<active>1</active>
+	<persistent>1</persistent>
+	<maxrange>40</maxrange>
+	<modifyabstracttype>AbstractVillager</modifyabstracttype>
+	<modifytype>MineGatherRate</modifytype>
+	<modifymultiplier>2</modifymultiplier>
+	<modelattachment>effects\uhc_rings\ring_gold.xml</modelattachment>
+	<modelattachmentbone>bonethatdoesntexist</modelattachmentbone>
+</action>
+```
+
+Then name it in each `<tactic>` of the file, `<action>MinersAura</action>`, keeping the file's [CRLF line endings](#tactics-files).
+The bone is that word on purpose, as in `EconomicAuraKM`: with no such bone, the model goes at the unit's feet. WoL's
+`sawmill.tactics` has a real case: `AreaGatherTree` wants `ring_wood.xml` in its `<modelattachment>`, see
+[`unitResourceAuras`](#unitresourceauras).
+
+**3. Pick the colour.** The colour is the model, so it can say what the aura does:
+
+| Ring | Colour | For | `<modelattachment>` |
+|---|---|---|---|
+| wood | amber | gathering wood | `effects\uhc_rings\ring_wood.xml` |
+| food | red | gathering food | `effects\uhc_rings\ring_food.xml` |
+| gold | yellow | gathering gold | `effects\uhc_rings\ring_gold.xml` |
+| work | green | gathers or works faster | `effects\uhc_rings\ring_work.xml` |
+| damage | magenta | damage | `effects\uhc_rings\ring_damage.xml` |
+| heal | white | hit points, healing | `effects\uhc_rings\ring_heal.xml` |
+| speed | blue | moves faster | `effects\uhc_rings\ring_speed.xml` |
+
+Each ring is a wide band in its colour, fading to a lighter one, and a thin line inside it, 70% opaque, so the ground shows through.
+
+**4. The same file works on anything.** The `.xml` picks the size by what it hangs on, with `<logic type="UnitType">`:
+
+| On | Radius | Lines |
+|---|---|---|
+| A unit, a tree, anything else | 2.2 m | |
+| `AbstractCavalry`, `AbstractArtillery` | 4.6 m | twice as wide, as the game's own ring on cavalry |
+| `AbstractTownCenter` | 20 m | as thick in metres as on a unit |
+| `Building`, any other | 16 m | as thick in metres as on a unit |
+| `AbstractHouse` | 9 m | as thick in metres as on a unit |
+
+The first line that fits wins, top to bottom in `SHAPES` in the script. For a building of another size, add a line there, such
+as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the files, the radius, and the side of its texture.
+
+**5. A new colour.** One line in `RINGS` in `tools/make_rings.py`, the main colour and the light one. Then
+`python -I tools/make_rings.py` and copy the files again.
+
+**What to know:**
+
+- **The ring marks whom the aura reaches, not who gains.** A `MineGatherRate` aura reaches every villager, and only
+  [`resourceGatherAuras`](#resourcegatherauras) keeps the ring off those who are not mining. For an aura of the game's own
+  stats this is what you want. A `<modifyprotoid>` or `<modifyabstracttype>` that fits who gains is the rest of the job.
+- **The ring needs no key, so it can lie.** With [`resourceGatherAuras`](#resourcegatherauras) off, the exe does not know the
+  name and the aura does nothing, and still it hangs the ring on every villager in range. Ship the data with the key.
+- **A model that is not in the game gives no error.** The aura works and shows nothing. With `unitResourceAuras` the log says
+  so once. Check the path, and that `art\effects\uhc_rings\` is there on every player's copy.
+- **The ring outlasts the aura by the particle's life, 2 s.** It is one particle that lives 2 s and is replaced at once: a model
+  taken off a unit leaves its particles to die out. An aura updates about every 3 s, so a unit that walks in or out takes that
+  long to change.
+- **The game's own mesh is not a way to colour a ring.** `effects\ypack_auras\aura_econ` with `<replacetexture>` shows the new
+  colour on an empty map, and falls back to the game's green and gold in a scene with a Town Center: on a real map every such
+  ring looks the same. On a building it is also hidden: it stays 4 m wide and sits under the model. WoL's own rings are fine as
+  they are: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and `frightpower.xml`, `effects\chiefpower\chiefpower.xml`,
+  `effects\me_auras\aura_warlord.xml`, among others.
+- **Tested in WoL (2026-11-05),** with a Town Center in the game: each ring in its colour, on infantry, cavalry, trees, Town
+  Centers, a Barracks and a House; off when the aura's owner dies; no flicker in 220 frames of a master. Saved games, multiplayer
+  and hilly ground were not tested. How long a ring stays after its aura was not timed: the 2 s above is the particle's life.
 
 More about the tools: [tools/README.md](../tools/README.md).
 

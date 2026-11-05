@@ -1127,6 +1127,10 @@ SITES = [
     # +A8h) and the functions it calls: model by ID, has it (thiscall(unit, model), ret 4), hang it
     # (thiscall(unit, object, bone, byte), ret 0Ch), take it off (thiscall(unit, model), ret 4)
     ("AuraModelBlock", 0x9D053F, 9),
+    # resourceGatherAuras: the update's two decisions on the ring: has it, for a unit that stays in range,
+    # and hang it, for a new one
+    ("AuraHasModelCall", 0x9D0584, 5),
+    ("AuraHangModelCall", 0x9D06DC, 5),
     ("ModelById", 0x405E83, 6),
     ("UnitHasModel", 0x9C28DE, 8),
     ("UnitAttachModel", 0x9C04F3, 8),

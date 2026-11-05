@@ -882,6 +882,8 @@ the Gathering dance (FUN_004ECD39) in "Dances".
 | What | Where | Status | Notes |
 |---|---|---|---|
 | Aura model | `[protoAction+A4h]` model, -1 none (tag `ModelAttachment`, 0x5FC90C); `[+A8h]` bone (`ModelAttachmentBone`, 0x5FC8EE) | confirmed, in game | Read at 0x9D053F. The object: 0x405E83, `thiscall(table [0xC66240], model)`. |
+| Stock aura update, its model | in FUN_009D033E, ESI = the action: those in range 0x9D053C..0x9D059C, the has call at 0x9D0584; new targets 0x9D0640..0x9D06DC, the hang call at 0x9D06DC; leaving 0x9D04B5, 0x9C2885 | confirmed, in game | Model `[protoAction+A4h]`, bone `+A8h`, stat byte `+B8h`. |
+| Gather action | vtable 0xB97880; state `[+61h]` = 5 while gathering; target ID `[+14h]`; resource `[+70h]`; the unit's current action `[[unit+58h]+24h]` | confirmed, in game | |
 | Model on a unit | has 0x9C28DE, `bool thiscall(unit, model)`, `ret 4`; hang 0x9C04F3, `bool thiscall(unit, object, bone, byte)`, `ret 0Ch`; take off 0x9C2885, `thiscall(unit, model)`, `ret 4` | confirmed, in game | On the visual `[unit+60h]`. A model not in the game hangs with true and is never found. |
 | Aura update | FUN_009D033E, `void thiscall(action)`, plain `ret` (0x9D06FF) | confirmed (`cs`, in game) | No direct caller: a vtable slot. In WoL's Sawmill it runs about every 3 s (a take of 0.05/s measured 0.14–0.16). |
 | Aura scan | 0x9CFF9A, `thiscall(action, IdList*)`, `ret 4` | confirmed (`cs`, in game) | Range `[action+24h]` from the unit's position (0x4A1C55), else a contained-unit path. |
