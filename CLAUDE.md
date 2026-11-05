@@ -18,7 +18,7 @@ CMake and MSVC come from VS 2026 (`C:\Program Files\Microsoft Visual Studio\18\I
 
 ```
 cmake -S . -B build -G "Visual Studio 18 2026" -A Win32   # must be Win32; x64 fails on purpose
-cmake --build build --config Release                      # -> build\Release\UHC.dll
+cmake --build build --config Release                      # -> build\Release\UHC.dll and dinput8.dll
 dumpbin -exports build\Release\UHC.dll                    # must list _UHCMain@0 (in Git Bash, "/exports" is mangled)
 python -I tools/gen_sites.py "<Steam>\Age Of Empires 3\bin\age3y.exe"   # regenerates src/generated/sites.h
 ```
@@ -43,7 +43,8 @@ There are no unit tests. Every copy of the game, with its data and how to drive 
 `python -I tools/testbed.py` plays a test with no clicks: `deploy`, `map`, `launch`, `scenario`, `skirmish`, `wait`, `log`, `units`, `shot`, `close`, `record`. `skirmish` uses posted clicks, so it needs no cursor or focus ([`docs/wol-migration.md`, "Skirmish route"](docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)). Put a `timeout` on every `wait`: when a game ends the clock stops and `wait` never returns.
 
 Rules:
-- **Read `UHC.log` next to the exe:** `applied` / `FAILED`, and `hook reached: …`. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
+- **Read `UHC.log` next to the exe** (`engine-ext\engine-ext.log` in a bed with an `engine-ext` folder, where `testbed.py` deploys `dinput8.dll` and leaves `UHC.dll` alone): `applied` / `FAILED`, and `hook reached: …`. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
+- **`applied` is not `reached`:** hook the callee or the head rather than a call site another DLL may detour; beside WoL's DLL, `tech subtype lookup` at the old call 0x6206D7 was applied and never ran.
 - **Every test video shows the feature on screen:** the units it acts on selected (`record --select`), a still camera (`--frame`), `--perf`, `normalZoom` set by console before the game loads, `--crop` at native pixels, `--master` into `rea/media-masters/`, and the GIF from `tools/make_gifs.py` (800 px, 8 fps, 12 s, 4 MB; cuts in `tools/gifs.txt`). Vary the civ, public civs only, and film a control with the key off. A/B every hot-path key with `perfprobe.py`.
 - **Check the AI after data or combat changes.** `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error.
 - **Definition of done:** the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done), before a feature is reported as done.
@@ -52,7 +53,7 @@ Rules:
 
 ## Layout
 
-- `src/`: the DLL. `dllmain.cpp` (host guard, config load, the feature loop), `config.*` (the cfg parser; keys are case-insensitive), `patch.*` (`VerifyAll` checks the stock bytes before any write), `features.h` (the registry and the handled keys), `features/*.cpp` (one apply function per key group), `hooks/*.asm` (MASM hooks), `generated/sites.h`.
+- `src/`: the DLL. `dllmain.cpp` (host guard), `startup.*` (config load, the feature loop), `engineext*` (the `dinput8.dll` build), `config.*` (the cfg parser; keys are case-insensitive), `patch.*` (`VerifyAll` checks the stock bytes before any write), `features.h` (the registry and the handled keys), `features/*.cpp` (one apply function per key group), `hooks/*.asm` (MASM hooks), `generated/sites.h`.
 - **Hooks never relocate instructions.** Each one re-executes or replaces the stock code itself and leaves through an explicit `jmp` to the verified continuation.
 - **Shared hooks: add to them, never a second `jmp` at their site:**
   - `AddWorldTick` (`worldtick.*`, 0x481A57);
@@ -108,6 +109,7 @@ A loader exe is the stock exe with the Authenticode certificate stripped (hence 
 - `UHCMain` therefore runs **before the game's own startup code**. It must be `extern "C" __declspec(dllexport) void __stdcall`.
 - The config path is a wide string of at most 20 chars at VA `0xC65083`: `Startup\uhc.cfg`, or `Startup\wol.cfg` in WoL's exe.
 - Fixed addresses are only valid in this build. `src/dllmain.cpp` checks ImageBase, TimeDateStamp, SizeOfImage and the `"UHC.dll"` string before touching any of them; keep that guard.
+- **Beside another `UHC.dll`:** the target `EngineExt` builds the same sources as `dinput8.dll`, a proxy of the system DLL the exe imports. Its DllMain only moves the boot stub's last `jmp` (0xB836EC), so `EngineExtMain` runs after the loader's `UHCMain` and before the game's entry point. It reads and writes only `engine-ext\` (`engine-ext.cfg`, `engine-ext.log`, its data files), never 0xC65083, `Startup` or `data\uhc`, and has its own exe guard. A site the other DLL patched fails `VerifyAll`, so that key logs FAILED and writes nothing. `hostfiles.h` holds the paths that differ; `startup.cpp` is what both builds run. Not `version.dll`: it loads from System32 here. Key table: `docs/wol-uhc-map.md`.
 
 Full byte layout: `docs/binaries.md`.
 

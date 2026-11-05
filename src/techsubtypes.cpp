@@ -8,16 +8,22 @@
 #include "patch.h"
 
 extern "C" {
-void UhcTechSubtypeLookupHook();   // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeAttrHook();     // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeLookupHook();
+void UhcTechSubtypeLookupStock();
 void UhcTechSubtypeApplyHook();
 void UhcTechSubtypeUnapplyHook();
+char* g_uhcSubtypeEffect = nullptr;       // the effect whose subtype is being read, and its XML node
+const char* g_uhcSubtypeNode = nullptr;
 }
 
 namespace {
 
 constexpr std::size_t kMaxSubtypes = 16;
 constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
-constexpr std::uint32_t kNameLookupCall = 0x006206D7;  // setData's call of the lookup 0x61FF5D
+constexpr std::uint32_t kNameLookupHead = 0x0061FF5D;  // the lookup
+constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the attribute subtype
+constexpr std::uint32_t kOtherCaller = 0x00621C2E;     // the lookup's other caller, which tests for one stock ID
 constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
 constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
@@ -27,7 +33,7 @@ constexpr std::size_t kActionList = 0x1C;              // in the set: the array 
 constexpr std::size_t kActionId = 4;                   // in an action
 
 using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
-const auto kNameLookup = reinterpret_cast<NameLookupFn>(0x0061FF5D);
+const auto kNameLookup = reinterpret_cast<NameLookupFn>(&UhcTechSubtypeLookupStock);
 using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
 const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 using ActionIdByNameFn = std::int32_t(__thiscall*)(void* db, const void* attribute);
@@ -93,10 +99,12 @@ bool Add(const Subtype& subtype) {
     return false;
   }
   if (!g_installed) {
-    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupCall, &uhc::sites::kDataApplySwitch,
-                                          &uhc::sites::kDataUnapplySwitch, &uhc::sites::kDataActionAttribute,
-                                          &uhc::sites::kDataAllActionsApply, &uhc::sites::kDataAllActionsUnapply}) ||
-        !uhc::WriteCall(kNameLookupCall, reinterpret_cast<const void*>(&UhcTechSubtypeLookupHook)) ||
+    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupHead, &uhc::sites::kDataSubtypeAttrCall,
+                                          &uhc::sites::kDataApplySwitch, &uhc::sites::kDataUnapplySwitch,
+                                          &uhc::sites::kDataActionAttribute, &uhc::sites::kDataAllActionsApply,
+                                          &uhc::sites::kDataAllActionsUnapply}) ||
+        !uhc::WriteJmp(kNameLookupHead, reinterpret_cast<const void*>(&UhcTechSubtypeLookupHook), 5) ||
+        !uhc::WriteCall(kAttributeCall, reinterpret_cast<const void*>(&UhcTechSubtypeAttrHook)) ||
         !uhc::WriteJmp(kApplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeApplyHook), 9) ||
         !uhc::WriteJmp(kUnapplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeUnapplyHook), 9)) {
       return false;
@@ -109,17 +117,18 @@ bool Add(const Subtype& subtype) {
 
 }  // namespace
 
-// Replaces the call of the lookup in BDataEffect::setData. effect and node are its ESI and EBP.
-extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* name, char* effect, const char* node) {
+// The head of the lookup. Its head, not the call in setData: another DLL may replace that call, and what
+// it does not know still ends here.
+extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* name, std::uint32_t returnAddress) {
   const std::int32_t stock = kNameLookup(db, name);
-  if (stock != -1 || name == nullptr) {
+  if (stock != -1 || name == nullptr || returnAddress == kOtherCaller) {
     return stock;
   }
   for (std::size_t i = 0; i < g_count; ++i) {
     if (_stricmp(name, g_subtypes[i].name) != 0) {
       continue;
     }
-    if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, effect, node)) {
+    if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
     return kFirstId + static_cast<std::int32_t>(i);

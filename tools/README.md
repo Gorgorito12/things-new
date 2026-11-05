@@ -60,6 +60,9 @@ commented out), `README.txt` and `LICENSE.txt`, and prints the SHA-256 of the zi
 An existing zip is kept unless `--force` is given. The procedure around it is in
 [developer-guide.md, section 7](../docs/developer-guide.md#7-making-a-release).
 
+The zip also holds `beside-another-dll/`: `dinput8.dll` and `engine-ext/engine-ext.cfg`, for a game that keeps another
+`UHC.dll`. The script stops if `dinput8.dll` is missing, is not this version, or lacks `DirectInput8Create`.
+
 ## bar.py
 
 ```
@@ -257,6 +260,9 @@ it). The method and its pitfalls are in
 [developer-guide.md, "Driving the game unattended"](../docs/developer-guide.md#driving-the-game-unattended).
 
 **Which game the tracers attach to.** The `re/` tracers and `inspect_unittypes.py` attach to the `age3y.exe` whose exe is in `UHC_GAME_DIR` (or `UHC_TESTBED`); with no folder set and more than one copy running they stop with an error instead of picking one, since other sessions may run games beside yours (2026-11-03: a tracer attached to another session's game this way). Example: `set UHC_GAME_DIR=C:\AoE3-UHC-WoLReal`.
+
+**A bed with an `engine-ext` folder** runs our `dinput8.dll` beside the bed's own `UHC.dll`: `deploy` copies `dinput8.dll` and
+`engine-ext\engine-ext.cfg` and leaves `UHC.dll` and the bed's cfg alone, and `log` reads `engine-ext\engine-ext.log`.
 
 ## re/trace_writes.py
 

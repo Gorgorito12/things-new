@@ -508,9 +508,16 @@ Outcome ApplyDecimalPopulation(const Config& config) {
       &sites::kRefTotalPopReg, &sites::kRefPopProvider, &sites::kRefPopCapProvider, &sites::kRefFuturePopProvider,
       &sites::kRefTotalPopProvider, &sites::kColorizePopArg, &sites::kColorizePopFormat, &sites::kBStringFormat,
       &sites::kPopFormatHelp, &sites::kPopFormatHelp2, &sites::kPopFormatCost, &sites::kPopFormatCost2,
-      &sites::kPopFormatCost3, &sites::kPopFormatCapLine, &sites::kPopFormatCap};
+      &sites::kPopFormatCapLine, &sites::kPopFormatCap};
   if (!VerifyAll("decimalPopulation", checks)) {
     return Outcome::kFailed;
+  }
+  // This one only prints a cost, so another DLL's wrapper there leaves that line in whole numbers,
+  // K times too large, and nothing else.
+  const bool costLine = Matches(sites::kPopFormatCost3);
+  if (!costLine) {
+    Log(L"decimalPopulation: the population cost line at 0x%08X is another DLL's; it stays as it is",
+        sites::kPopFormatCost3.va);
   }
   for (const XsSyscall& xs : kXs) {
     if (!VerifyAll("decimalPopulation", {xs.site})) {
@@ -552,7 +559,7 @@ Outcome ApplyDecimalPopulation(const Config& config) {
             WriteCall(sites::kPopFormatHelp2.va, reinterpret_cast<const void*>(&PopFormat<0>)) &&
             WriteCall(sites::kPopFormatCost.va, reinterpret_cast<const void*>(&PopFormat<0>)) &&
             WriteCall(sites::kPopFormatCost2.va, reinterpret_cast<const void*>(&PopFormat<0>)) &&
-            WriteCall(sites::kPopFormatCost3.va, reinterpret_cast<const void*>(&PopFormat<0>)) &&
+            (!costLine || WriteCall(sites::kPopFormatCost3.va, reinterpret_cast<const void*>(&PopFormat<0>))) &&
             WriteCall(sites::kPopFormatCapLine.va, reinterpret_cast<const void*>(&PopFormat<2>)) &&
             WriteCall(sites::kPopFormatCap.va, reinterpret_cast<const void*>(&PopFormat<0>));
   for (std::size_t i = 0; ok && i < kRefCount; ++i) {

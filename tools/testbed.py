@@ -3,7 +3,8 @@ take screenshots, read units and UHC.log, and check that the Steam install was n
 
 Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
 
-  deploy [cfg]               copy build\\Release\\UHC.dll into the bed; with cfg, also copy it as
+  deploy [cfg]               copy build\\Release\\UHC.dll into the bed, or dinput8.dll to a bed with an
+                             engine-ext folder, which leaves its UHC.dll alone; with cfg, also copy it as
                              the cfg the bed's exe reads (Startup\\uhc.cfg, or Startup\\wol.cfg
                              in the WoL bed; perfExecFile is appended when missing)
   launch                     start age3y.exe +noIntroCinematics and wait for the main menu
@@ -200,6 +201,11 @@ def _exe_wstring(data, offset, limit):
 _PROFILES = {}
 
 
+def log_path(bed):
+    """The log of our DLL: next to the exe, or in engine-ext\\ when it runs beside the game's own."""
+    return bed / "engine-ext" / "engine-ext.log" if (bed / "engine-ext").is_dir() else bed / "UHC.log"
+
+
 def bed_profile(bed):
     """What the bed's exe reads, from its own bytes: the UHC loader's cfg path (VA 0xC65083), the
     AI folder (0xBE3A98) and the random-map folder (0xBE3AD8), which mods patch (WoL: wol.cfg, AI4,
@@ -209,6 +215,8 @@ def bed_profile(bed):
     data = (bed / "age3y.exe").read_bytes()
     digest = hashlib.sha256(data).hexdigest()
     cfg = _exe_wstring(data, 0x865083, 21) or "Startup\\uhc.cfg"
+    if (bed / "engine-ext").is_dir():  # our dinput8.dll beside the game's own UHC.dll
+        cfg = "engine-ext\\engine-ext.cfg"
     ai = _exe_wstring(data, 0x7E3A98, 5).rstrip("\\") or "AI3"
     rm = _exe_wstring(data, 0x7E3AD8, 5).rstrip("\\") or "RM3"
     games = "My Games\\Age of Empires 3"
@@ -822,7 +830,7 @@ def wait_game_time(seconds):
 
 
 def show_log(bed, pattern, tail):
-    path = bed / "UHC.log"
+    path = log_path(bed)
     lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines() if path.exists() else []
     if pattern:
         lines = [line for line in lines if re.search(pattern, line)]
@@ -1004,7 +1012,7 @@ class Overlay:
         self.ids = {int(w) for w in watch if w.isdigit()}
         self.protos = [w.lower() for w in watch if not w.isdigit()]
         self.pattern = re.compile(log_pattern) if log_pattern else None
-        self.log_path = bed / "UHC.log"
+        self.log_path = log_path(bed)
         # Show the lines of the current game: read from the last scenario load on.
         data = self.log_path.read_bytes() if self.log_path.exists() else b""
         start = data.rfind(b"loadScenario(")
@@ -1420,9 +1428,10 @@ def real_type(text):
 # --- deploying and safety ----------------------------------------------------------------------------
 
 def deploy(bed, cfg):
-    dll = REPO / "build" / "Release" / "UHC.dll"
-    shutil.copy2(dll, bed / "UHC.dll")
-    print(f"testbed: copied {dll} -> {bed / 'UHC.dll'}")
+    name = "dinput8.dll" if (bed / "engine-ext").is_dir() else "UHC.dll"
+    dll = REPO / "build" / "Release" / name
+    shutil.copy2(dll, bed / name)
+    print(f"testbed: copied {dll} -> {bed / name}")
     if cfg:
         text = pathlib.Path(cfg).read_text(encoding="utf-8")
         if "perfexecfile" not in text.lower():
@@ -1430,7 +1439,7 @@ def deploy(bed, cfg):
         target = bed / bed_profile(bed)["cfg"]
         target.write_text(text, encoding="utf-8")
         print(f"testbed: wrote {target}")
-    (bed / "UHC.log").unlink(missing_ok=True)
+    log_path(bed).unlink(missing_ok=True)
 
 
 def steam_listing():

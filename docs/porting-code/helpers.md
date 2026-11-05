@@ -330,8 +330,8 @@ inline constexpr Site kRegenAddHp{"RegenAddHp", 0x0049087C, kRegenAddHpBytes, si
 inline constexpr std::uint8_t kDanceRegenAddHpBytes[] = {0x6A, 0x01, 0x50, 0x8B, 0xCE, 0xE8, 0x63, 0x83, 0xE0, 0xFF, 0x83, 0xC5, 0x01, 0x3B, 0xEB, 0x0F, 0x8C, 0xF7, 0xFE, 0xFF, 0xFF};
 inline constexpr Site kDanceRegenAddHp{"DanceRegenAddHp", 0x0067A036, kDanceRegenAddHpBytes, sizeof(kDanceRegenAddHpBytes)};
 
-inline constexpr std::uint8_t kAbstractTypesEndBytes[] = {0x83, 0xC3, 0x04, 0x83, 0xC6, 0x01, 0x81, 0xFB, 0x1C, 0x12, 0xDC, 0x00, 0x7C, 0xBF, 0x5F, 0x5E, 0xB0, 0x01, 0x5B, 0x59, 0xC3};
-inline constexpr Site kAbstractTypesEnd{"AbstractTypesEnd", 0x0051BA23, kAbstractTypesEndBytes, sizeof(kAbstractTypesEndBytes)};
+inline constexpr std::uint8_t kAbstractTypesEndBytes[] = {0x7C, 0xBF, 0x5F, 0x5E, 0xB0, 0x01, 0x5B, 0x59, 0xC3};
+inline constexpr Site kAbstractTypesEnd{"AbstractTypesEnd", 0x0051BA2F, kAbstractTypesEndBytes, sizeof(kAbstractTypesEndBytes)};
 
 inline constexpr std::uint8_t kDotTakeDamageEntryBytes[] = {0x81, 0xEC, 0x8C, 0x00, 0x00, 0x00, 0x80, 0xBC, 0x24, 0xC0, 0x00, 0x00, 0x00, 0x01};
 inline constexpr Site kDotTakeDamageEntry{"DotTakeDamageEntry", 0x0049B3D9, kDotTakeDamageEntryBytes, sizeof(kDotTakeDamageEntryBytes)};
@@ -1044,8 +1044,11 @@ inline constexpr Site kModifyTypeNameTail{"ModifyTypeNameTail", 0x005FE6C7, kMod
 inline constexpr std::uint8_t kModifyTypeNameCompareBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57, 0x8B, 0xF1, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x26};
 inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10, kModifyTypeNameCompareBytes, sizeof(kModifyTypeNameCompareBytes)};
 
-inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
-inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
+inline constexpr std::uint8_t kDataSubtypeLookupHeadBytes[] = {0x57, 0x8B, 0x7C, 0x24, 0x08};
+inline constexpr Site kDataSubtypeLookupHead{"DataSubtypeLookupHead", 0x0061FF5D, kDataSubtypeLookupHeadBytes, sizeof(kDataSubtypeLookupHeadBytes)};
+
+inline constexpr std::uint8_t kDataSubtypeAttrCallBytes[] = {0xE8, 0x80, 0x88, 0xF7, 0xFF};
+inline constexpr Site kDataSubtypeAttrCall{"DataSubtypeAttrCall", 0x006206B2, kDataSubtypeAttrCallBytes, sizeof(kDataSubtypeAttrCallBytes)};
 
 inline constexpr std::uint8_t kTeamBountyPayBytes[] = {0x8B, 0x4C, 0x24, 0x14, 0x8B, 0x16};
 inline constexpr Site kTeamBountyPay{"TeamBountyPay", 0x0049BDAB, kTeamBountyPayBytes, sizeof(kTeamBountyPayBytes)};
@@ -1056,8 +1059,8 @@ inline constexpr Site kBountyTagHandler{"BountyTagHandler", 0x0051D669, kBountyT
 inline constexpr std::uint8_t kBountyKillBranchBytes[] = {0x8B, 0x4C, 0x24, 0x28, 0x51};
 inline constexpr Site kBountyKillBranch{"BountyKillBranch", 0x004D4E0C, kBountyKillBranchBytes, sizeof(kBountyKillBranchBytes)};
 
-inline constexpr std::uint8_t kTechFlagCallBytes[] = {0xE8, 0x07, 0x00, 0x00, 0x00};
-inline constexpr Site kTechFlagCall{"TechFlagCall", 0x00620C23, kTechFlagCallBytes, sizeof(kTechFlagCallBytes)};
+inline constexpr std::uint8_t kTechFlagHeadBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08};
+inline constexpr Site kTechFlagHead{"TechFlagHead", 0x00620C2F, kTechFlagHeadBytes, sizeof(kTechFlagHeadBytes)};
 
 inline constexpr std::uint8_t kTechApplyCallBytes[] = {0xE8, 0x2E, 0x0A, 0x00, 0x00};
 inline constexpr Site kTechApplyCall{"TechApplyCall", 0x0094D0AE, kTechApplyCallBytes, sizeof(kTechApplyCallBytes)};
@@ -1701,6 +1704,8 @@ void Log(const wchar_t* format, ...);
 #include <cstdio>
 #include <cwchar>
 
+#include "hostfiles.h"
+
 namespace uhc {
 
 void Log(const wchar_t* format, ...) {
@@ -1713,7 +1718,7 @@ void Log(const wchar_t* format, ...) {
   if (slash == nullptr) {
     return;
   }
-  wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - path), L"UHC.log");
+  wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - path), kLogFile);
 
   FILE* file = nullptr;
   if (_wfopen_s(&file, path, L"a, ccs=UTF-8") != 0 || file == nullptr) {
@@ -2919,16 +2924,22 @@ bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 #include "patch.h"
 
 extern "C" {
-void UhcTechSubtypeLookupHook();   // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeAttrHook();     // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeLookupHook();
+void UhcTechSubtypeLookupStock();
 void UhcTechSubtypeApplyHook();
 void UhcTechSubtypeUnapplyHook();
+char* g_uhcSubtypeEffect = nullptr;       // the effect whose subtype is being read, and its XML node
+const char* g_uhcSubtypeNode = nullptr;
 }
 
 namespace {
 
 constexpr std::size_t kMaxSubtypes = 16;
 constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
-constexpr std::uint32_t kNameLookupCall = 0x006206D7;  // setData's call of the lookup 0x61FF5D
+constexpr std::uint32_t kNameLookupHead = 0x0061FF5D;  // the lookup
+constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the attribute subtype
+constexpr std::uint32_t kOtherCaller = 0x00621C2E;     // the lookup's other caller, which tests for one stock ID
 constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
 constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
@@ -2938,7 +2949,7 @@ constexpr std::size_t kActionList = 0x1C;              // in the set: the array 
 constexpr std::size_t kActionId = 4;                   // in an action
 
 using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
-const auto kNameLookup = reinterpret_cast<NameLookupFn>(0x0061FF5D);
+const auto kNameLookup = reinterpret_cast<NameLookupFn>(&UhcTechSubtypeLookupStock);
 using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
 const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 using ActionIdByNameFn = std::int32_t(__thiscall*)(void* db, const void* attribute);
@@ -3004,10 +3015,12 @@ bool Add(const Subtype& subtype) {
     return false;
   }
   if (!g_installed) {
-    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupCall, &uhc::sites::kDataApplySwitch,
-                                          &uhc::sites::kDataUnapplySwitch, &uhc::sites::kDataActionAttribute,
-                                          &uhc::sites::kDataAllActionsApply, &uhc::sites::kDataAllActionsUnapply}) ||
-        !uhc::WriteCall(kNameLookupCall, reinterpret_cast<const void*>(&UhcTechSubtypeLookupHook)) ||
+    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupHead, &uhc::sites::kDataSubtypeAttrCall,
+                                          &uhc::sites::kDataApplySwitch, &uhc::sites::kDataUnapplySwitch,
+                                          &uhc::sites::kDataActionAttribute, &uhc::sites::kDataAllActionsApply,
+                                          &uhc::sites::kDataAllActionsUnapply}) ||
+        !uhc::WriteJmp(kNameLookupHead, reinterpret_cast<const void*>(&UhcTechSubtypeLookupHook), 5) ||
+        !uhc::WriteCall(kAttributeCall, reinterpret_cast<const void*>(&UhcTechSubtypeAttrHook)) ||
         !uhc::WriteJmp(kApplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeApplyHook), 9) ||
         !uhc::WriteJmp(kUnapplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeUnapplyHook), 9)) {
       return false;
@@ -3020,17 +3033,18 @@ bool Add(const Subtype& subtype) {
 
 }  // namespace
 
-// Replaces the call of the lookup in BDataEffect::setData. effect and node are its ESI and EBP.
-extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* name, char* effect, const char* node) {
+// The head of the lookup. Its head, not the call in setData: another DLL may replace that call, and what
+// it does not know still ends here.
+extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* name, std::uint32_t returnAddress) {
   const std::int32_t stock = kNameLookup(db, name);
-  if (stock != -1 || name == nullptr) {
+  if (stock != -1 || name == nullptr || returnAddress == kOtherCaller) {
     return stock;
   }
   for (std::size_t i = 0; i < g_count; ++i) {
     if (_stricmp(name, g_subtypes[i].name) != 0) {
       continue;
     }
-    if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, effect, node)) {
+    if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
     return kFirstId + static_cast<std::int32_t>(i);
@@ -3077,10 +3091,14 @@ option casemap :none
 
 include common.inc
 
-UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, effect:DWORD, node:DWORD
+UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, returnAddress:DWORD
+EXTERN g_uhcSubtypeEffect:DWORD
+EXTERN g_uhcSubtypeNode:DWORD
 UhcTechSubtypeRun PROTO STDCALL subtype:DWORD, target:DWORD, base:DWORD, amount:DWORD, relativity:DWORD, unapply:DWORD, actionId:DWORD, allActions:DWORD
 
 .data
+xmlAttribute      dd 00598F37h    ; the XML attribute read
+lookupNext        dd 0061FF62h    ; test edi,edi, in the name lookup
 applySwitchNext   dd 008F9796h    ; movzx ecx, the subtype's jump index
 applyDone         dd 008FAE9Eh    ; pop edi / esi / ebp, mov al,1, pop ebx / ecx, ret 20h
 applyFail         dd 008FAEF4h    ; the same with xor al,al
@@ -3090,14 +3108,29 @@ unapplyFail       dd 008FC19Ah    ; the same with xor al,al
 
 .code
 
-; Replaces the call at 0x6206D7 of the name lookup 0x61FF5D, thiscall(db, name), ret 4, in
-; BDataEffect::setData. ESI = the effect, EBP = its XML node; the helper keeps both.
+; Replaces the call at 0x6206B2 in BDataEffect::setData, which reads the attribute subtype. ESI = the
+; effect, EBP = its XML node: kept here because another DLL may do the rest of the lookup its own way.
+UhcTechSubtypeAttrHook PROC
+    mov g_uhcSubtypeEffect, esi
+    mov g_uhcSubtypeNode, ebp
+    jmp xmlAttribute
+UhcTechSubtypeAttrHook ENDP
+
+; The head of the name lookup 0x61FF5D, thiscall(db, name), ret 4.
 UhcTechSubtypeLookupHook PROC
-    TRACE_ONCE "tech subtype lookup (0x6206D7)"
-    mov eax, dword ptr [esp+4]
-    invoke UhcTechSubtypeLookup, ecx, eax, esi, ebp
+    TRACE_ONCE "tech subtype lookup (0x61FF5D)"
+    mov eax, dword ptr [esp]
+    mov edx, dword ptr [esp+4]
+    invoke UhcTechSubtypeLookup, ecx, edx, eax
     ret 4
 UhcTechSubtypeLookupHook ENDP
+
+; The stock lookup: re-executes 0x61FF5D..0x61FF61 (push edi / mov edi,[esp+8]).
+UhcTechSubtypeLookupStock PROC
+    push edi
+    mov edi, dword ptr [esp+8]
+    jmp lookupNext
+UhcTechSubtypeLookupStock ENDP
 
 ; Replaces 0x8F978D..0x8F9795 (cmp eax,63h / ja 0x8FAEF4) in applyData. EAX = subtype, EDI = target
 ; proto, ESI = its base proto, [esp+20h] the action's ID, [esp+28h] amount, [esp+2Ch] relativity,

@@ -12,9 +12,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Static CRT so the DLL drops into a game folder without a VC++ redistributable.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-add_library(UHC SHARED
-  src/dllmain.cpp
+set(UHC_SOURCES
   src/config.cpp
+  src/startup.cpp
   src/floatingtext.cpp
   src/log.cpp
   src/patch.cpp
@@ -164,15 +164,23 @@ add_library(UHC SHARED
   src/hooks/unitpanelrow_hooks.asm
   src/version.rc
 )
-target_compile_definitions(UHC PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
+# UHC.dll is the DLL the loader runs. dinput8.dll is the same code for a game whose loader runs another
+# UHC.dll: it sits beside it (src/engineext.cpp).
+add_library(UHC SHARED src/dllmain.cpp ${UHC_SOURCES})
+add_library(EngineExt SHARED src/engineext.cpp src/engineext_forward.cpp src/engineext.def ${UHC_SOURCES})
+target_compile_definitions(EngineExt PRIVATE UHC_ENGINE_EXT)
 # version.h (from src/version.h.in) carries the project version to dllmain.cpp and version.rc.
 configure_file(src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h @ONLY)
-target_include_directories(UHC PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
-# For `include common.inc` in the hook files.
-target_include_directories(UHC PRIVATE src/hooks)
-target_compile_options(UHC PRIVATE
-  $<$<COMPILE_LANGUAGE:CXX>:/W4 /permissive->
-  # x86 images link with /SAFESEH; MASM objects must declare their (empty) handler table.
-  $<$<COMPILE_LANGUAGE:ASM_MASM>:/safeseh>
-)
+foreach(target UHC EngineExt)
+  target_compile_definitions(${target} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
+  target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
+  # For `include common.inc` in the hook files.
+  target_include_directories(${target} PRIVATE src/hooks)
+  target_compile_options(${target} PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:/W4 /permissive->
+    # x86 images link with /SAFESEH; MASM objects must declare their (empty) handler table.
+    $<$<COMPILE_LANGUAGE:ASM_MASM>:/safeseh>
+  )
+endforeach()
+set_target_properties(EngineExt PROPERTIES OUTPUT_NAME dinput8)
 set_target_properties(UHC PROPERTIES OUTPUT_NAME UHC)

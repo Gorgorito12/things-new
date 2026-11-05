@@ -25,7 +25,8 @@ dumpbin /exports build\Release\UHC.dll
 - The game is 32-bit, so configure with `-A Win32`; `CMakeLists.txt` stops an x64 configure on
   purpose. For Visual Studio 2022 the generator is `"Visual Studio 17 2022"`.
 - The output is `build\Release\UHC.dll`, linked with the static C runtime, so it needs no
-  redistributable.
+  redistributable, and `build\Release\dinput8.dll`, the same code for a game that keeps another `UHC.dll`
+  ([how-it-works.md](how-it-works.md#beside-another-dll)).
 - `dumpbin /exports` must list `_UHCMain@0`, the exact name the loader asks for.
 
 **Layout:**
