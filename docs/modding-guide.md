@@ -2756,6 +2756,8 @@ Resources, gatherers, and what pays for them.
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
+| [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
+| [`resourceDebt`](#resourcedebt) | A stockpile may go below 0, for negative trickles. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -3051,6 +3053,99 @@ unitResourceAuras [log]
 - **Status:** confirmed (single player, on WoL): the rates above; with a limit of 2, two trees at a time, and new ones
   as they went; without `<targetgaia>`, nothing from Gaia's trees; an argument: `FAILED`. `buildingWorkRateAuras`,
   which now shares the name hook, still gives its x3. An AI that builds Sawmills and multiplayer were not tested.
+
+#### resourceGatherAuras
+
+![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
+
+*In WoL, with `showGatherRate` and `resourceGatherAuras` (Ethiopians; a test aura `MineGatherRate` ×2 on the Explorer,
+40 m):* eight settlers gather a mine, trees, berries and a Mill. The selected miner's rate is 1.20 coin/s, and at 77 s
+the player has 179 gold; wood (73) and food (170) go as in the control.
+[Full video (MP4)](media/resourceGatherAuras-wol.mp4).
+
+![resourceGatherAuras in WoL, key off](media/resourceGatherAuras-wol-control.gif)
+
+*In WoL, key off (the same scene):* 0.60 coin/s, and 88 gold, 72 wood and 167 food at 76 s.
+[Full video (MP4)](media/resourceGatherAuras-wol-control.mp4).
+
+```
+resourceGatherAuras [log]
+```
+
+- **In WoL today:** `<ModifyType>GatherRate</ModifyType>` multiplies everything a unit gathers. JTMaston's #32 asks for one
+  resource at a time.
+- **Effect:** seven more names for `<ModifyType>`, on any aura or `<unitModify>`:
+
+  | Name | Reaches the gather rate on |
+  |---|---|
+  | `MineGatherRate` | targets with `AbstractMine`, so WoL's plantations too |
+  | `TreeGatherRate` | targets with `Tree` |
+  | `FarmingGatherRate` | targets with `AbstractFarm` |
+  | `NaturalFoodGatherRate` | food from anything else: hunts, berries |
+  | `FoodGatherRate`, `WoodGatherRate`, `GoldGatherRate` | that resource, from any target |
+
+  The first four are DE's names. The aura is written as any other:
+
+  ```xml
+  <modifyabstracttype>AbstractVillager</modifyabstracttype>
+  <modifytype>MineGatherRate</modifytype>
+  <modifymultiplier>2</modifymultiplier>
+  ```
+
+  A name by target and one by resource multiply each other.
+- **Not covered:** AutoGather rates; `<ModifyType>AutoGatherRate</ModifyType>` still reaches all of them. The stat panel's
+  `GatherRate` line does not change; `showGatherRate` shows the real rate.
+- **Log:** `resourceGatherAuras: applied`, `hook reached: resourceGatherAuras (0x4ED02A)`; with `log`, the first 200
+  factors, `unit 1, resource 0, target MineGold: x2.000`.
+- **Order:** in `kFeatures` it goes after `showGatherRate`, which verifies the bytes of the call this key redirects.
+- **Simulation:** changes gathering: every player needs the same line.
+- **Saved games:** nothing to keep: the modifiers are the game's.
+- **Performance:** one more call per gather tick. With 30 gatherers under the aura, for 60 s: update 0.1 ms with and
+  without, longest frame 8 and 9 ms, no frame over 50 ms in either.
+- **Status:** confirmed (single player, on WoL): each of the seven names gave its factor, from the log, on a mine, trees,
+  berries and a Mill. In a skirmish with the five keys of this batch on, the AI as Germans played on (16 to 25 units in
+  150 s of game time). Multiplayer not tested.
+
+#### resourceDebt
+
+![resourceDebt in WoL](media/resourceDebt-wol.gif)
+
+*In WoL, with `resourceDebt Food` (Ethiopians, a test tech with a food trickle of −10/s):* the food goes below 0: −110
+at 88 s, −250 at 103 s. Gold, which is not listed, stays at 0 when a trigger takes 50.
+[Full video (MP4)](media/resourceDebt-wol.mp4).
+
+![resourceDebt in WoL, key off](media/resourceDebt-wol-control.gif)
+
+*In WoL, key off (the same scene):* the food stops at 0. [Full video (MP4)](media/resourceDebt-wol-control.mp4).
+
+```
+resourceDebt [Food] [Wood] [Gold]       no resource: the three
+```
+
+- **In WoL today:** a negative trickle drains a stockpile, and it stops at 0. JTMaston's #24 asks for debt. He did not
+  answer what a debt should do, so this is our design: nothing more than the number.
+- **Effect:** the listed stockpiles may go below 0. The trickle needs both effects, as without the key: the rate is
+  clamped to `MinimumResourceTrickleRate`, 0 by default.
+
+  ```xml
+  <Effect type ='Data' amount ='-20.00' subtype ='MinimumResourceTrickleRate' resource ='Food' relativity ='Absolute'>
+      <Target type ='Player' /></Effect>
+  <Effect type ='Data' amount ='-10.00' subtype ='ResourceTrickleRate' resource ='Food' relativity ='Absolute'>
+      <Target type ='Player' /></Effect>
+  ```
+
+- **In debt:** a cost is compared with the stockpile, so nothing can be paid until it is above the cost again. With food at
+  −140, an order to train was refused: no queue, no population, no charge. The panel shows the negative number.
+- **Any reduction counts:** with the key, a trigger or an effect that takes more than the stockpile also leaves a debt
+  of that resource.
+- **Not covered:** shared resources between teammates (the add has another path there) were not read.
+- **Log:** `resourceDebt: stockpiles of Food may go below 0 (multiplayer unverified)`, `hook reached: resourceDebt add
+  (0x679A0E)` and `resourceDebt set (0x6798F4)`. An unknown resource: `FAILED`.
+- **Simulation:** every player needs the same line.
+- **Saved games:** a debt saved at −80 loaded at −100, two seconds of trickle later.
+- **Performance:** runs only when a sum falls below 0.
+- **Status:** confirmed (single player, on WoL): the rates above, the refused order, the saved game. The AI played on with the
+  key in the same skirmish, without being in debt: **how an AI behaves in debt was not tested**. Multiplayer not tested.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 

@@ -218,6 +218,11 @@ Player (257, 803), Skirmish (689, 803), the home city's Play (181, 1029), the se
 click (1440, 403) in the setup; delete the copies after. In a skirmish, game time runs about twice as fast
 as a scenario's. Cheats do not run in a scenario.
 
+**The AI's civ.** Use a European AI: it is WoL's best prepared. A random AI takes a random personality, and the personality's
+`<forcedciv>` wins over `gameplayer2civ` in the profile. So before launching, `python -I tools/ai_personality.py
+C:\AoE3-UHC-WoLReal wolOtto` (Germans; also `wolVictoria` British, `wolNapoleon` French, `wolIsabel` Spanish, `wolOscar`
+Swedish), and `restore` after closing the game.
+
 ## Language of the bed
 
 Since 2026-11-04 the bed runs in WoL's original English, so the videos are in English:

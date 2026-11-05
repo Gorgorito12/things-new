@@ -234,6 +234,8 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
+resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
+resourceDebt [Food] [Wood] [Gold]   stockpiles may go below 0
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

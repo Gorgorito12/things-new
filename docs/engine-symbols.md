@@ -886,6 +886,14 @@ the Gathering dance (FUN_004ECD39) in "Dances".
 | Gather payment | 0x49A98A(player, resource, amount, 0) | confirmed (`cs`, in game) | After `× [player+37Ch]`. Zero when `[player+338h]` is set. Resource 5 also calls 0x9C02C0. |
 | Endless resource | proto flag 24h, tested at 0x4ED062 | confirmed (`cs`) | The tick skips the drain and 0x482152. |
 
+### Resource debt (for `resourceDebt`, WoL #24, 2026-11-04)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Add resource | 0x49A98A, `bool thiscall(player, res, float, bool)`, `ret 0Ch` | confirmed (`cs`, in game) | Sum compared with 1e-6 (0xB9FD78) at 0x49A9BF; below: 0x679A0E writes 0. Shared resources `[world+6912h]`: 0x67993B, not read. |
+| Set resource | 0x49A8C5, `thiscall(player, res, float, bool)`, `ret 0Ch` | confirmed (`cs`, in game) | Below 1e-6: 0x6798F4 writes 0. Stores through 0x58EF83 into `[player+230h]`; `[player+238h]` a per-resource cap; the delta goes to `[player+240h]`. |
+| Personality and civ | `gameplayer2aipersonality` in the profile; `<forcedciv>` of `AI4\*.personality` | in game | The personality wins over `gameplayer2civ`: 17 (Germans) in the profile gave a Mapuche AI. `tools/ai_personality.py` leaves one. |
+
 ### Building work rate auras (for `buildingWorkRateAuras`)
 
 The getter 0x9BFE33 and its four callers are in "Building work rate"; the modifier action, its

@@ -1046,6 +1046,13 @@ SITES = [
     ("MainResource", 0x4DBEC1, 0x10),
     ("UnitIsDead", 0x4802C6, 0x10),
     ("PlayerAddResource", 0x49A98A, 0x10),
+    # resourceGatherAuras: call 4ECD39h in the gather tick. showGatherRate verifies the same bytes, so
+    # that key must be applied first.
+    ("GatherDanceCall", 0x4ED02A, 5),
+    # resourceDebt: the clamps of the add 0x49A98A and the set 0x49A8C5 in their cold parts, and the
+    # jmp back each continues at
+    ("DebtAddClamp", 0x679A0E, 13),
+    ("DebtSetClamp", 0x6798F4, 13),
     # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
     # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
     # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)

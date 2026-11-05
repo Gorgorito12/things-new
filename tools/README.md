@@ -19,6 +19,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
+| `ai_personality.py` | Leaves one AI personality in a test copy, so a skirmish's AI has that civ. |
 | [`re/inspect_unittypes.py`](#reinspect_unittypespy) | Shows a unit type's ID and the protos that carry it. |
 | `re/debugger.py` | The shared debugger and game-memory helpers the `re/` scripts use. |
 | `perfprobe.py`, `set_laa.py` | Part of the performance work in progress; see [docs/performance.md](../docs/performance.md) and each script's docstring. |

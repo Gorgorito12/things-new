@@ -2543,6 +2543,28 @@ step, so one that dies in the loop is not touched again; the list belongs to the
 game clock and an ID-ordered map make the result the same on every machine. Stat 41h reaches no stock reader in an
 aura: the update does not run; in a power's `<unitModify>` the name is accepted and has no effect.
 
+### resourceGatherAuras
+
+The stat GatherRate (0Bh) is summed into the record's `+24h` and read at 0x4ECFE9, for every target. Seven new names go
+through `AddModifyType` (stats 42h..48h), so an aura gives its units modifiers of those stats; the record recompute skips
+them, as it skips 40h. The gather tick multiplies its rate by the Gathering dance factor, `call 4ECD39h` at 0x4ED02A, with
+ESI = the Gather action. The call goes to a wrapper that calls the stock function and multiplies by
+`UhcGatherAuraFactor(action)`: it classifies the target, `[action+14h]`, by proto type and the resource `[action+70h]`, and
+runs the stock sum 0x4B3C7D over the unit's modifiers of the stats that fit, as `buildingWorkRateAuras` does.
+
+**Why it is safe.** A unit with no modifier record returns 1.0 after one load, and the tick reads no register from the
+call but ST0. `showGatherRate`'s record hook, at 0x4ED044, comes after the call and so sees the factor. That key verifies
+the call's bytes, so this one is applied after it.
+
+### resourceDebt
+
+The add 0x49A98A clamps a sum below 1e-6 at its cold part 0x679A0E, and the set 0x49A8C5 clamps its value at 0x6798F4. Each
+is a single `mov dword ptr [esp+N],0` followed by a `jmp` back. The hooks replace that instruction and skip it for a listed
+resource (a byte table by index): ESI in the add, `[esp+70h]` in the set.
+
+**Why it is safe.** Costs are compared with the stockpile, so a negative one simply cannot pay. The set's other work, the
+total `+240h` and the listeners, takes the delta whatever its sign. The list comes from the cfg only.
+
 ### showGatherRate
 
 With the minimized interface (`optionminimizedui`) the stat panel fill returns at its start. The hook
