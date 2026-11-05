@@ -1260,16 +1260,17 @@ def test_monitor():
 
 
 def place_window(hwnd):
-    """Moves the game window to the top left of the test monitor, or to its top right for a second
-    copy (a folder whose name ends in 2), so that two copies stand side by side."""
+    """Moves the game window to a corner of the test monitor, by the last character of the copy's folder:
+    2 top right, 3 bottom left, 4 bottom right, anything else top left, so that four copies form a grid."""
     device, _primary, (left, top, right, bottom) = test_monitor()
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
-    x = right - (rc.right - rc.left) if BED.name.endswith("2") else left
-    if (rc.left, rc.top) == (x, top):
+    x = right - (rc.right - rc.left) if BED.name[-1] in "24" else left
+    y = bottom - (rc.bottom - rc.top) if BED.name[-1] in "34" else top
+    if (rc.left, rc.top) == (x, y):
         return
     # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
-    user32.SetWindowPos(hwnd, None, x, top, 0, 0, 0x0001 | 0x0004 | 0x0010)
+    user32.SetWindowPos(hwnd, None, x, y, 0, 0, 0x0001 | 0x0004 | 0x0010)
     time.sleep(0.3)
 
 

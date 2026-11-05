@@ -115,7 +115,7 @@ To test:
 
 `tools/xmbedit.py from-xml <in.xml> <out.xmb> --compress` compiles an edited XML; compiling the stock `protoy.xml` gives the stock XMB document byte for byte (decompressed).
 
-**The second WoL copy.** `C:\AoE3-UHC-WoLReal2` is a robocopy of `C:\AoE3-UHC-WoLReal` (12 GB, 2026-11-05), to run two tests at once. Pass `--bed C:\AoE3-UHC-WoLReal2`. Its window goes to the right of the monitor. A data edit in one copy does not reach the other.
+**More WoL copies.** `C:\AoE3-UHC-WoLReal2`, `3` and `4` are robocopies (12 GB each; 3 and 4 from `C:\WoL-Test`, 2026-11-05), to run four tests at once. Pass `--bed C:\AoE3-UHC-WoLReal3`. The last character of the folder picks the window's corner of the monitor: 2 top right, 3 bottom left, 4 bottom right. A data edit in one copy does not reach the others. They share `My Games`, so the profile (`Users3`) is one: a test that edits it runs with no other game open.
 
 **Second test copy.** `C:\AoE3-UHC-Poison` is a robocopy of the test bed (2026-10-28) for `damageOverTime`, so tests do not disturb `C:\AoE3-UHC-Test`, which other sessions use:
 - its cfg is `ignoreRegistryPath` and `damageOverTime log`;

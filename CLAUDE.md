@@ -37,7 +37,7 @@ python -I tools/export_public.py --check
 
 There are no unit tests. Every copy of the game, with its data and how to drive it, is in [`docs/developer-guide.md`, section 2](docs/developer-guide.md#2-a-safe-test-bed). The main ones:
 
-- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`), and `C:\AoE3-UHC-WoLReal2`, a second copy to run beside it. `C:\WoL-Test` is the control with WoL's DLL.
+- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`), and `C:\AoE3-UHC-WoLReal2`, `3` and `4`, copies to run beside it, one per agent. `C:\WoL-Test` is the control with WoL's DLL.
 - `C:\AoE3-UHC-Test`, and private copies per feature (`-Poison`, `-WoL`, `-Spread`).
 
 `python -I tools/testbed.py` plays a test with no clicks: `deploy`, `map`, `launch`, `scenario`, `skirmish`, `wait`, `log`, `units`, `shot`, `close`, `record`. `skirmish` uses posted clicks, so it needs no cursor or focus ([`docs/wol-migration.md`, "Skirmish route"](docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)). Put a `timeout` on every `wait`: when a game ends the clock stops and `wait` never returns.
