@@ -10,6 +10,8 @@ Reverse engineer Age of Empires III: The Asian Dynasties (`age3y.exe`) with REA,
 
 All binary analysis goes through the REA MCP server (`mcp__rea__*`, deferred tools: load them with ToolSearch). Load the `reverse-engineer-anything` skill before the first REA call.
 
+**Rule:** when something cannot be solved or found with the code or by trying it in the game, go to REA at once, before more blind attempts and before calling it blocked.
+
 ## Commands
 
 CMake and MSVC come from VS 2026 (`C:\Program Files\Microsoft Visual Studio\18\Insiders`) and are not on PATH. Use a VS x86 developer prompt, or call `Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe` by full path.
