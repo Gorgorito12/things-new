@@ -243,6 +243,10 @@ cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
 sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
 doNotQueue [log]              <DoNotQueue/> trains a proto ahead of what waits in the building
 nextResearchFree [log]        a Data tech effect makes a building's next research free
+killBountyTechs [log]         a Data tech effect may change a proto's Bounty
+resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
+teamKillBounty [log]          the XP of a marked victim goes to the killer's team
+cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

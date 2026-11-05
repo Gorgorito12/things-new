@@ -64,6 +64,8 @@ PAGES = {
         "accuracyTechs": ["src/features/accuracy.cpp"],
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],
+        "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
+        "killBountyTechs, resourceBounty and teamKillBounty": ["src/features/bounty.cpp", "src/hooks/bounty_hooks.asm"],
     }),
     "gathering": ("Gathering", {
         "showGatherRate": ["src/features/gatherrate.cpp", "src/hooks/gatherrate_hooks.asm"],

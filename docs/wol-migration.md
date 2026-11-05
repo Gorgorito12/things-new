@@ -235,7 +235,8 @@ with one, the AI barely grew (4 units against 26).
 C:\AoE3-UHC-WoLReal wolOtto` (Germans; also `wolVictoria` British, `wolNapoleon` French, `wolIsabel` Spanish), and
 `restore` after closing the game. Leave one personality per AI, each of a civ the human does not have: the game fell at
 0x7C252C on starting a skirmish with `wolOscar` and a Swedish human, and with two AIs and one personality. A 3-player game
-needs a normal map: a test map starts with 2 players whatever the profile says.
+needs a normal map, because a skirmish on a test map starts with 2 players whatever the profile says. With no AI,
+`testbed.py scenario <map> --players 3` makes teams 1 and 2 allied against 3, and needs no change in the shared profile.
 
 ## Language of the bed
 

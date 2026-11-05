@@ -38,6 +38,8 @@
 #include "../unittypes.h"
 #include "../worldtick.h"
 
+extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);  // cantslow.cpp; false when that key is off
+
 namespace {
 
 // Engine layout (docs/engine-symbols.md, "Damage and poison").
@@ -298,7 +300,7 @@ std::uint32_t TickInterval(const char* attaching) {
 // The stock snare's modifier (snareOnlyHitUnit in how-it-works.md): stat 0 (velocity), operation 2
 // (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration.
 void Snare(char* unit, float factor, std::uint32_t ms) {
-  if (factor >= 0.0f && CanMove(unit)) {
+  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit)) {
     kSnare(unit, 0, factor, -1.0f, -1.0f, 0, 2, static_cast<std::int32_t>(ms), -1, -1, 1);
   }
 }

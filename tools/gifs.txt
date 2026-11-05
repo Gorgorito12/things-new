@@ -129,3 +129,11 @@ doNotQueue-wol 2 46 3
 doNotQueue-wol-control 2 46 3
 nextResearchFree-wol 2 30 3
 nextResearchFree-wol-control 2 30 3
+cantBeSlowed-wol 0 12 1
+cantBeSlowed-wol-control 0 12 1
+killBountyTechs-wol 0 12 1
+killBountyTechs-wol-control 0 12 1
+resourceBounty-wol 0 12 1
+resourceBounty-wol-control 0 12 1
+teamKillBounty-wol 0 12 1
+teamKillBounty-wol-control 0 12 1

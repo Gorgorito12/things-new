@@ -2824,6 +2824,31 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
 
 - **Observed in game:** see the tests in the modding guide.
 
+### killBountyTechs, resourceBounty and teamKillBounty
+
+`<Bounty>` is stored by the handler 0x5F5D79 in the proto's `+168h`. On a kill, TakeDamage takes its branch 0x4D4E0C,
+reads the value through 0x4D4DC5 from `[victim+5Ch]`, the copy of the victim's owner, times the attacker's `Bounty`
+modifiers, and shows the text. Then 0x49B73C calls FUN_0049BD52, on every hit, with an amount of 0 unless the hit kills;
+it finds the killer's team and calls 0x49BDC0(player, amount, 0), which pays resource 5 to that player, or to every
+member, the whole amount, when the player is below 0 (cold 0x68EA12).
+
+- **The subtype:** `KillBounty` and `Bounty` go through `AddTechSubtype` and the value function 0x7F892A.
+- **The team:** the hook replaces `mov ecx,[esp+14h] / mov edx,[esi]` at 0x49BDAB. FUN_0049BD52 saved its caller's ESI,
+  the victim, at `[esp]`. It skips an amount of 0 first, so a hit costs one compare, and passes -1 for a marked victim.
+- **The resources:** a tag cannot be registered twice: 0x59B738 returns when the name exists. So the key changes the
+  immediate at 0x51D669, the handler the builder registers. Its handler keeps the stock one for a `<Bounty>` without
+  `resourcetype`, reads the attribute with 0x598F37, the name with 0x44709C, and stores by proto ID. The payment is a hook
+  on the head of the kill branch, not on FUN_0049BD52, because a proto with no XP bounty reaches that one with 0.
+
+- **Observed in game:** see the tests in the modding guide.
+
+### cantBeSlowed
+
+0x4DD1DE, the `TargetSpeedBoost` path, tests that the target can move, and 0x4DD201 pushes the arguments of the
+modifier's creator 0x4DD22D. The hook replaces the first three pushes, and leaves through 0x48FA49, the path's exit, for a
+marked target. The poison of `damageOverTime` calls the creator itself, so it asks the same function. The site is in the
+ranges `damageOverTime` and `snareOnlyHitUnit` verify, so this key comes after them in `kFeatures`.
+
 ### trainBatchSize
 
 The routine that queues units in a building reads its limit from one call, 0x8D051B at 0x9CE645: the player's `[+2ACh]`

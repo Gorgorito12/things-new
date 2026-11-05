@@ -32,12 +32,14 @@ add_library(UHC SHARED
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp
   src/features/ai.cpp
+  src/features/bounty.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
   src/features/freeresearch.cpp
+  src/features/cantslow.cpp
   src/features/civfirsttc.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp
@@ -144,6 +146,8 @@ add_library(UHC SHARED
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
   src/hooks/modifytype_hooks.asm
+  src/hooks/bounty_hooks.asm
+  src/hooks/cantslow_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm
   src/hooks/trainbatch_hooks.asm

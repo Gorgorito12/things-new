@@ -19,6 +19,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
+| Combat | `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `sharedBuildLimit`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `doNotQueue`, `nextResearchFree`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
@@ -828,6 +829,24 @@ Code: [data](porting-code/data.md#customhotkeycontexts).
   ESP.
 - **Ordering:** write the switch-off wrapper first and the trainer hook last, so a failed write
   leaves contexts that are never on, or on and switched off.
+
+### killBountyTechs, resourceBounty and teamKillBounty
+
+Code: [combat](porting-code/combat.md#killbountytechs-resourcebounty-and-teamkillbounty). `killBountyTechs` needs
+`AddTechSubtype`, in the [helpers](porting-code/helpers.md#tech-subtypes). WoL's data already has 10 effects with
+`subtype='Bounty'`, and your DLL has the string `KillBounty`: check what it does with them before adding this.
+
+- **Sites:** a 6-byte `jmp` at `0x49BDAB` (`8B 4C 24 14 8B 16`), continue at `0x49BDB1`; a 5-byte `jmp` at `0x4D4E0C`
+  (`8B 4C 24 28 51`), continue at `0x4D4E11`; and the dword at `0x51D669` (`0x5F5D79`).
+- **Test:** a kill of each kind, reading `[[player+230h]+4·res]`.
+
+### cantBeSlowed
+
+Code: [combat](porting-code/combat.md#cantbeslowed).
+
+- **Site:** a 6-byte `jmp` at `0x4DD201` (`6A 01 6A FF 6A FF`), continue at `0x4DD207`, exit `0x48FA49`. Write it after
+  anything that verifies the snare's bytes.
+- **Test:** a marked and an unmarked unit of the same speed under a `TargetSpeedBoost` attack.
 
 ### snareOnlyHitUnit
 
