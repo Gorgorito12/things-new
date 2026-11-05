@@ -1259,6 +1259,10 @@ Code: [gathering](porting-code/gathering.md#resourcedebt).
 
 - **Sites:** an 8-byte `jmp` at `0x679A0E` (`C7 44 24 10 00 00 00 00`), continue at `0x49A9D0`; at `0x6798F4` (`C7 44 24 74 00 00
   00 00`), continue at `0x49A8E3`; and at `0x6799D4` (`C7 44 24 18 00 00 00 00`), continue at `0x6799DC`. None overlaps WoL's DLL.
+- **The gates of negative rates:** a 6-byte `jmp` at `0x48D186` (`0F 8A 93 3D 03 00`), `0x49EE07` (`0F 8A 27 1C 02 00`) and
+  `0x4ED03E` (`0F 8B A6 BA 1B 00`). Check them against your DLL's gather hooks: WoL's gather code may already sit near the tick.
+- **The return addresses that have no floor** are constants in the helper: `0x4E0CFE`, `0x4C379D`, `0x4ED1F3`. A hook of yours on
+  those three calls changes nothing as long as the stock return address stays on the stack.
 
 ### showGatherRate
 

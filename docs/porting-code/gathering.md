@@ -1584,18 +1584,25 @@ END
 
 Contract: [resourceDebt](../porting-to-another-dll.md#resourcedebt).
 
-Sites: `DebtSetClamp` `0x6798F4` (13 B), `DebtShareClamp` `0x6799D4` (12 B), `DebtAddClamp` `0x679A0E` (13 B).
+Sites: `DebtAutoGate` `0x48D186` (6 B), `DebtAutoRate` `0x49EE07` (6 B), `DebtGatherGate` `0x4ED03E` (6 B), `DebtSetClamp` `0x6798F4` (13 B), `DebtShareClamp` `0x6799D4` (12 B), `DebtAddClamp` `0x679A0E` (13 B).
 
 ### src/features/resourcedebt.cpp
 
 ```cpp
-// resourceDebt: a player's stockpile of the listed resources may go below 0.
+// resourceDebt: only a player's trickles and the rates of its units may take a stockpile of the listed
+// resources below 0.
 //
-// Stock: a negative ResourceTrickleRate, with MinimumResourceTrickleRate lowered too, drains a
-// stockpile, and it stops at 0: the add 0x49A98A clamps the sum at its cold part 0x679A0E, in its
-// shared-resources path at 0x6799D4 (once per teammate), and the set 0x49A8C5 clamps its value at
-// 0x6798F4. With the key those three clamps skip the listed resources. Nothing else changes: a cost is compared with the stockpile, so a player in debt
-// cannot pay until the stockpile is back above the cost. The hooks are in
+// Stock: the add 0x49A98A clamps the sum at 0 at its cold part 0x679A0E, in its shared-resources path
+// at 0x6799D4 (once per teammate), and the set 0x49A8C5 clamps its value at 0x6798F4.
+// With the key each clamp asks UhcDebtFloor, by the return address of the add:
+// - the global trickle (0x4E0CF9), unit AutoGather (0x4C3798) and the gather tick (0x4ED1EE) have no floor;
+// - anything else (tech effects, triggers, costs, shipments) stops at 0, or at the debt the stockpile
+//   already has: it neither digs a debt nor wipes one. An income on a debt keeps the rest of the debt.
+// A set called by the add itself keeps what the add settled.
+// Stock also stops negative rates before the add: the AutoGather getter returns 0 below 1e-6, its update
+// skips an amount below 1e-6 and the gather tick ends the action at a rate of 1e-6 or less. The other
+// three hooks let the negative rates of the listed resources through. A cost is compared with the
+// stockpile, so a player in debt cannot pay until it is back above the cost. The hooks are in
 // hooks/resourcedebt_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
@@ -1612,6 +1619,9 @@ std::uint8_t g_uhcDebtResources[16] = {};  // by resource index; 1: no floor at 
 void UhcDebtAddHook();
 void UhcDebtSetHook();
 void UhcDebtShareHook();
+void UhcDebtAutoGateHook();
+void UhcDebtAutoRateHook();
+void UhcDebtGatherGateHook();
 }
 
 namespace {
@@ -1622,20 +1632,36 @@ struct ResourceName {
 };
 constexpr ResourceName kResources[] = {{"Gold", 0}, {"Coin", 0}, {"Wood", 1}, {"Food", 2}};
 constexpr int kMaxLogLines = 200;
+// Where the add returns to in the three callers that have no floor.
+constexpr std::uint32_t kGlobalTrickle = 0x004E0CFE;
+constexpr std::uint32_t kUnitAutoGather = 0x004C379D;
+constexpr std::uint32_t kGatherTick = 0x004ED1F3;
+constexpr std::size_t kStockpiles = 0x230;  // [player+230h], the stockpile array
+
+using StockpileFn = float(__thiscall*)(const void* stockpiles, std::int32_t resource);
+const auto kStockpile = reinterpret_cast<StockpileFn>(0x0044EFFF);
 
 bool g_log = false;
 int g_logLines = 0;
 
 }  // namespace
 
-// From the add's two hooks, when a listed resource's sum stays below 0.
-extern "C" void __stdcall UhcDebtNote(const char* player, std::int32_t resource, float amount) {
-  if (!g_log || g_logLines >= kMaxLogLines || player == nullptr) {
+// From the clamps, for a listed resource. `value` holds a sum or value below 1e-6; `caller` is where
+// the add or the set returns to.
+extern "C" void __stdcall UhcDebtFloor(const char* player, std::int32_t resource, float* value,
+                                       std::uint32_t caller) {
+  const bool source = caller == kGlobalTrickle || caller == kUnitAutoGather || caller == kGatherTick;
+  const float before = *value;
+  if (!source) {
+    const float current = kStockpile(player + kStockpiles, resource);
+    *value = current < 0.0f ? (before > current ? before : current) : 0.0f;
+  }
+  if (!g_log || g_logLines >= kMaxLogLines || before >= 0.0f) {
     return;
   }
   ++g_logLines;
-  uhc::Log(L"resourceDebt: player %d, resource %d at %.1f", *reinterpret_cast<const std::int32_t*>(player), resource,
-           static_cast<double>(amount));
+  uhc::Log(L"resourceDebt: player %d, resource %d, from 0x%08X: %.1f%ls", *reinterpret_cast<const std::int32_t*>(player),
+           resource, caller, static_cast<double>(*value), *value == before ? L"" : L" (held by the floor)");
 }
 
 namespace uhc {
@@ -1668,15 +1694,19 @@ Outcome ApplyResourceDebt(const Config& config) {
     g_uhcDebtResources[0] = g_uhcDebtResources[1] = g_uhcDebtResources[2] = 1;
     list = "Food Wood Gold";
   }
-  if (!VerifyAll("resourceDebt", {&sites::kDebtAddClamp, &sites::kDebtSetClamp, &sites::kDebtShareClamp})) {
+  if (!VerifyAll("resourceDebt", {&sites::kDebtAddClamp, &sites::kDebtSetClamp, &sites::kDebtShareClamp,
+                                  &sites::kDebtAutoGate, &sites::kDebtAutoRate, &sites::kDebtGatherGate})) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(sites::kDebtAddClamp.va, reinterpret_cast<const void*>(&UhcDebtAddHook), 8) ||
       !WriteJmp(sites::kDebtSetClamp.va, reinterpret_cast<const void*>(&UhcDebtSetHook), 8) ||
-      !WriteJmp(sites::kDebtShareClamp.va, reinterpret_cast<const void*>(&UhcDebtShareHook), 8)) {
+      !WriteJmp(sites::kDebtShareClamp.va, reinterpret_cast<const void*>(&UhcDebtShareHook), 8) ||
+      !WriteJmp(sites::kDebtAutoGate.va, reinterpret_cast<const void*>(&UhcDebtAutoGateHook), 6) ||
+      !WriteJmp(sites::kDebtAutoRate.va, reinterpret_cast<const void*>(&UhcDebtAutoRateHook), 6) ||
+      !WriteJmp(sites::kDebtGatherGate.va, reinterpret_cast<const void*>(&UhcDebtGatherGateHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"resourceDebt: stockpiles of %hs may go below 0 (multiplayer unverified)", list.c_str());
+  Log(L"resourceDebt: trickles and unit rates may take %hs below 0 (multiplayer unverified)", list.c_str());
   return Outcome::kApplied;
 }
 
@@ -1695,29 +1725,37 @@ option casemap :none
 include common.inc
 
 EXTERN g_uhcDebtResources:BYTE
-UhcDebtNote PROTO STDCALL player:DWORD, resource:DWORD, amount:DWORD
+UhcDebtFloor PROTO STDCALL player:DWORD, resource:DWORD, value:DWORD, caller:DWORD
 
 .data
-addNext     dd 0049A9D0h    ; mov ecx,[esp+18h]: the add goes on to the set
-setNext     dd 0049A8E3h    ; mov edi,[esp+70h]: the set goes on
-shareNext   dd 006799DCh    ; mov ecx,[esp+20h]: the shared add goes on to the set
+addNext       dd 0049A9D0h    ; mov ecx,[esp+18h]: the add goes on to the set
+setNext       dd 0049A8E3h    ; mov edi,[esp+70h]: the set goes on
+shareNext     dd 006799DCh    ; mov ecx,[esp+20h]: the shared add goes on to the set
+autoGo        dd 004C0F1Fh    ; mov ecx,[esi+4]: the AutoGather update books the amount
+autoSkip      dd 0048D18Ch    ; the AutoGather update's next resource
+rateGo        dd 004C0A34h    ; cmp dword ptr [edi],0: the getter returns the rate it computed
+rateZero      dd 0049EE0Dh    ; fld 0: the getter returns 0
+gatherGo      dd 004ED044h    ; fmul [esp+30h]: the gather tick goes on
+gatherEnd     dd 006A8AEAh    ; the gather tick ends the action
 
 .code
 
 ; Replaces 0x679A0E (mov dword ptr [esp+10h],0), the clamp of the add 0x49A98A, reached when the sum
-; is below 1e-6. EBP = the player, ESI = the resource; [esp+10h] holds the sum. EAX is free: the
-; continuation reloads it. FPU stack empty.
+; is below 1e-6. EBP = the player, ESI = the resource; [esp+0Ch] the add's return address, [esp+10h]
+; the sum. EAX is free: the continuation reloads it. FPU stack empty.
 UhcDebtAddHook PROC
     TRACE_ONCE "resourceDebt add (0x679A0E)"
     cmp esi, 16
     jae clamp
     cmp byte ptr g_uhcDebtResources[esi], 0
     je clamp
+    lea eax, dword ptr [esp+10h]
     pushad
-    push dword ptr [esp+30h]
+    push dword ptr [eax-4]
+    push eax
     push esi
     push ebp
-    call UhcDebtNote
+    call UhcDebtFloor
     popad
     jmp addNext
 clamp:
@@ -1726,8 +1764,9 @@ clamp:
 UhcDebtAddHook ENDP
 
 ; Replaces 0x6798F4 (mov dword ptr [esp+74h],0), the clamp of the set 0x49A8C5. ESI = the player,
-; [esp+70h] = the resource, [esp+74h] the value. EAX is free: the continuation writes it before
-; reading it. FPU stack empty.
+; [esp+6Ch] the set's return address, [esp+70h] the resource, [esp+74h] the value. A value from the
+; add's own two calls (returns 0x49A9E2 and 0x6799EE) was settled by the two hooks of the add. EAX is
+; free: the continuation writes it before reading it. FPU stack empty.
 UhcDebtSetHook PROC
     TRACE_ONCE "resourceDebt set (0x6798F4)"
     mov eax, dword ptr [esp+70h]
@@ -1735,6 +1774,19 @@ UhcDebtSetHook PROC
     jae clamp
     cmp byte ptr g_uhcDebtResources[eax], 0
     je clamp
+    cmp dword ptr [esp+6Ch], 0049A9E2h
+    je settled
+    cmp dword ptr [esp+6Ch], 006799EEh
+    je settled
+    lea ecx, dword ptr [esp+74h]
+    pushad
+    push dword ptr [ecx-8]
+    push ecx
+    push eax
+    push esi
+    call UhcDebtFloor
+    popad
+settled:
     jmp setNext
 clamp:
     mov dword ptr [esp+74h], 0      ; stolen 0x6798F4
@@ -1742,25 +1794,85 @@ clamp:
 UhcDebtSetHook ENDP
 
 ; Replaces 0x6799D4 (mov dword ptr [esp+18h],0), the clamp of the add's shared-resources path, once
-; per teammate. EDI = the teammate, EBP = the resource; [esp+18h] holds the sum. EAX is free: the
-; continuation does not read it. FPU stack empty.
+; per teammate. EDI = the teammate, EBP = the resource; [esp+14h] the add's return address, [esp+18h]
+; the sum. EAX is free: the continuation does not read it. FPU stack empty.
 UhcDebtShareHook PROC
     TRACE_ONCE "resourceDebt shared add (0x6799D4)"
     cmp ebp, 16
     jae clamp
     cmp byte ptr g_uhcDebtResources[ebp], 0
     je clamp
+    lea eax, dword ptr [esp+18h]
     pushad
-    push dword ptr [esp+38h]
+    push dword ptr [eax-4]
+    push eax
     push ebp
     push edi
-    call UhcDebtNote
+    call UhcDebtFloor
     popad
     jmp shareNext
 clamp:
     mov dword ptr [esp+18h], 0      ; stolen 0x6799D4
     jmp shareNext
 UhcDebtShareHook ENDP
+
+; Replaces 0x48D186 (jp 0x4C0F1F), in the AutoGather update: stock books an amount of 1e-6 or more
+; (the flags come from its test) and skips the rest. Here a negative amount of a listed resource is
+; booked too. EBX = the resource, [esp+10h] the amount.
+UhcDebtAutoGateHook PROC
+    jp book
+    TRACE_ONCE "resourceDebt AutoGather gate (0x48D186)"
+    cmp ebx, 16
+    jae skip
+    cmp byte ptr g_uhcDebtResources[ebx], 0
+    je skip
+    test dword ptr [esp+10h], 80000000h
+    je skip
+book:
+    jmp autoGo
+skip:
+    jmp autoSkip
+UhcDebtAutoGateHook ENDP
+
+; Replaces 0x49EE07 (jp 0x4C0A34), at the end of the AutoGather rate getter 0x49EBE4: stock returns a
+; rate of 1e-6 or more (the flags come from its test) and 0 for the rest. Here a negative rate of a
+; listed resource is returned too. EBX = the resource, [esp+14h] the rate.
+UhcDebtAutoRateHook PROC
+    jp keep
+    TRACE_ONCE "resourceDebt AutoGather rate (0x49EE07)"
+    cmp ebx, 16
+    jae zero
+    cmp byte ptr g_uhcDebtResources[ebx], 0
+    je zero
+    test dword ptr [esp+14h], 80000000h
+    je zero
+keep:
+    jmp rateGo
+zero:
+    jmp rateZero
+UhcDebtAutoRateHook ENDP
+
+; Replaces 0x4ED03E (jnp 0x6A8AEA), in the gather tick: stock ends the action at a rate of 1e-6 or
+; less (the flags come from its test). Here a negative rate of a listed resource goes on. ST0 = the
+; rate, kept; [esi+70h] the resource. EAX is free: fnstsw just wrote it.
+UhcDebtGatherGateHook PROC
+    jnp small
+    jmp gatherGo
+small:
+    TRACE_ONCE "resourceDebt gather gate (0x4ED03E)"
+    mov eax, dword ptr [esi+70h]
+    cmp eax, 16
+    jae stop
+    cmp byte ptr g_uhcDebtResources[eax], 0
+    je stop
+    ftst
+    fnstsw ax
+    test ah, 1                      ; below 0?
+    je stop
+    jmp gatherGo
+stop:
+    jmp gatherEnd
+UhcDebtGatherGateHook ENDP
 
 END
 ```

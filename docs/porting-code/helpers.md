@@ -1341,6 +1341,15 @@ inline constexpr Site kDebtSetClamp{"DebtSetClamp", 0x006798F4, kDebtSetClampByt
 inline constexpr std::uint8_t kDebtShareClampBytes[] = {0xC7, 0x44, 0x24, 0x18, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x4C, 0x24, 0x20};
 inline constexpr Site kDebtShareClamp{"DebtShareClamp", 0x006799D4, kDebtShareClampBytes, sizeof(kDebtShareClampBytes)};
 
+inline constexpr std::uint8_t kDebtAutoGateBytes[] = {0x0F, 0x8A, 0x93, 0x3D, 0x03, 0x00};
+inline constexpr Site kDebtAutoGate{"DebtAutoGate", 0x0048D186, kDebtAutoGateBytes, sizeof(kDebtAutoGateBytes)};
+
+inline constexpr std::uint8_t kDebtAutoRateBytes[] = {0x0F, 0x8A, 0x27, 0x1C, 0x02, 0x00};
+inline constexpr Site kDebtAutoRate{"DebtAutoRate", 0x0049EE07, kDebtAutoRateBytes, sizeof(kDebtAutoRateBytes)};
+
+inline constexpr std::uint8_t kDebtGatherGateBytes[] = {0x0F, 0x8B, 0xA6, 0xBA, 0x1B, 0x00};
+inline constexpr Site kDebtGatherGate{"DebtGatherGate", 0x004ED03E, kDebtGatherGateBytes, sizeof(kDebtGatherGateBytes)};
+
 inline constexpr std::uint8_t kXmlAttributeBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x8D, 0x44, 0x24, 0x04, 0x50, 0x52, 0xE8, 0x23, 0xFF, 0xFF, 0xFF, 0x84};
 inline constexpr Site kXmlAttribute{"XmlAttribute", 0x00598F37, kXmlAttributeBytes, sizeof(kXmlAttributeBytes)};
 
@@ -1890,7 +1899,6 @@ inline constexpr Feature kFeatures[] = {
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"unitResourceAuras", ApplyUnitResourceAuras},
-    {"resourceDebt", ApplyResourceDebt},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1944,6 +1952,7 @@ inline constexpr Feature kFeatures[] = {
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
+    {"resourceDebt", ApplyResourceDebt},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},

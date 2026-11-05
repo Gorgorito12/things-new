@@ -103,8 +103,10 @@ wonderPanelSkipAuras-wol-control 2 16 2
 overhealHitpointBars-damage-wol 20 26 2
 autoGatherScaleByContained-wol 2 36 3
 autoGatherScaleByContained-wol-control 2 36 3
-resourceDebt-wol 28 18 2
-resourceDebt-wol-control 28 18 2
+resourceDebt-autogather-wol 2 24 2
+resourceDebt-autogather-wol-control 2 24 2
+resourceDebt-wol 3 24 2
+resourceDebt-wol-control 3 24 2
 resourceGatherAuras-wol 2 36 3
 resourceGatherAuras-wol-control 2 36 3
 unitResourceAuras-depleted-wol 2 36 3

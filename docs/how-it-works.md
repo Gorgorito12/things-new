@@ -2560,8 +2560,22 @@ the call's bytes, so this one is applied after it.
 
 The add 0x49A98A clamps a sum below 1e-6 at its cold part 0x679A0E, and in its shared-resources path, once per teammate, at
 0x6799D4; the set 0x49A8C5 clamps its value at 0x6798F4. Each is a single `mov dword ptr [esp+N],0`. The hooks replace that
-instruction and skip it for a listed resource (a byte table by index): ESI in the add, EBP in the shared path, `[esp+70h]` in
-the set.
+instruction for a listed resource (a byte table by index): ESI in the add, EBP in the shared path, `[esp+70h]` in the set.
+
+**The sources.** Only three callers of the add may go below 0, told apart by the add's return address: the global trickle
+(call 0x4E0CF9, returns to 0x4E0CFE), unit AutoGather (0x4C3798, 0x4C379D) and the gather tick (0x4ED1EE, 0x4ED1F3).
+No call site is rewritten, so the check costs nothing on the normal path and the sites stay as `showGatherRate` verifies them.
+
+**The floor of the others.** For any other caller the helper reads the stockpile through 0x44EFFF on `[player+230h]`. At 0 or
+above it does what stock does, write 0. In debt it keeps the larger of the sum and the stockpile: a reduction leaves the
+debt where it was, and an income pays part of it. Writing 0 there, as stock would, would wipe the debt. A set the add itself
+called (returns 0x49A9E2 and 0x6799EE) was settled by the add's hook; any other set goes through the same helper.
+
+**Negative rates.** Three gates stop them before the add, each a jump on the compare with 1e-6: the end of the AutoGather
+getter (0x49EE07, returns 0), the AutoGather update (0x48D186, skips the amount) and the gather tick (0x4ED03E, ends the action
+at a rate of 1e-6 or less). Each hook keeps the stock branch and adds a case: a listed resource with a value below 0 goes on. The
+getter's four other callers ask for a rate above 1e-6, so the panel and the aura code see no change. The gather gate writes
+inside what `showGatherRate` and `resourceGatherAuras` verify, hence its place after them in `kFeatures`.
 
 **Why it is safe.** Costs are compared with the stockpile, so a negative one simply cannot pay. The set's other work, the
 total `+240h` and the listeners, takes the delta whatever its sign. The list comes from the cfg only.
