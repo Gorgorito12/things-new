@@ -94,7 +94,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 35 | `TeamKillBounty` | Flag on the victim: its bounty goes to the killer's whole team (used by no DE unit) | Absent, but the stock payment already has a "whole team" mode | **S** |
 | 36 | Cards that hit enemies / all | No tech flag. `CreatePower` → a timed power of type `EnemyEffect` / `TeamEffect` | Absent (`GeneralEffect` exists) | L |
 | 37 | `NextResearchIsFree` | Flag on a building proto, set by subtype `SetNextResearchFree` | Absent; a research is paid at one site when it is queued | M |
-| 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S** |
+| 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S**; both built as types (`cantBeSlowed`, 2026-11-05) |
 | 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L |
 | 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` exists only as a tech flag, and no code reading it was found | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |

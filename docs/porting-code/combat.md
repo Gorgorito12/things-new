@@ -642,7 +642,8 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 #include "../unittypes.h"
 #include "../worldtick.h"
 
-extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);  // cantslow.cpp; false when that key is off
+extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);     // cantslow.cpp; false when that key is off
+extern "C" bool __stdcall UhcCannotSnare(const char* attacker);  // cantslow.cpp; the attacking unit, or null
 
 namespace {
 
@@ -902,9 +903,13 @@ std::uint32_t TickInterval(const char* attaching) {
 }
 
 // The stock snare's modifier (snareOnlyHitUnit in how-it-works.md): stat 0 (velocity), operation 2
-// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration.
-void Snare(char* unit, float factor, std::uint32_t ms) {
-  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit)) {
+// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration. The
+// attacker is the unit whose hit attached the poison, or -1 once it is gone (then nothing stops the snare
+// on its side, as cantBeSlowed's CannotSnare needs the unit).
+void Snare(char* unit, std::int32_t attacker, float factor, std::uint32_t ms) {
+  const char* world = MainWorld();
+  const char* attackerUnit = world == nullptr || attacker < 0 ? nullptr : UnitById(world, attacker);
+  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit) && !UhcCannotSnare(attackerUnit)) {
     kSnare(unit, 0, factor, -1.0f, -1.0f, 0, 2, static_cast<std::int32_t>(ms), -1, -1, 1);
   }
 }
@@ -1029,7 +1034,7 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Atta
   dot.stacks.insert(std::upper_bound(dot.stacks.begin(), dot.stacks.end(), stackEnd, before), stackEnd);
   dot.end = dot.stacks.back();
   if (added) {
-    Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+    Snare(target, attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
   }
   if (!g_loggedFirstPoison || g_logEvery) {
     g_loggedFirstPoison = true;
@@ -1096,7 +1101,7 @@ void Tick(char* world) {
       alive = IsAlive(target);
       ShowTick(target, dealt, dot.tickColour);
       if (alive && Reached(dot.end, dot.nextTick)) {
-        Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+        Snare(target, dot.attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
       }
     }
     if (!alive || Reached(now, dot.end)) {
@@ -2500,11 +2505,14 @@ Sites: `SnareCreate` `0x4DD201` (44 B).
 ### src/features/cantslow.cpp
 
 ```cpp
-// cantBeSlowed: a unit whose proto has the abstract type CantBeSlowed ignores <TargetSpeedBoost>.
+// cantBeSlowed: a unit whose proto has the abstract type CantBeSlowed ignores <TargetSpeedBoost>, and a
+// unit whose proto has CannotSnare does not snare with its own attacks.
 //
 // Stock snares a target at one place: 0x4DD1DE tests that it can move, and 0x4DD201 pushes the arguments
-// of the modifier's creator 0x4DD22D. The hook leaves through the snare's exit for a marked target.
-// damageOverTime's snare asks UhcCantBeSlowed too. The hook is in hooks/cantslow_hooks.asm.
+// of the modifier's creator 0x4DD22D. There EBP is still the attacker's unit action, whose unit is at
+// [ebp+10h] (the one caller, 0x48F9F5 in FUN_004B7766, keeps it in EBP and FUN_0048FA07 never writes it).
+// The hook leaves through the snare's exit for a marked target or a marked attacker. damageOverTime's
+// snare asks UhcCantBeSlowed and UhcCannotSnare too. The hook is in hooks/cantslow_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -2527,21 +2535,43 @@ const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 bool g_log = false;
 int g_logLines = 0;
 std::int32_t g_type = -1;
+std::int32_t g_attackerType = -1;
+
+bool HasType(const char* unit, std::int32_t type) {
+  if (unit == nullptr || type < 0) {
+    return false;
+  }
+  const char* proto = *reinterpret_cast<const char* const*>(unit + 0x5C);
+  return proto != nullptr && kProtoIsType(proto, type);
+}
+
+std::int32_t ProtoId(const char* unit) {
+  return *reinterpret_cast<const std::int32_t*>(*reinterpret_cast<const char* const*>(unit + 0x5C) + 8);
+}
 
 }  // namespace
 
 // From the hook and from damageOverTime, with the target. True: no snare.
 extern "C" bool __stdcall UhcCantBeSlowed(const char* unit) {
-  if (unit == nullptr || g_type < 0) {
-    return false;
-  }
-  const char* proto = *reinterpret_cast<const char* const*>(unit + 0x5C);
-  if (proto == nullptr || !kProtoIsType(proto, g_type)) {
+  if (!HasType(unit, g_type)) {
     return false;
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"cantBeSlowed: proto %d ignores a snare", *reinterpret_cast<const std::int32_t*>(proto + 8));
+    uhc::Log(L"cantBeSlowed: proto %d ignores a snare", ProtoId(unit));
+  }
+  return true;
+}
+
+// From the hook and from damageOverTime, with the attacking unit (null when it is gone: then the snare
+// is as stock). True: no snare.
+extern "C" bool __stdcall UhcCannotSnare(const char* attacker) {
+  if (!HasType(attacker, g_attackerType)) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"cantBeSlowed: proto %d does not snare (CannotSnare)", ProtoId(attacker));
   }
   return true;
 }
@@ -2561,10 +2591,11 @@ Outcome ApplyCantBeSlowed(const Config& config) {
     g_log = true;
   }
   if (!VerifyAll("cantBeSlowed", {&sites::kSnareCreate}) || !RequestAbstractUnitType("CantBeSlowed", &g_type) ||
+      !RequestAbstractUnitType("CannotSnare", &g_attackerType) ||
       !WriteJmp(sites::kSnareCreate.va, reinterpret_cast<const void*>(&UhcCantBeSlowedHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"cantBeSlowed: the abstract type CantBeSlowed is on");
+  Log(L"cantBeSlowed: the abstract types CantBeSlowed (on the target) and CannotSnare (on the attacker) are on");
   return Outcome::kApplied;
 }
 
@@ -2583,6 +2614,7 @@ option casemap :none
 include common.inc
 
 UhcCantBeSlowed PROTO STDCALL unit:DWORD
+UhcCannotSnare PROTO STDCALL attacker:DWORD
 
 .data
 snareNext       dd 004DD207h    ; push 0BB8h: the rest of the creator's arguments
@@ -2591,10 +2623,15 @@ snareExit       dd 0048FA49h    ; pop esi / pop ecx ..., where the snare ends
 .code
 
 ; Replaces 0x4DD201..0x4DD206 (push 1 / push -1 / push -1), the creator's last arguments, re-executed
-; here. ESI = the target. The code after it sets ECX itself and reads neither EAX nor EDX.
+; here. ESI = the target; EBP = the attacker's unit action, [ebp+10h] its unit (FUN_004B7766 keeps it in
+; EBP, and FUN_0048FA07 does not write it). The code after it sets ECX itself and reads neither EAX nor EDX.
 UhcCantBeSlowedHook PROC
     TRACE_ONCE "cantBeSlowed (0x4DD201)"
     invoke UhcCantBeSlowed, esi
+    test al, al
+    jne skip
+    mov eax, [ebp+10h]
+    invoke UhcCannotSnare, eax
     test al, al
     jne skip
     push 1

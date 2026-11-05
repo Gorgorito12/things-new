@@ -2973,8 +2973,16 @@ member, the whole amount, when the player is below 0 (cold 0x68EA12).
 
 0x4DD1DE, the `TargetSpeedBoost` path, tests that the target can move, and 0x4DD201 pushes the arguments of the
 modifier's creator 0x4DD22D. The hook replaces the first three pushes, and leaves through 0x48FA49, the path's exit, for a
-marked target. The poison of `damageOverTime` calls the creator itself, so it asks the same function. The site is in the
+marked target or a marked attacker. The poison of `damageOverTime` calls the creator itself, so it asks the same two
+functions, with the unit whose hit attached the poison as the attacker (none once it is gone). The site is in the
 ranges `damageOverTime` and `snareOnlyHitUnit` verify, so this key comes after them in `kFeatures`.
+
+**The attacker at 0x4DD201.** FUN_0048FA07 (`thiscall(unitAction, target)`) has one caller, 0x48F9F5 in FUN_004B7766,
+which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is used as `this` with no null test at
+0x48F0EF and 0x48EAE1, so it is the attacking unit; `[ebp+4]` its tactics action). FUN_0048FA07 and its cold chunk
+0x4DD1DE..0x4DD228 write ESI, EAX, ECX and EDX but never EBP, so at 0x4DD201 `[ebp+10h]` is still the attacker. The
+hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
+in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
 
 ### trainBatchSize
 

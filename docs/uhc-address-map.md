@@ -178,7 +178,7 @@ No row is a `mismatch`: every upstream address is valid for this build.
 | resourceBounty | `resourceBounty [log]` | 0x51D669 (the immediate of `<Bounty>`'s handler); 0x4D4E0C (kill branch of TakeDamage) | confirmed, in game (2026-11-05) |
 | teamKillBounty | `teamKillBounty [log]` | 0x49BDAB (FUN_0049BD52, the amount and ID for 0x49BDC0) | confirmed, in game (2026-11-05) |
 | pillageGold | `pillageGold [log]` | 0x49B73C (`call 0x49BD52` in TakeDamage, verified from 0x49B72B); through `AddActionTagHandler`; `unittypes.*` | confirmed, in game (2026-11-05) |
-| cantBeSlowed | `cantBeSlowed [log]` | 0x4DD201 (the arguments of the snare's creator) | confirmed, in game (2026-11-05) |
+| cantBeSlowed | `cantBeSlowed [log]` | 0x4DD201 (the arguments of the snare's creator; the target in ESI, the attacker in `[ebp+10h]`) | confirmed, in game (2026-11-05), the attacker's test (`CannotSnare`) too |
 | hcTargetTechs | `hcTargetTechs [log]` | The call 0x94D0AE (applyEffects); the heads 0x620C2F (flag reader), 0x94DCB2 (removeEffects) and 0x94DDEA (pass after a load) | confirmed, in game (2026-11-05) |
 | detonationDeath | `detonationDeath [log]` | The call 0x493D8F (kill handler, in the kill queue's drain); through `AddProtoTagHandler`: 0x51DB0F | confirmed, in game (2026-11-05) |
 | trainBatchSize | `trainBatchSize [log]` | 0x9CE645 (the call of the limit 0x8D051B); through `AddProtoTagHandler`: 0x51DB0F (tail of the tag table's builder) | confirmed, in game (2026-11-05) |

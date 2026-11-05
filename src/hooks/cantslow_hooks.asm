@@ -7,6 +7,7 @@ option casemap :none
 include common.inc
 
 UhcCantBeSlowed PROTO STDCALL unit:DWORD
+UhcCannotSnare PROTO STDCALL attacker:DWORD
 
 .data
 snareNext       dd 004DD207h    ; push 0BB8h: the rest of the creator's arguments
@@ -15,10 +16,15 @@ snareExit       dd 0048FA49h    ; pop esi / pop ecx ..., where the snare ends
 .code
 
 ; Replaces 0x4DD201..0x4DD206 (push 1 / push -1 / push -1), the creator's last arguments, re-executed
-; here. ESI = the target. The code after it sets ECX itself and reads neither EAX nor EDX.
+; here. ESI = the target; EBP = the attacker's unit action, [ebp+10h] its unit (FUN_004B7766 keeps it in
+; EBP, and FUN_0048FA07 does not write it). The code after it sets ECX itself and reads neither EAX nor EDX.
 UhcCantBeSlowedHook PROC
     TRACE_ONCE "cantBeSlowed (0x4DD201)"
     invoke UhcCantBeSlowed, esi
+    test al, al
+    jne skip
+    mov eax, [ebp+10h]
+    invoke UhcCannotSnare, eax
     test al, al
     jne skip
     push 1

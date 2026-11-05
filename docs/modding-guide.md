@@ -2814,6 +2814,17 @@ on each):* the Halberdier walks away and the Skirmisher falls behind. [Full vide
 
 *In WoL, key off (the same data):* both are snared and walk level. [Full video (MP4)](media/cantBeSlowed-wol-control.mp4).
 
+![CannotSnare in WoL](media/cantBeSlowed-cannotsnare-wol.gif)
+
+*In WoL, with `cantBeSlowed` and `CannotSnare` on the Uhlan (Germans; two Settlers of 4000 HP walking the same way, two
+Uhlans on the upper one and two Hussars on the lower one):* the Settler under the Uhlans is not snared and pulls ahead.
+[Full video (MP4)](media/cantBeSlowed-cannotsnare-wol.mp4).
+
+![CannotSnare in WoL, key off](media/cantBeSlowed-cannotsnare-wol-control.gif)
+
+*In WoL, key off (the same data):* both Settlers are snared and walk level.
+[Full video (MP4)](media/cantBeSlowed-cannotsnare-wol-control.mp4).
+
 ```
 cantBeSlowed [log]
 ```
@@ -2822,19 +2833,31 @@ cantBeSlowed [log]
 <Unit name="Halberdier">
     <UnitType>CantBeSlowed</UnitType>
 </Unit>
+<Unit name="Uhlan">
+    <UnitType>CannotSnare</UnitType>
+</Unit>
 ```
 
 - **In WoL today:** every `TargetSpeedBoost` attack slows its target to 0.65 of its speed for 3 s. JTMaston's #38.
 - **Effect:** a unit whose proto has the type `CantBeSlowed` is not snared. The hit still does its damage. A
-  `damageOverTime` poison with `<AttachSnare>` does not slow it either.
-- **What it does not cover:** a speed aura or tech, which are not snares. DE's `CannotSnare`, on the attacker, is not built.
+  `damageOverTime` poison with `<AttachSnare>` does not slow it either. A unit whose proto has the type `CannotSnare`
+  (DE's flag of that name) does not snare with its own `TargetSpeedBoost` attacks, nor with a poison it attaches; its
+  hits still do their damage. Both types are DE's names, so DE data works unchanged.
+- **What it does not cover:** a speed aura or tech, which are not snares. A poison whose attacker is gone (dead or
+  deleted) snares as stock on its later ticks: the attacker's type cannot be read any more.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `cantBeSlowed: the abstract type CantBeSlowed is on`, `hook reached: cantBeSlowed (0x4DD201)`, and with `log`
-  `cantBeSlowed: proto 316 ignores a snare`.
+- **Log:** `cantBeSlowed: the abstract types CantBeSlowed (on the target) and CannotSnare (on the attacker) are on`,
+  `hook reached: cantBeSlowed (0x4DD201)`, and with `log` `cantBeSlowed: proto 316 ignores a snare` or
+  `cantBeSlowed: proto 171 does not snare (CannotSnare)`.
 - **Tested in WoL (2026-11-05):** a Halberdier and a Skirmisher of speed 4 with 4000 HP, 58 m apart, walking off with two
   Uhlans on each. With the key the Halberdier was 19.5 m ahead at the first reading, and the log shows 16 snares ignored.
   With the key off it was 4.5 m ahead, and no line. A marked Halberdier under three archers with `<AttachSnare>` logged
   19 snares ignored in 20 s. Not tested: multiplayer.
+- **`CannotSnare` tested in WoL (2026-11-05):** two Settlers of 4000 HP, speed 4, walking 44 m, one under two Uhlans
+  with the type and one under two stock Hussars. With the key the first was 10 m ahead after 10 s of walking (63.8
+  against 53.6 on the x axis) and the log counted 35 snares not applied; with the key off both walked level and the log
+  had no line. The hook was reached in the first fight (`hook reached: cantBeSlowed (0x4DD201)`). Not tested: a poison's
+  `AttachSnare` from a `CannotSnare` unit, multiplayer.
 #### veterancyBonus
 
 **Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Thursday 2026-11-05 10:17

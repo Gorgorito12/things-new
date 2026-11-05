@@ -948,6 +948,14 @@ movement".
 | Proto copy | 0x67E011, `bool thiscall(dst, src, bool)`, `ret 8` | confirmed (`cs`) | Called when a player's proto is cloned (0x8D1B60, 0x8D6576). Named `BProtoUnit` ctor 0x5F7394, dtor 0x58633D in another DLL's symbol table. |
 | BDataEffect | vtable slots 0xB9E5AC `setData` (0x6205F6), 0xB9E5C4 `playerApply` (0x7F874A), 0xB9E5C8 `playerUnapply` (0x7F877F), 0xB9E5CC `protoUnitApply` (0x7F86C0), 0xB9E5D0 `protoUnitUnapply` (0x7F8705) | confirmed (`cs`; names from another DLL's symbol table) | Fields: `+0Ch` subtype, `+18h` amount, `+1Ch` relativity byte. |
 | applyData / unapplyData | 0x8F973F / 0x8FB01C, thiscall on the target proto, `ret 20h` | confirmed (`cs`) | Switch on the subtype (tables 0x8FAFB8/0x8FAF00, 0x8FC23C/0x8FC1A8); Armor = 5Ch at 0x8FAE52 / 0x8FC144. |
+### DE parity sites (for WoL's requests #29–#42, 2026-10-30 and after)
+
+The legacy sites behind [de-parity.md](de-parity.md), "What legacy does today". Read with REA, then `cs`; the rows that
+say "in game" were driven by the feature's test.
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Snare attacker | `[ebp+10h]` at 0x4DD201, EBP = the attacker's unit action; `[ebp+4]` its tactics action | confirmed (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`) | FUN_0048FA07 has one caller, 0x48F9F5 in FUN_004B7766, which keeps the unit action in EBP and uses `[ebp+10h]` as `this` without a null test; FUN_0048FA07 and the chunk 0x4DD1DE..0x4DD228 never write EBP. `cantBeSlowed`'s `CannotSnare`. |
 | Action list | `[manager+14h]`: `+0` count, `+4` capacity, `+8` pointers | confirmed, in game | Holds the unit's fixed actions too. 16 in a Barracks; `[manager+24h]` stayed the idle action (type 7) while a Train action ran (state 14h, `[action+61h]`). Append and front through 0x48D975(item, bool front). |
 | Action add | 0x494894, `bool thiscall(manager, action, immediate, a, b)`, `ret 10h` | confirmed (`cs`), in game | With `immediate` 0 it appends; with 1 it stops the current action and makes the new one current. The queue routine calls it at 0x9CE81A. |
 | Research payment | 0x9E67E1 (Research, thiscall(action, playerId, techId), ret 8) and 0x9D54CF (CommandResearch), 0x8D946A(player, cost*) | confirmed, in game for the first | The action keeps the cost for the refund: `+74h` (0x9E68A0), `+7Ch` (0x9D5548). 0x4E2617(cost, float) fills a cost. |
