@@ -115,7 +115,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 ## Adding these features to WoL
 
-There are two ways. In both, the `wol.cfg` lines and the data edits of this guide are the same.
+There are three ways. In the first two, the `wol.cfg` lines and the data edits of this guide are the same.
 
 **1. Add the feature to WoL's own `uhc.dll` (the way to ship).** WoL's DLL has features this project
 does not have yet ([section 8](#8-wols-keys-that-are-not-implemented)), so WoL keeps its DLL and adds
@@ -166,6 +166,24 @@ list is in [wol-migration.md](wol-migration.md#wols-always-on-patches-inventory-
 - **Home cities and the profile** live in `Documents\My Games\Wars of Liberty`. A copy of WoL shares
   them with the real one. A copy that starts with other settings can change your resolution
   ([section 9](#9-troubleshooting)).
+
+**3. Run this project's code beside WoL's DLL (nothing of WoL changes).** The exe, `uhc.dll`, `wol.cfg` and `data\uhc`
+stay exactly as they are. Our code is a `dinput8.dll` with its own folder:
+
+1. From the release zip's `beside-another-dll` folder, or from `build\Release` and an empty `engine-ext` folder, copy
+   `dinput8.dll` next to `age3y.exe`, and the `engine-ext` folder next to it.
+2. Put the keys you want in `engine-ext\engine-ext.cfg`, with the syntax of `wol.cfg`. Not in `wol.cfg`.
+3. Files the keys read by default go in `engine-ext\`: `customabstracttypes.xml`. `data\uhc` is not read.
+4. Start the game as usual. `engine-ext\engine-ext.log` lists each key: `applied` or `FAILED`.
+5. To remove it, delete `dinput8.dll` and `engine-ext`. The game is as it was.
+
+- **A key that fails changes nothing:** it means WoL's DLL holds that place, and the key does not write. Almost all of
+  those are keys WoL has: keep them in `wol.cfg`. The table is in
+  [wol-uhc-map.md](wol-uhc-map.md#running-beside-wols-dll-dinput8dll-2026-11-05).
+- **`decimalPopulation`:** one cost line stays K times too large, because WoL's DLL holds it. The rest works.
+- **Every player needs the same files,** as with `wol.cfg`: the keys change the simulation.
+- **Tested in WoL (2026-11-05):** `hcTargetTechs` and `transformSpan` by effect with a control, a skirmish against a
+  German AI, and removal. Multiplayer and saved games are not tested.
 
 ## 1. What you need
 
@@ -2699,7 +2717,7 @@ accuracyTechs [log]
   and the rest of the tech works.
 - **Saved games:** on loading, the effects are applied again.
 - **Multiplayer:** the value is in the simulation: every player needs the same setting.
-- **Log:** `accuracyTechs: the Data subtype Accuracy is on`, `hook reached: tech subtype lookup (0x6206D7)`, `tech subtype
+- **Log:** `accuracyTechs: the Data subtype Accuracy is on`, `hook reached: tech subtype lookup (0x61FF5D)`, `tech subtype
   apply (0x8F978D)`, and with `log` one line per action: `accuracyTechs: action 68, relativity 3, amount 0.05: 1 -> 0.05`.
   The number is the action's ID, the same for every proto.
 - **Tested in WoL (2026-11-05):**

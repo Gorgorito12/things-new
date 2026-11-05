@@ -83,7 +83,7 @@ Outcome ApplyCustomProtoUnitCommands(const Config& config) {
   }
   std::wstring path;
   std::string text;
-  if (!ReadDataListFile(args->empty() ? std::string() : args->front(), L"data\\uhc\\customprotounitcommands.xml",
+  if (!ReadDataListFile(args->empty() ? std::string() : args->front(), L"customprotounitcommands.xml",
                         &path, &text)) {
     Log(L"customProtoUnitCommands: cannot read %ls (error %lu)", path.c_str(), GetLastError());
     return Outcome::kFailed;

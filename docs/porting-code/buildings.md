@@ -370,7 +370,7 @@ Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkratea
 
 Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
 
-Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `ModifyTypeNameTail` `0x5FE6C7` (27 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
+Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
 
 ### src/features/bwrauras.cpp
 
@@ -581,10 +581,11 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  // The name hook and its continuation, the compare it calls, three call sites (the Train one is
-  // checked alone below), the getter's tail, and the stock code the factor calls or mirrors.
+  // The compare the name hook calls, three call sites (the Train one is checked alone below), the
+  // getter's tail, and the stock code the factor calls or mirrors. AddModifyType checks the name hook:
+  // it may be in place already.
   if (!VerifyAll("buildingWorkRateAuras",
-                 {&sites::kModifyTypeNameTail, &sites::kModifyTypeNameCompare, &sites::kWorkRateResearchCall,
+                 {&sites::kModifyTypeNameCompare, &sites::kWorkRateResearchCall,
                   &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,

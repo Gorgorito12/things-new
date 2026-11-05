@@ -52,6 +52,19 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    The DLL then runs every feature in the order of `kFeatures` in `src/features.h`. Each returns
    *not configured*, *applied* or *failed*.
 
+### Beside another DLL
+
+The same sources also build `dinput8.dll` (`src/engineext.cpp`), for a game whose loader runs another `UHC.dll` that must stay
+as it is. The exe imports `DINPUT8.dll` and Windows looks next to the exe first, so it loads with no change to any file.
+Its six exports go on to the system's DLL by full path, resolved on the first call, so nothing is loaded under the loader lock.
+
+`DllMain` checks the exe and only moves the last `jmp` of the boot stub, at 0xB836EC. So the order is: the stub runs the other
+DLL's `UHCMain`, the `jmp` goes to `EngineExtMain`, which loads `engine-ext\engine-ext.cfg` and applies the keys through the same
+feature loop as `UHC.dll`, and then to the game's entry point. All its files are in `engine-ext\`.
+
+Coming second is what keeps the two apart: `VerifyAll` sees the other DLL's patches, so a key that needs one of those sites
+logs `FAILED` and writes nothing.
+
 ## 2. Verify, then patch
 
 Every byte the DLL writes is checked first:
@@ -1252,8 +1265,8 @@ each target, with the team flag clear. applyEffects goes through its `call`; the
 a function with the same arguments and `ret`, and an asm stub re-executes the replaced head for the stock call.
 
 The flag name is read by FUN_00620C2F, a chain of string compares called once, at 0x620C23, which ignores what it does not
-know. The key wraps that call and keeps the tech's definition, the routines' `this`, in a set. The set is only written during the
-load, so the game's lookups are lock-free.
+know. The key hooks the head of that reader, not its call, so it still works when another DLL wraps the call, and keeps the
+tech's definition, the routines' `this`, in a set. The set is only written during the load, so the game's lookups are lock-free.
 
 The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
 
@@ -1411,8 +1424,8 @@ action's `+38h`, the same object: a tech on one proto reached neither another pr
 another player.
 
 `techsubtypes.*` gained `AddTechActionSubtype`. setData reads the `action` attribute only for the subtypes it knows, so
-the lookup's replacement does it, for a subtype on actions: it runs in the call at 0x6206D7 with the effect in ESI and the
-node in EBP. `allactions` needs nothing: setData has already set bit 40h of `[effect+9]`, and protoUnitApply passes it as
+the lookup's hook does it, for a subtype on actions, with the effect and the node the attribute read at 0x6206B2 kept.
+`allactions` needs nothing: setData has already set bit 40h of `[effect+9]`, and protoUnitApply passes it as
 applyData's 8th argument. With it the key's handler runs for every action in the set, `[set+1Ch]`, count `[set+20h]`.
 
 - **Observed in game:** see the tests in the modding guide.
@@ -2981,9 +2994,10 @@ subtype reaches the field.
 
 New subtypes go through `techsubtypes.*`, shared by the keys that add one:
 
-- The stock name lookup 0x61FF5D is hash based and its table is sized at startup, so the `call` at 0x6206D7 in
-  BDataEffect::setData is replaced: a name stock does not know is looked up in our list and gets an ID from 100h. The
-  rest of setData treats an unknown ID as a plain subtype.
+- The stock name lookup 0x61FF5D is hash based and its table is sized at startup, so its head is hooked: a name stock does
+  not know is looked up in our list and gets an ID from 100h. The rest of setData treats an unknown ID as a plain subtype.
+  The hook is on the lookup, not on the call at 0x6206D7, so it still works when another DLL replaces that call. The
+  `call` at 0x6206B2 keeps the effect and its node, ESI and EBP, for the lookup. The other caller, 0x621C29, gets stock's answer.
 - The two switches, `cmp eax,63h / ja` at 0x8F978D in applyData and `cmp eax,5Eh / ja` at 0x8FB051 in unapplyData, send
   an ID from 100h to the key's handler, then to the exit of the case: 0x8FAE9E and 0x8FC191. Any other ID continues as
   stock.

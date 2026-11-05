@@ -30,7 +30,8 @@ keeping the license notice.
 **What has not been done:** none of this has been built inside WoL's DLL. We only have its binary, not
 its source, so what this page says about `remod` and `IUHCConfig` comes from reading the binary. Every
 feature ran on WoL's exe and data with this project's DLL in place of WoL's
-([section 7](#7-what-is-not-verified)), never next to WoL's own code.
+([section 7](#7-what-is-not-verified)). Next to WoL's own code, they run from a separate `dinput8.dll`
+([section 8](#8-beside-wols-dll-without-porting)), with no port.
 
 Contents:
 1. [Check that you can use the sites](#1-check-that-you-can-use-the-sites)
@@ -40,6 +41,7 @@ Contents:
 5. [Integration rules](#5-integration-rules)
 6. [Data and testing](#6-data-and-testing)
 7. [What is not verified](#7-what-is-not-verified)
+8. [Beside WoL's DLL, without porting](#8-beside-wols-dll-without-porting)
 
 ## 1. Check that you can use the sites
 
@@ -67,7 +69,7 @@ says so:
 | `SmartHealRange` | `0x9CDA21` | `0x1E` B | 5 B at `0x9CDA36` | `E8 F2 F4 E2 FF` (`call 7FCF2Dh`) | the heal search's range test; smartHealTargets |
 | `SmartHealLoopEnd` | `0x9CDA3F` | `0x40` B | 5 B at `0x9CDA58` | `5E 5B 5F 32 C0` (`pop esi; pop ebx; pop edi; xor al,al`) | the search's loop step, no-target exit and accept path; smartHealTargets |
 | `SmartHealLoop` | `0x9CD923` | `0x5F` B | — | — | the search's loop head (verified only); smartHealTargets |
-| `AbstractTypesEnd` | `0x51BA23` | `0x15` B | 5 B at `0x51BA31` | `5F 5E B0 01 5B` (`pop edi; pop esi; mov al,1; pop ebx`) | epilogue of the abstract unit type registration (FUN_0051A5DC) |
+| `AbstractTypesEnd` | `0x51BA2F` | 9 B | 5 B at `0x51BA31` | `5F 5E B0 01 5B` (`pop edi; pop esi; mov al,1; pop ebx`) | epilogue of the abstract unit type registration (FUN_0051A5DC) |
 | `DotProtoActionTag` | `0x5FA10F` | `0x1B` B | 8 B at `0x5FA11E` | `85 C0 0F 84 C7 33 00 00` (`test eax,eax; je 5FD4EDh`) | unknown-tag fall-through of the action parser FUN_005F98A0; the shared action tag hook (`actiontags.cpp`: damageOverTime, spreadAnyAccuracy) |
 | `DotProtoActionCall` | `0x5FA20E` | 5 B | — | — | the `<ProtoAction>` handler's `call 5F98A0h`; the tag hook checks its return address 0x5FA213 |
 | `TacticsActionCall` | `0x5FA60A` | `0x19` B | — | — | a tactics `<action>`'s parse in FUN_005FA5B3, up to its `call 5F98A0h`; the tag hook checks its return address 0x5FA623 |
@@ -205,7 +207,9 @@ new keys was compared with that list:
 |---|---|---|
 | `decimalPopulation` | `PopFormatCost3`: WoL patches `0x710652` (4 B), the `call` at `0x710651`. This is `DoubleShipmentsInspectFixFeature`, which also marks `0x71063C`. | Chain them: call WoL's wrapper from the population text wrapper. Also scale WoL's basePop hook at `0x4581F3` (see the contract). |
 | `techRenameEffect` | `TechRenameEffectParse` (`0x6205C9`, 4 B) and `TechRenameRegister` (`0x524CB1`, 4 B): WoL's own `SetTechName` and `RandomTech`. | Don't install a second hook. Change WoL's effect (see the contract). |
-| Extra abstract unit types | `AbstractTypesEnd`: WoL patches `0x51BA2B` (4 B). The hook itself, at `0x51BA31`, is not touched. | Start the verified range at `0x51BA2F`, or use WoL's own registration (see the contract). |
+| Extra abstract unit types | WoL patches `0x51BA2B` (4 B), just before `AbstractTypesEnd`. The hook itself, at `0x51BA31`, is not touched. | The range now starts at `0x51BA2F`, so nothing to do. Or use WoL's own registration (see the contract). |
+| Tech subtypes | WoL replaces `0x6206BF`..`0x6206CF` with its own call and a `jmp 0x6206DC`, so the stock lookup call at `0x6206D7` never runs. | Our hook is now on the head of the lookup, `0x61FF5D`, and on the attribute read at `0x6206B2`; both are stock. |
+| `hcTargetTechs` | WoL wraps the flag reader's call at `0x620C23`. | Our hook is now on the reader's head, `0x620C2F`, which WoL's wrapper calls for the flags it does not know. |
 
 No other new key overlaps: none of their sites, and none of the addresses their code writes directly,
 is in the list. That covers `transformInventory`, `noTrainNearEnemyTC`, the overheal keys,
@@ -358,8 +362,7 @@ Code: [helpers](porting-code/helpers.md#extra-abstract-unit-types).
   - it then re-executes `pop edi; pop esi; mov al,1; pop ebx` and jumps to `0x51BA36`.
 - **In WoL's DLL:** it reads `data\uhc\customabstracttypes.xml` always, through a patch at `0x51BA2B`, just
   before this hook. So:
-  - the hook can stay: its `jmp` at `0x51BA31` does not touch WoL's patch, and it runs after it. Start the
-    `AbstractTypesEnd` range at `0x51BA2F`, or `VerifyAll` refuses;
+  - the hook can stay: its `jmp` at `0x51BA31` does not touch WoL's patch, and it runs after it;
   - or use WoL's registration, and skip this one. Then add each marker name to that file. Two conditions:
   - the name must be registered before the protos load, so the proto loader sets its bit;
   - its ID must reach the feature's variable (`g_uhcHealNonIdleType`, `g_uhcLifespanType`, …) on
@@ -656,8 +659,9 @@ Code: [techs](porting-code/techs.md#transformspan). It needs `AddWorldTick`, in 
 
 Code: [techs](porting-code/techs.md#hctargettechs).
 
-- **Sites:** `call`s at `0x620C23` (`E8` to `0x620C2F`) and `0x94D0AE` (to `0x94DAE1`); a 6-byte `jmp` at `0x94DCB2`
-  (`53 55 8B 6C 24 0C`) and a 7-byte one at `0x94DDEA` (`53 55 57 8B 7C 24 10`). Check them against your DLL first.
+- **Sites:** a 5-byte `jmp` at `0x620C2F` (`56 8B 74 24 08`), the head of the flag reader; a `call` at `0x94D0AE` (to
+  `0x94DAE1`); a 6-byte `jmp` at `0x94DCB2` (`53 55 8B 6C 24 0C`) and a 7-byte one at `0x94DDEA`
+  (`53 55 57 8B 7C 24 10`). Check them against your DLL first.
 - **Test:** a tech with the flag: the enemy's units change, the owner's do not.
 
 ### techPrereqRecheck
@@ -727,7 +731,8 @@ Code: [techs](porting-code/techs.md#transformupdateslos).
 Code: [combat](porting-code/combat.md#accuracytechs). It needs `AddTechActionSubtype`, in the
 [helpers](porting-code/helpers.md#tech-subtypes).
 
-- **Sites:** those of the tech subtypes: the `call` at `0x6206D7` and the 9-byte `jmp`s at `0x8F978D` and `0x8FB051`.
+- **Sites:** those of the tech subtypes: the 5-byte `jmp` at `0x61FF5D`, the `call` at `0x6206B2` and the 9-byte `jmp`s at
+  `0x8F978D` and `0x8FB051`.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#accuracytechs) on a `Crossbowman`: they miss.
 
 ### broadsideMuzzleLimit
@@ -1086,8 +1091,8 @@ Code: [techs](porting-code/techs.md#transforminventory).
 Code: [buildings](porting-code/buildings.md#costescalationtechs). It needs `AddTechSubtype`, in the
 [helpers](porting-code/helpers.md#tech-subtypes).
 
-- **Sites:** the `call` at `0x6206D7` (`E8 81 F8 FF FF`), and 9-byte `jmp`s at `0x8F978D` (`83 F8 63 0F 87 5E 17 00 00`) and
-  `0x8FB051` (`83 F8 5E 0F 87 40 11 00 00`). Check them against your DLL first: another key that adds a Data subtype
+- **Sites:** a 5-byte `jmp` at `0x61FF5D` (`57 8B 7C 24 08`), the `call` at `0x6206B2` (`E8 80 88 F7 FF`), and 9-byte `jmp`s
+  at `0x8F978D` (`83 F8 63 0F 87 5E 17 00 00`) and `0x8FB051` (`83 F8 5E 0F 87 40 11 00 00`). Check them against your DLL first: another key that adds a Data subtype
   must share them.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#costescalationtechs): the button's cost changes
   and the food drops by it.
@@ -1685,3 +1690,16 @@ Code: [population](porting-code/population.md#decimalpopulation).
   covered: AI scripts that expect a Town Center (a tagged AI stayed idle), the engine AI's
   automatic base, the age-up picker, the start camera, the `Maintain` spawn gate, the water
   shipment point.
+
+## 8. Beside WoL's DLL, without porting
+
+`dinput8.dll` is this project's code as a DLL of its own: WoL's exe imports `DINPUT8.dll`, so Windows loads the one next to
+the exe, with no change to any WoL file. It moves the last `jmp` of the boot stub, so it runs after WoL's `UHCMain`, and
+every key checks its sites as usual. To install it, see the
+[modding guide](modding-guide.md#adding-these-features-to-wol); which keys work is in
+[wol-uhc-map.md](wol-uhc-map.md#running-beside-wols-dll-dinput8dll-2026-11-05).
+
+- **It is not a port:** WoL's DLL does not know the keys, and its hooks stay first. A port is still the way to change
+  behavior at the sites WoL holds.
+- **Limit:** a key whose site WoL holds cannot run from `dinput8.dll` unless the hook can move to code WoL's replacement
+  still calls, as `hcTargetTechs` and the tech subtypes did. The hook must not be written over WoL's.

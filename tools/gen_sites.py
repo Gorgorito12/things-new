@@ -177,9 +177,10 @@ SITES = [
     # (0x490881) and the Regeneration dance (0x67A03B)
     ("RegenAddHp", 0x49087C, 0x12),
     ("DanceRegenAddHp", 0x67A036, 0x15),
-    # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
-    # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
-    ("AbstractTypesEnd", 0x51BA23, 0x15),
+    # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the last
+    # loop's jl and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret. It starts at
+    # the jl because the loop's bounds are not ours: a DLL that lengthens the list writes them
+    ("AbstractTypesEnd", 0x51BA2F, 9),
     # damageOverTime: TakeDamage FUN_0049B3D9's entry, sub esp,8Ch, and the cmp byte
     # [esp+0C0h],1 the trampoline continues at
     ("DotTakeDamageEntry", 0x49B3D9, 14),
@@ -844,7 +845,8 @@ SITES = [
     ("ModifyTypeNameCompare", 0x443C10, 0x10),
     # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
     # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
-    ("DataSubtypeLookupCall", 0x6206D7, 5),
+    ("DataSubtypeLookupHead", 0x61FF5D, 5),
+    ("DataSubtypeAttrCall", 0x6206B2, 5),
     # teamKillBounty: FUN_0049BD52's mov ecx,[esp+14h] / mov edx,[esi], the amount and the killer's ID for
     # the team's XP routine 0x49BDC0
     ("TeamBountyPay", 0x49BDAB, 6),
@@ -852,10 +854,10 @@ SITES = [
     # immediate), and the head of TakeDamage's kill branch, mov ecx,[esp+28h] / push ecx
     ("BountyTagHandler", 0x51D669, 4),
     ("BountyKillBranch", 0x4D4E0C, 5),
-    # hcTargetTechs: the call of the tech <Flag> reader FUN_00620C2F, the only call of applyEffects, and the
+    # hcTargetTechs: the head of the tech <Flag> reader FUN_00620C2F (push esi / mov esi,[esp+8]), the only call of applyEffects, and the
     # heads of removeEffects (push ebx / push ebp / mov ebp,[esp+0Ch]) and of the pass after a load
     # (push ebx / push ebp / push edi / mov edi,[esp+10h]); the check of who is an enemy, verify only
-    ("TechFlagCall", 0x620C23, 5),
+    ("TechFlagHead", 0x620C2F, 5),
     ("TechApplyCall", 0x94D0AE, 5),
     ("TechRemoveHead", 0x94DCB2, 6),
     ("TechLoadHead", 0x94DDEA, 7),
