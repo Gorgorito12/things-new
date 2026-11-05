@@ -2558,9 +2558,10 @@ the call's bytes, so this one is applied after it.
 
 ### resourceDebt
 
-The add 0x49A98A clamps a sum below 1e-6 at its cold part 0x679A0E, and the set 0x49A8C5 clamps its value at 0x6798F4. Each
-is a single `mov dword ptr [esp+N],0` followed by a `jmp` back. The hooks replace that instruction and skip it for a listed
-resource (a byte table by index): ESI in the add, `[esp+70h]` in the set.
+The add 0x49A98A clamps a sum below 1e-6 at its cold part 0x679A0E, and in its shared-resources path, once per teammate, at
+0x6799D4; the set 0x49A8C5 clamps its value at 0x6798F4. Each is a single `mov dword ptr [esp+N],0`. The hooks replace that
+instruction and skip it for a listed resource (a byte table by index): ESI in the add, EBP in the shared path, `[esp+70h]` in
+the set.
 
 **Why it is safe.** Costs are compared with the stockpile, so a negative one simply cannot pay. The set's other work, the
 total `+240h` and the listeners, takes the delta whatever its sign. The list comes from the cfg only.

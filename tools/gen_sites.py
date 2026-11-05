@@ -1053,6 +1053,9 @@ SITES = [
     # jmp back each continues at
     ("DebtAddClamp", 0x679A0E, 13),
     ("DebtSetClamp", 0x6798F4, 13),
+    # resourceDebt: the third clamp, in the add's shared-resources path, and the mov it continues at. A
+    # jp at 0x6799D2 jumps over it to that continuation.
+    ("DebtShareClamp", 0x6799D4, 12),
     # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
     # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
     # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)

@@ -1584,7 +1584,7 @@ END
 
 Contract: [resourceDebt](../porting-to-another-dll.md#resourcedebt).
 
-Sites: `DebtSetClamp` `0x6798F4` (13 B), `DebtAddClamp` `0x679A0E` (13 B).
+Sites: `DebtSetClamp` `0x6798F4` (13 B), `DebtShareClamp` `0x6799D4` (12 B), `DebtAddClamp` `0x679A0E` (13 B).
 
 ### src/features/resourcedebt.cpp
 
@@ -1592,9 +1592,9 @@ Sites: `DebtSetClamp` `0x6798F4` (13 B), `DebtAddClamp` `0x679A0E` (13 B).
 // resourceDebt: a player's stockpile of the listed resources may go below 0.
 //
 // Stock: a negative ResourceTrickleRate, with MinimumResourceTrickleRate lowered too, drains a
-// stockpile, and it stops at 0: the add 0x49A98A clamps the sum at its cold part 0x679A0E, and the
-// set 0x49A8C5 clamps its value at 0x6798F4. With the key those two clamps skip the listed
-// resources. Nothing else changes: a cost is compared with the stockpile, so a player in debt
+// stockpile, and it stops at 0: the add 0x49A98A clamps the sum at its cold part 0x679A0E, in its
+// shared-resources path at 0x6799D4 (once per teammate), and the set 0x49A8C5 clamps its value at
+// 0x6798F4. With the key those three clamps skip the listed resources. Nothing else changes: a cost is compared with the stockpile, so a player in debt
 // cannot pay until the stockpile is back above the cost. The hooks are in
 // hooks/resourcedebt_hooks.asm.
 #include <cstdint>
@@ -1611,6 +1611,7 @@ std::uint8_t g_uhcDebtResources[16] = {};  // by resource index; 1: no floor at 
 
 void UhcDebtAddHook();
 void UhcDebtSetHook();
+void UhcDebtShareHook();
 }
 
 namespace {
@@ -1620,8 +1621,22 @@ struct ResourceName {
   int index;
 };
 constexpr ResourceName kResources[] = {{"Gold", 0}, {"Coin", 0}, {"Wood", 1}, {"Food", 2}};
+constexpr int kMaxLogLines = 200;
+
+bool g_log = false;
+int g_logLines = 0;
 
 }  // namespace
+
+// From the add's two hooks, when a listed resource's sum stays below 0.
+extern "C" void __stdcall UhcDebtNote(const char* player, std::int32_t resource, float amount) {
+  if (!g_log || g_logLines >= kMaxLogLines || player == nullptr) {
+    return;
+  }
+  ++g_logLines;
+  uhc::Log(L"resourceDebt: player %d, resource %d at %.1f", *reinterpret_cast<const std::int32_t*>(player), resource,
+           static_cast<double>(amount));
+}
 
 namespace uhc {
 
@@ -1632,6 +1647,10 @@ Outcome ApplyResourceDebt(const Config& config) {
   }
   std::string list;
   for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
     int index = -1;
     for (const ResourceName& resource : kResources) {
       if (_stricmp(arg.c_str(), resource.name) == 0) {
@@ -1649,11 +1668,12 @@ Outcome ApplyResourceDebt(const Config& config) {
     g_uhcDebtResources[0] = g_uhcDebtResources[1] = g_uhcDebtResources[2] = 1;
     list = "Food Wood Gold";
   }
-  if (!VerifyAll("resourceDebt", {&sites::kDebtAddClamp, &sites::kDebtSetClamp})) {
+  if (!VerifyAll("resourceDebt", {&sites::kDebtAddClamp, &sites::kDebtSetClamp, &sites::kDebtShareClamp})) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(sites::kDebtAddClamp.va, reinterpret_cast<const void*>(&UhcDebtAddHook), 8) ||
-      !WriteJmp(sites::kDebtSetClamp.va, reinterpret_cast<const void*>(&UhcDebtSetHook), 8)) {
+      !WriteJmp(sites::kDebtSetClamp.va, reinterpret_cast<const void*>(&UhcDebtSetHook), 8) ||
+      !WriteJmp(sites::kDebtShareClamp.va, reinterpret_cast<const void*>(&UhcDebtShareHook), 8)) {
     return Outcome::kFailed;
   }
   Log(L"resourceDebt: stockpiles of %hs may go below 0 (multiplayer unverified)", list.c_str());
@@ -1675,41 +1695,72 @@ option casemap :none
 include common.inc
 
 EXTERN g_uhcDebtResources:BYTE
+UhcDebtNote PROTO STDCALL player:DWORD, resource:DWORD, amount:DWORD
 
 .data
 addNext     dd 0049A9D0h    ; mov ecx,[esp+18h]: the add goes on to the set
 setNext     dd 0049A8E3h    ; mov edi,[esp+70h]: the set goes on
+shareNext   dd 006799DCh    ; mov ecx,[esp+20h]: the shared add goes on to the set
 
 .code
 
 ; Replaces 0x679A0E (mov dword ptr [esp+10h],0), the clamp of the add 0x49A98A, reached when the sum
-; is below 1e-6. ESI = the resource; [esp+10h] holds the sum. EAX is free: the continuation reloads it.
+; is below 1e-6. EBP = the player, ESI = the resource; [esp+10h] holds the sum. EAX is free: the
+; continuation reloads it. FPU stack empty.
 UhcDebtAddHook PROC
     TRACE_ONCE "resourceDebt add (0x679A0E)"
     cmp esi, 16
     jae clamp
     cmp byte ptr g_uhcDebtResources[esi], 0
-    jne done
+    je clamp
+    pushad
+    push dword ptr [esp+30h]
+    push esi
+    push ebp
+    call UhcDebtNote
+    popad
+    jmp addNext
 clamp:
     mov dword ptr [esp+10h], 0      ; stolen 0x679A0E
-done:
     jmp addNext
 UhcDebtAddHook ENDP
 
-; Replaces 0x6798F4 (mov dword ptr [esp+74h],0), the clamp of the set 0x49A8C5. [esp+70h] = the
-; resource, [esp+74h] the value. EAX is free: the continuation writes it before reading it.
+; Replaces 0x6798F4 (mov dword ptr [esp+74h],0), the clamp of the set 0x49A8C5. ESI = the player,
+; [esp+70h] = the resource, [esp+74h] the value. EAX is free: the continuation writes it before
+; reading it. FPU stack empty.
 UhcDebtSetHook PROC
     TRACE_ONCE "resourceDebt set (0x6798F4)"
     mov eax, dword ptr [esp+70h]
     cmp eax, 16
     jae clamp
     cmp byte ptr g_uhcDebtResources[eax], 0
-    jne done
+    je clamp
+    jmp setNext
 clamp:
     mov dword ptr [esp+74h], 0      ; stolen 0x6798F4
-done:
     jmp setNext
 UhcDebtSetHook ENDP
+
+; Replaces 0x6799D4 (mov dword ptr [esp+18h],0), the clamp of the add's shared-resources path, once
+; per teammate. EDI = the teammate, EBP = the resource; [esp+18h] holds the sum. EAX is free: the
+; continuation does not read it. FPU stack empty.
+UhcDebtShareHook PROC
+    TRACE_ONCE "resourceDebt shared add (0x6799D4)"
+    cmp ebp, 16
+    jae clamp
+    cmp byte ptr g_uhcDebtResources[ebp], 0
+    je clamp
+    pushad
+    push dword ptr [esp+38h]
+    push ebp
+    push edi
+    call UhcDebtNote
+    popad
+    jmp shareNext
+clamp:
+    mov dword ptr [esp+18h], 0      ; stolen 0x6799D4
+    jmp shareNext
+UhcDebtShareHook ENDP
 
 END
 ```

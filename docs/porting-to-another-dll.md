@@ -1257,8 +1257,8 @@ Check it in the game: an aura with `MineGatherRate` 2 on an Explorer, and `showG
 
 Code: [gathering](porting-code/gathering.md#resourcedebt).
 
-- **Sites:** an 8-byte `jmp` at `0x679A0E` (`C7 44 24 10 00 00 00 00`), continue at `0x49A9D0`; and at `0x6798F4` (`C7 44 24 74 00
-  00 00 00`), continue at `0x49A8E3`. Neither overlaps WoL's DLL.
+- **Sites:** an 8-byte `jmp` at `0x679A0E` (`C7 44 24 10 00 00 00 00`), continue at `0x49A9D0`; at `0x6798F4` (`C7 44 24 74 00 00
+  00 00`), continue at `0x49A8E3`; and at `0x6799D4` (`C7 44 24 18 00 00 00 00`), continue at `0x6799DC`. None overlaps WoL's DLL.
 
 ### showGatherRate
 

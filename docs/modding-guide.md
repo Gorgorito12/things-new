@@ -3125,7 +3125,7 @@ at 88 s, −250 at 103 s. Gold, which is not listed, stays at 0 when a trigger t
 *In WoL, key off (the same scene):* the food stops at 0. [Full video (MP4)](media/resourceDebt-wol-control.mp4).
 
 ```
-resourceDebt [Food] [Wood] [Gold]       no resource: the three
+resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
 ```
 
 - **In WoL today:** a negative trickle drains a stockpile, and it stops at 0. JTMaston's #24 asks for debt. He did not
@@ -3144,14 +3144,20 @@ resourceDebt [Food] [Wood] [Gold]       no resource: the three
   −140, an order to train was refused: no queue, no population, no charge. The panel shows the negative number.
 - **Any reduction counts:** with the key, a trigger or an effect that takes more than the stockpile also leaves a debt
   of that resource.
-- **Not covered:** shared resources between teammates (the add has another path there) were not read.
+- **Shared resources:** with the team option on, the add divides the amount among the teammates, each with its own floor at
+  0, which the key also lifts. Tested on the player alone (the game ran that path, and the food reached −1261); the real
+  split between two allies was not tested, because the test maps hold 2 players.
+- **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no error, between
+  −3.6 and −20.7 food, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers
+  kept working.
 - **Log:** `resourceDebt: stockpiles of Food may go below 0 (multiplayer unverified)`, `hook reached: resourceDebt add
-  (0x679A0E)` and `resourceDebt set (0x6798F4)`. An unknown resource: `FAILED`.
+  (0x679A0E)`, `resourceDebt set (0x6798F4)`, and `resourceDebt shared add (0x6799D4)`. With `log`, the first 200 sums below
+  0: `resourceDebt: player 2, resource 2 at -13.0`. An unknown resource: `FAILED`.
 - **Simulation:** every player needs the same line.
 - **Saved games:** a debt saved at −80 loaded at −100, two seconds of trickle later.
 - **Performance:** runs only when a sum falls below 0.
-- **Status:** confirmed (single player, on WoL): the rates above, the refused order, the saved game. The AI played on with the
-  key in the same skirmish, without being in debt: **how an AI behaves in debt was not tested**. Multiplayer not tested.
+- **Status:** confirmed (single player, on WoL): the rates above, the refused order, the saved game, an AI in debt, the shared
+  path on one player. Two allies sharing a debt and multiplayer not tested.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 
@@ -3859,9 +3865,10 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 - **Not covered:** placement that skips this check or runs it without a player's knowledge: the
   scenario editor, units created by triggers or random map scripts, and the in-place
   transformation of a unit into a socketed building.
-- **AI:** an AI build plan that is given a socket takes the first socket of the right type,
-  whatever its owner, and then fails its placement check on a refused one. An AI script that
-  hands a build plan a socket should pick one that Gaia owns.
+- **AI:** in tests with a socket that the AI owned (a Germans AI, `SocketTradeRoute` without `ForceToGaia`), neither a
+  `createSimpleBuildPlan` for a Trading Post nor `aiTaskUnitBuild` at the socket's position built anything, **with the key
+  off**, and this key's hook was never reached with it on. The AI's plans also go through the snap that takes only Gaia's
+  sockets (0x87DB30 → 0xA036BB). So no path that reaches this check is known yet: WoL's exact steps are needed.
 - **`log`:** one line per refused order, once per socket, owner, player and building in a game
   (at most 1000 per game): an AI build plan that picked a refused socket may retry on every
   update.
