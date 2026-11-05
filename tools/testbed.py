@@ -675,7 +675,8 @@ def write_map(bed, name, specs):
     for i, (player, proto, count, x, z) in enumerate(groups):
         unit_lines += [
             f'   int uhcGroup{i} = rmCreateObjectDef("uhc group {i}");',
-            f'   rmAddObjectDefItem(uhcGroup{i}, "{proto}", {count}, 3.0);',
+            # What does not fit in the radius is not placed: 120 units in 3 m gave none.
+            f'   rmAddObjectDefItem(uhcGroup{i}, "{proto}", {count}, {3.0 if count <= 12 else round(count ** 0.5 * 2, 1)});',
             f"   rmSetObjectDefMinDistance(uhcGroup{i}, 0.0);",
             f"   rmSetObjectDefMaxDistance(uhcGroup{i}, 2.0);",
             f"   rmPlaceObjectDefAtLoc(uhcGroup{i}, {player}, {x}, {z}, 1);",

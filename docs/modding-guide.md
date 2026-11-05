@@ -2125,6 +2125,7 @@ detonationDeath [log]
 - **Log:** `detonationDeath: the proto tag DetonationProtoAction is on`, and with `log`: `detonationDeath: proto 294 fires Build` and
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
 - **Tested in WoL (2026-11-05):**
+  - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
   - A kill by trigger, combat with 6 `Pikeman`, an expired `Lifespan`: each killed the enemy `Coureur` around it.
   - `Destroy`: no blast, and the 3 `Coureur` kept 180 HP.
   - Own units in the blast with `GAIAEnemy`: 180 HP kept, the enemy's dead. With `GAIAEnemySelfAlly`: the own ones died too.
@@ -2864,6 +2865,7 @@ veterancyBonus [log]
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
   `veterancyBonus: unit 0 keeps 4 kills as proto 324`. A row without `kills`, `modifytype` or a value is logged and ignored.
 - **Tested in WoL (2026-11-05):**
+  - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
   - With `transformSpan` on the same units: Hussars of 2 kills went to Dragoon and back in 15 s and kept their count; one killed as a Dragoon and came back with 3. `36 applied, 0 failed`.
   - Hits on a Settler, base 26.4: ×1.5 39.6, ×2 52.8, ×3 at 8 kills 79.2. Against the same unit with no rows: 26.4 all game.
   - Ranged: a `Crossbowman` went from 18 to 27 a hit, and its hit points rose at the second kill.
@@ -4444,6 +4446,7 @@ sharedBuildLimit [log]
 - **Performance:** on and off, twice each, with the selected TC's proto in a group of 110 protos: 635–641 fps on, 640–649
   off, 0.23 ms of update in all four. That scene had 14 villagers: the 120 asked for did not fit on the map.
 - **Tested in WoL (2026-11-05):**
+  - A real 3-player skirmish, the human and a British AI against a German AI, `Settler` limited to 14 with `TeamBuildLimit`: the ally stopped at 8 beside the human's 6 (`room 8 of 14`), and the lone German had room for 14 and reached 12 in 5 minutes. Key off, the ally reached 14 alone.
   - `AbstractVillager` on `AFRICANvillager`, limit 15, 9 alive and 3 `Coureur`: eight clicks trained 3 and charged 300, and
     the tooltip said "15 out of 15".
   - Two protos with weights, limit 6 (the video): 2 alive, one Opolcheniye of weight 2, three clicks on the Landwehr and
@@ -5004,6 +5007,7 @@ transformSpan [log]
   transformed and per unit turned back: `transformSpan: unit 1, proto 295 -> 312, back to 295 in 20.0 s, at game time 30.0 s`,
   `transformSpan: unit 1 turned back, proto 312 -> 295, game time 50.0 s`, `transformSpan: unit 3 is gone`.
 - **Tested in WoL (2026-11-05):**
+  - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
   - Every case above, each in its own scene.
   - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
