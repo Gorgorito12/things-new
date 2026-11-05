@@ -12,6 +12,8 @@ Contents:
 - [costEscalationTechs](#costescalationtechs)
 - [trainBatchSize](#trainbatchsize)
 - [sharedBuildLimit](#sharedbuildlimit)
+- [doNotQueue](#donotqueue)
+- [nextResearchFree](#nextresearchfree)
 - [maintainWaitForPop](#maintainwaitforpop)
 - [noTrainNearEnemyTC](#notrainnearenemytc)
 - [lifespanAfterConstruction](#lifespanafterconstruction)
@@ -1304,6 +1306,306 @@ UhcSharedLimitStock PROC
     mov edx, ecx
     jmp limitEntryNext
 UhcSharedLimitStock ENDP
+
+END
+```
+
+## doNotQueue
+
+Contract: [doNotQueue](../porting-to-another-dll.md#donotqueue).
+
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+
+Sites: `TrainQueueAddCall` `0x9CE81A` (5 B).
+
+### src/features/donotqueue.cpp
+
+```cpp
+// doNotQueue: <DoNotQueue/> in a proto trains it ahead of what waits in the building.
+//
+// The queue routine 0x9CE2BE adds each new Train action at the end of the unit's action list with
+// 0x494894 (the call at 0x9CE81A). The list is at [manager+14h]: +0 the count, +8 the pointers. It
+// also holds the unit's other actions (idle, Maintain...), and the building works on the first Train or
+// Research action of the list. After the stock add, the hook moves the new action before the first
+// of them, behind any action of a tagged proto, so those keep their order. An action already training
+// waits with its progress, and goes on when the tagged one is done. The proto IDs are read once and are
+// the same for every player.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <unordered_set>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+
+namespace {
+
+constexpr std::size_t kActionList = 0x14;
+constexpr std::uint8_t kResearchAction = 0x0C;
+constexpr std::uint8_t kTrainAction = 0x0D;
+constexpr int kMaxLogLines = 200;
+
+using AddActionFn = bool(__thiscall*)(char* manager, char* action, std::int32_t a, std::int32_t b, std::int32_t c);
+const auto kAddAction = reinterpret_cast<AddActionFn>(0x00494894);
+
+std::unordered_set<std::int32_t> g_protos;  // filled while protos load, read-only after
+bool g_log = false;
+int g_logLines = 0;
+
+bool __cdecl ReadDoNotQueue(void*, const char*, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  g_protos.insert(id);
+  if (g_log) {
+    uhc::Log(L"doNotQueue: proto %d has the tag", id);
+  }
+  return true;
+}
+
+// The proto of a Train action, or -1: the first entry of [action+70h], 14h bytes each, +0 the proto ID.
+std::int32_t TrainProto(const char* action) {
+  if (static_cast<std::uint8_t>(action[0x60]) != kTrainAction ||
+      *reinterpret_cast<const std::int32_t*>(action + 0x74) <= 0) {
+    return -1;
+  }
+  return **reinterpret_cast<const std::int32_t* const*>(action + 0x70);
+}
+
+bool Tagged(const char* action) { return g_protos.count(TrainProto(action)) != 0; }
+
+bool InQueue(const char* action) {
+  const auto type = static_cast<std::uint8_t>(action[0x60]);
+  return type == kResearchAction || type == kTrainAction;
+}
+
+// Replaces the call of the add in the queue routine.
+bool __fastcall AddAction(char* manager, void*, char* action, std::int32_t a, std::int32_t b, std::int32_t c) {
+  if (!kAddAction(manager, action, a, b, c)) {
+    return false;
+  }
+  if (!Tagged(action)) {
+    return true;
+  }
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(manager + kActionList);
+  char** list = *reinterpret_cast<char***>(manager + kActionList + 8);
+  std::int32_t from = count - 1;
+  while (from >= 0 && list[from] != action) {
+    --from;
+  }
+  std::int32_t to = 0;
+  while (to < from && !InQueue(list[to])) {
+    ++to;
+  }
+  while (to < from && Tagged(list[to])) {
+    ++to;
+  }
+  if (from < 0 || to >= from) {
+    return true;
+  }
+  for (std::int32_t i = from; i > to; --i) {
+    list[i] = list[i - 1];
+  }
+  list[to] = action;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"doNotQueue: proto %d goes from place %d to place %d of %d", TrainProto(action), from, to, count);
+  }
+  return true;
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyDoNotQueue(const Config& config) {
+  const Config::Args* args = config.First("doNotQueue");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"doNotQueue: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("doNotQueue", {&sites::kTrainQueueAddCall}) || !AddProtoTagHandler("DoNotQueue", &ReadDoNotQueue) ||
+      !WriteCall(sites::kTrainQueueAddCall.va, reinterpret_cast<const void*>(&AddAction))) {
+    return Outcome::kFailed;
+  }
+  Log(L"doNotQueue: the proto tag DoNotQueue is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## nextResearchFree
+
+Contract: [nextResearchFree](../porting-to-another-dll.md#nextresearchfree).
+
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `CommandResearchPayCall` `0x9D54CF` (5 B), `CommandResearchCostCopyCall` `0x9D5548` (5 B), `ResearchPayCall` `0x9E67E1` (5 B), `ResearchCostCopyCall` `0x9E68A0` (5 B).
+
+### src/features/freeresearch.cpp
+
+```cpp
+// nextResearchFree: a tech effect type='Data' subtype='NextResearchIsFree' on a ProtoUnit target makes
+// the next research queued in a building of that proto free. SetNextResearchFree is the same subtype.
+//
+// A research is paid when its action starts: 0x8D946A at 0x9E67E1 (Research) and at 0x9D54CF
+// (CommandResearch). Each action then keeps a copy of the cost for the refund of a cancel (0x9E68A0,
+// 0x9D5548). The effect adds its amount to a count kept by the player's copy of the proto. With a count
+// above 0 the payment is skipped, and the copy of the cost is emptied, so a cancel refunds nothing and
+// spends the count. The count is not in saved games: a load applies the tech's effects again, so it
+// is back to what the effects give. The hooks are in hooks/freeresearch_hooks.asm.
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <unordered_map>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcFreeResearchPayHook();
+void UhcFreeCommandPayHook();
+}
+
+namespace {
+
+constexpr int kMaxLogLines = 200;
+constexpr std::uint32_t kCostCopyCalls[] = {0x009E68A0, 0x009D5548};
+
+using PayFn = bool(__thiscall*)(void* player, const void* cost);
+using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
+using CostFillFn = void(__thiscall*)(void* cost, float value);
+const auto kPay = reinterpret_cast<PayFn>(0x008D946A);
+const auto kCostCopy = reinterpret_cast<CostCopyFn>(0x00480A73);
+const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
+
+std::unordered_map<const char*, std::int32_t> g_free;  // by the player's copy of the proto
+bool g_skipped = false;                                // the payment just skipped, for the copy that follows
+bool g_log = false;
+int g_logLines = 0;
+
+void LogLine(const wchar_t* what, const char* proto, std::int32_t count) {
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"nextResearchFree: proto %d: %ls, %d left", *reinterpret_cast<const std::int32_t*>(proto + 8), what, count);
+  }
+}
+
+void ChangeCount(char* proto, const char*, float amount, std::uint8_t, bool unapply) {
+  const std::int32_t delta = static_cast<std::int32_t>(std::lround(amount));
+  std::int32_t& count = g_free[proto];
+  count = unapply ? (count > delta ? count - delta : 0) : count + delta;
+  LogLine(unapply ? L"effect removed" : L"effect applied", proto, count);
+}
+
+void ForgetOnDataLoad(char*) {
+  g_free.clear();
+  g_skipped = false;
+}
+
+// Replaces the call of the copy of the cost into the action.
+void* __fastcall CostCopy(void* cost, void*, const void* from) {
+  void* result = kCostCopy(cost, from);
+  if (g_skipped) {
+    g_skipped = false;
+    kCostFill(cost, 0.0f);
+  }
+  return result;
+}
+
+}  // namespace
+
+// From the two hooks, instead of the payment. The action is the one being started.
+extern "C" bool __stdcall UhcFreeResearchPay(const char* action, void* player, const void* cost) {
+  const char* unit = *reinterpret_cast<const char* const*>(action + 0x10);
+  const char* proto = unit != nullptr ? *reinterpret_cast<const char* const*>(unit + 0x5C) : nullptr;
+  const auto found = proto != nullptr ? g_free.find(proto) : g_free.end();
+  if (found == g_free.end() || found->second <= 0) {
+    return kPay(player, cost);
+  }
+  --found->second;
+  g_skipped = true;
+  LogLine(L"a free research", proto, found->second);
+  return true;
+}
+
+namespace uhc {
+
+Outcome ApplyNextResearchFree(const Config& config) {
+  const Config::Args* args = config.First("nextResearchFree");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"nextResearchFree: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("nextResearchFree", {&sites::kResearchPayCall, &sites::kCommandResearchPayCall,
+                                      &sites::kResearchCostCopyCall, &sites::kCommandResearchCostCopyCall}) ||
+      !AddTechSubtype("NextResearchIsFree", &ChangeCount) || !AddTechSubtype("SetNextResearchFree", &ChangeCount) ||
+      !OnDatabaseLoad(&ForgetOnDataLoad) ||
+      !WriteCall(sites::kResearchPayCall.va, reinterpret_cast<const void*>(&UhcFreeResearchPayHook)) ||
+      !WriteCall(sites::kCommandResearchPayCall.va, reinterpret_cast<const void*>(&UhcFreeCommandPayHook))) {
+    return Outcome::kFailed;
+  }
+  for (const std::uint32_t call : kCostCopyCalls) {
+    if (!WriteCall(call, reinterpret_cast<const void*>(&CostCopy))) {
+      return Outcome::kFailed;
+    }
+  }
+  Log(L"nextResearchFree: the Data subtype NextResearchIsFree is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/freeresearch_hooks.asm
+
+```asm
+; nextResearchFree (src/features/freeresearch.cpp). Both replace a call of the payment 0x8D946A, whose
+; argument, the cost, is already on the stack, and return to the stock code as that call did: al, ret 4.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcFreeResearchPay PROTO STDCALL action:DWORD, player:DWORD, cost:DWORD
+
+.code
+
+; The call at 0x9E67E1 in the Research action's start. ECX = the player, EBP = the action.
+UhcFreeResearchPayHook PROC
+    TRACE_ONCE "nextResearchFree research (0x9E67E1)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcFreeResearchPay, ebp, ecx, eax
+    ret 4
+UhcFreeResearchPayHook ENDP
+
+; The call at 0x9D54CF in the CommandResearch action's start. ECX = the player, ESI = the action.
+UhcFreeCommandPayHook PROC
+    TRACE_ONCE "nextResearchFree command research (0x9D54CF)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcFreeResearchPay, esi, ecx, eax
+    ret 4
+UhcFreeCommandPayHook ENDP
 
 END
 ```

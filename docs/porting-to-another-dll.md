@@ -21,6 +21,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `sharedBuildLimit`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `doNotQueue`, `nextResearchFree`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1062,6 +1063,23 @@ Code: [buildings](porting-code/buildings.md#trainbatchsize). It needs `AddProtoT
   (`5F B0 01 5E 59`), continue at the `ret` `0x51DB14`. Check them against your DLL first: another key that adds a proto
   tag must share the second.
 - **Test:** the tag on a proto: five clicks queue in that size, and the log shows the proto.
+
+### doNotQueue
+
+Code: [buildings](porting-code/buildings.md#donotqueue). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Site:** the `call` at `0x9CE81A`, of `0x494894`.
+- **Test:** the tag on a unit: with others queued, it goes first and comes out first.
+
+### nextResearchFree
+
+Code: [buildings](porting-code/buildings.md#nextresearchfree). It needs `AddTechSubtype`, in the
+[helpers](porting-code/helpers.md#tech-subtypes), and `OnDatabaseLoad`.
+
+- **Sites:** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and `0x9D5548`, of `0x480A73`.
+- **Test:** a tech with the effect in the [modding guide](modding-guide.md#nextresearchfree): the next research takes
+  nothing, and its cancel gives nothing back.
 
 ### noTrainNearEnemyTC
 

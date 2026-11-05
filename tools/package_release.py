@@ -241,6 +241,8 @@ trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train 
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
 sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
+doNotQueue [log]              <DoNotQueue/> trains a proto ahead of what waits in the building
+nextResearchFree [log]        a Data tech effect makes a building's next research free
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
