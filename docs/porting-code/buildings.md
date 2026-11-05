@@ -370,7 +370,7 @@ Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkratea
 
 Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
 
-Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `ModifyTypeNameTail` `0x5FE6C7` (27 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
+Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
 
 ### src/features/bwrauras.cpp
 
@@ -581,10 +581,11 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  // The name hook and its continuation, the compare it calls, three call sites (the Train one is
-  // checked alone below), the getter's tail, and the stock code the factor calls or mirrors.
+  // The compare the name hook calls, three call sites (the Train one is checked alone below), the
+  // getter's tail, and the stock code the factor calls or mirrors. AddModifyType checks the name hook:
+  // it may be in place already.
   if (!VerifyAll("buildingWorkRateAuras",
-                 {&sites::kModifyTypeNameTail, &sites::kModifyTypeNameCompare, &sites::kWorkRateResearchCall,
+                 {&sites::kModifyTypeNameCompare, &sites::kWorkRateResearchCall,
                   &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
@@ -760,7 +761,7 @@ Outcome ApplyCostEscalationTechs(const Config& config) {
 
 Contract: [trainBatchSize](../porting-to-another-dll.md#trainbatchsize).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `TrainQueueCall1` `0x7560B5` (5 B), `TrainQueueCall2` `0x7CAF6E` (5 B), `TrainQueueCall3` `0x7D797A` (5 B), `TrainBatchLimitCall` `0x9CE645` (5 B), `TrainBatchProtoArg` `0x9CE6DE` (4 B), `TrainQueueCall4` `0x9EBF03` (5 B).
 
@@ -768,7 +769,11 @@ Sites: `TrainQueueCall1` `0x7560B5` (5 B), `TrainQueueCall2` `0x7CAF6E` (5 B), `
 
 ```cpp
 // trainBatchSize: <TrainBatchSize>N</TrainBatchSize> in a proto limits how many of it share one Train
-// action.
+// action. <DontTrainInBatches>1</DontTrainInBatches> is a size of 1 (an explicit size wins), and
+// <ForceBatchTrain> is read and does nothing: the trains it changes elsewhere do not exist here.
+// The tech effect type="Data" subtype="TrainBatchSize" changes the size for one player's copy of the
+// proto (base: the tag's size, or the stock 5), through the stock value function 0x7F892A; the hook
+// forwards the player, whose copy 0x45311B finds.
 //
 // Stock takes the limit from one call, 0x8D051B (0x9CE645, in the routine that queues units in a
 // building): the player's [+2ACh] when a tech set it, else the database's default of [+178h]. The routine
@@ -790,6 +795,8 @@ Sites: `TrainQueueCall1` `0x7560B5` (5 B), `TrainQueueCall2` `0x7CAF6E` (5 B), `
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
 
 extern "C" void UhcTrainBatchHook();
 
@@ -802,10 +809,61 @@ constexpr int kMaxLogLines = 200;
 using QueueFn = bool(__thiscall*)(void* building, std::int32_t a, std::int32_t b, std::int32_t proto,
                                   std::int32_t count, std::int32_t c, std::int32_t d, std::int32_t e);
 const auto kQueue = reinterpret_cast<QueueFn>(0x009CE2BE);
+using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t id);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+constexpr float kStockDefault = 5.0f;
 
 std::unordered_map<std::int32_t, std::int32_t> g_sizes;  // filled while protos load, read-only after
+std::unordered_map<std::int32_t, bool> g_explicit;        // protos whose size came from <TrainBatchSize>
+struct TechSize {
+  std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float value;
+};
+std::unordered_map<const char*, TechSize> g_techSizes;  // by the player's copy of the proto
 bool g_log = false;
 int g_logLines = 0;
+
+// The size for a player's copy: the tech's, else the tag's, else none (-1).
+std::int32_t SizeFor(const char* copy, std::int32_t id) {
+  if (copy != nullptr && !g_techSizes.empty()) {
+    const auto tech = g_techSizes.find(copy);
+    if (tech != g_techSizes.end() && tech->second.id == id) {
+      const long value = std::lround(tech->second.value);
+      return value < 1 ? 1 : static_cast<std::int32_t>(value);
+    }
+  }
+  const auto found = g_sizes.find(id);
+  return found == g_sizes.end() ? -1 : found->second;
+}
+
+void ChangeSize(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  const auto tag = g_sizes.find(*reinterpret_cast<const std::int32_t*>(base + 8));
+  const float baseValue = tag == g_sizes.end() ? kStockDefault : static_cast<float>(tag->second);
+  auto inserted = g_techSizes.emplace(proto, TechSize{id, baseValue});
+  if (inserted.first->second.id != id) {
+    inserted.first->second = TechSize{id, baseValue};  // the pointer was another proto's copy before
+  }
+  float& value = inserted.first->second.value;
+  const float before = value;
+  kEffectValue(relativity, &value, baseValue, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"trainBatchSize: proto %d, tech subtype TrainBatchSize, relativity %u, amount %g%ls: %g -> %g", id,
+             relativity, static_cast<double>(amount), unapply ? L" (removed)" : L"", static_cast<double>(before),
+             static_cast<double>(value));
+  }
+}
+
+void ForgetOnDataLoad(char*) { g_techSizes.clear(); }
+
+// A flag written as an element: absent text or anything but 0 is on.
+bool FlagOn(const char* node) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  return text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+}
 
 bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
   const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
@@ -816,8 +874,32 @@ bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
     return true;
   }
   g_sizes[id] = size;
+  g_explicit[id] = true;
   if (g_log) {
     uhc::Log(L"trainBatchSize: proto %d has %d", id, size);
+  }
+  return true;
+}
+
+bool __cdecl ReadDontTrainInBatches(void*, const char* node, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (!FlagOn(node)) {
+    return true;
+  }
+  if (g_explicit.count(id) == 0) {
+    g_sizes[id] = 1;
+  }
+  if (g_log) {
+    uhc::Log(L"trainBatchSize: proto %d has DontTrainInBatches: one per action%ls", id,
+             g_explicit.count(id) == 0 ? L"" : L" (its TrainBatchSize wins)");
+  }
+  return true;
+}
+
+bool __cdecl ReadForceBatchTrain(void*, const char* node, char* proto) {
+  if (g_log && FlagOn(node)) {
+    uhc::Log(L"trainBatchSize: proto %d has ForceBatchTrain, which changes nothing in this engine",
+             *reinterpret_cast<const std::int32_t*>(proto + 8));
   }
   return true;
 }
@@ -825,17 +907,21 @@ bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
 // Replaces the calls of the queue routine.
 bool __fastcall Queue(void* building, void*, std::int32_t a, std::int32_t b, std::int32_t proto, std::int32_t count,
                       std::int32_t c, std::int32_t d, std::int32_t e) {
-  const auto found = g_sizes.find(proto);
-  if (found == g_sizes.end() || count <= found->second) {
+  // `building` is the unit's action manager: [+4] its unit, and [unit+44h] the player (0x9CE63F..0x9CE642).
+  const char* unit = building == nullptr ? nullptr
+                                         : *reinterpret_cast<const char* const*>(reinterpret_cast<const char*>(building) + 4);
+  const char* player = unit == nullptr ? nullptr : *reinterpret_cast<const char* const*>(unit + 0x44);
+  const std::int32_t size = SizeFor(player == nullptr ? nullptr : kPlayerProto(player, proto), proto);
+  if (size < 1 || count <= size) {
     return kQueue(building, a, b, proto, count, c, d, e);
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"trainBatchSize: proto %d: %d asked, in pieces of %d", proto, count, found->second);
+    uhc::Log(L"trainBatchSize: proto %d: %d asked, in pieces of %d", proto, count, size);
   }
   bool queued = false;
-  for (std::int32_t left = count; left > 0; left -= found->second) {
-    if (!kQueue(building, a, b, proto, left < found->second ? left : found->second, c, d, e)) {
+  for (std::int32_t left = count; left > 0; left -= size) {
+    if (!kQueue(building, a, b, proto, left < size ? left : size, c, d, e)) {
       break;
     }
     queued = true;
@@ -845,17 +931,17 @@ bool __fastcall Queue(void* building, void*, std::int32_t a, std::int32_t b, std
 
 }  // namespace
 
-// From the hook, with the stock limit and the proto being queued.
-extern "C" std::int32_t __stdcall UhcTrainBatchLimit(std::int32_t stock, std::int32_t proto) {
-  const auto found = g_sizes.find(proto);
-  if (found == g_sizes.end()) {
+// From the hook, with the stock limit, the proto being queued and the player.
+extern "C" std::int32_t __stdcall UhcTrainBatchLimit(std::int32_t stock, std::int32_t proto, const char* player) {
+  const std::int32_t size = SizeFor(player == nullptr ? nullptr : kPlayerProto(player, proto), proto);
+  if (size < 1) {
     return stock;
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"trainBatchSize: proto %d queues up to %d per action (stock %d)", proto, found->second, stock);
+    uhc::Log(L"trainBatchSize: proto %d queues up to %d per action (stock %d)", proto, size, stock);
   }
-  return found->second;
+  return size;
 }
 
 namespace uhc {
@@ -875,6 +961,9 @@ Outcome ApplyTrainBatchSize(const Config& config) {
   if (!VerifyAll("trainBatchSize", {&sites::kTrainBatchLimitCall, &sites::kTrainBatchProtoArg, &sites::kTrainQueueCall1,
                                     &sites::kTrainQueueCall2, &sites::kTrainQueueCall3, &sites::kTrainQueueCall4}) ||
       !AddProtoTagHandler("TrainBatchSize", &ReadTrainBatchSize) ||
+      !AddProtoTagHandler("DontTrainInBatches", &ReadDontTrainInBatches) ||
+      !AddProtoTagHandler("ForceBatchTrain", &ReadForceBatchTrain) ||
+      !AddTechSubtype("TrainBatchSize", &ChangeSize) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !WriteJmp(kLimitCall, reinterpret_cast<const void*>(&UhcTrainBatchHook), 5)) {
     return Outcome::kFailed;
   }
@@ -883,7 +972,8 @@ Outcome ApplyTrainBatchSize(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  Log(L"trainBatchSize: the proto tag TrainBatchSize is on");
+  Log(L"trainBatchSize: the proto tags TrainBatchSize, DontTrainInBatches and ForceBatchTrain are on, and the Data "
+      L"subtype TrainBatchSize");
   return Outcome::kApplied;
 }
 
@@ -901,7 +991,7 @@ option casemap :none
 
 include common.inc
 
-UhcTrainBatchLimit PROTO STDCALL stockLimit:DWORD, protoId:DWORD
+UhcTrainBatchLimit PROTO STDCALL stockLimit:DWORD, protoId:DWORD, player:DWORD
 
 .data
 stockLimitFn    dd 008D051Bh    ; the limit of units per Train action, thiscall(player)
@@ -911,12 +1001,14 @@ limitCallNext   dd 009CE64Ah    ; cmp bl,1 / mov ebp,eax
 
 ; Replaces 0x9CE645 (call 0x8D051B) in the routine that queues units in a building. ECX = the player,
 ; [esp+30h] = the proto ID, as the routine reads it at 0x9CE6DE. The code that follows reads only EAX
-; of what the call leaves.
+; of what the call leaves (EDX is free).
 UhcTrainBatchHook PROC
     TRACE_ONCE "trainBatchSize limit (0x9CE645)"
+    push ecx                        ; the player, for the tech subtype's copy
     call stockLimitFn
+    pop edx
     mov ecx, dword ptr [esp+30h]
-    invoke UhcTrainBatchLimit, eax, ecx
+    invoke UhcTrainBatchLimit, eax, ecx, edx
     jmp limitCallNext
 UhcTrainBatchHook ENDP
 
@@ -927,7 +1019,7 @@ END
 
 Contract: [sharedBuildLimit](../porting-to-another-dll.md#sharedbuildlimit).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+Besides the core helpers, it needs: [`civtags.h`](helpers.md#civ-tags), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `XmlText` `0x402733` (9 B), `PlayerProtoEntry` `0x45311B` (8 B), `ProtoById` `0x45316E` (30 B), `BuildLimitEntry` `0x4C7B5F` (5 B), `BuildCountEntry` `0x4C7BC5` (8 B), `BuildCountTooltip1` `0x4C8B81` (5 B), `XmlAttribute` `0x598F37` (16 B), `BuildCountTooltip2` `0x70F5EF` (5 B).
 
@@ -940,6 +1032,12 @@ Sites: `XmlText` `0x402733` (9 B), `PlayerProtoEntry` `0x45311B` (8 B), `ProtoBy
 //   <SharedBuildLimitUnitType weight="N">Type</SharedBuildLimitUnitType>   what counts toward it: an
 //                                                                 abstract type or a proto; repeatable
 //   <TeamBuildLimit>1</TeamBuildLimit>                            the whole team counts
+//   <UseSharedBuildLimit>1</UseSharedBuildLimit>                  accepted; the lists alone are enough
+//   <SharedBuildLimitUnitTypes weight="N">Type</SharedBuildLimitUnitTypes>   the same list, plural
+//   <SettlerBuildLimit>1</SettlerBuildLimit>                      the limit of the civ's settler, shared by
+//                                                                 every unit of LogicalTypeSettlerBuildLimit;
+//                                                                 the civ names it in civs.xml:
+//                                                                 <SettlerProtoName>Settler</SettlerProtoName>
 //
 // Stock compares two numbers everywhere: a count of the proto, by many routes, and the limit, always
 // from 0x4C7B5F (50 callers: the buttons, the train action, Maintain, cards, the AI). So the count stays
@@ -950,7 +1048,9 @@ Sites: `XmlText` `0x402733` (9 B), `PlayerProtoEntry` `0x45311B` (8 B), `ProtoBy
 // The two tooltips that print "Build Limit: N out of M" are the exception: they get the group's total
 // and the real limit, through their own count calls and the return address of their limit calls.
 // The tags are read once and are the same for every player; the limit comes from the player's copy
-// of the proto, so techs reach it. The hook is in hooks/sharedlimit_hooks.asm.
+// of the proto, so techs reach it. A tech effect type="Data" subtype="EnableSharedBuildLimit" with
+// amount 0 turns the share off for that player's copy (the proto keeps its own limit), anything else
+// on; base 1. The hook is in hooks/sharedlimit_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -958,11 +1058,14 @@ Sites: `XmlText` `0x402733` (9 B), `PlayerProtoEntry` `0x45311B` (8 B), `ProtoBy
 #include <utility>
 #include <vector>
 
+#include "../civtags.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
 
 extern "C" {
 void UhcSharedLimitHook();
@@ -1007,6 +1110,8 @@ struct Share {
   std::string limitUnit;       // empty: the proto's own limit
   std::vector<Listed> listed;  // as the data has them
   bool team = false;
+  bool use = false;            // <UseSharedBuildLimit>, read and kept for the log
+  bool settler = false;        // <SettlerBuildLimit>
   bool built = false;
   std::int32_t limitProto = -1;
   std::int32_t ownWeight = 1;
@@ -1018,6 +1123,46 @@ std::unordered_map<std::int32_t, Share> g_shares;  // by proto ID; the load fill
 std::vector<bool> g_tagged;                        // by proto ID, for the calls of every other proto
 bool g_log = false;
 int g_logLines = 0;
+
+// <SettlerProtoName> per civ, from civs.xml; the proto is resolved by name on first use and again
+// when the database's proto table changes (a data reload).
+struct SettlerCiv {
+  std::string name;
+  const char* table = nullptr;
+  std::int32_t proto = -1;
+};
+std::vector<SettlerCiv> g_settlerCivs;  // by civ ID
+std::int32_t g_settlerType = -1;        // LogicalTypeSettlerBuildLimit
+
+bool FlagOn(const char* text) { return text == nullptr || text[0] == 0 || std::atoi(text) != 0; }
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+struct Enabled {
+  std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float value;      // 0 turns the share off
+};
+std::unordered_map<const char*, Enabled> g_enabled;  // by the player's copy
+
+void ChangeEnabled(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 4);
+  Enabled& slot = g_enabled.emplace(proto, Enabled{id, 1.0f}).first->second;
+  if (slot.id != id) {
+    slot = Enabled{id, 1.0f};
+  }
+  float& value = slot.value;
+  const float before = value;
+  kEffectValue(relativity, &value, 1.0f, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"sharedBuildLimit: proto %d, tech subtype EnableSharedBuildLimit, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 4), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"",
+             static_cast<double>(before), static_cast<double>(value));
+  }
+}
+
+void ForgetOnDataLoad(char*) { g_enabled.clear(); }
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -1068,6 +1213,30 @@ bool __cdecl ReadTeam(void*, const char* node, char* proto) {
   return true;
 }
 
+bool __cdecl ReadUse(void*, const char* node, char* proto) {
+  ShareOf(proto).use = FlagOn(TagText(node));
+  return true;
+}
+
+bool __cdecl ReadSettler(void*, const char* node, char* proto) {
+  ShareOf(proto).settler = FlagOn(TagText(node));
+  return true;
+}
+
+void ReadSettlerProtoName(const char* civ, std::int32_t civId, const wchar_t* text) {
+  if (civId >= static_cast<std::int32_t>(g_settlerCivs.size())) {
+    g_settlerCivs.resize(civId + 1);
+  }
+  std::string name;
+  for (const wchar_t* c = text; c != nullptr && *c != 0; ++c) {
+    name.push_back(static_cast<char>(*c));
+  }
+  g_settlerCivs[civId] = SettlerCiv{name};
+  const char* civName = civ == nullptr ? nullptr : Field<const char*>(civ, 0x04);
+  uhc::Log(L"sharedBuildLimit: civ %d (%hs): its settler is %hs (SettlerProtoName)", civId,
+           civName == nullptr ? "?" : civName, name.c_str());
+}
+
 const char* Database() {
   const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
   return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
@@ -1086,6 +1255,31 @@ std::int32_t NameId(const char* database, const std::string& name) {
   return kNameFind(table, name.c_str(), bucket, &id) ? id : -1;
 }
 
+// A player's civ ID (0x4539D3): [[player+20h]] when [player+24h] > 0, else -1.
+std::int32_t CivIdOf(const char* player) {
+  return Field<std::int32_t>(player, 0x24) > 0 ? *Field<const std::int32_t*>(player, 0x20) : -1;
+}
+
+// The <SettlerProtoName> proto of the player's civ, or -1.
+std::int32_t SettlerProtoOf(const char* player, const char* database) {
+  const std::int32_t civ = CivIdOf(player);
+  if (civ < 0 || civ >= static_cast<std::int32_t>(g_settlerCivs.size()) || g_settlerCivs[civ].name.empty()) {
+    return -1;
+  }
+  SettlerCiv& entry = g_settlerCivs[civ];
+  const char* table = Field<const char*>(database, 0x54);
+  if (entry.table != table) {
+    entry.table = table;
+    entry.proto = NameId(database, entry.name);
+    if (entry.proto < 0 || entry.proto >= Field<std::int32_t>(database, 0x19B0)) {
+      uhc::Log(L"sharedBuildLimit: civ %d: %hs is no proto (SettlerProtoName); its settler limit is each proto's own",
+               civ, entry.name.c_str());
+      entry.proto = -1;
+    }
+  }
+  return entry.proto;
+}
+
 // Built at the first use: the protos are not all read while the tags load.
 void Build(std::int32_t ownId, Share& share, const char* database) {
   share.built = true;
@@ -1097,6 +1291,14 @@ void Build(std::int32_t ownId, Share& share, const char* database) {
     }
   }
   const std::int32_t protos = Field<std::int32_t>(database, 0x19B0);
+  if (share.settler && g_settlerType >= 0) {
+    for (std::int32_t id = 0; id < protos; ++id) {
+      const char* proto = kProtoById(database, id);
+      if (proto != nullptr && kProtoIsType(proto, g_settlerType)) {
+        share.members.emplace_back(id, 1);
+      }
+    }
+  }
   for (const Listed& entry : share.listed) {
     const std::int32_t type = NameId(database, entry.name);
     if (type < 0) {
@@ -1121,8 +1323,10 @@ void Build(std::int32_t ownId, Share& share, const char* database) {
     }
   }
   if (g_log) {
-    uhc::Log(L"sharedBuildLimit: proto %d: limit of %d, %u protos count, own weight %d%ls", ownId, share.limitProto,
-             static_cast<unsigned>(share.members.size()), share.ownWeight, share.team ? L", the team's" : L"");
+    uhc::Log(L"sharedBuildLimit: proto %d: limit of %d, %u protos count, own weight %d%ls%ls%ls", ownId,
+             share.limitProto, static_cast<unsigned>(share.members.size()), share.ownWeight,
+             share.team ? L", the team's" : L"", share.settler ? L", the civ's settler limit" : L"",
+             share.use ? L", UseSharedBuildLimit" : L"");
   }
 }
 
@@ -1213,10 +1417,24 @@ extern "C" std::int32_t __stdcall UhcSharedLimit(const char* player, const char*
   if (!ReadyShare(id, &found)) {
     return stock;
   }
+  if (!g_enabled.empty()) {
+    const auto enabled = g_enabled.find(proto);
+    if (enabled != g_enabled.end() && enabled->second.id == id && enabled->second.value == 0.0f) {
+      return stock;  // a tech turned the share off for this player
+    }
+  }
   Share& share = *found;
   std::int32_t limit = stock;
-  if (share.limitProto >= 0) {
-    const char* limitProto = kPlayerProto(player, share.limitProto);
+  std::int32_t limitId = share.limitProto;
+  if (share.settler) {
+    const char* database = Database();
+    const std::int32_t settler = database == nullptr ? -1 : SettlerProtoOf(player, database);
+    if (settler >= 0) {
+      limitId = settler;
+    }
+  }
+  if (limitId >= 0) {
+    const char* limitProto = kPlayerProto(player, limitId);
     if (limitProto != nullptr) {
       limit = stockLimit(player, limitProto);
     }
@@ -1257,6 +1475,12 @@ Outcome ApplySharedBuildLimit(const Config& config) {
       !AddProtoTagHandler("SharedBuildLimitUnit", &ReadLimitUnit) ||
       !AddProtoTagHandler("SharedBuildLimitUnitType", &ReadUnitType) ||
       !AddProtoTagHandler("TeamBuildLimit", &ReadTeam) ||
+      !AddProtoTagHandler("UseSharedBuildLimit", &ReadUse) ||
+      !AddProtoTagHandler("SharedBuildLimitUnitTypes", &ReadUnitType) ||
+      !AddProtoTagHandler("SettlerBuildLimit", &ReadSettler) ||
+      !AddCivTagHandler("SettlerProtoName", &ReadSettlerProtoName) ||
+      !AddTechSubtype("EnableSharedBuildLimit", &ChangeEnabled) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
+      !RequestAbstractUnitType("LogicalTypeSettlerBuildLimit", &g_settlerType) ||
       !WriteJmp(kLimitEntry, reinterpret_cast<const void*>(&UhcSharedLimitHook), 5)) {
     return Outcome::kFailed;
   }
@@ -1265,7 +1489,8 @@ Outcome ApplySharedBuildLimit(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  Log(L"sharedBuildLimit: the proto tags are on");
+  Log(L"sharedBuildLimit: the proto tags are on, the civ tag SettlerProtoName and the Data subtype "
+      L"EnableSharedBuildLimit");
   return Outcome::kApplied;
 }
 

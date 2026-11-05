@@ -38,7 +38,8 @@
 #include "../unittypes.h"
 #include "../worldtick.h"
 
-extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);  // cantslow.cpp; false when that key is off
+extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);     // cantslow.cpp; false when that key is off
+extern "C" bool __stdcall UhcCannotSnare(const char* attacker);  // cantslow.cpp; the attacking unit, or null
 
 namespace {
 
@@ -298,9 +299,13 @@ std::uint32_t TickInterval(const char* attaching) {
 }
 
 // The stock snare's modifier (snareOnlyHitUnit in how-it-works.md): stat 0 (velocity), operation 2
-// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration.
-void Snare(char* unit, float factor, std::uint32_t ms) {
-  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit)) {
+// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration. The
+// attacker is the unit whose hit attached the poison, or -1 once it is gone (then nothing stops the snare
+// on its side, as cantBeSlowed's CannotSnare needs the unit).
+void Snare(char* unit, std::int32_t attacker, float factor, std::uint32_t ms) {
+  const char* world = MainWorld();
+  const char* attackerUnit = world == nullptr || attacker < 0 ? nullptr : UnitById(world, attacker);
+  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit) && !UhcCannotSnare(attackerUnit)) {
     kSnare(unit, 0, factor, -1.0f, -1.0f, 0, 2, static_cast<std::int32_t>(ms), -1, -1, 1);
   }
 }
@@ -425,7 +430,7 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Atta
   dot.stacks.insert(std::upper_bound(dot.stacks.begin(), dot.stacks.end(), stackEnd, before), stackEnd);
   dot.end = dot.stacks.back();
   if (added) {
-    Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+    Snare(target, attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
   }
   if (!g_loggedFirstPoison || g_logEvery) {
     g_loggedFirstPoison = true;
@@ -492,7 +497,7 @@ void Tick(char* world) {
       alive = IsAlive(target);
       ShowTick(target, dealt, dot.tickColour);
       if (alive && Reached(dot.end, dot.nextTick)) {
-        Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+        Snare(target, dot.attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
       }
     }
     if (!alive || Reached(now, dot.end)) {

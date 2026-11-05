@@ -18,12 +18,19 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "Comments", "https://github.com/Gorgorito12/tad-engine-extensions"
+#ifdef UHC_ENGINE_EXT
+            VALUE "FileDescription", "Engine extensions for Age of Empires III: The Asian Dynasties"
+            VALUE "InternalName", "engine-ext"
+            VALUE "OriginalFilename", "dinput8.dll"
+            VALUE "ProductName", "engine-ext"
+#else
             VALUE "FileDescription", "UHC.dll for Age of Empires III: The Asian Dynasties"
-            VALUE "FileVersion", UHC_VERSION
             VALUE "InternalName", "UHC"
-            VALUE "LegalCopyright", "Copyright (c) 2026 Gorgorito12. MIT License."
             VALUE "OriginalFilename", "UHC.dll"
             VALUE "ProductName", "UHC.dll"
+#endif
+            VALUE "FileVersion", UHC_VERSION
+            VALUE "LegalCopyright", "Copyright (c) 2026 Gorgorito12. MIT License."
             VALUE "ProductVersion", UHC_VERSION
         END
     END

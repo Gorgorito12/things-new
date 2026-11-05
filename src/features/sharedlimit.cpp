@@ -4,6 +4,12 @@
 //   <SharedBuildLimitUnitType weight="N">Type</SharedBuildLimitUnitType>   what counts toward it: an
 //                                                                 abstract type or a proto; repeatable
 //   <TeamBuildLimit>1</TeamBuildLimit>                            the whole team counts
+//   <UseSharedBuildLimit>1</UseSharedBuildLimit>                  accepted; the lists alone are enough
+//   <SharedBuildLimitUnitTypes weight="N">Type</SharedBuildLimitUnitTypes>   the same list, plural
+//   <SettlerBuildLimit>1</SettlerBuildLimit>                      the limit of the civ's settler, shared by
+//                                                                 every unit of LogicalTypeSettlerBuildLimit;
+//                                                                 the civ names it in civs.xml:
+//                                                                 <SettlerProtoName>Settler</SettlerProtoName>
 //
 // Stock compares two numbers everywhere: a count of the proto, by many routes, and the limit, always
 // from 0x4C7B5F (50 callers: the buttons, the train action, Maintain, cards, the AI). So the count stays
@@ -14,7 +20,9 @@
 // The two tooltips that print "Build Limit: N out of M" are the exception: they get the group's total
 // and the real limit, through their own count calls and the return address of their limit calls.
 // The tags are read once and are the same for every player; the limit comes from the player's copy
-// of the proto, so techs reach it. The hook is in hooks/sharedlimit_hooks.asm.
+// of the proto, so techs reach it. A tech effect type="Data" subtype="EnableSharedBuildLimit" with
+// amount 0 turns the share off for that player's copy (the proto keeps its own limit), anything else
+// on; base 1. The hook is in hooks/sharedlimit_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -22,11 +30,14 @@
 #include <utility>
 #include <vector>
 
+#include "../civtags.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
 
 extern "C" {
 void UhcSharedLimitHook();
@@ -71,6 +82,8 @@ struct Share {
   std::string limitUnit;       // empty: the proto's own limit
   std::vector<Listed> listed;  // as the data has them
   bool team = false;
+  bool use = false;            // <UseSharedBuildLimit>, read and kept for the log
+  bool settler = false;        // <SettlerBuildLimit>
   bool built = false;
   std::int32_t limitProto = -1;
   std::int32_t ownWeight = 1;
@@ -82,6 +95,46 @@ std::unordered_map<std::int32_t, Share> g_shares;  // by proto ID; the load fill
 std::vector<bool> g_tagged;                        // by proto ID, for the calls of every other proto
 bool g_log = false;
 int g_logLines = 0;
+
+// <SettlerProtoName> per civ, from civs.xml; the proto is resolved by name on first use and again
+// when the database's proto table changes (a data reload).
+struct SettlerCiv {
+  std::string name;
+  const char* table = nullptr;
+  std::int32_t proto = -1;
+};
+std::vector<SettlerCiv> g_settlerCivs;  // by civ ID
+std::int32_t g_settlerType = -1;        // LogicalTypeSettlerBuildLimit
+
+bool FlagOn(const char* text) { return text == nullptr || text[0] == 0 || std::atoi(text) != 0; }
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+struct Enabled {
+  std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float value;      // 0 turns the share off
+};
+std::unordered_map<const char*, Enabled> g_enabled;  // by the player's copy
+
+void ChangeEnabled(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 4);
+  Enabled& slot = g_enabled.emplace(proto, Enabled{id, 1.0f}).first->second;
+  if (slot.id != id) {
+    slot = Enabled{id, 1.0f};
+  }
+  float& value = slot.value;
+  const float before = value;
+  kEffectValue(relativity, &value, 1.0f, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"sharedBuildLimit: proto %d, tech subtype EnableSharedBuildLimit, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 4), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"",
+             static_cast<double>(before), static_cast<double>(value));
+  }
+}
+
+void ForgetOnDataLoad(char*) { g_enabled.clear(); }
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -132,6 +185,30 @@ bool __cdecl ReadTeam(void*, const char* node, char* proto) {
   return true;
 }
 
+bool __cdecl ReadUse(void*, const char* node, char* proto) {
+  ShareOf(proto).use = FlagOn(TagText(node));
+  return true;
+}
+
+bool __cdecl ReadSettler(void*, const char* node, char* proto) {
+  ShareOf(proto).settler = FlagOn(TagText(node));
+  return true;
+}
+
+void ReadSettlerProtoName(const char* civ, std::int32_t civId, const wchar_t* text) {
+  if (civId >= static_cast<std::int32_t>(g_settlerCivs.size())) {
+    g_settlerCivs.resize(civId + 1);
+  }
+  std::string name;
+  for (const wchar_t* c = text; c != nullptr && *c != 0; ++c) {
+    name.push_back(static_cast<char>(*c));
+  }
+  g_settlerCivs[civId] = SettlerCiv{name};
+  const char* civName = civ == nullptr ? nullptr : Field<const char*>(civ, 0x04);
+  uhc::Log(L"sharedBuildLimit: civ %d (%hs): its settler is %hs (SettlerProtoName)", civId,
+           civName == nullptr ? "?" : civName, name.c_str());
+}
+
 const char* Database() {
   const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
   return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
@@ -150,6 +227,31 @@ std::int32_t NameId(const char* database, const std::string& name) {
   return kNameFind(table, name.c_str(), bucket, &id) ? id : -1;
 }
 
+// A player's civ ID (0x4539D3): [[player+20h]] when [player+24h] > 0, else -1.
+std::int32_t CivIdOf(const char* player) {
+  return Field<std::int32_t>(player, 0x24) > 0 ? *Field<const std::int32_t*>(player, 0x20) : -1;
+}
+
+// The <SettlerProtoName> proto of the player's civ, or -1.
+std::int32_t SettlerProtoOf(const char* player, const char* database) {
+  const std::int32_t civ = CivIdOf(player);
+  if (civ < 0 || civ >= static_cast<std::int32_t>(g_settlerCivs.size()) || g_settlerCivs[civ].name.empty()) {
+    return -1;
+  }
+  SettlerCiv& entry = g_settlerCivs[civ];
+  const char* table = Field<const char*>(database, 0x54);
+  if (entry.table != table) {
+    entry.table = table;
+    entry.proto = NameId(database, entry.name);
+    if (entry.proto < 0 || entry.proto >= Field<std::int32_t>(database, 0x19B0)) {
+      uhc::Log(L"sharedBuildLimit: civ %d: %hs is no proto (SettlerProtoName); its settler limit is each proto's own",
+               civ, entry.name.c_str());
+      entry.proto = -1;
+    }
+  }
+  return entry.proto;
+}
+
 // Built at the first use: the protos are not all read while the tags load.
 void Build(std::int32_t ownId, Share& share, const char* database) {
   share.built = true;
@@ -161,6 +263,14 @@ void Build(std::int32_t ownId, Share& share, const char* database) {
     }
   }
   const std::int32_t protos = Field<std::int32_t>(database, 0x19B0);
+  if (share.settler && g_settlerType >= 0) {
+    for (std::int32_t id = 0; id < protos; ++id) {
+      const char* proto = kProtoById(database, id);
+      if (proto != nullptr && kProtoIsType(proto, g_settlerType)) {
+        share.members.emplace_back(id, 1);
+      }
+    }
+  }
   for (const Listed& entry : share.listed) {
     const std::int32_t type = NameId(database, entry.name);
     if (type < 0) {
@@ -185,8 +295,10 @@ void Build(std::int32_t ownId, Share& share, const char* database) {
     }
   }
   if (g_log) {
-    uhc::Log(L"sharedBuildLimit: proto %d: limit of %d, %u protos count, own weight %d%ls", ownId, share.limitProto,
-             static_cast<unsigned>(share.members.size()), share.ownWeight, share.team ? L", the team's" : L"");
+    uhc::Log(L"sharedBuildLimit: proto %d: limit of %d, %u protos count, own weight %d%ls%ls%ls", ownId,
+             share.limitProto, static_cast<unsigned>(share.members.size()), share.ownWeight,
+             share.team ? L", the team's" : L"", share.settler ? L", the civ's settler limit" : L"",
+             share.use ? L", UseSharedBuildLimit" : L"");
   }
 }
 
@@ -277,10 +389,24 @@ extern "C" std::int32_t __stdcall UhcSharedLimit(const char* player, const char*
   if (!ReadyShare(id, &found)) {
     return stock;
   }
+  if (!g_enabled.empty()) {
+    const auto enabled = g_enabled.find(proto);
+    if (enabled != g_enabled.end() && enabled->second.id == id && enabled->second.value == 0.0f) {
+      return stock;  // a tech turned the share off for this player
+    }
+  }
   Share& share = *found;
   std::int32_t limit = stock;
-  if (share.limitProto >= 0) {
-    const char* limitProto = kPlayerProto(player, share.limitProto);
+  std::int32_t limitId = share.limitProto;
+  if (share.settler) {
+    const char* database = Database();
+    const std::int32_t settler = database == nullptr ? -1 : SettlerProtoOf(player, database);
+    if (settler >= 0) {
+      limitId = settler;
+    }
+  }
+  if (limitId >= 0) {
+    const char* limitProto = kPlayerProto(player, limitId);
     if (limitProto != nullptr) {
       limit = stockLimit(player, limitProto);
     }
@@ -321,6 +447,12 @@ Outcome ApplySharedBuildLimit(const Config& config) {
       !AddProtoTagHandler("SharedBuildLimitUnit", &ReadLimitUnit) ||
       !AddProtoTagHandler("SharedBuildLimitUnitType", &ReadUnitType) ||
       !AddProtoTagHandler("TeamBuildLimit", &ReadTeam) ||
+      !AddProtoTagHandler("UseSharedBuildLimit", &ReadUse) ||
+      !AddProtoTagHandler("SharedBuildLimitUnitTypes", &ReadUnitType) ||
+      !AddProtoTagHandler("SettlerBuildLimit", &ReadSettler) ||
+      !AddCivTagHandler("SettlerProtoName", &ReadSettlerProtoName) ||
+      !AddTechSubtype("EnableSharedBuildLimit", &ChangeEnabled) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
+      !RequestAbstractUnitType("LogicalTypeSettlerBuildLimit", &g_settlerType) ||
       !WriteJmp(kLimitEntry, reinterpret_cast<const void*>(&UhcSharedLimitHook), 5)) {
     return Outcome::kFailed;
   }
@@ -329,7 +461,8 @@ Outcome ApplySharedBuildLimit(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  Log(L"sharedBuildLimit: the proto tags are on");
+  Log(L"sharedBuildLimit: the proto tags are on, the civ tag SettlerProtoName and the Data subtype "
+      L"EnableSharedBuildLimit");
   return Outcome::kApplied;
 }
 

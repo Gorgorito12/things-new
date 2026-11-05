@@ -119,6 +119,8 @@ workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 34 26 3
 costEscalationTechs-wol 2 42 3
 costEscalationTechs-wol-control 2 42 3
+pillageGold-wol 4 24 2
+pillageGold-wol-control 4 24 2
 trainBatchSize-wol 2 36 3
 trainBatchSize-wol-control 2 36 3
 accuracyTechs-wol 2 30 3
@@ -133,6 +135,12 @@ nextResearchFree-wol 2 30 3
 nextResearchFree-wol-control 2 30 3
 cantBeSlowed-wol 0 12 1
 cantBeSlowed-wol-control 0 12 1
+cantBeSlowed-cannotsnare-wol 3 12 1
+cantBeSlowed-cannotsnare-wol-control 3 12 1
+detonationDeath-threshold-wol 2 12 1
+detonationDeath-threshold-wol-control 2 12 1
+detonationDeath-command-wol 3 12 1
+detonationDeath-command-wol-control 3 12 1
 killBountyTechs-wol 0 12 1
 killBountyTechs-wol-control 0 12 1
 resourceBounty-wol 0 12 1

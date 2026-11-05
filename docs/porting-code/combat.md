@@ -15,6 +15,7 @@ Contents:
 - [snareOnlyHitUnit](#snareonlyhitunit)
 - [cantBeSlowed](#cantbeslowed)
 - [killBountyTechs, resourceBounty and teamKillBounty](#killbountytechs-resourcebounty-and-teamkillbounty)
+- [pillageGold](#pillagegold)
 - [veterancyBonus](#veterancybonus)
 - [detonationDeath](#detonationdeath)
 
@@ -22,7 +23,7 @@ Contents:
 
 Contract: [dodgeAnyUnit, dodgeSoundSet and criticalSoundSet](../porting-to-another-dll.md#dodgeanyunit-dodgesoundset-and-criticalsoundset).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `SyncRandom` `0x407CE7` (64 B), `IsA` `0x44D7FA` (105 B), `DodgeTest` `0x49ACAA` (110 B), `DodgeProtoCheck` `0x49ACE5` (12 B), `DodgeCaller` `0x49AF98` (146 B), `DodgeCall` `0x49B023` (7 B), `DamageTypeLoad` `0x52D454` (81 B), `TechByName` `0x600BE1` (16 B), `DodgeRollPath` `0x6A249C` (437 B), `DodgeTechCheck` `0x6A249C` (10 B), `DodgeSound` `0x6A2628` (8 B), `CriticalSound` `0x6A2A9A` (8 B), `TechActive` `0x94AF27` (51 B).
 
@@ -54,6 +55,13 @@ Sites: `SyncRandom` `0x407CE7` (64 B), `IsA` `0x44D7FA` (105 B), `DodgeTest` `0x
 // caller's EDI (FUN_0048649F, 0x49AF98..0x49B023): its index in damagetypes.xml. Tech and damage
 // type names are resolved on the first test after each data load, so every machine resolves the
 // same names from the same data; an unknown name is logged and disables its rule.
+//
+// The proto tags <CanDodgeAttacks>1</CanDodgeAttacks> and <DodgeChance>percent</DodgeChance> (the
+// names another edition of the game uses) mark a proto in the data instead of the cfg: with the
+// first, the unit dodges every hit type with the percent of the second (15 if absent), no tech
+// needed; they are read with dodgeAnyUnit on and come before the cfg rules. Two tech effects of
+// type="Data" change that for one player's copy of the proto: subtype="EnableDodge" (0 off, else on;
+// base: the tag) and subtype="DodgeChance" (the percent; base: the tag's, or 15).
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -65,7 +73,11 @@ Sites: `SyncRandom` `0x407CE7` (64 B), `IsA` `0x44D7FA` (105 B), `DodgeTest` `0x
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../prototags.h"
+#include "../techsubtypes.h"
 #include "../unittypes.h"
+
+#include <unordered_map>
 
 namespace {
 
@@ -78,6 +90,8 @@ const auto kTechByName = reinterpret_cast<TechByNameFn>(0x00600BE1);
 const auto kTechActive = reinterpret_cast<TechActiveFn>(0x0094AF27);
 const auto kSyncRandom = reinterpret_cast<SyncRandomFn>(0x00407CE7);
 void* const kSyncRng = reinterpret_cast<void*>(0x00C66588);  // the stock dodge rolls stream 2 of it
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 constexpr std::uint32_t kGameGlobal = 0x00C66234;             // game; +13Ch world, +140h database
 
 // What UhcDodgeDecide tells the hook at 0x49ACE5 (hooks/dodge_hooks.asm).
@@ -110,6 +124,19 @@ struct ChanceRule {
   std::int32_t damageType = -1;
   bool disabled = false;
 };
+
+struct ProtoDodge {
+  bool enabled = false;         // <CanDodgeAttacks>
+  std::int32_t permille = 150;  // <DodgeChance>, percent x 10
+};
+std::unordered_map<std::int32_t, ProtoDodge> g_protoDodge;  // by proto ID; the load writes it
+
+struct TechDodge {
+  std::int32_t id = -1;   // the proto ID the copy had: a reused pointer with another ID is ignored
+  float enabled = -1.0f;  // -1: no tech touched it
+  float percent = -1.0f;
+};
+std::unordered_map<const char*, TechDodge> g_techDodge;  // by the player's copy of the proto
 
 // Never resized after the features are applied: the hooks read them from the game thread.
 std::vector<SoundRule> g_dodgeSounds;
@@ -283,6 +310,89 @@ void Resolve(ChanceRule& rule, std::size_t index) {
   }
 }
 
+// The synced roll over [0, 999], below permille: dodged. 0 % and 100 % roll nothing.
+std::int32_t Roll(const char* unit, std::int32_t permille, const wchar_t* label, bool log) {
+  std::int32_t roll = -1;
+  bool dodged = permille >= 1000;
+  if (permille > 0 && permille < 1000) {
+    roll = kSyncRandom(kSyncRng, 2, 999);
+    dodged = roll < permille;
+  }
+  if (log) {
+    uhc::Log(L"dodgeChance: unit %d (%hs), %ls (%.1f %%): roll %d -> %ls", Field<std::int32_t>(unit, 0x10),
+             ProtoName(unit), label, permille / 10.0, roll, dodged ? L"dodged" : L"hit");
+  }
+  return dodged ? kDodged : kNotDodged;
+}
+
+bool __cdecl ReadCanDodgeAttacks(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  g_protoDodge[id].enabled = text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+  if (g_log) {
+    uhc::Log(L"dodgeAnyUnit: proto %d %ls (CanDodgeAttacks)", id, g_protoDodge[id].enabled ? L"can dodge" : L"cannot dodge");
+  }
+  return true;
+}
+
+bool __cdecl ReadDodgeChance(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  wchar_t* end = nullptr;
+  const double percent = text == nullptr ? -1.0 : std::wcstod(text, &end);
+  if (text == nullptr || end == text || !(percent >= 0.0) || !(percent <= 100.0)) {
+    uhc::Log(L"dodgeAnyUnit: proto %d: <DodgeChance> needs a percent from 0 to 100, ignored", id);
+    return true;
+  }
+  g_protoDodge[id].permille = static_cast<std::int32_t>(std::lround(percent * 10.0));
+  if (g_log) {
+    uhc::Log(L"dodgeAnyUnit: proto %d dodges %.1f %% (DodgeChance)", id, percent);
+  }
+  return true;
+}
+
+// The tag's values for a proto ID, as the base of the tech subtypes.
+ProtoDodge TagOf(const char* proto) {
+  const auto found = g_protoDodge.find(Field<std::int32_t>(proto, 8));
+  return found == g_protoDodge.end() ? ProtoDodge{} : found->second;
+}
+
+void ChangeDodgeTech(char* proto, float* field, float base, float amount, std::uint8_t relativity, bool unapply,
+                     const wchar_t* name) {
+  if (*field < 0.0f) {
+    *field = base;
+  }
+  const float before = *field;
+  kEffectValue(relativity, field, base, amount, unapply);
+  if (g_log || g_chanceLog) {
+    uhc::Log(L"dodgeAnyUnit: proto %d, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g",
+             Field<std::int32_t>(proto, 8), name, relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*field));
+  }
+}
+
+TechDodge& TechSlot(char* proto) {
+  TechDodge& slot = g_techDodge[proto];
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  if (slot.id != id) {
+    slot = TechDodge{};
+    slot.id = id;
+  }
+  return slot;
+}
+
+void ChangeEnableDodge(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeDodgeTech(proto, &TechSlot(proto).enabled, TagOf(base).enabled ? 1.0f : 0.0f, amount, relativity, unapply,
+                  L"EnableDodge");
+}
+
+void ChangeDodgeChance(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeDodgeTech(proto, &TechSlot(proto).percent, static_cast<float>(TagOf(base).permille) / 10.0f, amount,
+                  relativity, unapply, L"DodgeChance");
+}
+
+void ForgetTechDodge(char*) { g_techDodge.clear(); }
+
 // The matched rule decides: its tech, then the synced roll over [0, 999]. 0 % and 100 % roll
 // nothing.
 std::int32_t RollRule(const char* unit, const ChanceRule& rule, std::size_t index) {
@@ -300,18 +410,9 @@ std::int32_t RollRule(const char* unit, const ChanceRule& rule, std::size_t inde
       return kNotDodged;
     }
   }
-  std::int32_t roll = -1;
-  bool dodged = rule.permille >= 1000;
-  if (rule.permille > 0 && rule.permille < 1000) {
-    roll = kSyncRandom(kSyncRng, 2, 999);
-    dodged = roll < rule.permille;
-  }
-  if (g_chanceLog) {
-    uhc::Log(L"dodgeChance: unit %d (%hs), rule %u (%.1f %%): roll %d -> %ls", Field<std::int32_t>(unit, 0x10),
-             ProtoName(unit), static_cast<unsigned>(index + 1), rule.permille / 10.0, roll,
-             dodged ? L"dodged" : L"hit");
-  }
-  return dodged ? kDodged : kNotDodged;
+  wchar_t label[24];
+  swprintf_s(label, L"rule %u", static_cast<unsigned>(index + 1));
+  return Roll(unit, rule.permille, label, g_chanceLog);
 }
 
 bool RequestRuleTypes(std::vector<SoundRule>* rules) {
@@ -341,6 +442,28 @@ std::int32_t __stdcall UhcDodgeDecide(const char* unit, const char* damageInfo) 
     return kStockCompares;
   }
   const std::int32_t damageType = damageInfo == nullptr ? -1 : Field<std::uint8_t>(damageInfo, 5);
+  if (!g_protoDodge.empty() || !g_techDodge.empty()) {
+    const auto tagged = g_protoDodge.find(Field<std::int32_t>(proto, 8));
+    bool enabled = tagged != g_protoDodge.end() && tagged->second.enabled;
+    std::int32_t permille = tagged != g_protoDodge.end() ? tagged->second.permille : 150;
+    auto tech = g_techDodge.find(proto);  // the copy of this player
+    if (tech != g_techDodge.end() && tech->second.id != Field<std::int32_t>(proto, 8)) {
+      tech = g_techDodge.end();  // the pointer was another proto's copy
+    }
+    if (tech != g_techDodge.end()) {
+      if (tech->second.enabled >= 0.0f) {
+        enabled = tech->second.enabled != 0.0f;
+      }
+      if (tech->second.percent >= 0.0f) {
+        const long value = std::lround(tech->second.percent * 10.0f);
+        permille = value < 0 ? 0 : value > 1000 ? 1000 : static_cast<std::int32_t>(value);
+      }
+    }
+    if (enabled) {
+      return Roll(unit, permille, tech != g_techDodge.end() ? L"CanDodgeAttacks, by tech" : L"CanDodgeAttacks",
+                  g_chanceLog || g_log);
+    }
+  }
   for (std::size_t i = 0; i < g_chanceRules.size(); ++i) {
     ChanceRule& rule = g_chanceRules[i];
     if (rule.generation != g_generation) {
@@ -409,9 +532,17 @@ Outcome ApplyDodge(const Config& config) {
                                   &sites::kDodgeSound, &sites::kCriticalSound})) {
     return Outcome::kFailed;
   }
-  if (chance && !VerifyAll("dodgeChance", {&sites::kDodgeTest, &sites::kDodgeRollPath, &sites::kDodgeCaller,
-                                           &sites::kSyncRandom, &sites::kTechActive, &sites::kTechByName,
-                                           &sites::kDamageTypeLoad, &sites::kIsA})) {
+  // The cfg rules and the proto tags both roll: the roll's sites are checked for either.
+  if ((chance || dodge != nullptr) &&
+      !VerifyAll("dodgeChance", {&sites::kDodgeTest, &sites::kDodgeRollPath, &sites::kDodgeCaller,
+                                 &sites::kSyncRandom, &sites::kTechActive, &sites::kTechByName,
+                                 &sites::kDamageTypeLoad, &sites::kIsA})) {
+    return Outcome::kFailed;
+  }
+  if (dodge != nullptr && (!AddProtoTagHandler("CanDodgeAttacks", &ReadCanDodgeAttacks) ||
+                           !AddProtoTagHandler("DodgeChance", &ReadDodgeChance) ||
+                           !AddTechSubtype("EnableDodge", &ChangeEnableDodge) ||
+                           !AddTechSubtype("DodgeChance", &ChangeDodgeChance) || !OnDatabaseLoad(&ForgetTechDodge))) {
     return Outcome::kFailed;
   }
 
@@ -641,7 +772,8 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 #include "../unittypes.h"
 #include "../worldtick.h"
 
-extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);  // cantslow.cpp; false when that key is off
+extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);     // cantslow.cpp; false when that key is off
+extern "C" bool __stdcall UhcCannotSnare(const char* attacker);  // cantslow.cpp; the attacking unit, or null
 
 namespace {
 
@@ -901,9 +1033,13 @@ std::uint32_t TickInterval(const char* attaching) {
 }
 
 // The stock snare's modifier (snareOnlyHitUnit in how-it-works.md): stat 0 (velocity), operation 2
-// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration.
-void Snare(char* unit, float factor, std::uint32_t ms) {
-  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit)) {
+// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration. The
+// attacker is the unit whose hit attached the poison, or -1 once it is gone (then nothing stops the snare
+// on its side, as cantBeSlowed's CannotSnare needs the unit).
+void Snare(char* unit, std::int32_t attacker, float factor, std::uint32_t ms) {
+  const char* world = MainWorld();
+  const char* attackerUnit = world == nullptr || attacker < 0 ? nullptr : UnitById(world, attacker);
+  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit) && !UhcCannotSnare(attackerUnit)) {
     kSnare(unit, 0, factor, -1.0f, -1.0f, 0, 2, static_cast<std::int32_t>(ms), -1, -1, 1);
   }
 }
@@ -1028,7 +1164,7 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Atta
   dot.stacks.insert(std::upper_bound(dot.stacks.begin(), dot.stacks.end(), stackEnd, before), stackEnd);
   dot.end = dot.stacks.back();
   if (added) {
-    Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+    Snare(target, attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
   }
   if (!g_loggedFirstPoison || g_logEvery) {
     g_loggedFirstPoison = true;
@@ -1095,7 +1231,7 @@ void Tick(char* world) {
       alive = IsAlive(target);
       ShowTick(target, dealt, dot.tickColour);
       if (alive && Reached(dot.end, dot.nextTick)) {
-        Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+        Snare(target, dot.attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
       }
     }
     if (!alive || Reached(now, dot.end)) {
@@ -2499,11 +2635,14 @@ Sites: `SnareCreate` `0x4DD201` (44 B).
 ### src/features/cantslow.cpp
 
 ```cpp
-// cantBeSlowed: a unit whose proto has the abstract type CantBeSlowed ignores <TargetSpeedBoost>.
+// cantBeSlowed: a unit whose proto has the abstract type CantBeSlowed ignores <TargetSpeedBoost>, and a
+// unit whose proto has CannotSnare does not snare with its own attacks.
 //
 // Stock snares a target at one place: 0x4DD1DE tests that it can move, and 0x4DD201 pushes the arguments
-// of the modifier's creator 0x4DD22D. The hook leaves through the snare's exit for a marked target.
-// damageOverTime's snare asks UhcCantBeSlowed too. The hook is in hooks/cantslow_hooks.asm.
+// of the modifier's creator 0x4DD22D. There EBP is still the attacker's unit action, whose unit is at
+// [ebp+10h] (the one caller, 0x48F9F5 in FUN_004B7766, keeps it in EBP and FUN_0048FA07 never writes it).
+// The hook leaves through the snare's exit for a marked target or a marked attacker. damageOverTime's
+// snare asks UhcCantBeSlowed and UhcCannotSnare too. The hook is in hooks/cantslow_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -2526,21 +2665,43 @@ const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 bool g_log = false;
 int g_logLines = 0;
 std::int32_t g_type = -1;
+std::int32_t g_attackerType = -1;
+
+bool HasType(const char* unit, std::int32_t type) {
+  if (unit == nullptr || type < 0) {
+    return false;
+  }
+  const char* proto = *reinterpret_cast<const char* const*>(unit + 0x5C);
+  return proto != nullptr && kProtoIsType(proto, type);
+}
+
+std::int32_t ProtoId(const char* unit) {
+  return *reinterpret_cast<const std::int32_t*>(*reinterpret_cast<const char* const*>(unit + 0x5C) + 8);
+}
 
 }  // namespace
 
 // From the hook and from damageOverTime, with the target. True: no snare.
 extern "C" bool __stdcall UhcCantBeSlowed(const char* unit) {
-  if (unit == nullptr || g_type < 0) {
-    return false;
-  }
-  const char* proto = *reinterpret_cast<const char* const*>(unit + 0x5C);
-  if (proto == nullptr || !kProtoIsType(proto, g_type)) {
+  if (!HasType(unit, g_type)) {
     return false;
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"cantBeSlowed: proto %d ignores a snare", *reinterpret_cast<const std::int32_t*>(proto + 8));
+    uhc::Log(L"cantBeSlowed: proto %d ignores a snare", ProtoId(unit));
+  }
+  return true;
+}
+
+// From the hook and from damageOverTime, with the attacking unit (null when it is gone: then the snare
+// is as stock). True: no snare.
+extern "C" bool __stdcall UhcCannotSnare(const char* attacker) {
+  if (!HasType(attacker, g_attackerType)) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"cantBeSlowed: proto %d does not snare (CannotSnare)", ProtoId(attacker));
   }
   return true;
 }
@@ -2560,10 +2721,11 @@ Outcome ApplyCantBeSlowed(const Config& config) {
     g_log = true;
   }
   if (!VerifyAll("cantBeSlowed", {&sites::kSnareCreate}) || !RequestAbstractUnitType("CantBeSlowed", &g_type) ||
+      !RequestAbstractUnitType("CannotSnare", &g_attackerType) ||
       !WriteJmp(sites::kSnareCreate.va, reinterpret_cast<const void*>(&UhcCantBeSlowedHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"cantBeSlowed: the abstract type CantBeSlowed is on");
+  Log(L"cantBeSlowed: the abstract types CantBeSlowed (on the target) and CannotSnare (on the attacker) are on");
   return Outcome::kApplied;
 }
 
@@ -2582,6 +2744,7 @@ option casemap :none
 include common.inc
 
 UhcCantBeSlowed PROTO STDCALL unit:DWORD
+UhcCannotSnare PROTO STDCALL attacker:DWORD
 
 .data
 snareNext       dd 004DD207h    ; push 0BB8h: the rest of the creator's arguments
@@ -2590,10 +2753,15 @@ snareExit       dd 0048FA49h    ; pop esi / pop ecx ..., where the snare ends
 .code
 
 ; Replaces 0x4DD201..0x4DD206 (push 1 / push -1 / push -1), the creator's last arguments, re-executed
-; here. ESI = the target. The code after it sets ECX itself and reads neither EAX nor EDX.
+; here. ESI = the target; EBP = the attacker's unit action, [ebp+10h] its unit (FUN_004B7766 keeps it in
+; EBP, and FUN_0048FA07 does not write it). The code after it sets ECX itself and reads neither EAX nor EDX.
 UhcCantBeSlowedHook PROC
     TRACE_ONCE "cantBeSlowed (0x4DD201)"
     invoke UhcCantBeSlowed, esi
+    test al, al
+    jne skip
+    mov eax, [ebp+10h]
+    invoke UhcCannotSnare, eax
     test al, al
     jne skip
     push 1
@@ -2910,11 +3078,208 @@ UhcResourceBountyHook ENDP
 END
 ```
 
+## pillageGold
+
+Contract: [pillageGold](../porting-to-another-dll.md#pillagegold).
+
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `ResListGet` `0x44EFFF` (61 B), `PlayerAddResource` `0x49A98A` (16 B), `PillageHitCall` `0x49B72B` (22 B).
+
+### src/features/pillage.cpp
+
+```cpp
+// pillageGold: a unit of the abstract type AbstractCanPillage steals gold with each hit of an action
+// that has <PillageAmount>, normally its BuildingAttack, from the owner of the building it hits.
+//
+// Stock has no such thing. TakeDamage FUN_0049B3D9 calls 0x49BD52 on every hit that has an attacking
+// player (0x49B73C), and that call has all the key needs in its frame. The key replaces the call: it
+// runs the steal, then the stock function. Only gold, resource 0, and a real transfer: the attacker
+// gets what the victim loses, with no gather multiplier. If the victim has less than the amount, the
+// hit takes what there is; if it has none, nothing. The victim's stockpile is read before the add
+// 0x49A98A, so a victim in debt gives nothing and is never taken below 0. The hook is in
+// hooks/pillage_hooks.asm.
+#include <compare>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <map>
+#include <string>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" void UhcPillageHook();
+
+namespace {
+
+constexpr std::uint32_t kHitCall = 0x0049B73C;  // call 0x49BD52 in TakeDamage
+constexpr std::int32_t kGold = 0;
+constexpr std::int32_t kEnemy = 2;              // [player+1D4h+4*id], as the diplomacy filter 0x49AEE0 reads it
+constexpr float kMinAmount = 1.0e-6f;
+constexpr int kMaxLogLines = 200;
+
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using ListGetFn = float(__thiscall*)(const char* list, std::int32_t resource);
+using PlayerAddFn = bool(__thiscall*)(char* player, std::int32_t resource, float amount, bool flag);
+
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kListGet = reinterpret_cast<ListGetFn>(0x0044EFFF);
+const auto kPlayerAdd = reinterpret_cast<PlayerAddFn>(0x0049A98A);
+
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+std::map<ActionKey, float> g_amounts;  // filled while the data loads, read-only after
+std::int32_t g_canPillage = -1;
+std::int32_t g_building = -1;
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+void NewDatabase(char*) {
+  g_amounts.clear();
+  g_logLines = 0;
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  if (_wcsicmp(tag.name, L"PillageAmount") != 0) {
+    return;
+  }
+  const float amount = tag.text == nullptr ? 0.0f : std::wcstof(tag.text, nullptr);
+  const std::int32_t name = Field<std::int32_t>(tag.action, 0x04);
+  if (amount <= kMinAmount || name < 0) {
+    uhc::Log(L"pillageGold: proto %hs: <PillageAmount> needs a number above 0, after the action's <Name>; ignored",
+             Field<const char*>(tag.proto, 0x10));
+    return;
+  }
+  g_amounts[{Field<std::int32_t>(tag.proto, 0x04), name}] = amount;
+  if (g_log) {
+    uhc::Log(L"pillageGold: proto %hs, action %d: %g gold a hit", Field<const char*>(tag.proto, 0x10), name,
+             static_cast<double>(amount));
+  }
+}
+
+}  // namespace
+
+// From the hook, on every hit with an attacking player, before the stock call. The attacker is null
+// when it died before its projectile landed.
+extern "C" void __stdcall UhcPillageHit(const char* attacker, char* attackerPlayer, const char* action, const char* victim) {
+  if (g_amounts.empty() || attacker == nullptr || attackerPlayer == nullptr || action == nullptr) {
+    return;
+  }
+  const char* attackerProto = Field<const char*>(attacker, 0x5C);
+  if (attackerProto == nullptr) {
+    return;
+  }
+  const auto found = g_amounts.find({Field<std::int32_t>(attackerProto, 0x04), Field<std::int32_t>(action, 0x04)});
+  if (found == g_amounts.end() || g_canPillage < 0 || !kProtoIsType(attackerProto, g_canPillage)) {
+    return;
+  }
+  const char* victimProto = Field<const char*>(victim, 0x5C);
+  char* victimPlayer = Field<char*>(victim, 0x44);
+  if (victimProto == nullptr || victimPlayer == nullptr || g_building < 0 || !kProtoIsType(victimProto, g_building)) {
+    return;
+  }
+  const std::int32_t victimId = Field<std::int32_t>(victimPlayer, 0x00);
+  if (victimId <= 0 || Field<std::int32_t>(attackerPlayer, 0x1D4 + 4 * victimId) != kEnemy) {
+    return;
+  }
+  const float have = kListGet(victimPlayer + 0x230, kGold);
+  const float take = have < found->second ? have : found->second;
+  if (take <= kMinAmount) {
+    return;
+  }
+  kPlayerAdd(victimPlayer, kGold, -take, false);
+  kPlayerAdd(attackerPlayer, kGold, take, false);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"pillageGold: unit %d of player %d took %g gold from player %d (%hs): %g -> %g, the attacker has %g",
+             Field<std::int32_t>(attacker, 0x10), Field<std::int32_t>(attackerPlayer, 0x00), static_cast<double>(take),
+             victimId, Field<const char*>(victimProto, 0x10), static_cast<double>(have),
+             static_cast<double>(kListGet(victimPlayer + 0x230, kGold)),
+             static_cast<double>(kListGet(attackerPlayer + 0x230, kGold)));
+  }
+}
+
+namespace uhc {
+
+Outcome ApplyPillageGold(const Config& config) {
+  const Config::Args* args = config.First("pillageGold");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"pillageGold: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("pillageGold", {&sites::kPillageHitCall, &sites::kPlayerAddResource, &sites::kResListGet}) ||
+      !RequestAbstractUnitType("AbstractCanPillage", &g_canPillage) || !RequestAbstractUnitType("Building", &g_building) ||
+      !AddActionTagHandler(&ActionTagRead) || !OnDatabaseLoad(&NewDatabase) ||
+      !WriteCall(kHitCall, reinterpret_cast<const void*>(&UhcPillageHook))) {
+    return Outcome::kFailed;
+  }
+  Log(L"pillageGold: AbstractCanPillage units steal gold with an action's <PillageAmount>");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/pillage_hooks.asm
+
+```asm
+; pillageGold (src/features/pillage.cpp). Reached through a call retargeted in TakeDamage; it runs the
+; stock function it replaces and leaves through an explicit jmp to it.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcPillageHit PROTO STDCALL attacker:DWORD, attackerPlayer:DWORD, action:DWORD, victim:DWORD
+
+.data
+teamXpFn    dd 0049BD52h    ; the stock function of the call at 0x49B73C, thiscall with 3 stack arguments and more
+
+.code
+
+; Replaces the target of the call at 0x49B73C in TakeDamage FUN_0049B3D9. The call pushed four
+; arguments, so on entry the frame of TakeDamage starts at [esp+14h]. ESI = the unit hit, EBX = the
+; attacking player ([frame+20h]), [frame+28h] the attacking unit, [frame+A8h] the action, TakeDamage's
+; third argument. No register survives the helper unless pushed, so all are saved.
+UhcPillageHook PROC
+    TRACE_ONCE "pillageGold hit (0x49B73C)"
+    pushad
+    mov eax, dword ptr [esp+20h+14h+28h]
+    mov edx, dword ptr [esp+20h+14h+0A8h]
+    invoke UhcPillageHit, eax, ebx, edx, esi
+    popad
+    jmp teamXpFn
+UhcPillageHook ENDP
+
+END
+```
+
 ## veterancyBonus
 
 Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
 
-Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`transformcalls.h`](helpers.md#transform-calls).
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 
@@ -2938,6 +3303,10 @@ Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 // calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
 // new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
 // hooks/veterancy_hooks.asm.
+//
+// Two tech effects of type="Data" act on one player's copy of the proto: subtype="VeterancyEnable" (0 turns the
+// rows off for that player, anything else on; base 1) and subtype="VeterancyBonus" (a factor on what every row
+// adds: a row of 1.30 with factor 2 gives 1.60; base 1). Ranks already granted are game modifiers and stay.
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -2953,7 +3322,9 @@ Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 #include "../modifiers.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
 #include "../transformcalls.h"
+#include "../unittypes.h"
 
 extern "C" void UhcVeterancyHook();
 
@@ -2976,6 +3347,8 @@ const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
 const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
 const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 
 struct Row {
   std::int32_t kills;
@@ -2984,8 +3357,71 @@ struct Row {
 };
 
 std::unordered_map<std::int32_t, std::vector<Row>> g_rows;  // by proto ID; the load fills it
+
+struct TechOverride {
+  std::int32_t id = -1;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float enabled = 1.0f;
+  float factor = 1.0f;
+};
+std::unordered_map<const char*, TechOverride> g_tech;  // by the player's copy of the proto
 bool g_log = false;
 int g_logLines = 0;
+
+const TechOverride* TechFor(const char* copy) {
+  if (g_tech.empty()) {
+    return nullptr;
+  }
+  const auto found = g_tech.find(copy);
+  return found != g_tech.end() && found->second.id == *reinterpret_cast<const std::int32_t*>(copy + 8)
+             ? &found->second
+             : nullptr;
+}
+
+// The rows apply to this copy, and a row's total as the tech leaves it.
+bool EnabledFor(const char* copy) {
+  const TechOverride* tech = TechFor(copy);
+  return tech == nullptr || tech->enabled != 0.0f;
+}
+
+float TotalFor(const char* copy, float total) {
+  const TechOverride* tech = TechFor(copy);
+  if (tech == nullptr || tech->factor == 1.0f) {
+    return total;
+  }
+  const float scaled = 1.0f + (total - 1.0f) * tech->factor;
+  return scaled > 0.0f ? scaled : 0.0f;
+}
+
+TechOverride& TechSlot(char* proto) {
+  TechOverride& slot = g_tech[proto];
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (slot.id != id) {
+    slot = TechOverride{};
+    slot.id = id;
+  }
+  return slot;
+}
+
+void ChangeTech(char* proto, float* field, float amount, std::uint8_t relativity, bool unapply, const wchar_t* name) {
+  const float before = *field;
+  kEffectValue(relativity, field, 1.0f, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"veterancyBonus: proto %d, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), name, relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*field));
+  }
+}
+
+void ChangeEnable(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeTech(proto, &TechSlot(proto).enabled, amount, relativity, unapply, L"VeterancyEnable");
+}
+
+void ChangeFactor(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeTech(proto, &TechSlot(proto).factor, amount, relativity, unapply, L"VeterancyBonus");
+}
+
+void ForgetOnDataLoad(char*) { g_tech.clear(); }
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3062,7 +3498,7 @@ void RestoreAfterTransform(char* unit, float kills) {
     }
   }
   for (const auto& [stat, total] : totals) {
-    kModifier(unit, stat, total, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+    kModifier(unit, stat, TotalFor(now, total), -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
   }
   if (g_log) {
     uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
@@ -3082,7 +3518,7 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
     return;
   }
   const auto found = g_rows.find(Field<std::int32_t>(proto, 8));
-  if (found == g_rows.end()) {
+  if (found == g_rows.end() || !EnabledFor(proto)) {
     return;
   }
   const char* attackerPlayer = Field<const char*>(attacker, 0x44);
@@ -3104,6 +3540,7 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   std::int32_t rank = 0;
   std::int32_t last = 0;
   bool reached = false;
+  float applied = 1.0f;  // the last multiplier given, for the log
   for (const Row& row : found->second) {
     if (row.kills > kills) {
       break;
@@ -3122,7 +3559,8 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
         before = earlier.total;
       }
     }
-    kModifier(attacker, row.stat, row.total / before, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+    applied = TotalFor(proto, row.total) / TotalFor(proto, before);
+    kModifier(attacker, row.stat, applied, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
   }
   if (reached) {
     wchar_t text[32];
@@ -3131,8 +3569,9 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d", Field<std::int32_t>(attacker, 0x10),
-             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank);
+    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d%ls%g", Field<std::int32_t>(attacker, 0x10),
+             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank, reached ? L", x" : L"",
+             reached ? static_cast<double>(applied) : 0.0);
   }
 }
 
@@ -3153,10 +3592,12 @@ Outcome ApplyVeterancyBonus(const Config& config) {
   if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply}) ||
       !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
+      !AddTechSubtype("VeterancyEnable", &ChangeEnable) || !AddTechSubtype("VeterancyBonus", &ChangeFactor) ||
+      !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"veterancyBonus: the proto tag VeterancyBonus is on");
+  Log(L"veterancyBonus: the proto tag VeterancyBonus is on, and the Data subtypes VeterancyEnable and VeterancyBonus");
   return Outcome::kApplied;
 }
 
@@ -3200,9 +3641,9 @@ END
 
 Contract: [detonationDeath](../porting-to-another-dll.md#detonationdeath).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `DetonationKillCall` `0x493D8F` (5 B), `DetonationAreaHead` `0x4C9D89` (10 B).
+Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationKillCall` `0x493D8F` (5 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/detonation.cpp
 
@@ -3219,9 +3660,29 @@ Sites: `DetonationKillCall` `0x493D8F` (5 B), `DetonationAreaHead` `0x4C9D89` (1
 //
 // The action is the player's copy, so a tech that changes its damage counts. The names are read once and
 // are the same for every player.
+//
+// The three other tags (the names of another edition of the game):
+// - <DetonationCommand>Name</DetonationCommand>: the unit detonates when it is deleted. The modder gives
+//   the proto a command of that name wired to the console command uiDeleteSelectedUnit (the stock Delete
+//   does the same), so the button and the Delete key both send the synced delete command (type 7),
+//   whose executor FUN_007CCF7F sets the unit's HP to 0 through 0x4820A1 (flag 1) for most protos, or
+//   asks the kill queue with flags 1 0 0 for a proto with flag 0Dh. The two calls are wrapped: the first
+//   fires the blast before the setter, the second marks the unit as deleted so the kill handler's wrapper
+//   knows the kill is a delete. Without the tag a delete gives no blast.
+// - <DetonationHitpointThreshold>Ratio</DetonationHitpointThreshold>: when a loss of HP leaves the unit
+//   at or under that share of its max HP, it detonates by itself: the shared add-HP hook of
+//   overhealSources (0x4823A3, which TakeDamage's subtraction 0x49B822 reaches) reports every loss, and
+//   the unit's kill is asked from the queue with the combat flags, so the drain fires the blast.
+// - <DetonationHitpointDecay>HP per second</DetonationHitpointDecay>: with a threshold, the unit does
+//   not die at once but loses that many HP per second of game time from the threshold on, through the
+//   HP setter, and detonates when it reaches 0 (or when anything else kills it). Healed back over the
+//   threshold, it stops decaying until the next loss. The decaying units are kept by unit ID (the same
+//   order on every machine) and forgotten on a new game and a data load; a saved game does not keep them.
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
+#include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 
@@ -3230,6 +3691,14 @@ Sites: `DetonationKillCall` `0x493D8F` (5 B), `DetonationAreaHead` `0x4C9D89` (1
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+namespace uhc {
+extern void (*g_hpLoss)(const char* unit, float amount);  // overhealsources.cpp
+bool InstallOverhealAddHook();
+bool OverhealAddHookInstalled();
+}  // namespace uhc
 
 namespace {
 
@@ -3255,15 +3724,60 @@ using AreaFn = void(__thiscall*)(const char* world, std::int32_t unit, char* act
                                  std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t* hit, std::uint32_t flag,
                                  const void* offset);
 const auto kArea = reinterpret_cast<AreaFn>(0x004C9D89);
+using KillAskFn = void(__thiscall*)(char* unit, std::int32_t a, std::int32_t b, std::int32_t c);
+const auto kKillAsk = reinterpret_cast<KillAskFn>(0x004B4DC2);
+using SetHpFn = void(__thiscall*)(char* unit, float value, std::int32_t flag);
+const auto kSetHp = reinterpret_cast<SetHpFn>(0x004820A1);
+using MaxHpFn = float(__thiscall*)(const char* unit);
+const auto kMaxHp = reinterpret_cast<MaxHpFn>(0x00480408);
+using IsAliveFn = bool(__thiscall*)(const char* unit);
+constexpr std::uint32_t kDeleteSetHpCall = 0x007CD0CF;
+constexpr std::uint32_t kDeleteKillCall = 0x007CD0DC;
+constexpr std::size_t kUnitContainer = 0x6C;  // -1 when the unit is not inside another
 
 struct Detonation {
   std::wstring name;
   std::int32_t action = -2;  // -2: not looked up yet, -1: the proto has no action of that name
+  std::wstring command;      // <DetonationCommand>: the proto command that detonates (a delete)
+  float threshold = -1.0f;   // <DetonationHitpointThreshold>: the HP ratio that detonates by itself
+  float decay = -1.0f;       // <DetonationHitpointDecay>: HP lost per second under the threshold
 };
 
 std::unordered_map<std::int32_t, Detonation> g_protos;  // by proto ID; the map's shape is fixed after the load
 bool g_log = false;
 int g_logLines = 0;
+
+struct Decay {
+  float perSecond;
+  std::uint32_t lastMs;  // game time of the last step applied
+};
+std::set<std::int32_t> g_deleting;    // unit IDs the delete executor sent to the kill queue
+std::set<std::int32_t> g_asked;       // unit IDs whose kill the threshold asked, until the handler runs
+std::map<std::int32_t, Decay> g_decay;  // by unit ID
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
+
+bool IsAlive(const char* unit) { return (*reinterpret_cast<IsAliveFn const* const*>(unit))[0xA4 / 4](unit); }
+
+const char* World() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  return game == nullptr ? nullptr : *reinterpret_cast<const char* const*>(game + 0x13C);
+}
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= *reinterpret_cast<const std::int32_t*>(world + 0x10)) {
+    return nullptr;
+  }
+  char* unit = (*reinterpret_cast<char* const* const*>(world + 0x0C))[id & 0x3FFFF];
+  return unit != nullptr && *reinterpret_cast<const std::int32_t*>(unit + 0x10) == id ? unit : nullptr;
+}
+
+void Forget(char*) {
+  g_deleting.clear();
+  g_asked.clear();
+  g_decay.clear();
+}
 
 bool Bit(const char* owner, std::size_t array, std::uint32_t bit) {
   const auto* bits = *reinterpret_cast<const std::uint8_t* const*>(owner + array);
@@ -3320,7 +3834,64 @@ bool __cdecl ReadDetonation(void*, const char* node, char* proto) {
   return true;
 }
 
-void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+const wchar_t* NodeText(const char* node) { return *reinterpret_cast<const wchar_t* const*>(node + 0x14); }
+
+bool __cdecl ReadCommand(void*, const char* node, char* proto) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  if (text == nullptr || text[0] == L'\0') {
+    uhc::Log(L"detonationDeath: proto %d: <DetonationCommand> names no command, ignored", id);
+    return true;
+  }
+  g_protos[id].command = text;
+  if (g_log) {
+    uhc::Log(L"detonationDeath: proto %d detonates on its command %ls (a delete)", id, text);
+  }
+  return true;
+}
+
+bool ReadRatio(const char* node, char* proto, const wchar_t* tag, float* out, float low, float high) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  wchar_t* end = nullptr;
+  const double value = text == nullptr ? -1.0 : std::wcstod(text, &end);
+  if (text == nullptr || end == text || !(value >= low) || !(value <= high)) {
+    uhc::Log(L"detonationDeath: proto %d: <%ls> needs a number from %g to %g, ignored", id, tag, static_cast<double>(low),
+             static_cast<double>(high));
+    return true;
+  }
+  *out = static_cast<float>(value);
+  return true;
+}
+
+bool __cdecl ReadThreshold(void*, const char* node, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  float value = -1.0f;
+  ReadRatio(node, proto, L"DetonationHitpointThreshold", &value, 0.0f, 1.0f);
+  if (value >= 0.0f) {
+    g_protos[id].threshold = value;
+    if (g_log) {
+      uhc::Log(L"detonationDeath: proto %d detonates at %.0f %% of its hit points", id, static_cast<double>(value * 100.0f));
+    }
+  }
+  return true;
+}
+
+bool __cdecl ReadDecay(void*, const char* node, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  float value = -1.0f;
+  ReadRatio(node, proto, L"DetonationHitpointDecay", &value, 0.0f, 1.0e6f);
+  if (value >= 0.0f) {
+    g_protos[id].decay = value;
+    if (g_log) {
+      uhc::Log(L"detonationDeath: proto %d loses %.2f hit points a second under its threshold", id,
+               static_cast<double>(value));
+    }
+  }
+  return true;
+}
+
+void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, bool deleted) {
   const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
   if (proto == nullptr) {
     return;
@@ -3328,6 +3899,14 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
   const std::int32_t protoId = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
   const auto found = g_protos.find(protoId);
   if (found == g_protos.end() || found->second.action == -1 || Bit(unit, kUnitState, kDeadBit)) {
+    return;
+  }
+  if (deleted && found->second.command.empty()) {
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"detonationDeath: unit %d, proto %d: deleted without a DetonationCommand, no blast",
+               *reinterpret_cast<std::int32_t*>(unit + kUnitId), protoId);
+    }
     return;
   }
   const char* game = Game();
@@ -3345,15 +3924,135 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
         Bit(action, kActionFlags, kAreaFlagBit) ? 1 : 0, reinterpret_cast<const void*>(kZeroVector));
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
-             protoId, static_cast<double>(position[0]), static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF);
+    uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u%ls", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
+             protoId, static_cast<double>(position[0]), static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF,
+             deleted ? L" (a delete)" : L"");
   }
 }
 
 // Replaces the drain's call of the kill handler.
 void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
-  Detonate(unit, a, b, c);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + kUnitId);
+  const bool deleted = g_deleting.erase(id) > 0;
+  g_asked.erase(id);
+  g_decay.erase(id);
+  Detonate(unit, a, b, c, deleted);
   kKill(unit, a, b, c);
+}
+
+// Replaces the delete executor's call of the HP setter (a proto without flag 0Dh): the blast first,
+// while the unit is whole.
+void __fastcall DeleteSetHp(char* unit, void*, float value, std::int32_t flag) {
+  Detonate(unit, 1, 0, 0, true);
+  kSetHp(unit, value, flag);
+}
+
+// Replaces the delete executor's ask of the kill queue (a proto with flag 0Dh): the handler's wrapper
+// then knows the kill is a delete.
+void __fastcall DeleteKill(char* unit, void*, std::int32_t a, std::int32_t b, std::int32_t c) {
+  g_deleting.insert(*reinterpret_cast<const std::int32_t*>(unit + kUnitId));
+  kKillAsk(unit, a, b, c);
+}
+
+// The threshold: from the shared add-HP hook, for every loss, before it is applied.
+void HpLoss(const char* unit, float amount) {
+  const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
+  if (proto == nullptr || g_protos.empty()) {
+    return;
+  }
+  const auto found = g_protos.find(*reinterpret_cast<const std::int32_t*>(proto + kProtoId));
+  if (found == g_protos.end() || found->second.threshold < 0.0f || found->second.action == -1) {
+    return;
+  }
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + kUnitId);
+  if (Bit(unit, kUnitState, kDeadBit) || !IsAlive(unit) ||
+      *reinterpret_cast<const std::int32_t*>(unit + kUnitContainer) >= 0 || g_asked.count(id) != 0) {
+    return;
+  }
+  const float after = *reinterpret_cast<const float*>(unit + 0x64) + amount;
+  const float max = kMaxHp(unit);
+  if (after < 1e-6f || !(max > 0.0f) || after / max > found->second.threshold) {
+    return;  // the killing blow's own path, or still above the threshold
+  }
+  if (found->second.decay > 0.0f) {
+    const char* world = World();
+    if (world == nullptr || g_decay.count(id) != 0) {
+      return;
+    }
+    g_decay[id] = Decay{found->second.decay, *reinterpret_cast<const std::uint32_t*>(world + 0x108)};
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"detonationDeath: unit %d, proto %d: HP %.1f of %.1f (%.0f %%) under the threshold %.0f %%: loses %.2f HP a "
+               L"second from here",
+               id, found->first, static_cast<double>(after), static_cast<double>(max),
+               static_cast<double>(after / max * 100.0f), static_cast<double>(found->second.threshold * 100.0f),
+               static_cast<double>(found->second.decay));
+    }
+    return;
+  }
+  g_asked.insert(id);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"detonationDeath: unit %d, proto %d: HP %.1f of %.1f (%.0f %%) under the threshold %.0f %%: kill queued", id,
+             found->first, static_cast<double>(after), static_cast<double>(max),
+             static_cast<double>(after / max * 100.0f), static_cast<double>(found->second.threshold * 100.0f));
+  }
+  kKillAsk(const_cast<char*>(unit), 0, 0, 0);
+}
+
+// The decay: after each world update of the game world, by game time; a new game forgets every unit.
+void Tick(char* world, std::int32_t) {
+  if (world != World()) {
+    return;
+  }
+  const std::uint32_t now = *reinterpret_cast<const std::uint32_t*>(world + 0x108);
+  const std::uint32_t step = *reinterpret_cast<const std::uint32_t*>(world + 0xF8);
+  const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;
+  if (!sameGame) {
+    Forget(nullptr);
+    g_world = world;
+  }
+  g_lastTime = now;
+  g_lastStep = step;
+  for (auto it = g_decay.begin(); it != g_decay.end();) {
+    char* unit = UnitById(world, it->first);
+    if (unit == nullptr || !IsAlive(unit) || Bit(unit, kUnitState, kDeadBit)) {
+      it = g_decay.erase(it);
+      continue;
+    }
+    const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
+    const auto found = proto == nullptr ? g_protos.end() : g_protos.find(*reinterpret_cast<const std::int32_t*>(proto + kProtoId));
+    const float hp = *reinterpret_cast<const float*>(unit + 0x64);
+    const float max = kMaxHp(unit);
+    if (found == g_protos.end() || found->second.threshold < 0.0f || !(max > 0.0f) || hp / max > found->second.threshold) {
+      if (g_log && g_logLines < kMaxLogLines && found != g_protos.end()) {
+        ++g_logLines;
+        uhc::Log(L"detonationDeath: unit %d is back over its threshold (HP %.1f): the decay stops", it->first,
+                 static_cast<double>(hp));
+      }
+      it = g_decay.erase(it);
+      continue;
+    }
+    const std::uint32_t elapsed = now - it->second.lastMs;
+    it->second.lastMs = now;
+    if (elapsed == 0) {
+      ++it;
+      continue;
+    }
+    const float value = hp - it->second.perSecond * static_cast<float>(elapsed) * 0.001f;
+    if (value < 1e-6f) {
+      if (g_log && g_logLines < kMaxLogLines) {
+        ++g_logLines;
+        uhc::Log(L"detonationDeath: unit %d decayed to 0: kill queued", it->first);
+      }
+      g_asked.insert(it->first);
+      it = g_decay.erase(it);
+      kKillAsk(unit, 0, 0, 0);
+      continue;
+    }
+    kSetHp(unit, value, 0);
+    ++it;
+  }
 }
 
 }  // namespace
@@ -3372,12 +4071,24 @@ Outcome ApplyDetonationDeath(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("detonationDeath", {&sites::kDetonationKillCall, &sites::kDetonationAreaHead}) ||
+  // overhealSources or overhealDecay may already have written the add-HP hook: its bytes are then ours.
+  const Site* addEntry = OverhealAddHookInstalled() ? &sites::kHpSetter : &sites::kOverhealAddEntry;
+  if (!VerifyAll("detonationDeath", {&sites::kDetonationKillCall, &sites::kDetonationAreaHead, addEntry, &sites::kHpSetter,
+                                     &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot, &sites::kKillQueueAsk,
+                                     &sites::kDeleteSetHpCall, &sites::kDeleteKillCall, &sites::kDetonationTakeDamageHp}) ||
       !AddProtoTagHandler("DetonationProtoAction", &ReadDetonation) ||
-      !WriteCall(kKillCall, reinterpret_cast<const void*>(&Kill))) {
+      !AddProtoTagHandler("DetonationCommand", &ReadCommand) ||
+      !AddProtoTagHandler("DetonationHitpointThreshold", &ReadThreshold) ||
+      !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) || !OnDatabaseLoad(&Forget) ||
+      !WriteCall(kKillCall, reinterpret_cast<const void*>(&Kill)) ||
+      !WriteCall(kDeleteSetHpCall, reinterpret_cast<const void*>(&DeleteSetHp)) ||
+      !WriteCall(kDeleteKillCall, reinterpret_cast<const void*>(&DeleteKill)) || !InstallOverhealAddHook() ||
+      !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
   }
-  Log(L"detonationDeath: the proto tag DetonationProtoAction is on");
+  g_hpLoss = &HpLoss;
+  Log(L"detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold and "
+      L"DetonationHitpointDecay are on (multiplayer unverified)");
   return Outcome::kApplied;
 }
 

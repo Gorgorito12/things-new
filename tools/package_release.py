@@ -11,6 +11,9 @@ release"). It checks build/Release/UHC.dll first and stops if:
 The zip holds one folder, UHC-<version>/, with:
   UHC.dll
   Startup/uhc.cfg    examples/Startup/uhc.cfg with every key commented out (stock behavior)
+  beside-another-dll/dinput8.dll              the same code, for a game that keeps another UHC.dll
+  beside-another-dll/engine-ext/engine-ext.cfg  the same template, for that DLL
+  art/effects/uhc_rings/  the aura rings of tools/rings, for a game's art folder
   LICENSE.txt
   README.txt         the quick start for modders
 The game exe is not included: each modder patches their own copy with the loader's patcher.
@@ -70,6 +73,13 @@ def pe_exports(data):
     return names
 
 
+def check_fresh(dll, wanted):
+    sources = [ROOT / "CMakeLists.txt"] + [p for p in (ROOT / "src").rglob("*") if p.is_file() and wanted(p)]
+    newer = [p for p in sources if p.stat().st_mtime > dll.stat().st_mtime]
+    if newer:
+        fail(f"{newer[0].relative_to(ROOT)} is newer than {dll.name}; rebuild first")
+
+
 def check_dll(dll, version):
     if not dll.exists():
         fail(f"{dll} not found; build first: cmake --build build --config Release")
@@ -78,19 +88,29 @@ def check_dll(dll, version):
         fail("UHC.dll does not export _UHCMain@0")
     if f"UHC.dll {version}".encode("utf-16-le") not in data:
         fail(f"UHC.dll is not version {version}; rebuild after changing CMakeLists.txt")
-    sources = [ROOT / "CMakeLists.txt"] + [p for p in (ROOT / "src").rglob("*") if p.is_file()]
-    newer = [p for p in sources if p.stat().st_mtime > dll.stat().st_mtime]
-    if newer:
-        fail(f"{newer[0].relative_to(ROOT)} is newer than UHC.dll; rebuild first")
+    check_fresh(dll, lambda p: not p.name.startswith("engineext"))  # those are only in dinput8.dll
     return data
 
 
-def template_cfg(version):
+def check_proxy(dll, version):
+    """dinput8.dll: the same checks, and the system DLL's main export."""
+    if not dll.exists():
+        fail(f"{dll} not found; build first: cmake --build build --config Release")
+    data = dll.read_bytes()
+    if "DirectInput8Create" not in pe_exports(data):
+        fail("dinput8.dll does not export DirectInput8Create")
+    if f"dinput8.dll {version}".encode("utf-16-le") not in data:
+        fail(f"dinput8.dll is not version {version}; rebuild after changing CMakeLists.txt")
+    check_fresh(dll, lambda p: True)
+    return data
+
+
+def template_cfg(version, title=None):
     """The example cfg with every key line commented out."""
     lines = [
-        f"# Startup\\uhc.cfg template for UHC.dll {version}.",
+        title or f"# Startup\\uhc.cfg template for UHC.dll {version}.",
         "# Every key is commented out, so the game behaves as stock until you enable one: remove",
-        "# the \"# \" in front of a key line. Keep the other comment lines as they are.",
+        "# the \"#\" in front of a key line. Keep the other comment lines as they are.",
         "#",
     ]
     active = 0
@@ -129,7 +149,7 @@ Adding it to your mod
 3. From this package's UHC-{version} folder, copy UHC.dll next to the exe and the Startup
    folder into the mod folder, replacing the patcher's files. If you run the patcher again
    later, keep a copy of your own uhc.cfg first, then copy UHC.dll and your uhc.cfg back.
-4. In Startup\\uhc.cfg, remove the "# " in front of ignoreRegistryPath (always needed in a mod
+4. In Startup\\uhc.cfg, remove the "#" in front of ignoreRegistryPath (always needed in a mod
    folder) and of the keys you want. Some keys need data or art from your mod: see the guide.
 5. Start the mod's age3y.exe. UHC.log appears next to it: its first line is "UHC.dll {version}",
    and every key you enabled says "applied".
@@ -137,6 +157,24 @@ Adding it to your mod
    age3y.backupuhc). Do not ship a copy of the game: your installer builds the complete folder
    from each player's own game install. Players can then start it however they like, because
    UHC.dll makes the exe's folder the working directory. They install nothing else.
+
+A game that must keep another UHC.dll
+-------------------------------------
+If your game's loader runs a UHC.dll you do not want to replace, use the beside-another-dll
+folder instead. Nothing of that game changes: not its exe, its UHC.dll, its cfg or data\\uhc.
+1. Copy what is in beside-another-dll (dinput8.dll and the engine-ext folder) next to the exe.
+2. In engine-ext\\engine-ext.cfg, remove the "#" in front of the keys you want. Data files
+   that keys read by default go in engine-ext\\ too.
+3. Start the game. engine-ext\\engine-ext.log says "applied" or "FAILED" for each key. A key
+   fails, and changes nothing, when the other DLL already patched a place it needs.
+To remove it, delete dinput8.dll and the engine-ext folder.
+
+Aura rings
+----------
+art\\effects\\uhc_rings holds coloured rings that show which units an aura is working on. They
+are data: copy that folder to the game's art\\effects and name one in an aura, with
+<modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
+<modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -239,6 +277,7 @@ resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
+pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back
 hcTargetTechs [log]           tech flags HCTargetEnemy and HCTargetAll
 detonationDeath [log]         <DetonationProtoAction> fires an action when a unit dies
@@ -267,6 +306,7 @@ def main(argv):
     version = read_version()
     dll_path = ROOT / "build" / "Release" / "UHC.dll"
     dll = check_dll(dll_path, version)
+    proxy = check_proxy(ROOT / "build" / "Release" / "dinput8.dll", version)
     out = ROOT / "dist" / f"UHC-{version}.zip"
     if out.exists() and not force:
         fail(f"{out.relative_to(ROOT)} already exists; pass --force to replace it")
@@ -276,11 +316,17 @@ def main(argv):
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr(f"{top}/UHC.dll", dll)
         z.writestr(f"{top}/Startup/uhc.cfg", template_cfg(version))
+        z.writestr(f"{top}/beside-another-dll/dinput8.dll", proxy)
+        z.writestr(f"{top}/beside-another-dll/engine-ext/engine-ext.cfg",
+                   template_cfg(version, f"# engine-ext\\engine-ext.cfg template for dinput8.dll {version}."))
+        for ring in sorted((ROOT / "tools" / "rings").glob("ring_*")):
+            z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
         z.writestr(f"{top}/LICENSE.txt", license_text)
         z.writestr(f"{top}/README.txt", readme(version))
     print(f"wrote {out.relative_to(ROOT)}")
     print(f"  SHA-256 zip     {hashlib.sha256(out.read_bytes()).hexdigest()}")
     print(f"  SHA-256 UHC.dll {hashlib.sha256(dll).hexdigest()}")
+    print(f"  SHA-256 dinput8.dll {hashlib.sha256(proxy).hexdigest()}")
 
 
 if __name__ == "__main__":

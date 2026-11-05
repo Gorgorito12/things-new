@@ -15,6 +15,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` from git; run it before the commit of a new key or test video. | <!-- private -->
 | `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
 | `make_gifs.py` | Makes every test GIF to one standard (800 px, 8 fps, 12 s, 4 MB) from the masters in `rea/media-masters`, with the cuts in `gifs.txt`. `--check` fails on one out of it. |
+| `make_rings.py` | Draws the coloured aura rings in `tools/rings/`: for each, an `.xml`, its particles and textures by size, for `art/effects/uhc_rings/`. `--check` compares them. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
@@ -58,6 +59,9 @@ It then writes `dist\UHC-x.y.z.zip` with `UHC.dll`, `Startup\uhc.cfg` (the examp
 commented out), `README.txt` and `LICENSE.txt`, and prints the SHA-256 of the zip and of the DLL.
 An existing zip is kept unless `--force` is given. The procedure around it is in
 [developer-guide.md, section 7](../docs/developer-guide.md#7-making-a-release).
+
+The zip also holds `beside-another-dll/`: `dinput8.dll` and `engine-ext/engine-ext.cfg`, for a game that keeps another
+`UHC.dll`. The script stops if `dinput8.dll` is missing, is not this version, or lacks `DirectInput8Create`.
 
 ## bar.py
 
@@ -237,6 +241,8 @@ live text on every frame:
   identical in it, so a still camera costs little; an MP4 as source smears colour and text, and
   its noise makes the GIF grow.
 - `--log-top`: draws the `--log` lines above the game's bottom panel, for a feature that shows in it.
+- `--gold 1,2`: a line with those players' gold, read from the game, for a test of resources where the second player's
+  stockpile shows nowhere on screen.
 - `--background`: leaves the focus alone. For a copy with `multipleInstances background`: it needs
   no window in front, so a test can run while somebody uses the PC.
 - `--hover <x>,<y>`: rests the cursor on a client point (a command panel button), so the button's
@@ -256,6 +262,9 @@ it). The method and its pitfalls are in
 [developer-guide.md, "Driving the game unattended"](../docs/developer-guide.md#driving-the-game-unattended).
 
 **Which game the tracers attach to.** The `re/` tracers and `inspect_unittypes.py` attach to the `age3y.exe` whose exe is in `UHC_GAME_DIR` (or `UHC_TESTBED`); with no folder set and more than one copy running they stop with an error instead of picking one, since other sessions may run games beside yours (2026-11-03: a tracer attached to another session's game this way). Example: `set UHC_GAME_DIR=C:\AoE3-UHC-WoLReal`.
+
+**A bed with an `engine-ext` folder** runs our `dinput8.dll` beside the bed's own `UHC.dll`: `deploy` copies `dinput8.dll` and
+`engine-ext\engine-ext.cfg` and leaves `UHC.dll` and the bed's cfg alone, and `log` reads `engine-ext\engine-ext.log`.
 
 ## re/trace_writes.py
 

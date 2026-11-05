@@ -17,6 +17,7 @@ Contents:
 - [Action tags](#action-tags)
 - [Transform calls](#transform-calls)
 - [Proto tags](#proto-tags)
+- [Civ tags](#civ-tags)
 - [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
@@ -330,8 +331,8 @@ inline constexpr Site kRegenAddHp{"RegenAddHp", 0x0049087C, kRegenAddHpBytes, si
 inline constexpr std::uint8_t kDanceRegenAddHpBytes[] = {0x6A, 0x01, 0x50, 0x8B, 0xCE, 0xE8, 0x63, 0x83, 0xE0, 0xFF, 0x83, 0xC5, 0x01, 0x3B, 0xEB, 0x0F, 0x8C, 0xF7, 0xFE, 0xFF, 0xFF};
 inline constexpr Site kDanceRegenAddHp{"DanceRegenAddHp", 0x0067A036, kDanceRegenAddHpBytes, sizeof(kDanceRegenAddHpBytes)};
 
-inline constexpr std::uint8_t kAbstractTypesEndBytes[] = {0x83, 0xC3, 0x04, 0x83, 0xC6, 0x01, 0x81, 0xFB, 0x1C, 0x12, 0xDC, 0x00, 0x7C, 0xBF, 0x5F, 0x5E, 0xB0, 0x01, 0x5B, 0x59, 0xC3};
-inline constexpr Site kAbstractTypesEnd{"AbstractTypesEnd", 0x0051BA23, kAbstractTypesEndBytes, sizeof(kAbstractTypesEndBytes)};
+inline constexpr std::uint8_t kAbstractTypesEndBytes[] = {0x7C, 0xBF, 0x5F, 0x5E, 0xB0, 0x01, 0x5B, 0x59, 0xC3};
+inline constexpr Site kAbstractTypesEnd{"AbstractTypesEnd", 0x0051BA2F, kAbstractTypesEndBytes, sizeof(kAbstractTypesEndBytes)};
 
 inline constexpr std::uint8_t kDotTakeDamageEntryBytes[] = {0x81, 0xEC, 0x8C, 0x00, 0x00, 0x00, 0x80, 0xBC, 0x24, 0xC0, 0x00, 0x00, 0x00, 0x01};
 inline constexpr Site kDotTakeDamageEntry{"DotTakeDamageEntry", 0x0049B3D9, kDotTakeDamageEntryBytes, sizeof(kDotTakeDamageEntryBytes)};
@@ -1044,8 +1045,11 @@ inline constexpr Site kModifyTypeNameTail{"ModifyTypeNameTail", 0x005FE6C7, kMod
 inline constexpr std::uint8_t kModifyTypeNameCompareBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57, 0x8B, 0xF1, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x26};
 inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10, kModifyTypeNameCompareBytes, sizeof(kModifyTypeNameCompareBytes)};
 
-inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
-inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
+inline constexpr std::uint8_t kDataSubtypeLookupHeadBytes[] = {0x57, 0x8B, 0x7C, 0x24, 0x08};
+inline constexpr Site kDataSubtypeLookupHead{"DataSubtypeLookupHead", 0x0061FF5D, kDataSubtypeLookupHeadBytes, sizeof(kDataSubtypeLookupHeadBytes)};
+
+inline constexpr std::uint8_t kDataSubtypeAttrCallBytes[] = {0xE8, 0x80, 0x88, 0xF7, 0xFF};
+inline constexpr Site kDataSubtypeAttrCall{"DataSubtypeAttrCall", 0x006206B2, kDataSubtypeAttrCallBytes, sizeof(kDataSubtypeAttrCallBytes)};
 
 inline constexpr std::uint8_t kTeamBountyPayBytes[] = {0x8B, 0x4C, 0x24, 0x14, 0x8B, 0x16};
 inline constexpr Site kTeamBountyPay{"TeamBountyPay", 0x0049BDAB, kTeamBountyPayBytes, sizeof(kTeamBountyPayBytes)};
@@ -1056,8 +1060,8 @@ inline constexpr Site kBountyTagHandler{"BountyTagHandler", 0x0051D669, kBountyT
 inline constexpr std::uint8_t kBountyKillBranchBytes[] = {0x8B, 0x4C, 0x24, 0x28, 0x51};
 inline constexpr Site kBountyKillBranch{"BountyKillBranch", 0x004D4E0C, kBountyKillBranchBytes, sizeof(kBountyKillBranchBytes)};
 
-inline constexpr std::uint8_t kTechFlagCallBytes[] = {0xE8, 0x07, 0x00, 0x00, 0x00};
-inline constexpr Site kTechFlagCall{"TechFlagCall", 0x00620C23, kTechFlagCallBytes, sizeof(kTechFlagCallBytes)};
+inline constexpr std::uint8_t kTechFlagHeadBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08};
+inline constexpr Site kTechFlagHead{"TechFlagHead", 0x00620C2F, kTechFlagHeadBytes, sizeof(kTechFlagHeadBytes)};
 
 inline constexpr std::uint8_t kTechApplyCallBytes[] = {0xE8, 0x2E, 0x0A, 0x00, 0x00};
 inline constexpr Site kTechApplyCall{"TechApplyCall", 0x0094D0AE, kTechApplyCallBytes, sizeof(kTechApplyCallBytes)};
@@ -1076,6 +1080,18 @@ inline constexpr Site kDetonationKillCall{"DetonationKillCall", 0x00493D8F, kDet
 
 inline constexpr std::uint8_t kDetonationAreaHeadBytes[] = {0x8B, 0x44, 0x24, 0x20, 0x81, 0xEC, 0xF8, 0x0F, 0x00, 0x00};
 inline constexpr Site kDetonationAreaHead{"DetonationAreaHead", 0x004C9D89, kDetonationAreaHeadBytes, sizeof(kDetonationAreaHeadBytes)};
+
+inline constexpr std::uint8_t kDeleteSetHpCallBytes[] = {0xE8, 0xCD, 0x4F, 0xCB, 0xFF};
+inline constexpr Site kDeleteSetHpCall{"DeleteSetHpCall", 0x007CD0CF, kDeleteSetHpCallBytes, sizeof(kDeleteSetHpCallBytes)};
+
+inline constexpr std::uint8_t kDeleteKillCallBytes[] = {0xE8, 0xE1, 0x7C, 0xCE, 0xFF};
+inline constexpr Site kDeleteKillCall{"DeleteKillCall", 0x007CD0DC, kDeleteKillCallBytes, sizeof(kDeleteKillCallBytes)};
+
+inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
+inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
+
+inline constexpr std::uint8_t kDetonationTakeDamageHpBytes[] = {0xE8, 0x7C, 0x6B, 0xFE, 0xFF};
+inline constexpr Site kDetonationTakeDamageHp{"DetonationTakeDamageHp", 0x0049B822, kDetonationTakeDamageHpBytes, sizeof(kDetonationTakeDamageHpBytes)};
 
 inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
 inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
@@ -1124,6 +1140,9 @@ inline constexpr Site kPlayerProtoEntry{"PlayerProtoEntry", 0x0045311B, kPlayerP
 
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
+
+inline constexpr std::uint8_t kPillageHitCallBytes[] = {0x8B, 0xAC, 0x24, 0xAC, 0x00, 0x00, 0x00, 0x8B, 0x5C, 0x24, 0x20, 0x50, 0x51, 0x52, 0x55, 0x8B, 0xCB, 0xE8, 0x11, 0x06, 0x00, 0x00};
+inline constexpr Site kPillageHitCall{"PillageHitCall", 0x0049B72B, kPillageHitCallBytes, sizeof(kPillageHitCallBytes)};
 
 inline constexpr std::uint8_t kTrainQueueAddCallBytes[] = {0xE8, 0x75, 0x60, 0xAC, 0xFF};
 inline constexpr Site kTrainQueueAddCall{"TrainQueueAddCall", 0x009CE81A, kTrainQueueAddCallBytes, sizeof(kTrainQueueAddCallBytes)};
@@ -1455,6 +1474,27 @@ inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E
 inline constexpr std::uint8_t kAuraScanBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x96, 0x00, 0x00, 0x00, 0x56, 0x8B};
 inline constexpr Site kAuraScan{"AuraScan", 0x009CFF9A, kAuraScanBytes, sizeof(kAuraScanBytes)};
 
+inline constexpr std::uint8_t kAuraModelBlockBytes[] = {0x8B, 0x80, 0xA4, 0x00, 0x00, 0x00, 0x83, 0xF8, 0xFF};
+inline constexpr Site kAuraModelBlock{"AuraModelBlock", 0x009D053F, kAuraModelBlockBytes, sizeof(kAuraModelBlockBytes)};
+
+inline constexpr std::uint8_t kAuraHasModelCallBytes[] = {0xE8, 0x55, 0x23, 0xFF, 0xFF};
+inline constexpr Site kAuraHasModelCall{"AuraHasModelCall", 0x009D0584, kAuraHasModelCallBytes, sizeof(kAuraHasModelCallBytes)};
+
+inline constexpr std::uint8_t kAuraHangModelCallBytes[] = {0xE8, 0x12, 0xFE, 0xFE, 0xFF};
+inline constexpr Site kAuraHangModelCall{"AuraHangModelCall", 0x009D06DC, kAuraHangModelCallBytes, sizeof(kAuraHangModelCallBytes)};
+
+inline constexpr std::uint8_t kModelByIdBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x83, 0xF8};
+inline constexpr Site kModelById{"ModelById", 0x00405E83, kModelByIdBytes, sizeof(kModelByIdBytes)};
+
+inline constexpr std::uint8_t kUnitHasModelBytes[] = {0x57, 0x8B, 0xF9, 0x8B, 0x47, 0x60, 0x85, 0xC0};
+inline constexpr Site kUnitHasModel{"UnitHasModel", 0x009C28DE, kUnitHasModelBytes, sizeof(kUnitHasModelBytes)};
+
+inline constexpr std::uint8_t kUnitAttachModelBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x56, 0x8B};
+inline constexpr Site kUnitAttachModel{"UnitAttachModel", 0x009C04F3, kUnitAttachModelBytes, sizeof(kUnitAttachModelBytes)};
+
+inline constexpr std::uint8_t kUnitRemoveModelBytes[] = {0x57, 0x8B, 0xF9, 0x8B, 0x47, 0x60, 0x85, 0xC0};
+inline constexpr Site kUnitRemoveModel{"UnitRemoveModel", 0x009C2885, kUnitRemoveModelBytes, sizeof(kUnitRemoveModelBytes)};
+
 inline constexpr std::uint8_t kInventoryAddBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x53, 0x8B, 0xD9, 0x8B, 0x13, 0x85, 0xD2, 0x8B, 0x88, 0x3C, 0x01};
 inline constexpr Site kInventoryAdd{"InventoryAdd", 0x0049A5E6, kInventoryAddBytes, sizeof(kInventoryAddBytes)};
 
@@ -1686,6 +1726,8 @@ void Log(const wchar_t* format, ...);
 #include <cstdio>
 #include <cwchar>
 
+#include "hostfiles.h"
+
 namespace uhc {
 
 void Log(const wchar_t* format, ...) {
@@ -1698,7 +1740,7 @@ void Log(const wchar_t* format, ...) {
   if (slash == nullptr) {
     return;
   }
-  wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - path), L"UHC.log");
+  wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - path), kLogFile);
 
   FILE* file = nullptr;
   if (_wfopen_s(&file, path, L"a, ccs=UTF-8") != 0 || file == nullptr) {
@@ -1965,6 +2007,7 @@ Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
 Outcome ApplyCostEscalationTechs(const Config& config);
 Outcome ApplyTrainBatchSize(const Config& config);
+Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
@@ -2057,9 +2100,9 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
+    {"pillageGold", ApplyPillageGold},
     {"veterancyBonus", ApplyVeterancyBonus},
     {"hcTargetTechs", ApplyHcTargetTechs},
-    {"detonationDeath", ApplyDetonationDeath},
     {"accuracyTechs", ApplyAccuracyTechs},
     {"cratePriority", ApplyCratePriority},
     {"sharedBuildLimit", ApplySharedBuildLimit},
@@ -2121,6 +2164,9 @@ inline constexpr Feature kFeatures[] = {
     {"overhealSources", ApplyOverhealSources},
     // After overhealSources: they share the add-HP hook, which the first one writes.
     {"overhealDecay", ApplyOverhealDecay},
+    // After overhealDecay: its threshold uses the same add-HP hook, and overhealSources verifies the
+    // stock bytes of that entry.
+    {"detonationDeath", ApplyDetonationDeath},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
@@ -2143,7 +2189,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
@@ -2358,7 +2404,7 @@ bool AddWorldTick(WorldTick tick);
 
 namespace {
 
-constexpr std::size_t kMaxTicks = 4;
+constexpr std::size_t kMaxTicks = 8;
 
 using WorldUpdateFn = bool(__fastcall*)(char* world, void* unused, std::int32_t a, std::int32_t deltaMs);
 
@@ -2776,7 +2822,7 @@ extern "C" void UhcProtoTagsHook();  // hooks/prototag_hooks.asm
 
 namespace {
 
-constexpr std::size_t kMaxTags = 16;
+constexpr std::size_t kMaxTags = 32;
 constexpr std::uint32_t kTableTail = 0x0051DB0F;  // pop edi / mov al,1 / pop esi / pop ecx (5 B)
 
 using RegisterFn = void(__thiscall*)(void* table, const char* name, uhc::ProtoTagHandler* handler);
@@ -2858,6 +2904,190 @@ UhcProtoTagsHook ENDP
 END
 ```
 
+## Civ tags
+
+### src/civtags.h
+
+```cpp
+// Tags of a <civ> in civs.xml that stock does not know: one hook on the parser's unknown-tag path,
+// shared by every key that reads one (civFirstTC's <firstTC>, sharedBuildLimit's <SettlerProtoName>).
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// `civ` is the civ object being filled (+8 its ID), `text` the element's text (may be null).
+using CivTagHandler = void (*)(const char* civ, std::int32_t civId, const wchar_t* text);
+
+// Makes a <civ> child element named `name` (case ignored) reach `handler`. Writes the hook the
+// first time, after checking the stock bytes. The parse runs after UHCMain, so every tag is seen.
+bool AddCivTagHandler(const char* name, CivTagHandler handler);
+
+}  // namespace uhc
+```
+
+### src/civtags.cpp
+
+```cpp
+#include "civtags.h"
+
+#include <cstddef>
+#include <cwchar>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcCivTagsHook();  // hooks/civfirsttc_hooks.asm
+
+namespace {
+
+constexpr std::size_t kMaxTags = 8;
+constexpr std::uint32_t kUnknownTag = 0x0052BB07;  // xor edi,edi / cmp dword ptr [ebx+80h],edi (8 B)
+
+struct Tag {
+  const char* name;
+  uhc::CivTagHandler handler;
+};
+
+Tag g_tags[kMaxTags] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// name (narrow) == tag (wide), case ignored.
+bool SameName(const char* name, const wchar_t* tag) {
+  for (;; ++name, ++tag) {
+    const wchar_t a = static_cast<wchar_t>(*name >= 'A' && *name <= 'Z' ? *name + 32 : *name);
+    const wchar_t b = *tag >= L'A' && *tag <= L'Z' ? *tag + 32 : *tag;
+    if (a != b) {
+      return false;
+    }
+    if (a == 0) {
+      return true;
+    }
+  }
+}
+
+}  // namespace
+
+// From the hook: true if the node's name is a registered tag (then it is consumed).
+extern "C" bool __stdcall UhcCivTagDispatch(const char* node, const char* civ) {
+  // The element name, as the parser's compare chain reads it: [[node+4]+18h][[node+18h]].
+  const std::int32_t index = Field<std::int32_t>(node, 0x18);
+  const char* names = Field<const char*>(node, 0x04);
+  if (index < 0 || names == nullptr || index >= Field<std::int32_t>(names, 0x1C)) {
+    return false;
+  }
+  const wchar_t* tag = Field<const wchar_t* const*>(names, 0x18)[index];
+  if (tag == nullptr) {
+    return false;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (!SameName(g_tags[i].name, tag)) {
+      continue;
+    }
+    const std::int32_t civId = civ == nullptr ? -1 : Field<std::int32_t>(civ, 0x08);
+    if (civId >= 0 && civId < 0x10000) {
+      g_tags[i].handler(civ, civId, Field<const wchar_t*>(node, 0x14));
+    }
+    return true;
+  }
+  return false;
+}
+
+namespace uhc {
+
+bool AddCivTagHandler(const char* name, CivTagHandler handler) {
+  if (g_count == kMaxTags) {
+    Log(L"civ tags: no room for %hs", name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("civ tags", {&sites::kCivTagUnknown, &sites::kCivTagNextNode}) ||
+        !WriteJmp(kUnknownTag, reinterpret_cast<const void*>(&UhcCivTagsHook), 8)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_tags[g_count++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/civfirsttc_hooks.asm
+
+```asm
+; Hooks for civFirstTC. Entered through a jmp written over the stock code; each leaves through an
+; explicit jmp to a verified continuation (docs/engine-symbols.md, "Civ first town center"). The
+; FirstTC test is in startingtc_hooks.asm (UhcStartingTcProtoHook), shared with startingTC, and the
+; map placement wrapper is C++ (UhcRmPlaceObjectDef in features/civfirsttc.cpp).
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcCivTagDispatch PROTO STDCALL node:DWORD, civ:DWORD  ; civtags.cpp; true: a registered tag, consumed
+UhcCivFirstTcTownProto PROTO STDCALL player:DWORD      ; the proto for the town units, or -1
+
+.data
+civTagResume    dd 0052BB0Fh    ; jle 52B43Dh / jmp 52C066h: the stock unknown-tag path, on the flags
+civTagNext      dd 0052B43Dh    ; the next child of the <civ> node
+townQueryResume dd 00679ACEh    ; push ebp / push esi / mov esi,[edi+80h]: the query of proto EBX
+
+.code
+
+; Replaces 0x52BB07..0x52BB0E (xor edi,edi / cmp dword ptr [ebx+80h],edi) in the civs.xml
+; parser FUN_0052A590: a child tag of <civ> that matched none of the stock names. ESI = the node,
+; EBX = database, [esp+10h] = the civ. UhcCivTagDispatch (civtags.cpp, shared by civFirstTC and
+; sharedBuildLimit) reads a registered tag and the hook goes to the next child, as every stock
+; handler does; any other tag runs the stock path (the resource names, then a silent skip).
+; 0x52B43D reads only the stack.
+UhcCivTagsHook PROC
+    TRACE_ONCE "civ tags civs.xml (0x52BB07)"
+    pushad
+    push dword ptr [esp+30h]        ; the civ: [esp+10h] at entry, +20h for pushad
+    push esi                        ; the node
+    call UhcCivTagDispatch
+    mov dword ptr [esp+1Ch], eax    ; popad's EAX slot
+    popad
+    test al, al
+    jne nextChild
+    xor edi, edi                    ; stolen 0x52BB07
+    cmp dword ptr [ebx+80h], edi    ; stolen 0x52BB09: the flags the jle at 0x52BB0F reads
+    jmp civTagResume
+nextChild:
+    jmp civTagNext
+UhcCivTagsHook ENDP
+
+; Replaces 0x679AC8..0x679ACD (mov ebx,[ecx+5E08h]) in FUN_0049039A, which gives the civ's
+; <townstartingunit> units to the first built unit of proto EBX (stock: TownCenter) when a colony
+; starts at it. EDI = player. EAX, ECX and EDX are written before they are read after 0x679ACE.
+; UhcCivFirstTcTownProto returns the civ's <firstTC> proto when the player's FirstTC is such a
+; building with a colony; otherwise EBX stays TownCenter.
+UhcCivFirstTcTownHook PROC
+    TRACE_ONCE "civFirstTC town units (0x679AC8)"
+    mov ebx, dword ptr [ecx+5E08h]  ; stolen 0x679AC8: TownCenter
+    push edi
+    call UhcCivFirstTcTownProto
+    test eax, eax
+    jl done
+    mov ebx, eax
+done:
+    jmp townQueryResume
+UhcCivFirstTcTownHook ENDP
+
+END
+```
+
 ## Tech subtypes
 
 ### src/techsubtypes.h
@@ -2904,16 +3134,22 @@ bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 #include "patch.h"
 
 extern "C" {
-void UhcTechSubtypeLookupHook();   // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeAttrHook();     // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeLookupHook();
+void UhcTechSubtypeLookupStock();
 void UhcTechSubtypeApplyHook();
 void UhcTechSubtypeUnapplyHook();
+char* g_uhcSubtypeEffect = nullptr;       // the effect whose subtype is being read, and its XML node
+const char* g_uhcSubtypeNode = nullptr;
 }
 
 namespace {
 
-constexpr std::size_t kMaxSubtypes = 16;
+constexpr std::size_t kMaxSubtypes = 32;
 constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
-constexpr std::uint32_t kNameLookupCall = 0x006206D7;  // setData's call of the lookup 0x61FF5D
+constexpr std::uint32_t kNameLookupHead = 0x0061FF5D;  // the lookup
+constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the attribute subtype
+constexpr std::uint32_t kOtherCaller = 0x00621C2E;     // the lookup's other caller, which tests for one stock ID
 constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
 constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
@@ -2923,7 +3159,7 @@ constexpr std::size_t kActionList = 0x1C;              // in the set: the array 
 constexpr std::size_t kActionId = 4;                   // in an action
 
 using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
-const auto kNameLookup = reinterpret_cast<NameLookupFn>(0x0061FF5D);
+const auto kNameLookup = reinterpret_cast<NameLookupFn>(&UhcTechSubtypeLookupStock);
 using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
 const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 using ActionIdByNameFn = std::int32_t(__thiscall*)(void* db, const void* attribute);
@@ -2989,10 +3225,12 @@ bool Add(const Subtype& subtype) {
     return false;
   }
   if (!g_installed) {
-    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupCall, &uhc::sites::kDataApplySwitch,
-                                          &uhc::sites::kDataUnapplySwitch, &uhc::sites::kDataActionAttribute,
-                                          &uhc::sites::kDataAllActionsApply, &uhc::sites::kDataAllActionsUnapply}) ||
-        !uhc::WriteCall(kNameLookupCall, reinterpret_cast<const void*>(&UhcTechSubtypeLookupHook)) ||
+    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupHead, &uhc::sites::kDataSubtypeAttrCall,
+                                          &uhc::sites::kDataApplySwitch, &uhc::sites::kDataUnapplySwitch,
+                                          &uhc::sites::kDataActionAttribute, &uhc::sites::kDataAllActionsApply,
+                                          &uhc::sites::kDataAllActionsUnapply}) ||
+        !uhc::WriteJmp(kNameLookupHead, reinterpret_cast<const void*>(&UhcTechSubtypeLookupHook), 5) ||
+        !uhc::WriteCall(kAttributeCall, reinterpret_cast<const void*>(&UhcTechSubtypeAttrHook)) ||
         !uhc::WriteJmp(kApplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeApplyHook), 9) ||
         !uhc::WriteJmp(kUnapplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeUnapplyHook), 9)) {
       return false;
@@ -3005,17 +3243,18 @@ bool Add(const Subtype& subtype) {
 
 }  // namespace
 
-// Replaces the call of the lookup in BDataEffect::setData. effect and node are its ESI and EBP.
-extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* name, char* effect, const char* node) {
+// The head of the lookup. Its head, not the call in setData: another DLL may replace that call, and what
+// it does not know still ends here.
+extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* name, std::uint32_t returnAddress) {
   const std::int32_t stock = kNameLookup(db, name);
-  if (stock != -1 || name == nullptr) {
+  if (stock != -1 || name == nullptr || returnAddress == kOtherCaller) {
     return stock;
   }
   for (std::size_t i = 0; i < g_count; ++i) {
     if (_stricmp(name, g_subtypes[i].name) != 0) {
       continue;
     }
-    if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, effect, node)) {
+    if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
     return kFirstId + static_cast<std::int32_t>(i);
@@ -3062,10 +3301,14 @@ option casemap :none
 
 include common.inc
 
-UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, effect:DWORD, node:DWORD
+UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, returnAddress:DWORD
+EXTERN g_uhcSubtypeEffect:DWORD
+EXTERN g_uhcSubtypeNode:DWORD
 UhcTechSubtypeRun PROTO STDCALL subtype:DWORD, target:DWORD, base:DWORD, amount:DWORD, relativity:DWORD, unapply:DWORD, actionId:DWORD, allActions:DWORD
 
 .data
+xmlAttribute      dd 00598F37h    ; the XML attribute read
+lookupNext        dd 0061FF62h    ; test edi,edi, in the name lookup
 applySwitchNext   dd 008F9796h    ; movzx ecx, the subtype's jump index
 applyDone         dd 008FAE9Eh    ; pop edi / esi / ebp, mov al,1, pop ebx / ecx, ret 20h
 applyFail         dd 008FAEF4h    ; the same with xor al,al
@@ -3075,14 +3318,29 @@ unapplyFail       dd 008FC19Ah    ; the same with xor al,al
 
 .code
 
-; Replaces the call at 0x6206D7 of the name lookup 0x61FF5D, thiscall(db, name), ret 4, in
-; BDataEffect::setData. ESI = the effect, EBP = its XML node; the helper keeps both.
+; Replaces the call at 0x6206B2 in BDataEffect::setData, which reads the attribute subtype. ESI = the
+; effect, EBP = its XML node: kept here because another DLL may do the rest of the lookup its own way.
+UhcTechSubtypeAttrHook PROC
+    mov g_uhcSubtypeEffect, esi
+    mov g_uhcSubtypeNode, ebp
+    jmp xmlAttribute
+UhcTechSubtypeAttrHook ENDP
+
+; The head of the name lookup 0x61FF5D, thiscall(db, name), ret 4.
 UhcTechSubtypeLookupHook PROC
-    TRACE_ONCE "tech subtype lookup (0x6206D7)"
-    mov eax, dword ptr [esp+4]
-    invoke UhcTechSubtypeLookup, ecx, eax, esi, ebp
+    TRACE_ONCE "tech subtype lookup (0x61FF5D)"
+    mov eax, dword ptr [esp]
+    mov edx, dword ptr [esp+4]
+    invoke UhcTechSubtypeLookup, ecx, edx, eax
     ret 4
 UhcTechSubtypeLookupHook ENDP
+
+; The stock lookup: re-executes 0x61FF5D..0x61FF61 (push edi / mov edi,[esp+8]).
+UhcTechSubtypeLookupStock PROC
+    push edi
+    mov edi, dword ptr [esp+8]
+    jmp lookupNext
+UhcTechSubtypeLookupStock ENDP
 
 ; Replaces 0x8F978D..0x8F9795 (cmp eax,63h / ja 0x8FAEF4) in applyData. EAX = subtype, EDI = target
 ; proto, ESI = its base proto, [esp+20h] the action's ID, [esp+28h] amount, [esp+2Ch] relativity,

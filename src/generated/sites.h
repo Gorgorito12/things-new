@@ -278,8 +278,8 @@ inline constexpr Site kRegenAddHp{"RegenAddHp", 0x0049087C, kRegenAddHpBytes, si
 inline constexpr std::uint8_t kDanceRegenAddHpBytes[] = {0x6A, 0x01, 0x50, 0x8B, 0xCE, 0xE8, 0x63, 0x83, 0xE0, 0xFF, 0x83, 0xC5, 0x01, 0x3B, 0xEB, 0x0F, 0x8C, 0xF7, 0xFE, 0xFF, 0xFF};
 inline constexpr Site kDanceRegenAddHp{"DanceRegenAddHp", 0x0067A036, kDanceRegenAddHpBytes, sizeof(kDanceRegenAddHpBytes)};
 
-inline constexpr std::uint8_t kAbstractTypesEndBytes[] = {0x83, 0xC3, 0x04, 0x83, 0xC6, 0x01, 0x81, 0xFB, 0x1C, 0x12, 0xDC, 0x00, 0x7C, 0xBF, 0x5F, 0x5E, 0xB0, 0x01, 0x5B, 0x59, 0xC3};
-inline constexpr Site kAbstractTypesEnd{"AbstractTypesEnd", 0x0051BA23, kAbstractTypesEndBytes, sizeof(kAbstractTypesEndBytes)};
+inline constexpr std::uint8_t kAbstractTypesEndBytes[] = {0x7C, 0xBF, 0x5F, 0x5E, 0xB0, 0x01, 0x5B, 0x59, 0xC3};
+inline constexpr Site kAbstractTypesEnd{"AbstractTypesEnd", 0x0051BA2F, kAbstractTypesEndBytes, sizeof(kAbstractTypesEndBytes)};
 
 inline constexpr std::uint8_t kDotTakeDamageEntryBytes[] = {0x81, 0xEC, 0x8C, 0x00, 0x00, 0x00, 0x80, 0xBC, 0x24, 0xC0, 0x00, 0x00, 0x00, 0x01};
 inline constexpr Site kDotTakeDamageEntry{"DotTakeDamageEntry", 0x0049B3D9, kDotTakeDamageEntryBytes, sizeof(kDotTakeDamageEntryBytes)};
@@ -992,8 +992,11 @@ inline constexpr Site kModifyTypeNameTail{"ModifyTypeNameTail", 0x005FE6C7, kMod
 inline constexpr std::uint8_t kModifyTypeNameCompareBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57, 0x8B, 0xF1, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x26};
 inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10, kModifyTypeNameCompareBytes, sizeof(kModifyTypeNameCompareBytes)};
 
-inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
-inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
+inline constexpr std::uint8_t kDataSubtypeLookupHeadBytes[] = {0x57, 0x8B, 0x7C, 0x24, 0x08};
+inline constexpr Site kDataSubtypeLookupHead{"DataSubtypeLookupHead", 0x0061FF5D, kDataSubtypeLookupHeadBytes, sizeof(kDataSubtypeLookupHeadBytes)};
+
+inline constexpr std::uint8_t kDataSubtypeAttrCallBytes[] = {0xE8, 0x80, 0x88, 0xF7, 0xFF};
+inline constexpr Site kDataSubtypeAttrCall{"DataSubtypeAttrCall", 0x006206B2, kDataSubtypeAttrCallBytes, sizeof(kDataSubtypeAttrCallBytes)};
 
 inline constexpr std::uint8_t kTeamBountyPayBytes[] = {0x8B, 0x4C, 0x24, 0x14, 0x8B, 0x16};
 inline constexpr Site kTeamBountyPay{"TeamBountyPay", 0x0049BDAB, kTeamBountyPayBytes, sizeof(kTeamBountyPayBytes)};
@@ -1004,8 +1007,8 @@ inline constexpr Site kBountyTagHandler{"BountyTagHandler", 0x0051D669, kBountyT
 inline constexpr std::uint8_t kBountyKillBranchBytes[] = {0x8B, 0x4C, 0x24, 0x28, 0x51};
 inline constexpr Site kBountyKillBranch{"BountyKillBranch", 0x004D4E0C, kBountyKillBranchBytes, sizeof(kBountyKillBranchBytes)};
 
-inline constexpr std::uint8_t kTechFlagCallBytes[] = {0xE8, 0x07, 0x00, 0x00, 0x00};
-inline constexpr Site kTechFlagCall{"TechFlagCall", 0x00620C23, kTechFlagCallBytes, sizeof(kTechFlagCallBytes)};
+inline constexpr std::uint8_t kTechFlagHeadBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08};
+inline constexpr Site kTechFlagHead{"TechFlagHead", 0x00620C2F, kTechFlagHeadBytes, sizeof(kTechFlagHeadBytes)};
 
 inline constexpr std::uint8_t kTechApplyCallBytes[] = {0xE8, 0x2E, 0x0A, 0x00, 0x00};
 inline constexpr Site kTechApplyCall{"TechApplyCall", 0x0094D0AE, kTechApplyCallBytes, sizeof(kTechApplyCallBytes)};
@@ -1024,6 +1027,18 @@ inline constexpr Site kDetonationKillCall{"DetonationKillCall", 0x00493D8F, kDet
 
 inline constexpr std::uint8_t kDetonationAreaHeadBytes[] = {0x8B, 0x44, 0x24, 0x20, 0x81, 0xEC, 0xF8, 0x0F, 0x00, 0x00};
 inline constexpr Site kDetonationAreaHead{"DetonationAreaHead", 0x004C9D89, kDetonationAreaHeadBytes, sizeof(kDetonationAreaHeadBytes)};
+
+inline constexpr std::uint8_t kDeleteSetHpCallBytes[] = {0xE8, 0xCD, 0x4F, 0xCB, 0xFF};
+inline constexpr Site kDeleteSetHpCall{"DeleteSetHpCall", 0x007CD0CF, kDeleteSetHpCallBytes, sizeof(kDeleteSetHpCallBytes)};
+
+inline constexpr std::uint8_t kDeleteKillCallBytes[] = {0xE8, 0xE1, 0x7C, 0xCE, 0xFF};
+inline constexpr Site kDeleteKillCall{"DeleteKillCall", 0x007CD0DC, kDeleteKillCallBytes, sizeof(kDeleteKillCallBytes)};
+
+inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
+inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
+
+inline constexpr std::uint8_t kDetonationTakeDamageHpBytes[] = {0xE8, 0x7C, 0x6B, 0xFE, 0xFF};
+inline constexpr Site kDetonationTakeDamageHp{"DetonationTakeDamageHp", 0x0049B822, kDetonationTakeDamageHpBytes, sizeof(kDetonationTakeDamageHpBytes)};
 
 inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
 inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
@@ -1072,6 +1087,9 @@ inline constexpr Site kPlayerProtoEntry{"PlayerProtoEntry", 0x0045311B, kPlayerP
 
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
+
+inline constexpr std::uint8_t kPillageHitCallBytes[] = {0x8B, 0xAC, 0x24, 0xAC, 0x00, 0x00, 0x00, 0x8B, 0x5C, 0x24, 0x20, 0x50, 0x51, 0x52, 0x55, 0x8B, 0xCB, 0xE8, 0x11, 0x06, 0x00, 0x00};
+inline constexpr Site kPillageHitCall{"PillageHitCall", 0x0049B72B, kPillageHitCallBytes, sizeof(kPillageHitCallBytes)};
 
 inline constexpr std::uint8_t kTrainQueueAddCallBytes[] = {0xE8, 0x75, 0x60, 0xAC, 0xFF};
 inline constexpr Site kTrainQueueAddCall{"TrainQueueAddCall", 0x009CE81A, kTrainQueueAddCallBytes, sizeof(kTrainQueueAddCallBytes)};
@@ -1402,6 +1420,27 @@ inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E
 
 inline constexpr std::uint8_t kAuraScanBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x96, 0x00, 0x00, 0x00, 0x56, 0x8B};
 inline constexpr Site kAuraScan{"AuraScan", 0x009CFF9A, kAuraScanBytes, sizeof(kAuraScanBytes)};
+
+inline constexpr std::uint8_t kAuraModelBlockBytes[] = {0x8B, 0x80, 0xA4, 0x00, 0x00, 0x00, 0x83, 0xF8, 0xFF};
+inline constexpr Site kAuraModelBlock{"AuraModelBlock", 0x009D053F, kAuraModelBlockBytes, sizeof(kAuraModelBlockBytes)};
+
+inline constexpr std::uint8_t kAuraHasModelCallBytes[] = {0xE8, 0x55, 0x23, 0xFF, 0xFF};
+inline constexpr Site kAuraHasModelCall{"AuraHasModelCall", 0x009D0584, kAuraHasModelCallBytes, sizeof(kAuraHasModelCallBytes)};
+
+inline constexpr std::uint8_t kAuraHangModelCallBytes[] = {0xE8, 0x12, 0xFE, 0xFE, 0xFF};
+inline constexpr Site kAuraHangModelCall{"AuraHangModelCall", 0x009D06DC, kAuraHangModelCallBytes, sizeof(kAuraHangModelCallBytes)};
+
+inline constexpr std::uint8_t kModelByIdBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x83, 0xF8};
+inline constexpr Site kModelById{"ModelById", 0x00405E83, kModelByIdBytes, sizeof(kModelByIdBytes)};
+
+inline constexpr std::uint8_t kUnitHasModelBytes[] = {0x57, 0x8B, 0xF9, 0x8B, 0x47, 0x60, 0x85, 0xC0};
+inline constexpr Site kUnitHasModel{"UnitHasModel", 0x009C28DE, kUnitHasModelBytes, sizeof(kUnitHasModelBytes)};
+
+inline constexpr std::uint8_t kUnitAttachModelBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x56, 0x8B};
+inline constexpr Site kUnitAttachModel{"UnitAttachModel", 0x009C04F3, kUnitAttachModelBytes, sizeof(kUnitAttachModelBytes)};
+
+inline constexpr std::uint8_t kUnitRemoveModelBytes[] = {0x57, 0x8B, 0xF9, 0x8B, 0x47, 0x60, 0x85, 0xC0};
+inline constexpr Site kUnitRemoveModel{"UnitRemoveModel", 0x009C2885, kUnitRemoveModelBytes, sizeof(kUnitRemoveModelBytes)};
 
 inline constexpr std::uint8_t kInventoryAddBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x53, 0x8B, 0xD9, 0x8B, 0x13, 0x85, 0xD2, 0x8B, 0x88, 0x3C, 0x01};
 inline constexpr Site kInventoryAdd{"InventoryAdd", 0x0049A5E6, kInventoryAddBytes, sizeof(kInventoryAddBytes)};

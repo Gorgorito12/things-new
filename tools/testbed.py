@@ -3,7 +3,8 @@ take screenshots, read units and UHC.log, and check that the Steam install was n
 
 Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
 
-  deploy [cfg]               copy build\\Release\\UHC.dll into the bed; with cfg, also copy it as
+  deploy [cfg]               copy build\\Release\\UHC.dll into the bed, or dinput8.dll to a bed with an
+                             engine-ext folder, which leaves its UHC.dll alone; with cfg, also copy it as
                              the cfg the bed's exe reads (Startup\\uhc.cfg, or Startup\\wol.cfg
                              in the WoL bed; perfExecFile is appended when missing)
   launch                     start age3y.exe +noIntroCinematics and wait for the main menu
@@ -21,7 +22,7 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
   record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
          [--select ID|Proto,...] [--close Z] [--crop WxH[@cx,cy]] [--hover X,Y] [--master <out.mkv>]
-         [--background] [--log-top] [--perf] [--perf-csv <out.csv>]
+         [--background] [--log-top] [--perf] [--perf-csv <out.csv>] [--gold P,P]
                              films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
                              1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
                              C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
@@ -39,7 +40,8 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              --background leaves the focus alone,
                              --perf the performance numbers once a second (fps, longest frame,
                              frames over 50 ms, simulation speed, main-thread CPU, memory; the
-                             frame numbers need perfStats in the cfg), --perf-csv also saves them
+                             frame numbers need perfStats in the cfg), --perf-csv also saves them,
+                             --gold 1,2 shows those players' gold, read from the game
   profile                    the bed's exe build, cfg path, AI and map folders, My Games folder
   profile backup             copy the bed's player profiles (Users3\\*.xml) to .bak-uhc-<date>
   profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
@@ -200,6 +202,11 @@ def _exe_wstring(data, offset, limit):
 _PROFILES = {}
 
 
+def log_path(bed):
+    """The log of our DLL: next to the exe, or in engine-ext\\ when it runs beside the game's own."""
+    return bed / "engine-ext" / "engine-ext.log" if (bed / "engine-ext").is_dir() else bed / "UHC.log"
+
+
 def bed_profile(bed):
     """What the bed's exe reads, from its own bytes: the UHC loader's cfg path (VA 0xC65083), the
     AI folder (0xBE3A98) and the random-map folder (0xBE3AD8), which mods patch (WoL: wol.cfg, AI4,
@@ -209,6 +216,8 @@ def bed_profile(bed):
     data = (bed / "age3y.exe").read_bytes()
     digest = hashlib.sha256(data).hexdigest()
     cfg = _exe_wstring(data, 0x865083, 21) or "Startup\\uhc.cfg"
+    if (bed / "engine-ext").is_dir():  # our dinput8.dll beside the game's own UHC.dll
+        cfg = "engine-ext\\engine-ext.cfg"
     ai = _exe_wstring(data, 0x7E3A98, 5).rstrip("\\") or "AI3"
     rm = _exe_wstring(data, 0x7E3AD8, 5).rstrip("\\") or "RM3"
     games = "My Games\\Age of Empires 3"
@@ -822,7 +831,7 @@ def wait_game_time(seconds):
 
 
 def show_log(bed, pattern, tail):
-    path = bed / "UHC.log"
+    path = log_path(bed)
     lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines() if path.exists() else []
     if pattern:
         lines = [line for line in lines if re.search(pattern, line)]
@@ -991,8 +1000,9 @@ class Overlay:
     the hit points of the watched units (unit IDs or proto names, matched again every second, so new
     units appear and dead ones go) and the latest UHC.log lines that match a pattern."""
 
-    def __init__(self, bed, watch, log_pattern, follow=None, perf=None, select=None, look=None):
+    def __init__(self, bed, watch, log_pattern, follow=None, perf=None, select=None, look=None, gold=()):
         self.proc = process()
+        self.gold, self.gold_values = list(gold), {}  # --gold: players whose gold is shown
         self.perf = perf
         self.bed, self.follow, self.next_follow = bed, follow, 0.0
         self.follow_center = None
@@ -1004,7 +1014,7 @@ class Overlay:
         self.ids = {int(w) for w in watch if w.isdigit()}
         self.protos = [w.lower() for w in watch if not w.isdigit()]
         self.pattern = re.compile(log_pattern) if log_pattern else None
-        self.log_path = bed / "UHC.log"
+        self.log_path = log_path(bed)
         # Show the lines of the current game: read from the last scenario load on.
         data = self.log_path.read_bytes() if self.log_path.exists() else b""
         start = data.rfind(b"loadScenario(")
@@ -1055,6 +1065,11 @@ class Overlay:
                           if proc.u32(u + 0x10) in self.ids
                           or any(p in D.proto_name(proc, proc.u32(u + 0x5C)).lower() for p in self.protos)]
             self.read_log()
+            for unit in D.units(proc) if self.gold else []:
+                player = D.unit_player(proc, unit)
+                if player in self.gold:  # [[unit+44h]+230h]: the stockpile, gold first, xored with [C6DF14h]
+                    raw = proc.u32(proc.u32(proc.u32(unit + 0x44) + 0x230)) ^ proc.u32(0xC6DF14)
+                    self.gold_values[player] = struct.unpack("<f", struct.pack("<I", raw))[0]
         lines = [f"game time {(game_time(proc) or 0) / 1000:.1f} s"]
         if len(self.units) > 6:  # many units: one count per proto and player instead of one line each
             counts = {}
@@ -1070,6 +1085,8 @@ class Overlay:
                          f"HP {proc.f32(unit + 0x64):.1f} / {proc.f32(proto + 0x98):.0f}{los}")
         if not self.ids and not self.protos:
             lines = lines[:1]  # --perf or --log alone: no unit lines
+        if self.gold:
+            lines.append("gold: " + ", ".join(f"player {p} {self.gold_values.get(p, 0):.0f}" for p in self.gold))
         self.lines = lines
         # Without the feature's name: the frame only has room for what it says.
         self.bottom = [re.sub(r"^\w+: ", "", line) for line in self.log_lines[-4:]]
@@ -1420,9 +1437,10 @@ def real_type(text):
 # --- deploying and safety ----------------------------------------------------------------------------
 
 def deploy(bed, cfg):
-    dll = REPO / "build" / "Release" / "UHC.dll"
-    shutil.copy2(dll, bed / "UHC.dll")
-    print(f"testbed: copied {dll} -> {bed / 'UHC.dll'}")
+    name = "dinput8.dll" if (bed / "engine-ext").is_dir() else "UHC.dll"
+    dll = REPO / "build" / "Release" / name
+    shutil.copy2(dll, bed / name)
+    print(f"testbed: copied {dll} -> {bed / name}")
     if cfg:
         text = pathlib.Path(cfg).read_text(encoding="utf-8")
         if "perfexecfile" not in text.lower():
@@ -1430,7 +1448,7 @@ def deploy(bed, cfg):
         target = bed / bed_profile(bed)["cfg"]
         target.write_text(text, encoding="utf-8")
         print(f"testbed: wrote {target}")
-    (bed / "UHC.log").unlink(missing_ok=True)
+    log_path(bed).unlink(missing_ok=True)
 
 
 def steam_listing():
@@ -1560,8 +1578,9 @@ def main(argv):
             cx, cy = (float(v) for v in at.split(",")) if at else CROP_CENTRE
             crop = (cw, ch, cx, cy)
         perf_csv = args[args.index("--perf-csv") + 1] if "--perf-csv" in args else None
+        gold = [int(w) for w in args[args.index("--gold") + 1].split(",")] if "--gold" in args else []
         flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--select", "--close", "--crop", "--hover",
-                             "--master", "--perf-csv")
+                             "--master", "--perf-csv", "--gold")
                  if f in args for i in (args.index(f), args.index(f) + 1)}
         look = frame if frame is not None else follow
         # With the camera locked the cursor can do what it likes: an edge no longer scrolls it, and
@@ -1595,7 +1614,7 @@ def main(argv):
         if "--perf" in args or perf_csv:
             pid = bed_pid() or sys.exit("testbed: the game is not running")
             perf = PerfReader(pid, perf_csv)
-        overlay = (Overlay(bed, watch, log_pattern, follow, perf, select, look)
+        overlay = (Overlay(bed, watch, log_pattern, follow, perf, select, look, gold)
                    if watch or log_pattern or follow is not None or perf or select else None)
         if overlay is not None:
             overlay.selected = set(ids)

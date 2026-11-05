@@ -204,10 +204,11 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  // The name hook and its continuation, the compare it calls, three call sites (the Train one is
-  // checked alone below), the getter's tail, and the stock code the factor calls or mirrors.
+  // The compare the name hook calls, three call sites (the Train one is checked alone below), the
+  // getter's tail, and the stock code the factor calls or mirrors. AddModifyType checks the name hook:
+  // it may be in place already.
   if (!VerifyAll("buildingWorkRateAuras",
-                 {&sites::kModifyTypeNameTail, &sites::kModifyTypeNameCompare, &sites::kWorkRateResearchCall,
+                 {&sites::kModifyTypeNameCompare, &sites::kWorkRateResearchCall,
                   &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,

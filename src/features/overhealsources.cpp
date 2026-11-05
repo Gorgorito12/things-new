@@ -40,6 +40,7 @@ std::int32_t UhcOverhealMarked(const char* proto);
 
 namespace uhc {
 extern void (*g_overhealGain)(const char* unit, bool restartDelay);  // set by overhealDecay
+extern void (*g_hpLoss)(const char* unit, float amount);             // set by detonationDeath: every loss
 }
 
 namespace {
@@ -108,6 +109,9 @@ bool __stdcall UhcOverhealUseReference(const char* target, const char* healer) {
 // it; with overhealDecay a unit that still goes above its reference is noted.
 void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   if (!(*amount > 0.0f)) {
+    if (*amount < 0.0f && uhc::g_hpLoss != nullptr) {
+      uhc::g_hpLoss(unit, *amount);
+    }
     return;
   }
   const char* proto = Field<const char*>(unit, 0x5C);
@@ -148,6 +152,7 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
 namespace uhc {
 
 void (*g_overhealGain)(const char* unit, bool restartDelay) = nullptr;
+void (*g_hpLoss)(const char* unit, float amount) = nullptr;
 
 bool InstallOverhealAddHook() {
   if (!g_addHooked) {

@@ -6,10 +6,14 @@ option casemap :none
 
 include common.inc
 
-UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, effect:DWORD, node:DWORD
+UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, returnAddress:DWORD
+EXTERN g_uhcSubtypeEffect:DWORD
+EXTERN g_uhcSubtypeNode:DWORD
 UhcTechSubtypeRun PROTO STDCALL subtype:DWORD, target:DWORD, base:DWORD, amount:DWORD, relativity:DWORD, unapply:DWORD, actionId:DWORD, allActions:DWORD
 
 .data
+xmlAttribute      dd 00598F37h    ; the XML attribute read
+lookupNext        dd 0061FF62h    ; test edi,edi, in the name lookup
 applySwitchNext   dd 008F9796h    ; movzx ecx, the subtype's jump index
 applyDone         dd 008FAE9Eh    ; pop edi / esi / ebp, mov al,1, pop ebx / ecx, ret 20h
 applyFail         dd 008FAEF4h    ; the same with xor al,al
@@ -19,14 +23,29 @@ unapplyFail       dd 008FC19Ah    ; the same with xor al,al
 
 .code
 
-; Replaces the call at 0x6206D7 of the name lookup 0x61FF5D, thiscall(db, name), ret 4, in
-; BDataEffect::setData. ESI = the effect, EBP = its XML node; the helper keeps both.
+; Replaces the call at 0x6206B2 in BDataEffect::setData, which reads the attribute subtype. ESI = the
+; effect, EBP = its XML node: kept here because another DLL may do the rest of the lookup its own way.
+UhcTechSubtypeAttrHook PROC
+    mov g_uhcSubtypeEffect, esi
+    mov g_uhcSubtypeNode, ebp
+    jmp xmlAttribute
+UhcTechSubtypeAttrHook ENDP
+
+; The head of the name lookup 0x61FF5D, thiscall(db, name), ret 4.
 UhcTechSubtypeLookupHook PROC
-    TRACE_ONCE "tech subtype lookup (0x6206D7)"
-    mov eax, dword ptr [esp+4]
-    invoke UhcTechSubtypeLookup, ecx, eax, esi, ebp
+    TRACE_ONCE "tech subtype lookup (0x61FF5D)"
+    mov eax, dword ptr [esp]
+    mov edx, dword ptr [esp+4]
+    invoke UhcTechSubtypeLookup, ecx, edx, eax
     ret 4
 UhcTechSubtypeLookupHook ENDP
+
+; The stock lookup: re-executes 0x61FF5D..0x61FF61 (push edi / mov edi,[esp+8]).
+UhcTechSubtypeLookupStock PROC
+    push edi
+    mov edi, dword ptr [esp+8]
+    jmp lookupNext
+UhcTechSubtypeLookupStock ENDP
 
 ; Replaces 0x8F978D..0x8F9795 (cmp eax,63h / ja 0x8FAEF4) in applyData. EAX = subtype, EDI = target
 ; proto, ESI = its base proto, [esp+20h] the action's ID, [esp+28h] amount, [esp+2Ch] relativity,

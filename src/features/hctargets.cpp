@@ -5,7 +5,7 @@
 // pass after a load 0x94DDEA, each with its own copy of the loop over the team. So the key wraps the
 // three: for a marked tech it calls the stock routine once per target, without the team flag. The tech
 // stays active in the owner's tree only; a load and a removal go through the owner, and the targets are
-// counted again then. The flag's reader is wrapped too: the stock chain ignores a name it does not know.
+// counted again then. The flag's reader is hooked too: the stock chain ignores a name it does not know.
 // The hooks are in hooks/hctarget_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
@@ -19,6 +19,7 @@
 #include "../patch.h"
 
 extern "C" {
+void UhcTechFlagHook();
 void UhcTechRemoveStock();
 void UhcTechLoadStock();
 }
@@ -27,7 +28,7 @@ namespace {
 
 enum class Target { kEnemies, kAll };
 
-constexpr std::uint32_t kFlagCall = 0x00620C23;
+constexpr std::uint32_t kFlagHead = 0x00620C2F;
 constexpr std::uint32_t kApplyCall = 0x0094D0AE;
 constexpr std::uint32_t kRemoveHead = 0x0094DCB2;
 constexpr std::uint32_t kLoadHead = 0x0094DDEA;
@@ -35,8 +36,6 @@ constexpr std::size_t kWorld = 0x13C;
 constexpr std::size_t kPlayerCount = 0x5C;
 constexpr int kMaxLogLines = 200;
 
-using ReadFlagFn = void(__cdecl*)(char* entry, const char* name);
-const auto kReadFlag = reinterpret_cast<ReadFlagFn>(0x00620C2F);
 using ApplyFn = bool(__thiscall*)(char* tech, char* player, void* unit, std::uint32_t team, std::int32_t a,
                                   std::int32_t b);
 const auto kApply = reinterpret_cast<ApplyFn>(0x0094DAE1);
@@ -80,18 +79,6 @@ void Note(const wchar_t* what, const char* tech, const char* player) {
   }
 }
 
-void __cdecl ReadFlag(char* entry, const char* name) {
-  const bool enemy = name != nullptr && _stricmp(name, "HCTargetEnemy") == 0;
-  if (!enemy && (name == nullptr || _stricmp(name, "HCTargetAll") != 0)) {
-    kReadFlag(entry, name);
-    return;
-  }
-  g_techs[*reinterpret_cast<void* const*>(entry)] = enemy ? Target::kEnemies : Target::kAll;
-  if (g_log) {
-    uhc::Log(L"hcTargetTechs: %hs read", name);
-  }
-}
-
 bool __fastcall Apply(char* tech, void*, char* player, void* unit, std::uint32_t team, std::int32_t a, std::int32_t b) {
   const auto found = g_techs.find(tech);
   if (found == g_techs.end()) {
@@ -110,6 +97,19 @@ bool __fastcall Apply(char* tech, void*, char* player, void* unit, std::uint32_t
 }
 
 }  // namespace
+
+// From the head of the flag reader: true for the two flags of the key, which stock would ignore.
+extern "C" bool __stdcall UhcTechFlag(char* entry, const char* name) {
+  const bool enemy = name != nullptr && _stricmp(name, "HCTargetEnemy") == 0;
+  if (!enemy && (name == nullptr || _stricmp(name, "HCTargetAll") != 0)) {
+    return false;
+  }
+  g_techs[*reinterpret_cast<void* const*>(entry)] = enemy ? Target::kEnemies : Target::kAll;
+  if (g_log) {
+    uhc::Log(L"hcTargetTechs: %hs read", name);
+  }
+  return true;
+}
 
 // Both replace the head of the routine, through a jmp: same arguments, same ret 0Ch.
 extern "C" bool __fastcall UhcTechRemove(char* tech, void*, char* player, std::int32_t a, std::uint32_t team) {
@@ -148,9 +148,9 @@ Outcome ApplyHcTargetTechs(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("hcTargetTechs", {&sites::kTechFlagCall, &sites::kTechApplyCall, &sites::kTechRemoveHead,
+  if (!VerifyAll("hcTargetTechs", {&sites::kTechFlagHead, &sites::kTechApplyCall, &sites::kTechRemoveHead,
                                    &sites::kTechLoadHead, &sites::kIsEnemyHead}) ||
-      !WriteCall(kFlagCall, reinterpret_cast<const void*>(&ReadFlag)) ||
+      !WriteJmp(kFlagHead, reinterpret_cast<const void*>(&UhcTechFlagHook), 5) ||
       !WriteCall(kApplyCall, reinterpret_cast<const void*>(&Apply)) ||
       !WriteJmp(kRemoveHead, reinterpret_cast<const void*>(&UhcTechRemove), 6) ||
       !WriteJmp(kLoadHead, reinterpret_cast<const void*>(&UhcTechLoad), 7)) {

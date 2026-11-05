@@ -28,6 +28,7 @@ PAGES = {
         "Action tags": ["src/actiontags.h", "src/actiontags.cpp", "src/hooks/actiontag_hooks.asm"],
         "Transform calls": ["src/transformcalls.h", "src/transformcalls.cpp"],
         "Proto tags": ["src/prototags.h", "src/prototags.cpp", "src/hooks/prototag_hooks.asm"],
+        "Civ tags": ["src/civtags.h", "src/civtags.cpp", "src/hooks/civfirsttc_hooks.asm"],
         "Tech subtypes": ["src/techsubtypes.h", "src/techsubtypes.cpp", "src/hooks/techsubtype_hooks.asm"],
         "Modify types": ["src/modifytypes.h", "src/modifytypes.cpp", "src/hooks/modifytype_hooks.asm"],
         "Floating text": ["src/floatingtext.h", "src/floatingtext.cpp"],
@@ -67,6 +68,7 @@ PAGES = {
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],
         "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
         "killBountyTechs, resourceBounty and teamKillBounty": ["src/features/bounty.cpp", "src/hooks/bounty_hooks.asm"],
+        "pillageGold": ["src/features/pillage.cpp", "src/hooks/pillage_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp", "src/hooks/veterancy_hooks.asm"],
         "detonationDeath": ["src/features/detonation.cpp"],
     }),
@@ -111,7 +113,7 @@ PAGES = {
 HELPER_OF = {
     "generated/sites.h": "site-table", "site.h": "site-table", "patch.h": "patching", "log.h": "log",
     "config.h": "cfg-reader", "features.h": "results", "unittypes.h": "extra-abstract-unit-types",
-    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
+    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "civtags.h": "civ-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
     "namelists.h": "name-lists",
 }

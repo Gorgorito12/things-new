@@ -1266,9 +1266,9 @@ END
 
 Contract: [unitResourceAuras](../porting-to-another-dll.md#unitresourceauras).
 
-Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `UnitIsDead` `0x4802C6` (16 B), `CheckState` `0x482152` (16 B), `InventoryAdd` `0x49A5E6` (16 B), `PlayerAddResource` `0x49A98A` (16 B), `MainResource` `0x4DBEC1` (16 B), `AuraScan` `0x9CFF9A` (16 B), `UnitResourceAuraEntry` `0x9D033E` (8 B).
+Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `UnitIsDead` `0x4802C6` (16 B), `CheckState` `0x482152` (16 B), `InventoryAdd` `0x49A5E6` (16 B), `PlayerAddResource` `0x49A98A` (16 B), `MainResource` `0x4DBEC1` (16 B), `UnitAttachModel` `0x9C04F3` (8 B), `UnitRemoveModel` `0x9C2885` (8 B), `UnitHasModel` `0x9C28DE` (8 B), `AuraScan` `0x9CFF9A` (16 B), `UnitResourceAuraEntry` `0x9D033E` (8 B), `AuraModelBlock` `0x9D053F` (9 B).
 
 ### src/features/unitresource.cpp
 
@@ -1290,13 +1290,22 @@ Sites: `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBui
 // player's gather multiplier [player+37Ch]. The time comes from the game clock. A target whose
 // proto has flag 24h (an endless resource) pays and is not drained, as in the gather tick.
 //
-// The hook is in hooks/unitresource_hooks.asm. The time of each aura's last update lives here, so a
-// saved game restarts that clock; nothing else is kept.
+// The stock update also hangs the action's <ModelAttachment> on each target (0x9D053F: the ring under
+// units that an aura affects). Running instead of it, this code does the same, through the same
+// functions, for the targets that gave resources in this update, and takes the model off the ones that
+// stop. A target in two auras keeps its ring until the last one lets go. A model is only a visual of the
+// unit: it does not reach the simulation.
+//
+// The hook is in hooks/unitresource_hooks.asm. The time of each aura's last update and the rings it
+// hung live here, so a saved game restarts that clock; nothing else is kept.
+#include <algorithm>
 #include <compare>
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
 #include <map>
+#include <utility>
+#include <vector>
 
 #include "../actiontags.h"
 #include "../features.h"
@@ -1305,6 +1314,7 @@ Sites: `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBui
 #include "../modifytypes.h"
 #include "../patch.h"
 #include "../unittypes.h"
+#include "../worldtick.h"
 
 extern "C" {
 void UhcUnitResourceAuraHook();
@@ -1316,6 +1326,8 @@ constexpr std::int32_t kStatUnitResource = 0x41;  // as in unitresource_hooks.as
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
 constexpr std::int32_t kFlagEndless = 0x24;        // proto flag tested at 0x4ED062
 constexpr std::uint32_t kMaxStepMs = 5000;         // a longer gap (a load, a pause) pays this much
+constexpr std::uint32_t kModelTable = 0x00C66240;  // the table of models; read as at 0x9D054A
+constexpr std::uint32_t kRingSweepMs = 1000;       // how often the auras that hung rings are checked
 constexpr float kMinAmount = 1.0e-6f;
 constexpr int kMaxLogLines = 200;
 
@@ -1335,6 +1347,10 @@ using InventoryAddFn = bool(__thiscall*)(char* inventory, std::int32_t resource,
 using PlayerAddFn = bool(__thiscall*)(char* player, std::int32_t resource, float amount, bool flag);
 using CheckStateFn = void(__thiscall*)(char* unit);
 using ProtoBitFn = bool(__thiscall*)(const char* proto, std::int32_t bit);
+using ModelByIdFn = const void*(__thiscall*)(void* table, std::int32_t model);
+using HasModelFn = bool(__thiscall*)(const char* unit, std::int32_t model);
+using AttachModelFn = bool(__thiscall*)(char* unit, const void* object, std::int32_t bone, std::int32_t flag);
+using RemoveModelFn = void(__thiscall*)(char* unit, std::int32_t model);
 
 const auto kIsBuilt = reinterpret_cast<UnitTestFn>(0x0044DDB4);
 const auto kIsDead = reinterpret_cast<UnitTestFn>(0x004802C6);
@@ -1347,6 +1363,10 @@ const auto kPlayerAdd = reinterpret_cast<PlayerAddFn>(0x0049A98A);
 const auto kCheckState = reinterpret_cast<CheckStateFn>(0x00482152);
 const auto kProtoFlag = reinterpret_cast<ProtoBitFn>(0x0045EE02);
 const auto kIsAbstractIndex = reinterpret_cast<ProtoBitFn>(0x0044CAC4);
+const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
+const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
+const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
+const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
 
 struct ActionKey {
   std::int32_t proto;
@@ -1363,6 +1383,19 @@ struct Params {
 std::map<ActionKey, Params> g_params;
 std::map<std::int32_t, std::uint32_t> g_lastUpdate;  // by the owner's unit ID: in ID order, game time
 IdList g_list = {};
+
+struct Rings {
+  std::int32_t model = -1;
+  std::vector<std::int32_t> targets;
+};
+
+std::map<std::int32_t, Rings> g_rings;          // by the owner's unit ID
+std::map<std::int32_t, std::int32_t> g_ringUsers;  // by the target's unit ID: the auras holding its ring
+std::vector<std::int32_t> g_ringTargets;        // the targets of the update that is running
+const char* g_ringWorld = nullptr;
+std::uint32_t g_ringTime = 0;
+std::uint32_t g_nextRingSweep = 0;
+bool g_ringModelWarned = false;
 bool g_log = false;
 int g_logLines = 0;
 
@@ -1371,10 +1404,118 @@ T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
 }
 
+void ForgetRings() {
+  g_rings.clear();
+  g_ringUsers.clear();
+  g_nextRingSweep = 0;
+}
+
 void NewDatabase(char*) {
   g_params.clear();
   g_lastUpdate.clear();
+  ForgetRings();
   g_logLines = 0;
+}
+
+// Another game: its unit IDs are not the ones held here.
+void CheckRingWorld(const char* world, std::uint32_t now) {
+  if (world != g_ringWorld || now < g_ringTime) {
+    ForgetRings();
+    g_ringWorld = world;
+  }
+  g_ringTime = now;
+}
+
+// As the stock update does at 0x9D054A..0x9D059C. False: the unit has no visual yet, and the next
+// update tries again. A model that is not in the game is taken as hung, or it would be hung again on
+// every update: the engine accepts it and shows nothing.
+bool HangRing(const char* world, std::int32_t id, std::int32_t model, std::int32_t bone, const char* tactics) {
+  char* unit = const_cast<char*>(kUnitById(world, id));
+  void* table = *reinterpret_cast<void**>(kModelTable);
+  if (unit == nullptr || table == nullptr) {
+    return false;
+  }
+  if (kHasModel(unit, model)) {
+    return true;
+  }
+  const void* object = kModelById(table, model);
+  if (object == nullptr || !kAttachModel(unit, object, bone, 0)) {
+    return false;
+  }
+  if (!kHasModel(unit, model)) {
+    if (!g_ringModelWarned) {
+      g_ringModelWarned = true;
+      uhc::Log(L"unitResourceAuras: the action %d has a <ModelAttachment> that is not in the game: no ring shows",
+               Field<std::int32_t>(tactics, 0x04));
+    }
+  } else if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"unitResourceAuras: ring on unit %d", id);
+  }
+  return true;
+}
+
+void ReleaseRing(const char* world, std::int32_t id, std::int32_t model) {
+  const auto users = g_ringUsers.find(id);
+  if (users == g_ringUsers.end() || --users->second > 0) {
+    return;
+  }
+  g_ringUsers.erase(users);
+  if (char* unit = const_cast<char*>(kUnitById(world, id))) {
+    kRemoveModel(unit, model);
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"unitResourceAuras: ring off unit %d", id);
+    }
+  }
+}
+
+void UpdateRings(const char* world, std::int32_t owner, const char* tactics, std::int32_t model, std::int32_t bone) {
+  Rings& rings = g_rings[owner];
+  rings.model = model;
+  std::vector<std::int32_t> held;
+  for (const std::int32_t id : g_ringTargets) {
+    const bool had = std::find(rings.targets.begin(), rings.targets.end(), id) != rings.targets.end();
+    if (had) {
+      held.push_back(id);
+    } else if (HangRing(world, id, model, bone, tactics)) {
+      ++g_ringUsers[id];
+      held.push_back(id);
+    }
+  }
+  for (const std::int32_t id : rings.targets) {
+    if (std::find(held.begin(), held.end(), id) == held.end()) {
+      ReleaseRing(world, id, model);
+    }
+  }
+  rings.targets = std::move(held);
+  if (rings.targets.empty()) {
+    g_rings.erase(owner);
+  }
+}
+
+// An aura that dies has no more updates, so its rings are taken off from here.
+void RingTick(char* world, std::int32_t) {
+  if (g_rings.empty()) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  CheckRingWorld(world, now);
+  if (now < g_nextRingSweep) {
+    return;
+  }
+  g_nextRingSweep = now + kRingSweepMs;
+  for (auto it = g_rings.begin(); it != g_rings.end();) {
+    const char* owner = kUnitById(world, it->first);
+    if (owner != nullptr && kIsBuilt(owner) && !kIsDead(owner)) {
+      ++it;
+      continue;
+    }
+    for (const std::int32_t id : it->second.targets) {
+      ReleaseRing(world, id, it->second.model);
+    }
+    it = g_rings.erase(it);
+  }
 }
 
 void ActionTagRead(const uhc::ActionTag& tag) {
@@ -1425,6 +1566,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
   }
   const Params& params = found->second;
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  CheckRingWorld(world, now);
   const auto [last, isNew] = g_lastUpdate.try_emplace(Field<std::int32_t>(owner, 0x10), now);
   const std::uint32_t since = now - last->second;
   if (isNew || since == 0) {
@@ -1438,6 +1580,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
   const float multiplier = Field<float>(player, 0x37C);
   g_list.count = 0;
   kScan(action, &g_list);
+  g_ringTargets.clear();
   std::int32_t gathered = 0;
   for (std::int32_t i = 0; i < g_list.count; ++i) {
     if (params.limit >= 0 && gathered >= params.limit) {
@@ -1474,6 +1617,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     }
     const float take = have < amount ? have : amount;
     ++gathered;
+    g_ringTargets.push_back(Field<std::int32_t>(target, 0x10));  // the state check below may remove it
     if (!kProtoFlag(targetProto, kFlagEndless)) {
       kInventoryAdd(inventory, resource, -take);
       kCheckState(target);
@@ -1486,6 +1630,10 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
                resource, Field<std::int32_t>(target, 0x10), Field<const char*>(targetProto, 0x10),
                static_cast<double>(have - take));
     }
+  }
+  const std::int32_t model = Field<std::int32_t>(tactics, 0xA4);
+  if (model != -1) {
+    UpdateRings(world, Field<std::int32_t>(owner, 0x10), tactics, model, Field<std::int32_t>(tactics, 0xA8));
   }
 }
 
@@ -1508,11 +1656,13 @@ Outcome ApplyUnitResourceAuras(const Config& config) {
   if (!VerifyAll("unitResourceAuras",
                  {&sites::kUnitResourceAuraEntry, &sites::kAuraScan, &sites::kInventoryAdd, &sites::kCheckState,
                   &sites::kMainResource, &sites::kUnitIsDead, &sites::kPlayerAddResource, &sites::kIsBuilt,
-                  &sites::kUnitById, &sites::kProtoFlag, &sites::kIsAbstractIndex, &sites::kResListGet})) {
+                  &sites::kUnitById, &sites::kProtoFlag, &sites::kIsAbstractIndex, &sites::kResListGet,
+                  &sites::kAuraModelBlock, &sites::kModelById, &sites::kUnitHasModel, &sites::kUnitAttachModel,
+                  &sites::kUnitRemoveModel})) {
     return Outcome::kFailed;
   }
   if (!AddModifyType(L"UnitResource", kStatUnitResource) || !AddActionTagHandler(&ActionTagRead) ||
-      !OnDatabaseLoad(&NewDatabase)) {
+      !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&RingTick)) {
     return Outcome::kFailed;
   }
   g_log = log;
@@ -1577,7 +1727,7 @@ Contract: [resourceGatherAuras](../porting-to-another-dll.md#resourcegatherauras
 
 Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `GatherDanceCall` `0x4ED02A` (5 B), `SnareModifierSumTactic` `0x6A88D6` (34 B).
+Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `GatherDanceCall` `0x4ED02A` (5 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `UnitAttachModel` `0x9C04F3` (8 B), `UnitRemoveModel` `0x9C2885` (8 B), `UnitHasModel` `0x9C28DE` (8 B), `AuraHasModelCall` `0x9D0584` (5 B), `AuraHangModelCall` `0x9D06DC` (5 B).
 
 ### src/features/gatherauras.cpp
 
@@ -1596,7 +1746,13 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareCollector` 
 // its rate by the dance factor of 0x4ECD39 (0x4ED02A). The call goes to a wrapper that multiplies in
 // the stock sum 0x4B3C7D of the unit's modifiers of the stats that fit this target and resource,
 // each from 1.0, with the GatherRate reader's rule: no modifier, or a sum below 1e-6, counts as 1.0.
-// A unit with no modifier record pays one load. The hook is in hooks/gatherauras_hooks.asm.
+// A unit with no modifier record pays one load.
+//
+// The aura update hangs the action's <ModelAttachment> on every unit in range, whatever it does, so a
+// villager cutting wood under a MineGatherRate aura would wear a ring that means nothing. For these
+// stats only, the two calls of the update that decide it (0x9D0584, has it; 0x9D06DC, a new target)
+// go through wrappers that give the ring to the units gathering something the stat fits, and take it
+// off the others, by the same rule as the factor. The hooks are in hooks/gatherauras_hooks.asm.
 #include <bit>
 #include <cstdint>
 #include <vector>
@@ -1611,6 +1767,8 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareCollector` 
 
 extern "C" {
 void UhcGatherAuraCall();
+void UhcGatherAuraHasRingHook();
+void UhcGatherAuraHangRingHook();
 }
 
 namespace {
@@ -1627,6 +1785,8 @@ constexpr std::int32_t kResourceWood = 1;
 constexpr std::int32_t kResourceFood = 2;
 constexpr float kMinFactor = 1.0e-6f;
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+constexpr std::uint32_t kGatherVtable = 0x00B97880;  // the Gather action
+constexpr std::uint8_t kGatheringState = 5;          // [action+61h] while the tick runs (0x4ECC8E)
 
 struct ModifierArray {
   const char* const* data;
@@ -1639,6 +1799,12 @@ using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
 const auto kModifierSum = reinterpret_cast<ModifierSumFn>(0x004B3C7D);
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+using HasModelFn = bool(__thiscall*)(const char* unit, std::int32_t model);
+using HangModelFn = bool(__thiscall*)(char* unit, const void* object, std::int32_t bone, std::int32_t flag);
+using RemoveModelFn = void(__thiscall*)(char* unit, std::int32_t model);
+const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
+const auto kHangModel = reinterpret_cast<HangModelFn>(0x009C04F3);
+const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
 
 std::int32_t g_mineType = -1;
 std::int32_t g_treeType = -1;
@@ -1673,7 +1839,89 @@ float StatFactor(const char* list, std::int32_t stat) {
   return factor;
 }
 
+// What a Gather action gathers, as the stats see it.
+struct Gathers {
+  const char* proto;
+  std::int32_t resource;
+};
+
+Gathers WhatItGathers(const char* action) {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* target = kUnitById(Field<const char*>(game, 0x13C), Field<std::int32_t>(action, 0x14));
+  return {target == nullptr ? nullptr : Field<const char*>(target, 0x5C), Field<std::int32_t>(action, 0x70)};
+}
+
+// True when the stat changes what this Gather action gathers: the rule of UhcGatherAuraFactor.
+bool StatFits(std::int32_t stat, const Gathers& what) {
+  switch (stat) {
+    case kStatFood:
+      return what.resource == kResourceFood;
+    case kStatWood:
+      return what.resource == kResourceWood;
+    case kStatGold:
+      return what.resource == kResourceGold;
+    default:
+      break;
+  }
+  if (what.proto == nullptr) {
+    return false;
+  }
+  const bool mine = kProtoIsType(what.proto, g_mineType);
+  const bool tree = !mine && kProtoIsType(what.proto, g_treeType);
+  const bool farm = !mine && !tree && kProtoIsType(what.proto, g_farmType);
+  switch (stat) {
+    case kStatMine:
+      return mine;
+    case kStatTree:
+      return tree;
+    case kStatFarming:
+      return farm;
+    case kStatNaturalFood:
+      return !mine && !tree && !farm && what.resource == kResourceFood;
+    default:
+      return false;
+  }
+}
+
+bool IsGatherStat(const char* auraAction) {
+  const std::int32_t stat = Field<std::int8_t>(Field<const char*>(auraAction, 0x04), 0xB8);
+  return stat >= kStatMine && stat <= kStatGold;
+}
+
+// True when the unit is gathering, now, something the aura's stat changes.
+bool GetsTheEffect(const char* auraAction, const char* unit) {
+  const char* manager = Field<const char*>(unit, 0x58);
+  const char* current = manager == nullptr ? nullptr : Field<const char*>(manager, 0x24);
+  if (current == nullptr || Field<std::uint32_t>(current, 0) != kGatherVtable ||
+      Field<std::uint8_t>(current, 0x61) != kGatheringState) {
+    return false;
+  }
+  return StatFits(Field<std::int8_t>(Field<const char*>(auraAction, 0x04), 0xB8), WhatItGathers(current));
+}
+
 }  // namespace
+
+// Replaces the has-it call in the aura update, for a unit that stays in range. True keeps the update
+// from hanging the model, so it answers true for a unit that must not have it.
+extern "C" bool __stdcall UhcGatherAuraHasRing(const char* auraAction, char* unit, std::int32_t model) {
+  const bool has = kHasModel(unit, model);
+  if (!IsGatherStat(auraAction) || GetsTheEffect(auraAction, unit)) {
+    return has;
+  }
+  if (has) {
+    kRemoveModel(unit, model);
+  }
+  return true;
+}
+
+// Replaces the hang call in the aura update, for a unit that has just come into range.
+extern "C" bool __stdcall UhcGatherAuraHangRing(const char* auraAction, char* unit, const void* object,
+                                                std::int32_t bone, std::int32_t flag) {
+  if (IsGatherStat(auraAction) && !GetsTheEffect(auraAction, unit)) {
+    return false;
+  }
+  return kHangModel(unit, object, bone, flag);
+}
 
 // From the wrapper of the dance factor's call in the gather tick. `action` is the Gather action:
 // [+10h] the gatherer, [+14h] the target's ID, [+70h] the resource.
@@ -1683,10 +1931,9 @@ extern "C" float __stdcall UhcGatherAuraFactor(const char* action) {
   if (list == nullptr) {
     return 1.0f;
   }
-  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
-  const char* target = kUnitById(Field<const char*>(game, 0x13C), Field<std::int32_t>(action, 0x14));
-  const char* proto = target == nullptr ? nullptr : Field<const char*>(target, 0x5C);
-  const std::int32_t resource = Field<std::int32_t>(action, 0x70);
+  const Gathers what = WhatItGathers(action);
+  const char* proto = what.proto;
+  const std::int32_t resource = what.resource;
   float factor = 1.0f;
   if (proto != nullptr) {
     if (kProtoIsType(proto, g_mineType)) {
@@ -1732,7 +1979,8 @@ Outcome ApplyResourceGatherAuras(const Config& config) {
   }
   if (!VerifyAll("resourceGatherAuras", {&sites::kGatherDanceCall, &sites::kSnareCollector, &sites::kSnareModifierSum,
                                          &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kIsA,
-                                         &sites::kUnitById})) {
+                                         &sites::kUnitById, &sites::kAuraHasModelCall, &sites::kAuraHangModelCall,
+                                         &sites::kUnitHasModel, &sites::kUnitAttachModel, &sites::kUnitRemoveModel})) {
     return Outcome::kFailed;
   }
   if (!RequestAbstractUnitType("AbstractMine", &g_mineType) || !RequestAbstractUnitType("Tree", &g_treeType) ||
@@ -1743,7 +1991,9 @@ Outcome ApplyResourceGatherAuras(const Config& config) {
     return Outcome::kFailed;
   }
   g_log = log;
-  if (!WriteCall(sites::kGatherDanceCall.va, reinterpret_cast<const void*>(&UhcGatherAuraCall))) {
+  if (!WriteCall(sites::kGatherDanceCall.va, reinterpret_cast<const void*>(&UhcGatherAuraCall)) ||
+      !WriteCall(sites::kAuraHasModelCall.va, reinterpret_cast<const void*>(&UhcGatherAuraHasRingHook)) ||
+      !WriteCall(sites::kAuraHangModelCall.va, reinterpret_cast<const void*>(&UhcGatherAuraHangRingHook))) {
     return Outcome::kFailed;
   }
   Log(L"resourceGatherAuras: modifiers can change the gather rate of one kind of target or one resource%ls "
@@ -1767,6 +2017,8 @@ option casemap :none
 include common.inc
 
 UhcGatherAuraFactor PROTO STDCALL action:DWORD
+UhcGatherAuraHasRing PROTO STDCALL auraAction:DWORD, unit:DWORD, model:DWORD
+UhcGatherAuraHangRing PROTO STDCALL auraAction:DWORD, unit:DWORD, object:DWORD, bone:DWORD, flag:DWORD
 
 .data
 danceFactor dd 004ECD39h    ; float thiscall(player): the Gathering dance factor
@@ -1787,6 +2039,22 @@ UhcGatherAuraCall PROC
     add esp, 4
     ret
 UhcGatherAuraCall ENDP
+
+; Replaces the target of call 9C28DEh at 0x9D0584 in the aura update FUN_009D033E, thiscall(unit,
+; model), ret 4. ESI = the aura action. The update reads only AL after it.
+UhcGatherAuraHasRingHook PROC
+    TRACE_ONCE "resourceGatherAuras ring (0x9D0584)"
+    invoke UhcGatherAuraHasRing, esi, ecx, dword ptr [esp+4]
+    ret 4
+UhcGatherAuraHasRingHook ENDP
+
+; Replaces the target of call 9C04F3h at 0x9D06DC in the same update, thiscall(unit, object, bone,
+; byte), ret 0Ch. ESI = the aura action. The update ignores the result.
+UhcGatherAuraHangRingHook PROC
+    TRACE_ONCE "resourceGatherAuras ring (0x9D06DC)"
+    invoke UhcGatherAuraHangRing, esi, ecx, dword ptr [esp+4], dword ptr [esp+8], dword ptr [esp+0Ch]
+    ret 0Ch
+UhcGatherAuraHangRingHook ENDP
 
 END
 ```

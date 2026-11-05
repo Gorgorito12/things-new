@@ -8,7 +8,7 @@ option casemap :none
 
 include common.inc
 
-UhcCivFirstTcTag PROTO STDCALL node:DWORD, civ:DWORD   ; true: the node was <firstTC>
+UhcCivTagDispatch PROTO STDCALL node:DWORD, civ:DWORD  ; civtags.cpp; true: a registered tag, consumed
 UhcCivFirstTcTownProto PROTO STDCALL player:DWORD      ; the proto for the town units, or -1
 
 .data
@@ -20,15 +20,16 @@ townQueryResume dd 00679ACEh    ; push ebp / push esi / mov esi,[edi+80h]: the q
 
 ; Replaces 0x52BB07..0x52BB0E (xor edi,edi / cmp dword ptr [ebx+80h],edi) in the civs.xml
 ; parser FUN_0052A590: a child tag of <civ> that matched none of the stock names. ESI = the node,
-; EBX = database, [esp+10h] = the civ. UhcCivFirstTcTag reads a <firstTC> tag and the hook goes to
-; the next child, as every stock handler does; any other tag runs the stock path (the resource
-; names, then a silent skip). 0x52B43D reads only the stack.
-UhcCivFirstTcTagHook PROC
-    TRACE_ONCE "civFirstTC civs.xml (0x52BB07)"
+; EBX = database, [esp+10h] = the civ. UhcCivTagDispatch (civtags.cpp, shared by civFirstTC and
+; sharedBuildLimit) reads a registered tag and the hook goes to the next child, as every stock
+; handler does; any other tag runs the stock path (the resource names, then a silent skip).
+; 0x52B43D reads only the stack.
+UhcCivTagsHook PROC
+    TRACE_ONCE "civ tags civs.xml (0x52BB07)"
     pushad
     push dword ptr [esp+30h]        ; the civ: [esp+10h] at entry, +20h for pushad
     push esi                        ; the node
-    call UhcCivFirstTcTag
+    call UhcCivTagDispatch
     mov dword ptr [esp+1Ch], eax    ; popad's EAX slot
     popad
     test al, al
@@ -38,7 +39,7 @@ UhcCivFirstTcTagHook PROC
     jmp civTagResume
 nextChild:
     jmp civTagNext
-UhcCivFirstTcTagHook ENDP
+UhcCivTagsHook ENDP
 
 ; Replaces 0x679AC8..0x679ACD (mov ebx,[ecx+5E08h]) in FUN_0049039A, which gives the civ's
 ; <townstartingunit> units to the first built unit of proto EBX (stock: TownCenter) when a colony

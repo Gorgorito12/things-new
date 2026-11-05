@@ -5,6 +5,8 @@
 #include <cctype>
 #include <cstdlib>
 
+#include "hostfiles.h"
+
 namespace uhc {
 namespace {
 
@@ -61,8 +63,8 @@ bool IsNameChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || 
 
 }  // namespace
 
-bool ReadDataListFile(const std::string& arg, const wchar_t* defaultPath, std::wstring* path, std::string* text) {
-  *path = arg.empty() ? std::wstring(defaultPath) : std::wstring(arg.begin(), arg.end());
+bool ReadDataListFile(const std::string& arg, const wchar_t* defaultName, std::wstring* path, std::string* text) {
+  *path = arg.empty() ? std::wstring(kDataFolder) + defaultName : std::wstring(arg.begin(), arg.end());
   const bool absolute = path->size() > 1 && ((*path)[1] == L':' || (*path)[0] == L'\\');
   if (!absolute) {
     *path = ExeDirectory() + *path;

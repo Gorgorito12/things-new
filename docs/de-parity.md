@@ -50,6 +50,12 @@ Every statement is **[O]** observed (a file, a listing, a byte search) or **[I]*
    - [O] Ghidra (through REA) did not finish analysing the 59 MB exe within REA's 30-minute startup
      limit (`REA_GHIDRA_STARTUP_TIMEOUT_MS`), twice. The listings above come from
      `tools/re/pe64.py` with capstone 5.0.6.
+   - [O] On 2026-11-05 a third run with a 4-hour limit was cut off too, with no result and nothing
+     saved. Its log showed RTTI work at 12:49 and decompiler work until 13:39, after a start at 10:26,
+     then nothing more until the limit.
+   - [O] `mBuildingForwardOrientation` is in `.rdata` (RVA 0x27C6D10), with no code reference and no
+     data pointer in the file (`pe64.py xrefs`, a byte scan). [I] What reads it is probably in the
+     42 % of functions encrypted on disk: a finished Ghidra analysis of the file would not show it either.
 
 **Evidence.** Everything is in `rea/evidence/aoe3de-31fad98f/parity/` (gitignored):
 - `pdf/`: the guide's text per page and `inventory.tsv`, its 996 entries;
@@ -79,20 +85,20 @@ Sizes, following the Design rule in wol-requests.md:
 | 24 | Negative trickles, debt | `ResourceTrickleRate` with negative amounts, clamped by `Minimum/MaximumResourceTrickleRate`; no debt rule | Has those subtypes; default min 0, max 10; a stockpile never goes below 0 | negative trickle: **data only** (lower the minimum); debt: S–M |
 | 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M |
 | 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Polish Torp) | Absent; WoL's `sawmill.tactics` already carries DE's aura | M |
-| 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L |
-| 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M |
-| 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M |
+| 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L; all five names read as elements (2026-11-05) ; `EnableSharedBuildLimit` built (2026-11-05), the two subtypes with a name not |
+| 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M; the three names built in `sharedBuildLimit` (2026-11-05) |
+| 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M; the three names read as elements (2026-11-05) ; the subtype `TrainBatchSize` built too (2026-11-05) |
 | 32 | Economic aura per resource | Modify types `NaturalFoodGatherRate`, `TreeGatherRate`, `MineGatherRate`, `FarmingGatherRate` (by target class) | Absent (`GatherRate` only) | M |
 | 33 | Crate gather priority | Nothing; auto-crate-gather by flag only | Hardcoded per civ in two places (Dutch: coin first; Ottomans and Indians: wood first) | M (a per-civ cfg order) |
 | 34 | Kill bounty by techs | Subtype `KillBounty`; `Bounty resourcetype`; `BountyResourceOverride` / `BountyResourceExtra` / `BountySpecificBonus` | Absent; WoL's DLL has a `KillBounty` string | M |
 | 35 | `TeamKillBounty` | Flag on the victim: its bounty goes to the killer's whole team (used by no DE unit) | Absent, but the stock payment already has a "whole team" mode | **S** |
 | 36 | Cards that hit enemies / all | No tech flag. `CreatePower` → a timed power of type `EnemyEffect` / `TeamEffect` | Absent (`GeneralEffect` exists) | L |
 | 37 | `NextResearchIsFree` | Flag on a building proto, set by subtype `SetNextResearchFree` | Absent; a research is paid at one site when it is queued | M |
-| 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S** |
-| 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L |
+| 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S**; both built as types (`cantBeSlowed`, 2026-11-05) |
+| 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L ; the flag's four tags built in `detonationDeath` (2026-11-05) |
 | 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` exists only as a tech flag, and no code reading it was found | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
-| 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L |
+| 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons not |
 | 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI |
 | 44 | Building rotated / annexed by its builder | Nothing for rotation; in-place building upgrades (`ForceMutate`, `RevertUpgrade`) | — | needs a design |
 
@@ -397,6 +403,16 @@ engine-symbols.md, "DE parity sites". All of this is static reading; nothing was
 - **#29, #30 build limits.** [O] Every check (train queue, Maintain, build, AI, UI: 50 calls) goes
   through one limit getter (0x4C7B5F) and one count function (0x4C7BC5). [I] A shared or team
   limit belongs there.
+- **#39 the delete (2026-11-05).** [O] The stock Delete button and the Delete key run the console command
+  `uiDeleteSelectedUnit` (handler 0x7E5197, registered at 0x52F5C6; the `exec` crash at 0x7E51C8 is a null UI
+  pointer `[0xC66244]+74h→+34h→+1874h`, read before the selection, so the console route only works with the
+  interface up). With one unit selected it calls FUN_0082F1E3, which builds the synced command of type 7 (constructor
+  FUN_007D5949, vtable 0xB87E30) with the unit's ID and sends it; several units go through a confirmation dialog
+  first. The executor is slot 21 of that vtable, FUN_007CCF7F: for a proto with flag 0Dh it asks the kill queue
+  0x4B4DC2 with flags 1 0 0 (0x7CD0DC); for any other it sets the HP to 0 through 0x4820A1 with flag 1 (0x7CD0CF),
+  whose death check 0x482152 goes to FUN_004B4F2F, not through the queue; a command with byte `+8Ch` set goes to
+  0x4726B2 instead. [I] So a delete reaches the kill handler's wrapper only for flag-0Dh protos; `detonationDeath`
+  wraps the two calls.
 - **#37 research cost.** [O] A research is paid once, when it is queued (0x9E67E1; a second path at
   0x9D54CF). The paid cost is copied to the action, [I] for the refund on cancel. [I] "Next
   research is free" skips that payment and copies a zero cost.
@@ -407,7 +423,7 @@ So the cfg keys and markers can keep DE's names where DE has one:
 
 | # | Our key | DE counterpart | Note |
 |---|---|---|---|
-| 1 | `dodgeAnyUnit` (`AbstractDodge`) | flag `CanDodgeAttacks` + `DodgeChance` (guide p8, p18); subtypes `EnableDodge`, `DodgeChance` | DE keeps the Japanese-monk path and adds the flag for other units |
+| 1 | `dodgeAnyUnit` (`AbstractDodge`) | flag `CanDodgeAttacks` + `DodgeChance` (guide p8, p18); subtypes `EnableDodge`, `DodgeChance` | DE keeps the Japanese-monk path and adds the flag for other units. Both names read as proto elements since 2026-11-05 , and the two subtypes (2026-11-05) |
 | 1b | `dodgeSoundSet`, `criticalSoundSet` | proto `DodgeSoundSet`, `DodgeMessageID`; tactics `HitPercentSoundSet` | DE's parser: fn 0x101DEF0 |
 | 3 | `startingTC`, `civFirstTC` | tactics flag `FirstTC` (an aura only on the first TC); no per-civ start tag | |
 | 5, 22 | `liveBuildingWorkRate`, `buildingWorkRateAuras` | modify type `BuildingWorkRate` (guide p35), the same spelling as ours; also `TrainingRate`, `ResearchRate` | |

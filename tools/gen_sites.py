@@ -177,9 +177,10 @@ SITES = [
     # (0x490881) and the Regeneration dance (0x67A03B)
     ("RegenAddHp", 0x49087C, 0x12),
     ("DanceRegenAddHp", 0x67A036, 0x15),
-    # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
-    # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
-    ("AbstractTypesEnd", 0x51BA23, 0x15),
+    # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the last
+    # loop's jl and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret. It starts at
+    # the jl because the loop's bounds are not ours: a DLL that lengthens the list writes them
+    ("AbstractTypesEnd", 0x51BA2F, 9),
     # damageOverTime: TakeDamage FUN_0049B3D9's entry, sub esp,8Ch, and the cmp byte
     # [esp+0C0h],1 the trampoline continues at
     ("DotTakeDamageEntry", 0x49B3D9, 14),
@@ -844,7 +845,8 @@ SITES = [
     ("ModifyTypeNameCompare", 0x443C10, 0x10),
     # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
     # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
-    ("DataSubtypeLookupCall", 0x6206D7, 5),
+    ("DataSubtypeLookupHead", 0x61FF5D, 5),
+    ("DataSubtypeAttrCall", 0x6206B2, 5),
     # teamKillBounty: FUN_0049BD52's mov ecx,[esp+14h] / mov edx,[esi], the amount and the killer's ID for
     # the team's XP routine 0x49BDC0
     ("TeamBountyPay", 0x49BDAB, 6),
@@ -852,10 +854,10 @@ SITES = [
     # immediate), and the head of TakeDamage's kill branch, mov ecx,[esp+28h] / push ecx
     ("BountyTagHandler", 0x51D669, 4),
     ("BountyKillBranch", 0x4D4E0C, 5),
-    # hcTargetTechs: the call of the tech <Flag> reader FUN_00620C2F, the only call of applyEffects, and the
+    # hcTargetTechs: the head of the tech <Flag> reader FUN_00620C2F (push esi / mov esi,[esp+8]), the only call of applyEffects, and the
     # heads of removeEffects (push ebx / push ebp / mov ebp,[esp+0Ch]) and of the pass after a load
     # (push ebx / push ebp / push edi / mov edi,[esp+10h]); the check of who is an enemy, verify only
-    ("TechFlagCall", 0x620C23, 5),
+    ("TechFlagHead", 0x620C2F, 5),
     ("TechApplyCall", 0x94D0AE, 5),
     ("TechRemoveHead", 0x94DCB2, 6),
     ("TechLoadHead", 0x94DDEA, 7),
@@ -864,6 +866,15 @@ SITES = [
     # the area damage, verify only
     ("DetonationKillCall", 0x493D8F, 5),
     ("DetonationAreaHead", 0x4C9D89, 10),
+    # detonationDeath, the delete command: in its executor FUN_007CCF7F (slot 21 of the type-7 command's
+    # vtable 0xB87E30) the call of the HP setter 0x4820A1 with (0, 1) for a proto without flag 0Dh, and the
+    # call of the kill queue 0x4B4DC2 with (1, 0, 0) for one with it; ESI = the unit at both
+    ("DeleteSetHpCall", 0x7CD0CF, 5),
+    ("DeleteKillCall", 0x7CD0DC, 5),
+    # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
+    ("KillQueueAsk", 0x4B4DC2, 8),
+    # TakeDamage's subtraction through the add-HP entry 0x4823A3, verify only
+    ("DetonationTakeDamageHp", 0x49B822, 5),
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),
@@ -888,6 +899,9 @@ SITES = [
     ("BuildCountTooltip2", 0x70F5EF, 5),
     ("PlayerProtoEntry", 0x45311B, 8),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
+    # pillageGold: TakeDamage's call of 0x49BD52, on every hit with an attacking player, and the
+    # instructions that load its arguments: EBX the player [esp+20h], and the frame it relies on
+    ("PillageHitCall", 0x49B72B, 22),
     # doNotQueue: the queue routine's call of the action add 0x494894
     ("TrainQueueAddCall", 0x9CE81A, 5),
     # nextResearchFree: the payment 0x8D946A and the copy of the cost 0x480A73 into the action, in the
@@ -1118,6 +1132,18 @@ SITES = [
     # (thiscall(inventory, resource, float)), unit state check, main resource of a unit, dead test,
     # add resource to a player
     ("AuraScan", 0x9CFF9A, 0x10),
+    # unitResourceAuras: the stock update's reading of <ModelAttachment> ([protoAction+A4h], the bone at
+    # +A8h) and the functions it calls: model by ID, has it (thiscall(unit, model), ret 4), hang it
+    # (thiscall(unit, object, bone, byte), ret 0Ch), take it off (thiscall(unit, model), ret 4)
+    ("AuraModelBlock", 0x9D053F, 9),
+    # resourceGatherAuras: the update's two decisions on the ring: has it, for a unit that stays in range,
+    # and hang it, for a new one
+    ("AuraHasModelCall", 0x9D0584, 5),
+    ("AuraHangModelCall", 0x9D06DC, 5),
+    ("ModelById", 0x405E83, 6),
+    ("UnitHasModel", 0x9C28DE, 8),
+    ("UnitAttachModel", 0x9C04F3, 8),
+    ("UnitRemoveModel", 0x9C2885, 8),
     ("InventoryAdd", 0x49A5E6, 0x10),
     ("CheckState", 0x482152, 0x10),
     ("MainResource", 0x4DBEC1, 0x10),

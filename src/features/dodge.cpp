@@ -23,6 +23,13 @@
 // caller's EDI (FUN_0048649F, 0x49AF98..0x49B023): its index in damagetypes.xml. Tech and damage
 // type names are resolved on the first test after each data load, so every machine resolves the
 // same names from the same data; an unknown name is logged and disables its rule.
+//
+// The proto tags <CanDodgeAttacks>1</CanDodgeAttacks> and <DodgeChance>percent</DodgeChance> (the
+// names another edition of the game uses) mark a proto in the data instead of the cfg: with the
+// first, the unit dodges every hit type with the percent of the second (15 if absent), no tech
+// needed; they are read with dodgeAnyUnit on and come before the cfg rules. Two tech effects of
+// type="Data" change that for one player's copy of the proto: subtype="EnableDodge" (0 off, else on;
+// base: the tag) and subtype="DodgeChance" (the percent; base: the tag's, or 15).
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -34,7 +41,11 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../prototags.h"
+#include "../techsubtypes.h"
 #include "../unittypes.h"
+
+#include <unordered_map>
 
 namespace {
 
@@ -47,6 +58,8 @@ const auto kTechByName = reinterpret_cast<TechByNameFn>(0x00600BE1);
 const auto kTechActive = reinterpret_cast<TechActiveFn>(0x0094AF27);
 const auto kSyncRandom = reinterpret_cast<SyncRandomFn>(0x00407CE7);
 void* const kSyncRng = reinterpret_cast<void*>(0x00C66588);  // the stock dodge rolls stream 2 of it
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 constexpr std::uint32_t kGameGlobal = 0x00C66234;             // game; +13Ch world, +140h database
 
 // What UhcDodgeDecide tells the hook at 0x49ACE5 (hooks/dodge_hooks.asm).
@@ -79,6 +92,19 @@ struct ChanceRule {
   std::int32_t damageType = -1;
   bool disabled = false;
 };
+
+struct ProtoDodge {
+  bool enabled = false;         // <CanDodgeAttacks>
+  std::int32_t permille = 150;  // <DodgeChance>, percent x 10
+};
+std::unordered_map<std::int32_t, ProtoDodge> g_protoDodge;  // by proto ID; the load writes it
+
+struct TechDodge {
+  std::int32_t id = -1;   // the proto ID the copy had: a reused pointer with another ID is ignored
+  float enabled = -1.0f;  // -1: no tech touched it
+  float percent = -1.0f;
+};
+std::unordered_map<const char*, TechDodge> g_techDodge;  // by the player's copy of the proto
 
 // Never resized after the features are applied: the hooks read them from the game thread.
 std::vector<SoundRule> g_dodgeSounds;
@@ -252,6 +278,89 @@ void Resolve(ChanceRule& rule, std::size_t index) {
   }
 }
 
+// The synced roll over [0, 999], below permille: dodged. 0 % and 100 % roll nothing.
+std::int32_t Roll(const char* unit, std::int32_t permille, const wchar_t* label, bool log) {
+  std::int32_t roll = -1;
+  bool dodged = permille >= 1000;
+  if (permille > 0 && permille < 1000) {
+    roll = kSyncRandom(kSyncRng, 2, 999);
+    dodged = roll < permille;
+  }
+  if (log) {
+    uhc::Log(L"dodgeChance: unit %d (%hs), %ls (%.1f %%): roll %d -> %ls", Field<std::int32_t>(unit, 0x10),
+             ProtoName(unit), label, permille / 10.0, roll, dodged ? L"dodged" : L"hit");
+  }
+  return dodged ? kDodged : kNotDodged;
+}
+
+bool __cdecl ReadCanDodgeAttacks(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  g_protoDodge[id].enabled = text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+  if (g_log) {
+    uhc::Log(L"dodgeAnyUnit: proto %d %ls (CanDodgeAttacks)", id, g_protoDodge[id].enabled ? L"can dodge" : L"cannot dodge");
+  }
+  return true;
+}
+
+bool __cdecl ReadDodgeChance(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  wchar_t* end = nullptr;
+  const double percent = text == nullptr ? -1.0 : std::wcstod(text, &end);
+  if (text == nullptr || end == text || !(percent >= 0.0) || !(percent <= 100.0)) {
+    uhc::Log(L"dodgeAnyUnit: proto %d: <DodgeChance> needs a percent from 0 to 100, ignored", id);
+    return true;
+  }
+  g_protoDodge[id].permille = static_cast<std::int32_t>(std::lround(percent * 10.0));
+  if (g_log) {
+    uhc::Log(L"dodgeAnyUnit: proto %d dodges %.1f %% (DodgeChance)", id, percent);
+  }
+  return true;
+}
+
+// The tag's values for a proto ID, as the base of the tech subtypes.
+ProtoDodge TagOf(const char* proto) {
+  const auto found = g_protoDodge.find(Field<std::int32_t>(proto, 8));
+  return found == g_protoDodge.end() ? ProtoDodge{} : found->second;
+}
+
+void ChangeDodgeTech(char* proto, float* field, float base, float amount, std::uint8_t relativity, bool unapply,
+                     const wchar_t* name) {
+  if (*field < 0.0f) {
+    *field = base;
+  }
+  const float before = *field;
+  kEffectValue(relativity, field, base, amount, unapply);
+  if (g_log || g_chanceLog) {
+    uhc::Log(L"dodgeAnyUnit: proto %d, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g",
+             Field<std::int32_t>(proto, 8), name, relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*field));
+  }
+}
+
+TechDodge& TechSlot(char* proto) {
+  TechDodge& slot = g_techDodge[proto];
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  if (slot.id != id) {
+    slot = TechDodge{};
+    slot.id = id;
+  }
+  return slot;
+}
+
+void ChangeEnableDodge(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeDodgeTech(proto, &TechSlot(proto).enabled, TagOf(base).enabled ? 1.0f : 0.0f, amount, relativity, unapply,
+                  L"EnableDodge");
+}
+
+void ChangeDodgeChance(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeDodgeTech(proto, &TechSlot(proto).percent, static_cast<float>(TagOf(base).permille) / 10.0f, amount,
+                  relativity, unapply, L"DodgeChance");
+}
+
+void ForgetTechDodge(char*) { g_techDodge.clear(); }
+
 // The matched rule decides: its tech, then the synced roll over [0, 999]. 0 % and 100 % roll
 // nothing.
 std::int32_t RollRule(const char* unit, const ChanceRule& rule, std::size_t index) {
@@ -269,18 +378,9 @@ std::int32_t RollRule(const char* unit, const ChanceRule& rule, std::size_t inde
       return kNotDodged;
     }
   }
-  std::int32_t roll = -1;
-  bool dodged = rule.permille >= 1000;
-  if (rule.permille > 0 && rule.permille < 1000) {
-    roll = kSyncRandom(kSyncRng, 2, 999);
-    dodged = roll < rule.permille;
-  }
-  if (g_chanceLog) {
-    uhc::Log(L"dodgeChance: unit %d (%hs), rule %u (%.1f %%): roll %d -> %ls", Field<std::int32_t>(unit, 0x10),
-             ProtoName(unit), static_cast<unsigned>(index + 1), rule.permille / 10.0, roll,
-             dodged ? L"dodged" : L"hit");
-  }
-  return dodged ? kDodged : kNotDodged;
+  wchar_t label[24];
+  swprintf_s(label, L"rule %u", static_cast<unsigned>(index + 1));
+  return Roll(unit, rule.permille, label, g_chanceLog);
 }
 
 bool RequestRuleTypes(std::vector<SoundRule>* rules) {
@@ -310,6 +410,28 @@ std::int32_t __stdcall UhcDodgeDecide(const char* unit, const char* damageInfo) 
     return kStockCompares;
   }
   const std::int32_t damageType = damageInfo == nullptr ? -1 : Field<std::uint8_t>(damageInfo, 5);
+  if (!g_protoDodge.empty() || !g_techDodge.empty()) {
+    const auto tagged = g_protoDodge.find(Field<std::int32_t>(proto, 8));
+    bool enabled = tagged != g_protoDodge.end() && tagged->second.enabled;
+    std::int32_t permille = tagged != g_protoDodge.end() ? tagged->second.permille : 150;
+    auto tech = g_techDodge.find(proto);  // the copy of this player
+    if (tech != g_techDodge.end() && tech->second.id != Field<std::int32_t>(proto, 8)) {
+      tech = g_techDodge.end();  // the pointer was another proto's copy
+    }
+    if (tech != g_techDodge.end()) {
+      if (tech->second.enabled >= 0.0f) {
+        enabled = tech->second.enabled != 0.0f;
+      }
+      if (tech->second.percent >= 0.0f) {
+        const long value = std::lround(tech->second.percent * 10.0f);
+        permille = value < 0 ? 0 : value > 1000 ? 1000 : static_cast<std::int32_t>(value);
+      }
+    }
+    if (enabled) {
+      return Roll(unit, permille, tech != g_techDodge.end() ? L"CanDodgeAttacks, by tech" : L"CanDodgeAttacks",
+                  g_chanceLog || g_log);
+    }
+  }
   for (std::size_t i = 0; i < g_chanceRules.size(); ++i) {
     ChanceRule& rule = g_chanceRules[i];
     if (rule.generation != g_generation) {
@@ -378,9 +500,17 @@ Outcome ApplyDodge(const Config& config) {
                                   &sites::kDodgeSound, &sites::kCriticalSound})) {
     return Outcome::kFailed;
   }
-  if (chance && !VerifyAll("dodgeChance", {&sites::kDodgeTest, &sites::kDodgeRollPath, &sites::kDodgeCaller,
-                                           &sites::kSyncRandom, &sites::kTechActive, &sites::kTechByName,
-                                           &sites::kDamageTypeLoad, &sites::kIsA})) {
+  // The cfg rules and the proto tags both roll: the roll's sites are checked for either.
+  if ((chance || dodge != nullptr) &&
+      !VerifyAll("dodgeChance", {&sites::kDodgeTest, &sites::kDodgeRollPath, &sites::kDodgeCaller,
+                                 &sites::kSyncRandom, &sites::kTechActive, &sites::kTechByName,
+                                 &sites::kDamageTypeLoad, &sites::kIsA})) {
+    return Outcome::kFailed;
+  }
+  if (dodge != nullptr && (!AddProtoTagHandler("CanDodgeAttacks", &ReadCanDodgeAttacks) ||
+                           !AddProtoTagHandler("DodgeChance", &ReadDodgeChance) ||
+                           !AddTechSubtype("EnableDodge", &ChangeEnableDodge) ||
+                           !AddTechSubtype("DodgeChance", &ChangeDodgeChance) || !OnDatabaseLoad(&ForgetTechDodge))) {
     return Outcome::kFailed;
   }
 

@@ -25,7 +25,8 @@ dumpbin /exports build\Release\UHC.dll
 - The game is 32-bit, so configure with `-A Win32`; `CMakeLists.txt` stops an x64 configure on
   purpose. For Visual Studio 2022 the generator is `"Visual Studio 17 2022"`.
 - The output is `build\Release\UHC.dll`, linked with the static C runtime, so it needs no
-  redistributable.
+  redistributable, and `build\Release\dinput8.dll`, the same code for a game that keeps another `UHC.dll`
+  ([how-it-works.md](how-it-works.md#beside-another-dll)).
 - `dumpbin /exports` must list `_UHCMain@0`, the exact name the loader asks for.
 
 **Layout:**
@@ -658,6 +659,8 @@ Modders download a zip, so they never need a compiler. The version has a single 
    UHC-x.y.z\
        UHC.dll
        Startup\uhc.cfg     examples/Startup/uhc.cfg with every key commented out
+       beside-another-dll\ dinput8.dll and engine-ext\engine-ext.cfg, for a game that keeps another UHC.dll
+       art\effects\uhc_rings\  the aura rings of tools/rings
        README.txt          the modder's quick start
        LICENSE.txt
    ```

@@ -15,6 +15,10 @@
 // calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
 // new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
 // hooks/veterancy_hooks.asm.
+//
+// Two tech effects of type="Data" act on one player's copy of the proto: subtype="VeterancyEnable" (0 turns the
+// rows off for that player, anything else on; base 1) and subtype="VeterancyBonus" (a factor on what every row
+// adds: a row of 1.30 with factor 2 gives 1.60; base 1). Ranks already granted are game modifiers and stay.
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -30,7 +34,9 @@
 #include "../modifiers.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
 #include "../transformcalls.h"
+#include "../unittypes.h"
 
 extern "C" void UhcVeterancyHook();
 
@@ -53,6 +59,8 @@ const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
 const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
 const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 
 struct Row {
   std::int32_t kills;
@@ -61,8 +69,71 @@ struct Row {
 };
 
 std::unordered_map<std::int32_t, std::vector<Row>> g_rows;  // by proto ID; the load fills it
+
+struct TechOverride {
+  std::int32_t id = -1;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float enabled = 1.0f;
+  float factor = 1.0f;
+};
+std::unordered_map<const char*, TechOverride> g_tech;  // by the player's copy of the proto
 bool g_log = false;
 int g_logLines = 0;
+
+const TechOverride* TechFor(const char* copy) {
+  if (g_tech.empty()) {
+    return nullptr;
+  }
+  const auto found = g_tech.find(copy);
+  return found != g_tech.end() && found->second.id == *reinterpret_cast<const std::int32_t*>(copy + 8)
+             ? &found->second
+             : nullptr;
+}
+
+// The rows apply to this copy, and a row's total as the tech leaves it.
+bool EnabledFor(const char* copy) {
+  const TechOverride* tech = TechFor(copy);
+  return tech == nullptr || tech->enabled != 0.0f;
+}
+
+float TotalFor(const char* copy, float total) {
+  const TechOverride* tech = TechFor(copy);
+  if (tech == nullptr || tech->factor == 1.0f) {
+    return total;
+  }
+  const float scaled = 1.0f + (total - 1.0f) * tech->factor;
+  return scaled > 0.0f ? scaled : 0.0f;
+}
+
+TechOverride& TechSlot(char* proto) {
+  TechOverride& slot = g_tech[proto];
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (slot.id != id) {
+    slot = TechOverride{};
+    slot.id = id;
+  }
+  return slot;
+}
+
+void ChangeTech(char* proto, float* field, float amount, std::uint8_t relativity, bool unapply, const wchar_t* name) {
+  const float before = *field;
+  kEffectValue(relativity, field, 1.0f, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"veterancyBonus: proto %d, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), name, relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*field));
+  }
+}
+
+void ChangeEnable(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeTech(proto, &TechSlot(proto).enabled, amount, relativity, unapply, L"VeterancyEnable");
+}
+
+void ChangeFactor(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeTech(proto, &TechSlot(proto).factor, amount, relativity, unapply, L"VeterancyBonus");
+}
+
+void ForgetOnDataLoad(char*) { g_tech.clear(); }
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -139,7 +210,7 @@ void RestoreAfterTransform(char* unit, float kills) {
     }
   }
   for (const auto& [stat, total] : totals) {
-    kModifier(unit, stat, total, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+    kModifier(unit, stat, TotalFor(now, total), -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
   }
   if (g_log) {
     uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
@@ -159,7 +230,7 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
     return;
   }
   const auto found = g_rows.find(Field<std::int32_t>(proto, 8));
-  if (found == g_rows.end()) {
+  if (found == g_rows.end() || !EnabledFor(proto)) {
     return;
   }
   const char* attackerPlayer = Field<const char*>(attacker, 0x44);
@@ -181,6 +252,7 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   std::int32_t rank = 0;
   std::int32_t last = 0;
   bool reached = false;
+  float applied = 1.0f;  // the last multiplier given, for the log
   for (const Row& row : found->second) {
     if (row.kills > kills) {
       break;
@@ -199,7 +271,8 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
         before = earlier.total;
       }
     }
-    kModifier(attacker, row.stat, row.total / before, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+    applied = TotalFor(proto, row.total) / TotalFor(proto, before);
+    kModifier(attacker, row.stat, applied, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
   }
   if (reached) {
     wchar_t text[32];
@@ -208,8 +281,9 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d", Field<std::int32_t>(attacker, 0x10),
-             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank);
+    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d%ls%g", Field<std::int32_t>(attacker, 0x10),
+             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank, reached ? L", x" : L"",
+             reached ? static_cast<double>(applied) : 0.0);
   }
 }
 
@@ -230,10 +304,12 @@ Outcome ApplyVeterancyBonus(const Config& config) {
   if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply}) ||
       !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
+      !AddTechSubtype("VeterancyEnable", &ChangeEnable) || !AddTechSubtype("VeterancyBonus", &ChangeFactor) ||
+      !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"veterancyBonus: the proto tag VeterancyBonus is on");
+  Log(L"veterancyBonus: the proto tag VeterancyBonus is on, and the Data subtypes VeterancyEnable and VeterancyBonus");
   return Outcome::kApplied;
 }
 

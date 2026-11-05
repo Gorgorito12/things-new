@@ -2,7 +2,7 @@
 // unit type (unittypes.h), so protoy.xml, techtrees, auras and XS (cUnitType<Name>) can use it
 // like a built-in type. Stock drops any <UnitType> that is not on its compiled-in list.
 //
-// File format (default data\uhc\customabstracttypes.xml, relative to the exe's folder):
+// File format (default customabstracttypes.xml in the build's data folder, hostfiles.h):
 //   <AbstractTypes>
 //     <AbstractType stringId="430103">AbstractLightCavalry</AbstractType>  <!-- comment -->
 //     <AbstractType>AbstractTrainLimitOne</AbstractType>
@@ -38,7 +38,7 @@ Outcome ApplyCustomAbstractTypes(const Config& config) {
   }
   std::wstring path;
   std::string text;
-  if (!ReadDataListFile(args->empty() ? std::string() : args->front(), L"data\\uhc\\customabstracttypes.xml", &path,
+  if (!ReadDataListFile(args->empty() ? std::string() : args->front(), L"customabstracttypes.xml", &path,
                         &text)) {
     Log(L"customAbstractTypes: cannot read %ls (error %lu)", path.c_str(), GetLastError());
     return Outcome::kFailed;

@@ -52,6 +52,19 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    The DLL then runs every feature in the order of `kFeatures` in `src/features.h`. Each returns
    *not configured*, *applied* or *failed*.
 
+### Beside another DLL
+
+The same sources also build `dinput8.dll` (`src/engineext.cpp`), for a game whose loader runs another `UHC.dll` that must stay
+as it is. The exe imports `DINPUT8.dll` and Windows looks next to the exe first, so it loads with no change to any file.
+Its six exports go on to the system's DLL by full path, resolved on the first call, so nothing is loaded under the loader lock.
+
+`DllMain` checks the exe and only moves the last `jmp` of the boot stub, at 0xB836EC. So the order is: the stub runs the other
+DLL's `UHCMain`, the `jmp` goes to `EngineExtMain`, which loads `engine-ext\engine-ext.cfg` and applies the keys through the same
+feature loop as `UHC.dll`, and then to the game's entry point. All its files are in `engine-ext\`.
+
+Coming second is what keeps the two apart: `VerifyAll` sees the other DLL's patches, so a key that needs one of those sites
+logs `FAILED` and writes nothing.
+
 ## 2. Verify, then patch
 
 Every byte the DLL writes is checked first:
@@ -894,6 +907,22 @@ in the simulation.
 
 ### detonationDeath
 
+**The three other tags (2026-11-05).** The delete: the stock Delete button and key run the console command
+`uiDeleteSelectedUnit`, whose handler builds the synced command of type 7 for the selected unit; its executor
+FUN_007CCF7F (slot 21 of the command's vtable 0xB87E30) kills the unit in one of two ways, both wrapped by a call
+rewrite: `0x4820A1(0, 1)` at 0x7CD0CF for most protos (the wrapper fires the blast first, while the unit is whole, with
+kill flags 1 0 0 for the log) and `0x4B4DC2(1, 0, 0)` at 0x7CD0DC for a proto with flag 0Dh (the wrapper notes the unit
+ID, and the kill handler's wrapper reads it to tell a delete from a trigger's kill, which has the same flags). A proto
+without `<DetonationCommand>` gets no blast on a delete; the stock `uiDeleteSelectedUnit` from `exec` crashes on a null
+UI pointer before the selection, so the test used the real Delete key. The threshold: `overhealsources.cpp`'s hook at
+0x4823A3 now reports every loss (`g_hpLoss`) before it is applied, and `detonationDeath` compares the HP after it with
+the max HP of 0x480408 (modifiers counted); at or under the threshold it asks the kill queue with the combat flags once
+(a set of unit IDs until the handler runs), so the drain fires the blast exactly as for a killing blow; with a decay it
+only arms the unit. The decay: a `std::map` by unit ID walked after each world update (`AddWorldTick`, now 8 slots),
+by game time; the HP setter with flag 0 applies each step, the kill queue the end; a unit back over the threshold, dead,
+gone or inside another is dropped; a new game or a data load forgets everything. `detonationDeath` moved after
+`overhealDecay` in `kFeatures`, because `overhealSources` verifies the raw bytes of the add-HP entry.
+
 Every death goes through one queue. TakeDamage, a lifespan, a trigger's kill and the rest ask 0x4B4DC2, which appends the unit and
 three flag bytes to the world's list at `[world+8DCh]`, and the drain 0x493D46 calls the kill handler 0x4B4F70 from one single
 call, 0x493D8F. `Destroy` does not pass there. The key wraps that call, so it runs before the handler sets the dead bit,
@@ -1252,8 +1281,8 @@ each target, with the team flag clear. applyEffects goes through its `call`; the
 a function with the same arguments and `ret`, and an asm stub re-executes the replaced head for the stock call.
 
 The flag name is read by FUN_00620C2F, a chain of string compares called once, at 0x620C23, which ignores what it does not
-know. The key wraps that call and keeps the tech's definition, the routines' `this`, in a set. The set is only written during the
-load, so the game's lookups are lock-free.
+know. The key hooks the head of that reader, not its call, so it still works when another DLL wraps the call, and keeps the
+tech's definition, the routines' `this`, in a set. The set is only written during the load, so the game's lookups are lock-free.
 
 The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
 
@@ -1411,8 +1440,8 @@ action's `+38h`, the same object: a tech on one proto reached neither another pr
 another player.
 
 `techsubtypes.*` gained `AddTechActionSubtype`. setData reads the `action` attribute only for the subtypes it knows, so
-the lookup's replacement does it, for a subtype on actions: it runs in the call at 0x6206D7 with the effect in ESI and the
-node in EBP. `allactions` needs nothing: setData has already set bit 40h of `[effect+9]`, and protoUnitApply passes it as
+the lookup's hook does it, for a subtype on actions, with the effect and the node the attribute read at 0x6206B2 kept.
+`allactions` needs nothing: setData has already set bit 40h of `[effect+9]`, and protoUnitApply passes it as
 applyData's 8th argument. With it the key's handler runs for every action in the set, `[set+1Ch]`, count `[set+20h]`.
 
 - **Observed in game:** see the tests in the modding guide.
@@ -2626,7 +2655,28 @@ that are alive, built and of the wanted type.
 
 `AddModifyType` makes `UnitResource` stat 41h, stored in the tactics action's byte `[+B8h]`. The hook replaces the
 update's first instruction: with another stat it re-executes it and goes on at 0x9D0343; with 41h it calls
-`UhcUnitResourceAura(action)` and returns, so no modifier is made. The helper:
+`UhcUnitResourceAura(action)` and returns, so no modifier is made.
+
+The stock update also hangs the action's model on each target, at 0x9D053F: the model `[protoAction+A4h]` (-1: none), the
+bone `[+A8h]`, the object through `0x405E83(table [0xC66240], model)`, then `0x9C28DE(unit, model)`, whether the unit has it,
+and `0x9C04F3(unit, object, bone, 0)`, which hangs it. `0x9C2885(unit, model)` takes it off. All three work on the unit's
+visual `[unit+60h]`, not on the simulation. Skipping the stock update skips this too, so the helper repeats it for the
+targets that paid, and keeps per owner what it hung and per target how many auras hold it. A world tick checks the owners
+once a second, because a dead owner has no more updates. A model that is not in the game is accepted by 0x9C04F3, returns
+true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
+
+The rings of `tools/make_rings.py` need no code. A ring's `.xml` hangs one flat particle, chosen by `<logic type="UnitType">`:
+`appearancetype` 2 lies on the ground, 0 faces the camera, and `materialtype` 0 with `material` 0 honours the texture's alpha;
+`scale` is half the width of the square in metres. The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it
+within a frame, and `startfull` has it there at once: 0x9C2885 takes the model off but leaves its particles to die out, so a
+ring with an hour's life stayed on the unit. The stock mesh is out for two reasons: at 2 m on anything it stays under a
+building, and in a scene with a Town Center its `<replacetexture>` falls back to the stock texture. The cause of that is
+unknown: it is not the Town Center's active aura, and a Barracks does not do it.
+The texture is a `.ddt`: `RTS3`, usage 0, alpha 1, format 8 (DXT3), a mip per halving down to 4x4, then an offset and a size per
+mip. The script draws two bands in alpha, at 70%, and gives each block two colours and a 2-bit shade per texel. A building has
+its own texture, so that a line of 0.5 m stays 0.5 m on a ring ten times as wide.
+
+The helper:
 
 - reads `<ModifyAmount>`, `<ModifyTargetLimit>` and `<TargetGaia>`, unknown to the exe, through `AddActionTagHandler`,
   by `{proto ID, action name}`;
@@ -2650,6 +2700,14 @@ them, as it skips 40h. The gather tick multiplies its rate by the Gathering danc
 ESI = the Gather action. The call goes to a wrapper that calls the stock function and multiplies by
 `UhcGatherAuraFactor(action)`: it classifies the target, `[action+14h]`, by proto type and the resource `[action+70h]`, and
 runs the stock sum 0x4B3C7D over the unit's modifiers of the stats that fit, as `buildingWorkRateAuras` does.
+
+**The ring.** The stock update hangs the action's model on everything it reaches: a miner's ring would be on the lumberjack
+too. Two `call`s of that update go through wrappers instead: the has at 0x9D0584, for those already in range, and the hang at
+0x9D06DC, for new targets. Both have ESI = the aura action. For a stat in 42h..48h, `[protoAction+B8h]`, the wrappers read what
+the target gathers: its current action `[[unit+58h]+24h]`, a Gather action (vtable 0xB97880) in state `[+61h]` = 5, its target
+`[+14h]` and resource `[+70h]`. The hang skips a unit whose stat does not fit; the has takes the model off that unit with
+0x9C2885 and answers true, so the update hangs nothing. A unit on the way to its resource is in no such state and has no ring.
+The modifier is left alone: it does nothing on a unit that does not gather what fits.
 
 **Why it is safe.** A unit with no modifier record returns 1.0 after one load, and the tick reads no register from the
 call but ST0. `showGatherRate`'s record hook, at 0x4ED044, comes after the call and so sees the factor. That key verifies
@@ -2931,8 +2989,39 @@ member, the whole amount, when the player is below 0 (cold 0x68EA12).
 
 0x4DD1DE, the `TargetSpeedBoost` path, tests that the target can move, and 0x4DD201 pushes the arguments of the
 modifier's creator 0x4DD22D. The hook replaces the first three pushes, and leaves through 0x48FA49, the path's exit, for a
-marked target. The poison of `damageOverTime` calls the creator itself, so it asks the same function. The site is in the
+marked target or a marked attacker. The poison of `damageOverTime` calls the creator itself, so it asks the same two
+functions, with the unit whose hit attached the poison as the attacker (none once it is gone). The site is in the
 ranges `damageOverTime` and `snareOnlyHitUnit` verify, so this key comes after them in `kFeatures`.
+
+**The attacker at 0x4DD201.** FUN_0048FA07 (`thiscall(unitAction, target)`) has one caller, 0x48F9F5 in FUN_004B7766,
+which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is used as `this` with no null test at
+0x48F0EF and 0x48EAE1, so it is the attacking unit; `[ebp+4]` its tactics action). FUN_0048FA07 and its cold chunk
+0x4DD1DE..0x4DD228 write ESI, EAX, ECX and EDX but never EBP, so at 0x4DD201 `[ebp+10h]` is still the attacker. The
+hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
+in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
+
+### Tech subtypes on the built tags: a value per player's copy
+
+A `Data` subtype's handler gets the player's copy of the proto and the base it was cloned from (`techsubtypes.h`),
+while the tag values of `trainBatchSize`, `veterancyBonus`, `sharedBuildLimit` and `dodgeAnyUnit` are maps by proto
+ID that every player reads. So each of those keys keeps a second map, by the copy's pointer (as `nextResearchFree`
+does), holding what the techs made of the base value through the stock value function 0x7F892A, and its readers
+look there first: the kill path has `[attacker+5Ch]`, the dodge test `[unit+5Ch]`, the limit hook `(player, copy)`,
+and the batch hook now forwards ECX, the player at 0x9CE645, so `UhcTrainBatchLimit` finds the copy with 0x45311B
+(`PlayerProtoEntry`); the queue wrapper takes it from its action manager (`[this+4]` the unit, `[unit+44h]` the
+player, 0x9CE63F). A scenario loaded without a data reload reuses copy pointers, so every entry keeps the proto ID
+it was made for and is ignored when the copy's ID differs; a data load clears the maps (`OnDatabaseLoad`). The
+base of each subtype is the tag's value (or the stock default), so `Absolute` adds to it and `Assign` sets it.
+
+### Civ tags (civtags.*)
+
+A `<civ>` child that civs.xml's parser FUN_0052A590 does not know reaches 0x52BB07, where `civFirstTC` used to read
+`<firstTC>` alone. `civtags.cpp` owns that hook now: `AddCivTagHandler(name, handler)` writes it once (checking
+`CivTagUnknown` and `CivTagNextNode`) and keeps a table of up to 8 names; the asm proc (`UhcCivTagsHook`, in
+`civfirsttc_hooks.asm`) calls `UhcCivTagDispatch(node, civ)`, which compares the element name with each registered one,
+case ignored, calls the handler with the civ, its ID and the text, and goes to the next child; an unknown name runs
+the stock path. `civFirstTC` registers `firstTC` and `sharedBuildLimit` registers `SettlerProtoName`, in `kFeatures`
+order, so whichever comes first installs the hook and the other only adds its name.
 
 ### trainBatchSize
 
@@ -2956,6 +3045,29 @@ number and there is nothing to save.
 - **Observed in game:** five clicks with 2 logged `queues up to 2 per action (stock 5)` five times and showed a queue
   of 2, 2 and 1.
 
+### pillageGold
+
+TakeDamage FUN_0049B3D9 calls FUN_0049BD52 at 0x49B73C on every hit with an attacking player, whether it kills or not.
+`damageOverTime` holds the entry of TakeDamage, and this call needs no second hook there: its frame has it all. `[esp+20h]`
+the attacker's player, also in EBX by then, `[esp+28h]` its unit, null when it has died, `[esp+0A8h]` the action, and ESI the
+unit hit. The hook replaces the call: it runs the steal with the registers saved, then jumps to the stock function, so
+the return address of the original call is the one that function sees.
+
+`[action+4]` is the index of the action's name, the same for a proto action and a tactics action, so `(proto [proto+4],
+name)` is the key of the map of `<PillageAmount>`, which the load fills through `AddActionTagHandler`. That index is -1
+until `<Name>` is read, so the tag must come after it. A map that only the load writes, with nothing to save. It is
+cleared on a new database, since the data is read again when a game loads.
+
+The test order goes from cheap to dear: the map, the is-a test 0x44D7FA with `AbstractCanPillage`, the victim's is-a test
+with `Building`, the relation `[player+1D4h+4*id]`, where 2 is enemy, as the filter 0x49AEE0 reads it. The stockpile is read
+through 0x44EFFF on `player+230h`, then two calls of the add 0x49A98A, one with `-take` and one with `+take`. The add
+applies no multiplier: `[player+37Ch]` belongs to its gather caller. Reading first keeps the victim from going below 0 by
+itself, and a victim in debt gives nothing, with `resourceDebt` too.
+
+- **Observed in game:** 66 hits of 5 from 3 Pikemen. Each line's before and after chain exactly, and the two stockpiles
+  always add up to the 1000 of the start.
+- **Not tested:** shared resources, where the add takes its path 0x67993B: amount / teammates, to each.
+
 ### costEscalationTechs
 
 `<CostEscalation>` is stored by the handler 0xA1119D in the proto's `+78h`, default 1 (the proto's cost container is at
@@ -2967,9 +3079,10 @@ subtype reaches the field.
 
 New subtypes go through `techsubtypes.*`, shared by the keys that add one:
 
-- The stock name lookup 0x61FF5D is hash based and its table is sized at startup, so the `call` at 0x6206D7 in
-  BDataEffect::setData is replaced: a name stock does not know is looked up in our list and gets an ID from 100h. The
-  rest of setData treats an unknown ID as a plain subtype.
+- The stock name lookup 0x61FF5D is hash based and its table is sized at startup, so its head is hooked: a name stock does
+  not know is looked up in our list and gets an ID from 100h. The rest of setData treats an unknown ID as a plain subtype.
+  The hook is on the lookup, not on the call at 0x6206D7, so it still works when another DLL replaces that call. The
+  `call` at 0x6206B2 keeps the effect and its node, ESI and EBP, for the lookup. The other caller, 0x621C29, gets stock's answer.
 - The two switches, `cmp eax,63h / ja` at 0x8F978D in applyData and `cmp eax,5Eh / ja` at 0x8FB051 in unapplyData, send
   an ID from 100h to the key's handler, then to the exit of the case: 0x8FAE9E and 0x8FC191. Any other ID continues as
   stock.
