@@ -4305,6 +4305,11 @@ sharedBuildLimit [log]
   limit 6 it says "out of 3". The button turns red when the proto does not fit.
 - **A batch that does not fit is cut:** a Shift+click of 5 with room for 4 trains 4 and pays 4, as stock does at a limit.
 - **Over the limit:** if the group is already over, nothing more trains; no unit is removed.
+- **Cards:** a card sent from the home city that does not fit whole shows red and cannot be sent, with no partial delivery.
+  That is stock's check, and the key only gives it the group's room, so the card sees the whole group.
+- **Effects that skip that check:** a tech made active by a trigger and an age-up Politician deliver all their units, over
+  the limit, with or without the key: a stock `BuildLimit` of 6 went from 6 to 14 with the `HCShipPikemen1` tech set by a
+  trigger. The units stay, and training stops until the group is back under the limit.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
 - **Log:** `sharedBuildLimit: the proto tags are on`, `hook reached: sharedBuildLimit limit (0x4C7B5F)`, and with `log`:
   `sharedBuildLimit: proto 295: limit of 2182, 2 protos count, own weight 2`, and at each change `sharedBuildLimit: player 1,
@@ -4318,9 +4323,17 @@ sharedBuildLimit [log]
     a last Opolcheniye left 4 and 1. Key off: 5 and 2.
   - A real Shift+click of 5 with room for 4: 4 trained, 310 food at 77.5; a second one was refused and charged nothing.
   - `TeamBuildLimit` with an ally's 3 `WOLLandwehr`: room 3 of 6.
+  - `TeamBuildLimit` in a `scenario --players 3`, limit 6: the ally's 2 Pikemen and 1 Landwehr counted, the enemy's 5 Landwehr
+    did not, and six clicks left 3 of ours. Key off: 6.
   - A German AI with a limit of 12 by `Age0German`: it stopped at 12 settlers, kept playing, no XS error.
-  - Not tested: an AI against other units of its group (the AI above had no `SettlerWagon`), a real `OutpostWagon` building
-    the last Outpost, a card or a tech granting units at the limit, multiplayer.
+  - A German AI with its villagers, infantry and cavalry in one group of 24, against the same scene with the key off, 270 s:
+    it stopped training at 14 Settlers, and ended with 28 because 8 Hussars and 6 Skirmishers came from its age-up
+    Politicians. From 180 s to 270 s it trained nothing more, and no XS error appeared. Key off: 33 and growing.
+  - The Swedish "3 Hussars" card sent from the home city: red with a stock limit of 6 and 6 alive, and with 7 and 6 alive,
+    where one fits and three do not; red with a group of 3 Hussars and 3 Pikemen, limit 6; sent, and 3 arrived, with 4 and 4,
+    limit 20.
+  - Not tested: a real `OutpostWagon` building the last Outpost, a team in a real skirmish, `FreeHomeCityUnitShipped` with
+    room, an AI's own home city card at the limit, multiplayer.
 #### doNotQueue
 
 **Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 09:33
