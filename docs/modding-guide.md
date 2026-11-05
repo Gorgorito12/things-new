@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 07:36 | [`costEscalationTechs`](#costescalationtechs) | Added. A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | The `Data` effects in `techtreey.xml`. |
 | Wednesday 2026-11-04 18:04 | [`resourceGatherAuras`](#resourcegatherauras) | Added. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
 | Wednesday 2026-11-04 18:04 | [`resourceDebt`](#resourcedebt) | Added. A stockpile may go below 0, for negative trickles. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`. |
 | Wednesday 2026-11-04 17:21 | [`unitResourceAuras`](#unitresourceauras) | Added. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
@@ -3997,7 +3998,7 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 
 #### costEscalationTechs
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 07:36 · **Filmed in WoL:** Thursday 2026-11-05 07:36
 
 ![costEscalationTechs in WoL](media/costEscalationTechs-wol.gif)
 
