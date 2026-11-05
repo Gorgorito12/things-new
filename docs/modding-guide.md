@@ -3302,6 +3302,7 @@ How buildings train, spawn, live and get replaced.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | **new** | Nothing. | confirmed (single player) |
+| [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
 | [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | **new** | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. | confirmed (single player) |
@@ -3995,6 +3996,48 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
+
+#### trainBatchSize
+
+**Added:** — · **Filmed in WoL:** —
+
+![trainBatchSize in WoL](media/trainBatchSize-wol.gif)
+
+*In WoL, with the key (Ethiopians, `<TrainBatchSize>2</TrainBatchSize>` on `WOLLandwehr`):* five clicks make a queue of
+2, 2 and 1, and the units come out in twos. [Full video (MP4)](media/trainBatchSize-wol.mp4).
+
+![trainBatchSize in WoL, key off](media/trainBatchSize-wol-control.gif)
+
+*In WoL, key off (the same data):* the five clicks make one action of 5, and they come out together. The game skips the
+tag it does not know. [Full video (MP4)](media/trainBatchSize-wol-control.mp4).
+
+```
+trainBatchSize [log]
+```
+
+```xml
+<Unit name="WOLLandwehr">
+    <TrainBatchSize>2</TrainBatchSize>
+</Unit>
+```
+
+- **In WoL today:** the units per Train action are one number for all of a player's protos: 5 by default, or what a tech
+  sets with `PlayerSpecificTrainLimitPerAction`. JTMaston's #31.
+- **Effect:** a proto with the tag uses its number instead. A value from 1 is accepted; 1 means no batches. Each click
+  fills the last action of that proto up to the limit, and the rest opens a new one, as stock does with its number.
+- **Precedence:** the tag beats the tech: a proto with the tag ignores `PlayerSpecificTrainLimitPerAction`.
+- **Above the default:** a value above 5 lets more units share an action, but a Shift+click still asks for what the game
+  asks for. Not tested.
+- **A tech cannot change the tag:** it is read once and is the same for every player.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and the same data.
+- **Log:** `trainBatchSize: the proto tag TrainBatchSize is on`, `hook reached: proto tags (0x51DB0F)`, `trainBatchSize
+  limit (0x9CE645)`, and with `log`: `trainBatchSize: proto 2182 has 2` and `trainBatchSize: proto 2182 queues up to 2 per
+  action (stock 5)`. A value below 1 is logged and ignored.
+- **Tested in WoL (2026-11-05):**
+  - 2 on `WOLLandwehr`: five clicks queued 2, 2 and 1. Key off: one action of 5.
+  - A skirmish with a European AI (`wolOtto`) with the key on: it trained through the hook and had 16 units at 120 s.
+  - Not tested: a value above 5, a Shift+click batch (our test tool cannot hold Shift in a background copy),
+    `PlayerSpecificTrainLimitPerAction` beside the tag, multiplayer.
 
 #### costEscalationTechs
 

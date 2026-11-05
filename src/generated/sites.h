@@ -989,6 +989,15 @@ inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10
 inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
 inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
 
+inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
+inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
+
+inline constexpr std::uint8_t kTrainBatchLimitCallBytes[] = {0xE8, 0xD1, 0x1E, 0xF0, 0xFF};
+inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kTrainBatchLimitCallBytes, sizeof(kTrainBatchLimitCallBytes)};
+
+inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
+inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
+
 inline constexpr std::uint8_t kDataApplySwitchBytes[] = {0x83, 0xF8, 0x63, 0x0F, 0x87, 0x5E, 0x17, 0x00, 0x00};
 inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApplySwitchBytes, sizeof(kDataApplySwitchBytes)};
 

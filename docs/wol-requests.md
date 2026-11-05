@@ -7,8 +7,6 @@ Source: JTMaston (WoL), Discord, 2026-10-28. Three messages of requests, then hi
 
 Their next patch is planned for **December 2026 – January 2027**. Tier 1 should land before December.
 
-**Missing items.** The top of the 1:44 p.m. message was cut off in the screenshot. Ask for the items above "workrate modifiable by auras".
-
 Every row starts as `open`. Update the Status column as work progresses (`open` → `RE` → `implemented` → `confirmed in game`).
 
 ## How to work an item
@@ -82,7 +80,7 @@ Every row starts as `open`. Update the Status column as work progresses (`open` 
   - **Answered and tested in game** (2026-10-30): (b) is what happens to a ceasefire power that no
     record grants at game start; `ypPowerCeaseFire` itself works from any caster (shared charge,
     case c). Details and the data fix under "second batch" below.
-- **Q6 (#19):** which dance failed? Its kind (`Training`, `XPTrickle`, `Gathering`, `Regeneration`, `UnitModification` with which ModifyType, or a new kind), the civ, the building (with or without `AbstractFirePit`), and what failed (no effect, a blank tooltip, no button).
+- **Closed 2026-11-05 (#19):** Punchline's request is the dances, built as `danceBonusCivs`; nothing more to ask.
   - The four global kinds apply only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`: for any other civ they silently do nothing, although the tooltip shows the bonus. This is now built and confirmed in game as `danceBonusCivs <Civ>…` (Healing Dance tested).
   - Only the first `AbstractFirePit` of a player counts, and a dance building needs `AbstractFirePit` to dance at all. Lifting either is more work.
 
@@ -137,7 +135,6 @@ design below is ours.
   - If WoL's ceasefire still fails after this, the cause is outside the legacy exe and data
     (WoL's DLL registers its own `BetterCeaseFire` power type, which WoL's data does not use; its
     other patches were not tested): a save or the exact steps would settle it.
-- **Q6 / #19:** ask Punchline, another WoL developer. No action until then.
 - **#5:** the techs that change train and research work rate, and those that change building work
   rate, must apply to buildings that already stand. `liveBuildingWorkRate` covers `BuildingWorkRate`;
   train and research `WorkRate` techs are to be checked in game. Done 2026-10-30 (see the row):
@@ -190,7 +187,7 @@ Ordered by gameplay impact, then expected effort.
 | 16 | A unit can have any number of powers (e.g. crackshot), but the UI shows only the first 6: a 7th power enabled for a civ, with the first 6 disabled, gets no button. | hardcode | `abilitySlots N [log]`: with `abilitySlots 8`, an Explorer whose first 6 abilities were locked showed buttons for its 7th and, once its tech was active, its 8th. | confirmed in game (single player) |
 | 17 | Tech rename / redescribe (WoL `enabletechrenameeffect`, effect `SetTechName`) applies globally, not per civ / player. | bug (WoL) | `techRenameEffect [log]` (also read as `enableTechRenameEffect`, with WoL's attributes): a rename showed for player 1 only, and the database's tech data, which the other players see, kept the stock string IDs. See [wol-uhc-map.md](wol-uhc-map.md). | confirmed in game (single player) |
 | 18 | Dopples (the fog-of-war copy) of hunted animals leave a static corpse; they should just vanish. | odd logic | `noCorpseDopples [UnitType] [log]`: with `Doppled` hunts, dead Deer marked by the key left no dopple (player 1 kept 6 dopples, against 9 without the key); live animals are still doppled. | confirmed in game (single player) |
-| 19 | New dances with global (aura-like) effects can't be added. | hardcode | RE done (static): the fire pit's four global dance kinds (`Training`, `XPTrickle`, `Gathering`, `Regeneration`) apply only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`; the exe compares the civ ID, silently (the tooltip still shows the bonus). Done as `danceBonusCivs <Civ>… [log]` (WoL's DLL has a UI-only `danceCiv`): a Spanish player's Healing Dance healed its damaged musketeers to 150 HP, where stock left them at 90 (Training, XPTrickle and Gathering not tested). `UnitModification` dances should already work in data. Question Q6 stays open: which dance failed for WoL. | confirmed in game (single player) |
+| 19 | New dances with global (aura-like) effects can't be added. | hardcode | RE done (static): the fire pit's four global dance kinds (`Training`, `XPTrickle`, `Gathering`, `Regeneration`) apply only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`; the exe compares the civ ID, silently (the tooltip still shows the bonus). Done as `danceBonusCivs <Civ>… [log]` (WoL's DLL has a UI-only `danceCiv`): a Spanish player's Healing Dance healed its damaged musketeers to 150 HP, where stock left them at 90 (Training, XPTrickle and Gathering not tested). `UnitModification` dances should already work in data. Punchline's request is this one (the user, 2026-11-05). | done |
 | 20 | Global powers can't be added to buildings with auras, like the Japanese wonder. | hardcode | `wonderPanelSkipAuras [log]`: a power listed after the Toshogu Shrine's aura got its wonder-panel button (2 buttons instead of 1). Listing the power before the aura may already work in stock (not tested). | confirmed in game (single player) |
 
 ## Tier 3: new mechanics, in his order
@@ -214,7 +211,7 @@ DE parity and extras, in rough order.
 |---|---|---|---|
 | 29 | Shared build limits (team-wide, DE): e.g. a livestock limit per team, or no more wagons for building X once all X are built. | Do with #30: same mechanism. DE: `UseSharedBuildLimit`, `SharedBuildLimitUnit`, `SharedBuildLimitUnitTypes` (`weight`), `TeamBuildLimit`. Legacy: every check uses the limit 0x4C7B5F and the count 0x4C7BC5 ([de-parity](de-parity.md#29-shared-and-team-build-limits)). | RE |
 | 30 | Settler build limit: a civ XML tag setting one shared limit for all units with `AbstractWoLSettler`. | DE's design under other names: flag `SettlerBuildLimit`, type `LogicalTypeSettlerBuildLimit`, civ `SettlerProtoName` ([de-parity](de-parity.md#30-settler-build-limit-shared-by-a-unit-type)); legacy sites as #29. | RE |
-| 31 | Per-unit military batch limit as a proto attribute, instead of only a global tech. | New proto attribute. DE: `TrainBatchSize`, `DontTrainInBatches`, `ForceBatchTrain`. Legacy: the units per Train action come from one call, 0x9CE645 ([de-parity](de-parity.md#31-per-unit-military-batch-limit)). | RE |
+| 31 | Per-unit military batch limit as a proto attribute, instead of only a global tech. | Built: [`trainBatchSize`](modding-guide.md#trainbatchsize), the tag `<TrainBatchSize>`, on `AddProtoTagHandler`, which #29 and #30 can use. DE's name; its flags `DontTrainInBatches` and `ForceBatchTrain` are not built: 1 gives the first. | confirmed in WoL (2026-11-05) |
 | 32 | Economic aura per resource, instead of all resources. | `resourceGatherAuras [log]`: DE's `MineGatherRate`, `TreeGatherRate`, `FarmingGatherRate`, `NaturalFoodGatherRate`, and by resource `FoodGatherRate`, `WoodGatherRate`, `GoldGatherRate`. In WoL (2026-11-04), `MineGatherRate` ×2 gave a miner 1.20 coin/s against 0.60, with wood and food unchanged; all seven gave their factor. | confirmed in game (single player) |
 | 33 | Customizable gather priority on crates (Dutch gold is hardcoded). | RE (static): two per-civ hardcodes, a rank in the gather target search (0x4DBF40; Dutch coin, Ottomans and Indians wood, others food) and a next-crate cycle (FUN_00501786). DE has no interface for it ([de-parity](de-parity.md#33-crate-gather-priority)). | RE |
 | 34 | Kill bounty modifiable by techs. | DE: subtype `KillBounty`, `Bounty resourcetype`, `BountyResourceOverride`. Legacy: `<Bounty>` at `[proto+168h]`, value 0x4D4DC5, paid from TakeDamage 0x49B73C ([de-parity](de-parity.md#34-kill-bounty-modifiable-by-techs)). | RE |

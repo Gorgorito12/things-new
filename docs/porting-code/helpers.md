@@ -15,6 +15,7 @@ Contents:
 - [Extra abstract unit types](#extra-abstract-unit-types)
 - [World tick](#world-tick)
 - [Action tags](#action-tags)
+- [Proto tags](#proto-tags)
 - [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
@@ -1039,6 +1040,15 @@ inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10
 inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
 inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
 
+inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
+inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
+
+inline constexpr std::uint8_t kTrainBatchLimitCallBytes[] = {0xE8, 0xD1, 0x1E, 0xF0, 0xFF};
+inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kTrainBatchLimitCallBytes, sizeof(kTrainBatchLimitCallBytes)};
+
+inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
+inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
+
 inline constexpr std::uint8_t kDataApplySwitchBytes[] = {0x83, 0xF8, 0x63, 0x0F, 0x87, 0x5E, 0x17, 0x00, 0x00};
 inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApplySwitchBytes, sizeof(kDataApplySwitchBytes)};
 
@@ -1824,6 +1834,7 @@ Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
 Outcome ApplyCostEscalationTechs(const Config& config);
+Outcome ApplyTrainBatchSize(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1903,6 +1914,7 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"resourceDebt", ApplyResourceDebt},
     {"costEscalationTechs", ApplyCostEscalationTechs},
+    {"trainBatchSize", ApplyTrainBatchSize},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1974,7 +1986,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
@@ -2434,6 +2446,125 @@ dispatch:
 next:
     jmp nextChild
 UhcActionTagHook ENDP
+
+END
+```
+
+## Proto tags
+
+### src/prototags.h
+
+```cpp
+// New tags inside a proto's <Unit>: one hook on the tail of the tag table's builder, shared by every
+// key that adds a tag.
+#pragma once
+
+namespace uhc {
+
+// The stock handler convention. `node` is the tag's XML node (its text, a BString, is at +14h), `proto`
+// the base proto being read. Return true; false stops reading that proto.
+using ProtoTagHandler = bool(__cdecl*)(void* context, const char* node, char* proto);
+
+// Registers <name> (static text). Call it from a feature's apply function: the table is built later,
+// during the game's startup. Writes the hook the first time, after checking the stock bytes.
+bool AddProtoTagHandler(const char* name, ProtoTagHandler handler);
+
+}  // namespace uhc
+```
+
+### src/prototags.cpp
+
+```cpp
+#include "prototags.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcProtoTagsHook();  // hooks/prototag_hooks.asm
+
+namespace {
+
+constexpr std::size_t kMaxTags = 8;
+constexpr std::uint32_t kTableTail = 0x0051DB0F;  // pop edi / mov al,1 / pop esi / pop ecx (5 B)
+
+using RegisterFn = void(__thiscall*)(void* table, const char* name, uhc::ProtoTagHandler* handler);
+const auto kRegister = reinterpret_cast<RegisterFn>(0x0059B738);
+
+struct Tag {
+  const char* name;
+  uhc::ProtoTagHandler handler;
+};
+
+Tag g_tags[kMaxTags] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+// From the hook, with the table the builder just filled.
+extern "C" void __stdcall UhcProtoTagsRegister(void* table) {
+  for (std::size_t i = 0; i < g_count; ++i) {
+    uhc::ProtoTagHandler handler = g_tags[i].handler;
+    kRegister(table, g_tags[i].name, &handler);
+  }
+}
+
+namespace uhc {
+
+bool AddProtoTagHandler(const char* name, ProtoTagHandler handler) {
+  if (g_count == kMaxTags) {
+    Log(L"proto tags: no room for %hs", name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("proto tags", {&sites::kProtoTagsTail}) ||
+        !WriteJmp(kTableTail, reinterpret_cast<const void*>(&UhcProtoTagsHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_tags[g_count++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/prototag_hooks.asm
+
+```asm
+; The shared hook for new proto tags (src/prototags.h). Entered through a jmp written over the stock
+; code; it leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcProtoTagsRegister PROTO STDCALL table:DWORD
+
+.data
+tableBuilderRet dd 0051DB14h    ; ret of FUN_0051CE1D
+
+.code
+
+; Replaces 0x51DB0F..0x51DB13 (pop edi / mov al,1 / pop esi / pop ecx), the tail of the tag table's
+; builder, after its last registration. EDI = the builder's object: the protos' table is at +0Ch
+; (0x51CE27), and ESI by now is the second table, at +0C2Ch (0x51D807). The hook re-executes those
+; instructions after the helper.
+UhcProtoTagsHook PROC
+    TRACE_ONCE "proto tags (0x51DB0F)"
+    lea eax, [edi+0Ch]
+    invoke UhcProtoTagsRegister, eax
+    pop edi
+    mov al, 1
+    pop esi
+    pop ecx
+    jmp tableBuilderRet
+UhcProtoTagsHook ENDP
 
 END
 ```

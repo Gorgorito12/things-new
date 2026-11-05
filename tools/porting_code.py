@@ -26,6 +26,7 @@ PAGES = {
         "Extra abstract unit types": ["src/unittypes.h", "src/unittypes.cpp", "src/hooks/unittype_hooks.asm"],
         "World tick": ["src/worldtick.h", "src/worldtick.cpp", "src/hooks/worldtick_hooks.asm"],
         "Action tags": ["src/actiontags.h", "src/actiontags.cpp", "src/hooks/actiontag_hooks.asm"],
+        "Proto tags": ["src/prototags.h", "src/prototags.cpp", "src/hooks/prototag_hooks.asm"],
         "Tech subtypes": ["src/techsubtypes.h", "src/techsubtypes.cpp", "src/hooks/techsubtype_hooks.asm"],
         "Modify types": ["src/modifytypes.h", "src/modifytypes.cpp", "src/hooks/modifytype_hooks.asm"],
         "Floating text": ["src/floatingtext.h", "src/floatingtext.cpp"],
@@ -75,6 +76,7 @@ PAGES = {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],
         "buildingWorkRateAuras": ["src/features/bwrauras.cpp", "src/hooks/bwraura_hooks.asm"],
         "costEscalationTechs": ["src/features/costescalation.cpp"],
+        "trainBatchSize": ["src/features/trainbatch.cpp", "src/hooks/trainbatch_hooks.asm"],
         "maintainWaitForPop": ["src/features/maintain.cpp", "src/hooks/maintain_hooks.asm"],
         "noTrainNearEnemyTC": ["src/features/notrainneartc.cpp", "src/hooks/notrainneartc_hooks.asm"],
         "lifespanAfterConstruction": ["src/features/lifespan.cpp", "src/hooks/lifespan_hooks.asm"],
@@ -97,7 +99,7 @@ PAGES = {
 HELPER_OF = {
     "generated/sites.h": "site-table", "site.h": "site-table", "patch.h": "patching", "log.h": "log",
     "config.h": "cfg-reader", "features.h": "results", "unittypes.h": "extra-abstract-unit-types",
-    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "floatingtext.h": "floating-text",
+    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "floatingtext.h": "floating-text",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
     "namelists.h": "name-lists",
 }

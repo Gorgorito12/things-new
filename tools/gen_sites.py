@@ -841,6 +841,12 @@ SITES = [
     # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
     # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
     ("DataSubtypeLookupCall", 0x6206D7, 5),
+    # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
+    # / ret; the hook needs the ret at 0x51DB14
+    ("ProtoTagsTail", 0x51DB0F, 6),
+    # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
+    ("TrainBatchLimitCall", 0x9CE645, 5),
+    ("TrainBatchProtoArg", 0x9CE6DE, 4),
     ("DataApplySwitch", 0x8F978D, 9),
     ("DataUnapplySwitch", 0x8FB051, 9),
     # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not

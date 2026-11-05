@@ -2730,6 +2730,24 @@ Value is `{3, BString}` with an empty BString (0x44A635).
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
 
+### trainBatchSize
+
+The routine that queues units in a building reads its limit from one call, 0x8D051B at 0x9CE645: the player's `[+2ACh]`
+when set, else the database's `[+178h]`. It then walks the Train actions and fills the last one of that proto up to the
+limit (0x9CE6C7..0x9CE6E7). The hook keeps the call and replaces its result for a proto with the tag. The proto ID is the
+routine's `[esp+30h]`, the same value it pushes at 0x9CE6DE.
+
+New proto tags go through `prototags.*`, shared by the keys that add one. The builder FUN_0051CE1D fills two tables with
+0x59B738(name, &handler): the protos' at its object's `+0Ch`, and from 0x51D807 a second one at `+0C2Ch`. So at its tail
+ESI is the second: the hook takes the first from EDI. It runs at startup, after `UHCMain`, so the keys only have to
+list their tags. A handler gets `(context, node, proto)`, and the node's text is the BString at `+14h`.
+
+The values are kept by proto ID in a map that only the load writes, so a proto's copy for each player reads the same
+number and there is nothing to save.
+
+- **Observed in game:** five clicks with 2 logged `queues up to 2 per action (stock 5)` five times and showed a queue
+  of 2, 2 and 1.
+
 ### costEscalationTechs
 
 `<CostEscalation>` is stored by the handler 0xA1119D in the proto's `+78h`, default 1 (the proto's cost container is at
