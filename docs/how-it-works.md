@@ -1629,6 +1629,30 @@ them stays off; the flag `EnterHotkeyContext` makes them enter one.
   hooks do nothing.
 - UI only: a context decides which keys are live; the command a key runs is the one a click runs.
 
+### veterancyBonus
+
+Stock's flag `ExperienceUnit` (bit 7Dh of the proto's flags, set at the cold 0x6B0AE4) has no reader: no call of the getter
+0x44CAC4 passes it, and no direct `test`. So nothing counts a unit's kills.
+
+TakeDamage marks the killing blow in `[esp+1Fh]` (0x4D484B, when the unit had hit points and the damage takes them), and a `je`
+at 0x49B746 goes to the cold path 0x4D4F37. The hook sits there: ESI is the unit killed, and `[esp+28h]` the attacker unit, null
+when it is gone. Gaia and the attacker's own units do not count.
+
+The state lives in the game, not in the DLL: everything is a stat modifier made by 0x4DD22D, the call of snares and auras, with
+0 ms, so no time limit. The count is a modifier of stat 60h, which no code reads, with the kills in `[+68h]`; it is read back
+by the walk of `modifiers.h`. Each row reached adds a multiply modifier of its total divided by the total of the row before,
+because modifiers multiply. So the save, the stat code and the panel need nothing more, and nothing is left to clean up.
+
+The modifier of `MaxHP` scales the current hit points. A transform in place, 0x9C754C, ends the unit's modifiers, so its seven
+calls go through a wrapper that reads the count before and, after it, adds the count back and one multiply modifier per stat
+for the rows of the new proto. The new proto's rows decide, so a proto with none keeps only the count. `trUnitChangeProtoUnit`
+does not come through 0x9C754C.
+
+Rows: `<VeterancyBonus>`, through `prototags.*`; `modifytype` goes through the stock parser 0x5F5645, so the names of
+`AddModifyType` work too. The rows are kept by proto ID in a map that only the load writes.
+
+- **Observed in game:** see the tests in the modding guide.
+
 ### snareOnlyHitUnit
 
 **The stock snare.** When an attack's tactics action has `<TargetSpeedBoost>` and the target can

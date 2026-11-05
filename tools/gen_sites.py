@@ -844,6 +844,17 @@ SITES = [
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),
+    # veterancyBonus: mov ecx,[0xC66234], the head of TakeDamage's cold kill path; its only entry is the je
+    # at 0x49B746
+    ("VeterancyKillPath", 0x4D4F37, 6),
+    # veterancyBonus: the seven calls of the transform in place FUN_009C754C, thiscall(unit, proto), ret 4
+    ("TransformCall1", 0x7FBC79, 5),
+    ("TransformCall2", 0x7FBEF2, 5),
+    ("TransformCall3", 0x8C2D08, 5),
+    ("TransformCall4", 0x8EB78A, 5),
+    ("TransformCall5", 0x8F05F5, 5),
+    ("TransformCall6", 0x9BB6D5, 5),
+    ("TransformCall7", 0x9C7C16, 5),
     # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
     ("TrainBatchLimitCall", 0x9CE645, 5),
     # sharedBuildLimit: the entry of the build limit, sub esp,10h / mov edx,ecx (no branch lands inside);

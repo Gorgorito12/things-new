@@ -87,6 +87,7 @@ add_library(UHC SHARED
   src/features/smallfixes.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
+  src/features/veterancy.cpp
   src/features/workrate.cpp
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
@@ -147,6 +148,7 @@ add_library(UHC SHARED
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm
   src/hooks/trainbatch_hooks.asm
+  src/hooks/veterancy_hooks.asm
   src/hooks/freeresearch_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm

@@ -237,6 +237,7 @@ unitResourceAuras [log]       auras with ModifyType UnitResource gather from uni
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
+veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
