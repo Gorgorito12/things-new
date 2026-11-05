@@ -2256,6 +2256,11 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   and need no marker type. They are elements, not `<Flag>` entries. With `log`, every roll of such a unit:
   `dodgeChance: unit 7 (Pikeman), CanDodgeAttacks (50.0 %): roll 312 -> dodged`. In WoL (2026-11-05) four Pikemen with
   the tags at 50 % under four Musketeers rolled 197 times and dodged 106.
+- **Their tech subtypes (2026-11-05):** `subtype='EnableDodge'` (`Assign` 0 off, else on; base: the tag) and
+  `subtype='DodgeChance'` (the percent; base: the tag's, or 15) as `Data` effects on a proto change that for one
+  player's copy. The relativity is the stock one of every `Data` effect: `Absolute` adds the amount, `Percent` and `BasePercent` multiply, `Assign` sets it; the removal of the tech undoes it. The log calls those rolls `CanDodgeAttacks, by tech`. In WoL
+  (2026-11-05) `DodgeChance` 90 (`Assign`) on player 1: its Pikemen rolled 78 times at 90.0 %, player 2's 116 times
+  at the tag's 50.0 %.
 - **WoL needs:** a type or proto name in the cfg (`dodgeAnyUnit Settler`, `dodgeAnyUnit AbstractInfantry`)
   needs no data change, or put the marker `AbstractDodge` on the protos. Then make `YPDodge` active for
   the players who should have it, from a tech of that civ, such as its `Age0<Civ>` tech or a home city
@@ -2912,7 +2917,13 @@ veterancyBonus [log]
 - **Garrison:** a garrisoned unit keeps its rank and bonuses.
 - **Saved games:** the count and the bonuses are the game's own stat modifiers, so they are saved: after loading, the count
   went on from 7 and the damage stayed at ×3.
-- **Techs:** DE's `VeterancyEnable` and `VeterancyBonus` subtypes are not built: a tech cannot change the rows. A tech that
+- **Techs (2026-11-05):** two `Data` effects on a proto act on one player's copy: `subtype='VeterancyEnable'`
+  (`relativity='Assign'` and amount 0 turns the rows off for that player, anything else on; base 1) and
+  `subtype='VeterancyBonus'` (a factor on what every row adds: a row of 1.5 with amount 2 gives ×2.0, with 0.5 gives
+  ×1.25; base 1). The relativity is the stock one of every `Data` effect: `Absolute` adds the amount, `Percent` and `BasePercent` multiply, `Assign` sets it; the removal of the tech undoes it. Ranks already granted are game modifiers and stay as they were; the
+  factor shows in the log as `, x2`. In WoL (2026-11-05) the Pikeman with a row of 1.5 at 1 kill and the tech of
+  amount 2 (`Assign`) on player 1: player 1's Pikemen logged `rank 1, x2` and player 2's `rank 1, x1.5`; with
+  `VeterancyEnable` 0 player 1's logged no rank. A tech cannot add or change the rows themselves. A tech that
   changes a stat works with the rows as with any modifier.
 - **Interface:** no bronze, silver or gold icons: `Rank N` over the unit is all it shows. Damage and hit points in the panel are
   the game's, with the modifiers.
@@ -4582,6 +4593,12 @@ sharedBuildLimit [log]
   of `<civ>`, like `<firstTC>`), and every unit of the type `LogicalTypeSettlerBuildLimit` counts toward it with weight
   1, besides what `<SharedBuildLimitUnitType>` lists. A civ without the tag keeps the proto's own limit; the type does
   not exist in the stock data: `customAbstractTypes` is not needed, the key registers it.
+- **`subtype='EnableSharedBuildLimit'`** (a `Data` tech effect on a proto, 2026-11-05): `relativity='Assign'` with
+  amount 0 turns the share off for that player's copy of the proto, which then keeps its own limit; anything else
+  turns it on again (base 1). The relativity is the stock one of every `Data` effect: `Absolute` adds the amount, `Percent` and `BasePercent` multiply, `Assign` sets it; the removal of the tech undoes it. The other edition's `SharedBuildLimitUnit` and
+  `AddSharedBuildLimitUnitType` subtypes carry a name, which a `Data` effect's amount cannot: not built. In WoL
+  (2026-11-05) a tech with amount 0 on the villager of the settler test above logged `1 -> 0` and the same order
+  trained all 3 (8 villagers), with no `room` line.
 - **Tag each proto that must stop:** a tag acts on the proto that carries it. `OutpostWagon` with the limit of `Outpost`
   stops the wagons once the Outposts are all there, and leaves `Outpost` untagged, or the last wagon, which counts
   until it builds, would forbid its own Outpost.
@@ -4748,7 +4765,12 @@ trainBatchSize [log]
 - **Shift+click:** the batch respects the tag: with 2 it queues 2, 2 and 1. Stock would make one action of the whole
   batch, so the key asks for it in pieces, and each piece pays as usual: 5 at 119.2 charged 596.
 - **Above the default:** with 8, eight clicks share one action. A Shift+click still asks for 5.
-- **A tech cannot change the tag:** it is read once and is the same for every player.
+- **A tech changes it per player (2026-11-05):** the effect `<Effect type='Data' subtype='TrainBatchSize' amount='3'
+  relativity='Absolute'><Target type='ProtoUnit'>X</Target></Effect>` changes the size for that player's copy of the
+  proto, from the tag's size (or the stock 5 without a tag). The relativity is the stock one of every `Data` effect: `Absolute` adds the amount, `Percent` and `BasePercent` multiply, `Assign` sets it; the removal of the tech undoes it. Another
+  player's units keep the tag. With `log`: `trainBatchSize: proto 1842, tech subtype TrainBatchSize, relativity 1,
+  amount 3: 1 -> 4`. In WoL (2026-11-05) that tech on the villager with `DontTrainInBatches` gave
+  `queues up to 4 per action (stock 5)` and an order for 3 was one action.
 - **The flags of the other edition, as elements (2026-11-05):** `<DontTrainInBatches>1</DontTrainInBatches>` is a
   `TrainBatchSize` of 1 (an explicit `<TrainBatchSize>` wins, whatever the order), and
   `<ForceBatchTrain>1</ForceBatchTrain>` is read and changes nothing: the multi-block trains it affects do not exist

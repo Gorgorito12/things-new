@@ -2984,6 +2984,19 @@ which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is
 hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
 in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
 
+### Tech subtypes on the built tags: a value per player's copy
+
+A `Data` subtype's handler gets the player's copy of the proto and the base it was cloned from (`techsubtypes.h`),
+while the tag values of `trainBatchSize`, `veterancyBonus`, `sharedBuildLimit` and `dodgeAnyUnit` are maps by proto
+ID that every player reads. So each of those keys keeps a second map, by the copy's pointer (as `nextResearchFree`
+does), holding what the techs made of the base value through the stock value function 0x7F892A, and its readers
+look there first: the kill path has `[attacker+5Ch]`, the dodge test `[unit+5Ch]`, the limit hook `(player, copy)`,
+and the batch hook now forwards ECX, the player at 0x9CE645, so `UhcTrainBatchLimit` finds the copy with 0x45311B
+(`PlayerProtoEntry`); the queue wrapper takes it from its action manager (`[this+4]` the unit, `[unit+44h]` the
+player, 0x9CE63F). A scenario loaded without a data reload reuses copy pointers, so every entry keeps the proto ID
+it was made for and is ignored when the copy's ID differs; a data load clears the maps (`OnDatabaseLoad`). The
+base of each subtype is the tag's value (or the stock default), so `Absolute` adds to it and `Assign` sets it.
+
 ### Civ tags (civtags.*)
 
 A `<civ>` child that civs.xml's parser FUN_0052A590 does not know reaches 0x52BB07, where `civFirstTC` used to read

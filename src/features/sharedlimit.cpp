@@ -20,7 +20,9 @@
 // The two tooltips that print "Build Limit: N out of M" are the exception: they get the group's total
 // and the real limit, through their own count calls and the return address of their limit calls.
 // The tags are read once and are the same for every player; the limit comes from the player's copy
-// of the proto, so techs reach it. The hook is in hooks/sharedlimit_hooks.asm.
+// of the proto, so techs reach it. A tech effect type="Data" subtype="EnableSharedBuildLimit" with
+// amount 0 turns the share off for that player's copy (the proto keeps its own limit), anything else
+// on; base 1. The hook is in hooks/sharedlimit_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -34,6 +36,7 @@
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -104,6 +107,34 @@ std::vector<SettlerCiv> g_settlerCivs;  // by civ ID
 std::int32_t g_settlerType = -1;        // LogicalTypeSettlerBuildLimit
 
 bool FlagOn(const char* text) { return text == nullptr || text[0] == 0 || std::atoi(text) != 0; }
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+struct Enabled {
+  std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float value;      // 0 turns the share off
+};
+std::unordered_map<const char*, Enabled> g_enabled;  // by the player's copy
+
+void ChangeEnabled(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 4);
+  Enabled& slot = g_enabled.emplace(proto, Enabled{id, 1.0f}).first->second;
+  if (slot.id != id) {
+    slot = Enabled{id, 1.0f};
+  }
+  float& value = slot.value;
+  const float before = value;
+  kEffectValue(relativity, &value, 1.0f, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"sharedBuildLimit: proto %d, tech subtype EnableSharedBuildLimit, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 4), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"",
+             static_cast<double>(before), static_cast<double>(value));
+  }
+}
+
+void ForgetOnDataLoad(char*) { g_enabled.clear(); }
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -358,6 +389,12 @@ extern "C" std::int32_t __stdcall UhcSharedLimit(const char* player, const char*
   if (!ReadyShare(id, &found)) {
     return stock;
   }
+  if (!g_enabled.empty()) {
+    const auto enabled = g_enabled.find(proto);
+    if (enabled != g_enabled.end() && enabled->second.id == id && enabled->second.value == 0.0f) {
+      return stock;  // a tech turned the share off for this player
+    }
+  }
   Share& share = *found;
   std::int32_t limit = stock;
   std::int32_t limitId = share.limitProto;
@@ -414,6 +451,7 @@ Outcome ApplySharedBuildLimit(const Config& config) {
       !AddProtoTagHandler("SharedBuildLimitUnitTypes", &ReadUnitType) ||
       !AddProtoTagHandler("SettlerBuildLimit", &ReadSettler) ||
       !AddCivTagHandler("SettlerProtoName", &ReadSettlerProtoName) ||
+      !AddTechSubtype("EnableSharedBuildLimit", &ChangeEnabled) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !RequestAbstractUnitType("LogicalTypeSettlerBuildLimit", &g_settlerType) ||
       !WriteJmp(kLimitEntry, reinterpret_cast<const void*>(&UhcSharedLimitHook), 5)) {
     return Outcome::kFailed;
@@ -423,7 +461,8 @@ Outcome ApplySharedBuildLimit(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  Log(L"sharedBuildLimit: the proto tags are on, and the civ tag SettlerProtoName");
+  Log(L"sharedBuildLimit: the proto tags are on, the civ tag SettlerProtoName and the Data subtype "
+      L"EnableSharedBuildLimit");
   return Outcome::kApplied;
 }
 

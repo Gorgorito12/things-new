@@ -19,7 +19,7 @@ const char* g_uhcSubtypeNode = nullptr;
 
 namespace {
 
-constexpr std::size_t kMaxSubtypes = 16;
+constexpr std::size_t kMaxSubtypes = 32;
 constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
 constexpr std::uint32_t kNameLookupHead = 0x0061FF5D;  // the lookup
 constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the attribute subtype

@@ -23,7 +23,7 @@ Contents:
 
 Contract: [dodgeAnyUnit, dodgeSoundSet and criticalSoundSet](../porting-to-another-dll.md#dodgeanyunit-dodgesoundset-and-criticalsoundset).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `SyncRandom` `0x407CE7` (64 B), `IsA` `0x44D7FA` (105 B), `DodgeTest` `0x49ACAA` (110 B), `DodgeProtoCheck` `0x49ACE5` (12 B), `DodgeCaller` `0x49AF98` (146 B), `DodgeCall` `0x49B023` (7 B), `DamageTypeLoad` `0x52D454` (81 B), `TechByName` `0x600BE1` (16 B), `DodgeRollPath` `0x6A249C` (437 B), `DodgeTechCheck` `0x6A249C` (10 B), `DodgeSound` `0x6A2628` (8 B), `CriticalSound` `0x6A2A9A` (8 B), `TechActive` `0x94AF27` (51 B).
 
@@ -59,7 +59,9 @@ Sites: `SyncRandom` `0x407CE7` (64 B), `IsA` `0x44D7FA` (105 B), `DodgeTest` `0x
 // The proto tags <CanDodgeAttacks>1</CanDodgeAttacks> and <DodgeChance>percent</DodgeChance> (the
 // names another edition of the game uses) mark a proto in the data instead of the cfg: with the
 // first, the unit dodges every hit type with the percent of the second (15 if absent), no tech
-// needed; they are read with dodgeAnyUnit on and come before the cfg rules.
+// needed; they are read with dodgeAnyUnit on and come before the cfg rules. Two tech effects of
+// type="Data" change that for one player's copy of the proto: subtype="EnableDodge" (0 off, else on;
+// base: the tag) and subtype="DodgeChance" (the percent; base: the tag's, or 15).
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -72,6 +74,7 @@ Sites: `SyncRandom` `0x407CE7` (64 B), `IsA` `0x44D7FA` (105 B), `DodgeTest` `0x
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
 #include "../unittypes.h"
 
 #include <unordered_map>
@@ -87,6 +90,8 @@ const auto kTechByName = reinterpret_cast<TechByNameFn>(0x00600BE1);
 const auto kTechActive = reinterpret_cast<TechActiveFn>(0x0094AF27);
 const auto kSyncRandom = reinterpret_cast<SyncRandomFn>(0x00407CE7);
 void* const kSyncRng = reinterpret_cast<void*>(0x00C66588);  // the stock dodge rolls stream 2 of it
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 constexpr std::uint32_t kGameGlobal = 0x00C66234;             // game; +13Ch world, +140h database
 
 // What UhcDodgeDecide tells the hook at 0x49ACE5 (hooks/dodge_hooks.asm).
@@ -125,6 +130,13 @@ struct ProtoDodge {
   std::int32_t permille = 150;  // <DodgeChance>, percent x 10
 };
 std::unordered_map<std::int32_t, ProtoDodge> g_protoDodge;  // by proto ID; the load writes it
+
+struct TechDodge {
+  std::int32_t id = -1;   // the proto ID the copy had: a reused pointer with another ID is ignored
+  float enabled = -1.0f;  // -1: no tech touched it
+  float percent = -1.0f;
+};
+std::unordered_map<const char*, TechDodge> g_techDodge;  // by the player's copy of the proto
 
 // Never resized after the features are applied: the hooks read them from the game thread.
 std::vector<SoundRule> g_dodgeSounds;
@@ -339,6 +351,48 @@ bool __cdecl ReadDodgeChance(void*, const char* node, char* proto) {
   return true;
 }
 
+// The tag's values for a proto ID, as the base of the tech subtypes.
+ProtoDodge TagOf(const char* proto) {
+  const auto found = g_protoDodge.find(Field<std::int32_t>(proto, 8));
+  return found == g_protoDodge.end() ? ProtoDodge{} : found->second;
+}
+
+void ChangeDodgeTech(char* proto, float* field, float base, float amount, std::uint8_t relativity, bool unapply,
+                     const wchar_t* name) {
+  if (*field < 0.0f) {
+    *field = base;
+  }
+  const float before = *field;
+  kEffectValue(relativity, field, base, amount, unapply);
+  if (g_log || g_chanceLog) {
+    uhc::Log(L"dodgeAnyUnit: proto %d, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g",
+             Field<std::int32_t>(proto, 8), name, relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*field));
+  }
+}
+
+TechDodge& TechSlot(char* proto) {
+  TechDodge& slot = g_techDodge[proto];
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  if (slot.id != id) {
+    slot = TechDodge{};
+    slot.id = id;
+  }
+  return slot;
+}
+
+void ChangeEnableDodge(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeDodgeTech(proto, &TechSlot(proto).enabled, TagOf(base).enabled ? 1.0f : 0.0f, amount, relativity, unapply,
+                  L"EnableDodge");
+}
+
+void ChangeDodgeChance(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeDodgeTech(proto, &TechSlot(proto).percent, static_cast<float>(TagOf(base).permille) / 10.0f, amount,
+                  relativity, unapply, L"DodgeChance");
+}
+
+void ForgetTechDodge(char*) { g_techDodge.clear(); }
+
 // The matched rule decides: its tech, then the synced roll over [0, 999]. 0 % and 100 % roll
 // nothing.
 std::int32_t RollRule(const char* unit, const ChanceRule& rule, std::size_t index) {
@@ -388,10 +442,26 @@ std::int32_t __stdcall UhcDodgeDecide(const char* unit, const char* damageInfo) 
     return kStockCompares;
   }
   const std::int32_t damageType = damageInfo == nullptr ? -1 : Field<std::uint8_t>(damageInfo, 5);
-  if (!g_protoDodge.empty()) {
+  if (!g_protoDodge.empty() || !g_techDodge.empty()) {
     const auto tagged = g_protoDodge.find(Field<std::int32_t>(proto, 8));
-    if (tagged != g_protoDodge.end() && tagged->second.enabled) {
-      return Roll(unit, tagged->second.permille, L"CanDodgeAttacks", g_chanceLog || g_log);
+    bool enabled = tagged != g_protoDodge.end() && tagged->second.enabled;
+    std::int32_t permille = tagged != g_protoDodge.end() ? tagged->second.permille : 150;
+    auto tech = g_techDodge.find(proto);  // the copy of this player
+    if (tech != g_techDodge.end() && tech->second.id != Field<std::int32_t>(proto, 8)) {
+      tech = g_techDodge.end();  // the pointer was another proto's copy
+    }
+    if (tech != g_techDodge.end()) {
+      if (tech->second.enabled >= 0.0f) {
+        enabled = tech->second.enabled != 0.0f;
+      }
+      if (tech->second.percent >= 0.0f) {
+        const long value = std::lround(tech->second.percent * 10.0f);
+        permille = value < 0 ? 0 : value > 1000 ? 1000 : static_cast<std::int32_t>(value);
+      }
+    }
+    if (enabled) {
+      return Roll(unit, permille, tech != g_techDodge.end() ? L"CanDodgeAttacks, by tech" : L"CanDodgeAttacks",
+                  g_chanceLog || g_log);
     }
   }
   for (std::size_t i = 0; i < g_chanceRules.size(); ++i) {
@@ -470,7 +540,9 @@ Outcome ApplyDodge(const Config& config) {
     return Outcome::kFailed;
   }
   if (dodge != nullptr && (!AddProtoTagHandler("CanDodgeAttacks", &ReadCanDodgeAttacks) ||
-                           !AddProtoTagHandler("DodgeChance", &ReadDodgeChance))) {
+                           !AddProtoTagHandler("DodgeChance", &ReadDodgeChance) ||
+                           !AddTechSubtype("EnableDodge", &ChangeEnableDodge) ||
+                           !AddTechSubtype("DodgeChance", &ChangeDodgeChance) || !OnDatabaseLoad(&ForgetTechDodge))) {
     return Outcome::kFailed;
   }
 
@@ -3207,7 +3279,7 @@ END
 
 Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
 
-Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`transformcalls.h`](helpers.md#transform-calls).
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 
@@ -3231,6 +3303,10 @@ Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 // calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
 // new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
 // hooks/veterancy_hooks.asm.
+//
+// Two tech effects of type="Data" act on one player's copy of the proto: subtype="VeterancyEnable" (0 turns the
+// rows off for that player, anything else on; base 1) and subtype="VeterancyBonus" (a factor on what every row
+// adds: a row of 1.30 with factor 2 gives 1.60; base 1). Ranks already granted are game modifiers and stay.
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -3246,7 +3322,9 @@ Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 #include "../modifiers.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../techsubtypes.h"
 #include "../transformcalls.h"
+#include "../unittypes.h"
 
 extern "C" void UhcVeterancyHook();
 
@@ -3269,6 +3347,8 @@ const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
 const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
 const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 
 struct Row {
   std::int32_t kills;
@@ -3277,8 +3357,71 @@ struct Row {
 };
 
 std::unordered_map<std::int32_t, std::vector<Row>> g_rows;  // by proto ID; the load fills it
+
+struct TechOverride {
+  std::int32_t id = -1;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float enabled = 1.0f;
+  float factor = 1.0f;
+};
+std::unordered_map<const char*, TechOverride> g_tech;  // by the player's copy of the proto
 bool g_log = false;
 int g_logLines = 0;
+
+const TechOverride* TechFor(const char* copy) {
+  if (g_tech.empty()) {
+    return nullptr;
+  }
+  const auto found = g_tech.find(copy);
+  return found != g_tech.end() && found->second.id == *reinterpret_cast<const std::int32_t*>(copy + 8)
+             ? &found->second
+             : nullptr;
+}
+
+// The rows apply to this copy, and a row's total as the tech leaves it.
+bool EnabledFor(const char* copy) {
+  const TechOverride* tech = TechFor(copy);
+  return tech == nullptr || tech->enabled != 0.0f;
+}
+
+float TotalFor(const char* copy, float total) {
+  const TechOverride* tech = TechFor(copy);
+  if (tech == nullptr || tech->factor == 1.0f) {
+    return total;
+  }
+  const float scaled = 1.0f + (total - 1.0f) * tech->factor;
+  return scaled > 0.0f ? scaled : 0.0f;
+}
+
+TechOverride& TechSlot(char* proto) {
+  TechOverride& slot = g_tech[proto];
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (slot.id != id) {
+    slot = TechOverride{};
+    slot.id = id;
+  }
+  return slot;
+}
+
+void ChangeTech(char* proto, float* field, float amount, std::uint8_t relativity, bool unapply, const wchar_t* name) {
+  const float before = *field;
+  kEffectValue(relativity, field, 1.0f, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"veterancyBonus: proto %d, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), name, relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*field));
+  }
+}
+
+void ChangeEnable(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeTech(proto, &TechSlot(proto).enabled, amount, relativity, unapply, L"VeterancyEnable");
+}
+
+void ChangeFactor(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeTech(proto, &TechSlot(proto).factor, amount, relativity, unapply, L"VeterancyBonus");
+}
+
+void ForgetOnDataLoad(char*) { g_tech.clear(); }
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3355,7 +3498,7 @@ void RestoreAfterTransform(char* unit, float kills) {
     }
   }
   for (const auto& [stat, total] : totals) {
-    kModifier(unit, stat, total, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+    kModifier(unit, stat, TotalFor(now, total), -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
   }
   if (g_log) {
     uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
@@ -3375,7 +3518,7 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
     return;
   }
   const auto found = g_rows.find(Field<std::int32_t>(proto, 8));
-  if (found == g_rows.end()) {
+  if (found == g_rows.end() || !EnabledFor(proto)) {
     return;
   }
   const char* attackerPlayer = Field<const char*>(attacker, 0x44);
@@ -3397,6 +3540,7 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   std::int32_t rank = 0;
   std::int32_t last = 0;
   bool reached = false;
+  float applied = 1.0f;  // the last multiplier given, for the log
   for (const Row& row : found->second) {
     if (row.kills > kills) {
       break;
@@ -3415,7 +3559,8 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
         before = earlier.total;
       }
     }
-    kModifier(attacker, row.stat, row.total / before, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+    applied = TotalFor(proto, row.total) / TotalFor(proto, before);
+    kModifier(attacker, row.stat, applied, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
   }
   if (reached) {
     wchar_t text[32];
@@ -3424,8 +3569,9 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d", Field<std::int32_t>(attacker, 0x10),
-             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank);
+    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d%ls%g", Field<std::int32_t>(attacker, 0x10),
+             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank, reached ? L", x" : L"",
+             reached ? static_cast<double>(applied) : 0.0);
   }
 }
 
@@ -3446,10 +3592,12 @@ Outcome ApplyVeterancyBonus(const Config& config) {
   if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply}) ||
       !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
+      !AddTechSubtype("VeterancyEnable", &ChangeEnable) || !AddTechSubtype("VeterancyBonus", &ChangeFactor) ||
+      !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"veterancyBonus: the proto tag VeterancyBonus is on");
+  Log(L"veterancyBonus: the proto tag VeterancyBonus is on, and the Data subtypes VeterancyEnable and VeterancyBonus");
   return Outcome::kApplied;
 }
 

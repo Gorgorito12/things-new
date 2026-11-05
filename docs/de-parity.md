@@ -85,9 +85,9 @@ Sizes, following the Design rule in wol-requests.md:
 | 24 | Negative trickles, debt | `ResourceTrickleRate` with negative amounts, clamped by `Minimum/MaximumResourceTrickleRate`; no debt rule | Has those subtypes; default min 0, max 10; a stockpile never goes below 0 | negative trickle: **data only** (lower the minimum); debt: S–M |
 | 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M |
 | 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Polish Torp) | Absent; WoL's `sawmill.tactics` already carries DE's aura | M |
-| 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L; all five names read as elements (2026-11-05) |
+| 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L; all five names read as elements (2026-11-05) ; `EnableSharedBuildLimit` built (2026-11-05), the two subtypes with a name not |
 | 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M; the three names built in `sharedBuildLimit` (2026-11-05) |
-| 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M; the three names read as elements (2026-11-05) |
+| 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M; the three names read as elements (2026-11-05) ; the subtype `TrainBatchSize` built too (2026-11-05) |
 | 32 | Economic aura per resource | Modify types `NaturalFoodGatherRate`, `TreeGatherRate`, `MineGatherRate`, `FarmingGatherRate` (by target class) | Absent (`GatherRate` only) | M |
 | 33 | Crate gather priority | Nothing; auto-crate-gather by flag only | Hardcoded per civ in two places (Dutch: coin first; Ottomans and Indians: wood first) | M (a per-civ cfg order) |
 | 34 | Kill bounty by techs | Subtype `KillBounty`; `Bounty resourcetype`; `BountyResourceOverride` / `BountyResourceExtra` / `BountySpecificBonus` | Absent; WoL's DLL has a `KillBounty` string | M |
@@ -98,7 +98,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L |
 | 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` exists only as a tech flag, and no code reading it was found | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
-| 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L |
+| 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons not |
 | 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI |
 | 44 | Building rotated / annexed by its builder | Nothing for rotation; in-place building upgrades (`ForceMutate`, `RevertUpgrade`) | — | needs a design |
 
@@ -413,7 +413,7 @@ So the cfg keys and markers can keep DE's names where DE has one:
 
 | # | Our key | DE counterpart | Note |
 |---|---|---|---|
-| 1 | `dodgeAnyUnit` (`AbstractDodge`) | flag `CanDodgeAttacks` + `DodgeChance` (guide p8, p18); subtypes `EnableDodge`, `DodgeChance` | DE keeps the Japanese-monk path and adds the flag for other units. Both names read as proto elements since 2026-11-05 |
+| 1 | `dodgeAnyUnit` (`AbstractDodge`) | flag `CanDodgeAttacks` + `DodgeChance` (guide p8, p18); subtypes `EnableDodge`, `DodgeChance` | DE keeps the Japanese-monk path and adds the flag for other units. Both names read as proto elements since 2026-11-05 , and the two subtypes (2026-11-05) |
 | 1b | `dodgeSoundSet`, `criticalSoundSet` | proto `DodgeSoundSet`, `DodgeMessageID`; tactics `HitPercentSoundSet` | DE's parser: fn 0x101DEF0 |
 | 3 | `startingTC`, `civFirstTC` | tactics flag `FirstTC` (an aura only on the first TC); no per-civ start tag | |
 | 5, 22 | `liveBuildingWorkRate`, `buildingWorkRateAuras` | modify type `BuildingWorkRate` (guide p35), the same spelling as ours; also `TrainingRate`, `ResearchRate` | |
