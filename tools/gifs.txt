@@ -147,3 +147,4 @@ hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
 unitResourceRings-wol 2 34 3
 unitResourceRings-wol-control 2 34 3
+unitResourceRings-wood-wol 2 34 3

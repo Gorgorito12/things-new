@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<animfile>
+	<definebone>bone_main</definebone>
+	<attachment>
+		chiefpower_a
+		<component>
+			chiefpower_a
+			<notshadowcaster/>
+			<logic type="UnitType">
+				<none>
+					<assetreference type="GrannyModel">
+						<file>effects\ypack_auras\aura_econ</file>
+						<replacetexture>
+							<from>effects\ypack_auras\aura_econ</from>
+							<to>effects\uhc_rings\ring_work</to>
+						</replacetexture>
+					</assetreference>
+				</none>
+				<abstractcavalry>
+					<assetreference type="GrannyModel">
+						<file>effects\ypack_auras\aura_econ_cav</file>
+						<replacetexture>
+							<from>effects\ypack_auras\aura_econ</from>
+							<to>effects\uhc_rings\ring_work</to>
+						</replacetexture>
+					</assetreference>
+				</abstractcavalry>
+				<abstractartillery>
+					<assetreference type="GrannyModel">
+						<file>effects\ypack_auras\aura_econ_cav</file>
+						<replacetexture>
+							<from>effects\ypack_auras\aura_econ</from>
+							<to>effects\uhc_rings\ring_work</to>
+						</replacetexture>
+					</assetreference>
+				</abstractartillery>
+			</logic>
+		</component>
+		<anim>
+			Idle
+			<component>chiefpower_a</component>
+		</anim>
+	</attachment>
+	<component>
+		chiefpower_a
+		<assetreference type="GrannyModel">
+			<file>effects\Chiefpower\chiefpower</file>
+		</assetreference>
+		<decal>
+			<effecttype>default</effecttype>
+			<width>0.00</width>
+			<height>0.00</height>
+			<zoffset>0.00</zoffset>
+		</decal>
+	</component>
+	<anim>
+		Idle
+		<component>chiefpower_a</component>
+		<attach a="chiefpower_a" frombone="HITPOINTBAR" tobone="HITPOINTBAR" syncanims="0"/>
+	</anim>
+</animfile>

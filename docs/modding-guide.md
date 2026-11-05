@@ -3339,6 +3339,10 @@ their wood. [Full video (MP4)](media/unitResourceAuras-wol-control.mp4).
 *In WoL, the rings, with `econpower.xml` in the `<modelattachment>` of `AreaGatherTree` (Ethiopians):* the 4 trees in range
 show the ring at their feet, and they lose it when the Sawmill is destroyed. [Full video (MP4)](media/unitResourceRings-wol.mp4).
 
+![unitResourceAuras in WoL, the wood ring](media/unitResourceRings-wood-wol.gif)
+
+*The same scene with `ring_wood.xml`, an amber ring for gathering wood.* [Full video (MP4)](media/unitResourceRings-wood-wol.mp4).
+
 ![unitResourceAuras in WoL, the rings, key off](media/unitResourceRings-wol-control.gif)
 
 *In WoL, key off (the same data):* no ring and no gathering. [Full video (MP4)](media/unitResourceRings-wol-control.mp4).
@@ -3352,8 +3356,28 @@ unitResourceAuras [log]
   aura does not run the stock update, so the key hangs the model itself: on the units that gave resources in that update,
   and it takes it off when they stop, when the aura's owner dies, or at the limit of `<ModifyTargetLimit>`. A target in two
   auras keeps its ring until the last one lets go.
-- **The colour is the model:** each ring is one file. In WoL: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and
-  `frightpower.xml`, `effects\chiefpower\chiefpower.xml`, `effects\me_auras\aura_warlord.xml`, among others.
+- **A colour for each action:** the colour is the model, so a ring can say what the aura does. `tools/make_rings.py` draws
+  these in `tools/rings/`; copy them to `art/effects/uhc_rings/`, and no DLL key is needed for them:
+
+  ![The seven rings in WoL](media/rings-palette.png)
+
+  | Ring | Colour | For | `<modelattachment>` |
+  |---|---|---|---|
+  | wood | amber | gathering wood | `effects\uhc_rings\ring_wood.xml` |
+  | food | red | gathering food | `effects\uhc_rings\ring_food.xml` |
+  | gold | yellow | gathering gold | `effects\uhc_rings\ring_gold.xml` |
+  | work | green | gathers or works faster | `effects\uhc_rings\ring_work.xml` |
+  | damage | magenta | damage | `effects\uhc_rings\ring_damage.xml` |
+  | heal | white | hit points, healing | `effects\uhc_rings\ring_heal.xml` |
+  | speed | blue | moves faster | `effects\uhc_rings\ring_speed.xml` |
+
+  With `<modelattachmentbone>bonethatdoesntexist</modelattachmentbone>`, as `EconomicAuraKM` has it. The ring uses the mesh
+  of `aura_econ` and draws its own texture through `<replacetexture>`, so cavalry gets its wider ring too. A new colour is one
+  line in `RINGS` in the script. WoL's own rings: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and `frightpower.xml`,
+  `effects\chiefpower\chiefpower.xml`, `effects\me_auras\aura_warlord.xml`, among others.
+- **Tested in WoL (2026-11-05):** `ring_wood.xml` on `AreaGatherTree`: amber rings at the feet of the trees, and off when the
+  Sawmill died. The seven rings through stock auras, with no key, on infantry and cavalry. The yellow is the weakest on
+  dry ground.
 - **WoL's data today shows no ring:** `sawmill.tactics` names `effects\ypack_auras\torpgatherpower.xml`, which is in no folder
   and no `.bar` of WoL. The log says so once: `the action 692 has a <ModelAttachment> that is not in the game`. Ship that
   model or name another one.
