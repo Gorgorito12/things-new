@@ -37,17 +37,17 @@ python -I tools/export_public.py --check
 
 There are no unit tests. Every copy of the game, with its data and how to drive it, is in [`docs/developer-guide.md`, section 2](docs/developer-guide.md#2-a-safe-test-bed). The main ones:
 
-- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`). `C:\WoL-Test` is the control with WoL's DLL.
+- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`), and `C:\AoE3-UHC-WoLReal2`, a second copy to run beside it. `C:\WoL-Test` is the control with WoL's DLL.
 - `C:\AoE3-UHC-Test`, and private copies per feature (`-Poison`, `-WoL`, `-Spread`).
 
-`python -I tools/testbed.py` plays a test with no clicks: `deploy`, `map`, `launch`, `scenario`, `wait`, `log`, `units`, `shot`, `close`, `record`. The console cannot start a skirmish: a test that needs a home city or cheats takes real clicks ([`docs/wol-migration.md`, "Skirmish route"](docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)).
+`python -I tools/testbed.py` plays a test with no clicks: `deploy`, `map`, `launch`, `scenario`, `skirmish`, `wait`, `log`, `units`, `shot`, `close`, `record`. `skirmish` uses posted clicks, so it needs no cursor or focus ([`docs/wol-migration.md`, "Skirmish route"](docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)). Put a `timeout` on every `wait`: when a game ends the clock stops and `wait` never returns.
 
 Rules:
 - **Read `UHC.log` next to the exe:** `applied` / `FAILED`, and `hook reached: …`. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
 - **Every test video shows the feature on screen:** the units it acts on selected (`record --select`), a still camera (`--frame`), `--perf`, `normalZoom` set by console before the game loads, `--crop` at native pixels, `--master` into `rea/media-masters/`, and the GIF from `tools/make_gifs.py` (800 px, 8 fps, 12 s, 4 MB; cuts in `tools/gifs.txt`). Vary the civ, public civs only, and film a control with the key off. A/B every hot-path key with `perfprobe.py`.
 - **Check the AI after data or combat changes.** `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error.
 - **Definition of done:** the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done), before a feature is reported as done.
-- **Never run two games at once** unless yours has `multipleInstances background` and the other session agreed. Stop yours when one asks. Stop a tracer with Ctrl+C, never by killing it.
+- **Two games at once:** only with `multipleInstances background` in both cfgs, and another session's game only if it agreed. Such a copy ignores real input: `click`, `exec` and `record` work; a test that needs `rkey`, `drag` or `wheel` runs alone without `background`. Stop yours when one asks. Stop a tracer with Ctrl+C, never by killing it.
 - **Never modify the Steam install.** Test on copies only. `testbed.py safety check wol` checks Steam's WoL folder.
 
 ## Layout
@@ -58,10 +58,12 @@ Rules:
   - `AddWorldTick` (`worldtick.*`, 0x481A57);
   - `AddActionTagHandler` (`actiontags.*`, 0x5FA11E);
   - `AddModifyType` (`modifytypes.*`, 0x5FE6D7);
+  - `AddTechSubtype` (`techsubtypes.*`, the call 0x6206D7, 0x8F978D, 0x8FB051);
+  - `AddProtoTagHandler` (`prototags.*`, 0x51DB0F);
   - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
   - `AddSyscall` (`syscalls.*`, the group sites);
   - `floatingtext.*`, `modifiers.h` (the read-only walk over a unit's modifiers), `unittypes.*` (extra abstract types).
-- **Order in `kFeatures` matters:** `customAbstractTypes` first, `customSyscalls` last; `noTrainNearEnemyTC` after `liveBuildingWorkRate`; `buildingWorkRateAuras` last of the WoL keys (the two share `g_uhcBwrTrainGetter`); `civFirstTC` after `startingTC` (they share the hook at 0x506B3B); `resourceGatherAuras` after `showGatherRate`; `overhealSources` and `overhealDecay` after `overhealHitpointBars`; `decimalPopulation` after `basePop`/`extraPop`; `spreadAnyAccuracy` after `damageOverTime`. Hook the callee where `maintainWaitForPop` verifies the call 0x6AB264.
+- **Order in `kFeatures` matters:** `customAbstractTypes` first, `customSyscalls` last; `noTrainNearEnemyTC` after `liveBuildingWorkRate`; `buildingWorkRateAuras` last of the WoL keys (the two share `g_uhcBwrTrainGetter`); `civFirstTC` after `startingTC` (they share the hook at 0x506B3B); `resourceGatherAuras` after `showGatherRate`; `resourceDebt` after both (it writes inside what they verify); `overhealSources` and `overhealDecay` after `overhealHitpointBars`; `decimalPopulation` after `basePop`/`extraPop`; `spreadAnyAccuracy` after `damageOverTime`. Hook the callee where `maintainWaitForPop` verifies the call 0x6AB264.
 - `docs/`:
   - `modding-guide.md`: for WoL's modders, private; a new key gets a row in its theme's table in section 5 and its section there;
   - `porting-to-another-dll.md` and `porting-code/*.md` (generated): adding the features to WoL's DLL;

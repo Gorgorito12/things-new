@@ -15,6 +15,8 @@ Contents:
 - [Extra abstract unit types](#extra-abstract-unit-types)
 - [World tick](#world-tick)
 - [Action tags](#action-tags)
+- [Proto tags](#proto-tags)
+- [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
 - [Modifier walk](#modifier-walk)
@@ -1035,6 +1037,36 @@ inline constexpr Site kModifyTypeNameTail{"ModifyTypeNameTail", 0x005FE6C7, kMod
 inline constexpr std::uint8_t kModifyTypeNameCompareBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57, 0x8B, 0xF1, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x26};
 inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10, kModifyTypeNameCompareBytes, sizeof(kModifyTypeNameCompareBytes)};
 
+inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
+inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
+
+inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
+inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
+
+inline constexpr std::uint8_t kTrainBatchLimitCallBytes[] = {0xE8, 0xD1, 0x1E, 0xF0, 0xFF};
+inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kTrainBatchLimitCallBytes, sizeof(kTrainBatchLimitCallBytes)};
+
+inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
+inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall1Bytes[] = {0xE8, 0x04, 0x82, 0x27, 0x00};
+inline constexpr Site kTrainQueueCall1{"TrainQueueCall1", 0x007560B5, kTrainQueueCall1Bytes, sizeof(kTrainQueueCall1Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall2Bytes[] = {0xE8, 0x4B, 0x33, 0x20, 0x00};
+inline constexpr Site kTrainQueueCall2{"TrainQueueCall2", 0x007CAF6E, kTrainQueueCall2Bytes, sizeof(kTrainQueueCall2Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall3Bytes[] = {0xE8, 0x3F, 0x69, 0x1F, 0x00};
+inline constexpr Site kTrainQueueCall3{"TrainQueueCall3", 0x007D797A, kTrainQueueCall3Bytes, sizeof(kTrainQueueCall3Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall4Bytes[] = {0xE8, 0xB6, 0x23, 0xFE, 0xFF};
+inline constexpr Site kTrainQueueCall4{"TrainQueueCall4", 0x009EBF03, kTrainQueueCall4Bytes, sizeof(kTrainQueueCall4Bytes)};
+
+inline constexpr std::uint8_t kDataApplySwitchBytes[] = {0x83, 0xF8, 0x63, 0x0F, 0x87, 0x5E, 0x17, 0x00, 0x00};
+inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApplySwitchBytes, sizeof(kDataApplySwitchBytes)};
+
+inline constexpr std::uint8_t kDataUnapplySwitchBytes[] = {0x83, 0xF8, 0x5E, 0x0F, 0x87, 0x40, 0x11, 0x00, 0x00};
+inline constexpr Site kDataUnapplySwitch{"DataUnapplySwitch", 0x008FB051, kDataUnapplySwitchBytes, sizeof(kDataUnapplySwitchBytes)};
+
 inline constexpr std::uint8_t kBwrTrainCallBytes[] = {0x8B, 0x4E, 0x10, 0xE8, 0x1B, 0x5A, 0xFD, 0xFF};
 inline constexpr Site kBwrTrainCall{"BwrTrainCall", 0x009EA410, kBwrTrainCallBytes, sizeof(kBwrTrainCallBytes)};
 
@@ -1340,6 +1372,15 @@ inline constexpr Site kDebtSetClamp{"DebtSetClamp", 0x006798F4, kDebtSetClampByt
 
 inline constexpr std::uint8_t kDebtShareClampBytes[] = {0xC7, 0x44, 0x24, 0x18, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x4C, 0x24, 0x20};
 inline constexpr Site kDebtShareClamp{"DebtShareClamp", 0x006799D4, kDebtShareClampBytes, sizeof(kDebtShareClampBytes)};
+
+inline constexpr std::uint8_t kDebtAutoGateBytes[] = {0x0F, 0x8A, 0x93, 0x3D, 0x03, 0x00};
+inline constexpr Site kDebtAutoGate{"DebtAutoGate", 0x0048D186, kDebtAutoGateBytes, sizeof(kDebtAutoGateBytes)};
+
+inline constexpr std::uint8_t kDebtAutoRateBytes[] = {0x0F, 0x8A, 0x27, 0x1C, 0x02, 0x00};
+inline constexpr Site kDebtAutoRate{"DebtAutoRate", 0x0049EE07, kDebtAutoRateBytes, sizeof(kDebtAutoRateBytes)};
+
+inline constexpr std::uint8_t kDebtGatherGateBytes[] = {0x0F, 0x8B, 0xA6, 0xBA, 0x1B, 0x00};
+inline constexpr Site kDebtGatherGate{"DebtGatherGate", 0x004ED03E, kDebtGatherGateBytes, sizeof(kDebtGatherGateBytes)};
 
 inline constexpr std::uint8_t kXmlAttributeBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x8D, 0x44, 0x24, 0x04, 0x50, 0x52, 0xE8, 0x23, 0xFF, 0xFF, 0xFF, 0x84};
 inline constexpr Site kXmlAttribute{"XmlAttribute", 0x00598F37, kXmlAttributeBytes, sizeof(kXmlAttributeBytes)};
@@ -1813,6 +1854,8 @@ Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
+Outcome ApplyCostEscalationTechs(const Config& config);
+Outcome ApplyTrainBatchSize(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1890,7 +1933,8 @@ inline constexpr Feature kFeatures[] = {
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"unitResourceAuras", ApplyUnitResourceAuras},
-    {"resourceDebt", ApplyResourceDebt},
+    {"costEscalationTechs", ApplyCostEscalationTechs},
+    {"trainBatchSize", ApplyTrainBatchSize},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1944,6 +1988,7 @@ inline constexpr Feature kFeatures[] = {
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
+    {"resourceDebt", ApplyResourceDebt},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
@@ -1962,7 +2007,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
@@ -2422,6 +2467,304 @@ dispatch:
 next:
     jmp nextChild
 UhcActionTagHook ENDP
+
+END
+```
+
+## Proto tags
+
+### src/prototags.h
+
+```cpp
+// New tags inside a proto's <Unit>: one hook on the tail of the tag table's builder, shared by every
+// key that adds a tag.
+#pragma once
+
+namespace uhc {
+
+// The stock handler convention. `node` is the tag's XML node (its text, a BString, is at +14h), `proto`
+// the base proto being read. Return true; false stops reading that proto.
+using ProtoTagHandler = bool(__cdecl*)(void* context, const char* node, char* proto);
+
+// Registers <name> (static text). Call it from a feature's apply function: the table is built later,
+// during the game's startup. Writes the hook the first time, after checking the stock bytes.
+bool AddProtoTagHandler(const char* name, ProtoTagHandler handler);
+
+}  // namespace uhc
+```
+
+### src/prototags.cpp
+
+```cpp
+#include "prototags.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcProtoTagsHook();  // hooks/prototag_hooks.asm
+
+namespace {
+
+constexpr std::size_t kMaxTags = 8;
+constexpr std::uint32_t kTableTail = 0x0051DB0F;  // pop edi / mov al,1 / pop esi / pop ecx (5 B)
+
+using RegisterFn = void(__thiscall*)(void* table, const char* name, uhc::ProtoTagHandler* handler);
+const auto kRegister = reinterpret_cast<RegisterFn>(0x0059B738);
+
+struct Tag {
+  const char* name;
+  uhc::ProtoTagHandler handler;
+};
+
+Tag g_tags[kMaxTags] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+// From the hook, with the table the builder just filled.
+extern "C" void __stdcall UhcProtoTagsRegister(void* table) {
+  for (std::size_t i = 0; i < g_count; ++i) {
+    uhc::ProtoTagHandler handler = g_tags[i].handler;
+    kRegister(table, g_tags[i].name, &handler);
+  }
+}
+
+namespace uhc {
+
+bool AddProtoTagHandler(const char* name, ProtoTagHandler handler) {
+  if (g_count == kMaxTags) {
+    Log(L"proto tags: no room for %hs", name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("proto tags", {&sites::kProtoTagsTail}) ||
+        !WriteJmp(kTableTail, reinterpret_cast<const void*>(&UhcProtoTagsHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_tags[g_count++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/prototag_hooks.asm
+
+```asm
+; The shared hook for new proto tags (src/prototags.h). Entered through a jmp written over the stock
+; code; it leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcProtoTagsRegister PROTO STDCALL table:DWORD
+
+.data
+tableBuilderRet dd 0051DB14h    ; ret of FUN_0051CE1D
+
+.code
+
+; Replaces 0x51DB0F..0x51DB13 (pop edi / mov al,1 / pop esi / pop ecx), the tail of the tag table's
+; builder, after its last registration. EDI = the builder's object: the protos' table is at +0Ch
+; (0x51CE27), and ESI by now is the second table, at +0C2Ch (0x51D807). The hook re-executes those
+; instructions after the helper.
+UhcProtoTagsHook PROC
+    TRACE_ONCE "proto tags (0x51DB0F)"
+    lea eax, [edi+0Ch]
+    invoke UhcProtoTagsRegister, eax
+    pop edi
+    mov al, 1
+    pop esi
+    pop ecx
+    jmp tableBuilderRet
+UhcProtoTagsHook ENDP
+
+END
+```
+
+## Tech subtypes
+
+### src/techsubtypes.h
+
+```cpp
+// New subtypes of the tech effect type="Data", on ProtoUnit targets: one hook on the name lookup and
+// one on each of the two subtype switches, shared by every key that adds a subtype.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// `proto` is the player's copy, `base` the proto it was cloned from. `relativity` and `amount` are the
+// effect's. `unapply` is set when the effect is removed.
+using TechSubtypeHandler = void (*)(char* proto, const char* base, float amount, std::uint8_t relativity,
+                                    bool unapply);
+
+// Makes subtype="<name>" (static text; case ignored) reach `handler`. Writes the hooks the first time,
+// after checking the stock bytes.
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler);
+
+}  // namespace uhc
+```
+
+### src/techsubtypes.cpp
+
+```cpp
+#include "techsubtypes.h"
+
+#include <cstddef>
+#include <cstring>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+void UhcTechSubtypeApplyHook();    // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeUnapplyHook();
+}
+
+namespace {
+
+constexpr std::size_t kMaxSubtypes = 16;
+constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
+constexpr std::uint32_t kNameLookupCall = 0x006206D7;  // setData's call of the lookup 0x61FF5D
+constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
+constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
+
+using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
+const auto kNameLookup = reinterpret_cast<NameLookupFn>(0x0061FF5D);
+
+struct Subtype {
+  const char* name;
+  uhc::TechSubtypeHandler handler;
+};
+
+Subtype g_subtypes[kMaxSubtypes] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+// Replaces the call of the lookup in BDataEffect::setData.
+std::int32_t __fastcall NameLookup(void* db, void*, const char* name) {
+  const std::int32_t stock = kNameLookup(db, name);
+  if (stock != -1 || name == nullptr) {
+    return stock;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (_stricmp(name, g_subtypes[i].name) == 0) {
+      return kFirstId + static_cast<std::int32_t>(i);
+    }
+  }
+  return -1;
+}
+
+}  // namespace
+
+// From the two switch hooks, for a subtype at or above kFirstId. False: stock's failure exit.
+extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const char* base, float amount,
+                                            std::uint32_t relativity, std::uint32_t unapply) {
+  const std::size_t index = static_cast<std::size_t>(id - kFirstId);
+  if (index >= g_count) {
+    return false;
+  }
+  g_subtypes[index].handler(proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
+  return true;
+}
+
+namespace uhc {
+
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
+  if (g_count == kMaxSubtypes) {
+    Log(L"tech subtypes: no room for %hs", name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("tech subtypes",
+                   {&sites::kDataSubtypeLookupCall, &sites::kDataApplySwitch, &sites::kDataUnapplySwitch}) ||
+        !WriteCall(kNameLookupCall, reinterpret_cast<const void*>(&NameLookup)) ||
+        !WriteJmp(kApplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeApplyHook), 9) ||
+        !WriteJmp(kUnapplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeUnapplyHook), 9)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_subtypes[g_count++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/techsubtype_hooks.asm
+
+```asm
+; The shared hooks for new Data effect subtypes (src/techsubtypes.h). Entered through a jmp written
+; over the stock code; they leave through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTechSubtypeRun PROTO STDCALL subtype:DWORD, target:DWORD, base:DWORD, amount:DWORD, relativity:DWORD, unapply:DWORD
+
+.data
+applySwitchNext   dd 008F9796h    ; movzx ecx, the subtype's jump index
+applyDone         dd 008FAE9Eh    ; pop edi / esi / ebp, mov al,1, pop ebx / ecx, ret 20h
+applyFail         dd 008FAEF4h    ; the same with xor al,al
+unapplySwitchNext dd 008FB05Ah    ; movzx eax, the subtype's jump index
+unapplyDone       dd 008FC191h    ; pop edi / esi / ebp, mov al,1, pop ebx, ret 20h
+unapplyFail       dd 008FC19Ah    ; the same with xor al,al
+
+.code
+
+; Replaces 0x8F978D..0x8F9795 (cmp eax,63h / ja 0x8FAEF4) in applyData. EAX = subtype, EDI = target
+; proto, ESI = its base proto, [esp+28h] amount, [esp+2Ch] relativity.
+UhcTechSubtypeApplyHook PROC
+    TRACE_ONCE "tech subtype apply (0x8F978D)"
+    cmp eax, 100h
+    jae custom
+    cmp eax, 63h
+    ja fail
+    jmp applySwitchNext
+custom:
+    movzx ecx, byte ptr [esp+2Ch]
+    mov edx, dword ptr [esp+28h]
+    invoke UhcTechSubtypeRun, eax, edi, esi, edx, ecx, 0
+    test al, al
+    je fail
+    jmp applyDone
+fail:
+    jmp applyFail
+UhcTechSubtypeApplyHook ENDP
+
+; Replaces 0x8FB051..0x8FB059 (cmp eax,5Eh / ja 0x8FC19A) in unapplyData. EAX = subtype, ESI = target
+; proto, EDI = its base proto, [esp+24h] amount, [esp+28h] relativity.
+UhcTechSubtypeUnapplyHook PROC
+    TRACE_ONCE "tech subtype unapply (0x8FB051)"
+    cmp eax, 100h
+    jae custom
+    cmp eax, 5Eh
+    ja fail
+    jmp unapplySwitchNext
+custom:
+    movzx ecx, byte ptr [esp+28h]
+    mov edx, dword ptr [esp+24h]
+    invoke UhcTechSubtypeRun, eax, esi, edi, edx, ecx, 1
+    test al, al
+    je fail
+    jmp unapplyDone
+fail:
+    jmp unapplyFail
+UhcTechSubtypeUnapplyHook ENDP
 
 END
 ```

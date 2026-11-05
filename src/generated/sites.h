@@ -986,6 +986,36 @@ inline constexpr Site kModifyTypeNameTail{"ModifyTypeNameTail", 0x005FE6C7, kMod
 inline constexpr std::uint8_t kModifyTypeNameCompareBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57, 0x8B, 0xF1, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x26};
 inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10, kModifyTypeNameCompareBytes, sizeof(kModifyTypeNameCompareBytes)};
 
+inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
+inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
+
+inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
+inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
+
+inline constexpr std::uint8_t kTrainBatchLimitCallBytes[] = {0xE8, 0xD1, 0x1E, 0xF0, 0xFF};
+inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kTrainBatchLimitCallBytes, sizeof(kTrainBatchLimitCallBytes)};
+
+inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
+inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall1Bytes[] = {0xE8, 0x04, 0x82, 0x27, 0x00};
+inline constexpr Site kTrainQueueCall1{"TrainQueueCall1", 0x007560B5, kTrainQueueCall1Bytes, sizeof(kTrainQueueCall1Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall2Bytes[] = {0xE8, 0x4B, 0x33, 0x20, 0x00};
+inline constexpr Site kTrainQueueCall2{"TrainQueueCall2", 0x007CAF6E, kTrainQueueCall2Bytes, sizeof(kTrainQueueCall2Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall3Bytes[] = {0xE8, 0x3F, 0x69, 0x1F, 0x00};
+inline constexpr Site kTrainQueueCall3{"TrainQueueCall3", 0x007D797A, kTrainQueueCall3Bytes, sizeof(kTrainQueueCall3Bytes)};
+
+inline constexpr std::uint8_t kTrainQueueCall4Bytes[] = {0xE8, 0xB6, 0x23, 0xFE, 0xFF};
+inline constexpr Site kTrainQueueCall4{"TrainQueueCall4", 0x009EBF03, kTrainQueueCall4Bytes, sizeof(kTrainQueueCall4Bytes)};
+
+inline constexpr std::uint8_t kDataApplySwitchBytes[] = {0x83, 0xF8, 0x63, 0x0F, 0x87, 0x5E, 0x17, 0x00, 0x00};
+inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApplySwitchBytes, sizeof(kDataApplySwitchBytes)};
+
+inline constexpr std::uint8_t kDataUnapplySwitchBytes[] = {0x83, 0xF8, 0x5E, 0x0F, 0x87, 0x40, 0x11, 0x00, 0x00};
+inline constexpr Site kDataUnapplySwitch{"DataUnapplySwitch", 0x008FB051, kDataUnapplySwitchBytes, sizeof(kDataUnapplySwitchBytes)};
+
 inline constexpr std::uint8_t kBwrTrainCallBytes[] = {0x8B, 0x4E, 0x10, 0xE8, 0x1B, 0x5A, 0xFD, 0xFF};
 inline constexpr Site kBwrTrainCall{"BwrTrainCall", 0x009EA410, kBwrTrainCallBytes, sizeof(kBwrTrainCallBytes)};
 
@@ -1291,6 +1321,15 @@ inline constexpr Site kDebtSetClamp{"DebtSetClamp", 0x006798F4, kDebtSetClampByt
 
 inline constexpr std::uint8_t kDebtShareClampBytes[] = {0xC7, 0x44, 0x24, 0x18, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x4C, 0x24, 0x20};
 inline constexpr Site kDebtShareClamp{"DebtShareClamp", 0x006799D4, kDebtShareClampBytes, sizeof(kDebtShareClampBytes)};
+
+inline constexpr std::uint8_t kDebtAutoGateBytes[] = {0x0F, 0x8A, 0x93, 0x3D, 0x03, 0x00};
+inline constexpr Site kDebtAutoGate{"DebtAutoGate", 0x0048D186, kDebtAutoGateBytes, sizeof(kDebtAutoGateBytes)};
+
+inline constexpr std::uint8_t kDebtAutoRateBytes[] = {0x0F, 0x8A, 0x27, 0x1C, 0x02, 0x00};
+inline constexpr Site kDebtAutoRate{"DebtAutoRate", 0x0049EE07, kDebtAutoRateBytes, sizeof(kDebtAutoRateBytes)};
+
+inline constexpr std::uint8_t kDebtGatherGateBytes[] = {0x0F, 0x8B, 0xA6, 0xBA, 0x1B, 0x00};
+inline constexpr Site kDebtGatherGate{"DebtGatherGate", 0x004ED03E, kDebtGatherGateBytes, sizeof(kDebtGatherGateBytes)};
 
 inline constexpr std::uint8_t kXmlAttributeBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x8D, 0x44, 0x24, 0x04, 0x50, 0x52, 0xE8, 0x23, 0xFF, 0xFF, 0xFF, 0x84};
 inline constexpr Site kXmlAttribute{"XmlAttribute", 0x00598F37, kXmlAttributeBytes, sizeof(kXmlAttributeBytes)};

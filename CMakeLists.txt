@@ -26,11 +26,14 @@ add_library(UHC SHARED
   src/unitpanel.cpp
   src/actiontags.cpp
   src/modifytypes.cpp
+  src/prototags.cpp
+  src/techsubtypes.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp
+  src/features/costescalation.cpp
   src/features/civfirsttc.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp
@@ -65,6 +68,7 @@ add_library(UHC SHARED
   src/features/techprereq.cpp
   src/features/teams.cpp
   src/features/techrename.cpp
+  src/features/trainbatch.cpp
   src/features/transform.cpp
   src/features/transforminv.cpp
   src/features/typetests.cpp
@@ -135,6 +139,9 @@ add_library(UHC SHARED
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
   src/hooks/modifytype_hooks.asm
+  src/hooks/prototag_hooks.asm
+  src/hooks/trainbatch_hooks.asm
+  src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
   src/version.rc

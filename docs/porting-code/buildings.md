@@ -9,6 +9,8 @@ Every feature also needs the core [helpers](helpers.md): the site table, patchin
 Contents:
 - [liveBuildingWorkRate](#livebuildingworkrate)
 - [buildingWorkRateAuras](#buildingworkrateauras)
+- [costEscalationTechs](#costescalationtechs)
+- [trainBatchSize](#trainbatchsize)
 - [maintainWaitForPop](#maintainwaitforpop)
 - [noTrainNearEnemyTC](#notrainnearenemytc)
 - [lifespanAfterConstruction](#lifespanafterconstruction)
@@ -673,6 +675,247 @@ UhcBwrAuraCall PROC
 stock:
     jmp workRateGetter              ; no modifier record: the stock call
 UhcBwrAuraCall ENDP
+
+END
+```
+
+## costEscalationTechs
+
+Contract: [costEscalationTechs](../porting-to-another-dll.md#costescalationtechs).
+
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes).
+
+### src/features/costescalation.cpp
+
+```cpp
+// costEscalationTechs: a tech effect type="Data" subtype="CostEscalation" changes a proto's
+// <CostEscalation>.
+//
+// Stock keeps the tag in the proto's [+78h], default 1. The cost getter 0x480B1E reads it from the
+// player's copy on every call: when it is not 1, each cost is multiplied by it (N + count - 1) times,
+// N being the count of that proto the player has. No Data subtype reaches the field, so the effect
+// is a new one (techsubtypes.h), applied through the stock value function 0x7F892A, which gives it
+// every relativity and its removal.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../log.h"
+#include "../techsubtypes.h"
+
+namespace {
+
+constexpr std::size_t kEscalation = 0x78;
+constexpr int kMaxLogLines = 200;
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+bool g_log = false;
+int g_logLines = 0;
+
+void ChangeEscalation(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  auto* value = reinterpret_cast<float*>(proto + kEscalation);
+  const float before = *value;
+  kEffectValue(relativity, value, *reinterpret_cast<const float*>(base + kEscalation), amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"costEscalationTechs: proto %d, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*value));
+  }
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyCostEscalationTechs(const Config& config) {
+  const Config::Args* args = config.First("costEscalationTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"costEscalationTechs: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!AddTechSubtype("CostEscalation", &ChangeEscalation)) {
+    return Outcome::kFailed;
+  }
+  Log(L"costEscalationTechs: the Data subtype CostEscalation is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## trainBatchSize
+
+Contract: [trainBatchSize](../porting-to-another-dll.md#trainbatchsize).
+
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+
+Sites: `TrainQueueCall1` `0x7560B5` (5 B), `TrainQueueCall2` `0x7CAF6E` (5 B), `TrainQueueCall3` `0x7D797A` (5 B), `TrainBatchLimitCall` `0x9CE645` (5 B), `TrainBatchProtoArg` `0x9CE6DE` (4 B), `TrainQueueCall4` `0x9EBF03` (5 B).
+
+### src/features/trainbatch.cpp
+
+```cpp
+// trainBatchSize: <TrainBatchSize>N</TrainBatchSize> in a proto limits how many of it share one Train
+// action.
+//
+// Stock takes the limit from one call, 0x8D051B (0x9CE645, in the routine that queues units in a
+// building): the player's [+2ACh] when a tech set it, else the database's default of [+178h]. The routine
+// then fills the last Train action up to the limit and opens a new one for the rest. The hook keeps that
+// call and replaces its result for a proto with the tag.
+//
+// The new action takes all that remains, whatever the limit, so a Shift+click of 5 is one action of 5.
+// So the routine's four calls go through a wrapper that asks for more than the tag allows in pieces of
+// that size, and each piece is queued and paid by the stock routine. Values are read once, kept by proto
+// ID, and are the same for every player. The hook is in hooks/trainbatch_hooks.asm.
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
+#include <unordered_map>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+
+extern "C" void UhcTrainBatchHook();
+
+namespace {
+
+constexpr std::uint32_t kLimitCall = 0x009CE645;
+constexpr std::uint32_t kQueueCalls[] = {0x007560B5, 0x007CAF6E, 0x007D797A, 0x009EBF03};
+constexpr int kMaxLogLines = 200;
+
+using QueueFn = bool(__thiscall*)(void* building, std::int32_t a, std::int32_t b, std::int32_t proto,
+                                  std::int32_t count, std::int32_t c, std::int32_t d, std::int32_t e);
+const auto kQueue = reinterpret_cast<QueueFn>(0x009CE2BE);
+
+std::unordered_map<std::int32_t, std::int32_t> g_sizes;  // filled while protos load, read-only after
+bool g_log = false;
+int g_logLines = 0;
+
+bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const int size = text != nullptr ? _wtoi(text) : 0;
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (size < 1) {
+    uhc::Log(L"trainBatchSize: proto %d: <TrainBatchSize> needs a number from 1, ignored", id);
+    return true;
+  }
+  g_sizes[id] = size;
+  if (g_log) {
+    uhc::Log(L"trainBatchSize: proto %d has %d", id, size);
+  }
+  return true;
+}
+
+// Replaces the calls of the queue routine.
+bool __fastcall Queue(void* building, void*, std::int32_t a, std::int32_t b, std::int32_t proto, std::int32_t count,
+                      std::int32_t c, std::int32_t d, std::int32_t e) {
+  const auto found = g_sizes.find(proto);
+  if (found == g_sizes.end() || count <= found->second) {
+    return kQueue(building, a, b, proto, count, c, d, e);
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"trainBatchSize: proto %d: %d asked, in pieces of %d", proto, count, found->second);
+  }
+  bool queued = false;
+  for (std::int32_t left = count; left > 0; left -= found->second) {
+    if (!kQueue(building, a, b, proto, left < found->second ? left : found->second, c, d, e)) {
+      break;
+    }
+    queued = true;
+  }
+  return queued;
+}
+
+}  // namespace
+
+// From the hook, with the stock limit and the proto being queued.
+extern "C" std::int32_t __stdcall UhcTrainBatchLimit(std::int32_t stock, std::int32_t proto) {
+  const auto found = g_sizes.find(proto);
+  if (found == g_sizes.end()) {
+    return stock;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"trainBatchSize: proto %d queues up to %d per action (stock %d)", proto, found->second, stock);
+  }
+  return found->second;
+}
+
+namespace uhc {
+
+Outcome ApplyTrainBatchSize(const Config& config) {
+  const Config::Args* args = config.First("trainBatchSize");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"trainBatchSize: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("trainBatchSize", {&sites::kTrainBatchLimitCall, &sites::kTrainBatchProtoArg, &sites::kTrainQueueCall1,
+                                    &sites::kTrainQueueCall2, &sites::kTrainQueueCall3, &sites::kTrainQueueCall4}) ||
+      !AddProtoTagHandler("TrainBatchSize", &ReadTrainBatchSize) ||
+      !WriteJmp(kLimitCall, reinterpret_cast<const void*>(&UhcTrainBatchHook), 5)) {
+    return Outcome::kFailed;
+  }
+  for (const std::uint32_t call : kQueueCalls) {
+    if (!WriteCall(call, reinterpret_cast<const void*>(&Queue))) {
+      return Outcome::kFailed;
+    }
+  }
+  Log(L"trainBatchSize: the proto tag TrainBatchSize is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/trainbatch_hooks.asm
+
+```asm
+; trainBatchSize (src/features/trainbatch.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTrainBatchLimit PROTO STDCALL stockLimit:DWORD, protoId:DWORD
+
+.data
+stockLimitFn    dd 008D051Bh    ; the limit of units per Train action, thiscall(player)
+limitCallNext   dd 009CE64Ah    ; cmp bl,1 / mov ebp,eax
+
+.code
+
+; Replaces 0x9CE645 (call 0x8D051B) in the routine that queues units in a building. ECX = the player,
+; [esp+30h] = the proto ID, as the routine reads it at 0x9CE6DE. The code that follows reads only EAX
+; of what the call leaves.
+UhcTrainBatchHook PROC
+    TRACE_ONCE "trainBatchSize limit (0x9CE645)"
+    call stockLimitFn
+    mov ecx, dword ptr [esp+30h]
+    invoke UhcTrainBatchLimit, eax, ecx
+    jmp limitCallNext
+UhcTrainBatchHook ENDP
 
 END
 ```

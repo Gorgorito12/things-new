@@ -838,6 +838,23 @@ SITES = [
     # buildingWorkRateAuras: the head of the name compare 0x443C10 the hook calls again, int
     # thiscall(BString*, const wchar_t*, flag, n), ret 0Ch; 0 = equal, case ignored for flag 0
     ("ModifyTypeNameCompare", 0x443C10, 0x10),
+    # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
+    # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
+    ("DataSubtypeLookupCall", 0x6206D7, 5),
+    # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
+    # / ret; the hook needs the ret at 0x51DB14
+    ("ProtoTagsTail", 0x51DB0F, 6),
+    # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
+    ("TrainBatchLimitCall", 0x9CE645, 5),
+    ("TrainBatchProtoArg", 0x9CE6DE, 4),
+    # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
+    # arg 3 the proto ID, arg 4 the count
+    ("TrainQueueCall1", 0x7560B5, 5),
+    ("TrainQueueCall2", 0x7CAF6E, 5),
+    ("TrainQueueCall3", 0x7D797A, 5),
+    ("TrainQueueCall4", 0x9EBF03, 5),
+    ("DataApplySwitch", 0x8F978D, 9),
+    ("DataUnapplySwitch", 0x8FB051, 9),
     # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not
     # in the VerifyAll: noTrainNearEnemyTC hooks these bytes and calls g_uhcBwrTrainGetter, and the
     # call is redirected only while they are stock
@@ -1056,6 +1073,12 @@ SITES = [
     # resourceDebt: the third clamp, in the add's shared-resources path, and the mov it continues at. A
     # jp at 0x6799D2 jumps over it to that continuation.
     ("DebtShareClamp", 0x6799D4, 12),
+    # resourceDebt: the three gates that stop negative rates before the add: jp 4C0F1Fh in the AutoGather
+    # update, jp 4C0A34h at the end of its rate getter, jnp 6A8AEAh in the gather tick. No branch lands
+    # inside; each holds its own target, so its bytes prove the continuation.
+    ("DebtAutoGate", 0x48D186, 6),
+    ("DebtAutoRate", 0x49EE07, 6),
+    ("DebtGatherGate", 0x4ED03E, 6),
     # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
     # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
     # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)

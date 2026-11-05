@@ -211,17 +211,31 @@ load-time A/B for `customAbstractTypes`.
 
 ## Skirmish route for videos (2026-11-04)
 
-The console cannot start a skirmish, so a test that needs a home city or cheats takes real clicks: Single
-Player (257, 803), Skirmish (689, 803), the home city's Play (181, 1029), the setup's Play (477, 979), at
-1920 x 1080, with `multipleInstances` off. `profile hc <Civ>` chooses the civ. On a test map with triggers:
-`map uhcsheep ...`, copy `RM4\uhcsheep.xs` and `.xml` to `My Games\Wars of Liberty\RM4\uhc-sheep.*`, and
-click (1440, 403) in the setup; delete the copies after. In a skirmish, game time runs about twice as fast
-as a scenario's. Cheats do not run in a scenario.
+The console cannot start a skirmish, but posted clicks do (2026-11-05): `testbed.py skirmish` goes from the
+main menu to the game with no cursor and no focus, behind other windows and beside another copy. Before it:
+`profile hc <Civ>` chooses the civ. On a test map with triggers: `map uhcsheep ...`, then `skirmish --map`. Client
+coordinates at 1920 x 1080: Single Player (257, 803), Skirmish (689, 803), the home city's Play (181, 1029), the
+test map (1440, 403), the setup's Play (477, 979). In a skirmish, game time runs about twice as fast as a
+scenario's. Cheats do not run in a scenario.
+
+**Two games at once.** Both cfgs need `multipleInstances background`. `C:\AoE3-UHC-WoLReal2` opens at the right of
+the monitor, the first copy at the left. `launch` and `skirmish` wait for each other: copies that start together
+collide on the log in `My Games` ("Cannot create log file") and exit. The profile and the `Scenario` folder are
+shared too, so give each test its own map name, and run `profile hc` with both closed or between launches. In
+the test on 2026-11-05, one copy filmed at 822 fps with no frame over 100 ms while the other played a skirmish.
+With `background` a copy ignores the real mouse and keyboard, so moving the mouse does not move its camera (confirmed
+by the user). What a test can do in it is in the [developer guide](developer-guide.md#a-safe-test-bed).
+
+**End a game on purpose.** A skirmish is lost when the player has no unit left: a lone Explorer dies, the game
+stops at "You abandon your colony" and the clock with it. Give player 1 a building far away, but no Town Center:
+with one, the AI barely grew (4 units against 26).
 
 **The AI's civ.** Use a European AI: it is WoL's best prepared. A random AI takes a random personality, and the personality's
 `<forcedciv>` wins over `gameplayer2civ` in the profile. So before launching, `python -I tools/ai_personality.py
-C:\AoE3-UHC-WoLReal wolOtto` (Germans; also `wolVictoria` British, `wolNapoleon` French, `wolIsabel` Spanish, `wolOscar`
-Swedish), and `restore` after closing the game.
+C:\AoE3-UHC-WoLReal wolOtto` (Germans; also `wolVictoria` British, `wolNapoleon` French, `wolIsabel` Spanish), and
+`restore` after closing the game. Leave one personality per AI, each of a civ the human does not have: the game fell at
+0x7C252C on starting a skirmish with `wolOscar` and a Swedish human, and with two AIs and one personality. A 3-player game
+needs a normal map: a test map starts with 2 players whatever the profile says.
 
 ## Language of the bed
 

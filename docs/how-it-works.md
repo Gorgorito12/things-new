@@ -2560,8 +2560,22 @@ the call's bytes, so this one is applied after it.
 
 The add 0x49A98A clamps a sum below 1e-6 at its cold part 0x679A0E, and in its shared-resources path, once per teammate, at
 0x6799D4; the set 0x49A8C5 clamps its value at 0x6798F4. Each is a single `mov dword ptr [esp+N],0`. The hooks replace that
-instruction and skip it for a listed resource (a byte table by index): ESI in the add, EBP in the shared path, `[esp+70h]` in
-the set.
+instruction for a listed resource (a byte table by index): ESI in the add, EBP in the shared path, `[esp+70h]` in the set.
+
+**The sources.** Only three callers of the add may go below 0, told apart by the add's return address: the global trickle
+(call 0x4E0CF9, returns to 0x4E0CFE), unit AutoGather (0x4C3798, 0x4C379D) and the gather tick (0x4ED1EE, 0x4ED1F3).
+No call site is rewritten, so the check costs nothing on the normal path and the sites stay as `showGatherRate` verifies them.
+
+**The floor of the others.** For any other caller the helper reads the stockpile through 0x44EFFF on `[player+230h]`. At 0 or
+above it does what stock does, write 0. In debt it keeps the larger of the sum and the stockpile: a reduction leaves the
+debt where it was, and an income pays part of it. Writing 0 there, as stock would, would wipe the debt. A set the add itself
+called (returns 0x49A9E2 and 0x6799EE) was settled by the add's hook; any other set goes through the same helper.
+
+**Negative rates.** Three gates stop them before the add, each a jump on the compare with 1e-6: the end of the AutoGather
+getter (0x49EE07, returns 0), the AutoGather update (0x48D186, skips the amount) and the gather tick (0x4ED03E, ends the action
+at a rate of 1e-6 or less). Each hook keeps the stock branch and adds a case: a listed resource with a value below 0 goes on. The
+getter's four other callers ask for a rate above 1e-6, so the panel and the aura code see no change. The gather gate writes
+inside what `showGatherRate` and `resourceGatherAuras` verify, hence its place after them in `kFeatures`.
 
 **Why it is safe.** Costs are compared with the stockpile, so a negative one simply cannot pay. The set's other work, the
 total `+240h` and the listeners, takes the delta whatever its sign. The list comes from the cfg only.
@@ -2729,6 +2743,53 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   It is the last WoL key there. <!-- private -->
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
+
+### trainBatchSize
+
+The routine that queues units in a building reads its limit from one call, 0x8D051B at 0x9CE645: the player's `[+2ACh]`
+when set, else the database's `[+178h]`. It then walks the Train actions and fills the last one of that proto up to the
+limit (0x9CE6C7..0x9CE6E7). The hook keeps the call and replaces its result for a proto with the tag. The proto ID is the
+routine's `[esp+30h]`, the same value it pushes at 0x9CE6DE.
+
+That limit only fills an existing action: a new action takes all that remains, so a Shift+click of 5 stays one action of
+5 at any limit. So the four calls of the routine (0x7560B5, 0x7CAF6E, 0x7D797A, 0x9EBF03) go through a wrapper that
+asks for more than the tag allows in pieces of that size. Each piece runs the stock routine, which charges it.
+
+New proto tags go through `prototags.*`, shared by the keys that add one. The builder FUN_0051CE1D fills two tables with
+0x59B738(name, &handler): the protos' at its object's `+0Ch`, and from 0x51D807 a second one at `+0C2Ch`. So at its tail
+ESI is the second: the hook takes the first from EDI. It runs at startup, after `UHCMain`, so the keys only have to
+list their tags. A handler gets `(context, node, proto)`, and the node's text is the BString at `+14h`.
+
+The values are kept by proto ID in a map that only the load writes, so a proto's copy for each player reads the same
+number and there is nothing to save.
+
+- **Observed in game:** five clicks with 2 logged `queues up to 2 per action (stock 5)` five times and showed a queue
+  of 2, 2 and 1.
+
+### costEscalationTechs
+
+`<CostEscalation>` is stored by the handler 0xA1119D in the proto's `+78h`, default 1 (the proto's cost container is at
+`+70h`). The cost getter 0x480B1E (`bool thiscall(player, protoId, cost*, count)`) takes the player's copy, copies the
+costs, and compares the field with 1. Equal: the costs are multiplied by `count`. Different (cold part 0x67A1A0): a
+query counts that player's units of the proto, and the costs are multiplied by the field `N + count - 1` times, and
+not by `count`. That does not undercharge a batch: in game a Shift+click of 5 charged 5 times the unit's price. No Data
+subtype reaches the field.
+
+New subtypes go through `techsubtypes.*`, shared by the keys that add one:
+
+- The stock name lookup 0x61FF5D is hash based and its table is sized at startup, so the `call` at 0x6206D7 in
+  BDataEffect::setData is replaced: a name stock does not know is looked up in our list and gets an ID from 100h. The
+  rest of setData treats an unknown ID as a plain subtype.
+- The two switches, `cmp eax,63h / ja` at 0x8F978D in applyData and `cmp eax,5Eh / ja` at 0x8FB051 in unapplyData, send
+  an ID from 100h to the key's handler, then to the exit of the case: 0x8FAE9E and 0x8FC191. Any other ID continues as
+  stock.
+
+The handler calls the stock value function 0x7F892A on `+78h`, with the base proto's `+78h`, which gives it every
+relativity and the removal. A tech reaches a proto through protoUnitApply 0x7F86C0; the player path 0x8D842B is not
+involved, as with Armor.
+
+- **Observed in game:** see the tests in the modding guide. After a load the log shows the effects applied again in
+  order, from the data's value.
 
 ### bufferedFileReads
 

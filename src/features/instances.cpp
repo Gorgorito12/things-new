@@ -11,7 +11,14 @@
 // nor take its clicks and keys. The game keeps rendering behind the other windows. It is meant for
 // test copies driven through perfExecFile; the game also needs config("DontPauseWhenLosingFocus")
 // to keep running without focus.
+//
+// background also cuts the copy off the user's mouse and keyboard, so that a test does not follow
+// them: real mouse messages are dropped (a real one has the position GetMessagePos reports; a message
+// posted by a test tool does not), GetCursorPos returns the position of the last posted message (the
+// middle of the window before the first), GetAsyncKeyState returns 0, and SetCursorPos and ClipCursor
+// do nothing, so the game cannot touch the user's cursor. Real clicks and keys do not reach this copy.
 #include <windows.h>
+#include <windowsx.h>
 
 #include <intrin.h>
 
@@ -35,6 +42,11 @@ constexpr std::uint32_t kCreateSemaphoreWSlot = 0x00B843F0;
 // Return address of `call [CreateSemaphoreW]` at 0x55A185 (sites::kSingleInstanceSemaphore).
 constexpr std::uint32_t kSingleInstanceReturn = 0x0055A18B;
 constexpr wchar_t kOldProcProp[] = L"UHC.multipleInstances.WndProc";
+// USER32 IAT slots, from the same parse.
+constexpr std::uint32_t kGetCursorPosSlot = 0x00B844E8;
+constexpr std::uint32_t kSetCursorPosSlot = 0x00B844EC;
+constexpr std::uint32_t kClipCursorSlot = 0x00B84590;
+constexpr std::uint32_t kGetAsyncKeyStateSlot = 0x00B845A0;
 
 using CreateSemaphoreWFn = HANDLE(WINAPI*)(LPSECURITY_ATTRIBUTES, LONG, LONG, LPCWSTR);
 CreateSemaphoreWFn g_createSemaphoreW = nullptr;
@@ -70,10 +82,40 @@ std::wstring FolderSuffix() {
   return suffix;
 }
 
+HWND g_gameWindow = nullptr;  // the window of class Age3
+POINT g_cursor = {-1, -1};    // client coordinates of the last posted mouse message; -1: none yet
+
+BOOL WINAPI GetCursorPosHook(LPPOINT point) {
+  if (point == nullptr || g_gameWindow == nullptr) {
+    return FALSE;
+  }
+  RECT client = {};
+  GetClientRect(g_gameWindow, &client);
+  *point = g_cursor.x >= 0 ? g_cursor : POINT{client.right / 2, client.bottom / 2};
+  ClientToScreen(g_gameWindow, point);
+  return TRUE;
+}
+
+BOOL WINAPI SetCursorPosHook(int, int) { return TRUE; }
+BOOL WINAPI ClipCursorHook(const RECT*) { return TRUE; }
+SHORT WINAPI GetAsyncKeyStateHook(int) { return 0; }
+
 // Keeps the window where it was created in the z-order and never activates it.
 LRESULT CALLBACK BackgroundWndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
   const auto old = reinterpret_cast<WNDPROC>(GetPropW(window, kOldProcProp));
-  if (message == WM_WINDOWPOSCHANGING) {
+  if (message >= WM_MOUSEFIRST && message <= WM_MOUSELAST) {
+    if (message == WM_MOUSEWHEEL || message == WM_MOUSEHWHEEL) {
+      return 0;
+    }
+    POINT point = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+    const POINT client = point;
+    ClientToScreen(window, &point);
+    const DWORD real = GetMessagePos();
+    if (GET_X_LPARAM(real) == point.x && GET_Y_LPARAM(real) == point.y) {
+      return 0;  // the user's mouse
+    }
+    g_cursor = client;
+  } else if (message == WM_WINDOWPOSCHANGING) {
     reinterpret_cast<WINDOWPOS*>(lParam)->flags |= SWP_NOZORDER | SWP_NOACTIVATE;
   } else if (message == WM_MOUSEACTIVATE) {
     return MA_NOACTIVATE;
@@ -97,6 +139,9 @@ LRESULT CALLBACK CbtHook(int code, WPARAM wParam, LPARAM lParam) {
       const LONG_PTR old = GetWindowLongPtrW(window, GWLP_WNDPROC);
       if (old != 0 && SetPropW(window, kOldProcProp, reinterpret_cast<HANDLE>(old))) {
         SetWindowLongPtrW(window, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&BackgroundWndProc));
+      }
+      if (wcscmp(className, L"Age3") == 0) {
+        g_gameWindow = window;
       }
       Log(L"multipleInstances background: window of class %ls placed at the bottom, never activated", className);
     }
@@ -137,6 +182,28 @@ Outcome ApplyMultipleInstances(const Config& config) {
     return Outcome::kFailed;
   }
   if (background) {
+    struct Slot {
+      std::uint32_t address;
+      const char* name;
+      const void* hook;
+    };
+    const Slot slots[] = {{kGetCursorPosSlot, "GetCursorPos", reinterpret_cast<const void*>(&GetCursorPosHook)},
+                          {kSetCursorPosSlot, "SetCursorPos", reinterpret_cast<const void*>(&SetCursorPosHook)},
+                          {kClipCursorSlot, "ClipCursor", reinterpret_cast<const void*>(&ClipCursorHook)},
+                          {kGetAsyncKeyStateSlot, "GetAsyncKeyState", reinterpret_cast<const void*>(&GetAsyncKeyStateHook)}};
+    HMODULE user32 = GetModuleHandleW(L"user32.dll");
+    for (const Slot& slot : slots) {
+      void* stock = user32 != nullptr ? reinterpret_cast<void*>(GetProcAddress(user32, slot.name)) : nullptr;
+      if (stock == nullptr || *reinterpret_cast<void* const*>(slot.address) != stock) {
+        Log(L"multipleInstances: IAT slot 0x%08X does not point at %hs", slot.address, slot.name);
+        return Outcome::kFailed;
+      }
+    }
+    for (const Slot& slot : slots) {
+      if (!WriteDword(slot.address, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(slot.hook)))) {
+        return Outcome::kFailed;
+      }
+    }
     // UHCMain runs on the game's main thread, which creates the game's windows.
     g_cbtHook = SetWindowsHookExW(WH_CBT, &CbtHook, nullptr, GetCurrentThreadId());
     if (g_cbtHook == nullptr) {

@@ -30,8 +30,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 08:01 | [`resourceDebt`](#resourcedebt) | Filmed in WoL, with a control. Only trickles and the rates of units may take a stockpile below 0. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. |
+| Thursday 2026-11-05 07:53 | [`trainBatchSize`](#trainbatchsize) | Added. `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | The tag on the protos that want it. |
+| Thursday 2026-11-05 07:36 | [`costEscalationTechs`](#costescalationtechs) | Added. A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | The `Data` effects in `techtreey.xml`. |
 | Wednesday 2026-11-04 18:04 | [`resourceGatherAuras`](#resourcegatherauras) | Added. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
-| Wednesday 2026-11-04 18:04 | [`resourceDebt`](#resourcedebt) | Added. A stockpile may go below 0, for negative trickles. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`. |
 | Wednesday 2026-11-04 17:21 | [`unitResourceAuras`](#unitresourceauras) | Added. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Wednesday 2026-11-04 17:03 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | Added. `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. |
 | Wednesday 2026-11-04 16:29 | [`workRateByAbstractType`](#workratebyabstracttype) | Added. A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. |
@@ -358,6 +360,9 @@ A tool for testing, not for WoL's players: nothing needs porting.
 - **Effect:** this copy no longer collides with copies in other folders. Two copies started from the
   same folder still refuse each other, because they would share that folder's files (`UHC.log`, the
   `perfExecFile` file, …). Only one of the two copies needs the key.
+- **`background` and your mouse:** this copy also ignores the real mouse and keyboard: it does not follow the
+  cursor, real clicks and keys do not reach it, and it cannot move or confine your cursor. Only messages posted by a
+  test tool reach it. Don't use it to play.
 - **`background`:** this copy's windows open behind every other window, stay there and never take the
   focus. The copy cannot cover another window or receive the clicks and keys meant for it. This is
   for unattended tests driven through `perfExecFile`
@@ -2759,7 +2764,7 @@ Resources, gatherers, and what pays for them.
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
-| [`resourceDebt`](#resourcedebt) | A stockpile may go below 0, for negative trickles. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`. | confirmed |
+| [`resourceDebt`](#resourcedebt) | Only trickles and the rates of units may take a stockpile below 0. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -3112,26 +3117,48 @@ resourceGatherAuras [log]
 
 #### resourceDebt
 
-**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Wednesday 2026-11-04 18:04
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 08:01
 
 ![resourceDebt in WoL](media/resourceDebt-wol.gif)
 
-*In WoL, with `resourceDebt Food` (Ethiopians, a test tech with a food trickle of −10/s):* the food goes below 0: −110
-at 88 s, −250 at 103 s. Gold, which is not listed, stays at 0 when a trigger takes 50.
+*In WoL, with `resourceDebt Food Gold` (Ethiopians, a test tech with a food trickle of −10/s):* a trigger takes 150 gold of 100
+and the gold stops at 0. A tech takes 300 food of the little left and the food stops at 0. Only the trickle goes below 0: −20,
+then −80. A trigger then gives 400 food, which pays the debt and leaves 239, and the trickle takes it below 0 again.
 [Full video (MP4)](media/resourceDebt-wol.mp4).
 
 ![resourceDebt in WoL, key off](media/resourceDebt-wol-control.gif)
 
-*In WoL, key off (the same scene):* the food stops at 0. [Full video (MP4)](media/resourceDebt-wol-control.mp4).
+*In WoL, key off (the same scene):* the food stops at 0 at every step. [Full video (MP4)](media/resourceDebt-wol-control.mp4).
+
+![resourceDebt in WoL, a unit with a negative AutoGather](media/resourceDebt-autogather-wol.gif)
+
+*In WoL, with `resourceDebt Gold` (a test tech gives a Bank an AutoGather of −10 gold):* the gold goes from 100 to −208, −440 and
+−560. [Full video (MP4)](media/resourceDebt-autogather-wol.mp4).
+
+![resourceDebt in WoL, a negative AutoGather, key off](media/resourceDebt-autogather-wol-control.gif)
+
+*In WoL, key off (the same scene):* stock ignores a negative AutoGather and the gold stays at 100.
+[Full video (MP4)](media/resourceDebt-autogather-wol-control.mp4).
 
 ```
 resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
 ```
 
-- **In WoL today:** a negative trickle drains a stockpile, and it stops at 0. JTMaston's #24 asks for debt. He did not
-  answer what a debt should do, so this is our design: nothing more than the number.
-- **Effect:** the listed stockpiles may go below 0. The trickle needs both effects, as without the key: the rate is
-  clamped to `MinimumResourceTrickleRate`, 0 by default.
+- **In WoL today:** a negative trickle drains a stockpile, and it stops at 0. JTMaston's #24 asks for debt, with no penalties.
+- **What may go below 0 (JTMaston's rule, 2026-11-05):** only these three, for the listed resources:
+
+  | Source | Stock | With the key |
+  |---|---|---|
+  | Global trickle: `ResourceTrickleRate` by tech on the player | Drains, stops at 0 | Goes below 0 |
+  | A unit's AutoGather with a negative rate | Does nothing: the rate reads 0 | Drains and goes below 0 |
+  | A gatherer whose rate turns negative | The gathering ends | Goes on, and drains |
+
+- **Everything else stops at 0:** tech effects, triggers, XS, costs, shipments and any other caller. A tech can never leave a
+  player negative: a tech that took 100000 gold left 0, a trigger that took 100000 wood left 0.
+- **Already in debt:** that floor is the debt itself. A tech that took 300 food at −80 left −80, a trigger that took 300 at −140
+  left −140, so nothing but the three sources digs deeper. An income pays the debt, it does not wipe it: a tech that gave
+  40 food at −180 left −140.
+- **The trickle** needs both effects, as without the key: the rate is clamped to `MinimumResourceTrickleRate`, 0 by default.
 
   ```xml
   <Effect type ='Data' amount ='-20.00' subtype ='MinimumResourceTrickleRate' resource ='Food' relativity ='Absolute'>
@@ -3140,22 +3167,28 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
       <Target type ='Player' /></Effect>
   ```
 
-- **In debt:** a cost is compared with the stockpile, so nothing can be paid until it is above the cost again. With food at
-  −140, an order to train was refused: no queue, no population, no charge. The panel shows the negative number.
-- **Any reduction counts:** with the key, a trigger or an effect that takes more than the stockpile also leaves a debt
-  of that resource.
-- **Shared resources:** with the team option on, the add divides the amount among the teammates, each with its own floor at
-  0, which the key also lifts. Tested on the player alone (the game ran that path, and the food reached −1261); the real
-  split between two allies was not tested, because the test maps hold 2 players.
-- **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no error, between
-  −3.6 and −20.7 food, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers
-  kept working.
-- **Log:** `resourceDebt: stockpiles of Food may go below 0 (multiplayer unverified)`, `hook reached: resourceDebt add
-  (0x679A0E)`, `resourceDebt set (0x6798F4)`, and `resourceDebt shared add (0x6799D4)`. With `log`, the first 200 sums below
-  0: `resourceDebt: player 2, resource 2 at -13.0`. An unknown resource: `FAILED`.
+- **A unit:** a negative `<Rate>` in the AutoGather action of the proto, or a tech that sets it. The building must have the
+  action enabled. WoL's `saqueo` has −15 of each resource, but its `saqueo.tactics` is not in the data, so it has no action and
+  drains nothing, with or without the key.
+- **A gatherer:** a `WorkRate` tech that turns the rate negative while the unit gathers. It drained 1 food per tick in the test.
+  A negative rate from the start was not seen to begin gathering, so this path needs the action already running.
+- **In debt:** a cost is compared with the stockpile, so nothing can be paid until it is above the cost again. At −1060 food an
+  order to train did nothing: 11 units 34 s later, against one more villager in the same scene with food. No penalties.
+- **Shared resources:** with the team option on, the add divides the amount among the teammates, each with its own floor, by the
+  same rule. Tested on 2026-11-05 in a 3-player skirmish, the human and a British AI against a German AI, with a trickle of
+  −20/s in the two AIs' start techs: both allies went into debt with the same number (−4.6), then the team's income paid
+  it, and the lone German reached −150 and stalled at 6 units. The floor of the shared path with the key off was not
+  shown: that run ended at 3 food. A test map cannot do this: it starts with 2 players whatever the profile says.
+- **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no XS error, its food
+  around −15, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers kept working.
+- **Log:** `resourceDebt: trickles and unit rates may take Food below 0 (multiplayer unverified)`, and `hook reached: resourceDebt
+  add (0x679A0E)`, `set (0x6798F4)`, `shared add (0x6799D4)`, `AutoGather rate (0x49EE07)`, `AutoGather gate (0x48D186)` and `gather
+  gate (0x4ED03E)`. With `log`, the first 200 values below 0, with the caller:
+  `resourceDebt: player 1, resource 2, from 0x004E0CFE: -80.0`, and `(held by the floor)` when the floor changed it. Resources: 0
+  gold, 1 wood, 2 food. An unknown resource: `FAILED`.
 - **Simulation:** every player needs the same line.
-- **Saved games:** a debt saved at −80 loaded at −100, two seconds of trickle later.
-- **Performance:** runs only when a sum falls below 0.
+- **Saved games:** a game saved in debt loaded at −3220, with the debt intact and the floors working.
+- **Performance:** runs only when a sum falls below 0, plus one test for each AutoGather amount and gather rate under 1e-6.
 - **Status:** confirmed (single player, on WoL): the rates above, the refused order, the saved game, an AI in debt, the shared
   path on one player. Two allies sharing a debt and multiplayer not tested.
 
@@ -3298,6 +3331,8 @@ How buildings train, spawn, live and get replaced.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | **new** | Nothing. | confirmed (single player) |
+| [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
+| [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
 | [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | **new** | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. | confirmed (single player) |
 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Marked units leave a training building one at a time, not as a batch. | **in `wol.cfg`** | `AbstractTrainLimitOne` on the protos (36 have it). | confirmed |
@@ -3990,6 +4025,98 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
+
+#### trainBatchSize
+
+**Added:** Thursday 2026-11-05 07:53 · **Filmed in WoL:** Thursday 2026-11-05 07:53
+
+![trainBatchSize in WoL](media/trainBatchSize-wol.gif)
+
+*In WoL, with the key (Ethiopians, `<TrainBatchSize>2</TrainBatchSize>` on `WOLLandwehr`):* five clicks make a queue of
+2, 2 and 1, and the units come out in twos. [Full video (MP4)](media/trainBatchSize-wol.mp4).
+
+![trainBatchSize in WoL, key off](media/trainBatchSize-wol-control.gif)
+
+*In WoL, key off (the same data):* the five clicks make one action of 5, and they come out together. The game skips the
+tag it does not know. [Full video (MP4)](media/trainBatchSize-wol-control.mp4).
+
+```
+trainBatchSize [log]
+```
+
+```xml
+<Unit name="WOLLandwehr">
+    <TrainBatchSize>2</TrainBatchSize>
+</Unit>
+```
+
+- **In WoL today:** the units per Train action are one number for all of a player's protos: 5 by default, or what a tech
+  sets with `PlayerSpecificTrainLimitPerAction`. JTMaston's #31.
+- **Effect:** a proto with the tag uses its number instead. A value from 1 is accepted; 1 means no batches. Each click
+  fills the last action of that proto up to the limit, and the rest opens a new one, as stock does with its number.
+- **Precedence:** the tag beats the tech: a proto with the tag ignores `PlayerSpecificTrainLimitPerAction`.
+- **Shift+click:** the batch respects the tag: with 2 it queues 2, 2 and 1. Stock would make one action of the whole
+  batch, so the key asks for it in pieces, and each piece pays as usual: 5 at 119.2 charged 596.
+- **Above the default:** with 8, eight clicks share one action. A Shift+click still asks for 5.
+- **A tech cannot change the tag:** it is read once and is the same for every player.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and the same data.
+- **Log:** `trainBatchSize: the proto tag TrainBatchSize is on`, `hook reached: proto tags (0x51DB0F)`, `trainBatchSize
+  limit (0x9CE645)`, and with `log`: `trainBatchSize: proto 2182 has 2` and `trainBatchSize: proto 2182 queues up to 2 per
+  action (stock 5)`. A value below 1 is logged and ignored.
+- **Tested in WoL (2026-11-05):**
+  - 2 on `WOLLandwehr`: five clicks queued 2, 2 and 1. Key off: one action of 5.
+  - A real Shift+click with 2: 2, 2 and 1, and 596 food.
+  - 8, beside `PlayerSpecificTrainLimitPerAction` at 3: one action of 8; the log says `queues up to 8 per action (stock 3)`.
+  - A skirmish with a European AI (`wolOtto`) with the key on: it trained through the hook and had 16 units at 120 s.
+  - Not tested: multiplayer.
+
+#### costEscalationTechs
+
+**Added:** Thursday 2026-11-05 07:36 · **Filmed in WoL:** Thursday 2026-11-05 07:36
+
+![costEscalationTechs in WoL](media/costEscalationTechs-wol.gif)
+
+*In WoL, with the key (Ethiopians, 9 `WOLLandwehr` alive and a test tech that sets 1.2):* the button's cost goes from
+85 to 464, and the food drops by what the button says. [Full video (MP4)](media/costEscalationTechs-wol.mp4).
+
+![costEscalationTechs in WoL, key off](media/costEscalationTechs-wol-control.gif)
+
+*In WoL, key off (the same scene):* the tech does nothing and the cost stays near 85.
+[Full video (MP4)](media/costEscalationTechs-wol-control.mp4).
+
+```
+costEscalationTechs [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.20' subtype ='CostEscalation' relativity ='Assign'>
+    <Target type ='ProtoUnit'>WOLLandwehr</Target></Effect>
+```
+
+- **In WoL today:** `WOLLandwehr` has 1.015 and `WolLandwehrCav` 1.025, and no tech can touch them. JTMaston's #46.
+- **Effect:** the new subtype changes the value of that player's proto. It takes every relativity: `Assign`, `Percent`,
+  `BasePercent` and `Absolute`. Any proto can have it: one with no tag starts at 1, which is no escalation.
+- **How the game charges it:** cost × escalation^N, N being that player's units of the proto **alive**. **Queued units do
+  not count:** three clicks in a row on 9 alive and 1.2 charged 387 each, and the next unit cost 464 once one had come
+  out. The cost is read at the click, so a tech does not change what a queued unit already paid.
+- **Rounding:** the food falls by the rounded value and the button shows it cut: 386.98 shows 386 and charges 387.
+- **Batches:** a Shift+click batch pays every unit, each at the same price: 5 at 85.8 charged 429 (the user, by hand,
+  2026-11-05).
+- **Saved games:** on loading, the effects are applied again and the value comes back (1.26 in the test, the same cost).
+- **Removal:** undone by the stock value function (1.06575 → 1.015 through `Age0Egyptian`, which the game applies and
+  removes at a scenario's start). Setting a tech unobtainable does not remove effects, with or without this key.
+- **Off:** the subtype is unknown, as in stock: the effect is dropped and the rest of the tech works.
+- **Multiplayer:** the value is in the simulation: every player needs the same setting.
+- **Log:** `costEscalationTechs: the Data subtype CostEscalation is on`, `hook reached: tech subtype apply (0x8F978D)`, and
+  with `log` one line per change: `costEscalationTechs: proto 2182, relativity 3, amount 1.2: 1.015 -> 1.2`.
+- **Tested in WoL (2026-11-05):**
+  - 1.015 at 9 alive showed 85, and 87 at 10, and charged 86.
+  - `Assign` 1.2 showed 386, 464 and 557 at 9, 10 and 11 alive, and charged 387, 465 and 557.
+  - `Percent` 1.05 on top gave 1.26: 756 at 10 alive and 1200 at 12.
+  - A skirmish with a European AI (`wolVictoria`) with the key on: the AI compiled and had 12 units at 90 s.
+  - A Shift+click of 5 on 1.015 and 9 alive charged 429, from 20000 to 19571.
+  - `BasePercent` 1.10 then `Absolute` 0.05 on 1.015: the cost at 3 alive was 119, which is 75 × 1.1665³.
+  - Not tested: multiplayer.
 
 ### Techs and transforms
 

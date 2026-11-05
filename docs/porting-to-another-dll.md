@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1022,6 +1022,27 @@ Code: [techs](porting-code/techs.md#transforminventory).
 - **Coexistence:** it runs with transformUpdatesLOS (0x9C763F); do not verify `TransformSetProto`
   in this feature, since that feature may have written its `jmp` there.
 
+### costEscalationTechs
+
+Code: [buildings](porting-code/buildings.md#costescalationtechs). It needs `AddTechSubtype`, in the
+[helpers](porting-code/helpers.md#tech-subtypes).
+
+- **Sites:** the `call` at `0x6206D7` (`E8 81 F8 FF FF`), and 9-byte `jmp`s at `0x8F978D` (`83 F8 63 0F 87 5E 17 00 00`) and
+  `0x8FB051` (`83 F8 5E 0F 87 40 11 00 00`). Check them against your DLL first: another key that adds a Data subtype
+  must share them.
+- **Test:** a tech with the effect in the [modding guide](modding-guide.md#costescalationtechs): the button's cost changes
+  and the food drops by it.
+
+### trainBatchSize
+
+Code: [buildings](porting-code/buildings.md#trainbatchsize). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Sites:** a 5-byte `jmp` at `0x9CE645` (`call 0x8D051B`), continue at `0x9CE64A`; and a 5-byte `jmp` at `0x51DB0F`
+  (`5F B0 01 5E 59`), continue at the `ret` `0x51DB14`. Check them against your DLL first: another key that adds a proto
+  tag must share the second.
+- **Test:** the tag on a proto: five clicks queue in that size, and the log shows the proto.
+
 ### noTrainNearEnemyTC
 
 Code: [buildings](porting-code/buildings.md#notrainnearenemytc).
@@ -1259,6 +1280,10 @@ Code: [gathering](porting-code/gathering.md#resourcedebt).
 
 - **Sites:** an 8-byte `jmp` at `0x679A0E` (`C7 44 24 10 00 00 00 00`), continue at `0x49A9D0`; at `0x6798F4` (`C7 44 24 74 00 00
   00 00`), continue at `0x49A8E3`; and at `0x6799D4` (`C7 44 24 18 00 00 00 00`), continue at `0x6799DC`. None overlaps WoL's DLL.
+- **The gates of negative rates:** a 6-byte `jmp` at `0x48D186` (`0F 8A 93 3D 03 00`), `0x49EE07` (`0F 8A 27 1C 02 00`) and
+  `0x4ED03E` (`0F 8B A6 BA 1B 00`). Check them against your DLL's gather hooks: WoL's gather code may already sit near the tick.
+- **The return addresses that have no floor** are constants in the helper: `0x4E0CFE`, `0x4C379D`, `0x4ED1F3`. A hook of yours on
+  those three calls changes nothing as long as the stock return address stays on the stack.
 
 ### showGatherRate
 
