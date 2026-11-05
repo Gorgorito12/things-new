@@ -30,6 +30,17 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
+| Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
+| Thursday 2026-11-05 10:29 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
+| Thursday 2026-11-05 10:29 | [`nextResearchFree`](#nextresearchfree) | Filmed in WoL, with a control. A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | The `Data` effects in `techtreey.xml`. |
+| Thursday 2026-11-05 10:29 | [`transformSpan`](#transformspan) | Filmed in WoL, with a control. `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | The attribute on the effects that want it. |
+| Thursday 2026-11-05 10:21 | [`detonationDeath`](#detonationdeath) | Added. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | The tag, and an action with `DamageArea`. |
+| Thursday 2026-11-05 10:21 | [`hcTargetTechs`](#hctargettechs) | Added. The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | The flag on the techs that want it. |
+| Thursday 2026-11-05 10:17 | [`veterancyBonus`](#veterancybonus) | Added. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
+| Thursday 2026-11-05 09:39 | [`cantBeSlowed`](#cantbeslowed) | Added. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
+| Thursday 2026-11-05 09:39 | [`killBountyTechs`](#killbountytechs-resourcebounty-and-teamkillbounty), [`resourceBounty`](#killbountytechs-resourcebounty-and-teamkillbounty), [`teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Added. Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. |
+| Thursday 2026-11-05 09:26 | [`sharedBuildLimit`](#sharedbuildlimit) | Added. Protos share a build limit: by unit type, with weights, or across a team. | The tags on the protos that share. |
 | Thursday 2026-11-05 08:01 | [`resourceDebt`](#resourcedebt) | Filmed in WoL, with a control. Only trickles and the rates of units may take a stockpile below 0. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. |
 | Thursday 2026-11-05 07:53 | [`trainBatchSize`](#trainbatchsize) | Added. `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | The tag on the protos that want it. |
 | Thursday 2026-11-05 07:36 | [`costEscalationTechs`](#costescalationtechs) | Added. A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | The `Data` effects in `techtreey.xml`. |
@@ -2048,15 +2059,81 @@ Attacks, armor, and what a hit does.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
+| [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | **new** | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. | confirmed (single player) |
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | **new** | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. | confirmed (single player) |
+| [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
+| [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
+| [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
+| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills. | **new** | The rows on the protos that want them. | confirmed |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
+
+#### detonationDeath
+
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 10:21
+
+![detonationDeath in WoL](media/detonationDeath-wol.gif)
+
+*In WoL, with the key (a test action on `Settler`: 1000 Siege, `DamageArea` 6, `GAIAEnemy`):* a trigger kills a settler and the
+4 enemy `Coureur` around it die; another kills one of 3 settlers beside 3 enemy settlers, and all six go in a chain. The blue
+`Coureur` in the middle is out of range. The blast has no effect of its own on screen.
+[Full video (MP4)](media/detonationDeath-wol.mp4).
+
+![detonationDeath in WoL, key off](media/detonationDeath-wol-control.gif)
+
+*In WoL, key off (the same data):* the settlers die and nothing else happens.
+[Full video (MP4)](media/detonationDeath-wol-control.mp4).
+
+```
+detonationDeath [log]
+```
+
+```xml
+<Unit name="Settler">
+    <DetonationProtoAction>Build</DetonationProtoAction>
+    <ProtoAction>
+        <Name>Build</Name>
+        <Damage>1000.000000</Damage>
+        <DamageType>Siege</DamageType>
+        <DamageArea>6.000000</DamageArea>
+        <DamageFlags>GAIAEnemy</DamageFlags>
+    </ProtoAction>
+</Unit>
+```
+
+- **In WoL today:** no unit can do something when it dies. `selfdestruct` in a tactics file is another thing: the unit dies from
+  its own attack. JTMaston's #39.
+- **Effect:** when a unit of that proto dies, the action named by the tag fires around it: the stock area damage, with the
+  action's damage, `DamageArea`, damage type, bonuses and `DamageFlags`. The action needs `DamageArea` above 0, and the proto
+  must have it: an action its tactics file does not list does nothing, and the log says so.
+- **Use an action the unit does not attack with.** The tag reads any action with a `<Damage>`, so `Build` works on a settler. If
+  it is the unit's weapon, raising the damage also raises its normal attacks.
+- **Which deaths:** combat, a kill by a trigger, an expired `Lifespan`, and a unit that dies in a blast. Not `Destroy` (the
+  trigger that removes a unit with no death).
+- **Chains:** a unit that dies from a blast fires too, later in the same pass of the game's kill queue, not inside the blast.
+- **Friendly fire:** `DamageFlags` decides it, as on any attack. {FF}
+- **Techs:** the action is the player's copy, so a tech that changes its damage counts.
+- **From DE, not built:** `DetonationCommand` (a command that replaces delete), `DetonationHitpointThreshold` (the command fires
+  at an HP ratio) and `DetonationHitpointDecay`. Without the threshold, one tag is the whole of it: there is no flag to set.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Log:** `detonationDeath: the proto tag DetonationProtoAction is on`, and with `log`: `detonationDeath: proto 294 fires Build` and
+  `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
+- **Tested in WoL (2026-11-05):**
+  - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
+  - A kill by trigger, combat with 6 `Pikeman`, an expired `Lifespan`: each killed the enemy `Coureur` around it.
+  - `Destroy`: no blast, and the 3 `Coureur` kept 180 HP.
+  - Own units in the blast with `GAIAEnemy`: 180 HP kept, the enemy's dead. With `GAIAEnemySelfAlly`: the own ones died too.
+  - A chain of 3 + 3 settlers of both players: 23, then 26, 27 and 28, then 24 and 25, with no recursion.
+  - Key off: no blast, in the same scene.
+  - Not tested: a unit that dies garrisoned, and a building that dies with units inside: four trigger attempts left nobody
+    inside (`[unit+74h]` stayed 0). The player's delete key: the console's `uiDeleteSelectedUnit` crashes the stock game at
+    0x7E51C8 with or without keys. Multiplayer, and an A/B: with four games open the numbers are not clean.
 
 #### multiarmor
 
@@ -2580,6 +2657,60 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
   - **Not tested:** multiplayer, saved games. The area damage of the ground shots was seen on HP, the
     landing points only on video.
 
+#### accuracyTechs
+
+**Added:** Thursday 2026-11-05 09:22 · **Filmed in WoL:** Thursday 2026-11-05 10:29
+
+![accuracyTechs in WoL](media/accuracyTechs-wol.gif)
+
+*In WoL, with the key (Ethiopians, ten `Crossbowman` each side, a test tech that sets `Accuracy` 0.05 on the player's
+own, which are selected):* they keep firing and miss, and the enemy's stand at full health while they fall.
+[Full video (MP4)](media/accuracyTechs-wol.mp4).
+
+![accuracyTechs in WoL, key off](media/accuracyTechs-wol-control.gif)
+
+*In WoL, key off (the same scene):* the effect is dropped and both sides lose men.
+[Full video (MP4)](media/accuracyTechs-wol-control.mp4).
+
+```
+accuracyTechs [log]
+```
+
+```xml
+<Effect type ='Data' action ='VolleyRangedAttack' amount ='0.80' subtype ='Accuracy' relativity ='Assign'>
+    <Target type ='ProtoUnit'>Crossbowman</Target></Effect>
+<Effect type ='Data' allactions ='1' amount ='0.80' subtype ='Accuracy' relativity ='BasePercent'>
+    <Target type ='ProtoUnit'>Crossbowman</Target></Effect>
+```
+
+- **In WoL today:** `<Accuracy>` is read from the tactics and no tech can touch it. JTMaston's #45.
+- **Effect:** the new subtype changes the action of that player's proto, as `TrackRating` does. It takes `action` or
+  `allactions='1'`, and every relativity. A proto without that action is left alone.
+- **It only changes what is one proto's:** tactics files are shared, but a tech on `Crossbowman` did not reach `Longbowman`,
+  which uses the same `archer.tactics`, nor the enemy's `Crossbowman`.
+- **Muskets do not read it:** an action with `<InstantBallistics>` or `<PerfectAccuracy>` never rolls, so the effect changes
+  a number nothing reads. `musketBayonet.tactics` has it on its ranged attacks; `grenadier.tactics` and `archer.tactics` do
+  not. Melee actions have no use for it either.
+- **What the number does:** hit chance in % = accuracy × 100 − half the distance in metres, see
+  [`spreadAnyAccuracy`](#spreadanyaccuracy). So 0.05 misses from 8 m on. A miss deals no damage.
+- **`BasePercent` adds to the current value:** current + base × amount − base. On 0.05 with a base of 1, an amount of 0.5
+  gives −0.45, which never hits. The game does not stop it.
+- **Bad data:** an effect with no `action` and no `allactions`, or an action that does not exist, is dropped and logged,
+  and the rest of the tech works.
+- **Saved games:** on loading, the effects are applied again.
+- **Multiplayer:** the value is in the simulation: every player needs the same setting.
+- **Log:** `accuracyTechs: the Data subtype Accuracy is on`, `hook reached: tech subtype lookup (0x6206D7)`, `tech subtype
+  apply (0x8F978D)`, and with `log` one line per action: `accuracyTechs: action 68, relativity 3, amount 0.05: 1 -> 0.05`.
+  The number is the action's ID, the same for every proto.
+- **Tested in WoL (2026-11-05):**
+  - `Assign` 0.05: the enemy's 8 `Crossbowman` ended at 100 HP each; key off, both sides were hit.
+  - Beside it, 8 `Longbowman` a side kept fighting evenly, both sides losing men.
+  - `BasePercent`, `Percent` and `Absolute` on one action: 0.05, −0.45, −0.225, −0.125.
+  - Removal through `Age0Egyptian`: 10 actions, 0.5 → 1 with `allactions`.
+  - A saved game: the enemy still at 100 HP after loading, and still 15 s later.
+  - A skirmish with a European AI (`wolOtto`) and both this key and `cratePriority` on: no XS error, 15 units at 120 s.
+  - Not tested: multiplayer.
+
 #### broadsideMuzzleLimit
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
@@ -2650,6 +2781,103 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
   attack has `SingleUsePlayer`, so it keeps 1. A projectile count set in the data, independent of the
   model (`numberprojectiles`), is a different and larger change; it is not provided.
 
+#### cantBeSlowed
+
+**Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Thursday 2026-11-05 09:39
+
+![cantBeSlowed in WoL](media/cantBeSlowed-wol.gif)
+
+*In WoL, with `cantBeSlowed` (Ethiopians, a marked `Halberdier` and an unmarked `Skirmisher` of the same speed, two Uhlans
+on each):* the Halberdier walks away and the Skirmisher falls behind. [Full video (MP4)](media/cantBeSlowed-wol.mp4).
+
+![cantBeSlowed in WoL, key off](media/cantBeSlowed-wol-control.gif)
+
+*In WoL, key off (the same data):* both are snared and walk level. [Full video (MP4)](media/cantBeSlowed-wol-control.mp4).
+
+```
+cantBeSlowed [log]
+```
+
+```xml
+<Unit name="Halberdier">
+    <UnitType>CantBeSlowed</UnitType>
+</Unit>
+```
+
+- **In WoL today:** every `TargetSpeedBoost` attack slows its target to 0.65 of its speed for 3 s. JTMaston's #38.
+- **Effect:** a unit whose proto has the type `CantBeSlowed` is not snared. The hit still does its damage. A
+  `damageOverTime` poison with `<AttachSnare>` does not slow it either.
+- **What it does not cover:** a speed aura or tech, which are not snares. DE's `CannotSnare`, on the attacker, is not built.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Log:** `cantBeSlowed: the abstract type CantBeSlowed is on`, `hook reached: cantBeSlowed (0x4DD201)`, and with `log`
+  `cantBeSlowed: proto 316 ignores a snare`.
+- **Tested in WoL (2026-11-05):** a Halberdier and a Skirmisher of speed 4 with 4000 HP, 58 m apart, walking off with two
+  Uhlans on each. With the key the Halberdier was 19.5 m ahead at the first reading, and the log shows 16 snares ignored.
+  With the key off it was 4.5 m ahead, and no line. A marked Halberdier under three archers with `<AttachSnare>` logged
+  19 snares ignored in 20 s. Not tested: multiplayer.
+#### veterancyBonus
+
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Thursday 2026-11-05 10:17
+
+![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
+
+*In WoL, with the key (Ethiopians, 3 `Hussar` against 9 `Crossbowman`, rows ×1.5 damage at 1 kill, ×1.5 hit points at 2,
+×2 damage at 3):* two hussars survive with 413 and 345 hit points, and the log shows the ranks.
+[Full video (MP4)](media/veterancyBonus-wol.mp4).
+
+![veterancyBonus in WoL, key off](media/veterancyBonus-wol-control.gif)
+
+*In WoL, key off (the same data):* the two that survive end with 261 and 155. The game skips a tag it does not know.
+[Full video (MP4)](media/veterancyBonus-wol-control.mp4).
+
+```
+veterancyBonus [log]
+```
+
+```xml
+<Unit name="Hussar">
+    <VeterancyBonus kills="1" modifytype="Damage">1.5</VeterancyBonus>
+    <VeterancyBonus kills="2" modifytype="MaxHP">1.5</VeterancyBonus>
+    <VeterancyBonus kills="3" modifytype="Damage">2.0</VeterancyBonus>
+</Unit>
+```
+
+- **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
+- **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
+  ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
+  distinct `kills` value, and reaching one shows `Rank N` over the unit.
+- **What counts as a kill:** the killing blow of a unit, in melee or at range, on a unit of another player. **Not** Gaia, so
+  hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
+  unit already dead. Stock's flag is not needed.
+- **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
+- **Transforms:** a `TransformUnit` tech keeps the count, and gives the bonuses of the **new** proto's rows for those kills: a
+  proto with no rows has none until it becomes one with rows. A trigger's `Change Unit Type` takes another path and is not
+  covered.
+- **Garrison:** a garrisoned unit keeps its rank and bonuses.
+- **Saved games:** the count and the bonuses are the game's own stat modifiers, so they are saved: after loading, the count
+  went on from 7 and the damage stayed at ×3.
+- **Techs:** DE's `VeterancyEnable` and `VeterancyBonus` subtypes are not built: a tech cannot change the rows. A tech that
+  changes a stat works with the rows as with any modifier.
+- **Interface:** no bronze, silver or gold icons: `Rank N` over the unit is all it shows. Damage and hit points in the panel are
+  the game's, with the modifiers.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
+- **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: veterancyBonus kill (0x4D4F37)`, and with `log`:
+  `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
+  `veterancyBonus: unit 0 keeps 4 kills as proto 324`. A row without `kills`, `modifytype` or a value is logged and ignored.
+- **Tested in WoL (2026-11-05):**
+  - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
+  - With `transformSpan` on the same units: Hussars of 2 kills went to Dragoon and back in 15 s and kept their count; one killed as a Dragoon and came back with 3. `36 applied, 0 failed`.
+  - Hits on a Settler, base 26.4: ×1.5 39.6, ×2 52.8, ×3 at 8 kills 79.2. Against the same unit with no rows: 26.4 all game.
+  - Ranged: a `Crossbowman` went from 18 to 27 a hit, and its hit points rose at the second kill.
+  - Garrisoned for about 8 s and thrown out when the Town Center fell: 52.8 a hit after it, and 79.2 at the
+    next rank.
+  - Saved at 7 kills and loaded: 8, 9 … 13 kills, 79.2 a hit, no bonus twice.
+  - `TransformUnit`, `Hussar` to `Dragoon`, both with rows, at 4 kills: 5 kills on as `Dragoon`, ×2 on its hits.
+  - A hunter with rows killed a deer: no count.
+  - A European AI (`wolVictoria`) in a skirmish, rows on `Hussar`: all four of its hussars reached a rank, up to 3, no `Error 0003`.
+  - Not tested: killing a unit of its own, a treasure guardian, multiplayer. The hook runs only on a killing blow, so there
+    was no `perfprobe.py` A/B, and four games were open.
+
 #### snareOnlyHitUnit
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
@@ -2704,6 +2932,92 @@ snareOnlyHitUnit [log]
 - **Simulation:** yes.
 - **Status:** confirmed in single player. In WoL (2026-11-04), six Redcoats harassed by an Uhlan reached the
   end of the map at 50 s with the key and about 54 s without, positions sampled once a second.
+
+#### killBountyTechs, resourceBounty and teamKillBounty
+
+**Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Thursday 2026-11-05 09:39
+
+![killBountyTechs in WoL](media/killBountyTechs-wol.gif)
+
+*In WoL, with `killBountyTechs` (Ethiopians, a test tech sets the bounty of the enemy's `Settler` to 100):* each kill
+shows +100. [Full video (MP4)](media/killBountyTechs-wol.mp4).
+
+![killBountyTechs in WoL, key off](media/killBountyTechs-wol-control.gif)
+
+*In WoL, key off (the same scene):* each kill shows the data's +10. [Full video (MP4)](media/killBountyTechs-wol-control.mp4).
+
+![resourceBounty in WoL](media/resourceBounty-wol.gif)
+
+*In WoL, with `resourceBounty` (`<Bounty resourcetype="Wood">30</Bounty>` on `Pikeman`):* each kill adds 30 wood.
+[Full video (MP4)](media/resourceBounty-wol.mp4).
+
+![resourceBounty in WoL, key off](media/resourceBounty-wol-control.gif)
+
+*In WoL, key off (the same data):* no wood; the stock game reads that tag's number as XP.
+[Full video (MP4)](media/resourceBounty-wol-control.mp4).
+
+![teamKillBounty in WoL](media/teamKillBounty-wol.gif)
+
+*In WoL, with `teamKillBounty` (`Dragoon` marked, the human and an ally against a third player):* the log says each
+kill paid 2 players. [Full video (MP4)](media/teamKillBounty-wol.mp4).
+
+![teamKillBounty in WoL, key off](media/teamKillBounty-wol-control.gif)
+
+*In WoL, key off (the same scene):* each kill pays 1 player. [Full video (MP4)](media/teamKillBounty-wol-control.mp4).
+
+```
+killBountyTechs [log]
+resourceBounty [log]
+teamKillBounty [log]
+```
+
+```xml
+<!-- techtreey.xml -->
+<Effect type ='Data' amount ='1.50' subtype ='KillBounty' relativity ='Percent'>
+    <Target type ='ProtoUnit'>Settler</Target></Effect>
+
+<!-- protoy.xml -->
+<Unit name="Dragoon">
+    <Bounty>17</Bounty>
+    <Bounty resourcetype="Gold">50</Bounty>
+    <UnitType>TeamKillBounty</UnitType>
+</Unit>
+```
+
+- **In WoL today:** `<Bounty>` is a fixed amount of XP, for the killer alone. WoL's data already has 10 effects with
+  `subtype='Bounty'`, which the stock game drops: the subtype does not exist. JTMaston's #34 and #35.
+- **`killBountyTechs`:** the subtypes `KillBounty`, DE's name, and `Bounty` change a proto's `<Bounty>`, with every
+  relativity, on one proto or an abstract type. **Turning the key on also turns on those 10 effects in WoL's data.**
+- **Whose tech:** the value is in the copy of the **victim's** owner. A tech changes what the enemy gets for killing
+  that player's units. A tech cannot change what its own player gets for kills: that is the `Bounty` aura.
+- **`resourceBounty`:** `<Bounty resourcetype="Gold">N</Bounty>` pays N of that resource at the kill, beside the XP of a
+  plain `<Bounty>`, and a proto can have several. It reads any resource name of the data.
+  - A tech does not change it: `KillBounty` is the XP. The `Bounty` aura does not reach it either.
+  - Killing your own unit pays nothing.
+  - With the key off the tag's number is read as **XP**, and the last `<Bounty>` of the proto wins.
+- **`teamKillBounty`:** a victim whose proto has the type `TeamKillBounty` pays its XP, and with `resourceBounty` its
+  resources, to the killer's whole team. **Each member gets the full amount;** it is not split. The floating text shows
+  on the killer's side only.
+- **Multiplayer:** they change the simulation: every player needs the same setting and data.
+- **Log:** `killBountyTechs: the Data subtypes KillBounty and Bounty are on`, `hook reached: tech subtype apply
+  (0x8F978D)`, `resourceBounty (0x4D4E0C)`, `teamKillBounty (0x49BDAB)`. With `log`: `killBountyTechs: proto 294,
+  relativity 3, amount 100: 10 -> 100`, `resourceBounty: proto 295 killed: 30 of resource 1 to 1 player(s)`,
+  `teamKillBounty: proto 324: 34 XP to the killer's whole team`. A `resourcetype` that is no resource is logged and ignored.
+- **Tested in WoL (2026-11-05), reading each player's XP and resources in memory, in a 3-player scenario (two teams):**
+  - One kill each: `Assign` 100 paid 100, `Percent` 3 on 8 paid 24, `BasePercent` 2 on 8 with `subtype='Bounty'` paid 16,
+    `Absolute` 50 on 12 paid 62.
+  - An abstract target: `Percent` 2 on `AbstractCavalry` reached each cavalry proto, and a Hussar paid 40.
+  - Removal: 15 → 22.5 → 15 through `Age0Egyptian`.
+  - Saved game: after a load the five kills paid the same.
+  - Team: a marked Hussar paid 40 XP to the killer and to the ally; a marked Dragoon 34 XP and 50 gold to each; an
+    unmarked Pikeman 24 XP and 30 wood to the killer alone.
+  - The keys on with no data: the stock 10, 8, 8, 12 and 20, to the killer alone.
+  - A skirmish with a European AI (`wolOtto`), the keys on, and so WoL's 10 `subtype='Bounty'` effects active: the AI
+    compiled and had 16 units at 120 s.
+  - Cost, with `cantBeSlowed` too: 70 Uhlans against 70 marked Halberdiers, on and off twice, with another copy running.
+    The game's update stayed at 0.13 ms, and the fight ended the same way, 6 to 8 Halberdiers left. Frames came out 3 to 7%
+    lower in the runs with the keys, with the scenes not identical, so read that as noise until a cleaner run.
+  - Not tested: multiplayer, a kill by a building or a ship, a `Bounty` aura beside `teamKillBounty`.
 
 #### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
 
@@ -2765,6 +3079,7 @@ Resources, gatherers, and what pays for them.
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
 | [`resourceDebt`](#resourcedebt) | Only trickles and the rates of units may take a stockpile below 0. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. | confirmed |
+| [`cratePriority`](#cratepriority) | The order in which a civ's units gather crates, instead of the exe's hardcoded one. | **new** | One line per civ in `wol.cfg`. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -3178,7 +3493,8 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
   same rule. Tested on 2026-11-05 in a 3-player skirmish, the human and a British AI against a German AI, with a trickle of
   −20/s in the two AIs' start techs: both allies went into debt with the same number (−4.6), then the team's income paid
   it, and the lone German reached −150 and stalled at 6 units. The floor of the shared path with the key off was not
-  shown: that run ended at 3 food. A test map cannot do this: it starts with 2 players whatever the profile says.
+  shown: that run ended at 3 food. A skirmish on a test map cannot do this: it starts with 2 players whatever the
+  profile says. `testbed.py scenario <map> --players 3` makes two teams, without the AI.
 - **An AI in debt:** a Germans AI with a food trickle of −10/s and 5 settlers kept playing for 150 s with no XS error, its food
   around −15, and stayed at 14 units: what it gathered went to the debt, so it could not train. Its gatherers kept working.
 - **Log:** `resourceDebt: trickles and unit rates may take Food below 0 (multiplayer unverified)`, and `hook reached: resourceDebt
@@ -3191,6 +3507,50 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
 - **Performance:** runs only when a sum falls below 0, plus one test for each AutoGather amount and gather rate under 1e-6.
 - **Status:** confirmed (single player, on WoL): the rates above, the refused order, the saved game, an AI in debt, the shared
   path on one player. Two allies sharing a debt and multiplayer not tested.
+
+#### cratePriority
+
+**Added:** Thursday 2026-11-05 09:22 · **Filmed in WoL:** Thursday 2026-11-05 10:29
+
+![cratePriority in WoL](media/cratePriority-wol.gif)
+
+*In WoL, with `cratePriority all Gold Wood Food` (Swedish, the settlers selected):* at the start the settlers take the gold
+crates first, then the wood, and the food last. [Full video (MP4)](media/cratePriority-wol.mp4).
+
+![cratePriority in WoL, key off](media/cratePriority-wol-control.gif)
+
+*In WoL, key off (the same civ):* food first, then wood, and the gold last.
+[Full video (MP4)](media/cratePriority-wol-control.mp4).
+
+```
+cratePriority <Civ> <Resource> <Resource> <Resource>   gathered first to last: Gold (or Coin), Wood and Food
+cratePriority all <Resource> <Resource> <Resource>     for every civ with no line of its own
+cratePriority log
+```
+
+```
+cratePriority Dutch Food Wood Gold
+cratePriority all Gold Wood Food
+```
+
+- **In WoL today:** the exe compares the civ's name. Dutch: Gold, Wood, Food. `Ottomans` and `Indians`: Wood, Food, Gold.
+  The rest: Food, Wood, Gold. JTMaston's #33.
+- **Effect:** a civ with a line gathers in that order. A civ with none keeps the exe's order, or takes the `all` line. One
+  line per civ; a name the game does not know matches nobody. The names are the civ's in `civs.xml`.
+- **Where it applies, both places the exe has it:** the score of a crate when a unit looks for one, which is what decides
+  at the start of a game, and the next kind of crate when a unit runs out of one kind. Large crates go before small ones.
+- **The next kind is a cycle:** after the last resource comes the first. So `Gold Food Wood` is the same cycle as the stock
+  `Food Wood Gold`, and a unit that starts on wood goes on to gold in both; only the start of a game tells them apart.
+- **The AI too:** its gatherers use the same code.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Log:** `cratePriority: applied`, and with `log`: `cratePriority: Swedish -> civ 23`, `cratePriority: civ 23, resource 0: rank 3`
+  and `cratePriority: civ 1, after proto 425 look for proto 530`. A line with a missing or repeated resource: `FAILED`.
+- **Tested in WoL (2026-11-05):**
+  - A skirmish as the Swedish, `Gold Wood Food`: gold 200 at 5 s, then wood, food last. Key off: food 200 at 5 s, gold last.
+  - Six crates, starting on wood: `Gold Wood Food` went on to food, then gold. Key off: gold, then food.
+  - Lines for `Swedish` and `Germans` in a skirmish against a German AI: both civs used their own (civ 23 and 17 in the
+    log), and a name the game does not know gave civ −1 and did nothing. No XS error, 15 AI units at 120 s.
+  - Not tested: multiplayer.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 
@@ -3331,6 +3691,9 @@ How buildings train, spawn, live and get replaced.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | **new** | Nothing. | confirmed (single player) |
+| [`sharedBuildLimit`](#sharedbuildlimit) | Protos share a build limit: by unit type, with weights, or across a team. | **new** | The tags on the protos that share. | confirmed |
+| [`doNotQueue`](#donotqueue) | `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | **new** | The tag on the protos that want it. | confirmed |
+| [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
@@ -4026,6 +4389,176 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
 
+#### sharedBuildLimit
+
+**Added:** Thursday 2026-11-05 09:26 · **Filmed in WoL:** Thursday 2026-11-05 09:26
+
+![sharedBuildLimit in WoL](media/sharedBuildLimit-wol.gif)
+
+*In WoL, with the key (Ethiopians; `WOLLandwehr` has limit 6 and `Pikeman`, which reads Opolcheniye here, counts 2):*
+one Opolcheniye, then three clicks on the Landwehr and a last Opolcheniye: 4 Landwehr and 1 Opolcheniye, a total of 6, and the buttons turn red. [Full video (MP4)](media/sharedBuildLimit-wol.mp4).
+
+![sharedBuildLimit in WoL, key off](media/sharedBuildLimit-wol-control.gif)
+
+*In WoL, key off (the same data):* the same clicks give 5 Landwehr and 2 Opolcheniye, a total of 9 by the same count. [Full video (MP4)](media/sharedBuildLimit-wol-control.mp4).
+
+```
+sharedBuildLimit [log]
+```
+
+```xml
+<Unit name="Coureur">
+    <SharedBuildLimitUnit>Settler</SharedBuildLimitUnit>
+    <SharedBuildLimitUnitType>AbstractWoLSettler</SharedBuildLimitUnitType>
+    <SharedBuildLimitUnitType weight="2">SettlerWagon</SharedBuildLimitUnitType>
+</Unit>
+<Unit name="Cow">
+    <SharedBuildLimitUnitType>AbstractBovine</SharedBuildLimitUnitType>
+    <TeamBuildLimit>1</TeamBuildLimit>
+</Unit>
+```
+
+- **In WoL today:** each proto has its own `BuildLimit`, and no unit counts toward another's. JTMaston's #29 and #30.
+- **`<SharedBuildLimitUnit>`:** whose limit applies. Without it, the proto's own. It is read from the player's copy, so a
+  tech reaches it, and a civ's limit too: `Age0German` assigns its `Settler` 84, and that is what counts.
+- **`<SharedBuildLimitUnitType>`:** what counts toward the limit, an abstract type or a proto, repeatable. Without it, only
+  the proto itself. `weight="N"` is how much each of them counts, default 1. If the type does not reach the proto
+  itself, the proto still counts, with weight 1. Queued units count, as stock counts its own.
+- **`<TeamBuildLimit>1</TeamBuildLimit>`:** the same units of the player's allies count too.
+- **Tag each proto that must stop:** a tag acts on the proto that carries it. `OutpostWagon` with the limit of `Outpost`
+  stops the wagons once the Outposts are all there, and leaves `Outpost` untagged, or the last wagon, which counts
+  until it builds, would forbid its own Outpost.
+- **#30's civ tag is not needed:** the limit per civ is the proto's limit as the civ's techs leave it, and the type is
+  in the data. WoL has no `AbstractWoLSettler` yet: `customAbstractTypes` registers it.
+- **The tooltip:** "Build Limit: 15 out of 15" is the whole group, and the limit, in the units of the proto: with weight 2 and
+  limit 6 it says "out of 3". The button turns red when the proto does not fit.
+- **A batch that does not fit is cut:** a Shift+click of 5 with room for 4 trains 4 and pays 4, as stock does at a limit.
+- **Over the limit:** if the group is already over, nothing more trains; no unit is removed.
+- **Cards:** a card sent from the home city that does not fit whole shows red and cannot be sent, with no partial delivery.
+  That is stock's check, and the key only gives it the group's room, so the card sees the whole group.
+- **Effects that skip that check:** a tech made active by a trigger and an age-up Politician deliver all their units, over
+  the limit, with or without the key: a stock `BuildLimit` of 6 went from 6 to 14 with the `HCShipPikemen1` tech set by a
+  trigger. The units stay, and training stops until the group is back under the limit.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Log:** `sharedBuildLimit: the proto tags are on`, `hook reached: sharedBuildLimit limit (0x4C7B5F)`, and with `log`:
+  `sharedBuildLimit: proto 295: limit of 2182, 2 protos count, own weight 2`, and at each change `sharedBuildLimit: player 1,
+  proto 295: room 2 of 6 (stock -1)`. Room is what the proto's own count is compared with.
+- **Performance:** on and off, twice each, with the selected TC's proto in a group of 110 protos: 635–641 fps on, 640–649
+  off, 0.23 ms of update in all four. That scene had 14 villagers: the 120 asked for did not fit on the map.
+- **Tested in WoL (2026-11-05):**
+  - A real 3-player skirmish, the human and a British AI against a German AI, `Settler` limited to 14 with `TeamBuildLimit`: the ally stopped at 8 beside the human's 6 (`room 8 of 14`), and the lone German had room for 14 and reached 12 in 5 minutes. Key off, the ally reached 14 alone.
+  - `AbstractVillager` on `AFRICANvillager`, limit 15, 9 alive and 3 `Coureur`: eight clicks trained 3 and charged 300, and
+    the tooltip said "15 out of 15".
+  - Two protos with weights, limit 6 (the video): 2 alive, one Opolcheniye of weight 2, three clicks on the Landwehr and
+    a last Opolcheniye left 4 and 1. Key off: 5 and 2.
+  - A real Shift+click of 5 with room for 4: 4 trained, 310 food at 77.5; a second one was refused and charged nothing.
+  - `TeamBuildLimit` with an ally's 3 `WOLLandwehr`: room 3 of 6.
+  - `TeamBuildLimit` in a `scenario --players 3`, limit 6: the ally's 2 Pikemen and 1 Landwehr counted, the enemy's 5 Landwehr
+    did not, and six clicks left 3 of ours. Key off: 6.
+  - A German AI with a limit of 12 by `Age0German`: it stopped at 12 settlers, kept playing, no XS error.
+  - A German AI with its villagers, infantry and cavalry in one group of 24, against the same scene with the key off, 270 s:
+    it stopped training at 14 Settlers, and ended with 28 because 8 Hussars and 6 Skirmishers came from its age-up
+    Politicians. From 180 s to 270 s it trained nothing more, and no XS error appeared. Key off: 33 and growing.
+  - The Swedish "3 Hussars" card sent from the home city: red with a stock limit of 6 and 6 alive, and with 7 and 6 alive,
+    where one fits and three do not; red with a group of 3 Hussars and 3 Pikemen, limit 6; sent, and 3 arrived, with 4 and 4,
+    limit 20.
+  - Not tested: a real `OutpostWagon` building the last Outpost, a team in a real skirmish, `FreeHomeCityUnitShipped` with
+    room, an AI's own home city card at the limit, multiplayer.
+#### doNotQueue
+
+**Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 10:29
+
+![doNotQueue in WoL](media/doNotQueue-wol.gif)
+
+*In WoL, with the key (Ethiopians, `<DoNotQueue/>` on `Pikeman`):* with two batches of `WOLLandwehr` in the Barracks, a batch
+of Pikemen jumps to the first place of the queue, and comes out first. The Landwehr that was training waits with its
+progress. [Full video (MP4)](media/doNotQueue-wol.mp4).
+
+![doNotQueue in WoL, key off](media/doNotQueue-wol-control.gif)
+
+*In WoL, key off (the same data):* the Pikemen wait at the end of the queue. The game skips the tag it does not know.
+[Full video (MP4)](media/doNotQueue-wol-control.mp4).
+
+```
+doNotQueue [log]
+```
+
+```xml
+<Unit name="Pikeman">
+    <DoNotQueue/>
+</Unit>
+```
+
+- **In WoL today:** a unit waits behind all that is queued in its building. JTMaston's #40.
+- **Effect:** a tagged unit goes to the first place of the queue, also ahead of a research.
+- **What was training** stops and keeps its progress: it goes on when the tagged unit is done. In the test, 2 Pikemen took
+  26 s and the first batch of Landwehr came out 26 s later than without the key. If you want the running item to finish
+  first, this is not it.
+- **Several tagged units** keep their order among them.
+- **Cost, cancel:** nothing changes: a batch of 5 was paid when queued, and its cancel gave back the 300.
+- **Shipments are not covered.** A static reading found no queue of cards to reorder: the send (0x8577D2, 0x858299) pays and
+  starts the card at once, and the list that refuses a card, `[hc+4D8h]`, is the `Blockade` effect's. What a flag on a card
+  should do has to be decided first.
+- **The tech flag `DoNotQueue`** is another thing: it has a stock reader, a method of the Research action, used only under a
+  world setting that is not known yet. WoL's 16 techs with it are not changed by this key.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and the same data.
+- **Log:** `doNotQueue: the proto tag DoNotQueue is on`, `hook reached: proto tags (0x51DB0F)`, and with `log`:
+  `doNotQueue: proto 295 has the tag`, and `doNotQueue: proto 295 goes from place 19 to place 16 of 20` for each move.
+- **Tested in WoL (2026-11-05):**
+  - 3 batches of 5 `WOLLandwehr` then 2 Pikemen: the Pikemen came out at 45 s and the first Landwehr at 60 s. Key off: the
+    first Landwehr at 34 s, and the Pikemen after all of them.
+  - A batch of 5 ahead of a running research and a batch of Landwehr: first in the queue, and the research kept its progress.
+  - Its cancel gave back the 300 it cost. The queue kept its order through a saved game, and the Pikemen came out first.
+  - A skirmish with a European AI (`wolOtto`) with `Settler` and `Musketeer` tagged: it compiled and had 19 units at 120 s, but
+    no tagged unit found anything to pass, so the move itself did not run for the AI.
+  - Not tested: a building with a Maintain, multiplayer.
+
+#### nextResearchFree
+
+**Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 10:29
+
+![nextResearchFree in WoL](media/nextResearchFree-wol.gif)
+
+*In WoL, with the key (Ethiopians, a test tech and two test researches of 300 wood at the Market):* the first research takes
+no wood and the second takes 300. [Full video (MP4)](media/nextResearchFree-wol.mp4).
+
+![nextResearchFree in WoL, key off](media/nextResearchFree-wol-control.gif)
+
+*In WoL, key off (the same data):* the effect is dropped and both researches take 300.
+[Full video (MP4)](media/nextResearchFree-wol-control.mp4).
+
+```
+nextResearchFree [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.00' subtype ='NextResearchIsFree' relativity ='Absolute'>
+    <Target type ='ProtoUnit'>Market</Target></Effect>
+```
+
+- **In WoL today:** nothing does this. JTMaston's #37. DE's name for the subtype, `SetNextResearchFree`, works too.
+- **Effect:** the next research started in a building of that proto, for that player, costs nothing. `amount` is how many
+  researches; `relativity` is required by the game and not used.
+- **One count per proto:** two Markets of a player share it, and it does not reach another proto.
+- **No resources needed:** with 0 wood the button starts the research. The button and its tooltip still show the normal
+  price.
+- **Cancel:** the free research gives nothing back, and the free turn is spent. A paid one refunds as usual.
+- **Saved games:** the count is not saved. A load applies the tech again, so an unused turn stays, but **a spent one comes
+  back**.
+- **Removal:** taking the effect away takes that many turns from the count, down to 0. Not tested in game.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Log:** `nextResearchFree: the Data subtype NextResearchIsFree is on`, `hook reached: nextResearchFree research
+  (0x9E67E1)`, and with `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444: a free research, 0 left`.
+- **Tested in WoL (2026-11-05):**
+  - One turn, three researches of 300 wood: 2000, 2000, 1700, 1400, and a cancel of the third gave back 300. Key off: 2000,
+    1700, 1400, 1100.
+  - With 0 wood: by the real button and by console it started. Its cancel left 0, and the next research was refused for
+    lack of 300 wood.
+  - A saved game with the turn unused: free after the load. With the turn spent and the research still running: the count
+    came back to 1, and a second research asked for by console did not start and logged nothing (not understood).
+  - A skirmish with a European AI with the key on compiled and played; it did not use the effect.
+  - Not tested: `CommandResearch` (0x9D54CF: its hook was not reached), an AI using the effect, a type as target, multiplayer.
+
 #### trainBatchSize
 
 **Added:** Thursday 2026-11-05 07:53 · **Filmed in WoL:** Thursday 2026-11-05 07:53
@@ -4124,9 +4657,61 @@ What happens when a tech activates or a unit changes proto.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
+| [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
 | [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | **new** | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. | confirmed (single player) |
 | [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | **new** | Nothing. | confirmed (single player) |
+| [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | **new** | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
+
+#### hcTargetTechs
+
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 10:21
+
+![hcTargetTechs in WoL](media/hcTargetTechs-wol.gif)
+
+*In WoL, with the key (Ethiopians against a test player, a test tech with `HCTargetEnemy`, Hitpoints ×0.5 on `Hussar`):* the
+tech goes active for player 1, and only player 2's Hussar drops, from 352 to 176: the top lines show both, and the enemy is
+off screen. [Full video (MP4)](media/hcTargetTechs-wol.mp4).
+
+![hcTargetTechs in WoL, key off](media/hcTargetTechs-wol-control.gif)
+
+*In WoL, key off (the same data):* the flag means nothing, and the tech halves the owner's Hussar.
+[Full video (MP4)](media/hcTargetTechs-wol-control.mp4).
+
+```
+hcTargetTechs [log]
+```
+
+```xml
+<Tech name ='HCMyPlague' type ='Normal'>
+    <Flag>HomeCity</Flag>
+    <Flag>HCTargetEnemy</Flag>
+    ...
+</Tech>
+```
+
+- **In WoL today:** a tech reaches its owner, or the team with `TeamTech`. JTMaston's #36.
+- **Effect:** `HCTargetEnemy` sends the tech's effects to every enemy of the owner, and not to the owner; `HCTargetAll`
+  to every player, the owner included, without Gaia. It works on any tech, not only a card.
+- **What stays with the owner:** the tech itself: it goes active in the owner's tree, its button and its status are his.
+  Effects that act on a unit (the card's gather point, the ship) get no unit on the targets, since it would be the owner's.
+- **Who is an enemy:** the check runs when the tech applies, again at a removal, and again when a game is loaded. If the
+  diplomacy changed in between, those can differ.
+- **Beside `TeamTech`:** the new flag wins.
+- **Saved games:** the effects that stock re-applies after a load are re-applied on the targets.
+- **Off:** the game skips a flag it does not know, and the tech acts on its owner.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Log:** `hcTargetTechs: the tech flags HCTargetEnemy and HCTargetAll are on`, `hook reached: hcTargetTechs remove (0x94DCB2)`,
+  `hcTargetTechs load (0x94DDEA)`, and with `log`: `hcTargetTechs: apply tech 10542 of player 1`, `hcTargetTechs: effects on
+  player 2`, and `remove` and `load` lines.
+- **Tested in WoL (2026-11-05):**
+  - `HCTargetEnemy` ×0.5 on Hussar: player 2's 320 → 160, player 1's stayed 384. Key off: the owner's dropped, 352 → 176.
+  - `HCTargetAll` ×2 on Pikeman: both players doubled. A plain tech beside them: only its owner.
+  - Removal, through `Age0Egyptian`: the effect on the enemy went back, 1.06575 → 1.015.
+  - A saved game: 160, 234 and 260 stayed the same after the load, and the log shows the three `load` lines.
+  - {CARD}
+  - Not tested: 3 or more players (a test map starts with 2, and editing the shared profile needs no other game open),
+    multiplayer.
 
 #### techPrereqRecheck
 
@@ -4374,6 +4959,58 @@ transformInventory [all] [scale] [<UnitType>] [log]
   (2026-10-29), a test tech covered a change of resource type, a unit with no inventory, a unit with the
   same types (kept) and a new proto with no resources (kept without `all`). `all`, `scale`, a marker,
   revolutions and a conversion after a transform were not tested.
+
+#### transformSpan
+
+**Added:** Thursday 2026-11-05 09:57 · **Filmed in WoL:** Thursday 2026-11-05 10:29
+
+![transformSpan in WoL](media/transformSpan-wol.gif)
+
+*In WoL, with the key (6 `Pikeman` and a test tech with `transformspan='20'`):* the units turn into `Rodelero`
+and, 20 s of game time later, back into `Pikeman`, with the same IDs. [Full video (MP4)](media/transformSpan-wol.mp4).
+
+![transformSpan in WoL, key off](media/transformSpan-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the attribute, and the units stay `Rodelero`.
+[Full video (MP4)](media/transformSpan-wol-control.mp4).
+
+```
+transformSpan [log]
+```
+
+```xml
+<Effect type ='TransformUnit' toprotoid ='Rodelero' fromprotoid ='Pikeman' transformspan ='20' />
+```
+
+- **In WoL today:** a `TransformUnit` tech effect is one way. JTMaston's #41, with his design.
+- **Effect:** `transformspan`, in seconds of game time, turns back each unit that effect transformed. A trained unit
+  is not touched: the effect only ever acts on the units alive when it runs.
+- **What comes back:** the same unit, with its ID, through the stock transform: HP by proportion (54/135 became 49.4/123.5,
+  40% both), and [`transformInventory`](#transforminventory) and [`transformUpdatesLOS`](#transformupdateslos) act both ways.
+- **Who is turned back:** a unit alive, of the proto the key gave it.
+  - **Dead:** dropped.
+  - **Transformed again with `transformspan`:** it goes back to its **first** proto, at the new end. A → B for 20 s, then
+    B → C for 15 s at second 10, gave A at second 25.
+  - **Transformed again without it:** the timer ends, and the unit stays. Any other way of changing it (a revolution, a
+    trigger) leaves it as it is too, because the unit is no longer the proto the key gave it.
+  - **Converted:** it turns back with its new owner.
+  - **Garrisoned:** it turns back inside, even in a building that does not take that proto, and it comes out as usual. A
+    `Settler` in a `Blockhouse` became a `Pikeman` there, and left it by the trigger `Ungarrison`.
+- **Saved games:** the time survives. Each unit carries two modifiers of stats nothing reads, and a loaded game rebuilds the
+  table from them. The effect is not run again on loading.
+- **Another game:** pending units are dropped, by the game's step count, so the same IDs in a new game are not touched.
+- **Off:** the game ignores the attribute and the transform is permanent, as today.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Performance:** one tick per world update. With nothing pending it is a compare. The A/B with `perfprobe.py` is still
+  to do: the tests ran beside other games.
+- **Log:** `transformSpan: TransformUnit effects take transformspan`, and with `log` one line per data effect, per unit
+  transformed and per unit turned back: `transformSpan: unit 1, proto 295 -> 312, back to 295 in 20.0 s, at game time 30.0 s`,
+  `transformSpan: unit 1 turned back, proto 312 -> 295, game time 50.0 s`, `transformSpan: unit 3 is gone`.
+- **Tested in WoL (2026-11-05):**
+  - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
+  - Every case above, each in its own scene.
+  - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
+  - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
 
 ### Interface
 

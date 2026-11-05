@@ -7,9 +7,225 @@ Read the [porting guide](../porting-to-another-dll.md) first: it says what each 
 Every feature also needs the core [helpers](helpers.md): the site table, patching and the log.
 
 Contents:
+- [hcTargetTechs](#hctargettechs)
 - [techPrereqRecheck](#techprereqrecheck)
 - [transformUpdatesLOS](#transformupdateslos)
+- [transformSpan](#transformspan)
 - [transformInventory](#transforminventory)
+
+## hcTargetTechs
+
+Contract: [hcTargetTechs](../porting-to-another-dll.md#hctargettechs).
+
+Sites: `IsEnemyHead` `0x484D2D` (6 B), `TechFlagCall` `0x620C23` (5 B), `TechApplyCall` `0x94D0AE` (5 B), `TechRemoveHead` `0x94DCB2` (6 B), `TechLoadHead` `0x94DDEA` (7 B).
+
+### src/features/hctargets.cpp
+
+```cpp
+// hcTargetTechs: <Flag>HCTargetEnemy</Flag> and <Flag>HCTargetAll</Flag> on a tech send its effects to
+// the owner's enemies, or to every player, instead of to the owner.
+//
+// A team tech keeps its list inside three routines: applyEffects 0x94DAE1, removeEffects 0x94DCB2 and the
+// pass after a load 0x94DDEA, each with its own copy of the loop over the team. So the key wraps the
+// three: for a marked tech it calls the stock routine once per target, without the team flag. The tech
+// stays active in the owner's tree only; a load and a removal go through the owner, and the targets are
+// counted again then. The flag's reader is wrapped too: the stock chain ignores a name it does not know.
+// The hooks are in hooks/hctarget_hooks.asm.
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <unordered_map>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" {
+void UhcTechRemoveStock();
+void UhcTechLoadStock();
+}
+
+namespace {
+
+enum class Target { kEnemies, kAll };
+
+constexpr std::uint32_t kFlagCall = 0x00620C23;
+constexpr std::uint32_t kApplyCall = 0x0094D0AE;
+constexpr std::uint32_t kRemoveHead = 0x0094DCB2;
+constexpr std::uint32_t kLoadHead = 0x0094DDEA;
+constexpr std::size_t kWorld = 0x13C;
+constexpr std::size_t kPlayerCount = 0x5C;
+constexpr int kMaxLogLines = 200;
+
+using ReadFlagFn = void(__cdecl*)(char* entry, const char* name);
+const auto kReadFlag = reinterpret_cast<ReadFlagFn>(0x00620C2F);
+using ApplyFn = bool(__thiscall*)(char* tech, char* player, void* unit, std::uint32_t team, std::int32_t a,
+                                  std::int32_t b);
+const auto kApply = reinterpret_cast<ApplyFn>(0x0094DAE1);
+using RemoveFn = bool(__thiscall*)(char* tech, char* player, std::int32_t a, std::uint32_t team);
+const auto kRemove = reinterpret_cast<RemoveFn>(&UhcTechRemoveStock);
+const auto kLoad = reinterpret_cast<RemoveFn>(&UhcTechLoadStock);
+using PlayerByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+using IsEnemyFn = bool(__thiscall*)(const char* player, std::int32_t other);
+const auto kIsEnemy = reinterpret_cast<IsEnemyFn>(0x00484D2D);
+
+std::unordered_map<const void*, Target> g_techs;  // filled while the techs load, read-only after
+bool g_log = false;
+int g_logLines = 0;
+
+const char* World() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  return game == nullptr ? nullptr : *reinterpret_cast<const char* const*>(game + kWorld);
+}
+
+template <typename Call>
+void ForTargets(Target target, const char* player, Call call) {
+  const char* world = World();
+  if (world == nullptr) {
+    return;
+  }
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(world + kPlayerCount);
+  for (std::int32_t id = 1; id < count; ++id) {
+    char* other = kPlayerById(world, id);
+    if (other != nullptr && (target == Target::kAll || kIsEnemy(player, id))) {
+      call(other);
+    }
+  }
+}
+
+void Note(const wchar_t* what, const char* tech, const char* player) {
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"hcTargetTechs: %ls tech %d of player %d", what, *reinterpret_cast<const std::int32_t*>(tech),
+             *reinterpret_cast<const std::int32_t*>(player));
+  }
+}
+
+void __cdecl ReadFlag(char* entry, const char* name) {
+  const bool enemy = name != nullptr && _stricmp(name, "HCTargetEnemy") == 0;
+  if (!enemy && (name == nullptr || _stricmp(name, "HCTargetAll") != 0)) {
+    kReadFlag(entry, name);
+    return;
+  }
+  g_techs[*reinterpret_cast<void* const*>(entry)] = enemy ? Target::kEnemies : Target::kAll;
+  if (g_log) {
+    uhc::Log(L"hcTargetTechs: %hs read", name);
+  }
+}
+
+bool __fastcall Apply(char* tech, void*, char* player, void* unit, std::uint32_t team, std::int32_t a, std::int32_t b) {
+  const auto found = g_techs.find(tech);
+  if (found == g_techs.end()) {
+    return kApply(tech, player, unit, team, a, b);
+  }
+  Note(L"apply", tech, player);
+  bool done = true;
+  ForTargets(found->second, player, [&](char* other) {
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"hcTargetTechs: effects on player %d", *reinterpret_cast<const std::int32_t*>(other));
+    }
+    done = kApply(tech, other, nullptr, team & ~0xFFu, a, b) && done;
+  });
+  return done;
+}
+
+}  // namespace
+
+// Both replace the head of the routine, through a jmp: same arguments, same ret 0Ch.
+extern "C" bool __fastcall UhcTechRemove(char* tech, void*, char* player, std::int32_t a, std::uint32_t team) {
+  const auto found = g_techs.find(tech);
+  if (found == g_techs.end()) {
+    return kRemove(tech, player, a, team);
+  }
+  Note(L"remove", tech, player);
+  bool done = true;
+  ForTargets(found->second, player, [&](char* other) { done = kRemove(tech, other, a, team & ~0xFFu) && done; });
+  return done;
+}
+
+extern "C" bool __fastcall UhcTechLoad(char* tech, void*, char* player, std::int32_t a, std::uint32_t team) {
+  const auto found = g_techs.find(tech);
+  if (found == g_techs.end()) {
+    return kLoad(tech, player, a, team);
+  }
+  Note(L"load", tech, player);
+  bool done = true;
+  ForTargets(found->second, player, [&](char* other) { done = kLoad(tech, other, a, team & ~0xFFu) && done; });
+  return done;
+}
+
+namespace uhc {
+
+Outcome ApplyHcTargetTechs(const Config& config) {
+  const Config::Args* args = config.First("hcTargetTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"hcTargetTechs: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("hcTargetTechs", {&sites::kTechFlagCall, &sites::kTechApplyCall, &sites::kTechRemoveHead,
+                                   &sites::kTechLoadHead, &sites::kIsEnemyHead}) ||
+      !WriteCall(kFlagCall, reinterpret_cast<const void*>(&ReadFlag)) ||
+      !WriteCall(kApplyCall, reinterpret_cast<const void*>(&Apply)) ||
+      !WriteJmp(kRemoveHead, reinterpret_cast<const void*>(&UhcTechRemove), 6) ||
+      !WriteJmp(kLoadHead, reinterpret_cast<const void*>(&UhcTechLoad), 7)) {
+    return Outcome::kFailed;
+  }
+  Log(L"hcTargetTechs: the tech flags HCTargetEnemy and HCTargetAll are on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/hctarget_hooks.asm
+
+```asm
+; hcTargetTechs (src/features/hctargets.cpp): the stock heads of the two routines the key replaces with a
+; jmp. The C++ wrappers call these, which re-execute the replaced instructions and leave through an
+; explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+.data
+removeNext      dd 0094DCB8h    ; push edi, in removeEffects
+loadNext        dd 0094DDF1h    ; xor ebx,ebx, in the pass after a load
+
+.code
+
+; removeEffects: replaces 0x94DCB2..0x94DCB7 (push ebx / push ebp / mov ebp,[esp+0Ch]).
+UhcTechRemoveStock PROC
+    TRACE_ONCE "hcTargetTechs remove (0x94DCB2)"
+    push ebx
+    push ebp
+    mov ebp, dword ptr [esp+0Ch]
+    jmp removeNext
+UhcTechRemoveStock ENDP
+
+; The pass after a load: replaces 0x94DDEA..0x94DDF0 (push ebx / push ebp / push edi / mov edi,[esp+10h]).
+UhcTechLoadStock PROC
+    TRACE_ONCE "hcTargetTechs load (0x94DDEA)"
+    push ebx
+    push ebp
+    push edi
+    mov edi, dword ptr [esp+10h]
+    jmp loadNext
+UhcTechLoadStock ENDP
+
+END
+```
 
 ## techPrereqRecheck
 
@@ -547,6 +763,355 @@ UhcTransformLosHook PROC
 UhcTransformLosHook ENDP
 
 END
+```
+
+## transformSpan
+
+Contract: [transformSpan](../porting-to-another-dll.md#transformspan).
+
+Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`transformcalls.h`](helpers.md#transform-calls), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `XmlText` `0x402733` (9 B), `SnareApply` `0x4DD22D` (130 B), `XmlAttribute` `0x598F37` (16 B), `TransformProtoLookup` `0x9C754C` (22 B), `TransformEffectSetDataSlot` `0xB96B64` (4 B), `TransformEffectApplySlot` `0xB96B9C` (4 B).
+
+### src/features/transformspan.cpp
+
+```cpp
+// transformSpan: the attribute transformspan="<seconds>" on a TransformUnit effect: when the time ends,
+// the units that effect transformed turn back into what they were.
+//
+// Stock's TransformUnit (apply 0x7FBBAF) changes each alive, built unit of fromprotoid in place with
+// 0x9C754C, which keeps the unit's ID, and nothing ever turns it back. The key reads the attribute
+// in a wrapper of the effect's setData slot, knows which effect is running through a wrapper of its
+// apply slot, and records each unit in the wrapper of the call 0x7FBC79. A world tick turns the unit
+// back with the same 0x9C754C, so whatever that function keeps (HP by proportion, transformInventory,
+// transformUpdatesLOS) applies both ways.
+//
+// A unit is turned back only if it is still alive, built, and of the proto this key gave it: a unit
+// transformed again by something else stays what it is. A second transformspan on a pending unit
+// keeps the first proto and the new end, and a TransformUnit without the attribute ends the pending
+// one.
+//
+// Saved games: the table lives in this DLL, so a copy of each entry lives on the unit, as two modifiers
+// of stats nothing reads (the unit's actions are in the save). When another game is running (see
+// SyncWorld) the table is rebuilt from them. A modifier's value is written in place, which is the
+// only write here into a unit's actions; it runs in the simulation on every machine.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../modifiers.h"
+#include "../patch.h"
+#include "../transformcalls.h"
+#include "../worldtick.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+constexpr std::int32_t kStatFrom = 0x60;           // a modifier's value: the proto to go back to
+constexpr std::int32_t kStatEnd = 0x61;            // the game time to do it, in tenths of a second
+constexpr std::int32_t kMarkerExtraMs = 5000;      // the marker outlives the entry by this
+constexpr float kDoneMarker = -1.0f;
+constexpr int kMaxLogLines = 200;
+
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+using SetDataFn = bool(__thiscall*)(void* effect, const void* node);
+using ApplyFn = void(__thiscall*)(void* effect, void* a, void* b, void* c, void* d);
+using TransformFn = void(__thiscall*)(char* unit, std::int32_t proto);
+using ModifierFn = std::int32_t(__thiscall*)(char* unit, std::int32_t stat, float value, float, float, std::int32_t,
+                                             std::int32_t operation, std::int32_t ms, std::int32_t, std::int32_t,
+                                             std::int32_t exclusive);
+using IsBuiltFn = bool(__thiscall*)(const char* unit);
+using IsAliveFn = bool(__thiscall*)(const char* unit);
+
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
+const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
+
+struct Pending {
+  std::int32_t unit;
+  std::int32_t from;
+  std::int32_t to;
+  std::uint32_t end;  // game time, ms
+};
+
+SetDataFn g_setData = nullptr;
+ApplyFn g_apply = nullptr;
+std::unordered_map<const void*, std::int32_t> g_spans;  // effect -> ms; written while the data loads
+std::vector<Pending> g_pending;                         // in the order the effects ran
+std::int32_t g_runningSpan = 0;                         // of the effect in its apply
+std::uint32_t g_nextEnd = 0;
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* World() {
+  const char* game = Field<const char*>(reinterpret_cast<const char*>(kGameGlobal), 0);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+bool Reached(std::uint32_t now, std::uint32_t time) { return static_cast<std::int32_t>(now - time) >= 0; }
+
+bool LogLine() {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return false;
+  }
+  ++g_logLines;
+  return true;
+}
+
+// Units by ID: [world+0Ch] array, [world+10h] count; the low 18 bits index the array and [unit+10h]
+// must equal the full ID.
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  char* unit = Field<char**>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+std::int32_t ProtoId(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  return proto == nullptr ? -1 : Field<std::int32_t>(proto, 8);
+}
+
+bool Alive(const char* unit) {
+  const auto alive = Field<IsAliveFn>(Field<const char*>(unit, 0), 0xA4);
+  return alive(unit);
+}
+
+// The marker of that stat on a unit, or nullptr. Its value is at +68h.
+char* FindMarker(const char* unit, std::int32_t stat) {
+  const char* list = uhc::modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return nullptr;
+  }
+  char* found = nullptr;
+  auto visit = [&](const char* action) {
+    if (Field<std::int32_t>(action, 0x64) != stat) {
+      return true;
+    }
+    found = const_cast<char*>(action);
+    return false;
+  };
+  uhc::modifiers::WalkModifiers(list, visit, 0);
+  return found;
+}
+
+void SetMarker(char* unit, std::int32_t stat, float value, std::int32_t ms) {
+  if (char* marker = FindMarker(unit, stat)) {
+    *reinterpret_cast<float*>(marker + 0x68) = value;
+    return;
+  }
+  kModifier(unit, stat, value, -1.0f, -1.0f, 0, 1, ms, -1, -1, 0);
+}
+
+void UpdateNextEnd() {
+  if (g_pending.empty()) {
+    return;
+  }
+  g_nextEnd = g_pending.front().end;
+  for (const Pending& entry : g_pending) {
+    if (static_cast<std::int32_t>(entry.end - g_nextEnd) < 0) {
+      g_nextEnd = entry.end;
+    }
+  }
+}
+
+// The table again, from the markers of a game that just started or loaded.
+void Rebuild(const char* world) {
+  g_pending.clear();
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* units = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = units[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    const char* from = FindMarker(unit, kStatFrom);
+    const char* end = from == nullptr ? nullptr : FindMarker(unit, kStatEnd);
+    if (end == nullptr || Field<float>(from, 0x68) < 0.0f) {
+      continue;
+    }
+    g_pending.push_back({Field<std::int32_t>(unit, 0x10), static_cast<std::int32_t>(Field<float>(from, 0x68)),
+                         ProtoId(unit), static_cast<std::uint32_t>(Field<float>(end, 0x68)) * 100});
+  }
+  UpdateNextEnd();
+  if (!g_pending.empty()) {
+    uhc::Log(L"transformSpan: %u pending unit(s) found in the saved game", static_cast<unsigned>(g_pending.size()));
+  }
+}
+
+// A new or loaded game can reuse the old world's address, so the test is the step count [world+F8h],
+// which rises by 1 per step, and the game time going back. The tick sees every step.
+void SyncWorld(const char* world, std::uint32_t now) {
+  const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
+  if (world != g_world || !Reached(now, g_lastTime) || step - g_lastStep > 1) {
+    g_world = world;
+    Rebuild(world);
+  }
+  g_lastTime = now;
+  g_lastStep = step;
+}
+
+void TurnBack(const char* world, const Pending& entry) {
+  char* unit = UnitById(world, entry.unit);
+  if (unit == nullptr || !Alive(unit)) {
+    if (LogLine()) {
+      uhc::Log(L"transformSpan: unit %d is gone", entry.unit);
+    }
+    return;
+  }
+  if (char* marker = FindMarker(unit, kStatFrom)) {
+    *reinterpret_cast<float*>(marker + 0x68) = kDoneMarker;
+  }
+  if (ProtoId(unit) != entry.to) {
+    if (LogLine()) {
+      uhc::Log(L"transformSpan: unit %d is proto %d now, not %d: left as it is", entry.unit, ProtoId(unit), entry.to);
+    }
+    return;
+  }
+  uhc::TransformUnit(unit, entry.from);
+  if (LogLine()) {
+    uhc::Log(L"transformSpan: unit %d turned back, proto %d -> %d, game time %.1f s", entry.unit, entry.to, ProtoId(unit),
+             static_cast<double>(Field<std::uint32_t>(world, 0x108)) / 1000.0);
+  }
+}
+
+void Tick(char* world, std::int32_t) {
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  SyncWorld(world, now);
+  if (g_pending.empty() || !Reached(now, g_nextEnd)) {
+    return;
+  }
+  std::vector<Pending> due;
+  std::size_t kept = 0;
+  for (const Pending& entry : g_pending) {
+    if (Reached(now, entry.end)) {
+      due.push_back(entry);
+    } else {
+      g_pending[kept++] = entry;
+    }
+  }
+  g_pending.resize(kept);
+  UpdateNextEnd();
+  for (const Pending& entry : due) {
+    TurnBack(world, entry);
+  }
+}
+
+bool __fastcall SetData(void* effect, void*, const void* node) {
+  const bool ok = g_setData(effect, node);
+  const void* text = nullptr;
+  if (ok && node != nullptr && kXmlAttribute(node, "transformspan", &text) && text != nullptr) {
+    const double seconds = std::atof(kXmlText(text));
+    if (seconds > 0.0) {
+      g_spans[effect] = static_cast<std::int32_t>(seconds * 1000.0 + 0.5);
+      if (g_log) {
+        uhc::Log(L"transformSpan: an effect lasts %.1f s", seconds);
+      }
+    }
+  }
+  return ok;
+}
+
+void __fastcall Apply(void* effect, void*, void* a, void* b, void* c, void* d) {
+  const auto found = g_spans.find(effect);
+  g_runningSpan = found == g_spans.end() ? 0 : found->second;
+  g_apply(effect, a, b, c, d);
+  g_runningSpan = 0;
+}
+
+// Takes the call of 0x9C754C in the effect's apply.
+void Transform(char* unit, std::int32_t proto) {
+  const std::int32_t was = ProtoId(unit);
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  Pending* pending = nullptr;
+  for (Pending& entry : g_pending) {
+    if (entry.unit == id) {
+      pending = &entry;
+    }
+  }
+  uhc::TransformUnit(unit, proto);
+  if (g_runningSpan == 0) {
+    if (pending != nullptr) {  // a lasting transform ends the timed one
+      if (char* marker = FindMarker(unit, kStatFrom)) {
+        *reinterpret_cast<float*>(marker + 0x68) = kDoneMarker;
+      }
+      g_pending.erase(g_pending.begin() + (pending - g_pending.data()));
+      UpdateNextEnd();
+    }
+    return;
+  }
+  const char* world = World();
+  if (world == nullptr) {
+    return;
+  }
+  const std::uint32_t end = Field<std::uint32_t>(world, 0x108) + static_cast<std::uint32_t>(g_runningSpan);
+  const std::int32_t from = pending != nullptr ? pending->from : was;
+  if (pending != nullptr) {
+    pending->to = proto;
+    pending->end = end;
+  } else {
+    g_pending.push_back({id, from, proto, end});
+  }
+  UpdateNextEnd();
+  // The markers go on after the transform: they must outlive anything it rebuilds.
+  const std::int32_t markerMs = g_runningSpan + kMarkerExtraMs;
+  SetMarker(unit, kStatFrom, static_cast<float>(from), markerMs);
+  SetMarker(unit, kStatEnd, static_cast<float>((end + 99) / 100), markerMs);
+  if (LogLine()) {
+    uhc::Log(L"transformSpan: unit %d, proto %d -> %d, back to %d in %.1f s, at game time %.1f s", id, was, proto, from,
+             static_cast<double>(g_runningSpan) / 1000.0, static_cast<double>(end - g_runningSpan) / 1000.0);
+  }
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyTransformSpan(const Config& config) {
+  const Config::Args* args = config.First("transformSpan");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"transformSpan: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("transformSpan", {&sites::kTransformEffectSetDataSlot, &sites::kTransformEffectApplySlot,
+                                   &sites::kSnareApply, &sites::kXmlAttribute,
+                                   &sites::kXmlText, &sites::kTransformProtoLookup})) {
+    return Outcome::kFailed;
+  }
+  g_setData = *reinterpret_cast<SetDataFn*>(sites::kTransformEffectSetDataSlot.va);
+  g_apply = *reinterpret_cast<ApplyFn*>(sites::kTransformEffectApplySlot.va);
+  if (!WriteDword(sites::kTransformEffectSetDataSlot.va, reinterpret_cast<std::uintptr_t>(&SetData)) ||
+      !WriteDword(sites::kTransformEffectApplySlot.va, reinterpret_cast<std::uintptr_t>(&Apply)) ||
+      !SetTransformEffectWrapper(&Transform) || !AddWorldTick(&Tick)) {
+    return Outcome::kFailed;
+  }
+  Log(L"transformSpan: TransformUnit effects take transformspan");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
 ```
 
 ## transformInventory

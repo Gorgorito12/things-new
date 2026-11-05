@@ -237,7 +237,20 @@ unitResourceAuras [log]       auras with ModifyType UnitResource gather from uni
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
+veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
+transformSpan [log]           transformspan on a TransformUnit effect turns the units back
+hcTargetTechs [log]           tech flags HCTargetEnemy and HCTargetAll
+detonationDeath [log]         <DetonationProtoAction> fires an action when a unit dies
+accuracyTechs [log]           a Data tech effect may change an action's Accuracy
+cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
+sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
+doNotQueue [log]              <DoNotQueue/> trains a proto ahead of what waits in the building
+nextResearchFree [log]        a Data tech effect makes a building's next research free
+killBountyTechs [log]         a Data tech effect may change a proto's Bounty
+resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
+teamKillBounty [log]          the XP of a marked victim goes to the killer's team
+cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

@@ -11,8 +11,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   exec <cmd> [<cmd> ...]     run console commands through perfExecFile and wait until they ran
   map <name> <spec> ...      write RM3\\<name>.xs/.xml, a test map (spec syntax below); RM4
                              when the bed's exe reads RM4 (WoL)
-  scenario <map> [--seed N]  editor route: generate <map>, save it as scenario uhc-<map>, leave,
-                             load it as a game and unpause. Players have no AI.
+  scenario <map> [--seed N] [--players N]   editor route: generate <map>, save it as scenario
+                             uhc-<map>, leave, load it as a game and unpause. Players have no AI.
+                             With 3 players the map makes two teams, unlike a skirmish on a test map.
   wait <seconds>             let that much game time pass (polls the world clock)
   state                      process, window, world and game time
   units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
@@ -674,7 +675,8 @@ def write_map(bed, name, specs):
     for i, (player, proto, count, x, z) in enumerate(groups):
         unit_lines += [
             f'   int uhcGroup{i} = rmCreateObjectDef("uhc group {i}");',
-            f'   rmAddObjectDefItem(uhcGroup{i}, "{proto}", {count}, 3.0);',
+            # What does not fit in the radius is not placed: 120 units in 3 m gave none.
+            f'   rmAddObjectDefItem(uhcGroup{i}, "{proto}", {count}, {3.0 if count <= 12 else round(count ** 0.5 * 2, 1)});',
             f"   rmSetObjectDefMinDistance(uhcGroup{i}, 0.0);",
             f"   rmSetObjectDefMaxDistance(uhcGroup{i}, 2.0);",
             f"   rmPlaceObjectDefAtLoc(uhcGroup{i}, {player}, {x}, {z}, 1);",
@@ -743,7 +745,7 @@ def write_map(bed, name, specs):
           f"{len(timed)} timed effects)")
 
 
-def scenario(bed, map_name, seed):
+def scenario(bed, map_name, seed, players=2):
     proc = process() or sys.exit("testbed: the game is not running")
     name = f"uhc-{map_name}"
     target = my_games(bed) / "Scenario" / f"{name}.age3Yscn"
@@ -760,7 +762,7 @@ def scenario(bed, map_name, seed):
                        "startRandomGame(true)"])
     wait_until(lambda: D.world(proc), 120, 1, "the scenario editor")
     time.sleep(5)
-    run_commands(bed, [f'startRandomGame2("{map_name}", 2, {seed}, "", false, 2, 1, 0, false)'])
+    run_commands(bed, [f'startRandomGame2("{map_name}", {players}, {seed}, "", false, 2, 1, 0, false)'])
     time.sleep(10)
     run_commands(bed, [f'saveScenario("{name}")'])
     wait_until(lambda: target.exists() and target.stat().st_size > 0, 60, 1, f"{target}")
@@ -1260,16 +1262,17 @@ def test_monitor():
 
 
 def place_window(hwnd):
-    """Moves the game window to the top left of the test monitor, or to its top right for a second
-    copy (a folder whose name ends in 2), so that two copies stand side by side."""
+    """Moves the game window to a corner of the test monitor, by the last character of the copy's folder:
+    2 top right, 3 bottom left, 4 bottom right, anything else top left, so that four copies form a grid."""
     device, _primary, (left, top, right, bottom) = test_monitor()
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
-    x = right - (rc.right - rc.left) if BED.name.endswith("2") else left
-    if (rc.left, rc.top) == (x, top):
+    x = right - (rc.right - rc.left) if BED.name[-1] in "24" else left
+    y = bottom - (rc.bottom - rc.top) if BED.name[-1] in "34" else top
+    if (rc.left, rc.top) == (x, y):
         return
     # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
-    user32.SetWindowPos(hwnd, None, x, top, 0, 0, 0x0001 | 0x0004 | 0x0010)
+    user32.SetWindowPos(hwnd, None, x, y, 0, 0, 0x0001 | 0x0004 | 0x0010)
     time.sleep(0.3)
 
 
@@ -1530,7 +1533,7 @@ def main(argv):
         write_map(bed, args[0], args[1:])
     elif cmd == "scenario":
         seed = int(args[args.index("--seed") + 1]) if "--seed" in args else 1234
-        scenario(bed, args[0], seed)
+        scenario(bed, args[0], seed, int(args[args.index("--players") + 1]) if "--players" in args else 2)
     elif cmd == "wait":
         wait_game_time(float(args[0]))
     elif cmd == "state":

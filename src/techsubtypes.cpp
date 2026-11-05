@@ -8,7 +8,8 @@
 #include "patch.h"
 
 extern "C" {
-void UhcTechSubtypeApplyHook();    // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeLookupHook();   // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeApplyHook();
 void UhcTechSubtypeUnapplyHook();
 }
 
@@ -19,65 +20,136 @@ constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stoc
 constexpr std::uint32_t kNameLookupCall = 0x006206D7;  // setData's call of the lookup 0x61FF5D
 constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
+constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
+constexpr std::size_t kEffectFlags = 9;                // bit 40h: allactions="1", read before the subtype
+constexpr std::size_t kProtoActions = 0x44;            // the action set
+constexpr std::size_t kActionList = 0x1C;              // in the set: the array of actions, and its count at +20h
+constexpr std::size_t kActionId = 4;                   // in an action
 
 using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
 const auto kNameLookup = reinterpret_cast<NameLookupFn>(0x0061FF5D);
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+using ActionIdByNameFn = std::int32_t(__thiscall*)(void* db, const void* attribute);
+const auto kActionIdByName = reinterpret_cast<ActionIdByNameFn>(0x005E0C64);
+using ActionByIdFn = char*(__thiscall*)(const void* set, std::int32_t id);
+const auto kActionById = reinterpret_cast<ActionByIdFn>(0x0048D22E);
 
 struct Subtype {
   const char* name;
-  uhc::TechSubtypeHandler handler;
+  uhc::TechSubtypeHandler handler;              // on a proto
+  uhc::TechActionSubtypeHandler actionHandler;  // or on its actions
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
 
-// Replaces the call of the lookup in BDataEffect::setData.
-std::int32_t __fastcall NameLookup(void* db, void*, const char* name) {
+// What stock does in setData for TrackRating: only the subtypes it knows read the attribute.
+bool ReadAction(void* db, const char* name, char* effect, const char* node) {
+  auto* action = reinterpret_cast<std::int32_t*>(effect + kEffectAction);
+  if ((static_cast<std::uint8_t>(effect[kEffectFlags]) & 0x40) != 0) {
+    *action = -1;
+    return true;
+  }
+  const void* attribute = nullptr;
+  if (!kXmlAttribute(node, "action", &attribute) || attribute == nullptr) {
+    uhc::Log(L"tech subtypes: a %hs effect names no action and has no allactions='1'; effect dropped", name);
+    return false;
+  }
+  *action = kActionIdByName(db, attribute);
+  if (*action == -1) {
+    uhc::Log(L"tech subtypes: a %hs effect names an unknown action; effect dropped", name);
+    return false;
+  }
+  return true;
+}
+
+bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float amount, std::uint8_t relativity,
+                  bool unapply, std::int32_t actionId, bool allActions) {
+  const char* set = *reinterpret_cast<char* const*>(proto + kProtoActions);
+  const char* baseSet = *reinterpret_cast<char* const*>(base + kProtoActions);
+  if (set == nullptr || baseSet == nullptr) {
+    return false;
+  }
+  if (!allActions) {
+    if (char* action = kActionById(set, actionId)) {
+      subtype.actionHandler(action, kActionById(baseSet, actionId), amount, relativity, unapply);
+    }
+    return true;
+  }
+  char* const* actions = *reinterpret_cast<char* const* const*>(set + kActionList);
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(set + kActionList + 4);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const std::int32_t id = *reinterpret_cast<const std::int32_t*>(actions[i] + kActionId);
+    subtype.actionHandler(actions[i], kActionById(baseSet, id), amount, relativity, unapply);
+  }
+  return true;
+}
+
+bool Add(const Subtype& subtype) {
+  if (g_count == kMaxSubtypes) {
+    uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupCall, &uhc::sites::kDataApplySwitch,
+                                          &uhc::sites::kDataUnapplySwitch, &uhc::sites::kDataActionAttribute,
+                                          &uhc::sites::kDataAllActionsApply, &uhc::sites::kDataAllActionsUnapply}) ||
+        !uhc::WriteCall(kNameLookupCall, reinterpret_cast<const void*>(&UhcTechSubtypeLookupHook)) ||
+        !uhc::WriteJmp(kApplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeApplyHook), 9) ||
+        !uhc::WriteJmp(kUnapplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeUnapplyHook), 9)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_subtypes[g_count++] = subtype;
+  return true;
+}
+
+}  // namespace
+
+// Replaces the call of the lookup in BDataEffect::setData. effect and node are its ESI and EBP.
+extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* name, char* effect, const char* node) {
   const std::int32_t stock = kNameLookup(db, name);
   if (stock != -1 || name == nullptr) {
     return stock;
   }
   for (std::size_t i = 0; i < g_count; ++i) {
-    if (_stricmp(name, g_subtypes[i].name) == 0) {
-      return kFirstId + static_cast<std::int32_t>(i);
+    if (_stricmp(name, g_subtypes[i].name) != 0) {
+      continue;
     }
+    if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, effect, node)) {
+      return -1;
+    }
+    return kFirstId + static_cast<std::int32_t>(i);
   }
   return -1;
 }
 
-}  // namespace
-
 // From the two switch hooks, for a subtype at or above kFirstId. False: stock's failure exit.
 extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const char* base, float amount,
-                                            std::uint32_t relativity, std::uint32_t unapply) {
+                                            std::uint32_t relativity, std::uint32_t unapply, std::int32_t actionId,
+                                            std::uint32_t allActions) {
   const std::size_t index = static_cast<std::size_t>(id - kFirstId);
   if (index >= g_count) {
     return false;
   }
-  g_subtypes[index].handler(proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
+  const Subtype& subtype = g_subtypes[index];
+  if (subtype.actionHandler != nullptr) {
+    return RunOnActions(subtype, proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0, actionId,
+                        allActions != 0);
+  }
+  subtype.handler(proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
   return true;
 }
 
 namespace uhc {
 
-bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
-  if (g_count == kMaxSubtypes) {
-    Log(L"tech subtypes: no room for %hs", name);
-    return false;
-  }
-  if (!g_installed) {
-    if (!VerifyAll("tech subtypes",
-                   {&sites::kDataSubtypeLookupCall, &sites::kDataApplySwitch, &sites::kDataUnapplySwitch}) ||
-        !WriteCall(kNameLookupCall, reinterpret_cast<const void*>(&NameLookup)) ||
-        !WriteJmp(kApplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeApplyHook), 9) ||
-        !WriteJmp(kUnapplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeUnapplyHook), 9)) {
-      return false;
-    }
-    g_installed = true;
-  }
-  g_subtypes[g_count++] = {name, handler};
-  return true;
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({name, handler, nullptr}); }
+
+bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
+  return Add({name, nullptr, handler});
 }
 
 }  // namespace uhc

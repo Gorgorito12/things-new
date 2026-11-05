@@ -892,6 +892,24 @@ the cfg rules in order with the same is-a test and returns the stock string when
 The names are `std::string`s that live as long as the DLL. Choosing a sound set changes nothing
 in the simulation.
 
+### detonationDeath
+
+Every death goes through one queue. TakeDamage, a lifespan, a trigger's kill and the rest ask 0x4B4DC2, which appends the unit and
+three flag bytes to the world's list at `[world+8DCh]`, and the drain 0x493D46 calls the kill handler 0x4B4F70 from one single
+call, 0x493D8F. `Destroy` does not pass there. The key wraps that call, so it runs before the handler sets the dead bit,
+with the unit still valid as an attacker.
+
+The blast is the stock area damage 0x4C9D89, `thiscall(world, unitId, action, point, multiplier, 0, 0, -1, int* out, bool, Vector*
+offset)`, `ret 28h`, in the same call a unit makes for an attack around itself at 0x6A4A6B: its own position, multiplier 1, the
+action's bit 6, and the zero vector at 0xCF0618.
+
+A unit killed by the blast only joins the queue, and the drain reads the count again on each turn, so a chain runs in order
+and does not recurse. A proto's action is found by comparing the names of the database's list `[db+1FD8h]` for the IDs its action set
+has, and the ID is kept. The action is the one in the player's copy of the proto.
+
+- **Observed in game:** see the tests in the modding guide. The kill flags were 1 0 0 for a trigger's kill, 0 0 0 for combat, a
+  lifespan and a chain.
+
 ### damageOverTime
 
 **What stock has.** An Age of Mythology poison survives only as dead code:
@@ -1224,6 +1242,23 @@ research is in stock.
   is in the callee, so that site stays stock. A cycle it holds at 1.0 can drop below 1.0 when the
   points grow, and then simply runs on.
 
+### hcTargetTechs
+
+A team tech keeps its list of players inside three routines, each with its own copy of the loop over the team:
+applyEffects 0x94DAE1 (one caller, 0x94D0AE), removeEffects 0x94DCB2 (six callers) and the pass after a load 0x94DDEA. The
+team is the routine's third or fourth argument, from the tech's status bit 13h. Rewriting three lists is more work than
+calling each routine once per target, so the key wraps the three: for a marked tech it calls the stock routine for
+each target, with the team flag clear. applyEffects goes through its `call`; the other two through a `jmp` at the head, to
+a function with the same arguments and `ret`, and an asm stub re-executes the replaced head for the stock call.
+
+The flag name is read by FUN_00620C2F, a chain of string compares called once, at 0x620C23, which ignores what it does not
+know. The key wraps that call and keeps the tech's definition, the routines' `this`, in a set. The set is only written during the
+load, so the game's lookups are lock-free.
+
+The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
+
+- **Observed in game:** see the tests in the modding guide. After a load the log shows one `load` line per tech.
+
 ### techPrereqRecheck
 
 **The stock re-check.** Each world update calls FUN_00491A40 (call at `0x481D51`) when
@@ -1367,6 +1402,20 @@ leaves the field alone.
 - The equality guard keeps a value the game set on purpose (a foundation's LOS, a knocked-out
   hero's 6.0). It also keeps the stock gap of a converted unit, which carries its former owner's
   LOS (the owner change at `0x514529` swaps the proto copy without touching the LOS).
+
+### accuracyTechs
+
+Stock's `TrackRating` (Data subtype 26h, 0x8FAA45) shows the shape of an effect on an action: `[proto+44h]` is the action
+set, 0x48D22E finds the action by the ID in `[effect+10h]`, and the base proto's set gives the base value. Accuracy is the
+action's `+38h`, the same object: a tech on one proto reached neither another proto that uses the same tactics file nor
+another player.
+
+`techsubtypes.*` gained `AddTechActionSubtype`. setData reads the `action` attribute only for the subtypes it knows, so
+the lookup's replacement does it, for a subtype on actions: it runs in the call at 0x6206D7 with the effect in ESI and the
+node in EBP. `allactions` needs nothing: setData has already set bit 40h of `[effect+9]`, and protoUnitApply passes it as
+applyData's 8th argument. With it the key's handler runs for every action in the set, `[set+1Ch]`, count `[set+20h]`.
+
+- **Observed in game:** see the tests in the modding guide.
 
 ### broadsideMuzzleLimit
 
@@ -1614,6 +1663,30 @@ them stays off; the flag `EnterHotkeyContext` makes them enter one.
   If the manager changes, the list is rebuilt on the next keymap pass, and until then the selection
   hooks do nothing.
 - UI only: a context decides which keys are live; the command a key runs is the one a click runs.
+
+### veterancyBonus
+
+Stock's flag `ExperienceUnit` (bit 7Dh of the proto's flags, set at the cold 0x6B0AE4) has no reader: no call of the getter
+0x44CAC4 passes it, and no direct `test`. So nothing counts a unit's kills.
+
+TakeDamage marks the killing blow in `[esp+1Fh]` (0x4D484B, when the unit had hit points and the damage takes them), and a `je`
+at 0x49B746 goes to the cold path 0x4D4F37. The hook sits there: ESI is the unit killed, and `[esp+28h]` the attacker unit, null
+when it is gone. Gaia and the attacker's own units do not count.
+
+The state lives in the game, not in the DLL: everything is a stat modifier made by 0x4DD22D, the call of snares and auras, with
+0 ms, so no time limit. The count is a modifier of stat 62h, which no code reads, with the kills in `[+68h]`; it is read back
+by the walk of `modifiers.h`. Each row reached adds a multiply modifier of its total divided by the total of the row before,
+because modifiers multiply. So the save, the stat code and the panel need nothing more, and nothing is left to clean up.
+
+The modifier of `MaxHP` scales the current hit points. A transform in place, 0x9C754C, ends the unit's modifiers, so its seven
+calls go through a wrapper that reads the count before and, after it, adds the count back and one multiply modifier per stat
+for the rows of the new proto. The new proto's rows decide, so a proto with none keeps only the count. `trUnitChangeProtoUnit`
+does not come through 0x9C754C.
+
+Rows: `<VeterancyBonus>`, through `prototags.*`; `modifytype` goes through the stock parser 0x5F5645, so the names of
+`AddModifyType` work too. The rows are kept by proto ID in a map that only the load writes.
+
+- **Observed in game:** see the tests in the modding guide.
 
 ### snareOnlyHitUnit
 
@@ -1996,6 +2069,32 @@ during the game and its byte `+1A95h` was 0.
 its Market and settlers, then stayed idle), and the engine's AI auto-base FUN_004CF222; the age-up
 picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B), the `Maintain` spawn
 gate (0x492FD6) and the water shipment point `[hc+190h]`, which all look for `TownCenter` itself.
+
+### transformSpan
+
+The seven calls of the transform 0x9C754C belong to `transformcalls.*`: `veterancyBonus` and `transformSpan` both need them,
+and a second `WriteCall` would fail the first one's check. A key adds an observer, called around the transform, or takes
+the effect's call 0x7FBC79; its own transform calls `TransformUnit`, so a timed unit coming back runs the observers too.
+Stats 60h and 61h are `transformSpan`'s markers and 62h is the kill count of `veterancyBonus`.
+
+The effect's vtable is 0xB96B60. Slot 1, setData 0x622822, is wrapped to read `transformspan` from the node, by effect in a
+map. Slot 0Fh, apply 0x7FBBAF, is wrapped to know which effect runs. Its call of the in-place transform at 0x7FBC79
+goes to a function that records the unit: ID, the proto it had, the proto it gets, and the end in game time `[world+108h]`.
+
+A world tick turns the due units back with the same 0x9C754C. It runs after the stock update, so no action list is being
+walked. Each entry is checked again then: the unit by ID (`[unit+10h]` must match), alive, and of the proto the key gave
+it. With nothing due the tick is one compare with the nearest end.
+
+The table is in the DLL, so a saved game keeps a copy on the units: two stat modifiers (0x4DD22D, stats 60h and 61h, which
+no getter reads), one with the proto to return to and one with the end in tenths of a second. A value that changes is
+written in place, at `[modifier+68h]`; a finished entry writes -1. The modifier outlives the entry by 5 s, and stock removes
+it. As poisons do, the tick compares the step count `[world+F8h]`: when it jumps, or the time goes back, or the world
+changes, another game is running, and the table is rebuilt by walking every unit's modifiers once.
+
+TransformUnit is not applied again on load: a saved game loaded after the end left the units as they were.
+
+- **Observed in game:** see the cases in the modding guide. A unit can turn back into a proto its building does not take:
+  stock does not check, and the unit left the building normally.
 
 ### transformInventory
 
@@ -2580,6 +2679,20 @@ inside what `showGatherRate` and `resourceGatherAuras` verify, hence its place a
 **Why it is safe.** Costs are compared with the stockpile, so a negative one simply cannot pay. The set's other work, the
 total `+240h` and the listeners, takes the delta whatever its sign. The list comes from the cfg only.
 
+### cratePriority
+
+Stock orders crates in two functions, both by comparing the civ's ID with those of the names Dutch, Ottomans and Indians.
+FUN_004DBF40 `(db, resource, civ)`, called once at 0x49A03C, gives a rank of 1 to 3 that the gather target search adds to a
+crate's score × 1000. FUN_00501786 `(player, proto, int* next, int* resource)`, called once at 0x50170B in a loop of 6, gives
+the next of the six crate protos (`[db+5E34h..5E48h]`) in a cycle.
+
+Both calls go through a wrapper, so the functions stay as they are. The rank wrapper answers `3 - position` for a civ with
+an order. The next wrapper calls stock first, which checks the proto is one of the six, then replaces the answer by
+walking the same cycle built from the order: large, small, for each resource. For stock's three orders that gives stock's
+answers. The names are looked up again for each database, as civs.xml is read again when a game starts.
+
+- **Observed in game:** see the tests in the modding guide.
+
 ### showGatherRate
 
 With the minimized interface (`optionminimizedui`) the stat panel fill returns at its start. The hook
@@ -2743,6 +2856,83 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   It is the last WoL key there. <!-- private -->
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
+
+### sharedBuildLimit
+
+Stock compares a count with a limit in about 30 places. The count has many routes: 0x4C7BC5 (6 callers) and 0x4C846D (60
+callers, with several flags). The limit has one: 0x4C7B5F, `int thiscall(player, proto)`, 50 callers, which reads the player's
+copy's `[proto+108h]`. So the key leaves every count alone and changes only the limit: for a tagged proto it returns the room
+the others leave, `(limit - others) / own weight`, never below 0, because a negative limit means no limit. The buttons, the
+train action, Maintain, cards and the AI all give the right answer at once, and the stock cut of a batch (0x9EAD32, limit
+minus count) works too.
+
+The others are counted by 0x4C7BC5 with `(1, 1)`, the arguments of the train check at 0x9EAD04, so queued units count. With
+`TeamBuildLimit` the loop goes over the players whose `[player+1D4h+4i]` is 0 or 1, the test of the shared resources at
+0x67995B, skipping Gaia.
+
+The hook replaces the 5 bytes at the entry (`sub esp,10h / mov edx,ecx`); a small stub re-executes them and jumps to 0x4C7B64,
+which is how the helper reads the stock limit. A proto that is not tagged costs a bit test by ID.
+
+Only the tooltips must not see the room: "9 out of 7" says nothing to a player. So their count calls (0x4C8B81, 0x70F5EF) go
+through a wrapper that adds the others, and the hook returns the real limit to the return addresses of their limit calls.
+
+Names resolve at the first use through the table `<UnitType>` reads, `[db+190h]` (0x58E685, 0x40295B), which holds protos and
+abstract types, and the members through the is-a test 0x44D7FA, which takes both.
+### doNotQueue
+
+A unit's action list `[manager+14h]` (`+0` count, `+8` pointers) holds all its actions: in a Barracks 16 fixed ones (idle,
+types 29, 68 and 34) and then the Train actions. `[manager+24h]`, the current action, was the idle one while a Train action
+ran, so a building's queue is not the current action: the list order is. The first Train or Research in the list has the
+state 14h and advances. The action add 0x494894 appends, and the queue routine calls it at 0x9CE81A. The hook calls it and
+then moves the new action before the first Train or Research of the list, behind those of a tagged proto.
+
+The action that was first keeps its state and progress: it no longer advances until the tagged one leaves the list, as the
+two timings of the guide show. The list is saved in order.
+
+The tech flag of the same name is bit 1Ah. Its reader is the Research action's slot 58h, 0x9E5EAD (slot 58h of the Train
+action just returns 1), called only from 0x9CA1F0 when the world byte `[world+6910h]` is set.
+
+Shipments have no such list, as far as a static reading goes: the send (0x8577D2, 0x858299) pays and starts the card.
+`[hc+4D8h]`, with the count at `+4DCh`, refuses a card while it is not empty (0x858301, 0x85A7C7; 0x855F8F for the AI), but
+it is the `Blockade` effect's: 0x85C09C adds the IDs, called at 0x7FBA2D for the other players.
+
+### nextResearchFree
+
+A research is paid when its action starts: 0x8D946A at 0x9E67E1 (the Research action, EBP) and at 0x9D54CF (CommandResearch,
+ESI). Each action then copies the cost for a cancel's refund (0x480A73 at 0x9E68A0, to `+74h`, and at 0x9D5548, to `+7Ch`).
+
+The effect is a subtype through `AddTechSubtype`, which adds its amount to a count kept by the player's copy of the proto.
+Both payment calls go to a helper that reads the proto from the action's unit (`[[action+10h]+5Ch]`). With a count above 0 it
+takes one, returns true and leaves a mark, and the wrapper of the copy that follows empties the action's cost with
+0x4E2617, so a cancel refunds nothing. The count is forgotten when a database loads (`OnDatabaseLoad`), because a new game
+can reuse the address of a proto. It is not saved, and a load applies the effects again.
+
+- **Observed in game:** see the tests in the modding guide.
+
+### killBountyTechs, resourceBounty and teamKillBounty
+
+`<Bounty>` is stored by the handler 0x5F5D79 in the proto's `+168h`. On a kill, TakeDamage takes its branch 0x4D4E0C,
+reads the value through 0x4D4DC5 from `[victim+5Ch]`, the copy of the victim's owner, times the attacker's `Bounty`
+modifiers, and shows the text. Then 0x49B73C calls FUN_0049BD52, on every hit, with an amount of 0 unless the hit kills;
+it finds the killer's team and calls 0x49BDC0(player, amount, 0), which pays resource 5 to that player, or to every
+member, the whole amount, when the player is below 0 (cold 0x68EA12).
+
+- **The subtype:** `KillBounty` and `Bounty` go through `AddTechSubtype` and the value function 0x7F892A.
+- **The team:** the hook replaces `mov ecx,[esp+14h] / mov edx,[esi]` at 0x49BDAB. FUN_0049BD52 saved its caller's ESI,
+  the victim, at `[esp]`. It skips an amount of 0 first, so a hit costs one compare, and passes -1 for a marked victim.
+- **The resources:** a tag cannot be registered twice: 0x59B738 returns when the name exists. So the key changes the
+  immediate at 0x51D669, the handler the builder registers. Its handler keeps the stock one for a `<Bounty>` without
+  `resourcetype`, reads the attribute with 0x598F37, the name with 0x44709C, and stores by proto ID. The payment is a hook
+  on the head of the kill branch, not on FUN_0049BD52, because a proto with no XP bounty reaches that one with 0.
+
+- **Observed in game:** see the tests in the modding guide.
+
+### cantBeSlowed
+
+0x4DD1DE, the `TargetSpeedBoost` path, tests that the target can move, and 0x4DD201 pushes the arguments of the
+modifier's creator 0x4DD22D. The hook replaces the first three pushes, and leaves through 0x48FA49, the path's exit, for a
+marked target. The poison of `damageOverTime` calls the creator itself, so it asks the same function. The site is in the
+ranges `damageOverTime` and `snareOnlyHitUnit` verify, so this key comes after them in `kFeatures`.
 
 ### trainBatchSize
 

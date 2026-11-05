@@ -15,10 +15,10 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
-| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `veterancyBonus`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `detonationDeath` | [combat](porting-code/combat.md) |
+| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree` | [buildings](porting-code/buildings.md) |
+| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
@@ -480,6 +480,14 @@ Code: [buildings](porting-code/buildings.md#hcshipmentpointfallback).
   (`startingTC` or `civFirstTC`); without either line in the cfg the DLL logs a warning and still
   applies the key.
 
+### detonationDeath
+
+Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Sites:** a `call` at `0x493D8F` (to `0x4B4F70`). Check it against your DLL first.
+- **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage.
+
 ### damageOverTime
 
 Code: [combat](porting-code/combat.md#damageovertime).
@@ -636,6 +644,22 @@ Code: [buildings](porting-code/buildings.md#livebuildingworkrate).
   - `maintainWaitForPop` verifies the Maintain call 0x6AB264 as stock bytes, so hook the callee,
     not the call.
 
+### transformSpan
+
+Code: [techs](porting-code/techs.md#transformspan). It needs `AddWorldTick`, in the [helpers](porting-code/helpers.md#world-tick).
+
+- **Sites:** the vtable slots `0xB96B64` (value `0x622822`) and `0xB96B9C` (value `0x7FBBAF`), and the `call` at `0x7FBC79`
+  (`E8 CE B8 1C 00`). Check them against your DLL first: a key that wraps the same call must share it.
+- **Saved games:** stats 60h and 61h carry the markers, and `veterancyBonus` uses 62h. A key of yours that uses them must take other numbers.
+- **Test:** a tech with the attribute: the units return at the end, and in a saved game too.
+### hcTargetTechs
+
+Code: [techs](porting-code/techs.md#hctargettechs).
+
+- **Sites:** `call`s at `0x620C23` (`E8` to `0x620C2F`) and `0x94D0AE` (to `0x94DAE1`); a 6-byte `jmp` at `0x94DCB2`
+  (`53 55 8B 6C 24 0C`) and a 7-byte one at `0x94DDEA` (`53 55 57 8B 7C 24 10`). Check them against your DLL first.
+- **Test:** a tech with the flag: the enemy's units change, the owner's do not.
+
 ### techPrereqRecheck
 
 Code: [techs](porting-code/techs.md#techprereqrecheck).
@@ -697,6 +721,14 @@ Code: [techs](porting-code/techs.md#transformupdateslos).
   - preserve ESI, EDI, EBX, EBP and ESP; EAX, ECX, EDX and the flags are what setProto leaves.
 - **Keep the write before setProto:** the old proto is only readable there, and the per-player
   LOS cache (`0x9C768D`) and the visibility add (`0x9C7730`) must both see the new value.
+
+### accuracyTechs
+
+Code: [combat](porting-code/combat.md#accuracytechs). It needs `AddTechActionSubtype`, in the
+[helpers](porting-code/helpers.md#tech-subtypes).
+
+- **Sites:** those of the tech subtypes: the `call` at `0x6206D7` and the 9-byte `jmp`s at `0x8F978D` and `0x8FB051`.
+- **Test:** a tech with the effect in the [modding guide](modding-guide.md#accuracytechs) on a `Crossbowman`: they miss.
 
 ### broadsideMuzzleLimit
 
@@ -816,6 +848,33 @@ Code: [data](porting-code/data.md#customhotkeycontexts).
   ESP.
 - **Ordering:** write the switch-off wrapper first and the trainer hook last, so a failed write
   leaves contexts that are never on, or on and switched off.
+
+### killBountyTechs, resourceBounty and teamKillBounty
+
+Code: [combat](porting-code/combat.md#killbountytechs-resourcebounty-and-teamkillbounty). `killBountyTechs` needs
+`AddTechSubtype`, in the [helpers](porting-code/helpers.md#tech-subtypes). WoL's data already has 10 effects with
+`subtype='Bounty'`, and your DLL has the string `KillBounty`: check what it does with them before adding this.
+
+- **Sites:** a 6-byte `jmp` at `0x49BDAB` (`8B 4C 24 14 8B 16`), continue at `0x49BDB1`; a 5-byte `jmp` at `0x4D4E0C`
+  (`8B 4C 24 28 51`), continue at `0x4D4E11`; and the dword at `0x51D669` (`0x5F5D79`).
+- **Test:** a kill of each kind, reading `[[player+230h]+4·res]`.
+
+### cantBeSlowed
+
+Code: [combat](porting-code/combat.md#cantbeslowed).
+
+- **Site:** a 6-byte `jmp` at `0x4DD201` (`6A 01 6A FF 6A FF`), continue at `0x4DD207`, exit `0x48FA49`. Write it after
+  anything that verifies the snare's bytes.
+- **Test:** a marked and an unmarked unit of the same speed under a `TargetSpeedBoost` attack.
+### veterancyBonus
+
+Code: [combat](porting-code/combat.md#veterancybonus). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags), the helpers `modifiers.h` and `floatingtext.*`.
+
+- **Sites:** a 6-byte `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`), continue at `0x4D4F3D`; and the seven calls of `0x9C754C`:
+  `0x7FBC79`, `0x7FBEF2`, `0x8C2D08`, `0x8EB78A`, `0x8F05F5`, `0x9BB6D5`, `0x9C7C16`. Check them against your DLL first:
+  another key that wraps the transform must share them.
+- **Test:** the rows on a proto: the hits grow with the kills, and the log shows the ranks.
 
 ### snareOnlyHitUnit
 
@@ -1033,6 +1092,15 @@ Code: [buildings](porting-code/buildings.md#costescalationtechs). It needs `AddT
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#costescalationtechs): the button's cost changes
   and the food drops by it.
 
+### sharedBuildLimit
+
+Code: [buildings](porting-code/buildings.md#sharedbuildlimit). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Sites:** a 5-byte `jmp` at `0x4C7B5F` (`83 EC 10 8B D1`), continue at `0x4C7B64`; and the `call`s at `0x4C8B81` and
+  `0x70F5EF`. Check them against your DLL first.
+- **Test:** two protos sharing a limit: the second stops when the first fills it, and the tooltip shows the total.
+
 ### trainBatchSize
 
 Code: [buildings](porting-code/buildings.md#trainbatchsize). It needs `AddProtoTagHandler`, in the
@@ -1042,6 +1110,23 @@ Code: [buildings](porting-code/buildings.md#trainbatchsize). It needs `AddProtoT
   (`5F B0 01 5E 59`), continue at the `ret` `0x51DB14`. Check them against your DLL first: another key that adds a proto
   tag must share the second.
 - **Test:** the tag on a proto: five clicks queue in that size, and the log shows the proto.
+
+### doNotQueue
+
+Code: [buildings](porting-code/buildings.md#donotqueue). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Site:** the `call` at `0x9CE81A`, of `0x494894`.
+- **Test:** the tag on a unit: with others queued, it goes first and comes out first.
+
+### nextResearchFree
+
+Code: [buildings](porting-code/buildings.md#nextresearchfree). It needs `AddTechSubtype`, in the
+[helpers](porting-code/helpers.md#tech-subtypes), and `OnDatabaseLoad`.
+
+- **Sites:** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and `0x9D5548`, of `0x480A73`.
+- **Test:** a tech with the effect in the [modding guide](modding-guide.md#nextresearchfree): the next research takes
+  nothing, and its cancel gives nothing back.
 
 ### noTrainNearEnemyTC
 
@@ -1273,6 +1358,13 @@ Code: [gathering](porting-code/gathering.md#resourcegatherauras). It needs `AddM
   that function, for its `danceCiv`: the wrapper calls through it, so the two combine. No range overlaps the call.
 
 Check it in the game: an aura with `MineGatherRate` 2 on an Explorer, and `showGatherRate` on a miner.
+
+### cratePriority
+
+Code: [gathering](porting-code/gathering.md#cratepriority).
+
+- **Sites:** the `call`s at `0x49A03C` (`E8 FF 1E 04 00`) and `0x50170B` (`E8 76 00 00 00`).
+- **Test:** a skirmish with `cratePriority all Gold Wood Food`: gold rises first.
 
 ### resourceDebt
 

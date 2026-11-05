@@ -10,7 +10,7 @@ extern "C" void UhcProtoTagsHook();  // hooks/prototag_hooks.asm
 
 namespace {
 
-constexpr std::size_t kMaxTags = 8;
+constexpr std::size_t kMaxTags = 16;
 constexpr std::uint32_t kTableTail = 0x0051DB0F;  // pop edi / mov al,1 / pop esi / pop ecx (5 B)
 
 using RegisterFn = void(__thiscall*)(void* table, const char* name, uhc::ProtoTagHandler* handler);

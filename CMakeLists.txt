@@ -26,14 +26,23 @@ add_library(UHC SHARED
   src/unitpanel.cpp
   src/actiontags.cpp
   src/modifytypes.cpp
+  src/transformcalls.cpp
   src/prototags.cpp
   src/techsubtypes.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
+  src/features/accuracy.cpp
   src/features/ai.cpp
+  src/features/bounty.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
+  src/features/detonation.cpp
+  src/features/hctargets.cpp
+  src/features/cratepriority.cpp
+  src/features/donotqueue.cpp
+  src/features/freeresearch.cpp
+  src/features/cantslow.cpp
   src/features/civfirsttc.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp
@@ -59,6 +68,7 @@ add_library(UHC SHARED
   src/features/plugins.cpp
   src/features/perf.cpp
   src/features/selection.cpp
+  src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
   src/features/snare.cpp
@@ -70,6 +80,7 @@ add_library(UHC SHARED
   src/features/techrename.cpp
   src/features/trainbatch.cpp
   src/features/transform.cpp
+  src/features/transformspan.cpp
   src/features/transforminv.cpp
   src/features/typetests.cpp
   src/features/kbsyscalls.cpp
@@ -82,6 +93,7 @@ add_library(UHC SHARED
   src/features/smallfixes.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
+  src/features/veterancy.cpp
   src/features/workrate.cpp
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
@@ -138,9 +150,15 @@ add_library(UHC SHARED
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
+  src/hooks/hctarget_hooks.asm
   src/hooks/modifytype_hooks.asm
+  src/hooks/bounty_hooks.asm
+  src/hooks/cantslow_hooks.asm
   src/hooks/prototag_hooks.asm
+  src/hooks/sharedlimit_hooks.asm
   src/hooks/trainbatch_hooks.asm
+  src/hooks/veterancy_hooks.asm
+  src/hooks/freeresearch_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm

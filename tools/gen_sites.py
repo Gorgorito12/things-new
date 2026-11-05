@@ -337,6 +337,10 @@ SITES = [
     # transformUpdatesLOS: the entry through call 45311Bh / mov ebp,eax, the player's copy of the
     # new proto (EBP), and push ebp / mov ecx,esi, which make it setProto's argument at [esp]
     ("TransformProtoLookup", 0x9C754C, 22),
+    # transformSpan: BTransformUnitEffect's vtable (0xB96B60) slots setData (0x622822, thiscall(effect, node))
+    # and apply (0x7FBBAF, thiscall(effect, 4 arguments), ret 10h), and the apply's call of 0x9C754C
+    ("TransformEffectSetDataSlot", 0xB96B64, 0x04),
+    ("TransformEffectApplySlot", 0xB96B9C, 0x04),
     ("TransformPushProto", 0x9C763C, 3),
     # transformUpdatesLOS: push 1 / push 0 / mov ecx,esi / call 483262h (the unit leaves the
     # visibility map with its old LOS) and push 1 / push 1 / ... (it goes back with the new one)
@@ -841,12 +845,57 @@ SITES = [
     # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
     # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
     ("DataSubtypeLookupCall", 0x6206D7, 5),
+    # teamKillBounty: FUN_0049BD52's mov ecx,[esp+14h] / mov edx,[esi], the amount and the killer's ID for
+    # the team's XP routine 0x49BDC0
+    ("TeamBountyPay", 0x49BDAB, 6),
+    # resourceBounty: the handler the tag table's builder registers for <Bounty> (mov [esp+10h],5F5D79h, its
+    # immediate), and the head of TakeDamage's kill branch, mov ecx,[esp+28h] / push ecx
+    ("BountyTagHandler", 0x51D669, 4),
+    ("BountyKillBranch", 0x4D4E0C, 5),
+    # hcTargetTechs: the call of the tech <Flag> reader FUN_00620C2F, the only call of applyEffects, and the
+    # heads of removeEffects (push ebx / push ebp / mov ebp,[esp+0Ch]) and of the pass after a load
+    # (push ebx / push ebp / push edi / mov edi,[esp+10h]); the check of who is an enemy, verify only
+    ("TechFlagCall", 0x620C23, 5),
+    ("TechApplyCall", 0x94D0AE, 5),
+    ("TechRemoveHead", 0x94DCB2, 6),
+    ("TechLoadHead", 0x94DDEA, 7),
+    ("IsEnemyHead", 0x484D2D, 6),
+    # detonationDeath: the only call of the kill handler, in the kill queue's drain 0x493D46; the head of
+    # the area damage, verify only
+    ("DetonationKillCall", 0x493D8F, 5),
+    ("DetonationAreaHead", 0x4C9D89, 10),
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),
+    # veterancyBonus: mov ecx,[0xC66234], the head of TakeDamage's cold kill path; its only entry is the je
+    # at 0x49B746
+    ("VeterancyKillPath", 0x4D4F37, 6),
+    # veterancyBonus: the seven calls of the transform in place FUN_009C754C, thiscall(unit, proto), ret 4
+    ("TransformCall1", 0x7FBC79, 5),
+    ("TransformCall2", 0x7FBEF2, 5),
+    ("TransformCall3", 0x8C2D08, 5),
+    ("TransformCall4", 0x8EB78A, 5),
+    ("TransformCall5", 0x8F05F5, 5),
+    ("TransformCall6", 0x9BB6D5, 5),
+    ("TransformCall7", 0x9C7C16, 5),
     # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
     ("TrainBatchLimitCall", 0x9CE645, 5),
+    # sharedBuildLimit: the entry of the build limit, sub esp,10h / mov edx,ecx (no branch lands inside);
+    # the heads of the count it calls, thiscall(proto, player, bool, bool), and of the player's proto
+    ("BuildLimitEntry", 0x4C7B5F, 5),
+    ("BuildCountEntry", 0x4C7BC5, 8),
+    ("BuildCountTooltip1", 0x4C8B81, 5),
+    ("BuildCountTooltip2", 0x70F5EF, 5),
+    ("PlayerProtoEntry", 0x45311B, 8),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
+    # doNotQueue: the queue routine's call of the action add 0x494894
+    ("TrainQueueAddCall", 0x9CE81A, 5),
+    # nextResearchFree: the payment 0x8D946A and the copy of the cost 0x480A73 into the action, in the
+    # starts of the Research (EBP = the action) and CommandResearch (ESI = the action) actions
+    ("ResearchPayCall", 0x9E67E1, 5),
+    ("CommandResearchPayCall", 0x9D54CF, 5),
+    ("ResearchCostCopyCall", 0x9E68A0, 5),
+    ("CommandResearchCostCopyCall", 0x9D5548, 5),
     # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
     # arg 3 the proto ID, arg 4 the count
     ("TrainQueueCall1", 0x7560B5, 5),
@@ -855,6 +904,17 @@ SITES = [
     ("TrainQueueCall4", 0x9EBF03, 5),
     ("DataApplySwitch", 0x8F978D, 9),
     ("DataUnapplySwitch", 0x8FB051, 9),
+    # tech subtypes on actions: setData's push "action"; and how protoUnitApply and Unapply turn the
+    # allactions bit 40h of [effect+9] into applyData's 8th argument
+    ("DataActionAttribute", 0x6216A3, 5),
+    ("DataAllActionsApply", 0x7F86CA, 0x0E),
+    ("DataAllActionsUnapply", 0x7F870F, 0x0E),
+    # cratePriority: the only calls of the crate rank FUN_004DBF40 (thiscall(db, resource, civ), ret 8)
+    # and of the next crate FUN_00501786 (thiscall(player, proto, int* next, int* resource), ret 0Ch),
+    # and that one's read of the civ: mov ecx,[esi+4] / mov ecx,[ecx+44h]
+    ("CrateRankCall", 0x49A03C, 5),
+    ("CrateNextCall", 0x50170B, 5),
+    ("CrateNextCivRead", 0x50184A, 6),
     # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not
     # in the VerifyAll: noTrainNearEnemyTC hooks these bytes and calls g_uhcBwrTrainGetter, and the
     # call is redirected only while they are stock

@@ -458,6 +458,12 @@ inline constexpr Site kTransformSetProto{"TransformSetProto", 0x009C763F, kTrans
 inline constexpr std::uint8_t kTransformProtoLookupBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x83, 0xEC, 0x0C, 0x55, 0x56, 0x8B, 0xF1, 0x8B, 0x4E, 0x44, 0x50, 0xE8, 0xBB, 0xBB, 0xA8, 0xFF, 0x8B, 0xE8};
 inline constexpr Site kTransformProtoLookup{"TransformProtoLookup", 0x009C754C, kTransformProtoLookupBytes, sizeof(kTransformProtoLookupBytes)};
 
+inline constexpr std::uint8_t kTransformEffectSetDataSlotBytes[] = {0x22, 0x28, 0x62, 0x00};
+inline constexpr Site kTransformEffectSetDataSlot{"TransformEffectSetDataSlot", 0x00B96B64, kTransformEffectSetDataSlotBytes, sizeof(kTransformEffectSetDataSlotBytes)};
+
+inline constexpr std::uint8_t kTransformEffectApplySlotBytes[] = {0xAF, 0xBB, 0x7F, 0x00};
+inline constexpr Site kTransformEffectApplySlot{"TransformEffectApplySlot", 0x00B96B9C, kTransformEffectApplySlotBytes, sizeof(kTransformEffectApplySlotBytes)};
+
 inline constexpr std::uint8_t kTransformPushProtoBytes[] = {0x55, 0x8B, 0xCE};
 inline constexpr Site kTransformPushProto{"TransformPushProto", 0x009C763C, kTransformPushProtoBytes, sizeof(kTransformPushProtoBytes)};
 
@@ -989,14 +995,98 @@ inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10
 inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
 inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
 
+inline constexpr std::uint8_t kTeamBountyPayBytes[] = {0x8B, 0x4C, 0x24, 0x14, 0x8B, 0x16};
+inline constexpr Site kTeamBountyPay{"TeamBountyPay", 0x0049BDAB, kTeamBountyPayBytes, sizeof(kTeamBountyPayBytes)};
+
+inline constexpr std::uint8_t kBountyTagHandlerBytes[] = {0x79, 0x5D, 0x5F, 0x00};
+inline constexpr Site kBountyTagHandler{"BountyTagHandler", 0x0051D669, kBountyTagHandlerBytes, sizeof(kBountyTagHandlerBytes)};
+
+inline constexpr std::uint8_t kBountyKillBranchBytes[] = {0x8B, 0x4C, 0x24, 0x28, 0x51};
+inline constexpr Site kBountyKillBranch{"BountyKillBranch", 0x004D4E0C, kBountyKillBranchBytes, sizeof(kBountyKillBranchBytes)};
+
+inline constexpr std::uint8_t kTechFlagCallBytes[] = {0xE8, 0x07, 0x00, 0x00, 0x00};
+inline constexpr Site kTechFlagCall{"TechFlagCall", 0x00620C23, kTechFlagCallBytes, sizeof(kTechFlagCallBytes)};
+
+inline constexpr std::uint8_t kTechApplyCallBytes[] = {0xE8, 0x2E, 0x0A, 0x00, 0x00};
+inline constexpr Site kTechApplyCall{"TechApplyCall", 0x0094D0AE, kTechApplyCallBytes, sizeof(kTechApplyCallBytes)};
+
+inline constexpr std::uint8_t kTechRemoveHeadBytes[] = {0x53, 0x55, 0x8B, 0x6C, 0x24, 0x0C};
+inline constexpr Site kTechRemoveHead{"TechRemoveHead", 0x0094DCB2, kTechRemoveHeadBytes, sizeof(kTechRemoveHeadBytes)};
+
+inline constexpr std::uint8_t kTechLoadHeadBytes[] = {0x53, 0x55, 0x57, 0x8B, 0x7C, 0x24, 0x10};
+inline constexpr Site kTechLoadHead{"TechLoadHead", 0x0094DDEA, kTechLoadHeadBytes, sizeof(kTechLoadHeadBytes)};
+
+inline constexpr std::uint8_t kIsEnemyHeadBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0};
+inline constexpr Site kIsEnemyHead{"IsEnemyHead", 0x00484D2D, kIsEnemyHeadBytes, sizeof(kIsEnemyHeadBytes)};
+
+inline constexpr std::uint8_t kDetonationKillCallBytes[] = {0xE8, 0xDC, 0x11, 0x02, 0x00};
+inline constexpr Site kDetonationKillCall{"DetonationKillCall", 0x00493D8F, kDetonationKillCallBytes, sizeof(kDetonationKillCallBytes)};
+
+inline constexpr std::uint8_t kDetonationAreaHeadBytes[] = {0x8B, 0x44, 0x24, 0x20, 0x81, 0xEC, 0xF8, 0x0F, 0x00, 0x00};
+inline constexpr Site kDetonationAreaHead{"DetonationAreaHead", 0x004C9D89, kDetonationAreaHeadBytes, sizeof(kDetonationAreaHeadBytes)};
+
 inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
 inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
+
+inline constexpr std::uint8_t kVeterancyKillPathBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kVeterancyKillPath{"VeterancyKillPath", 0x004D4F37, kVeterancyKillPathBytes, sizeof(kVeterancyKillPathBytes)};
+
+inline constexpr std::uint8_t kTransformCall1Bytes[] = {0xE8, 0xCE, 0xB8, 0x1C, 0x00};
+inline constexpr Site kTransformCall1{"TransformCall1", 0x007FBC79, kTransformCall1Bytes, sizeof(kTransformCall1Bytes)};
+
+inline constexpr std::uint8_t kTransformCall2Bytes[] = {0xE8, 0x55, 0xB6, 0x1C, 0x00};
+inline constexpr Site kTransformCall2{"TransformCall2", 0x007FBEF2, kTransformCall2Bytes, sizeof(kTransformCall2Bytes)};
+
+inline constexpr std::uint8_t kTransformCall3Bytes[] = {0xE8, 0x3F, 0x48, 0x10, 0x00};
+inline constexpr Site kTransformCall3{"TransformCall3", 0x008C2D08, kTransformCall3Bytes, sizeof(kTransformCall3Bytes)};
+
+inline constexpr std::uint8_t kTransformCall4Bytes[] = {0xE8, 0xBD, 0xBD, 0x0D, 0x00};
+inline constexpr Site kTransformCall4{"TransformCall4", 0x008EB78A, kTransformCall4Bytes, sizeof(kTransformCall4Bytes)};
+
+inline constexpr std::uint8_t kTransformCall5Bytes[] = {0xE8, 0x52, 0x6F, 0x0D, 0x00};
+inline constexpr Site kTransformCall5{"TransformCall5", 0x008F05F5, kTransformCall5Bytes, sizeof(kTransformCall5Bytes)};
+
+inline constexpr std::uint8_t kTransformCall6Bytes[] = {0xE8, 0x72, 0xBE, 0x00, 0x00};
+inline constexpr Site kTransformCall6{"TransformCall6", 0x009BB6D5, kTransformCall6Bytes, sizeof(kTransformCall6Bytes)};
+
+inline constexpr std::uint8_t kTransformCall7Bytes[] = {0xE8, 0x31, 0xF9, 0xFF, 0xFF};
+inline constexpr Site kTransformCall7{"TransformCall7", 0x009C7C16, kTransformCall7Bytes, sizeof(kTransformCall7Bytes)};
 
 inline constexpr std::uint8_t kTrainBatchLimitCallBytes[] = {0xE8, 0xD1, 0x1E, 0xF0, 0xFF};
 inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kTrainBatchLimitCallBytes, sizeof(kTrainBatchLimitCallBytes)};
 
+inline constexpr std::uint8_t kBuildLimitEntryBytes[] = {0x83, 0xEC, 0x10, 0x8B, 0xD1};
+inline constexpr Site kBuildLimitEntry{"BuildLimitEntry", 0x004C7B5F, kBuildLimitEntryBytes, sizeof(kBuildLimitEntryBytes)};
+
+inline constexpr std::uint8_t kBuildCountEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x57, 0x8B, 0xF9};
+inline constexpr Site kBuildCountEntry{"BuildCountEntry", 0x004C7BC5, kBuildCountEntryBytes, sizeof(kBuildCountEntryBytes)};
+
+inline constexpr std::uint8_t kBuildCountTooltip1Bytes[] = {0xE8, 0x3F, 0xF0, 0xFF, 0xFF};
+inline constexpr Site kBuildCountTooltip1{"BuildCountTooltip1", 0x004C8B81, kBuildCountTooltip1Bytes, sizeof(kBuildCountTooltip1Bytes)};
+
+inline constexpr std::uint8_t kBuildCountTooltip2Bytes[] = {0xE8, 0xD1, 0x85, 0xDB, 0xFF};
+inline constexpr Site kBuildCountTooltip2{"BuildCountTooltip2", 0x0070F5EF, kBuildCountTooltip2Bytes, sizeof(kBuildCountTooltip2Bytes)};
+
+inline constexpr std::uint8_t kPlayerProtoEntryBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x85, 0xD2, 0x0F, 0x8C};
+inline constexpr Site kPlayerProtoEntry{"PlayerProtoEntry", 0x0045311B, kPlayerProtoEntryBytes, sizeof(kPlayerProtoEntryBytes)};
+
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
+
+inline constexpr std::uint8_t kTrainQueueAddCallBytes[] = {0xE8, 0x75, 0x60, 0xAC, 0xFF};
+inline constexpr Site kTrainQueueAddCall{"TrainQueueAddCall", 0x009CE81A, kTrainQueueAddCallBytes, sizeof(kTrainQueueAddCallBytes)};
+
+inline constexpr std::uint8_t kResearchPayCallBytes[] = {0xE8, 0x84, 0x2C, 0xEF, 0xFF};
+inline constexpr Site kResearchPayCall{"ResearchPayCall", 0x009E67E1, kResearchPayCallBytes, sizeof(kResearchPayCallBytes)};
+
+inline constexpr std::uint8_t kCommandResearchPayCallBytes[] = {0xE8, 0x96, 0x3F, 0xF0, 0xFF};
+inline constexpr Site kCommandResearchPayCall{"CommandResearchPayCall", 0x009D54CF, kCommandResearchPayCallBytes, sizeof(kCommandResearchPayCallBytes)};
+
+inline constexpr std::uint8_t kResearchCostCopyCallBytes[] = {0xE8, 0xCE, 0xA1, 0xA9, 0xFF};
+inline constexpr Site kResearchCostCopyCall{"ResearchCostCopyCall", 0x009E68A0, kResearchCostCopyCallBytes, sizeof(kResearchCostCopyCallBytes)};
+
+inline constexpr std::uint8_t kCommandResearchCostCopyCallBytes[] = {0xE8, 0x26, 0xB5, 0xAA, 0xFF};
+inline constexpr Site kCommandResearchCostCopyCall{"CommandResearchCostCopyCall", 0x009D5548, kCommandResearchCostCopyCallBytes, sizeof(kCommandResearchCostCopyCallBytes)};
 
 inline constexpr std::uint8_t kTrainQueueCall1Bytes[] = {0xE8, 0x04, 0x82, 0x27, 0x00};
 inline constexpr Site kTrainQueueCall1{"TrainQueueCall1", 0x007560B5, kTrainQueueCall1Bytes, sizeof(kTrainQueueCall1Bytes)};
@@ -1015,6 +1105,24 @@ inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApply
 
 inline constexpr std::uint8_t kDataUnapplySwitchBytes[] = {0x83, 0xF8, 0x5E, 0x0F, 0x87, 0x40, 0x11, 0x00, 0x00};
 inline constexpr Site kDataUnapplySwitch{"DataUnapplySwitch", 0x008FB051, kDataUnapplySwitchBytes, sizeof(kDataUnapplySwitchBytes)};
+
+inline constexpr std::uint8_t kDataActionAttributeBytes[] = {0x68, 0x3C, 0x34, 0xBA, 0x00};
+inline constexpr Site kDataActionAttribute{"DataActionAttribute", 0x006216A3, kDataActionAttributeBytes, sizeof(kDataActionAttributeBytes)};
+
+inline constexpr std::uint8_t kDataAllActionsApplyBytes[] = {0x0F, 0xB6, 0x50, 0x09, 0xC0, 0xEA, 0x06, 0x80, 0xE2, 0x01, 0x88, 0x54, 0x24, 0x0C};
+inline constexpr Site kDataAllActionsApply{"DataAllActionsApply", 0x007F86CA, kDataAllActionsApplyBytes, sizeof(kDataAllActionsApplyBytes)};
+
+inline constexpr std::uint8_t kDataAllActionsUnapplyBytes[] = {0x0F, 0xB6, 0x50, 0x09, 0xC0, 0xEA, 0x06, 0x80, 0xE2, 0x01, 0x88, 0x54, 0x24, 0x0C};
+inline constexpr Site kDataAllActionsUnapply{"DataAllActionsUnapply", 0x007F870F, kDataAllActionsUnapplyBytes, sizeof(kDataAllActionsUnapplyBytes)};
+
+inline constexpr std::uint8_t kCrateRankCallBytes[] = {0xE8, 0xFF, 0x1E, 0x04, 0x00};
+inline constexpr Site kCrateRankCall{"CrateRankCall", 0x0049A03C, kCrateRankCallBytes, sizeof(kCrateRankCallBytes)};
+
+inline constexpr std::uint8_t kCrateNextCallBytes[] = {0xE8, 0x76, 0x00, 0x00, 0x00};
+inline constexpr Site kCrateNextCall{"CrateNextCall", 0x0050170B, kCrateNextCallBytes, sizeof(kCrateNextCallBytes)};
+
+inline constexpr std::uint8_t kCrateNextCivReadBytes[] = {0x8B, 0x4E, 0x04, 0x8B, 0x49, 0x44};
+inline constexpr Site kCrateNextCivRead{"CrateNextCivRead", 0x0050184A, kCrateNextCivReadBytes, sizeof(kCrateNextCivReadBytes)};
 
 inline constexpr std::uint8_t kBwrTrainCallBytes[] = {0x8B, 0x4E, 0x10, 0xE8, 0x1B, 0x5A, 0xFD, 0xFF};
 inline constexpr Site kBwrTrainCall{"BwrTrainCall", 0x009EA410, kBwrTrainCallBytes, sizeof(kBwrTrainCallBytes)};

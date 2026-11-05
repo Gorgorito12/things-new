@@ -10,8 +10,13 @@ Contents:
 - [dodgeAnyUnit, dodgeSoundSet and criticalSoundSet](#dodgeanyunit-dodgesoundset-and-criticalsoundset)
 - [damageOverTime](#damageovertime)
 - [spreadAnyAccuracy](#spreadanyaccuracy)
+- [accuracyTechs](#accuracytechs)
 - [broadsideMuzzleLimit](#broadsidemuzzlelimit)
 - [snareOnlyHitUnit](#snareonlyhitunit)
+- [cantBeSlowed](#cantbeslowed)
+- [killBountyTechs, resourceBounty and teamKillBounty](#killbountytechs-resourcebounty-and-teamkillbounty)
+- [veterancyBonus](#veterancybonus)
+- [detonationDeath](#detonationdeath)
 
 ## dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
@@ -636,6 +641,8 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 #include "../unittypes.h"
 #include "../worldtick.h"
 
+extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);  // cantslow.cpp; false when that key is off
+
 namespace {
 
 // Engine layout (docs/engine-symbols.md, "Damage and poison").
@@ -896,7 +903,7 @@ std::uint32_t TickInterval(const char* attaching) {
 // The stock snare's modifier (snareOnlyHitUnit in how-it-works.md): stat 0 (velocity), operation 2
 // (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration.
 void Snare(char* unit, float factor, std::uint32_t ms) {
-  if (factor >= 0.0f && CanMove(unit)) {
+  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit)) {
     kSnare(unit, 0, factor, -1.0f, -1.0f, 0, 2, static_cast<std::int32_t>(ms), -1, -1, 1);
   }
 }
@@ -1742,6 +1749,79 @@ UhcSpreadRadiusHook ENDP
 END
 ```
 
+## accuracyTechs
+
+Contract: [accuracyTechs](../porting-to-another-dll.md#accuracytechs).
+
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes).
+
+### src/features/accuracy.cpp
+
+```cpp
+// accuracyTechs: a tech effect type="Data" subtype="Accuracy" changes an action's <Accuracy>.
+//
+// Stock keeps the tag in the action's [+38h], default 1, and reads it at the projectile launch: the
+// hit chance is accuracy x 100 - d / 2, d the distance. No Data subtype reaches the field, so the
+// effect is a new one on the action (techsubtypes.h), applied through the stock value function 0x7F892A,
+// which gives it every relativity and its removal.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../log.h"
+#include "../techsubtypes.h"
+
+namespace {
+
+constexpr std::size_t kAccuracy = 0x38;
+constexpr int kMaxLogLines = 200;
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+bool g_log = false;
+int g_logLines = 0;
+
+void ChangeAccuracy(char* action, const char* baseAction, float amount, std::uint8_t relativity, bool unapply) {
+  auto* value = reinterpret_cast<float*>(action + kAccuracy);
+  const float before = *value;
+  const float base = baseAction != nullptr ? *reinterpret_cast<const float*>(baseAction + kAccuracy) : 1.0f;
+  kEffectValue(relativity, value, base, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"accuracyTechs: action %d, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(action + 4), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*value));
+  }
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyAccuracyTechs(const Config& config) {
+  const Config::Args* args = config.First("accuracyTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"accuracyTechs: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!AddTechActionSubtype("Accuracy", &ChangeAccuracy)) {
+    return Outcome::kFailed;
+  }
+  Log(L"accuracyTechs: the Data subtype Accuracy is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
 ## broadsideMuzzleLimit
 
 Contract: [broadsideMuzzleLimit](../porting-to-another-dll.md#broadsidemuzzlelimit).
@@ -2406,4 +2486,900 @@ skip:
 UhcSnarePathCheckHook ENDP
 
 END
+```
+
+## cantBeSlowed
+
+Contract: [cantBeSlowed](../porting-to-another-dll.md#cantbeslowed).
+
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `SnareCreate` `0x4DD201` (44 B).
+
+### src/features/cantslow.cpp
+
+```cpp
+// cantBeSlowed: a unit whose proto has the abstract type CantBeSlowed ignores <TargetSpeedBoost>.
+//
+// Stock snares a target at one place: 0x4DD1DE tests that it can move, and 0x4DD201 pushes the arguments
+// of the modifier's creator 0x4DD22D. The hook leaves through the snare's exit for a marked target.
+// damageOverTime's snare asks UhcCantBeSlowed too. The hook is in hooks/cantslow_hooks.asm.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" void UhcCantBeSlowedHook();
+
+namespace {
+
+constexpr int kMaxLogLines = 200;
+
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+bool g_log = false;
+int g_logLines = 0;
+std::int32_t g_type = -1;
+
+}  // namespace
+
+// From the hook and from damageOverTime, with the target. True: no snare.
+extern "C" bool __stdcall UhcCantBeSlowed(const char* unit) {
+  if (unit == nullptr || g_type < 0) {
+    return false;
+  }
+  const char* proto = *reinterpret_cast<const char* const*>(unit + 0x5C);
+  if (proto == nullptr || !kProtoIsType(proto, g_type)) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"cantBeSlowed: proto %d ignores a snare", *reinterpret_cast<const std::int32_t*>(proto + 8));
+  }
+  return true;
+}
+
+namespace uhc {
+
+Outcome ApplyCantBeSlowed(const Config& config) {
+  const Config::Args* args = config.First("cantBeSlowed");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"cantBeSlowed: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("cantBeSlowed", {&sites::kSnareCreate}) || !RequestAbstractUnitType("CantBeSlowed", &g_type) ||
+      !WriteJmp(sites::kSnareCreate.va, reinterpret_cast<const void*>(&UhcCantBeSlowedHook), 6)) {
+    return Outcome::kFailed;
+  }
+  Log(L"cantBeSlowed: the abstract type CantBeSlowed is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/cantslow_hooks.asm
+
+```asm
+; cantBeSlowed (src/features/cantslow.cpp). Entered through a jmp written over the stock code; it leaves
+; through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcCantBeSlowed PROTO STDCALL unit:DWORD
+
+.data
+snareNext       dd 004DD207h    ; push 0BB8h: the rest of the creator's arguments
+snareExit       dd 0048FA49h    ; pop esi / pop ecx ..., where the snare ends
+
+.code
+
+; Replaces 0x4DD201..0x4DD206 (push 1 / push -1 / push -1), the creator's last arguments, re-executed
+; here. ESI = the target. The code after it sets ECX itself and reads neither EAX nor EDX.
+UhcCantBeSlowedHook PROC
+    TRACE_ONCE "cantBeSlowed (0x4DD201)"
+    invoke UhcCantBeSlowed, esi
+    test al, al
+    jne skip
+    push 1
+    push -1
+    push -1
+    jmp snareNext
+skip:
+    jmp snareExit
+UhcCantBeSlowedHook ENDP
+
+END
+```
+
+## killBountyTechs, resourceBounty and teamKillBounty
+
+Contract: [killBountyTechs, resourceBounty and teamKillBounty](../porting-to-another-dll.md#killbountytechs-resourcebounty-and-teamkillbounty).
+
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `TeamBountyPay` `0x49BDAB` (6 B), `BountyKillBranch` `0x4D4E0C` (5 B), `BountyTagHandler` `0x51D669` (4 B).
+
+### src/features/bounty.cpp
+
+```cpp
+// killBountyTechs: a tech effect type="Data" subtype="KillBounty" (or "Bounty") changes a proto's
+// <Bounty>, the XP its killer gets. teamKillBounty: that XP goes to the killer's whole team when the
+// victim's proto has the abstract type TeamKillBounty.
+//
+// Stock keeps the tag in the proto's [+168h]. The value function 0x4D4DC5 reads it from the victim's
+// proto, the copy of the victim's owner, at the kill. No Data subtype reaches the field, so the effect
+// is a new one (techsubtypes.h), applied through the stock value function 0x7F892A, which gives it
+// every relativity and its removal.
+//
+// The kill reaches FUN_0049BD52 (killer's player), which calls the team's XP routine 0x49BDC0 with the
+// killer's ID. That routine pays every member the whole amount when the ID is below 0, so the hook
+// passes -1 for a marked victim.
+//
+// resourceBounty: <Bounty resourcetype="Gold">N</Bounty> pays that resource at the kill. The stock handler
+// 0x5F5D79 ignores the attribute and takes the number as XP. A tag cannot be registered twice, so the key
+// changes the handler the builder registers, which keeps the stock one for a <Bounty> without the
+// attribute. The payment is a hook on the kill branch of TakeDamage (0x4D4E0C), which runs for any bounty
+// or none. A TeamKillBounty victim pays the team here too. The hooks are in hooks/bounty_hooks.asm.
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+extern "C" void UhcTeamBountyHook();
+extern "C" void UhcResourceBountyHook();
+
+namespace {
+
+constexpr std::size_t kBounty = 0x168;
+constexpr std::size_t kUnitProto = 0x5C;
+constexpr int kMaxLogLines = 200;
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+using ResourceByNameFn = std::int32_t(__thiscall*)(void* context, const char* name);
+const auto kResourceByName = reinterpret_cast<ResourceByNameFn>(0x0044709C);
+using PlayerAddFn = bool(__thiscall*)(char* player, std::int32_t resource, float amount, bool flag);
+const auto kPlayerAdd = reinterpret_cast<PlayerAddFn>(0x0049A98A);
+using PlayerByIdFn = char*(__thiscall*)(char* world, std::int32_t id);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+using BountyHandlerFn = bool(__cdecl*)(void* context, const char* node, char* proto);
+const auto kStockBountyTag = reinterpret_cast<BountyHandlerFn>(0x005F5D79);
+
+struct ResourceBounty {
+  std::int32_t resource;
+  float amount;
+};
+
+// By proto ID. Written while protos load and read at a kill, on the same thread.
+std::unordered_map<std::int32_t, std::vector<ResourceBounty>> g_resourceBounties;
+bool g_logResource = false;
+int g_resourceLines = 0;
+
+bool g_logTech = false;
+bool g_logTeam = false;
+int g_techLines = 0;
+int g_teamLines = 0;
+std::int32_t g_teamType = -1;
+
+void ChangeBounty(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  auto* value = reinterpret_cast<float*>(proto + kBounty);
+  const float before = *value;
+  kEffectValue(relativity, value, *reinterpret_cast<const float*>(base + kBounty), amount, unapply);
+  if (g_logTech && g_techLines < kMaxLogLines) {
+    ++g_techLines;
+    uhc::Log(L"killBountyTechs: proto %d, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*value));
+  }
+}
+
+void ForgetResourceBounties(char*) { g_resourceBounties.clear(); }
+
+// Replaces the handler of <Bounty> in the tag table.
+bool __cdecl ReadBounty(void* context, const char* node, char* proto) {
+  const void* text = nullptr;
+  if (!kXmlAttribute(node, "resourcetype", &text) || text == nullptr) {
+    return kStockBountyTag(context, node, proto);
+  }
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  const char* name = kXmlText(text);
+  const std::int32_t resource = name != nullptr ? kResourceByName(context, name) : -1;
+  const wchar_t* value = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const float amount = value != nullptr ? static_cast<float>(_wtof(value)) : 0.0f;
+  if (resource < 0 || amount <= 0.0f) {
+    uhc::Log(L"resourceBounty: proto %d: <Bounty resourcetype=\"%hs\"> needs a resource and a number above 0, ignored", id,
+             name != nullptr ? name : "");
+    return true;
+  }
+  g_resourceBounties[id].push_back({resource, amount});
+  if (g_logResource) {
+    uhc::Log(L"resourceBounty: proto %d pays %g of resource %d", id, static_cast<double>(amount), resource);
+  }
+  return true;
+}
+
+bool LogOption(const uhc::Config::Args& args, const char* key, bool* log) {
+  for (const std::string& arg : args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      uhc::Log(L"%hs: unknown option %hs; feature not applied", key, arg.c_str());
+      return false;
+    }
+    *log = true;
+  }
+  return true;
+}
+
+}  // namespace
+
+// From the hook, with the victim. True: the whole team gets the XP.
+extern "C" bool __stdcall UhcIsTeamBounty(const char* victim, float amount) {
+  if (victim == nullptr || g_teamType < 0) {
+    return false;
+  }
+  const char* proto = *reinterpret_cast<const char* const*>(victim + kUnitProto);
+  if (proto == nullptr || !kProtoIsType(proto, g_teamType)) {
+    return false;
+  }
+  if (g_logTeam && g_teamLines < kMaxLogLines) {
+    ++g_teamLines;
+    uhc::Log(L"teamKillBounty: proto %d: %g XP to the killer's whole team", *reinterpret_cast<const std::int32_t*>(proto + 8),
+             static_cast<double>(amount));
+  }
+  return true;
+}
+
+// From the hook on the kill branch, with the victim and the killer's player, which can be null.
+extern "C" void __stdcall UhcPayResourceBounty(const char* victim, char* killer) {
+  if (victim == nullptr || killer == nullptr) {
+    return;
+  }
+  const char* proto = *reinterpret_cast<const char* const*>(victim + kUnitProto);
+  if (proto == nullptr) {
+    return;
+  }
+  const auto found = g_resourceBounties.find(*reinterpret_cast<const std::int32_t*>(proto + 8));
+  if (found == g_resourceBounties.end() || killer == *reinterpret_cast<char* const*>(victim + 0x44)) {
+    return;
+  }
+  char* world = *reinterpret_cast<char**>(*reinterpret_cast<char**>(0x00C66234) + 0x13C);
+  const bool team = g_teamType >= 0 && kProtoIsType(proto, g_teamType);
+  for (const ResourceBounty& bounty : found->second) {
+    int paid = 1;
+    if (team) {
+      paid = 0;
+      const std::int32_t teamId = *reinterpret_cast<const std::int32_t*>(killer + 0x10);
+      const auto teams = *reinterpret_cast<char* const* const*>(world + 0x188);
+      const char* members = teamId >= 0 && teamId < *reinterpret_cast<const std::int32_t*>(world + 0x18C) ? teams[teamId] : nullptr;
+      if (members != nullptr) {
+        const auto* ids = *reinterpret_cast<const std::int32_t* const*>(members + 8);
+        const std::int32_t count = *reinterpret_cast<const std::int32_t*>(members + 0xC);
+        for (std::int32_t i = 0; i < count; ++i) {
+          if (char* player = kPlayerById(world, ids[i])) {
+            kPlayerAdd(player, bounty.resource, bounty.amount, false);
+            ++paid;
+          }
+        }
+      }
+    } else {
+      kPlayerAdd(killer, bounty.resource, bounty.amount, false);
+    }
+    if (g_logResource && g_resourceLines < kMaxLogLines) {
+      ++g_resourceLines;
+      uhc::Log(L"resourceBounty: proto %d killed: %g of resource %d to %d player(s)",
+               *reinterpret_cast<const std::int32_t*>(proto + 8), static_cast<double>(bounty.amount), bounty.resource, paid);
+    }
+  }
+}
+
+namespace uhc {
+
+Outcome ApplyKillBountyTechs(const Config& config) {
+  const Config::Args* args = config.First("killBountyTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!LogOption(*args, "killBountyTechs", &g_logTech) || !AddTechSubtype("KillBounty", &ChangeBounty) ||
+      !AddTechSubtype("Bounty", &ChangeBounty)) {
+    return Outcome::kFailed;
+  }
+  Log(L"killBountyTechs: the Data subtypes KillBounty and Bounty are on");
+  return Outcome::kApplied;
+}
+
+Outcome ApplyResourceBounty(const Config& config) {
+  const Config::Args* args = config.First("resourceBounty");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!LogOption(*args, "resourceBounty", &g_logResource) ||
+      !VerifyAll("resourceBounty", {&sites::kBountyTagHandler, &sites::kBountyKillBranch}) ||
+      !OnDatabaseLoad(&ForgetResourceBounties) ||
+      !WriteDword(sites::kBountyTagHandler.va, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&ReadBounty))) ||
+      !WriteJmp(sites::kBountyKillBranch.va, reinterpret_cast<const void*>(&UhcResourceBountyHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"resourceBounty: <Bounty resourcetype> is on");
+  return Outcome::kApplied;
+}
+
+Outcome ApplyTeamKillBounty(const Config& config) {
+  const Config::Args* args = config.First("teamKillBounty");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!LogOption(*args, "teamKillBounty", &g_logTeam) || !VerifyAll("teamKillBounty", {&sites::kTeamBountyPay}) ||
+      !RequestAbstractUnitType("TeamKillBounty", &g_teamType) ||
+      !WriteJmp(sites::kTeamBountyPay.va, reinterpret_cast<const void*>(&UhcTeamBountyHook), 6)) {
+    return Outcome::kFailed;
+  }
+  Log(L"teamKillBounty: the abstract type TeamKillBounty is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/bounty_hooks.asm
+
+```asm
+; teamKillBounty and resourceBounty (src/features/bounty.cpp). Entered through a jmp written over the stock code; it leaves
+; through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcIsTeamBounty PROTO STDCALL victim:DWORD, amount:DWORD
+UhcPayResourceBounty PROTO STDCALL victim:DWORD, killer:DWORD
+
+.data
+teamPayNext     dd 0049BDB1h    ; push 0 / push ecx / push edx / mov ecx,eax / call 0x49BDC0
+killBranchNext  dd 004D4E11h    ; mov ecx,esi / call 0x4D4DC5
+
+.code
+
+; Replaces 0x49BDAB..0x49BDB0 (mov ecx,[esp+14h] / mov edx,[esi]) in FUN_0049BD52, its only caller being
+; TakeDamage at 0x49B73C. EAX = the killer's team, ESI = the killer's player, [esp] = the ESI the function
+; saved: the caller's, the victim. EDX and ECX go to the XP routine: the player ID, -1 for the whole
+; team, and the amount. The routine runs on every hit, with an amount of 0 unless the hit kills, so the
+; helper only runs for a bounty.
+UhcTeamBountyHook PROC
+    TRACE_ONCE "teamKillBounty (0x49BDAB)"
+    cmp dword ptr [esp+14h], 0
+    je killer
+    push eax
+    mov ecx, dword ptr [esp+4]
+    mov edx, dword ptr [esp+18h]
+    invoke UhcIsTeamBounty, ecx, edx
+    test al, al
+    pop eax
+    je killer
+    mov ecx, dword ptr [esp+14h]
+    or edx, -1
+    jmp teamPayNext
+killer:
+    mov ecx, dword ptr [esp+14h]
+    mov edx, dword ptr [esi]
+    jmp teamPayNext
+UhcTeamBountyHook ENDP
+
+; Replaces 0x4D4E0C..0x4D4E10 (mov ecx,[esp+28h] / push ecx), re-executed here, on the kill branch of
+; TakeDamage. ESI = the victim, [esp+20h] = the killer's player. The next call overwrites EAX, ECX and EDX.
+UhcResourceBountyHook PROC
+    TRACE_ONCE "resourceBounty (0x4D4E0C)"
+    mov ecx, dword ptr [esp+20h]
+    invoke UhcPayResourceBounty, esi, ecx
+    mov ecx, dword ptr [esp+28h]
+    push ecx
+    jmp killBranchNext
+UhcResourceBountyHook ENDP
+
+END
+```
+
+## veterancyBonus
+
+Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
+
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`transformcalls.h`](helpers.md#transform-calls).
+
+Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
+
+### src/features/veterancy.cpp
+
+```cpp
+// veterancyBonus: a unit grows stronger with its kills.
+//
+//   <VeterancyBonus kills="1" modifytype="Damage">1.15</VeterancyBonus>   repeatable, in a proto
+//
+// Each row says: from that many kills on, this stat is multiplied by this much, in all (1.15 then 1.30
+// is ×1.30 at the second row, not 1.15 × 1.30). modifytype takes every <ModifyType> name.
+//
+// Stock's flag ExperienceUnit has no reader in the exe, so nothing counts a unit's kills. The hook sits
+// on TakeDamage's kill path, where the attacker unit is known. The count and the bonuses are all stat
+// modifiers of the game (0x4DD22D, the call of snares and auras, with no time limit), so that the game
+// saves them, the stat code reads them and a transformed unit keeps them:
+// - the count is a modifier of a stat no code reads, kStatKills, whose value is the kills;
+// - each row reached adds a multiply modifier for what its total adds to the row before it.
+// A transform in place (0x9C754C: TransformUnit, revolutions) ends the unit's modifiers, so its seven
+// calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
+// new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
+// hooks/veterancy_hooks.asm.
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../features.h"
+#include "../floatingtext.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../modifiers.h"
+#include "../patch.h"
+#include "../prototags.h"
+#include "../transformcalls.h"
+
+extern "C" void UhcVeterancyHook();
+
+namespace {
+
+constexpr std::uint32_t kKillPath = 0x004D4F37;
+constexpr std::int32_t kStatKills = 0x62;       // no stock stat or key uses it; transformSpan has 60h and 61h
+constexpr std::int32_t kOperationSet = 0;
+constexpr std::int32_t kOperationMultiply = 2;
+constexpr std::uint32_t kRankColour = 0xFFFFD700;
+constexpr int kMaxLogLines = 200;
+
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+using ModifyTypeFn = std::int32_t(__cdecl*)(const void* name);
+using ModifierFn = std::int32_t(__thiscall*)(char* unit, std::int32_t stat, float value, float a, float b,
+                                             std::int32_t c, std::int32_t operation, std::int32_t ms, std::int32_t d,
+                                             std::int32_t e, std::int32_t exclusive);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
+const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
+
+struct Row {
+  std::int32_t kills;
+  std::int32_t stat;
+  float total;
+};
+
+std::unordered_map<std::int32_t, std::vector<Row>> g_rows;  // by proto ID; the load fills it
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+bool __cdecl ReadVeterancyBonus(void*, const char* node, char* proto) {
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  const void* killsText = nullptr;
+  const void* typeText = nullptr;
+  const char* amount = kXmlText(node + 0x14);
+  if (!kXmlAttribute(node, "kills", &killsText) || killsText == nullptr ||
+      !kXmlAttribute(node, "modifytype", &typeText) || typeText == nullptr || amount == nullptr) {
+    uhc::Log(L"veterancyBonus: proto %d: a row needs kills, modifytype and a value; ignored", id);
+    return true;
+  }
+  const char* digits = kXmlText(killsText);
+  const std::int32_t kills = digits != nullptr ? std::atoi(digits) : 0;
+  const std::int32_t stat = kModifyType(typeText);
+  const float total = static_cast<float>(std::atof(amount));
+  if (kills < 1 || stat < 0 || total <= 0.0f) {
+    uhc::Log(L"veterancyBonus: proto %d: a row with kills %d, stat %d, value %hs is not valid; ignored", id, kills, stat,
+             amount);
+    return true;
+  }
+  std::vector<Row>& rows = g_rows[id];
+  rows.push_back({kills, stat, total});
+  std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) { return a.kills < b.kills; });
+  if (g_log) {
+    uhc::Log(L"veterancyBonus: proto %d: from %d kills, stat %d x%g", id, kills, stat, static_cast<double>(total));
+  }
+  return true;
+}
+
+// The modifier that holds the count, or null.
+char* FindCount(const char* unit) {
+  const char* list = uhc::modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return nullptr;
+  }
+  char* found = nullptr;
+  auto visit = [&found](const char* action) {
+    if (Field<std::int32_t>(action, 0x64) != kStatKills) {
+      return true;
+    }
+    found = const_cast<char*>(action);
+    return false;
+  };
+  uhc::modifiers::WalkModifiers(list, visit, 0);
+  return found;
+}
+
+// Around the transform in place, which ends the unit's modifiers.
+float KillsBeforeTransform(const char* unit) {
+  const char* count = g_rows.empty() ? nullptr : FindCount(unit);
+  return count != nullptr ? Field<float>(count, 0x68) : 0.0f;
+}
+
+void RestoreAfterTransform(char* unit, float kills) {
+  if (kills < 1.0f || FindCount(unit) != nullptr) {
+    return;
+  }
+  kModifier(unit, kStatKills, kills, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0);
+  const char* now = Field<const char*>(unit, 0x5C);
+  const auto found = now != nullptr ? g_rows.find(Field<std::int32_t>(now, 8)) : g_rows.end();
+  if (found == g_rows.end()) {
+    return;
+  }
+  // The total of each stat is its last row reached.
+  std::unordered_map<std::int32_t, float> totals;
+  for (const Row& row : found->second) {
+    if (static_cast<float>(row.kills) <= kills) {
+      totals[row.stat] = row.total;
+    }
+  }
+  for (const auto& [stat, total] : totals) {
+    kModifier(unit, stat, total, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+  }
+  if (g_log) {
+    uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
+             static_cast<double>(kills), Field<std::int32_t>(now, 8));
+  }
+}
+
+}  // namespace
+
+// From the hook, for every killing blow.
+extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
+  if (attacker == nullptr || victim == nullptr) {
+    return;
+  }
+  const char* proto = Field<const char*>(attacker, 0x5C);
+  if (proto == nullptr) {
+    return;
+  }
+  const auto found = g_rows.find(Field<std::int32_t>(proto, 8));
+  if (found == g_rows.end()) {
+    return;
+  }
+  const char* attackerPlayer = Field<const char*>(attacker, 0x44);
+  const char* victimPlayer = Field<const char*>(victim, 0x44);
+  if (attackerPlayer == nullptr || victimPlayer == nullptr) {
+    return;
+  }
+  const std::int32_t victimOwner = Field<std::int32_t>(victimPlayer, 0);
+  if (victimOwner == 0 || victimOwner == Field<std::int32_t>(attackerPlayer, 0)) {
+    return;  // Gaia, which is hunted game too, or a unit of its own
+  }
+  std::int32_t kills = 1;
+  if (char* count = FindCount(attacker)) {
+    kills = static_cast<std::int32_t>(Field<float>(count, 0x68)) + 1;
+    *reinterpret_cast<float*>(count + 0x68) = static_cast<float>(kills);
+  } else if (kModifier(attacker, kStatKills, 1.0f, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0) == -1) {
+    return;  // no action manager
+  }
+  std::int32_t rank = 0;
+  std::int32_t last = 0;
+  bool reached = false;
+  for (const Row& row : found->second) {
+    if (row.kills > kills) {
+      break;
+    }
+    if (row.kills != last) {
+      ++rank;
+      last = row.kills;
+    }
+    if (row.kills != kills) {
+      continue;
+    }
+    reached = true;
+    float before = 1.0f;
+    for (const Row& earlier : found->second) {
+      if (earlier.kills < row.kills && earlier.stat == row.stat) {
+        before = earlier.total;
+      }
+    }
+    kModifier(attacker, row.stat, row.total / before, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+  }
+  if (reached) {
+    wchar_t text[32];
+    swprintf(text, 32, L"Rank %d", rank);
+    uhc::ShowUnitText(attacker, text, -1, kRankColour);
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d", Field<std::int32_t>(attacker, 0x10),
+             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank);
+  }
+}
+
+namespace uhc {
+
+Outcome ApplyVeterancyBonus(const Config& config) {
+  const Config::Args* args = config.First("veterancyBonus");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"veterancyBonus: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply}) ||
+      !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
+      !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
+      !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
+    return Outcome::kFailed;
+  }
+  Log(L"veterancyBonus: the proto tag VeterancyBonus is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/veterancy_hooks.asm
+
+```asm
+; veterancyBonus (src/features/veterancy.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcVeterancyKill PROTO STDCALL attacker:DWORD, victim:DWORD
+
+.data
+killPathNext    dd 004D4F3Dh    ; call 0x4D520C
+
+.code
+
+; Replaces 0x4D4F37 (mov ecx,[0xC66234]), the head of TakeDamage's cold kill path: the only way here
+; is the je at 0x49B746 on [esp+1Fh] = 1, set at 0x4D484B for the blow that takes the unit from alive
+; to no hit points. ESI = the unit killed, [esp+28h] = the attacker unit, null when it is gone. The code
+; that follows reads neither EAX nor EDX before writing them.
+UhcVeterancyHook PROC
+    TRACE_ONCE "veterancyBonus kill (0x4D4F37)"
+    mov eax, dword ptr [esp+28h]
+    invoke UhcVeterancyKill, eax, esi
+    mov ecx, dword ptr ds:[00C66234h]
+    jmp killPathNext
+UhcVeterancyHook ENDP
+
+END
+```
+
+## detonationDeath
+
+Contract: [detonationDeath](../porting-to-another-dll.md#detonationdeath).
+
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+
+Sites: `DetonationKillCall` `0x493D8F` (5 B), `DetonationAreaHead` `0x4C9D89` (10 B).
+
+### src/features/detonation.cpp
+
+```cpp
+// detonationDeath: <DetonationProtoAction>Name</DetonationProtoAction> in a proto fires that action around
+// the unit when it dies.
+//
+// Every death goes through one queue: TakeDamage, a lifespan, a delete and the rest ask 0x4B4DC2, and the
+// queue's drain 0x493D46 calls the kill handler 0x4B4F70 for each, from a single call, 0x493D8F. The key
+// wraps that call. Before the stock handler runs, the unit still exists, so the stock area damage
+// 0x4C9D89 gets it as the attacker, in the same call the game makes for a unit that hits around
+// itself (0x6A4A6B). Units that die from the blast join the queue, and the drain reads its count again,
+// so a chain runs one by one and does not recurse.
+//
+// The action is the player's copy, so a tech that changes its damage counts. The names are read once and
+// are the same for every player.
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
+#include <unordered_map>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+
+namespace {
+
+constexpr std::uint32_t kKillCall = 0x00493D8F;
+constexpr std::size_t kUnitState = 4;       // bit array; +8h its size in bits
+constexpr std::size_t kUnitId = 0x10;
+constexpr std::size_t kUnitPosition = 0x14;
+constexpr std::size_t kUnitProto = 0x5C;
+constexpr std::size_t kProtoId = 8;
+constexpr std::size_t kProtoActions = 0x44;  // the action set
+constexpr std::size_t kActionList = 0x1C;    // in the set: the array of actions, its count at +20h
+constexpr std::size_t kActionId = 4;
+constexpr std::size_t kActionFlags = 0x64;   // bit array; +68h its size in bits
+constexpr std::size_t kActionNames = 0x1FD8; // in the database: the names by action ID, the count at +1FDCh
+constexpr std::uint32_t kDeadBit = 11;       // the kill handler returns at once when it is set
+constexpr std::uint32_t kAreaFlagBit = 6;    // what the stock caller reads and passes on
+constexpr std::uint32_t kZeroVector = 0x00CF0618;
+constexpr int kMaxLogLines = 200;
+
+using KillFn = void(__thiscall*)(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c);
+const auto kKill = reinterpret_cast<KillFn>(0x004B4F70);
+using AreaFn = void(__thiscall*)(const char* world, std::int32_t unit, char* action, const void* point, float multiplier,
+                                 std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t* hit, std::uint32_t flag,
+                                 const void* offset);
+const auto kArea = reinterpret_cast<AreaFn>(0x004C9D89);
+
+struct Detonation {
+  std::wstring name;
+  std::int32_t action = -2;  // -2: not looked up yet, -1: the proto has no action of that name
+};
+
+std::unordered_map<std::int32_t, Detonation> g_protos;  // by proto ID; the map's shape is fixed after the load
+bool g_log = false;
+int g_logLines = 0;
+
+bool Bit(const char* owner, std::size_t array, std::uint32_t bit) {
+  const auto* bits = *reinterpret_cast<const std::uint8_t* const*>(owner + array);
+  const std::uint32_t size = *reinterpret_cast<const std::uint32_t*>(owner + array + 4);
+  return bits != nullptr && bit < size && (bits[bit / 8] & (1u << (bit % 8))) != 0;
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(0x00C66234); }
+
+// The action of the player's copy with that name, by its ID in the database's list of names.
+char* FindAction(const char* proto, Detonation& detonation) {
+  const char* game = Game();
+  const char* db = *reinterpret_cast<const char* const*>(game + 0x140);
+  const char* set = *reinterpret_cast<const char* const*>(proto + kProtoActions);
+  if (set == nullptr) {
+    return nullptr;
+  }
+  const auto* names = *reinterpret_cast<const wchar_t* const* const*>(db + kActionNames);
+  const std::int32_t nameCount = *reinterpret_cast<const std::int32_t*>(db + kActionNames + 4);
+  char* const* actions = *reinterpret_cast<char* const* const*>(set + kActionList);
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(set + kActionList + 4);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const std::int32_t id = *reinterpret_cast<const std::int32_t*>(actions[i] + kActionId);
+    if (detonation.action >= 0) {
+      if (id == detonation.action) {
+        return actions[i];
+      }
+      continue;
+    }
+    if (id >= 0 && id < nameCount && names[id] != nullptr && _wcsicmp(names[id], detonation.name.c_str()) == 0) {
+      detonation.action = id;
+      return actions[i];
+    }
+  }
+  if (detonation.action == -2) {
+    detonation.action = -1;
+    uhc::Log(L"detonationDeath: proto %d has no action %ls", *reinterpret_cast<const std::int32_t*>(proto + kProtoId),
+             detonation.name.c_str());
+  }
+  return nullptr;
+}
+
+bool __cdecl ReadDetonation(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  if (text == nullptr || text[0] == L'\0') {
+    uhc::Log(L"detonationDeath: proto %d: <DetonationProtoAction> names no action, ignored", id);
+    return true;
+  }
+  g_protos[id].name = text;
+  if (g_log) {
+    uhc::Log(L"detonationDeath: proto %d fires %ls", id, text);
+  }
+  return true;
+}
+
+void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+  const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
+  if (proto == nullptr) {
+    return;
+  }
+  const std::int32_t protoId = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  const auto found = g_protos.find(protoId);
+  if (found == g_protos.end() || found->second.action == -1 || Bit(unit, kUnitState, kDeadBit)) {
+    return;
+  }
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : *reinterpret_cast<const char* const*>(game + 0x13C);
+  if (world == nullptr) {
+    return;
+  }
+  char* action = FindAction(proto, found->second);
+  if (action == nullptr) {
+    return;
+  }
+  const auto* position = reinterpret_cast<const float*>(unit + kUnitPosition);
+  std::int32_t hit = 0;
+  kArea(world, *reinterpret_cast<const std::int32_t*>(unit + kUnitId), action, position, 1.0f, 0, 0, -1, &hit,
+        Bit(action, kActionFlags, kAreaFlagBit) ? 1 : 0, reinterpret_cast<const void*>(kZeroVector));
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
+             protoId, static_cast<double>(position[0]), static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF);
+  }
+}
+
+// Replaces the drain's call of the kill handler.
+void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+  Detonate(unit, a, b, c);
+  kKill(unit, a, b, c);
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyDetonationDeath(const Config& config) {
+  const Config::Args* args = config.First("detonationDeath");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"detonationDeath: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("detonationDeath", {&sites::kDetonationKillCall, &sites::kDetonationAreaHead}) ||
+      !AddProtoTagHandler("DetonationProtoAction", &ReadDetonation) ||
+      !WriteCall(kKillCall, reinterpret_cast<const void*>(&Kill))) {
+    return Outcome::kFailed;
+  }
+  Log(L"detonationDeath: the proto tag DetonationProtoAction is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
 ```
