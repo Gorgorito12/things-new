@@ -43,7 +43,7 @@ In any other mod:
    Never modify the Steam install.
 <!-- private:begin -->
 3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`, from
-   [AoE3UnHardcoded/Release](https://github.com/danielpereira/AoE3UnHardcoded/tree/master/Release). It must
+   [AoE3UnHardcoded/Release] It must
    be the unmodified Steam exe.
 <!-- private:end -->
 <!-- public: 3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`. It must be the unmodified Steam exe. -->
