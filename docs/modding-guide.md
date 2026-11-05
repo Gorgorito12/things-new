@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 10:17 | [`veterancyBonus`](#veterancybonus) | Added. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Thursday 2026-11-05 09:33 | [`doNotQueue`](#donotqueue) | Added. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Thursday 2026-11-05 09:33 | [`nextResearchFree`](#nextresearchfree) | Added. A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 09:26 | [`sharedBuildLimit`](#sharedbuildlimit) | Added. Protos share a build limit: by unit type, with weights, or across a team. | The tags on the protos that share. |
@@ -2713,7 +2714,7 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 
 #### veterancyBonus
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Thursday 2026-11-05 10:17
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
