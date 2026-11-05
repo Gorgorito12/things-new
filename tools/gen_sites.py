@@ -846,6 +846,13 @@ SITES = [
     ("ProtoTagsTail", 0x51DB0F, 6),
     # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
     ("TrainBatchLimitCall", 0x9CE645, 5),
+    # sharedBuildLimit: the entry of the build limit, sub esp,10h / mov edx,ecx (no branch lands inside);
+    # the heads of the count it calls, thiscall(proto, player, bool, bool), and of the player's proto
+    ("BuildLimitEntry", 0x4C7B5F, 5),
+    ("BuildCountEntry", 0x4C7BC5, 8),
+    ("BuildCountTooltip1", 0x4C8B81, 5),
+    ("BuildCountTooltip2", 0x70F5EF, 5),
+    ("PlayerProtoEntry", 0x45311B, 8),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
     # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
     # arg 3 the proto ID, arg 4 the count

@@ -240,6 +240,7 @@ costEscalationTechs [log]     a Data tech effect may change CostEscalation
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
+sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

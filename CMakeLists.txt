@@ -61,6 +61,7 @@ add_library(UHC SHARED
   src/features/plugins.cpp
   src/features/perf.cpp
   src/features/selection.cpp
+  src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
   src/features/snare.cpp
@@ -142,6 +143,7 @@ add_library(UHC SHARED
   src/hooks/resourcedebt_hooks.asm
   src/hooks/modifytype_hooks.asm
   src/hooks/prototag_hooks.asm
+  src/hooks/sharedlimit_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm

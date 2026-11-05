@@ -2772,6 +2772,30 @@ Value is `{3, BString}` with an empty BString (0x44A635).
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
 
+### sharedBuildLimit
+
+Stock compares a count with a limit in about 30 places. The count has many routes: 0x4C7BC5 (6 callers) and 0x4C846D (60
+callers, with several flags). The limit has one: 0x4C7B5F, `int thiscall(player, proto)`, 50 callers, which reads the player's
+copy's `[proto+108h]`. So the key leaves every count alone and changes only the limit: for a tagged proto it returns the room
+the others leave, `(limit - others) / own weight`, never below 0, because a negative limit means no limit. The buttons, the
+train action, Maintain, cards and the AI all give the right answer at once, and the stock cut of a batch (0x9EAD32, limit
+minus count) works too.
+
+The others are counted by 0x4C7BC5 with `(1, 1)`, the arguments of the train check at 0x9EAD04, so queued units count. With
+`TeamBuildLimit` the loop goes over the players whose `[player+1D4h+4i]` is 0 or 1, the test of the shared resources at
+0x67995B, skipping Gaia.
+
+The hook replaces the 5 bytes at the entry (`sub esp,10h / mov edx,ecx`); a small stub re-executes them and jumps to 0x4C7B64,
+which is how the helper reads the stock limit. A proto that is not tagged costs a bit test by ID.
+
+Only the tooltips must not see the room: "9 out of 7" says nothing to a player. So their count calls (0x4C8B81, 0x70F5EF) go
+through a wrapper that adds the others, and the hook returns the real limit to the return addresses of their limit calls.
+
+Names resolve at the first use through the table `<UnitType>` reads, `[db+190h]` (0x58E685, 0x40295B), which holds protos and
+abstract types, and the members through the is-a test 0x44D7FA, which takes both.
+
+- **Observed in game:** see the tests in the modding guide.
+
 ### trainBatchSize
 
 The routine that queues units in a building reads its limit from one call, 0x8D051B at 0x9CE645: the player's `[+2ACh]`

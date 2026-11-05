@@ -1046,6 +1046,21 @@ inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTail
 inline constexpr std::uint8_t kTrainBatchLimitCallBytes[] = {0xE8, 0xD1, 0x1E, 0xF0, 0xFF};
 inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kTrainBatchLimitCallBytes, sizeof(kTrainBatchLimitCallBytes)};
 
+inline constexpr std::uint8_t kBuildLimitEntryBytes[] = {0x83, 0xEC, 0x10, 0x8B, 0xD1};
+inline constexpr Site kBuildLimitEntry{"BuildLimitEntry", 0x004C7B5F, kBuildLimitEntryBytes, sizeof(kBuildLimitEntryBytes)};
+
+inline constexpr std::uint8_t kBuildCountEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x57, 0x8B, 0xF9};
+inline constexpr Site kBuildCountEntry{"BuildCountEntry", 0x004C7BC5, kBuildCountEntryBytes, sizeof(kBuildCountEntryBytes)};
+
+inline constexpr std::uint8_t kBuildCountTooltip1Bytes[] = {0xE8, 0x3F, 0xF0, 0xFF, 0xFF};
+inline constexpr Site kBuildCountTooltip1{"BuildCountTooltip1", 0x004C8B81, kBuildCountTooltip1Bytes, sizeof(kBuildCountTooltip1Bytes)};
+
+inline constexpr std::uint8_t kBuildCountTooltip2Bytes[] = {0xE8, 0xD1, 0x85, 0xDB, 0xFF};
+inline constexpr Site kBuildCountTooltip2{"BuildCountTooltip2", 0x0070F5EF, kBuildCountTooltip2Bytes, sizeof(kBuildCountTooltip2Bytes)};
+
+inline constexpr std::uint8_t kPlayerProtoEntryBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x85, 0xD2, 0x0F, 0x8C};
+inline constexpr Site kPlayerProtoEntry{"PlayerProtoEntry", 0x0045311B, kPlayerProtoEntryBytes, sizeof(kPlayerProtoEntryBytes)};
+
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
 
@@ -1876,6 +1891,7 @@ Outcome ApplyCostEscalationTechs(const Config& config);
 Outcome ApplyTrainBatchSize(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
+Outcome ApplySharedBuildLimit(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1957,6 +1973,7 @@ inline constexpr Feature kFeatures[] = {
     {"trainBatchSize", ApplyTrainBatchSize},
     {"accuracyTechs", ApplyAccuracyTechs},
     {"cratePriority", ApplyCratePriority},
+    {"sharedBuildLimit", ApplySharedBuildLimit},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -2029,7 +2046,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
