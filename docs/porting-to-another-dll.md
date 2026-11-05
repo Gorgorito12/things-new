@@ -1346,7 +1346,7 @@ from the [helpers](porting-code/helpers.md).
   overlap WoL's DLL. The name hook at `0x5FE6D7` is the one `buildingWorkRateAuras` uses; with both keys there is one
   `jmp` and one list of names.
 - **Data:** none: `AreaGatherTree` is already in `sawmill.tactics`. For a ring, its `<modelattachment>` needs a model that
-  exists: `torpgatherpower.xml` is not in WoL.
+  exists: `torpgatherpower.xml` is not in WoL. The [aura rings](modding-guide.md#aura-rings) have one.
 - **Rings:** no new `jmp`; the code calls the game's model functions and needs `AddWorldTick`.
 
 Check it in the game: a `WOLSawmill` among trees, with `log`: a line about every 3 s per tree, for at most 5 trees.
@@ -1358,8 +1358,12 @@ Code: [gathering](porting-code/gathering.md#resourcegatherauras). It needs `AddM
 
 - **Site:** the `call 4ECD39h` at `0x4ED02A` goes to the wrapper, and the wrapper calls it. WoL's DLL patches `0x4ECD6B`, inside
   that function, for its `danceCiv`: the wrapper calls through it, so the two combine. No range overlaps the call.
+- **Ring:** the `call`s at `0x9D0584` (`E8 55 23 FF FF`, has a model) and `0x9D06DC` (hang a model) go to two more wrappers. A
+  hook at `0x9D033E`, as `unitResourceAuras` has, does not overlap them: they are inside that function, and each wrapper calls
+  the stock function. A DLL with no rings to mark can leave both out: the gather bonus works without them.
 
-Check it in the game: an aura with `MineGatherRate` 2 on an Explorer, and `showGatherRate` on a miner.
+Check it in the game: an aura with `MineGatherRate` 2 on an Explorer, and `showGatherRate` on a miner. With a `<modelattachment>`,
+the miners wear the ring, and a villager cutting wood does not.
 
 ### cratePriority
 

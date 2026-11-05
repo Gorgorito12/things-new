@@ -1458,6 +1458,12 @@ inline constexpr Site kAuraScan{"AuraScan", 0x009CFF9A, kAuraScanBytes, sizeof(k
 inline constexpr std::uint8_t kAuraModelBlockBytes[] = {0x8B, 0x80, 0xA4, 0x00, 0x00, 0x00, 0x83, 0xF8, 0xFF};
 inline constexpr Site kAuraModelBlock{"AuraModelBlock", 0x009D053F, kAuraModelBlockBytes, sizeof(kAuraModelBlockBytes)};
 
+inline constexpr std::uint8_t kAuraHasModelCallBytes[] = {0xE8, 0x55, 0x23, 0xFF, 0xFF};
+inline constexpr Site kAuraHasModelCall{"AuraHasModelCall", 0x009D0584, kAuraHasModelCallBytes, sizeof(kAuraHasModelCallBytes)};
+
+inline constexpr std::uint8_t kAuraHangModelCallBytes[] = {0xE8, 0x12, 0xFE, 0xFE, 0xFF};
+inline constexpr Site kAuraHangModelCall{"AuraHangModelCall", 0x009D06DC, kAuraHangModelCallBytes, sizeof(kAuraHangModelCallBytes)};
+
 inline constexpr std::uint8_t kModelByIdBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x83, 0xF8};
 inline constexpr Site kModelById{"ModelById", 0x00405E83, kModelByIdBytes, sizeof(kModelByIdBytes)};
 

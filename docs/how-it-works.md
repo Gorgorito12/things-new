@@ -2636,9 +2636,16 @@ targets that paid, and keeps per owner what it hung and per target how many aura
 once a second, because a dead owner has no more updates. A model that is not in the game is accepted by 0x9C04F3, returns
 true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
 
-The rings of `tools/make_rings.py` need no code. A ring's `.xml` names the mesh and swaps its texture with `<replacetexture>`.
-The texture is a `.ddt`: `RTS3`, usage 0, alpha 1, format 8 (DXT3), 5 mips, 64x64, then an offset and a size per mip, 5512
-bytes in all. The script draws two bands in alpha, at 70%, and gives each block two colours and a 2-bit shade per texel.
+The rings of `tools/make_rings.py` need no code. A ring's `.xml` hangs one flat particle, chosen by `<logic type="UnitType">`:
+`appearancetype` 2 lies on the ground, 0 faces the camera, and `materialtype` 0 with `material` 0 honours the texture's alpha;
+`scale` is half the width of the square in metres. The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it
+within a frame, and `startfull` has it there at once: 0x9C2885 takes the model off but leaves its particles to die out, so a
+ring with an hour's life stayed on the unit. The stock mesh is out for two reasons: at 2 m on anything it stays under a
+building, and in a scene with a Town Center its `<replacetexture>` falls back to the stock texture. The cause of that is
+unknown: it is not the Town Center's active aura, and a Barracks does not do it.
+The texture is a `.ddt`: `RTS3`, usage 0, alpha 1, format 8 (DXT3), a mip per halving down to 4x4, then an offset and a size per
+mip. The script draws two bands in alpha, at 70%, and gives each block two colours and a 2-bit shade per texel. A building has
+its own texture, so that a line of 0.5 m stays 0.5 m on a ring ten times as wide.
 
 The helper:
 
@@ -2664,6 +2671,14 @@ them, as it skips 40h. The gather tick multiplies its rate by the Gathering danc
 ESI = the Gather action. The call goes to a wrapper that calls the stock function and multiplies by
 `UhcGatherAuraFactor(action)`: it classifies the target, `[action+14h]`, by proto type and the resource `[action+70h]`, and
 runs the stock sum 0x4B3C7D over the unit's modifiers of the stats that fit, as `buildingWorkRateAuras` does.
+
+**The ring.** The stock update hangs the action's model on everything it reaches: a miner's ring would be on the lumberjack
+too. Two `call`s of that update go through wrappers instead: the has at 0x9D0584, for those already in range, and the hang at
+0x9D06DC, for new targets. Both have ESI = the aura action. For a stat in 42h..48h, `[protoAction+B8h]`, the wrappers read what
+the target gathers: its current action `[[unit+58h]+24h]`, a Gather action (vtable 0xB97880) in state `[+61h]` = 5, its target
+`[+14h]` and resource `[+70h]`. The hang skips a unit whose stat does not fit; the has takes the model off that unit with
+0x9C2885 and answers true, so the update hangs nothing. A unit on the way to its resource is in no such state and has no ring.
+The modifier is left alone: it does nothing on a unit that does not gather what fits.
 
 **Why it is safe.** A unit with no modifier record returns 1.0 after one load, and the tick reads no register from the
 call but ST0. `showGatherRate`'s record hook, at 0x4ED044, comes after the call and so sees the factor. That key verifies
