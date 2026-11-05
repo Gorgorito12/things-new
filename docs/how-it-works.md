@@ -2637,7 +2637,7 @@ once a second, because a dead owner has no more updates. A model that is not in 
 true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
 
 The rings of `tools/make_rings.py` need no code. A ring's `.xml` names the mesh and swaps its texture with `<replacetexture>`.
-The texture is a `.ddt`: `RTS3`, usage 0, alpha 1, format 8 (DXT3), 6 mips, 128x128, then an offset and a size per mip, 21880
+The texture is a `.ddt`: `RTS3`, usage 0, alpha 1, format 8 (DXT3), 6 mips, 128x128, then an offset and a size per mip, 21904
 bytes in all. The script draws two thin lines in alpha, at 85%, and gives each block two colours.
 
 The helper:
