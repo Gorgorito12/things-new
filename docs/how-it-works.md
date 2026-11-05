@@ -2754,7 +2754,8 @@ number and there is nothing to save.
 `+70h`). The cost getter 0x480B1E (`bool thiscall(player, protoId, cost*, count)`) takes the player's copy, copies the
 costs, and compares the field with 1. Equal: the costs are multiplied by `count`. Different (cold part 0x67A1A0): a
 query counts that player's units of the proto, and the costs are multiplied by the field `N + count - 1` times, and
-**not** by `count`. No Data subtype reaches the field.
+not by `count`. That does not undercharge a batch: in game a Shift+click of 5 charged 5 times the unit's price. No Data
+subtype reaches the field.
 
 New subtypes go through `techsubtypes.*`, shared by the keys that add one:
 

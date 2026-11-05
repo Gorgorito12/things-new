@@ -4070,9 +4070,8 @@ costEscalationTechs [log]
   not count:** three clicks in a row on 9 alive and 1.2 charged 387 each, and the next unit cost 464 once one had come
   out. The cost is read at the click, so a tech does not change what a queued unit already paid.
 - **Rounding:** the food falls by the rounded value and the button shows it cut: 386.98 shows 386 and charges 387.
-- **Batches, not tested:** the game's code raises the escalation by the batch size but, with an escalation, does not
-  multiply the cost by it, so a Shift+click batch may charge the price of one unit. It is stock code, and our test tool
-  cannot hold Shift in a background copy. Check it with a real Shift+click on a `WOLLandwehr`.
+- **Batches:** a Shift+click batch pays every unit, each at the same price: 5 at 85.8 charged 429 (the user, by hand,
+  2026-11-05).
 - **Saved games:** on loading, the effects are applied again and the value comes back (1.26 in the test, the same cost).
 - **Removal:** undone by the stock value function (1.06575 → 1.015 through `Age0Egyptian`, which the game applies and
   removes at a scenario's start). Setting a tech unobtainable does not remove effects, with or without this key.
@@ -4085,7 +4084,8 @@ costEscalationTechs [log]
   - `Assign` 1.2 showed 386, 464 and 557 at 9, 10 and 11 alive, and charged 387, 465 and 557.
   - `Percent` 1.05 on top gave 1.26: 756 at 10 alive and 1200 at 12.
   - A skirmish with a European AI (`wolVictoria`) with the key on: the AI compiled and had 12 units at 90 s.
-  - Not tested: batches, `BasePercent` and `Absolute` (the stock function handles them), multiplayer.
+  - A Shift+click of 5 on 1.015 and 9 alive charged 429, from 20000 to 19571.
+  - Not tested: `BasePercent` and `Absolute` (the stock function handles them), multiplayer.
 
 ### Techs and transforms
 
