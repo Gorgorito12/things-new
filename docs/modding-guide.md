@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-04 18:04 | [`resourceGatherAuras`](#resourcegatherauras) | Added. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
+| Wednesday 2026-11-04 18:04 | [`resourceDebt`](#resourcedebt) | Added. A stockpile may go below 0, for negative trickles. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`. |
 | Wednesday 2026-11-04 17:21 | [`unitResourceAuras`](#unitresourceauras) | Added. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Wednesday 2026-11-04 17:03 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | Added. `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. |
 | Wednesday 2026-11-04 16:29 | [`workRateByAbstractType`](#workratebyabstracttype) | Added. A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. |
@@ -3056,6 +3058,8 @@ unitResourceAuras [log]
 
 #### resourceGatherAuras
 
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Wednesday 2026-11-04 18:04
+
 ![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
 
 *In WoL, with `showGatherRate` and `resourceGatherAuras` (Ethiopians; a test aura `MineGatherRate` ×2 on the Explorer,
@@ -3107,6 +3111,8 @@ resourceGatherAuras [log]
   150 s of game time). Multiplayer not tested.
 
 #### resourceDebt
+
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Wednesday 2026-11-04 18:04
 
 ![resourceDebt in WoL](media/resourceDebt-wol.gif)
 
