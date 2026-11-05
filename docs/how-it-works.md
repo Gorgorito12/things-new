@@ -2626,7 +2626,17 @@ that are alive, built and of the wanted type.
 
 `AddModifyType` makes `UnitResource` stat 41h, stored in the tactics action's byte `[+B8h]`. The hook replaces the
 update's first instruction: with another stat it re-executes it and goes on at 0x9D0343; with 41h it calls
-`UhcUnitResourceAura(action)` and returns, so no modifier is made. The helper:
+`UhcUnitResourceAura(action)` and returns, so no modifier is made.
+
+The stock update also hangs the action's model on each target, at 0x9D053F: the model `[protoAction+A4h]` (-1: none), the
+bone `[+A8h]`, the object through `0x405E83(table [0xC66240], model)`, then `0x9C28DE(unit, model)`, whether the unit has it,
+and `0x9C04F3(unit, object, bone, 0)`, which hangs it. `0x9C2885(unit, model)` takes it off. All three work on the unit's
+visual `[unit+60h]`, not on the simulation. Skipping the stock update skips this too, so the helper repeats it for the
+targets that paid, and keeps per owner what it hung and per target how many auras hold it. A world tick checks the owners
+once a second, because a dead owner has no more updates. A model that is not in the game is accepted by 0x9C04F3, returns
+true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
+
+The helper:
 
 - reads `<ModifyAmount>`, `<ModifyTargetLimit>` and `<TargetGaia>`, unknown to the exe, through `AddActionTagHandler`,
   by `{proto ID, action name}`;

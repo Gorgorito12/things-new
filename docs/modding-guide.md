@@ -3334,9 +3334,34 @@ when its 300 wood are out. [Full video (MP4)](media/unitResourceAuras-depleted-w
 *In WoL, key off (the first scene):* only the AutoGather works: 107 wood at 62 s of game time, and the trees keep
 their wood. [Full video (MP4)](media/unitResourceAuras-wol-control.mp4).
 
+![unitResourceAuras in WoL, the rings](media/unitResourceRings-wol.gif)
+
+*In WoL, the rings, with `econpower.xml` in the `<modelattachment>` of `AreaGatherTree` (Ethiopians):* the 4 trees in range
+show the ring at their feet, and they lose it when the Sawmill is destroyed. [Full video (MP4)](media/unitResourceRings-wol.mp4).
+
+![unitResourceAuras in WoL, the rings, key off](media/unitResourceRings-wol-control.gif)
+
+*In WoL, key off (the same data):* no ring and no gathering. [Full video (MP4)](media/unitResourceRings-wol-control.mp4).
+
 ```
 unitResourceAuras [log]
 ```
+
+- **The ring:** `<modelattachment>` on an `AutoRangedModify` action hangs a model on each unit the aura affects, as Karni
+  Mata's `EconomicAuraKM` does with `effects\ypack_auras\econpower.xml`. Normal auras need only the data. A `UnitResource`
+  aura does not run the stock update, so the key hangs the model itself: on the units that gave resources in that update,
+  and it takes it off when they stop, when the aura's owner dies, or at the limit of `<ModifyTargetLimit>`. A target in two
+  auras keeps its ring until the last one lets go.
+- **The colour is the model:** each ring is one file. In WoL: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and
+  `frightpower.xml`, `effects\chiefpower\chiefpower.xml`, `effects\me_auras\aura_warlord.xml`, among others.
+- **WoL's data today shows no ring:** `sawmill.tactics` names `effects\ypack_auras\torpgatherpower.xml`, which is in no folder
+  and no `.bar` of WoL. The log says so once: `the action 692 has a <ModelAttachment> that is not in the game`. Ship that
+  model or name another one.
+- **Rings, tested in WoL (2026-11-05):** with `econpower.xml`, one model per tree and no repeats; off when the Sawmill dies;
+  back once per tree after loading a saved game, and off again when the Sawmill dies after the load. WoL's data: no repeats,
+  one line in the log. With 9 Sawmills and 29 rings or more (the log stops at 200 lines): update 0.12 ms with rings and
+  without, 1136 and 1147 fps with, 1170 and 1156 without. A German AI with the key on had 17 units at 120 s, with no `Error
+  0003`. Not tested: two Sawmills sharing a tree, multiplayer.
 
 - **In WoL today:** WoL's `sawmill.tactics` has DE's `AreaGatherTree` aura, on `WOLSawmill` and `WOLSawmillSwedish`,
   and the exe reads it as nothing: `UnitResource`, `ModifyAmount`, `ModifyTargetLimit` and `TargetGaia` are unknown

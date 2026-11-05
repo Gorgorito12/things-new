@@ -1345,7 +1345,9 @@ from the [helpers](porting-code/helpers.md).
 - **Sites:** a 5-byte `jmp` at `0x9D033E` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`), continue at `0x9D0343`. It does not
   overlap WoL's DLL. The name hook at `0x5FE6D7` is the one `buildingWorkRateAuras` uses; with both keys there is one
   `jmp` and one list of names.
-- **Data:** none: `AreaGatherTree` is already in `sawmill.tactics`.
+- **Data:** none: `AreaGatherTree` is already in `sawmill.tactics`. For a ring, its `<modelattachment>` needs a model that
+  exists: `torpgatherpower.xml` is not in WoL.
+- **Rings:** no new `jmp`; the code calls the game's model functions and needs `AddWorldTick`.
 
 Check it in the game: a `WOLSawmill` among trees, with `log`: a line about every 3 s per tree, for at most 5 trees.
 

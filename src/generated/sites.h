@@ -1403,6 +1403,21 @@ inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E
 inline constexpr std::uint8_t kAuraScanBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x96, 0x00, 0x00, 0x00, 0x56, 0x8B};
 inline constexpr Site kAuraScan{"AuraScan", 0x009CFF9A, kAuraScanBytes, sizeof(kAuraScanBytes)};
 
+inline constexpr std::uint8_t kAuraModelBlockBytes[] = {0x8B, 0x80, 0xA4, 0x00, 0x00, 0x00, 0x83, 0xF8, 0xFF};
+inline constexpr Site kAuraModelBlock{"AuraModelBlock", 0x009D053F, kAuraModelBlockBytes, sizeof(kAuraModelBlockBytes)};
+
+inline constexpr std::uint8_t kModelByIdBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x83, 0xF8};
+inline constexpr Site kModelById{"ModelById", 0x00405E83, kModelByIdBytes, sizeof(kModelByIdBytes)};
+
+inline constexpr std::uint8_t kUnitHasModelBytes[] = {0x57, 0x8B, 0xF9, 0x8B, 0x47, 0x60, 0x85, 0xC0};
+inline constexpr Site kUnitHasModel{"UnitHasModel", 0x009C28DE, kUnitHasModelBytes, sizeof(kUnitHasModelBytes)};
+
+inline constexpr std::uint8_t kUnitAttachModelBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x56, 0x8B};
+inline constexpr Site kUnitAttachModel{"UnitAttachModel", 0x009C04F3, kUnitAttachModelBytes, sizeof(kUnitAttachModelBytes)};
+
+inline constexpr std::uint8_t kUnitRemoveModelBytes[] = {0x57, 0x8B, 0xF9, 0x8B, 0x47, 0x60, 0x85, 0xC0};
+inline constexpr Site kUnitRemoveModel{"UnitRemoveModel", 0x009C2885, kUnitRemoveModelBytes, sizeof(kUnitRemoveModelBytes)};
+
 inline constexpr std::uint8_t kInventoryAddBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x53, 0x8B, 0xD9, 0x8B, 0x13, 0x85, 0xD2, 0x8B, 0x88, 0x3C, 0x01};
 inline constexpr Site kInventoryAdd{"InventoryAdd", 0x0049A5E6, kInventoryAddBytes, sizeof(kInventoryAddBytes)};
 

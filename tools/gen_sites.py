@@ -1118,6 +1118,14 @@ SITES = [
     # (thiscall(inventory, resource, float)), unit state check, main resource of a unit, dead test,
     # add resource to a player
     ("AuraScan", 0x9CFF9A, 0x10),
+    # unitResourceAuras: the stock update's reading of <ModelAttachment> ([protoAction+A4h], the bone at
+    # +A8h) and the functions it calls: model by ID, has it (thiscall(unit, model), ret 4), hang it
+    # (thiscall(unit, object, bone, byte), ret 0Ch), take it off (thiscall(unit, model), ret 4)
+    ("AuraModelBlock", 0x9D053F, 9),
+    ("ModelById", 0x405E83, 6),
+    ("UnitHasModel", 0x9C28DE, 8),
+    ("UnitAttachModel", 0x9C04F3, 8),
+    ("UnitRemoveModel", 0x9C2885, 8),
     ("InventoryAdd", 0x49A5E6, 0x10),
     ("CheckState", 0x482152, 0x10),
     ("MainResource", 0x4DBEC1, 0x10),

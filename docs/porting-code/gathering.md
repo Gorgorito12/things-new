@@ -1266,9 +1266,9 @@ END
 
 Contract: [unitResourceAuras](../porting-to-another-dll.md#unitresourceauras).
 
-Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `UnitIsDead` `0x4802C6` (16 B), `CheckState` `0x482152` (16 B), `InventoryAdd` `0x49A5E6` (16 B), `PlayerAddResource` `0x49A98A` (16 B), `MainResource` `0x4DBEC1` (16 B), `AuraScan` `0x9CFF9A` (16 B), `UnitResourceAuraEntry` `0x9D033E` (8 B).
+Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `UnitIsDead` `0x4802C6` (16 B), `CheckState` `0x482152` (16 B), `InventoryAdd` `0x49A5E6` (16 B), `PlayerAddResource` `0x49A98A` (16 B), `MainResource` `0x4DBEC1` (16 B), `UnitAttachModel` `0x9C04F3` (8 B), `UnitRemoveModel` `0x9C2885` (8 B), `UnitHasModel` `0x9C28DE` (8 B), `AuraScan` `0x9CFF9A` (16 B), `UnitResourceAuraEntry` `0x9D033E` (8 B), `AuraModelBlock` `0x9D053F` (9 B).
 
 ### src/features/unitresource.cpp
 
@@ -1290,13 +1290,22 @@ Sites: `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBui
 // player's gather multiplier [player+37Ch]. The time comes from the game clock. A target whose
 // proto has flag 24h (an endless resource) pays and is not drained, as in the gather tick.
 //
-// The hook is in hooks/unitresource_hooks.asm. The time of each aura's last update lives here, so a
-// saved game restarts that clock; nothing else is kept.
+// The stock update also hangs the action's <ModelAttachment> on each target (0x9D053F: the ring under
+// units that an aura affects). Running instead of it, this code does the same, through the same
+// functions, for the targets that gave resources in this update, and takes the model off the ones that
+// stop. A target in two auras keeps its ring until the last one lets go. A model is only a visual of the
+// unit: it does not reach the simulation.
+//
+// The hook is in hooks/unitresource_hooks.asm. The time of each aura's last update and the rings it
+// hung live here, so a saved game restarts that clock; nothing else is kept.
+#include <algorithm>
 #include <compare>
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
 #include <map>
+#include <utility>
+#include <vector>
 
 #include "../actiontags.h"
 #include "../features.h"
@@ -1305,6 +1314,7 @@ Sites: `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBui
 #include "../modifytypes.h"
 #include "../patch.h"
 #include "../unittypes.h"
+#include "../worldtick.h"
 
 extern "C" {
 void UhcUnitResourceAuraHook();
@@ -1316,6 +1326,8 @@ constexpr std::int32_t kStatUnitResource = 0x41;  // as in unitresource_hooks.as
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
 constexpr std::int32_t kFlagEndless = 0x24;        // proto flag tested at 0x4ED062
 constexpr std::uint32_t kMaxStepMs = 5000;         // a longer gap (a load, a pause) pays this much
+constexpr std::uint32_t kModelTable = 0x00C66240;  // the table of models; read as at 0x9D054A
+constexpr std::uint32_t kRingSweepMs = 1000;       // how often the auras that hung rings are checked
 constexpr float kMinAmount = 1.0e-6f;
 constexpr int kMaxLogLines = 200;
 
@@ -1335,6 +1347,10 @@ using InventoryAddFn = bool(__thiscall*)(char* inventory, std::int32_t resource,
 using PlayerAddFn = bool(__thiscall*)(char* player, std::int32_t resource, float amount, bool flag);
 using CheckStateFn = void(__thiscall*)(char* unit);
 using ProtoBitFn = bool(__thiscall*)(const char* proto, std::int32_t bit);
+using ModelByIdFn = const void*(__thiscall*)(void* table, std::int32_t model);
+using HasModelFn = bool(__thiscall*)(const char* unit, std::int32_t model);
+using AttachModelFn = bool(__thiscall*)(char* unit, const void* object, std::int32_t bone, std::int32_t flag);
+using RemoveModelFn = void(__thiscall*)(char* unit, std::int32_t model);
 
 const auto kIsBuilt = reinterpret_cast<UnitTestFn>(0x0044DDB4);
 const auto kIsDead = reinterpret_cast<UnitTestFn>(0x004802C6);
@@ -1347,6 +1363,10 @@ const auto kPlayerAdd = reinterpret_cast<PlayerAddFn>(0x0049A98A);
 const auto kCheckState = reinterpret_cast<CheckStateFn>(0x00482152);
 const auto kProtoFlag = reinterpret_cast<ProtoBitFn>(0x0045EE02);
 const auto kIsAbstractIndex = reinterpret_cast<ProtoBitFn>(0x0044CAC4);
+const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
+const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
+const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
+const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
 
 struct ActionKey {
   std::int32_t proto;
@@ -1363,6 +1383,19 @@ struct Params {
 std::map<ActionKey, Params> g_params;
 std::map<std::int32_t, std::uint32_t> g_lastUpdate;  // by the owner's unit ID: in ID order, game time
 IdList g_list = {};
+
+struct Rings {
+  std::int32_t model = -1;
+  std::vector<std::int32_t> targets;
+};
+
+std::map<std::int32_t, Rings> g_rings;          // by the owner's unit ID
+std::map<std::int32_t, std::int32_t> g_ringUsers;  // by the target's unit ID: the auras holding its ring
+std::vector<std::int32_t> g_ringTargets;        // the targets of the update that is running
+const char* g_ringWorld = nullptr;
+std::uint32_t g_ringTime = 0;
+std::uint32_t g_nextRingSweep = 0;
+bool g_ringModelWarned = false;
 bool g_log = false;
 int g_logLines = 0;
 
@@ -1371,10 +1404,118 @@ T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
 }
 
+void ForgetRings() {
+  g_rings.clear();
+  g_ringUsers.clear();
+  g_nextRingSweep = 0;
+}
+
 void NewDatabase(char*) {
   g_params.clear();
   g_lastUpdate.clear();
+  ForgetRings();
   g_logLines = 0;
+}
+
+// Another game: its unit IDs are not the ones held here.
+void CheckRingWorld(const char* world, std::uint32_t now) {
+  if (world != g_ringWorld || now < g_ringTime) {
+    ForgetRings();
+    g_ringWorld = world;
+  }
+  g_ringTime = now;
+}
+
+// As the stock update does at 0x9D054A..0x9D059C. False: the unit has no visual yet, and the next
+// update tries again. A model that is not in the game is taken as hung, or it would be hung again on
+// every update: the engine accepts it and shows nothing.
+bool HangRing(const char* world, std::int32_t id, std::int32_t model, std::int32_t bone, const char* tactics) {
+  char* unit = const_cast<char*>(kUnitById(world, id));
+  void* table = *reinterpret_cast<void**>(kModelTable);
+  if (unit == nullptr || table == nullptr) {
+    return false;
+  }
+  if (kHasModel(unit, model)) {
+    return true;
+  }
+  const void* object = kModelById(table, model);
+  if (object == nullptr || !kAttachModel(unit, object, bone, 0)) {
+    return false;
+  }
+  if (!kHasModel(unit, model)) {
+    if (!g_ringModelWarned) {
+      g_ringModelWarned = true;
+      uhc::Log(L"unitResourceAuras: the action %d has a <ModelAttachment> that is not in the game: no ring shows",
+               Field<std::int32_t>(tactics, 0x04));
+    }
+  } else if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"unitResourceAuras: ring on unit %d", id);
+  }
+  return true;
+}
+
+void ReleaseRing(const char* world, std::int32_t id, std::int32_t model) {
+  const auto users = g_ringUsers.find(id);
+  if (users == g_ringUsers.end() || --users->second > 0) {
+    return;
+  }
+  g_ringUsers.erase(users);
+  if (char* unit = const_cast<char*>(kUnitById(world, id))) {
+    kRemoveModel(unit, model);
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"unitResourceAuras: ring off unit %d", id);
+    }
+  }
+}
+
+void UpdateRings(const char* world, std::int32_t owner, const char* tactics, std::int32_t model, std::int32_t bone) {
+  Rings& rings = g_rings[owner];
+  rings.model = model;
+  std::vector<std::int32_t> held;
+  for (const std::int32_t id : g_ringTargets) {
+    const bool had = std::find(rings.targets.begin(), rings.targets.end(), id) != rings.targets.end();
+    if (had) {
+      held.push_back(id);
+    } else if (HangRing(world, id, model, bone, tactics)) {
+      ++g_ringUsers[id];
+      held.push_back(id);
+    }
+  }
+  for (const std::int32_t id : rings.targets) {
+    if (std::find(held.begin(), held.end(), id) == held.end()) {
+      ReleaseRing(world, id, model);
+    }
+  }
+  rings.targets = std::move(held);
+  if (rings.targets.empty()) {
+    g_rings.erase(owner);
+  }
+}
+
+// An aura that dies has no more updates, so its rings are taken off from here.
+void RingTick(char* world, std::int32_t) {
+  if (g_rings.empty()) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  CheckRingWorld(world, now);
+  if (now < g_nextRingSweep) {
+    return;
+  }
+  g_nextRingSweep = now + kRingSweepMs;
+  for (auto it = g_rings.begin(); it != g_rings.end();) {
+    const char* owner = kUnitById(world, it->first);
+    if (owner != nullptr && kIsBuilt(owner) && !kIsDead(owner)) {
+      ++it;
+      continue;
+    }
+    for (const std::int32_t id : it->second.targets) {
+      ReleaseRing(world, id, it->second.model);
+    }
+    it = g_rings.erase(it);
+  }
 }
 
 void ActionTagRead(const uhc::ActionTag& tag) {
@@ -1425,6 +1566,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
   }
   const Params& params = found->second;
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  CheckRingWorld(world, now);
   const auto [last, isNew] = g_lastUpdate.try_emplace(Field<std::int32_t>(owner, 0x10), now);
   const std::uint32_t since = now - last->second;
   if (isNew || since == 0) {
@@ -1438,6 +1580,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
   const float multiplier = Field<float>(player, 0x37C);
   g_list.count = 0;
   kScan(action, &g_list);
+  g_ringTargets.clear();
   std::int32_t gathered = 0;
   for (std::int32_t i = 0; i < g_list.count; ++i) {
     if (params.limit >= 0 && gathered >= params.limit) {
@@ -1474,6 +1617,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     }
     const float take = have < amount ? have : amount;
     ++gathered;
+    g_ringTargets.push_back(Field<std::int32_t>(target, 0x10));  // the state check below may remove it
     if (!kProtoFlag(targetProto, kFlagEndless)) {
       kInventoryAdd(inventory, resource, -take);
       kCheckState(target);
@@ -1486,6 +1630,10 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
                resource, Field<std::int32_t>(target, 0x10), Field<const char*>(targetProto, 0x10),
                static_cast<double>(have - take));
     }
+  }
+  const std::int32_t model = Field<std::int32_t>(tactics, 0xA4);
+  if (model != -1) {
+    UpdateRings(world, Field<std::int32_t>(owner, 0x10), tactics, model, Field<std::int32_t>(tactics, 0xA8));
   }
 }
 
@@ -1508,11 +1656,13 @@ Outcome ApplyUnitResourceAuras(const Config& config) {
   if (!VerifyAll("unitResourceAuras",
                  {&sites::kUnitResourceAuraEntry, &sites::kAuraScan, &sites::kInventoryAdd, &sites::kCheckState,
                   &sites::kMainResource, &sites::kUnitIsDead, &sites::kPlayerAddResource, &sites::kIsBuilt,
-                  &sites::kUnitById, &sites::kProtoFlag, &sites::kIsAbstractIndex, &sites::kResListGet})) {
+                  &sites::kUnitById, &sites::kProtoFlag, &sites::kIsAbstractIndex, &sites::kResListGet,
+                  &sites::kAuraModelBlock, &sites::kModelById, &sites::kUnitHasModel, &sites::kUnitAttachModel,
+                  &sites::kUnitRemoveModel})) {
     return Outcome::kFailed;
   }
   if (!AddModifyType(L"UnitResource", kStatUnitResource) || !AddActionTagHandler(&ActionTagRead) ||
-      !OnDatabaseLoad(&NewDatabase)) {
+      !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&RingTick)) {
     return Outcome::kFailed;
   }
   g_log = log;
