@@ -411,6 +411,15 @@ def wait_until(predicate, timeout, step=0.5, what="condition"):
     sys.exit(f"testbed: timed out waiting for {what}")
 
 
+def bed_has_background():
+    """True if this copy's cfg has multipleInstances background: it ignores the real mouse and keyboard."""
+    try:
+        lines = (BED / bed_profile(BED)["cfg"]).read_text(encoding="utf-8", errors="replace").lower().splitlines()
+    except OSError:
+        return False
+    return any(line.split()[:2] == ["multipleinstances", "background"] for line in lines)
+
+
 def bed_allows_second_copy(bed):
     """True if the bed's cfg has multipleInstances (the DLL then lets it run beside a copy from
     another folder)."""
@@ -1341,8 +1350,12 @@ def real_drag(x1, y1, x2, y2, steps=12):
 
 
 def hover(cx, cy):
-    """Rests the cursor on a client point (record --hover: a button whose tooltip the video shows)."""
+    """Rests the cursor on a client point (record --hover: a button whose tooltip the video shows).
+    A copy with multipleInstances background does not see the real cursor: it gets a posted move."""
     hwnd = window()
+    if bed_has_background():
+        user32.PostMessageW(hwnd, WM_MOUSEMOVE, 0, (cy & 0xFFFF) << 16 | (cx & 0xFFFF))
+        return
     pt = POINT(cx, cy)
     user32.ClientToScreen(hwnd, ctypes.byref(pt))
     user32.SetCursorPos(pt.x, pt.y)

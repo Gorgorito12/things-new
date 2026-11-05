@@ -47,7 +47,7 @@ Rules:
 - **Every test video shows the feature on screen:** the units it acts on selected (`record --select`), a still camera (`--frame`), `--perf`, `normalZoom` set by console before the game loads, `--crop` at native pixels, `--master` into `rea/media-masters/`, and the GIF from `tools/make_gifs.py` (800 px, 8 fps, 12 s, 4 MB; cuts in `tools/gifs.txt`). Vary the civ, public civs only, and film a control with the key off. A/B every hot-path key with `perfprobe.py`.
 - **Check the AI after data or combat changes.** `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error.
 - **Definition of done:** the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done), before a feature is reported as done.
-- **Two games at once:** only with `multipleInstances background` in both cfgs, and another session's game only if it agreed. Stop yours when one asks. Stop a tracer with Ctrl+C, never by killing it.
+- **Two games at once:** only with `multipleInstances background` in both cfgs, and another session's game only if it agreed. Such a copy ignores real input: `click`, `exec` and `record` work; a test that needs `rkey`, `drag` or `wheel` runs alone without `background`. Stop yours when one asks. Stop a tracer with Ctrl+C, never by killing it.
 - **Never modify the Steam install.** Test on copies only. `testbed.py safety check wol` checks Steam's WoL folder.
 
 ## Layout

@@ -223,6 +223,8 @@ the monitor, the first copy at the left. `launch` and `skirmish` wait for each o
 collide on the log in `My Games` ("Cannot create log file") and exit. The profile and the `Scenario` folder are
 shared too, so give each test its own map name, and run `profile hc` with both closed or between launches. In
 the test on 2026-11-05, one copy filmed at 822 fps with no frame over 100 ms while the other played a skirmish.
+With `background` a copy ignores the real mouse and keyboard, so moving the mouse does not move its camera (confirmed
+by the user). What a test can do in it is in the [developer guide](developer-guide.md#a-safe-test-bed).
 
 **End a game on purpose.** A skirmish is lost when the player has no unit left: a lone Explorer dies, the game
 stops at "You abandon your colony" and the clock with it. Give player 1 a building far away, but no Town Center:

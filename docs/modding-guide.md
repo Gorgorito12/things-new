@@ -358,6 +358,9 @@ A tool for testing, not for WoL's players: nothing needs porting.
 - **Effect:** this copy no longer collides with copies in other folders. Two copies started from the
   same folder still refuse each other, because they would share that folder's files (`UHC.log`, the
   `perfExecFile` file, …). Only one of the two copies needs the key.
+- **`background` and your mouse:** this copy also ignores the real mouse and keyboard: it does not follow the
+  cursor, real clicks and keys do not reach it, and it cannot move or confine your cursor. Only messages posted by a
+  test tool reach it. Don't use it to play.
 - **`background`:** this copy's windows open behind every other window, stay there and never take the
   focus. The copy cannot cover another window or receive the clicks and keys meant for it. This is
   for unattended tests driven through `perfExecFile`

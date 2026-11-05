@@ -323,6 +323,17 @@ there:
   `record --background`: the window stays behind the others, takes no focus, and `PrintWindow` still
   films it. The camera does not ease to a new `normalZoom` in the background, hence setting it
   first. Only real clicks and keys (`rclick`, `rkey`) need the window in front.
+- **What works in a background copy, with no mouse (2026-11-05):**
+
+  | Need | How |
+  |---|---|
+  | Focus the camera | `exec "uiLookAtUnit(<id>)"`; `record --frame` |
+  | Select a unit | `exec "uiLookAtAndSelectUnit(<id>)"`; `record --select` |
+  | Zoom | `normalZoom` by console **before the game loads**: `exec 'configSetFloat("normalZoom", 25)'`. It does not change a running game |
+  | Crop the video | `record --crop` |
+  | Click a button, open a tooltip | `click <x> <y>`; `record --hover` |
+  | Unit orders and tech | triggers (`at<s>=...`) and `exec` |
+  | Hotkeys, typing, a box drag, the wheel | **Not in background:** `rkey`, `type`, `drag` and `wheel` are real input, which this copy ignores. Take `background` out of the cfg and run that test alone |
 - **Edge scrolling moves the camera:** the game scrolls while the cursor sits at a screen edge
   (`ScrollSpeed`, `ScrollRateBase` and `ScrollMaxSpeed` at 0 do not stop it). `record` sets
   `cameraMovementLock`, which does, and `uiLookAtUnit` still works under it.
