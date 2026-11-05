@@ -30,10 +30,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 10:17 | [`veterancyBonus`](#veterancybonus) | Added. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Thursday 2026-11-05 09:57 | [`transformSpan`](#transformspan) | Added. `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | The attribute on the effects that want it. |
 | Thursday 2026-11-05 09:39 | [`cantBeSlowed`](#cantbeslowed) | Added. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
 | Thursday 2026-11-05 09:39 | [`killBountyTechs`](#killbountytechs-resourcebounty-and-teamkillbounty), [`resourceBounty`](#killbountytechs-resourcebounty-and-teamkillbounty), [`teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Added. Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. |
-| Thursday 2026-11-05 10:17 | [`veterancyBonus`](#veterancybonus) | Added. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Thursday 2026-11-05 09:33 | [`doNotQueue`](#donotqueue) | Added. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Thursday 2026-11-05 09:33 | [`nextResearchFree`](#nextresearchfree) | Added. A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 09:26 | [`sharedBuildLimit`](#sharedbuildlimit) | Added. Protos share a build limit: by unit type, with weights, or across a team. | The tags on the protos that share. |
