@@ -2635,35 +2635,6 @@ Sites: `TeamBountyPay` `0x49BDAB` (6 B), `BountyKillBranch` `0x4D4E0C` (5 B), `B
 // changes the handler the builder registers, which keeps the stock one for a <Bounty> without the
 // attribute. The payment is a hook on the kill branch of TakeDamage (0x4D4E0C), which runs for any bounty
 // or none. A TeamKillBounty victim pays the team here too. The hooks are in hooks/bounty_hooks.asm.
-## veterancyBonus
-
-Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
-
-Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags).
-
-Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B), `TransformCall1` `0x7FBC79` (5 B), `TransformCall2` `0x7FBEF2` (5 B), `TransformCall3` `0x8C2D08` (5 B), `TransformCall4` `0x8EB78A` (5 B), `TransformCall5` `0x8F05F5` (5 B), `TransformCall6` `0x9BB6D5` (5 B), `TransformCall7` `0x9C7C16` (5 B).
-
-### src/features/veterancy.cpp
-
-```cpp
-// veterancyBonus: a unit grows stronger with its kills.
-//
-//   <VeterancyBonus kills="1" modifytype="Damage">1.15</VeterancyBonus>   repeatable, in a proto
-//
-// Each row says: from that many kills on, this stat is multiplied by this much, in all (1.15 then 1.30
-// is ×1.30 at the second row, not 1.15 × 1.30). modifytype takes every <ModifyType> name.
-//
-// Stock's flag ExperienceUnit has no reader in the exe, so nothing counts a unit's kills. The hook sits
-// on TakeDamage's kill path, where the attacker unit is known. The count and the bonuses are all stat
-// modifiers of the game (0x4DD22D, the call of snares and auras, with no time limit), so that the game
-// saves them, the stat code reads them and a transformed unit keeps them:
-// - the count is a modifier of a stat no code reads, kStatKills, whose value is the kills;
-// - each row reached adds a multiply modifier for what its total adds to the row before it.
-// A transform in place (0x9C754C: TransformUnit, revolutions) ends the unit's modifiers, so its seven
-// calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
-// new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
-// hooks/veterancy_hooks.asm.
-#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
@@ -2754,78 +2725,6 @@ bool __cdecl ReadBounty(void* context, const char* node, char* proto) {
   g_resourceBounties[id].push_back({resource, amount});
   if (g_logResource) {
     uhc::Log(L"resourceBounty: proto %d pays %g of resource %d", id, static_cast<double>(amount), resource);
-#include "../floatingtext.h"
-#include "../generated/sites.h"
-#include "../log.h"
-#include "../modifiers.h"
-#include "../patch.h"
-#include "../prototags.h"
-
-extern "C" void UhcVeterancyHook();
-
-namespace {
-
-constexpr std::uint32_t kKillPath = 0x004D4F37;
-constexpr std::uint32_t kTransformCalls[] = {0x007FBC79, 0x007FBEF2, 0x008C2D08, 0x008EB78A,
-                                             0x008F05F5, 0x009BB6D5, 0x009C7C16};
-constexpr std::int32_t kStatKills = 0x60;       // no stock stat or key uses it
-constexpr std::int32_t kOperationSet = 0;
-constexpr std::int32_t kOperationMultiply = 2;
-constexpr std::uint32_t kRankColour = 0xFFFFD700;
-constexpr int kMaxLogLines = 200;
-
-using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
-using XmlTextFn = const char*(__thiscall*)(const void* text);
-using ModifyTypeFn = std::int32_t(__cdecl*)(const void* name);
-using ModifierFn = std::int32_t(__thiscall*)(char* unit, std::int32_t stat, float value, float a, float b,
-                                             std::int32_t c, std::int32_t operation, std::int32_t ms, std::int32_t d,
-                                             std::int32_t e, std::int32_t exclusive);
-const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
-const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
-const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
-const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
-using TransformFn = std::int32_t(__thiscall*)(char* unit, std::int32_t proto);
-const auto kTransform = reinterpret_cast<TransformFn>(0x009C754C);
-
-struct Row {
-  std::int32_t kills;
-  std::int32_t stat;
-  float total;
-};
-
-std::unordered_map<std::int32_t, std::vector<Row>> g_rows;  // by proto ID; the load fills it
-bool g_log = false;
-int g_logLines = 0;
-
-template <typename T>
-T Field(const char* base, std::uint32_t offset) {
-  return *reinterpret_cast<const T*>(base + offset);
-}
-
-bool __cdecl ReadVeterancyBonus(void*, const char* node, char* proto) {
-  const std::int32_t id = Field<std::int32_t>(proto, 8);
-  const void* killsText = nullptr;
-  const void* typeText = nullptr;
-  const char* amount = kXmlText(node + 0x14);
-  if (!kXmlAttribute(node, "kills", &killsText) || killsText == nullptr ||
-      !kXmlAttribute(node, "modifytype", &typeText) || typeText == nullptr || amount == nullptr) {
-    uhc::Log(L"veterancyBonus: proto %d: a row needs kills, modifytype and a value; ignored", id);
-    return true;
-  }
-  const char* digits = kXmlText(killsText);
-  const std::int32_t kills = digits != nullptr ? std::atoi(digits) : 0;
-  const std::int32_t stat = kModifyType(typeText);
-  const float total = static_cast<float>(std::atof(amount));
-  if (kills < 1 || stat < 0 || total <= 0.0f) {
-    uhc::Log(L"veterancyBonus: proto %d: a row with kills %d, stat %d, value %hs is not valid; ignored", id, kills, stat,
-             amount);
-    return true;
-  }
-  std::vector<Row>& rows = g_rows[id];
-  rows.push_back({kills, stat, total});
-  std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) { return a.kills < b.kills; });
-  if (g_log) {
-    uhc::Log(L"veterancyBonus: proto %d: from %d kills, stat %d x%g", id, kills, stat, static_cast<double>(total));
   }
   return true;
 }
@@ -2839,53 +2738,6 @@ bool LogOption(const uhc::Config::Args& args, const char* key, bool* log) {
     *log = true;
   }
   return true;
-// The modifier that holds the count, or null.
-char* FindCount(const char* unit) {
-  const char* list = uhc::modifiers::ModifierList(unit);
-  if (list == nullptr) {
-    return nullptr;
-  }
-  char* found = nullptr;
-  auto visit = [&found](const char* action) {
-    if (Field<std::int32_t>(action, 0x64) != kStatKills) {
-      return true;
-    }
-    found = const_cast<char*>(action);
-    return false;
-  };
-  uhc::modifiers::WalkModifiers(list, visit, 0);
-  return found;
-}
-
-// Replaces the calls of the transform in place.
-std::int32_t __fastcall Transform(char* unit, void*, std::int32_t proto) {
-  const char* count = g_rows.empty() ? nullptr : FindCount(unit);
-  const float kills = count != nullptr ? Field<float>(count, 0x68) : 0.0f;
-  const std::int32_t result = kTransform(unit, proto);
-  if (kills < 1.0f || FindCount(unit) != nullptr) {
-    return result;
-  }
-  kModifier(unit, kStatKills, kills, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0);
-  const char* now = Field<const char*>(unit, 0x5C);
-  const auto found = now != nullptr ? g_rows.find(Field<std::int32_t>(now, 8)) : g_rows.end();
-  if (found == g_rows.end()) {
-    return result;
-  }
-  // The total of each stat is its last row reached.
-  std::unordered_map<std::int32_t, float> totals;
-  for (const Row& row : found->second) {
-    if (static_cast<float>(row.kills) <= kills) {
-      totals[row.stat] = row.total;
-    }
-  }
-  for (const auto& [stat, total] : totals) {
-    kModifier(unit, stat, total, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
-  }
-  if (g_log) {
-    uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
-             static_cast<double>(kills), Field<std::int32_t>(now, 8));
-  }
-  return result;
 }
 
 }  // namespace
@@ -2947,6 +2799,278 @@ extern "C" void __stdcall UhcPayResourceBounty(const char* victim, char* killer)
       uhc::Log(L"resourceBounty: proto %d killed: %g of resource %d to %d player(s)",
                *reinterpret_cast<const std::int32_t*>(proto + 8), static_cast<double>(bounty.amount), bounty.resource, paid);
     }
+  }
+}
+
+namespace uhc {
+
+Outcome ApplyKillBountyTechs(const Config& config) {
+  const Config::Args* args = config.First("killBountyTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!LogOption(*args, "killBountyTechs", &g_logTech) || !AddTechSubtype("KillBounty", &ChangeBounty) ||
+      !AddTechSubtype("Bounty", &ChangeBounty)) {
+    return Outcome::kFailed;
+  }
+  Log(L"killBountyTechs: the Data subtypes KillBounty and Bounty are on");
+  return Outcome::kApplied;
+}
+
+Outcome ApplyResourceBounty(const Config& config) {
+  const Config::Args* args = config.First("resourceBounty");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!LogOption(*args, "resourceBounty", &g_logResource) ||
+      !VerifyAll("resourceBounty", {&sites::kBountyTagHandler, &sites::kBountyKillBranch}) ||
+      !OnDatabaseLoad(&ForgetResourceBounties) ||
+      !WriteDword(sites::kBountyTagHandler.va, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&ReadBounty))) ||
+      !WriteJmp(sites::kBountyKillBranch.va, reinterpret_cast<const void*>(&UhcResourceBountyHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"resourceBounty: <Bounty resourcetype> is on");
+  return Outcome::kApplied;
+}
+
+Outcome ApplyTeamKillBounty(const Config& config) {
+  const Config::Args* args = config.First("teamKillBounty");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!LogOption(*args, "teamKillBounty", &g_logTeam) || !VerifyAll("teamKillBounty", {&sites::kTeamBountyPay}) ||
+      !RequestAbstractUnitType("TeamKillBounty", &g_teamType) ||
+      !WriteJmp(sites::kTeamBountyPay.va, reinterpret_cast<const void*>(&UhcTeamBountyHook), 6)) {
+    return Outcome::kFailed;
+  }
+  Log(L"teamKillBounty: the abstract type TeamKillBounty is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/bounty_hooks.asm
+
+```asm
+; teamKillBounty and resourceBounty (src/features/bounty.cpp). Entered through a jmp written over the stock code; it leaves
+; through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcIsTeamBounty PROTO STDCALL victim:DWORD, amount:DWORD
+UhcPayResourceBounty PROTO STDCALL victim:DWORD, killer:DWORD
+
+.data
+teamPayNext     dd 0049BDB1h    ; push 0 / push ecx / push edx / mov ecx,eax / call 0x49BDC0
+killBranchNext  dd 004D4E11h    ; mov ecx,esi / call 0x4D4DC5
+
+.code
+
+; Replaces 0x49BDAB..0x49BDB0 (mov ecx,[esp+14h] / mov edx,[esi]) in FUN_0049BD52, its only caller being
+; TakeDamage at 0x49B73C. EAX = the killer's team, ESI = the killer's player, [esp] = the ESI the function
+; saved: the caller's, the victim. EDX and ECX go to the XP routine: the player ID, -1 for the whole
+; team, and the amount. The routine runs on every hit, with an amount of 0 unless the hit kills, so the
+; helper only runs for a bounty.
+UhcTeamBountyHook PROC
+    TRACE_ONCE "teamKillBounty (0x49BDAB)"
+    cmp dword ptr [esp+14h], 0
+    je killer
+    push eax
+    mov ecx, dword ptr [esp+4]
+    mov edx, dword ptr [esp+18h]
+    invoke UhcIsTeamBounty, ecx, edx
+    test al, al
+    pop eax
+    je killer
+    mov ecx, dword ptr [esp+14h]
+    or edx, -1
+    jmp teamPayNext
+killer:
+    mov ecx, dword ptr [esp+14h]
+    mov edx, dword ptr [esi]
+    jmp teamPayNext
+UhcTeamBountyHook ENDP
+
+; Replaces 0x4D4E0C..0x4D4E10 (mov ecx,[esp+28h] / push ecx), re-executed here, on the kill branch of
+; TakeDamage. ESI = the victim, [esp+20h] = the killer's player. The next call overwrites EAX, ECX and EDX.
+UhcResourceBountyHook PROC
+    TRACE_ONCE "resourceBounty (0x4D4E0C)"
+    mov ecx, dword ptr [esp+20h]
+    invoke UhcPayResourceBounty, esi, ecx
+    mov ecx, dword ptr [esp+28h]
+    push ecx
+    jmp killBranchNext
+UhcResourceBountyHook ENDP
+
+END
+```
+
+## veterancyBonus
+
+Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
+
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`transformcalls.h`](helpers.md#transform-calls).
+
+Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
+
+### src/features/veterancy.cpp
+
+```cpp
+// veterancyBonus: a unit grows stronger with its kills.
+//
+//   <VeterancyBonus kills="1" modifytype="Damage">1.15</VeterancyBonus>   repeatable, in a proto
+//
+// Each row says: from that many kills on, this stat is multiplied by this much, in all (1.15 then 1.30
+// is ×1.30 at the second row, not 1.15 × 1.30). modifytype takes every <ModifyType> name.
+//
+// Stock's flag ExperienceUnit has no reader in the exe, so nothing counts a unit's kills. The hook sits
+// on TakeDamage's kill path, where the attacker unit is known. The count and the bonuses are all stat
+// modifiers of the game (0x4DD22D, the call of snares and auras, with no time limit), so that the game
+// saves them, the stat code reads them and a transformed unit keeps them:
+// - the count is a modifier of a stat no code reads, kStatKills, whose value is the kills;
+// - each row reached adds a multiply modifier for what its total adds to the row before it.
+// A transform in place (0x9C754C: TransformUnit, revolutions) ends the unit's modifiers, so its seven
+// calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
+// new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
+// hooks/veterancy_hooks.asm.
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../features.h"
+#include "../floatingtext.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../modifiers.h"
+#include "../patch.h"
+#include "../prototags.h"
+#include "../transformcalls.h"
+
+extern "C" void UhcVeterancyHook();
+
+namespace {
+
+constexpr std::uint32_t kKillPath = 0x004D4F37;
+constexpr std::int32_t kStatKills = 0x62;       // no stock stat or key uses it; transformSpan has 60h and 61h
+constexpr std::int32_t kOperationSet = 0;
+constexpr std::int32_t kOperationMultiply = 2;
+constexpr std::uint32_t kRankColour = 0xFFFFD700;
+constexpr int kMaxLogLines = 200;
+
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+using ModifyTypeFn = std::int32_t(__cdecl*)(const void* name);
+using ModifierFn = std::int32_t(__thiscall*)(char* unit, std::int32_t stat, float value, float a, float b,
+                                             std::int32_t c, std::int32_t operation, std::int32_t ms, std::int32_t d,
+                                             std::int32_t e, std::int32_t exclusive);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
+const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
+
+struct Row {
+  std::int32_t kills;
+  std::int32_t stat;
+  float total;
+};
+
+std::unordered_map<std::int32_t, std::vector<Row>> g_rows;  // by proto ID; the load fills it
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+bool __cdecl ReadVeterancyBonus(void*, const char* node, char* proto) {
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  const void* killsText = nullptr;
+  const void* typeText = nullptr;
+  const char* amount = kXmlText(node + 0x14);
+  if (!kXmlAttribute(node, "kills", &killsText) || killsText == nullptr ||
+      !kXmlAttribute(node, "modifytype", &typeText) || typeText == nullptr || amount == nullptr) {
+    uhc::Log(L"veterancyBonus: proto %d: a row needs kills, modifytype and a value; ignored", id);
+    return true;
+  }
+  const char* digits = kXmlText(killsText);
+  const std::int32_t kills = digits != nullptr ? std::atoi(digits) : 0;
+  const std::int32_t stat = kModifyType(typeText);
+  const float total = static_cast<float>(std::atof(amount));
+  if (kills < 1 || stat < 0 || total <= 0.0f) {
+    uhc::Log(L"veterancyBonus: proto %d: a row with kills %d, stat %d, value %hs is not valid; ignored", id, kills, stat,
+             amount);
+    return true;
+  }
+  std::vector<Row>& rows = g_rows[id];
+  rows.push_back({kills, stat, total});
+  std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) { return a.kills < b.kills; });
+  if (g_log) {
+    uhc::Log(L"veterancyBonus: proto %d: from %d kills, stat %d x%g", id, kills, stat, static_cast<double>(total));
+  }
+  return true;
+}
+
+// The modifier that holds the count, or null.
+char* FindCount(const char* unit) {
+  const char* list = uhc::modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return nullptr;
+  }
+  char* found = nullptr;
+  auto visit = [&found](const char* action) {
+    if (Field<std::int32_t>(action, 0x64) != kStatKills) {
+      return true;
+    }
+    found = const_cast<char*>(action);
+    return false;
+  };
+  uhc::modifiers::WalkModifiers(list, visit, 0);
+  return found;
+}
+
+// Around the transform in place, which ends the unit's modifiers.
+float KillsBeforeTransform(const char* unit) {
+  const char* count = g_rows.empty() ? nullptr : FindCount(unit);
+  return count != nullptr ? Field<float>(count, 0x68) : 0.0f;
+}
+
+void RestoreAfterTransform(char* unit, float kills) {
+  if (kills < 1.0f || FindCount(unit) != nullptr) {
+    return;
+  }
+  kModifier(unit, kStatKills, kills, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0);
+  const char* now = Field<const char*>(unit, 0x5C);
+  const auto found = now != nullptr ? g_rows.find(Field<std::int32_t>(now, 8)) : g_rows.end();
+  if (found == g_rows.end()) {
+    return;
+  }
+  // The total of each stat is its last row reached.
+  std::unordered_map<std::int32_t, float> totals;
+  for (const Row& row : found->second) {
+    if (static_cast<float>(row.kills) <= kills) {
+      totals[row.stat] = row.total;
+    }
+  }
+  for (const auto& [stat, total] : totals) {
+    kModifier(unit, stat, total, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+  }
+  if (g_log) {
+    uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
+             static_cast<double>(kills), Field<std::int32_t>(now, 8));
+  }
+}
+
+}  // namespace
+
 // From the hook, for every killing blow.
 extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   if (attacker == nullptr || victim == nullptr) {
@@ -3013,46 +3137,6 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
 
 namespace uhc {
 
-Outcome ApplyKillBountyTechs(const Config& config) {
-  const Config::Args* args = config.First("killBountyTechs");
-  if (args == nullptr) {
-    return Outcome::kNotConfigured;
-  }
-  if (!LogOption(*args, "killBountyTechs", &g_logTech) || !AddTechSubtype("KillBounty", &ChangeBounty) ||
-      !AddTechSubtype("Bounty", &ChangeBounty)) {
-    return Outcome::kFailed;
-  }
-  Log(L"killBountyTechs: the Data subtypes KillBounty and Bounty are on");
-  return Outcome::kApplied;
-}
-
-Outcome ApplyResourceBounty(const Config& config) {
-  const Config::Args* args = config.First("resourceBounty");
-  if (args == nullptr) {
-    return Outcome::kNotConfigured;
-  }
-  if (!LogOption(*args, "resourceBounty", &g_logResource) ||
-      !VerifyAll("resourceBounty", {&sites::kBountyTagHandler, &sites::kBountyKillBranch}) ||
-      !OnDatabaseLoad(&ForgetResourceBounties) ||
-      !WriteDword(sites::kBountyTagHandler.va, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&ReadBounty))) ||
-      !WriteJmp(sites::kBountyKillBranch.va, reinterpret_cast<const void*>(&UhcResourceBountyHook), 5)) {
-    return Outcome::kFailed;
-  }
-  Log(L"resourceBounty: <Bounty resourcetype> is on");
-  return Outcome::kApplied;
-}
-
-Outcome ApplyTeamKillBounty(const Config& config) {
-  const Config::Args* args = config.First("teamKillBounty");
-  if (args == nullptr) {
-    return Outcome::kNotConfigured;
-  }
-  if (!LogOption(*args, "teamKillBounty", &g_logTeam) || !VerifyAll("teamKillBounty", {&sites::kTeamBountyPay}) ||
-      !RequestAbstractUnitType("TeamKillBounty", &g_teamType) ||
-      !WriteJmp(sites::kTeamBountyPay.va, reinterpret_cast<const void*>(&UhcTeamBountyHook), 6)) {
-    return Outcome::kFailed;
-  }
-  Log(L"teamKillBounty: the abstract type TeamKillBounty is on");
 Outcome ApplyVeterancyBonus(const Config& config) {
   const Config::Args* args = config.First("veterancyBonus");
   if (args == nullptr) {
@@ -3065,17 +3149,11 @@ Outcome ApplyVeterancyBonus(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply, &sites::kTransformCall1,
-                                    &sites::kTransformCall2, &sites::kTransformCall3, &sites::kTransformCall4,
-                                    &sites::kTransformCall5, &sites::kTransformCall6, &sites::kTransformCall7}) ||
+  if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply}) ||
+      !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
       !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
     return Outcome::kFailed;
-  }
-  for (const std::uint32_t call : kTransformCalls) {
-    if (!WriteCall(call, reinterpret_cast<const void*>(&Transform))) {
-      return Outcome::kFailed;
-    }
   }
   Log(L"veterancyBonus: the proto tag VeterancyBonus is on");
   return Outcome::kApplied;
@@ -3084,11 +3162,6 @@ Outcome ApplyVeterancyBonus(const Config& config) {
 }  // namespace uhc
 ```
 
-### src/hooks/bounty_hooks.asm
-
-```asm
-; teamKillBounty and resourceBounty (src/features/bounty.cpp). Entered through a jmp written over the stock code; it leaves
-; through an explicit jmp to a verified continuation.
 ### src/hooks/veterancy_hooks.asm
 
 ```asm
@@ -3100,50 +3173,6 @@ option casemap :none
 
 include common.inc
 
-UhcIsTeamBounty PROTO STDCALL victim:DWORD, amount:DWORD
-UhcPayResourceBounty PROTO STDCALL victim:DWORD, killer:DWORD
-
-.data
-teamPayNext     dd 0049BDB1h    ; push 0 / push ecx / push edx / mov ecx,eax / call 0x49BDC0
-killBranchNext  dd 004D4E11h    ; mov ecx,esi / call 0x4D4DC5
-
-.code
-
-; Replaces 0x49BDAB..0x49BDB0 (mov ecx,[esp+14h] / mov edx,[esi]) in FUN_0049BD52, its only caller being
-; TakeDamage at 0x49B73C. EAX = the killer's team, ESI = the killer's player, [esp] = the ESI the function
-; saved: the caller's, the victim. EDX and ECX go to the XP routine: the player ID, -1 for the whole
-; team, and the amount. The routine runs on every hit, with an amount of 0 unless the hit kills, so the
-; helper only runs for a bounty.
-UhcTeamBountyHook PROC
-    TRACE_ONCE "teamKillBounty (0x49BDAB)"
-    cmp dword ptr [esp+14h], 0
-    je killer
-    push eax
-    mov ecx, dword ptr [esp+4]
-    mov edx, dword ptr [esp+18h]
-    invoke UhcIsTeamBounty, ecx, edx
-    test al, al
-    pop eax
-    je killer
-    mov ecx, dword ptr [esp+14h]
-    or edx, -1
-    jmp teamPayNext
-killer:
-    mov ecx, dword ptr [esp+14h]
-    mov edx, dword ptr [esi]
-    jmp teamPayNext
-UhcTeamBountyHook ENDP
-
-; Replaces 0x4D4E0C..0x4D4E10 (mov ecx,[esp+28h] / push ecx), re-executed here, on the kill branch of
-; TakeDamage. ESI = the victim, [esp+20h] = the killer's player. The next call overwrites EAX, ECX and EDX.
-UhcResourceBountyHook PROC
-    TRACE_ONCE "resourceBounty (0x4D4E0C)"
-    mov ecx, dword ptr [esp+20h]
-    invoke UhcPayResourceBounty, esi, ecx
-    mov ecx, dword ptr [esp+28h]
-    push ecx
-    jmp killBranchNext
-UhcResourceBountyHook ENDP
 UhcVeterancyKill PROTO STDCALL attacker:DWORD, victim:DWORD
 
 .data

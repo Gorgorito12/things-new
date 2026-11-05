@@ -554,9 +554,9 @@ END
 
 Contract: [transformSpan](../porting-to-another-dll.md#transformspan).
 
-Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`transformcalls.h`](helpers.md#transform-calls), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `XmlText` `0x402733` (9 B), `SnareApply` `0x4DD22D` (130 B), `XmlAttribute` `0x598F37` (16 B), `TransformEffectCall` `0x7FBC79` (5 B), `TransformProtoLookup` `0x9C754C` (22 B), `TransformEffectSetDataSlot` `0xB96B64` (4 B), `TransformEffectApplySlot` `0xB96B9C` (4 B).
+Sites: `XmlText` `0x402733` (9 B), `SnareApply` `0x4DD22D` (130 B), `XmlAttribute` `0x598F37` (16 B), `TransformProtoLookup` `0x9C754C` (22 B), `TransformEffectSetDataSlot` `0xB96B64` (4 B), `TransformEffectApplySlot` `0xB96B9C` (4 B).
 
 ### src/features/transformspan.cpp
 
@@ -591,12 +591,12 @@ Sites: `XmlText` `0x402733` (9 B), `SnareApply` `0x4DD22D` (130 B), `XmlAttribut
 #include "../log.h"
 #include "../modifiers.h"
 #include "../patch.h"
+#include "../transformcalls.h"
 #include "../worldtick.h"
 
 namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
-constexpr std::uint32_t kApplyCall = 0x007FBC79;   // call 0x9C754C in the effect's apply
 constexpr std::int32_t kStatFrom = 0x60;           // a modifier's value: the proto to go back to
 constexpr std::int32_t kStatEnd = 0x61;            // the game time to do it, in tenths of a second
 constexpr std::int32_t kMarkerExtraMs = 5000;      // the marker outlives the entry by this
@@ -616,7 +616,6 @@ using IsAliveFn = bool(__thiscall*)(const char* unit);
 
 const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
-const auto kTransform = reinterpret_cast<TransformFn>(0x009C754C);
 const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
 const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
 
@@ -770,7 +769,7 @@ void TurnBack(const char* world, const Pending& entry) {
     }
     return;
   }
-  kTransform(unit, entry.from);
+  uhc::TransformUnit(unit, entry.from);
   if (LogLine()) {
     uhc::Log(L"transformSpan: unit %d turned back, proto %d -> %d, game time %.1f s", entry.unit, entry.to, ProtoId(unit),
              static_cast<double>(Field<std::uint32_t>(world, 0x108)) / 1000.0);
@@ -821,8 +820,8 @@ void __fastcall Apply(void* effect, void*, void* a, void* b, void* c, void* d) {
   g_runningSpan = 0;
 }
 
-// Replaces the call of 0x9C754C in the effect's apply.
-void __fastcall Transform(char* unit, void*, std::int32_t proto) {
+// Takes the call of 0x9C754C in the effect's apply.
+void Transform(char* unit, std::int32_t proto) {
   const std::int32_t was = ProtoId(unit);
   const std::int32_t id = Field<std::int32_t>(unit, 0x10);
   Pending* pending = nullptr;
@@ -831,7 +830,7 @@ void __fastcall Transform(char* unit, void*, std::int32_t proto) {
       pending = &entry;
     }
   }
-  kTransform(unit, proto);
+  uhc::TransformUnit(unit, proto);
   if (g_runningSpan == 0) {
     if (pending != nullptr) {  // a lasting transform ends the timed one
       if (char* marker = FindMarker(unit, kStatFrom)) {
@@ -882,7 +881,7 @@ Outcome ApplyTransformSpan(const Config& config) {
     g_log = true;
   }
   if (!VerifyAll("transformSpan", {&sites::kTransformEffectSetDataSlot, &sites::kTransformEffectApplySlot,
-                                   &sites::kTransformEffectCall, &sites::kSnareApply, &sites::kXmlAttribute,
+                                   &sites::kSnareApply, &sites::kXmlAttribute,
                                    &sites::kXmlText, &sites::kTransformProtoLookup})) {
     return Outcome::kFailed;
   }
@@ -890,7 +889,7 @@ Outcome ApplyTransformSpan(const Config& config) {
   g_apply = *reinterpret_cast<ApplyFn*>(sites::kTransformEffectApplySlot.va);
   if (!WriteDword(sites::kTransformEffectSetDataSlot.va, reinterpret_cast<std::uintptr_t>(&SetData)) ||
       !WriteDword(sites::kTransformEffectApplySlot.va, reinterpret_cast<std::uintptr_t>(&Apply)) ||
-      !WriteCall(kApplyCall, reinterpret_cast<const void*>(&Transform)) || !AddWorldTick(&Tick)) {
+      !SetTransformEffectWrapper(&Transform) || !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
   }
   Log(L"transformSpan: TransformUnit effects take transformspan");

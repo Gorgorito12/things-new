@@ -464,9 +464,6 @@ inline constexpr Site kTransformEffectSetDataSlot{"TransformEffectSetDataSlot", 
 inline constexpr std::uint8_t kTransformEffectApplySlotBytes[] = {0xAF, 0xBB, 0x7F, 0x00};
 inline constexpr Site kTransformEffectApplySlot{"TransformEffectApplySlot", 0x00B96B9C, kTransformEffectApplySlotBytes, sizeof(kTransformEffectApplySlotBytes)};
 
-inline constexpr std::uint8_t kTransformEffectCallBytes[] = {0xE8, 0xCE, 0xB8, 0x1C, 0x00};
-inline constexpr Site kTransformEffectCall{"TransformEffectCall", 0x007FBC79, kTransformEffectCallBytes, sizeof(kTransformEffectCallBytes)};
-
 inline constexpr std::uint8_t kTransformPushProtoBytes[] = {0x55, 0x8B, 0xCE};
 inline constexpr Site kTransformPushProto{"TransformPushProto", 0x009C763C, kTransformPushProtoBytes, sizeof(kTransformPushProtoBytes)};
 

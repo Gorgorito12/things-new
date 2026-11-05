@@ -26,6 +26,7 @@ add_library(UHC SHARED
   src/unitpanel.cpp
   src/actiontags.cpp
   src/modifytypes.cpp
+  src/transformcalls.cpp
   src/prototags.cpp
   src/techsubtypes.cpp
   src/features/abilityslots.cpp

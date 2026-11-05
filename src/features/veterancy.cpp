@@ -30,15 +30,14 @@
 #include "../modifiers.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../transformcalls.h"
 
 extern "C" void UhcVeterancyHook();
 
 namespace {
 
 constexpr std::uint32_t kKillPath = 0x004D4F37;
-constexpr std::uint32_t kTransformCalls[] = {0x007FBC79, 0x007FBEF2, 0x008C2D08, 0x008EB78A,
-                                             0x008F05F5, 0x009BB6D5, 0x009C7C16};
-constexpr std::int32_t kStatKills = 0x60;       // no stock stat or key uses it
+constexpr std::int32_t kStatKills = 0x62;       // no stock stat or key uses it; transformSpan has 60h and 61h
 constexpr std::int32_t kOperationSet = 0;
 constexpr std::int32_t kOperationMultiply = 2;
 constexpr std::uint32_t kRankColour = 0xFFFFD700;
@@ -54,8 +53,6 @@ const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
 const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
 const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
-using TransformFn = std::int32_t(__thiscall*)(char* unit, std::int32_t proto);
-const auto kTransform = reinterpret_cast<TransformFn>(0x009C754C);
 
 struct Row {
   std::int32_t kills;
@@ -118,19 +115,21 @@ char* FindCount(const char* unit) {
   return found;
 }
 
-// Replaces the calls of the transform in place.
-std::int32_t __fastcall Transform(char* unit, void*, std::int32_t proto) {
+// Around the transform in place, which ends the unit's modifiers.
+float KillsBeforeTransform(const char* unit) {
   const char* count = g_rows.empty() ? nullptr : FindCount(unit);
-  const float kills = count != nullptr ? Field<float>(count, 0x68) : 0.0f;
-  const std::int32_t result = kTransform(unit, proto);
+  return count != nullptr ? Field<float>(count, 0x68) : 0.0f;
+}
+
+void RestoreAfterTransform(char* unit, float kills) {
   if (kills < 1.0f || FindCount(unit) != nullptr) {
-    return result;
+    return;
   }
   kModifier(unit, kStatKills, kills, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0);
   const char* now = Field<const char*>(unit, 0x5C);
   const auto found = now != nullptr ? g_rows.find(Field<std::int32_t>(now, 8)) : g_rows.end();
   if (found == g_rows.end()) {
-    return result;
+    return;
   }
   // The total of each stat is its last row reached.
   std::unordered_map<std::int32_t, float> totals;
@@ -146,7 +145,6 @@ std::int32_t __fastcall Transform(char* unit, void*, std::int32_t proto) {
     uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
              static_cast<double>(kills), Field<std::int32_t>(now, 8));
   }
-  return result;
 }
 
 }  // namespace
@@ -229,17 +227,11 @@ Outcome ApplyVeterancyBonus(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply, &sites::kTransformCall1,
-                                    &sites::kTransformCall2, &sites::kTransformCall3, &sites::kTransformCall4,
-                                    &sites::kTransformCall5, &sites::kTransformCall6, &sites::kTransformCall7}) ||
+  if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply}) ||
+      !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
       !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
     return Outcome::kFailed;
-  }
-  for (const std::uint32_t call : kTransformCalls) {
-    if (!WriteCall(call, reinterpret_cast<const void*>(&Transform))) {
-      return Outcome::kFailed;
-    }
   }
   Log(L"veterancyBonus: the proto tag VeterancyBonus is on");
   return Outcome::kApplied;

@@ -60,6 +60,7 @@ Rules:
   - `AddModifyType` (`modifytypes.*`, 0x5FE6D7);
   - `AddTechSubtype` and `AddTechActionSubtype` (`techsubtypes.*`, the call 0x6206D7, 0x8F978D, 0x8FB051);
   - `AddProtoTagHandler` (`prototags.*`, 0x51DB0F);
+  - `AddTransformObserver` (`transformcalls.*`, the seven calls of 0x9C754C); a key's own transform calls `TransformUnit`;
   - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
   - `AddSyscall` (`syscalls.*`, the group sites);
   - `floatingtext.*`, `modifiers.h` (the read-only walk over a unit's modifiers), `unittypes.*` (extra abstract types).

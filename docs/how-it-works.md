@@ -1639,7 +1639,7 @@ at 0x49B746 goes to the cold path 0x4D4F37. The hook sits there: ESI is the unit
 when it is gone. Gaia and the attacker's own units do not count.
 
 The state lives in the game, not in the DLL: everything is a stat modifier made by 0x4DD22D, the call of snares and auras, with
-0 ms, so no time limit. The count is a modifier of stat 60h, which no code reads, with the kills in `[+68h]`; it is read back
+0 ms, so no time limit. The count is a modifier of stat 62h, which no code reads, with the kills in `[+68h]`; it is read back
 by the walk of `modifiers.h`. Each row reached adds a multiply modifier of its total divided by the total of the row before,
 because modifiers multiply. So the save, the stat code and the panel need nothing more, and nothing is left to clean up.
 
@@ -2036,6 +2036,11 @@ picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B), the `
 gate (0x492FD6) and the water shipment point `[hc+190h]`, which all look for `TownCenter` itself.
 
 ### transformSpan
+
+The seven calls of the transform 0x9C754C belong to `transformcalls.*`: `veterancyBonus` and `transformSpan` both need them,
+and a second `WriteCall` would fail the first one's check. A key adds an observer, called around the transform, or takes
+the effect's call 0x7FBC79; its own transform calls `TransformUnit`, so a timed unit coming back runs the observers too.
+Stats 60h and 61h are `transformSpan`'s markers and 62h is the kill count of `veterancyBonus`.
 
 The effect's vtable is 0xB96B60. Slot 1, setData 0x622822, is wrapped to read `transformspan` from the node, by effect in a
 map. Slot 0Fh, apply 0x7FBBAF, is wrapped to know which effect runs. Its call of the in-place transform at 0x7FBC79

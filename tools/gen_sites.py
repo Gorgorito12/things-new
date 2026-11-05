@@ -341,7 +341,6 @@ SITES = [
     # and apply (0x7FBBAF, thiscall(effect, 4 arguments), ret 10h), and the apply's call of 0x9C754C
     ("TransformEffectSetDataSlot", 0xB96B64, 0x04),
     ("TransformEffectApplySlot", 0xB96B9C, 0x04),
-    ("TransformEffectCall", 0x7FBC79, 5),
     ("TransformPushProto", 0x9C763C, 3),
     # transformUpdatesLOS: push 1 / push 0 / mov ecx,esi / call 483262h (the unit leaves the
     # visibility map with its old LOS) and push 1 / push 1 / ... (it goes back with the new one)
