@@ -2053,6 +2053,7 @@ Attacks, armor, and what a hit does.
 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | **new** | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. | confirmed (single player) |
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | **new** | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. | confirmed (single player) |
+| [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
@@ -2580,6 +2581,60 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
   - **Not tested:** multiplayer, saved games. The area damage of the ground shots was seen on HP, the
     landing points only on video.
 
+#### accuracyTechs
+
+**Added:** — · **Filmed in WoL:** —
+
+![accuracyTechs in WoL](media/accuracyTechs-wol.gif)
+
+*In WoL, with the key (Ethiopians, ten `Crossbowman` each side, a test tech that sets `Accuracy` 0.05 on the player's
+own, which are selected):* they keep firing and miss, and the enemy's stand at full health while they fall.
+[Full video (MP4)](media/accuracyTechs-wol.mp4).
+
+![accuracyTechs in WoL, key off](media/accuracyTechs-wol-control.gif)
+
+*In WoL, key off (the same scene):* the effect is dropped and both sides lose men.
+[Full video (MP4)](media/accuracyTechs-wol-control.mp4).
+
+```
+accuracyTechs [log]
+```
+
+```xml
+<Effect type ='Data' action ='VolleyRangedAttack' amount ='0.80' subtype ='Accuracy' relativity ='Assign'>
+    <Target type ='ProtoUnit'>Crossbowman</Target></Effect>
+<Effect type ='Data' allactions ='1' amount ='0.80' subtype ='Accuracy' relativity ='BasePercent'>
+    <Target type ='ProtoUnit'>Crossbowman</Target></Effect>
+```
+
+- **In WoL today:** `<Accuracy>` is read from the tactics and no tech can touch it. JTMaston's #45.
+- **Effect:** the new subtype changes the action of that player's proto, as `TrackRating` does. It takes `action` or
+  `allactions='1'`, and every relativity. A proto without that action is left alone.
+- **It only changes what is one proto's:** tactics files are shared, but a tech on `Crossbowman` did not reach `Longbowman`,
+  which uses the same `archer.tactics`, nor the enemy's `Crossbowman`.
+- **Muskets do not read it:** an action with `<InstantBallistics>` or `<PerfectAccuracy>` never rolls, so the effect changes
+  a number nothing reads. `musketBayonet.tactics` has it on its ranged attacks; `grenadier.tactics` and `archer.tactics` do
+  not. Melee actions have no use for it either.
+- **What the number does:** hit chance in % = accuracy × 100 − half the distance in metres, see
+  [`spreadAnyAccuracy`](#spreadanyaccuracy). So 0.05 misses from 8 m on. A miss deals no damage.
+- **`BasePercent` adds to the current value:** current + base × amount − base. On 0.05 with a base of 1, an amount of 0.5
+  gives −0.45, which never hits. The game does not stop it.
+- **Bad data:** an effect with no `action` and no `allactions`, or an action that does not exist, is dropped and logged,
+  and the rest of the tech works.
+- **Saved games:** on loading, the effects are applied again.
+- **Multiplayer:** the value is in the simulation: every player needs the same setting.
+- **Log:** `accuracyTechs: the Data subtype Accuracy is on`, `hook reached: tech subtype lookup (0x6206D7)`, `tech subtype
+  apply (0x8F978D)`, and with `log` one line per action: `accuracyTechs: action 68, relativity 3, amount 0.05: 1 -> 0.05`.
+  The number is the action's ID, the same for every proto.
+- **Tested in WoL (2026-11-05):**
+  - `Assign` 0.05: the enemy's 8 `Crossbowman` ended at 100 HP each; key off, both sides were hit.
+  - Beside it, 8 `Longbowman` a side kept fighting evenly, both sides losing men.
+  - `BasePercent`, `Percent` and `Absolute` on one action: 0.05, −0.45, −0.225, −0.125.
+  - Removal through `Age0Egyptian`: 10 actions, 0.5 → 1 with `allactions`.
+  - A saved game: the enemy still at 100 HP after loading, and still 15 s later.
+  - A skirmish with a European AI (`wolOtto`) and both this key and `cratePriority` on: no XS error, 15 units at 120 s.
+  - Not tested: multiplayer.
+
 #### broadsideMuzzleLimit
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
@@ -2765,6 +2820,7 @@ Resources, gatherers, and what pays for them.
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
 | [`resourceDebt`](#resourcedebt) | Only trickles and the rates of units may take a stockpile below 0. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. | confirmed |
+| [`cratePriority`](#cratepriority) | The order in which a civ's units gather crates, instead of the exe's hardcoded one. | **new** | One line per civ in `wol.cfg`. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
@@ -3191,6 +3247,50 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
 - **Performance:** runs only when a sum falls below 0, plus one test for each AutoGather amount and gather rate under 1e-6.
 - **Status:** confirmed (single player, on WoL): the rates above, the refused order, the saved game, an AI in debt, the shared
   path on one player. Two allies sharing a debt and multiplayer not tested.
+
+#### cratePriority
+
+**Added:** — · **Filmed in WoL:** —
+
+![cratePriority in WoL](media/cratePriority-wol.gif)
+
+*In WoL, with `cratePriority all Gold Wood Food` (Swedish, the settlers selected):* at the start the settlers take the gold
+crates first, then the wood, and the food last. [Full video (MP4)](media/cratePriority-wol.mp4).
+
+![cratePriority in WoL, key off](media/cratePriority-wol-control.gif)
+
+*In WoL, key off (the same civ):* food first, then wood, and the gold last.
+[Full video (MP4)](media/cratePriority-wol-control.mp4).
+
+```
+cratePriority <Civ> <Resource> <Resource> <Resource>   gathered first to last: Gold (or Coin), Wood and Food
+cratePriority all <Resource> <Resource> <Resource>     for every civ with no line of its own
+cratePriority log
+```
+
+```
+cratePriority Dutch Food Wood Gold
+cratePriority all Gold Wood Food
+```
+
+- **In WoL today:** the exe compares the civ's name. Dutch: Gold, Wood, Food. `Ottomans` and `Indians`: Wood, Food, Gold.
+  The rest: Food, Wood, Gold. JTMaston's #33.
+- **Effect:** a civ with a line gathers in that order. A civ with none keeps the exe's order, or takes the `all` line. One
+  line per civ; a name the game does not know matches nobody. The names are the civ's in `civs.xml`.
+- **Where it applies, both places the exe has it:** the score of a crate when a unit looks for one, which is what decides
+  at the start of a game, and the next kind of crate when a unit runs out of one kind. Large crates go before small ones.
+- **The next kind is a cycle:** after the last resource comes the first. So `Gold Food Wood` is the same cycle as the stock
+  `Food Wood Gold`, and a unit that starts on wood goes on to gold in both; only the start of a game tells them apart.
+- **The AI too:** its gatherers use the same code.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Log:** `cratePriority: applied`, and with `log`: `cratePriority: Swedish -> civ 23`, `cratePriority: civ 23, resource 0: rank 3`
+  and `cratePriority: civ 1, after proto 425 look for proto 530`. A line with a missing or repeated resource: `FAILED`.
+- **Tested in WoL (2026-11-05):**
+  - A skirmish as the Swedish, `Gold Wood Food`: gold 200 at 5 s, then wood, food last. Key off: food 200 at 5 s, gold last.
+  - Six crates, starting on wood: `Gold Wood Food` went on to food, then gold. Key off: gold, then food.
+  - Lines for `Swedish` and `Germans` in a skirmish against a German AI: both civs used their own (civ 23 and 17 in the
+    log), and a name the game does not know gave civ −1 and did nothing. No XS error, 15 AI units at 120 s.
+  - Not tested: multiplayer.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
 

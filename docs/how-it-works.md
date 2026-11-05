@@ -1368,6 +1368,20 @@ leaves the field alone.
   hero's 6.0). It also keeps the stock gap of a converted unit, which carries its former owner's
   LOS (the owner change at `0x514529` swaps the proto copy without touching the LOS).
 
+### accuracyTechs
+
+Stock's `TrackRating` (Data subtype 26h, 0x8FAA45) shows the shape of an effect on an action: `[proto+44h]` is the action
+set, 0x48D22E finds the action by the ID in `[effect+10h]`, and the base proto's set gives the base value. Accuracy is the
+action's `+38h`, the same object: a tech on one proto reached neither another proto that uses the same tactics file nor
+another player.
+
+`techsubtypes.*` gained `AddTechActionSubtype`. setData reads the `action` attribute only for the subtypes it knows, so
+the lookup's replacement does it, for a subtype on actions: it runs in the call at 0x6206D7 with the effect in ESI and the
+node in EBP. `allactions` needs nothing: setData has already set bit 40h of `[effect+9]`, and protoUnitApply passes it as
+applyData's 8th argument. With it the key's handler runs for every action in the set, `[set+1Ch]`, count `[set+20h]`.
+
+- **Observed in game:** see the tests in the modding guide.
+
 ### broadsideMuzzleLimit
 
 **The stock broadside.** `BroadsideAttack` is protoaction type 29h (ctor `0x9D2B23`, vtable
@@ -2579,6 +2593,20 @@ inside what `showGatherRate` and `resourceGatherAuras` verify, hence its place a
 
 **Why it is safe.** Costs are compared with the stockpile, so a negative one simply cannot pay. The set's other work, the
 total `+240h` and the listeners, takes the delta whatever its sign. The list comes from the cfg only.
+
+### cratePriority
+
+Stock orders crates in two functions, both by comparing the civ's ID with those of the names Dutch, Ottomans and Indians.
+FUN_004DBF40 `(db, resource, civ)`, called once at 0x49A03C, gives a rank of 1 to 3 that the gather target search adds to a
+crate's score × 1000. FUN_00501786 `(player, proto, int* next, int* resource)`, called once at 0x50170B in a loop of 6, gives
+the next of the six crate protos (`[db+5E34h..5E48h]`) in a cycle.
+
+Both calls go through a wrapper, so the functions stay as they are. The rank wrapper answers `3 - position` for a civ with
+an order. The next wrapper calls stock first, which checks the proto is one of the six, then replaces the answer by
+walking the same cycle built from the order: large, small, for each resource. For stock's three orders that gives stock's
+answers. The names are looked up again for each database, as civs.xml is read again when a game starts.
+
+- **Observed in game:** see the tests in the modding guide.
 
 ### showGatherRate
 

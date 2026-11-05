@@ -30,10 +30,12 @@ add_library(UHC SHARED
   src/techsubtypes.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
+  src/features/accuracy.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
+  src/features/cratepriority.cpp
   src/features/civfirsttc.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp

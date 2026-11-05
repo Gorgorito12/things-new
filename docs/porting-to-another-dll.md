@@ -15,8 +15,8 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
+| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
@@ -698,6 +698,14 @@ Code: [techs](porting-code/techs.md#transformupdateslos).
 - **Keep the write before setProto:** the old proto is only readable there, and the per-player
   LOS cache (`0x9C768D`) and the visibility add (`0x9C7730`) must both see the new value.
 
+### accuracyTechs
+
+Code: [combat](porting-code/combat.md#accuracytechs). It needs `AddTechActionSubtype`, in the
+[helpers](porting-code/helpers.md#tech-subtypes).
+
+- **Sites:** those of the tech subtypes: the `call` at `0x6206D7` and the 9-byte `jmp`s at `0x8F978D` and `0x8FB051`.
+- **Test:** a tech with the effect in the [modding guide](modding-guide.md#accuracytechs) on a `Crossbowman`: they miss.
+
 ### broadsideMuzzleLimit
 
 Code: [combat](porting-code/combat.md#broadsidemuzzlelimit).
@@ -1273,6 +1281,13 @@ Code: [gathering](porting-code/gathering.md#resourcegatherauras). It needs `AddM
   that function, for its `danceCiv`: the wrapper calls through it, so the two combine. No range overlaps the call.
 
 Check it in the game: an aura with `MineGatherRate` 2 on an Explorer, and `showGatherRate` on a miner.
+
+### cratePriority
+
+Code: [gathering](porting-code/gathering.md#cratepriority).
+
+- **Sites:** the `call`s at `0x49A03C` (`E8 FF 1E 04 00`) and `0x50170B` (`E8 76 00 00 00`).
+- **Test:** a skirmish with `cratePriority all Gold Wood Food`: gold rises first.
 
 ### resourceDebt
 

@@ -15,4 +15,12 @@ using TechSubtypeHandler = void (*)(char* proto, const char* base, float amount,
 // after checking the stock bytes.
 bool AddTechSubtype(const char* name, TechSubtypeHandler handler);
 
+// The same for a subtype on a proto's action: the effect takes action="<Action>" or allactions="1", as
+// stock's TrackRating and Damage do. `action` is the player's copy, once for each action the effect
+// names, and `baseAction` the action of that name in the base proto, or nullptr if it has none. A
+// proto without the action is left alone.
+using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, float amount,
+                                          std::uint8_t relativity, bool unapply);
+bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
+
 }  // namespace uhc

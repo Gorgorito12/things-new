@@ -947,6 +947,9 @@ movement".
 | Data subtype lookup | 0x61FF5D, `int thiscall(db, const char* name)`, `ret 4`; table `[db+3500h]` | confirmed (`cs`), in game | Callers 0x6206D7 (setData) and 0x621C29. −1 if absent. `techsubtypes.*` adds IDs from 100h at the first. |
 | Proto CostEscalation | `[proto+78h]`, float, default 1; tag handler 0xA1119D | confirmed, in game | Cost container at `+70h`, set by 0x58EF83. Read at 0x480B66 and 0x67A1DD. |
 | Cost getter | 0x480B1E, `bool thiscall(player, protoId, cost*, count)`, `ret 0Ch` | confirmed (`cs`), in game | 35 callers, nearly all with count 1; variable count at 0x9EAF86 (train). Cold part 0x67A1A0: the query counts alive units only, in game. The costs are XOR-masked with `0xC6DF14`, count `[0xC6DF38]`. |
+| Data effect on an action | subtype TrackRating 26h, case 0x8FAA45; `action` read at 0x65BDE2 | confirmed (`cs`), in game | `[effect+10h]` the action's ID through 0x5E0C64(db, attribute). `allactions`: bit 40h of `[effect+9]`, 8th argument of applyData and unapplyData. Action set: `[proto+44h]`, array `[set+1Ch]`, count `[set+20h]`, ID at `[action+4]`; each proto and player has its own. |
+| Crate rank | FUN_004DBF40, `int thiscall(db, resource, civ)`, `ret 8` | confirmed (`cs`), in game | One caller, 0x49A03C: score += rank × 1000. Resource 0 Gold, 1 Wood, 2 Food. Dutch 3, 2, 1; Ottomans and Indians 1, 3, 2; others 1, 2, 3. |
+| Next crate | FUN_00501786, `bool thiscall(player, proto, int* next, int* resource)`, `ret 0Ch` | confirmed (`cs`), in game | One caller, 0x50170B, a loop of 6. Crate protos `[db+5E34h]` Food, `+5E38h` Wood, `+5E3Ch` Coin, `+5E40h..+5E48h` the large ones. |
 | Effect value | 0x7F892A, cdecl `(byte relativity, float* target, float base, float amount, bool unapply)` | confirmed (`cs`) | 0 Percent (×, ÷), 2 BasePercent, 3 Assign, else Absolute. |
 
 ### Command types (for `customProtoUnitCommands`, 2026-11-03)

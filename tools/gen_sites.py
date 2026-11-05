@@ -855,6 +855,17 @@ SITES = [
     ("TrainQueueCall4", 0x9EBF03, 5),
     ("DataApplySwitch", 0x8F978D, 9),
     ("DataUnapplySwitch", 0x8FB051, 9),
+    # tech subtypes on actions: setData's push "action"; and how protoUnitApply and Unapply turn the
+    # allactions bit 40h of [effect+9] into applyData's 8th argument
+    ("DataActionAttribute", 0x6216A3, 5),
+    ("DataAllActionsApply", 0x7F86CA, 0x0E),
+    ("DataAllActionsUnapply", 0x7F870F, 0x0E),
+    # cratePriority: the only calls of the crate rank FUN_004DBF40 (thiscall(db, resource, civ), ret 8)
+    # and of the next crate FUN_00501786 (thiscall(player, proto, int* next, int* resource), ret 0Ch),
+    # and that one's read of the civ: mov ecx,[esi+4] / mov ecx,[ecx+44h]
+    ("CrateRankCall", 0x49A03C, 5),
+    ("CrateNextCall", 0x50170B, 5),
+    ("CrateNextCivRead", 0x50184A, 6),
     # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not
     # in the VerifyAll: noTrainNearEnemyTC hooks these bytes and calls g_uhcBwrTrainGetter, and the
     # call is redirected only while they are stock

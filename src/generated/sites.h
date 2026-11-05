@@ -1016,6 +1016,24 @@ inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApply
 inline constexpr std::uint8_t kDataUnapplySwitchBytes[] = {0x83, 0xF8, 0x5E, 0x0F, 0x87, 0x40, 0x11, 0x00, 0x00};
 inline constexpr Site kDataUnapplySwitch{"DataUnapplySwitch", 0x008FB051, kDataUnapplySwitchBytes, sizeof(kDataUnapplySwitchBytes)};
 
+inline constexpr std::uint8_t kDataActionAttributeBytes[] = {0x68, 0x3C, 0x34, 0xBA, 0x00};
+inline constexpr Site kDataActionAttribute{"DataActionAttribute", 0x006216A3, kDataActionAttributeBytes, sizeof(kDataActionAttributeBytes)};
+
+inline constexpr std::uint8_t kDataAllActionsApplyBytes[] = {0x0F, 0xB6, 0x50, 0x09, 0xC0, 0xEA, 0x06, 0x80, 0xE2, 0x01, 0x88, 0x54, 0x24, 0x0C};
+inline constexpr Site kDataAllActionsApply{"DataAllActionsApply", 0x007F86CA, kDataAllActionsApplyBytes, sizeof(kDataAllActionsApplyBytes)};
+
+inline constexpr std::uint8_t kDataAllActionsUnapplyBytes[] = {0x0F, 0xB6, 0x50, 0x09, 0xC0, 0xEA, 0x06, 0x80, 0xE2, 0x01, 0x88, 0x54, 0x24, 0x0C};
+inline constexpr Site kDataAllActionsUnapply{"DataAllActionsUnapply", 0x007F870F, kDataAllActionsUnapplyBytes, sizeof(kDataAllActionsUnapplyBytes)};
+
+inline constexpr std::uint8_t kCrateRankCallBytes[] = {0xE8, 0xFF, 0x1E, 0x04, 0x00};
+inline constexpr Site kCrateRankCall{"CrateRankCall", 0x0049A03C, kCrateRankCallBytes, sizeof(kCrateRankCallBytes)};
+
+inline constexpr std::uint8_t kCrateNextCallBytes[] = {0xE8, 0x76, 0x00, 0x00, 0x00};
+inline constexpr Site kCrateNextCall{"CrateNextCall", 0x0050170B, kCrateNextCallBytes, sizeof(kCrateNextCallBytes)};
+
+inline constexpr std::uint8_t kCrateNextCivReadBytes[] = {0x8B, 0x4E, 0x04, 0x8B, 0x49, 0x44};
+inline constexpr Site kCrateNextCivRead{"CrateNextCivRead", 0x0050184A, kCrateNextCivReadBytes, sizeof(kCrateNextCivReadBytes)};
+
 inline constexpr std::uint8_t kBwrTrainCallBytes[] = {0x8B, 0x4E, 0x10, 0xE8, 0x1B, 0x5A, 0xFD, 0xFF};
 inline constexpr Site kBwrTrainCall{"BwrTrainCall", 0x009EA410, kBwrTrainCallBytes, sizeof(kBwrTrainCallBytes)};
 
