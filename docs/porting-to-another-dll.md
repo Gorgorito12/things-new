@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `veterancyBonus`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `detonationDeath` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `detonationDeath` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
@@ -848,6 +848,16 @@ Code: [data](porting-code/data.md#customhotkeycontexts).
   ESP.
 - **Ordering:** write the switch-off wrapper first and the trainer hook last, so a failed write
   leaves contexts that are never on, or on and switched off.
+
+### pillageGold
+
+Code: [combat](porting-code/combat.md#pillagegold). It needs `AddActionTagHandler`, in the
+[helpers](porting-code/helpers.md#action-tags), and `RequestAbstractUnitType`, in the
+[helpers](porting-code/helpers.md#extra-abstract-unit-types).
+
+- **Site:** a `call` at `0x49B73C` (`E8 11 06 00 00`), which the hook ends with a `jmp` to its target `0x49BD52`. Nothing in
+  your DLL holds it today, as far as the map of that DLL shows; check it first.
+- **Test:** a marked unit against an enemy building with gold: each hit moves the amount, and the sum of both stockpiles stays.
 
 ### killBountyTechs, resourceBounty and teamKillBounty
 

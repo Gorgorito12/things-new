@@ -239,6 +239,7 @@ resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
+pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back
 hcTargetTechs [log]           tech flags HCTargetEnemy and HCTargetAll
 detonationDeath [log]         <DetonationProtoAction> fires an action when a unit dies

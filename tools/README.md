@@ -238,6 +238,8 @@ live text on every frame:
   identical in it, so a still camera costs little; an MP4 as source smears colour and text, and
   its noise makes the GIF grow.
 - `--log-top`: draws the `--log` lines above the game's bottom panel, for a feature that shows in it.
+- `--gold 1,2`: a line with those players' gold, read from the game, for a test of resources where the second player's
+  stockpile shows nowhere on screen.
 - `--background`: leaves the focus alone. For a copy with `multipleInstances background`: it needs
   no window in front, so a test can run while somebody uses the PC.
 - `--hover <x>,<y>`: rests the cursor on a client point (a command panel button), so the button's

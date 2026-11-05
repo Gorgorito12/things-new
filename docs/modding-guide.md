@@ -2069,6 +2069,7 @@ Attacks, armor, and what a hit does.
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
+| [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
 | [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills. | **new** | The rows on the protos that want them. | confirmed |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
@@ -3018,6 +3019,73 @@ teamKillBounty [log]
     The game's update stayed at 0.13 ms, and the fight ended the same way, 6 to 8 Halberdiers left. Frames came out 3 to 7%
     lower in the runs with the keys, with the scenes not identical, so read that as noise until a cleaner run.
   - Not tested: multiplayer, a kill by a building or a ship, a `Bounty` aura beside `teamKillBounty`.
+
+#### pillageGold
+
+![pillageGold in WoL](media/pillageGold-wol.gif)
+
+*In WoL, with the key (`AbstractCanPillage` and `<PillageAmount>5</PillageAmount>` on `Pikeman`):* each torch that lands
+moves 5 gold from the Barracks' owner to the attacker. The gold line on top is read from the game.
+[Full video (MP4)](media/pillageGold-wol.mp4).
+
+![pillageGold in WoL, key off](media/pillageGold-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* the same torches, and the gold of both players stays where it was.
+[Full video (MP4)](media/pillageGold-wol-control.mp4).
+
+```
+pillageGold [log]
+```
+
+```xml
+<Unit name="Pikeman">
+    <UnitType>AbstractCanPillage</UnitType>
+    <ProtoAction>
+        <Name>BuildingAttack</Name>
+        <PillageAmount>5</PillageAmount>   <!-- after <Name> -->
+        <Damage>32.000000</Damage>
+    </ProtoAction>
+</Unit>
+```
+
+- **In WoL today:** nothing takes a resource from another player by attacking. JTMaston's #47.
+- **What it does:** both are needed: the type on the proto, the tag on the action. On each hit of that action on a building
+  of an enemy, the attacker's owner gets the gold its victim loses. It is a real transfer: no gold is created, and the
+  gather multiplier does not apply. One hit is one torch that lands, so the rate is the action's `ROF`.
+- **Only gold.** A victim with no gold gives nothing, and the attacker gets nothing. A victim with less than the amount
+  gives what it has: 12 gold and a tag of 5 pays 5, 5 and 2.
+- **Which action:** the one that has the tag. `CoverBuildingAttack` is a different action: a unit in cover pays nothing
+  until that action has its own tag.
+- **Against what:** enemy buildings. A unit that hits a unit steals nothing, with the tag on that action too. The game
+  sends no attack at an own or allied building, and the fight stops the moment two players ally.
+- **Attacker dead before its torch lands:** nothing is stolen. The damage stays.
+- **Shared resources:** the add 0x49A98A splits an amount among the team when the world's flag `[world+6912h]` is on. So
+  with that option each side's team shares the transfer. If a teammate of the victim has less than its share, it stops at 0
+  and the attacker still gets the full amount. Read in the code, not played.
+- **Changes the simulation:** every player needs the same setting and data.
+- **Saved games:** nothing is saved. The amounts come from the data, and the gold is the game's own.
+- **Log:** `pillageGold: AbstractCanPillage units steal gold with an action's <PillageAmount>`, `hook reached: pillageGold
+  hit (0x49B73C)`, and with `log` `pillageGold: proto Pikeman, action 15: 5 gold a hit` and, for the first 200 hits,
+  `pillageGold: unit 1 of player 1 took 5 gold from player 2 (Barracks): 995 -> 990, the attacker has 10`.
+- **Tested** in WoL, with a Barracks of player 2, reading both stockpiles:
+  - 3 Pikemen with the type and the tag: 66 hits in 46 s, each exactly 5: 1000 to 670, and the attacker 0 to 330. The two
+    always added up to 1000.
+  - `Skirmisher` with the tag and no type: the Barracks went from 2288.8 to 1866.4 HP, 0 stolen.
+  - `Crossbowman` with the type and no tag: 2356 to 2116 HP, 0 stolen.
+  - 2 tagged Pikemen against `Settler`, with their `MeleeHandAttack`: 0 stolen. With the tag on `MeleeHandAttack`: 2 Settlers
+    dead, 0 stolen.
+  - Pikemen switched to `Cover` during the fight: 13 hits paid, then the Barracks went on losing 15.2 HP a hit, half of the
+    30.4 before, the rate of `CoverBuildingAttack`, with no more gold.
+  - A victim with 0 gold: the Barracks from 1952.8 to 1132 HP, 0 stolen. A victim with 12: 5, 5, 2, then nothing.
+  - Own and allied Barracks: the Pikemen did not attack it, 2500 of 2500 HP. Two enemies that ally at 12 s: 9 hits paid and
+    the attack stopped there, at 2226.4 HP.
+- A game saved with the attacker at 120 gold and the victim at 880, and loaded in a new process: the same 12 hits, to 180
+    and 820, and the sum stays 1000. Loaded in the same process too, 12 hits with no jump.
+- A skirmish against a European AI, `wolOtto` (Germans), with the type and the tag on `Pikeman`, `Crossbowman`, `Skirmisher`
+    and `Rodelero`: no Error 0003, and the AI went from 14 units at 60 s to 26 at 240 s, with a Manor built.
+  - Cost: the hook adds a map lookup to each hit that has an attacker, after a test of an empty map. No A/B yet: other
+    games ran on the machine, so the numbers would not be clean.
+  - Not tested: multiplayer, shared resources, an attacker that dies with its torch in the air, an action with splash.
 
 #### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
 

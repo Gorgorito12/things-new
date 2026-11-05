@@ -78,6 +78,7 @@ add_library(UHC SHARED
   src/features/techprereq.cpp
   src/features/teams.cpp
   src/features/techrename.cpp
+  src/features/pillage.cpp
   src/features/trainbatch.cpp
   src/features/transform.cpp
   src/features/transformspan.cpp
@@ -156,6 +157,7 @@ add_library(UHC SHARED
   src/hooks/cantslow_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm
+  src/hooks/pillage_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/veterancy_hooks.asm
   src/hooks/freeresearch_hooks.asm
