@@ -4,7 +4,7 @@
     python -I tools/make_rings.py --check  exit code 1 if a file differs from what this script writes
 
 A ring is two files, copied to art/effects/uhc_rings/ in the game folder:
-- ring_<name>.ddt, a 64x64 DXT3 texture drawn here: no pixel comes from the game;
+- ring_<name>.ddt, a 128x128 DXT3 texture drawn here: no pixel comes from the game;
 - ring_<name>.xml, the game's own ring mesh with that texture, through <replacetexture>.
 
 An aura uses one with <modelattachment>effects\\uhc_rings\\ring_<name>.xml</modelattachment>.
@@ -15,8 +15,8 @@ import struct
 import sys
 
 OUT = pathlib.Path(__file__).with_name("rings")
-SIZE = 64
-MIPS = 5
+SIZE = 128  # thin lines need more texels than the game's 64
+MIPS = 6
 MESH = r"effects\ypack_auras\aura_econ"
 MESH_CAVALRY = r"effects\ypack_auras\aura_econ_cav"
 
@@ -31,12 +31,11 @@ RINGS = {
     "speed": ((30, 105, 255), (140, 235, 255)),   # blue: moves faster
 }
 
-# Radii as fractions of the half width, as (inner, outer): a wide band and a thin one.
-BANDS = ((0.74, 0.97), (0.52, 0.60))
-EDGE = 0.035  # the soft edge of a band, in the same fraction
-OPACITY = 0.70  # the ground shows through
-# A DXT3 block holds two colours and two mixes of them. By how much of the main colour: 1, 2/3, 1/3, 0.
-SHADES = (0, 2, 3, 1)
+# Radii as fractions of the half width, as (inner, outer): two thin lines, never a band.
+BANDS = ((0.905, 0.955), (0.70, 0.73))
+EDGE = 0.02  # the soft edge of a line, in the same fraction
+OPACITY = 0.85  # a thin line needs more than a band to show, and the ground still shows between the lines
+SPLIT = 0.8  # the radius between the outer line, in the main colour, and the inner one, in the light colour
 
 
 def coverage(r):
@@ -67,11 +66,8 @@ def alpha_map(size):
 
 
 def shade(x, y, size):
-    """The block index of a texel: the wide band fades from the main colour at its rim, the thin one is light."""
-    r = math.hypot((x + 0.5) / size * 2 - 1, (y + 0.5) / size * 2 - 1)
-    inner, outer = BANDS[0]
-    main = min(1.0, max(0.0, (r - inner) / (outer - inner)))
-    return SHADES[min(3, int((1.0 - main) * 4))]
+    """The block index of a texel: 0, the main colour, on the outer line; 1, the light one, on the inner."""
+    return 0 if math.hypot((x + 0.5) / size * 2 - 1, (y + 0.5) / size * 2 - 1) >= SPLIT else 1
 
 
 def rgb565(colour):

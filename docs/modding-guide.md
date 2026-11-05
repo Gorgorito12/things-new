@@ -3361,7 +3361,7 @@ unitResourceAuras [log]
 
   ![The seven rings in WoL](media/rings-palette.png)
 
-  Each ring has two tones, its colour at the rim fading to a lighter one, and is 70% opaque, so the ground shows through.
+  Each ring is two thin lines, 85% opaque: the outer in its colour, the inner in a lighter one, with the ground between them.
   The photo shows six: the amber one is in the video above.
 
   | Ring | Colour | For | `<modelattachment>` |
