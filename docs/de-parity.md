@@ -50,6 +50,12 @@ Every statement is **[O]** observed (a file, a listing, a byte search) or **[I]*
    - [O] Ghidra (through REA) did not finish analysing the 59 MB exe within REA's 30-minute startup
      limit (`REA_GHIDRA_STARTUP_TIMEOUT_MS`), twice. The listings above come from
      `tools/re/pe64.py` with capstone 5.0.6.
+   - [O] On 2026-11-05 a third run with a 4-hour limit was cut off too, with no result and nothing
+     saved. Its log showed RTTI work at 12:49 and decompiler work until 13:39, after a start at 10:26,
+     then nothing more until the limit.
+   - [O] `mBuildingForwardOrientation` is in `.rdata` (RVA 0x27C6D10), with no code reference and no
+     data pointer in the file (`pe64.py xrefs`, a byte scan). [I] What reads it is probably in the
+     42 % of functions encrypted on disk: a finished Ghidra analysis of the file would not show it either.
 
 **Evidence.** Everything is in `rea/evidence/aoe3de-31fad98f/parity/` (gitignored):
 - `pdf/`: the guide's text per page and `inventory.tsv`, its 996 entries;
