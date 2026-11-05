@@ -238,6 +238,7 @@ resourceGatherAuras [log]     ModifyType names for one kind of target or one res
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
+transformSpan [log]           transformspan on a TransformUnit effect turns the units back
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,

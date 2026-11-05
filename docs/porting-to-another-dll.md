@@ -18,7 +18,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
-| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
+| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
@@ -635,6 +635,15 @@ Code: [buildings](porting-code/buildings.md#livebuildingworkrate).
     finishes on that tick, as research does in stock.
   - `maintainWaitForPop` verifies the Maintain call 0x6AB264 as stock bytes, so hook the callee,
     not the call.
+
+### transformSpan
+
+Code: [techs](porting-code/techs.md#transformspan). It needs `AddWorldTick`, in the [helpers](porting-code/helpers.md#world-tick).
+
+- **Sites:** the vtable slots `0xB96B64` (value `0x622822`) and `0xB96B9C` (value `0x7FBBAF`), and the `call` at `0x7FBC79`
+  (`E8 CE B8 1C 00`). Check them against your DLL first: a key that wraps the same call must share it.
+- **Saved games:** stats 60h and 61h carry the markers. A key of yours that uses them must take other numbers.
+- **Test:** a tech with the attribute: the units return at the end, and in a saved game too.
 
 ### techPrereqRecheck
 

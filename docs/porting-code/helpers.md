@@ -509,6 +509,15 @@ inline constexpr Site kTransformSetProto{"TransformSetProto", 0x009C763F, kTrans
 inline constexpr std::uint8_t kTransformProtoLookupBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x83, 0xEC, 0x0C, 0x55, 0x56, 0x8B, 0xF1, 0x8B, 0x4E, 0x44, 0x50, 0xE8, 0xBB, 0xBB, 0xA8, 0xFF, 0x8B, 0xE8};
 inline constexpr Site kTransformProtoLookup{"TransformProtoLookup", 0x009C754C, kTransformProtoLookupBytes, sizeof(kTransformProtoLookupBytes)};
 
+inline constexpr std::uint8_t kTransformEffectSetDataSlotBytes[] = {0x22, 0x28, 0x62, 0x00};
+inline constexpr Site kTransformEffectSetDataSlot{"TransformEffectSetDataSlot", 0x00B96B64, kTransformEffectSetDataSlotBytes, sizeof(kTransformEffectSetDataSlotBytes)};
+
+inline constexpr std::uint8_t kTransformEffectApplySlotBytes[] = {0xAF, 0xBB, 0x7F, 0x00};
+inline constexpr Site kTransformEffectApplySlot{"TransformEffectApplySlot", 0x00B96B9C, kTransformEffectApplySlotBytes, sizeof(kTransformEffectApplySlotBytes)};
+
+inline constexpr std::uint8_t kTransformEffectCallBytes[] = {0xE8, 0xCE, 0xB8, 0x1C, 0x00};
+inline constexpr Site kTransformEffectCall{"TransformEffectCall", 0x007FBC79, kTransformEffectCallBytes, sizeof(kTransformEffectCallBytes)};
+
 inline constexpr std::uint8_t kTransformPushProtoBytes[] = {0x55, 0x8B, 0xCE};
 inline constexpr Site kTransformPushProto{"TransformPushProto", 0x009C763C, kTransformPushProtoBytes, sizeof(kTransformPushProtoBytes)};
 
@@ -1892,6 +1901,7 @@ Outcome ApplyDanceBonusCivs(const Config& config);
 Outcome ApplyStartingTc(const Config& config);
 Outcome ApplyCivFirstTc(const Config& config);
 Outcome ApplyTransformInventory(const Config& config);
+Outcome ApplyTransformSpan(const Config& config);
 Outcome ApplyNoTrainNearEnemyTc(const Config& config);
 Outcome ApplyOverhealHitpointBars(const Config& config);
 Outcome ApplyOverhealSources(const Config& config);
@@ -2000,6 +2010,7 @@ inline constexpr Feature kFeatures[] = {
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
     {"civFirstTC", ApplyCivFirstTc},
     {"transformInventory", ApplyTransformInventory},
+    {"transformSpan", ApplyTransformSpan},
     // After liveBuildingWorkRate, which verifies the stock bytes of the site this one hooks.
     {"noTrainNearEnemyTC", ApplyNoTrainNearEnemyTc},
     {"overhealHitpointBars", ApplyOverhealHitpointBars},
@@ -2029,7 +2040,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "transformspan", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",

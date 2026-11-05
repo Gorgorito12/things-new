@@ -72,6 +72,7 @@ add_library(UHC SHARED
   src/features/techrename.cpp
   src/features/trainbatch.cpp
   src/features/transform.cpp
+  src/features/transformspan.cpp
   src/features/transforminv.cpp
   src/features/typetests.cpp
   src/features/kbsyscalls.cpp

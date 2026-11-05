@@ -2011,6 +2011,27 @@ its Market and settlers, then stayed idle), and the engine's AI auto-base FUN_00
 picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B), the `Maintain` spawn
 gate (0x492FD6) and the water shipment point `[hc+190h]`, which all look for `TownCenter` itself.
 
+### transformSpan
+
+The effect's vtable is 0xB96B60. Slot 1, setData 0x622822, is wrapped to read `transformspan` from the node, by effect in a
+map. Slot 0Fh, apply 0x7FBBAF, is wrapped to know which effect runs. Its call of the in-place transform at 0x7FBC79
+goes to a function that records the unit: ID, the proto it had, the proto it gets, and the end in game time `[world+108h]`.
+
+A world tick turns the due units back with the same 0x9C754C. It runs after the stock update, so no action list is being
+walked. Each entry is checked again then: the unit by ID (`[unit+10h]` must match), alive, and of the proto the key gave
+it. With nothing due the tick is one compare with the nearest end.
+
+The table is in the DLL, so a saved game keeps a copy on the units: two stat modifiers (0x4DD22D, stats 60h and 61h, which
+no getter reads), one with the proto to return to and one with the end in tenths of a second. A value that changes is
+written in place, at `[modifier+68h]`; a finished entry writes -1. The modifier outlives the entry by 5 s, and stock removes
+it. As poisons do, the tick compares the step count `[world+F8h]`: when it jumps, or the time goes back, or the world
+changes, another game is running, and the table is rebuilt by walking every unit's modifiers once.
+
+TransformUnit is not applied again on load: a saved game loaded after the end left the units as they were.
+
+- **Observed in game:** see the cases in the modding guide. A unit can turn back into a proto its building does not take:
+  stock does not check, and the unit left the building normally.
+
 ### transformInventory
 
 **Where a unit's resources live.**

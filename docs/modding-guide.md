@@ -4228,6 +4228,7 @@ What happens when a tech activates or a unit changes proto.
 |---|---|---|---|---|
 | [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | **new** | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. | confirmed (single player) |
 | [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | **new** | Nothing. | confirmed (single player) |
+| [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | **new** | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
 
 #### techPrereqRecheck
@@ -4476,6 +4477,57 @@ transformInventory [all] [scale] [<UnitType>] [log]
   (2026-10-29), a test tech covered a change of resource type, a unit with no inventory, a unit with the
   same types (kept) and a new proto with no resources (kept without `all`). `all`, `scale`, a marker,
   revolutions and a conversion after a transform were not tested.
+
+#### transformSpan
+
+**Added:** — · **Filmed in WoL:** —
+
+![transformSpan in WoL](media/transformSpan-wol.gif)
+
+*In WoL, with the key (6 `Pikeman` and a test tech with `transformspan='20'`):* the units turn into `Rodelero`
+and, 20 s of game time later, back into `Pikeman`, with the same IDs. [Full video (MP4)](media/transformSpan-wol.mp4).
+
+![transformSpan in WoL, key off](media/transformSpan-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the attribute, and the units stay `Rodelero`.
+[Full video (MP4)](media/transformSpan-wol-control.mp4).
+
+```
+transformSpan [log]
+```
+
+```xml
+<Effect type ='TransformUnit' toprotoid ='Rodelero' fromprotoid ='Pikeman' transformspan ='20' />
+```
+
+- **In WoL today:** a `TransformUnit` tech effect is one way. JTMaston's #41, with his design.
+- **Effect:** `transformspan`, in seconds of game time, turns back each unit that effect transformed. A trained unit
+  is not touched: the effect only ever acts on the units alive when it runs.
+- **What comes back:** the same unit, with its ID, through the stock transform: HP by proportion (54/135 became 49.4/123.5,
+  40% both), and [`transformInventory`](#transforminventory) and [`transformUpdatesLOS`](#transformupdateslos) act both ways.
+- **Who is turned back:** a unit alive, of the proto the key gave it.
+  - **Dead:** dropped.
+  - **Transformed again with `transformspan`:** it goes back to its **first** proto, at the new end. A → B for 20 s, then
+    B → C for 15 s at second 10, gave A at second 25.
+  - **Transformed again without it:** the timer ends, and the unit stays. Any other way of changing it (a revolution, a
+    trigger) leaves it as it is too, because the unit is no longer the proto the key gave it.
+  - **Converted:** it turns back with its new owner.
+  - **Garrisoned:** it turns back inside, even in a building that does not take that proto, and it comes out as usual. A
+    `Settler` in a `Blockhouse` became a `Pikeman` there, and left it by the trigger `Ungarrison`.
+- **Saved games:** the time survives. Each unit carries two modifiers of stats nothing reads, and a loaded game rebuilds the
+  table from them. The effect is not run again on loading.
+- **Another game:** pending units are dropped, by the game's step count, so the same IDs in a new game are not touched.
+- **Off:** the game ignores the attribute and the transform is permanent, as today.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Performance:** one tick per world update. With nothing pending it is a compare. The A/B with `perfprobe.py` is still
+  to do: the tests ran beside other games.
+- **Log:** `transformSpan: TransformUnit effects take transformspan`, and with `log` one line per data effect, per unit
+  transformed and per unit turned back: `transformSpan: unit 1, proto 295 -> 312, back to 295 in 20.0 s, at game time 30.0 s`,
+  `transformSpan: unit 1 turned back, proto 312 -> 295, game time 50.0 s`, `transformSpan: unit 3 is gone`.
+- **Tested in WoL (2026-11-05):**
+  - Every case above, each in its own scene.
+  - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
+  - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
 
 ### Interface
 

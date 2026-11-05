@@ -123,3 +123,5 @@ accuracyTechs-wol 2 30 3
 accuracyTechs-wol-control 2 30 3
 cratePriority-wol 0 9 1
 cratePriority-wol-control 0 9 1
+transformSpan-wol 8 30 3
+transformSpan-wol-control 8 30 3
