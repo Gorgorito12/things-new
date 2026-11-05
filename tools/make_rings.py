@@ -20,20 +20,23 @@ MIPS = 5
 MESH = r"effects\ypack_auras\aura_econ"
 MESH_CAVALRY = r"effects\ypack_auras\aura_econ_cav"
 
-# One colour, one meaning.
+# One meaning per ring: its main colour, on the outside, and the lighter one it fades to.
 RINGS = {
-    "wood": (240, 160, 40),    # amber: gathering wood
-    "food": (225, 45, 40),     # red: gathering food, as the food icon of the panel
-    "gold": (250, 228, 70),    # yellow: gathering gold, as the coin icon of the panel
-    "work": (90, 225, 70),     # green: gathers or works faster
-    "damage": (235, 40, 200),  # magenta: damage, kept away from the three colours above
-    "heal": (245, 245, 245),   # white: hit points, healing
-    "speed": (60, 140, 255),   # blue: moves faster
+    "wood": ((235, 130, 20), (255, 225, 130)),    # amber: gathering wood
+    "food": ((220, 30, 30), (255, 160, 110)),     # red: gathering food, as the food icon of the panel
+    "gold": ((255, 205, 0), (255, 250, 170)),     # yellow: gathering gold, as the coin icon of the panel
+    "work": ((50, 205, 50), (220, 245, 90)),      # green: gathers or works faster
+    "damage": ((225, 20, 180), (255, 160, 235)),  # magenta: damage, kept away from the three colours above
+    "heal": ((245, 248, 255), (150, 215, 255)),   # white: hit points, healing
+    "speed": ((30, 105, 255), (140, 235, 255)),   # blue: moves faster
 }
 
 # Radii as fractions of the half width, as (inner, outer): a wide band and a thin one.
 BANDS = ((0.74, 0.97), (0.52, 0.60))
 EDGE = 0.035  # the soft edge of a band, in the same fraction
+OPACITY = 0.70  # the ground shows through
+# A DXT3 block holds two colours and two mixes of them. By how much of the main colour: 1, 2/3, 1/3, 0.
+SHADES = (0, 2, 3, 1)
 
 
 def coverage(r):
@@ -58,9 +61,17 @@ def alpha_map(size):
                     u = (x + (sx + 0.5) / samples) / size * 2 - 1
                     v = (y + (sy + 0.5) / samples) / size * 2 - 1
                     total += coverage(math.hypot(u, v))
-            row.append(round(total / samples ** 2 * 15))
+            row.append(round(total / samples ** 2 * OPACITY * 15))
         out.append(row)
     return out
+
+
+def shade(x, y, size):
+    """The block index of a texel: the wide band fades from the main colour at its rim, the thin one is light."""
+    r = math.hypot((x + 0.5) / size * 2 - 1, (y + 0.5) / size * 2 - 1)
+    inner, outer = BANDS[0]
+    main = min(1.0, max(0.0, (r - inner) / (outer - inner)))
+    return SHADES[min(3, int((1.0 - main) * 4))]
 
 
 def rgb565(colour):
@@ -68,19 +79,21 @@ def rgb565(colour):
     return (r >> 3) << 11 | (g >> 2) << 5 | b >> 3
 
 
-def dxt3(size, colour):
-    """DXT3 blocks: explicit alpha in 4 bits, and one colour for every texel."""
+def dxt3(size, colours):
+    """DXT3 blocks: explicit alpha in 4 bits, then the two colours and a 2-bit index per texel."""
     alpha = alpha_map(size)
-    pixel = rgb565(colour)
+    main, light = rgb565(colours[0]), rgb565(colours[1])
     out = bytearray()
     for by in range(0, size, 4):
         for bx in range(0, size, 4):
+            indices = 0
             for y in range(4):
                 row = 0
                 for x in range(4):
                     row |= alpha[by + y][bx + x] << (4 * x)
+                    indices |= shade(bx + x, by + y, size) << (2 * (y * 4 + x))
                 out += struct.pack("<H", row)
-            out += struct.pack("<HHI", pixel, pixel, 0)
+            out += struct.pack("<HHI", main, light, indices)
     return bytes(out)
 
 

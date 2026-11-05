@@ -3361,6 +3361,9 @@ unitResourceAuras [log]
 
   ![The seven rings in WoL](media/rings-palette.png)
 
+  Each ring has two tones, its colour at the rim fading to a lighter one, and is 70% opaque, so the ground shows through.
+  The photo shows six: the amber one is in the video above.
+
   | Ring | Colour | For | `<modelattachment>` |
   |---|---|---|---|
   | wood | amber | gathering wood | `effects\uhc_rings\ring_wood.xml` |
@@ -3376,8 +3379,7 @@ unitResourceAuras [log]
   line in `RINGS` in the script. WoL's own rings: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and `frightpower.xml`,
   `effects\chiefpower\chiefpower.xml`, `effects\me_auras\aura_warlord.xml`, among others.
 - **Tested in WoL (2026-11-05):** `ring_wood.xml` on `AreaGatherTree`: amber rings at the feet of the trees, and off when the
-  Sawmill died. The seven rings through stock auras, with no key, on infantry and cavalry. The yellow is the weakest on
-  dry ground.
+  Sawmill died. The rings through stock auras, with no key, on infantry and cavalry.
 - **WoL's data today shows no ring:** `sawmill.tactics` names `effects\ypack_auras\torpgatherpower.xml`, which is in no folder
   and no `.bar` of WoL. The log says so once: `the action 692 has a <ModelAttachment> that is not in the game`. Ship that
   model or name another one.

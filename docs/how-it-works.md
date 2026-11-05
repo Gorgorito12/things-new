@@ -2638,7 +2638,7 @@ true and is never found by 0x9C28DE: the helper treats it as hung and logs it on
 
 The rings of `tools/make_rings.py` need no code. A ring's `.xml` names the mesh and swaps its texture with `<replacetexture>`.
 The texture is a `.ddt`: `RTS3`, usage 0, alpha 1, format 8 (DXT3), 5 mips, 64x64, then an offset and a size per mip, 5512
-bytes in all. The script draws two bands in alpha and fills each block with one colour.
+bytes in all. The script draws two bands in alpha, at 70%, and gives each block two colours and a 2-bit shade per texel.
 
 The helper:
 
