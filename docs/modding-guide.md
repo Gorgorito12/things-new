@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 09:57 | [`transformSpan`](#transformspan) | Added. `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | The attribute on the effects that want it. |
 | Thursday 2026-11-05 09:22 | [`accuracyTechs`](#accuracytechs) | Added. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 09:22 | [`cratePriority`](#cratepriority) | Added. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
 | Thursday 2026-11-05 08:01 | [`resourceDebt`](#resourcedebt) | Filmed in WoL, with a control. Only trickles and the rates of units may take a stockpile below 0. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. |
@@ -4480,7 +4481,7 @@ transformInventory [all] [scale] [<UnitType>] [log]
 
 #### transformSpan
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 09:57 · **Filmed in WoL:** Thursday 2026-11-05 09:57
 
 ![transformSpan in WoL](media/transformSpan-wol.gif)
 
