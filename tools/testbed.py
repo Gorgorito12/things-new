@@ -44,6 +44,8 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
                              or a file name, make it the one a skirmish uses (LastSelectedSPHC;
                              the game must be closed)
+  skirmish [--map]           from the main menu to a running skirmish with posted clicks only (no
+                             cursor, no focus); --map plays the map `map uhcsheep ...` wrote
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
   wheel <x> <y> <steps>      real mouse wheel at a client point (+ zooms in, - out)
@@ -420,7 +422,71 @@ def bed_allows_second_copy(bed):
     return any(line.split()[:1] and line.split()[0].lower() == "multipleinstances" for line in lines)
 
 
+def start_lock():
+    """One copy at a time. Every copy of a mod shares its My Games folder, and two copies that start
+    together collide on the log file there: "Cannot create log file", and the game exits. The test
+    map of a skirmish is a shared file too. Returns the lock's path."""
+    lock = pathlib.Path(os.environ.get("TEMP", ".")) / "uhc-testbed-launch.lock"
+    deadline, told = time.time() + 300, False
+    while True:
+        try:
+            os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+            break
+        except FileExistsError:
+            if time.time() - lock.stat().st_mtime > 240:  # a launch that died: nothing takes this long
+                lock.unlink(missing_ok=True)
+                continue
+            if time.time() > deadline:
+                sys.exit(f"testbed: another copy is still starting; if none is, delete {lock}")
+            if not told:
+                print("testbed: another copy is starting; waiting for it")
+                told = True
+            time.sleep(1)
+    return lock
+
+
 def launch(bed):
+    lock = start_lock()
+    try:
+        start_game(bed)
+    finally:
+        lock.unlink(missing_ok=True)
+
+
+# Client coordinates at 1920 x 1080: main menu Single Player, Skirmish, the home city's Play, the
+# setup's Play, and the test map in the setup's map list.
+SKIRMISH_CLICKS = ((257, 803, 5), (689, 803, 12), (181, 1029, 10))
+SKIRMISH_MAP = (1440, 403, 3)
+SKIRMISH_PLAY = (477, 979)
+
+
+def skirmish(bed, test_map=False):
+    """From the main menu to a running skirmish with posted clicks only: no cursor, no focus, so it
+    runs behind other windows and beside another copy. test_map: the map `map uhcsheep ...` wrote,
+    copied to My Games for the start and removed after it."""
+    folder = my_games(bed) / bed_profile(bed)["rm"]
+    copies = []
+    lock = start_lock()
+    try:
+        if test_map:
+            for ext in (".xs", ".xml"):
+                copies.append(folder / f"uhc-sheep{ext}")
+                shutil.copy2(bed / bed_profile(bed)["rm"] / f"uhcsheep{ext}", copies[-1])
+        for x, y, pause in SKIRMISH_CLICKS + ((SKIRMISH_MAP,) if test_map else ()):
+            posted_click(x, y)
+            time.sleep(pause)
+        before = game_time(process()) or 0
+        posted_click(*SKIRMISH_PLAY)
+        proc = process()
+        wait_until(lambda: (game_time(proc) or 0) > before + 2000, 180, 1, "the skirmish to start")
+    finally:
+        for path in copies:
+            path.unlink(missing_ok=True)
+        lock.unlink(missing_ok=True)
+    print(f"testbed: skirmish running, game time {game_time(process())} ms")
+
+
+def start_game(bed):
     running = game_processes()
     if any(path.lower() == str(bed / "age3y.exe").lower() for _, path in running):
         sys.exit("testbed: this copy is already running")
@@ -1185,15 +1251,16 @@ def test_monitor():
 
 
 def place_window(hwnd):
-    """Moves the game window onto the test monitor (top-left of its work area) unless it is there."""
+    """Moves the game window to the top left of the test monitor, or to its top right for a second
+    copy (a folder whose name ends in 2), so that two copies stand side by side."""
     device, _primary, (left, top, right, bottom) = test_monitor()
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
-    cx, cy = (rc.left + rc.right) // 2, (rc.top + rc.bottom) // 2
-    if left <= cx < right and top <= cy < bottom:
+    x = right - (rc.right - rc.left) if BED.name.endswith("2") else left
+    if (rc.left, rc.top) == (x, top):
         return
     # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
-    user32.SetWindowPos(hwnd, None, left, top, 0, 0, 0x0001 | 0x0004 | 0x0010)
+    user32.SetWindowPos(hwnd, None, x, top, 0, 0, 0x0001 | 0x0004 | 0x0010)
     time.sleep(0.3)
 
 
@@ -1518,6 +1585,8 @@ def main(argv):
             overlay.selected = set(ids)
         record(pos[0], float(pos[1]) if len(pos) > 1 else 30.0, int(pos[2]) if len(pos) > 2 else 10,
                int(pos[3]) if len(pos) > 3 else 1280, overlay, crop, master, "--background" in args)
+    elif cmd == "skirmish":
+        skirmish(bed, "--map" in args)
     elif cmd == "click":
         posted_click(int(args[0]), int(args[1]))
     elif cmd == "rclick":
