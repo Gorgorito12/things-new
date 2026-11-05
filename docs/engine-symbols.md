@@ -963,6 +963,9 @@ movement".
 | Data effect on an action | subtype TrackRating 26h, case 0x8FAA45; `action` read at 0x65BDE2 | confirmed (`cs`), in game | `[effect+10h]` the action's ID through 0x5E0C64(db, attribute). `allactions`: bit 40h of `[effect+9]`, 8th argument of applyData and unapplyData. Action set: `[proto+44h]`, array `[set+1Ch]`, count `[set+20h]`, ID at `[action+4]`; each proto and player has its own. |
 | Crate rank | FUN_004DBF40, `int thiscall(db, resource, civ)`, `ret 8` | confirmed (`cs`), in game | One caller, 0x49A03C: score += rank × 1000. Resource 0 Gold, 1 Wood, 2 Food. Dutch 3, 2, 1; Ottomans and Indians 1, 3, 2; others 1, 2, 3. |
 | Next crate | FUN_00501786, `bool thiscall(player, proto, int* next, int* resource)`, `ret 0Ch` | confirmed (`cs`), in game | One caller, 0x50170B, a loop of 6. Crate protos `[db+5E34h]` Food, `+5E38h` Wood, `+5E3Ch` Coin, `+5E40h..+5E48h` the large ones. |
+| ExperienceUnit | proto flag 7Dh, `[[proto+50h]+0Fh]` bit 20h, set at 0x6B0AE4 | confirmed (`cs`) | No reader: none of the 642 calls of the flag getter 0x44CAC4 passes it, and no `test` of that byte. WoL uses it on no proto. |
+| Killing blow | `[esp+1Fh]` in TakeDamage, set at 0x4D484B; `je` at 0x49B746 to 0x4D4F37 | confirmed, in game | ESI the unit killed, `[esp+28h]` the attacker unit (null when gone), `[esp+20h]` the attacker's player. |
+| Transform in place | 0x9C754C, `thiscall(unit, proto)`, `ret 4` | confirmed, in game | Seven calls: 0x7FBC79, 0x7FBEF2, 0x8C2D08, 0x8EB78A, 0x8F05F5, 0x9BB6D5, 0x9C7C16. It keeps the unit ID and ends its stat modifiers. |
 | Effect value | 0x7F892A, cdecl `(byte relativity, float* target, float base, float amount, bool unapply)` | confirmed (`cs`) | 0 Percent (×, ÷), 2 BasePercent, 3 Assign, else Absolute. |
 
 ### Command types (for `customProtoUnitCommands`, 2026-11-03)

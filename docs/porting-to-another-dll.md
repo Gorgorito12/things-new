@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `veterancyBonus`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
@@ -648,7 +648,7 @@ Code: [techs](porting-code/techs.md#transformspan). It needs `AddWorldTick`, in 
 
 - **Sites:** the vtable slots `0xB96B64` (value `0x622822`) and `0xB96B9C` (value `0x7FBBAF`), and the `call` at `0x7FBC79`
   (`E8 CE B8 1C 00`). Check them against your DLL first: a key that wraps the same call must share it.
-- **Saved games:** stats 60h and 61h carry the markers. A key of yours that uses them must take other numbers.
+- **Saved games:** stats 60h and 61h carry the markers, and `veterancyBonus` uses 62h. A key of yours that uses them must take other numbers.
 - **Test:** a tech with the attribute: the units return at the end, and in a saved game too.
 
 ### techPrereqRecheck
@@ -857,6 +857,15 @@ Code: [combat](porting-code/combat.md#cantbeslowed).
 - **Site:** a 6-byte `jmp` at `0x4DD201` (`6A 01 6A FF 6A FF`), continue at `0x4DD207`, exit `0x48FA49`. Write it after
   anything that verifies the snare's bytes.
 - **Test:** a marked and an unmarked unit of the same speed under a `TargetSpeedBoost` attack.
+### veterancyBonus
+
+Code: [combat](porting-code/combat.md#veterancybonus). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags), the helpers `modifiers.h` and `floatingtext.*`.
+
+- **Sites:** a 6-byte `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`), continue at `0x4D4F3D`; and the seven calls of `0x9C754C`:
+  `0x7FBC79`, `0x7FBEF2`, `0x8C2D08`, `0x8EB78A`, `0x8F05F5`, `0x9BB6D5`, `0x9C7C16`. Check them against your DLL first:
+  another key that wraps the transform must share them.
+- **Test:** the rows on a proto: the hits grow with the kills, and the log shows the ranks.
 
 ### snareOnlyHitUnit
 

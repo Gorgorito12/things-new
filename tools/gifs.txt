@@ -112,6 +112,8 @@ resourceGatherAuras-wol-control 2 36 3
 unitResourceAuras-depleted-wol 2 36 3
 unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
+veterancyBonus-wol 0 12 1
+veterancyBonus-wol-control 0 12 1
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 34 26 3

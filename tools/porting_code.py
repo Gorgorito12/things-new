@@ -26,6 +26,7 @@ PAGES = {
         "Extra abstract unit types": ["src/unittypes.h", "src/unittypes.cpp", "src/hooks/unittype_hooks.asm"],
         "World tick": ["src/worldtick.h", "src/worldtick.cpp", "src/hooks/worldtick_hooks.asm"],
         "Action tags": ["src/actiontags.h", "src/actiontags.cpp", "src/hooks/actiontag_hooks.asm"],
+        "Transform calls": ["src/transformcalls.h", "src/transformcalls.cpp"],
         "Proto tags": ["src/prototags.h", "src/prototags.cpp", "src/hooks/prototag_hooks.asm"],
         "Tech subtypes": ["src/techsubtypes.h", "src/techsubtypes.cpp", "src/hooks/techsubtype_hooks.asm"],
         "Modify types": ["src/modifytypes.h", "src/modifytypes.cpp", "src/hooks/modifytype_hooks.asm"],
@@ -66,6 +67,7 @@ PAGES = {
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],
         "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
         "killBountyTechs, resourceBounty and teamKillBounty": ["src/features/bounty.cpp", "src/hooks/bounty_hooks.asm"],
+        "veterancyBonus": ["src/features/veterancy.cpp", "src/hooks/veterancy_hooks.asm"],
     }),
     "gathering": ("Gathering", {
         "showGatherRate": ["src/features/gatherrate.cpp", "src/hooks/gatherrate_hooks.asm"],
@@ -107,7 +109,7 @@ PAGES = {
 HELPER_OF = {
     "generated/sites.h": "site-table", "site.h": "site-table", "patch.h": "patching", "log.h": "log",
     "config.h": "cfg-reader", "features.h": "results", "unittypes.h": "extra-abstract-unit-types",
-    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "floatingtext.h": "floating-text",
+    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
     "namelists.h": "name-lists",
 }

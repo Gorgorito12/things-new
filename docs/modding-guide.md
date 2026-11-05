@@ -33,6 +33,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-05 09:57 | [`transformSpan`](#transformspan) | Added. `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | The attribute on the effects that want it. |
 | Thursday 2026-11-05 09:39 | [`cantBeSlowed`](#cantbeslowed) | Added. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
 | Thursday 2026-11-05 09:39 | [`killBountyTechs`](#killbountytechs-resourcebounty-and-teamkillbounty), [`resourceBounty`](#killbountytechs-resourcebounty-and-teamkillbounty), [`teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Added. Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. |
+| Thursday 2026-11-05 10:17 | [`veterancyBonus`](#veterancybonus) | Added. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Thursday 2026-11-05 09:33 | [`doNotQueue`](#donotqueue) | Added. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Thursday 2026-11-05 09:33 | [`nextResearchFree`](#nextresearchfree) | Added. A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 09:26 | [`sharedBuildLimit`](#sharedbuildlimit) | Added. Protos share a build limit: by unit type, with weights, or across a team. | The tags on the protos that share. |
@@ -2065,6 +2066,7 @@ Attacks, armor, and what a hit does.
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
+| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills. | **new** | The rows on the protos that want them. | confirmed |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
@@ -2749,6 +2751,66 @@ cantBeSlowed [log]
   Uhlans on each. With the key the Halberdier was 19.5 m ahead at the first reading, and the log shows 16 snares ignored.
   With the key off it was 4.5 m ahead, and no line. A marked Halberdier under three archers with `<AttachSnare>` logged
   19 snares ignored in 20 s. Not tested: multiplayer.
+#### veterancyBonus
+
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Thursday 2026-11-05 10:17
+
+![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
+
+*In WoL, with the key (Ethiopians, 3 `Hussar` against 9 `Crossbowman`, rows ×1.5 damage at 1 kill, ×1.5 hit points at 2,
+×2 damage at 3):* two hussars survive with 413 and 345 hit points, and the log shows the ranks.
+[Full video (MP4)](media/veterancyBonus-wol.mp4).
+
+![veterancyBonus in WoL, key off](media/veterancyBonus-wol-control.gif)
+
+*In WoL, key off (the same data):* the two that survive end with 261 and 155. The game skips a tag it does not know.
+[Full video (MP4)](media/veterancyBonus-wol-control.mp4).
+
+```
+veterancyBonus [log]
+```
+
+```xml
+<Unit name="Hussar">
+    <VeterancyBonus kills="1" modifytype="Damage">1.5</VeterancyBonus>
+    <VeterancyBonus kills="2" modifytype="MaxHP">1.5</VeterancyBonus>
+    <VeterancyBonus kills="3" modifytype="Damage">2.0</VeterancyBonus>
+</Unit>
+```
+
+- **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
+- **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
+  ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
+  distinct `kills` value, and reaching one shows `Rank N` over the unit.
+- **What counts as a kill:** the killing blow of a unit, in melee or at range, on a unit of another player. **Not** Gaia, so
+  hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
+  unit already dead. Stock's flag is not needed.
+- **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
+- **Transforms:** a `TransformUnit` tech keeps the count, and gives the bonuses of the **new** proto's rows for those kills: a
+  proto with no rows has none until it becomes one with rows. A trigger's `Change Unit Type` takes another path and is not
+  covered.
+- **Garrison:** a garrisoned unit keeps its rank and bonuses.
+- **Saved games:** the count and the bonuses are the game's own stat modifiers, so they are saved: after loading, the count
+  went on from 7 and the damage stayed at ×3.
+- **Techs:** DE's `VeterancyEnable` and `VeterancyBonus` subtypes are not built: a tech cannot change the rows. A tech that
+  changes a stat works with the rows as with any modifier.
+- **Interface:** no bronze, silver or gold icons: `Rank N` over the unit is all it shows. Damage and hit points in the panel are
+  the game's, with the modifiers.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
+- **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: veterancyBonus kill (0x4D4F37)`, and with `log`:
+  `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
+  `veterancyBonus: unit 0 keeps 4 kills as proto 324`. A row without `kills`, `modifytype` or a value is logged and ignored.
+- **Tested in WoL (2026-11-05):**
+  - Hits on a Settler, base 26.4: ×1.5 39.6, ×2 52.8, ×3 at 8 kills 79.2. Against the same unit with no rows: 26.4 all game.
+  - Ranged: a `Crossbowman` went from 18 to 27 a hit, and its hit points rose at the second kill.
+  - Garrisoned for about 8 s and thrown out when the Town Center fell: 52.8 a hit after it, and 79.2 at the
+    next rank.
+  - Saved at 7 kills and loaded: 8, 9 … 13 kills, 79.2 a hit, no bonus twice.
+  - `TransformUnit`, `Hussar` to `Dragoon`, both with rows, at 4 kills: 5 kills on as `Dragoon`, ×2 on its hits.
+  - A hunter with rows killed a deer: no count.
+  - A European AI (`wolVictoria`) in a skirmish, rows on `Hussar`: all four of its hussars reached a rank, up to 3, no `Error 0003`.
+  - Not tested: killing a unit of its own, a treasure guardian, multiplayer. The hook runs only on a killing blow, so there
+    was no `perfprobe.py` A/B, and four games were open.
 
 #### snareOnlyHitUnit
 

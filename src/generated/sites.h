@@ -1010,6 +1010,30 @@ inline constexpr Site kBountyKillBranch{"BountyKillBranch", 0x004D4E0C, kBountyK
 inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
 inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
 
+inline constexpr std::uint8_t kVeterancyKillPathBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kVeterancyKillPath{"VeterancyKillPath", 0x004D4F37, kVeterancyKillPathBytes, sizeof(kVeterancyKillPathBytes)};
+
+inline constexpr std::uint8_t kTransformCall1Bytes[] = {0xE8, 0xCE, 0xB8, 0x1C, 0x00};
+inline constexpr Site kTransformCall1{"TransformCall1", 0x007FBC79, kTransformCall1Bytes, sizeof(kTransformCall1Bytes)};
+
+inline constexpr std::uint8_t kTransformCall2Bytes[] = {0xE8, 0x55, 0xB6, 0x1C, 0x00};
+inline constexpr Site kTransformCall2{"TransformCall2", 0x007FBEF2, kTransformCall2Bytes, sizeof(kTransformCall2Bytes)};
+
+inline constexpr std::uint8_t kTransformCall3Bytes[] = {0xE8, 0x3F, 0x48, 0x10, 0x00};
+inline constexpr Site kTransformCall3{"TransformCall3", 0x008C2D08, kTransformCall3Bytes, sizeof(kTransformCall3Bytes)};
+
+inline constexpr std::uint8_t kTransformCall4Bytes[] = {0xE8, 0xBD, 0xBD, 0x0D, 0x00};
+inline constexpr Site kTransformCall4{"TransformCall4", 0x008EB78A, kTransformCall4Bytes, sizeof(kTransformCall4Bytes)};
+
+inline constexpr std::uint8_t kTransformCall5Bytes[] = {0xE8, 0x52, 0x6F, 0x0D, 0x00};
+inline constexpr Site kTransformCall5{"TransformCall5", 0x008F05F5, kTransformCall5Bytes, sizeof(kTransformCall5Bytes)};
+
+inline constexpr std::uint8_t kTransformCall6Bytes[] = {0xE8, 0x72, 0xBE, 0x00, 0x00};
+inline constexpr Site kTransformCall6{"TransformCall6", 0x009BB6D5, kTransformCall6Bytes, sizeof(kTransformCall6Bytes)};
+
+inline constexpr std::uint8_t kTransformCall7Bytes[] = {0xE8, 0x31, 0xF9, 0xFF, 0xFF};
+inline constexpr Site kTransformCall7{"TransformCall7", 0x009C7C16, kTransformCall7Bytes, sizeof(kTransformCall7Bytes)};
+
 inline constexpr std::uint8_t kTrainBatchLimitCallBytes[] = {0xE8, 0xD1, 0x1E, 0xF0, 0xFF};
 inline constexpr Site kTrainBatchLimitCall{"TrainBatchLimitCall", 0x009CE645, kTrainBatchLimitCallBytes, sizeof(kTrainBatchLimitCallBytes)};
 
