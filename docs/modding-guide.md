@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-05 09:26 | [`sharedBuildLimit`](#sharedbuildlimit) | Added. Protos share a build limit: by unit type, with weights, or across a team. | The tags on the protos that share. |
 | Thursday 2026-11-05 08:01 | [`resourceDebt`](#resourcedebt) | Filmed in WoL, with a control. Only trickles and the rates of units may take a stockpile below 0. | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. |
 | Thursday 2026-11-05 07:53 | [`trainBatchSize`](#trainbatchsize) | Added. `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | The tag on the protos that want it. |
 | Thursday 2026-11-05 07:36 | [`costEscalationTechs`](#costescalationtechs) | Added. A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | The `Data` effects in `techtreey.xml`. |
@@ -4029,7 +4030,7 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
 
 #### sharedBuildLimit
 
-**Added:** — · **Filmed in WoL:** —
+**Added:** Thursday 2026-11-05 09:26 · **Filmed in WoL:** Thursday 2026-11-05 09:26
 
 ![sharedBuildLimit in WoL](media/sharedBuildLimit-wol.gif)
 
