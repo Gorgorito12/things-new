@@ -1004,6 +1004,27 @@ inline constexpr Site kBountyTagHandler{"BountyTagHandler", 0x0051D669, kBountyT
 inline constexpr std::uint8_t kBountyKillBranchBytes[] = {0x8B, 0x4C, 0x24, 0x28, 0x51};
 inline constexpr Site kBountyKillBranch{"BountyKillBranch", 0x004D4E0C, kBountyKillBranchBytes, sizeof(kBountyKillBranchBytes)};
 
+inline constexpr std::uint8_t kTechFlagCallBytes[] = {0xE8, 0x07, 0x00, 0x00, 0x00};
+inline constexpr Site kTechFlagCall{"TechFlagCall", 0x00620C23, kTechFlagCallBytes, sizeof(kTechFlagCallBytes)};
+
+inline constexpr std::uint8_t kTechApplyCallBytes[] = {0xE8, 0x2E, 0x0A, 0x00, 0x00};
+inline constexpr Site kTechApplyCall{"TechApplyCall", 0x0094D0AE, kTechApplyCallBytes, sizeof(kTechApplyCallBytes)};
+
+inline constexpr std::uint8_t kTechRemoveHeadBytes[] = {0x53, 0x55, 0x8B, 0x6C, 0x24, 0x0C};
+inline constexpr Site kTechRemoveHead{"TechRemoveHead", 0x0094DCB2, kTechRemoveHeadBytes, sizeof(kTechRemoveHeadBytes)};
+
+inline constexpr std::uint8_t kTechLoadHeadBytes[] = {0x53, 0x55, 0x57, 0x8B, 0x7C, 0x24, 0x10};
+inline constexpr Site kTechLoadHead{"TechLoadHead", 0x0094DDEA, kTechLoadHeadBytes, sizeof(kTechLoadHeadBytes)};
+
+inline constexpr std::uint8_t kIsEnemyHeadBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0};
+inline constexpr Site kIsEnemyHead{"IsEnemyHead", 0x00484D2D, kIsEnemyHeadBytes, sizeof(kIsEnemyHeadBytes)};
+
+inline constexpr std::uint8_t kDetonationKillCallBytes[] = {0xE8, 0xDC, 0x11, 0x02, 0x00};
+inline constexpr Site kDetonationKillCall{"DetonationKillCall", 0x00493D8F, kDetonationKillCallBytes, sizeof(kDetonationKillCallBytes)};
+
+inline constexpr std::uint8_t kDetonationAreaHeadBytes[] = {0x8B, 0x44, 0x24, 0x20, 0x81, 0xEC, 0xF8, 0x0F, 0x00, 0x00};
+inline constexpr Site kDetonationAreaHead{"DetonationAreaHead", 0x004C9D89, kDetonationAreaHeadBytes, sizeof(kDetonationAreaHeadBytes)};
+
 inline constexpr std::uint8_t kProtoTagsTailBytes[] = {0x5F, 0xB0, 0x01, 0x5E, 0x59, 0xC3};
 inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTailBytes, sizeof(kProtoTagsTailBytes)};
 

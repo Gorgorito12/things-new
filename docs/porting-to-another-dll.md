@@ -15,16 +15,10 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `veterancyBonus`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `veterancyBonus`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `detonationDeath` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Combat | `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `sharedBuildLimit`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `doNotQueue`, `nextResearchFree`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
-| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
-| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan` | [techs](porting-code/techs.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree` | [buildings](porting-code/buildings.md) |
+| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
@@ -486,6 +480,14 @@ Code: [buildings](porting-code/buildings.md#hcshipmentpointfallback).
   (`startingTC` or `civFirstTC`); without either line in the cfg the DLL logs a warning and still
   applies the key.
 
+### detonationDeath
+
+Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Sites:** a `call` at `0x493D8F` (to `0x4B4F70`). Check it against your DLL first.
+- **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage.
+
 ### damageOverTime
 
 Code: [combat](porting-code/combat.md#damageovertime).
@@ -650,6 +652,13 @@ Code: [techs](porting-code/techs.md#transformspan). It needs `AddWorldTick`, in 
   (`E8 CE B8 1C 00`). Check them against your DLL first: a key that wraps the same call must share it.
 - **Saved games:** stats 60h and 61h carry the markers, and `veterancyBonus` uses 62h. A key of yours that uses them must take other numbers.
 - **Test:** a tech with the attribute: the units return at the end, and in a saved game too.
+### hcTargetTechs
+
+Code: [techs](porting-code/techs.md#hctargettechs).
+
+- **Sites:** `call`s at `0x620C23` (`E8` to `0x620C2F`) and `0x94D0AE` (to `0x94DAE1`); a 6-byte `jmp` at `0x94DCB2`
+  (`53 55 8B 6C 24 0C`) and a 7-byte one at `0x94DDEA` (`53 55 57 8B 7C 24 10`). Check them against your DLL first.
+- **Test:** a tech with the flag: the enemy's units change, the owner's do not.
 
 ### techPrereqRecheck
 

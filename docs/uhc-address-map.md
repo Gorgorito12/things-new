@@ -178,6 +178,8 @@ No row is a `mismatch`: every upstream address is valid for this build.
 | resourceBounty | `resourceBounty [log]` | 0x51D669 (the immediate of `<Bounty>`'s handler); 0x4D4E0C (kill branch of TakeDamage) | confirmed, in game (2026-11-05) |
 | teamKillBounty | `teamKillBounty [log]` | 0x49BDAB (FUN_0049BD52, the amount and ID for 0x49BDC0) | confirmed, in game (2026-11-05) |
 | cantBeSlowed | `cantBeSlowed [log]` | 0x4DD201 (the arguments of the snare's creator) | confirmed, in game (2026-11-05) |
+| hcTargetTechs | `hcTargetTechs [log]` | The calls 0x620C23 (flag reader) and 0x94D0AE (applyEffects); the heads 0x94DCB2 (removeEffects) and 0x94DDEA (pass after a load) | confirmed, in game (2026-11-05) |
+| detonationDeath | `detonationDeath [log]` | The call 0x493D8F (kill handler, in the kill queue's drain); through `AddProtoTagHandler`: 0x51DB0F | confirmed, in game (2026-11-05) |
 | trainBatchSize | `trainBatchSize [log]` | 0x9CE645 (the call of the limit 0x8D051B); through `AddProtoTagHandler`: 0x51DB0F (tail of the tag table's builder) | confirmed, in game (2026-11-05) |
 | transformSpan | `transformSpan [log]` | Slots 0xB96B64 (setData) and 0xB96B9C (apply) of the TransformUnit effect; the call at 0x7FBC79 (0x9C754C); `AddWorldTick`; markers through 0x4DD22D, stats 60h and 61h | confirmed, in game (2026-11-05) |
 | costEscalationTechs | `costEscalationTechs [log]` | Through `AddTechSubtype`: the call at 0x6206D7 (subtype lookup 0x61FF5D), 0x8F978D and 0x8FB051 (the subtype switches of applyData and unapplyData); `[proto+78h]`, value function 0x7F892A | confirmed, in game (2026-11-05) |

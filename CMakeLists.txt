@@ -37,6 +37,8 @@ add_library(UHC SHARED
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
+  src/features/detonation.cpp
+  src/features/hctargets.cpp
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
   src/features/freeresearch.cpp
@@ -148,6 +150,7 @@ add_library(UHC SHARED
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
+  src/hooks/hctarget_hooks.asm
   src/hooks/modifytype_hooks.asm
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm

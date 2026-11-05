@@ -852,6 +852,18 @@ SITES = [
     # immediate), and the head of TakeDamage's kill branch, mov ecx,[esp+28h] / push ecx
     ("BountyTagHandler", 0x51D669, 4),
     ("BountyKillBranch", 0x4D4E0C, 5),
+    # hcTargetTechs: the call of the tech <Flag> reader FUN_00620C2F, the only call of applyEffects, and the
+    # heads of removeEffects (push ebx / push ebp / mov ebp,[esp+0Ch]) and of the pass after a load
+    # (push ebx / push ebp / push edi / mov edi,[esp+10h]); the check of who is an enemy, verify only
+    ("TechFlagCall", 0x620C23, 5),
+    ("TechApplyCall", 0x94D0AE, 5),
+    ("TechRemoveHead", 0x94DCB2, 6),
+    ("TechLoadHead", 0x94DDEA, 7),
+    ("IsEnemyHead", 0x484D2D, 6),
+    # detonationDeath: the only call of the kill handler, in the kill queue's drain 0x493D46; the head of
+    # the area damage, verify only
+    ("DetonationKillCall", 0x493D8F, 5),
+    ("DetonationAreaHead", 0x4C9D89, 10),
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),
