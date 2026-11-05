@@ -3,17 +3,6 @@
 Engine extensions for Age of Empires III: The Asian Dynasties (Steam). A DLL removes hard-coded limits
 and adds new engine features, and a mod turns each one on with a line in its cfg file.
 
-<!-- private:begin -->
-It loads through the community loader, as a from-scratch successor to
-[AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). Every patch site was checked
-against the stock exe, the known defects of the original are fixed, and most of the new features
-answer Wars of Liberty's requests.
-<!-- private:end -->
-<!-- public:begin
-It loads through the community loader, and it checks every patch site against the stock exe before
-it writes there.
-public:end -->
-
 ## Features
 
 Every key, with what it needs and how far it was tested, is in the
