@@ -119,3 +119,5 @@ costEscalationTechs-wol 2 42 3
 costEscalationTechs-wol-control 2 42 3
 trainBatchSize-wol 2 36 3
 trainBatchSize-wol-control 2 36 3
+sharedBuildLimit-wol 2 36 3
+sharedBuildLimit-wol-control 2 36 3

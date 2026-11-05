@@ -3331,6 +3331,7 @@ How buildings train, spawn, live and get replaced.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | **new** | Nothing. | confirmed (single player) |
+| [`sharedBuildLimit`](#sharedbuildlimit) | Protos share a build limit: by unit type, with weights, or across a team. | **new** | The tags on the protos that share. | confirmed |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
@@ -4025,6 +4026,68 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
+
+#### sharedBuildLimit
+
+**Added:** — · **Filmed in WoL:** —
+
+![sharedBuildLimit in WoL](media/sharedBuildLimit-wol.gif)
+
+*In WoL, with the key (Ethiopians; `WOLLandwehr` has limit 6 and `Pikeman`, which reads Opolcheniye here, counts 2):*
+one Opolcheniye, then three clicks on the Landwehr and a last Opolcheniye: 4 Landwehr and 1 Opolcheniye, a total of 6, and the buttons turn red. [Full video (MP4)](media/sharedBuildLimit-wol.mp4).
+
+![sharedBuildLimit in WoL, key off](media/sharedBuildLimit-wol-control.gif)
+
+*In WoL, key off (the same data):* the same clicks give 5 Landwehr and 2 Opolcheniye, a total of 9 by the same count. [Full video (MP4)](media/sharedBuildLimit-wol-control.mp4).
+
+```
+sharedBuildLimit [log]
+```
+
+```xml
+<Unit name="Coureur">
+    <SharedBuildLimitUnit>Settler</SharedBuildLimitUnit>
+    <SharedBuildLimitUnitType>AbstractWoLSettler</SharedBuildLimitUnitType>
+    <SharedBuildLimitUnitType weight="2">SettlerWagon</SharedBuildLimitUnitType>
+</Unit>
+<Unit name="Cow">
+    <SharedBuildLimitUnitType>AbstractBovine</SharedBuildLimitUnitType>
+    <TeamBuildLimit>1</TeamBuildLimit>
+</Unit>
+```
+
+- **In WoL today:** each proto has its own `BuildLimit`, and no unit counts toward another's. JTMaston's #29 and #30.
+- **`<SharedBuildLimitUnit>`:** whose limit applies. Without it, the proto's own. It is read from the player's copy, so a
+  tech reaches it, and a civ's limit too: `Age0German` assigns its `Settler` 84, and that is what counts.
+- **`<SharedBuildLimitUnitType>`:** what counts toward the limit, an abstract type or a proto, repeatable. Without it, only
+  the proto itself. `weight="N"` is how much each of them counts, default 1. If the type does not reach the proto
+  itself, the proto still counts, with weight 1. Queued units count, as stock counts its own.
+- **`<TeamBuildLimit>1</TeamBuildLimit>`:** the same units of the player's allies count too.
+- **Tag each proto that must stop:** a tag acts on the proto that carries it. `OutpostWagon` with the limit of `Outpost`
+  stops the wagons once the Outposts are all there, and leaves `Outpost` untagged, or the last wagon, which counts
+  until it builds, would forbid its own Outpost.
+- **#30's civ tag is not needed:** the limit per civ is the proto's limit as the civ's techs leave it, and the type is
+  in the data. WoL has no `AbstractWoLSettler` yet: `customAbstractTypes` registers it.
+- **The tooltip:** "Build Limit: 15 out of 15" is the whole group, and the limit, in the units of the proto: with weight 2 and
+  limit 6 it says "out of 3". The button turns red when the proto does not fit.
+- **A batch that does not fit is cut:** a Shift+click of 5 with room for 4 trains 4 and pays 4, as stock does at a limit.
+- **Over the limit:** if the group is already over, nothing more trains; no unit is removed.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Log:** `sharedBuildLimit: the proto tags are on`, `hook reached: sharedBuildLimit limit (0x4C7B5F)`, and with `log`:
+  `sharedBuildLimit: proto 295: limit of 2182, 2 protos count, own weight 2`, and at each change `sharedBuildLimit: player 1,
+  proto 295: room 2 of 6 (stock -1)`. Room is what the proto's own count is compared with.
+- **Performance:** on and off, twice each, with the selected TC's proto in a group of 110 protos: 635–641 fps on, 640–649
+  off, 0.23 ms of update in all four. That scene had 14 villagers: the 120 asked for did not fit on the map.
+- **Tested in WoL (2026-11-05):**
+  - `AbstractVillager` on `AFRICANvillager`, limit 15, 9 alive and 3 `Coureur`: eight clicks trained 3 and charged 300, and
+    the tooltip said "15 out of 15".
+  - Two protos with weights, limit 6 (the video): 2 alive, one Opolcheniye of weight 2, three clicks on the Landwehr and
+    a last Opolcheniye left 4 and 1. Key off: 5 and 2.
+  - A real Shift+click of 5 with room for 4: 4 trained, 310 food at 77.5; a second one was refused and charged nothing.
+  - `TeamBuildLimit` with an ally's 3 `WOLLandwehr`: room 3 of 6.
+  - A German AI with a limit of 12 by `Age0German`: it stopped at 12 settlers, kept playing, no XS error.
+  - Not tested: an AI against other units of its group (the AI above had no `SettlerWagon`), a real `OutpostWagon` building
+    the last Outpost, a card or a tech granting units at the limit, multiplayer.
 
 #### trainBatchSize
 

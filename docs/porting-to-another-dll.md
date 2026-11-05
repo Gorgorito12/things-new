@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `sharedBuildLimit`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1032,6 +1032,15 @@ Code: [buildings](porting-code/buildings.md#costescalationtechs). It needs `AddT
   must share them.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#costescalationtechs): the button's cost changes
   and the food drops by it.
+
+### sharedBuildLimit
+
+Code: [buildings](porting-code/buildings.md#sharedbuildlimit). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Sites:** a 5-byte `jmp` at `0x4C7B5F` (`83 EC 10 8B D1`), continue at `0x4C7B64`; and the `call`s at `0x4C8B81` and
+  `0x70F5EF`. Check them against your DLL first.
+- **Test:** two protos sharing a limit: the second stops when the first fills it, and the tooltip shows the total.
 
 ### trainBatchSize
 
