@@ -567,6 +567,7 @@ The in-game measurements read the actions from memory once a second (`docs/moddi
 | LOS getter | FUN_0048206D | confirmed | `[world+5ACh]` × (`[[unit+B4h]+C8h]` ? its `+1Ch` : 1.0) × `[[unit+B4h]+90h]`. |
 | Visibility add / remove | FUN_00483262 | partly confirmed | `thiscall(unit, bool add, bool force)`, `ret 8` (scoping); calls the getter (0x4832E7, 0x483347), so the radius follows the current LOS. |
 | `TransformUnit` effect apply | 0x7FBBAF (vtable 0xB96B60, slot 3Ch) | confirmed (0x7FBC32..0x7FBC8A) | For each of the player's units of `fromprotoid` that is alive and built, `0x9C754C(toprotoid)` at 0x7FBC79. |
+| `TransformUnit` effect | vtable 0xB96B60: slot 1 setData 0x622822 (`thiscall(effect, node)`), slot 0Fh apply 0x7FBBAF (`ret 10h`) | confirmed (`cs`), in game | `[effect+0Ch]` fromprotoid, `+10h` toprotoid. Not applied again when a saved game loads, in game. |
 | Owner change | 0x514529 in 0x514358 (from FUN_004E3334) | confirmed | Writes `[unit+5Ch]` with the new owner's copy of the same proto; does not touch the LOS. |
 | Fields | `[unit+B4h]+90h` base LOS (float); `[proto+48h]` `<LOS>` | confirmed, in game | |
 

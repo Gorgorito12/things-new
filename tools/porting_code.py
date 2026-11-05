@@ -93,6 +93,7 @@ PAGES = {
     "techs": ("Techs and transforms", {
         "techPrereqRecheck": ["src/features/techprereq.cpp", "src/hooks/techprereq_hooks.asm"],
         "transformUpdatesLOS": ["src/features/transform.cpp", "src/hooks/transform_hooks.asm"],
+        "transformSpan": ["src/features/transformspan.cpp"],
         "transformInventory": ["src/features/transforminv.cpp", "src/hooks/transforminv_hooks.asm"],
     }),
     "interface": ("Interface", {

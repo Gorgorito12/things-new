@@ -137,3 +137,5 @@ resourceBounty-wol 0 12 1
 resourceBounty-wol-control 0 12 1
 teamKillBounty-wol 0 12 1
 teamKillBounty-wol-control 0 12 1
+transformSpan-wol 8 30 3
+transformSpan-wol-control 8 30 3
