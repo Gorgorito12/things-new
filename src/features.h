@@ -35,6 +35,7 @@ Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
+Outcome ApplyCostEscalationTechs(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -113,6 +114,7 @@ inline constexpr Feature kFeatures[] = {
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"resourceDebt", ApplyResourceDebt},
+    {"costEscalationTechs", ApplyCostEscalationTechs},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -184,7 +186,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",

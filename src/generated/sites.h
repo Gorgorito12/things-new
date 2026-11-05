@@ -986,6 +986,15 @@ inline constexpr Site kModifyTypeNameTail{"ModifyTypeNameTail", 0x005FE6C7, kMod
 inline constexpr std::uint8_t kModifyTypeNameCompareBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57, 0x8B, 0xF1, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x26};
 inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10, kModifyTypeNameCompareBytes, sizeof(kModifyTypeNameCompareBytes)};
 
+inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
+inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
+
+inline constexpr std::uint8_t kDataApplySwitchBytes[] = {0x83, 0xF8, 0x63, 0x0F, 0x87, 0x5E, 0x17, 0x00, 0x00};
+inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApplySwitchBytes, sizeof(kDataApplySwitchBytes)};
+
+inline constexpr std::uint8_t kDataUnapplySwitchBytes[] = {0x83, 0xF8, 0x5E, 0x0F, 0x87, 0x40, 0x11, 0x00, 0x00};
+inline constexpr Site kDataUnapplySwitch{"DataUnapplySwitch", 0x008FB051, kDataUnapplySwitchBytes, sizeof(kDataUnapplySwitchBytes)};
+
 inline constexpr std::uint8_t kBwrTrainCallBytes[] = {0x8B, 0x4E, 0x10, 0xE8, 0x1B, 0x5A, 0xFD, 0xFF};
 inline constexpr Site kBwrTrainCall{"BwrTrainCall", 0x009EA410, kBwrTrainCallBytes, sizeof(kBwrTrainCallBytes)};
 

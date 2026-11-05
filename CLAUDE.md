@@ -58,6 +58,7 @@ Rules:
   - `AddWorldTick` (`worldtick.*`, 0x481A57);
   - `AddActionTagHandler` (`actiontags.*`, 0x5FA11E);
   - `AddModifyType` (`modifytypes.*`, 0x5FE6D7);
+  - `AddTechSubtype` (`techsubtypes.*`, the call 0x6206D7, 0x8F978D, 0x8FB051);
   - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
   - `AddSyscall` (`syscalls.*`, the group sites);
   - `floatingtext.*`, `modifiers.h` (the read-only walk over a unit's modifiers), `unittypes.*` (extra abstract types).

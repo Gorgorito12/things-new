@@ -15,6 +15,7 @@ Contents:
 - [Extra abstract unit types](#extra-abstract-unit-types)
 - [World tick](#world-tick)
 - [Action tags](#action-tags)
+- [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
 - [Modifier walk](#modifier-walk)
@@ -1035,6 +1036,15 @@ inline constexpr Site kModifyTypeNameTail{"ModifyTypeNameTail", 0x005FE6C7, kMod
 inline constexpr std::uint8_t kModifyTypeNameCompareBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57, 0x8B, 0xF1, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x26};
 inline constexpr Site kModifyTypeNameCompare{"ModifyTypeNameCompare", 0x00443C10, kModifyTypeNameCompareBytes, sizeof(kModifyTypeNameCompareBytes)};
 
+inline constexpr std::uint8_t kDataSubtypeLookupCallBytes[] = {0xE8, 0x81, 0xF8, 0xFF, 0xFF};
+inline constexpr Site kDataSubtypeLookupCall{"DataSubtypeLookupCall", 0x006206D7, kDataSubtypeLookupCallBytes, sizeof(kDataSubtypeLookupCallBytes)};
+
+inline constexpr std::uint8_t kDataApplySwitchBytes[] = {0x83, 0xF8, 0x63, 0x0F, 0x87, 0x5E, 0x17, 0x00, 0x00};
+inline constexpr Site kDataApplySwitch{"DataApplySwitch", 0x008F978D, kDataApplySwitchBytes, sizeof(kDataApplySwitchBytes)};
+
+inline constexpr std::uint8_t kDataUnapplySwitchBytes[] = {0x83, 0xF8, 0x5E, 0x0F, 0x87, 0x40, 0x11, 0x00, 0x00};
+inline constexpr Site kDataUnapplySwitch{"DataUnapplySwitch", 0x008FB051, kDataUnapplySwitchBytes, sizeof(kDataUnapplySwitchBytes)};
+
 inline constexpr std::uint8_t kBwrTrainCallBytes[] = {0x8B, 0x4E, 0x10, 0xE8, 0x1B, 0x5A, 0xFD, 0xFF};
 inline constexpr Site kBwrTrainCall{"BwrTrainCall", 0x009EA410, kBwrTrainCallBytes, sizeof(kBwrTrainCallBytes)};
 
@@ -1813,6 +1823,7 @@ Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
+Outcome ApplyCostEscalationTechs(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -1891,6 +1902,7 @@ inline constexpr Feature kFeatures[] = {
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"resourceDebt", ApplyResourceDebt},
+    {"costEscalationTechs", ApplyCostEscalationTechs},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
@@ -1962,7 +1974,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
@@ -2422,6 +2434,185 @@ dispatch:
 next:
     jmp nextChild
 UhcActionTagHook ENDP
+
+END
+```
+
+## Tech subtypes
+
+### src/techsubtypes.h
+
+```cpp
+// New subtypes of the tech effect type="Data", on ProtoUnit targets: one hook on the name lookup and
+// one on each of the two subtype switches, shared by every key that adds a subtype.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// `proto` is the player's copy, `base` the proto it was cloned from. `relativity` and `amount` are the
+// effect's. `unapply` is set when the effect is removed.
+using TechSubtypeHandler = void (*)(char* proto, const char* base, float amount, std::uint8_t relativity,
+                                    bool unapply);
+
+// Makes subtype="<name>" (static text; case ignored) reach `handler`. Writes the hooks the first time,
+// after checking the stock bytes.
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler);
+
+}  // namespace uhc
+```
+
+### src/techsubtypes.cpp
+
+```cpp
+#include "techsubtypes.h"
+
+#include <cstddef>
+#include <cstring>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+void UhcTechSubtypeApplyHook();    // hooks/techsubtype_hooks.asm
+void UhcTechSubtypeUnapplyHook();
+}
+
+namespace {
+
+constexpr std::size_t kMaxSubtypes = 16;
+constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
+constexpr std::uint32_t kNameLookupCall = 0x006206D7;  // setData's call of the lookup 0x61FF5D
+constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
+constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
+
+using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
+const auto kNameLookup = reinterpret_cast<NameLookupFn>(0x0061FF5D);
+
+struct Subtype {
+  const char* name;
+  uhc::TechSubtypeHandler handler;
+};
+
+Subtype g_subtypes[kMaxSubtypes] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+// Replaces the call of the lookup in BDataEffect::setData.
+std::int32_t __fastcall NameLookup(void* db, void*, const char* name) {
+  const std::int32_t stock = kNameLookup(db, name);
+  if (stock != -1 || name == nullptr) {
+    return stock;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (_stricmp(name, g_subtypes[i].name) == 0) {
+      return kFirstId + static_cast<std::int32_t>(i);
+    }
+  }
+  return -1;
+}
+
+}  // namespace
+
+// From the two switch hooks, for a subtype at or above kFirstId. False: stock's failure exit.
+extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const char* base, float amount,
+                                            std::uint32_t relativity, std::uint32_t unapply) {
+  const std::size_t index = static_cast<std::size_t>(id - kFirstId);
+  if (index >= g_count) {
+    return false;
+  }
+  g_subtypes[index].handler(proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
+  return true;
+}
+
+namespace uhc {
+
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
+  if (g_count == kMaxSubtypes) {
+    Log(L"tech subtypes: no room for %hs", name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("tech subtypes",
+                   {&sites::kDataSubtypeLookupCall, &sites::kDataApplySwitch, &sites::kDataUnapplySwitch}) ||
+        !WriteCall(kNameLookupCall, reinterpret_cast<const void*>(&NameLookup)) ||
+        !WriteJmp(kApplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeApplyHook), 9) ||
+        !WriteJmp(kUnapplySwitch, reinterpret_cast<const void*>(&UhcTechSubtypeUnapplyHook), 9)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_subtypes[g_count++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/techsubtype_hooks.asm
+
+```asm
+; The shared hooks for new Data effect subtypes (src/techsubtypes.h). Entered through a jmp written
+; over the stock code; they leave through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTechSubtypeRun PROTO STDCALL subtype:DWORD, target:DWORD, base:DWORD, amount:DWORD, relativity:DWORD, unapply:DWORD
+
+.data
+applySwitchNext   dd 008F9796h    ; movzx ecx, the subtype's jump index
+applyDone         dd 008FAE9Eh    ; pop edi / esi / ebp, mov al,1, pop ebx / ecx, ret 20h
+applyFail         dd 008FAEF4h    ; the same with xor al,al
+unapplySwitchNext dd 008FB05Ah    ; movzx eax, the subtype's jump index
+unapplyDone       dd 008FC191h    ; pop edi / esi / ebp, mov al,1, pop ebx, ret 20h
+unapplyFail       dd 008FC19Ah    ; the same with xor al,al
+
+.code
+
+; Replaces 0x8F978D..0x8F9795 (cmp eax,63h / ja 0x8FAEF4) in applyData. EAX = subtype, EDI = target
+; proto, ESI = its base proto, [esp+28h] amount, [esp+2Ch] relativity.
+UhcTechSubtypeApplyHook PROC
+    TRACE_ONCE "tech subtype apply (0x8F978D)"
+    cmp eax, 100h
+    jae custom
+    cmp eax, 63h
+    ja fail
+    jmp applySwitchNext
+custom:
+    movzx ecx, byte ptr [esp+2Ch]
+    mov edx, dword ptr [esp+28h]
+    invoke UhcTechSubtypeRun, eax, edi, esi, edx, ecx, 0
+    test al, al
+    je fail
+    jmp applyDone
+fail:
+    jmp applyFail
+UhcTechSubtypeApplyHook ENDP
+
+; Replaces 0x8FB051..0x8FB059 (cmp eax,5Eh / ja 0x8FC19A) in unapplyData. EAX = subtype, ESI = target
+; proto, EDI = its base proto, [esp+24h] amount, [esp+28h] relativity.
+UhcTechSubtypeUnapplyHook PROC
+    TRACE_ONCE "tech subtype unapply (0x8FB051)"
+    cmp eax, 100h
+    jae custom
+    cmp eax, 5Eh
+    ja fail
+    jmp unapplySwitchNext
+custom:
+    movzx ecx, byte ptr [esp+28h]
+    mov edx, dword ptr [esp+24h]
+    invoke UhcTechSubtypeRun, eax, esi, edi, edx, ecx, 1
+    test al, al
+    je fail
+    jmp unapplyDone
+fail:
+    jmp unapplyFail
+UhcTechSubtypeUnapplyHook ENDP
 
 END
 ```

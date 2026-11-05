@@ -113,3 +113,5 @@ unitResourceAuras-wol-control 2 36 3
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 34 26 3
+costEscalationTechs-wol 2 42 3
+costEscalationTechs-wol-control 2 42 3

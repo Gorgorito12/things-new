@@ -838,6 +838,11 @@ SITES = [
     # buildingWorkRateAuras: the head of the name compare 0x443C10 the hook calls again, int
     # thiscall(BString*, const wchar_t*, flag, n), ret 0Ch; 0 = equal, case ignored for flag 0
     ("ModifyTypeNameCompare", 0x443C10, 0x10),
+    # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
+    # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
+    ("DataSubtypeLookupCall", 0x6206D7, 5),
+    ("DataApplySwitch", 0x8F978D, 9),
+    ("DataUnapplySwitch", 0x8FB051, 9),
     # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not
     # in the VerifyAll: noTrainNearEnemyTC hooks these bytes and calls g_uhcBwrTrainGetter, and the
     # call is redirected only while they are stock

@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1021,6 +1021,17 @@ Code: [techs](porting-code/techs.md#transforminventory).
   - with `scale`, compute the factor before the copy and apply it with 0x480B94.
 - **Coexistence:** it runs with transformUpdatesLOS (0x9C763F); do not verify `TransformSetProto`
   in this feature, since that feature may have written its `jmp` there.
+
+### costEscalationTechs
+
+Code: [buildings](porting-code/buildings.md#costescalationtechs). It needs `AddTechSubtype`, in the
+[helpers](porting-code/helpers.md#tech-subtypes).
+
+- **Sites:** the `call` at `0x6206D7` (`E8 81 F8 FF FF`), and 9-byte `jmp`s at `0x8F978D` (`83 F8 63 0F 87 5E 17 00 00`) and
+  `0x8FB051` (`83 F8 5E 0F 87 40 11 00 00`). Check them against your DLL first: another key that adds a Data subtype
+  must share them.
+- **Test:** a tech with the effect in the [modding guide](modding-guide.md#costescalationtechs): the button's cost changes
+  and the food drops by it.
 
 ### noTrainNearEnemyTC
 

@@ -236,6 +236,7 @@ autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather act
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   stockpiles may go below 0
+costEscalationTechs [log]     a Data tech effect may change CostEscalation
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

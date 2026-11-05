@@ -2730,6 +2730,30 @@ Value is `{3, BString}` with an empty BString (0x44A635).
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
 
+### costEscalationTechs
+
+`<CostEscalation>` is stored by the handler 0xA1119D in the proto's `+78h`, default 1 (the proto's cost container is at
+`+70h`). The cost getter 0x480B1E (`bool thiscall(player, protoId, cost*, count)`) takes the player's copy, copies the
+costs, and compares the field with 1. Equal: the costs are multiplied by `count`. Different (cold part 0x67A1A0): a
+query counts that player's units of the proto, and the costs are multiplied by the field `N + count - 1` times, and
+**not** by `count`. No Data subtype reaches the field.
+
+New subtypes go through `techsubtypes.*`, shared by the keys that add one:
+
+- The stock name lookup 0x61FF5D is hash based and its table is sized at startup, so the `call` at 0x6206D7 in
+  BDataEffect::setData is replaced: a name stock does not know is looked up in our list and gets an ID from 100h. The
+  rest of setData treats an unknown ID as a plain subtype.
+- The two switches, `cmp eax,63h / ja` at 0x8F978D in applyData and `cmp eax,5Eh / ja` at 0x8FB051 in unapplyData, send
+  an ID from 100h to the key's handler, then to the exit of the case: 0x8FAE9E and 0x8FC191. Any other ID continues as
+  stock.
+
+The handler calls the stock value function 0x7F892A on `+78h`, with the base proto's `+78h`, which gives it every
+relativity and the removal. A tech reaches a proto through protoUnitApply 0x7F86C0; the player path 0x8D842B is not
+involved, as with Armor.
+
+- **Observed in game:** see the tests in the modding guide. After a load the log shows the effects applied again in
+  order, from the data's value.
+
 ### bufferedFileReads
 
 **Why it exists.** The game's raw file stream reads with one `ReadFile` per request:

@@ -938,6 +938,9 @@ movement".
 | Proto copy | 0x67E011, `bool thiscall(dst, src, bool)`, `ret 8` | confirmed (`cs`) | Called when a player's proto is cloned (0x8D1B60, 0x8D6576). Named `BProtoUnit` ctor 0x5F7394, dtor 0x58633D in another DLL's symbol table. |
 | BDataEffect | vtable slots 0xB9E5AC `setData` (0x6205F6), 0xB9E5C4 `playerApply` (0x7F874A), 0xB9E5C8 `playerUnapply` (0x7F877F), 0xB9E5CC `protoUnitApply` (0x7F86C0), 0xB9E5D0 `protoUnitUnapply` (0x7F8705) | confirmed (`cs`; names from another DLL's symbol table) | Fields: `+0Ch` subtype, `+18h` amount, `+1Ch` relativity byte. |
 | applyData / unapplyData | 0x8F973F / 0x8FB01C, thiscall on the target proto, `ret 20h` | confirmed (`cs`) | Switch on the subtype (tables 0x8FAFB8/0x8FAF00, 0x8FC23C/0x8FC1A8); Armor = 5Ch at 0x8FAE52 / 0x8FC144. |
+| Data subtype lookup | 0x61FF5D, `int thiscall(db, const char* name)`, `ret 4`; table `[db+3500h]` | confirmed (`cs`), in game | Callers 0x6206D7 (setData) and 0x621C29. −1 if absent. `techsubtypes.*` adds IDs from 100h at the first. |
+| Proto CostEscalation | `[proto+78h]`, float, default 1; tag handler 0xA1119D | confirmed, in game | Cost container at `+70h`, set by 0x58EF83. Read at 0x480B66 and 0x67A1DD. |
+| Cost getter | 0x480B1E, `bool thiscall(player, protoId, cost*, count)`, `ret 0Ch` | confirmed (`cs`), in game | 35 callers, nearly all with count 1; variable count at 0x9EAF86 (train). Cold part 0x67A1A0: the query counts alive units only, in game. The costs are XOR-masked with `0xC6DF14`, count `[0xC6DF38]`. |
 | Effect value | 0x7F892A, cdecl `(byte relativity, float* target, float base, float amount, bool unapply)` | confirmed (`cs`) | 0 Percent (×, ÷), 2 BasePercent, 3 Assign, else Absolute. |
 
 ### Command types (for `customProtoUnitCommands`, 2026-11-03)

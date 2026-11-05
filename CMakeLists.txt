@@ -26,11 +26,13 @@ add_library(UHC SHARED
   src/unitpanel.cpp
   src/actiontags.cpp
   src/modifytypes.cpp
+  src/techsubtypes.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/ai.cpp
   src/features/broadside.cpp
   src/features/bwrauras.cpp
+  src/features/costescalation.cpp
   src/features/civfirsttc.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp
@@ -135,6 +137,7 @@ add_library(UHC SHARED
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
   src/hooks/modifytype_hooks.asm
+  src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
   src/version.rc

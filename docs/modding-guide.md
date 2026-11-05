@@ -3301,6 +3301,7 @@ How buildings train, spawn, live and get replaced.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | **new** | Nothing. | confirmed (single player) |
+| [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
 | [`maintainWaitForPop`](#maintainwaitforpop) | When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | **new** | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. | confirmed (single player) |
 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Marked units leave a training building one at a time, not as a batch. | **in `wol.cfg`** | `AbstractTrainLimitOne` on the protos (36 have it). | confirmed |
@@ -3993,6 +3994,53 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
+
+#### costEscalationTechs
+
+**Added:** — · **Filmed in WoL:** —
+
+![costEscalationTechs in WoL](media/costEscalationTechs-wol.gif)
+
+*In WoL, with the key (Ethiopians, 9 `WOLLandwehr` alive and a test tech that sets 1.2):* the button's cost goes from
+85 to 464, and the food drops by what the button says. [Full video (MP4)](media/costEscalationTechs-wol.mp4).
+
+![costEscalationTechs in WoL, key off](media/costEscalationTechs-wol-control.gif)
+
+*In WoL, key off (the same scene):* the tech does nothing and the cost stays near 85.
+[Full video (MP4)](media/costEscalationTechs-wol-control.mp4).
+
+```
+costEscalationTechs [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.20' subtype ='CostEscalation' relativity ='Assign'>
+    <Target type ='ProtoUnit'>WOLLandwehr</Target></Effect>
+```
+
+- **In WoL today:** `WOLLandwehr` has 1.015 and `WolLandwehrCav` 1.025, and no tech can touch them. JTMaston's #46.
+- **Effect:** the new subtype changes the value of that player's proto. It takes every relativity: `Assign`, `Percent`,
+  `BasePercent` and `Absolute`. Any proto can have it: one with no tag starts at 1, which is no escalation.
+- **How the game charges it:** cost × escalation^N, N being that player's units of the proto **alive**. **Queued units do
+  not count:** three clicks in a row on 9 alive and 1.2 charged 387 each, and the next unit cost 464 once one had come
+  out. The cost is read at the click, so a tech does not change what a queued unit already paid.
+- **Rounding:** the food falls by the rounded value and the button shows it cut: 386.98 shows 386 and charges 387.
+- **Batches, not tested:** the game's code raises the escalation by the batch size but, with an escalation, does not
+  multiply the cost by it, so a Shift+click batch may charge the price of one unit. It is stock code, and our test tool
+  cannot hold Shift in a background copy. Check it with a real Shift+click on a `WOLLandwehr`.
+- **Saved games:** on loading, the effects are applied again and the value comes back (1.26 in the test, the same cost).
+- **Removal:** undone by the stock value function (1.06575 → 1.015 through `Age0Egyptian`, which the game applies and
+  removes at a scenario's start). Setting a tech unobtainable does not remove effects, with or without this key.
+- **Off:** the subtype is unknown, as in stock: the effect is dropped and the rest of the tech works.
+- **Multiplayer:** the value is in the simulation: every player needs the same setting.
+- **Log:** `costEscalationTechs: the Data subtype CostEscalation is on`, `hook reached: tech subtype apply (0x8F978D)`, and
+  with `log` one line per change: `costEscalationTechs: proto 2182, relativity 3, amount 1.2: 1.015 -> 1.2`.
+- **Tested in WoL (2026-11-05):**
+  - 1.015 at 9 alive showed 85, and 87 at 10, and charged 86.
+  - `Assign` 1.2 showed 386, 464 and 557 at 9, 10 and 11 alive, and charged 387, 465 and 557.
+  - `Percent` 1.05 on top gave 1.26: 756 at 10 alive and 1200 at 12.
+  - A skirmish with a European AI (`wolVictoria`) with the key on: the AI compiled and had 12 units at 90 s.
+  - Not tested: batches, `BasePercent` and `Absolute` (the stock function handles them), multiplayer.
 
 ### Techs and transforms
 
