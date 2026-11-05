@@ -11,6 +11,8 @@ Contents:
 - [workRateByAbstractType](#workratebyabstracttype)
 - [autoGatherScaleByContained](#autogatherscalebycontained)
 - [unitResourceAuras](#unitresourceauras)
+- [resourceGatherAuras](#resourcegatherauras)
+- [resourceDebt](#resourcedebt)
 
 ## showGatherRate
 
@@ -1354,6 +1356,411 @@ stock:
     mov eax, ds:[0C66234h]          ; stolen 0x9D033E
     jmp auraNext
 UhcUnitResourceAuraHook ENDP
+
+END
+```
+
+## resourceGatherAuras
+
+Contract: [resourceGatherAuras](../porting-to-another-dll.md#resourcegatherauras).
+
+Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `GatherDanceCall` `0x4ED02A` (5 B), `SnareModifierSumTactic` `0x6A88D6` (34 B).
+
+### src/features/gatherauras.cpp
+
+```cpp
+// resourceGatherAuras: stat modifiers that change a unit's gather rate for one kind of target or one
+// resource only.
+//
+// Stock: the modifier stat GatherRate (<ModifyType>GatherRate</ModifyType>) multiplies a unit's rate
+// for everything it gathers (the record's +24h, read at 0x4ECFE9).
+//
+// With the key, seven more names are ModifyType stats (modifytypes.h): by what is gathered,
+// MineGatherRate (AbstractMine), TreeGatherRate (Tree), FarmingGatherRate (AbstractFarm) and
+// NaturalFoodGatherRate (food from anything else); and by resource, FoodGatherRate, WoodGatherRate
+// and GoldGatherRate. The aura code needs no change: it gives the units in range a modifier of that
+// stat, as for any stat, and the record recompute ignores it. The gather tick FUN_004ECD87 multiplies
+// its rate by the dance factor of 0x4ECD39 (0x4ED02A). The call goes to a wrapper that multiplies in
+// the stock sum 0x4B3C7D of the unit's modifiers of the stats that fit this target and resource,
+// each from 1.0, with the GatherRate reader's rule: no modifier, or a sum below 1e-6, counts as 1.0.
+// A unit with no modifier record pays one load. The hook is in hooks/gatherauras_hooks.asm.
+#include <bit>
+#include <cstdint>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../modifiers.h"
+#include "../modifytypes.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcGatherAuraCall();
+}
+
+namespace {
+
+constexpr std::int32_t kStatMine = 0x42;
+constexpr std::int32_t kStatTree = 0x43;
+constexpr std::int32_t kStatFarming = 0x44;
+constexpr std::int32_t kStatNaturalFood = 0x45;
+constexpr std::int32_t kStatFood = 0x46;
+constexpr std::int32_t kStatWood = 0x47;
+constexpr std::int32_t kStatGold = 0x48;
+constexpr std::int32_t kResourceGold = 0;
+constexpr std::int32_t kResourceWood = 1;
+constexpr std::int32_t kResourceFood = 2;
+constexpr float kMinFactor = 1.0e-6f;
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+
+struct ModifierArray {
+  const char* const* data;
+  std::int32_t count;
+};
+
+using ModifierSumFn = bool(__thiscall*)(void* unused, float* value, const ModifierArray* list, std::int32_t stat);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
+const auto kModifierSum = reinterpret_cast<ModifierSumFn>(0x004B3C7D);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+
+std::int32_t g_mineType = -1;
+std::int32_t g_treeType = -1;
+std::int32_t g_farmType = -1;
+bool g_log = false;
+int g_logLines = 0;
+constexpr int kMaxLogLines = 200;
+std::vector<const char*> g_matched;  // only the game thread touches it
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// The stock sum over the unit's modifiers of one stat, from 1.0.
+float StatFactor(const char* list, std::int32_t stat) {
+  g_matched.clear();
+  auto visit = [stat](const char* action) {
+    if (Field<std::int32_t>(action, 0x64) == stat) {
+      g_matched.push_back(action);
+    }
+    return true;
+  };
+  if (uhc::modifiers::WalkModifiers(list, visit, 0) != uhc::modifiers::Walk::kDone || g_matched.empty()) {
+    return 1.0f;
+  }
+  const ModifierArray array{g_matched.data(), static_cast<std::int32_t>(g_matched.size())};
+  float factor = 1.0f;
+  if (!kModifierSum(nullptr, &factor, &array, stat) || factor < kMinFactor) {
+    return 1.0f;
+  }
+  return factor;
+}
+
+}  // namespace
+
+// From the wrapper of the dance factor's call in the gather tick. `action` is the Gather action:
+// [+10h] the gatherer, [+14h] the target's ID, [+70h] the resource.
+extern "C" float __stdcall UhcGatherAuraFactor(const char* action) {
+  const char* unit = Field<const char*>(action, 0x10);
+  const char* list = unit == nullptr ? nullptr : uhc::modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return 1.0f;
+  }
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* target = kUnitById(Field<const char*>(game, 0x13C), Field<std::int32_t>(action, 0x14));
+  const char* proto = target == nullptr ? nullptr : Field<const char*>(target, 0x5C);
+  const std::int32_t resource = Field<std::int32_t>(action, 0x70);
+  float factor = 1.0f;
+  if (proto != nullptr) {
+    if (kProtoIsType(proto, g_mineType)) {
+      factor *= StatFactor(list, kStatMine);
+    } else if (kProtoIsType(proto, g_treeType)) {
+      factor *= StatFactor(list, kStatTree);
+    } else if (kProtoIsType(proto, g_farmType)) {
+      factor *= StatFactor(list, kStatFarming);
+    } else if (resource == kResourceFood) {
+      factor *= StatFactor(list, kStatNaturalFood);
+    }
+  }
+  if (resource == kResourceFood) {
+    factor *= StatFactor(list, kStatFood);
+  } else if (resource == kResourceWood) {
+    factor *= StatFactor(list, kStatWood);
+  } else if (resource == kResourceGold) {
+    factor *= StatFactor(list, kStatGold);
+  }
+  if (g_log && factor != 1.0f && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"resourceGatherAuras: unit %d, resource %d, target %hs: x%.3f", Field<std::int32_t>(unit, 0x10), resource,
+             proto == nullptr ? "?" : Field<const char*>(proto, 0x10), static_cast<double>(factor));
+  }
+  return factor;
+}
+
+namespace uhc {
+
+Outcome ApplyResourceGatherAuras(const Config& config) {
+  const Config::Args* args = config.First("resourceGatherAuras");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else {
+      Log(L"resourceGatherAuras: unexpected argument %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("resourceGatherAuras", {&sites::kGatherDanceCall, &sites::kSnareCollector, &sites::kSnareModifierSum,
+                                         &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kIsA,
+                                         &sites::kUnitById})) {
+    return Outcome::kFailed;
+  }
+  if (!RequestAbstractUnitType("AbstractMine", &g_mineType) || !RequestAbstractUnitType("Tree", &g_treeType) ||
+      !RequestAbstractUnitType("AbstractFarm", &g_farmType) || !AddModifyType(L"MineGatherRate", kStatMine) ||
+      !AddModifyType(L"TreeGatherRate", kStatTree) || !AddModifyType(L"FarmingGatherRate", kStatFarming) ||
+      !AddModifyType(L"NaturalFoodGatherRate", kStatNaturalFood) || !AddModifyType(L"FoodGatherRate", kStatFood) ||
+      !AddModifyType(L"WoodGatherRate", kStatWood) || !AddModifyType(L"GoldGatherRate", kStatGold)) {
+    return Outcome::kFailed;
+  }
+  g_log = log;
+  if (!WriteCall(sites::kGatherDanceCall.va, reinterpret_cast<const void*>(&UhcGatherAuraCall))) {
+    return Outcome::kFailed;
+  }
+  Log(L"resourceGatherAuras: modifiers can change the gather rate of one kind of target or one resource%ls "
+      L"(multiplayer unverified)",
+      log ? L", the first factors logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/gatherauras_hooks.asm
+
+```asm
+; Wrapper for resourceGatherAuras: the target of the redirected call at 0x4ED02A
+; (docs/engine-symbols.md, "Gathering and the stat panel").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcGatherAuraFactor PROTO STDCALL action:DWORD
+
+.data
+danceFactor dd 004ECD39h    ; float thiscall(player): the Gathering dance factor
+
+.code
+
+; Replaces the target of call 4ECD39h at 0x4ED02A in the gather tick FUN_004ECD87. ECX = the
+; gatherer's player, ESI = the Gather action, FPU stack empty. It returns the stock factor times the
+; helper's, in ST0, as the stock call does; the tick reads no other register from it.
+UhcGatherAuraCall PROC
+    TRACE_ONCE "resourceGatherAuras (0x4ED02A)"
+    call danceFactor
+    sub esp, 4
+    fstp dword ptr [esp]
+    push esi
+    call UhcGatherAuraFactor
+    fmul dword ptr [esp]
+    add esp, 4
+    ret
+UhcGatherAuraCall ENDP
+
+END
+```
+
+## resourceDebt
+
+Contract: [resourceDebt](../porting-to-another-dll.md#resourcedebt).
+
+Sites: `DebtSetClamp` `0x6798F4` (13 B), `DebtShareClamp` `0x6799D4` (12 B), `DebtAddClamp` `0x679A0E` (13 B).
+
+### src/features/resourcedebt.cpp
+
+```cpp
+// resourceDebt: a player's stockpile of the listed resources may go below 0.
+//
+// Stock: a negative ResourceTrickleRate, with MinimumResourceTrickleRate lowered too, drains a
+// stockpile, and it stops at 0: the add 0x49A98A clamps the sum at its cold part 0x679A0E, in its
+// shared-resources path at 0x6799D4 (once per teammate), and the set 0x49A8C5 clamps its value at
+// 0x6798F4. With the key those three clamps skip the listed resources. Nothing else changes: a cost is compared with the stockpile, so a player in debt
+// cannot pay until the stockpile is back above the cost. The hooks are in
+// hooks/resourcedebt_hooks.asm.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" {
+std::uint8_t g_uhcDebtResources[16] = {};  // by resource index; 1: no floor at 0
+
+void UhcDebtAddHook();
+void UhcDebtSetHook();
+void UhcDebtShareHook();
+}
+
+namespace {
+
+struct ResourceName {
+  const char* name;
+  int index;
+};
+constexpr ResourceName kResources[] = {{"Gold", 0}, {"Coin", 0}, {"Wood", 1}, {"Food", 2}};
+constexpr int kMaxLogLines = 200;
+
+bool g_log = false;
+int g_logLines = 0;
+
+}  // namespace
+
+// From the add's two hooks, when a listed resource's sum stays below 0.
+extern "C" void __stdcall UhcDebtNote(const char* player, std::int32_t resource, float amount) {
+  if (!g_log || g_logLines >= kMaxLogLines || player == nullptr) {
+    return;
+  }
+  ++g_logLines;
+  uhc::Log(L"resourceDebt: player %d, resource %d at %.1f", *reinterpret_cast<const std::int32_t*>(player), resource,
+           static_cast<double>(amount));
+}
+
+namespace uhc {
+
+Outcome ApplyResourceDebt(const Config& config) {
+  const Config::Args* args = config.First("resourceDebt");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  std::string list;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
+    int index = -1;
+    for (const ResourceName& resource : kResources) {
+      if (_stricmp(arg.c_str(), resource.name) == 0) {
+        index = resource.index;
+      }
+    }
+    if (index < 0) {
+      Log(L"resourceDebt: unknown resource %hs (expected: Food, Wood, Gold); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_uhcDebtResources[index] = 1;
+    list += (list.empty() ? "" : " ") + arg;
+  }
+  if (list.empty()) {
+    g_uhcDebtResources[0] = g_uhcDebtResources[1] = g_uhcDebtResources[2] = 1;
+    list = "Food Wood Gold";
+  }
+  if (!VerifyAll("resourceDebt", {&sites::kDebtAddClamp, &sites::kDebtSetClamp, &sites::kDebtShareClamp})) {
+    return Outcome::kFailed;
+  }
+  if (!WriteJmp(sites::kDebtAddClamp.va, reinterpret_cast<const void*>(&UhcDebtAddHook), 8) ||
+      !WriteJmp(sites::kDebtSetClamp.va, reinterpret_cast<const void*>(&UhcDebtSetHook), 8) ||
+      !WriteJmp(sites::kDebtShareClamp.va, reinterpret_cast<const void*>(&UhcDebtShareHook), 8)) {
+    return Outcome::kFailed;
+  }
+  Log(L"resourceDebt: stockpiles of %hs may go below 0 (multiplayer unverified)", list.c_str());
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/resourcedebt_hooks.asm
+
+```asm
+; Hooks for resourceDebt. Entered through a jmp written over the stock code; each leaves through an
+; explicit jmp to a verified continuation (docs/engine-symbols.md, "Resource debt").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+EXTERN g_uhcDebtResources:BYTE
+UhcDebtNote PROTO STDCALL player:DWORD, resource:DWORD, amount:DWORD
+
+.data
+addNext     dd 0049A9D0h    ; mov ecx,[esp+18h]: the add goes on to the set
+setNext     dd 0049A8E3h    ; mov edi,[esp+70h]: the set goes on
+shareNext   dd 006799DCh    ; mov ecx,[esp+20h]: the shared add goes on to the set
+
+.code
+
+; Replaces 0x679A0E (mov dword ptr [esp+10h],0), the clamp of the add 0x49A98A, reached when the sum
+; is below 1e-6. EBP = the player, ESI = the resource; [esp+10h] holds the sum. EAX is free: the
+; continuation reloads it. FPU stack empty.
+UhcDebtAddHook PROC
+    TRACE_ONCE "resourceDebt add (0x679A0E)"
+    cmp esi, 16
+    jae clamp
+    cmp byte ptr g_uhcDebtResources[esi], 0
+    je clamp
+    pushad
+    push dword ptr [esp+30h]
+    push esi
+    push ebp
+    call UhcDebtNote
+    popad
+    jmp addNext
+clamp:
+    mov dword ptr [esp+10h], 0      ; stolen 0x679A0E
+    jmp addNext
+UhcDebtAddHook ENDP
+
+; Replaces 0x6798F4 (mov dword ptr [esp+74h],0), the clamp of the set 0x49A8C5. ESI = the player,
+; [esp+70h] = the resource, [esp+74h] the value. EAX is free: the continuation writes it before
+; reading it. FPU stack empty.
+UhcDebtSetHook PROC
+    TRACE_ONCE "resourceDebt set (0x6798F4)"
+    mov eax, dword ptr [esp+70h]
+    cmp eax, 16
+    jae clamp
+    cmp byte ptr g_uhcDebtResources[eax], 0
+    je clamp
+    jmp setNext
+clamp:
+    mov dword ptr [esp+74h], 0      ; stolen 0x6798F4
+    jmp setNext
+UhcDebtSetHook ENDP
+
+; Replaces 0x6799D4 (mov dword ptr [esp+18h],0), the clamp of the add's shared-resources path, once
+; per teammate. EDI = the teammate, EBP = the resource; [esp+18h] holds the sum. EAX is free: the
+; continuation does not read it. FPU stack empty.
+UhcDebtShareHook PROC
+    TRACE_ONCE "resourceDebt shared add (0x6799D4)"
+    cmp ebp, 16
+    jae clamp
+    cmp byte ptr g_uhcDebtResources[ebp], 0
+    je clamp
+    pushad
+    push dword ptr [esp+38h]
+    push ebp
+    push edi
+    call UhcDebtNote
+    popad
+    jmp shareNext
+clamp:
+    mov dword ptr [esp+18h], 0      ; stolen 0x6799D4
+    jmp shareNext
+UhcDebtShareHook ENDP
 
 END
 ```

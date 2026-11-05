@@ -82,6 +82,8 @@ add_library(UHC SHARED
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
   src/features/unitresource.cpp
+  src/features/gatherauras.cpp
+  src/features/resourcedebt.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/ai_hooks.asm
@@ -130,6 +132,8 @@ add_library(UHC SHARED
   src/hooks/workratetype_hooks.asm
   src/hooks/gatherscale_hooks.asm
   src/hooks/unitresource_hooks.asm
+  src/hooks/gatherauras_hooks.asm
+  src/hooks/resourcedebt_hooks.asm
   src/hooks/modifytype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm

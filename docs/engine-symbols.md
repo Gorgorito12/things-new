@@ -636,7 +636,7 @@ reads in game (`ceasefire14/powers.py`).
 | Socket test in PLACE | 0x508C14..0x508CC6 | confirmed | A building already on the socket refuses; a unit that is not a matching socket (0x466C31) is ignored; a matching socket counts only when its xz distance² is below 1e-12; 0x508CC1 stores "socket found" `[esp+37h]`; ESI = unit + 14h, EDI = the building's proto. No read of `[unit+44h]`. |
 | No socket found | 0x509215 | confirmed | `cmp byte [esp+37h],0 / jne … / mov byte [esp+13h],0`. |
 | Matching socket | 0x466C31 | confirmed (entry) | `bool __thiscall(buildingProto, int protoId)`: is-a of the proto against `[buildingProto+12Ch]` (`<SocketUnitType>`, stored at 0x5FCC8E). |
-| Snap to socket | FUN_00A036BB (callers 0x96E7A3 cursor ghost, 0x87DB30 AI) | confirmed (0xA0383B..0xA03855) | The only owner test on the placement paths: `mov edx,[esi+44h] / cmp dword [edx],0 / jne`. A socket a player owns is never snapped to; the ghost stays red. |
+| Snap to socket | FUN_00A036BB (callers 0x96E7A3 cursor ghost, 0x87DB30 AI; in game, a Trading Post plan on an AI-owned socket built nothing and never reached 0x508CC1) | confirmed (0xA0383B..0xA03855) | The only owner test on the placement paths: `mov edx,[esi+44h] / cmp dword [edx],0 / jne`. A socket a player owns is never snapped to; the ghost stays red. |
 | ForceToGaia | flag 42, applied at unit creation (0x498865 → 0x506B0F) | scoping | Every stock socket has it except `ypTradingPostCapture` and `AIStart`. |
 
 ### Hotkey contexts (for `customHotkeyContexts`)
@@ -885,6 +885,14 @@ the Gathering dance (FUN_004ECD39) in "Dances".
 | Inventory add | 0x49A5E6, `bool thiscall(inventory, resource, float)`, `ret 8` | confirmed (`cs`, in game) | The gather tick passes −amount / the action's ratio (0x4ED124). |
 | Gather payment | 0x49A98A(player, resource, amount, 0) | confirmed (`cs`, in game) | After `× [player+37Ch]`. Zero when `[player+338h]` is set. Resource 5 also calls 0x9C02C0. |
 | Endless resource | proto flag 24h, tested at 0x4ED062 | confirmed (`cs`) | The tick skips the drain and 0x482152. |
+
+### Resource debt (for `resourceDebt`, WoL #24, 2026-11-04)
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Add resource | 0x49A98A, `bool thiscall(player, res, float, bool)`, `ret 0Ch` | confirmed (`cs`, in game) | Sum compared with 1e-6 (0xB9FD78) at 0x49A9BF; below: 0x679A0E writes 0. Shared resources `[world+6912h]`, 0x67993B: divides the amount among the player and those with relation 0 or 1 in `[player+1D4h]`, and clamps each sum at 0x6799D4 before its set. |
+| Set resource | 0x49A8C5, `thiscall(player, res, float, bool)`, `ret 0Ch` | confirmed (`cs`, in game) | Below 1e-6: 0x6798F4 writes 0. Stores through 0x58EF83 into `[player+230h]`; `[player+238h]` a per-resource cap; the delta goes to `[player+240h]`. |
+| Personality and civ | `gameplayer2aipersonality` in the profile; `<forcedciv>` of `AI4\*.personality` | in game | The personality wins over `gameplayer2civ`: 17 (Germans) in the profile gave a Mapuche AI. `tools/ai_personality.py` leaves one. |
 
 ### Building work rate auras (for `buildingWorkRateAuras`)
 

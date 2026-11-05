@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
@@ -1242,6 +1242,23 @@ from the [helpers](porting-code/helpers.md).
 - **Data:** none: `AreaGatherTree` is already in `sawmill.tactics`.
 
 Check it in the game: a `WOLSawmill` among trees, with `log`: a line about every 3 s per tree, for at most 5 trees.
+
+### resourceGatherAuras
+
+Code: [gathering](porting-code/gathering.md#resourcegatherauras). It needs `AddModifyType` from the
+[helpers](porting-code/helpers.md).
+
+- **Site:** the `call 4ECD39h` at `0x4ED02A` goes to the wrapper, and the wrapper calls it. WoL's DLL patches `0x4ECD6B`, inside
+  that function, for its `danceCiv`: the wrapper calls through it, so the two combine. No range overlaps the call.
+
+Check it in the game: an aura with `MineGatherRate` 2 on an Explorer, and `showGatherRate` on a miner.
+
+### resourceDebt
+
+Code: [gathering](porting-code/gathering.md#resourcedebt).
+
+- **Sites:** an 8-byte `jmp` at `0x679A0E` (`C7 44 24 10 00 00 00 00`), continue at `0x49A9D0`; at `0x6798F4` (`C7 44 24 74 00 00
+  00 00`), continue at `0x49A8E3`; and at `0x6799D4` (`C7 44 24 18 00 00 00 00`), continue at `0x6799DC`. None overlaps WoL's DLL.
 
 ### showGatherRate
 
