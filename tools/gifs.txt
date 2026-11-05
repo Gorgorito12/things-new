@@ -125,3 +125,7 @@ cratePriority-wol 0 9 1
 cratePriority-wol-control 0 9 1
 sharedBuildLimit-wol 2 36 3
 sharedBuildLimit-wol-control 2 36 3
+detonationDeath-wol 2 24 2
+detonationDeath-wol-control 2 24 2
+hcTargetTechs-wol 2 18 2
+hcTargetTechs-wol-control 2 18 2

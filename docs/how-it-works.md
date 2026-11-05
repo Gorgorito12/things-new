@@ -892,6 +892,24 @@ the cfg rules in order with the same is-a test and returns the stock string when
 The names are `std::string`s that live as long as the DLL. Choosing a sound set changes nothing
 in the simulation.
 
+### detonationDeath
+
+Every death goes through one queue. TakeDamage, a lifespan, a trigger's kill and the rest ask 0x4B4DC2, which appends the unit and
+three flag bytes to the world's list at `[world+8DCh]`, and the drain 0x493D46 calls the kill handler 0x4B4F70 from one single
+call, 0x493D8F. `Destroy` does not pass there. The key wraps that call, so it runs before the handler sets the dead bit,
+with the unit still valid as an attacker.
+
+The blast is the stock area damage 0x4C9D89, `thiscall(world, unitId, action, point, multiplier, 0, 0, -1, int* out, bool, Vector*
+offset)`, `ret 28h`, in the same call a unit makes for an attack around itself at 0x6A4A6B: its own position, multiplier 1, the
+action's bit 6, and the zero vector at 0xCF0618.
+
+A unit killed by the blast only joins the queue, and the drain reads the count again on each turn, so a chain runs in order
+and does not recurse. A proto's action is found by comparing the names of the database's list `[db+1FD8h]` for the IDs its action set
+has, and the ID is kept. The action is the one in the player's copy of the proto.
+
+- **Observed in game:** see the tests in the modding guide. The kill flags were 1 0 0 for a trigger's kill, 0 0 0 for combat, a
+  lifespan and a chain.
+
 ### damageOverTime
 
 **What stock has.** An Age of Mythology poison survives only as dead code:
@@ -1223,6 +1241,23 @@ research is in stock.
 - `maintainWaitForPop` verifies `MaintainCycleDone`, which holds the Maintain call 0x6AB264: the hook
   is in the callee, so that site stays stock. A cycle it holds at 1.0 can drop below 1.0 when the
   points grow, and then simply runs on.
+
+### hcTargetTechs
+
+A team tech keeps its list of players inside three routines, each with its own copy of the loop over the team:
+applyEffects 0x94DAE1 (one caller, 0x94D0AE), removeEffects 0x94DCB2 (six callers) and the pass after a load 0x94DDEA. The
+team is the routine's third or fourth argument, from the tech's status bit 13h. Rewriting three lists is more work than
+calling each routine once per target, so the key wraps the three: for a marked tech it calls the stock routine for
+each target, with the team flag clear. applyEffects goes through its `call`; the other two through a `jmp` at the head, to
+a function with the same arguments and `ret`, and an asm stub re-executes the replaced head for the stock call.
+
+The flag name is read by FUN_00620C2F, a chain of string compares called once, at 0x620C23, which ignores what it does not
+know. The key wraps that call and keeps the tech's definition, the routines' `this`, in a set. The set is only written during the
+load, so the game's lookups are lock-free.
+
+The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
+
+- **Observed in game:** see the tests in the modding guide. After a load the log shows one `load` line per tech.
 
 ### techPrereqRecheck
 

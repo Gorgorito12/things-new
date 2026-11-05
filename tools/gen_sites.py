@@ -841,6 +841,18 @@ SITES = [
     # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
     # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
     ("DataSubtypeLookupCall", 0x6206D7, 5),
+    # hcTargetTechs: the call of the tech <Flag> reader FUN_00620C2F, the only call of applyEffects, and the
+    # heads of removeEffects (push ebx / push ebp / mov ebp,[esp+0Ch]) and of the pass after a load
+    # (push ebx / push ebp / push edi / mov edi,[esp+10h]); the check of who is an enemy, verify only
+    ("TechFlagCall", 0x620C23, 5),
+    ("TechApplyCall", 0x94D0AE, 5),
+    ("TechRemoveHead", 0x94DCB2, 6),
+    ("TechLoadHead", 0x94DDEA, 7),
+    ("IsEnemyHead", 0x484D2D, 6),
+    # detonationDeath: the only call of the kill handler, in the kill queue's drain 0x493D46; the head of
+    # the area damage, verify only
+    ("DetonationKillCall", 0x493D8F, 5),
+    ("DetonationAreaHead", 0x4C9D89, 10),
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),

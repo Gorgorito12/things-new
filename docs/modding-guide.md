@@ -2051,6 +2051,7 @@ Attacks, armor, and what a hit does.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
+| [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
@@ -2061,6 +2062,66 @@ Attacks, armor, and what a hit does.
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
+
+#### detonationDeath
+
+**Added:** — · **Filmed in WoL:** —
+
+![detonationDeath in WoL](media/detonationDeath-wol.gif)
+
+*In WoL, with the key (a test action on `Settler`: 1000 Siege, `DamageArea` 6, `GAIAEnemy`):* a trigger kills a settler and the
+4 enemy `Coureur` around it die; another kills one of 3 settlers beside 3 enemy settlers, and all six go in a chain. The blue
+`Coureur` in the middle is out of range. The blast has no effect of its own on screen.
+[Full video (MP4)](media/detonationDeath-wol.mp4).
+
+![detonationDeath in WoL, key off](media/detonationDeath-wol-control.gif)
+
+*In WoL, key off (the same data):* the settlers die and nothing else happens.
+[Full video (MP4)](media/detonationDeath-wol-control.mp4).
+
+```
+detonationDeath [log]
+```
+
+```xml
+<Unit name="Settler">
+    <DetonationProtoAction>Build</DetonationProtoAction>
+    <ProtoAction>
+        <Name>Build</Name>
+        <Damage>1000.000000</Damage>
+        <DamageType>Siege</DamageType>
+        <DamageArea>6.000000</DamageArea>
+        <DamageFlags>GAIAEnemy</DamageFlags>
+    </ProtoAction>
+</Unit>
+```
+
+- **In WoL today:** no unit can do something when it dies. `selfdestruct` in a tactics file is another thing: the unit dies from
+  its own attack. JTMaston's #39.
+- **Effect:** when a unit of that proto dies, the action named by the tag fires around it: the stock area damage, with the
+  action's damage, `DamageArea`, damage type, bonuses and `DamageFlags`. The action needs `DamageArea` above 0, and the proto
+  must have it: an action its tactics file does not list does nothing, and the log says so.
+- **Use an action the unit does not attack with.** The tag reads any action with a `<Damage>`, so `Build` works on a settler. If
+  it is the unit's weapon, raising the damage also raises its normal attacks.
+- **Which deaths:** combat, a kill by a trigger, an expired `Lifespan`, and a unit that dies in a blast. Not `Destroy` (the
+  trigger that removes a unit with no death).
+- **Chains:** a unit that dies from a blast fires too, later in the same pass of the game's kill queue, not inside the blast.
+- **Friendly fire:** `DamageFlags` decides it, as on any attack. {FF}
+- **Techs:** the action is the player's copy, so a tech that changes its damage counts.
+- **From DE, not built:** `DetonationCommand` (a command that replaces delete), `DetonationHitpointThreshold` (the command fires
+  at an HP ratio) and `DetonationHitpointDecay`. Without the threshold, one tag is the whole of it: there is no flag to set.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Log:** `detonationDeath: the proto tag DetonationProtoAction is on`, and with `log`: `detonationDeath: proto 294 fires Build` and
+  `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
+- **Tested in WoL (2026-11-05):**
+  - A kill by trigger, combat with 6 `Pikeman`, an expired `Lifespan`: each killed the enemy `Coureur` around it.
+  - `Destroy`: no blast, and the 3 `Coureur` kept 180 HP.
+  - Own units in the blast with `GAIAEnemy`: 180 HP kept, the enemy's dead. With `GAIAEnemySelfAlly`: the own ones died too.
+  - A chain of 3 + 3 settlers of both players: 23, then 26, 27 and 28, then 24 and 25, with no recursion.
+  - Key off: no blast, in the same scene.
+  - Not tested: a unit that dies garrisoned, and a building that dies with units inside: four trigger attempts left nobody
+    inside (`[unit+74h]` stayed 0). The player's delete key: the console's `uiDeleteSelectedUnit` crashes the stock game at
+    0x7E51C8 with or without keys. Multiplayer, and an A/B: with four games open the numbers are not clean.
 
 #### multiarmor
 
@@ -4290,9 +4351,60 @@ What happens when a tech activates or a unit changes proto.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
+| [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
 | [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | **new** | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. | confirmed (single player) |
 | [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | **new** | Nothing. | confirmed (single player) |
 | [`transformInventory`](#transforminventory) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | **new** | Nothing; with a new marker, that type on the target protos. | confirmed (single player) |
+
+#### hcTargetTechs
+
+**Added:** — · **Filmed in WoL:** —
+
+![hcTargetTechs in WoL](media/hcTargetTechs-wol.gif)
+
+*In WoL, with the key (Ethiopians against a test player, a test tech with `HCTargetEnemy`, Hitpoints ×0.5 on `Hussar`):* the
+tech goes active for player 1, and only player 2's Hussar drops, from 352 to 176: the top lines show both, and the enemy is
+off screen. [Full video (MP4)](media/hcTargetTechs-wol.mp4).
+
+![hcTargetTechs in WoL, key off](media/hcTargetTechs-wol-control.gif)
+
+*In WoL, key off (the same data):* the flag means nothing, and the tech halves the owner's Hussar.
+[Full video (MP4)](media/hcTargetTechs-wol-control.mp4).
+
+```
+hcTargetTechs [log]
+```
+
+```xml
+<Tech name ='HCMyPlague' type ='Normal'>
+    <Flag>HomeCity</Flag>
+    <Flag>HCTargetEnemy</Flag>
+    ...
+</Tech>
+```
+
+- **In WoL today:** a tech reaches its owner, or the team with `TeamTech`. JTMaston's #36.
+- **Effect:** `HCTargetEnemy` sends the tech's effects to every enemy of the owner, and not to the owner; `HCTargetAll`
+  to every player, the owner included, without Gaia. It works on any tech, not only a card.
+- **What stays with the owner:** the tech itself: it goes active in the owner's tree, its button and its status are his.
+  Effects that act on a unit (the card's gather point, the ship) get no unit on the targets, since it would be the owner's.
+- **Who is an enemy:** the check runs when the tech applies, again at a removal, and again when a game is loaded. If the
+  diplomacy changed in between, those can differ.
+- **Beside `TeamTech`:** the new flag wins.
+- **Saved games:** the effects that stock re-applies after a load are re-applied on the targets.
+- **Off:** the game skips a flag it does not know, and the tech acts on its owner.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Log:** `hcTargetTechs: the tech flags HCTargetEnemy and HCTargetAll are on`, `hook reached: hcTargetTechs remove (0x94DCB2)`,
+  `hcTargetTechs load (0x94DDEA)`, and with `log`: `hcTargetTechs: apply tech 10542 of player 1`, `hcTargetTechs: effects on
+  player 2`, and `remove` and `load` lines.
+- **Tested in WoL (2026-11-05):**
+  - `HCTargetEnemy` ×0.5 on Hussar: player 2's 320 → 160, player 1's stayed 384. Key off: the owner's dropped, 352 → 176.
+  - `HCTargetAll` ×2 on Pikeman: both players doubled. A plain tech beside them: only its owner.
+  - Removal, through `Age0Egyptian`: the effect on the enemy went back, 1.06575 → 1.015.
+  - A saved game: 160, 234 and 260 stayed the same after the load, and the log shows the three `load` lines.
+  - {CARD}
+  - Not tested: 3 or more players (a test map starts with 2, and editing the shared profile needs no other game open),
+    multiplayer.
 
 #### techPrereqRecheck
 
