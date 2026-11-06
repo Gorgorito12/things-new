@@ -5281,9 +5281,46 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
+| [`displayedRange`](#displayedrange) | A selected unit shows a ring of the radius of `<DisplayedRange>`. | **new** | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. | confirmed |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
+
+#### displayedRange
+
+![displayedRange in WoL](media/displayedRange-wol.gif)
+
+*In WoL, with `displayedRange log` (Ethiopians, test data, a Sawmill with 14 and a Town Center with 20):* the ring shows
+while the building is selected and goes when it is not. [Full video (MP4)](media/displayedRange-wol.mp4).
+
+![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
+
+*In WoL, key off (the same data):* no ring. [Full video (MP4)](media/displayedRange-wol-control.mp4).
+
+```
+displayedRange [log]
+```
+
+```xml
+<Unit name="WOLSawmill">
+    <DisplayRange>1</DisplayRange>
+    <DisplayedRange>14</DisplayedRange>
+</Unit>
+```
+
+- **In WoL today:** nothing shows how far a building's aura reaches.
+- **Effect:** a selected unit with both tags shows a thin white ring on the ground, centred on it, of the radius of
+  `<DisplayedRange>`: the nearest of 4, 6, 8, 10, 12, 14, 16, 20, 24 and 30 m, the sizes in `tools/rings`.
+- **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
+- **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
+  took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
+- **Several units:** each selected unit with the tags shows its own, as long as it is selected.
+- **Multiplayer:** display only: the selection is this machine's and a model is a visual. Every player can have it or not.
+- **Log:** `displayedRange: the proto tags DisplayRange and DisplayedRange are on`, and with `log`
+  `displayedRange: ring of 14.0 m on unit 1 (WOLSawmill)` and `ring off unit 1`.
+- **Performance:** a tick four times a second over the selected units only. Not measured with `perfprobe.py`.
+- **Tested in WoL (2026-11-06):** selecting a Sawmill and a Town Center by console, 14 m and 20 m, on and off in the log and on
+  screen. Not tested: 24 and 30 m, a saved game, multiplayer.
 
 #### abilitySlots
 

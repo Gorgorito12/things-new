@@ -1087,6 +1087,12 @@ inline constexpr Site kDeleteSetHpCall{"DeleteSetHpCall", 0x007CD0CF, kDeleteSet
 inline constexpr std::uint8_t kDeleteKillCallBytes[] = {0xE8, 0xE1, 0x7C, 0xCE, 0xFF};
 inline constexpr Site kDeleteKillCall{"DeleteKillCall", 0x007CD0DC, kDeleteKillCallBytes, sizeof(kDeleteKillCallBytes)};
 
+inline constexpr std::uint8_t kModelPathLookupBytes[] = {0x51, 0x53, 0x55, 0x56, 0x8B, 0xE9, 0x57, 0x8D, 0x4C, 0x24};
+inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPathLookupBytes, sizeof(kModelPathLookupBytes)};
+
+inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
+inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
+
 inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
 inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
 
@@ -2014,6 +2020,7 @@ Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
+Outcome ApplyDisplayedRange(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
@@ -2098,6 +2105,7 @@ inline constexpr Feature kFeatures[] = {
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"unitResourceAuras", ApplyUnitResourceAuras},
+    {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
     {"pillageGold", ApplyPillageGold},
@@ -2192,7 +2200,7 @@ inline constexpr const char* kHandledKeys[] = {
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
+    "displayedrange", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",

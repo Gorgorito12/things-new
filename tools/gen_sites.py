@@ -871,6 +871,10 @@ SITES = [
     # call of the kill queue 0x4B4DC2 with (1, 0, 0) for one with it; ESI = the unit at both
     ("DeleteSetHpCall", 0x7CD0CF, 5),
     ("DeleteKillCall", 0x7CD0DC, 5),
+    # displayedRange: the ID of a model path, thiscall(table [0xC66240], path, 1, 0, 0), called at 0x5FC94C; the ID
+    # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
+    ("ModelPathLookup", 0x58F68F, 10),
+    ("BoneNameLookup", 0x58E506, 10),
     # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
     ("KillQueueAsk", 0x4B4DC2, 8),
     # TakeDamage's subtraction through the add-HP entry 0x4823A3, verify only

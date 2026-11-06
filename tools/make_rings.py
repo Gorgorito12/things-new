@@ -8,6 +8,7 @@ Everything goes to art/effects/uhc_rings/ in the game folder. No pixel and no me
 - ring_<name>_<size>.particle, that particle, for each size;
 - ring_<name>.ddt, the 64x64 DXT3 texture of a unit, a tree or a cavalryman;
 - ring_<name>_<size>.ddt, the texture of a building, with lines as thick in metres as those of a unit's ring;
+- range_<metres>.xml, its particle and its texture: one thin line of that radius, for displayedRange;
 - for wood, food and gold, aura_<name>.xml, the marker of a resource being gathered: the ring and, floating over the
   unit, icon_<name>_<height>.particle with the glyph of icon_<name>.ddt, drawn here.
 
@@ -68,6 +69,10 @@ GLYPHS = {
     "food": ((0.0, 0.14, 0.62, 0.0), (0.0, -0.56, 0.11, 0.0), (0.0, -0.70, 0.11, 0.0), (0.16, -0.72, 0.11, 0.0)),  # a fruit
     "gold": ((0.0, 0.0, 0.76, 0.46), (0.0, 0.0, 0.20, 0.0)),  # a coin
 }
+# The rings of displayedRange, by radius in metres, a thin line of RANGE_LINE metres in a neutral colour.
+RANGES = (4, 6, 8, 10, 12, 14, 16, 20, 24, 30)
+RANGE_LINE = 0.30
+RANGE_COLOURS = ((245, 245, 235), (255, 255, 255))
 OPACITY = 0.70  # the ground shows through
 # A DXT3 block holds two colours and two mixes of them. By how much of the main colour: 1, 2/3, 1/3, 0.
 SHADES = (0, 2, 3, 1)
@@ -243,7 +248,23 @@ def icon_attachment(name):
 """
 
 
-def xml(name, marker=False):
+def range_shape(radius):
+    """One band at the rim, RANGE_LINE metres wide: the particle's half width is radius / rim."""
+    rim = BANDS[0][1]
+    half = radius / rim
+    return ((rim - RANGE_LINE / half, rim),), EDGE * UNIT_RADIUS / half
+
+
+def range_logic(radius):
+    return f"""\t\t\t\t<none>
+\t\t\t\t\t<assetreference type="ParticleSystem">
+\t\t\t\t\t\t<file>effects\\uhc_rings\\range_{radius}.particle</file>
+\t\t\t\t\t</assetreference>
+\t\t\t\t</none>
+"""
+
+
+def xml(name, marker=False, logic=None):
     return f"""<?xml version="1.0" encoding="utf-8"?>
 
 <animfile>
@@ -254,7 +275,7 @@ def xml(name, marker=False):
 \t\t\tchiefpower_a
 \t\t\t<notshadowcaster/>
 \t\t\t<logic type="UnitType">
-{branches(name)}\t\t\t</logic>
+{logic or branches(name)}\t\t\t</logic>
 \t\t</component>
 \t\t<anim>
 \t\t\tIdle
@@ -363,6 +384,11 @@ def main():
             wanted[f"icon_{name}.ddt"] = icon_ddt(colour, GLYPHS[name])
             for _, size, height in ICON_HEIGHTS:
                 wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", ICON_SIDE, height, 0))
+    for radius in RANGES:
+        side = 256 if radius <= 16 else 512
+        wanted[f"range_{radius}.ddt"] = ddt(RANGE_COLOURS, side, *range_shape(radius))
+        wanted[f"range_{radius}.xml"] = text(xml("", logic=range_logic(radius)))
+        wanted[f"range_{radius}.particle"] = text(particle(f"range_{radius}", radius / BANDS[0][1]))
     bad = 0
     OUT.mkdir(exist_ok=True)
     for name, data in wanted.items():

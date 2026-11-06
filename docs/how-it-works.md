@@ -1524,6 +1524,16 @@ n + 1 = `[esp+34h]` ≥ 7 it calls the C++ logger with the unit (EDI) and GetNth
 `pushad` / `popad`, before the stock call (which returns a float in ST0), then makes the stock call
 itself and jumps to `0x696C75`.
 
+### displayedRange
+
+The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID of `effects\uhc_rings\range_<N>.xml`, as
+0x5FC91C does for `<ModelAttachment>`, and 0x58E506 the ID of the bone `bonethatdoesntexist`, as 0x5FC8EE does, which puts
+it at the unit's feet. A world tick, four times a second of game time, compares the selection of 0x453B28 with the units
+that hold a ring, and hangs or removes it through the functions of the stock aura update.
+
+**Why it is safe.** Nothing here reaches the simulation: the selection is local and is only read, and a model is a visual
+of the unit. The tick walks the selection and its own map, never the world's units.
+
 ### wonderPanelSkipAuras
 
 **The stock panel.** The wonder power panel (gadget `uiwonderpowerpanel`, five buttons) refreshes

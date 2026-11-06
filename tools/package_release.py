@@ -242,6 +242,7 @@ maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produ
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
 broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
+displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
 lifespanAfterConstruction [UnitType] [log]   a marked building's Lifespan starts when
                               its construction ends, not when it is placed

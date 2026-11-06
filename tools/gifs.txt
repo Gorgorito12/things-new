@@ -156,3 +156,5 @@ hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
 unitResourceAuras-torp-wol 12 12 1
 unitResourceAuras-torp-wol-control 12 12 1
+displayedRange-wol 0 12 1
+displayedRange-wol-control 0 12 1

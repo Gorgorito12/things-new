@@ -74,6 +74,7 @@ PAGES = {
     }),
     "gathering": ("Gathering", {
         "showGatherRate": ["src/features/gatherrate.cpp", "src/hooks/gatherrate_hooks.asm"],
+        "displayedRange": ["src/features/displayrange.cpp"],
         "workRateByAbstractType": ["src/features/workratetype.cpp", "src/hooks/workratetype_hooks.asm"],
         "cratePriority": ["src/features/cratepriority.cpp"],
         "autoGatherScaleByContained": ["src/features/gatherscale.cpp", "src/hooks/gatherscale_hooks.asm"],

@@ -45,6 +45,7 @@ set(UHC_SOURCES
   src/features/freeresearch.cpp
   src/features/cantslow.cpp
   src/features/civfirsttc.cpp
+  src/features/displayrange.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp

@@ -173,6 +173,8 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   drains nearby resources at a linear rate set by `ModifyAmount` (guide p35): mines 0.27, trees 0.05 on up
   to 5 trees (`ModifyTargetLimit`), hunts 0.42, berries 0.3, crates 4.0. 19 such actions
   (Torp, folwark, hacienda). The flag `ShowUnitResourceActionRates` shows the rates.
+- [O] DE's `DisplayRange` + `DisplayedRange` (a decal on selection; `deTorp` has 5.9) are built as `displayedRange`
+  (2026-11-06), with a ring of our own, centred on the unit.
 - [O] Built as `unitResourceAuras` (2026-11-04), with the rest of the Torp's tags on 2026-11-06: `IncludeGaia`,
   `DeadExclusive`, `DoNotIgnoreDead`, `SingleUnit`, `ForbidUnitType`, `ModifyRate`, `ShowUnitResourceActionRates`.
   DE's marker `torpgatherpower.xml` is a ring model plus a particle on the bone `HITPOINTBAR`; ours is `aura_<colour>.xml`,
