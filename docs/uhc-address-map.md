@@ -179,6 +179,7 @@ No row is a `mismatch`: every upstream address is valid for this build.
 | resourceBounty | `resourceBounty [log]` | 0x51D669 (the immediate of `<Bounty>`'s handler); 0x4D4E0C (kill branch of TakeDamage) | confirmed, in game (2026-11-05) |
 | teamKillBounty | `teamKillBounty [log]` | 0x49BDAB (FUN_0049BD52, the amount and ID for 0x49BDC0) | confirmed, in game (2026-11-05) |
 | pillageGold | `pillageGold [log]` | 0x49B73C (`call 0x49BD52` in TakeDamage, verified from 0x49B72B); through `AddActionTagHandler`; `unittypes.*` | confirmed, in game (2026-11-05) |
+| auraStacking | `auraStacking [log]` | 0x9D0633 (the filter's call), 0x9D0675 (after the apply); through the shared hook: 0x5FA11E | confirmed, in game (2026-11-06) |
 | linkedResource | `linkedResource [log]` | 0x49A5E6 (head of the inventory add), 0x9BFE5A (head of the inventory recreate), 0x4C378A (the AutoGather pay); through the shared hooks: 0x51DB0F, 0x5FA11E, 0x481A57 | confirmed, in game (2026-11-06) |
 | displayedRange | `displayedRange [log]` | No site of its own: the world tick 0x481A57 and the tag table 0x51DB0F; verifies 0x453B28, 0x58F68F, 0x58E506 and the model functions | confirmed, in game (2026-11-06) |
 | cantBeSlowed | `cantBeSlowed [log]` | 0x4DD201 (the arguments of the snare's creator; the target in ESI, the attacker in `[ebp+10h]`) | confirmed, in game (2026-11-05), the attacker's test (`CannotSnare`) too |

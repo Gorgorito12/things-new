@@ -73,6 +73,7 @@ PAGES = {
         "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
         "killBountyTechs, resourceBounty and teamKillBounty": ["src/features/bounty.cpp", "src/hooks/bounty_hooks.asm"],
         "pillageGold": ["src/features/pillage.cpp", "src/hooks/pillage_hooks.asm"],
+        "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp", "src/hooks/veterancy_hooks.asm"],
         "detonationDeath": ["src/features/detonation.cpp"],
     }),

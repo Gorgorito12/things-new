@@ -46,6 +46,7 @@ Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
 Outcome ApplyDisplayedRange(const Config& config);
 Outcome ApplyLinkedResource(const Config& config);
+Outcome ApplyAuraStacking(const Config& config);
 Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
@@ -208,6 +209,7 @@ inline constexpr Feature kFeatures[] = {
     {"resourceDebt", ApplyResourceDebt},
     // After resourceDebt and the keys that verify the heads of the inventory add and the inventory recreate.
     {"linkedResource", ApplyLinkedResource},
+    {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
@@ -232,7 +234,7 @@ inline constexpr const char* kHandledKeys[] = {
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "displayedrange", "linkedresource", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
+    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",

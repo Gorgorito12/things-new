@@ -176,3 +176,5 @@ lifespanAfterConstruction-countdown-wol 2 30 2
 lifespanAfterConstruction-countdown-wol-control 2 30 2
 hcShipmentPointFallback-lastresort-wol 4 20 2
 hcShipmentPointFallback-lastresort-wol-control 4 20 2
+auraStacking-wol 2 40 3
+auraStacking-wol-control 2 40 3

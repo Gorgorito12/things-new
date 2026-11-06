@@ -875,6 +875,11 @@ SITES = [
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
     ("BoneNameLookup", 0x58E506, 10),
+    # auraStacking: the one call of the filter in the aura update, the filter's head, and mov ebx,eax /
+    # cmp ebx,-1 after the apply
+    ("AuraFilterCall", 0x9D0633, 5),
+    ("AuraFilter", 0x9D0238, 6),
+    ("AuraAppliedNext", 0x9D0675, 5),
     # xsErrorLog: sub esp,804h at the head of each XS reporter, and the formatter they call
     ("XsReportHead", 0x43A3A4, 6),
     ("XsMessageHead", 0xA5667F, 6),

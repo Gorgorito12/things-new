@@ -1532,6 +1532,7 @@ Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitB
 #include <vector>
 
 #include "../actiontags.h"
+#include "../aurastacking.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -1800,7 +1801,7 @@ void ActionTagRead(const uhc::ActionTag& tag) {
   const bool single = _wcsicmp(tag.name, L"SingleUnit") == 0;
   const bool ignoreDead = _wcsicmp(tag.name, L"DoNotIgnoreDead") == 0;
   const bool deadOnly = _wcsicmp(tag.name, L"DeadExclusive") == 0;
-  const bool forbid = _wcsicmp(tag.name, L"ForbidUnitType") == 0;
+  const bool forbid = _wcsicmp(tag.name, L"ForbidUnitType") == 0 || _wcsicmp(tag.name, L"ForbidAbstractType") == 0;
   if (!amount && !limit && !gaia && !single && !ignoreDead && !deadOnly && !forbid) {
     return;  // <ForceUpdateMode> stays unread: the take already follows the game time between updates
   }
@@ -2049,6 +2050,10 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     }
     const float have = kListGet(inventory + 4, resource);
     if (have <= kMinAmount) {
+      continue;
+    }
+    if (!uhc::AuraClaim(world, Field<std::int32_t>(ownerProto, 0x04), auraKey.name, auraKey.owner,
+                        Field<std::int32_t>(target, 0x10), now)) {
       continue;
     }
     const float take = have < amount ? have : amount;

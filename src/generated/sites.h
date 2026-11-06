@@ -1040,6 +1040,15 @@ inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPath
 inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
 inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
 
+inline constexpr std::uint8_t kAuraFilterCallBytes[] = {0xE8, 0x00, 0xFC, 0xFF, 0xFF};
+inline constexpr Site kAuraFilterCall{"AuraFilterCall", 0x009D0633, kAuraFilterCallBytes, sizeof(kAuraFilterCallBytes)};
+
+inline constexpr std::uint8_t kAuraFilterBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08, 0x57};
+inline constexpr Site kAuraFilter{"AuraFilter", 0x009D0238, kAuraFilterBytes, sizeof(kAuraFilterBytes)};
+
+inline constexpr std::uint8_t kAuraAppliedNextBytes[] = {0x8B, 0xD8, 0x83, 0xFB, 0xFF};
+inline constexpr Site kAuraAppliedNext{"AuraAppliedNext", 0x009D0675, kAuraAppliedNextBytes, sizeof(kAuraAppliedNextBytes)};
+
 inline constexpr std::uint8_t kXsReportHeadBytes[] = {0x81, 0xEC, 0x04, 0x08, 0x00, 0x00};
 inline constexpr Site kXsReportHead{"XsReportHead", 0x0043A3A4, kXsReportHeadBytes, sizeof(kXsReportHeadBytes)};
 

@@ -87,6 +87,8 @@ struct KnownTag {
 };
 
 constexpr KnownTag kKnownTags[] = {
+    {L"NoStack", "auraStacking"},
+    {L"ForbidAbstractType", "auraStacking"},
     {L"AttachProtoUnit", "damageOverTime"},
     {L"AttachMaxStacks", "damageOverTime"},
     {L"AttachSnare", "damageOverTime"},
