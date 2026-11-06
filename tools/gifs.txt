@@ -115,6 +115,8 @@ unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
 veterancyBonus-wol 0 12 1
 veterancyBonus-wol-control 0 12 1
+veterancyBonus-icons-wol 1 24 2
+veterancyBonus-icons-wol-control 1 24 2
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 34 26 3
@@ -161,3 +163,6 @@ displayedRange-wol-control 0 12 1
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
+ceasefire-wol 2 34 3
+doNotQueue-shipment-wol 5 36 3
+doNotQueue-shipment-wol-control 5 36 3

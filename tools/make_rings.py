@@ -75,6 +75,19 @@ GLYPH_ACCENTS = {
              (0.72, 0.54, 0.15, 0.0), (0.54, 0.72, 0.15, 0.0)),  # its bone
 }
 ICON_ACCENT = (245, 235, 210)
+# The marks of veterancyBonus' ranks: one, two and three chevrons in bronze, silver and gold, floating over the
+# unit with no ring.
+RANKS = {1: (205, 127, 50), 2: (200, 205, 215), 3: (255, 205, 40)}
+RANK_ARMS = {1: (0.14,), 2: (-0.14, 0.38), 3: (-0.38, 0.10, 0.58)}
+RANK_SIDE = 0.75
+
+
+def chevron(y):
+    """Circles along an upward chevron whose arms end at height y."""
+    steps = range(-6, 7)
+    return tuple((0.72 * t / 6, y - 0.30 * (1 - abs(t) / 6), 0.13, 0.0) for t in steps)
+
+
 # The rings of displayedRange, by radius in metres, a thin line of RANGE_LINE metres in a neutral colour.
 RANGES = (4, 6, 8, 10, 12, 14, 16, 20, 24, 30)
 RANGE_LINE = 0.30
@@ -235,8 +248,7 @@ def branches(name):
     return out
 
 
-def icon_attachment(name):
-    """The icon, in an attachment of its own: a logic branch shows only one of two particle systems."""
+def icon_logic(name):
     out = ""
     for branch, height, _ in ICON_HEIGHTS:
         out += f"""\t\t\t\t<{branch}>
@@ -245,6 +257,12 @@ def icon_attachment(name):
 \t\t\t\t\t</assetreference>
 \t\t\t\t</{branch}>
 """
+    return out
+
+
+def icon_attachment(name):
+    """The icon, in an attachment of its own: a logic branch shows only one of two particle systems."""
+    out = icon_logic(name)
     return f"""\t<attachment>
 \t\ticon_a
 \t\t<component>
@@ -397,6 +415,13 @@ def main():
             wanted[f"icon_{name}.ddt"] = icon_ddt(colour, GLYPHS[name], GLYPH_ACCENTS.get(name, ()))
             for _, size, height in ICON_HEIGHTS:
                 wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", ICON_SIDE, height, 0))
+    for rank, colour in RANKS.items():
+        name = f"rank_{rank}"
+        glyph = tuple(circle for y in RANK_ARMS[rank] for circle in chevron(y))
+        wanted[f"{name}.xml"] = text(xml("", logic=icon_logic(name)))
+        wanted[f"icon_{name}.ddt"] = icon_ddt((colour, colour), glyph)
+        for _, size, height in ICON_HEIGHTS:
+            wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", RANK_SIDE, height + 0.7, 0))
     for radius in RANGES:
         side = 256 if radius <= 16 else 512
         wanted[f"range_{radius}.ddt"] = ddt(RANGE_COLOURS, side, *range_shape(radius))

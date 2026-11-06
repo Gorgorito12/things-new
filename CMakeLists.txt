@@ -24,6 +24,7 @@ set(UHC_SOURCES
   src/xmllist.cpp
   src/worldtick.cpp
   src/unitpanel.cpp
+  src/unitmodels.cpp
   src/actiontags.cpp
   src/modifytypes.cpp
   src/transformcalls.cpp

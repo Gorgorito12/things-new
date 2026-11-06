@@ -2711,6 +2711,13 @@ step, so one that dies in the loop is not touched again; the list belongs to the
 game clock and an ID-ordered map make the result the same on every machine. Stat 41h reaches no stock reader in an
 aura: the update does not run; in a power's `<unitModify>` the name is accepted and has no effect.
 
+### veterancyBonus: the rank marks
+
+A kill that reaches a rank and a transform queue the unit's ID. A world tick every 250 ms of game time hangs `rank_N.xml` through
+`unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
+`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. **Why it is safe:** a model is a
+visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
+
 ### linkedResource
 
 Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagged unit to an ID-ordered map. The tick, four
@@ -2718,8 +2725,9 @@ times a second, looks for a mine for the ones with none (FUN_004A1C55 around the
 `+B8h`) and copies the mine's entry into the building's inventory with 0x58EF83. The head of 0x49A5E6, the add every take goes
 through (0x4ED124 in the gather tick), sends a negative add on a linked inventory to the mine's and runs 0x482152 on the
 mine, whichever of the eight callers it comes from. A positive add stays on the building and the next copy overwrites it.
-In the AutoGather update, 0x4C378A hands the amount to the C++ code, which takes it from the source and writes back what
-was there; the add at 0x4C3798 stays, because `resourceDebt` reads its return address. Two paths of that update are not
+In the AutoGather update, 0x4C378A hands the amount to the C++ code. That amount has the player's handicap `[player+37Ch]` in it, so
+the code takes it divided by the handicap from the source, as the gather tick takes before it multiplies, and writes back what
+that pays; the add at 0x4C3798 stays, because `resourceDebt` reads its return address. Two paths of that update are not
 hooked: a `SingleUse` action pays the unit's whole inventory at 0x6A7E85, and `AddResourcesToInventory` adds to it at
 0x4C0F7B.
 
@@ -2989,6 +2997,11 @@ action just returns 1), called only from 0x9CA1F0 when the world byte `[world+69
 Shipments have no such list, as far as a static reading goes: the send (0x8577D2, 0x858299) pays and starts the card.
 `[hc+4D8h]`, with the count at `+4DCh`, refuses a card while it is not empty (0x858301, 0x85A7C7; 0x855F8F for the AI), but
 it is the `Blockade` effect's: 0x85C09C adds the IDs, called at 0x7FBA2D for the other players.
+
+The card queue is `[hc+288h]`, and only entry 0 advances. A `WriteCall` at 0x85AD38, the send's call of the add 0x857204, moves a
+flagged entry after the stock add. Entries move as bytes, as each owns its cost list and nothing points into one. Progress lives
+in the entry, so a card that waits keeps it, and a saved game needs nothing more. The wrapper returns the new place, which the
+send gives to the shipment's models.
 
 ### nextResearchFree
 

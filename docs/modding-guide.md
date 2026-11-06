@@ -2939,6 +2939,15 @@ cantBeSlowed [log]
 *In WoL, key off (the same data):* the two that survive end with 261 and 155. The game skips a tag it does not know.
 [Full video (MP4)](media/veterancyBonus-wol-control.mp4).
 
+![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
+
+*In WoL, with `art\effects\uhc_rings` (Dutch, 3 `Hussar` against 9 `Crossbowman`):* each rank shows its chevrons over the
+unit: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
+
+![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
+
+*In WoL, key off (the same scene):* no marks. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
+
 ```
 veterancyBonus [log]
 ```
@@ -2959,6 +2968,14 @@ veterancyBonus [log]
   hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
+- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, and a rank above the
+  third keeps the gold one. With no such folder the log says so once and the bonuses work as before. Display only: it
+  changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
+  our own: DE's are images in its selection panel.
+- **Tested in WoL (2026-11-06, marks):** ranks 1 to 3 shown; the mark left at death; a `TransformUnit` Hussar → Cuirassier kept it;
+  a saved game loaded with it; with the folder gone, one log line and no crash. 1214 fps against 1252 with the key off, update
+  0.17 ms against 0.16, no frame over 50 ms with the key on (60 s, `perfprobe.py`). An AI skirmish of 100 s had 19 units and no XS
+  error. Not tested: a transform to a proto with no rows, a rank above the third, multiplayer, recorded games.
 - **Transforms:** a `TransformUnit` tech keeps the count, and gives the bonuses of the **new** proto's rows for those kills: a
   proto with no rows has none until it becomes one with rows. A trigger's `Change Unit Type` takes another path and is not
   covered.
@@ -3170,8 +3187,8 @@ pillageGold [log]
   gather multiplier does not apply. One hit is one torch that lands, so the rate is the action's `ROF`.
 - **Only gold.** A victim with no gold gives nothing, and the attacker gets nothing. A victim with less than the amount
   gives what it has: 12 gold and a tag of 5 pays 5, 5 and 2.
-- **Which action:** the one that has the tag. `CoverBuildingAttack` is a different action: a unit in cover pays nothing
-  until that action has its own tag.
+- **Which action:** the one that has the tag. `CoverBuildingAttack` is the same attack in another stance: with no tag of its
+  own it uses `BuildingAttack`'s amount, and with one it uses its own, so a unit does not stop stealing when it takes cover.
 - **Against what:** enemy buildings. A unit that hits a unit steals nothing, with the tag on that action too. The game
   sends no attack at an own or allied building, and the fight stops the moment two players ally.
 - **Attacker dead before its torch lands:** nothing is stolen. The damage stays.
@@ -3184,6 +3201,8 @@ pillageGold [log]
   hit (0x49B73C)`, and with `log` `pillageGold: proto Pikeman, action 15: 5 gold a hit` and, for the first 200 hits,
   `pillageGold: unit 1 of player 1 took 5 gold from player 2 (Barracks): 995 -> 990, the attacker has 10`.
 - **Tested** in WoL, with a Barracks of player 2, reading both stockpiles:
+  - `CoverBuildingAttack` (2026-11-06, the action put in `Pikeman`'s Normal tactic, so the stance change itself was not driven):
+    tag only on `BuildingAttack`, 48 hits of 5; its own tag of 2, 47 hits of 2; `BuildingAttack`, 48 hits of 5.
   - Beside WoL's own DLL, as `dinput8.dll`, with `veterancyBonus`, `transformSpan` and `resourceDebt` on: 48 hits of 5, victim 1000 -> 760, attacker 0 -> 240.
   - 3 Pikemen with the type and the tag: 66 hits in 46 s, each exactly 5: 1000 to 670, and the attacker 0 to 330. The two
     always added up to 1000.
@@ -3685,8 +3704,8 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
     `cResourceGold` and `aiPlanAddUnitType`, as WoL's scripts do for the Tupi Wigham. With `aiTaskUnitWork` alone, only the trickle paid;
   - `aiPlanGetState` gives −1 for any plan that is gone, and a finished plan is gone too: −1 is not a failure.
 - **Handicap:** every pay is multiplied by the player's handicap. A villager takes x from the mine and pays x × handicap, as in
-  stock. An AutoGather pays its rate × handicap, and the key takes that same amount from the source, so with a handicap of 2 the
-  trickle empties a mine twice as fast as its rate says.
+  stock, and `<GatherLinkedResource>` does the same: the source loses the rate and the player gets the rate × handicap. A mine lasts the
+  same at any handicap. How DE does this was not checked: its exe does not finish a REA analysis.
 - **Not covered:** DE's `AreaHeal`: the stock `Heal` action on a building healed nobody around it, idle or not, so a heal
   needs an aura. `GatherableByAllies` and Influence.
 - **Do not combine:** the stock tags `<SingleUse>` and `<AddResourcesToInventory>` on the building's AutoGather. The first pays
@@ -3711,10 +3730,10 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
   100 s and no XS error. Villagers were ordered by console (`uiWorkAtPointer` with the camera on the target).
   **Japanese skirmish:** placed and built by three villagers with the monastery's model, linked at 9.0 m, lost the 200-gold mine,
   and linked to the Mine at 11.0 m. The human's handicap there was 2.0, from `gameplayer1handicap` 100 in the profile (1.0 with 0):
-  the trickle paid 0.99/s, and on a stock Mine with the key off villagers took 1.8/s and paid 3.6/s. **German AI**, handicap 0.65
-  (`aiWoLMain.xs`, Moderate): a plain build plan built it in 60 s and it linked at 6.0 m. The trickle alone took and paid
-  0.327/s. With a gather plan, 3 settlers and the trickle, the Mine lost 2.11/s and the AI gained 1.48/s, which is 1.8 × 0.65 +
-  0.325; no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
+  on a stock Mine with the key off villagers took 1.8/s and paid 3.6/s. With the Dutch at that handicap, the trickle took 0.506/s and
+  paid 1.012/s, and with 3 villagers on the building 2.319/s and 4.638/s. In a scenario, handicap 1, 0.499/s both ways. **German
+  AI**, handicap 0.65 (`aiWoLMain.xs`, Moderate): a plain build plan built it in 60 s and it linked at 6.0 m. With a gather plan, 3
+  settlers and the trickle, the Mine lost 2.28/s and the AI gained 1.48/s; no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
   1386.66 and the player at 613.24, a sum of 2000; key off, the Mine stayed at 2000.
   Not tested: `createSimpleBuildPlan`, an AI that chooses it with no rule of yours, allies gathering, multiplayer.
 
@@ -4844,6 +4863,16 @@ progress. [Full video (MP4)](media/doNotQueue-wol.mp4).
 *In WoL, key off (the same data):* the Pikemen wait at the end of the queue. The game skips the tag it does not know.
 [Full video (MP4)](media/doNotQueue-wol-control.mp4).
 
+![doNotQueue on a shipment in WoL](media/doNotQueue-shipment-wol.gif)
+
+*In WoL, with `doNotQueue log` (Dutch, test data: `<Flag>DoNotQueue</Flag>` on `HCShoreLeaveDutch`):* the Settlers' card is on its
+way, Shore Leave goes in front of it, and the Settlers' card waits at 12 of 40 and goes on after it.
+[Full video (MP4)](media/doNotQueue-shipment-wol.mp4).
+
+![doNotQueue on a shipment in WoL, key off](media/doNotQueue-shipment-wol-control.gif)
+
+*In WoL, key off (the same data):* Shore Leave waits behind the Settlers. [Full video (MP4)](media/doNotQueue-shipment-wol-control.mp4).
+
 ```
 doNotQueue [log]
 ```
@@ -4877,6 +4906,13 @@ doNotQueue [log]
   - A skirmish with a European AI (`wolOtto`) with `Settler` and `Musketeer` tagged: it compiled and had 19 units at 120 s, but
     no tagged unit found anything to pass, so the move itself did not run for the AI.
   - Not tested: a building with a Maintain, multiplayer.
+
+- **Shipments:** the stock tech flag on a card's tech puts the card before the first card without the flag, and the card on its
+  way keeps its progress. Only the first card of the queue advances. WoL's 16 techs with the flag are not cards, so nothing
+  changes for them.
+- **Tested in WoL (2026-11-06, shipments):** with the flag, cards arrived at 67 s and 95 s; key off, at 58 s and 101 s. A saved game
+  kept the order and the progress; a cancel refunded the ship; a German AI sent a card with no XS error. Not tested: two flagged
+  cards in a row, an AI's flagged card, the home city's models, beside WoL's DLL, multiplayer.
 
 #### nextResearchFree
 

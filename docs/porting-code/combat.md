@@ -3092,6 +3092,7 @@ Sites: `ResListGet` `0x44EFFF` (61 B), `PlayerAddResource` `0x49A98A` (16 B), `P
 ```cpp
 // pillageGold: a unit of the abstract type AbstractCanPillage steals gold with each hit of an action
 // that has <PillageAmount>, normally its BuildingAttack, from the owner of the building it hits.
+// CoverBuildingAttack is the same torch in another stance: with no tag of its own it uses BuildingAttack's.
 //
 // Stock has no such thing. TakeDamage FUN_0049B3D9 calls 0x49BD52 on every hit that has an attacking
 // player (0x49B73C), and that call has all the key needs in its frame. The key replaces the call: it
@@ -3122,6 +3123,8 @@ constexpr std::uint32_t kHitCall = 0x0049B73C;  // call 0x49BD52 in TakeDamage
 constexpr std::int32_t kGold = 0;
 constexpr std::int32_t kEnemy = 2;              // [player+1D4h+4*id], as the diplomacy filter 0x49AEE0 reads it
 constexpr float kMinAmount = 1.0e-6f;
+constexpr std::size_t kGameGlobal = 0xC66234;
+constexpr std::size_t kActionNames = 0x1FD8;  // in the database: the action names, then +4 their count
 constexpr int kMaxLogLines = 200;
 
 using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
@@ -3141,6 +3144,8 @@ struct ActionKey {
 std::map<ActionKey, float> g_amounts;  // filled while the data loads, read-only after
 std::int32_t g_canPillage = -1;
 std::int32_t g_building = -1;
+std::int32_t g_coverName = -2;     // name indices of the two actions; -2: not looked up yet
+std::int32_t g_buildingName = -1;
 bool g_log = false;
 int g_logLines = 0;
 
@@ -3151,6 +3156,8 @@ T Field(const char* base, std::uint32_t offset) {
 
 void NewDatabase(char*) {
   g_amounts.clear();
+  g_coverName = -2;
+  g_buildingName = -1;
   g_logLines = 0;
 }
 
@@ -3172,6 +3179,31 @@ void ActionTagRead(const uhc::ActionTag& tag) {
   }
 }
 
+// The two names, once per database.
+void LookUpNames() {
+  if (g_coverName != -2) {
+    return;
+  }
+  g_coverName = -1;
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* db = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (db == nullptr) {
+    return;
+  }
+  const auto* names = Field<const wchar_t* const*>(db, kActionNames);
+  const std::int32_t count = Field<std::int32_t>(db, kActionNames + 4);
+  for (std::int32_t i = 0; i < count; ++i) {
+    if (names[i] == nullptr) {
+      continue;
+    }
+    if (_wcsicmp(names[i], L"CoverBuildingAttack") == 0) {
+      g_coverName = i;
+    } else if (_wcsicmp(names[i], L"BuildingAttack") == 0) {
+      g_buildingName = i;
+    }
+  }
+}
+
 }  // namespace
 
 // From the hook, on every hit with an attacking player, before the stock call. The attacker is null
@@ -3184,7 +3216,15 @@ extern "C" void __stdcall UhcPillageHit(const char* attacker, char* attackerPlay
   if (attackerProto == nullptr) {
     return;
   }
-  const auto found = g_amounts.find({Field<std::int32_t>(attackerProto, 0x04), Field<std::int32_t>(action, 0x04)});
+  const std::int32_t protoId = Field<std::int32_t>(attackerProto, 0x04);
+  const std::int32_t actionName = Field<std::int32_t>(action, 0x04);
+  auto found = g_amounts.find({protoId, actionName});
+  if (found == g_amounts.end()) {
+    LookUpNames();
+    if (actionName == g_coverName && g_buildingName >= 0) {
+      found = g_amounts.find({protoId, g_buildingName});
+    }
+  }
   if (found == g_amounts.end() || g_canPillage < 0 || !kProtoIsType(attackerProto, g_canPillage)) {
     return;
   }
@@ -3280,9 +3320,9 @@ END
 
 Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
 
-Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
+Sites: `UnitById` `0x44CC6D` (58 B), `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 
 ### src/features/veterancy.cpp
 
@@ -3308,10 +3348,15 @@ Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 // Two tech effects of type="Data" act on one player's copy of the proto: subtype="VeterancyEnable" (0 turns the
 // rows off for that player, anything else on; base 1) and subtype="VeterancyBonus" (a factor on what every row
 // adds: a row of 1.30 with factor 2 gives 1.60; base 1). Ranks already granted are game modifiers and stay.
+//
+// A unit with a rank carries a mark, tools/rings' rank_1 to rank_3, and the unit panel's row says its rank. Both only
+// show: the mark is a visual of the unit. A kill and a transform name a unit for the world tick, which hangs the
+// mark; the tick looks only at units with a mark; one walk over the world's units finds the ranks of a loaded game.
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cwchar>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -3325,7 +3370,10 @@ Sites: `VeterancyKillPath` `0x4D4F37` (6 B), `SnareApply` `0x4DD22D` (130 B).
 #include "../prototags.h"
 #include "../techsubtypes.h"
 #include "../transformcalls.h"
+#include "../unitmodels.h"
+#include "../unitpanel.h"
 #include "../unittypes.h"
+#include "../worldtick.h"
 
 extern "C" void UhcVeterancyHook();
 
@@ -3337,6 +3385,10 @@ constexpr std::int32_t kOperationSet = 0;
 constexpr std::int32_t kOperationMultiply = 2;
 constexpr std::uint32_t kRankColour = 0xFFFFD700;
 constexpr int kMaxLogLines = 200;
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::uint32_t kMarkTickMs = 250;
+constexpr std::uint32_t kTimeJumpMs = 2000;  // more than a world update: a game was loaded
+constexpr std::int32_t kMarkRanks = 3;       // tools/rings has this many; a higher rank keeps the last
 
 using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
 using XmlTextFn = const char*(__thiscall*)(const void* text);
@@ -3350,6 +3402,9 @@ const auto kModifyType = reinterpret_cast<ModifyTypeFn>(0x005F5645);
 const auto kModifier = reinterpret_cast<ModifierFn>(0x004DD22D);
 using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
 const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+using UnitByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
 
 struct Row {
   std::int32_t kills;
@@ -3367,6 +3422,17 @@ struct TechOverride {
 std::unordered_map<const char*, TechOverride> g_tech;  // by the player's copy of the proto
 bool g_log = false;
 int g_logLines = 0;
+
+bool g_marks = false;                     // the sites of the marks are stock
+std::int32_t g_rankModels[kMarkRanks + 1];  // by rank; -2: not looked up yet
+std::int32_t g_noBone = -2;
+std::map<std::int32_t, std::int32_t> g_marked;  // by unit ID: the rank it shows
+std::vector<std::int32_t> g_pending;            // unit IDs whose mark may have changed
+bool g_noArt = false;
+bool g_scan = true;
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_nextMark = 0;
 
 const TechOverride* TechFor(const char* copy) {
   if (g_tech.empty()) {
@@ -3422,7 +3488,15 @@ void ChangeFactor(char* proto, const char*, float amount, std::uint8_t relativit
   ChangeTech(proto, &TechSlot(proto).factor, amount, relativity, unapply, L"VeterancyBonus");
 }
 
-void ForgetOnDataLoad(char*) { g_tech.clear(); }
+void ForgetOnDataLoad(char*) {
+  g_tech.clear();
+  g_marked.clear();
+  g_pending.clear();
+  std::fill(std::begin(g_rankModels), std::end(g_rankModels), -2);
+  g_noBone = -2;
+  g_noArt = false;
+  g_scan = true;
+}
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3475,6 +3549,142 @@ char* FindCount(const char* unit) {
   return found;
 }
 
+float KillsOf(const char* unit) {
+  const char* count = FindCount(unit);
+  return count != nullptr ? Field<float>(count, 0x68) : 0.0f;
+}
+
+// Each distinct kills value is a rank.
+std::int32_t RankOf(const std::vector<Row>& rows, float kills) {
+  std::int32_t rank = 0;
+  std::int32_t last = 0;
+  for (const Row& row : rows) {
+    if (static_cast<float>(row.kills) > kills) {
+      break;
+    }
+    if (row.kills != last) {
+      ++rank;
+      last = row.kills;
+    }
+  }
+  return rank;
+}
+
+std::int32_t RankOfUnit(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const auto found = proto != nullptr ? g_rows.find(Field<std::int32_t>(proto, 8)) : g_rows.end();
+  return found == g_rows.end() ? 0 : RankOf(found->second, KillsOf(unit));
+}
+
+std::int32_t RankModel(std::int32_t rank) {
+  std::int32_t& model = g_rankModels[rank];
+  if (model == -2) {
+    wchar_t path[64];
+    swprintf_s(path, L"effects\\uhc_rings\\rank_%d.xml", rank);
+    model = uhc::ModelOfPath(path);
+  }
+  return model;
+}
+
+// False: try again at the next tick.
+bool UpdateMark(const char* world, std::int32_t id) {
+  char* unit = kUnitById(world, id);
+  if (unit == nullptr) {
+    return true;
+  }
+  const std::int32_t rank = (std::min)(RankOfUnit(unit), kMarkRanks);
+  const auto marked = g_marked.find(id);
+  const std::int32_t shown = marked != g_marked.end() ? marked->second : 0;
+  if (shown != 0 && shown != rank) {
+    uhc::RemoveUnitModel(unit, RankModel(shown));
+    g_marked.erase(id);
+  }
+  if (rank == 0) {
+    return true;
+  }
+  if (g_noBone == -2) {
+    g_noBone = uhc::NoBone();
+  }
+  const std::int32_t model = RankModel(rank);
+  if (model == -1) {
+    return false;
+  }
+  const uhc::ModelHang hang = uhc::HangUnitModel(unit, model, g_noBone);
+  if (hang == uhc::ModelHang::kRetry) {
+    return false;
+  }
+  if (hang == uhc::ModelHang::kNotInGame) {
+    g_noArt = true;
+    uhc::RemoveUnitModel(unit, model);
+    uhc::Log(L"veterancyBonus: effects\\uhc_rings\\rank_%d.xml is not in the game: no rank marks", rank);
+    return true;
+  }
+  g_marked[id] = rank;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"veterancyBonus: unit %d shows rank %d", id, rank);
+  }
+  return true;
+}
+
+void ScanWorld(const char* world) {
+  const auto* table = Field<char* const*>(world, 0x0C);
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+    const char* unit = table[i];
+    const char* proto = unit != nullptr ? Field<const char*>(unit, 0x5C) : nullptr;
+    if (proto != nullptr && g_rows.count(Field<std::int32_t>(proto, 8)) != 0 && FindCount(unit) != nullptr) {
+      g_pending.push_back(Field<std::int32_t>(unit, 0x10));
+    }
+  }
+}
+
+void Tick(char* world, std::int32_t) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  if (game == nullptr || world != Field<const char*>(game, 0x13C) || g_rows.empty() || g_noArt) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (world != g_world || now < g_lastTime || now > g_lastTime + kTimeJumpMs) {
+    g_marked.clear();  // another game: its unit IDs are not these
+    g_pending.clear();
+    g_world = world;
+    g_nextMark = 0;
+    g_scan = true;
+  }
+  g_lastTime = now;
+  if (now < g_nextMark) {
+    return;
+  }
+  g_nextMark = now + kMarkTickMs;
+  if (g_scan) {
+    g_scan = false;
+    ScanWorld(world);
+  }
+  for (auto it = g_marked.begin(); it != g_marked.end();) {
+    char* unit = kUnitById(world, it->first);
+    if (unit != nullptr && (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit)) {
+      ++it;
+      continue;
+    }
+    if (unit != nullptr) {
+      uhc::RemoveUnitModel(unit, RankModel(it->second));  // the corpse does not keep it
+    }
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"veterancyBonus: unit %d is gone, and its mark", it->first);
+    }
+    it = g_marked.erase(it);
+  }
+  std::vector<std::int32_t> waiting;
+  waiting.swap(g_pending);
+  for (const std::int32_t id : waiting) {
+    if (!UpdateMark(world, id)) {
+      g_pending.push_back(id);
+    }
+  }
+}
+
 // Around the transform in place, which ends the unit's modifiers.
 float KillsBeforeTransform(const char* unit) {
   const char* count = g_rows.empty() ? nullptr : FindCount(unit);
@@ -3484,6 +3694,9 @@ float KillsBeforeTransform(const char* unit) {
 void RestoreAfterTransform(char* unit, float kills) {
   if (kills < 1.0f || FindCount(unit) != nullptr) {
     return;
+  }
+  if (g_marks) {
+    g_pending.push_back(Field<std::int32_t>(unit, 0x10));
   }
   kModifier(unit, kStatKills, kills, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0);
   const char* now = Field<const char*>(unit, 0x5C);
@@ -3567,6 +3780,9 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
     wchar_t text[32];
     swprintf(text, 32, L"Rank %d", rank);
     uhc::ShowUnitText(attacker, text, -1, kRankColour);
+    if (g_marks) {
+      g_pending.push_back(Field<std::int32_t>(attacker, 0x10));
+    }
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
@@ -3574,6 +3790,23 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
              Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank, reached ? L", x" : L"",
              reached ? static_cast<double>(applied) : 0.0);
   }
+}
+
+// The unit panel's row, for a unit with kills.
+bool __stdcall UhcVeterancyRow(const char* panel, const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || g_rows.count(Field<std::int32_t>(proto, 8)) == 0) {
+    return false;
+  }
+  const float kills = KillsOf(unit);
+  if (kills < 1.0f) {
+    return false;
+  }
+  wchar_t label[32];
+  wchar_t value[32];
+  swprintf_s(label, L"Rank %d", RankOfUnit(unit));
+  swprintf_s(value, L"%d kills", static_cast<int>(kills));
+  return uhc::SetUnitPanelRow(panel, label, value);
 }
 
 namespace uhc {
@@ -3598,7 +3831,14 @@ Outcome ApplyVeterancyBonus(const Config& config) {
       !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"veterancyBonus: the proto tag VeterancyBonus is on, and the Data subtypes VeterancyEnable and VeterancyBonus");
+  std::fill(std::begin(g_rankModels), std::end(g_rankModels), -2);
+  g_marks = VerifyAll("veterancyBonus marks", {&sites::kUnitById}) && VerifyUnitModels("veterancyBonus marks") &&
+            AddWorldTick(&Tick);
+  if (!AddUnitPanelRow(&UhcVeterancyRow)) {
+    Log(L"veterancyBonus: no rank row in the unit panel");
+  }
+  Log(L"veterancyBonus: the proto tag VeterancyBonus is on, and the Data subtypes VeterancyEnable and VeterancyBonus%ls",
+      g_marks ? L"; rank marks on" : L"; no rank marks");
   return Outcome::kApplied;
 }
 

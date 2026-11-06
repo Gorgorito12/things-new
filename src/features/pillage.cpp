@@ -1,5 +1,6 @@
 // pillageGold: a unit of the abstract type AbstractCanPillage steals gold with each hit of an action
 // that has <PillageAmount>, normally its BuildingAttack, from the owner of the building it hits.
+// CoverBuildingAttack is the same torch in another stance: with no tag of its own it uses BuildingAttack's.
 //
 // Stock has no such thing. TakeDamage FUN_0049B3D9 calls 0x49BD52 on every hit that has an attacking
 // player (0x49B73C), and that call has all the key needs in its frame. The key replaces the call: it
@@ -30,6 +31,8 @@ constexpr std::uint32_t kHitCall = 0x0049B73C;  // call 0x49BD52 in TakeDamage
 constexpr std::int32_t kGold = 0;
 constexpr std::int32_t kEnemy = 2;              // [player+1D4h+4*id], as the diplomacy filter 0x49AEE0 reads it
 constexpr float kMinAmount = 1.0e-6f;
+constexpr std::size_t kGameGlobal = 0xC66234;
+constexpr std::size_t kActionNames = 0x1FD8;  // in the database: the action names, then +4 their count
 constexpr int kMaxLogLines = 200;
 
 using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
@@ -49,6 +52,8 @@ struct ActionKey {
 std::map<ActionKey, float> g_amounts;  // filled while the data loads, read-only after
 std::int32_t g_canPillage = -1;
 std::int32_t g_building = -1;
+std::int32_t g_coverName = -2;     // name indices of the two actions; -2: not looked up yet
+std::int32_t g_buildingName = -1;
 bool g_log = false;
 int g_logLines = 0;
 
@@ -59,6 +64,8 @@ T Field(const char* base, std::uint32_t offset) {
 
 void NewDatabase(char*) {
   g_amounts.clear();
+  g_coverName = -2;
+  g_buildingName = -1;
   g_logLines = 0;
 }
 
@@ -80,6 +87,31 @@ void ActionTagRead(const uhc::ActionTag& tag) {
   }
 }
 
+// The two names, once per database.
+void LookUpNames() {
+  if (g_coverName != -2) {
+    return;
+  }
+  g_coverName = -1;
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* db = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (db == nullptr) {
+    return;
+  }
+  const auto* names = Field<const wchar_t* const*>(db, kActionNames);
+  const std::int32_t count = Field<std::int32_t>(db, kActionNames + 4);
+  for (std::int32_t i = 0; i < count; ++i) {
+    if (names[i] == nullptr) {
+      continue;
+    }
+    if (_wcsicmp(names[i], L"CoverBuildingAttack") == 0) {
+      g_coverName = i;
+    } else if (_wcsicmp(names[i], L"BuildingAttack") == 0) {
+      g_buildingName = i;
+    }
+  }
+}
+
 }  // namespace
 
 // From the hook, on every hit with an attacking player, before the stock call. The attacker is null
@@ -92,7 +124,15 @@ extern "C" void __stdcall UhcPillageHit(const char* attacker, char* attackerPlay
   if (attackerProto == nullptr) {
     return;
   }
-  const auto found = g_amounts.find({Field<std::int32_t>(attackerProto, 0x04), Field<std::int32_t>(action, 0x04)});
+  const std::int32_t protoId = Field<std::int32_t>(attackerProto, 0x04);
+  const std::int32_t actionName = Field<std::int32_t>(action, 0x04);
+  auto found = g_amounts.find({protoId, actionName});
+  if (found == g_amounts.end()) {
+    LookUpNames();
+    if (actionName == g_coverName && g_buildingName >= 0) {
+      found = g_amounts.find({protoId, g_buildingName});
+    }
+  }
   if (found == g_amounts.end() || g_canPillage < 0 || !kProtoIsType(attackerProto, g_canPillage)) {
     return;
   }

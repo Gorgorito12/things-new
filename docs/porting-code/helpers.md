@@ -24,6 +24,7 @@ Contents:
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
 - [Name lists](#name-lists)
+- [Models on a unit](#models-on-a-unit)
 
 ## Site table
 
@@ -1164,6 +1165,9 @@ inline constexpr Site kPillageHitCall{"PillageHitCall", 0x0049B72B, kPillageHitC
 
 inline constexpr std::uint8_t kTrainQueueAddCallBytes[] = {0xE8, 0x75, 0x60, 0xAC, 0xFF};
 inline constexpr Site kTrainQueueAddCall{"TrainQueueAddCall", 0x009CE81A, kTrainQueueAddCallBytes, sizeof(kTrainQueueAddCallBytes)};
+
+inline constexpr std::uint8_t kShipQueueAddCallBytes[] = {0xE8, 0xC7, 0xC4, 0xFF, 0xFF};
+inline constexpr Site kShipQueueAddCall{"ShipQueueAddCall", 0x0085AD38, kShipQueueAddCallBytes, sizeof(kShipQueueAddCallBytes)};
 
 inline constexpr std::uint8_t kResearchPayCallBytes[] = {0xE8, 0x84, 0x2C, 0xEF, 0xFF};
 inline constexpr Site kResearchPayCall{"ResearchPayCall", 0x009E67E1, kResearchPayCallBytes, sizeof(kResearchPayCallBytes)};
@@ -2427,7 +2431,7 @@ bool AddWorldTick(WorldTick tick);
 
 namespace {
 
-constexpr std::size_t kMaxTicks = 8;
+constexpr std::size_t kMaxTicks = 12;
 
 using WorldUpdateFn = bool(__fastcall*)(char* world, void* unused, std::int32_t a, std::int32_t deltaMs);
 
@@ -4125,6 +4129,108 @@ std::int32_t FirstCivOfPlayer(const char* player) {
   }
   return *Field<const std::int32_t*>(player, 0x20);
 }
+
+}  // namespace uhc
+```
+
+## Models on a unit
+
+### src/unitmodels.h
+
+```cpp
+// A model hung on a unit, as the stock aura update does (0x9D054A..0x9D059C): the rings of unitResourceAuras
+// and displayedRange, and the rank marks of veterancyBonus. A model is a visual of the unit: nothing here
+// reaches the simulation.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+enum class ModelHang {
+  kRetry,     // the unit has no visual yet
+  kAlready,   // the unit has it
+  kHung,      // on the unit now
+  kNotInGame  // the engine took it and shows nothing: its file is not in the game
+};
+
+// Checks the sites of these functions, for the key's log.
+bool VerifyUnitModels(const char* key);
+
+// The ID of a model's path, as the tactics parser finds it (0x5FC91C); -1 before the table exists.
+std::int32_t ModelOfPath(const wchar_t* path);
+
+// The index that means "no such bone": the model's own file says where it goes.
+std::int32_t NoBone();
+
+ModelHang HangUnitModel(char* unit, std::int32_t model, std::int32_t bone);
+bool UnitHasModel(const char* unit, std::int32_t model);
+void RemoveUnitModel(char* unit, std::int32_t model);
+
+}  // namespace uhc
+```
+
+### src/unitmodels.cpp
+
+```cpp
+#include "unitmodels.h"
+
+#include "generated/sites.h"
+#include "patch.h"
+
+namespace {
+
+constexpr std::uint32_t kModelTable = 0x00C66240;
+constexpr std::uint32_t kBoneTable = 0x00D6F478;
+
+using ModelIdFn = std::int32_t(__thiscall*)(void* table, const wchar_t* path, std::int32_t a, std::int32_t b, std::int32_t c);
+using BoneIdFn = std::int32_t(__thiscall*)(void* table, const char* name);
+using ModelByIdFn = const void*(__thiscall*)(void* table, std::int32_t model);
+using HasModelFn = bool(__thiscall*)(const char* unit, std::int32_t model);
+using AttachModelFn = bool(__thiscall*)(char* unit, const void* object, std::int32_t bone, std::int32_t flag);
+using RemoveModelFn = void(__thiscall*)(char* unit, std::int32_t model);
+
+const auto kModelId = reinterpret_cast<ModelIdFn>(0x0058F68F);
+const auto kBoneId = reinterpret_cast<BoneIdFn>(0x0058E506);
+const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
+const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
+const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
+const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
+
+}  // namespace
+
+namespace uhc {
+
+bool VerifyUnitModels(const char* key) {
+  return VerifyAll(key, {&sites::kModelById, &sites::kUnitHasModel, &sites::kUnitAttachModel, &sites::kUnitRemoveModel,
+                         &sites::kModelPathLookup, &sites::kBoneNameLookup});
+}
+
+std::int32_t ModelOfPath(const wchar_t* path) {
+  void* table = *reinterpret_cast<void**>(kModelTable);
+  return table == nullptr ? -1 : kModelId(table, path, 1, 0, 0);
+}
+
+std::int32_t NoBone() { return kBoneId(reinterpret_cast<void*>(kBoneTable), "bonethatdoesntexist"); }
+
+ModelHang HangUnitModel(char* unit, std::int32_t model, std::int32_t bone) {
+  void* table = *reinterpret_cast<void**>(kModelTable);
+  if (unit == nullptr || table == nullptr) {
+    return ModelHang::kRetry;
+  }
+  if (kHasModel(unit, model)) {
+    return ModelHang::kAlready;
+  }
+  const void* object = kModelById(table, model);
+  if (object == nullptr || !kAttachModel(unit, object, bone, 0)) {
+    return ModelHang::kRetry;
+  }
+  return kHasModel(unit, model) ? ModelHang::kHung : ModelHang::kNotInGame;
+}
+
+bool UnitHasModel(const char* unit, std::int32_t model) { return kHasModel(unit, model); }
+
+void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model); }
 
 }  // namespace uhc
 ```

@@ -66,7 +66,7 @@ Rules:
   - `AddTransformObserver` (`transformcalls.*`, the seven calls of 0x9C754C); a key's own transform calls `TransformUnit`;
   - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
   - `AddSyscall` (`syscalls.*`, the group sites);
-  - `floatingtext.*`, `modifiers.h` (the read-only walk over a unit's modifiers), `unittypes.*` (extra abstract types).
+  - `floatingtext.*`, `modifiers.h` (the read-only walk over a unit's modifiers), `unitmodels.*` (a model hung on a unit), `unittypes.*` (extra abstract types).
 - **Order in `kFeatures` matters:** `customAbstractTypes` first, `customSyscalls` last; `noTrainNearEnemyTC` after `liveBuildingWorkRate`; `buildingWorkRateAuras` last of the WoL keys (the two share `g_uhcBwrTrainGetter`); `civFirstTC` after `startingTC` (they share the hook at 0x506B3B); `resourceGatherAuras` after `showGatherRate`; `resourceDebt` after both (it writes inside what they verify); `overhealSources` and `overhealDecay` after `overhealHitpointBars`; `decimalPopulation` after `basePop`/`extraPop`; `spreadAnyAccuracy` after `damageOverTime`; `cantBeSlowed` after `damageOverTime` and `snareOnlyHitUnit`, which verify its site; `detonationDeath` after `overhealDecay` (it extends the add-HP hook that `overhealSources` verifies raw); `linkedResource` after `resourceDebt` (it writes the heads that `unitResourceAuras` and `transformInventory` verify). Hook the callee where `maintainWaitForPop` verifies the call 0x6AB264.
 - `docs/`:
   - `modding-guide.md`: for WoL's modders, private; a new key gets a row in its theme's table in section 5 and its section there;
