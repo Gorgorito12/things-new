@@ -335,8 +335,7 @@ First: moving while held and `refuse`.
 
 ## `overhealHitpointBars`
 
-- **Percentage techs leave a full unit at 99 %:** scale the reference by the same factor, as the
-  key already does for auras. *small*
+- **Percentage techs leave a full unit at 99 %:** false, measured on 2026-11-06. The rescale 0xA0036E adds new max minus old max to the HP of a built unit, and the tech adds the same to InitialHitpoints, so a unit at its 100 % stays there: 141.75/156.75 went to 158.25/173.25 with `BasePercent`, 139.28/154.28 to 154.70/169.70 with `Percent`, a new unit got the same, and a unit at its max stayed at its max. Only an unbuilt unit is scaled. *Nothing to build.*
 - **Minimized UI text stays white** (the gadget prints markup as text): colour by property. *small*
 - **Group Health above 100 %** as an option. *small*
 - **Techs that raise only the max** (`MaxHitpointsOnly` / `OverhealCapacity` subtype): today
