@@ -12,6 +12,10 @@
 // stock setter FUN_004820A1 with flag 0: it clamps and updates the damage visuals, and skips its
 // death check 0x482152, which a HP above the reference never needs. The setter raises no attack
 // event (those come from TakeDamage), so the decay is not seen as an attack.
+//
+// Saved games: a noted unit carries a marker of stat 65h (savedmarkers.h) with the time of its last gain. The
+// add-HP hook can run inside an update over the unit's own actions, so it only names the unit: the world tick
+// writes the marker. When another game is running the table is rebuilt from the markers.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -25,6 +29,7 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../savedmarkers.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
@@ -48,6 +53,7 @@ namespace {
 
 constexpr std::size_t kMaxTypes = 8;
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::int32_t kStatNoted = 0x65;  // words: 1, the game time of the last gain
 
 using SetHpFn = void(__thiscall*)(char* unit, float value, std::int32_t flag);
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
@@ -70,6 +76,7 @@ bool g_log = false;
 // Noted units by unit ID (so every machine walks them in the same order): the game time of their
 // last gain above the reference.
 std::map<std::int32_t, std::uint32_t> g_units;
+std::vector<std::int32_t> g_changed;  // units whose marker the next tick writes
 const char* g_world = nullptr;
 std::uint32_t g_lastTime = 0;
 std::uint32_t g_lastStep = 0;
@@ -131,17 +138,63 @@ void Note(const char* unit, bool restartDelay) {
     return;
   }
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
   if (restartDelay) {
-    g_units[Field<std::int32_t>(unit, 0x10)] = now;
-  } else {
-    g_units.emplace(Field<std::int32_t>(unit, 0x10), now - g_delayMs);
+    g_units[id] = now;
+  } else if (!g_units.emplace(id, now - g_delayMs).second) {
+    return;
+  }
+  if (g_changed.empty() || g_changed.back() != id) {
+    g_changed.push_back(id);
   }
 }
 
-void Reset(char*) { g_units.clear(); }
+void Reset(char*) {
+  g_units.clear();
+  g_changed.clear();
+}
+
+void WriteMarker(char* unit, std::uint32_t lastGain) {
+  namespace markers = uhc::markers;
+  char* marker = markers::Find(unit, kStatNoted, 1);
+  if (marker == nullptr) {
+    marker = markers::Take(unit, kStatNoted);
+  }
+  if (marker != nullptr) {
+    markers::Word(marker, 0) = 1;
+    markers::Word(marker, 1) = lastGain;
+  }
+}
+
+void ClearMarker(char* unit) {
+  if (char* marker = uhc::markers::Find(unit, kStatNoted, 1)) {
+    uhc::markers::Free(marker);
+  }
+}
+
+// The table from the markers of a game that just started or loaded: one walk over the world's units.
+void Rebuild(const char* world) {
+  namespace markers = uhc::markers;
+  g_units.clear();
+  g_changed.clear();
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* units = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = units[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    if (char* marker = markers::Find(unit, kStatNoted, 1)) {
+      g_units[Field<std::int32_t>(unit, 0x10)] = markers::Word(marker, 1);
+    }
+  }
+  if (!g_units.empty()) {
+    uhc::Log(L"overhealDecay: %u noted unit(s) found in the saved game", static_cast<unsigned>(g_units.size()));
+  }
+}
 
 // After each world update: game time [world+108h] since the last tick, never the real clock. A new
-// game (another game world, the time going back or the step count jumping) forgets every unit.
+// game (another game world, the time going back or the step count jumping) takes the units its markers say.
 void DecayTick(char* world, std::int32_t) {
   // The world update also runs for other worlds (the home city's; 0x481D01 compares this with
   // [game+13Ch]): only the game world's units decay, and another world must not look like a new game.
@@ -153,17 +206,28 @@ void DecayTick(char* world, std::int32_t) {
   const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;
   const std::uint32_t elapsed = sameGame ? now - g_lastTime : 0;
   if (!sameGame) {
-    g_units.clear();
     g_world = world;
+    Rebuild(world);
   }
   g_lastTime = now;
   g_lastStep = step;
+  for (const std::int32_t id : g_changed) {
+    const auto noted = g_units.find(id);
+    char* unit = noted == g_units.end() ? nullptr : UnitById(world, id);
+    if (unit != nullptr) {
+      WriteMarker(unit, noted->second);
+    }
+  }
+  g_changed.clear();
   if (elapsed == 0) {
     return;
   }
   for (auto it = g_units.begin(); it != g_units.end();) {
     char* unit = UnitById(world, it->first);
     if (unit == nullptr || !IsAlive(unit) || !Decays(Field<const char*>(unit, 0x5C))) {
+      if (unit != nullptr) {
+        ClearMarker(unit);
+      }
       it = g_units.erase(it);
       continue;
     }
@@ -174,6 +238,7 @@ void DecayTick(char* world, std::int32_t) {
         uhc::Log(L"overhealDecay: unit %d (%hs) is back at its 100 %% %.1f; logged once per proto", it->first,
                  ProtoName(unit), static_cast<double>(reference));
       }
+      ClearMarker(unit);
       it = g_units.erase(it);
       continue;
     }
