@@ -1196,6 +1196,10 @@ the log reads the simulation and never writes it.
 `std::map` lookup (about 600 entries with the stock data) and the stock function. No allocation per
 shot. Not measured with `perfStats`.
 
+A TargetGround shot leaves its lead at 0x4C4DEC with no roll. For a marked shooter the hook runs the miss offset 0x4CEF8C on the point at
+`[esp+28h]` and leaves the mode at 3. At 0x4997AE a marked shooter goes on into the precalculated block when the cfg var is off.
+Unmarked shooters take the stock path in both.
+
 ### liveBuildingWorkRate
 
 **The stock mechanism** (BuildingWorkRate).

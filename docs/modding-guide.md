@@ -2798,6 +2798,16 @@ point up to 3 m away, and it hurts whoever stands within 1 m of it.
 target. In this melee-range fight the total damage is about the same either way, with or without the
 key. [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
 
+![spreadAnyAccuracy on a ground shot in WoL](media/spreadAnyAccuracy-ground-wol.gif)
+
+*In WoL, with `spreadAnyAccuracy log` (Ethiopians, test data: a marked Catapult, `SpreadFactor` 2.8, `MaxSpread` 10):* its shots at
+5 still Settlers land up to 10 m off, and all 5 are alive after 22 s. [Full video (MP4)](media/spreadAnyAccuracy-ground-wol.mp4).
+
+![spreadAnyAccuracy on a ground shot in WoL, not marked](media/spreadAnyAccuracy-ground-wol-control.gif)
+
+*In WoL, the Catapult not marked:* its shots land on the target and 3 Settlers die.
+[Full video (MP4)](media/spreadAnyAccuracy-ground-wol-control.mp4).
+
 ```
 spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 ```
@@ -2848,13 +2858,12 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
   Mark only units whose attack has `<DamageArea>`, such as shotguns: a marked attack without area
   does no damage. The marker is registered by the DLL, like `healNonIdle`'s; an existing type or
   proto name works too (`spreadAnyAccuracy Escopetero`).
-- **Not covered** (these shots never reach the code, and stay as they are):
-  - actions with `<InstantBallistics>` (sure hits: most muskets) or `<TargetGround>` (grenades,
-    mortars). Of WoL's 647 actions with spread tags, 304 and 122; the current shotgun files
-    (`wolinfantryrangedescopetero`, `wolinfantryrangedbacamarteer`, the trench fighter's volley)
-    are covered;
-  - shots at the ground with no target unit, and every shot when the startup cfg does not define
-    `ballisticPrecalcHits` (`Startup\gamey.cfg` defines it; keep that line);
+- **Ground shots:** a marked unit's `TargetGround` shot scatters with the action's values. It stays a ground shot, so it deals its area
+  damage where it lands. Against a building the same Catapult went through the roll instead.
+- **`ballisticPrecalcHits` off:** a marked unit still scatters, and other units stay as stock.
+- **Not covered:**
+  - actions with `<InstantBallistics>` (sure hits: most muskets), 304 of WoL's 647 actions with spread tags. Almost all are tags
+    nothing reads; only 5 referenced actions have values of their own;
   - `<NumberProjectiles>`: a shot is still one projectile.
 - **`log`:** one line per value that differs from the exe's 5 / 0.25 (the first 200 per data load),
   and the first 5 offset shots of each attack (at most 100): who shot, a miss or a marked shot, `r`
@@ -3508,6 +3517,15 @@ villager gathers berries, and the unit panel shows `Food (icon): 0.67/s` in WoL'
 *In WoL, key off (the same scene):* the panel shows no rate.
 [Full video (MP4)](media/showGatherRate-wol-control.mp4).
 
+![showGatherRate on a group in WoL](media/showGatherRate-group-wol.gif)
+
+*In WoL, with `showGatherRate` (Dutch, 5 Settlers selected, 3 on a Mine and 2 on a bush):* the row shows 3.60 coin and 2.68 food, the
+sum of the group. [Full video (MP4)](media/showGatherRate-group-wol.mp4).
+
+![showGatherRate on a group in WoL, key off](media/showGatherRate-group-wol-control.gif)
+
+*In WoL, key off (the same scene):* no row. [Full video (MP4)](media/showGatherRate-group-wol-control.mp4).
+
 ```
 showGatherRate [<UnitType>] [log]      no UnitType: every unit
 ```
@@ -3550,16 +3568,19 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 - **WoL needs:** nothing. A file without those gadgets shows no rate; the data ref still works in any
   gadget.
 - **Limits:**
-  - one selected unit only (the exe's rule for the AutoGather row); nothing for a group, where the panel
-    shows the first unit and its rate would read as the group's;
+  - in the minimized interface a group shows the sum per resource, with an icon and a number each when there are several; the stat
+    panel of the normal interface still takes one unit;
   - the AutoGather row's other conditions apply too: a building must be finished, and the selection must
     pass a test whose meaning is not known (a selection byte; possibly units the player does not own);
-  - gathering into the unit's own inventory (`<addresourcestoinventory>`, for example herd animals
-    fattening at a pen) runs other code and gets no row;
+  - a unit gathering into its own inventory, such as a Sheep at a pen, shows its Gather rate, 0.50/s; its AutoGather on top, 0.20/s,
+    is not counted, so the Sheep fattens at 0.70/s;
   - a target of type `AbstractShrine` and a defeated player give nothing, so they show no row;
   - the rate is that of the last gather loop: a tech researched during a loop shows from the next
     loop on;
   - the row follows the panel's own refresh.
+- **Tested in WoL (2026-11-06, groups):** 5 Dutch Settlers showed 3.60 coin with the player's gold at +3.617/s; the same after a load; 41
+  keys applied with the panel's others on; an AI skirmish of 132 s with no XS error. The first gather tick pays 0.49 s after a unit
+  starts, so the row has little to wait for.
 - **`log`:** one line the first time a unit's rate for a resource is shown in the panel, and one the
   first time the data ref returns it. A new game starts the list again.
 - **Log:** at startup `showGatherRate: the stat panel shows the gather rate per second of a
