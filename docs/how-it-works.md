@@ -2687,6 +2687,15 @@ The helper:
   0x482152, which kills a unit with `DieAtZeroResources` at zero, unless the proto has flag 24h;
 - pays 0x49A98A(player, resource, take × `[player+37Ch]`, 0).
 
+**The Torp's tags (2026-11-06).** The clock, the rates and the rings are kept per `{owner, action name}`: per owner, a
+second aura found the clock already at `now` and paid nothing. The model count is per `{target, model}`. The dead test is
+the alive slot `+A4h`, not 0x4802C6: that one reads the action manager, and a carcass passes it as alive. `<SingleUnit>`
+moves the last target to the head of the scan's list and takes one. An action with bit 0 of `[tactics+64h]` clear
+(`ActionEnable` 0) still reaches this code, so it lets its rings go and leaves. `ModifyRate` keeps a value by the player's
+copy of the action, with the name beside it against a reused pointer; `AddTechActionSubtype`'s handlers now get the
+player's proto, for the base value. The panel row runs in `AddUnitPanelRow`, after the stock AutoGather row has written the
+same gadgets, so it adds `0x49EBE4(0x485CAC(manager, 1Dh), resource)`; it is display only.
+
 **Why it is safe.** The hook sits at a function entry and reads only the action. Targets are looked up by ID on each
 step, so one that dies in the loop is not touched again; the list belongs to the helper. The order of the scan, the
 game clock and an ID-ordered map make the result the same on every machine. Stat 41h reaches no stock reader in an

@@ -3112,9 +3112,9 @@ bool AddTechSubtype(const char* name, TechSubtypeHandler handler);
 
 // The same for a subtype on a proto's action: the effect takes action="<Action>" or allactions="1", as
 // stock's TrackRating and Damage do. `action` is the player's copy, once for each action the effect
-// names, and `baseAction` the action of that name in the base proto, or nullptr if it has none. A
-// proto without the action is left alone.
-using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, float amount,
+// names, and `baseAction` the action of that name in the base proto, or nullptr if it has none. `proto`
+// is the player's copy of the proto ([proto+4] its ID). A proto without the action is left alone.
+using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, const char* proto, float amount,
                                           std::uint8_t relativity, bool unapply);
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 
@@ -3206,7 +3206,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   }
   if (!allActions) {
     if (char* action = kActionById(set, actionId)) {
-      subtype.actionHandler(action, kActionById(baseSet, actionId), amount, relativity, unapply);
+      subtype.actionHandler(action, kActionById(baseSet, actionId), proto, amount, relativity, unapply);
     }
     return true;
   }
@@ -3214,7 +3214,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   const std::int32_t count = *reinterpret_cast<const std::int32_t*>(set + kActionList + 4);
   for (std::int32_t i = 0; i < count; ++i) {
     const std::int32_t id = *reinterpret_cast<const std::int32_t*>(actions[i] + kActionId);
-    subtype.actionHandler(actions[i], kActionById(baseSet, id), amount, relativity, unapply);
+    subtype.actionHandler(actions[i], kActionById(baseSet, id), proto, amount, relativity, unapply);
   }
   return true;
 }

@@ -154,3 +154,5 @@ detonationDeath-wol 2 24 2
 detonationDeath-wol-control 2 24 2
 hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
+unitResourceAuras-torp-wol 12 12 1
+unitResourceAuras-torp-wol-control 12 12 1

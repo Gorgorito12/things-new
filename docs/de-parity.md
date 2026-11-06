@@ -84,7 +84,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 23 | Decimal population | Nothing; pop counts are integers | — | L, no DE spec |
 | 24 | Negative trickles, debt | `ResourceTrickleRate` with negative amounts, clamped by `Minimum/MaximumResourceTrickleRate`; no debt rule | Has those subtypes; default min 0, max 10; a stockpile never goes below 0 | negative trickle: **data only** (lower the minimum); debt: S–M |
 | 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M |
-| 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Swedish Torp) | Absent; WoL's `sawmill.tactics` already carries DE's aura | M |
+| 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Swedish Torp) | Built: `unitResourceAuras` | M |
 | 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L; all five names read as elements (2026-11-05) ; `EnableSharedBuildLimit` built (2026-11-05), the two subtypes with a name not |
 | 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M; the three names built in `sharedBuildLimit` (2026-11-05) |
 | 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M; the three names read as elements (2026-11-05) ; the subtype `TrainBatchSize` built too (2026-11-05) |
@@ -173,6 +173,10 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   drains nearby resources at a linear rate set by `ModifyAmount` (guide p35): mines 0.27, trees 0.05 on up
   to 5 trees (`ModifyTargetLimit`), hunts 0.42, berries 0.3, crates 4.0. 19 such actions
   (Torp, folwark, hacienda). The flag `ShowUnitResourceActionRates` shows the rates.
+- [O] Built as `unitResourceAuras` (2026-11-04), with the rest of the Torp's tags on 2026-11-06: `IncludeGaia`,
+  `DeadExclusive`, `DoNotIgnoreDead`, `SingleUnit`, `ForbidUnitType`, `ModifyRate`, `ShowUnitResourceActionRates`.
+  DE's marker `torpgatherpower.xml` is a ring model plus a particle on the bone `HITPOINTBAR`; ours is `aura_<colour>.xml`,
+  own art.
 - [O] WoL's `sawmill.tactics` already contains DE's `AreaGatherTree` aura; stock legacy drops
   those tags (`UnitResource` 0/0), so only its AutoGather works.
 - [I] The same method as `buildingWorkRateAuras` applies: make `UnitResource` a valid modify type

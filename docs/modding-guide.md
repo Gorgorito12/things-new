@@ -3445,6 +3445,12 @@ workRateByAbstractType [UnitType ...] [log | log=<Proto>]
   took it to 0.49). The game needs the same line.
 - **Performance:** it runs only when a tech applies, never per unit or per tick. In the filmed scene, without
   `log`: longest frame 10 ms against 13 ms for the control, no frame over 50 ms in either.
+- **The Torp's tags, tested in WoL (2026-11-06, Ethiopians, `tools/torp_testdata.py`):** one Sawmill, five auras: a Mine paid
+  with an own Plantation in range that never did, one BerryBush of two, a Deer and a Sheep only once a trigger killed them,
+  two crates at 4/s; `ModifyRate` 0.5 took the Mine from 0.80 to 0.39 per update and the log said `0.27 -> 0.135`;
+  `ActionEnable` 0 took a tree aura from 7 takes to none. With 9 Sawmills on 3 Mines and 4 bushes: 895 fps against 898 with
+  the key off, update 0.14 ms in both, no frame over 50 ms (60 s, `perfprobe.py`). Not tested: a loaded game with these
+  tags, an AI that builds them, a real Torp's 14 m trees, multiplayer.
 - **Status:** confirmed (single player, on WoL): the rates above; a real removal, `Age0Egyptian` at game
   start with `workRateByAbstractType All`, took 0.536 back to 0.670; with `AbstractMine` taken off `Plantation`
   in `protoy.xml`, 32 protos and no change to its rate; a skirmish against the AI, which played on (16 to 24
@@ -3523,6 +3529,17 @@ wood and no tree has a ring. [Full video (MP4)](media/unitResourceAuras-wol-cont
 unitResourceAuras [log]
 ```
 
+![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
+
+*In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a fruit
+over the bush and the two carcasses, and no mark on the live Deer, the live Sheep or the Plantation. The panel row adds
+what the auras pay to the AutoGather. [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
+
+![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
+
+*In WoL, key off (the same data, the marker there):* stock hangs the model on every unit of the type, a live Sheep and the
+Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
+
 - **The ring:** a `UnitResource` aura does not run the stock update, so the key hangs the [aura's ring](#aura-rings) itself: on
   the units that gave resources in that update, and it takes it off when they stop, when the aura's owner dies, or at the limit
   of `<ModifyTargetLimit>`. A target in two auras keeps its ring until the last one lets go.
@@ -3558,9 +3575,24 @@ unitResourceAuras [log]
 
   A tree with no wood left goes, as when villagers finish it. The payment follows the player's gather multiplier.
   A target with an endless resource pays and is not drained, as in gathering.
-- **Not covered:** `<ForceUpdateMode>` and `<DoNotIgnoreDead>` are read as nothing (dead targets with resources count
-  anyway). The aura's rate does not show in the panels: DE's `ShowUnitResourceActionRates` is not built. Other
-  players' units are never targets.
+- **The Torp's tags (2026-11-06), in the action, flags written with 1 or empty:**
+  - `<IncludeGaia>`: the same as `<TargetGaia>`: Gaia's units count too. Other players' units never do.
+  - `<DeadExclusive>`: only dead units, a killed deer or sheep. `<DoNotIgnoreDead>`: dead units count too. With neither, dead
+    units are skipped. **A change:** before this they counted. WoL's `sawmill.tactics` has `<DoNotIgnoreDead>`, so it
+    behaves the same.
+  - `<SingleUnit>`: one target at a time, kept until it is used up.
+  - `<ForbidUnitType>Plantation</ForbidUnitType>`: a unit type or a proto that never pays, though it has the target type.
+  - `<ForceUpdateMode>` is read as nothing: the take follows the game time between updates anyway.
+- **Several auras on a building:** each has its own clock and rings. Before 2026-11-06 only the first paid in each update.
+- **Techs:** `ModifyRate` and `ModifyAmount`, two names of one new Data subtype, change `<ModifyAmount>` for one player's copy
+  of the action, with every relativity: `<Effect type='Data' subtype='ModifyRate' action='AreaGatherMine' amount='0.5'
+  relativity='BasePercent'><Target type='ProtoUnit'>WOLSawmill</Target></Effect>`. The stock `ActionEnable` turns an aura
+  off or on, and its markers go with it.
+- **The rates in the panel:** `<ShowUnitResourceActionRates>1</ShowUnitResourceActionRates>` in the proto, an element, as the
+  stock flag parser drops a flag it does not know. In the minimized interface the unit panel's rate row shows, per
+  resource, the icon and the auras' take per second plus the building's AutoGather, in the order of the resources.
+  Three resources fit. It shows while an aura pays. **Pending:** the stat panel of the normal interface.
+- **Not covered:** other players' units are never targets. Stock has no `NoStack` or `SquareAura`.
 - **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
   `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
   resource 1 from unit 2 (TreeNewEngland), 299.1 left`.
@@ -5619,6 +5651,14 @@ as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the file
   and hilly ground were not tested. How long a ring stays after its aura was not timed: the 2 s above is the particle's life.
 
 More about the tools: [tools/README.md](../tools/README.md).
+
+### The marker of a gathered resource
+
+`aura_wood.xml`, `aura_food.xml` and `aura_gold.xml` in `tools/rings` are a ring plus a floating icon of that resource, the
+same idea as DE's marker on what a Torp works, with our own art: name one in a `UnitResource` aura's
+`<modelattachment>`. The icon is a sprite that faces the camera, at a height by kind of unit in `ICON_HEIGHTS` of
+`tools/make_rings.py`. Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
+so the icon is a second `<attachment>`, not a second `<assetreference>`.
 
 ### Rotating a building while placing it
 
