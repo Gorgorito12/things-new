@@ -355,6 +355,10 @@ namespace uhc {
 
 Outcome ApplyCivFirstTc(const Config& config) {
   const Config::Args* args = config.First("civFirstTC");
+  const bool alias = args == nullptr;  // firstTC [UnitType] [log]: the type is startingTC's
+  if (alias) {
+    args = config.First("firstTC");
+  }
   if (args == nullptr) {
     return Outcome::kNotConfigured;
   }
@@ -362,7 +366,7 @@ Outcome ApplyCivFirstTc(const Config& config) {
   for (const std::string& arg : *args) {
     if (_stricmp(arg.c_str(), "log") == 0) {
       log = true;
-    } else {
+    } else if (!alias) {
       Log(L"civFirstTC: unexpected argument %hs (expected: [log]); feature not applied", arg.c_str());
       return Outcome::kFailed;
     }
