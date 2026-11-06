@@ -4512,7 +4512,7 @@ buildingWorkRateAuras [log]
   `CommandResearch`, `Maintain`, or `through g_uhcBwrTrainGetter` for the Train call when
   `noTrainNearEnemyTC` owns it.
 - **Limits:**
-  - only train, research and `Maintain` speed. Build, repair and heal speed come from each action's own
+  - train, research, `Maintain`, build, heal and repair speed: not gathering, which has its own auras. Each rate comes from its own
     rate and are not covered;
   - the panel still shows the proto's `BuildingWorkRate`, and the aura's tooltip has no line
     for this stat;
@@ -4540,10 +4540,22 @@ buildingWorkRateAuras [log]
 *In WoL, key off (the same data; the ring is there all the same):* at 34 s it is half built.
 [Full video (MP4)](media/buildingWorkRateAuras-build-wol-control.mp4).
 
-- **Healing and building:** the factor also multiplies the heal rate and the build rate of the unit it reaches. It always applies with
-  the key.
+- **Healing, building and repair:** the factor also multiplies the heal rate and the build rate of the unit it reaches, and the repair of
+  a building it reaches. Repair is the building's own action, started by the command `repairUnit(id)`, not a villager's work, so the
+  aura has to reach the building. It always applies with the key.
 - **Tested in WoL (2026-11-06):** a House at 1912 points 3 s after placing, against 603; a Pikeman at 24.7 HP full in under 3.2 s, against
-  113.6 at 4.7 s. Not covered: repair: no order tried reached it. Not tested: a loaded game with this part, beside WoL's DLL.
+  113.6 at 4.7 s; a Barracks repaired from 1000 HP had 2468 at 28.3 s, against 1476.7, and 83 HP/s with no aura. Not tested: a loaded
+  game with this part, beside WoL's DLL.
+
+![buildingWorkRateAuras on a repair in WoL](media/buildingWorkRateAuras-repair-wol.gif)
+
+*In WoL (an Explorer's aura ×3 on `Barracks`, with `ring_work.xml`):* the Barracks' HP run three times as fast. [Full video
+(MP4)](media/buildingWorkRateAuras-repair-wol.mp4).
+
+![buildingWorkRateAuras on a repair in WoL, key off](media/buildingWorkRateAuras-repair-wol-control.gif)
+
+*In WoL, key off (the same data; the ring is there all the same):* the stock 83 HP/s. [Full video
+(MP4)](media/buildingWorkRateAuras-repair-wol-control.mp4).
 
 #### maintainWaitForPop
 

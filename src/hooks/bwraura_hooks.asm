@@ -14,6 +14,7 @@ UhcBwrPanelRate PROTO STDCALL unit:DWORD
 
 .data
 panelNext       dd 006F4A02h    ; jne 6F4A0Dh
+repairNext      dd 009D0BF9h    ; call 480408h, with ECX = the unit
 rateLookup      dd 00487C45h    ; float thiscall(tactics action, target), ret 4
 workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
 
@@ -87,5 +88,31 @@ UhcBwrRateCall PROC
 done:
     ret 4
 UhcBwrRateCall ENDP
+
+; Replaces 0x9D0BF2, in the AutoRepair update: fmul [esi+64h] / fstp [esp+0Ch]. ST0 = the world's rate times
+; the elapsed time; the repairing unit is [esi+10h], also in ECX, which the continuation needs. Repair runs
+; on the building itself, not on a villager, so the factor is the building's.
+UhcBwrRepairHook PROC
+    TRACE_ONCE "buildingWorkRateAuras repair (0x9D0BF2)"
+    fmul dword ptr [esi+64h]
+    mov eax, dword ptr [esi+10h]
+    test eax, eax
+    je store
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je store
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je store
+    push ecx
+    push 009D0BF2h                  ; for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+    pop ecx
+store:
+    fstp dword ptr [esp+0Ch]
+    jmp repairNext
+UhcBwrRepairHook ENDP
 
 END

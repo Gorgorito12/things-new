@@ -392,6 +392,9 @@ inline constexpr Site kBwrRateCallHeal{"BwrRateCallHeal", 0x009E0CCF, kBwrRateCa
 inline constexpr std::uint8_t kBwrRateCallBuildBytes[] = {0xE8, 0xC5, 0x3E, 0xAB, 0xFF};
 inline constexpr Site kBwrRateCallBuild{"BwrRateCallBuild", 0x009D3D7B, kBwrRateCallBuildBytes, sizeof(kBwrRateCallBuildBytes)};
 
+inline constexpr std::uint8_t kBwrRepairRateBytes[] = {0xD8, 0x4E, 0x64, 0xD9, 0x5C, 0x24, 0x0C};
+inline constexpr Site kBwrRepairRate{"BwrRepairRate", 0x009D0BF2, kBwrRepairRateBytes, sizeof(kBwrRepairRateBytes)};
+
 inline constexpr std::uint8_t kTrainEnqueueHeadBytes[] = {0x83, 0xEC, 0x1C, 0x53, 0x55, 0x56};
 inline constexpr Site kTrainEnqueueHead{"TrainEnqueueHead", 0x009EAC35, kTrainEnqueueHeadBytes, sizeof(kTrainEnqueueHeadBytes)};
 

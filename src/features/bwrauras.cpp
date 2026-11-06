@@ -29,7 +29,8 @@
 //
 // Heal and build read their rate through 0x487C45, which has 22 callers (gather too), so the callee is
 // left alone: only the calls that add the work go to UhcBwrRateCall, with the worker in [esi+10h]. The
-// calls that only ask whether the rate is above 0 stay stock.
+// calls that only ask whether the rate is above 0 stay stock. Repair is the building's own AutoRepair action
+// (the command repairUnit, type 3Ah): its update adds [action+64h] x time at 0x9D0BF2, hooked there.
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -49,6 +50,7 @@ void UhcBwrAuraCall();
 void UhcBwrRateCall();
 void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
 void UhcBwrPanelHook();
+void UhcBwrRepairHook();
 }
 
 namespace {
@@ -250,7 +252,7 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
                   &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead, &sites::kBwrRateCallHeal,
-                  &sites::kBwrRateCallBuild})) {
+                  &sites::kBwrRateCallBuild, &sites::kBwrRepairRate})) {
     return Outcome::kFailed;
   }
   if (!GetterHeadIsKnown()) {
@@ -280,7 +282,8 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
     }
   }
   g_uhcBwrTrainGetter = reinterpret_cast<void*>(&UhcBwrAuraCall);
-  if (!WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
+  if (!WriteJmp(sites::kBwrRepairRate.va, reinterpret_cast<const void*>(&UhcBwrRepairHook), 7) ||
+      !WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
     return Outcome::kFailed;
   }
   if (!trainCallStock) {

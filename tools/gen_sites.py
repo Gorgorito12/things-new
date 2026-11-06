@@ -274,6 +274,8 @@ SITES = [
     # with the action in ESI
     ("BwrRateCallHeal", 0x9E0CCF, 5),
     ("BwrRateCallBuild", 0x9D3D7B, 5),
+    # buildingWorkRateAuras: fmul [esi+64h] / fstp [esp+0Ch] in the AutoRepair update 0x9D0A4D, the HP added
+    ("BwrRepairRate", 0x9D0BF2, 7),
     # noTrainNearEnemyTC refuse: sub esp,1Ch / push ebx / push ebp / push esi, the head of the enqueue
     ("TrainEnqueueHead", 0x9EAC35, 6),
     ("TrainPointsSet", 0x9EB19F, 0x43),

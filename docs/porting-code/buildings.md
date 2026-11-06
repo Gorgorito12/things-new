@@ -371,7 +371,7 @@ Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkratea
 
 Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
 
-Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `BwrRateCallBuild` `0x9D3D7B` (5 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `BwrRateCallHeal` `0x9E0CCF` (5 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
+Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `BwrRepairRate` `0x9D0BF2` (7 B), `BwrRateCallBuild` `0x9D3D7B` (5 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `BwrRateCallHeal` `0x9E0CCF` (5 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
 
 ### src/features/bwrauras.cpp
 
@@ -407,7 +407,8 @@ Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (1
 //
 // Heal and build read their rate through 0x487C45, which has 22 callers (gather too), so the callee is
 // left alone: only the calls that add the work go to UhcBwrRateCall, with the worker in [esi+10h]. The
-// calls that only ask whether the rate is above 0 stay stock.
+// calls that only ask whether the rate is above 0 stay stock. Repair is the building's own AutoRepair action
+// (the command repairUnit, type 3Ah): its update adds [action+64h] x time at 0x9D0BF2, hooked there.
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -427,6 +428,7 @@ void UhcBwrAuraCall();
 void UhcBwrRateCall();
 void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
 void UhcBwrPanelHook();
+void UhcBwrRepairHook();
 }
 
 namespace {
@@ -628,7 +630,7 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
                   &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead, &sites::kBwrRateCallHeal,
-                  &sites::kBwrRateCallBuild})) {
+                  &sites::kBwrRateCallBuild, &sites::kBwrRepairRate})) {
     return Outcome::kFailed;
   }
   if (!GetterHeadIsKnown()) {
@@ -658,7 +660,8 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
     }
   }
   g_uhcBwrTrainGetter = reinterpret_cast<void*>(&UhcBwrAuraCall);
-  if (!WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
+  if (!WriteJmp(sites::kBwrRepairRate.va, reinterpret_cast<const void*>(&UhcBwrRepairHook), 7) ||
+      !WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
     return Outcome::kFailed;
   }
   if (!trainCallStock) {
@@ -694,6 +697,7 @@ UhcBwrPanelRate PROTO STDCALL unit:DWORD
 
 .data
 panelNext       dd 006F4A02h    ; jne 6F4A0Dh
+repairNext      dd 009D0BF9h    ; call 480408h, with ECX = the unit
 rateLookup      dd 00487C45h    ; float thiscall(tactics action, target), ret 4
 workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
 
@@ -767,6 +771,32 @@ UhcBwrRateCall PROC
 done:
     ret 4
 UhcBwrRateCall ENDP
+
+; Replaces 0x9D0BF2, in the AutoRepair update: fmul [esi+64h] / fstp [esp+0Ch]. ST0 = the world's rate times
+; the elapsed time; the repairing unit is [esi+10h], also in ECX, which the continuation needs. Repair runs
+; on the building itself, not on a villager, so the factor is the building's.
+UhcBwrRepairHook PROC
+    TRACE_ONCE "buildingWorkRateAuras repair (0x9D0BF2)"
+    fmul dword ptr [esi+64h]
+    mov eax, dword ptr [esi+10h]
+    test eax, eax
+    je store
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je store
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je store
+    push ecx
+    push 009D0BF2h                  ; for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+    pop ecx
+store:
+    fstp dword ptr [esp+0Ch]
+    jmp repairNext
+UhcBwrRepairHook ENDP
 
 END
 ```

@@ -206,3 +206,5 @@ snareValues-strongest-wol 0 12 1
 snareValues-strongest-wol-control 0 12 1
 customHotkeyContexts-tooltip-wol 2 12 1
 customHotkeyContexts-tooltip-wol-control 2 12 1
+buildingWorkRateAuras-repair-wol 2 28 3
+buildingWorkRateAuras-repair-wol-control 2 28 3
