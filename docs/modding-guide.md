@@ -4512,10 +4512,8 @@ buildingWorkRateAuras [log]
   `CommandResearch`, `Maintain`, or `through g_uhcBwrTrainGetter` for the Train call when
   `noTrainNearEnemyTC` owns it.
 - **Limits:**
-  - only train, research and `Maintain` speed. Build, repair and heal speed come from each action's own
-    rate and are not covered;
-  - the panel still shows the proto's `BuildingWorkRate`, and the aura's tooltip has no line
-    for this stat;
+  - train, research, `Maintain`, build, heal and repair speed. Gathering has its own auras;
+  - the aura's tooltip has no line for this stat;
   - with `log`, a unit is logged once per unit ID and factor in a session, so a unit of a later
     game with the same ID and factor is not logged again;
   - the value 0x40 that stands for the new stat is this DLL's choice. Another DLL that adds its own
@@ -4540,10 +4538,22 @@ buildingWorkRateAuras [log]
 *In WoL, key off (the same data; the ring is there all the same):* at 34 s it is half built.
 [Full video (MP4)](media/buildingWorkRateAuras-build-wol-control.mp4).
 
-- **Healing and building:** the factor also multiplies the heal rate and the build rate of the unit it reaches. It always applies with
-  the key.
+- **Healing, building and repair:** the factor also multiplies the heal rate and the build rate of the unit it reaches, and the repair of
+  a building it reaches. Repair is the building's own action, started by the command `repairUnit(id)`, not a villager's work, so the
+  aura has to reach the building. It always applies with the key.
 - **Tested in WoL (2026-11-06):** a House at 1912 points 3 s after placing, against 603; a Pikeman at 24.7 HP full in under 3.2 s, against
-  113.6 at 4.7 s. Not covered: repair: no order tried reached it. Not tested: a loaded game with this part, beside WoL's DLL.
+  113.6 at 4.7 s; a Barracks repaired from 1000 HP had 2468 at 28.3 s, against 1476.7, and 83 HP/s with no aura. Not tested: a loaded
+  game with this part, beside WoL's DLL.
+
+![buildingWorkRateAuras on a repair in WoL](media/buildingWorkRateAuras-repair-wol.gif)
+
+*In WoL (an Explorer's aura ×3 on `Barracks`, with `ring_work.xml`):* the Barracks' HP run three times as fast. [Full video
+(MP4)](media/buildingWorkRateAuras-repair-wol.mp4).
+
+![buildingWorkRateAuras on a repair in WoL, key off](media/buildingWorkRateAuras-repair-wol-control.gif)
+
+*In WoL, key off (the same data; the ring is there all the same):* the stock 83 HP/s. [Full video
+(MP4)](media/buildingWorkRateAuras-repair-wol-control.mp4).
 
 #### maintainWaitForPop
 
@@ -5096,6 +5106,28 @@ one Opolcheniye, then three clicks on the Landwehr and a last Opolcheniye: 4 Lan
 
 *In WoL, key off (the same data):* the same clicks give 5 Landwehr and 2 Opolcheniye, a total of 9 by the same count. [Full video (MP4)](media/sharedBuildLimit-wol-control.mp4).
 
+![sharedBuildLimit with a real wagon in WoL](media/sharedBuildLimit-wagon-wol.gif)
+
+*In WoL, with the key (Ethiopians; `OutpostWagon` trained at the Town Center with the limit of `Outpost`, 4 here):* with 2 Outposts and
+a wagon, three clicks train one wagon and the button turns red. Both wagons build, and it stays red. An Outpost dies, the button comes
+back, and one more wagon trains. [Full video (MP4)](media/sharedBuildLimit-wagon-wol.mp4).
+
+![sharedBuildLimit with a real wagon in WoL, key off](media/sharedBuildLimit-wagon-wol-control.gif)
+
+*In WoL, key off (the same data):* the three clicks train three wagons, and with the Outposts at 4 the two left over cannot build.
+[Full video (MP4)](media/sharedBuildLimit-wagon-wol-control.mp4).
+
+![sharedBuildLimit with a team's livestock in WoL](media/sharedBuildLimit-team-wol.gif)
+
+*In WoL, with the key (`ypGoat` with a team limit of 10 over every `Herdable`, and a `Cow` that counts 2):* the ally's 4 Sheep and Cow leave
+room for 4 Goats, and "10 out of 10" turns red. A Sheep of the ally dies, and another goes to the enemy: room 5, room 6, and 6 Goats.
+[Full video (MP4)](media/sharedBuildLimit-team-wol.mp4).
+
+![sharedBuildLimit with a team's livestock in WoL, key off](media/sharedBuildLimit-team-wol-control.gif)
+
+*In WoL, key off (the same data):* the tooltip reads "6 out of 10" and only the player's own Goats count: 10, beside the ally's herd.
+[Full video (MP4)](media/sharedBuildLimit-team-wol-control.mp4).
+
 ```
 sharedBuildLimit [log]
 ```
@@ -5103,8 +5135,8 @@ sharedBuildLimit [log]
 ```xml
 <Unit name="Coureur">
     <SharedBuildLimitUnit>Settler</SharedBuildLimitUnit>
-    <SharedBuildLimitUnitType>AbstractWoLSettler</SharedBuildLimitUnitType>
     <SharedBuildLimitUnitType weight="2">SettlerWagon</SharedBuildLimitUnitType>
+    <SharedBuildLimitUnitType>AbstractWoLSettler</SharedBuildLimitUnitType>
 </Unit>
 <Unit name="Cow">
     <SharedBuildLimitUnitType>AbstractBovine</SharedBuildLimitUnitType>
@@ -5117,7 +5149,8 @@ sharedBuildLimit [log]
   tech reaches it, and a civ's limit too: `Age0German` assigns its `Settler` 84, and that is what counts.
 - **`<SharedBuildLimitUnitType>`:** what counts toward the limit, an abstract type or a proto, repeatable. Without it, only
   the proto itself. `weight="N"` is how much each of them counts, default 1. If the type does not reach the proto
-  itself, the proto still counts, with weight 1. Queued units count, as stock counts its own.
+  itself, the proto still counts, with weight 1. Queued units count, as stock counts its own. When two lines reach
+  the same proto, the first one sets its weight, so a specific proto goes before the type that holds it.
 - **`<TeamBuildLimit>1</TeamBuildLimit>`:** the same units of the player's allies count too.
 - **`<UseSharedBuildLimit>1</UseSharedBuildLimit>`** (2026-11-05): the other edition's flag, as an element. Accepted and
   shown in the log; the lists alone are enough, so data written without it works as before.
@@ -5136,7 +5169,8 @@ sharedBuildLimit [log]
   trained all 3 (8 villagers), with no `room` line.
 - **Tag each proto that must stop:** a tag acts on the proto that carries it. `OutpostWagon` with the limit of `Outpost`
   stops the wagons once the Outposts are all there, and leaves `Outpost` untagged, or the last wagon, which counts
-  until it builds, would forbid its own Outpost.
+  until it builds, would forbid its own Outpost. A villager can still take the last place while a wagon is on the
+  road: that wagon stays alive and cannot build until an Outpost dies, as `Outpost` is at its stock limit.
 - **#30 without the civ tag:** the limit per civ is the proto's limit as the civ's techs leave it, and the type is
   in the data. WoL has no `AbstractWoLSettler` yet: `customAbstractTypes` registers it.
 - **The tooltip:** "Build Limit: 15 out of 15" is the whole group, and the limit, in the units of the proto: with weight 2 and
@@ -5171,8 +5205,18 @@ sharedBuildLimit [log]
   - The Swedish "3 Hussars" card sent from the home city: red with a stock limit of 6 and 6 alive, and with 7 and 6 alive,
     where one fits and three do not; red with a group of 3 Hussars and 3 Pikemen, limit 6; sent, and 3 arrived, with 4 and 4,
     limit 20.
-  - Not tested: a real `OutpostWagon` building the last Outpost, a team in a real skirmish, `FreeHomeCityUnitShipped` with
-    room, an AI's own home city card at the limit, multiplayer.
+  - A real `OutpostWagon` (2026-11-06, the video), limit 4, 2 Outposts and 1 wagon: three clicks trained 1, 4 in all. Both built
+    their Outposts, and at 4 Outposts a click trained nothing. One Outpost died: `room 1 of 4`, one wagon trained, a second click
+    nothing. Key off: 4 wagons and 2 Outposts, and only two can build.
+  - A `Settler` took the last place with 3 Outposts and a wagon alive: 4 and 1. The wagon's own placement was refused, and
+    the wagon stayed alive: `Outpost` is untagged, so that is its stock limit.
+  - A team's livestock (2026-11-06, the video), `scenario --players 3`: `ypGoat` limit 10 with the ally's 4 Sheep and a Cow of weight 2
+    gave `room 4 of 10`, and six clicks trained 4. The Sheep killed gave room 5, the one converted to the enemy room 6: 6 Goats, 2 Sheep
+    and the Cow make 10, and two more clicks trained nothing. The enemy's Sheep never counted. The Cow passed from the ally to
+    the player on its own in that run, and still counted 2. Key off: 10 Goats beside the same herd.
+  - Weights that overlap (2026-11-06): `Cow` at 2 before `Herdable` counted 2; the proto itself at 2 before `Herdable` gave
+    "own weight 2", and 3 Goats beside 4 Sheep, limit 10.
+  - Not tested: `FreeHomeCityUnitShipped` with room, an AI's own home city card at the limit, multiplayer.
 #### doNotQueue
 
 **Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 10:29

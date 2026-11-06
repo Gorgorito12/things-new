@@ -3028,6 +3028,7 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   spawned 11 musketeers while a factory without the aura spawned 2.
 
 The rate lookup 0x487C45 has 22 callers, so only the heal tick's 0x9E0CCF and the build tick's 0x9D3D7B go to `UhcBwrRateCall`, with the worker in `[esi+10h]`. Calls that only test the rate above 0 stay stock.
+Repair does not go through that lookup: the command `repairUnit`, type 3Ah, runs the building's own AutoRepair action, type 35h, vtable 0xB971D8, whose update 0x9D0A4D adds `[action+64h]` × time × max HP / build points. The hook at 0x9D0BF2 multiplies that by the building's factor.
 
 ### sharedBuildLimit
 
