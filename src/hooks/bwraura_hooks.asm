@@ -10,7 +10,10 @@ UhcBwrAuraRate PROTO STDCALL base:DWORD, unit:DWORD, caller:DWORD
 
 kStatBuildingWorkRate EQU 40h       ; the new ModifyType stat; bwrauras.cpp uses the same value
 
+UhcBwrPanelRate PROTO STDCALL unit:DWORD
+
 .data
+panelNext       dd 006F4A02h    ; jne 6F4A0Dh
 workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
 
 .code
@@ -46,5 +49,19 @@ UhcBwrAuraCall PROC
 stock:
     jmp workRateGetter              ; no modifier record: the stock call
 UhcBwrAuraCall ENDP
+
+; Replaces 0x6F49FC, fld dword ptr [edx+0D0h], in the data refs' reader. EAX = the selected unit, ECX
+; the result; the jne at the continuation reads the flags of a cmp above, so they are kept. The rate is
+; left on the x87 stack, as the fld did.
+UhcBwrPanelHook PROC
+    TRACE_ONCE "buildingWorkRateAuras panel (0x6F49FC)"
+    pushfd
+    push ecx
+    push eax
+    call UhcBwrPanelRate
+    pop ecx
+    popfd
+    jmp panelNext
+UhcBwrPanelHook ENDP
 
 END

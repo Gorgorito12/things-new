@@ -22,7 +22,9 @@
 //   starting from 1.0, with the GatherRate reader's rule: no modifier, or a sum below 1e-6, counts
 //   as 1.0. A unit without a record (it never had a modifier) gets the stock call.
 // The getter itself is not touched, so liveBuildingWorkRate (which hooks it) combines with this
-// key: the factor then multiplies the proto's live rate. The hooks are in hooks/bwraura_hooks.asm.
+// key: the factor then multiplies the proto's live rate. The data refs currentUnitBuildingWorkRate and
+// its Float twin, the panel's number, read the proto (0x6F49FC): they now read the rate the unit works at,
+// the building's own copy and the factor. The hooks are in hooks/bwraura_hooks.asm.
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -40,6 +42,7 @@
 extern "C" {
 void UhcBwrAuraCall();
 void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
+void UhcBwrPanelHook();
 }
 
 namespace {
@@ -48,6 +51,9 @@ namespace {
 constexpr std::int32_t kStatBuildingWorkRate = 0x40;  // the new ModifyType stat, as in bwraura_hooks.asm
 constexpr float kMinFactor = 1.0e-6f;  // 0xB9FB64: a smaller sum counts as no modifier (0x69FE56)
 constexpr std::uint32_t kTrainCall = 0x009EA413;     // call 9BFE33h in the Train update
+
+using GetterFn = float(__thiscall*)(const char* unit);
+const auto kGetter = reinterpret_cast<GetterFn>(0x009BFE33);
 
 // The four callers of the getter: the address of the call and the return address it pushes.
 struct Caller {
@@ -186,6 +192,15 @@ float __stdcall UhcBwrAuraRate(float base, const char* unit, std::uint32_t ret) 
   }
   return factor == 1.0f ? base : base * factor;
 }
+
+// From the panel's read, with the selected unit: what the unit works at. Display only.
+float __stdcall UhcBwrPanelRate(const char* unit) {
+  const float base = kGetter(unit);
+  if (Field<const char*>(unit, 0xB4) == nullptr || Field<const char*>(Field<const char*>(unit, 0xB4), 0xC8) == nullptr) {
+    return base;
+  }
+  return base * Factor(unit);
+}
 }
 
 namespace uhc {
@@ -212,7 +227,7 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
                   &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
-                  &sites::kBwrGatherRateRule})) {
+                  &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead})) {
     return Outcome::kFailed;
   }
   if (!GetterHeadIsKnown()) {
@@ -237,6 +252,9 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
     }
   }
   g_uhcBwrTrainGetter = reinterpret_cast<void*>(&UhcBwrAuraCall);
+  if (!WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
+    return Outcome::kFailed;
+  }
   if (!trainCallStock) {
     Log(L"buildingWorkRateAuras: the Train call at 0x%08X is already hooked (noTrainNearEnemyTC); Train speed "
         L"gets the factor only through that hook's call of g_uhcBwrTrainGetter",
