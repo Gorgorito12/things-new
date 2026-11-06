@@ -3535,8 +3535,8 @@ unitResourceAuras [log]
 ![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
 
 *In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a fruit
-over the bush and the two carcasses, and no mark on the live Deer, the live Sheep or the Plantation. The panel row adds
-what the auras pay to the AutoGather. [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
+over the bush and the two carcasses, and no mark on the live Deer, the live Sheep or the Plantation.
+[Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
 
 ![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
 
@@ -3594,7 +3594,8 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
 - **The rates in the panel:** `<ShowUnitResourceActionRates>1</ShowUnitResourceActionRates>` in the proto, an element, as the
   stock flag parser drops a flag it does not know. In the minimized interface the unit panel's rate row shows, per
   resource, the icon and the auras' take per second plus the building's AutoGather, in the order of the resources.
-  Three resources fit. It shows while an aura pays. **Pending:** the stat panel of the normal interface.
+  Two resources fit: in WoL's layout at 1920×1080 a third shows its icon with no number. It shows while an aura pays.
+  **Pending:** the stat panel of the normal interface.
 - **Not covered:** other players' units are never targets. Stock has no `NoStack` or `SquareAura`.
 - **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
   `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
@@ -3669,6 +3670,11 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 - **Placing:** anywhere: there is no socket or snap, and it looks for a mine once a second while it has none.
 - **Not covered:** DE's `AreaHeal`: the stock `Heal` action on a building healed nobody around it, idle or not, so a heal
   needs an aura. `GatherableByAllies` and Influence.
+- **Do not combine:** the stock tags `<SingleUse>` and `<AddResourcesToInventory>` on the building's AutoGather. The first pays
+  the whole inventory at once and the second adds to it, on a path the key does not hook, so with a link they work on the
+  copy: gold from nothing, or an add that the next copy overwrites. Any positive add on a linked building is lost the same way.
+- **Bad values:** an unknown `<LinkedResourceType>` or a range of 0 or less is logged and ignored, and the building uses its
+  own stock. An unknown argument of the key logs FAILED.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
 - **Saved games:** the link is found again at the first take or the next second.
 - **Log:** `linkedResource: the proto tags ... are on`, `hook reached: linkedResource recreate (0x9BFE5A)`,
@@ -3679,11 +3685,13 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
   frame over 50 ms (60 s, `perfprobe.py`).
 - **Tested in WoL (2026-11-06, Ethiopians, `tools/monastery_testdata.py`):** in 32 s the Mine lost 30.95 gold and the player gained
   30.95, with the trickle and one villager. A mine of 200 with two villagers and the trickle gave the player 200.0001, went,
-  and the building stood at 0 with the trickle stopped. A loaded game went on from 1926.67, with the link. With no mine,
-  the building lost 47.29 of its 900 and the player gained 47.29. Key off: the Mine stayed at 2000. A skirmish with the key
-  on, no tagged building: the AI had 14 units at 100 s and no XS error. Villagers were ordered by console
-  (`uiWorkAtPointer` with the camera on the target). Not tested: a re-link in game (the only second mine was chosen first),
-  a real model, an AI that builds it, allies gathering, multiplayer.
+  and the building stood at 0 with the trickle stopped. With no mine, the building lost 47.29 of its 900 and the player
+  gained 47.29. Key off: the Mine stayed at 2000. With [`unitResourceAuras`](#unitresourceauras) on and a Torp beside them,
+  the Mine lost 23.06 and the player gained 23.06 in 31 s, and a game saved there and loaded kept the link with Mine and
+  player summing 2000 from its first second. A skirmish with the key on, no tagged building: the AI had 14 units at
+  100 s and no XS error. Villagers were ordered by console (`uiWorkAtPointer` with the camera on the target). Not tested:
+  a re-link in game (the only second mine was chosen first), a real model, an AI that builds it, allies gathering,
+  another civ, beside WoL's DLL, multiplayer.
 
 #### resourceGatherAuras
 
@@ -5796,14 +5804,16 @@ map("shift-mousez", "building", "uiWheelRotatePlacedUnit")
 - **How it works in stock:** the wheel command turns the ghost, the build command carries the ghost's forward direction
   to every machine, and the foundation is created with it. It is part of the game's own command, so it is
   the same on every machine and in a recording (static reading; multiplayer not played).
-- **One direction only:** the command turns only for a wheel step up. The step down does nothing, so a full turn is 16
-  steps. Stock's `uiWheelRotatePlacedUnit` is the same for the Asian wonders' special powers.
+- **Both directions:** a positive argument turns the ghost +22.5°, a negative one −22.5°, and 0 does nothing, so a full turn
+  is 16 steps. Stock's `uiWheelRotatePlacedUnit` is the same for the Asian wonders' special powers.
 - **A building that must not turn:** `<Flag>NotRotateable</Flag>`, a stock flag, on its proto: the ghost keeps its angle.
 - **What it does not do:** turn a building that already stands, or turn it to face its builder (#44).
-- **Plain wheel:** `map("mousez", "building", …)` also works and takes the zoom away while placing.
+- **Plain wheel:** `map("mousez", "building", …)` is the form stock uses in its `specialpower` block. It would take the zoom
+  away while placing. Not tested.
 - **Tested in WoL (2026-11-06):** by console, so with no real wheel: `uiWheelRotatePlacedUnit(1)` three times took the ghost
   from yaw −180° to −112.5°, the foundation had exactly that yaw, the finished building too, and a saved game loaded
-  with it. With `NotRotateable` on the proto the ghost stayed at −180°. Not tested: the line above with a real wheel, a
+  with it. Arguments 1, 1, −1, −1, −1, 0 took the ghost from −180° to −157.5°, −135°, −157.5°, 180°, 157.5°, 157.5°. With
+  `NotRotateable` on the proto the ghost stayed at −180°. Not tested: the line above with a real wheel, a
   rotated building's obstruction, multiplayer, recorded games.
 
 ## 7. Multiplayer, saved games and replays

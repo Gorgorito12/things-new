@@ -1952,7 +1952,7 @@ bool __stdcall UhcUnitResourceRow(const char* panel, const char* unit) {
     if (rate <= kMinAmount) {
       continue;
     }
-    // The stock label with no name: only the icon, so the row holds three or four resources.
+    // The stock label with no name: only the icon, so that the row is short.
     BString label{nullptr};
     kBStringFormat(&label, kRateLabelFormat, L"", kResourceIcon(database, r));
     wchar_t text[16];

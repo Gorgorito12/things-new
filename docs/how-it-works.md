@@ -2717,10 +2717,11 @@ Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagge
 times a second, looks for a mine for the ones with none (FUN_004A1C55 around the unit, the is-a test, the distance slot
 `+B8h`) and copies the mine's entry into the building's inventory with 0x58EF83. The head of 0x49A5E6, the add every take goes
 through (0x4ED124 in the gather tick), sends a negative add on a linked inventory to the mine's and runs 0x482152 on the
-mine. Stock's other seven callers: positive adds stay on the building and the next copy overwrites them. In the AutoGather
-update, 0x4C378A hands the amount to the C++ code, which takes it from the source and writes back what was there; the add
-at 0x4C3798 stays, because `resourceDebt` reads its return address. The other AutoGather add, 0x6A7E85, is the unit's own
-inventory case (flag 4, herdables) and is left alone.
+mine, whichever of the eight callers it comes from. A positive add stays on the building and the next copy overwrites it.
+In the AutoGather update, 0x4C378A hands the amount to the C++ code, which takes it from the source and writes back what
+was there; the add at 0x4C3798 stays, because `resourceDebt` reads its return address. Two paths of that update are not
+hooked: a `SingleUse` action pays the unit's whole inventory at 0x6A7E85, and `AddResourcesToInventory` adds to it at
+0x4C0F7B.
 
 **Why it is safe.** The building's inventory is only a copy, so the stock clamp in the gather tick and the stock stop at 0 need
 no hook. The map is keyed by unit ID and read by game time, so every machine walks it alike. A take looks a unit up by ID,
