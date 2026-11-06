@@ -1738,6 +1738,21 @@ One line for [`civFirstTC`](#civfirsttc) and [`startingTC`](#startingtc): the fi
 `firstTC` registers no marker, so it does not change the unit type count. If `startingTC` or `civFirstTC` is in the cfg too, that key
 keeps its own line. Bad arguments fail only the `startingTC` part.
 
+![firstTC in WoL](media/firstTC-derived-wol.gif)
+
+*In WoL, with `firstTC log` (Dutch, `<firstTC>Market</firstTC>`, the Market in `<starttypes>`, no flag in `protoy`):* the town units and
+crates come to the Market, and a card's workers arrive there. [Full video (MP4)](media/firstTC-derived-wol.mp4).
+
+![civFirstTC alone in WoL](media/firstTC-derived-wol-control.gif)
+
+*In WoL, with `civFirstTC log` (the same data):* nothing comes, and the card is refused. [Full video (MP4)](media/firstTC-derived-wol-control.mp4).
+
+- **What it derives from the tag:** `StartingColonyBuilding`, for that civ's first town center only, without writing the proto, and
+  `FirstTC` first in `hcShipmentPointFallback`'s list, with or without that key. The `<starttypes>` entry in `colonies.xml` is still yours.
+- **Tested in WoL (2026-11-06, Dutch):** town units, 400 food, 200 wood, 200 gold, and 2 -> 5 workers from a card; `civFirstTC` alone, none
+  of it. An AI skirmish of 80 s had no XS error. A card needs population: the Market gives none, so the test has a House. Not tested:
+  a loaded game, beside WoL's DLL, multiplayer.
+
 #### customRevolutionBanners
 
 **Added:** Wednesday 2026-10-28 10:56
@@ -2020,9 +2035,9 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
       <MaxHitpoints>165.0000</MaxHitpoints>
   ```
 
-- **Techs and auras:** a `Hitpoints` tech adds the same amount to `InitialHitpoints` as to
-  `MaxHitpoints`. A percentage tech therefore leaves a full unit slightly below 100 %: after
-  +10 % on 150/165, `InitialHitpoints` is 166.5 and a unit that was at 150 HP has 165 (99 %). An aura or
+- **Techs and auras:** a `Hitpoints` tech adds the same amount to the max, to `InitialHitpoints` and to the HP of a built unit, so a
+  unit at its 100 % stays there: 141.75/156.75 went to 158.25/173.25 with `BasePercent`, and 139.28/154.28 to 154.70/169.70 with
+  `Percent`, as a new unit gets. A unit at its max stays at its max. Only an unbuilt unit is scaled. An aura or
   modifier that changes one unit's max scales its reference by the same factor, so a full unit stays
   full (seen on the stock game: a Golden Pavilion's MaxHP x1.1 aura took a unit from `165/150` to
   `181/165 (150+15)`, `Overheal 15/15` to `16/16`). In a skirmish, an Explorer marked for a test (400 /
@@ -4987,6 +5002,22 @@ point and the 3 workers arrive beside it. [Full video (MP4)](media/hcShipmentPoi
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
+
+![replace in WoL](media/hcShipmentPointFallback-replace-wol.gif)
+
+*In WoL, with `hcShipmentPointFallback replace Market warn` (Dutch, a Market and an Outpost, the Town Center falls at 16 s):* the
+workers arrive at the Market. [Full video (MP4)](media/hcShipmentPointFallback-replace-wol.mp4).
+
+![The stock list first in WoL](media/hcShipmentPointFallback-replace-wol-control.gif)
+
+*In WoL, without `replace` (the same scene):* the stock list finds the Outpost first.
+[Full video (MP4)](media/hcShipmentPointFallback-replace-wol-control.mp4).
+
+- **`replace`:** the list runs instead of the ten stock types, not after them. Name `TownCenter` in it if you want it.
+- **`warn`, `warn=My_text`:** when a card is queued and no point is left, the local player gets a chat line, at most every 30 s. `_`
+  is a space. It reaches no game state, so players may set it differently.
+- **Tested in WoL (2026-11-06, Dutch):** `replace Market`: the point went to the Market, 2 -> 5 workers; without it, to the Outpost.
+  `warn=No_point_for_shipments`: the line showed. Not tested: `replace` in a loaded game or with an AI, beside WoL's DLL, multiplayer.
 
 #### sharedBuildLimit
 

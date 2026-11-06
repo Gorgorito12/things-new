@@ -731,6 +731,13 @@ Market and who had no Town Center sent a card of food crates; the helper returne
 list is the simulation's, so every machine picks the same unit, and the walk runs only for a player with no point. With no point
 the game cancels the queue and refunds the ship, seen in game; the code that does it was not read.
 
+`replace`: a jmp at 0x4C6BCF, 7 bytes, goes to the same search as the exit 0x669E2E, with the stack the same after a push of EBP. `warn` runs
+at "nothing found", on the local player's real clock, through the game's chat, vtable +5Ch as `trChatSend`. The search that stores never
+comes with no point, so the test is a queued card.
+
+`firstTC`: a jmp at 0x6A2130 re-executes the read of flag 136 and sets the bit for the player's FirstTC of its civ's `<firstTC>` proto.
+Nothing is written to the proto, which every civ shares.
+
 ### healNonIdle
 
 Two filters stop a healer from healing a busy unit:
