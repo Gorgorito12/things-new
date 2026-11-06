@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 13:55 | [`snareValues`](#snarevalues) | Filmed in WoL, with a control. The factor and length of `<TargetSpeedBoost>`, per action and by tech. | The tags on the action. |
 | Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
 | Friday 2026-11-06 13:11 | [`firstTC`](#firsttc) | Added.  |  |
 | Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added.  |  |
@@ -3416,6 +3417,8 @@ removeConversionRestriction
 - **Status:** not confirmed: one test with the Sioux war chief, on the stock game, was inconclusive.
 
 #### snareValues
+
+**Added:** Friday 2026-11-06 13:25 · **Filmed in WoL:** Friday 2026-11-06 13:55
 
 ![snareValues in WoL](media/snareValues-wol.gif)
 
