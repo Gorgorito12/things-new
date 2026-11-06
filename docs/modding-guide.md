@@ -2147,6 +2147,8 @@ Attacks, armor, and what a hit does.
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
+- **Saved games:** the delay goes on after a load. Saved at 11 s with `overhealDecay 5 20`, the decay ran from 24.2 s to 30.2 s in
+  both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
 
 #### detonationDeath
 
@@ -2487,6 +2489,23 @@ over the unit. [Full video (MP4)](media/damageOverTime-noticktext-wol.mp4).
 damageOverTime [log] [noticktext]
 ```
 
+![damageOverTime with a model in WoL](media/damageOverTime-model-wol.gif)
+
+*In WoL, with `damageOverTime log` (test data: `xpAenna` with `<AttachModel>effects\uhc_rings\ring_damage.xml</AttachModel>`,
+Settlers as targets):* each poisoned unit wears the ring, and a corpse does not. [Full video (MP4)](media/damageOverTime-model-wol.mp4).
+
+![damageOverTime with a model in WoL, key off](media/damageOverTime-model-wol-control.gif)
+
+*In WoL, key off (the same scene):* arrows only, no ring. [Full video (MP4)](media/damageOverTime-model-wol-control.mp4).
+
+- **`<AttachModel>path.xml</AttachModel>`:** the unit carries that model while poisoned, as an aura's `<modelattachment>`. Two
+  poisons with the same model share it until the last ends. A visual: nothing reaches the simulation. A file that is not in
+  the game logs one line and shows nothing.
+- **Saved games:** running poisons go on after a load, with their stacks, next tick and attacker: a copy lives on the unit.
+- **Tested in WoL (2026-11-06, model and saves):** a poison saved after its attacker died went from 2652.0 to 2636.0 and ended at game
+  time 27656, the same ticks as with no save; with the attacker alive every tick matched. 694 fps against 664, update 0.18 ms
+  against 0.19, with 16 attackers (other games running). An AI skirmish of 100 s, saved and loaded, had no XS error. Not tested:
+  a target transformed just before a save, 100 stacks, beside WoL's DLL, multiplayer.
 - **In WoL today:** there is no damage over time. The exe still contains Age of Mythology's poison, but
   the function that would apply it is empty, so nothing happens.
 - **Effect:** an attack whose `<ProtoAction>` lists `<AttachProtoUnit>X</AttachProtoUnit>` poisons
@@ -2612,9 +2631,6 @@ damageOverTime [log] [noticktext]
 
   A value the DLL cannot read is logged and that tag is ignored.
 - **Not done:**
-  - no model or effect shows the poison, since X never exists in the world (`AttachTickText`
-    shows the ticks as text);
-  - poisons are not saved in saved games, so a loaded game starts without them (tested);
   - the exe's `Poison` flag is not used.
 - **`log`** writes every poison, renewal, tick and end to `UHC.log`, and once per attack the
   attacks that deal damage without `<AttachProtoUnit>` (`damage by proto N (Name), action A …:
@@ -2673,8 +2689,6 @@ damageOverTime [log] [noticktext]
     - invalid values (`dot_testdata.py --bad`), each logged and ignored;
     - AI: in 12 minutes, 49 poisons and 242 ticks between two AIs; in a 25-minute game with a 120 s
       poison, 902 ticks after the attacker was gone; no XS error and no crash;
-    - saved games: a game saved with a poison running loaded without it (`the data was reloaded; 1
-      running poison(s) dropped`).
   - **Not tested:** poison in an AI game of WoL, multiplayer.
   - **Not reproduced:** a tick on a unit of an engine army after the attacking unit is gone (the p11 = 0
     path of [how-it-works](how-it-works.md#damageovertime)). No unit carried the army flag in any test,
@@ -5951,16 +5965,25 @@ the code. Saved games were tested only where a section says so.
   and replays with the same DLL and cfg they were made with.
 - **Random map replays:** `civFirstTC` also needs the same `civs.xml`, `placementrules\colonies.xml` and
   `protoy.xml` when a recorded game plays back, because the map is generated again.
-- **`damageOverTime`** keeps its poisons in the DLL, not in the game state: a saved game loads without
-  the poisons that were running.
-- **`overhealDecay`** keeps its delays in the DLL: a loaded game forgets them, and a unit is noted again at
-  its next gain above the reference.
 - **`buildingWorkRateAuras`:** its modifiers are saved with the game, but a game loaded without the
   key ignores them.
 - **`decimalPopulation`** stores every population K times larger, and saved games keep it so: load them
   with the same K (tested with K = 100: a game saved at 17 / 20 loaded at 17 / 20).
 - **No feature sends network commands of its own,** but for `repairWallGlobal`, which sends the game's
   own repair command: they all act inside the normal simulation, on every machine, in the same order.
+
+
+**After a load, by key:**
+
+| Key | After a load |
+|---|---|
+| `damageOverTime` | Goes on: stacks, next tick and attacker are kept on the unit. |
+| `overhealDecay` | Goes on: the delay is kept on the unit. The first step decays nothing. |
+| `veterancyBonus`, `transformSpan` | Go on: kept in the game's modifiers. |
+| `detonationDeath` | The hit point decay restarts from the next loss. |
+| `unitResourceAuras` | At most one update is lost; `SingleUnit` chooses its target again. |
+| `linkedResource`, rings, marks | Found again at once. |
+| `nextResearchFree` | A spent turn comes back. |
 
 ## 8. WoL's keys that are not implemented
 

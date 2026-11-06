@@ -1080,6 +1080,11 @@ tick text depends on the local player and touches nothing the simulation reads, 
   no more ticks).
 - The stock Poison flag stays unused.
 
+**Saved games.** `savedmarkers.h`: the modifier's save 0x9E3423 and load 0x9E355E copy `+68h`, `+6Ch`, `+70h` and `+74h` as raw dwords,
+and its update reads none of the last three, so a modifier of an unread stat holds four words. `damageOverTime` keeps a header
+(63h) and the stacks (64h) per poison, `overhealDecay` the last gain (65h). They are written in the simulation on every machine,
+reused when free, and read once when another game is running. A transform ends them until the key's next write.
+
 ### spreadAnyAccuracy
 
 **What stock does.** A projectile's fate is decided when it is launched.
