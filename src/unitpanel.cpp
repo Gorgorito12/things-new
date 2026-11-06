@@ -9,7 +9,7 @@
 
 namespace {
 
-constexpr std::size_t kMaxRows = 4;
+constexpr std::size_t kMaxRows = 8;
 
 // [panel+33Ch] unitResourceRateLabel, [panel+340h] unitResourceRateValue, and the styles of the
 // stock row (vtable +84h), then the text (+80h) and the refresh (+54h).

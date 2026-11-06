@@ -9,16 +9,49 @@
 namespace {
 
 constexpr std::size_t kMaxObservers = 4;
+constexpr std::size_t kMaxReaders = 4;
 constexpr std::uint32_t kEffectCall = 0x007FBC79;  // the TransformUnit effect's apply
 constexpr std::uint32_t kOtherCalls[] = {0x007FBEF2, 0x008C2D08, 0x008EB78A, 0x008F05F5, 0x009BB6D5, 0x009C7C16};
 
 using TransformFn = std::int32_t(__thiscall*)(char* unit, std::int32_t proto);
+using SetDataFn = bool(__thiscall*)(void* effect, const void* node);
+using ApplyFn = void(__thiscall*)(void* effect, void* a, void* b, void* c, void* d);
 const auto kTransform = reinterpret_cast<TransformFn>(0x009C754C);
 
 uhc::TransformObserver g_observers[kMaxObservers] = {};
 std::size_t g_count = 0;
 uhc::TransformEffectWrapper g_effectWrapper = nullptr;
 bool g_installed = false;
+uhc::TransformEffectReader g_readers[kMaxReaders] = {};
+std::size_t g_readerCount = 0;
+SetDataFn g_setData = nullptr;
+ApplyFn g_apply = nullptr;
+
+bool __fastcall EffectSetData(void* effect, void*, const void* node) {
+  const bool ok = g_setData(effect, node);
+  if (ok && node != nullptr) {
+    for (std::size_t i = 0; i < g_readerCount; ++i) {
+      if (g_readers[i].read != nullptr) {
+        g_readers[i].read(effect, node);
+      }
+    }
+  }
+  return ok;
+}
+
+void __fastcall EffectApply(void* effect, void*, void* a, void* b, void* c, void* d) {
+  for (std::size_t i = 0; i < g_readerCount; ++i) {
+    if (g_readers[i].before != nullptr) {
+      g_readers[i].before(effect);
+    }
+  }
+  g_apply(effect, a, b, c, d);
+  for (std::size_t i = g_readerCount; i > 0; --i) {
+    if (g_readers[i - 1].after != nullptr) {
+      g_readers[i - 1].after(effect);
+    }
+  }
+}
 
 std::int32_t __fastcall OtherCall(char* unit, void*, std::int32_t proto) { return uhc::TransformUnit(unit, proto); }
 
@@ -53,6 +86,26 @@ bool Install() {
 }  // namespace
 
 namespace uhc {
+
+bool AddTransformEffectReader(const TransformEffectReader& reader) {
+  if (g_readerCount == kMaxReaders) {
+    Log(L"transform effect: no room for another reader");
+    return false;
+  }
+  if (g_readerCount == 0) {
+    if (!VerifyAll("transform effect", {&sites::kTransformEffectSetDataSlot, &sites::kTransformEffectApplySlot})) {
+      return false;
+    }
+    g_setData = *reinterpret_cast<SetDataFn*>(sites::kTransformEffectSetDataSlot.va);
+    g_apply = *reinterpret_cast<ApplyFn*>(sites::kTransformEffectApplySlot.va);
+    if (!WriteDword(sites::kTransformEffectSetDataSlot.va, reinterpret_cast<std::uintptr_t>(&EffectSetData)) ||
+        !WriteDword(sites::kTransformEffectApplySlot.va, reinterpret_cast<std::uintptr_t>(&EffectApply))) {
+      return false;
+    }
+  }
+  g_readers[g_readerCount++] = reader;
+  return true;
+}
 
 bool AddTransformObserver(const TransformObserver& observer) {
   if (g_count == kMaxObservers) {

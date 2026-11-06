@@ -790,7 +790,7 @@ Contract: [transformSpan](../porting-to-another-dll.md#transformspan).
 
 Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`transformcalls.h`](helpers.md#transform-calls), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `XmlText` `0x402733` (9 B), `SnareApply` `0x4DD22D` (130 B), `XmlAttribute` `0x598F37` (16 B), `TransformProtoLookup` `0x9C754C` (22 B), `TransformEffectSetDataSlot` `0xB96B64` (4 B), `TransformEffectApplySlot` `0xB96B9C` (4 B).
+Sites: `XmlText` `0x402733` (9 B), `SnareApply` `0x4DD22D` (130 B), `XmlAttribute` `0x598F37` (16 B), `TransformProtoLookup` `0x9C754C` (22 B).
 
 ### src/features/transformspan.cpp
 
@@ -839,8 +839,6 @@ constexpr int kMaxLogLines = 200;
 
 using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
 using XmlTextFn = const char*(__thiscall*)(const void* text);
-using SetDataFn = bool(__thiscall*)(void* effect, const void* node);
-using ApplyFn = void(__thiscall*)(void* effect, void* a, void* b, void* c, void* d);
 using TransformFn = void(__thiscall*)(char* unit, std::int32_t proto);
 using ModifierFn = std::int32_t(__thiscall*)(char* unit, std::int32_t stat, float value, float, float, std::int32_t,
                                              std::int32_t operation, std::int32_t ms, std::int32_t, std::int32_t,
@@ -860,8 +858,6 @@ struct Pending {
   std::uint32_t end;  // game time, ms
 };
 
-SetDataFn g_setData = nullptr;
-ApplyFn g_apply = nullptr;
 std::unordered_map<const void*, std::int32_t> g_spans;  // effect -> ms; written while the data loads
 std::vector<Pending> g_pending;                         // in the order the effects ran
 std::int32_t g_runningSpan = 0;                         // of the effect in its apply
@@ -1032,10 +1028,9 @@ void Tick(char* world, std::int32_t) {
   }
 }
 
-bool __fastcall SetData(void* effect, void*, const void* node) {
-  const bool ok = g_setData(effect, node);
+void ReadEffect(void* effect, const void* node) {
   const void* text = nullptr;
-  if (ok && node != nullptr && kXmlAttribute(node, "transformspan", &text) && text != nullptr) {
+  if (kXmlAttribute(node, "transformspan", &text) && text != nullptr) {
     const double seconds = std::atof(kXmlText(text));
     if (seconds > 0.0) {
       g_spans[effect] = static_cast<std::int32_t>(seconds * 1000.0 + 0.5);
@@ -1044,15 +1039,14 @@ bool __fastcall SetData(void* effect, void*, const void* node) {
       }
     }
   }
-  return ok;
 }
 
-void __fastcall Apply(void* effect, void*, void* a, void* b, void* c, void* d) {
+void BeforeApply(void* effect) {
   const auto found = g_spans.find(effect);
   g_runningSpan = found == g_spans.end() ? 0 : found->second;
-  g_apply(effect, a, b, c, d);
-  g_runningSpan = 0;
 }
+
+void AfterApply(void*) { g_runningSpan = 0; }
 
 // Takes the call of 0x9C754C in the effect's apply.
 void Transform(char* unit, std::int32_t proto) {
@@ -1114,15 +1108,9 @@ Outcome ApplyTransformSpan(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("transformSpan", {&sites::kTransformEffectSetDataSlot, &sites::kTransformEffectApplySlot,
-                                   &sites::kSnareApply, &sites::kXmlAttribute,
-                                   &sites::kXmlText, &sites::kTransformProtoLookup})) {
-    return Outcome::kFailed;
-  }
-  g_setData = *reinterpret_cast<SetDataFn*>(sites::kTransformEffectSetDataSlot.va);
-  g_apply = *reinterpret_cast<ApplyFn*>(sites::kTransformEffectApplySlot.va);
-  if (!WriteDword(sites::kTransformEffectSetDataSlot.va, reinterpret_cast<std::uintptr_t>(&SetData)) ||
-      !WriteDword(sites::kTransformEffectApplySlot.va, reinterpret_cast<std::uintptr_t>(&Apply)) ||
+  if (!VerifyAll("transformSpan", {&sites::kSnareApply, &sites::kXmlAttribute, &sites::kXmlText,
+                                   &sites::kTransformProtoLookup}) ||
+      !AddTransformEffectReader({&ReadEffect, &BeforeApply, &AfterApply}) ||
       !SetTransformEffectWrapper(&Transform) || !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
   }

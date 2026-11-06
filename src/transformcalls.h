@@ -21,6 +21,16 @@ bool AddTransformObserver(const TransformObserver& observer);
 using TransformEffectWrapper = void (*)(char* unit, std::int32_t proto);
 bool SetTransformEffectWrapper(TransformEffectWrapper wrapper);
 
+// Keys that read an attribute of a TransformUnit effect. The first call takes the effect's SetData and Apply
+// slots, after checking them. `read` runs when the effect's XML was read and is good; `before` and `after`
+// run around each apply. Any of them may be null.
+struct TransformEffectReader {
+  void (*read)(void* effect, const void* node);
+  void (*before)(void* effect);
+  void (*after)(void* effect);
+};
+bool AddTransformEffectReader(const TransformEffectReader& reader);
+
 // 0x9C754C with the observers around it. Every key's own transform goes through here.
 std::int32_t TransformUnit(char* unit, std::int32_t proto);
 
