@@ -36,15 +36,18 @@ PAGES = {
         "Unit panel row (the minimized interface)": ["src/unitpanel.h", "src/unitpanel.cpp", "src/hooks/unitpanelrow_hooks.asm"],
         "Name lists": ["src/namelists.h", "src/namelists.cpp"],
         "Models on a unit": ["src/unitmodels.h", "src/unitmodels.cpp"],
+        "State kept for a saved game": ["src/savedmarkers.h"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
+        "xsErrorLog": ["src/features/xslog.cpp", "src/hooks/xslog_hooks.asm"],
     }),
     "population": ("Population", {
         "decimalPopulation": ["src/features/decimalpop.cpp", "src/hooks/decimalpop_hooks.asm",
                               "src/features/limits.cpp", "src/hooks/limit_hooks.asm"],
     }),
     "data": ("Data and scripting", {
+        "dataLint": ["src/features/datalint.cpp", "src/hooks/datalint_hooks.asm"],
         "customHotkeyContexts": ["src/features/hotkeys.cpp", "src/hooks/hotkey_hooks.asm"],
         "techRenameEffect": ["src/features/techrename.cpp", "src/hooks/techrename_hooks.asm"],
     }),
@@ -68,8 +71,10 @@ PAGES = {
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],
         "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
+        "snareValues": ["src/features/snarevalues.cpp", "src/hooks/snarevalues_hooks.asm"],
         "killBountyTechs, resourceBounty and teamKillBounty": ["src/features/bounty.cpp", "src/hooks/bounty_hooks.asm"],
         "pillageGold": ["src/features/pillage.cpp", "src/hooks/pillage_hooks.asm"],
+        "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp", "src/hooks/veterancy_hooks.asm"],
         "detonationDeath": ["src/features/detonation.cpp"],
     }),
@@ -88,6 +93,7 @@ PAGES = {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],
         "buildingWorkRateAuras": ["src/features/bwrauras.cpp", "src/hooks/bwraura_hooks.asm"],
         "costEscalationTechs": ["src/features/costescalation.cpp"],
+        "unitTypeTechs": ["src/features/unittypetechs.cpp"],
         "trainBatchSize": ["src/features/trainbatch.cpp", "src/hooks/trainbatch_hooks.asm"],
         "sharedBuildLimit": ["src/features/sharedlimit.cpp", "src/hooks/sharedlimit_hooks.asm"],
         "doNotQueue": ["src/features/donotqueue.cpp"],
@@ -119,6 +125,7 @@ HELPER_OF = {
     "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "civtags.h": "civ-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
     "namelists.h": "name-lists", "unitmodels.h": "models-on-a-unit",
+    "savedmarkers.h": "state-kept-for-a-saved-game",
 }
 LANG = {".cpp": "cpp", ".h": "cpp", ".asm": "asm", ".inc": "asm"}
 

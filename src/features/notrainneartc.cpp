@@ -1,4 +1,4 @@
-// noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC ...] [nowarn | warn=<text>] [log]:
+// noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC ...] [nowarn | warn=<text>] [refuse] [log]:
 // a unit of the marker type (default AbstractDaimyo, the Daimyos and the Shogun) does not train
 // while it stands near an enemy's first Town Center, or near an enemy's building of a listed type.
 //
@@ -38,6 +38,10 @@
 // stock dodge (0x6A24FC..0x6A2604: the text manager [world+8A8h], 0x8023AE) appears over it at most
 // once every kWarnIntervalMs of game time, red and without the dodge's rise. Interface only: every
 // machine holds the same trainers, and only the owner's screen shows the text.
+//
+// With "refuse", a marked trainer in that place also takes no new unit: the head of the enqueue FUN_009EAC35
+// answers false before the cost is paid at 0x9EAF86, for the train command's three calls and 0x8D60EA.
+// What was queued before the trainer walked in keeps waiting, as without it.
 #include <windows.h>
 
 #include <algorithm>
@@ -97,6 +101,7 @@ constexpr wchar_t kDefaultWarning[] = L"Too close to the enemy: training paused"
 
 float g_meters = 65.0f;
 bool g_log = false;  // "noTrainNearEnemyTC ... log": every pause and resume
+bool g_refuse = false;
 
 // What the trainers may not stand near: kFirstTc, or a unit type ID set on each data load.
 std::int32_t g_nearTypes[kMaxNear] = {kFirstTc, -1, -1, -1};
@@ -330,6 +335,7 @@ extern "C" {
 std::int32_t g_uhcNoTrainType = -1;  // marker unittype ID, set on each database load; -1 before
 
 void UhcNoTrainHook();
+void UhcNoTrainEnqueueHook();
 
 // Called by the hook on every tick of an active Train action, with its trainer. True: the
 // trainer is of the marker type and a blocker (an enemy's FirstTC, or an enemy unit of a "near"
@@ -349,6 +355,19 @@ bool __stdcall UhcNoTrainBlocked(const char* trainer) {
   }
   return blocked;
 }
+
+// From the head of the enqueue, for each unit asked of any trainer.
+bool __stdcall UhcNoTrainRefused(const char* trainer) {
+  if (!UhcNoTrainBlocked(trainer)) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"noTrainNearEnemyTC: unit %d (%hs, player %d) refused a unit", Field<std::int32_t>(trainer, 0x10),
+             ProtoName(trainer), PlayerIdOf(trainer));
+  }
+  return true;
+}
 }
 
 namespace uhc {
@@ -366,7 +385,7 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
   float meters = 0.0f;
   if (args.empty() || !ParseMeters(args.front(), &meters)) {
     Log(L"noTrainNearEnemyTC: expected \"noTrainNearEnemyTC <meters> [UnitType] [near <UnitType> ...] [nowarn | "
-        L"warn=<text>] [log]\" with meters above 0 and at most %.0f, got \"%hs\"; feature not applied",
+        L"warn=<text>] [refuse] [log]\" with meters above 0 and at most %.0f, got \"%hs\"; feature not applied",
         static_cast<double>(kMaxMeters), args.empty() ? "" : args.front().c_str());
     return Outcome::kFailed;
   }
@@ -380,6 +399,8 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
       log = true;
     } else if (_stricmp(arg, "nowarn") == 0) {
       g_warn = false;
+    } else if (_stricmp(arg, "refuse") == 0) {
+      g_refuse = true;
     } else if (_strnicmp(arg, "warn=", 5) == 0) {
       if (!ParseWarning(args[i].substr(5))) {
         Log(L"noTrainNearEnemyTC: %hs: expected warn=<text> (at most 127 characters, '_' for a space) or "
@@ -399,7 +420,7 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
       typeGiven = true;
     } else {
       Log(L"noTrainNearEnemyTC: unexpected argument %hs (expected: <meters> [UnitType] [near <UnitType> ...] [nowarn | "
-          L"warn=<text>] [log]); feature not applied",
+          L"warn=<text>] [refuse] [log]); feature not applied",
           arg);
       return Outcome::kFailed;
     }
@@ -422,6 +443,9 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
   if (g_warn && !uhc::VerifyFloatingText("noTrainNearEnemyTC warning")) {
     return Outcome::kFailed;
   }
+  if (g_refuse && !VerifyAll("noTrainNearEnemyTC refuse", {&sites::kTrainEnqueueHead})) {
+    return Outcome::kFailed;
+  }
   if (!RequestAbstractUnitType(typeName.c_str(), &g_uhcNoTrainType)) {
     return Outcome::kFailed;
   }
@@ -442,7 +466,8 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
     return Outcome::kFailed;
   }
   // Replaces mov ecx,[esi+10h] / call 9BFE33h at 0x9EA410; the hook re-executes them.
-  if (!WriteJmp(sites::kWorkRateTrainCall.va, reinterpret_cast<const void*>(&UhcNoTrainHook), 8)) {
+  if (!WriteJmp(sites::kWorkRateTrainCall.va, reinterpret_cast<const void*>(&UhcNoTrainHook), 8) ||
+      (g_refuse && !WriteJmp(sites::kTrainEnqueueHead.va, reinterpret_cast<const void*>(&UhcNoTrainEnqueueHook), 6))) {
     return Outcome::kFailed;
   }
   std::string blockers;  // not "near": windows.h defines it as a macro

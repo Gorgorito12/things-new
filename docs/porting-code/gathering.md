@@ -54,6 +54,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringAssign` `0x443BB8` (15 B), `BStr
 // unit panel writes an AutoGather rate itself, in the gadgets unitResourceRateLabel / Value
 // (0x69922D..0x699456, gadgets at [panel+33Ch] / [panel+340h]). A hook after that block
 // (0x699456) writes the gatherer's rate there. The normal interface has no such gadgets.
+// With several units selected, the minimized interface's row sums their rates per resource.
 // The hooks are in hooks/gatherrate_hooks.asm.
 #include <cmath>
 #include <cstdint>
@@ -112,6 +113,7 @@ constexpr std::uint32_t kGameGlobal = 0x00C66234;        // game; +13Ch world, +
 constexpr std::uint32_t kUiGlobal = 0x00C67310;          // [[+920h]+13Ch]: the data refs' current unit ID
 
 constexpr std::uint8_t kGatheringState = 5;          // [action+61h] while the tick runs (0x4ECC8E)
+constexpr std::int32_t kMaxResources = 16;
 constexpr std::int32_t kShowAutoGatherRate = 0x9B;   // proto flag; <Flag>DoNotShowAutoGatherRate clears it
 constexpr std::int32_t kAbstractShrine = 0x58;       // abstract index: the tick adds nothing (0x4ED14B)
 constexpr std::int32_t kStatPanelRows = 9;           // StackLabel/StackValue 0..8 (0x9BBAD1)
@@ -249,6 +251,31 @@ bool CurrentRate(const char* world, const char* database, const char* unit, Rate
   return true;
 }
 
+// What a unit counts for in a row: built, the proto flag, and the marker when one was given.
+bool ShowsRow(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  return proto != nullptr && kIsBuilt(unit) && kProtoFlag(proto, kShowAutoGatherRate) &&
+         (!g_useMarker || (g_markerType >= 0 && kProtoIsType(proto, g_markerType)));
+}
+
+// The sum of the selected units' rates per resource; false if none of them is gathering.
+bool GroupRates(const char* world, const char* database, const char* selection, float* rates) {
+  const std::int32_t count = Field<std::int32_t>(selection, 0x14);
+  const auto* ids = Field<const std::int32_t*>(selection, 0x10);
+  const std::int32_t resources = Field<std::int32_t>(database, 0x80);
+  bool any = false;
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    const char* unit = UnitById(world, ids[i]);
+    Rate rate{};
+    if (unit != nullptr && ShowsRow(unit) && CurrentRate(world, database, unit, &rate) && rate.resource < resources &&
+        rate.resource < kMaxResources) {
+      rates[rate.resource] += rate.perSecond;
+      any = true;
+    }
+  }
+  return any;
+}
+
 // The resource's display name (string table), copied; "?" if it has none.
 std::wstring ResourceName(const char* database, std::int32_t resource) {
   const std::int32_t stringId = kResourceNameId(database, resource);
@@ -304,14 +331,7 @@ extern "C" {
 // built unit and proto flag 9Bh (so <Flag>DoNotShowAutoGatherRate</Flag> hides this row too).
 bool __stdcall UhcGatherPanelRow(const char* unit, const char* selection, std::int32_t row) {
   if (unit == nullptr || selection == nullptr || row < 0 || row >= kStatPanelRows ||
-      Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0) {
-    return false;
-  }
-  const char* proto = Field<const char*>(unit, 0x5C);
-  if (proto == nullptr || !kIsBuilt(unit) || !kProtoFlag(proto, kShowAutoGatherRate)) {
-    return false;
-  }
-  if (g_useMarker && (g_markerType < 0 || !kProtoIsType(proto, g_markerType))) {
+      Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0 || !ShowsRow(unit)) {
     return false;
   }
   const char* world = World();
@@ -328,13 +348,57 @@ bool __stdcall UhcGatherPanelRow(const char* unit, const char* selection, std::i
   return true;
 }
 
-// The minimized interface's row (unitpanel.cpp). Same gate as the stat panel row.
-bool __stdcall UhcGatherUnitPanel(const char* panel, const char* unit) {
-  const char* proto = Field<const char*>(unit, 0x5C);
-  if (proto == nullptr || !kIsBuilt(unit) || !kProtoFlag(proto, kShowAutoGatherRate)) {
+// The minimized interface's row for a group: one resource as the single unit's row, several as icon
+// and number each, as they would not fit with their names.
+bool __stdcall UhcGatherGroupPanel(const char* panel, const char* selection) {
+  const char* world = World();
+  const char* database = Database();
+  float rates[kMaxResources] = {};
+  if (world == nullptr || database == nullptr || !GroupRates(world, database, selection, rates)) {
     return false;
   }
-  if (g_useMarker && (g_markerType < 0 || !kProtoIsType(proto, g_markerType))) {
+  std::int32_t shown = 0;
+  std::int32_t last = -1;
+  for (std::int32_t r = 0; r < kMaxResources; ++r) {
+    if (rates[r] > 0.0f) {
+      ++shown;
+      last = r;
+    }
+  }
+  wchar_t number[32];
+  if (shown == 1) {
+    BString name{nullptr};
+    const std::int32_t stringId = kResourceNameId(database, last);
+    if (stringId >= 0) {
+      kBStringFromId(&name, stringId);
+    }
+    BString label{nullptr};
+    kBStringFormat(&label, kRateLabelFormat, name.text == nullptr ? L"?" : name.text, kResourceIcon(database, last));
+    swprintf_s(number, L"%.2f/s", static_cast<double>(rates[last]));
+    const bool written = uhc::SetUnitPanelRow(panel, label.text == nullptr ? L"" : label.text, number);
+    kBStringFree(&label);
+    kBStringFree(&name);
+    return written;
+  }
+  std::wstring row;
+  for (std::int32_t r = 0; r < kMaxResources; ++r) {
+    if (rates[r] > 0.0f) {
+      BString label{nullptr};
+      kBStringFormat(&label, kRateLabelFormat, L"", kResourceIcon(database, r));
+      if (label.text != nullptr) {
+        row += label.text;
+      }
+      kBStringFree(&label);
+      swprintf_s(number, L" %.2f ", static_cast<double>(rates[r]));
+      row += number;
+    }
+  }
+  return uhc::SetUnitPanelRow(panel, row.c_str(), L"");
+}
+
+// The minimized interface's row (unitpanel.cpp). Same gate as the stat panel row.
+bool __stdcall UhcGatherUnitPanel(const char* panel, const char* unit) {
+  if (!ShowsRow(unit)) {
     return false;
   }
   const char* world = World();
@@ -452,6 +516,7 @@ Outcome ApplyShowGatherRate(const Config& config) {
       !AddUnitPanelRow(&UhcGatherUnitPanel)) {
     return Outcome::kFailed;
   }
+  SetUnitPanelGroupRow(&UhcGatherGroupPanel);
   if (g_useMarker) {
     Log(L"showGatherRate: the stat panel shows the gather rate per second of a selected unit of unittype %hs, "
         L"and {currentUnitGatherRateString} returns it for any unit%ls (UI only)",
@@ -1532,6 +1597,7 @@ Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitB
 #include <vector>
 
 #include "../actiontags.h"
+#include "../aurastacking.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -1800,7 +1866,7 @@ void ActionTagRead(const uhc::ActionTag& tag) {
   const bool single = _wcsicmp(tag.name, L"SingleUnit") == 0;
   const bool ignoreDead = _wcsicmp(tag.name, L"DoNotIgnoreDead") == 0;
   const bool deadOnly = _wcsicmp(tag.name, L"DeadExclusive") == 0;
-  const bool forbid = _wcsicmp(tag.name, L"ForbidUnitType") == 0;
+  const bool forbid = _wcsicmp(tag.name, L"ForbidUnitType") == 0 || _wcsicmp(tag.name, L"ForbidAbstractType") == 0;
   if (!amount && !limit && !gaia && !single && !ignoreDead && !deadOnly && !forbid) {
     return;  // <ForceUpdateMode> stays unread: the take already follows the game time between updates
   }
@@ -2049,6 +2115,10 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     }
     const float have = kListGet(inventory + 4, resource);
     if (have <= kMinAmount) {
+      continue;
+    }
+    if (!uhc::AuraClaim(world, Field<std::int32_t>(ownerProto, 0x04), auraKey.name, auraKey.owner,
+                        Field<std::int32_t>(target, 0x10), now)) {
       continue;
     }
     const float take = have < amount ? have : amount;

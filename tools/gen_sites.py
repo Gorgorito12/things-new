@@ -131,6 +131,9 @@ SITES = [
     ("PoliticianCosts2", 0x81943D, 7),     # mov edx,[esi] / lea eax,[esp+14h] / push eax
     # hcShipmentPointFallback (FUN_004C6B9E, "get a valid HC gather unit")
     ("GatherFallbackExit", 0x669E2E, 10),  # pop ebp/edi/esi, xor eax,eax, pop ebx/ecx, ret 4
+    # firstTC: the read of flag 136, StartingColonyBuilding, when a unit is created; a proto's bit is every civ's
+    ("StartColonyFlagRead", 0x6A2130, 6),
+    ("GatherSearchStart", 0x4C6BCF, 7),    # hc in ECX and EDX, before the stock ten types; `replace` starts there
     ("GatherFallbackStore", 0x4C6CB2, 12), # cmp byte [esp+18h],1 / je 669E38h: store-and-return
     ("GatherFallbackBlock", 0x6698B4, 0xB0),  # the stock FortFrontier search block the hook mirrors
     # hcShipmentPointFallback FirstTC: the stored-point check 0x85302C, bool thiscall(hc, unit),
@@ -202,6 +205,9 @@ SITES = [
     # leading 0x4A5B02): cmp ebx,2 / je 4CEF7Bh (replaced, 9 bytes), then the continuation
     # mov [esi+20h],ebx / mov ebx,[esp+18h] (the unit action) / mov edi,[esp+0ECh] (the target)
     ("SpreadHitRoll", 0x499890, 0x17),
+    # test al,al / je 4998A7h: the cfg var ballisticPrecalcHits; and the store of the ground shot, then its jmp
+    ("SpreadPrecalcGate", 0x4997AE, 8),
+    ("SpreadGroundStore", 0x4C4DEC, 12),
     # spreadAnyAccuracy: the miss stub every miss reaches (from 0x499893 and from the failed lead
     # at 0x6A4BCA): lea eax,[esp+28h] / push eax / mov ecx,esi (replaced, 7 bytes) /
     # call 4CEF8Ch / jmp 499899h
@@ -261,6 +267,15 @@ SITES = [
     # (cmp [esi+74h],0 / jg), stores [edi+6Ch] in [esi+64h], or with the trainer flag 9Eh
     # (YPForceTrainAtBaseTrainPoints, call 44D063h) the base proto's (call 45316Eh) [eax+6Ch]
     ("TrainPointsProto", 0x9EAC3D, 0x29),
+    # noCorpseDopples expire=: the manager update's call of the dopple's update; the store of the proto
+    ("DoppleUpdateCall", 0x49198B, 5),
+    ("DoppleInitProto", 0x4E4701, 6),
+    # buildingWorkRateAuras: the rate lookup 0x487C45 in the heal tick and in the build tick (traced in game), each
+    # with the action in ESI
+    ("BwrRateCallHeal", 0x9E0CCF, 5),
+    ("BwrRateCallBuild", 0x9D3D7B, 5),
+    # noTrainNearEnemyTC refuse: sub esp,1Ch / push ebx / push ebp / push esi, the head of the enqueue
+    ("TrainEnqueueHead", 0x9EAC35, 6),
     ("TrainPointsSet", 0x9EB19F, 0x43),
     # liveBuildingWorkRate, TrainPoints: the same for Maintain. Its fraction function (only caller
     # 0x6AB264, inside maintainWaitForPop's MaintainCycleDone, which the head hook leaves stock):
@@ -386,7 +401,7 @@ SITES = [
     # test al,al / lea ecx,[esp+58h] / jne 696C70h; the log hook reads n and GetNth's out slots
     ("AbilityNthCall", 0x696C0B, 0x65),
     # abilitySlots log: call 45EE37h on GetNth's "true" path, and the fcomp it continues at
-    ("AbilityButtonRecharge", 0x696C70, 11),
+    ("AbilityButtonCost", 0x696C70, 11),
     # wonderPanelSkipAuras (cold chunk of FUN_004586B1, wonder power panel refresh): the eight
     # argument pushes, mov ecx,[esp+5Ch] (the ability manager) and push 0 (n) of the panel's
     # ability request; the hook re-pushes these arguments in this order
@@ -470,6 +485,17 @@ SITES = [
     # customHotkeyContexts: mov bl,1 / mov edi,esi, the path of a selected Building, which then
     # enters its own context through FUN_0079F851
     ("HotkeyTrainerQualified", 0x64A05A, 4),
+    # customHotkeyContexts, the letter in a button's tooltip (FUN_008F8F5E, a proto's hotkey text, cached
+    # per proto by FUN_007EF89E): the read of the manager after the last name of the context list, the
+    # jle of a building's lookup in BuildAccel, and the lookup 0xAB481D (thiscall manager, char* command,
+    # char* context, list* out, bool first, ret 10h), with the helpers that build a name for the list
+    ("HotkeyTipListDone", 0x8F9696, 6),
+    ("HotkeyTipBuildMiss", 0x8F90FC, 6),
+    ("HotkeyTipLookup", 0xAB481D, 6),
+    ("HotkeyTipListAdd", 0x467722, 6),
+    ("HotkeyTipStringNew", 0x401A12, 6),
+    ("HotkeyTipStringFree", 0x4010CA, 6),
+    ("HotkeyTipStringNarrow", 0x402733, 6),
     # snareOnlyHitUnit (FUN_004FD289, group recompute): the member's vtbl[34h] velocity, fcomp
     # with the group's pace [esi+7Ch], jnp 4FD53Ah, and the mov ecx,[edi+5Ch] it continues at
     ("SnareGroupPace", 0x4FD3FD, 0x1D),
@@ -495,6 +521,9 @@ SITES = [
     # int thiscall(unit, stat, value, -1f, -1f, 0, op, ms, -1, -1, exclusive), ret 28h, -1 without
     # an action manager [unit+58h]; it allocates the modifier record [[unit+0B4h]+0C8h] if missing
     ("SnareTargetCheck", 0x4DD1DE, 0x23),
+    # the part of SnareCreate after what cantBeSlowed writes: push 0BB8h, and the pushes up to the creator
+    ("SnareDurationPush", 0x4DD207, 5),
+    ("SnareCreateTail", 0x4DD20C, 0x21),
     ("SnareApply", 0x4DD22D, 0x82),
     # snareOnlyHitUnit: the modifier init 0x4B3D44 ([+64h] stat, [+68h] value, [+78h] op, flag
     # 15h or 14h by duration, flag 16h exclusive)
@@ -502,6 +531,8 @@ SITES = [
     # snareOnlyHitUnit: the collector's per-action step 0x49F34B (type [+60h], children at
     # [+40h]) and its list loop 0x49F397 ({count +0, data +8})
     ("SnareCollector", 0x49F34B, 0x79),
+    # snareValues strongest: the only call of the velocity sum, in the unit's recompute
+    ("SnareStatsSumCall", 0x49F26A, 5),
     # snareOnlyHitUnit: the velocity modifier sum 0x4B3C48 / 0x4B3C7D and its two cold chunks
     ("SnareModifierSum", 0x4B3C48, 0xB7),
     ("SnareModifierSumEnd", 0x4E2A8E, 0x1B),
@@ -568,6 +599,11 @@ SITES = [
     # [edi+80h],0 / je 4904BBh (no unit list: no regeneration)
     ("DanceRegenGate", 0x490486, 0x11),
     ("DanceRegenBranch", 0x679E66, 0xD),
+    # the head of getFirePit: mov eax,[0C66234h]; the lookup it calls, thiscall(player, type, startId, 0, -1)
+    ("FirePitHead", 0x4819EF, 5),
+    ("UnitOfTypeLookup", 0x48195C, 0xC),
+    # the dancer count 0x9C1577: mov eax,[eax+5Ch] / test eax,eax / je 9C161Fh
+    ("DancerProtoRead", 0x9C1604, 7),
     # startingTC (FUN_0049874F, Player::addUnit, ESI = player, EDI = unit): cmp dword ptr
     # [esi+4F0h],0 / jl 506B2Ah, FirstTC (the placementrules keyword) is only set while it is
     # still -1, and the exit pop ebx / pop ebp / pop edi / mov al,1 / pop esi / ret 8 after it
@@ -823,6 +859,8 @@ SITES = [
     # showGatherRate: the data refs' current unit, [[[0C67310h]+920h]+13Ch] in world
     # [[0C66234h]+13Ch], as currentUnitBuildingWorkRate FUN_006F49B1 looks it up
     ("CurrentUnitRef", 0x6F49B1, 0x41),
+    # fld dword ptr [edx+0D0h] in it: the rate the panel shows
+    ("CurrentUnitRateRead", 0x6F49FC, 6),
     # showGatherRate: the proto flag test 0x45EE02 (thiscall(proto, bit), ret 4), bitset
     # [proto+50h] / count [proto+54h]
     ("ProtoFlag", 0x45EE02, 0x35),
@@ -875,6 +913,15 @@ SITES = [
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
     ("BoneNameLookup", 0x58E506, 10),
+    # auraStacking: the one call of the filter in the aura update, the filter's head, and mov ebx,eax /
+    # cmp ebx,-1 after the apply
+    ("AuraFilterCall", 0x9D0633, 5),
+    ("AuraFilter", 0x9D0238, 6),
+    ("AuraAppliedNext", 0x9D0675, 5),
+    # xsErrorLog: sub esp,804h at the head of each XS reporter, and the formatter they call
+    ("XsReportHead", 0x43A3A4, 6),
+    ("XsMessageHead", 0xA5667F, 6),
+    ("XsFormat", 0x435D99, 6),
     # linkedResource: mov eax,[0xC66234], the head of the inventory add; the 9 bytes at the head of the inventory
     # recreate, up to mov eax,[esi+0B4h]; mov edi,[esp+10h] / mov edx,[esi+10h] in the AutoGather pay, before the add
     # 0x4C3798; the ResList set
@@ -882,6 +929,17 @@ SITES = [
     ("InventoryRecreateHead", 0x9BFE5A, 9),
     ("AutoGatherPayPoint", 0x4C378A, 7),
     ("ResListSet", 0x58EF83, 10),
+    # dataLint: push 0EB4h at the <UnitType> handler's failure; test al,al / je / mov edx,[esp+14h] after the proto tag
+    # table's find; je at the <ProtoAction> handler's failure; the call of the tech parser 0x61FD02; in that
+    # parser, mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] with the next <Tech>; je on setData's false in the effect parse;
+    # push 512h, the effect type's failure
+    ("LintUnitTypeMiss", 0x5FCB61, 5),
+    ("LintProtoTagMiss", 0x5F62A2, 8),
+    ("LintProtoActionMiss", 0x5FA202, 6),
+    ("LintTechLoadCall", 0x61FE4A, 5),
+    ("LintTechNode", 0x61FDB8, 7),
+    ("LintEffectDrop", 0x6205E9, 6),
+    ("LintEffectType", 0x65BC56, 5),
     # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
     ("KillQueueAsk", 0x4B4DC2, 8),
     # TakeDamage's subtraction through the add-HP entry 0x4823A3, verify only

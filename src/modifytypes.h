@@ -11,4 +11,9 @@ namespace uhc {
 // the stock bytes.
 bool AddModifyType(const wchar_t* name, std::int32_t stat);
 
+// Called for a name nothing knows, while the data loads, for dataLint. `proto` is null when the name was not read in a
+// proto's action. Writes the hook too.
+using UnknownModifyType = void (*)(const wchar_t* name, const char* proto);
+bool OnUnknownModifyType(UnknownModifyType callback);
+
 }  // namespace uhc

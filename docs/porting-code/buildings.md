@@ -10,6 +10,7 @@ Contents:
 - [liveBuildingWorkRate](#livebuildingworkrate)
 - [buildingWorkRateAuras](#buildingworkrateauras)
 - [costEscalationTechs](#costescalationtechs)
+- [unitTypeTechs](#unittypetechs)
 - [trainBatchSize](#trainbatchsize)
 - [sharedBuildLimit](#sharedbuildlimit)
 - [doNotQueue](#donotqueue)
@@ -370,13 +371,14 @@ Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkratea
 
 Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
 
-Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
+Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `BwrRateCallBuild` `0x9D3D7B` (5 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `BwrRateCallHeal` `0x9E0CCF` (5 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
 
 ### src/features/bwrauras.cpp
 
 ```cpp
 // buildingWorkRateAuras: an aura (or any other stat modifier) whose ModifyType is BuildingWorkRate
-// changes how fast the units it reaches train, research and spawn their Maintain units.
+// changes how fast the units it reaches train, research and spawn their Maintain units, and how fast
+// they heal and build.
 //
 // Stock: ModifyType names are read by FUN_005F5645, for the tactics tag <ModifyType> (0x5FC8AE,
 // stored unchecked in the byte [action+B8h]) and for the <unitModify> powers (0x5F3EFA, which
@@ -399,7 +401,13 @@ Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (1
 //   starting from 1.0, with the GatherRate reader's rule: no modifier, or a sum below 1e-6, counts
 //   as 1.0. A unit without a record (it never had a modifier) gets the stock call.
 // The getter itself is not touched, so liveBuildingWorkRate (which hooks it) combines with this
-// key: the factor then multiplies the proto's live rate. The hooks are in hooks/bwraura_hooks.asm.
+// key: the factor then multiplies the proto's live rate. The data refs currentUnitBuildingWorkRate and
+// its Float twin, the panel's number, read the proto (0x6F49FC): they now read the rate the unit works at,
+// the building's own copy and the factor. The hooks are in hooks/bwraura_hooks.asm.
+//
+// Heal and build read their rate through 0x487C45, which has 22 callers (gather too), so the callee is
+// left alone: only the calls that add the work go to UhcBwrRateCall, with the worker in [esi+10h]. The
+// calls that only ask whether the rate is above 0 stay stock.
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -416,7 +424,9 @@ Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (1
 
 extern "C" {
 void UhcBwrAuraCall();
+void UhcBwrRateCall();
 void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
+void UhcBwrPanelHook();
 }
 
 namespace {
@@ -425,6 +435,9 @@ namespace {
 constexpr std::int32_t kStatBuildingWorkRate = 0x40;  // the new ModifyType stat, as in bwraura_hooks.asm
 constexpr float kMinFactor = 1.0e-6f;  // 0xB9FB64: a smaller sum counts as no modifier (0x69FE56)
 constexpr std::uint32_t kTrainCall = 0x009EA413;     // call 9BFE33h in the Train update
+
+using GetterFn = float(__thiscall*)(const char* unit);
+const auto kGetter = reinterpret_cast<GetterFn>(0x009BFE33);
 
 // The four callers of the getter: the address of the call and the return address it pushes.
 struct Caller {
@@ -437,6 +450,17 @@ constexpr Caller kCallers[] = {
     {0x009E65F7, 0x009E65FC, L"Research"},
     {0x009D58D4, 0x009D58D9, L"CommandResearch"},
     {0x006AB23F, 0x006AB244, L"Maintain"},
+};
+
+// The calls of the rate lookup that add the work.
+struct RateCaller {
+  std::uint32_t call;
+  std::uint32_t ret;
+  const wchar_t* name;
+};
+constexpr RateCaller kRateCallers[] = {
+    {0x009E0CCF, 0x009E0CD4, L"Heal"},
+    {0x009D3D7B, 0x009D3D80, L"Build"},
 };
 
 // The list the stock sum reads, {data +0, count +4}: the layout of the collector's list 0xCF0718.
@@ -494,6 +518,11 @@ float Factor(const char* unit) {
 
 const wchar_t* CallerName(std::uint32_t ret) {
   for (const Caller& caller : kCallers) {
+    if (caller.ret == ret) {
+      return caller.name;
+    }
+  }
+  for (const RateCaller& caller : kRateCallers) {
     if (caller.ret == ret) {
       return caller.name;
     }
@@ -563,6 +592,15 @@ float __stdcall UhcBwrAuraRate(float base, const char* unit, std::uint32_t ret) 
   }
   return factor == 1.0f ? base : base * factor;
 }
+
+// From the panel's read, with the selected unit: what the unit works at. Display only.
+float __stdcall UhcBwrPanelRate(const char* unit) {
+  const float base = kGetter(unit);
+  if (Field<const char*>(unit, 0xB4) == nullptr || Field<const char*>(Field<const char*>(unit, 0xB4), 0xC8) == nullptr) {
+    return base;
+  }
+  return base * Factor(unit);
+}
 }
 
 namespace uhc {
@@ -589,7 +627,8 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
                   &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
-                  &sites::kBwrGatherRateRule})) {
+                  &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead, &sites::kBwrRateCallHeal,
+                  &sites::kBwrRateCallBuild})) {
     return Outcome::kFailed;
   }
   if (!GetterHeadIsKnown()) {
@@ -613,14 +652,22 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
       return Outcome::kFailed;
     }
   }
+  for (const RateCaller& caller : kRateCallers) {
+    if (!WriteCall(caller.call, reinterpret_cast<const void*>(&UhcBwrRateCall))) {
+      return Outcome::kFailed;
+    }
+  }
   g_uhcBwrTrainGetter = reinterpret_cast<void*>(&UhcBwrAuraCall);
+  if (!WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
+    return Outcome::kFailed;
+  }
   if (!trainCallStock) {
     Log(L"buildingWorkRateAuras: the Train call at 0x%08X is already hooked (noTrainNearEnemyTC); Train speed "
         L"gets the factor only through that hook's call of g_uhcBwrTrainGetter",
         sites::kBwrTrainCall.va);
   }
-  Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research "
-      L"and Maintain speed%ls (multiplayer unverified)",
+  Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research, "
+      L"Maintain, heal and build speed%ls (multiplayer unverified)",
       kStatBuildingWorkRate, log ? L", every change of a unit's factor logged" : L"");
   return Outcome::kApplied;
 }
@@ -643,7 +690,11 @@ UhcBwrAuraRate PROTO STDCALL base:DWORD, unit:DWORD, caller:DWORD
 
 kStatBuildingWorkRate EQU 40h       ; the new ModifyType stat; bwrauras.cpp uses the same value
 
+UhcBwrPanelRate PROTO STDCALL unit:DWORD
+
 .data
+panelNext       dd 006F4A02h    ; jne 6F4A0Dh
+rateLookup      dd 00487C45h    ; float thiscall(tactics action, target), ret 4
 workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
 
 .code
@@ -679,6 +730,43 @@ UhcBwrAuraCall PROC
 stock:
     jmp workRateGetter              ; no modifier record: the stock call
 UhcBwrAuraCall ENDP
+
+; Replaces 0x6F49FC, fld dword ptr [edx+0D0h], in the data refs' reader. EAX = the selected unit, ECX
+; the result; the jne at the continuation reads the flags of a cmp above, so they are kept. The rate is
+; left on the x87 stack, as the fld did.
+UhcBwrPanelHook PROC
+    TRACE_ONCE "buildingWorkRateAuras panel (0x6F49FC)"
+    pushfd
+    push ecx
+    push eax
+    call UhcBwrPanelRate
+    pop ecx
+    popfd
+    jmp panelNext
+UhcBwrPanelHook ENDP
+; Target of the calls of the rate lookup 0x487C45 in the heal tick (0x9E0CCF) and the build tick (0x9D3D7B).
+; Each has the action in ESI, so [esi+10h] is the unit that works, and each writes EAX, ECX and EDX
+; before reading them. ST0 = the rate, times the unit's BuildingWorkRate factor.
+UhcBwrRateCall PROC
+    TRACE_ONCE "buildingWorkRateAuras (calls of 0x487C45)"
+    push dword ptr [esp+4]          ; the target
+    call rateLookup                 ; ST0 = the stock rate; pops the target
+    mov eax, dword ptr [esi+10h]    ; the unit
+    test eax, eax
+    je done
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je done
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je done
+    push dword ptr [esp]            ; caller: the return address, for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+done:
+    ret 4
+UhcBwrRateCall ENDP
 
 END
 ```
@@ -751,6 +839,158 @@ Outcome ApplyCostEscalationTechs(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"costEscalationTechs: the Data subtype CostEscalation is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## unitTypeTechs
+
+Contract: [unitTypeTechs](../porting-to-another-dll.md#unittypetechs).
+
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+### src/features/unittypetechs.cpp
+
+```cpp
+// unitTypeTechs: the Data tech effects subtype="AddUnitType" and "RemoveUnitType", with unittype="<AbstractType>".
+//
+// An abstract type is a bit of the proto: the buffer [proto+30h], with [proto+34h] bits, indexed from the first
+// abstract ID [db+19B0h]. The per-player clone 0x67E011 builds its own buffer and copies the bits one by one, so
+// writing a player's copy changes that player alone, and the is-a test 0x44D7FA reads it at once.
+//
+// Stock's table of protos by type, read through 0x453326 (the KB's counts and queries by type, and so an AI's),
+// is built from the data and shared by every player: a type added here is not in it. Nothing here changes that.
+//
+// A type the base proto has is never lost when an AddUnitType ends, and comes back when a RemoveUnitType ends.
+// Several techs count: the bit is (base has it or some AddUnitType runs) and no RemoveUnitType runs.
+#include <compare>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <string>
+
+#include "../features.h"
+#include "../log.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+namespace {
+
+constexpr std::uintptr_t kGameGlobal = 0x00C66234;
+constexpr std::size_t kWorld = 0x13C;
+constexpr std::size_t kDatabase = 0x140;
+constexpr std::size_t kFirstAbstract = 0x19B0;
+constexpr std::size_t kProtoBits = 0x30;
+constexpr std::size_t kProtoBitCount = 0x34;
+constexpr int kMaxLogLines = 200;
+
+struct Key {
+  const char* proto;
+  std::int32_t type;
+  auto operator<=>(const Key&) const = default;
+};
+
+struct Count {
+  std::int32_t added = 0;
+  std::int32_t removed = 0;
+};
+
+std::map<Key, Count> g_counts;  // by the player's copy
+const char* g_world = nullptr;
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::size_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+// The bit's index in the buffer, or -1.
+std::int32_t BitOf(const char* proto, std::int32_t type) {
+  const char* game = Game();
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, kDatabase);
+  if (database == nullptr) {
+    return -1;
+  }
+  const std::int32_t bit = type - Field<std::int32_t>(database, kFirstAbstract);
+  return bit >= 0 && bit < Field<std::int32_t>(proto, kProtoBitCount) ? bit : -1;
+}
+
+bool HasBit(const char* proto, std::int32_t bit) {
+  const auto* bits = Field<const std::uint8_t*>(proto, kProtoBits);
+  return bits != nullptr && (bits[bit >> 3] & (1u << (bit & 7))) != 0;
+}
+
+void Change(char* proto, const char* base, std::int32_t type, bool add, bool unapply) {
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, kWorld);
+  if (world != g_world) {
+    g_counts.clear();  // another game: its copies are not these
+    g_world = world;
+  }
+  const std::int32_t bit = BitOf(proto, type);
+  auto* bits = Field<std::uint8_t*>(proto, kProtoBits);
+  if (bit < 0 || bits == nullptr) {
+    uhc::Log(L"unitTypeTechs: proto %hs has no bit for type %d; effect ignored", Field<const char*>(proto, 0x10), type);
+    return;
+  }
+  Count& count = g_counts[{proto, type}];
+  std::int32_t& which = add ? count.added : count.removed;
+  which += unapply ? -1 : 1;
+  if (which < 0) {
+    which = 0;
+  }
+  const bool wanted = (HasBit(base, bit) || count.added > 0) && count.removed == 0;
+  const std::uint8_t mask = static_cast<std::uint8_t>(1u << (bit & 7));
+  if (wanted) {
+    bits[bit >> 3] |= mask;
+  } else {
+    bits[bit >> 3] = static_cast<std::uint8_t>(bits[bit >> 3] & ~mask);
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"unitTypeTechs: proto %hs (player's copy), %ls%ls type %d: bit %ls", Field<const char*>(proto, 0x10),
+             unapply ? L"end of " : L"", add ? L"AddUnitType" : L"RemoveUnitType", type, wanted ? L"on" : L"off");
+  }
+}
+
+void AddType(char* proto, const char* base, std::int32_t type, bool unapply) { Change(proto, base, type, true, unapply); }
+
+void RemoveType(char* proto, const char* base, std::int32_t type, bool unapply) {
+  Change(proto, base, type, false, unapply);
+}
+
+void NewDatabase(char*) {
+  g_counts.clear();
+  g_world = nullptr;
+  g_logLines = 0;
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyUnitTypeTechs(const Config& config) {
+  const Config::Args* args = config.First("unitTypeTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"unitTypeTechs: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!AddTechTypeSubtype("AddUnitType", &AddType) || !AddTechTypeSubtype("RemoveUnitType", &RemoveType) ||
+      !OnDatabaseLoad(&NewDatabase)) {
+    return Outcome::kFailed;
+  }
+  Log(L"unitTypeTechs: Data effects AddUnitType and RemoveUnitType change one player's copy of a proto");
   return Outcome::kApplied;
 }
 
@@ -2207,12 +2447,12 @@ Contract: [noTrainNearEnemyTC](../porting-to-another-dll.md#notrainnearenemytc).
 
 Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `IsATrue` `0x44F139` (5 B), `PlayerByIdNull` `0x4649E1` (5 B), `PlayerIsEnemy` `0x484D2D` (32 B), `NoCorpseDoppleAliveCall` `0x4868FA` (21 B), `UnitsNearPoint` `0x4A1C55` (248 B), `UnitByIdNull` `0x4E2A35` (5 B), `FirstTcRuleLoop` `0x8CE9BE` (104 B), `TypeRuleQuery` `0x8CEA69` (34 B), `FirstTcRuleFilter` `0x8CEB45` (55 B), `TrainUpdateTrainer` `0x9EA2B2` (11 B), `WorkRateTrainCall` `0x9EA410` (20 B), `TrainRateScale` `0x9EA424` (19 B).
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `IsATrue` `0x44F139` (5 B), `PlayerByIdNull` `0x4649E1` (5 B), `PlayerIsEnemy` `0x484D2D` (32 B), `NoCorpseDoppleAliveCall` `0x4868FA` (21 B), `UnitsNearPoint` `0x4A1C55` (248 B), `UnitByIdNull` `0x4E2A35` (5 B), `FirstTcRuleLoop` `0x8CE9BE` (104 B), `TypeRuleQuery` `0x8CEA69` (34 B), `FirstTcRuleFilter` `0x8CEB45` (55 B), `TrainUpdateTrainer` `0x9EA2B2` (11 B), `WorkRateTrainCall` `0x9EA410` (20 B), `TrainRateScale` `0x9EA424` (19 B), `TrainEnqueueHead` `0x9EAC35` (6 B).
 
 ### src/features/notrainneartc.cpp
 
 ```cpp
-// noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC ...] [nowarn | warn=<text>] [log]:
+// noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC ...] [nowarn | warn=<text>] [refuse] [log]:
 // a unit of the marker type (default AbstractDaimyo, the Daimyos and the Shogun) does not train
 // while it stands near an enemy's first Town Center, or near an enemy's building of a listed type.
 //
@@ -2252,6 +2492,10 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44
 // stock dodge (0x6A24FC..0x6A2604: the text manager [world+8A8h], 0x8023AE) appears over it at most
 // once every kWarnIntervalMs of game time, red and without the dodge's rise. Interface only: every
 // machine holds the same trainers, and only the owner's screen shows the text.
+//
+// With "refuse", a marked trainer in that place also takes no new unit: the head of the enqueue FUN_009EAC35
+// answers false before the cost is paid at 0x9EAF86, for the train command's three calls and 0x8D60EA.
+// What was queued before the trainer walked in keeps waiting, as without it.
 #include <windows.h>
 
 #include <algorithm>
@@ -2311,6 +2555,7 @@ constexpr wchar_t kDefaultWarning[] = L"Too close to the enemy: training paused"
 
 float g_meters = 65.0f;
 bool g_log = false;  // "noTrainNearEnemyTC ... log": every pause and resume
+bool g_refuse = false;
 
 // What the trainers may not stand near: kFirstTc, or a unit type ID set on each data load.
 std::int32_t g_nearTypes[kMaxNear] = {kFirstTc, -1, -1, -1};
@@ -2544,6 +2789,7 @@ extern "C" {
 std::int32_t g_uhcNoTrainType = -1;  // marker unittype ID, set on each database load; -1 before
 
 void UhcNoTrainHook();
+void UhcNoTrainEnqueueHook();
 
 // Called by the hook on every tick of an active Train action, with its trainer. True: the
 // trainer is of the marker type and a blocker (an enemy's FirstTC, or an enemy unit of a "near"
@@ -2563,6 +2809,19 @@ bool __stdcall UhcNoTrainBlocked(const char* trainer) {
   }
   return blocked;
 }
+
+// From the head of the enqueue, for each unit asked of any trainer.
+bool __stdcall UhcNoTrainRefused(const char* trainer) {
+  if (!UhcNoTrainBlocked(trainer)) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"noTrainNearEnemyTC: unit %d (%hs, player %d) refused a unit", Field<std::int32_t>(trainer, 0x10),
+             ProtoName(trainer), PlayerIdOf(trainer));
+  }
+  return true;
+}
 }
 
 namespace uhc {
@@ -2580,7 +2839,7 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
   float meters = 0.0f;
   if (args.empty() || !ParseMeters(args.front(), &meters)) {
     Log(L"noTrainNearEnemyTC: expected \"noTrainNearEnemyTC <meters> [UnitType] [near <UnitType> ...] [nowarn | "
-        L"warn=<text>] [log]\" with meters above 0 and at most %.0f, got \"%hs\"; feature not applied",
+        L"warn=<text>] [refuse] [log]\" with meters above 0 and at most %.0f, got \"%hs\"; feature not applied",
         static_cast<double>(kMaxMeters), args.empty() ? "" : args.front().c_str());
     return Outcome::kFailed;
   }
@@ -2594,6 +2853,8 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
       log = true;
     } else if (_stricmp(arg, "nowarn") == 0) {
       g_warn = false;
+    } else if (_stricmp(arg, "refuse") == 0) {
+      g_refuse = true;
     } else if (_strnicmp(arg, "warn=", 5) == 0) {
       if (!ParseWarning(args[i].substr(5))) {
         Log(L"noTrainNearEnemyTC: %hs: expected warn=<text> (at most 127 characters, '_' for a space) or "
@@ -2613,7 +2874,7 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
       typeGiven = true;
     } else {
       Log(L"noTrainNearEnemyTC: unexpected argument %hs (expected: <meters> [UnitType] [near <UnitType> ...] [nowarn | "
-          L"warn=<text>] [log]); feature not applied",
+          L"warn=<text>] [refuse] [log]); feature not applied",
           arg);
       return Outcome::kFailed;
     }
@@ -2636,6 +2897,9 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
   if (g_warn && !uhc::VerifyFloatingText("noTrainNearEnemyTC warning")) {
     return Outcome::kFailed;
   }
+  if (g_refuse && !VerifyAll("noTrainNearEnemyTC refuse", {&sites::kTrainEnqueueHead})) {
+    return Outcome::kFailed;
+  }
   if (!RequestAbstractUnitType(typeName.c_str(), &g_uhcNoTrainType)) {
     return Outcome::kFailed;
   }
@@ -2656,7 +2920,8 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
     return Outcome::kFailed;
   }
   // Replaces mov ecx,[esi+10h] / call 9BFE33h at 0x9EA410; the hook re-executes them.
-  if (!WriteJmp(sites::kWorkRateTrainCall.va, reinterpret_cast<const void*>(&UhcNoTrainHook), 8)) {
+  if (!WriteJmp(sites::kWorkRateTrainCall.va, reinterpret_cast<const void*>(&UhcNoTrainHook), 8) ||
+      (g_refuse && !WriteJmp(sites::kTrainEnqueueHead.va, reinterpret_cast<const void*>(&UhcNoTrainEnqueueHook), 6))) {
     return Outcome::kFailed;
   }
   std::string blockers;  // not "near": windows.h defines it as a macro
@@ -2694,9 +2959,11 @@ EXTERNDEF g_uhcNoTrainType:SDWORD      ; marker unittype ID, set on each databas
 EXTERNDEF g_uhcBwrTrainGetter:DWORD
 
 UhcNoTrainBlocked PROTO STDCALL trainer:DWORD
+UhcNoTrainRefused PROTO STDCALL trainer:DWORD
 
 .data
 trainRateNext   dd 009EA418h    ; mov ebx,[0C66234h] / mov eax,[ebx+13Ch] / fmul [eax+310h]
+enqueueNext     dd 009EAC3Bh    ; mov esi,ecx
 
 .code
 
@@ -2725,6 +2992,28 @@ stock:
     jmp trainRateNext
 UhcNoTrainHook ENDP
 
+; Replaces 0x9EAC35..0x9EAC3A (sub esp,1Ch / push ebx / push ebp / push esi), the head of the enqueue
+; FUN_009EAC35, bool thiscall(action, proto, count, a), ret 0Ch, called by the train command and by
+; 0x8D60EA. The cost is paid further in (0x9EAF86), so a refusal here charges nothing, and all its
+; callers take a false. ECX = the Train action; its trainer [ecx+10h] was set before this call.
+UhcNoTrainEnqueueHook PROC
+    TRACE_ONCE "noTrainNearEnemyTC refuse (0x9EAC35)"
+    push ecx
+    push dword ptr [ecx+10h]        ; the trainer
+    call UhcNoTrainRefused          ; bool: marked, and a blocker is alive within range
+    pop ecx
+    test al, al
+    jne refused
+    sub esp, 1Ch                    ; stolen
+    push ebx                        ; stolen
+    push ebp                        ; stolen
+    push esi                        ; stolen
+    jmp enqueueNext
+refused:
+    xor eax, eax
+    ret 0Ch
+UhcNoTrainEnqueueHook ENDP
+
 END
 ```
 
@@ -2732,7 +3021,7 @@ END
 
 Contract: [lifespanAfterConstruction](../porting-to-another-dll.md#lifespanafterconstruction).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `IsATrue` `0x44F139` (5 B), `FadeUpdateHead` `0x4829FA` (32 B), `FadeTimerCommit` `0x482A1A` (12 B), `FadeDispatch` `0x482A26` (99 B), `LifespanTickHead` `0x482BF6` (42 B), `LifespanTickReturn` `0x482C20` (5 B), `LifespanTick` `0x483EEC` (12 B), `FadeOutTimerTest` `0x4A174A` (21 B), `IsBuiltFalse` `0x69F904` (3 B).
 
@@ -2752,6 +3041,7 @@ Sites: `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `IsATrue` `0x44F13
 // percent reaches 100 %, then run as in stock. A destroyed or deleted foundation is never held,
 // so its corpse fades and leaves as in stock. The hooks are in hooks/lifespan_hooks.asm.
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <set>
 #include <string>
@@ -2760,6 +3050,7 @@ Sites: `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `IsATrue` `0x44F13
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unitpanel.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -2783,6 +3074,22 @@ const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
+}
+
+// The unit panel's row: the seconds left of a marked unit's lifespan, and a held foundation's whole lifespan.
+bool __stdcall UhcLifespanRow(const char* panel, const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* record = Field<const char*>(unit, 0xB4);
+  if (proto == nullptr || record == nullptr || g_uhcLifespanType < 0 || !kProtoIsType(proto, g_uhcLifespanType)) {
+    return false;
+  }
+  const float left = Field<float>(record, 0x1C);
+  if (!(left > 0.0f)) {
+    return false;
+  }
+  wchar_t value[32];
+  swprintf_s(value, kIsBuilt(unit) ? L"%.0f s" : L"%.0f s once built", static_cast<double>(left));
+  return uhc::SetUnitPanelRow(panel, L"Lifespan", value);
 }
 
 const char* MainWorld() {
@@ -2943,6 +3250,9 @@ Outcome ApplyLifespanAfterConstruction(const Config& config) {
   if (!WriteJmp(sites::kFadeTimerCommit.va, reinterpret_cast<const void*>(&UhcLifespanFadeHook), 6)) {
     WriteBytes(sites::kLifespanTick.va, sites::kLifespanTick.bytes, 10);
     return Outcome::kFailed;
+  }
+  if (!AddUnitPanelRow(&UhcLifespanRow)) {
+    Log(L"lifespanAfterConstruction: no countdown in the unit panel");
   }
   Log(L"lifespanAfterConstruction: units of unittype %hs keep their Lifespan and its fade-out until their "
       L"construction is finished%ls (multiplayer unverified)",
@@ -3323,7 +3633,9 @@ END
 
 Contract: [hcShipmentPointFallback](../porting-to-another-dll.md#hcshipmentpointfallback).
 
-Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherSearchStart` `0x4C6BCF` (7 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
 
 ### src/features/shipments.cpp
 
@@ -3334,7 +3646,11 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerById
 // uhc.cfg, in order. An entry is a proto unit name, or the keyword FirstTC: the player's first town
 // center, the unit ID at [player+4F0h] that the placement rules call FirstTC. Stock makes only a
 // TownCenter FirstTC, which the stock list already tries first, so FirstTC is useful with
-// startingTC (a marked building can be FirstTC). The hook is in hooks/shipment_hooks.asm.
+// startingTC (a marked building can be FirstTC). The keyword LastResort, best listed last, takes any
+// building of the player, else a hero (the Explorer), so that a shipment always has somewhere to go.
+// The keyword replace makes the list run instead of the ten stock types, not after them; warn tells the
+// local player, through the chat, when a card is queued and there is no point at all; warn=<text> sets its text.
+// The hook is in hooks/shipment_hooks.asm.
 #include <windows.h>
 
 #include <cstdint>
@@ -3345,6 +3661,7 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerById
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unittypes.h"
 
 namespace {
 
@@ -3352,11 +3669,22 @@ constexpr int kMaxFallbackTypes = 64;
 // The entry of the keyword FirstTC; -1 is an unknown proto, >= 0 a proto ID.
 constexpr std::int32_t kFirstTcEntry = -2;
 constexpr char kFirstTcKeyword[] = "FirstTC";
+constexpr std::int32_t kLastResortEntry = -3;
+constexpr char kLastResortKeyword[] = "LastResort";
+constexpr char kReplaceKeyword[] = "replace";
+constexpr char kWarnKeyword[] = "warn";
+constexpr char kWarnPrefix[] = "warn=";
+constexpr std::uint32_t kLocalPlayer = 0x3C0;       // game: the local player's ID
+constexpr std::uint32_t kHcQueueCount = 0x28C;      // home city: cards in the shipment queue
+constexpr std::uint32_t kChatSlot = 0x5C;           // game's vtable: cdecl(game, from, to, format, text), as trChatSend
+constexpr std::uint32_t kChatFormat = 0x00BE2DD0;   // the stock L"%s"
+constexpr DWORD kWarnEveryMs = 30000;
 
 // Engine layout (docs/engine-symbols.md, "Home city gather point").
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
 constexpr std::uint32_t kHcPlayer = 0x08;          // home city: its player; [player+0] the player ID
 constexpr std::uint32_t kPlayerFirstTc = 0x4F0;    // unit ID of the player's first town center; -1 none
+constexpr std::uint32_t kPlayerUnits = 0xF8;       // the IDs of the player's units; +4 their count
 constexpr std::uint32_t kUnitId = 0x10;
 constexpr std::uint32_t kUnitOwner = 0x44;  // the owning Player*
 constexpr std::uint32_t kUnitProto = 0x5C;  // proto; [proto+10h] its name
@@ -3365,12 +3693,19 @@ constexpr int kMaxLoggedPlayers = 32;
 using PlayerByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
 using UnitByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
 using GatherPointValidFn = bool(__thiscall*)(const char* hc, const char* unit);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
 
 const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 // The check stock applies to the stored point and to every candidate: not null, alive (unit vtable
 // slot A4h), 0x44DDB4 true, 0x4802C6 not 1.
 const auto kGatherPointValid = reinterpret_cast<GatherPointValidFn>(0x0085302C);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+bool g_installed = false;
+bool g_warn = false;
+std::wstring g_warnText = L"No shipment point: cards on their way are refunded.";
+DWORD g_lastWarn = 0;
 
 // Proto names from uhc.cfg; resolved to IDs only once the game database exists.
 std::vector<std::string> g_typeNames;
@@ -3379,6 +3714,10 @@ std::vector<std::string> g_typeNames;
 // never reads them, so they cannot make two machines disagree.
 const char* g_loggedWorld = nullptr;
 std::int32_t g_loggedFirstTc[kMaxLoggedPlayers];
+std::int32_t g_loggedLastResort[kMaxLoggedPlayers];
+
+std::int32_t g_buildingType = -1;
+std::int32_t g_heroType = -1;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3397,6 +3736,7 @@ const char* ProtoName(const char* unit) {
 }
 
 bool IsFirstTcKeyword(const std::string& name) { return _stricmp(name.c_str(), kFirstTcKeyword) == 0; }
+bool IsLastResortKeyword(const std::string& name) { return _stricmp(name.c_str(), kLastResortKeyword) == 0; }
 
 void LogFirstTcPick(const char* world, std::int32_t playerId, const char* unit) {
   if (playerId < 0 || playerId >= kMaxLoggedPlayers) {
@@ -3406,6 +3746,9 @@ void LogFirstTcPick(const char* world, std::int32_t playerId, const char* unit) 
     g_loggedWorld = world;
     for (std::int32_t& id : g_loggedFirstTc) {
       id = -1;
+    }
+    for (std::int32_t& id : g_loggedLastResort) {
+      id = -2;
     }
   }
   const std::int32_t id = Field<std::int32_t>(unit, kUnitId);
@@ -3417,9 +3760,67 @@ void LogFirstTcPick(const char* world, std::int32_t playerId, const char* unit) 
            playerId, id, ProtoName(unit));
 }
 
+// The same for LastResort, with -1 for nothing left. Log only.
+void LogLastResort(const char* world, std::int32_t playerId, const char* unit) {
+  if (playerId < 0 || playerId >= kMaxLoggedPlayers) {
+    return;
+  }
+  if (world != g_loggedWorld) {
+    g_loggedWorld = world;
+    for (std::int32_t& id : g_loggedFirstTc) {
+      id = -1;
+    }
+    for (std::int32_t& id : g_loggedLastResort) {
+      id = -2;
+    }
+  }
+  const std::int32_t id = unit == nullptr ? -1 : Field<std::int32_t>(unit, kUnitId);
+  if (g_loggedLastResort[playerId] == id) {
+    return;
+  }
+  g_loggedLastResort[playerId] = id;
+  if (unit == nullptr) {
+    uhc::Log(L"hcShipmentPointFallback: player %d has no building and no hero: shipments have no point", playerId);
+  } else {
+    uhc::Log(L"hcShipmentPointFallback: player %d's shipment point -> unit %d (%hs), the last resort", playerId, id,
+             ProtoName(unit));
+  }
+}
+
 }  // namespace
 
 extern "C" {
+void UhcHcGatherReplaceHook();
+
+// From the hook, at "nothing found". Interface only: the local player's message, on the real clock, so it
+// reaches no game state.
+void __stdcall UhcGatherNoPoint(const char* hc, std::uint32_t store) {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  // The search that stores a point (store 1) never comes with no point: the game cancels the queue first, after a
+  // search with store 0. So the test is that a card is queued, [hc+28Ch].
+  (void)store;
+  if (!g_warn || game == nullptr || hc == nullptr || *reinterpret_cast<const std::int32_t*>(hc + kHcQueueCount) <= 0) {
+    return;
+  }
+  const char* player = *reinterpret_cast<char* const*>(hc + kHcPlayer);
+  if (player == nullptr ||
+      *reinterpret_cast<const std::int32_t*>(player) != *reinterpret_cast<const std::int32_t*>(game + kLocalPlayer)) {
+    return;
+  }
+  const DWORD now = GetTickCount();
+  if (g_lastWarn != 0 && now - g_lastWarn < kWarnEveryMs) {
+    return;
+  }
+  g_lastWarn = now;
+  uhc::Log(L"hcShipmentPointFallback: player %d has no shipment point; warned",
+           *reinterpret_cast<const std::int32_t*>(player));
+  using ChatFn = void(__cdecl*)(const char* game, std::int32_t from, std::int32_t to, const void* format, const wchar_t* text);
+  const auto vtable = *reinterpret_cast<const char* const*>(game);
+  const auto chat = *reinterpret_cast<ChatFn const*>(vtable + kChatSlot);
+  chat(game, 0, *reinterpret_cast<const std::int32_t*>(game + kLocalPlayer), reinterpret_cast<const void*>(kChatFormat),
+       g_warnText.c_str());
+}
+
 std::int32_t g_uhcGatherFallbackTypes[kMaxFallbackTypes];
 std::int32_t g_uhcGatherFallbackCount = 0;
 
@@ -3438,11 +3839,55 @@ void __stdcall UhcResolveGatherFallbackTypes() {
       uhc::Log(L"hcShipmentPointFallback: FirstTC -> each player's first town center (FirstTC)");
       continue;
     }
+    if (IsLastResortKeyword(g_typeNames[i])) {
+      g_uhcGatherFallbackTypes[i] = kLastResortEntry;
+      uhc::Log(L"hcShipmentPointFallback: LastResort -> any building of the player, then a hero");
+      continue;
+    }
     const int id = database == nullptr ? -1 : protoIdByName(database, g_typeNames[i].c_str());
     g_uhcGatherFallbackTypes[i] = id;
     uhc::Log(L"hcShipmentPointFallback: %hs -> proto %d%ls", g_typeNames[i].c_str(), id,
              id < 0 ? L" (unknown proto; skipped)" : L"");
   }
+}
+
+// Called from the hook for a LastResort entry. The first of the player's units, in the order of the player's
+// list, that is a building and passes the stock check 0x85302C, else the first such hero, else null. The list is
+// the simulation's, so every machine picks the same unit. It writes no game state, as a FirstTC entry; the walk
+// runs only for a player with no point at all.
+const char* __stdcall UhcGatherLastResortUnit(const char* hc) {
+  char* world = World();
+  if (world == nullptr || hc == nullptr) {
+    return nullptr;
+  }
+  const char* hcPlayer = Field<const char*>(hc, kHcPlayer);
+  if (hcPlayer == nullptr) {
+    return nullptr;
+  }
+  const std::int32_t playerId = Field<std::int32_t>(hcPlayer, 0x00);
+  const char* player = kPlayerById(world, playerId);
+  if (player == nullptr) {
+    return nullptr;
+  }
+  const auto* ids = Field<const std::int32_t*>(player, kPlayerUnits);
+  const std::int32_t count = Field<std::int32_t>(player, kPlayerUnits + 4);
+  const char* hero = nullptr;
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = kUnitById(world, ids[i]);
+    const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, kUnitProto);
+    if (proto == nullptr || !kGatherPointValid(hc, unit)) {
+      continue;
+    }
+    if (kProtoIsType(proto, g_buildingType)) {
+      LogLastResort(world, playerId, unit);
+      return unit;
+    }
+    if (hero == nullptr && kProtoIsType(proto, g_heroType)) {
+      hero = unit;
+    }
+  }
+  LogLastResort(world, playerId, hero);
+  return hero;
 }
 
 // Called from the hook for a FirstTC entry, [esp+10h] of FUN_004C6B9E = the home city. Returns the
@@ -3489,6 +3934,34 @@ namespace uhc {
 // FUN_004C6B9E returns the unit shipments arrive at. When the stored one is gone it searches a
 // fixed list of 10 unit types; this extends that list. Choice order is the cfg order, then the
 // stock unit-query order, so every machine with the same cfg picks the same building.
+bool AddFirstTcShipmentPoint() {
+  for (const std::string& name : g_typeNames) {
+    if (IsFirstTcKeyword(name)) {
+      return true;
+    }
+  }
+  if (g_uhcGatherFallbackCount >= kMaxFallbackTypes) {
+    Log(L"hcShipmentPointFallback: no room for FirstTC");
+    return false;
+  }
+  if (!VerifyAll("firstTC shipment point",
+                 {&sites::kFirstTcSet, &sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
+                  &sites::kUnitByIdNull, &sites::kGatherPointValid})) {
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("firstTC shipment point", {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore,
+                                              &sites::kGatherFallbackBlock}) ||
+        !WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_typeNames.insert(g_typeNames.begin(), kFirstTcKeyword);
+  g_uhcGatherFallbackCount = static_cast<std::int32_t>(g_typeNames.size());
+  return true;
+}
+
 Outcome ApplyHcShipmentPointFallback(const Config& config) {
   const Config::Args* names = config.First("hcShipmentPointFallback");
   if (names == nullptr) {
@@ -3499,8 +3972,39 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
     return Outcome::kFailed;
   }
   bool firstTc = false;
+  bool lastResort = false;
+  bool replace = false;
+  std::vector<std::string> entries;
   for (const std::string& name : *names) {
+    if (_stricmp(name.c_str(), kReplaceKeyword) == 0) {
+      replace = true;
+    } else if (_stricmp(name.c_str(), kWarnKeyword) == 0) {
+      g_warn = true;
+    } else if (_strnicmp(name.c_str(), kWarnPrefix, sizeof(kWarnPrefix) - 1) == 0) {
+      std::string text = name.substr(sizeof(kWarnPrefix) - 1);
+      if (text.empty() || text.size() > 127) {
+        Log(L"hcShipmentPointFallback: %hs: expected warn=<text>, at most 127 characters, '_' for a space; feature not "
+            L"applied",
+            name.c_str());
+        return Outcome::kFailed;
+      }
+      for (char& ch : text) {
+        ch = ch == '_' ? ' ' : ch;
+      }
+      g_warn = true;
+      g_warnText.assign(text.begin(), text.end());
+    } else {
+      entries.push_back(name);
+    }
     firstTc = firstTc || IsFirstTcKeyword(name);
+    lastResort = lastResort || IsLastResortKeyword(name);
+  }
+  if (entries.empty() && (replace || !g_warn)) {
+    Log(L"hcShipmentPointFallback: expected a proto unit name, FirstTC or LastResort; feature not applied");
+    return Outcome::kFailed;
+  }
+  if (replace && !VerifyAll("hcShipmentPointFallback replace", {&sites::kGatherSearchStart})) {
+    return Outcome::kFailed;
   }
   // FirstTC also reads [player+4F0h] (set at 0x67ABD4), player and unit by ID and the stored point
   // check; no feature writes those sites.
@@ -3511,23 +4015,33 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
                            &sites::kUnitByIdNull, &sites::kGatherPointValid})
               : VerifyAll("hcShipmentPointFallback",
                           {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock});
-  if (!verified) {
+  if (!verified || (lastResort && !VerifyAll("hcShipmentPointFallback LastResort",
+                                             {&sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
+                                              &sites::kUnitByIdNull, &sites::kGatherPointValid, &sites::kIsA}))) {
     return Outcome::kFailed;
   }
-  if (firstTc && config.First("startingTC") == nullptr && config.First("civFirstTC") == nullptr) {
+  if (lastResort && (!RequestAbstractUnitType("Building", &g_buildingType) ||
+                     !RequestAbstractUnitType("Hero", &g_heroType))) {
+    return Outcome::kFailed;
+  }
+  if (firstTc && config.First("firstTC") == nullptr && config.First("startingTC") == nullptr && config.First("civFirstTC") == nullptr) {
     Log(L"hcShipmentPointFallback: FirstTC without startingTC: a first town center can only be a TownCenter, which "
         L"the stock list already tries first");
   }
-  g_typeNames = *names;
+  g_typeNames = entries;
   for (int& id : g_uhcGatherFallbackTypes) {
     id = -1;
   }
   g_uhcGatherFallbackCount = static_cast<std::int32_t>(g_typeNames.size());
-  if (!WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
+  if (!WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5) ||
+      (replace && !WriteJmp(sites::kGatherSearchStart.va, reinterpret_cast<const void*>(&UhcHcGatherReplaceHook), 7))) {
     return Outcome::kFailed;
   }
-  Log(L"hcShipmentPointFallback: %d extra types after the stock list%ls (multiplayer unverified)",
-      g_uhcGatherFallbackCount, firstTc ? L", including each player's first town center (FirstTC)" : L"");
+  g_installed = true;
+  Log(L"hcShipmentPointFallback: %d extra types %ls%ls%ls%ls (multiplayer unverified)", g_uhcGatherFallbackCount,
+      replace ? L"instead of the stock list" : L"after the stock list",
+      firstTc ? L", including each player's first town center (FirstTC)" : L"", lastResort ? L", and a last resort" : L"",
+      g_warn ? L", with a warning" : L"");
   return Outcome::kApplied;
 }
 
@@ -3549,8 +4063,11 @@ include common.inc
 EXTERNDEF g_uhcGatherFallbackTypes:DWORD    ; proto IDs, resolved on first use
 EXTERNDEF g_uhcGatherFallbackCount:SDWORD
 UhcResolveGatherFallbackTypes PROTO STDCALL
+UhcGatherLastResortUnit PROTO STDCALL hc:DWORD ; any building, then a hero, of the player, or 0
 UhcGatherFirstTcUnit PROTO STDCALL hc:DWORD   ; the player's FirstTC if it is a valid point, else 0
+UhcGatherNoPoint PROTO STDCALL hc:DWORD, store:DWORD ; the warning, interface only
 
+LAST_RESORT_ENTRY EQU -3                    ; the same for the keyword LastResort
 FIRST_TC_ENTRY EQU -2                       ; g_uhcGatherFallbackTypes entry of the keyword FirstTC
 
 .data
@@ -3579,12 +4096,12 @@ resolved         db 0
 UhcHcGatherFallbackHook PROC
     TRACE_ONCE "hcShipmentPointFallback (0x669E2E)"
     cmp resolved, 0
-    jne searchTypes
+    jne gatherSearch
     mov resolved, 1
     pushad
     call UhcResolveGatherFallbackTypes
     popad
-searchTypes:
+gatherSearch::
     mov typeIndex, 0
 nextType:
     mov eax, typeIndex
@@ -3593,6 +4110,8 @@ nextType:
     mov edx, g_uhcGatherFallbackTypes[eax*4]
     cmp edx, FIRST_TC_ENTRY
     je firstTc
+    cmp edx, LAST_RESORT_ENTRY
+    je lastResort
     cmp edx, -1
     je typeDone
     mov eax, dword ptr [esp+10h]    ; home city
@@ -3669,13 +4188,39 @@ firstTc:
     je typeDone
     mov edi, eax
     jmp storeAndReturn              ; 0x4C6CB2: stores [hc+18Ch] when [esp+18h]==1, returns EDI
+lastResort:
+    TRACE_ONCE "hcShipmentPointFallback LastResort (0x669E2E)"
+    push dword ptr [esp+10h]        ; home city (address taken before the push)
+    call UhcGatherLastResortUnit    ; Unit* or 0; clobbers EAX/ECX/EDX only
+    test eax, eax
+    je typeDone
+    mov edi, eax
+    jmp storeAndReturn
 notFound:
+    movzx eax, byte ptr [esp+18h]   ; store
+    push eax
+    push dword ptr [esp+14h]        ; home city (address taken after the push above)
+    call UhcGatherNoPoint           ; clobbers EAX/ECX/EDX only
     pop ebp                         ; stolen 0x669E2E..0x669E32
     pop edi
     pop esi
     xor eax, eax
     jmp notFoundReturn
 UhcHcGatherFallbackHook ENDP
+
+; Replaces 0x4C6BCF..0x4C6BD5 with the keyword replace: the list runs instead of the ten stock types.
+; The stored point was refused just before. With the push of EBP, the stack is as at 0x669E2E.
+UhcHcGatherReplaceHook PROC
+    TRACE_ONCE "hcShipmentPointFallback replace (0x4C6BCF)"
+    push ebp
+    cmp resolved, 0
+    jne gatherSearch
+    mov resolved, 1
+    pushad
+    call UhcResolveGatherFallbackTypes
+    popad
+    jmp gatherSearch
+UhcHcGatherReplaceHook ENDP
 
 END
 ```

@@ -10,6 +10,8 @@ include common.inc
 
 UhcHotkeyContextFor PROTO STDCALL dbProto:DWORD, unit:DWORD
 UhcHotkeyTrainerHasContext PROTO STDCALL unit:DWORD
+UhcHotkeyTipAddContexts PROTO STDCALL list:DWORD
+UhcHotkeyTipFindBuild PROTO STDCALL
 
 EXTERNDEF g_uhcHotkeyFindContext:DWORD      ; int fastcall(manager, -, name, record), ret 8
 EXTERNDEF g_uhcHotkeyDeactivateAll:DWORD    ; int fastcall(manager, -, name, flag), ret 8
@@ -18,6 +20,9 @@ EXTERNDEF g_uhcHotkeyDeactivateAll:DWORD    ; int fastcall(manager, -, name, fla
 unitContextNext     dd 0079F89Dh    ; test edi,edi / jge 79F9BFh: turn context EDI on
 trainerQualified    dd 0064A05Ah    ; mov bl,1 / mov edi,esi: the unit enters its own context
 trainerNext         dd 0064A05Ch    ; mov edi,esi: the target of the stock jmp after the stolen mov
+tipListNext         dd 008F969Ch    ; mov eax,[edx+74h]: the context list is done
+tipBuildFound       dd 008F9102h    ; a key was found: its text goes out
+tipBuildMissing     dd 008F96AFh    ; no key: return false
 
 .code
 
@@ -77,5 +82,32 @@ UhcHotkeyTrainerHook PROC
 qualifies:
     jmp trainerQualified
 UhcHotkeyTrainerHook ENDP
+
+; Replaces mov edx,[0C66244h] at 0x8F9696 in FUN_008F8F5E, which writes the hotkey text of a proto's
+; tooltip. The function builds a list of the 37 stock context names at [esp+18h] and looks the unit's
+; tis("name") up in each. The added contexts join that list here, after the stock names, so a stock
+; mapping is found first. EDX is what the stolen read loads, and nothing else is live but the
+; callee-saved registers.
+UhcHotkeyTipListHook PROC
+    TRACE_ONCE "customHotkeyContexts tooltip (0x8F9696)"
+    lea eax, [esp+18h]
+    push eax
+    call UhcHotkeyTipAddContexts
+    mov edx, dword ptr ds:[0C66244h]    ; stolen 0x8F9696
+    jmp tipListNext
+UhcHotkeyTipListHook ENDP
+
+; Replaces jle 8F96AFh at 0x8F90FC. A proto with the Building bit is looked up in BuildAccel only.
+; With no key there, the added contexts are tried. The flags are those of the stock test eax,eax.
+UhcHotkeyTipBuildHook PROC
+    jg found
+    TRACE_ONCE "customHotkeyContexts tooltip, building (0x8F90FC)"
+    call UhcHotkeyTipFindBuild
+    test eax, eax
+    jg found
+    jmp tipBuildMissing
+found:
+    jmp tipBuildFound
+UhcHotkeyTipBuildHook ENDP
 
 END

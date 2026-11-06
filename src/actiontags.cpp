@@ -8,7 +8,7 @@
 
 namespace {
 
-constexpr std::size_t kMaxHandlers = 4;
+constexpr std::size_t kMaxHandlers = 12;
 // Return address of the parser's call by the <ProtoAction> handler; the hook passes only that one
 // and 0x5FA623, the tactics <action> creator's (docs/engine-symbols.md, "Damage and poison").
 constexpr std::uint32_t kFromProtoAction = 0x005FA213;

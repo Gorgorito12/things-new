@@ -56,6 +56,7 @@
 
 #include "../features.h"
 #include "../generated/sites.h"
+#include "../techsubtypes.h"
 #include "../unitpanel.h"
 #include "../log.h"
 #include "../patch.h"
@@ -515,6 +516,30 @@ bool __stdcall UhcOverhealUnitPanel(const char* panel, const char* unit) {
 }
 }
 
+namespace {
+
+// The Data subtype MaxHPOnly: the stock subtype Hitpoints rescales the HP of the units that stand (0xA0036E), so a
+// unit at 100 % stays there; this one writes only MaxHitpoints [proto+98h], so that room for overheal grows and
+// the units keep their HP.
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+constexpr std::uint32_t kProtoMaxHp = 0x98;
+int g_maxHpLogLines = 0;
+
+void ChangeMaxHpOnly(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  auto* value = reinterpret_cast<float*>(proto + kProtoMaxHp);
+  const float before = *value;
+  kEffectValue(relativity, value, *reinterpret_cast<const float*>(base + kProtoMaxHp), amount, unapply);
+  if (g_maxHpLogLines < 40) {
+    ++g_maxHpLogLines;
+    uhc::Log(L"overhealHitpointBars: MaxHPOnly on proto %d, relativity %u, amount %g%ls: max %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*value));
+  }
+}
+
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyOverhealHitpointBars(const Config& config) {
@@ -657,6 +682,9 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
     swprintf_s(statText, L", an overheal stat row labelled by string %d", g_statLabelId);
   } else if (g_statRow) {
     swprintf_s(statText, L", an overheal stat row labelled '%ls'", g_statLabel.c_str());
+  }
+  if (!AddTechSubtype("MaxHPOnly", &ChangeMaxHpOnly)) {
+    Log(L"overhealHitpointBars: no Data subtype MaxHPOnly; the bars work as before");
   }
   Log(L"overhealHitpointBars: HP bars and HP texts of units of unittype %hs take InitialHitpoints as 100 %%%ls%ls%ls "
       L"(display only)",

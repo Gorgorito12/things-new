@@ -150,10 +150,21 @@ bool InstallFirstTcProtoHook() {
   return g_protoHookInstalled;
 }
 
+// firstTC [UnitType] [log] is startingTC and civFirstTC in one line. The marker type is registered only when the line
+// names one, as it changes the unit type count: with none, this part stays off, and civFirstTC runs alone.
 Outcome ApplyStartingTc(const Config& config) {
   const Config::Args* args = config.First("startingTC");
   if (args == nullptr) {
-    return Outcome::kNotConfigured;
+    args = config.First("firstTC");
+    bool named = false;
+    if (args != nullptr) {
+      for (const std::string& arg : *args) {
+        named = named || _stricmp(arg.c_str(), "log") != 0;
+      }
+    }
+    if (!named) {
+      return Outcome::kNotConfigured;
+    }
   }
   std::string typeName = "AbstractStartingTC";
   bool typeGiven = false;

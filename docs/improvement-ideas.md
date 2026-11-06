@@ -9,6 +9,31 @@ public export allowlist.
 Status words: **data** = no DLL change; **small / medium / large** = DLL work; **RE** = needs
 reverse engineering first; **verify** = an in-game check before deciding.
 
+## Checked on 2026-11-06
+
+The notes below date from 2026-11-02. A review of the code and the exe (static, not played) changed these:
+
+- **Wrong:** the water shipment point looks for `HomeCityWaterSpawnFlag`, never for a Town Center. `damageOverTime` wraps
+  TakeDamage, not death. `AbilityButtonRecharge` was misnamed: 0x45EE37 reads the cost, now site `AbilityButtonCost`.
+- **Already done:** `cantBeSlowed` covers `AttachSnare`; the Maori age up; `techPrereqRecheck` has its KB null guard and
+  rechecks once per update; `hcShipmentPointFallback` has the keyword `FirstTC`.
+- **Smaller than it looks:** of WoL's actions that never reach `spreadAnyAccuracy`, most are unread tags. Only 7 referenced
+  actions have values of their own: 5 `InstantBallistics` and 2 `TargetGround`. A trainer held with a queue cannot move in
+  stock either. `abilitySlots 8` already shows every WoL ability. A button does show its recharge: stock draws it for the 36
+  cells (0x695202..0x695440), seen on the Town Center's ceasefire in `docs/media/ceasefire-wol.mp4`.
+- **Not to do unless WoL asks,** with the reason:
+  - `NumberProjectiles`: JTMaston does not need it.
+  - The `Poison` flag: stock's event does nothing (0xB1BE43), and no data reaches the bit.
+  - The engine AI's base, the start camera and a Nomad start: JTMaston said only the Pa needs FirstTC, and nothing starts a Nomad
+    game in a normal setup.
+  - `trPlayerToggleAllowTCSpawning`: nothing in WoL's data uses it.
+  - `InstantBallistics` spread: waits for JTMaston (#2).
+  - `techPrereqRecheck` by events, `Volatile` hysteresis and team counts: polling already answers in the same update, and
+    none of WoL's 9 `<TypeCount>` techs is `Volatile`.
+  - Hotkey contexts for mixed selections: that is stock's rule.
+  - `abilitySlots` by buttons and the wonder panel's 8: no WoL case.
+  - Transforming at expiry and hold conditions in `lifespanAfterConstruction`: WoL's `*Maturing` already end in a unit.
+
 ## Cross-cutting
 
 These come up in several sections below. Building them once makes the later items cheaper.
@@ -164,8 +189,8 @@ First: the event-driven version and the hysteresis.
 
 - **Count buttons, not records.** A disabled ability still uses a slot, so N must be at least the
   longest list. Loop until N *visible* abilities are collected; N becomes "max buttons". *small*
-- **Recharge on the button** or "ready in 12 s" in the tooltip; the per-player charge and period
-  were located for the ceasefire. *medium*
+- **Recharge on the button:** stock already draws it, a sweep over a red button. Left: "ready in 12 s" in the
+  tooltip; the per-player charge and period were located for the ceasefire. *medium*
 - **Locked abilities greyed** with the requirement in the tooltip, instead of hidden. *small*
 - **Order:** a position tag in the record, or "enabled first". *small*
 - **A second page** ("more" button): the grid stays 6×6 and what does not fit is not drawn. *large*
@@ -177,7 +202,7 @@ First: the event-driven version and the hysteresis.
 - **Tests:** the monk's `AlwaysDisabledInGrid` aura at position 7 (WoL's real case); two players
   with different N (should be harmless, UI only).
 
-First: count buttons, then recharge on the button.
+First: count buttons.
 
 ## `lifespanAfterConstruction`
 
@@ -242,7 +267,6 @@ The guide lists what still looks for the `TownCenter` proto; close that list:
 - **Engine AI main base** (0x4CF222); the XS scripts are WoL's part (a tagged AI got its Market
   and settlers, then stayed idle). *small*
 - **`trPlayerToggleAllowTCSpawning`** gate on `Maintain`. *small*
-- **Water shipment point** (`hcShipmentPointFallback` does not cover it). *small*
 - `CoveredWagon` build limit, Town Center repair cost. *minor*
 - **Better replacement rule:** when the first town center dies, pick among the live marked
   buildings (oldest or nearest) at once instead of waiting for the next one added; option for a
@@ -311,8 +335,7 @@ First: moving while held and `refuse`.
 
 ## `overhealHitpointBars`
 
-- **Percentage techs leave a full unit at 99 %:** scale the reference by the same factor, as the
-  key already does for auras. *small*
+- **Percentage techs leave a full unit at 99 %:** false, measured on 2026-11-06. The rescale 0xA0036E adds new max minus old max to the HP of a built unit, and the tech adds the same to InitialHitpoints, so a unit at its 100 % stays there: 141.75/156.75 went to 158.25/173.25 with `BasePercent`, 139.28/154.28 to 154.70/169.70 with `Percent`, a new unit got the same, and a unit at its max stayed at its max. Only an unbuilt unit is scaled. *Nothing to build.*
 - **Minimized UI text stays white** (the gadget prints markup as text): colour by property. *small*
 - **Group Health above 100 %** as an option. *small*
 - **Techs that raise only the max** (`MaxHitpointsOnly` / `OverhealCapacity` subtype): today

@@ -104,7 +104,7 @@ says so:
 | `BroadsideMuzzleClampL` | `0x5034E2` | 12 B | 6 B at `0x5034E2`, only with `log` | `3B C6 89 44 24 1C` (`cmp eax,esi; mov [esp+1Ch],eax`) | the MuzzleL clamp; broadsideMuzzleLimit log hook |
 | `BroadsideInitHead`, `BroadsideMuzzleClampR`, `BroadsideMuzzleReload`, `BroadsideSingleUseCap`, `BroadsideClampCold` | `0x50339A`, `0x503447`, `0x5034B3`, `0x6A8236`, `0x6A8247` | `0x35`, 12, 13, 17, 22 B | — | — | the set-up up to the Ship test, the MuzzleR clamp, the limit reload, the `SingleUsePlayer` block and the cold clamps |
 | `AbilitySlotCopies` | `0x695BB6` | `0x4C` B | 4 B at `0x695BD3` | `05 00 00 00` (imm32 of `mov edi,5`) | page-11 copy loop of the command panel refresh FUN_0046188E; abilitySlots |
-| `AbilityButtonRecharge` | `0x696C70` | 11 B | 5 B at `0x696C70`, only with `log` | `E8 C2 81 DC FF` (`call 45EE37h`) | first instruction of GetNth's true path; abilitySlots log hook |
+| `AbilityButtonCost` | `0x696C70` | 11 B | 5 B at `0x696C70`, only with `log` | `E8 C2 81 DC FF` (`call 45EE37h`) | first instruction of GetNth's true path; abilitySlots log hook |
 | `AbilityPage11Branch`, `AbilityNthCall` | `0x4C5AEB`, `0x696C0B` | `0x10`, `0x65` B | — | — | the only entry of the copy loop, and the GetNth call frame the log hook reads |
 | `WonderPanelAbilityCall` | `0x69EE5D` | `0x2D` B | 5 B at `0x69EE5D` (a `call` to the hook) | `E8 6A F7 04 00` (`call 6EE5CCh`) | the wonder power panel's ability request and the stock re-check after it; wonderPanelSkipAuras (returns to `0x69EE62`) |
 | `WonderPanelAbilityArgs`, `NthVisibleAbility`, `AbilityByIndex` | `0x69EE37`, `0x6EE5CC`, `0x44E702` | `0x26`, `0x14`, `0x1D` B | — | — | the arguments the hook re-pushes, and the two functions it calls |

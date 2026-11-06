@@ -727,6 +727,17 @@ would then send.
 Market and who had no Town Center sent a card of food crates; the helper returned the Market
 (unit 148), the store = 1 path wrote 148 to `[hc+18Ch]`, and the crates landed beside the Market.
 
+`LastResort`: the helper walks the IDs at `[player+F8h]`, count `+FCh`, with the stock check 0x85302C, and writes no game state. The
+list is the simulation's, so every machine picks the same unit, and the walk runs only for a player with no point. With no point
+the game cancels the queue and refunds the ship, seen in game; the code that does it was not read.
+
+`replace`: a jmp at 0x4C6BCF, 7 bytes, goes to the same search as the exit 0x669E2E, with the stack the same after a push of EBP. `warn` runs
+at "nothing found", on the local player's real clock, through the game's chat, vtable +5Ch as `trChatSend`. The search that stores never
+comes with no point, so the test is a queued card.
+
+`firstTC`: a jmp at 0x6A2130 re-executes the read of flag 136 and sets the bit for the player's FirstTC of its civ's `<firstTC>` proto.
+Nothing is written to the proto, which every civ shares.
+
 ### healNonIdle
 
 Two filters stop a healer from healing a busy unit:
@@ -1080,6 +1091,11 @@ tick text depends on the local player and touches nothing the simulation reads, 
   no more ticks).
 - The stock Poison flag stays unused.
 
+**Saved games.** `savedmarkers.h`: the modifier's save 0x9E3423 and load 0x9E355E copy `+68h`, `+6Ch`, `+70h` and `+74h` as raw dwords,
+and its update reads none of the last three, so a modifier of an unread stat holds four words. `damageOverTime` keeps a header
+(63h) and the stacks (64h) per poison, `overhealDecay` the last gain (65h). They are written in the simulation on every machine,
+reused when free, and read once when another game is running. A transform ends them until the key's next write.
+
 ### spreadAnyAccuracy
 
 **What stock does.** A projectile's fate is decided when it is launched.
@@ -1186,6 +1202,10 @@ the log reads the simulation and never writes it.
 **Performance.** Per shot through the block: one C++ call with an is-a bit test (hits); per miss, one
 `std::map` lookup (about 600 entries with the stock data) and the stock function. No allocation per
 shot. Not measured with `perfStats`.
+
+A TargetGround shot leaves its lead at 0x4C4DEC with no roll. For a marked shooter the hook runs the miss offset 0x4CEF8C on the point at
+`[esp+28h]` and leaves the mode at 3. At 0x4997AE a marked shooter goes on into the precalculated block when the cfg var is off.
+Unmarked shooters take the stock path in both.
 
 ### liveBuildingWorkRate
 
@@ -1870,6 +1890,8 @@ takes after a creation. Any other unit re-executes the two `mov`s and continues 
   game already holds, and the dopple of a live unit that later dies out of sight.
   No WoL proto uses `MutateDopples` either. <!-- private -->
 
+`expire=` wraps the call 0x49198B of the manager update; past the age it answers true and 0x5038E0 removes the dopple. `[dopple+0]` is the time it was made, kept in the save, and only simulation data decides, so every machine ends the same dopples.
+
 ### danceBonusCivs
 
 **The stock dances.** A `DanceBonus` action (protoaction type 45h) stores its kind as a byte at
@@ -2106,8 +2128,8 @@ during the game and its byte `+1A95h` was 0.
 **Not covered:** a Nomad start was not driven (TAD's skirmish setup has no Nomad option); a
 `TownCenter` from `<startingunit>`; the AI scripts, which expect a Town Center (a tagged AI got
 its Market and settlers, then stayed idle), and the engine's AI auto-base FUN_004CF222; the age-up
-picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B), the `Maintain` spawn
-gate (0x492FD6) and the water shipment point `[hc+190h]`, which all look for `TownCenter` itself.
+picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B) and the `Maintain` spawn
+gate (0x492FD6), which all look for `TownCenter` itself.
 
 ### transformSpan
 
@@ -2311,6 +2333,8 @@ screen in about 0.3 s, while at 0 it stays over the unit. 0x8023AE refuses a tex
   18.4 m between centres, the radius branch of the distance), a Town Center that is not the first
   (`near AbstractTownCenter`) and a saved game loaded with a held trainer were seen in game.
 
+With `refuse`, the head of the enqueue 0x9EAC35 answers false before the cost at 0x9EAF86, for the train command and 0x8D60EA. **Why it is safe:** all four callers take a false, and the trainer `[ecx+10h]` is set before the call.
+
 ### overhealHitpointBars
 
 **The stock numbers.** The `<MaxHitpoints>` tag handler (0x5F5CED) stores `[proto+98h]` (`fstp
@@ -2496,6 +2520,8 @@ reference is coloured the same.
   (EAX, ECX, EDX and the flags are written there before they are read).
 - *Observed in game:* `Overheal 15/15` (orange) at 165/150, `0/15` when damaged, `16/16` under a
   MaxHP aura, `0/40` for a marked Explorer at its 100 % in a skirmish.
+
+`MaxHPOnly`: an `AddTechSubtype` handler writes `[proto+98h]` through 0x7F892A and skips the rescale 0xA0036E.
 
 ### overhealSources
 
@@ -2717,6 +2743,48 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
+
+### auraStacking
+
+The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps.
+A modifier does not say which aura made it, so right after the apply, at 0x9D0675, the key writes the aura's mark in `[modifier+84h]`,
+a field stock saves and loads and does not read. `<NoStack>` refuses a target that holds that mark. A refused target stays out of the
+action's list, so every update of every carrier asks again, and a dead carrier's modifier goes with it. `unitResourceAuras` makes no
+modifier: its take asks `AuraClaim`.
+
+**Why it is safe.** The mark lives in game state, so every machine and a saved game see the same thing, and the filter runs only for
+targets the action does not hold yet.
+
+### snareValues
+
+A jmp at 0x4DD207, after what `cantBeSlowed` writes, pushes the action's values and calls the creator 0x4DD22D. EBP is the attacker's unit
+action; `[ebp+4]` the player's copy of the tactics action. **Why it is safe:** the values are data and tech effects, the same on every machine.
+
+`strongest`: the unit's recompute 0x49F1BA has the one call of the velocity sum, 0x49F26A, with the list 0xCF0718 it has just built, oldest
+first. A `WriteCall` there swaps the slowest snare into the first snare's place and runs the sum. **Why it is safe:** nothing is kept, the
+list is rebuilt for each recompute, and both swapped entries are velocity modifiers, so the other stats read the same list.
+
+### danceBonusCivs: the fire pit
+
+The head of getFirePit 0x4819EF keeps, per player, the place of the first unit of the type, keyed by the list's count, its last ID and a
+counter of transforms. The stock lookup 0x48195C then starts at that place. **Why it is safe:** the memory is a fact about the list, not of
+a step, so a UI call between updates cannot change a result. The dancer count is hooked at 0x9C1604, after its stale workers.
+
+### unitTypeTechs
+
+The proto clone 0x67E011 builds its own bit buffer `[proto+30h]`, so a write to a player's copy reaches that player alone, and the is-a
+test 0x44D7FA reads it at once. `AddTechTypeSubtype` reads `unittype` into `[effect+10h]`, the field the action variant uses. A proto's
+bits are not in a saved game, so the same code sets flag 20h in `[effect+9]`: the pass after a load 0x94DDEA runs only flagged effects.
+
+**Why it is safe.** Counts decide the bit, so an end of effect never clears what the base proto has or another tech still adds. The
+pass after a load starts them from zero, as a new world clears them. Stock's table behind 0x453326 is left alone: it is shared by
+all players, and KB counts stay as the data says.
+
+### customHotkeyContexts: the tooltip letter
+
+FUN_008F8F5E writes a proto's key by looking its `tis("X")` up in a list of 37 names written in the code, once per proto (FUN_007EF89E, the
+cache `[db+5D28h]`). A jmp at 0x8F9696 adds the added contexts to that list after the stock names, and one at 0x8F90FC tries them when a
+building has no key in `BuildAccel`. **Why it is safe:** it is UI text, read on the UI thread, and the cache is reset with the keymap.
 
 ### linkedResource
 
@@ -2959,6 +3027,8 @@ Value is `{3, BString}` with an empty BString (0x44A635).
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
 
+The rate lookup 0x487C45 has 22 callers, so only the heal tick's 0x9E0CCF and the build tick's 0x9D3D7B go to `UhcBwrRateCall`, with the worker in `[esi+10h]`. Calls that only test the rate above 0 stay stock.
+
 ### sharedBuildLimit
 
 Stock compares a count with a limit in about 30 places. The count has many routes: 0x4C7BC5 (6 callers) and 0x4C846D (60
@@ -3200,6 +3270,22 @@ default) with its file offset.
   mismatch.
 - `perfFileLog` counts the game's calls against the ones made to Windows. A session with the
   buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows.
+
+### xsErrorLog
+
+Both XS reporters, 0x43A3A4 and 0xA5667F, print through a callback at `[log]` that the shipped game leaves empty. A jmp over the
+6 bytes of each head hands the stack to C++, which formats with the stock 0x435D99 and writes to the log; the stub replays
+`sub esp,804h`. **Why it is safe:** both are cdecl, so EAX, ECX and EDX are free at the head, the formatter is stock, and neither runs
+in a clean game.
+
+### dataLint
+
+Reads the exe's own failure exits while the data loads: the `<UnitType>` handler's 0x5FCB61, the proto tag find at 0x5F62A2, the
+`<ProtoAction>` look-up at 0x5FA202, and in the effect parse the false setData at 0x6205E9 and the unknown type at 0x65BC56, plus the
+shared action tag, ModifyType and Data subtype hooks. The tech parser's loop 0x61FDB8 keeps the current `<Tech>` node to name it,
+and the summary is written when the call 0x61FE4A returns.
+
+**Why it is safe.** Each hook re-executes what it replaces and only records a name, and all of that code runs while the data loads.
 
 ### multipleInstances
 

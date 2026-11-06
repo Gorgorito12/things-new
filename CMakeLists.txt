@@ -39,15 +39,19 @@ set(UHC_SOURCES
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
+  src/features/unittypetechs.cpp
   src/features/detonation.cpp
   src/features/hctargets.cpp
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
   src/features/freeresearch.cpp
   src/features/cantslow.cpp
+  src/features/snarevalues.cpp
   src/features/civfirsttc.cpp
+  src/features/datalint.cpp
   src/features/displayrange.cpp
   src/features/linkedresource.cpp
+  src/features/xslog.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
@@ -83,6 +87,7 @@ set(UHC_SOURCES
   src/features/teams.cpp
   src/features/techrename.cpp
   src/features/pillage.cpp
+  src/features/aurastacking.cpp
   src/features/trainbatch.cpp
   src/features/transform.cpp
   src/features/transformspan.cpp
@@ -159,10 +164,14 @@ set(UHC_SOURCES
   src/hooks/modifytype_hooks.asm
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm
+  src/hooks/datalint_hooks.asm
+  src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm
+  src/hooks/xslog_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm
   src/hooks/pillage_hooks.asm
+  src/hooks/aurastacking_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/veterancy_hooks.asm
   src/hooks/freeresearch_hooks.asm

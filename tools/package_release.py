@@ -222,7 +222,8 @@ removeFameRestriction         Fame, XP and shipment costs and icons
 removeConversionRestriction   ConvertGuardian works on any unit
 hcShipmentPointFallback ...   when no stock fallback building is left, the shipment point
                               moves to the building types you list; FirstTC = the
-                              player's first town center (with startingTC or civFirstTC)
+                              player's first town center (with startingTC or civFirstTC);
+                              LastResort = any building, then a hero
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
 smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt unit
                               (listed types first) instead of the first one
@@ -251,15 +252,16 @@ gaiaSocketsOnly [UnitType] [log]  socketed buildings only on sockets owned by Ga
 customHotkeyContexts [log]    keymap contexts <ProtoName>Accel: hotkeys for new buildings
 snareOnlyHitUnit [log]        a snared unit no longer slows the group it moves with
 techRenameEffect [log]        tech effect SetTechName: rename a tech per player
-noCorpseDopples [UnitType] [log]   dead marked units (hunt carcasses) leave no dopple
+noCorpseDopples [UnitType] [expire=S] [log]   dead marked units (hunt carcasses) leave no dopple
 danceBonusCivs Civ ... [log]  fire pit train/XP/gather/regen dances for more civs
 startingTC [UnitType] [log]   marked buildings count as a player's first town center
                               (FirstTC in placementrules), like TownCenter
 civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCenter maps
                               place for its players (not Nomad); it is their FirstTC
+firstTC [UnitType] [log]      civFirstTC, and startingTC when a type is named, in one line
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
-noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [log]   marked units
+noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [refuse] [log]   marked units
                               (Daimyos) do not train within M metres of an enemy's first
                               Town Center or of an enemy building of a near type
 overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=Texture] [stat[=Label]] [log]   HP bars and texts
@@ -276,9 +278,12 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
+auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura
+dataLint [log] [file]         while the data loads, says what it asks for and the game drops
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
+unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
 veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
@@ -294,9 +299,11 @@ killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
 teamKillBounty [log]          the XP of a marked victim goes to the killer's team
 cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
+snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
-                              research and Maintain speed
+                              research, Maintain, heal and build speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
+xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
 
 What each key needs from your mod, and how well it is tested: see the guide.

@@ -30,11 +30,17 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 14:15 | [`unitTypeTechs`](#unittypetechs) | Added. Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | The effects in your techs. |
+| Friday 2026-11-06 13:55 | [`snareValues`](#snarevalues) | Filmed in WoL, with a control. The factor and length of `<TargetSpeedBoost>`, per action and by tech. | The tags on the action. |
+| Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
+| Friday 2026-11-06 13:11 | [`firstTC`](#firsttc) | Added.  |  |
+| Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added.  |  |
+| Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added.  |  |
+| Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
+| Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
+| Friday 2026-11-06 11:33 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Friday 2026-11-06 08:01 | [`linkedResource`](#linkedresource) | Added. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
 | Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
-| Thursday 2026-11-05 14:06 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
-| Thursday 2026-11-05 14:06 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
-| Thursday 2026-11-05 14:06 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -383,6 +389,42 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
   need the same setting.
 - **Status:** confirmed in single player, on the stock game: on a 25-minute save, `verify` checked 7.5
   million buffered reads against the file and found no mismatch. Not tested in WoL or in multiplayer.
+
+#### xsErrorLog
+
+**Added:** Friday 2026-11-06 12:56
+
+```
+xsErrorLog [lines]
+```
+
+- **In WoL today:** a broken AI script shows only `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'`, and the AI does
+  nothing. `tools/re/trace_xs.py` was the only way to see the cause.
+- **Effect:** the XS compiler's messages go to `UHC.log`, or `engine-ext\engine-ext.log`, with file and line, for at most `lines`
+  lines (200 by default). The log says when it stops. It changes nothing in the game, so players may set it differently.
+- **Log:** `xsErrorLog: applied`, `hook reached: xsErrorLog report (0x43A3A4)`, `hook reached: xsErrorLog message (0xA5667F)`, and
+  `xsErrorLog: C:\...\AI4\aiWoLMain.xs(33806): Error 0324: invalid expression, likely is not enclosed by parentheses.`
+- **Tested in WoL (2026-11-06):** a broken script gave its 6 messages and Error 0003, key off none; a cap of 3 stopped and said so;
+  beside WoL's DLL, the same lines. A clean skirmish of 165 s reached neither hook. Not shown: a runtime message. Array errors, an
+  unknown rule, a division by zero and a recursion of 400 print nothing, and an unbounded recursion ended the game.
+
+#### dataLint
+
+**Added:** Friday 2026-11-06 12:52
+
+```
+dataLint [log] [file]
+```
+
+- **What it does:** while the data loads, it says what the data asks for and the game drops: unknown `<UnitType>`, proto and action
+  tags, Data subtypes, `<ModifyType>` names with no stat, `<ProtoAction>` names not in the unit's tactics, and effects the game
+  deletes. Stock says nothing about any of them.
+- **Output:** one line per name, with how many times and the first proto or tech, up to 40 per kind, then a summary. `log`: all of
+  them. `file`: the whole report, with every deleted effect, in `dataLint.txt` next to the log.
+- **No effect on the game:** it changes nothing, and nothing runs after the load.
+- **Tested in WoL (2026-11-06):** 105 names on WoL's data, among them about 518 `TechStatus` effects on techs that do not exist and 88
+  `<ModifyType>GATHER`. One typo per kind was caught. Beside WoL's DLL too. The load time was not measured well, as other games
+  were running. Not covered: unknown `<Flag>` names, and why an effect was deleted.
 
 #### multipleInstances
 
@@ -750,6 +792,7 @@ New names the game's data and scripts can use.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`customAbstractTypes`](#customabstracttypes) | Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | always on | The file. | confirmed |
+| [`auraStacking`](#aurastacking) | `<NoStack>` and `<ForbidUnitType>` on any aura. | **new** | The tags on the aura. | confirmed |
 | [`customProtoUnitCommands`](#customprotounitcommands) | Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | always on | The file, and the `<Command>` lines that use them. | confirmed |
 | [`customHotkeyContexts`](#customhotkeycontexts) | Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. Today the exe drops them. | **new** | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. | confirmed (single player) |
 | [`techRenameEffect`](#techrenameeffect) | The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | **in `wol.cfg`**, but WoL's renames for all players | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. | confirmed (single player) |
@@ -861,6 +904,16 @@ exe does not know. The DLL registers it (`registered keymap context WOLBarracksG
 so `o` does nothing and no Klepht is queued.
 [Full video (MP4)](media/customHotkeyContexts-wol-control.mp4).
 
+![The letter in the tooltip in WoL](media/customHotkeyContexts-tooltip-wol.gif)
+
+*In WoL, with `customHotkeyContexts log` (test data: Klepht enabled for Ethiopians, the Greek barracks selected):* the tooltip reads
+`Klepht (O)`. [Full video (MP4)](media/customHotkeyContexts-tooltip-wol.mp4).
+
+![The letter in the tooltip in WoL, key off](media/customHotkeyContexts-tooltip-wol-control.gif)
+
+*In WoL, key off (the same data):* `Klepht`, with no letter. `Scytheman (P)` keeps its letter: a stock context has it.
+[Full video (MP4)](media/customHotkeyContexts-tooltip-wol-control.mp4).
+
 ```
 customHotkeyContexts [log]
 ```
@@ -921,13 +974,15 @@ customHotkeyContexts [log]
   - when the context table is too full: `customHotkeyContexts: N contexts are registered; keymap
     context X not registered, its entries are dropped (the last 32 of the 255 context IDs stay free
     for the game)`.
+- **The letter in the tooltip:** a key of an added context shows on its button, as a stock one does. A unit mapped in a stock context
+  and in an added one shows the stock letter. Only `tis("Proto")` counts, not `tis("Proto",5)`.
+- **Tested in WoL (2026-11-06, tooltip):** 41 protos gain a letter (556 to 597) and no stock letter changes; the same after a load and
+  beside WoL's DLL; an AI skirmish of 100 s with no XS error. Not tested: tech buttons, the building branch, multiplayer.
 - **Limits:**
   - at most 255 contexts in all; the DLL stops adding at ID 222 to leave the game room. About 70 can
     be added: the game registers about 151 before the keymap;
   - names the exe already knows (`SettlerAccel`, `CoveredWagonAccel`, …) keep the exe's meaning;
   - a context is on only for the last unit of the selection;
-  - the hotkey letter on train-button tooltips comes from the exe's fixed list of contexts, so keys of
-    an added context are not shown there (static reading).
 - **Simulation:** no. A hotkey issues the same command as clicking the button, so players may set
   the key differently. Not tested in multiplayer.
 - **Status:** confirmed in single player. In WoL (2026-11-03), three real presses of `o` queued three
@@ -1136,6 +1191,51 @@ kbUnitSyscalls
   mine and a bush at full showed "full". `kbUnitGetNumberTargeters` was reached but gave 0 in that
   window (every gatherer was already working its target).
 
+#### auraStacking
+
+**Added:** Friday 2026-11-06 13:44 · **Filmed in WoL:** Friday 2026-11-06 13:44
+
+![auraStacking in WoL](media/auraStacking-wol.gif)
+
+*In WoL, with `auraStacking log` (Ethiopians, 5 `Pikeman` with a test aura `BuildingWorkRate` ×3 and `<NoStack>`, `ring_work.xml`):*
+the Town Centers in range work at ×3. [Full video (MP4)](media/auraStacking-wol.mp4).
+
+![auraStacking in WoL, key off](media/auraStacking-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the tag, the auras multiply and they work at ×27.
+[Full video (MP4)](media/auraStacking-wol-control.mp4).
+
+```
+auraStacking [log]
+```
+
+```xml
+<action>
+    <name>MyAura</name>
+    <type>AutoRangedModify</type>
+    <nostack>1</nostack>
+    <forbidunittype>Hussar</forbidunittype>
+</action>
+```
+
+- **In WoL today:** every carrier of an aura multiplies: five of ×4 give ×1024.
+- **`<NoStack>`:** a target holds this aura from one carrier. When that one dies or it leaves its range, the next takes over,
+  0.6 s later in the test. Another aura still multiplies with it. For stock auras and those of `buildingWorkRateAuras`,
+  `resourceGatherAuras` and `unitResourceAuras`, where each target is paid by one carrier.
+- **`<ForbidUnitType>`** (or `<ForbidAbstractType>`, more than once): the aura leaves those units alone, on any aura.
+- **Same aura:** the same proto and action name. Two protos sharing a tactics file are two auras, and the first carrier stays: the
+  strongest does not win.
+- **Changes the simulation:** every player needs the same setting and data.
+- **Saved games:** nothing to do: the mark is in the modifier, which the game saves.
+- **Log:** `auraStacking: applied`, `hook reached: auraStacking filter (0x9D0633)`, `auraStacking applied (0x9D0675)`, and with `log`
+  `auraStacking: unit 1 holds unit 6`, `unit 2 leaves unit 6 alone: it holds this aura`.
+- **Not covered:** the applier of auras with no range, FUN_009D7328, and powers.
+- **Tested in WoL (2026-11-06):** a stock Speed ×4 aura, ×256 with 4 carriers and ×4 with the tag; `resourceGatherAuras` ×1024 against
+  ×4; `buildingWorkRateAuras` ×64 against ×4; two Sawmills on three trees, one payer each; two auras ×8; a Hussar forbidden from an
+  `AbstractCavalry` aura, 0 modifiers; a loaded game kept one modifier; beside WoL's DLL; an AI skirmish of 100 s with no XS error.
+  Performance could not be compared: other games were running, and the two runs do not carry the same modifiers. Not tested:
+  multiplayer, recorded games.
+
 ### Civs
 
 What the exe decides by civ.
@@ -1281,6 +1381,14 @@ trained by 65 s of game time. [Full video (MP4)](media/danceBonusCivs-wol.mp4).
 civs, so the TC trains at its normal rate: 2 villagers by 65 s.
 [Full video (MP4)](media/danceBonusCivs-wol-control.mp4).
 
+![danceBonusCivs, Gathering and XP in WoL](media/danceBonusCivs-all-wol.gif)
+
+*In WoL (Ethiopians, 9 dancers at a `FirePit`, test data):* the Gathering dance and then the XP dance, with the miners' rate and the XP
+in the corner. [Full video (MP4)](media/danceBonusCivs-all-wol.mp4).
+
+- **Tested in WoL (2026-11-06):** Gathering ×1.47–1.50 against none with the key off; XPTrickle 7.0–7.3 XP/s against about 2.0. WoL's
+  tactics do not use `GatherRateIncrease`: add it to a dance to use it. Training: 4 villagers against 2 at 65 s.
+
 ```
 danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lines add up
 ```
@@ -1338,6 +1446,20 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
   dancing the Fertility Dance, 4 villagers by 65 s, 2 without the key. `Regeneration` in WoL
   ([overhealSources](#overhealsources)), and on the stock game (2026-10-29), where damaged units healed
   to full with the key and stayed at 90 without. XPTrickle and Gathering were not tested in game.
+
+![The weight of a dancer in WoL](media/danceBonusCivs-weight-wol.gif)
+
+*In WoL (Ethiopians, 9 dancers, `<DanceWeight>3`, a test Gathering dance):* the selected miner's rate is in the panel.
+[Full video (MP4)](media/danceBonusCivs-weight-wol.mp4). [Control, no tag](media/danceBonusCivs-weight-wol-control.mp4).
+
+- **`<DanceWeight>N</DanceWeight>`** in a proto: that unit counts as N dancers, from 0 to 1000, instead of 1 for a villager and 2 for
+  any other unit. Tested: 1.19/s with no dance, 1.74/s, 2.88/s with weight 3 (expected ×2.35, measured ×2.42, not explained),
+  1.20/s with weight 0.
+- **The fire pit** is now found through a memory of where it is in the player's list, without changing what the game finds.
+  With 60 miners no gain could be measured: 0.36–0.39 ms against 0.39–0.46 ms, other games running.
+- **A resource dance, in data:** a `DanceBonus` of type `UnitModification` with `<modifytype>AutoGatherRate</modifytype>` multiplies the
+  trickle of the buildings it names, and needs no key. On `Building`, multiplier 0.2, 9 dancers: a Sawmill went from 1.75 to 4.9 wood/s.
+  `UnitResource` does nothing in a dance: only an aura reads it. There is no cost discount: no stat exists for it.
 
 #### wonderCivUnitType
 
@@ -1567,8 +1689,7 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   - the engine's automatic AI main base;
   - the age-up picker (`uiPoliticianUI`);
   - the start camera (it looks for `TownCenter`, then `CoveredWagon`, `Explorer`, …);
-  - the `trPlayerToggleAllowTCSpawning` gate on `Maintain`;
-  - the water shipment point.
+  - the `trPlayerToggleAllowTCSpawning` gate on `Maintain`.
 
   The [`startingTC`](#startingtc) section lists the rest.
 - **With other keys:** [`startingTC`](#startingtc) can be on too: the two share the hook that sets
@@ -1620,6 +1741,33 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
 
   Not tested: a skirmish in WoL, the town starting units at a WoL building, WoL's AI with the tag, a Nomad
   start, multiplayer, recorded games, the `no colony` log line.
+
+#### firstTC
+
+**Added:** Friday 2026-11-06 13:11
+
+```
+firstTC [UnitType] [log]
+```
+
+One line for [`civFirstTC`](#civfirsttc) and [`startingTC`](#startingtc): the first always, the second when a type is named. A plain
+`firstTC` registers no marker, so it does not change the unit type count. If `startingTC` or `civFirstTC` is in the cfg too, that key
+keeps its own line. Bad arguments fail only the `startingTC` part.
+
+![firstTC in WoL](media/firstTC-derived-wol.gif)
+
+*In WoL, with `firstTC log` (Dutch, `<firstTC>Market</firstTC>`, the Market in `<starttypes>`, no flag in `protoy`):* the town units and
+crates come to the Market, and a card's workers arrive there. [Full video (MP4)](media/firstTC-derived-wol.mp4).
+
+![civFirstTC alone in WoL](media/firstTC-derived-wol-control.gif)
+
+*In WoL, with `civFirstTC log` (the same data):* nothing comes, and the card is refused. [Full video (MP4)](media/firstTC-derived-wol-control.mp4).
+
+- **What it derives from the tag:** `StartingColonyBuilding`, for that civ's first town center only, without writing the proto, and
+  `FirstTC` first in `hcShipmentPointFallback`'s list, with or without that key. The `<starttypes>` entry in `colonies.xml` is still yours.
+- **Tested in WoL (2026-11-06, Dutch):** town units, 400 food, 200 wood, 200 gold, and 2 -> 5 workers from a card; `civFirstTC` alone, none
+  of it. An AI skirmish of 80 s had no XS error. A card needs population: the Market gives none, so the test has a House. Not tested:
+  a loaded game, beside WoL's DLL, multiplayer.
 
 #### customRevolutionBanners
 
@@ -1832,6 +1980,19 @@ above its 100 %. [Full video (MP4)](media/overhealHitpointBars-group-wol.mp4).
 overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=<Label>]] [log]   default AbstractOverheal; up to 8 types
 ```
 
+![MaxHPOnly in WoL](media/overhealHitpointBars-maxonly-wol.gif)
+
+*In WoL (Ethiopians, Pikeman with the marker, a tech with `subtype='MaxHPOnly'` 1.20 BasePercent at 22 s):* the HP stay at 122 and the
+room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wol.mp4).
+
+![The stock subtype in WoL](media/overhealHitpointBars-maxonly-wol-control.gif)
+
+*In WoL, the same tech with the stock subtype `Hitpoints`:* HP and InitialHitpoints go to 151.5, so the unit stays at 100 %.
+[Full video (MP4)](media/overhealHitpointBars-maxonly-wol-control.mp4).
+
+- **`MaxHPOnly`:** the tech Data subtype that writes only MaxHitpoints. Units keep their HP and new ones keep InitialHitpoints.
+- **Tested in WoL (2026-11-06):** 135.85 -> 164.45 with HP 122.9, kept by a saved game; a marked House showed 1290/1200 and a Caravel
+  850/800, both with the Overheal row, HP written in memory. Not tested: auto-repair above 100 %, multiplayer.
 - **In WoL today:** a unit is created with its proto's `<InitialHitpoints>` and can be healed up to
   `<MaxHitpoints>`. Every HP display takes `MaxHitpoints` as 100 %: the floating HP bar over a unit, the
   selection panel's HP bar (green, yellow below 66 %, red below 33 %), and the texts `HP/max`, or
@@ -1890,9 +2051,9 @@ overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=
       <MaxHitpoints>165.0000</MaxHitpoints>
   ```
 
-- **Techs and auras:** a `Hitpoints` tech adds the same amount to `InitialHitpoints` as to
-  `MaxHitpoints`. A percentage tech therefore leaves a full unit slightly below 100 %: after
-  +10 % on 150/165, `InitialHitpoints` is 166.5 and a unit that was at 150 HP has 165 (99 %). An aura or
+- **Techs and auras:** a `Hitpoints` tech adds the same amount to the max, to `InitialHitpoints` and to the HP of a built unit, so a
+  unit at its 100 % stays there: 141.75/156.75 went to 158.25/173.25 with `BasePercent`, and 139.28/154.28 to 154.70/169.70 with
+  `Percent`, as a new unit gets. A unit at its max stays at its max. Only an unbuilt unit is scaled. An aura or
   modifier that changes one unit's max scales its reference by the same factor, so a full unit stays
   full (seen on the stock game: a Golden Pavilion's MaxHP x1.1 aura took a unit from `165/150` to
   `181/165 (150+15)`, `Overheal 15/15` to `16/16`). In a skirmish, an Explorer marked for a test (400 /
@@ -2087,6 +2248,7 @@ Attacks, armor, and what a hit does.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
+| [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
 | [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
@@ -2102,6 +2264,8 @@ Attacks, armor, and what a hit does.
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
+- **Saved games:** the delay goes on after a load. Saved at 11 s with `overhealDecay 5 20`, the decay ran from 24.2 s to 30.2 s in
+  both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
 
 #### detonationDeath
 
@@ -2250,8 +2414,9 @@ multiarmor
 
   Up to 8 armors per proto. An effect on a damage type the proto has no armor for starts from 0 (so
   `BasePercent` changes nothing there).
-- **What stays as it is:** the unit panel shows the last armor only, and saved games do not keep the
-  other armors' tech changes (a loaded game has their data values).
+- **What stays as it is:** the unit panel shows the last armor only.
+- **Saved games:** the other armors' tech changes are not saved, but a load applies the effects again: tested on 2026-11-06, a
+  `Pikeman` hit `HonorGuard` for 19 with an `Armor` effect on `Hand`, and for 19 again after a load in a new process.
 - **Log:** `multiarmor: protos keep one armor per damage type; ...`; `multiarmor: <Proto> has N
   armors` for the first proto with several; `multiarmor: an Armor effect changed damage type T of
   <Proto> (now V; stock type S kept)` the first time an effect goes to another armor;
@@ -2441,6 +2606,23 @@ over the unit. [Full video (MP4)](media/damageOverTime-noticktext-wol.mp4).
 damageOverTime [log] [noticktext]
 ```
 
+![damageOverTime with a model in WoL](media/damageOverTime-model-wol.gif)
+
+*In WoL, with `damageOverTime log` (test data: `xpAenna` with `<AttachModel>effects\uhc_rings\ring_damage.xml</AttachModel>`,
+Settlers as targets):* each poisoned unit wears the ring, and a corpse does not. [Full video (MP4)](media/damageOverTime-model-wol.mp4).
+
+![damageOverTime with a model in WoL, key off](media/damageOverTime-model-wol-control.gif)
+
+*In WoL, key off (the same scene):* arrows only, no ring. [Full video (MP4)](media/damageOverTime-model-wol-control.mp4).
+
+- **`<AttachModel>path.xml</AttachModel>`:** the unit carries that model while poisoned, as an aura's `<modelattachment>`. Two
+  poisons with the same model share it until the last ends. A visual: nothing reaches the simulation. A file that is not in
+  the game logs one line and shows nothing.
+- **Saved games:** running poisons go on after a load, with their stacks, next tick and attacker: a copy lives on the unit.
+- **Tested in WoL (2026-11-06, model and saves):** a poison saved after its attacker died went from 2652.0 to 2636.0 and ended at game
+  time 27656, the same ticks as with no save; with the attacker alive every tick matched. 694 fps against 664, update 0.18 ms
+  against 0.19, with 16 attackers (other games running). An AI skirmish of 100 s, saved and loaded, had no XS error. Not tested:
+  a target transformed just before a save, 100 stacks, beside WoL's DLL, multiplayer.
 - **In WoL today:** there is no damage over time. The exe still contains Age of Mythology's poison, but
   the function that would apply it is empty, so nothing happens.
 - **Effect:** an attack whose `<ProtoAction>` lists `<AttachProtoUnit>X</AttachProtoUnit>` poisons
@@ -2566,9 +2748,6 @@ damageOverTime [log] [noticktext]
 
   A value the DLL cannot read is logged and that tag is ignored.
 - **Not done:**
-  - no model or effect shows the poison, since X never exists in the world (`AttachTickText`
-    shows the ticks as text);
-  - poisons are not saved in saved games, so a loaded game starts without them (tested);
   - the exe's `Poison` flag is not used.
 - **`log`** writes every poison, renewal, tick and end to `UHC.log`, and once per attack the
   attacks that deal damage without `<AttachProtoUnit>` (`damage by proto N (Name), action A …:
@@ -2627,8 +2806,6 @@ damageOverTime [log] [noticktext]
     - invalid values (`dot_testdata.py --bad`), each logged and ignored;
     - AI: in 12 minutes, 49 poisons and 242 ticks between two AIs; in a 25-minute game with a 120 s
       poison, 902 ticks after the attacker was gone; no XS error and no crash;
-    - saved games: a game saved with a poison running loaded without it (`the data was reloaded; 1
-      running poison(s) dropped`).
   - **Not tested:** poison in an AI game of WoL, multiplayer.
   - **Not reproduced:** a tick on a unit of an engine army after the attacking unit is gone (the p11 = 0
     path of [how-it-works](how-it-works.md#damageovertime)). No unit carried the army flag in any test,
@@ -2651,6 +2828,16 @@ point up to 3 m away, and it hurts whoever stands within 1 m of it.
 *In WoL, key off (the same scene):* the 59 % of shots that miss do no damage, the hits damage their
 target. In this melee-range fight the total damage is about the same either way, with or without the
 key. [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
+
+![spreadAnyAccuracy on a ground shot in WoL](media/spreadAnyAccuracy-ground-wol.gif)
+
+*In WoL, with `spreadAnyAccuracy log` (Ethiopians, test data: a marked Catapult, `SpreadFactor` 2.8, `MaxSpread` 10):* its shots at
+5 still Settlers land up to 10 m off, and all 5 are alive after 22 s. [Full video (MP4)](media/spreadAnyAccuracy-ground-wol.mp4).
+
+![spreadAnyAccuracy on a ground shot in WoL, not marked](media/spreadAnyAccuracy-ground-wol-control.gif)
+
+*In WoL, the Catapult not marked:* its shots land on the target and 3 Settlers die.
+[Full video (MP4)](media/spreadAnyAccuracy-ground-wol-control.mp4).
 
 ```
 spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
@@ -2702,13 +2889,12 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
   Mark only units whose attack has `<DamageArea>`, such as shotguns: a marked attack without area
   does no damage. The marker is registered by the DLL, like `healNonIdle`'s; an existing type or
   proto name works too (`spreadAnyAccuracy Escopetero`).
-- **Not covered** (these shots never reach the code, and stay as they are):
-  - actions with `<InstantBallistics>` (sure hits: most muskets) or `<TargetGround>` (grenades,
-    mortars). Of WoL's 647 actions with spread tags, 304 and 122; the current shotgun files
-    (`wolinfantryrangedescopetero`, `wolinfantryrangedbacamarteer`, the trench fighter's volley)
-    are covered;
-  - shots at the ground with no target unit, and every shot when the startup cfg does not define
-    `ballisticPrecalcHits` (`Startup\gamey.cfg` defines it; keep that line);
+- **Ground shots:** a marked unit's `TargetGround` shot scatters with the action's values. It stays a ground shot, so it deals its area
+  damage where it lands. Against a building the same Catapult went through the roll instead.
+- **`ballisticPrecalcHits` off:** a marked unit still scatters, and other units stay as stock.
+- **Not covered:**
+  - actions with `<InstantBallistics>` (sure hits: most muskets), 304 of WoL's 647 actions with spread tags. Almost all are tags
+    nothing reads; only 5 referenced actions have values of their own;
   - `<NumberProjectiles>`: a shot is still one projectile.
 - **`log`:** one line per value that differs from the exe's 5 / 0.25 (the first 200 per data load),
   and the first 5 offset shots of each attack (at most 100): who shot, a miss or a marked shot, `r`
@@ -3270,6 +3456,49 @@ removeConversionRestriction
 - **Simulation:** yes.
 - **Status:** not confirmed: one test with the Sioux war chief, on the stock game, was inconclusive.
 
+#### snareValues
+
+**Added:** Friday 2026-11-06 13:25 · **Filmed in WoL:** Friday 2026-11-06 13:55
+
+![snareValues in WoL](media/snareValues-wol.gif)
+
+*In WoL (Pikeman against Crossbowman, `SnareFactor` 0.3, `SnareDuration` 6):* the log shows each snare.
+[Full video (MP4)](media/snareValues-wol.mp4). [Control, key off](media/snareValues-wol-control.mp4).
+
+```
+snareValues [strongest] [log]
+```
+
+```xml
+<SnareFactor>0.3</SnareFactor>      <!-- a speed factor, from 0 to 10 -->
+<SnareDuration>6</SnareDuration>    <!-- seconds, above 0 -->
+```
+
+- **In WoL today:** every `<TargetSpeedBoost>` is 0.65 for 3 s.
+- **Where:** in a `<ProtoAction>` or tactics `<action>` with `<TargetSpeedBoost>`, after `<Name>`.
+- **By tech:** the Data subtypes `SnareFactor` and `SnareDuration`, with `action` or `allactions`. `Assign` sets, `BasePercent`
+  multiplies the tag's value, `Absolute` adds. A duration of 0 or less means no snare.
+- **With other keys:** after `cantBeSlowed`, whose rules stay. `<AttachSnare>` is apart.
+- **Tested in WoL (2026-11-06):** stock 0.65 for 2.93 s; tags 0.3 and 6 s; a tech 0.5 and 12 s, also after a load; a duration of 0, none;
+  bad tags logged. An AI skirmish of 100 s had 15 units and no XS error. Not tested: beside WoL's DLL, multiplayer.
+
+![The strongest snare in WoL](media/snareValues-strongest-wol.gif)
+
+*In WoL, with `snareValues strongest log` (Pikeman 0.8 for 40 s, Halberdier 0.3 for 5 s, a Settler running away):* the 0.3 counts, and
+the attackers catch it. It lost 1070 HP. [Full video (MP4)](media/snareValues-strongest-wol.mp4).
+
+![The oldest snare in WoL](media/snareValues-strongest-wol-control.gif)
+
+*In WoL, without `strongest` (the same scene):* the 0.8 came first, the 0.3 does nothing, and the Settler gets away after 449 HP.
+[Full video (MP4)](media/snareValues-strongest-wol-control.mp4).
+
+- **`strongest`:** of the snares on a unit, the slowest counts. In stock the oldest does, so a weak long snare hides a strong new
+  one. When the strongest ends, the next counts by itself. `<AttachSnare>` is one more snare here.
+- **Tested in WoL (2026-11-06, strongest):** 1.20 against 3.20; 3.20 when the 0.3 ended; a loaded game went on at 1.50 with a speed boost;
+  `<AttachSnare>` 0.5 over 0.8, 2.00 against 3.20, with `damageOverTime`, `snareOnlyHitUnit` and `cantBeSlowed` on; an AI skirmish of
+  100 s had 16 units and no XS error; 1686 fps against 1639 with 60 units fighting and other games open, in a scene with no swap.
+  Not tested: beside WoL's DLL, multiplayer.
+
 ### Gathering and farms
 
 Resources, gatherers, and what pays for them.
@@ -3336,6 +3565,15 @@ villager gathers berries, and the unit panel shows `Food (icon): 0.67/s` in WoL'
 *In WoL, key off (the same scene):* the panel shows no rate.
 [Full video (MP4)](media/showGatherRate-wol-control.mp4).
 
+![showGatherRate on a group in WoL](media/showGatherRate-group-wol.gif)
+
+*In WoL, with `showGatherRate` (Dutch, 5 Settlers selected, 3 on a Mine and 2 on a bush):* the row shows 3.60 coin and 2.68 food, the
+sum of the group. [Full video (MP4)](media/showGatherRate-group-wol.mp4).
+
+![showGatherRate on a group in WoL, key off](media/showGatherRate-group-wol-control.gif)
+
+*In WoL, key off (the same scene):* no row. [Full video (MP4)](media/showGatherRate-group-wol-control.mp4).
+
 ```
 showGatherRate [<UnitType>] [log]      no UnitType: every unit
 ```
@@ -3378,16 +3616,19 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 - **WoL needs:** nothing. A file without those gadgets shows no rate; the data ref still works in any
   gadget.
 - **Limits:**
-  - one selected unit only (the exe's rule for the AutoGather row); nothing for a group, where the panel
-    shows the first unit and its rate would read as the group's;
+  - in the minimized interface a group shows the sum per resource, with an icon and a number each when there are several; the stat
+    panel of the normal interface still takes one unit;
   - the AutoGather row's other conditions apply too: a building must be finished, and the selection must
     pass a test whose meaning is not known (a selection byte; possibly units the player does not own);
-  - gathering into the unit's own inventory (`<addresourcestoinventory>`, for example herd animals
-    fattening at a pen) runs other code and gets no row;
+  - a unit gathering into its own inventory, such as a Sheep at a pen, shows its Gather rate, 0.50/s; its AutoGather on top, 0.20/s,
+    is not counted, so the Sheep fattens at 0.70/s;
   - a target of type `AbstractShrine` and a defeated player give nothing, so they show no row;
   - the rate is that of the last gather loop: a tech researched during a loop shows from the next
     loop on;
   - the row follows the panel's own refresh.
+- **Tested in WoL (2026-11-06, groups):** 5 Dutch Settlers showed 3.60 coin with the player's gold at +3.617/s; the same after a load; 41
+  keys applied with the panel's others on; an AI skirmish of 132 s with no XS error. The first gather tick pays 0.49 s after a unit
+  starts, so the row has little to wait for.
 - **`log`:** one line the first time a unit's rate for a resource is shown in the panel, and one the
   first time the data ref returns it. A new game starts the list again.
 - **Log:** at startup `showGatherRate: the stat panel shows the gather rate per second of a
@@ -3527,24 +3768,24 @@ autoGatherScaleByContained
 
 #### unitResourceAuras
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Thursday 2026-11-05 14:06
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
 *In WoL, with `unitResourceAuras log` (Ethiopians, WoL's own `WOLSawmill` and its `AreaGatherTree`, with
-[`ring_wood.xml`](#aura-rings) in its `<modelattachment>`):* the 5 trees the Sawmill takes from wear the amber ring, and the others
-in range do not. It takes 0.05 wood per second from each, 0.25 wood/s on top of its AutoGather; the log shows a take about every
+[`ring_wood.xml`](#aura-rings) in its `<modelattachment>`):* the 4 trees in the Sawmill's reach, on a slope, wear the amber ring on the ground, and the 3
+beyond it do not. It takes 0.05 wood per second from each, 0.20 wood/s on top of its AutoGather; the log shows a take about every
 3 s and the trees going down. [Full video (MP4)](media/unitResourceAuras-wol.mp4).
 
 ![unitResourceAuras in WoL, trees used up](media/unitResourceAuras-depleted-wol.gif)
 
-*In WoL, the same aura with a test `<modifyamount>15`:* each ringed tree gives 15 wood per second. It goes when its 300 wood are
-out, and its ring with it, and the next tree takes the ring: 7 trees in all, until none is left in range.
+*In WoL, the same aura with a test `<modifyamount>15` and `<maxrange>10`:* each ringed tree gives 15 wood per second. It goes when its 300 wood are
+out, and its ring with it, and the next tree takes the ring: 10 trees in all.
 [Full video (MP4)](media/unitResourceAuras-depleted-wol.mp4).
 
 ![unitResourceAuras in WoL, key off](media/unitResourceAuras-wol-control.gif)
 
-*In WoL, key off (the first scene, the same data):* only the AutoGather works: 136 wood at 78 s of game time, the trees keep their
+*In WoL, key off (the first scene, the same data):* only the AutoGather works: 441 wood at 81 s of game time, the trees keep their
 wood and no tree has a ring. [Full video (MP4)](media/unitResourceAuras-wol-control.mp4).
 
 ```
@@ -3554,7 +3795,7 @@ unitResourceAuras [log]
 ![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
 
 *In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a drumstick
-over the bush and the two carcasses, and no mark on the live Deer, the live Sheep or the Plantation.
+over the bush and the two carcasses, and no mark on the live Deer or the Plantation.
 [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
 
 ![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
@@ -3615,7 +3856,7 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
   resource, the icon and the auras' take per second plus the building's AutoGather, in the order of the resources.
   Two resources fit: in WoL's layout at 1920×1080 a third shows its icon with no number. It shows while an aura pays.
   **Pending:** the stat panel of the normal interface.
-- **Not covered:** other players' units are never targets. Stock has no `NoStack` or `SquareAura`.
+- **Not covered:** other players' units are never targets. Stock has no `SquareAura`; `NoStack` comes with [`auraStacking`](#aurastacking).
 - **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
   `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
   resource 1 from unit 2 (TreeNewEngland), 299.1 left`.
@@ -3739,19 +3980,19 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 
 #### resourceGatherAuras
 
-**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 14:06
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
 ![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
 
 *In WoL, with `showGatherRate` and `resourceGatherAuras` (Ethiopians; a test aura `MineGatherRate` ×2 with
-[`ring_gold.xml`](#aura-rings) on the Explorer, 40 m):* eight settlers gather a mine, trees, berries and a Mill, all in range. Only
-the two at the mine wear the ring. The selected miner's rate is 1.20 coin/s, and at 68 s the player has 157 gold; wood (63) and
-food (148) go as in the control. [Full video (MP4)](media/resourceGatherAuras-wol.mp4).
+[`ring_gold.xml`](#aura-rings) on the Explorer, 40 m, the Mine on a small hill):* eight settlers gather a mine, trees, berries and a
+Mill, all in range. Only the two at the mine wear the ring, which lies on the ground. The selected miner's rate is 1.20 coin/s,
+and at 68 s the player has 136 gold; wood and food go as in the control. [Full video (MP4)](media/resourceGatherAuras-wol.mp4).
 
 ![resourceGatherAuras in WoL, key off](media/resourceGatherAuras-wol-control.gif)
 
-*In WoL, key off (the same scene):* 0.60 coin/s, and 78 gold, 62 wood and 146 food at 67 s. The exe does not know the name, so the
-aura does nothing, and it still hangs its ring on all eight: the ring alone proves nothing.
+*In WoL, key off (the same scene):* 0.60 coin/s, and 67 gold at 67 s. The exe does not know the name, so the aura does nothing, and
+it still hangs its ring on settlers that gather something else: the ring alone proves nothing.
 [Full video (MP4)](media/resourceGatherAuras-wol-control.mp4).
 
 ```
@@ -4193,7 +4434,7 @@ liveBuildingWorkRate [log]
 
 #### buildingWorkRateAuras
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Thursday 2026-11-05 14:06
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
 ![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
 
@@ -4285,6 +4526,24 @@ buildingWorkRateAuras [log]
   Center, 7 villagers against 2 at the TC out of range; without the key, 2 and 2. On the stock game
   (2026-10-29), `Maintain`: 11 units against 2, with `liveBuildingWorkRate` and `noTrainNearEnemyTC` on in
   the same run. Research speed, the removal of the aura, powers and saved games were not tested.
+- **The panel's number:** `{currentUnitBuildingWorkRate}` and `{currentUnitBuildingWorkRateFloat}` give the rate the unit works at:
+  3.00 under an aura x3, 1.00 beside it. WoL's interface does not show them: a gadget has to name them.
+  [Video](media/buildingWorkRateAuras-panel-wol.mp4), [control](media/buildingWorkRateAuras-panel-wol-control.mp4).
+
+![buildingWorkRateAuras on building in WoL](media/buildingWorkRateAuras-build-wol.gif)
+
+*In WoL (Ethiopians, an Explorer's aura ×3 on `AFRICANvillager`, with `ring_work.xml`):* the Apartment is finished at 31 s.
+[Full video (MP4)](media/buildingWorkRateAuras-build-wol.mp4).
+
+![buildingWorkRateAuras on building in WoL, key off](media/buildingWorkRateAuras-build-wol-control.gif)
+
+*In WoL, key off (the same data; the ring is there all the same):* at 34 s it is half built.
+[Full video (MP4)](media/buildingWorkRateAuras-build-wol-control.mp4).
+
+- **Healing and building:** the factor also multiplies the heal rate and the build rate of the unit it reaches. It always applies with
+  the key.
+- **Tested in WoL (2026-11-06):** a House at 1912 points 3 s after placing, against 603; a Pikeman at 24.7 HP full in under 3.2 s, against
+  113.6 at 4.7 s. Not covered: repair: no order tried reached it. Not tested: a loaded game with this part, beside WoL's DLL.
 
 #### maintainWaitForPop
 
@@ -4303,6 +4562,11 @@ used)`). [Full video (MP4)](media/maintainWaitForPop-wol.mp4).
 *In WoL, key off (the same scene):* the cycle that ended at full population is lost; after the
 two deaths at 70 s the next settler needs a whole new cycle and appears about 23 s later.
 [Full video (MP4)](media/maintainWaitForPop-wol-control.mp4).
+
+![maintainWaitForPop on a Factory in WoL](media/maintainWaitForPop-factory-wol.gif)
+
+*In WoL, with `maintainWaitForPop Factory log` (a Factory on its Cannon tactic, 7 of 10 population):* the finished Cannon waits, and
+comes out as soon as population is freed. [Full video (MP4)](media/maintainWaitForPop-factory-wol.mp4).
 
 ```
 maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
@@ -4351,7 +4615,8 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 - **Simulation:** yes. It may also add a unit type, which changes the unit type count.
 - **Status:** confirmed in single player, in WoL (2026-11-04) with an Ottoman Town Center (`Age0Ottoman`
   gives it `MaintainSettlersOttoman`): it held its finished settler and released it right after two
-  settlers died; without the key, the next settler came about 23 s later. Factory cannons, batches and
+  settlers died; without the key, the next settler came about 23 s later. A real Factory (2026-11-06): a Cannon held at 7 of 10 came at 154.8 s, right
+after room at 150 s; key off, at 245.9 s, a whole cycle later. Batches and
   `SingleUse` spawns were not tested.
 
 #### trainSingleAbstractType
@@ -4522,6 +4787,22 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
   - **Not tested:** a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
     from Age II and needs population room and food.
 
+![noTrainNearEnemyTC refuse in WoL](media/noTrainNearEnemyTC-refuse-wol.gif)
+
+*In WoL, with `refuse log` (a Daimyo 25 m from a Stable):* each order is refused and nothing is charged.
+[Full video (MP4)](media/noTrainNearEnemyTC-refuse-wol.mp4).
+
+![noTrainNearEnemyTC without refuse in WoL](media/noTrainNearEnemyTC-refuse-wol-control.gif)
+
+*In WoL, without `refuse` (the same scene):* the units queue, are paid for, and wait.
+[Full video (MP4)](media/noTrainNearEnemyTC-refuse-wol-control.mp4).
+
+- **`refuse`:** a held trainer takes no new unit, and nothing is charged. What it queued before walking in keeps its progress and waits.
+- **The AI:** an AI whose order is refused does not look for another trainer. A German AI with its Town Center held asked once in
+  125 s, with no XS error.
+- **Tested in WoL (2026-11-06, refuse):** a Daimyo 25.0 m from a Stable: 3 orders refused and no cost, against 180 wood queued without it;
+  after the Stable fell an order paid. Not tested: the second enqueue caller 0x8D60EA, a loaded game, beside WoL's DLL, multiplayer.
+
 #### lifespanAfterConstruction
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
@@ -4545,6 +4826,18 @@ shorter than their construction (`WOLVillagerMaturing`: Lifespan 10, BuildPoints
 lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterConstruction
 ```
 
+![The Lifespan row in WoL](media/lifespanAfterConstruction-countdown-wol.gif)
+
+*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` on the foundation, then counts
+down. [Full video (MP4)](media/lifespanAfterConstruction-countdown-wol.mp4).
+
+![The Lifespan row in WoL, key off](media/lifespanAfterConstruction-countdown-wol-control.gif)
+
+*In WoL, key off (the same data):* no row, and the lifespan runs from the placing.
+[Full video (MP4)](media/lifespanAfterConstruction-countdown-wol-control.mp4).
+
+- **Countdown:** the unit panel has a `Lifespan` row for a marked unit. Another key's row takes that place when it has something
+  to show. Not tested: that case, and the row in a loaded game.
 - **In WoL today:** `<Lifespan>` (seconds) is a countdown that starts when the unit is created. A
   building is created when its foundation is placed, so the countdown runs while the building is under
   construction, and nothing restarts it when the construction ends. A building whose Lifespan is
@@ -4701,6 +4994,22 @@ point, and nothing arrives. [Full video (MP4)](media/hcShipmentPointFallback-wol
 hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entries
 ```
 
+![LastResort in WoL](media/hcShipmentPointFallback-lastresort-wol.gif)
+
+*In WoL, with `hcShipmentPointFallback LastResort` (Dutch, the Town Center falls at 16 s with a card on its way):* the House becomes the
+point and the 3 workers arrive beside it. [Full video (MP4)](media/hcShipmentPointFallback-lastresort-wol.mp4).
+
+![LastResort in WoL, key off](media/hcShipmentPointFallback-lastresort-wol-control.gif)
+
+*In WoL, key off (the same scene):* the game cancels the card and gives the ship back, and nothing arrives.
+[Full video (MP4)](media/hcShipmentPointFallback-lastresort-wol-control.mp4).
+
+- **With no point at all:** the game cancels the cards on their way and refunds the ship, so a card is not lost. The cards are red
+  in the home city then.
+- **`LastResort`** (any case), best listed last: any building of the player that passes the same checks, else a hero (`Hero`), in
+  the order of the player's unit list. With neither, the stock refund and one line in the log.
+- **Tested in WoL (2026-11-06, Dutch):** House: 2 -> 5 workers. Explorer only: 5 workers. Neither: the refund. Key off: 2 workers and
+  the ship back.
 - **In WoL today:** home city shipments arrive at the player's shipment point, a building
   (usually the Town Center). The game keeps that point while the building is alive and built.
   When it is destroyed or deleted, the game moves the point to the first alive, built building of
@@ -4757,6 +5066,22 @@ hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entrie
     beside the Market (`[hc+18Ch]` read its unit).
   - Not tested: `FirstTC` with `startingTC`, a converted first town center, water shipment points (the
     key does not change them).
+
+![replace in WoL](media/hcShipmentPointFallback-replace-wol.gif)
+
+*In WoL, with `hcShipmentPointFallback replace Market warn` (Dutch, a Market and an Outpost, the Town Center falls at 16 s):* the
+workers arrive at the Market. [Full video (MP4)](media/hcShipmentPointFallback-replace-wol.mp4).
+
+![The stock list first in WoL](media/hcShipmentPointFallback-replace-wol-control.gif)
+
+*In WoL, without `replace` (the same scene):* the stock list finds the Outpost first.
+[Full video (MP4)](media/hcShipmentPointFallback-replace-wol-control.mp4).
+
+- **`replace`:** the list runs instead of the ten stock types, not after them. Name `TownCenter` in it if you want it.
+- **`warn`, `warn=My_text`:** when a card is queued and no point is left, the local player gets a chat line, at most every 30 s. `_`
+  is a space. It reaches no game state, so players may set it differently.
+- **Tested in WoL (2026-11-06, Dutch):** `replace Market`: the point went to the Market, 2 -> 5 workers; without it, to the Outpost.
+  `warn=No_point_for_shipments`: the line showed. Not tested: `replace` in a loaded game or with an AI, beside WoL's DLL, multiplayer.
 
 #### sharedBuildLimit
 
@@ -5069,6 +5394,7 @@ What happens when a tech activates or a unit changes proto.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
+| [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | **new** | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. | confirmed (single player) |
 | [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | **new** | Nothing. | confirmed (single player) |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
@@ -5370,6 +5696,9 @@ transformInventory [all] [scale] [<UnitType>] [log]
   (2026-10-29), a test tech covered a change of resource type, a unit with no inventory, a unit with the
   same types (kept) and a new proto with no resources (kept without `all`). `all`, `scale`, a marker,
   revolutions and a conversion after a transform were not tested.
+- **By effect:** `inventory='keep'`, `'rebuild'` or `'scale'` on a `TransformUnit` effect decides over the cfg: keep is stock, rebuild is
+  `all`, scale is `all scale`. A transform with no effect, a turn back or a revolution, follows the cfg.
+  [Video](media/transformInventory-effect-wol.mp4), [control with keep](media/transformInventory-effect-wol-control.mp4).
 
 #### transformSpan
 
@@ -5422,6 +5751,45 @@ transformSpan [log]
   - Every case above, each in its own scene.
   - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
+
+#### unitTypeTechs
+
+**Added:** Friday 2026-11-06 14:15
+
+![unitTypeTechs in WoL](media/addUnitType-wol.gif)
+
+*In WoL, with `unitTypeTechs log` and `dodgeChance AbstractDodge 50 notech log` (5 `Pikeman` a side, a tech on Player 1 only):* only
+Player 1's Pikemen roll: 50 rolls and 31 dodged, none on Player 2's. [Full video (MP4)](media/addUnitType-wol.mp4).
+
+![unitTypeTechs in WoL, key off](media/addUnitType-wol-control.gif)
+
+*In WoL, key off (the same data):* the game drops the effect, and nobody rolls. [Full video (MP4)](media/addUnitType-wol-control.mp4).
+
+```
+unitTypeTechs [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.00' subtype ='AddUnitType' unittype ='AbstractDodge' relativity ='Absolute'>
+    <Target type ='ProtoUnit'>Pikeman</Target></Effect>
+```
+
+- **In WoL today:** a marker type sits on a proto for every player, so a card that unlocks a feature needs a second proto.
+- **Effect:** the player's copy of the target proto gains or loses an abstract type. Everything that tests the unit sees it at once:
+  `dodgeAnyUnit`, `dodgeChance`, `healNonIdle`, `overhealSources`, `spreadAnyAccuracy`, the damage bonuses and a `<Target>` by that type.
+- **What does not follow:** stock's table of protos by type, built from the data and shared by all players. KB counts and queries by
+  type, and so an AI's `kbUnitCount`, stay as the data says (read in the code, not tested in game).
+- **`unittype`:** an abstract type that exists when the techs are read. A proto's name or an unknown one is logged and the effect dropped.
+- **Base proto:** a type the base has comes back when a `RemoveUnitType` ends, and is not lost when an `AddUnitType` ends. Several
+  techs count: a `RemoveUnitType` wins while it runs.
+- **First techs:** an effect in a civ's first tech reaches every player of that civ.
+- **Saved games:** nothing to do: the effects run again after a load.
+- **Changes the simulation:** every player needs the same setting and data.
+- **Log:** `unitTypeTechs: applied`, and with `log` `unitTypeTechs: proto Pikeman (player's copy), AddUnitType type 3884: bit on`.
+- **Tested in WoL (2026-11-06):** the numbers above; 0 rolls key off; the bits held through a load in a new process; ending the
+  effects, through `Age0Egyptian`, which stock applies and removes at a scenario's start; a `<Target>` by abstract type reached
+  the copy; beside WoL's DLL, 54 rolls on one player; an AI skirmish of 100 s with no XS error. Not tested: `kbUnitCount` in game,
+  `healNonIdle`, `overhealSources`, `spreadAnyAccuracy` (only `dodgeChance` was driven), multiplayer, recorded games.
 
 ### Interface
 
@@ -5686,6 +6054,21 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
   data: the dead deer left no copy, and the dead bison, not named, stayed in the fog. Without the key,
   all of them stayed.
 
+![noCorpseDopples expire in WoL](media/noCorpseDopples-expire-wol.gif)
+
+*In WoL, with `noCorpseDopples Huntable expire=20 log`:* the dopples made at 8.1 s end at 28.1 s, and the fog is empty.
+[Full video (MP4)](media/noCorpseDopples-expire-wol.mp4).
+
+![noCorpseDopples without expire in WoL](media/noCorpseDopples-expire-wol-control.gif)
+
+*In WoL, without `expire=`:* the Deer were killed at 34 s out of sight, and their dopples stay.
+[Full video (MP4)](media/noCorpseDopples-expire-wol-control.mp4).
+
+- **`expire=<seconds>`:** every dopple of a marked proto ends that long after it was made, live or dead, so its going says nothing about
+  the unit. Changes the simulation: every player needs the same line.
+- **Tested in WoL (2026-11-06, expire):** with `expire=20`, dopples made at 8.2 s ended at 28.2 s; saved at 38 s with `expire=45`, they kept
+  their time and ended at 53.2 s. Not tested: beside WoL's DLL, multiplayer.
+
 ## 6. Editing the game data
 
 Work on a copy of the WoL folder.
@@ -5799,6 +6182,7 @@ The bone is that word on purpose, as in `EconomicAuraKM`: with no such bone, the
 | speed | blue | moves faster | `effects\uhc_rings\ring_speed.xml` |
 
 Each ring is a wide band in its colour, fading to a lighter one, and a thin line inside it, 70% opaque, so the ground shows through.
+It stays on the ground on a slope: the particle has `terraininteractiontype` 1 and `terrainheight` 0.2, the setting stock's low effects use. A `<decal>` is not drawn on a hung model (tried), and that is why the rings are particles.
 
 **4. The same file works on anything.** The `.xml` picks the size by what it hangs on, with `<logic type="UnitType">`:
 
@@ -5898,14 +6282,25 @@ the code. Saved games were tested only where a section says so.
   and replays with the same DLL and cfg they were made with.
 - **Random map replays:** `civFirstTC` also needs the same `civs.xml`, `placementrules\colonies.xml` and
   `protoy.xml` when a recorded game plays back, because the map is generated again.
-- **`damageOverTime`** keeps its poisons in the DLL, not in the game state: a saved game loads without
-  the poisons that were running.
 - **`buildingWorkRateAuras`:** its modifiers are saved with the game, but a game loaded without the
   key ignores them.
 - **`decimalPopulation`** stores every population K times larger, and saved games keep it so: load them
   with the same K (tested with K = 100: a game saved at 17 / 20 loaded at 17 / 20).
 - **No feature sends network commands of its own,** but for `repairWallGlobal`, which sends the game's
   own repair command: they all act inside the normal simulation, on every machine, in the same order.
+
+
+**After a load, by key:**
+
+| Key | After a load |
+|---|---|
+| `damageOverTime` | Goes on: stacks, next tick and attacker are kept on the unit. |
+| `overhealDecay` | Goes on: the delay is kept on the unit. The first step decays nothing. |
+| `veterancyBonus`, `transformSpan` | Go on: kept in the game's modifiers. |
+| `detonationDeath` | The hit point decay restarts from the next loss. |
+| `unitResourceAuras` | At most one update is lost; `SingleUnit` chooses its target again. |
+| `linkedResource`, rings, marks | Found again at once. |
+| `nextResearchFree` | A spent turn comes back. |
 
 ## 8. WoL's keys that are not implemented
 

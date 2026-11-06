@@ -25,6 +25,7 @@ Contents:
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
 - [Name lists](#name-lists)
 - [Models on a unit](#models-on-a-unit)
+- [State kept for a saved game](#state-kept-for-a-saved-game)
 
 ## Site table
 
@@ -287,6 +288,12 @@ inline constexpr Site kPoliticianCosts2{"PoliticianCosts2", 0x0081943D, kPolitic
 inline constexpr std::uint8_t kGatherFallbackExitBytes[] = {0x5D, 0x5F, 0x5E, 0x33, 0xC0, 0x5B, 0x59, 0xC2, 0x04, 0x00};
 inline constexpr Site kGatherFallbackExit{"GatherFallbackExit", 0x00669E2E, kGatherFallbackExitBytes, sizeof(kGatherFallbackExitBytes)};
 
+inline constexpr std::uint8_t kStartColonyFlagReadBytes[] = {0x8B, 0x50, 0x50, 0x8A, 0x42, 0x11};
+inline constexpr Site kStartColonyFlagRead{"StartColonyFlagRead", 0x006A2130, kStartColonyFlagReadBytes, sizeof(kStartColonyFlagReadBytes)};
+
+inline constexpr std::uint8_t kGatherSearchStartBytes[] = {0x8B, 0x4C, 0x24, 0x0C, 0x8B, 0x51, 0x08};
+inline constexpr Site kGatherSearchStart{"GatherSearchStart", 0x004C6BCF, kGatherSearchStartBytes, sizeof(kGatherSearchStartBytes)};
+
 inline constexpr std::uint8_t kGatherFallbackStoreBytes[] = {0x80, 0x7C, 0x24, 0x18, 0x01, 0x0F, 0x84, 0x7B, 0x31, 0x1A, 0x00, 0x5D};
 inline constexpr Site kGatherFallbackStore{"GatherFallbackStore", 0x004C6CB2, kGatherFallbackStoreBytes, sizeof(kGatherFallbackStoreBytes)};
 
@@ -352,6 +359,12 @@ inline constexpr Site kTacticsActionCall{"TacticsActionCall", 0x005FA60A, kTacti
 
 inline constexpr std::uint8_t kSpreadHitRollBytes[] = {0x83, 0xFB, 0x02, 0x0F, 0x84, 0xE2, 0x56, 0x03, 0x00, 0x89, 0x5E, 0x20, 0x8B, 0x5C, 0x24, 0x18, 0x8B, 0xBC, 0x24, 0xEC, 0x00, 0x00, 0x00};
 inline constexpr Site kSpreadHitRoll{"SpreadHitRoll", 0x00499890, kSpreadHitRollBytes, sizeof(kSpreadHitRollBytes)};
+
+inline constexpr std::uint8_t kSpreadPrecalcGateBytes[] = {0x84, 0xC0, 0x0F, 0x84, 0xF1, 0x00, 0x00, 0x00};
+inline constexpr Site kSpreadPrecalcGate{"SpreadPrecalcGate", 0x004997AE, kSpreadPrecalcGateBytes, sizeof(kSpreadPrecalcGateBytes)};
+
+inline constexpr std::uint8_t kSpreadGroundStoreBytes[] = {0xC7, 0x46, 0x20, 0x03, 0x00, 0x00, 0x00, 0xE9, 0xAF, 0x4A, 0xFD, 0xFF};
+inline constexpr Site kSpreadGroundStore{"SpreadGroundStore", 0x004C4DEC, kSpreadGroundStoreBytes, sizeof(kSpreadGroundStoreBytes)};
 
 inline constexpr std::uint8_t kSpreadMissStubBytes[] = {0x8D, 0x44, 0x24, 0x28, 0x50, 0x8B, 0xCE, 0xE8, 0x05, 0x00, 0x00, 0x00, 0xE9, 0x0D, 0xA9, 0xFC, 0xFF};
 inline constexpr Site kSpreadMissStub{"SpreadMissStub", 0x004CEF7B, kSpreadMissStubBytes, sizeof(kSpreadMissStubBytes)};
@@ -421,6 +434,21 @@ inline constexpr Site kTrainFrac{"TrainFrac", 0x009EA1FA, kTrainFracBytes, sizeo
 
 inline constexpr std::uint8_t kTrainPointsProtoBytes[] = {0x8B, 0x46, 0x10, 0x85, 0xC0, 0x57, 0x89, 0x74, 0x24, 0x14, 0x0F, 0x84, 0x2F, 0x05, 0x00, 0x00, 0x8B, 0x58, 0x44, 0x85, 0xDB, 0x0F, 0x84, 0x24, 0x05, 0x00, 0x00, 0x8B, 0x44, 0x24, 0x30, 0x50, 0x8B, 0xCB, 0xE8, 0xB7, 0x84, 0xA6, 0xFF, 0x8B, 0xF8};
 inline constexpr Site kTrainPointsProto{"TrainPointsProto", 0x009EAC3D, kTrainPointsProtoBytes, sizeof(kTrainPointsProtoBytes)};
+
+inline constexpr std::uint8_t kDoppleUpdateCallBytes[] = {0xE8, 0x9B, 0xFF, 0xFF, 0xFF};
+inline constexpr Site kDoppleUpdateCall{"DoppleUpdateCall", 0x0049198B, kDoppleUpdateCallBytes, sizeof(kDoppleUpdateCallBytes)};
+
+inline constexpr std::uint8_t kDoppleInitProtoBytes[] = {0x89, 0x86, 0x2C, 0x01, 0x00, 0x00};
+inline constexpr Site kDoppleInitProto{"DoppleInitProto", 0x004E4701, kDoppleInitProtoBytes, sizeof(kDoppleInitProtoBytes)};
+
+inline constexpr std::uint8_t kBwrRateCallHealBytes[] = {0xE8, 0x71, 0x6F, 0xAA, 0xFF};
+inline constexpr Site kBwrRateCallHeal{"BwrRateCallHeal", 0x009E0CCF, kBwrRateCallHealBytes, sizeof(kBwrRateCallHealBytes)};
+
+inline constexpr std::uint8_t kBwrRateCallBuildBytes[] = {0xE8, 0xC5, 0x3E, 0xAB, 0xFF};
+inline constexpr Site kBwrRateCallBuild{"BwrRateCallBuild", 0x009D3D7B, kBwrRateCallBuildBytes, sizeof(kBwrRateCallBuildBytes)};
+
+inline constexpr std::uint8_t kTrainEnqueueHeadBytes[] = {0x83, 0xEC, 0x1C, 0x53, 0x55, 0x56};
+inline constexpr Site kTrainEnqueueHead{"TrainEnqueueHead", 0x009EAC35, kTrainEnqueueHeadBytes, sizeof(kTrainEnqueueHeadBytes)};
 
 inline constexpr std::uint8_t kTrainPointsSetBytes[] = {0x83, 0x7E, 0x74, 0x00, 0x7F, 0x3D, 0x8B, 0x57, 0x6C, 0x8B, 0x4E, 0x10, 0x68, 0x9E, 0x00, 0x00, 0x00, 0x89, 0x56, 0x64, 0xE8, 0xAB, 0x1E, 0xA6, 0xFF, 0x84, 0xC0, 0x74, 0x22, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x40, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x13, 0x8B, 0x47, 0x08, 0x50, 0xE8, 0x9A, 0x7F, 0xA6, 0xFF, 0x85, 0xC0, 0x74, 0x06, 0x8B, 0x48, 0x6C, 0x89, 0x4E, 0x64, 0xC6, 0x46, 0x61, 0xFF};
 inline constexpr Site kTrainPointsSet{"TrainPointsSet", 0x009EB19F, kTrainPointsSetBytes, sizeof(kTrainPointsSetBytes)};
@@ -566,8 +594,8 @@ inline constexpr Site kAbilityPage11Branch{"AbilityPage11Branch", 0x004C5AEB, kA
 inline constexpr std::uint8_t kAbilityNthCallBytes[] = {0x8B, 0x54, 0x24, 0x34, 0x83, 0xC8, 0xFF, 0x89, 0x44, 0x24, 0x2C, 0x89, 0x44, 0x24, 0x78, 0x8B, 0xC2, 0x83, 0xC2, 0x01, 0x89, 0x54, 0x24, 0x34, 0x8D, 0x54, 0x24, 0x78, 0x52, 0x8D, 0x54, 0x24, 0x30, 0x52, 0x8D, 0x54, 0x24, 0x14, 0x52, 0x8D, 0x54, 0x24, 0x24, 0x52, 0x8D, 0x54, 0x24, 0x4C, 0x52, 0x8D, 0x54, 0x24, 0x6C, 0x52, 0x8B, 0x54, 0x24, 0x38, 0x57, 0xC6, 0x44, 0x24, 0x28, 0x00, 0x8B, 0x89, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x89, 0x6C, 0x05, 0x00, 0x00, 0x52, 0x50, 0xE8, 0x6E, 0x79, 0x05, 0x00, 0x84, 0xC0, 0x8D, 0x4C, 0x24, 0x58, 0x75, 0x0A, 0xE8, 0xAC, 0x5B, 0xDB, 0xFF, 0xE9, 0x1A, 0xBA, 0xDC, 0xFF};
 inline constexpr Site kAbilityNthCall{"AbilityNthCall", 0x00696C0B, kAbilityNthCallBytes, sizeof(kAbilityNthCallBytes)};
 
-inline constexpr std::uint8_t kAbilityButtonRechargeBytes[] = {0xE8, 0xC2, 0x81, 0xDC, 0xFF, 0xD8, 0x1D, 0xE4, 0x4B, 0xB8, 0x00};
-inline constexpr Site kAbilityButtonRecharge{"AbilityButtonRecharge", 0x00696C70, kAbilityButtonRechargeBytes, sizeof(kAbilityButtonRechargeBytes)};
+inline constexpr std::uint8_t kAbilityButtonCostBytes[] = {0xE8, 0xC2, 0x81, 0xDC, 0xFF, 0xD8, 0x1D, 0xE4, 0x4B, 0xB8, 0x00};
+inline constexpr Site kAbilityButtonCost{"AbilityButtonCost", 0x00696C70, kAbilityButtonCostBytes, sizeof(kAbilityButtonCostBytes)};
 
 inline constexpr std::uint8_t kWonderPanelAbilityArgsBytes[] = {0x51, 0x8D, 0x54, 0x24, 0x2C, 0x52, 0x8D, 0x44, 0x24, 0x1B, 0x50, 0x8D, 0x4C, 0x24, 0x24, 0x51, 0x8B, 0x4C, 0x24, 0x34, 0x8D, 0x54, 0x24, 0x50, 0x52, 0x8D, 0x44, 0x24, 0x5C, 0x50, 0x56, 0x51, 0x8B, 0x4C, 0x24, 0x5C, 0x6A, 0x00};
 inline constexpr Site kWonderPanelAbilityArgs{"WonderPanelAbilityArgs", 0x0069EE37, kWonderPanelAbilityArgsBytes, sizeof(kWonderPanelAbilityArgsBytes)};
@@ -653,6 +681,27 @@ inline constexpr Site kHotkeyTrainerBuildFlag{"HotkeyTrainerBuildFlag", 0x0064A0
 inline constexpr std::uint8_t kHotkeyTrainerQualifiedBytes[] = {0xB3, 0x01, 0x8B, 0xFE};
 inline constexpr Site kHotkeyTrainerQualified{"HotkeyTrainerQualified", 0x0064A05A, kHotkeyTrainerQualifiedBytes, sizeof(kHotkeyTrainerQualifiedBytes)};
 
+inline constexpr std::uint8_t kHotkeyTipListDoneBytes[] = {0x8B, 0x15, 0x44, 0x62, 0xC6, 0x00};
+inline constexpr Site kHotkeyTipListDone{"HotkeyTipListDone", 0x008F9696, kHotkeyTipListDoneBytes, sizeof(kHotkeyTipListDoneBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipBuildMissBytes[] = {0x0F, 0x8E, 0xAD, 0x05, 0x00, 0x00};
+inline constexpr Site kHotkeyTipBuildMiss{"HotkeyTipBuildMiss", 0x008F90FC, kHotkeyTipBuildMissBytes, sizeof(kHotkeyTipBuildMissBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipLookupBytes[] = {0x51, 0x55, 0x8B, 0x6C, 0x24, 0x14};
+inline constexpr Site kHotkeyTipLookup{"HotkeyTipLookup", 0x00AB481D, kHotkeyTipLookupBytes, sizeof(kHotkeyTipLookupBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipListAddBytes[] = {0x56, 0x57, 0x8B, 0xF1, 0x8B, 0x7E};
+inline constexpr Site kHotkeyTipListAdd{"HotkeyTipListAdd", 0x00467722, kHotkeyTipListAddBytes, sizeof(kHotkeyTipListAddBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipStringNewBytes[] = {0x53, 0x56, 0x8B, 0x74, 0x24, 0x0C};
+inline constexpr Site kHotkeyTipStringNew{"HotkeyTipStringNew", 0x00401A12, kHotkeyTipStringNewBytes, sizeof(kHotkeyTipStringNewBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipStringFreeBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85};
+inline constexpr Site kHotkeyTipStringFree{"HotkeyTipStringFree", 0x004010CA, kHotkeyTipStringFreeBytes, sizeof(kHotkeyTipStringFreeBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipStringNarrowBytes[] = {0x51, 0x55, 0x8B, 0xE9, 0x8B, 0x45};
+inline constexpr Site kHotkeyTipStringNarrow{"HotkeyTipStringNarrow", 0x00402733, kHotkeyTipStringNarrowBytes, sizeof(kHotkeyTipStringNarrowBytes)};
+
 inline constexpr std::uint8_t kSnareGroupPaceBytes[] = {0x8B, 0x17, 0x8B, 0xCF, 0x8B, 0x42, 0x34, 0xE8, 0x41, 0xC3, 0xFA, 0xFF, 0xD8, 0x5E, 0x7C, 0xDF, 0xE0, 0xF6, 0xC4, 0x05, 0x0F, 0x8B, 0x23, 0x01, 0x00, 0x00, 0x8B, 0x4F, 0x5C};
 inline constexpr Site kSnareGroupPace{"SnareGroupPace", 0x004FD3FD, kSnareGroupPaceBytes, sizeof(kSnareGroupPaceBytes)};
 
@@ -674,6 +723,12 @@ inline constexpr Site kSnareCreate{"SnareCreate", 0x004DD201, kSnareCreateBytes,
 inline constexpr std::uint8_t kSnareTargetCheckBytes[] = {0x8B, 0x74, 0x24, 0x0C, 0x85, 0xF6, 0x0F, 0x84, 0x5F, 0x28, 0xFB, 0xFF, 0x8B, 0x16, 0x8B, 0xCE, 0x8B, 0x82, 0x90, 0x00, 0x00, 0x00, 0xE8, 0xD3, 0xAC, 0xFA, 0xFF, 0x3C, 0x01, 0x0F, 0x85, 0x48, 0x28, 0xFB, 0xFF};
 inline constexpr Site kSnareTargetCheck{"SnareTargetCheck", 0x004DD1DE, kSnareTargetCheckBytes, sizeof(kSnareTargetCheckBytes)};
 
+inline constexpr std::uint8_t kSnareDurationPushBytes[] = {0x68, 0xB8, 0x0B, 0x00, 0x00};
+inline constexpr Site kSnareDurationPush{"SnareDurationPush", 0x004DD207, kSnareDurationPushBytes, sizeof(kSnareDurationPushBytes)};
+
+inline constexpr std::uint8_t kSnareCreateTailBytes[] = {0x6A, 0x02, 0x6A, 0x00, 0x68, 0x00, 0x00, 0x80, 0xBF, 0x68, 0x00, 0x00, 0x80, 0xBF, 0x68, 0x66, 0x66, 0x26, 0x3F, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x05, 0x00, 0x00, 0x00, 0xE9, 0x1C, 0x28, 0xFB, 0xFF};
+inline constexpr Site kSnareCreateTail{"SnareCreateTail", 0x004DD20C, kSnareCreateTailBytes, sizeof(kSnareCreateTailBytes)};
+
 inline constexpr std::uint8_t kSnareApplyBytes[] = {0x56, 0x8B, 0xF1, 0x83, 0x7E, 0x58, 0x00, 0x0F, 0x84, 0x83, 0x2B, 0x1C, 0x00, 0x8B, 0x86, 0xB4, 0x00, 0x00, 0x00, 0x83, 0xB8, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x74, 0x53, 0x8B, 0x96, 0xB4, 0x00, 0x00, 0x00, 0x83, 0xBA, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x84, 0x61, 0x2B, 0x1C, 0x00, 0x8B, 0x44, 0x24, 0x2C, 0x8B, 0x4C, 0x24, 0x28, 0x8B, 0x54, 0x24, 0x24, 0x6A, 0x00, 0x50, 0x8B, 0x44, 0x24, 0x28, 0x51, 0x8B, 0x4C, 0x24, 0x28, 0x52, 0x8B, 0x54, 0x24, 0x28, 0x50, 0x8B, 0x44, 0x24, 0x28, 0x51, 0x8B, 0x4C, 0x24, 0x28, 0x52, 0x8B, 0x54, 0x24, 0x28, 0x50, 0x8B, 0x44, 0x24, 0x28, 0x51, 0x8B, 0x4E, 0x58, 0x52, 0x50, 0xE8, 0x06, 0x6B, 0xFD, 0xFF, 0x5E, 0xC2, 0x28, 0x00, 0xE8, 0xC6, 0xD9, 0xFC, 0xFF, 0x8B, 0x8E, 0xB4, 0x00, 0x00, 0x00, 0x89, 0x81, 0xC8, 0x00, 0x00, 0x00, 0xEB, 0x9A};
 inline constexpr Site kSnareApply{"SnareApply", 0x004DD22D, kSnareApplyBytes, sizeof(kSnareApplyBytes)};
 
@@ -682,6 +737,9 @@ inline constexpr Site kSnareModifierInit{"SnareModifierInit", 0x004B3D44, kSnare
 
 inline constexpr std::uint8_t kSnareCollectorBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x56, 0x8B, 0x74, 0x24, 0x14, 0x57, 0x8B, 0xF9, 0x0F, 0xB6, 0x47, 0x60, 0x3B, 0xC5, 0x75, 0x1B, 0x53, 0x8B, 0x5E, 0x04, 0x6A, 0x00, 0x8D, 0x4B, 0x01, 0x51, 0x8B, 0xCE, 0xE8, 0xA2, 0x1D, 0xF6, 0xFF, 0x84, 0xC0, 0x74, 0x05, 0x8B, 0x16, 0x89, 0x3C, 0x9A, 0x5B, 0x80, 0x7C, 0x24, 0x14, 0x01, 0x75, 0x0C, 0x56, 0x6A, 0x01, 0x55, 0x8D, 0x4F, 0x40, 0xE8, 0x12, 0xFE, 0xFF, 0xFF, 0x8B, 0x46, 0x04, 0x5F, 0x5E, 0x5D, 0xC2, 0x0C, 0x00, 0x53, 0x8B, 0x5C, 0x24, 0x18, 0x55, 0x8B, 0x6C, 0x24, 0x14, 0x8B, 0x44, 0x24, 0x18, 0x8B, 0x4F, 0x08, 0x8B, 0x0C, 0xB1, 0x53, 0x50, 0x55, 0xE8, 0x98, 0xFF, 0xFF, 0xFF, 0x83, 0xC6, 0x01, 0x3B, 0x37, 0x7C, 0xE7, 0x8B, 0x43, 0x04, 0x5D, 0x5B, 0x5F, 0x5E, 0xC2, 0x0C, 0x00};
 inline constexpr Site kSnareCollector{"SnareCollector", 0x0049F34B, kSnareCollectorBytes, sizeof(kSnareCollectorBytes)};
+
+inline constexpr std::uint8_t kSnareStatsSumCallBytes[] = {0xE8, 0xD9, 0x49, 0x01, 0x00};
+inline constexpr Site kSnareStatsSumCall{"SnareStatsSumCall", 0x0049F26A, kSnareStatsSumCallBytes, sizeof(kSnareStatsSumCallBytes)};
 
 inline constexpr std::uint8_t kSnareModifierSumBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x56, 0x8B, 0xF1, 0x8B, 0x48, 0x5C, 0x8B, 0x91, 0x80, 0x00, 0x00, 0x00, 0x8B, 0x44, 0x24, 0x0C, 0x6A, 0x00, 0x50, 0x8D, 0x4C, 0x24, 0x10, 0x51, 0x8B, 0xCE, 0x89, 0x54, 0x24, 0x14, 0xE8, 0x0E, 0x00, 0x00, 0x00, 0x3C, 0x01, 0x75, 0x06, 0x8B, 0x54, 0x24, 0x08, 0x89, 0x16, 0x5E, 0xC2, 0x08, 0x00, 0x53, 0x55, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x18, 0x33, 0xF6, 0x32, 0xC0, 0x39, 0x77, 0x04, 0x0F, 0x8E, 0xFE, 0xED, 0x02, 0x00, 0x8B, 0x5C, 0x24, 0x1C, 0x8B, 0x6C, 0x24, 0x14, 0x8D, 0x09, 0x8B, 0x0F, 0x8B, 0x0C, 0xB1, 0x39, 0x59, 0x64, 0x74, 0x0F, 0x83, 0xC6, 0x01, 0x3B, 0x77, 0x04, 0x7C, 0xEE, 0x5F, 0x5E, 0x5D, 0x5B, 0xC2, 0x0C, 0x00, 0x8B, 0x51, 0x78, 0xD9, 0x41, 0x68, 0x83, 0xEA, 0x00, 0xB0, 0x01, 0x74, 0x15, 0x83, 0xEA, 0x01, 0x0F, 0x84, 0xCC, 0xED, 0x02, 0x00, 0x83, 0xEA, 0x01, 0x0F, 0x85, 0xCE, 0xED, 0x02, 0x00, 0xD8, 0x4D, 0x00, 0xD9, 0x5D, 0x00, 0x83, 0x79, 0x34, 0x16, 0x76, 0x13, 0x8B, 0x51, 0x30, 0x8A, 0x52, 0x02, 0x83, 0xE2, 0x40, 0x89, 0x54, 0x24, 0x18, 0x0F, 0x87, 0x9B, 0xED, 0x02, 0x00, 0x8B, 0x49, 0x04, 0x85, 0xC9, 0x74, 0xAC, 0xE9, 0xD7, 0x4B, 0x1F, 0x00};
 inline constexpr Site kSnareModifierSum{"SnareModifierSum", 0x004B3C48, kSnareModifierSumBytes, sizeof(kSnareModifierSumBytes)};
@@ -763,6 +821,15 @@ inline constexpr Site kDanceRegenGate{"DanceRegenGate", 0x00490486, kDanceRegenG
 
 inline constexpr std::uint8_t kDanceRegenBranchBytes[] = {0x83, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x84, 0x48, 0x66, 0xE1, 0xFF};
 inline constexpr Site kDanceRegenBranch{"DanceRegenBranch", 0x00679E66, kDanceRegenBranchBytes, sizeof(kDanceRegenBranchBytes)};
+
+inline constexpr std::uint8_t kFirePitHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kFirePitHead{"FirePitHead", 0x004819EF, kFirePitHeadBytes, sizeof(kFirePitHeadBytes)};
+
+inline constexpr std::uint8_t kUnitOfTypeLookupBytes[] = {0x83, 0xEC, 0x0C, 0x53, 0x55, 0x56, 0x8B, 0x74, 0x24, 0x20, 0x33, 0xC0};
+inline constexpr Site kUnitOfTypeLookup{"UnitOfTypeLookup", 0x0048195C, kUnitOfTypeLookupBytes, sizeof(kUnitOfTypeLookupBytes)};
+
+inline constexpr std::uint8_t kDancerProtoReadBytes[] = {0x8B, 0x40, 0x5C, 0x85, 0xC0, 0x74, 0x14};
+inline constexpr Site kDancerProtoRead{"DancerProtoRead", 0x009C1604, kDancerProtoReadBytes, sizeof(kDancerProtoReadBytes)};
 
 inline constexpr std::uint8_t kFirstTcGateBytes[] = {0x83, 0xBE, 0xF0, 0x04, 0x00, 0x00, 0x00, 0x0F, 0x8C, 0x13, 0xE3, 0x06, 0x00, 0x5B, 0x5D, 0x5F, 0xB0, 0x01, 0x5E, 0xC2, 0x08, 0x00};
 inline constexpr Site kFirstTcGate{"FirstTcGate", 0x0049880A, kFirstTcGateBytes, sizeof(kFirstTcGateBytes)};
@@ -1022,6 +1089,9 @@ inline constexpr Site kDataRefStringEval{"DataRefStringEval", 0x0044A635, kDataR
 inline constexpr std::uint8_t kCurrentUnitRefBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x6B, 0x8B, 0x15, 0x10, 0x73, 0xC6, 0x00, 0x8B, 0x82, 0x20, 0x09, 0x00, 0x00, 0x8B, 0x90, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xD2, 0x7C, 0x55, 0x8B, 0xC2, 0x25, 0xFF, 0xFF, 0x03, 0x00, 0x3B, 0x41, 0x10, 0x7D, 0x49, 0x8B, 0x49, 0x0C, 0x8B, 0x04, 0x81, 0x85, 0xC0, 0x74, 0x3F, 0x39, 0x50, 0x10, 0x75, 0x3A};
 inline constexpr Site kCurrentUnitRef{"CurrentUnitRef", 0x006F49B1, kCurrentUnitRefBytes, sizeof(kCurrentUnitRefBytes)};
 
+inline constexpr std::uint8_t kCurrentUnitRateReadBytes[] = {0xD9, 0x82, 0xD0, 0x00, 0x00, 0x00};
+inline constexpr Site kCurrentUnitRateRead{"CurrentUnitRateRead", 0x006F49FC, kCurrentUnitRateReadBytes, sizeof(kCurrentUnitRateReadBytes)};
+
 inline constexpr std::uint8_t kProtoFlagBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x8B, 0xD1, 0x3B, 0x42, 0x54, 0x73, 0x20, 0x56, 0x8B, 0xC8, 0x83, 0xE1, 0x07, 0xBE, 0x01, 0x00, 0x00, 0x00, 0xD3, 0xE6, 0x8B, 0x4A, 0x50, 0xC1, 0xE8, 0x03, 0x0F, 0xB6, 0x14, 0x08, 0x23, 0xF2, 0x89, 0x74, 0x24, 0x08, 0x5E, 0x77, 0x05, 0x32, 0xC0, 0xC2, 0x04, 0x00, 0xB0, 0x01, 0xC2, 0x04, 0x00};
 inline constexpr Site kProtoFlag{"ProtoFlag", 0x0045EE02, kProtoFlagBytes, sizeof(kProtoFlagBytes)};
 
@@ -1094,6 +1164,24 @@ inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPath
 inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
 inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
 
+inline constexpr std::uint8_t kAuraFilterCallBytes[] = {0xE8, 0x00, 0xFC, 0xFF, 0xFF};
+inline constexpr Site kAuraFilterCall{"AuraFilterCall", 0x009D0633, kAuraFilterCallBytes, sizeof(kAuraFilterCallBytes)};
+
+inline constexpr std::uint8_t kAuraFilterBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08, 0x57};
+inline constexpr Site kAuraFilter{"AuraFilter", 0x009D0238, kAuraFilterBytes, sizeof(kAuraFilterBytes)};
+
+inline constexpr std::uint8_t kAuraAppliedNextBytes[] = {0x8B, 0xD8, 0x83, 0xFB, 0xFF};
+inline constexpr Site kAuraAppliedNext{"AuraAppliedNext", 0x009D0675, kAuraAppliedNextBytes, sizeof(kAuraAppliedNextBytes)};
+
+inline constexpr std::uint8_t kXsReportHeadBytes[] = {0x81, 0xEC, 0x04, 0x08, 0x00, 0x00};
+inline constexpr Site kXsReportHead{"XsReportHead", 0x0043A3A4, kXsReportHeadBytes, sizeof(kXsReportHeadBytes)};
+
+inline constexpr std::uint8_t kXsMessageHeadBytes[] = {0x81, 0xEC, 0x04, 0x08, 0x00, 0x00};
+inline constexpr Site kXsMessageHead{"XsMessageHead", 0x00A5667F, kXsMessageHeadBytes, sizeof(kXsMessageHeadBytes)};
+
+inline constexpr std::uint8_t kXsFormatBytes[] = {0x51, 0x8B, 0x44, 0x24, 0x0C, 0x57};
+inline constexpr Site kXsFormat{"XsFormat", 0x00435D99, kXsFormatBytes, sizeof(kXsFormatBytes)};
+
 inline constexpr std::uint8_t kInventoryAddHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00};
 inline constexpr Site kInventoryAddHead{"InventoryAddHead", 0x0049A5E6, kInventoryAddHeadBytes, sizeof(kInventoryAddHeadBytes)};
 
@@ -1105,6 +1193,27 @@ inline constexpr Site kAutoGatherPayPoint{"AutoGatherPayPoint", 0x004C378A, kAut
 
 inline constexpr std::uint8_t kResListSetBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x39};
 inline constexpr Site kResListSet{"ResListSet", 0x0058EF83, kResListSetBytes, sizeof(kResListSetBytes)};
+
+inline constexpr std::uint8_t kLintUnitTypeMissBytes[] = {0x68, 0xB4, 0x0E, 0x00, 0x00};
+inline constexpr Site kLintUnitTypeMiss{"LintUnitTypeMiss", 0x005FCB61, kLintUnitTypeMissBytes, sizeof(kLintUnitTypeMissBytes)};
+
+inline constexpr std::uint8_t kLintProtoTagMissBytes[] = {0x84, 0xC0, 0x74, 0x16, 0x8B, 0x54, 0x24, 0x14};
+inline constexpr Site kLintProtoTagMiss{"LintProtoTagMiss", 0x005F62A2, kLintProtoTagMissBytes, sizeof(kLintProtoTagMissBytes)};
+
+inline constexpr std::uint8_t kLintProtoActionMissBytes[] = {0x0F, 0x84, 0x89, 0x26, 0x00, 0x00};
+inline constexpr Site kLintProtoActionMiss{"LintProtoActionMiss", 0x005FA202, kLintProtoActionMissBytes, sizeof(kLintProtoActionMissBytes)};
+
+inline constexpr std::uint8_t kLintTechLoadCallBytes[] = {0xE8, 0xB3, 0xFE, 0xFF, 0xFF};
+inline constexpr Site kLintTechLoadCall{"LintTechLoadCall", 0x0061FE4A, kLintTechLoadCallBytes, sizeof(kLintTechLoadCallBytes)};
+
+inline constexpr std::uint8_t kLintTechNodeBytes[] = {0x8B, 0xF0, 0x8B, 0xCE, 0x8B, 0x51, 0x18};
+inline constexpr Site kLintTechNode{"LintTechNode", 0x0061FDB8, kLintTechNodeBytes, sizeof(kLintTechNodeBytes)};
+
+inline constexpr std::uint8_t kLintEffectDropBytes[] = {0x0F, 0x84, 0xDB, 0x18, 0x00, 0x00};
+inline constexpr Site kLintEffectDrop{"LintEffectDrop", 0x006205E9, kLintEffectDropBytes, sizeof(kLintEffectDropBytes)};
+
+inline constexpr std::uint8_t kLintEffectTypeBytes[] = {0x68, 0x12, 0x05, 0x00, 0x00};
+inline constexpr Site kLintEffectType{"LintEffectType", 0x0065BC56, kLintEffectTypeBytes, sizeof(kLintEffectTypeBytes)};
 
 inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
 inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
@@ -2038,12 +2147,16 @@ Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
 Outcome ApplyDisplayedRange(const Config& config);
 Outcome ApplyLinkedResource(const Config& config);
+Outcome ApplyUnitTypeTechs(const Config& config);
+Outcome ApplyAuraStacking(const Config& config);
+Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
+Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -2069,6 +2182,7 @@ Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
+Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
@@ -2096,6 +2210,9 @@ Outcome ApplyFallenHeroTacticsFix(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
+// Puts FirstTC first in hcShipmentPointFallback's list, and installs its hook if the key is off. For firstTC,
+// which applies after that key.
+bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
@@ -2124,6 +2241,7 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
+    {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
     {"pillageGold", ApplyPillageGold},
     {"veterancyBonus", ApplyVeterancyBonus},
@@ -2148,6 +2266,8 @@ inline constexpr Feature kFeatures[] = {
     {"snareOnlyHitUnit", ApplySnareOnlyHitUnit},
     // After damageOverTime and snareOnlyHitUnit: both verify the stock bytes of the site it writes.
     {"cantBeSlowed", ApplyCantBeSlowed},
+    // After cantBeSlowed: its hook continues at the push this key writes.
+    {"snareValues", ApplySnareValues},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
@@ -2198,11 +2318,15 @@ inline constexpr Feature kFeatures[] = {
     {"resourceDebt", ApplyResourceDebt},
     // After resourceDebt and the keys that verify the heads of the inventory add and the inventory recreate.
     {"linkedResource", ApplyLinkedResource},
+    {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
+    // After the keys that verify the sites it writes as stock bytes; before the plugins, as a plugin may read its log.
+    {"dataLint", ApplyDataLint},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
+    {"xsErrorLog", ApplyXsErrorLog},
     {"multipleInstances", ApplyMultipleInstances},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
@@ -2216,12 +2340,12 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "displayedrange", "linkedresource", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
+    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
-    "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
+    "buildingworkrateauras", "xserrorlog", "datalint", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
@@ -2570,7 +2694,7 @@ bool AddActionTagHandler(ActionTagHandler handler);
 
 namespace {
 
-constexpr std::size_t kMaxHandlers = 4;
+constexpr std::size_t kMaxHandlers = 12;
 // Return address of the parser's call by the <ProtoAction> handler; the hook passes only that one
 // and 0x5FA623, the tactics <action> creator's (docs/engine-symbols.md, "Damage and poison").
 constexpr std::uint32_t kFromProtoAction = 0x005FA213;
@@ -2708,6 +2832,16 @@ bool AddTransformObserver(const TransformObserver& observer);
 using TransformEffectWrapper = void (*)(char* unit, std::int32_t proto);
 bool SetTransformEffectWrapper(TransformEffectWrapper wrapper);
 
+// Keys that read an attribute of a TransformUnit effect. The first call takes the effect's SetData and Apply
+// slots, after checking them. `read` runs when the effect's XML was read and is good; `before` and `after`
+// run around each apply. Any of them may be null.
+struct TransformEffectReader {
+  void (*read)(void* effect, const void* node);
+  void (*before)(void* effect);
+  void (*after)(void* effect);
+};
+bool AddTransformEffectReader(const TransformEffectReader& reader);
+
 // 0x9C754C with the observers around it. Every key's own transform goes through here.
 std::int32_t TransformUnit(char* unit, std::int32_t proto);
 
@@ -2728,16 +2862,49 @@ std::int32_t TransformUnit(char* unit, std::int32_t proto);
 namespace {
 
 constexpr std::size_t kMaxObservers = 4;
+constexpr std::size_t kMaxReaders = 4;
 constexpr std::uint32_t kEffectCall = 0x007FBC79;  // the TransformUnit effect's apply
 constexpr std::uint32_t kOtherCalls[] = {0x007FBEF2, 0x008C2D08, 0x008EB78A, 0x008F05F5, 0x009BB6D5, 0x009C7C16};
 
 using TransformFn = std::int32_t(__thiscall*)(char* unit, std::int32_t proto);
+using SetDataFn = bool(__thiscall*)(void* effect, const void* node);
+using ApplyFn = void(__thiscall*)(void* effect, void* a, void* b, void* c, void* d);
 const auto kTransform = reinterpret_cast<TransformFn>(0x009C754C);
 
 uhc::TransformObserver g_observers[kMaxObservers] = {};
 std::size_t g_count = 0;
 uhc::TransformEffectWrapper g_effectWrapper = nullptr;
 bool g_installed = false;
+uhc::TransformEffectReader g_readers[kMaxReaders] = {};
+std::size_t g_readerCount = 0;
+SetDataFn g_setData = nullptr;
+ApplyFn g_apply = nullptr;
+
+bool __fastcall EffectSetData(void* effect, void*, const void* node) {
+  const bool ok = g_setData(effect, node);
+  if (ok && node != nullptr) {
+    for (std::size_t i = 0; i < g_readerCount; ++i) {
+      if (g_readers[i].read != nullptr) {
+        g_readers[i].read(effect, node);
+      }
+    }
+  }
+  return ok;
+}
+
+void __fastcall EffectApply(void* effect, void*, void* a, void* b, void* c, void* d) {
+  for (std::size_t i = 0; i < g_readerCount; ++i) {
+    if (g_readers[i].before != nullptr) {
+      g_readers[i].before(effect);
+    }
+  }
+  g_apply(effect, a, b, c, d);
+  for (std::size_t i = g_readerCount; i > 0; --i) {
+    if (g_readers[i - 1].after != nullptr) {
+      g_readers[i - 1].after(effect);
+    }
+  }
+}
 
 std::int32_t __fastcall OtherCall(char* unit, void*, std::int32_t proto) { return uhc::TransformUnit(unit, proto); }
 
@@ -2772,6 +2939,26 @@ bool Install() {
 }  // namespace
 
 namespace uhc {
+
+bool AddTransformEffectReader(const TransformEffectReader& reader) {
+  if (g_readerCount == kMaxReaders) {
+    Log(L"transform effect: no room for another reader");
+    return false;
+  }
+  if (g_readerCount == 0) {
+    if (!VerifyAll("transform effect", {&sites::kTransformEffectSetDataSlot, &sites::kTransformEffectApplySlot})) {
+      return false;
+    }
+    g_setData = *reinterpret_cast<SetDataFn*>(sites::kTransformEffectSetDataSlot.va);
+    g_apply = *reinterpret_cast<ApplyFn*>(sites::kTransformEffectApplySlot.va);
+    if (!WriteDword(sites::kTransformEffectSetDataSlot.va, reinterpret_cast<std::uintptr_t>(&EffectSetData)) ||
+        !WriteDword(sites::kTransformEffectApplySlot.va, reinterpret_cast<std::uintptr_t>(&EffectApply))) {
+      return false;
+    }
+  }
+  g_readers[g_readerCount++] = reader;
+  return true;
+}
 
 bool AddTransformObserver(const TransformObserver& observer) {
   if (g_count == kMaxObservers) {
@@ -3064,10 +3251,12 @@ include common.inc
 
 UhcCivTagDispatch PROTO STDCALL node:DWORD, civ:DWORD  ; civtags.cpp; true: a registered tag, consumed
 UhcCivFirstTcTownProto PROTO STDCALL player:DWORD      ; the proto for the town units, or -1
+UhcCivFirstTcColonyFlag PROTO STDCALL unit:DWORD       ; true: this unit counts as StartingColonyBuilding
 
 .data
 civTagResume    dd 0052BB0Fh    ; jle 52B43Dh / jmp 52C066h: the stock unknown-tag path, on the flags
 civTagNext      dd 0052B43Dh    ; the next child of the <civ> node
+colonyFlagResume dd 006A2136h   ; and eax,1 / mov [esp+74h],eax: the rest of the test of flag 136
 townQueryResume dd 00679ACEh    ; push ebp / push esi / mov esi,[edi+80h]: the query of proto EBX
 
 .code
@@ -3112,6 +3301,30 @@ done:
     jmp townQueryResume
 UhcCivFirstTcTownHook ENDP
 
+; Replaces 0x6A2130..0x6A2135 with the key firstTC, at the creation of a unit, ESI: the test of flag 136 of its
+; proto, StartingColonyBuilding. A civ's <firstTC> building counts as having it, without writing the proto,
+; which every civ shares. AL is what `and eax,1` reads; EAX's other bytes do not matter there.
+UhcCivFirstTcColonyHook PROC
+    TRACE_ONCE "firstTC colony flag (0x6A2130)"
+    mov edx, dword ptr [eax+50h]    ; stolen 0x6A2130
+    mov al, byte ptr [edx+11h]      ; stolen 0x6A2133
+    test al, 1
+    jne done
+    push eax
+    push ecx
+    push edx
+    push esi
+    call UhcCivFirstTcColonyFlag
+    test al, al
+    pop edx
+    pop ecx
+    pop eax
+    je done
+    or al, 1
+done:
+    jmp colonyFlagResume
+UhcCivFirstTcColonyHook ENDP
+
 END
 ```
 
@@ -3144,6 +3357,16 @@ bool AddTechSubtype(const char* name, TechSubtypeHandler handler);
 using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, const char* proto, float amount,
                                           std::uint8_t relativity, bool unapply);
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
+
+// The same for a subtype that names an abstract unit type: the effect takes unittype="<Type>", which must
+// exist when the techs are read. `type` is its ID in the unit type table. An unknown name, or a proto's,
+// is logged and the effect dropped.
+using TechTypeSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t type, bool unapply);
+bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler);
+
+// Called for a Data subtype that neither stock nor a key knows, while the data loads, for dataLint. Writes the hooks too.
+using UnknownTechSubtype = void (*)(const char* name);
+bool OnUnknownTechSubtype(UnknownTechSubtype callback);
 
 }  // namespace uhc
 ```
@@ -3181,9 +3404,12 @@ constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
 constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
 constexpr std::size_t kEffectFlags = 9;                // bit 40h: allactions="1", read before the subtype
+constexpr std::uint8_t kEffectAfterLoad = 0x20;         // in those flags
 constexpr std::size_t kProtoActions = 0x44;            // the action set
 constexpr std::size_t kActionList = 0x1C;              // in the set: the array of actions, and its count at +20h
 constexpr std::size_t kActionId = 4;                   // in an action
+constexpr std::size_t kTypeNames = 0x190;              // in the database: the unit type name table
+constexpr std::size_t kFirstAbstract = 0x19B0;         // in the database: the first abstract type's ID
 
 using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
 const auto kNameLookup = reinterpret_cast<NameLookupFn>(&UhcTechSubtypeLookupStock);
@@ -3193,16 +3419,24 @@ using ActionIdByNameFn = std::int32_t(__thiscall*)(void* db, const void* attribu
 const auto kActionIdByName = reinterpret_cast<ActionIdByNameFn>(0x005E0C64);
 using ActionByIdFn = char*(__thiscall*)(const void* set, std::int32_t id);
 const auto kActionById = reinterpret_cast<ActionByIdFn>(0x0048D22E);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+using NameBucketFn = std::int32_t(__thiscall*)(const void* table, const char* name);
+const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
+using NameFindFn = bool(__thiscall*)(const void* table, const char* name, std::int32_t bucket, std::int32_t* id);
+const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
 
 struct Subtype {
   const char* name;
   uhc::TechSubtypeHandler handler;              // on a proto
   uhc::TechActionSubtypeHandler actionHandler;  // or on its actions
+  uhc::TechTypeSubtypeHandler typeHandler;      // or with a unit type
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+uhc::UnknownTechSubtype g_unknown = nullptr;
 
 // What stock does in setData for TrackRating: only the subtypes it knows read the attribute.
 bool ReadAction(void* db, const char* name, char* effect, const char* node) {
@@ -3221,6 +3455,31 @@ bool ReadAction(void* db, const char* name, char* effect, const char* node) {
     uhc::Log(L"tech subtypes: a %hs effect names an unknown action; effect dropped", name);
     return false;
   }
+  return true;
+}
+
+// The attribute unittype, into the field the action's ID uses.
+bool ReadType(void* db, const char* name, char* effect, const char* node) {
+  const void* attribute = nullptr;
+  if (!kXmlAttribute(node, "unittype", &attribute) || attribute == nullptr) {
+    uhc::Log(L"tech subtypes: a %hs effect names no unittype; effect dropped", name);
+    return false;
+  }
+  const char* text = kXmlText(attribute);
+  const char* table = static_cast<const char*>(db) + kTypeNames;
+  std::int32_t id = -1;
+  if (text == nullptr || !kNameFind(table, text, kNameBucket(table, text), &id) || id < 0) {
+    uhc::Log(L"tech subtypes: a %hs effect names the unknown unit type %hs; effect dropped", name,
+             text == nullptr ? "" : text);
+    return false;
+  }
+  if (id < *reinterpret_cast<const std::int32_t*>(static_cast<const char*>(db) + kFirstAbstract)) {
+    uhc::Log(L"tech subtypes: a %hs effect names %hs, a proto and not an abstract type; effect dropped", name, text);
+    return false;
+  }
+  *reinterpret_cast<std::int32_t*>(effect + kEffectAction) = id;
+  // A proto's types are not in a saved game: the pass after a load, 0x94DDEA, runs the effects with this flag again.
+  effect[kEffectFlags] = static_cast<char>(effect[kEffectFlags] | kEffectAfterLoad);
   return true;
 }
 
@@ -3246,11 +3505,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   return true;
 }
 
-bool Add(const Subtype& subtype) {
-  if (g_count == kMaxSubtypes) {
-    uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
-    return false;
-  }
+bool Install() {
   if (!g_installed) {
     if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupHead, &uhc::sites::kDataSubtypeAttrCall,
                                           &uhc::sites::kDataApplySwitch, &uhc::sites::kDataUnapplySwitch,
@@ -3264,9 +3519,21 @@ bool Add(const Subtype& subtype) {
     }
     g_installed = true;
   }
+  return true;
+}
+
+bool Add(const Subtype& subtype) {
+  if (g_count == kMaxSubtypes) {
+    uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
+    return false;
+  }
+  if (!Install()) {
+    return false;
+  }
   g_subtypes[g_count++] = subtype;
   return true;
 }
+
 
 }  // namespace
 
@@ -3284,7 +3551,13 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
     if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
+    if (g_subtypes[i].typeHandler != nullptr && !ReadType(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
+      return -1;
+    }
     return kFirstId + static_cast<std::int32_t>(i);
+  }
+  if (g_unknown != nullptr) {
+    g_unknown(name);
   }
   return -1;
 }
@@ -3298,6 +3571,10 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
     return false;
   }
   const Subtype& subtype = g_subtypes[index];
+  if (subtype.typeHandler != nullptr) {
+    subtype.typeHandler(proto, base, actionId, unapply != 0);
+    return true;
+  }
   if (subtype.actionHandler != nullptr) {
     return RunOnActions(subtype, proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0, actionId,
                         allActions != 0);
@@ -3308,10 +3585,22 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
 
 namespace uhc {
 
-bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({name, handler, nullptr}); }
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({name, handler, nullptr, nullptr}); }
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
-  return Add({name, nullptr, handler});
+  return Add({name, nullptr, handler, nullptr});
+}
+
+bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler) {
+  return Add({name, nullptr, nullptr, handler});
+}
+
+bool OnUnknownTechSubtype(UnknownTechSubtype callback) {
+  if (!Install()) {
+    return false;
+  }
+  g_unknown = callback;
+  return true;
 }
 
 }  // namespace uhc
@@ -3448,6 +3737,11 @@ namespace uhc {
 // the stock bytes.
 bool AddModifyType(const wchar_t* name, std::int32_t stat);
 
+// Called for a name nothing knows, while the data loads, for dataLint. `proto` is null when the name was not read in a
+// proto's action. Writes the hook too.
+using UnknownModifyType = void (*)(const wchar_t* name, const char* proto);
+bool OnUnknownModifyType(UnknownModifyType callback);
+
 }  // namespace uhc
 ```
 
@@ -3469,6 +3763,7 @@ namespace {
 constexpr std::size_t kMaxTypes = 16;
 constexpr std::uint32_t kNameTailHook = 0x005FE6D7;  // neg eax / sbb eax,eax / and al,0F1h (6 B)
 constexpr std::int32_t kTailAdds = 0x0E;             // the tail adds 0Eh to what the hook leaves in EAX
+constexpr std::uint32_t kFromActionParser = 0x005FC8B7;  // the action parser's call of the name parser
 
 using CompareFn = std::int32_t(__thiscall*)(const void* name, const wchar_t* text, std::int32_t flag, std::int32_t n);
 const auto kCompare = reinterpret_cast<CompareFn>(0x00443C10);
@@ -3481,15 +3776,32 @@ struct ModifyType {
 ModifyType g_types[kMaxTypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+uhc::UnknownModifyType g_unknown = nullptr;
+
+bool Install() {
+  if (g_installed) {
+    return true;
+  }
+  if (!uhc::VerifyAll("modify types", {&uhc::sites::kModifyTypeNameTail, &uhc::sites::kModifyTypeNameCompare}) ||
+      !uhc::WriteJmp(kNameTailHook, reinterpret_cast<const void*>(&UhcModifyTypeHook), 6)) {
+    return false;
+  }
+  g_installed = true;
+  return true;
+}
 
 }  // namespace
 
-// From the hook, for a name that is none of the stock ones. The tail returns EAX + 0Eh.
-extern "C" std::int32_t __stdcall UhcModifyTypeByName(const void* name) {
+// From the hook, for a name that is none of the stock ones. The tail returns EAX + 0Eh. For the action parser's call,
+// `proto` is its argument; for the other caller that slot means nothing.
+extern "C" std::int32_t __stdcall UhcModifyTypeByName(const void* name, std::uint32_t returnAddress, const char* proto) {
   for (std::size_t i = 0; i < g_count; ++i) {
     if (kCompare(name, g_types[i].name, 0, -1) == 0) {
       return g_types[i].stat - kTailAdds;
     }
+  }
+  if (g_unknown != nullptr) {
+    g_unknown(*static_cast<const wchar_t* const*>(name), returnAddress == kFromActionParser ? proto : nullptr);
   }
   return -1 - kTailAdds;
 }
@@ -3501,14 +3813,18 @@ bool AddModifyType(const wchar_t* name, std::int32_t stat) {
     Log(L"modify types: no room for %ls", name);
     return false;
   }
-  if (!g_installed) {
-    if (!VerifyAll("modify types", {&sites::kModifyTypeNameTail, &sites::kModifyTypeNameCompare}) ||
-        !WriteJmp(kNameTailHook, reinterpret_cast<const void*>(&UhcModifyTypeHook), 6)) {
-      return false;
-    }
-    g_installed = true;
+  if (!Install()) {
+    return false;
   }
   g_types[g_count++] = {name, stat};
+  return true;
+}
+
+bool OnUnknownModifyType(UnknownModifyType callback) {
+  if (!Install()) {
+    return false;
+  }
+  g_unknown = callback;
   return true;
 }
 
@@ -3526,7 +3842,7 @@ option casemap :none
 
 include common.inc
 
-UhcModifyTypeByName PROTO STDCALL nameString:DWORD
+UhcModifyTypeByName PROTO STDCALL :DWORD, :DWORD, :DWORD
 
 .data
 nameTailNext    dd 005FE6DDh    ; pop esi / add eax,0Eh / ret: FUN_005F5645 returns EAX + 0Eh
@@ -3539,11 +3855,14 @@ nameTailNext    dd 005FE6DDh    ; pop esi / add eax,0Eh / ret: FUN_005F5645 retu
 ; saved. Stock turns EAX into 0 (a match) or -0Fh and the tail adds 0Eh: stat 0Eh, or -1 for an
 ; unknown name. The hook keeps a match; for any other name the helper returns the stat - 0Eh, or
 ; -0Fh. ECX, EDX and the flags are dead at the tail, which sets the flags, and its two callers read
-; only EAX.
+; only EAX. [esp+4] = the caller; for the action parser, its proto argument is at [esp+0D0h] (0C4h in its loop, with
+; the return address and the argument of this call on top, and the saved ESI).
 UhcModifyTypeHook PROC
     TRACE_ONCE "ModifyType names (0x5FE6D7)"
     test eax, eax
     je done                         ; "AutoGatherRate": EAX = 0, the tail returns 0Eh
+    push dword ptr [esp+0D0h]
+    push dword ptr [esp+8]
     push esi
     call UhcModifyTypeByName
 done:
@@ -3765,6 +4084,11 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
 // Writes the hook the first time (after checking the site's stock bytes) and adds row.
 bool AddUnitPanelRow(UnitPanelRow row);
 
+// One key may also write the row for a selection of several units: `row` gets the panel and the
+// selection group (IDs [group+10h], count [group+14h]). The single-unit rows do not run for a group.
+using UnitPanelGroupRow = bool(__stdcall*)(const char* panel, const char* selection);
+void SetUnitPanelGroupRow(UnitPanelGroupRow row);
+
 }  // namespace uhc
 ```
 
@@ -3782,7 +4106,7 @@ bool AddUnitPanelRow(UnitPanelRow row);
 
 namespace {
 
-constexpr std::size_t kMaxRows = 4;
+constexpr std::size_t kMaxRows = 8;
 
 // [panel+33Ch] unitResourceRateLabel, [panel+340h] unitResourceRateValue, and the styles of the
 // stock row (vtable +84h), then the text (+80h) and the refresh (+54h).
@@ -3841,6 +4165,7 @@ void SetGadget(void* gadget, std::uint32_t style, const wchar_t* text) {
 
 uhc::UnitPanelRow g_rows[kMaxRows] = {};
 std::size_t g_rowCount = 0;
+uhc::UnitPanelGroupRow g_groupRow = nullptr;
 bool g_installed = false;
 
 }  // namespace
@@ -3855,7 +4180,13 @@ void __stdcall UhcUnitPanelRows(const char* panel, const char* unit) {
     return;
   }
   const char* selection = kCurrentSelection();
-  if (selection == nullptr || Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0) {
+  if (selection == nullptr || Field<std::uint8_t>(selection, 0x21) != 0) {
+    return;
+  }
+  if (Field<std::int32_t>(selection, 0x14) != 1) {
+    if (g_groupRow != nullptr) {
+      g_groupRow(panel, selection);
+    }
     return;
   }
   for (std::size_t i = g_rowCount; i > 0; --i) {
@@ -3878,6 +4209,8 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
   SetGadget(valueGadget, kValueStyle, value);
   return true;
 }
+
+void SetUnitPanelGroupRow(UnitPanelGroupRow row) { g_groupRow = row; }
 
 bool AddUnitPanelRow(UnitPanelRow row) {
   if (g_rowCount == kMaxRows) {
@@ -4233,4 +4566,89 @@ bool UnitHasModel(const char* unit, std::int32_t model) { return kHasModel(unit,
 void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model); }
 
 }  // namespace uhc
+```
+
+## State kept for a saved game
+
+### src/savedmarkers.h
+
+```cpp
+// State that must survive a saved game, kept on the unit itself. A marker is a stat modifier of a stat no code
+// reads, with no time limit, created by 0x4DD22D. The modifier's save (slot 5Ch of vtable 0xB97C08, 0x9E3423) and
+// load (0x9E355E) copy its fields as raw dwords, so four of them hold a key's words: the value [+68h] and the three
+// floats of [+6Ch], which no code reads on these actions. A marker is written in place, and is reused when free,
+// so a unit keeps at most as many as it ever needed at once. A transform in place (0x9C754C) ends the unit's
+// modifiers, markers too: a key writes its state again at its next change.
+//
+// Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay.
+#pragma once
+
+#include <cstdint>
+
+#include "modifiers.h"
+
+namespace uhc::markers {
+
+constexpr std::uint32_t kFree = 0x3F800000;  // word 0 of a free marker: the 1.0f it is created with
+constexpr int kWords = 4;
+
+using ModifierFn = std::int32_t(__thiscall*)(char* unit, std::int32_t stat, float value, float, float, std::int32_t,
+                                             std::int32_t operation, std::int32_t ms, std::int32_t, std::int32_t,
+                                             std::int32_t exclusive);
+
+inline std::uint32_t& Word(char* marker, int word) {
+  constexpr std::uint32_t kOffsets[kWords] = {0x68, 0x6C, 0x70, 0x74};
+  return *reinterpret_cast<std::uint32_t*>(marker + kOffsets[word]);
+}
+
+// Calls visit(marker) for each marker of the stat on the unit; visit returns false to stop.
+template <typename Visit>
+void ForEach(const char* unit, std::int32_t stat, Visit visit) {
+  const char* list = modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return;
+  }
+  auto filter = [&](const char* action) {
+    if (*reinterpret_cast<const std::int32_t*>(action + 0x64) != stat) {
+      return true;
+    }
+    return visit(const_cast<char*>(action));
+  };
+  modifiers::WalkModifiers(list, filter, 0);
+}
+
+// The first marker of the stat whose word 0 is that, or nullptr.
+inline char* Find(const char* unit, std::int32_t stat, std::uint32_t word0) {
+  char* found = nullptr;
+  ForEach(unit, stat, [&](char* marker) {
+    if (Word(marker, 0) != word0) {
+      return true;
+    }
+    found = marker;
+    return false;
+  });
+  return found;
+}
+
+// A free marker of the stat, made if there is none; nullptr for a unit with no action manager. Its words 1 to 3
+// are 0.
+inline char* Take(char* unit, std::int32_t stat) {
+  if (char* marker = Find(unit, stat, kFree)) {
+    return marker;
+  }
+  const auto modifier = reinterpret_cast<ModifierFn>(0x004DD22D);
+  if (modifier(unit, stat, 1.0f, -1.0f, -1.0f, 0, 0, 0, -1, -1, 0) == -1) {
+    return nullptr;
+  }
+  return Find(unit, stat, kFree);
+}
+
+inline void Free(char* marker) {
+  Word(marker, 0) = kFree;
+  Word(marker, 1) = 0;
+  Word(marker, 2) = 0;
+  Word(marker, 3) = 0;
+}
+
+}  // namespace uhc::markers
 ```

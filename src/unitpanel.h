@@ -15,4 +15,9 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
 // Writes the hook the first time (after checking the site's stock bytes) and adds row.
 bool AddUnitPanelRow(UnitPanelRow row);
 
+// One key may also write the row for a selection of several units: `row` gets the panel and the
+// selection group (IDs [group+10h], count [group+14h]). The single-unit rows do not run for a group.
+using UnitPanelGroupRow = bool(__stdcall*)(const char* panel, const char* selection);
+void SetUnitPanelGroupRow(UnitPanelGroupRow row);
+
 }  // namespace uhc

@@ -67,7 +67,8 @@ extern "C" {
 void UhcAbilityButtonHook();
 
 // Called by the hook when GetNth returned true for n >= 6: the unit gets a button that stock
-// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid or a recharging one).
+// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid). The panel's loop over the 36 cells
+// (0x695202..0x695440) draws the recharge on any button, so one past the sixth gets it too.
 void __stdcall UhcAbilitySlotsLogButton(const char* unit, std::int32_t n, std::int32_t record, std::int32_t power,
                                         std::int32_t enabled) {
   ForgetOtherGames();
@@ -104,7 +105,7 @@ Outcome ApplyAbilitySlots(const Config& config) {
     }
   }
   if (!VerifyAll("abilitySlots", {&sites::kAbilitySlotCopies, &sites::kAbilityPage11Branch, &sites::kAbilityNthCall,
-                                  &sites::kAbilityButtonRecharge})) {
+                                  &sites::kAbilityButtonCost})) {
     return Outcome::kFailed;
   }
   // mov edi,5 at 0x695BD2, the do-while's count: the imm32 starts one byte in. N-1 >= 5, so the
@@ -112,7 +113,7 @@ Outcome ApplyAbilitySlots(const Config& config) {
   if (!WriteDword(sites::kAbilitySlotCopies.va + 0x1D, static_cast<std::uint32_t>(*slots - 1))) {
     return Outcome::kFailed;
   }
-  if (log && !WriteJmp(sites::kAbilityButtonRecharge.va, reinterpret_cast<const void*>(&UhcAbilityButtonHook), 5)) {
+  if (log && !WriteJmp(sites::kAbilityButtonCost.va, reinterpret_cast<const void*>(&UhcAbilityButtonHook), 5)) {
     return Outcome::kFailed;
   }
   Log(L"abilitySlots: the command panel asks for %d abilities per unit (stock %d)%ls", *slots, kStockSlots,

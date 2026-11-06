@@ -98,6 +98,7 @@ WOL_ATTACKERS = {
         "<AttachMaxStacks>3</AttachMaxStacks>",
         "<AttachSnare>0.5</AttachSnare>",
         "<AttachTickText>40FF40</AttachTickText>",
+        "<AttachModel>effects\\uhc_rings\\ring_damage.xml</AttachModel>",
     ]),
 }
 

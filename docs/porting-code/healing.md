@@ -421,7 +421,7 @@ END
 
 Contract: [overhealHitpointBars](../porting-to-another-dll.md#overhealhitpointbars).
 
-Besides the core helpers, it needs: [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `DynamicVbFull` `0x40A689` (25 B), `DynamicVbLock` `0x40A6A2` (69 B), `ProgressGadget` `0x44B8B8` (35 B), `IsA` `0x44D7FA` (105 B), `IsATrue` `0x44F139` (5 B), `HpBarRenderStart` `0x45C4AF` (63 B), `HpBarRenderLoop` `0x45C60B` (1415 B), `HealthRatio` `0x45F295` (72 B), `OverhealBarRatio` `0x45FAA7` (17 B), `OverhealSegmentQueue` `0x45FB3F` (50 B), `HpBarQueue` `0x45FB71` (111 B), `MaxHitpointsGetter` `0x480408` (38 B), `OverhealGroupRatio` `0x4C5012` (15 B), `GadgetRef` `0x4C519C` (27 B), `OverhealPortraitTail` `0x4C82E6` (258 B), `OverhealStatMax` `0x4D7560` (81 B), `OverhealStatBase` `0x4D75DA` (69 B), `OverhealTextStat` `0x4D7647` (21 B), `OverhealStatRow` `0x4D76DB` (9 B), `BStringFromId` `0x58EA52` (25 B), `ProgressFill` `0x590772` (73 B), `InitialHitpointsTag` `0x5F5CE3` (6 B), `MaxHitpointsTag` `0x5F5D39` (6 B), `OverhealPanelMax` `0x698B18` (38 B), `OverhealPortraitColours` `0x69A614` (22 B), `OverhealTextStatSplit` `0x69A9B0` (27 B), `GroupHealthRow` `0x69A9D3` (316 B), `OverhealInfoProto` `0x9AF33B` (25 B), `OverhealInfoBase` `0x9AFA07` (45 B), `OverhealInfoMax` `0x9AFA34` (35 B), `HealthBarGadgets` `0x9BAEE5` (135 B).
 
@@ -486,6 +486,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 
 #include "../features.h"
 #include "../generated/sites.h"
+#include "../techsubtypes.h"
 #include "../unitpanel.h"
 #include "../log.h"
 #include "../patch.h"
@@ -945,6 +946,30 @@ bool __stdcall UhcOverhealUnitPanel(const char* panel, const char* unit) {
 }
 }
 
+namespace {
+
+// The Data subtype MaxHPOnly: the stock subtype Hitpoints rescales the HP of the units that stand (0xA0036E), so a
+// unit at 100 % stays there; this one writes only MaxHitpoints [proto+98h], so that room for overheal grows and
+// the units keep their HP.
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+constexpr std::uint32_t kProtoMaxHp = 0x98;
+int g_maxHpLogLines = 0;
+
+void ChangeMaxHpOnly(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  auto* value = reinterpret_cast<float*>(proto + kProtoMaxHp);
+  const float before = *value;
+  kEffectValue(relativity, value, *reinterpret_cast<const float*>(base + kProtoMaxHp), amount, unapply);
+  if (g_maxHpLogLines < 40) {
+    ++g_maxHpLogLines;
+    uhc::Log(L"overhealHitpointBars: MaxHPOnly on proto %d, relativity %u, amount %g%ls: max %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*value));
+  }
+}
+
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyOverhealHitpointBars(const Config& config) {
@@ -1087,6 +1112,9 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
     swprintf_s(statText, L", an overheal stat row labelled by string %d", g_statLabelId);
   } else if (g_statRow) {
     swprintf_s(statText, L", an overheal stat row labelled '%ls'", g_statLabel.c_str());
+  }
+  if (!AddTechSubtype("MaxHPOnly", &ChangeMaxHpOnly)) {
+    Log(L"overhealHitpointBars: no Data subtype MaxHPOnly; the bars work as before");
   }
   Log(L"overhealHitpointBars: HP bars and HP texts of units of unittype %hs take InitialHitpoints as 100 %%%ls%ls%ls "
       L"(display only)",
@@ -1877,7 +1905,7 @@ END
 
 Contract: [overhealDecay](../porting-to-another-dll.md#overhealdecay).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `RegenAddHp` `0x49087C` (18 B), `DanceRegenAddHp` `0x67A036` (21 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
@@ -1898,6 +1926,10 @@ Sites: `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `HpSett
 // stock setter FUN_004820A1 with flag 0: it clamps and updates the damage visuals, and skips its
 // death check 0x482152, which a HP above the reference never needs. The setter raises no attack
 // event (those come from TakeDamage), so the decay is not seen as an attack.
+//
+// Saved games: a noted unit carries a marker of stat 65h (savedmarkers.h) with the time of its last gain. The
+// add-HP hook can run inside an update over the unit's own actions, so it only names the unit: the world tick
+// writes the marker. When another game is running the table is rebuilt from the markers.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -1911,6 +1943,7 @@ Sites: `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `HpSett
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../savedmarkers.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
@@ -1934,6 +1967,7 @@ namespace {
 
 constexpr std::size_t kMaxTypes = 8;
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::int32_t kStatNoted = 0x65;  // words: 1, the game time of the last gain
 
 using SetHpFn = void(__thiscall*)(char* unit, float value, std::int32_t flag);
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
@@ -1956,6 +1990,7 @@ bool g_log = false;
 // Noted units by unit ID (so every machine walks them in the same order): the game time of their
 // last gain above the reference.
 std::map<std::int32_t, std::uint32_t> g_units;
+std::vector<std::int32_t> g_changed;  // units whose marker the next tick writes
 const char* g_world = nullptr;
 std::uint32_t g_lastTime = 0;
 std::uint32_t g_lastStep = 0;
@@ -2017,17 +2052,63 @@ void Note(const char* unit, bool restartDelay) {
     return;
   }
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
   if (restartDelay) {
-    g_units[Field<std::int32_t>(unit, 0x10)] = now;
-  } else {
-    g_units.emplace(Field<std::int32_t>(unit, 0x10), now - g_delayMs);
+    g_units[id] = now;
+  } else if (!g_units.emplace(id, now - g_delayMs).second) {
+    return;
+  }
+  if (g_changed.empty() || g_changed.back() != id) {
+    g_changed.push_back(id);
   }
 }
 
-void Reset(char*) { g_units.clear(); }
+void Reset(char*) {
+  g_units.clear();
+  g_changed.clear();
+}
+
+void WriteMarker(char* unit, std::uint32_t lastGain) {
+  namespace markers = uhc::markers;
+  char* marker = markers::Find(unit, kStatNoted, 1);
+  if (marker == nullptr) {
+    marker = markers::Take(unit, kStatNoted);
+  }
+  if (marker != nullptr) {
+    markers::Word(marker, 0) = 1;
+    markers::Word(marker, 1) = lastGain;
+  }
+}
+
+void ClearMarker(char* unit) {
+  if (char* marker = uhc::markers::Find(unit, kStatNoted, 1)) {
+    uhc::markers::Free(marker);
+  }
+}
+
+// The table from the markers of a game that just started or loaded: one walk over the world's units.
+void Rebuild(const char* world) {
+  namespace markers = uhc::markers;
+  g_units.clear();
+  g_changed.clear();
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* units = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = units[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    if (char* marker = markers::Find(unit, kStatNoted, 1)) {
+      g_units[Field<std::int32_t>(unit, 0x10)] = markers::Word(marker, 1);
+    }
+  }
+  if (!g_units.empty()) {
+    uhc::Log(L"overhealDecay: %u noted unit(s) found in the saved game", static_cast<unsigned>(g_units.size()));
+  }
+}
 
 // After each world update: game time [world+108h] since the last tick, never the real clock. A new
-// game (another game world, the time going back or the step count jumping) forgets every unit.
+// game (another game world, the time going back or the step count jumping) takes the units its markers say.
 void DecayTick(char* world, std::int32_t) {
   // The world update also runs for other worlds (the home city's; 0x481D01 compares this with
   // [game+13Ch]): only the game world's units decay, and another world must not look like a new game.
@@ -2039,17 +2120,28 @@ void DecayTick(char* world, std::int32_t) {
   const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;
   const std::uint32_t elapsed = sameGame ? now - g_lastTime : 0;
   if (!sameGame) {
-    g_units.clear();
     g_world = world;
+    Rebuild(world);
   }
   g_lastTime = now;
   g_lastStep = step;
+  for (const std::int32_t id : g_changed) {
+    const auto noted = g_units.find(id);
+    char* unit = noted == g_units.end() ? nullptr : UnitById(world, id);
+    if (unit != nullptr) {
+      WriteMarker(unit, noted->second);
+    }
+  }
+  g_changed.clear();
   if (elapsed == 0) {
     return;
   }
   for (auto it = g_units.begin(); it != g_units.end();) {
     char* unit = UnitById(world, it->first);
     if (unit == nullptr || !IsAlive(unit) || !Decays(Field<const char*>(unit, 0x5C))) {
+      if (unit != nullptr) {
+        ClearMarker(unit);
+      }
       it = g_units.erase(it);
       continue;
     }
@@ -2060,6 +2152,7 @@ void DecayTick(char* world, std::int32_t) {
         uhc::Log(L"overhealDecay: unit %d (%hs) is back at its 100 %% %.1f; logged once per proto", it->first,
                  ProtoName(unit), static_cast<double>(reference));
       }
+      ClearMarker(unit);
       it = g_units.erase(it);
       continue;
     }

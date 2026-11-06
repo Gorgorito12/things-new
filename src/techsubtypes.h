@@ -23,4 +23,14 @@ using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, 
                                           std::uint8_t relativity, bool unapply);
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 
+// The same for a subtype that names an abstract unit type: the effect takes unittype="<Type>", which must
+// exist when the techs are read. `type` is its ID in the unit type table. An unknown name, or a proto's,
+// is logged and the effect dropped.
+using TechTypeSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t type, bool unapply);
+bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler);
+
+// Called for a Data subtype that neither stock nor a key knows, while the data loads, for dataLint. Writes the hooks too.
+using UnknownTechSubtype = void (*)(const char* name);
+bool OnUnknownTechSubtype(UnknownTechSubtype callback);
+
 }  // namespace uhc

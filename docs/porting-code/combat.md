@@ -14,8 +14,10 @@ Contents:
 - [broadsideMuzzleLimit](#broadsidemuzzlelimit)
 - [snareOnlyHitUnit](#snareonlyhitunit)
 - [cantBeSlowed](#cantbeslowed)
+- [snareValues](#snarevalues)
 - [killBountyTechs, resourceBounty and teamKillBounty](#killbountytechs-resourcebounty-and-teamkillbounty)
 - [pillageGold](#pillagegold)
+- [auraStacking](#aurastacking)
 - [veterancyBonus](#veterancybonus)
 - [detonationDeath](#detonationdeath)
 
@@ -725,7 +727,7 @@ END
 
 Contract: [damageOverTime](../porting-to-another-dll.md#damageovertime).
 
-Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`floatingtext.h`](helpers.md#floating-text), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`floatingtext.h`](helpers.md#floating-text), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35 B), `SnareCreate` `0x4DD201` (44 B), `SnareApply` `0x4DD22D` (130 B).
 
@@ -750,6 +752,12 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 // - <AttachTickText>RRGGBB</AttachTickText>: each tick shows the damage dealt over the unit in
 //   that colour, for the local player only (floatingtext.h); "damageOverTime noticktext" in
 //   uhc.cfg turns it off on that machine.
+// - <AttachModel>path.xml</AttachModel>: the unit carries that model while poisoned, as an aura's
+//   <modelattachment> (unitmodels.h). A visual: nothing reaches the simulation.
+//
+// Saved games: a copy of each running poison lives on the poisoned unit, in markers (savedmarkers.h): a
+// header of stat 63h and the stacks' ends in markers of stat 64h. They are written at each change, in the
+// simulation, so on every machine, and the table is rebuilt from them when another game is running (SyncWorld).
 #include <windows.h>
 
 #include <algorithm>
@@ -761,6 +769,7 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 #include <cwchar>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../actiontags.h"
@@ -769,6 +778,8 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../savedmarkers.h"
+#include "../unitmodels.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
@@ -799,6 +810,8 @@ const auto kSnare = reinterpret_cast<SnareFn>(0x004DD22D);
 constexpr std::int32_t kMaxStacks = 100;
 constexpr std::uint32_t kSnareSlackMs = 250;  // the snare outlasts the next tick by this much
 constexpr std::uint32_t kDefaultTickColour = 0xFF40FF40;
+constexpr std::int32_t kStatDot = 0x63;       // words: tag, next tick, attacker, source (proto << 16 | action name)
+constexpr std::int32_t kStatDotStacks = 0x64; // words: tag, three stacks' ends, 0 when unused
 
 template <typename T>
 T& Field(const char* base, std::uint32_t offset) {
@@ -925,6 +938,8 @@ struct Attachment {
   std::int32_t maxStacks = 1;    // <AttachMaxStacks>
   float snare = -1.0f;           // <AttachSnare>: the speed factor while poisoned; < 0 none
   std::uint32_t tickColour = 0;  // <AttachTickText>: ARGB of the tick text; 0 none
+  std::wstring modelPath;        // <AttachModel>; empty none
+  std::int32_t model = kUnresolved;
 };
 
 // Filled while protoy.xml is parsed, keyed by proto ID and action name, since every player's
@@ -947,9 +962,12 @@ struct Dot {
   std::uint32_t end = 0;                 // the last stack's end
   std::vector<std::uint32_t> stacks;     // each stack's end, in game time order of expiry
   // From the latest hit's action.
+  ActionKey source = {-1, -1};
   std::int32_t maxStacks = 1;
   float snare = -1.0f;
   std::uint32_t tickColour = 0;
+  std::int32_t model = -1;  // <AttachModel> of the first hit, -1 none
+  bool hung = false;        // this poison counts in g_modelUsers
 };
 
 // Ordered by key, so every machine applies the ticks in the same order.
@@ -957,6 +975,10 @@ std::map<DotKey, Dot> g_dots;
 const char* g_dotWorld = nullptr;
 std::uint32_t g_lastTime = 0;
 std::uint32_t g_lastStep = 0;
+std::map<std::pair<std::int32_t, std::int32_t>, std::int32_t> g_modelUsers;  // {unit, model}: the poisons showing it
+std::int32_t g_noBone = -1;
+bool g_models = false;  // the sites of unitmodels.h are as in stock
+bool g_loggedNoModel = false;
 
 extern "C" void UhcDotTakeDamageStock();
 const auto kTakeDamageStock = reinterpret_cast<TakeDamageFn>(&UhcDotTakeDamageStock);
@@ -1076,25 +1098,195 @@ void ResetForDataLoad(char*) {
   g_loggedUntagged.clear();
   g_attachingName = kUnresolved;
   g_dots.clear();
+  g_modelUsers.clear();
   g_dotWorld = nullptr;
 }
 
-// Drops every poison when another game is running: a new or loaded game can reuse the old
-// world's address, so the test is the world's step count [world+F8h], which the world update
-// raises by exactly 1 per step (0x481A87), and the game time going back. While poisons run, Tick
-// sees every step; with none running, a jump only clears an empty map.
+std::uint32_t Tag(const DotKey& key) {
+  return static_cast<std::uint32_t>(key.attachment) << 8 | static_cast<std::uint32_t>(key.player);
+}
+
+// The model of <AttachModel>, -1 for none. The path table exists once a game runs.
+std::int32_t ModelOf(Attachment& attachment) {
+  if (!g_models || attachment.modelPath.empty()) {
+    return -1;
+  }
+  if (attachment.model == kUnresolved) {
+    attachment.model = uhc::ModelOfPath(attachment.modelPath.c_str());
+    if (attachment.model < 0) {
+      uhc::Log(L"damageOverTime: <AttachModel>%ls is not in the game; no model shown", attachment.modelPath.c_str());
+    }
+  }
+  return attachment.model;
+}
+
+// The copy of a poison on its unit. Only words change in place; a marker is made only when the unit lacks one.
+void SaveDot(char* unit, const DotKey& key, const Dot& dot) {
+  namespace markers = uhc::markers;
+  const std::uint32_t tag = Tag(key);
+  char* header = markers::Find(unit, kStatDot, tag);
+  if (header == nullptr) {
+    header = markers::Take(unit, kStatDot);
+  }
+  if (header == nullptr) {
+    return;
+  }
+  markers::Word(header, 0) = tag;
+  markers::Word(header, 1) = dot.nextTick;
+  markers::Word(header, 2) = static_cast<std::uint32_t>(dot.attacker);
+  markers::Word(header, 3) =
+      static_cast<std::uint32_t>(dot.source.proto) << 16 | (static_cast<std::uint32_t>(dot.source.name) & 0xFFFF);
+  std::size_t next = 0;
+  auto fill = [&](char* marker) {
+    for (int word = 1; word < markers::kWords; ++word) {
+      markers::Word(marker, word) = next < dot.stacks.size() ? dot.stacks[next++] : 0;
+    }
+  };
+  markers::ForEach(unit, kStatDotStacks, [&](char* marker) {
+    if (markers::Word(marker, 0) == tag) {
+      if (next < dot.stacks.size()) {
+        fill(marker);
+      } else {
+        markers::Free(marker);
+      }
+    }
+    return true;
+  });
+  while (next < dot.stacks.size()) {
+    char* marker = markers::Take(unit, kStatDotStacks);
+    if (marker == nullptr) {
+      return;
+    }
+    markers::Word(marker, 0) = tag;
+    fill(marker);
+  }
+}
+
+// The poison ended on a unit that is still there.
+void ClearSavedDot(char* unit, const DotKey& key) {
+  namespace markers = uhc::markers;
+  const std::uint32_t tag = Tag(key);
+  auto freeOwn = [tag](char* marker) {
+    if (markers::Word(marker, 0) == tag) {
+      markers::Free(marker);
+    }
+    return true;
+  };
+  markers::ForEach(unit, kStatDot, freeOwn);
+  markers::ForEach(unit, kStatDotStacks, freeOwn);
+}
+
+// The table from the markers of a game that just started or loaded: the walk over the world's units runs once.
+void Rebuild(const char* world) {
+  namespace markers = uhc::markers;
+  g_dots.clear();
+  g_modelUsers.clear();
+  if (g_attachingName == kUnresolved) {
+    g_attachingName = ActionNameIndex(L"Attaching");
+  }
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* units = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = units[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    markers::ForEach(unit, kStatDot, [&](char* header) {
+      const std::uint32_t tag = markers::Word(header, 0);
+      if (tag == markers::kFree) {
+        return true;
+      }
+      Dot dot;
+      dot.nextTick = markers::Word(header, 1);
+      dot.attacker = static_cast<std::int32_t>(markers::Word(header, 2));
+      const std::uint32_t source = markers::Word(header, 3);
+      dot.source = {static_cast<std::int32_t>(source >> 16), static_cast<std::int32_t>(source & 0xFFFF)};
+      markers::ForEach(unit, kStatDotStacks, [&](char* marker) {
+        if (markers::Word(marker, 0) == tag) {
+          for (int word = 1; word < markers::kWords; ++word) {
+            if (markers::Word(marker, word) != 0) {
+              dot.stacks.push_back(markers::Word(marker, word));
+            }
+          }
+        }
+        return true;
+      });
+      if (dot.stacks.empty()) {
+        return true;
+      }
+      std::sort(dot.stacks.begin(), dot.stacks.end(),
+                [](std::uint32_t a, std::uint32_t b) { return static_cast<std::int32_t>(a - b) < 0; });
+      dot.end = dot.stacks.back();
+      const auto found = g_attachments.find(dot.source);
+      if (found != g_attachments.end()) {
+        dot.maxStacks = found->second.maxStacks;
+        dot.snare = found->second.snare;
+        dot.tickColour = found->second.tickColour;
+        dot.model = ModelOf(found->second);
+      }
+      g_dots[DotKey{Field<std::int32_t>(unit, 0x10), static_cast<std::int32_t>(tag >> 8),
+                    static_cast<std::int32_t>(tag & 0xFF)}] = std::move(dot);
+      return true;
+    });
+  }
+  if (!g_dots.empty()) {
+    uhc::Log(L"damageOverTime: %u running poison(s) found in the saved game", static_cast<unsigned>(g_dots.size()));
+  }
+}
+
+// Another game is running: a new or loaded game can reuse the old world's address, so the test is
+// the world's step count [world+F8h], which the world update raises by exactly 1 per step (0x481A87), and
+// the game time going back. The world tick sees every step of the main world.
 void SyncWorld(const char* world, std::uint32_t now) {
   const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
   if (world != g_dotWorld || !Reached(now, g_lastTime) || step - g_lastStep > 1) {
-    if (!g_dots.empty()) {
-      uhc::Log(L"damageOverTime: another game started; %u running poison(s) dropped",
-               static_cast<unsigned>(g_dots.size()));
-    }
-    g_dots.clear();
     g_dotWorld = world;
+    Rebuild(world);
   }
   g_lastTime = now;
   g_lastStep = step;
+}
+
+// Hangs the poison's model, from the world tick: a unit can have no visual yet, so it tries again.
+void ShowModel(char* target, std::int32_t targetId, Dot& dot) {
+  if (dot.model < 0 || dot.hung) {
+    return;
+  }
+  if (g_noBone < 0) {
+    g_noBone = uhc::NoBone();
+  }
+  const uhc::ModelHang hang = uhc::HangUnitModel(target, dot.model, g_noBone);
+  if (hang == uhc::ModelHang::kRetry) {
+    return;
+  }
+  if (hang == uhc::ModelHang::kNotInGame) {
+    uhc::RemoveUnitModel(target, dot.model);
+    if (!g_loggedNoModel) {
+      g_loggedNoModel = true;
+      uhc::Log(L"damageOverTime: an <AttachModel> is not in the game; no model shown");
+    }
+    dot.model = -1;
+    return;
+  }
+  dot.hung = true;
+  ++g_modelUsers[{targetId, dot.model}];
+}
+
+// The poison ends. target is null when the unit is gone.
+void ReleaseModel(char* target, std::int32_t targetId, const Dot& dot) {
+  if (!dot.hung) {
+    return;
+  }
+  const auto users = g_modelUsers.find({targetId, dot.model});
+  if (users != g_modelUsers.end() && --users->second > 0) {
+    return;
+  }
+  if (users != g_modelUsers.end()) {
+    g_modelUsers.erase(users);
+  }
+  if (target != nullptr) {
+    uhc::RemoveUnitModel(target, dot.model);  // the corpse does not keep it
+  }
 }
 
 // One-time diagnostics: each reason is logged the first time it happens, so a modder can see
@@ -1107,7 +1299,8 @@ bool g_loggedFirstTick = false;
 // "damageOverTime log" in uhc.cfg: every poison start, refresh, tick and end, for tuning data.
 bool g_logEvery = false;
 
-void Attach(char* target, std::int32_t player, std::int32_t attacker, const Attachment& source) {
+void Attach(char* target, std::int32_t player, std::int32_t attacker, const ActionKey& sourceKey,
+            Attachment& source) {
   const std::int32_t attachment = source.proto;
   const char* world = MainWorld();
   const char* proto = nullptr;
@@ -1144,12 +1337,14 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Atta
   Dot& dot = it->second;
   if (added) {
     dot.nextTick = now + TickInterval(attaching);
+    dot.model = ModelOf(source);
   }
   // A new hit by the player's units makes that unit the attacker and takes its action's options.
   // It adds a stack that ends Lifespan (the current one) from now; at the stack limit it renews the
   // oldest stack instead. With one stack this restarts the duration. The tick timer keeps running.
   // Capped so the end stays within the 2^31 ms window that Reached() compares.
   dot.attacker = attacker;
+  dot.source = sourceKey;
   dot.maxStacks = source.maxStacks;
   dot.snare = source.snare;
   dot.tickColour = source.tickColour;
@@ -1166,6 +1361,7 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Atta
   if (added) {
     Snare(target, attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
   }
+  SaveDot(target, key, dot);
   if (!g_loggedFirstPoison || g_logEvery) {
     g_loggedFirstPoison = true;
     uhc::Log(L"damageOverTime: %ls: unit %d (%hs) by player %d, proto %d, stack %u/%d, every %u ms until game time "
@@ -1190,18 +1386,18 @@ float ApplyTick(char* target, char* attaching, const DotKey& key, const Dot& dot
                           0, 0, 1, notify, -2, 1);
 }
 
-void Tick(char* world) {
-  if (world != MainWorld()) {
-    return;  // other worlds run the same update; the function itself compares this with [game+13Ch]
-  }
-  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
-  SyncWorld(world, now);
+void Tick(char* world, std::uint32_t now) {
   for (auto it = g_dots.begin(); it != g_dots.end();) {
     const DotKey& key = it->first;
     Dot& dot = it->second;
     char* target = UnitById(world, key.target);
     bool alive = target != nullptr && IsAlive(target);
+    if (alive) {
+      ShowModel(target, key.target, dot);
+    }
+    bool ticked = false;
     while (alive && Reached(now, dot.nextTick) && Reached(dot.end, dot.nextTick)) {
+      ticked = true;
       const char* proto = nullptr;
       char* attaching = PlayerAttaching(world, key.player, key.attachment, &proto);
       if (attaching == nullptr) {
@@ -1239,8 +1435,15 @@ void Tick(char* world) {
         uhc::Log(L"damageOverTime: poison on unit %d ended at game time %u: %ls", key.target, now,
                  !alive ? (target == nullptr ? L"unit gone" : L"unit dead or not damageable") : L"expired");
       }
+      ReleaseModel(target, key.target, dot);
+      if (target != nullptr) {
+        ClearSavedDot(target, key);
+      }
       it = g_dots.erase(it);
     } else {
+      if (ticked) {
+        SaveDot(target, key, dot);
+      }
       ++it;
     }
   }
@@ -1260,7 +1463,8 @@ void DotActionTag(const uhc::ActionTag& tag) {
   const bool stacks = _wcsicmp(name, L"AttachMaxStacks") == 0;
   const bool snare = _wcsicmp(name, L"AttachSnare") == 0;
   const bool tickText = _wcsicmp(name, L"AttachTickText") == 0;
-  if (!attach && !stacks && !snare && !tickText) {
+  const bool model = _wcsicmp(name, L"AttachModel") == 0;
+  if (!attach && !stacks && !snare && !tickText && !model) {
     return;
   }
   const char* protoName = Field<const char*>(proto, 0x10);
@@ -1273,6 +1477,15 @@ void DotActionTag(const uhc::ActionTag& tag) {
     }
     g_attachments[key].protoName = Narrow(text);
     uhc::Log(L"damageOverTime: %hs/%ls attaches %ls", protoName, ActionName(key.name), text);
+    return;
+  }
+  if (model) {
+    if (text == nullptr || *text == L'\0') {
+      uhc::Log(L"damageOverTime: %hs/%ls: empty <AttachModel>; ignored", protoName, ActionName(key.name));
+      return;
+    }
+    g_attachments[key].modelPath = text;
+    uhc::Log(L"damageOverTime: %hs/%ls: poisoned units carry %ls", protoName, ActionName(key.name), text);
     return;
   }
   wchar_t* end = nullptr;
@@ -1325,7 +1538,7 @@ float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::i
     const ActionKey key{proto, Field<std::int32_t>(action, 0x04)};
     const auto it = g_attachments.find(key);
     if (it != g_attachments.end() && Resolve(it->second)) {
-      Attach(unit, player, attacker, it->second);
+      Attach(unit, player, attacker, key, it->second);
     } else if (g_logEvery && it == g_attachments.end() && g_loggedUntagged.size() < 200 &&
                g_loggedUntagged.try_emplace(key, true).second) {
       const char* database = Database();
@@ -1342,8 +1555,13 @@ float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::i
 
 // After each world update (the shared wrapper of worldtick.cpp).
 void DotWorldTick(char* world, std::int32_t) {
+  if (world != MainWorld()) {
+    return;  // other worlds run the same update; the function itself compares this with [game+13Ch]
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  SyncWorld(world, now);
   if (!g_dots.empty()) {
-    Tick(world);
+    Tick(world, now);
   }
 }
 
@@ -1375,13 +1593,17 @@ Outcome ApplyDamageOverTime(const Config& config) {
       !uhc::VerifyFloatingText("damageOverTime") || !OnDatabaseLoad(&ResetForDataLoad)) {
     return Outcome::kFailed;
   }
+  g_models = VerifyUnitModels("damageOverTime models");
+  if (!g_models) {
+    Log(L"damageOverTime: <AttachModel> shows nothing: its sites are not stock");
+  }
   if (!AddActionTagHandler(&DotActionTag) ||
       !WriteJmp(sites::kDotTakeDamageEntry.va, reinterpret_cast<const void*>(&UhcDotTakeDamageHook), 6) ||
       !uhc::AddWorldTick(&DotWorldTick)) {
     return Outcome::kFailed;
   }
   Log(L"damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with "
-      L"<AttachMaxStacks>, <AttachSnare> and <AttachTickText>%ls (multiplayer unverified)",
+      L"<AttachMaxStacks>, <AttachSnare>, <AttachTickText> and <AttachModel>%ls (multiplayer unverified)",
       g_noTickText ? L"; tick texts off on this machine" : L"");
   return Outcome::kApplied;
 }
@@ -1434,7 +1656,7 @@ Contract: [spreadAnyAccuracy](../porting-to-another-dll.md#spreadanyaccuracy).
 
 Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `IsA` `0x44D7FA` (105 B), `SpreadHitRoll` `0x499890` (23 B), `SpreadMissStub` `0x4CEF7B` (17 B), `SpreadRadius` `0x4CF00B` (44 B), `SpreadDraws` `0x4CF037` (64 B).
+Sites: `IsA` `0x44D7FA` (105 B), `SpreadPrecalcGate` `0x4997AE` (8 B), `SpreadHitRoll` `0x499890` (23 B), `SpreadGroundStore` `0x4C4DEC` (12 B), `SpreadMissStub` `0x4CEF7B` (17 B), `SpreadRadius` `0x4CF00B` (44 B), `SpreadDraws` `0x4CF037` (64 B).
 
 ### src/features/spread.cpp
 
@@ -1454,9 +1676,10 @@ Sites: `IsA` `0x44D7FA` (105 B), `SpreadHitRoll` `0x499890` (23 B), `SpreadMissS
 //   that goes through the precalculated roll, PerfectAccuracy and accuracy 1 included: the projectile
 //   lands at the offset point as a ground shot (the TargetGround mode, 3), which deals the attack's
 //   area damage where it lands. A stock miss (mode 2) deals no damage at all, area included.
-// InstantBallistics and TargetGround shots, shots with no target unit and every shot while the cfg
-// var ballisticPrecalcHits is off never reach that code (docs/how-it-works.md). The hooks are in
-// hooks/spread_hooks.asm; the tags come through the shared action tag hook (actiontags.h).
+// - a marked unit's TargetGround shot, which never rolls, lands at such an offset point too, and a marked
+//   unit goes through the roll even with the cfg var ballisticPrecalcHits off.
+// InstantBallistics shots and shots with no target unit never reach that code (docs/how-it-works.md). The
+// hooks are in hooks/spread_hooks.asm; the tags come through the shared action tag hook (actiontags.h).
 #include <windows.h>
 
 #include <cmath>
@@ -1552,6 +1775,7 @@ constexpr std::int32_t kGroundShot = 3;
 // The shot being offset, between the hit hook or UhcSpreadSelect and UhcSpreadDone.
 bool g_forced = false;  // a hit (the roll, or PerfectAccuracy without one); the shooter is marked
 bool g_marked = false;  // the shooter is marked
+bool g_ground = false;  // a TargetGround shot of a marked unit
 bool g_tagged = false;
 const char* g_shooter = nullptr;
 ActionKey g_shotKey{-1, -1};
@@ -1670,6 +1894,16 @@ float g_uhcSpreadRadius = -1.0f;
 void UhcSpreadHitHook();
 void UhcSpreadMissHook();
 void UhcSpreadRadiusHook();
+void UhcSpreadGroundHook();
+void UhcSpreadPrecalcHook();
+
+// The precalc hook and the ground hook.
+bool __stdcall UhcSpreadIsMarked(const char* shooter) { return IsMarked(shooter); }
+
+bool __stdcall UhcSpreadMarkedGround(const char* shooter) {
+  g_ground = IsMarked(shooter);
+  return g_ground;
+}
 
 // The hit hook, for a shot the roll did not make a miss: true if the shooting unit is marked, so
 // that the shot takes the miss stub too.
@@ -1721,6 +1955,7 @@ std::int32_t __stdcall UhcSpreadDone() {
                g_shooter == nullptr ? -1 : Field<std::int32_t>(g_shooter, 0x10), ProtoName(proto),
                ActionName(g_shotKey.name),
                !g_marked  ? L"a miss"
+               : g_ground ? L"marked unit, its shot lands at the offset point"
                : g_forced ? L"marked unit, a hit made a ground shot at the offset point"
                           : L"marked unit, a miss made a ground shot at the offset point",
                radius, static_cast<double>(g_uhcSpreadFactor), static_cast<double>(g_uhcSpreadMax),
@@ -1732,6 +1967,7 @@ std::int32_t __stdcall UhcSpreadDone() {
   const bool marked = g_marked;
   g_forced = false;
   g_marked = false;
+  g_ground = false;
   return marked ? kGroundShot : kMiss;
 }
 }
@@ -1759,14 +1995,17 @@ Outcome ApplySpreadAnyAccuracy(const Config& config) {
   // The hit hook jumps straight to the miss hook, and the miss hook relies on the radius hook: all
   // three are written, or none.
   if (!VerifyAll("spreadAnyAccuracy", {&sites::kSpreadHitRoll, &sites::kSpreadMissStub, &sites::kSpreadRadius,
-                                       &sites::kSpreadDraws, &sites::kIsA}) ||
+                                       &sites::kSpreadDraws, &sites::kIsA, &sites::kSpreadPrecalcGate,
+                                       &sites::kSpreadGroundStore}) ||
       !RequestAbstractUnitType(g_markerName.c_str(), &g_markerType) || !OnDatabaseLoad(&ResetForDataLoad) ||
       !AddActionTagHandler(&OnActionTag)) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(sites::kSpreadRadius.va, reinterpret_cast<const void*>(&UhcSpreadRadiusHook), 27) ||
       !WriteJmp(sites::kSpreadMissStub.va, reinterpret_cast<const void*>(&UhcSpreadMissHook), 7) ||
-      !WriteJmp(sites::kSpreadHitRoll.va, reinterpret_cast<const void*>(&UhcSpreadHitHook), 9)) {
+      !WriteJmp(sites::kSpreadHitRoll.va, reinterpret_cast<const void*>(&UhcSpreadHitHook), 9) ||
+      !WriteJmp(sites::kSpreadGroundStore.va, reinterpret_cast<const void*>(&UhcSpreadGroundHook), 7) ||
+      !WriteJmp(sites::kSpreadPrecalcGate.va, reinterpret_cast<const void*>(&UhcSpreadPrecalcHook), 8)) {
     return Outcome::kFailed;
   }
   Log(L"spreadAnyAccuracy: <MaxSpread> and <SpreadFactor> are read per action (stock 5.0 and 0.25) and every "
@@ -1794,6 +2033,8 @@ include common.inc
 UhcSpreadForceMiss PROTO STDCALL :DWORD, :DWORD
 UhcSpreadSelect PROTO STDCALL :DWORD, :DWORD
 UhcSpreadDone PROTO STDCALL            ; returns the hit result to store: 2 or 3
+UhcSpreadIsMarked PROTO STDCALL :DWORD
+UhcSpreadMarkedGround PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcSpreadFactor:DWORD       ; float: SpreadFactor of the shot being offset (stock 0.25)
 EXTERNDEF g_uhcSpreadMax:DWORD          ; float: MaxSpread of the shot being offset (stock 5.0)
@@ -1803,6 +2044,9 @@ EXTERNDEF g_uhcSpreadRadius:DWORD       ; float: the radius the offset used, for
 afterRoll           dd 00499899h    ; mov [esi+20h],ebx: the projectile's hit result
 missOffsetFn        dd 004CEF8Ch    ; FUN_004CEF8C, bool thiscall(projectile, Vector* point), ret 4
 radiusCheck         dd 004CF026h    ; fld [esp+0Ch] / fcomp [1e-6]: the stock "r > 0" test
+afterGround         dd 004C4DF3h    ; jmp 4998A7h, after the store of the ground shot
+precalcGo           dd 004997B6h    ; test edi,edi: the precalculated block's next test
+precalcSkip         dd 004998A7h    ; past the block
 
 .code
 
@@ -1857,6 +2101,52 @@ UhcSpreadMissHook PROC
     popad
     jmp afterRoll                       ; stock 0x4CEF87: jmp 499899h
 UhcSpreadMissHook ENDP
+
+; Replaces mov [esi+20h],3 (7 bytes) at 0x4C4DEC, where a TargetGround shot leaves its ground lead, in
+; the launch's frame (see the hit hook): [esp+28h] = the impact point. A marked shooter's point moves
+; as a miss's does, by FUN_004CEF8C with the action's values; the shot stays a ground shot. Everything
+; is saved around the call, so the continuation sees what it sees in stock.
+UhcSpreadGroundHook PROC
+    TRACE_ONCE "spreadAnyAccuracy ground shot (0x4C4DEC)"
+    mov dword ptr [esi+20h], 3          ; stolen
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    call UhcSpreadMarkedGround
+    test al, al
+    popad
+    je done
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    push dword ptr [esp+24h+18h]        ; the unit action
+    call UhcSpreadSelect
+    lea eax, dword ptr [esp+20h+28h]    ; the impact point
+    push eax
+    mov ecx, esi                        ; the projectile
+    call missOffsetFn
+    call UhcSpreadDone
+    popad
+done:
+    jmp afterGround
+UhcSpreadGroundHook ENDP
+
+; Replaces test al,al / je 4998A7h (8 bytes) at 0x4997AE, the test of the cfg var ballisticPrecalcHits,
+; with EBX = the unit action and the frame of the hit hook. With the var off, a marked shooter still
+; goes through the precalculated block, so its shots scatter. EAX, ECX and EDX are free: the block
+; writes them first.
+UhcSpreadPrecalcHook PROC
+    test al, al                         ; stolen
+    jne go
+    TRACE_ONCE "spreadAnyAccuracy precalc off (0x4997AE)"
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    call UhcSpreadIsMarked
+    test al, al
+    popad
+    jne go
+    jmp precalcSkip
+go:
+    jmp precalcGo
+UhcSpreadPrecalcHook ENDP
 
 ; Replaces fmul [0BA0AECh] (0.25) / fst [esp+0Ch] / fcomp [0BA0AF8h] (5.0) / fnstsw ax / test ah,41h /
 ; je 4E2CE3h (27 bytes) at 0x4CF00B in FUN_004CEF8C, with ST0 = d, the 2D distance from the
@@ -2427,6 +2717,9 @@ bool SkipsWait(const char* member, std::uint32_t site) {
 
 }  // namespace
 
+// For snareValues: a modifier that is a snare, by the same test.
+extern "C" bool __stdcall UhcIsSnareModifier(const char* action) { return IsSnare(action); }
+
 extern "C" {
 void UhcSnareGroupPaceHook();
 void UhcSnareSlotWaitHook();
@@ -2772,6 +3065,287 @@ UhcCantBeSlowedHook PROC
 skip:
     jmp snareExit
 UhcCantBeSlowedHook ENDP
+
+END
+```
+
+## snareValues
+
+Contract: [snareValues](../porting-to-another-dll.md#snarevalues).
+
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `SnareStatsSumCall` `0x49F26A` (5 B), `SnareDurationPush` `0x4DD207` (5 B), `SnareCreateTail` `0x4DD20C` (33 B).
+
+### src/features/snarevalues.cpp
+
+```cpp
+// snareValues: the slowdown of <TargetSpeedBoost> by action and by tech.
+//
+// Stock has two literals, 0.65 and 3000 ms, in the arguments of the creator 0x4DD22D at 0x4DD201. The key
+// takes over from 0x4DD207, after the part cantBeSlowed writes, and pushes the action's values:
+//   <SnareFactor>0.3</SnareFactor>       the speed factor, from 0 to 10
+//   <SnareDuration>6</SnareDuration>     seconds, above 0
+// in a <ProtoAction> or a tactics <action> that has <TargetSpeedBoost>. The Data subtypes SnareFactor and
+// SnareDuration change them for one player's copy of the action, through the stock value function, from
+// the tag's value as base. A tech that leaves a duration of 0 or less means no snare: the creator takes a
+// duration of 0 as a modifier with no end.
+//
+// With `strongest`, of the snares on a unit the slowest counts. The sum stops at the first exclusive modifier, so
+// stock lets the oldest snare hide a stronger one. The unit's recompute has one call of the velocity sum, 0x49F26A,
+// with the list of its modifiers, which it builds each time. The key puts the strongest snare in the place of the
+// first one, then runs the sum. Nothing is kept: when a snare ends, the next recompute finds the next strongest, so
+// durations need no care, and <AttachSnare> counts too, as it is the same modifier.
+#include <compare>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <map>
+#include <string>
+#include <unordered_map>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+extern "C" void UhcSnareValuesHook();
+extern "C" bool __stdcall UhcIsSnareModifier(const char* action);  // snare.cpp
+
+namespace {
+
+constexpr float kStockFactor = 0.65f;
+constexpr float kStockSeconds = 3.0f;
+constexpr int kMaxLogLines = 200;
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+struct ModifierArray {
+  char** data;
+  std::int32_t count;
+};
+
+using VelocitySumFn = void(__thiscall*)(void* record, const char* unit, ModifierArray* list);
+const auto kVelocitySum = reinterpret_cast<VelocitySumFn>(0x004B3C48);
+
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+struct Values {
+  float factor = kStockFactor;
+  float seconds = kStockSeconds;
+};
+
+struct TechValues {
+  std::int32_t name;
+  Values values;
+};
+
+std::map<ActionKey, Values> g_values;                   // by proto and action, from the data
+std::unordered_map<const char*, TechValues> g_tech;     // by the player's copy of the action
+bool g_log = false;
+int g_logLines = 0;
+int g_strongestLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+Values BaseValues(std::int32_t proto, std::int32_t name) {
+  const auto found = g_values.find({proto, name});
+  return found == g_values.end() ? Values{} : found->second;
+}
+
+void NewDatabase(char*) {
+  g_values.clear();
+  g_tech.clear();
+  g_logLines = 0;
+  g_strongestLines = 0;
+}
+
+// Takes the call at 0x49F26A.
+void __fastcall StrongestSnare(void* record, void*, const char* unit, ModifierArray* list) {
+  std::int32_t first = -1;
+  std::int32_t best = -1;
+  for (std::int32_t i = 0; i < list->count; ++i) {
+    if (!UhcIsSnareModifier(list->data[i])) {
+      continue;
+    }
+    if (first < 0) {
+      first = i;
+      best = i;
+    } else if (Field<float>(list->data[i], 0x68) < Field<float>(list->data[best], 0x68)) {
+      best = i;
+    }
+  }
+  if (best != first) {
+    if (g_log && g_strongestLines < kMaxLogLines) {
+      ++g_strongestLines;
+      uhc::Log(L"snareValues: unit %d: the strongest snare, %g, over the first, %g", Field<std::int32_t>(unit, 0x10),
+               static_cast<double>(Field<float>(list->data[best], 0x68)),
+               static_cast<double>(Field<float>(list->data[first], 0x68)));
+    }
+    char* swap = list->data[first];
+    list->data[first] = list->data[best];
+    list->data[best] = swap;
+  }
+  kVelocitySum(record, unit, list);
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  const bool factor = _wcsicmp(tag.name, L"SnareFactor") == 0;
+  if (!factor && _wcsicmp(tag.name, L"SnareDuration") != 0) {
+    return;
+  }
+  wchar_t* end = nullptr;
+  const float value = tag.text == nullptr ? -1.0f : std::wcstof(tag.text, &end);
+  const std::int32_t name = Field<std::int32_t>(tag.action, 0x04);
+  const bool good = tag.text != nullptr && end != tag.text && (factor ? value >= 0.0f && value <= 10.0f : value > 0.0f);
+  if (!good || name < 0) {
+    uhc::Log(L"snareValues: proto %hs: <%ls> needs %ls, after the action's <Name>; ignored",
+             Field<const char*>(tag.proto, 0x10), tag.name, factor ? L"a factor from 0 to 10" : L"seconds above 0");
+    return;
+  }
+  Values& values = g_values[{Field<std::int32_t>(tag.proto, 0x04), name}];
+  (factor ? values.factor : values.seconds) = value;
+  if (g_log) {
+    uhc::Log(L"snareValues: proto %hs, action %d: factor %g, %g s", Field<const char*>(tag.proto, 0x10), name,
+             static_cast<double>(values.factor), static_cast<double>(values.seconds));
+  }
+}
+
+template <bool kFactor>
+void Change(char* action, const char*, const char* proto, float amount, std::uint8_t relativity, bool unapply) {
+  const std::int32_t name = Field<std::int32_t>(action, 0x04);
+  const Values base = BaseValues(Field<std::int32_t>(proto, 0x04), name);
+  TechValues& slot = g_tech.emplace(action, TechValues{name, base}).first->second;
+  if (slot.name != name) {
+    slot = TechValues{name, base};
+  }
+  float& value = kFactor ? slot.values.factor : slot.values.seconds;
+  kEffectValue(relativity, &value, kFactor ? base.factor : base.seconds, amount, unapply);
+  if (g_log) {
+    uhc::Log(L"snareValues: action %d of proto %d: %ls %g%ls", name, Field<std::int32_t>(proto, 0x04),
+             kFactor ? L"factor" : L"duration", static_cast<double>(value), unapply ? L" (removed)" : L"");
+  }
+}
+
+}  // namespace
+
+// From the hook: the values of the attacker's unit action. *ms 0: no snare.
+extern "C" void __stdcall UhcSnareValues(const char* unitAction, float* factor, std::int32_t* ms) {
+  Values values;
+  const char* tactics = unitAction == nullptr ? nullptr : Field<const char*>(unitAction, 0x04);
+  const char* unit = unitAction == nullptr ? nullptr : Field<const char*>(unitAction, 0x10);
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  if (tactics != nullptr && proto != nullptr) {
+    const std::int32_t name = Field<std::int32_t>(tactics, 0x04);
+    values = BaseValues(Field<std::int32_t>(proto, 0x04), name);
+    const auto tech = g_tech.find(tactics);
+    if (tech != g_tech.end() && tech->second.name == name) {
+      values = tech->second.values;
+    }
+  }
+  *factor = values.factor;
+  *ms = values.seconds > 0.0f ? static_cast<std::int32_t>(values.seconds * 1000.0f + 0.5f) : 0;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"snareValues: a snare of factor %g for %d ms", static_cast<double>(*factor), *ms);
+  }
+}
+
+namespace uhc {
+
+Outcome ApplySnareValues(const Config& config) {
+  const Config::Args* args = config.First("snareValues");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  bool strongest = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "strongest") == 0) {
+      strongest = true;
+    } else {
+      Log(L"snareValues: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("snareValues", {&sites::kSnareDurationPush, &sites::kSnareCreateTail}) ||
+      (strongest && !VerifyAll("snareValues", {&sites::kSnareStatsSumCall})) ||
+      !AddActionTagHandler(&ActionTagRead) || !OnDatabaseLoad(&NewDatabase) ||
+      !AddTechActionSubtype("SnareFactor", &Change<true>) || !AddTechActionSubtype("SnareDuration", &Change<false>) ||
+      !WriteJmp(sites::kSnareDurationPush.va, reinterpret_cast<const void*>(&UhcSnareValuesHook), 5) ||
+      (strongest && !WriteCall(sites::kSnareStatsSumCall.va, reinterpret_cast<const void*>(&StrongestSnare)))) {
+    return Outcome::kFailed;
+  }
+  Log(L"snareValues: <SnareFactor>, <SnareDuration> and their Data subtypes are on%ls (multiplayer unverified)",
+      strongest ? L", and the strongest snare counts" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/snarevalues_hooks.asm
+
+```asm
+; snareValues (src/features/snarevalues.cpp). Entered through a jmp written over the stock code, left
+; through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcSnareValues PROTO STDCALL unitAction:DWORD, factor:DWORD, ms:DWORD
+
+.data
+snareCreate     dd 004DD22Dh    ; thiscall(unit, stat, value, -1f, -1f, 0, operation, ms, -1, -1, exclusive)
+snareExit       dd 0048FA49h    ; pop esi / pop ecx ..., where the snare ends
+
+.code
+
+; Replaces 0x4DD207, push 0BB8h. The stack already has the creator's last three arguments, from stock or
+; cantBeSlowed, whose hook continues here. ESI = the target; EBP = the attacker's unit action. The stock
+; code from here to the creator is only pushes, so it is done here with the action's values, and the
+; flow ends at the exit, as stock's jmp 48FA49h does.
+UhcSnareValuesHook PROC
+    TRACE_ONCE "snareValues (0x4DD207)"
+    sub esp, 8                      ; [esp] the factor, [esp+4] the ms
+    lea eax, [esp+4]
+    push eax
+    lea eax, [esp+4]
+    push eax
+    push ebp
+    call UhcSnareValues
+    pop ecx
+    pop edx
+    test edx, edx
+    je none
+    push edx
+    push 2
+    push 0
+    push 0BF800000h
+    push 0BF800000h
+    push ecx
+    push 0
+    mov ecx, esi
+    call snareCreate
+    jmp snareExit
+none:
+    add esp, 0Ch
+    jmp snareExit
+UhcSnareValuesHook ENDP
 
 END
 ```
@@ -3312,6 +3886,389 @@ UhcPillageHook PROC
     popad
     jmp teamXpFn
 UhcPillageHook ENDP
+
+END
+```
+
+## auraStacking
+
+Contract: [auraStacking](../porting-to-another-dll.md#aurastacking).
+
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifiers.h`](helpers.md#modifier-walk), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `AuraFilter` `0x9D0238` (6 B), `AuraFilterCall` `0x9D0633` (5 B), `AuraAppliedNext` `0x9D0675` (5 B).
+
+### src/features/aurastacking.cpp
+
+```cpp
+// auraStacking: <NoStack> and <ForbidUnitType> on an AutoRangedModify action, for any aura.
+//
+// In the aura update FUN_009D033E, a unit in range that the action does not hold yet goes through the
+// filter 0x9D0238, once (call 0x9D0633), and gets its modifier from 0x4DD22D. The key wraps that call.
+//   <ForbidUnitType> refuses a target of the type.
+//   <NoStack> refuses a target that holds a modifier of the same aura, from another carrier.
+// A modifier does not say which aura made it: [modifier+4] is null on this path, so nothing links it to
+// the action. So the key marks it: right after the apply (0x9D0675) it writes the aura's mark in
+// [modifier+84h], a field that stock saves and loads and nothing reads (0x9E34E8, 0x9E366C). The mark is
+// in the game state, so the key keeps no list, a saved game needs nothing, and every machine sees the
+// same thing. A refused target stays out of [action+68h], so each update of each carrier asks again: when
+// the holder dies or the target leaves its range, its modifier goes and the next carrier to update takes it.
+//
+// unitResourceAuras makes no modifier and its take does not go through the filter: AuraClaim holds a
+// target per aura for it. That state is not saved, and a load only makes a carrier take the claim again.
+//
+// The second applier FUN_009D7328, for actions with no range, has no filter and is not covered.
+#include "../aurastacking.h"
+
+#include <compare>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../modifiers.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcAuraFilterHook();
+void UhcAuraAppliedHook();
+std::uint32_t g_uhcAuraAppliedNext = 0x009D067A;
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
+constexpr std::uint32_t kModifierMark = 0x84;      // saved, and read by nothing else
+constexpr std::uint32_t kClaimExpiryMs = 7000;     // the take comes back at most every few seconds
+constexpr std::size_t kMaxClaims = 4096;           // beyond it, the old ones are swept
+constexpr int kMaxLogLines = 200;
+constexpr int kMaxRefusalLines = 20;               // they repeat at every update
+
+using FilterFn = bool(__thiscall*)(const char* action, const char* target);
+using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using NameBucketFn = std::int32_t(__thiscall*)(const char* table, const char* name);
+using NameFindFn = bool(__thiscall*)(const char* table, const char* name, std::int32_t bucket, std::int32_t* id);
+
+const auto kFilter = reinterpret_cast<FilterFn>(0x009D0238);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
+const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
+
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+struct Forbidden {
+  std::string name;
+  std::int32_t id = -2;  // -2: not looked up yet, -1: unknown
+};
+
+struct Aura {
+  bool noStack = false;
+  std::vector<Forbidden> forbidden;
+};
+
+struct Claim {
+  std::int32_t owner;
+  std::uint32_t time;
+};
+
+std::map<ActionKey, Aura> g_auras;  // filled while the data loads, read-only after, but for the IDs
+std::unordered_map<std::uint64_t, Claim> g_claims;
+const char* g_claimWorld = nullptr;
+bool g_on = false;
+bool g_log = false;
+int g_logLines = 0;
+int g_refusalLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// Above 0, so that no field that was never set is a mark.
+std::int32_t MarkOf(std::int32_t proto, std::int32_t name) { return ((proto + 1) << 14) | (name & 0x3FFF); }
+
+void NewDatabase(char*) {
+  g_auras.clear();
+  g_claims.clear();
+  g_logLines = 0;
+  g_refusalLines = 0;
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  const bool noStack = _wcsicmp(tag.name, L"NoStack") == 0;
+  const bool forbid = _wcsicmp(tag.name, L"ForbidUnitType") == 0 || _wcsicmp(tag.name, L"ForbidAbstractType") == 0;
+  if (!noStack && !forbid) {
+    return;
+  }
+  const std::int32_t name = Field<std::int32_t>(tag.action, 0x04);
+  if (name < 0) {
+    uhc::Log(L"auraStacking: proto %hs: <%ls> goes after the action's <Name>; ignored",
+             Field<const char*>(tag.proto, 0x10), tag.name);
+    return;
+  }
+  const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
+  Aura& aura = g_auras[{Field<std::int32_t>(tag.proto, 0x04), name}];
+  if (noStack) {
+    aura.noStack = text[0] == L'\0' || std::wcstol(text, nullptr, 10) != 0;
+  } else {
+    Forbidden entry;
+    for (const wchar_t* c = text; *c != L'\0'; ++c) {
+      entry.name.push_back(static_cast<char>(*c));
+    }
+    if (entry.name.empty()) {
+      uhc::Log(L"auraStacking: proto %hs: an empty <%ls>; ignored", Field<const char*>(tag.proto, 0x10), tag.name);
+      return;
+    }
+    aura.forbidden.push_back(entry);
+  }
+  if (g_log) {
+    uhc::Log(L"auraStacking: proto %hs, action %d: %ls %ls", Field<const char*>(tag.proto, 0x10), name, tag.name, text);
+  }
+}
+
+// By the table <UnitType> reads, on the first update: every name is known by then.
+std::int32_t ForbiddenType(Forbidden& entry) {
+  if (entry.id != -2) {
+    return entry.id;
+  }
+  entry.id = -1;
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (database == nullptr) {
+    return -1;
+  }
+  const char* table = database + 0x190;
+  std::int32_t id = -1;
+  const std::int32_t bucket = kNameBucket(table, entry.name.c_str());
+  if (kNameFind(table, entry.name.c_str(), bucket, &id)) {
+    entry.id = id;
+  } else {
+    uhc::Log(L"auraStacking: <ForbidUnitType>%hs names no unit type or proto; ignored", entry.name.c_str());
+  }
+  return entry.id;
+}
+
+// The target holds a modifier with this mark.
+bool HoldsMark(const char* target, std::int32_t mark) {
+  const char* list = uhc::modifiers::ModifierList(target);
+  if (list == nullptr) {
+    return false;
+  }
+  auto different = [mark](const char* modifier) { return Field<std::int32_t>(modifier, kModifierMark) != mark; };
+  return uhc::modifiers::WalkModifiers(list, different, 0) == uhc::modifiers::Walk::kStopped;
+}
+
+Aura* AuraOf(const char* action, ActionKey* key) {
+  const char* tactics = Field<const char*>(action, 0x04);
+  const char* owner = Field<const char*>(action, 0x10);
+  const char* proto = owner == nullptr ? nullptr : Field<const char*>(owner, 0x5C);
+  if (tactics == nullptr || proto == nullptr) {
+    return nullptr;
+  }
+  *key = {Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(tactics, 0x04)};
+  const auto found = g_auras.find(*key);
+  return found == g_auras.end() ? nullptr : &found->second;
+}
+
+void LogRefusal(const char* action, const char* target, const wchar_t* why) {
+  if (g_log && g_refusalLines < kMaxRefusalLines) {
+    ++g_refusalLines;
+    uhc::Log(L"auraStacking: unit %d leaves unit %d alone: %ls", Field<std::int32_t>(Field<const char*>(action, 0x10), 0x10),
+             Field<std::int32_t>(target, 0x10), why);
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+// Instead of the filter 0x9D0238, at its one call 0x9D0633.
+bool __stdcall UhcAuraFilter(const char* action, const char* target) {
+  if (!kFilter(action, target)) {
+    return false;
+  }
+  ActionKey key{};
+  Aura* aura = AuraOf(action, &key);
+  if (aura == nullptr) {
+    return true;
+  }
+  const char* proto = Field<const char*>(target, 0x5C);
+  for (Forbidden& entry : aura->forbidden) {
+    const std::int32_t type = ForbiddenType(entry);
+    if (type >= 0 && proto != nullptr && kProtoIsType(proto, type)) {
+      LogRefusal(action, target, L"a forbidden type");
+      return false;
+    }
+  }
+  if (aura->noStack && HoldsMark(target, MarkOf(key.proto, key.name))) {
+    LogRefusal(action, target, L"it holds this aura");
+    return false;
+  }
+  return true;
+}
+
+// After the apply: EAX of 0x4DD22D, the ID of the new modifier.
+void __stdcall UhcAuraApplied(const char* action, char* target, std::int32_t modifier) {
+  if (modifier == -1) {
+    return;
+  }
+  ActionKey key{};
+  const Aura* aura = AuraOf(action, &key);
+  if (aura == nullptr || !aura->noStack) {
+    return;
+  }
+  const char* list = uhc::modifiers::ModifierList(target);
+  if (list == nullptr) {
+    return;
+  }
+  const std::int32_t mark = MarkOf(key.proto, key.name);
+  auto write = [modifier, mark](const char* action2) {
+    if (Field<std::int32_t>(action2, 0x08) != modifier) {
+      return true;
+    }
+    *reinterpret_cast<std::int32_t*>(const_cast<char*>(action2) + kModifierMark) = mark;
+    return false;
+  };
+  if (uhc::modifiers::WalkModifiers(list, write, 0) != uhc::modifiers::Walk::kStopped) {
+    uhc::Log(L"auraStacking: the modifier %d of unit %d was not found", modifier, Field<std::int32_t>(target, 0x10));
+  } else if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"auraStacking: unit %d holds unit %d", Field<std::int32_t>(Field<const char*>(action, 0x10), 0x10),
+             Field<std::int32_t>(target, 0x10));
+  }
+}
+}
+
+namespace uhc {
+
+bool AuraClaim(const char* world, std::int32_t proto, std::int32_t name, std::int32_t owner, std::int32_t target,
+               std::uint32_t now) {
+  if (!g_on) {
+    return true;
+  }
+  const auto aura = g_auras.find({proto, name});
+  if (aura == g_auras.end() || !aura->second.noStack) {
+    return true;
+  }
+  if (world != g_claimWorld) {
+    g_claimWorld = world;
+    g_claims.clear();
+  }
+  const std::uint64_t id = (static_cast<std::uint64_t>(static_cast<std::uint32_t>(MarkOf(proto, name))) << 32) |
+                           static_cast<std::uint32_t>(target);
+  if (g_claims.size() > kMaxClaims) {
+    std::erase_if(g_claims, [now](const auto& claim) { return now - claim.second.time > kClaimExpiryMs; });
+  }
+  const auto [claim, isNew] = g_claims.try_emplace(id, Claim{owner, now});
+  if (isNew || claim->second.owner == owner) {
+    claim->second.time = now;
+    return true;
+  }
+  if (now - claim->second.time <= kClaimExpiryMs && now >= claim->second.time &&
+      kUnitById(world, claim->second.owner) != nullptr) {
+    return false;
+  }
+  claim->second = {owner, now};
+  return true;
+}
+
+Outcome ApplyAuraStacking(const Config& config) {
+  const Config::Args* args = config.First("auraStacking");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"auraStacking: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("auraStacking", {&sites::kAuraFilterCall, &sites::kAuraAppliedNext, &sites::kAuraFilter}) ||
+      !AddActionTagHandler(&ActionTagRead) || !OnDatabaseLoad(&NewDatabase) ||
+      !WriteCall(sites::kAuraFilterCall.va, reinterpret_cast<const void*>(&UhcAuraFilterHook)) ||
+      !WriteJmp(sites::kAuraAppliedNext.va, reinterpret_cast<const void*>(&UhcAuraAppliedHook), 5)) {
+    return Outcome::kFailed;
+  }
+  g_on = true;
+  Log(L"auraStacking: auras read <NoStack> and <ForbidUnitType> (changes the simulation)");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/aurastacking.h
+
+```cpp
+// The part of auraStacking that unitResourceAuras uses: its take runs instead of the stock update, so
+// the filter of the aura update never sees it.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// True if this owner may take from this target now. With <NoStack> on the aura, one carrier holds each
+// target; it keeps it while it comes back within a few seconds and is alive. True for any other aura and
+// with the key off.
+bool AuraClaim(const char* world, std::int32_t proto, std::int32_t name, std::int32_t owner, std::int32_t target,
+               std::uint32_t now);
+
+}  // namespace uhc
+```
+
+### src/hooks/aurastacking_hooks.asm
+
+```asm
+; auraStacking (src/features/aurastacking.cpp). Two hooks in the aura update FUN_009D033E.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcAuraFilter PROTO STDCALL action:DWORD, target:DWORD
+UhcAuraApplied PROTO STDCALL action:DWORD, target:DWORD, modifier:DWORD
+
+EXTERNDEF C g_uhcAuraAppliedNext:DWORD
+
+.code
+
+; Replaces the target of the call at 0x9D0633: the filter 0x9D0238, thiscall(action, target), ret 4.
+; The update reads AL. The C++ code calls the filter itself.
+UhcAuraFilterHook PROC
+    TRACE_ONCE "auraStacking filter (0x9D0633)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcAuraFilter, ecx, eax
+    ret 4
+UhcAuraFilterHook ENDP
+
+; Replaces, at 0x9D0675 right after the call of 0x4DD22D, mov ebx,eax / cmp ebx,-1. EAX = the modifier's
+; ID, EBX = the target, ESI = the action. ECX and EDX hold nothing, as 0x4DD22D has just run.
+UhcAuraAppliedHook PROC
+    TRACE_ONCE "auraStacking applied (0x9D0675)"
+    push eax
+    invoke UhcAuraApplied, esi, ebx, eax
+    pop eax
+    mov ebx, eax
+    cmp ebx, -1
+    jmp g_uhcAuraAppliedNext
+UhcAuraAppliedHook ENDP
 
 END
 ```

@@ -9,7 +9,7 @@
 
 namespace {
 
-constexpr std::size_t kMaxRows = 4;
+constexpr std::size_t kMaxRows = 8;
 
 // [panel+33Ch] unitResourceRateLabel, [panel+340h] unitResourceRateValue, and the styles of the
 // stock row (vtable +84h), then the text (+80h) and the refresh (+54h).
@@ -68,6 +68,7 @@ void SetGadget(void* gadget, std::uint32_t style, const wchar_t* text) {
 
 uhc::UnitPanelRow g_rows[kMaxRows] = {};
 std::size_t g_rowCount = 0;
+uhc::UnitPanelGroupRow g_groupRow = nullptr;
 bool g_installed = false;
 
 }  // namespace
@@ -82,7 +83,13 @@ void __stdcall UhcUnitPanelRows(const char* panel, const char* unit) {
     return;
   }
   const char* selection = kCurrentSelection();
-  if (selection == nullptr || Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0) {
+  if (selection == nullptr || Field<std::uint8_t>(selection, 0x21) != 0) {
+    return;
+  }
+  if (Field<std::int32_t>(selection, 0x14) != 1) {
+    if (g_groupRow != nullptr) {
+      g_groupRow(panel, selection);
+    }
     return;
   }
   for (std::size_t i = g_rowCount; i > 0; --i) {
@@ -105,6 +112,8 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
   SetGadget(valueGadget, kValueStyle, value);
   return true;
 }
+
+void SetUnitPanelGroupRow(UnitPanelGroupRow row) { g_groupRow = row; }
 
 bool AddUnitPanelRow(UnitPanelRow row) {
   if (g_rowCount == kMaxRows) {
