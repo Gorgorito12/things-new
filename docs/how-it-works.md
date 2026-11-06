@@ -1524,6 +1524,16 @@ n + 1 = `[esp+34h]` ≥ 7 it calls the C++ logger with the unit (EDI) and GetNth
 `pushad` / `popad`, before the stock call (which returns a float in ST0), then makes the stock call
 itself and jumps to `0x696C75`.
 
+### displayedRange
+
+The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID of `effects\uhc_rings\range_<N>.xml`, as
+0x5FC91C does for `<ModelAttachment>`, and 0x58E506 the ID of the bone `bonethatdoesntexist`, as 0x5FC8EE does, which puts
+it at the unit's feet. A world tick, four times a second of game time, compares the selection of 0x453B28 with the units
+that hold a ring, and hangs or removes it through the functions of the stock aura update.
+
+**Why it is safe.** Nothing here reaches the simulation: the selection is local and is only read, and a model is a visual
+of the unit. The tick walks the selection and its own map, never the world's units.
+
 ### wonderPanelSkipAuras
 
 **The stock panel.** The wonder power panel (gadget `uiwonderpowerpanel`, five buttons) refreshes
@@ -2687,10 +2697,36 @@ The helper:
   0x482152, which kills a unit with `DieAtZeroResources` at zero, unless the proto has flag 24h;
 - pays 0x49A98A(player, resource, take × `[player+37Ch]`, 0).
 
+**The Torp's tags (2026-11-06).** The clock, the rates and the rings are kept per `{owner, action name}`: per owner, a
+second aura found the clock already at `now` and paid nothing. The model count is per `{target, model}`. The dead test is
+the alive slot `+A4h`, not 0x4802C6: that one reads the action manager, and a carcass passes it as alive. `<SingleUnit>`
+moves the last target to the head of the scan's list and takes one. An action with bit 0 of `[tactics+64h]` clear
+(`ActionEnable` 0) still reaches this code, so it lets its rings go and leaves. `ModifyRate` keeps a value by the player's
+copy of the action, with the name beside it against a reused pointer; `AddTechActionSubtype`'s handlers now get the
+player's proto, for the base value. The panel row runs in `AddUnitPanelRow`, after the stock AutoGather row has written the
+same gadgets, so it adds `0x49EBE4(0x485CAC(manager, 1Dh), resource)`; it is display only.
+
 **Why it is safe.** The hook sits at a function entry and reads only the action. Targets are looked up by ID on each
 step, so one that dies in the loop is not touched again; the list belongs to the helper. The order of the scan, the
 game clock and an ID-ordered map make the result the same on every machine. Stat 41h reaches no stock reader in an
 aura: the update does not run; in a power's `<unitModify>` the name is accepted and has no effect.
+
+### linkedResource
+
+Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagged unit to an ID-ordered map. The tick, four
+times a second, looks for a mine for the ones with none (FUN_004A1C55 around the unit, the is-a test, the distance slot
+`+B8h`) and copies the mine's entry into the building's inventory with 0x58EF83. The head of 0x49A5E6, the add every take goes
+through (0x4ED124 in the gather tick), sends a negative add on a linked inventory to the mine's and runs 0x482152 on the
+mine, whichever of the eight callers it comes from. A positive add stays on the building and the next copy overwrites it.
+In the AutoGather update, 0x4C378A hands the amount to the C++ code, which takes it from the source and writes back what
+was there; the add at 0x4C3798 stays, because `resourceDebt` reads its return address. Two paths of that update are not
+hooked: a `SingleUse` action pays the unit's whole inventory at 0x6A7E85, and `AddResourcesToInventory` adds to it at
+0x4C0F7B.
+
+**Why it is safe.** The building's inventory is only a copy, so the stock clamp in the gather tick and the stock stop at 0 need
+no hook. The map is keyed by unit ID and read by game time, so every machine walks it alike. A take looks a unit up by ID,
+so a mine that dies in the state check is not touched again. With no tagged proto in the data, the inventory hook is one
+compare.
 
 ### resourceGatherAuras
 

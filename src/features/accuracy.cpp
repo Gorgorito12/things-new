@@ -23,7 +23,8 @@ const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 bool g_log = false;
 int g_logLines = 0;
 
-void ChangeAccuracy(char* action, const char* baseAction, float amount, std::uint8_t relativity, bool unapply) {
+void ChangeAccuracy(char* action, const char* baseAction, const char*, float amount, std::uint8_t relativity,
+                    bool unapply) {
   auto* value = reinterpret_cast<float*>(action + kAccuracy);
   const float before = *value;
   const float base = baseAction != nullptr ? *reinterpret_cast<const float*>(baseAction + kAccuracy) : 1.0f;

@@ -1087,6 +1087,24 @@ inline constexpr Site kDeleteSetHpCall{"DeleteSetHpCall", 0x007CD0CF, kDeleteSet
 inline constexpr std::uint8_t kDeleteKillCallBytes[] = {0xE8, 0xE1, 0x7C, 0xCE, 0xFF};
 inline constexpr Site kDeleteKillCall{"DeleteKillCall", 0x007CD0DC, kDeleteKillCallBytes, sizeof(kDeleteKillCallBytes)};
 
+inline constexpr std::uint8_t kModelPathLookupBytes[] = {0x51, 0x53, 0x55, 0x56, 0x8B, 0xE9, 0x57, 0x8D, 0x4C, 0x24};
+inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPathLookupBytes, sizeof(kModelPathLookupBytes)};
+
+inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
+inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
+
+inline constexpr std::uint8_t kInventoryAddHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kInventoryAddHead{"InventoryAddHead", 0x0049A5E6, kInventoryAddHeadBytes, sizeof(kInventoryAddHeadBytes)};
+
+inline constexpr std::uint8_t kInventoryRecreateHeadBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x86, 0xB4, 0x00, 0x00, 0x00};
+inline constexpr Site kInventoryRecreateHead{"InventoryRecreateHead", 0x009BFE5A, kInventoryRecreateHeadBytes, sizeof(kInventoryRecreateHeadBytes)};
+
+inline constexpr std::uint8_t kAutoGatherPayPointBytes[] = {0x8B, 0x7C, 0x24, 0x10, 0x8B, 0x56, 0x10};
+inline constexpr Site kAutoGatherPayPoint{"AutoGatherPayPoint", 0x004C378A, kAutoGatherPayPointBytes, sizeof(kAutoGatherPayPointBytes)};
+
+inline constexpr std::uint8_t kResListSetBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x39};
+inline constexpr Site kResListSet{"ResListSet", 0x0058EF83, kResListSetBytes, sizeof(kResListSetBytes)};
+
 inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
 inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
 
@@ -2014,6 +2032,8 @@ Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
+Outcome ApplyDisplayedRange(const Config& config);
+Outcome ApplyLinkedResource(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
@@ -2098,6 +2118,7 @@ inline constexpr Feature kFeatures[] = {
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"unitResourceAuras", ApplyUnitResourceAuras},
+    {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
     {"pillageGold", ApplyPillageGold},
@@ -2171,6 +2192,8 @@ inline constexpr Feature kFeatures[] = {
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
     {"resourceDebt", ApplyResourceDebt},
+    // After resourceDebt and the keys that verify the heads of the inventory add and the inventory recreate.
+    {"linkedResource", ApplyLinkedResource},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
@@ -2192,7 +2215,7 @@ inline constexpr const char* kHandledKeys[] = {
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
+    "displayedrange", "linkedresource", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
     "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
@@ -3112,9 +3135,9 @@ bool AddTechSubtype(const char* name, TechSubtypeHandler handler);
 
 // The same for a subtype on a proto's action: the effect takes action="<Action>" or allactions="1", as
 // stock's TrackRating and Damage do. `action` is the player's copy, once for each action the effect
-// names, and `baseAction` the action of that name in the base proto, or nullptr if it has none. A
-// proto without the action is left alone.
-using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, float amount,
+// names, and `baseAction` the action of that name in the base proto, or nullptr if it has none. `proto`
+// is the player's copy of the proto ([proto+4] its ID). A proto without the action is left alone.
+using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, const char* proto, float amount,
                                           std::uint8_t relativity, bool unapply);
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 
@@ -3206,7 +3229,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   }
   if (!allActions) {
     if (char* action = kActionById(set, actionId)) {
-      subtype.actionHandler(action, kActionById(baseSet, actionId), amount, relativity, unapply);
+      subtype.actionHandler(action, kActionById(baseSet, actionId), proto, amount, relativity, unapply);
     }
     return true;
   }
@@ -3214,7 +3237,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   const std::int32_t count = *reinterpret_cast<const std::int32_t*>(set + kActionList + 4);
   for (std::int32_t i = 0; i < count; ++i) {
     const std::int32_t id = *reinterpret_cast<const std::int32_t*>(actions[i] + kActionId);
-    subtype.actionHandler(actions[i], kActionById(baseSet, id), amount, relativity, unapply);
+    subtype.actionHandler(actions[i], kActionById(baseSet, id), proto, amount, relativity, unapply);
   }
   return true;
 }

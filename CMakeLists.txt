@@ -45,6 +45,8 @@ set(UHC_SOURCES
   src/features/freeresearch.cpp
   src/features/cantslow.cpp
   src/features/civfirsttc.cpp
+  src/features/displayrange.cpp
+  src/features/linkedresource.cpp
   src/features/civs.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
@@ -156,6 +158,7 @@ set(UHC_SOURCES
   src/hooks/modifytype_hooks.asm
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm
+  src/hooks/linkedresource_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm
   src/hooks/pillage_hooks.asm

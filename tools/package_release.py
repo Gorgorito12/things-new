@@ -175,6 +175,7 @@ art\\effects\\uhc_rings holds coloured rings that show which units an aura is wo
 are data: copy that folder to the game's art\\effects and name one in an aura, with
 <modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
+aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -241,6 +242,7 @@ maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produ
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
 broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
+displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
 lifespanAfterConstruction [UnitType] [log]   a marked building's Lifespan starts when
                               its construction ends, not when it is placed
@@ -272,6 +274,7 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
+linkedResource [log]          a resource building takes the stock of the mine beside it
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation

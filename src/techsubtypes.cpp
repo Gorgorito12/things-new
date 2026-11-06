@@ -80,7 +80,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   }
   if (!allActions) {
     if (char* action = kActionById(set, actionId)) {
-      subtype.actionHandler(action, kActionById(baseSet, actionId), amount, relativity, unapply);
+      subtype.actionHandler(action, kActionById(baseSet, actionId), proto, amount, relativity, unapply);
     }
     return true;
   }
@@ -88,7 +88,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   const std::int32_t count = *reinterpret_cast<const std::int32_t*>(set + kActionList + 4);
   for (std::int32_t i = 0; i < count; ++i) {
     const std::int32_t id = *reinterpret_cast<const std::int32_t*>(actions[i] + kActionId);
-    subtype.actionHandler(actions[i], kActionById(baseSet, id), amount, relativity, unapply);
+    subtype.actionHandler(actions[i], kActionById(baseSet, id), proto, amount, relativity, unapply);
   }
   return true;
 }

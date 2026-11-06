@@ -15,7 +15,9 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` from git; run it before the commit of a new key or test video. | <!-- private -->
 | `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
 | `make_gifs.py` | Makes every test GIF to one standard (800 px, 8 fps, 12 s, 4 MB) from the masters in `rea/media-masters`, with the cuts in `gifs.txt`. `--check` fails on one out of it. |
-| `make_rings.py` | Draws the coloured aura rings in `tools/rings/`: for each, an `.xml`, its particles and textures by size, for `art/effects/uhc_rings/`. `--check` compares them. |
+| `make_rings.py` | Draws the coloured aura rings in `tools/rings/`: for each, an `.xml`, its particles and textures by size, for `art/effects/uhc_rings/`. Also `aura_<resource>.xml`, the ring with a floating icon, and `range_<metres>.xml` for `displayedRange`. `--check` compares them. |
+| `monastery_testdata.py` | `<bed> [--model\|--ai\|--restore]`: `UhcMonastery` and `UhcSmallMine` in a WoL bed, for `linkedResource`; buildable with a monastery's model, and an AI rule that builds one. |
+| `torp_testdata.py` | `<bed> [--restore]`: the Torp's auras on `WOLSawmill` in a WoL bed, a panel row and two test techs, for `unitResourceAuras`. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |

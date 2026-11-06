@@ -7,7 +7,10 @@ Everything goes to art/effects/uhc_rings/ in the game folder. No pixel and no me
 - ring_<name>.xml, the model: by <logic type="UnitType">, one flat particle on the ground of the size in SHAPES;
 - ring_<name>_<size>.particle, that particle, for each size;
 - ring_<name>.ddt, the 64x64 DXT3 texture of a unit, a tree or a cavalryman;
-- ring_<name>_<size>.ddt, the texture of a building, with lines as thick in metres as those of a unit's ring.
+- ring_<name>_<size>.ddt, the texture of a building, with lines as thick in metres as those of a unit's ring;
+- range_<metres>.xml, its particle and its texture: one thin line of that radius, for displayedRange;
+- for wood, food and gold, aura_<name>.xml, the marker of a resource being gathered: the ring and, floating over the
+  unit, icon_<name>_<height>.particle with the glyph of icon_<name>.ddt, drawn here.
 
 An aura uses one with <modelattachment>effects\\uhc_rings\\ring_<name>.xml</modelattachment>.
 """
@@ -45,6 +48,37 @@ SHAPES = (
     ("abstracthouse", "small", 9, 128),
     ("building", "medium", 16, 256),
 )
+# The floating icon of aura_<name>.xml, by logic branch: the same keys as SHAPES, then the kinds of resource. The height
+# is in metres above the unit's feet, as the ring lies at them. The side is the half width of the sprite.
+ICON_HEIGHTS = (
+    ("none", "unit", 3.2),
+    ("abstractcavalry", "cavalry", 4.0),
+    ("abstractartillery", "cavalry", 4.0),
+    ("tree", "tree", 8.0),
+    ("abstractmine", "mine", 3.5),
+    ("abstracttowncenter", "large", 14.0),
+    ("abstracthouse", "small", 9.0),
+    ("building", "medium", 11.0),
+)
+ICON_SIDE = 0.9
+ICON_OUTLINE = 0.14  # the dark edge that keeps a glyph readable, in the same fraction of the half width
+ICON_DARK = (24, 20, 16)
+# Each glyph is a list of (x, y, outer radius, inner radius), in fractions of the half width.
+GLYPHS = {
+    "wood": ((-0.40, 0.30, 0.38, 0.0), (0.40, 0.30, 0.38, 0.0), (0.0, -0.36, 0.38, 0.0)),  # three log ends
+    "food": ((-0.24, -0.24, 0.50, 0.0), (0.0, 0.0, 0.38, 0.0), (0.16, 0.16, 0.26, 0.0)),  # the meat of a drumstick
+    "gold": ((0.0, 0.0, 0.76, 0.46), (0.0, 0.0, 0.20, 0.0)),  # a coin
+}
+# What a glyph draws over itself in ICON_ACCENT: a block holds one of the two colours, as a DXT3 block has two.
+GLYPH_ACCENTS = {
+    "food": ((0.30, 0.30, 0.11, 0.0), (0.40, 0.40, 0.11, 0.0), (0.50, 0.50, 0.11, 0.0), (0.58, 0.58, 0.11, 0.0),
+             (0.72, 0.54, 0.15, 0.0), (0.54, 0.72, 0.15, 0.0)),  # its bone
+}
+ICON_ACCENT = (245, 235, 210)
+# The rings of displayedRange, by radius in metres, a thin line of RANGE_LINE metres in a neutral colour.
+RANGES = (4, 6, 8, 10, 12, 14, 16, 20, 24, 30)
+RANGE_LINE = 0.30
+RANGE_COLOURS = ((245, 245, 235), (255, 255, 255))
 OPACITY = 0.70  # the ground shows through
 # A DXT3 block holds two colours and two mixes of them. By how much of the main colour: 1, 2/3, 1/3, 0.
 SHADES = (0, 2, 3, 1)
@@ -94,6 +128,66 @@ def shade(x, y, size, bands):
     return SHADES[min(3, int((1.0 - main) * 4))]
 
 
+def glyph_cover(u, v, glyph, grow):
+    """1 if (u, v) falls in the glyph with its circles grown by grow, else 0."""
+    for x, y, outer, inner in glyph:
+        r = math.hypot(u - x, v - y)
+        if r <= outer + grow and (inner == 0.0 or r >= inner - grow):
+            return 1.0
+    return 0.0
+
+
+def icon_block(size, colours, glyph, accent=()):
+    """DXT3 blocks of an icon: the glyph in its colour on a dark edge, alpha from four samples per side."""
+    samples = 4
+    whole = glyph + accent
+    alpha, inside, over = [], [], []
+    for y in range(size):
+        alpha_row, inside_row, over_row = [], [], []
+        for x in range(size):
+            total = core = bone = 0.0
+            for sy in range(samples):
+                for sx in range(samples):
+                    u = (x + (sx + 0.5) / samples) / size * 2 - 1
+                    v = (y + (sy + 0.5) / samples) / size * 2 - 1
+                    total += glyph_cover(u, v, whole, ICON_OUTLINE)
+                    core += glyph_cover(u, v, whole, 0.0)
+                    bone += glyph_cover(u, v, accent, 0.0)
+            alpha_row.append(round(total / samples ** 2 * 15))
+            inside_row.append(core / samples ** 2 >= 0.5)
+            over_row.append(bone / samples ** 2 >= 0.5)
+        alpha.append(alpha_row)
+        inside.append(inside_row)
+        over.append(over_row)
+    dark = rgb565(ICON_DARK)
+    out = bytearray()
+    for by in range(0, size, 4):
+        for bx in range(0, size, 4):
+            indices = 0
+            bones = sum(over[by + y][bx + x] for y in range(4) for x in range(4))
+            solid = sum(inside[by + y][bx + x] for y in range(4) for x in range(4))
+            main = rgb565(ICON_ACCENT if bones * 2 > solid else colours[0])
+            for y in range(4):
+                row = 0
+                for x in range(4):
+                    row |= alpha[by + y][bx + x] << (4 * x)
+                    indices |= (0 if inside[by + y][bx + x] else 1) << (2 * (y * 4 + x))
+                out += struct.pack("<H", row)
+            out += struct.pack("<HHI", main, dark, indices)
+    return bytes(out)
+
+
+def icon_ddt(colours, glyph, accent=(), size=SIZE):
+    mips = int(math.log2(size)) - 1
+    levels = [icon_block(size >> i, colours, glyph, accent) for i in range(mips)]
+    out = b"RTS3" + bytes((0, 1, 8, mips)) + struct.pack("<II", size, size)
+    offset = len(out) + 8 * mips
+    for level in levels:
+        out += struct.pack("<II", offset, len(level))
+        offset += len(level)
+    return out + b"".join(levels)
+
+
 def rgb565(colour):
     r, g, b = colour
     return (r >> 3) << 11 | (g >> 2) << 5 | b >> 3
@@ -141,7 +235,49 @@ def branches(name):
     return out
 
 
-def xml(name):
+def icon_attachment(name):
+    """The icon, in an attachment of its own: a logic branch shows only one of two particle systems."""
+    out = ""
+    for branch, height, _ in ICON_HEIGHTS:
+        out += f"""\t\t\t\t<{branch}>
+\t\t\t\t\t<assetreference type="ParticleSystem">
+\t\t\t\t\t\t<file>effects\\uhc_rings\\icon_{name}_{height}.particle</file>
+\t\t\t\t\t</assetreference>
+\t\t\t\t</{branch}>
+"""
+    return f"""\t<attachment>
+\t\ticon_a
+\t\t<component>
+\t\t\ticon_a
+\t\t\t<notshadowcaster/>
+\t\t\t<logic type="UnitType">
+{out}\t\t\t</logic>
+\t\t</component>
+\t\t<anim>
+\t\t\tIdle
+\t\t\t<component>icon_a</component>
+\t\t</anim>
+\t</attachment>
+"""
+
+
+def range_shape(radius):
+    """One band at the rim, RANGE_LINE metres wide: the particle's half width is radius / rim."""
+    rim = BANDS[0][1]
+    half = radius / rim
+    return ((rim - RANGE_LINE / half, rim),), EDGE * UNIT_RADIUS / half
+
+
+def range_logic(radius):
+    return f"""\t\t\t\t<none>
+\t\t\t\t\t<assetreference type="ParticleSystem">
+\t\t\t\t\t\t<file>effects\\uhc_rings\\range_{radius}.particle</file>
+\t\t\t\t\t</assetreference>
+\t\t\t\t</none>
+"""
+
+
+def xml(name, marker=False, logic=None):
     return f"""<?xml version="1.0" encoding="utf-8"?>
 
 <animfile>
@@ -152,14 +288,14 @@ def xml(name):
 \t\t\tchiefpower_a
 \t\t\t<notshadowcaster/>
 \t\t\t<logic type="UnitType">
-{branches(name)}\t\t\t</logic>
+{logic or branches(name)}\t\t\t</logic>
 \t\t</component>
 \t\t<anim>
 \t\t\tIdle
 \t\t\t<component>chiefpower_a</component>
 \t\t</anim>
 \t</attachment>
-\t<component>
+{icon_attachment(name) if marker else ""}\t<component>
 \t\tchiefpower_a
 \t\t<assetreference type="GrannyModel">
 \t\t\t<file>effects\\Chiefpower\\chiefpower</file>
@@ -175,7 +311,8 @@ def xml(name):
 \t\tIdle
 \t\t<component>chiefpower_a</component>
 \t\t<attach a="chiefpower_a" frombone="HITPOINTBAR" tobone="HITPOINTBAR" syncanims="0"/>
-\t</anim>
+{'''\t\t<attach a="icon_a" frombone="HITPOINTBAR" tobone="HITPOINTBAR" syncanims="0"/>
+''' if marker else ""}\t</anim>
 </animfile>
 """
 
@@ -185,7 +322,7 @@ def xml(name):
 # one particle lives for an hour, is back at once, and <startfull> has it there from the first frame.
 PARTICLE = (
     ("emitter", """tiedtoemitter=1 ignorerotation=0 emitbymotion=0 loop=1 inheritvelocity=0 useminvelocity=0
-        usemaxvelocity=0 alwaysactive=1 syncwithattackanim=0 maxparticles=1 appearancetype=2 updateradius=0.000
+        usemaxvelocity=0 alwaysactive=1 syncwithattackanim=0 maxparticles=1 appearancetype={appearance} updateradius=0.000
         maxparticlesvar=0.000 particlelife=2.000 particlelifevar=0.000 globalfadein=0.000 globalfadeinvar=0.000
         globalfadeout=0.000 globalfadeoutvar=0.000 emitdistance=1.000 emitdistancevar=0.000 emissionrate=100.000
         emissionratevar=0.000 initialdormancy=0.000 initialdormancyvar=0.000 initialupdate=0.000
@@ -194,7 +331,7 @@ PARTICLE = (
         acceleration=0.000 accelerationvar=0.000 inheritinfluence=0.000 inheritinfluencevar=0.000 minvelocity=0.000
         minvelocityvar=0.000 maxvelocity=0.000 maxvelocityvar=0.000"""),
     ("shape", """startfull=1 emitawayfrombias=0 usespreader=0 shapetype=0 outerxradius=0.000 innerxradius=0.000
-        outeryradius=0.000 inneryradius=0.000 outerzradius=0.000 innerzradius=0.000 centerheight=0.200 offaxis=0.000
+        outeryradius=0.000 inneryradius=0.000 outerzradius=0.000 innerzradius=0.000 centerheight={height:.3f} offaxis=0.000
         offaxisspread=0.000 offplane=0.000 offplanespread=0.000 biaspointheight=0.000"""),
     ("appearance", """orientbymotion=0 numfiles=1 numframes=0 framewidth=0 frameheight=0 materialtype=0
         emissive=16777215 specular=16777215 specularexponent=2.000 framespersecond=0.000 animationrate=1.000
@@ -223,7 +360,7 @@ PARTICLE = (
 )
 
 
-def particle(texture, radius):
+def particle(texture, radius, height=0.2, appearance=2):
     out = "<particlefile>\n"
     for section, fields in PARTICLE:
         if fields is None:
@@ -231,7 +368,7 @@ def particle(texture, radius):
                     f"\t\t\t<material>0</material>\n\t\t\t<weight>1.000</weight>\n\t\t</stage>\n\t</{section}>\n")
         elif fields:
             out += f"\t<{section}>\n"
-            for field in fields.format(radius=radius).split():
+            for field in fields.format(radius=radius, height=height, appearance=appearance).split():
                 key, value = field.split("=")
                 out += f"\t\t<{key}>{value}</{key}>\n"
             out += f"\t</{section}>\n"
@@ -255,6 +392,16 @@ def main():
             wanted[f"ring_{name}_{size}.particle"] = text(particle(texture, radius))
             if side:
                 wanted[f"{texture}.ddt"] = ddt(colour, side, *building_shape(radius))
+        if name in GLYPHS:
+            wanted[f"aura_{name}.xml"] = text(xml(name, marker=True))
+            wanted[f"icon_{name}.ddt"] = icon_ddt(colour, GLYPHS[name], GLYPH_ACCENTS.get(name, ()))
+            for _, size, height in ICON_HEIGHTS:
+                wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", ICON_SIDE, height, 0))
+    for radius in RANGES:
+        side = 256 if radius <= 16 else 512
+        wanted[f"range_{radius}.ddt"] = ddt(RANGE_COLOURS, side, *range_shape(radius))
+        wanted[f"range_{radius}.xml"] = text(xml("", logic=range_logic(radius)))
+        wanted[f"range_{radius}.particle"] = text(particle(f"range_{radius}", radius / BANDS[0][1]))
     bad = 0
     OUT.mkdir(exist_ok=True)
     for name, data in wanted.items():

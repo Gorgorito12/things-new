@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 08:01 | [`linkedResource`](#linkedresource) | Added. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
+| Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
 | Thursday 2026-11-05 14:06 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Thursday 2026-11-05 14:06 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
 | Thursday 2026-11-05 14:06 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
@@ -2880,7 +2882,7 @@ on each):* the Halberdier walks away and the Skirmisher falls behind. [Full vide
 
 ![CannotSnare in WoL](media/cantBeSlowed-cannotsnare-wol.gif)
 
-*In WoL, with `cantBeSlowed` and `CannotSnare` on the Uhlan (Germans; two Settlers of 4000 HP walking the same way, two
+*In WoL, with `cantBeSlowed` and `CannotSnare` on the Uhlan (Ethiopians; two Settlers of 4000 HP walking the same way, two
 Uhlans on the upper one and two Hussars on the lower one):* the Settler under the Uhlans is not snared and pulls ahead.
 [Full video (MP4)](media/cantBeSlowed-cannotsnare-wol.mp4).
 
@@ -3256,6 +3258,7 @@ Resources, gatherers, and what pays for them.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`gatherFix`](#gatherfix) | Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. WoL's balance assumes it. | always on | Nothing. | confirmed |
+| [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
@@ -3445,6 +3448,12 @@ workRateByAbstractType [UnitType ...] [log | log=<Proto>]
   took it to 0.49). The game needs the same line.
 - **Performance:** it runs only when a tech applies, never per unit or per tick. In the filmed scene, without
   `log`: longest frame 10 ms against 13 ms for the control, no frame over 50 ms in either.
+- **The Torp's tags, tested in WoL (2026-11-06, Ethiopians, `tools/torp_testdata.py`):** one Sawmill, five auras: a Mine paid
+  with an own Plantation in range that never did, one BerryBush of two, a Deer and a Sheep only once a trigger killed them,
+  two crates at 4/s; `ModifyRate` 0.5 took the Mine from 0.80 to 0.39 per update and the log said `0.27 -> 0.135`;
+  `ActionEnable` 0 took a tree aura from 7 takes to none. With 9 Sawmills on 3 Mines and 4 bushes: 895 fps against 898 with
+  the key off, update 0.14 ms in both, no frame over 50 ms (60 s, `perfprobe.py`). Not tested: a loaded game with these
+  tags, an AI that builds them, a real Torp's 14 m trees, multiplayer.
 - **Status:** confirmed (single player, on WoL): the rates above; a real removal, `Age0Egyptian` at game
   start with `workRateByAbstractType All`, took 0.536 back to 0.670; with `AbstractMine` taken off `Plantation`
   in `protoy.xml`, 32 protos and no change to its rate; a skirmish against the AI, which played on (16 to 24
@@ -3523,6 +3532,17 @@ wood and no tree has a ring. [Full video (MP4)](media/unitResourceAuras-wol-cont
 unitResourceAuras [log]
 ```
 
+![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
+
+*In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a drumstick
+over the bush and the two carcasses, and no mark on the live Deer, the live Sheep or the Plantation.
+[Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
+
+![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
+
+*In WoL, key off (the same data, the marker there):* stock hangs the model on every unit of the type, a live Sheep and the
+Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
+
 - **The ring:** a `UnitResource` aura does not run the stock update, so the key hangs the [aura's ring](#aura-rings) itself: on
   the units that gave resources in that update, and it takes it off when they stop, when the aura's owner dies, or at the limit
   of `<ModifyTargetLimit>`. A target in two auras keeps its ring until the last one lets go.
@@ -3558,9 +3578,25 @@ unitResourceAuras [log]
 
   A tree with no wood left goes, as when villagers finish it. The payment follows the player's gather multiplier.
   A target with an endless resource pays and is not drained, as in gathering.
-- **Not covered:** `<ForceUpdateMode>` and `<DoNotIgnoreDead>` are read as nothing (dead targets with resources count
-  anyway). The aura's rate does not show in the panels: DE's `ShowUnitResourceActionRates` is not built. Other
-  players' units are never targets.
+- **The Torp's tags (2026-11-06), in the action, flags written with 1 or empty:**
+  - `<IncludeGaia>`: the same as `<TargetGaia>`: Gaia's units count too. Other players' units never do.
+  - `<DeadExclusive>`: only dead units, a killed deer or sheep. `<DoNotIgnoreDead>`: dead units count too. With neither, dead
+    units are skipped. **A change:** before this they counted. WoL's `sawmill.tactics` has `<DoNotIgnoreDead>`, so it
+    behaves the same.
+  - `<SingleUnit>`: one target at a time, kept until it is used up.
+  - `<ForbidUnitType>Plantation</ForbidUnitType>`: a unit type or a proto that never pays, though it has the target type.
+  - `<ForceUpdateMode>` is read as nothing: the take follows the game time between updates anyway.
+- **Several auras on a building:** each has its own clock and rings. Before 2026-11-06 only the first paid in each update.
+- **Techs:** `ModifyRate` and `ModifyAmount`, two names of one new Data subtype, change `<ModifyAmount>` for one player's copy
+  of the action, with every relativity: `<Effect type='Data' subtype='ModifyRate' action='AreaGatherMine' amount='0.5'
+  relativity='BasePercent'><Target type='ProtoUnit'>WOLSawmill</Target></Effect>`. The stock `ActionEnable` turns an aura
+  off or on, and its markers go with it.
+- **The rates in the panel:** `<ShowUnitResourceActionRates>1</ShowUnitResourceActionRates>` in the proto, an element, as the
+  stock flag parser drops a flag it does not know. In the minimized interface the unit panel's rate row shows, per
+  resource, the icon and the auras' take per second plus the building's AutoGather, in the order of the resources.
+  Two resources fit: in WoL's layout at 1920×1080 a third shows its icon with no number. It shows while an aura pays.
+  **Pending:** the stat panel of the normal interface.
+- **Not covered:** other players' units are never targets. Stock has no `NoStack` or `SquareAura`.
 - **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
   `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
   resource 1 from unit 2 (TreeNewEngland), 299.1 left`.
@@ -3572,6 +3608,115 @@ unitResourceAuras [log]
 - **Status:** confirmed (single player, on WoL): the rates above; with a limit of 2, two trees at a time, and new ones
   as they went; without `<targetgaia>`, nothing from Gaia's trees; an argument: `FAILED`. `buildingWorkRateAuras`,
   which now shares the name hook, still gives its x3. An AI that builds Sawmills and multiplayer were not tested.
+
+#### linkedResource
+
+**Added:** Friday 2026-11-06 08:01 · **Filmed in WoL:** Friday 2026-11-06 08:01
+
+![linkedResource in WoL](media/linkedResource-wol.gif)
+
+*In WoL, with `linkedResource log` (Ethiopians, test data: `UhcMonastery`, a copy of the stock orchard's proto and model,
+a Mine 9 m away, two villagers):* the building shows the Mine's gold, the villagers work the building, and all of it
+comes off the Mine. [Full video (MP4)](media/linkedResource-wol.mp4).
+
+![linkedResource in WoL, key off](media/linkedResource-wol-control.gif)
+
+*In WoL, key off (the same data):* the villagers take the building's own 900 gold, the trickle pays from nothing, and the Mine
+stays at 2000. [Full video (MP4)](media/linkedResource-wol-control.mp4).
+
+![linkedResource, placed by a player and linking again, in WoL](media/linkedResource-model-wol.gif)
+
+*In WoL, with `linkedResource log` (Japanese, test data: the model of WoL's Ethiopian monastery, a 200-gold mine and a Mine):*
+villagers place and build it, it links, the first mine runs out, and it links to the second. The log is in the corner.
+[Full video (MP4)](media/linkedResource-model-wol.mp4).
+
+```
+linkedResource [log]
+```
+
+```xml
+<Unit name="UhcMonastery">
+    <InitialResource resourcetype="Gold">900</InitialResource>
+    <ResourceSubType>Gold</ResourceSubType>
+    <UnitType>Resource</UnitType>
+    <UnitType>Gold</UnitType>
+    <UnitType>AbstractMine</UnitType>
+    <LinkedResourceType>AbstractMine</LinkedResourceType>
+    <LinkedResourceRange>8</LinkedResourceRange>
+    <ProtoAction><Name>AutoGatherGold</Name><Rate type="Gold">0.5</Rate></ProtoAction>
+</Unit>
+```
+
+```xml
+<action>
+    <name>AutoGatherGold</name>
+    <type>AutoGather</type>
+    <active>1</active>
+    <persistent>1</persistent>
+    <gatherlinkedresource>1</gatherlinkedresource>
+</action>
+```
+
+The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which TAD does not have.
+
+- **In WoL today:** a resource building holds its own stock, and an AutoGather pays from nothing.
+- **The building, in data:** a copy of `ypBerryBuilding` as above, **without** `DieAtZeroResources`, or it dies at 0.
+  `AbstractMine` makes villagers mine it at their mine rate and lets mining techs reach it (with
+  [`workRateByAbstractType`](#workratebyabstracttype)).
+- **`<LinkedResourceType>`:** a unit type or a proto. The building links to the nearest unit of it in `<LinkedResourceRange>`
+  metres (default 8, to the mine's edge), any owner, Gaia too, that holds something. Another tagged building is never a mine.
+- **While linked:** its inventory shows the mine's, so the panel reads the mine's gold, and every take by a villager goes to
+  the mine, which ends as if it were mined. The stock it had is replaced.
+- **`<GatherLinkedResource>1` on an AutoGather action:** it pays what the source holds and takes it from there: the mine, or
+  the building's own stock when it has no mine. Nothing when empty. Techs change it as any AutoGather: DE's `Yield` is a
+  `WorkRate` here. DE's `InventoryAmount` and `BuildLimit` are stock.
+- **The mine ends:** the building stands at 0, and villagers and the trickle stop. It links to another mine in range within a
+  second and the trickle goes on, but the villagers stay idle until they are ordered back.
+- **No mine in range:** it uses its own stock.
+- **Placing:** anywhere: there is no socket or snap, and it looks for a mine once a second while it has none. As a foundation
+  it takes nothing and links when finished. A builder needs it in its `<Train>` list and the civ needs an `Enable` effect
+  on it in a tech, or the game says it is "not obtainable by your civilization".
+- **The AI:** WoL's AI scripts do not know the building, so an AI builds and works it only with a rule of your own
+  (`AI_RULE` in `tools/monastery_testdata.py`):
+  - to build: `createLocationBuildPlan(proto, 1, 100, true, -1, site, 2)`, then `cBuildPlanCenterPositionDistance` 6. The site
+    needs room: `orchard.xml` wants 8 m from any building, and a site between the mine and the Town Center failed. The side
+    of the mine away from the Town Center worked;
+  - to work it: a `cPlanGather` plan with `cGatherPlanResourceUnitTypeFilter` = the proto, `cGatherPlanResourceType` =
+    `cResourceGold` and `aiPlanAddUnitType`, as WoL's scripts do for the Tupi Wigham. With `aiTaskUnitWork` alone, only the trickle paid;
+  - `aiPlanGetState` gives −1 for any plan that is gone, and a finished plan is gone too: −1 is not a failure.
+- **Handicap:** every pay is multiplied by the player's handicap. A villager takes x from the mine and pays x × handicap, as in
+  stock. An AutoGather pays its rate × handicap, and the key takes that same amount from the source, so with a handicap of 2 the
+  trickle empties a mine twice as fast as its rate says.
+- **Not covered:** DE's `AreaHeal`: the stock `Heal` action on a building healed nobody around it, idle or not, so a heal
+  needs an aura. `GatherableByAllies` and Influence.
+- **Do not combine:** the stock tags `<SingleUse>` and `<AddResourcesToInventory>` on the building's AutoGather. The first pays
+  the whole inventory at once and the second adds to it, on a path the key does not hook, so with a link they work on the
+  copy: gold from nothing, or an add that the next copy overwrites. Any positive add on a linked building is lost the same way.
+- **Bad values:** an unknown `<LinkedResourceType>` or a range of 0 or less is logged and ignored, and the building uses its
+  own stock. An unknown argument of the key logs FAILED.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Saved games:** the link is found again at the first take or the next second.
+- **Log:** `linkedResource: the proto tags ... are on`, `hook reached: linkedResource recreate (0x9BFE5A)`,
+  `linkedResource inventory (0x49A5E6)`, `linkedResource AutoGather (0x4C378A)`, and with `log`
+  `linkedResource: unit 1 linked to unit 2, 9.1 m`, `unit 1 lost unit 2 (0 left)`.
+- **Performance:** one map lookup per take from anything once the data has a tagged proto, and a tick four times a second over
+  the tagged buildings. With 8 villagers and a trickle: 858 fps against 846 with the key off, update 0.14 ms in both, no
+  frame over 50 ms (60 s, `perfprobe.py`).
+- **Tested in WoL (2026-11-06, Ethiopians, `tools/monastery_testdata.py`):** in 32 s the Mine lost 30.95 gold and the player gained
+  30.95, with the trickle and one villager. A mine of 200 with two villagers and the trickle gave the player 200.0001, went,
+  and the building stood at 0 with the trickle stopped. With no mine, the building lost 47.29 of its 900 and the player
+  gained 47.29. Key off: the Mine stayed at 2000. With [`unitResourceAuras`](#unitresourceauras) on and a Torp beside them,
+  the Mine lost 23.06 and the player gained 23.06 in 31 s, and a game saved there and loaded kept the link with Mine and
+  player summing 2000 from its first second. A skirmish with the key on, no tagged building: the AI had 14 units at
+  100 s and no XS error. Villagers were ordered by console (`uiWorkAtPointer` with the camera on the target).
+  **Japanese skirmish:** placed and built by three villagers with the monastery's model, linked at 9.0 m, lost the 200-gold mine,
+  and linked to the Mine at 11.0 m. The human's handicap there was 2.0, from `gameplayer1handicap` 100 in the profile (1.0 with 0):
+  the trickle paid 0.99/s, and on a stock Mine with the key off villagers took 1.8/s and paid 3.6/s. **German AI**, handicap 0.65
+  (`aiWoLMain.xs`, Moderate): a plain build plan built it in 60 s and it linked at 6.0 m. The trickle alone took and paid
+  0.327/s. With a gather plan, 3 settlers and the trickle, the Mine lost 2.11/s and the AI gained 1.48/s, which is 1.8 × 0.65 +
+  0.325; no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
+  1386.66 and the player at 613.24, a sum of 2000; key off, the Mine stayed at 2000.
+  Not tested: `createSimpleBuildPlan`, an AI that chooses it with no rule of yours, allies gathering, multiplayer.
 
 #### resourceGatherAuras
 
@@ -5249,9 +5394,48 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
+| [`displayedRange`](#displayedrange) | A selected unit shows a ring of the radius of `<DisplayedRange>`. | **new** | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. | confirmed |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
+
+#### displayedRange
+
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Friday 2026-11-06 07:32
+
+![displayedRange in WoL](media/displayedRange-wol.gif)
+
+*In WoL, with `displayedRange log` (Ethiopians, test data, a Sawmill with 14 and a Town Center with 20):* the ring shows
+while the building is selected and goes when it is not. [Full video (MP4)](media/displayedRange-wol.mp4).
+
+![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
+
+*In WoL, key off (the same data):* no ring. [Full video (MP4)](media/displayedRange-wol-control.mp4).
+
+```
+displayedRange [log]
+```
+
+```xml
+<Unit name="WOLSawmill">
+    <DisplayRange>1</DisplayRange>
+    <DisplayedRange>14</DisplayedRange>
+</Unit>
+```
+
+- **In WoL today:** nothing shows how far a building's aura reaches.
+- **Effect:** a selected unit with both tags shows a thin white ring on the ground, centred on it, of the radius of
+  `<DisplayedRange>`: the nearest of 4, 6, 8, 10, 12, 14, 16, 20, 24 and 30 m, the sizes in `tools/rings`.
+- **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
+- **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
+  took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
+- **Several units:** each selected unit with the tags shows its own, as long as it is selected.
+- **Multiplayer:** display only: the selection is this machine's and a model is a visual. Every player can have it or not.
+- **Log:** `displayedRange: the proto tags DisplayRange and DisplayedRange are on`, and with `log`
+  `displayedRange: ring of 14.0 m on unit 1 (WOLSawmill)` and `ring off unit 1`.
+- **Performance:** a tick four times a second over the selected units only. Not measured with `perfprobe.py`.
+- **Tested in WoL (2026-11-06):** selecting a Sawmill and a Town Center by console, 14 m and 20 m, on and off in the log and on
+  screen. Not tested: 24 and 30 m, a saved game, multiplayer.
 
 #### abilitySlots
 
@@ -5619,6 +5803,45 @@ as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the file
   and hilly ground were not tested. How long a ring stays after its aura was not timed: the 2 s above is the particle's life.
 
 More about the tools: [tools/README.md](../tools/README.md).
+
+### The marker of a gathered resource
+
+`aura_wood.xml`, `aura_food.xml` and `aura_gold.xml` in `tools/rings` are a ring plus a floating icon of that resource, the
+same idea as DE's marker on what a Torp works, with our own art: name one in a `UnitResource` aura's
+`<modelattachment>`. The icon is a sprite that faces the camera, at a height by kind of unit in `ICON_HEIGHTS` of
+`tools/make_rings.py`. Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
+so the icon is a second `<attachment>`, not a second `<assetreference>`.
+
+### Rotating a building while placing it
+
+No key and no DLL: the stock exe already does all of it. Only the key binding is missing. Add this line to the `Building
+placement Mode` block of `Startup\gamey.con`, and Shift + mouse wheel turns the building's ghost by 22.5° a step:
+
+```
+map("shift-mousez", "building", "uiWheelRotatePlacedUnit")
+```
+
+![A building rotated while placing it, in WoL](media/buildingRotation-wol.gif)
+
+*In WoL (Ethiopians, an Apartment, Shift + the real wheel, 6 steps up and 2 down):* the foundation and the finished building
+stay at the ghost's angle.
+[Full video (MP4)](media/buildingRotation-wol.mp4).
+
+- **How it works in stock:** the wheel command turns the ghost, the build command carries the ghost's forward direction
+  to every machine, and the foundation is created with it. It is part of the game's own command, so it is
+  the same on every machine and in a recording (static reading; multiplayer not played).
+- **Both directions:** a step up turns the ghost +22.5° and a step down −22.5°, so a full turn is 16 steps. Stock's
+  `uiWheelRotatePlacedUnit` is the same for the Asian wonders' special powers.
+- **A building that must not turn:** `<Flag>NotRotateable</Flag>`, a stock flag, on its proto: the ghost keeps its angle.
+- **What it does not do:** turn a building that already stands, or turn it to face its builder (#44).
+- **Wheel alone:** with the Shift line, the wheel alone zooms and does not turn. `map("mousez", "building", …)`, the form stock
+  uses in its `specialpower` block, turns with the wheel alone and takes the zoom away while placing; the zoom comes back
+  when placing ends, and that line does not fire with Shift held.
+- **Tested in WoL (2026-11-06):** with the real wheel and Shift, the ghost went from yaw −180° to −157.5°, −135°, −112.5° up and
+  back down to −135°, −157.5°. Placed at −90°, the foundation and the finished building, 2500 HP, had −90°. With no line in
+  `gamey.con`, Shift + wheel did not turn it. By console, a saved game loaded with the yaw, and argument 0 did nothing.
+  With `NotRotateable` on the proto the ghost stayed at −180°. Not tested: a rotated building's obstruction, multiplayer,
+  recorded games.
 
 ## 7. Multiplayer, saved games and replays
 
