@@ -3170,8 +3170,8 @@ pillageGold [log]
   gather multiplier does not apply. One hit is one torch that lands, so the rate is the action's `ROF`.
 - **Only gold.** A victim with no gold gives nothing, and the attacker gets nothing. A victim with less than the amount
   gives what it has: 12 gold and a tag of 5 pays 5, 5 and 2.
-- **Which action:** the one that has the tag. `CoverBuildingAttack` is a different action: a unit in cover pays nothing
-  until that action has its own tag.
+- **Which action:** the one that has the tag. `CoverBuildingAttack` is the same attack in another stance: with no tag of its
+  own it uses `BuildingAttack`'s amount, and with one it uses its own, so a unit does not stop stealing when it takes cover.
 - **Against what:** enemy buildings. A unit that hits a unit steals nothing, with the tag on that action too. The game
   sends no attack at an own or allied building, and the fight stops the moment two players ally.
 - **Attacker dead before its torch lands:** nothing is stolen. The damage stays.
@@ -3184,6 +3184,8 @@ pillageGold [log]
   hit (0x49B73C)`, and with `log` `pillageGold: proto Pikeman, action 15: 5 gold a hit` and, for the first 200 hits,
   `pillageGold: unit 1 of player 1 took 5 gold from player 2 (Barracks): 995 -> 990, the attacker has 10`.
 - **Tested** in WoL, with a Barracks of player 2, reading both stockpiles:
+  - `CoverBuildingAttack` (2026-11-06, the action put in `Pikeman`'s Normal tactic, so the stance change itself was not driven):
+    tag only on `BuildingAttack`, 48 hits of 5; its own tag of 2, 47 hits of 2; `BuildingAttack`, 48 hits of 5.
   - Beside WoL's own DLL, as `dinput8.dll`, with `veterancyBonus`, `transformSpan` and `resourceDebt` on: 48 hits of 5, victim 1000 -> 760, attacker 0 -> 240.
   - 3 Pikemen with the type and the tag: 66 hits in 46 s, each exactly 5: 1000 to 670, and the attacker 0 to 330. The two
     always added up to 1000.
