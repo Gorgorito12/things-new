@@ -727,6 +727,10 @@ would then send.
 Market and who had no Town Center sent a card of food crates; the helper returned the Market
 (unit 148), the store = 1 path wrote 148 to `[hc+18Ch]`, and the crates landed beside the Market.
 
+`LastResort`: the helper walks the IDs at `[player+F8h]`, count `+FCh`, with the stock check 0x85302C, and writes no game state. The
+list is the simulation's, so every machine picks the same unit, and the walk runs only for a player with no point. With no point
+the game cancels the queue and refunds the ship, seen in game; the code that does it was not read.
+
 ### healNonIdle
 
 Two filters stop a healer from healing a busy unit:
@@ -2501,6 +2505,8 @@ reference is coloured the same.
   (EAX, ECX, EDX and the flags are written there before they are read).
 - *Observed in game:* `Overheal 15/15` (orange) at 165/150, `0/15` when damaged, `16/16` under a
   MaxHP aura, `0/40` for a marked Explorer at its 100 % in a skirmish.
+
+`MaxHPOnly`: an `AddTechSubtype` handler writes `[proto+98h]` through 0x7F892A and skips the rescale 0xA0036E.
 
 ### overhealSources
 

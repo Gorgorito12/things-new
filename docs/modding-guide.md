@@ -97,7 +97,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 12:48 | [`noCorpseDopples`](#nocorpsedopples) | Filmed in WoL, with a control. A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. |
 | Wednesday 2026-11-04 11:29 | [`basePop`](#basepop-and-extrapop), [`extraPop`](#basepop-and-extrapop) | Filmed in WoL, with a control. Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | Enough population buildings: 20 houses of 10 give 200 today. |
 | Wednesday 2026-11-04 11:29 | [`civFirstTC`](#civfirsttc) | Filmed in WoL, with a control. A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. |
-| Wednesday 2026-11-04 11:13 | [`startingTC`](#startingtc) | Filmed in WoL, with a control. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
+| Wednesday 2026-11-04 11:13 | [`firstTC`](#firsttc) | One line for `civFirstTC` and `startingTC`. | **new** | As those keys. | confirmed |
+| [`startingTC`](#startingtc) | Filmed in WoL, with a control. Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. |
 | Wednesday 2026-11-04 09:59 | [`decimalPopulation`](#decimalpopulation) | Filmed in WoL, with a control. Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | The decimals in `protoy` and `techtreey`. |
 | Wednesday 2026-11-04 09:54 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Filmed in WoL, with a control. Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | Nothing for the Daimyos (20 protos carry `AbstractDaimyo`); with a new marker, that type on the trainers or on the blocking buildings in `protoy.xml`. |
 | Wednesday 2026-11-04 09:20 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
@@ -1666,6 +1667,16 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   Not tested: a skirmish in WoL, the town starting units at a WoL building, WoL's AI with the tag, a Nomad
   start, multiplayer, recorded games, the `no colony` log line.
 
+#### firstTC
+
+```
+firstTC [UnitType] [log]
+```
+
+One line for [`civFirstTC`](#civfirsttc) and [`startingTC`](#startingtc): the first always, the second when a type is named. A plain
+`firstTC` registers no marker, so it does not change the unit type count. If `startingTC` or `civFirstTC` is in the cfg too, that key
+keeps its own line. Bad arguments fail only the `startingTC` part.
+
 #### customRevolutionBanners
 
 **Added:** Wednesday 2026-10-28 10:56
@@ -1877,6 +1888,19 @@ above its 100 %. [Full video (MP4)](media/overhealHitpointBars-group-wol.mp4).
 overhealHitpointBars [<UnitType> ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=<Label>]] [log]   default AbstractOverheal; up to 8 types
 ```
 
+![MaxHPOnly in WoL](media/overhealHitpointBars-maxonly-wol.gif)
+
+*In WoL (Ethiopians, Pikeman with the marker, a tech with `subtype='MaxHPOnly'` 1.20 BasePercent at 22 s):* the HP stay at 122 and the
+room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wol.mp4).
+
+![The stock subtype in WoL](media/overhealHitpointBars-maxonly-wol-control.gif)
+
+*In WoL, the same tech with the stock subtype `Hitpoints`:* HP and InitialHitpoints go to 151.5, so the unit stays at 100 %.
+[Full video (MP4)](media/overhealHitpointBars-maxonly-wol-control.mp4).
+
+- **`MaxHPOnly`:** the tech Data subtype that writes only MaxHitpoints. Units keep their HP and new ones keep InitialHitpoints.
+- **Tested in WoL (2026-11-06):** 135.85 -> 164.45 with HP 122.9, kept by a saved game; a marked House showed 1290/1200 and a Caravel
+  850/800, both with the Overheal row, HP written in memory. Not tested: auto-repair above 100 %, multiplayer.
 - **In WoL today:** a unit is created with its proto's `<InitialHitpoints>` and can be healed up to
   `<MaxHitpoints>`. Every HP display takes `MaxHitpoints` as 100 %: the floating HP bar over a unit, the
   selection panel's HP bar (green, yellow below 66 %, red below 33 %), and the texts `HP/max`, or
@@ -4611,6 +4635,18 @@ shorter than their construction (`WOLVillagerMaturing`: Lifespan 10, BuildPoints
 lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterConstruction
 ```
 
+![The Lifespan row in WoL](media/lifespanAfterConstruction-countdown-wol.gif)
+
+*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` on the foundation, then counts
+down. [Full video (MP4)](media/lifespanAfterConstruction-countdown-wol.mp4).
+
+![The Lifespan row in WoL, key off](media/lifespanAfterConstruction-countdown-wol-control.gif)
+
+*In WoL, key off (the same data):* no row, and the lifespan runs from the placing.
+[Full video (MP4)](media/lifespanAfterConstruction-countdown-wol-control.mp4).
+
+- **Countdown:** the unit panel has a `Lifespan` row for a marked unit. Another key's row takes that place when it has something
+  to show. Not tested: that case, and the row in a loaded game.
 - **In WoL today:** `<Lifespan>` (seconds) is a countdown that starts when the unit is created. A
   building is created when its foundation is placed, so the countdown runs while the building is under
   construction, and nothing restarts it when the construction ends. A building whose Lifespan is
@@ -4767,6 +4803,22 @@ point, and nothing arrives. [Full video (MP4)](media/hcShipmentPointFallback-wol
 hcShipmentPointFallback <Proto|FirstTC> [<Proto|FirstTC> ...]     1 to 64 entries
 ```
 
+![LastResort in WoL](media/hcShipmentPointFallback-lastresort-wol.gif)
+
+*In WoL, with `hcShipmentPointFallback LastResort` (Dutch, the Town Center falls at 16 s with a card on its way):* the House becomes the
+point and the 3 workers arrive beside it. [Full video (MP4)](media/hcShipmentPointFallback-lastresort-wol.mp4).
+
+![LastResort in WoL, key off](media/hcShipmentPointFallback-lastresort-wol-control.gif)
+
+*In WoL, key off (the same scene):* the game cancels the card and gives the ship back, and nothing arrives.
+[Full video (MP4)](media/hcShipmentPointFallback-lastresort-wol-control.mp4).
+
+- **With no point at all:** the game cancels the cards on their way and refunds the ship, so a card is not lost. The cards are red
+  in the home city then.
+- **`LastResort`** (any case), best listed last: any building of the player that passes the same checks, else a hero (`Hero`), in
+  the order of the player's unit list. With neither, the stock refund and one line in the log.
+- **Tested in WoL (2026-11-06, Dutch):** House: 2 -> 5 workers. Explorer only: 5 workers. Neither: the refund. Key off: 2 workers and
+  the ship back.
 - **In WoL today:** home city shipments arrive at the player's shipment point, a building
   (usually the Town Center). The game keeps that point while the building is alive and built.
   When it is destroyed or deleted, the game moves the point to the first alive, built building of
