@@ -233,6 +233,9 @@ inline constexpr Site kPoliticianCosts2{"PoliticianCosts2", 0x0081943D, kPolitic
 inline constexpr std::uint8_t kGatherFallbackExitBytes[] = {0x5D, 0x5F, 0x5E, 0x33, 0xC0, 0x5B, 0x59, 0xC2, 0x04, 0x00};
 inline constexpr Site kGatherFallbackExit{"GatherFallbackExit", 0x00669E2E, kGatherFallbackExitBytes, sizeof(kGatherFallbackExitBytes)};
 
+inline constexpr std::uint8_t kGatherSearchStartBytes[] = {0x8B, 0x4C, 0x24, 0x0C, 0x8B, 0x51, 0x08};
+inline constexpr Site kGatherSearchStart{"GatherSearchStart", 0x004C6BCF, kGatherSearchStartBytes, sizeof(kGatherSearchStartBytes)};
+
 inline constexpr std::uint8_t kGatherFallbackStoreBytes[] = {0x80, 0x7C, 0x24, 0x18, 0x01, 0x0F, 0x84, 0x7B, 0x31, 0x1A, 0x00, 0x5D};
 inline constexpr Site kGatherFallbackStore{"GatherFallbackStore", 0x004C6CB2, kGatherFallbackStoreBytes, sizeof(kGatherFallbackStoreBytes)};
 

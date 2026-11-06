@@ -131,6 +131,7 @@ SITES = [
     ("PoliticianCosts2", 0x81943D, 7),     # mov edx,[esi] / lea eax,[esp+14h] / push eax
     # hcShipmentPointFallback (FUN_004C6B9E, "get a valid HC gather unit")
     ("GatherFallbackExit", 0x669E2E, 10),  # pop ebp/edi/esi, xor eax,eax, pop ebx/ecx, ret 4
+    ("GatherSearchStart", 0x4C6BCF, 7),    # hc in ECX and EDX, before the stock ten types; `replace` starts there
     ("GatherFallbackStore", 0x4C6CB2, 12), # cmp byte [esp+18h],1 / je 669E38h: store-and-return
     ("GatherFallbackBlock", 0x6698B4, 0xB0),  # the stock FortFrontier search block the hook mirrors
     # hcShipmentPointFallback FirstTC: the stored-point check 0x85302C, bool thiscall(hc, unit),

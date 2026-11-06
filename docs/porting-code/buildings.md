@@ -3381,7 +3381,7 @@ Contract: [hcShipmentPointFallback](../porting-to-another-dll.md#hcshipmentpoint
 
 Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherSearchStart` `0x4C6BCF` (7 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
 
 ### src/features/shipments.cpp
 
@@ -3394,6 +3394,8 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44
 // TownCenter FirstTC, which the stock list already tries first, so FirstTC is useful with
 // startingTC (a marked building can be FirstTC). The keyword LastResort, best listed last, takes any
 // building of the player, else a hero (the Explorer), so that a shipment always has somewhere to go.
+// The keyword replace makes the list run instead of the ten stock types, not after them; warn tells the
+// local player, through the chat, when a card is queued and there is no point at all; warn=<text> sets its text.
 // The hook is in hooks/shipment_hooks.asm.
 #include <windows.h>
 
@@ -3415,6 +3417,14 @@ constexpr std::int32_t kFirstTcEntry = -2;
 constexpr char kFirstTcKeyword[] = "FirstTC";
 constexpr std::int32_t kLastResortEntry = -3;
 constexpr char kLastResortKeyword[] = "LastResort";
+constexpr char kReplaceKeyword[] = "replace";
+constexpr char kWarnKeyword[] = "warn";
+constexpr char kWarnPrefix[] = "warn=";
+constexpr std::uint32_t kLocalPlayer = 0x3C0;       // game: the local player's ID
+constexpr std::uint32_t kHcQueueCount = 0x28C;      // home city: cards in the shipment queue
+constexpr std::uint32_t kChatSlot = 0x5C;           // game's vtable: cdecl(game, from, to, format, text), as trChatSend
+constexpr std::uint32_t kChatFormat = 0x00BE2DD0;   // the stock L"%s"
+constexpr DWORD kWarnEveryMs = 30000;
 
 // Engine layout (docs/engine-symbols.md, "Home city gather point").
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
@@ -3437,6 +3447,10 @@ const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 // slot A4h), 0x44DDB4 true, 0x4802C6 not 1.
 const auto kGatherPointValid = reinterpret_cast<GatherPointValidFn>(0x0085302C);
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+bool g_warn = false;
+std::wstring g_warnText = L"No shipment point: cards on their way are refunded.";
+DWORD g_lastWarn = 0;
 
 // Proto names from uhc.cfg; resolved to IDs only once the game database exists.
 std::vector<std::string> g_typeNames;
@@ -3521,6 +3535,37 @@ void LogLastResort(const char* world, std::int32_t playerId, const char* unit) {
 }  // namespace
 
 extern "C" {
+void UhcHcGatherReplaceHook();
+
+// From the hook, at "nothing found". Interface only: the local player's message, on the real clock, so it
+// reaches no game state.
+void __stdcall UhcGatherNoPoint(const char* hc, std::uint32_t store) {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  // The search that stores a point (store 1) never comes with no point: the game cancels the queue first, after a
+  // search with store 0. So the test is that a card is queued, [hc+28Ch].
+  (void)store;
+  if (!g_warn || game == nullptr || hc == nullptr || *reinterpret_cast<const std::int32_t*>(hc + kHcQueueCount) <= 0) {
+    return;
+  }
+  const char* player = *reinterpret_cast<char* const*>(hc + kHcPlayer);
+  if (player == nullptr ||
+      *reinterpret_cast<const std::int32_t*>(player) != *reinterpret_cast<const std::int32_t*>(game + kLocalPlayer)) {
+    return;
+  }
+  const DWORD now = GetTickCount();
+  if (g_lastWarn != 0 && now - g_lastWarn < kWarnEveryMs) {
+    return;
+  }
+  g_lastWarn = now;
+  uhc::Log(L"hcShipmentPointFallback: player %d has no shipment point; warned",
+           *reinterpret_cast<const std::int32_t*>(player));
+  using ChatFn = void(__cdecl*)(const char* game, std::int32_t from, std::int32_t to, const void* format, const wchar_t* text);
+  const auto vtable = *reinterpret_cast<const char* const*>(game);
+  const auto chat = *reinterpret_cast<ChatFn const*>(vtable + kChatSlot);
+  chat(game, 0, *reinterpret_cast<const std::int32_t*>(game + kLocalPlayer), reinterpret_cast<const void*>(kChatFormat),
+       g_warnText.c_str());
+}
+
 std::int32_t g_uhcGatherFallbackTypes[kMaxFallbackTypes];
 std::int32_t g_uhcGatherFallbackCount = 0;
 
@@ -3645,9 +3690,38 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
   }
   bool firstTc = false;
   bool lastResort = false;
+  bool replace = false;
+  std::vector<std::string> entries;
   for (const std::string& name : *names) {
+    if (_stricmp(name.c_str(), kReplaceKeyword) == 0) {
+      replace = true;
+    } else if (_stricmp(name.c_str(), kWarnKeyword) == 0) {
+      g_warn = true;
+    } else if (_strnicmp(name.c_str(), kWarnPrefix, sizeof(kWarnPrefix) - 1) == 0) {
+      std::string text = name.substr(sizeof(kWarnPrefix) - 1);
+      if (text.empty() || text.size() > 127) {
+        Log(L"hcShipmentPointFallback: %hs: expected warn=<text>, at most 127 characters, '_' for a space; feature not "
+            L"applied",
+            name.c_str());
+        return Outcome::kFailed;
+      }
+      for (char& ch : text) {
+        ch = ch == '_' ? ' ' : ch;
+      }
+      g_warn = true;
+      g_warnText.assign(text.begin(), text.end());
+    } else {
+      entries.push_back(name);
+    }
     firstTc = firstTc || IsFirstTcKeyword(name);
     lastResort = lastResort || IsLastResortKeyword(name);
+  }
+  if (entries.empty() && (replace || !g_warn)) {
+    Log(L"hcShipmentPointFallback: expected a proto unit name, FirstTC or LastResort; feature not applied");
+    return Outcome::kFailed;
+  }
+  if (replace && !VerifyAll("hcShipmentPointFallback replace", {&sites::kGatherSearchStart})) {
+    return Outcome::kFailed;
   }
   // FirstTC also reads [player+4F0h] (set at 0x67ABD4), player and unit by ID and the stored point
   // check; no feature writes those sites.
@@ -3671,17 +3745,19 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
     Log(L"hcShipmentPointFallback: FirstTC without startingTC: a first town center can only be a TownCenter, which "
         L"the stock list already tries first");
   }
-  g_typeNames = *names;
+  g_typeNames = entries;
   for (int& id : g_uhcGatherFallbackTypes) {
     id = -1;
   }
   g_uhcGatherFallbackCount = static_cast<std::int32_t>(g_typeNames.size());
-  if (!WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
+  if (!WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5) ||
+      (replace && !WriteJmp(sites::kGatherSearchStart.va, reinterpret_cast<const void*>(&UhcHcGatherReplaceHook), 7))) {
     return Outcome::kFailed;
   }
-  Log(L"hcShipmentPointFallback: %d extra types after the stock list%ls%ls (multiplayer unverified)",
-      g_uhcGatherFallbackCount, firstTc ? L", including each player's first town center (FirstTC)" : L"",
-      lastResort ? L", and a last resort" : L"");
+  Log(L"hcShipmentPointFallback: %d extra types %ls%ls%ls%ls (multiplayer unverified)", g_uhcGatherFallbackCount,
+      replace ? L"instead of the stock list" : L"after the stock list",
+      firstTc ? L", including each player's first town center (FirstTC)" : L"", lastResort ? L", and a last resort" : L"",
+      g_warn ? L", with a warning" : L"");
   return Outcome::kApplied;
 }
 
@@ -3705,6 +3781,7 @@ EXTERNDEF g_uhcGatherFallbackCount:SDWORD
 UhcResolveGatherFallbackTypes PROTO STDCALL
 UhcGatherLastResortUnit PROTO STDCALL hc:DWORD ; any building, then a hero, of the player, or 0
 UhcGatherFirstTcUnit PROTO STDCALL hc:DWORD   ; the player's FirstTC if it is a valid point, else 0
+UhcGatherNoPoint PROTO STDCALL hc:DWORD, store:DWORD ; the warning, interface only
 
 LAST_RESORT_ENTRY EQU -3                    ; the same for the keyword LastResort
 FIRST_TC_ENTRY EQU -2                       ; g_uhcGatherFallbackTypes entry of the keyword FirstTC
@@ -3735,12 +3812,12 @@ resolved         db 0
 UhcHcGatherFallbackHook PROC
     TRACE_ONCE "hcShipmentPointFallback (0x669E2E)"
     cmp resolved, 0
-    jne searchTypes
+    jne gatherSearch
     mov resolved, 1
     pushad
     call UhcResolveGatherFallbackTypes
     popad
-searchTypes:
+gatherSearch::
     mov typeIndex, 0
 nextType:
     mov eax, typeIndex
@@ -3836,12 +3913,30 @@ lastResort:
     mov edi, eax
     jmp storeAndReturn
 notFound:
+    movzx eax, byte ptr [esp+18h]   ; store
+    push eax
+    push dword ptr [esp+14h]        ; home city (address taken after the push above)
+    call UhcGatherNoPoint           ; clobbers EAX/ECX/EDX only
     pop ebp                         ; stolen 0x669E2E..0x669E32
     pop edi
     pop esi
     xor eax, eax
     jmp notFoundReturn
 UhcHcGatherFallbackHook ENDP
+
+; Replaces 0x4C6BCF..0x4C6BD5 with the keyword replace: the list runs instead of the ten stock types.
+; The stored point was refused just before. With the push of EBP, the stack is as at 0x669E2E.
+UhcHcGatherReplaceHook PROC
+    TRACE_ONCE "hcShipmentPointFallback replace (0x4C6BCF)"
+    push ebp
+    cmp resolved, 0
+    jne gatherSearch
+    mov resolved, 1
+    pushad
+    call UhcResolveGatherFallbackTypes
+    popad
+    jmp gatherSearch
+UhcHcGatherReplaceHook ENDP
 
 END
 ```

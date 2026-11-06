@@ -190,3 +190,5 @@ showGatherRate-group-wol 2 12 1
 showGatherRate-group-wol-control 2 12 1
 spreadAnyAccuracy-ground-wol 4 12 1
 spreadAnyAccuracy-ground-wol-control 4 12 1
+hcShipmentPointFallback-replace-wol 2 42 4
+hcShipmentPointFallback-replace-wol-control 2 42 4
