@@ -486,6 +486,14 @@ counts, is in `requests-findings.md`, Appendix A.
 | `DECheckBuildLimit` | 54 | Blocks a card whose units would exceed a build limit | No wasted cards |
 | Civ `StartingResourcesMultiplier` | 46 | Starting resources per civ | Civ balance without map edits |
 
+## The Ethiopian Mountain Monastery
+
+- [O] DE's `deMountainMonastery` (data, not code): a Gold `Resource` building, `gathererlimit` 20, no `UnitResource` aura. Its
+  tactics have `ResourceProxy` on `AbstractMine` (range 8, `gatherlinkedresource`, `dontkillwhenexpired`), `AutoGather`
+  actions with `gatherlinkedresource` and `autogatherinventoryifnotsocketed`, `InfluenceRate` auras and `AreaHeal`.
+- [O] Legacy has neither `AreaHeal` nor `HealRate`, nor a `Yield` subtype: `WorkRate` on the AutoGather action does that.
+- [O] Built as `linkedResource` (2026-11-06) without Influence, sockets or the heal: the data is a recipe in the modding guide.
+
 ## Questions for JTMaston
 
 1. **#2.** *Answered (2026-10-30):* DE's model is not relevant to WoL. He wants `maxspread` respected

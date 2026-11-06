@@ -1040,6 +1040,18 @@ inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPath
 inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
 inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
 
+inline constexpr std::uint8_t kInventoryAddHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kInventoryAddHead{"InventoryAddHead", 0x0049A5E6, kInventoryAddHeadBytes, sizeof(kInventoryAddHeadBytes)};
+
+inline constexpr std::uint8_t kInventoryRecreateHeadBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x86, 0xB4, 0x00, 0x00, 0x00};
+inline constexpr Site kInventoryRecreateHead{"InventoryRecreateHead", 0x009BFE5A, kInventoryRecreateHeadBytes, sizeof(kInventoryRecreateHeadBytes)};
+
+inline constexpr std::uint8_t kAutoGatherPayPointBytes[] = {0x8B, 0x7C, 0x24, 0x10, 0x8B, 0x56, 0x10};
+inline constexpr Site kAutoGatherPayPoint{"AutoGatherPayPoint", 0x004C378A, kAutoGatherPayPointBytes, sizeof(kAutoGatherPayPointBytes)};
+
+inline constexpr std::uint8_t kResListSetBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x39};
+inline constexpr Site kResListSet{"ResListSet", 0x0058EF83, kResListSetBytes, sizeof(kResListSetBytes)};
+
 inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
 inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
 

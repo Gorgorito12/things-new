@@ -3257,6 +3257,7 @@ Resources, gatherers, and what pays for them.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`gatherFix`](#gatherfix) | Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. WoL's balance assumes it. | always on | Nothing. | confirmed |
+| [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
@@ -3605,6 +3606,81 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
 - **Status:** confirmed (single player, on WoL): the rates above; with a limit of 2, two trees at a time, and new ones
   as they went; without `<targetgaia>`, nothing from Gaia's trees; an argument: `FAILED`. `buildingWorkRateAuras`,
   which now shares the name hook, still gives its x3. An AI that builds Sawmills and multiplayer were not tested.
+
+#### linkedResource
+
+![linkedResource in WoL](media/linkedResource-wol.gif)
+
+*In WoL, with `linkedResource log` (Ethiopians, test data: `UhcMonastery`, a copy of the stock orchard's proto and model,
+a Mine 9 m away, two villagers):* the building shows the Mine's gold, the villagers work the building, and all of it
+comes off the Mine. [Full video (MP4)](media/linkedResource-wol.mp4).
+
+![linkedResource in WoL, key off](media/linkedResource-wol-control.gif)
+
+*In WoL, key off (the same data):* the villagers take the building's own 900 gold, the trickle pays from nothing, and the Mine
+stays at 2000. [Full video (MP4)](media/linkedResource-wol-control.mp4).
+
+```
+linkedResource [log]
+```
+
+```xml
+<Unit name="UhcMonastery">
+    <InitialResource resourcetype="Gold">900</InitialResource>
+    <ResourceSubType>Gold</ResourceSubType>
+    <UnitType>Resource</UnitType>
+    <UnitType>Gold</UnitType>
+    <UnitType>AbstractMine</UnitType>
+    <LinkedResourceType>AbstractMine</LinkedResourceType>
+    <LinkedResourceRange>8</LinkedResourceRange>
+    <ProtoAction><Name>AutoGatherGold</Name><Rate type="Gold">0.5</Rate></ProtoAction>
+</Unit>
+```
+
+```xml
+<action>
+    <name>AutoGatherGold</name>
+    <type>AutoGather</type>
+    <active>1</active>
+    <persistent>1</persistent>
+    <gatherlinkedresource>1</gatherlinkedresource>
+</action>
+```
+
+The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which TAD does not have.
+
+- **In WoL today:** a resource building holds its own stock, and an AutoGather pays from nothing.
+- **The building, in data:** a copy of `ypBerryBuilding` as above, **without** `DieAtZeroResources`, or it dies at 0.
+  `AbstractMine` makes villagers mine it at their mine rate and lets mining techs reach it (with
+  [`workRateByAbstractType`](#workratebyabstracttype)).
+- **`<LinkedResourceType>`:** a unit type or a proto. The building links to the nearest unit of it in `<LinkedResourceRange>`
+  metres (default 8, to the mine's edge), any owner, Gaia too, that holds something. Another tagged building is never a mine.
+- **While linked:** its inventory shows the mine's, so the panel reads the mine's gold, and every take by a villager goes to
+  the mine, which ends as if it were mined. The stock it had is replaced.
+- **`<GatherLinkedResource>1` on an AutoGather action:** it pays what the source holds and takes it from there: the mine, or
+  the building's own stock when it has no mine. Nothing when empty. Techs change it as any AutoGather: DE's `Yield` is a
+  `WorkRate` here. DE's `InventoryAmount` and `BuildLimit` are stock.
+- **The mine ends:** the building stands at 0, villagers stop and the trickle too, and it links to another mine in range
+  within a second.
+- **No mine in range:** it uses its own stock.
+- **Placing:** anywhere: there is no socket or snap, and it looks for a mine once a second while it has none.
+- **Not covered:** DE's `AreaHeal`: the stock `Heal` action on a building healed nobody around it, idle or not, so a heal
+  needs an aura. `GatherableByAllies` and Influence.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data.
+- **Saved games:** the link is found again at the first take or the next second.
+- **Log:** `linkedResource: the proto tags ... are on`, `hook reached: linkedResource recreate (0x9BFE5A)`,
+  `linkedResource inventory (0x49A5E6)`, `linkedResource AutoGather (0x4C378A)`, and with `log`
+  `linkedResource: unit 1 linked to unit 2, 9.1 m`, `unit 1 lost unit 2 (0 left)`.
+- **Performance:** one map lookup per take from anything once the data has a tagged proto, and a tick four times a second over
+  the tagged buildings. With 8 villagers and a trickle: 858 fps against 846 with the key off, update 0.14 ms in both, no
+  frame over 50 ms (60 s, `perfprobe.py`).
+- **Tested in WoL (2026-11-06, Ethiopians, `tools/monastery_testdata.py`):** in 32 s the Mine lost 30.95 gold and the player gained
+  30.95, with the trickle and one villager. A mine of 200 with two villagers and the trickle gave the player 200.0001, went,
+  and the building stood at 0 with the trickle stopped. A loaded game went on from 1926.67, with the link. With no mine,
+  the building lost 47.29 of its 900 and the player gained 47.29. Key off: the Mine stayed at 2000. A skirmish with the key
+  on, no tagged building: the AI had 14 units at 100 s and no XS error. Villagers were ordered by console
+  (`uiWorkAtPointer` with the camera on the target). Not tested: a re-link in game (the only second mine was chosen first),
+  a real model, an AI that builds it, allies gathering, multiplayer.
 
 #### resourceGatherAuras
 

@@ -158,3 +158,5 @@ unitResourceAuras-torp-wol 12 12 1
 unitResourceAuras-torp-wol-control 12 12 1
 displayedRange-wol 0 12 1
 displayedRange-wol-control 0 12 1
+linkedResource-wol 2 12 1
+linkedResource-wol-control 2 12 1

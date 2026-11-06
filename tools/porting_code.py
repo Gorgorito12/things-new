@@ -79,6 +79,7 @@ PAGES = {
         "cratePriority": ["src/features/cratepriority.cpp"],
         "autoGatherScaleByContained": ["src/features/gatherscale.cpp", "src/hooks/gatherscale_hooks.asm"],
         "unitResourceAuras": ["src/features/unitresource.cpp", "src/hooks/unitresource_hooks.asm"],
+        "linkedResource": ["src/features/linkedresource.cpp", "src/hooks/linkedresource_hooks.asm"],
         "resourceGatherAuras": ["src/features/gatherauras.cpp", "src/hooks/gatherauras_hooks.asm"],
         "resourceDebt": ["src/features/resourcedebt.cpp", "src/hooks/resourcedebt_hooks.asm"],
     }),

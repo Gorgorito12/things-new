@@ -274,6 +274,7 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
+linkedResource [log]          a resource building takes the stock of the mine beside it
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation

@@ -875,6 +875,13 @@ SITES = [
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
     ("BoneNameLookup", 0x58E506, 10),
+    # linkedResource: mov eax,[0xC66234], the head of the inventory add; the 9 bytes at the head of the inventory
+    # recreate, up to mov eax,[esi+0B4h]; mov edi,[esp+10h] / mov edx,[esi+10h] in the AutoGather pay, before the add
+    # 0x4C3798; the ResList set
+    ("InventoryAddHead", 0x49A5E6, 5),
+    ("InventoryRecreateHead", 0x9BFE5A, 9),
+    ("AutoGatherPayPoint", 0x4C378A, 7),
+    ("ResListSet", 0x58EF83, 10),
     # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
     ("KillQueueAsk", 0x4B4DC2, 8),
     # TakeDamage's subtraction through the add-HP entry 0x4823A3, verify only
