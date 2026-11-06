@@ -485,6 +485,17 @@ SITES = [
     # customHotkeyContexts: mov bl,1 / mov edi,esi, the path of a selected Building, which then
     # enters its own context through FUN_0079F851
     ("HotkeyTrainerQualified", 0x64A05A, 4),
+    # customHotkeyContexts, the letter in a button's tooltip (FUN_008F8F5E, a proto's hotkey text, cached
+    # per proto by FUN_007EF89E): the read of the manager after the last name of the context list, the
+    # jle of a building's lookup in BuildAccel, and the lookup 0xAB481D (thiscall manager, char* command,
+    # char* context, list* out, bool first, ret 10h), with the helpers that build a name for the list
+    ("HotkeyTipListDone", 0x8F9696, 6),
+    ("HotkeyTipBuildMiss", 0x8F90FC, 6),
+    ("HotkeyTipLookup", 0xAB481D, 6),
+    ("HotkeyTipListAdd", 0x467722, 6),
+    ("HotkeyTipStringNew", 0x401A12, 6),
+    ("HotkeyTipStringFree", 0x4010CA, 6),
+    ("HotkeyTipStringNarrow", 0x402733, 6),
     # snareOnlyHitUnit (FUN_004FD289, group recompute): the member's vtbl[34h] velocity, fcomp
     # with the group's pace [esi+7Ch], jnp 4FD53Ah, and the mov ecx,[edi+5Ch] it continues at
     ("SnareGroupPace", 0x4FD3FD, 0x1D),

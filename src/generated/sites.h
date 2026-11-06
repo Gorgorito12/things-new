@@ -626,6 +626,27 @@ inline constexpr Site kHotkeyTrainerBuildFlag{"HotkeyTrainerBuildFlag", 0x0064A0
 inline constexpr std::uint8_t kHotkeyTrainerQualifiedBytes[] = {0xB3, 0x01, 0x8B, 0xFE};
 inline constexpr Site kHotkeyTrainerQualified{"HotkeyTrainerQualified", 0x0064A05A, kHotkeyTrainerQualifiedBytes, sizeof(kHotkeyTrainerQualifiedBytes)};
 
+inline constexpr std::uint8_t kHotkeyTipListDoneBytes[] = {0x8B, 0x15, 0x44, 0x62, 0xC6, 0x00};
+inline constexpr Site kHotkeyTipListDone{"HotkeyTipListDone", 0x008F9696, kHotkeyTipListDoneBytes, sizeof(kHotkeyTipListDoneBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipBuildMissBytes[] = {0x0F, 0x8E, 0xAD, 0x05, 0x00, 0x00};
+inline constexpr Site kHotkeyTipBuildMiss{"HotkeyTipBuildMiss", 0x008F90FC, kHotkeyTipBuildMissBytes, sizeof(kHotkeyTipBuildMissBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipLookupBytes[] = {0x51, 0x55, 0x8B, 0x6C, 0x24, 0x14};
+inline constexpr Site kHotkeyTipLookup{"HotkeyTipLookup", 0x00AB481D, kHotkeyTipLookupBytes, sizeof(kHotkeyTipLookupBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipListAddBytes[] = {0x56, 0x57, 0x8B, 0xF1, 0x8B, 0x7E};
+inline constexpr Site kHotkeyTipListAdd{"HotkeyTipListAdd", 0x00467722, kHotkeyTipListAddBytes, sizeof(kHotkeyTipListAddBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipStringNewBytes[] = {0x53, 0x56, 0x8B, 0x74, 0x24, 0x0C};
+inline constexpr Site kHotkeyTipStringNew{"HotkeyTipStringNew", 0x00401A12, kHotkeyTipStringNewBytes, sizeof(kHotkeyTipStringNewBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipStringFreeBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85};
+inline constexpr Site kHotkeyTipStringFree{"HotkeyTipStringFree", 0x004010CA, kHotkeyTipStringFreeBytes, sizeof(kHotkeyTipStringFreeBytes)};
+
+inline constexpr std::uint8_t kHotkeyTipStringNarrowBytes[] = {0x51, 0x55, 0x8B, 0xE9, 0x8B, 0x45};
+inline constexpr Site kHotkeyTipStringNarrow{"HotkeyTipStringNarrow", 0x00402733, kHotkeyTipStringNarrowBytes, sizeof(kHotkeyTipStringNarrowBytes)};
+
 inline constexpr std::uint8_t kSnareGroupPaceBytes[] = {0x8B, 0x17, 0x8B, 0xCF, 0x8B, 0x42, 0x34, 0xE8, 0x41, 0xC3, 0xFA, 0xFF, 0xD8, 0x5E, 0x7C, 0xDF, 0xE0, 0xF6, 0xC4, 0x05, 0x0F, 0x8B, 0x23, 0x01, 0x00, 0x00, 0x8B, 0x4F, 0x5C};
 inline constexpr Site kSnareGroupPace{"SnareGroupPace", 0x004FD3FD, kSnareGroupPaceBytes, sizeof(kSnareGroupPaceBytes)};
 
