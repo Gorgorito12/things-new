@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
 | Thursday 2026-11-05 14:06 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Thursday 2026-11-05 14:06 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
 | Thursday 2026-11-05 14:06 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
@@ -5287,6 +5288,8 @@ What the panels and the fog of war show.
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
 
 #### displayedRange
+
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Friday 2026-11-06 07:32
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
