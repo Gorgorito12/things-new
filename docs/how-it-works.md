@@ -2729,6 +2729,17 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
+### auraStacking
+
+The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps.
+A modifier does not say which aura made it, so right after the apply, at 0x9D0675, the key writes the aura's mark in `[modifier+84h]`,
+a field stock saves and loads and does not read. `<NoStack>` refuses a target that holds that mark. A refused target stays out of the
+action's list, so every update of every carrier asks again, and a dead carrier's modifier goes with it. `unitResourceAuras` makes no
+modifier: its take asks `AuraClaim`.
+
+**Why it is safe.** The mark lives in game state, so every machine and a saved game see the same thing, and the filter runs only for
+targets the action does not hold yet.
+
 ### linkedResource
 
 Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagged unit to an ID-ordered map. The tick, four

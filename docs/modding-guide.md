@@ -789,6 +789,7 @@ New names the game's data and scripts can use.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`customAbstractTypes`](#customabstracttypes) | Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | always on | The file. | confirmed |
+| [`auraStacking`](#aurastacking) | `<NoStack>` and `<ForbidUnitType>` on any aura. | **new** | The tags on the aura. | confirmed |
 | [`customProtoUnitCommands`](#customprotounitcommands) | Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | always on | The file, and the `<Command>` lines that use them. | confirmed |
 | [`customHotkeyContexts`](#customhotkeycontexts) | Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. Today the exe drops them. | **new** | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. | confirmed (single player) |
 | [`techRenameEffect`](#techrenameeffect) | The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | **in `wol.cfg`**, but WoL's renames for all players | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. | confirmed (single player) |
@@ -1174,6 +1175,49 @@ kbUnitSyscalls
   memory showed the same 6 gatherer IDs); the AI's livestock showed food 50 of capacity 300, not full; a
   mine and a bush at full showed "full". `kbUnitGetNumberTargeters` was reached but gave 0 in that
   window (every gatherer was already working its target).
+
+#### auraStacking
+
+![auraStacking in WoL](media/auraStacking-wol.gif)
+
+*In WoL, with `auraStacking log` (Ethiopians, 5 `Pikeman` with a test aura `BuildingWorkRate` ×3 and `<NoStack>`, `ring_work.xml`):*
+the Town Centers in range work at ×3. [Full video (MP4)](media/auraStacking-wol.mp4).
+
+![auraStacking in WoL, key off](media/auraStacking-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the tag, the auras multiply and they work at ×27.
+[Full video (MP4)](media/auraStacking-wol-control.mp4).
+
+```
+auraStacking [log]
+```
+
+```xml
+<action>
+    <name>MyAura</name>
+    <type>AutoRangedModify</type>
+    <nostack>1</nostack>
+    <forbidunittype>Hussar</forbidunittype>
+</action>
+```
+
+- **In WoL today:** every carrier of an aura multiplies: five of ×4 give ×1024.
+- **`<NoStack>`:** a target holds this aura from one carrier. When that one dies or it leaves its range, the next takes over,
+  0.6 s later in the test. Another aura still multiplies with it. For stock auras and those of `buildingWorkRateAuras`,
+  `resourceGatherAuras` and `unitResourceAuras`, where each target is paid by one carrier.
+- **`<ForbidUnitType>`** (or `<ForbidAbstractType>`, more than once): the aura leaves those units alone, on any aura.
+- **Same aura:** the same proto and action name. Two protos sharing a tactics file are two auras, and the first carrier stays: the
+  strongest does not win.
+- **Changes the simulation:** every player needs the same setting and data.
+- **Saved games:** nothing to do: the mark is in the modifier, which the game saves.
+- **Log:** `auraStacking: applied`, `hook reached: auraStacking filter (0x9D0633)`, `auraStacking applied (0x9D0675)`, and with `log`
+  `auraStacking: unit 1 holds unit 6`, `unit 2 leaves unit 6 alone: it holds this aura`.
+- **Not covered:** the applier of auras with no range, FUN_009D7328, and powers.
+- **Tested in WoL (2026-11-06):** a stock Speed ×4 aura, ×256 with 4 carriers and ×4 with the tag; `resourceGatherAuras` ×1024 against
+  ×4; `buildingWorkRateAuras` ×64 against ×4; two Sawmills on three trees, one payer each; two auras ×8; a Hussar forbidden from an
+  `AbstractCavalry` aura, 0 modifiers; a loaded game kept one modifier; beside WoL's DLL; an AI skirmish of 100 s with no XS error.
+  Performance could not be compared: other games were running, and the two runs do not carry the same modifiers. Not tested:
+  multiplayer, recorded games.
 
 ### Civs
 
@@ -3701,7 +3745,7 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
   resource, the icon and the auras' take per second plus the building's AutoGather, in the order of the resources.
   Two resources fit: in WoL's layout at 1920×1080 a third shows its icon with no number. It shows while an aura pays.
   **Pending:** the stat panel of the normal interface.
-- **Not covered:** other players' units are never targets. Stock has no `NoStack` or `SquareAura`.
+- **Not covered:** other players' units are never targets. Stock has no `SquareAura`; `NoStack` comes with [`auraStacking`](#aurastacking).
 - **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
   `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
   resource 1 from unit 2 (TreeNewEngland), 299.1 left`.
