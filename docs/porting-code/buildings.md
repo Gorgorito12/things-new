@@ -371,13 +371,14 @@ Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkratea
 
 Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
 
-Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
+Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `BwrRateCallBuild` `0x9D3D7B` (5 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `BwrRateCallHeal` `0x9E0CCF` (5 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
 
 ### src/features/bwrauras.cpp
 
 ```cpp
 // buildingWorkRateAuras: an aura (or any other stat modifier) whose ModifyType is BuildingWorkRate
-// changes how fast the units it reaches train, research and spawn their Maintain units.
+// changes how fast the units it reaches train, research and spawn their Maintain units, and how fast
+// they heal and build.
 //
 // Stock: ModifyType names are read by FUN_005F5645, for the tactics tag <ModifyType> (0x5FC8AE,
 // stored unchecked in the byte [action+B8h]) and for the <unitModify> powers (0x5F3EFA, which
@@ -403,6 +404,11 @@ Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (1
 // key: the factor then multiplies the proto's live rate. The data refs currentUnitBuildingWorkRate and
 // its Float twin, the panel's number, read the proto (0x6F49FC): they now read the rate the unit works at,
 // the building's own copy and the factor. The hooks are in hooks/bwraura_hooks.asm.
+//
+//
+// Heal and build read their rate through 0x487C45, which has 22 callers (gather too), so the callee is
+// left alone: only the calls that add the work go to UhcBwrRateCall, with the worker in [esi+10h]. The
+// calls that only ask whether the rate is above 0 stay stock.
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -419,6 +425,7 @@ Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (1
 
 extern "C" {
 void UhcBwrAuraCall();
+void UhcBwrRateCall();
 void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
 void UhcBwrPanelHook();
 }
@@ -444,6 +451,17 @@ constexpr Caller kCallers[] = {
     {0x009E65F7, 0x009E65FC, L"Research"},
     {0x009D58D4, 0x009D58D9, L"CommandResearch"},
     {0x006AB23F, 0x006AB244, L"Maintain"},
+};
+
+// The calls of the rate lookup that add the work.
+struct RateCaller {
+  std::uint32_t call;
+  std::uint32_t ret;
+  const wchar_t* name;
+};
+constexpr RateCaller kRateCallers[] = {
+    {0x009E0CCF, 0x009E0CD4, L"Heal"},
+    {0x009D3D7B, 0x009D3D80, L"Build"},
 };
 
 // The list the stock sum reads, {data +0, count +4}: the layout of the collector's list 0xCF0718.
@@ -501,6 +519,11 @@ float Factor(const char* unit) {
 
 const wchar_t* CallerName(std::uint32_t ret) {
   for (const Caller& caller : kCallers) {
+    if (caller.ret == ret) {
+      return caller.name;
+    }
+  }
+  for (const RateCaller& caller : kRateCallers) {
     if (caller.ret == ret) {
       return caller.name;
     }
@@ -605,7 +628,8 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
                   &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
-                  &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead})) {
+                  &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead, &sites::kBwrRateCallHeal,
+                  &sites::kBwrRateCallBuild})) {
     return Outcome::kFailed;
   }
   if (!GetterHeadIsKnown()) {
@@ -629,6 +653,11 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
       return Outcome::kFailed;
     }
   }
+  for (const RateCaller& caller : kRateCallers) {
+    if (!WriteCall(caller.call, reinterpret_cast<const void*>(&UhcBwrRateCall))) {
+      return Outcome::kFailed;
+    }
+  }
   g_uhcBwrTrainGetter = reinterpret_cast<void*>(&UhcBwrAuraCall);
   if (!WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
     return Outcome::kFailed;
@@ -638,8 +667,8 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
         L"gets the factor only through that hook's call of g_uhcBwrTrainGetter",
         sites::kBwrTrainCall.va);
   }
-  Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research "
-      L"and Maintain speed%ls (multiplayer unverified)",
+  Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research, "
+      L"Maintain, heal and build speed%ls (multiplayer unverified)",
       kStatBuildingWorkRate, log ? L", every change of a unit's factor logged" : L"");
   return Outcome::kApplied;
 }
@@ -666,6 +695,7 @@ UhcBwrPanelRate PROTO STDCALL unit:DWORD
 
 .data
 panelNext       dd 006F4A02h    ; jne 6F4A0Dh
+rateLookup      dd 00487C45h    ; float thiscall(tactics action, target), ret 4
 workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
 
 .code
@@ -715,6 +745,29 @@ UhcBwrPanelHook PROC
     popfd
     jmp panelNext
 UhcBwrPanelHook ENDP
+; Target of the calls of the rate lookup 0x487C45 in the heal tick (0x9E0CCF) and the build tick (0x9D3D7B).
+; Each has the action in ESI, so [esi+10h] is the unit that works, and each writes EAX, ECX and EDX
+; before reading them. ST0 = the rate, times the unit's BuildingWorkRate factor.
+UhcBwrRateCall PROC
+    TRACE_ONCE "buildingWorkRateAuras (calls of 0x487C45)"
+    push dword ptr [esp+4]          ; the target
+    call rateLookup                 ; ST0 = the stock rate; pops the target
+    mov eax, dword ptr [esi+10h]    ; the unit
+    test eax, eax
+    je done
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je done
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je done
+    push dword ptr [esp]            ; caller: the return address, for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+done:
+    ret 4
+UhcBwrRateCall ENDP
 
 END
 ```

@@ -4498,6 +4498,21 @@ buildingWorkRateAuras [log]
   3.00 under an aura x3, 1.00 beside it. WoL's interface does not show them: a gadget has to name them.
   [Video](media/buildingWorkRateAuras-panel-wol.mp4), [control](media/buildingWorkRateAuras-panel-wol-control.mp4).
 
+![buildingWorkRateAuras on building in WoL](media/buildingWorkRateAuras-build-wol.gif)
+
+*In WoL (Ethiopians, an Explorer's aura ×3 on `AFRICANvillager`, with `ring_work.xml`):* the Apartment is finished at 31 s.
+[Full video (MP4)](media/buildingWorkRateAuras-build-wol.mp4).
+
+![buildingWorkRateAuras on building in WoL, key off](media/buildingWorkRateAuras-build-wol-control.gif)
+
+*In WoL, key off (the same data; the ring is there all the same):* at 34 s it is half built.
+[Full video (MP4)](media/buildingWorkRateAuras-build-wol-control.mp4).
+
+- **Healing and building:** the factor also multiplies the heal rate and the build rate of the unit it reaches. It always applies with
+  the key.
+- **Tested in WoL (2026-11-06):** a House at 1912 points 3 s after placing, against 603; a Pikeman at 24.7 HP full in under 3.2 s, against
+  113.6 at 4.7 s. Not covered: repair: no order tried reached it. Not tested: a loaded game with this part, beside WoL's DLL.
+
 #### maintainWaitForPop
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
@@ -4739,6 +4754,22 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
     with the Daimyo held, and a skirmish against a Japanese AI with no XS error.
   - **Not tested:** a foundation near the trainer, multiplayer. For such a test, the Daimyo trains only
     from Age II and needs population room and food.
+
+![noTrainNearEnemyTC refuse in WoL](media/noTrainNearEnemyTC-refuse-wol.gif)
+
+*In WoL, with `refuse log` (a Daimyo 25 m from a Stable):* each order is refused and nothing is charged.
+[Full video (MP4)](media/noTrainNearEnemyTC-refuse-wol.mp4).
+
+![noTrainNearEnemyTC without refuse in WoL](media/noTrainNearEnemyTC-refuse-wol-control.gif)
+
+*In WoL, without `refuse` (the same scene):* the units queue, are paid for, and wait.
+[Full video (MP4)](media/noTrainNearEnemyTC-refuse-wol-control.mp4).
+
+- **`refuse`:** a held trainer takes no new unit, and nothing is charged. What it queued before walking in keeps its progress and waits.
+- **The AI:** an AI whose order is refused does not look for another trainer. A German AI with its Town Center held asked once in
+  125 s, with no XS error.
+- **Tested in WoL (2026-11-06, refuse):** a Daimyo 25.0 m from a Stable: 3 orders refused and no cost, against 180 wood queued without it;
+  after the Stable fell an order paid. Not tested: the second enqueue caller 0x8D60EA, a loaded game, beside WoL's DLL, multiplayer.
 
 #### lifespanAfterConstruction
 
@@ -5990,6 +6021,21 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 - **Status:** confirmed in single player, in WoL (2026-11-04), with `noCorpseDopples Deer log` on WoL's own
   data: the dead deer left no copy, and the dead bison, not named, stayed in the fog. Without the key,
   all of them stayed.
+
+![noCorpseDopples expire in WoL](media/noCorpseDopples-expire-wol.gif)
+
+*In WoL, with `noCorpseDopples Huntable expire=20 log`:* the dopples made at 8.1 s end at 28.1 s, and the fog is empty.
+[Full video (MP4)](media/noCorpseDopples-expire-wol.mp4).
+
+![noCorpseDopples without expire in WoL](media/noCorpseDopples-expire-wol-control.gif)
+
+*In WoL, without `expire=`:* the Deer were killed at 34 s out of sight, and their dopples stay.
+[Full video (MP4)](media/noCorpseDopples-expire-wol-control.mp4).
+
+- **`expire=<seconds>`:** every dopple of a marked proto ends that long after it was made, live or dead, so its going says nothing about
+  the unit. Changes the simulation: every player needs the same line.
+- **Tested in WoL (2026-11-06, expire):** with `expire=20`, dopples made at 8.2 s ended at 28.2 s; saved at 38 s with `expire=45`, they kept
+  their time and ended at 53.2 s. Not tested: beside WoL's DLL, multiplayer.
 
 ## 6. Editing the game data
 

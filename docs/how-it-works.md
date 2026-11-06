@@ -1890,6 +1890,8 @@ takes after a creation. Any other unit re-executes the two `mov`s and continues 
   game already holds, and the dopple of a live unit that later dies out of sight.
   No WoL proto uses `MutateDopples` either. <!-- private -->
 
+`expire=` wraps the call 0x49198B of the manager update; past the age it answers true and 0x5038E0 removes the dopple. `[dopple+0]` is the time it was made, kept in the save, and only simulation data decides, so every machine ends the same dopples.
+
 ### danceBonusCivs
 
 **The stock dances.** A `DanceBonus` action (protoaction type 45h) stores its kind as a byte at
@@ -2330,6 +2332,8 @@ screen in about 0.3 s, while at 0 it stays over the unit. 0x8023AE refuses a tex
   pausing it; a foundation near the trainer. A `near` type of moving units (a Hussar: 17.3 m for
   18.4 m between centres, the radius branch of the distance), a Town Center that is not the first
   (`near AbstractTownCenter`) and a saved game loaded with a held trainer were seen in game.
+
+With `refuse`, the head of the enqueue 0x9EAC35 answers false before the cost at 0x9EAF86, for the train command and 0x8D60EA. **Why it is safe:** all four callers take a false, and the trainer `[ecx+10h]` is set before the call.
 
 ### overhealHitpointBars
 
@@ -3012,6 +3016,8 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   It is the last WoL key there. <!-- private -->
 - **Observed in game:** a BloodFactory inside an Explorer's 4.0 aura logged `works at x4.000` and
   spawned 11 musketeers while a factory without the aura spawned 2.
+
+The rate lookup 0x487C45 has 22 callers, so only the heal tick's 0x9E0CCF and the build tick's 0x9D3D7B go to `UhcBwrRateCall`, with the worker in `[esi+10h]`. Calls that only test the rate above 0 stay stock.
 
 ### sharedBuildLimit
 
