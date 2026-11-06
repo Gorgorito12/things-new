@@ -1115,6 +1115,27 @@ inline constexpr Site kAutoGatherPayPoint{"AutoGatherPayPoint", 0x004C378A, kAut
 inline constexpr std::uint8_t kResListSetBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x39};
 inline constexpr Site kResListSet{"ResListSet", 0x0058EF83, kResListSetBytes, sizeof(kResListSetBytes)};
 
+inline constexpr std::uint8_t kLintUnitTypeMissBytes[] = {0x68, 0xB4, 0x0E, 0x00, 0x00};
+inline constexpr Site kLintUnitTypeMiss{"LintUnitTypeMiss", 0x005FCB61, kLintUnitTypeMissBytes, sizeof(kLintUnitTypeMissBytes)};
+
+inline constexpr std::uint8_t kLintProtoTagMissBytes[] = {0x84, 0xC0, 0x74, 0x16, 0x8B, 0x54, 0x24, 0x14};
+inline constexpr Site kLintProtoTagMiss{"LintProtoTagMiss", 0x005F62A2, kLintProtoTagMissBytes, sizeof(kLintProtoTagMissBytes)};
+
+inline constexpr std::uint8_t kLintProtoActionMissBytes[] = {0x0F, 0x84, 0x89, 0x26, 0x00, 0x00};
+inline constexpr Site kLintProtoActionMiss{"LintProtoActionMiss", 0x005FA202, kLintProtoActionMissBytes, sizeof(kLintProtoActionMissBytes)};
+
+inline constexpr std::uint8_t kLintTechLoadCallBytes[] = {0xE8, 0xB3, 0xFE, 0xFF, 0xFF};
+inline constexpr Site kLintTechLoadCall{"LintTechLoadCall", 0x0061FE4A, kLintTechLoadCallBytes, sizeof(kLintTechLoadCallBytes)};
+
+inline constexpr std::uint8_t kLintTechNodeBytes[] = {0x8B, 0xF0, 0x8B, 0xCE, 0x8B, 0x51, 0x18};
+inline constexpr Site kLintTechNode{"LintTechNode", 0x0061FDB8, kLintTechNodeBytes, sizeof(kLintTechNodeBytes)};
+
+inline constexpr std::uint8_t kLintEffectDropBytes[] = {0x0F, 0x84, 0xDB, 0x18, 0x00, 0x00};
+inline constexpr Site kLintEffectDrop{"LintEffectDrop", 0x006205E9, kLintEffectDropBytes, sizeof(kLintEffectDropBytes)};
+
+inline constexpr std::uint8_t kLintEffectTypeBytes[] = {0x68, 0x12, 0x05, 0x00, 0x00};
+inline constexpr Site kLintEffectType{"LintEffectType", 0x0065BC56, kLintEffectTypeBytes, sizeof(kLintEffectTypeBytes)};
+
 inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
 inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
 
@@ -2047,6 +2068,7 @@ Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
 Outcome ApplyDisplayedRange(const Config& config);
 Outcome ApplyLinkedResource(const Config& config);
+Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
@@ -2211,6 +2233,8 @@ inline constexpr Feature kFeatures[] = {
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
+    // After the keys that verify the sites it writes as stock bytes; before the plugins, as a plugin may read its log.
+    {"dataLint", ApplyDataLint},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"xsErrorLog", ApplyXsErrorLog},
@@ -2232,7 +2256,7 @@ inline constexpr const char* kHandledKeys[] = {
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
-    "buildingworkrateauras", "xserrorlog", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
+    "buildingworkrateauras", "xserrorlog", "datalint", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
@@ -3219,6 +3243,10 @@ using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, 
                                           std::uint8_t relativity, bool unapply);
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 
+// Called for a Data subtype that neither stock nor a key knows, while the data loads, for dataLint. Writes the hooks too.
+using UnknownTechSubtype = void (*)(const char* name);
+bool OnUnknownTechSubtype(UnknownTechSubtype callback);
+
 }  // namespace uhc
 ```
 
@@ -3277,6 +3305,7 @@ struct Subtype {
 Subtype g_subtypes[kMaxSubtypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+uhc::UnknownTechSubtype g_unknown = nullptr;
 
 // What stock does in setData for TrackRating: only the subtypes it knows read the attribute.
 bool ReadAction(void* db, const char* name, char* effect, const char* node) {
@@ -3320,11 +3349,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   return true;
 }
 
-bool Add(const Subtype& subtype) {
-  if (g_count == kMaxSubtypes) {
-    uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
-    return false;
-  }
+bool Install() {
   if (!g_installed) {
     if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupHead, &uhc::sites::kDataSubtypeAttrCall,
                                           &uhc::sites::kDataApplySwitch, &uhc::sites::kDataUnapplySwitch,
@@ -3338,9 +3363,21 @@ bool Add(const Subtype& subtype) {
     }
     g_installed = true;
   }
+  return true;
+}
+
+bool Add(const Subtype& subtype) {
+  if (g_count == kMaxSubtypes) {
+    uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
+    return false;
+  }
+  if (!Install()) {
+    return false;
+  }
   g_subtypes[g_count++] = subtype;
   return true;
 }
+
 
 }  // namespace
 
@@ -3359,6 +3396,9 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
       return -1;
     }
     return kFirstId + static_cast<std::int32_t>(i);
+  }
+  if (g_unknown != nullptr) {
+    g_unknown(name);
   }
   return -1;
 }
@@ -3386,6 +3426,14 @@ bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
   return Add({name, nullptr, handler});
+}
+
+bool OnUnknownTechSubtype(UnknownTechSubtype callback) {
+  if (!Install()) {
+    return false;
+  }
+  g_unknown = callback;
+  return true;
 }
 
 }  // namespace uhc
@@ -3522,6 +3570,11 @@ namespace uhc {
 // the stock bytes.
 bool AddModifyType(const wchar_t* name, std::int32_t stat);
 
+// Called for a name nothing knows, while the data loads, for dataLint. `proto` is null when the name was not read in a
+// proto's action. Writes the hook too.
+using UnknownModifyType = void (*)(const wchar_t* name, const char* proto);
+bool OnUnknownModifyType(UnknownModifyType callback);
+
 }  // namespace uhc
 ```
 
@@ -3543,6 +3596,7 @@ namespace {
 constexpr std::size_t kMaxTypes = 16;
 constexpr std::uint32_t kNameTailHook = 0x005FE6D7;  // neg eax / sbb eax,eax / and al,0F1h (6 B)
 constexpr std::int32_t kTailAdds = 0x0E;             // the tail adds 0Eh to what the hook leaves in EAX
+constexpr std::uint32_t kFromActionParser = 0x005FC8B7;  // the action parser's call of the name parser
 
 using CompareFn = std::int32_t(__thiscall*)(const void* name, const wchar_t* text, std::int32_t flag, std::int32_t n);
 const auto kCompare = reinterpret_cast<CompareFn>(0x00443C10);
@@ -3555,15 +3609,32 @@ struct ModifyType {
 ModifyType g_types[kMaxTypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+uhc::UnknownModifyType g_unknown = nullptr;
+
+bool Install() {
+  if (g_installed) {
+    return true;
+  }
+  if (!uhc::VerifyAll("modify types", {&uhc::sites::kModifyTypeNameTail, &uhc::sites::kModifyTypeNameCompare}) ||
+      !uhc::WriteJmp(kNameTailHook, reinterpret_cast<const void*>(&UhcModifyTypeHook), 6)) {
+    return false;
+  }
+  g_installed = true;
+  return true;
+}
 
 }  // namespace
 
-// From the hook, for a name that is none of the stock ones. The tail returns EAX + 0Eh.
-extern "C" std::int32_t __stdcall UhcModifyTypeByName(const void* name) {
+// From the hook, for a name that is none of the stock ones. The tail returns EAX + 0Eh. For the action parser's call,
+// `proto` is its argument; for the other caller that slot means nothing.
+extern "C" std::int32_t __stdcall UhcModifyTypeByName(const void* name, std::uint32_t returnAddress, const char* proto) {
   for (std::size_t i = 0; i < g_count; ++i) {
     if (kCompare(name, g_types[i].name, 0, -1) == 0) {
       return g_types[i].stat - kTailAdds;
     }
+  }
+  if (g_unknown != nullptr) {
+    g_unknown(*static_cast<const wchar_t* const*>(name), returnAddress == kFromActionParser ? proto : nullptr);
   }
   return -1 - kTailAdds;
 }
@@ -3575,14 +3646,18 @@ bool AddModifyType(const wchar_t* name, std::int32_t stat) {
     Log(L"modify types: no room for %ls", name);
     return false;
   }
-  if (!g_installed) {
-    if (!VerifyAll("modify types", {&sites::kModifyTypeNameTail, &sites::kModifyTypeNameCompare}) ||
-        !WriteJmp(kNameTailHook, reinterpret_cast<const void*>(&UhcModifyTypeHook), 6)) {
-      return false;
-    }
-    g_installed = true;
+  if (!Install()) {
+    return false;
   }
   g_types[g_count++] = {name, stat};
+  return true;
+}
+
+bool OnUnknownModifyType(UnknownModifyType callback) {
+  if (!Install()) {
+    return false;
+  }
+  g_unknown = callback;
   return true;
 }
 
@@ -3600,7 +3675,7 @@ option casemap :none
 
 include common.inc
 
-UhcModifyTypeByName PROTO STDCALL nameString:DWORD
+UhcModifyTypeByName PROTO STDCALL :DWORD, :DWORD, :DWORD
 
 .data
 nameTailNext    dd 005FE6DDh    ; pop esi / add eax,0Eh / ret: FUN_005F5645 returns EAX + 0Eh
@@ -3613,11 +3688,14 @@ nameTailNext    dd 005FE6DDh    ; pop esi / add eax,0Eh / ret: FUN_005F5645 retu
 ; saved. Stock turns EAX into 0 (a match) or -0Fh and the tail adds 0Eh: stat 0Eh, or -1 for an
 ; unknown name. The hook keeps a match; for any other name the helper returns the stat - 0Eh, or
 ; -0Fh. ECX, EDX and the flags are dead at the tail, which sets the flags, and its two callers read
-; only EAX.
+; only EAX. [esp+4] = the caller; for the action parser, its proto argument is at [esp+0D0h] (0C4h in its loop, with
+; the return address and the argument of this call on top, and the saved ESI).
 UhcModifyTypeHook PROC
     TRACE_ONCE "ModifyType names (0x5FE6D7)"
     test eax, eax
     je done                         ; "AutoGatherRate": EAX = 0, the tail returns 0Eh
+    push dword ptr [esp+0D0h]
+    push dword ptr [esp+8]
     push esi
     call UhcModifyTypeByName
 done:

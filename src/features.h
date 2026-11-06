@@ -46,6 +46,7 @@ Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
 Outcome ApplyDisplayedRange(const Config& config);
 Outcome ApplyLinkedResource(const Config& config);
+Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
@@ -210,6 +211,8 @@ inline constexpr Feature kFeatures[] = {
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
+    // After the keys that verify the sites it writes as stock bytes; before the plugins, as a plugin may read its log.
+    {"dataLint", ApplyDataLint},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"xsErrorLog", ApplyXsErrorLog},
@@ -231,7 +234,7 @@ inline constexpr const char* kHandledKeys[] = {
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
-    "buildingworkrateauras", "xserrorlog", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
+    "buildingworkrateauras", "xserrorlog", "datalint", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 

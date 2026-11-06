@@ -1061,6 +1061,27 @@ inline constexpr Site kAutoGatherPayPoint{"AutoGatherPayPoint", 0x004C378A, kAut
 inline constexpr std::uint8_t kResListSetBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x39};
 inline constexpr Site kResListSet{"ResListSet", 0x0058EF83, kResListSetBytes, sizeof(kResListSetBytes)};
 
+inline constexpr std::uint8_t kLintUnitTypeMissBytes[] = {0x68, 0xB4, 0x0E, 0x00, 0x00};
+inline constexpr Site kLintUnitTypeMiss{"LintUnitTypeMiss", 0x005FCB61, kLintUnitTypeMissBytes, sizeof(kLintUnitTypeMissBytes)};
+
+inline constexpr std::uint8_t kLintProtoTagMissBytes[] = {0x84, 0xC0, 0x74, 0x16, 0x8B, 0x54, 0x24, 0x14};
+inline constexpr Site kLintProtoTagMiss{"LintProtoTagMiss", 0x005F62A2, kLintProtoTagMissBytes, sizeof(kLintProtoTagMissBytes)};
+
+inline constexpr std::uint8_t kLintProtoActionMissBytes[] = {0x0F, 0x84, 0x89, 0x26, 0x00, 0x00};
+inline constexpr Site kLintProtoActionMiss{"LintProtoActionMiss", 0x005FA202, kLintProtoActionMissBytes, sizeof(kLintProtoActionMissBytes)};
+
+inline constexpr std::uint8_t kLintTechLoadCallBytes[] = {0xE8, 0xB3, 0xFE, 0xFF, 0xFF};
+inline constexpr Site kLintTechLoadCall{"LintTechLoadCall", 0x0061FE4A, kLintTechLoadCallBytes, sizeof(kLintTechLoadCallBytes)};
+
+inline constexpr std::uint8_t kLintTechNodeBytes[] = {0x8B, 0xF0, 0x8B, 0xCE, 0x8B, 0x51, 0x18};
+inline constexpr Site kLintTechNode{"LintTechNode", 0x0061FDB8, kLintTechNodeBytes, sizeof(kLintTechNodeBytes)};
+
+inline constexpr std::uint8_t kLintEffectDropBytes[] = {0x0F, 0x84, 0xDB, 0x18, 0x00, 0x00};
+inline constexpr Site kLintEffectDrop{"LintEffectDrop", 0x006205E9, kLintEffectDropBytes, sizeof(kLintEffectDropBytes)};
+
+inline constexpr std::uint8_t kLintEffectTypeBytes[] = {0x68, 0x12, 0x05, 0x00, 0x00};
+inline constexpr Site kLintEffectType{"LintEffectType", 0x0065BC56, kLintEffectTypeBytes, sizeof(kLintEffectTypeBytes)};
+
 inline constexpr std::uint8_t kKillQueueAskBytes[] = {0x8B, 0x44, 0x24, 0x0C, 0x8B, 0x54, 0x24, 0x08};
 inline constexpr Site kKillQueueAsk{"KillQueueAsk", 0x004B4DC2, kKillQueueAskBytes, sizeof(kKillQueueAskBytes)};
 

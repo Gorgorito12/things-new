@@ -276,6 +276,7 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
+dataLint [log] [file]         while the data loads, says what it asks for and the game drops
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation

@@ -46,6 +46,7 @@ PAGES = {
                               "src/features/limits.cpp", "src/hooks/limit_hooks.asm"],
     }),
     "data": ("Data and scripting", {
+        "dataLint": ["src/features/datalint.cpp", "src/hooks/datalint_hooks.asm"],
         "customHotkeyContexts": ["src/features/hotkeys.cpp", "src/hooks/hotkey_hooks.asm"],
         "techRenameEffect": ["src/features/techrename.cpp", "src/hooks/techrename_hooks.asm"],
     }),

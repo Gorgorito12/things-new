@@ -46,6 +46,7 @@ set(UHC_SOURCES
   src/features/freeresearch.cpp
   src/features/cantslow.cpp
   src/features/civfirsttc.cpp
+  src/features/datalint.cpp
   src/features/displayrange.cpp
   src/features/linkedresource.cpp
   src/features/xslog.cpp
@@ -160,6 +161,7 @@ set(UHC_SOURCES
   src/hooks/modifytype_hooks.asm
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm
+  src/hooks/datalint_hooks.asm
   src/hooks/linkedresource_hooks.asm
   src/hooks/xslog_hooks.asm
   src/hooks/prototag_hooks.asm

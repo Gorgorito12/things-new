@@ -23,4 +23,8 @@ using TechActionSubtypeHandler = void (*)(char* action, const char* baseAction, 
                                           std::uint8_t relativity, bool unapply);
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 
+// Called for a Data subtype that neither stock nor a key knows, while the data loads, for dataLint. Writes the hooks too.
+using UnknownTechSubtype = void (*)(const char* name);
+bool OnUnknownTechSubtype(UnknownTechSubtype callback);
+
 }  // namespace uhc

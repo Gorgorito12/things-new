@@ -50,6 +50,7 @@ struct Subtype {
 Subtype g_subtypes[kMaxSubtypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+uhc::UnknownTechSubtype g_unknown = nullptr;
 
 // What stock does in setData for TrackRating: only the subtypes it knows read the attribute.
 bool ReadAction(void* db, const char* name, char* effect, const char* node) {
@@ -93,11 +94,7 @@ bool RunOnActions(const Subtype& subtype, char* proto, const char* base, float a
   return true;
 }
 
-bool Add(const Subtype& subtype) {
-  if (g_count == kMaxSubtypes) {
-    uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
-    return false;
-  }
+bool Install() {
   if (!g_installed) {
     if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kDataSubtypeLookupHead, &uhc::sites::kDataSubtypeAttrCall,
                                           &uhc::sites::kDataApplySwitch, &uhc::sites::kDataUnapplySwitch,
@@ -111,9 +108,21 @@ bool Add(const Subtype& subtype) {
     }
     g_installed = true;
   }
+  return true;
+}
+
+bool Add(const Subtype& subtype) {
+  if (g_count == kMaxSubtypes) {
+    uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
+    return false;
+  }
+  if (!Install()) {
+    return false;
+  }
   g_subtypes[g_count++] = subtype;
   return true;
 }
+
 
 }  // namespace
 
@@ -132,6 +141,9 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
       return -1;
     }
     return kFirstId + static_cast<std::int32_t>(i);
+  }
+  if (g_unknown != nullptr) {
+    g_unknown(name);
   }
   return -1;
 }
@@ -159,6 +171,14 @@ bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
   return Add({name, nullptr, handler});
+}
+
+bool OnUnknownTechSubtype(UnknownTechSubtype callback) {
+  if (!Install()) {
+    return false;
+  }
+  g_unknown = callback;
+  return true;
 }
 
 }  // namespace uhc

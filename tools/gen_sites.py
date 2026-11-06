@@ -886,6 +886,17 @@ SITES = [
     ("InventoryRecreateHead", 0x9BFE5A, 9),
     ("AutoGatherPayPoint", 0x4C378A, 7),
     ("ResListSet", 0x58EF83, 10),
+    # dataLint: push 0EB4h at the <UnitType> handler's failure; test al,al / je / mov edx,[esp+14h] after the proto tag
+    # table's find; je at the <ProtoAction> handler's failure; the call of the tech parser 0x61FD02; in that
+    # parser, mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] with the next <Tech>; je on setData's false in the effect parse;
+    # push 512h, the effect type's failure
+    ("LintUnitTypeMiss", 0x5FCB61, 5),
+    ("LintProtoTagMiss", 0x5F62A2, 8),
+    ("LintProtoActionMiss", 0x5FA202, 6),
+    ("LintTechLoadCall", 0x61FE4A, 5),
+    ("LintTechNode", 0x61FDB8, 7),
+    ("LintEffectDrop", 0x6205E9, 6),
+    ("LintEffectType", 0x65BC56, 5),
     # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
     ("KillQueueAsk", 0x4B4DC2, 8),
     # TakeDamage's subtraction through the add-HP entry 0x4823A3, verify only
