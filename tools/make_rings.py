@@ -68,6 +68,9 @@ GLYPHS = {
     "wood": ((-0.40, 0.30, 0.38, 0.0), (0.40, 0.30, 0.38, 0.0), (0.0, -0.36, 0.38, 0.0)),  # three log ends
     "food": ((-0.24, -0.24, 0.50, 0.0), (0.0, 0.0, 0.38, 0.0), (0.16, 0.16, 0.26, 0.0)),  # the meat of a drumstick
     "gold": ((0.0, 0.0, 0.76, 0.46), (0.0, 0.0, 0.20, 0.0)),  # a coin
+    # a gear: a wheel and eight teeth
+    "work": ((0.0, 0.0, 0.60, 0.26),) + tuple((0.72 * math.cos(i * math.pi / 4), 0.72 * math.sin(i * math.pi / 4), 0.17, 0.0)
+                                              for i in range(8)),
 }
 # What a glyph draws over itself in ICON_ACCENT: a block holds one of the two colours, as a DXT3 block has two.
 GLYPH_ACCENTS = {
