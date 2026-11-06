@@ -51,7 +51,7 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              cursor, no focus); --map plays the map `map uhcsheep ...` wrote
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
-  wheel <x> <y> <steps>      real mouse wheel at a client point (+ zooms in, - out)
+  wheel <x> <y> <steps> [--hold key]  real mouse wheel at a client point (+ zooms in, - out), a key held
   front                      keep the game window above every other window and focus it
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
@@ -1381,18 +1381,32 @@ def hover(cx, cy):
     user32.SetCursorPos(pt.x, pt.y)
 
 
-def real_wheel(cx, cy, steps):
-    """Real mouse-wheel steps at a client point: the camera zooms in (steps > 0) or out."""
+def real_wheel(cx, cy, steps, hold=None):
+    """Real mouse-wheel steps at a client point: the camera zooms in (steps > 0) or out. hold names a
+    key kept down over the steps, as Shift for a shift-mousez binding."""
     hwnd = focus()
     pt = POINT(cx, cy)
     user32.ClientToScreen(hwnd, ctypes.byref(pt))
     user32.SetCursorPos(pt.x, pt.y)
     time.sleep(0.15)
-    for _ in range(abs(steps)):
-        i = INPUT(type=0)
-        i.u.mi = MOUSEINPUT(0, 0, 120 if steps > 0 else -120, 0x0800, 0, 0)
-        send(i)
-        time.sleep(0.12)
+    key = None
+    if hold:
+        vk = vk_of(hold)
+        key = [INPUT(type=1), INPUT(type=1)]
+        key[0].u.ki = KEYBDINPUT(vk, user32.MapVirtualKeyW(vk, 0), 0x8, 0, 0)
+        key[1].u.ki = KEYBDINPUT(vk, user32.MapVirtualKeyW(vk, 0), 0x8 | 0x2, 0, 0)
+        send(key[0])
+        time.sleep(0.1)
+    try:
+        for _ in range(abs(steps)):
+            i = INPUT(type=0)
+            i.u.mi = MOUSEINPUT(0, 0, 120 if steps > 0 else -120, 0x0800, 0, 0)
+            send(i)
+            time.sleep(0.25 if hold else 0.12)
+    finally:
+        if key:
+            send(key[1])
+            time.sleep(0.1)
 
 
 def front():
@@ -1629,7 +1643,8 @@ def main(argv):
     elif cmd == "drag":
         real_drag(*(int(a) for a in args[:4]))
     elif cmd == "wheel":
-        real_wheel(int(args[0]), int(args[1]), int(args[2]))
+        real_wheel(int(args[0]), int(args[1]), int(args[2]),
+                   args[args.index("--hold") + 1] if "--hold" in args else None)
     elif cmd == "front":
         front()
     elif cmd == "key":

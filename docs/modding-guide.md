@@ -3624,6 +3624,12 @@ comes off the Mine. [Full video (MP4)](media/linkedResource-wol.mp4).
 *In WoL, key off (the same data):* the villagers take the building's own 900 gold, the trickle pays from nothing, and the Mine
 stays at 2000. [Full video (MP4)](media/linkedResource-wol-control.mp4).
 
+![linkedResource, placed by a player and linking again, in WoL](media/linkedResource-model-wol.gif)
+
+*In WoL, with `linkedResource log` (Japanese, test data: the model of WoL's Ethiopian monastery, a 200-gold mine and a Mine):*
+villagers place and build it, it links, the first mine runs out, and it links to the second. The log is in the corner.
+[Full video (MP4)](media/linkedResource-model-wol.mp4).
+
 ```
 linkedResource [log]
 ```
@@ -3664,10 +3670,15 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 - **`<GatherLinkedResource>1` on an AutoGather action:** it pays what the source holds and takes it from there: the mine, or
   the building's own stock when it has no mine. Nothing when empty. Techs change it as any AutoGather: DE's `Yield` is a
   `WorkRate` here. DE's `InventoryAmount` and `BuildLimit` are stock.
-- **The mine ends:** the building stands at 0, villagers stop and the trickle too, and it links to another mine in range
-  within a second.
+- **The mine ends:** the building stands at 0, and villagers and the trickle stop. It links to another mine in range within a
+  second and the trickle goes on, but the villagers stay idle until they are ordered back.
 - **No mine in range:** it uses its own stock.
-- **Placing:** anywhere: there is no socket or snap, and it looks for a mine once a second while it has none.
+- **Placing:** anywhere: there is no socket or snap, and it looks for a mine once a second while it has none. As a foundation
+  it takes nothing and links when finished. A builder needs it in its `<Train>` list and the civ needs an `Enable` effect
+  on it in a tech, or the game says it is "not obtainable by your civilization".
+- **The AI:** WoL's AI scripts do not know the building, so an AI builds it only with a rule of your own. With a test rule, the
+  German AI's build plan died within 5 s for a reason not found, and `aiTaskUnitBuild` built it. Its settlers did not work
+  it in the two windows measured, so it paid by the trickle alone.
 - **Not covered:** DE's `AreaHeal`: the stock `Heal` action on a building healed nobody around it, idle or not, so a heal
   needs an aura. `GatherableByAllies` and Influence.
 - **Do not combine:** the stock tags `<SingleUse>` and `<AddResourcesToInventory>` on the building's AutoGather. The first pays
@@ -3689,9 +3700,15 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
   gained 47.29. Key off: the Mine stayed at 2000. With [`unitResourceAuras`](#unitresourceauras) on and a Torp beside them,
   the Mine lost 23.06 and the player gained 23.06 in 31 s, and a game saved there and loaded kept the link with Mine and
   player summing 2000 from its first second. A skirmish with the key on, no tagged building: the AI had 14 units at
-  100 s and no XS error. Villagers were ordered by console (`uiWorkAtPointer` with the camera on the target). Not tested:
-  a re-link in game (the only second mine was chosen first), a real model, an AI that builds it, allies gathering,
-  another civ, beside WoL's DLL, multiplayer.
+  100 s and no XS error. Villagers were ordered by console (`uiWorkAtPointer` with the camera on the target).
+  **Japanese skirmish:** placed and built by three villagers with the monastery's model, linked at 9.0 m, lost the 200-gold mine,
+  and linked to the Mine at 11.0 m, where the trickle took 1.035/s and paid 1.035/s. In that skirmish the game pays villagers
+  twice what they take, key or not: on a stock Mine with the key off, 1.8/s taken and 3.6/s paid. **German AI:** built by the
+  test rule 21 m from its Town Center, linked at 6.0 m, the Mine lost 26.61 and the AI gained 26.61 in 81 s; 27 units at
+  5:48 and no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
+  1386.66 and the player at 613.24, a sum of 2000; key off, the Mine stayed at 2000.
+  Not tested: an AI's build plan, or its villagers working it, allies gathering, multiplayer. Not explained: the trickle
+  of 0.5 in the data ran at 1.035/s in the Japanese skirmish and 0.327/s for the German AI, while the take and the pay matched.
 
 #### resourceGatherAuras
 
@@ -5798,23 +5815,25 @@ map("shift-mousez", "building", "uiWheelRotatePlacedUnit")
 
 ![A building rotated while placing it, in WoL](media/buildingRotation-wol.gif)
 
-*In WoL (Ethiopians, an Apartment, six steps by console):* the foundation stays at the ghost's angle.
+*In WoL (Ethiopians, an Apartment, Shift + the real wheel, 6 steps up and 2 down):* the foundation and the finished building
+stay at the ghost's angle.
 [Full video (MP4)](media/buildingRotation-wol.mp4).
 
 - **How it works in stock:** the wheel command turns the ghost, the build command carries the ghost's forward direction
   to every machine, and the foundation is created with it. It is part of the game's own command, so it is
   the same on every machine and in a recording (static reading; multiplayer not played).
-- **Both directions:** a positive argument turns the ghost +22.5°, a negative one −22.5°, and 0 does nothing, so a full turn
-  is 16 steps. Stock's `uiWheelRotatePlacedUnit` is the same for the Asian wonders' special powers.
+- **Both directions:** a step up turns the ghost +22.5° and a step down −22.5°, so a full turn is 16 steps. Stock's
+  `uiWheelRotatePlacedUnit` is the same for the Asian wonders' special powers.
 - **A building that must not turn:** `<Flag>NotRotateable</Flag>`, a stock flag, on its proto: the ghost keeps its angle.
 - **What it does not do:** turn a building that already stands, or turn it to face its builder (#44).
-- **Plain wheel:** `map("mousez", "building", …)` is the form stock uses in its `specialpower` block. It would take the zoom
-  away while placing. Not tested.
-- **Tested in WoL (2026-11-06):** by console, so with no real wheel: `uiWheelRotatePlacedUnit(1)` three times took the ghost
-  from yaw −180° to −112.5°, the foundation had exactly that yaw, the finished building too, and a saved game loaded
-  with it. Arguments 1, 1, −1, −1, −1, 0 took the ghost from −180° to −157.5°, −135°, −157.5°, 180°, 157.5°, 157.5°. With
-  `NotRotateable` on the proto the ghost stayed at −180°. Not tested: the line above with a real wheel, a
-  rotated building's obstruction, multiplayer, recorded games.
+- **Wheel alone:** with the Shift line, the wheel alone zooms and does not turn. `map("mousez", "building", …)`, the form stock
+  uses in its `specialpower` block, turns with the wheel alone and takes the zoom away while placing; the zoom comes back
+  when placing ends, and that line does not fire with Shift held.
+- **Tested in WoL (2026-11-06):** with the real wheel and Shift, the ghost went from yaw −180° to −157.5°, −135°, −112.5° up and
+  back down to −135°, −157.5°. Placed at −90°, the foundation and the finished building, 2500 HP, had −90°. With no line in
+  `gamey.con`, Shift + wheel did not turn it. By console, a saved game loaded with the yaw, and argument 0 did nothing.
+  With `NotRotateable` on the proto the ghost stayed at −180°. Not tested: a rotated building's obstruction, multiplayer,
+  recorded games.
 
 ## 7. Multiplayer, saved games and replays
 

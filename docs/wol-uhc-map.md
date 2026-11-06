@@ -228,6 +228,7 @@ JTMaston's request: keep WoL's `uhc.dll`, `Startup\wol.cfg` and `data\uhc` as th
 | `transformSpan`: 6 `Pikeman`, `transformspan='20'` to `Rodelero` | `Pikeman` again 20 s later | still `Rodelero` 46 s later |
 | Skirmish: one European AI, `wolOtto`, 4 min | Runs. The AI's XS calls reach our hooks (`aiSetEconomyPop`, `kbGetPop`), it built a `Manor`, 24 units, score 78 | not run |
 | Rings: `resourceGatherAuras`, `unitResourceAuras log`, `buildingWorkRateAuras log`, an Explorer with gold and work rings, a Sawmill with `ring_wood`, 8 villagers | 5 applied, 0 failed, both ring hooks reached (0x9D0584, 0x9D06DC). Each ring in its colour. The miners lose the ring when sent to a tree at 34 s. Town Center `x3.000`. Hashes of `uhc.dll`, `wol.cfg` and the tactics unchanged | not run |
+| `linkedResource log`, Ethiopians, a `UhcMonastery` by a Mine, villagers on it (2026-11-06; `uhc.dll` `c070d138`, `engine-ext.cfg` with only this key, `multipleInstances background` and `perfStats`) | 3 applied, 0 failed, hooks 0x9BFE5A, 0x4C378A and 0x49A5E6 reached. Mine 1386.66, player 613.24 at 149 s | Mine 2000, the building's own stock falls, player 191.59 at 62 s |
 | Removing `dinput8.dll` and `engine-ext\` | Game reaches WoL's main menu, hashes unchanged, no `engine-ext` created | |
 
 `Error 0003`: none in `Age3Log.txt`, but that file is shared with other games and was rewritten by a later start, so the proof that the AI compiled is its XS calls and its base.

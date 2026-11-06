@@ -160,3 +160,4 @@ displayedRange-wol 0 12 1
 displayedRange-wol-control 0 12 1
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
+linkedResource-model-wol 4 84 7
