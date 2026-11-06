@@ -202,6 +202,9 @@ SITES = [
     # leading 0x4A5B02): cmp ebx,2 / je 4CEF7Bh (replaced, 9 bytes), then the continuation
     # mov [esi+20h],ebx / mov ebx,[esp+18h] (the unit action) / mov edi,[esp+0ECh] (the target)
     ("SpreadHitRoll", 0x499890, 0x17),
+    # test al,al / je 4998A7h: the cfg var ballisticPrecalcHits; and the store of the ground shot, then its jmp
+    ("SpreadPrecalcGate", 0x4997AE, 8),
+    ("SpreadGroundStore", 0x4C4DEC, 12),
     # spreadAnyAccuracy: the miss stub every miss reaches (from 0x499893 and from the failed lead
     # at 0x6A4BCA): lea eax,[esp+28h] / push eax / mov ecx,esi (replaced, 7 bytes) /
     # call 4CEF8Ch / jmp 499899h

@@ -1656,7 +1656,7 @@ Contract: [spreadAnyAccuracy](../porting-to-another-dll.md#spreadanyaccuracy).
 
 Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `IsA` `0x44D7FA` (105 B), `SpreadHitRoll` `0x499890` (23 B), `SpreadMissStub` `0x4CEF7B` (17 B), `SpreadRadius` `0x4CF00B` (44 B), `SpreadDraws` `0x4CF037` (64 B).
+Sites: `IsA` `0x44D7FA` (105 B), `SpreadPrecalcGate` `0x4997AE` (8 B), `SpreadHitRoll` `0x499890` (23 B), `SpreadGroundStore` `0x4C4DEC` (12 B), `SpreadMissStub` `0x4CEF7B` (17 B), `SpreadRadius` `0x4CF00B` (44 B), `SpreadDraws` `0x4CF037` (64 B).
 
 ### src/features/spread.cpp
 
@@ -1676,9 +1676,10 @@ Sites: `IsA` `0x44D7FA` (105 B), `SpreadHitRoll` `0x499890` (23 B), `SpreadMissS
 //   that goes through the precalculated roll, PerfectAccuracy and accuracy 1 included: the projectile
 //   lands at the offset point as a ground shot (the TargetGround mode, 3), which deals the attack's
 //   area damage where it lands. A stock miss (mode 2) deals no damage at all, area included.
-// InstantBallistics and TargetGround shots, shots with no target unit and every shot while the cfg
-// var ballisticPrecalcHits is off never reach that code (docs/how-it-works.md). The hooks are in
-// hooks/spread_hooks.asm; the tags come through the shared action tag hook (actiontags.h).
+// - a marked unit's TargetGround shot, which never rolls, lands at such an offset point too, and a marked
+//   unit goes through the roll even with the cfg var ballisticPrecalcHits off.
+// InstantBallistics shots and shots with no target unit never reach that code (docs/how-it-works.md). The
+// hooks are in hooks/spread_hooks.asm; the tags come through the shared action tag hook (actiontags.h).
 #include <windows.h>
 
 #include <cmath>
@@ -1774,6 +1775,7 @@ constexpr std::int32_t kGroundShot = 3;
 // The shot being offset, between the hit hook or UhcSpreadSelect and UhcSpreadDone.
 bool g_forced = false;  // a hit (the roll, or PerfectAccuracy without one); the shooter is marked
 bool g_marked = false;  // the shooter is marked
+bool g_ground = false;  // a TargetGround shot of a marked unit
 bool g_tagged = false;
 const char* g_shooter = nullptr;
 ActionKey g_shotKey{-1, -1};
@@ -1892,6 +1894,16 @@ float g_uhcSpreadRadius = -1.0f;
 void UhcSpreadHitHook();
 void UhcSpreadMissHook();
 void UhcSpreadRadiusHook();
+void UhcSpreadGroundHook();
+void UhcSpreadPrecalcHook();
+
+// The precalc hook and the ground hook.
+bool __stdcall UhcSpreadIsMarked(const char* shooter) { return IsMarked(shooter); }
+
+bool __stdcall UhcSpreadMarkedGround(const char* shooter) {
+  g_ground = IsMarked(shooter);
+  return g_ground;
+}
 
 // The hit hook, for a shot the roll did not make a miss: true if the shooting unit is marked, so
 // that the shot takes the miss stub too.
@@ -1943,6 +1955,7 @@ std::int32_t __stdcall UhcSpreadDone() {
                g_shooter == nullptr ? -1 : Field<std::int32_t>(g_shooter, 0x10), ProtoName(proto),
                ActionName(g_shotKey.name),
                !g_marked  ? L"a miss"
+               : g_ground ? L"marked unit, its shot lands at the offset point"
                : g_forced ? L"marked unit, a hit made a ground shot at the offset point"
                           : L"marked unit, a miss made a ground shot at the offset point",
                radius, static_cast<double>(g_uhcSpreadFactor), static_cast<double>(g_uhcSpreadMax),
@@ -1954,6 +1967,7 @@ std::int32_t __stdcall UhcSpreadDone() {
   const bool marked = g_marked;
   g_forced = false;
   g_marked = false;
+  g_ground = false;
   return marked ? kGroundShot : kMiss;
 }
 }
@@ -1981,14 +1995,17 @@ Outcome ApplySpreadAnyAccuracy(const Config& config) {
   // The hit hook jumps straight to the miss hook, and the miss hook relies on the radius hook: all
   // three are written, or none.
   if (!VerifyAll("spreadAnyAccuracy", {&sites::kSpreadHitRoll, &sites::kSpreadMissStub, &sites::kSpreadRadius,
-                                       &sites::kSpreadDraws, &sites::kIsA}) ||
+                                       &sites::kSpreadDraws, &sites::kIsA, &sites::kSpreadPrecalcGate,
+                                       &sites::kSpreadGroundStore}) ||
       !RequestAbstractUnitType(g_markerName.c_str(), &g_markerType) || !OnDatabaseLoad(&ResetForDataLoad) ||
       !AddActionTagHandler(&OnActionTag)) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(sites::kSpreadRadius.va, reinterpret_cast<const void*>(&UhcSpreadRadiusHook), 27) ||
       !WriteJmp(sites::kSpreadMissStub.va, reinterpret_cast<const void*>(&UhcSpreadMissHook), 7) ||
-      !WriteJmp(sites::kSpreadHitRoll.va, reinterpret_cast<const void*>(&UhcSpreadHitHook), 9)) {
+      !WriteJmp(sites::kSpreadHitRoll.va, reinterpret_cast<const void*>(&UhcSpreadHitHook), 9) ||
+      !WriteJmp(sites::kSpreadGroundStore.va, reinterpret_cast<const void*>(&UhcSpreadGroundHook), 7) ||
+      !WriteJmp(sites::kSpreadPrecalcGate.va, reinterpret_cast<const void*>(&UhcSpreadPrecalcHook), 8)) {
     return Outcome::kFailed;
   }
   Log(L"spreadAnyAccuracy: <MaxSpread> and <SpreadFactor> are read per action (stock 5.0 and 0.25) and every "
@@ -2016,6 +2033,8 @@ include common.inc
 UhcSpreadForceMiss PROTO STDCALL :DWORD, :DWORD
 UhcSpreadSelect PROTO STDCALL :DWORD, :DWORD
 UhcSpreadDone PROTO STDCALL            ; returns the hit result to store: 2 or 3
+UhcSpreadIsMarked PROTO STDCALL :DWORD
+UhcSpreadMarkedGround PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcSpreadFactor:DWORD       ; float: SpreadFactor of the shot being offset (stock 0.25)
 EXTERNDEF g_uhcSpreadMax:DWORD          ; float: MaxSpread of the shot being offset (stock 5.0)
@@ -2025,6 +2044,9 @@ EXTERNDEF g_uhcSpreadRadius:DWORD       ; float: the radius the offset used, for
 afterRoll           dd 00499899h    ; mov [esi+20h],ebx: the projectile's hit result
 missOffsetFn        dd 004CEF8Ch    ; FUN_004CEF8C, bool thiscall(projectile, Vector* point), ret 4
 radiusCheck         dd 004CF026h    ; fld [esp+0Ch] / fcomp [1e-6]: the stock "r > 0" test
+afterGround         dd 004C4DF3h    ; jmp 4998A7h, after the store of the ground shot
+precalcGo           dd 004997B6h    ; test edi,edi: the precalculated block's next test
+precalcSkip         dd 004998A7h    ; past the block
 
 .code
 
@@ -2079,6 +2101,52 @@ UhcSpreadMissHook PROC
     popad
     jmp afterRoll                       ; stock 0x4CEF87: jmp 499899h
 UhcSpreadMissHook ENDP
+
+; Replaces mov [esi+20h],3 (7 bytes) at 0x4C4DEC, where a TargetGround shot leaves its ground lead, in
+; the launch's frame (see the hit hook): [esp+28h] = the impact point. A marked shooter's point moves
+; as a miss's does, by FUN_004CEF8C with the action's values; the shot stays a ground shot. Everything
+; is saved around the call, so the continuation sees what it sees in stock.
+UhcSpreadGroundHook PROC
+    TRACE_ONCE "spreadAnyAccuracy ground shot (0x4C4DEC)"
+    mov dword ptr [esi+20h], 3          ; stolen
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    call UhcSpreadMarkedGround
+    test al, al
+    popad
+    je done
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    push dword ptr [esp+24h+18h]        ; the unit action
+    call UhcSpreadSelect
+    lea eax, dword ptr [esp+20h+28h]    ; the impact point
+    push eax
+    mov ecx, esi                        ; the projectile
+    call missOffsetFn
+    call UhcSpreadDone
+    popad
+done:
+    jmp afterGround
+UhcSpreadGroundHook ENDP
+
+; Replaces test al,al / je 4998A7h (8 bytes) at 0x4997AE, the test of the cfg var ballisticPrecalcHits,
+; with EBX = the unit action and the frame of the hit hook. With the var off, a marked shooter still
+; goes through the precalculated block, so its shots scatter. EAX, ECX and EDX are free: the block
+; writes them first.
+UhcSpreadPrecalcHook PROC
+    test al, al                         ; stolen
+    jne go
+    TRACE_ONCE "spreadAnyAccuracy precalc off (0x4997AE)"
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    call UhcSpreadIsMarked
+    test al, al
+    popad
+    jne go
+    jmp precalcSkip
+go:
+    jmp precalcGo
+UhcSpreadPrecalcHook ENDP
 
 ; Replaces fmul [0BA0AECh] (0.25) / fst [esp+0Ch] / fcomp [0BA0AF8h] (5.0) / fnstsw ax / test ah,41h /
 ; je 4E2CE3h (27 bytes) at 0x4CF00B in FUN_004CEF8C, with ST0 = d, the 2D distance from the

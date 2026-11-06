@@ -11,6 +11,8 @@ include common.inc
 UhcSpreadForceMiss PROTO STDCALL :DWORD, :DWORD
 UhcSpreadSelect PROTO STDCALL :DWORD, :DWORD
 UhcSpreadDone PROTO STDCALL            ; returns the hit result to store: 2 or 3
+UhcSpreadIsMarked PROTO STDCALL :DWORD
+UhcSpreadMarkedGround PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcSpreadFactor:DWORD       ; float: SpreadFactor of the shot being offset (stock 0.25)
 EXTERNDEF g_uhcSpreadMax:DWORD          ; float: MaxSpread of the shot being offset (stock 5.0)
@@ -20,6 +22,9 @@ EXTERNDEF g_uhcSpreadRadius:DWORD       ; float: the radius the offset used, for
 afterRoll           dd 00499899h    ; mov [esi+20h],ebx: the projectile's hit result
 missOffsetFn        dd 004CEF8Ch    ; FUN_004CEF8C, bool thiscall(projectile, Vector* point), ret 4
 radiusCheck         dd 004CF026h    ; fld [esp+0Ch] / fcomp [1e-6]: the stock "r > 0" test
+afterGround         dd 004C4DF3h    ; jmp 4998A7h, after the store of the ground shot
+precalcGo           dd 004997B6h    ; test edi,edi: the precalculated block's next test
+precalcSkip         dd 004998A7h    ; past the block
 
 .code
 
@@ -74,6 +79,52 @@ UhcSpreadMissHook PROC
     popad
     jmp afterRoll                       ; stock 0x4CEF87: jmp 499899h
 UhcSpreadMissHook ENDP
+
+; Replaces mov [esi+20h],3 (7 bytes) at 0x4C4DEC, where a TargetGround shot leaves its ground lead, in
+; the launch's frame (see the hit hook): [esp+28h] = the impact point. A marked shooter's point moves
+; as a miss's does, by FUN_004CEF8C with the action's values; the shot stays a ground shot. Everything
+; is saved around the call, so the continuation sees what it sees in stock.
+UhcSpreadGroundHook PROC
+    TRACE_ONCE "spreadAnyAccuracy ground shot (0x4C4DEC)"
+    mov dword ptr [esi+20h], 3          ; stolen
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    call UhcSpreadMarkedGround
+    test al, al
+    popad
+    je done
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    push dword ptr [esp+24h+18h]        ; the unit action
+    call UhcSpreadSelect
+    lea eax, dword ptr [esp+20h+28h]    ; the impact point
+    push eax
+    mov ecx, esi                        ; the projectile
+    call missOffsetFn
+    call UhcSpreadDone
+    popad
+done:
+    jmp afterGround
+UhcSpreadGroundHook ENDP
+
+; Replaces test al,al / je 4998A7h (8 bytes) at 0x4997AE, the test of the cfg var ballisticPrecalcHits,
+; with EBX = the unit action and the frame of the hit hook. With the var off, a marked shooter still
+; goes through the precalculated block, so its shots scatter. EAX, ECX and EDX are free: the block
+; writes them first.
+UhcSpreadPrecalcHook PROC
+    test al, al                         ; stolen
+    jne go
+    TRACE_ONCE "spreadAnyAccuracy precalc off (0x4997AE)"
+    pushad
+    push dword ptr [esp+20h+0E8h]       ; the shooting unit
+    call UhcSpreadIsMarked
+    test al, al
+    popad
+    jne go
+    jmp precalcSkip
+go:
+    jmp precalcGo
+UhcSpreadPrecalcHook ENDP
 
 ; Replaces fmul [0BA0AECh] (0.25) / fst [esp+0Ch] / fcomp [0BA0AF8h] (5.0) / fnstsw ax / test ah,41h /
 ; je 4E2CE3h (27 bytes) at 0x4CF00B in FUN_004CEF8C, with ST0 = d, the 2D distance from the

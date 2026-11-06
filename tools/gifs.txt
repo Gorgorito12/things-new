@@ -188,3 +188,5 @@ transformInventory-effect-wol 8 11 1
 transformInventory-effect-wol-control 8 11 1
 showGatherRate-group-wol 2 12 1
 showGatherRate-group-wol-control 2 12 1
+spreadAnyAccuracy-ground-wol 4 12 1
+spreadAnyAccuracy-ground-wol-control 4 12 1
