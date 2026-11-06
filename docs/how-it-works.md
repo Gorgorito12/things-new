@@ -2780,6 +2780,12 @@ bits are not in a saved game, so the same code sets flag 20h in `[effect+9]`: th
 pass after a load starts them from zero, as a new world clears them. Stock's table behind 0x453326 is left alone: it is shared by
 all players, and KB counts stay as the data says.
 
+### customHotkeyContexts: the tooltip letter
+
+FUN_008F8F5E writes a proto's key by looking its `tis("X")` up in a list of 37 names written in the code, once per proto (FUN_007EF89E, the
+cache `[db+5D28h]`). A jmp at 0x8F9696 adds the added contexts to that list after the stock names, and one at 0x8F90FC tries them when a
+building has no key in `BuildAccel`. **Why it is safe:** it is UI text, read on the UI thread, and the cache is reset with the keymap.
+
 ### linkedResource
 
 Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagged unit to an ID-ordered map. The tick, four

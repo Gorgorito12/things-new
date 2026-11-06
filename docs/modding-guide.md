@@ -904,6 +904,16 @@ exe does not know. The DLL registers it (`registered keymap context WOLBarracksG
 so `o` does nothing and no Klepht is queued.
 [Full video (MP4)](media/customHotkeyContexts-wol-control.mp4).
 
+![The letter in the tooltip in WoL](media/customHotkeyContexts-tooltip-wol.gif)
+
+*In WoL, with `customHotkeyContexts log` (test data: Klepht enabled for Ethiopians, the Greek barracks selected):* the tooltip reads
+`Klepht (O)`. [Full video (MP4)](media/customHotkeyContexts-tooltip-wol.mp4).
+
+![The letter in the tooltip in WoL, key off](media/customHotkeyContexts-tooltip-wol-control.gif)
+
+*In WoL, key off (the same data):* `Klepht`, with no letter. `Scytheman (P)` keeps its letter: a stock context has it.
+[Full video (MP4)](media/customHotkeyContexts-tooltip-wol-control.mp4).
+
 ```
 customHotkeyContexts [log]
 ```
@@ -964,13 +974,15 @@ customHotkeyContexts [log]
   - when the context table is too full: `customHotkeyContexts: N contexts are registered; keymap
     context X not registered, its entries are dropped (the last 32 of the 255 context IDs stay free
     for the game)`.
+- **The letter in the tooltip:** a key of an added context shows on its button, as a stock one does. A unit mapped in a stock context
+  and in an added one shows the stock letter. Only `tis("Proto")` counts, not `tis("Proto",5)`.
+- **Tested in WoL (2026-11-06, tooltip):** 41 protos gain a letter (556 to 597) and no stock letter changes; the same after a load and
+  beside WoL's DLL; an AI skirmish of 100 s with no XS error. Not tested: tech buttons, the building branch, multiplayer.
 - **Limits:**
   - at most 255 contexts in all; the DLL stops adding at ID 222 to leave the game room. About 70 can
     be added: the game registers about 151 before the keymap;
   - names the exe already knows (`SettlerAccel`, `CoveredWagonAccel`, …) keep the exe's meaning;
   - a context is on only for the last unit of the selection;
-  - the hotkey letter on train-button tooltips comes from the exe's fixed list of contexts, so keys of
-    an added context are not shown there (static reading).
 - **Simulation:** no. A hotkey issues the same command as clicking the button, so players may set
   the key differently. Not tested in multiplayer.
 - **Status:** confirmed in single player. In WoL (2026-11-03), three real presses of `o` queued three
