@@ -297,6 +297,7 @@ cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research and Maintain speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
+xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
 
 What each key needs from your mod, and how well it is tested: see the guide.

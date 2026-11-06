@@ -77,6 +77,7 @@ Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
+Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
@@ -211,6 +212,7 @@ inline constexpr Feature kFeatures[] = {
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
+    {"xsErrorLog", ApplyXsErrorLog},
     {"multipleInstances", ApplyMultipleInstances},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
@@ -229,7 +231,7 @@ inline constexpr const char* kHandledKeys[] = {
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
-    "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
+    "buildingworkrateauras", "xserrorlog", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 

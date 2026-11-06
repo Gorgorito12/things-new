@@ -875,6 +875,10 @@ SITES = [
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
     ("BoneNameLookup", 0x58E506, 10),
+    # xsErrorLog: sub esp,804h at the head of each XS reporter, and the formatter they call
+    ("XsReportHead", 0x43A3A4, 6),
+    ("XsMessageHead", 0xA5667F, 6),
+    ("XsFormat", 0x435D99, 6),
     # linkedResource: mov eax,[0xC66234], the head of the inventory add; the 9 bytes at the head of the inventory
     # recreate, up to mov eax,[esi+0B4h]; mov edi,[esp+10h] / mov edx,[esi+10h] in the AutoGather pay, before the add
     # 0x4C3798; the ResList set

@@ -39,6 +39,7 @@ PAGES = {
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
+        "xsErrorLog": ["src/features/xslog.cpp", "src/hooks/xslog_hooks.asm"],
     }),
     "population": ("Population", {
         "decimalPopulation": ["src/features/decimalpop.cpp", "src/hooks/decimalpop_hooks.asm",

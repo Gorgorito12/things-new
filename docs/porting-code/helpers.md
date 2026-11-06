@@ -1094,6 +1094,15 @@ inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPath
 inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
 inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
 
+inline constexpr std::uint8_t kXsReportHeadBytes[] = {0x81, 0xEC, 0x04, 0x08, 0x00, 0x00};
+inline constexpr Site kXsReportHead{"XsReportHead", 0x0043A3A4, kXsReportHeadBytes, sizeof(kXsReportHeadBytes)};
+
+inline constexpr std::uint8_t kXsMessageHeadBytes[] = {0x81, 0xEC, 0x04, 0x08, 0x00, 0x00};
+inline constexpr Site kXsMessageHead{"XsMessageHead", 0x00A5667F, kXsMessageHeadBytes, sizeof(kXsMessageHeadBytes)};
+
+inline constexpr std::uint8_t kXsFormatBytes[] = {0x51, 0x8B, 0x44, 0x24, 0x0C, 0x57};
+inline constexpr Site kXsFormat{"XsFormat", 0x00435D99, kXsFormatBytes, sizeof(kXsFormatBytes)};
+
 inline constexpr std::uint8_t kInventoryAddHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00};
 inline constexpr Site kInventoryAddHead{"InventoryAddHead", 0x0049A5E6, kInventoryAddHeadBytes, sizeof(kInventoryAddHeadBytes)};
 
@@ -2069,6 +2078,7 @@ Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
+Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
@@ -2203,6 +2213,7 @@ inline constexpr Feature kFeatures[] = {
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
+    {"xsErrorLog", ApplyXsErrorLog},
     {"multipleInstances", ApplyMultipleInstances},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
@@ -2221,7 +2232,7 @@ inline constexpr const char* kHandledKeys[] = {
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
-    "buildingworkrateauras", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
+    "buildingworkrateauras", "xserrorlog", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
