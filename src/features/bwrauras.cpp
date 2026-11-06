@@ -27,7 +27,6 @@
 // its Float twin, the panel's number, read the proto (0x6F49FC): they now read the rate the unit works at,
 // the building's own copy and the factor. The hooks are in hooks/bwraura_hooks.asm.
 //
-//
 // Heal and build read their rate through 0x487C45, which has 22 callers (gather too), so the callee is
 // left alone: only the calls that add the work go to UhcBwrRateCall, with the worker in [esi+10h]. The
 // calls that only ask whether the rate is above 0 stay stock.

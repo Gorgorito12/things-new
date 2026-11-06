@@ -1445,6 +1445,9 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
   1.20/s with weight 0.
 - **The fire pit** is now found through a memory of where it is in the player's list, without changing what the game finds.
   With 60 miners no gain could be measured: 0.36–0.39 ms against 0.39–0.46 ms, other games running.
+- **A resource dance, in data:** a `DanceBonus` of type `UnitModification` with `<modifytype>AutoGatherRate</modifytype>` multiplies the
+  trickle of the buildings it names, and needs no key. On `Building`, multiplier 0.2, 9 dancers: a Sawmill went from 1.75 to 4.9 wood/s.
+  `UnitResource` does nothing in a dance: only an aura reads it. There is no cost discount: no stat exists for it.
 
 #### wonderCivUnitType
 
@@ -3451,7 +3454,7 @@ removeConversionRestriction
 [Full video (MP4)](media/snareValues-wol.mp4). [Control, key off](media/snareValues-wol-control.mp4).
 
 ```
-snareValues [log]
+snareValues [strongest] [log]
 ```
 
 ```xml
@@ -3466,6 +3469,23 @@ snareValues [log]
 - **With other keys:** after `cantBeSlowed`, whose rules stay. `<AttachSnare>` is apart.
 - **Tested in WoL (2026-11-06):** stock 0.65 for 2.93 s; tags 0.3 and 6 s; a tech 0.5 and 12 s, also after a load; a duration of 0, none;
   bad tags logged. An AI skirmish of 100 s had 15 units and no XS error. Not tested: beside WoL's DLL, multiplayer.
+
+![The strongest snare in WoL](media/snareValues-strongest-wol.gif)
+
+*In WoL, with `snareValues strongest log` (Pikeman 0.8 for 40 s, Halberdier 0.3 for 5 s, a Settler running away):* the 0.3 counts, and
+the attackers catch it. It lost 1070 HP. [Full video (MP4)](media/snareValues-strongest-wol.mp4).
+
+![The oldest snare in WoL](media/snareValues-strongest-wol-control.gif)
+
+*In WoL, without `strongest` (the same scene):* the 0.8 came first, the 0.3 does nothing, and the Settler gets away after 449 HP.
+[Full video (MP4)](media/snareValues-strongest-wol-control.mp4).
+
+- **`strongest`:** of the snares on a unit, the slowest counts. In stock the oldest does, so a weak long snare hides a strong new
+  one. When the strongest ends, the next counts by itself. `<AttachSnare>` is one more snare here.
+- **Tested in WoL (2026-11-06, strongest):** 1.20 against 3.20; 3.20 when the 0.3 ended; a loaded game went on at 1.50 with a speed boost;
+  `<AttachSnare>` 0.5 over 0.8, 2.00 against 3.20, with `damageOverTime`, `snareOnlyHitUnit` and `cantBeSlowed` on; an AI skirmish of
+  100 s had 16 units and no XS error; 1686 fps against 1639 with 60 units fighting and other games open, in a scene with no swap.
+  Not tested: beside WoL's DLL, multiplayer.
 
 ### Gathering and farms
 

@@ -2760,6 +2760,10 @@ targets the action does not hold yet.
 A jmp at 0x4DD207, after what `cantBeSlowed` writes, pushes the action's values and calls the creator 0x4DD22D. EBP is the attacker's unit
 action; `[ebp+4]` the player's copy of the tactics action. **Why it is safe:** the values are data and tech effects, the same on every machine.
 
+`strongest`: the unit's recompute 0x49F1BA has the one call of the velocity sum, 0x49F26A, with the list 0xCF0718 it has just built, oldest
+first. A `WriteCall` there swaps the slowest snare into the first snare's place and runs the sum. **Why it is safe:** nothing is kept, the
+list is rebuilt for each recompute, and both swapped entries are velocity modifiers, so the other stats read the same list.
+
 ### danceBonusCivs: the fire pit
 
 The head of getFirePit 0x4819EF keeps, per player, the place of the first unit of the type, keyed by the list's count, its last ID and a
