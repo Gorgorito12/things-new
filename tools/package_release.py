@@ -261,7 +261,7 @@ civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCen
 firstTC [UnitType] [log]      civFirstTC, and startingTC when a type is named, in one line
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
-noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [log]   marked units
+noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [refuse] [log]   marked units
                               (Daimyos) do not train within M metres of an enemy's first
                               Town Center or of an enemy building of a near type
 overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=Texture] [stat[=Label]] [log]   HP bars and texts

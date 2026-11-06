@@ -267,6 +267,8 @@ SITES = [
     # (cmp [esi+74h],0 / jg), stores [edi+6Ch] in [esi+64h], or with the trainer flag 9Eh
     # (YPForceTrainAtBaseTrainPoints, call 44D063h) the base proto's (call 45316Eh) [eax+6Ch]
     ("TrainPointsProto", 0x9EAC3D, 0x29),
+    # noTrainNearEnemyTC refuse: sub esp,1Ch / push ebx / push ebp / push esi, the head of the enqueue
+    ("TrainEnqueueHead", 0x9EAC35, 6),
     ("TrainPointsSet", 0x9EB19F, 0x43),
     # liveBuildingWorkRate, TrainPoints: the same for Maintain. Its fraction function (only caller
     # 0x6AB264, inside maintainWaitForPop's MaintainCycleDone, which the head hook leaves stock):

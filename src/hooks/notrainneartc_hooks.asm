@@ -13,9 +13,11 @@ EXTERNDEF g_uhcNoTrainType:SDWORD      ; marker unittype ID, set on each databas
 EXTERNDEF g_uhcBwrTrainGetter:DWORD
 
 UhcNoTrainBlocked PROTO STDCALL trainer:DWORD
+UhcNoTrainRefused PROTO STDCALL trainer:DWORD
 
 .data
 trainRateNext   dd 009EA418h    ; mov ebx,[0C66234h] / mov eax,[ebx+13Ch] / fmul [eax+310h]
+enqueueNext     dd 009EAC3Bh    ; mov esi,ecx
 
 .code
 
@@ -43,5 +45,27 @@ stock:
     call g_uhcBwrTrainGetter        ; stolen 0x9EA413 (call 9BFE33h), or the aura wrapper
     jmp trainRateNext
 UhcNoTrainHook ENDP
+
+; Replaces 0x9EAC35..0x9EAC3A (sub esp,1Ch / push ebx / push ebp / push esi), the head of the enqueue
+; FUN_009EAC35, bool thiscall(action, proto, count, a), ret 0Ch, called by the train command and by
+; 0x8D60EA. The cost is paid further in (0x9EAF86), so a refusal here charges nothing, and all its
+; callers take a false. ECX = the Train action; its trainer [ecx+10h] was set before this call.
+UhcNoTrainEnqueueHook PROC
+    TRACE_ONCE "noTrainNearEnemyTC refuse (0x9EAC35)"
+    push ecx
+    push dword ptr [ecx+10h]        ; the trainer
+    call UhcNoTrainRefused          ; bool: marked, and a blocker is alive within range
+    pop ecx
+    test al, al
+    jne refused
+    sub esp, 1Ch                    ; stolen
+    push ebx                        ; stolen
+    push ebp                        ; stolen
+    push esi                        ; stolen
+    jmp enqueueNext
+refused:
+    xor eax, eax
+    ret 0Ch
+UhcNoTrainEnqueueHook ENDP
 
 END
