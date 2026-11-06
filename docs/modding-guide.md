@@ -1281,6 +1281,14 @@ trained by 65 s of game time. [Full video (MP4)](media/danceBonusCivs-wol.mp4).
 civs, so the TC trains at its normal rate: 2 villagers by 65 s.
 [Full video (MP4)](media/danceBonusCivs-wol-control.mp4).
 
+![danceBonusCivs, Gathering and XP in WoL](media/danceBonusCivs-all-wol.gif)
+
+*In WoL (Ethiopians, 9 dancers at a `FirePit`, test data):* the Gathering dance and then the XP dance, with the miners' rate and the XP
+in the corner. [Full video (MP4)](media/danceBonusCivs-all-wol.mp4).
+
+- **Tested in WoL (2026-11-06):** Gathering ×1.47–1.50 against none with the key off; XPTrickle 7.0–7.3 XP/s against about 2.0. WoL's
+  tactics do not use `GatherRateIncrease`: add it to a dance to use it. Training: 4 villagers against 2 at 65 s.
+
 ```
 danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lines add up
 ```
@@ -3532,19 +3540,19 @@ autoGatherScaleByContained
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
 *In WoL, with `unitResourceAuras log` (Ethiopians, WoL's own `WOLSawmill` and its `AreaGatherTree`, with
-[`ring_wood.xml`](#aura-rings) in its `<modelattachment>`):* the 5 trees the Sawmill takes from wear the amber ring, and the others
-in range do not. It takes 0.05 wood per second from each, 0.25 wood/s on top of its AutoGather; the log shows a take about every
+[`ring_wood.xml`](#aura-rings) in its `<modelattachment>`):* the 4 trees in the Sawmill's reach, on a slope, wear the amber ring on the ground, and the 3
+beyond it do not. It takes 0.05 wood per second from each, 0.20 wood/s on top of its AutoGather; the log shows a take about every
 3 s and the trees going down. [Full video (MP4)](media/unitResourceAuras-wol.mp4).
 
 ![unitResourceAuras in WoL, trees used up](media/unitResourceAuras-depleted-wol.gif)
 
-*In WoL, the same aura with a test `<modifyamount>15`:* each ringed tree gives 15 wood per second. It goes when its 300 wood are
-out, and its ring with it, and the next tree takes the ring: 7 trees in all, until none is left in range.
+*In WoL, the same aura with a test `<modifyamount>15` and `<maxrange>10`:* each ringed tree gives 15 wood per second. It goes when its 300 wood are
+out, and its ring with it, and the next tree takes the ring: 10 trees in all.
 [Full video (MP4)](media/unitResourceAuras-depleted-wol.mp4).
 
 ![unitResourceAuras in WoL, key off](media/unitResourceAuras-wol-control.gif)
 
-*In WoL, key off (the first scene, the same data):* only the AutoGather works: 136 wood at 78 s of game time, the trees keep their
+*In WoL, key off (the first scene, the same data):* only the AutoGather works: 441 wood at 81 s of game time, the trees keep their
 wood and no tree has a ring. [Full video (MP4)](media/unitResourceAuras-wol-control.mp4).
 
 ```
@@ -3554,7 +3562,7 @@ unitResourceAuras [log]
 ![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
 
 *In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a drumstick
-over the bush and the two carcasses, and no mark on the live Deer, the live Sheep or the Plantation.
+over the bush and the two carcasses, and no mark on the live Deer or the Plantation.
 [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
 
 ![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
@@ -3744,14 +3752,14 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 ![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
 
 *In WoL, with `showGatherRate` and `resourceGatherAuras` (Ethiopians; a test aura `MineGatherRate` ×2 with
-[`ring_gold.xml`](#aura-rings) on the Explorer, 40 m):* eight settlers gather a mine, trees, berries and a Mill, all in range. Only
-the two at the mine wear the ring. The selected miner's rate is 1.20 coin/s, and at 68 s the player has 157 gold; wood (63) and
-food (148) go as in the control. [Full video (MP4)](media/resourceGatherAuras-wol.mp4).
+[`ring_gold.xml`](#aura-rings) on the Explorer, 40 m, the Mine on a small hill):* eight settlers gather a mine, trees, berries and a
+Mill, all in range. Only the two at the mine wear the ring, which lies on the ground. The selected miner's rate is 1.20 coin/s,
+and at 68 s the player has 136 gold; wood and food go as in the control. [Full video (MP4)](media/resourceGatherAuras-wol.mp4).
 
 ![resourceGatherAuras in WoL, key off](media/resourceGatherAuras-wol-control.gif)
 
-*In WoL, key off (the same scene):* 0.60 coin/s, and 78 gold, 62 wood and 146 food at 67 s. The exe does not know the name, so the
-aura does nothing, and it still hangs its ring on all eight: the ring alone proves nothing.
+*In WoL, key off (the same scene):* 0.60 coin/s, and 67 gold at 67 s. The exe does not know the name, so the aura does nothing, and
+it still hangs its ring on settlers that gather something else: the ring alone proves nothing.
 [Full video (MP4)](media/resourceGatherAuras-wol-control.mp4).
 
 ```
@@ -4304,6 +4312,11 @@ used)`). [Full video (MP4)](media/maintainWaitForPop-wol.mp4).
 two deaths at 70 s the next settler needs a whole new cycle and appears about 23 s later.
 [Full video (MP4)](media/maintainWaitForPop-wol-control.mp4).
 
+![maintainWaitForPop on a Factory in WoL](media/maintainWaitForPop-factory-wol.gif)
+
+*In WoL, with `maintainWaitForPop Factory log` (a Factory on its Cannon tactic, 7 of 10 population):* the finished Cannon waits, and
+comes out as soon as population is freed. [Full video (MP4)](media/maintainWaitForPop-factory-wol.mp4).
+
 ```
 maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 ```
@@ -4351,7 +4364,8 @@ maintainWaitForPop [<UnitType>] [log]     default AbstractMaintainWaitForPop
 - **Simulation:** yes. It may also add a unit type, which changes the unit type count.
 - **Status:** confirmed in single player, in WoL (2026-11-04) with an Ottoman Town Center (`Age0Ottoman`
   gives it `MaintainSettlersOttoman`): it held its finished settler and released it right after two
-  settlers died; without the key, the next settler came about 23 s later. Factory cannons, batches and
+  settlers died; without the key, the next settler came about 23 s later. A real Factory (2026-11-06): a Cannon held at 7 of 10 came at 154.8 s, right
+after room at 150 s; key off, at 245.9 s, a whole cycle later. Batches and
   `SingleUse` spawns were not tested.
 
 #### trainSingleAbstractType
