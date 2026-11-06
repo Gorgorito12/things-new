@@ -1166,6 +1166,9 @@ inline constexpr Site kPillageHitCall{"PillageHitCall", 0x0049B72B, kPillageHitC
 inline constexpr std::uint8_t kTrainQueueAddCallBytes[] = {0xE8, 0x75, 0x60, 0xAC, 0xFF};
 inline constexpr Site kTrainQueueAddCall{"TrainQueueAddCall", 0x009CE81A, kTrainQueueAddCallBytes, sizeof(kTrainQueueAddCallBytes)};
 
+inline constexpr std::uint8_t kShipQueueAddCallBytes[] = {0xE8, 0xC7, 0xC4, 0xFF, 0xFF};
+inline constexpr Site kShipQueueAddCall{"ShipQueueAddCall", 0x0085AD38, kShipQueueAddCallBytes, sizeof(kShipQueueAddCallBytes)};
+
 inline constexpr std::uint8_t kResearchPayCallBytes[] = {0xE8, 0x84, 0x2C, 0xEF, 0xFF};
 inline constexpr Site kResearchPayCall{"ResearchPayCall", 0x009E67E1, kResearchPayCallBytes, sizeof(kResearchPayCallBytes)};
 

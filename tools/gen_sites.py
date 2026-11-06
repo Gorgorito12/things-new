@@ -915,6 +915,8 @@ SITES = [
     ("PillageHitCall", 0x49B72B, 22),
     # doNotQueue: the queue routine's call of the action add 0x494894
     ("TrainQueueAddCall", 0x9CE81A, 5),
+    # and the send of a card's call of the add to the shipment queue 0x857204
+    ("ShipQueueAddCall", 0x85AD38, 5),
     # nextResearchFree: the payment 0x8D946A and the copy of the cost 0x480A73 into the action, in the
     # starts of the Research (EBP = the action) and CommandResearch (ESI = the action) actions
     ("ResearchPayCall", 0x9E67E1, 5),

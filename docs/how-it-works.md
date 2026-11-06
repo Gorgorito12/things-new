@@ -2998,6 +2998,11 @@ Shipments have no such list, as far as a static reading goes: the send (0x8577D2
 `[hc+4D8h]`, with the count at `+4DCh`, refuses a card while it is not empty (0x858301, 0x85A7C7; 0x855F8F for the AI), but
 it is the `Blockade` effect's: 0x85C09C adds the IDs, called at 0x7FBA2D for the other players.
 
+The card queue is `[hc+288h]`, and only entry 0 advances. A `WriteCall` at 0x85AD38, the send's call of the add 0x857204, moves a
+flagged entry after the stock add. Entries move as bytes, as each owns its cost list and nothing points into one. Progress lives
+in the entry, so a card that waits keeps it, and a saved game needs nothing more. The wrapper returns the new place, which the
+send gives to the shipment's models.
+
 ### nextResearchFree
 
 A research is paid when its action starts: 0x8D946A at 0x9E67E1 (the Research action, EBP) and at 0x9D54CF (CommandResearch,

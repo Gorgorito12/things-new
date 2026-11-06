@@ -96,7 +96,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 37 | `NextResearchIsFree` | Flag on a building proto, set by subtype `SetNextResearchFree` | Absent; a research is paid at one site when it is queued | M |
 | 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S**; both built as types (`cantBeSlowed`, 2026-11-05) |
 | 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L ; the flag's four tags built in `detonationDeath` (2026-11-05) |
-| 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` exists only as a tech flag, and no code reading it was found | S–M |
+| 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` is a tech flag, read by the Research action; legacy has a shipment queue `[hc+288h]`, whose flag `YPRecalcHCTrainQueuePointsWhenShipped` (bit 39h) is read at 0x858508. DE's shipments not checked | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
 | 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons as chevrons of our own (2026-11-06); DE's are HUD images in its selection panel |
 | 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI |
@@ -317,7 +317,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   19 protos have it: 17 builders or wagons, and the two Yoruba riders (cavalry with no build
   action). Legacy has a tech flag of the same name, which WoL uses on 16 techs, read by the Research action's
   slot 58h, 0x9E5EAD, only under the world byte `[world+6910h]`.
-- [O] Nothing in DE orders shipments.
+- [I] Nothing found in DE's guide orders shipments; DE's code was not checked.
 
 ### #41 Reversible transformation on a timer
 
@@ -400,7 +400,7 @@ engine-symbols.md, "DE parity sites". All of this is static reading; nothing was
     transform back when `ActiveTime` ends.
   - Unknown: the end of `ActiveTime` in the base power class (0x8E1445) was only skimmed.
 - **#40 `DoNotQueue`.**
-  - [O] It is only a tech flag (status bit 26). No code reading it was found.
+  - [O] It is a tech flag (status bit 26), read by the Research action's slot 58h 0x9E5EAD. Legacy has a shipment queue, and `doNotQueue` reorders it.
   - [O] The proto flag parser does not know the name.
   - [I] A proto version needs a marker and a hook in the train queue.
 - **#33 crates.** [O] The order is hardcoded twice, both keyed on the civ:

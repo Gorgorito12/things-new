@@ -288,7 +288,7 @@ detonationDeath [log]         <DetonationProtoAction> fires an action when a uni
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
 sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
-doNotQueue [log]              <DoNotQueue/> trains a proto ahead of what waits in the building
+doNotQueue [log]              <DoNotQueue/> trains a proto, and a card with that tech flag ships, ahead of the queue
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill

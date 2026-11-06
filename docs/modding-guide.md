@@ -4863,6 +4863,16 @@ progress. [Full video (MP4)](media/doNotQueue-wol.mp4).
 *In WoL, key off (the same data):* the Pikemen wait at the end of the queue. The game skips the tag it does not know.
 [Full video (MP4)](media/doNotQueue-wol-control.mp4).
 
+![doNotQueue on a shipment in WoL](media/doNotQueue-shipment-wol.gif)
+
+*In WoL, with `doNotQueue log` (Dutch, test data: `<Flag>DoNotQueue</Flag>` on `HCShoreLeaveDutch`):* the Settlers' card is on its
+way, Shore Leave goes in front of it, and the Settlers' card waits at 12 of 40 and goes on after it.
+[Full video (MP4)](media/doNotQueue-shipment-wol.mp4).
+
+![doNotQueue on a shipment in WoL, key off](media/doNotQueue-shipment-wol-control.gif)
+
+*In WoL, key off (the same data):* Shore Leave waits behind the Settlers. [Full video (MP4)](media/doNotQueue-shipment-wol-control.mp4).
+
 ```
 doNotQueue [log]
 ```
@@ -4896,6 +4906,13 @@ doNotQueue [log]
   - A skirmish with a European AI (`wolOtto`) with `Settler` and `Musketeer` tagged: it compiled and had 19 units at 120 s, but
     no tagged unit found anything to pass, so the move itself did not run for the AI.
   - Not tested: a building with a Maintain, multiplayer.
+
+- **Shipments:** the stock tech flag on a card's tech puts the card before the first card without the flag, and the card on its
+  way keeps its progress. Only the first card of the queue advances. WoL's 16 techs with the flag are not cards, so nothing
+  changes for them.
+- **Tested in WoL (2026-11-06, shipments):** with the flag, cards arrived at 67 s and 95 s; key off, at 58 s and 101 s. A saved game
+  kept the order and the progress; a cancel refunded the ship; a German AI sent a card with no XS error. Not tested: two flagged
+  cards in a row, an AI's flagged card, the home city's models, beside WoL's DLL, multiplayer.
 
 #### nextResearchFree
 
