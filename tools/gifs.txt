@@ -7,6 +7,7 @@ basePop-wol 2 8 2
 basePop-wol-control 2 8 2
 betterfreedynamicunit-wol 2 22 2
 betterfreedynamicunit-wol-control 2 22 2
+buildingRotation-wol 6 12 1
 broadsideMuzzleLimit-wol 18 24 2
 broadsideMuzzleLimit-wol-control 18 24 2
 buildingWorkRateAuras-wol 2 36 2

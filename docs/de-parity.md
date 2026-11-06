@@ -84,7 +84,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 23 | Decimal population | Nothing; pop counts are integers | — | L, no DE spec |
 | 24 | Negative trickles, debt | `ResourceTrickleRate` with negative amounts, clamped by `Minimum/MaximumResourceTrickleRate`; no debt rule | Has those subtypes; default min 0, max 10; a stockpile never goes below 0 | negative trickle: **data only** (lower the minimum); debt: S–M |
 | 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M |
-| 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Polish Torp) | Absent; WoL's `sawmill.tactics` already carries DE's aura | M |
+| 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Swedish Torp) | Absent; WoL's `sawmill.tactics` already carries DE's aura | M |
 | 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L; all five names read as elements (2026-11-05) ; `EnableSharedBuildLimit` built (2026-11-05), the two subtypes with a name not |
 | 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M; the three names built in `sharedBuildLimit` (2026-11-05) |
 | 31 | Per-unit batch size | `TrainBatchSize`; flags `DontTrainInBatches`, `ForceBatchTrain` | Absent (global `PlayerSpecificTrainLimitPerAction` only); the batch comes from one call | flags S, size M; the three names read as elements (2026-11-05) ; the subtype `TrainBatchSize` built too (2026-11-05) |
@@ -100,7 +100,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
 | 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons not |
 | 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI |
-| 44 | Building rotated / annexed by its builder | Nothing for rotation; in-place building upgrades (`ForceMutate`, `RevertUpgrade`) | — | needs a design |
+| 44 | Building rotated / annexed by its builder | Nothing by the builder; in-place building upgrades (`ForceMutate`, `RevertUpgrade`). The player can turn a building while placing it (see below) | Placement rotation: stock, only the key binding is missing | by the builder: needs a design |
 
 **Where to start** [I]:
 - **S:** #38 (the snare code is mapped), #35 (the payment already has a team mode), #30, and the flag parts of #29 and #31.
@@ -343,6 +343,12 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 
 - [O] DE has no such tag. The nearest DE mechanisms are socket buildings (`SocketBuildProtoUnit`) and
   in-place upgrades through commands (`Transform` + `ForceMutate`, `RevertUpgrade`; the folwark).
+- [O] **Rotation by the player, at placement** (found 2026-11-05, after this page said "nothing"): DE's
+  `Startup\gamey.con` has `map("shift-mousez", "building", "uiWheelRotatePlacedUnit")`, and the exe has the field name
+  `mBuildingForwardOrientation` beside `mBuildingPosition`. Nothing turns a standing building. This rests on the keymap
+  and strings: the code was not read with REA, whose analysis of the DE exe does not finish.
+- [O] **Legacy has all of it** (2026-11-06): the same console command, the forward direction in the build command and
+  `NotRotateable`. Only the key binding is missing: modding guide, "Rotating a building while placing it".
 
 ## What legacy does today
 

@@ -2880,7 +2880,7 @@ on each):* the Halberdier walks away and the Skirmisher falls behind. [Full vide
 
 ![CannotSnare in WoL](media/cantBeSlowed-cannotsnare-wol.gif)
 
-*In WoL, with `cantBeSlowed` and `CannotSnare` on the Uhlan (Germans; two Settlers of 4000 HP walking the same way, two
+*In WoL, with `cantBeSlowed` and `CannotSnare` on the Uhlan (Ethiopians; two Settlers of 4000 HP walking the same way, two
 Uhlans on the upper one and two Hussars on the lower one):* the Settler under the Uhlans is not snared and pulls ahead.
 [Full video (MP4)](media/cantBeSlowed-cannotsnare-wol.mp4).
 
@@ -5619,6 +5619,33 @@ as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the file
   and hilly ground were not tested. How long a ring stays after its aura was not timed: the 2 s above is the particle's life.
 
 More about the tools: [tools/README.md](../tools/README.md).
+
+### Rotating a building while placing it
+
+No key and no DLL: the stock exe already does all of it. Only the key binding is missing. Add this line to the `Building
+placement Mode` block of `Startup\gamey.con`, and Shift + mouse wheel turns the building's ghost by 22.5° a step:
+
+```
+map("shift-mousez", "building", "uiWheelRotatePlacedUnit")
+```
+
+![A building rotated while placing it, in WoL](media/buildingRotation-wol.gif)
+
+*In WoL (Ethiopians, an Apartment, six steps by console):* the foundation stays at the ghost's angle.
+[Full video (MP4)](media/buildingRotation-wol.mp4).
+
+- **How it works in stock:** the wheel command turns the ghost, the build command carries the ghost's forward direction
+  to every machine, and the foundation is created with it. It is part of the game's own command, so it is
+  the same on every machine and in a recording (static reading; multiplayer not played).
+- **One direction only:** the command turns only for a wheel step up. The step down does nothing, so a full turn is 16
+  steps. Stock's `uiWheelRotatePlacedUnit` is the same for the Asian wonders' special powers.
+- **A building that must not turn:** `<Flag>NotRotateable</Flag>`, a stock flag, on its proto: the ghost keeps its angle.
+- **What it does not do:** turn a building that already stands, or turn it to face its builder (#44).
+- **Plain wheel:** `map("mousez", "building", …)` also works and takes the zoom away while placing.
+- **Tested in WoL (2026-11-06):** by console, so with no real wheel: `uiWheelRotatePlacedUnit(1)` three times took the ghost
+  from yaw −180° to −112.5°, the foundation had exactly that yaw, the finished building too, and a saved game loaded
+  with it. With `NotRotateable` on the proto the ghost stayed at −180°. Not tested: the line above with a real wheel, a
+  rotated building's obstruction, multiplayer, recorded games.
 
 ## 7. Multiplayer, saved games and replays
 
