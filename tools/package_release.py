@@ -175,6 +175,7 @@ art\\effects\\uhc_rings holds coloured rings that show which units an aura is wo
 are data: copy that folder to the game's art\\effects and name one in an aura, with
 <modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
+aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
