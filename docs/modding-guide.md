@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
 | Friday 2026-11-06 13:11 | [`firstTC`](#firsttc) | Added.  |  |
 | Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added.  |  |
 | Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added.  |  |
@@ -1177,6 +1178,8 @@ kbUnitSyscalls
   window (every gatherer was already working its target).
 
 #### auraStacking
+
+**Added:** Friday 2026-11-06 13:44 · **Filmed in WoL:** Friday 2026-11-06 13:44
 
 ![auraStacking in WoL](media/auraStacking-wol.gif)
 
