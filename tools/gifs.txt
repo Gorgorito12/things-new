@@ -170,3 +170,5 @@ maintainWaitForPop-factory-wol 2 40 3
 danceBonusCivs-all-wol 2 72 6
 damageOverTime-model-wol 2 20 2
 damageOverTime-model-wol-control 2 20 2
+overhealHitpointBars-maxonly-wol 3 14 1
+overhealHitpointBars-maxonly-wol-control 3 14 1
