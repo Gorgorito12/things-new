@@ -2762,6 +2762,16 @@ The head of getFirePit 0x4819EF keeps, per player, the place of the first unit o
 counter of transforms. The stock lookup 0x48195C then starts at that place. **Why it is safe:** the memory is a fact about the list, not of
 a step, so a UI call between updates cannot change a result. The dancer count is hooked at 0x9C1604, after its stale workers.
 
+### unitTypeTechs
+
+The proto clone 0x67E011 builds its own bit buffer `[proto+30h]`, so a write to a player's copy reaches that player alone, and the is-a
+test 0x44D7FA reads it at once. `AddTechTypeSubtype` reads `unittype` into `[effect+10h]`, the field the action variant uses. A proto's
+bits are not in a saved game, so the same code sets flag 20h in `[effect+9]`: the pass after a load 0x94DDEA runs only flagged effects.
+
+**Why it is safe.** Counts decide the bit, so an end of effect never clears what the base proto has or another tech still adds. The
+pass after a load starts them from zero, as a new world clears them. Stock's table behind 0x453326 is left alone: it is shared by
+all players, and KB counts stay as the data says.
+
 ### linkedResource
 
 Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagged unit to an ID-ordered map. The tick, four

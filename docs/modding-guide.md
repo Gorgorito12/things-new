@@ -5330,6 +5330,7 @@ What happens when a tech activates or a unit changes proto.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
+| [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`techPrereqRecheck`](#techprereqrecheck) | Re-checks techs whose prerequisites count units (`<TypeCount>`) when units are created or die, not only at the player's next house, age-up or tech change. | **new** | Nothing: WoL has 12 `<TypeCount>` prerequisites in 9 techs. | confirmed (single player) |
 | [`transformUpdatesLOS`](#transformupdateslos) | A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes the line of sight of its new proto. | **new** | Nothing. | confirmed (single player) |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
@@ -5686,6 +5687,43 @@ transformSpan [log]
   - Every case above, each in its own scene.
   - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
+
+#### unitTypeTechs
+
+![unitTypeTechs in WoL](media/addUnitType-wol.gif)
+
+*In WoL, with `unitTypeTechs log` and `dodgeChance AbstractDodge 50 notech log` (5 `Pikeman` a side, a tech on Player 1 only):* only
+Player 1's Pikemen roll: 50 rolls and 31 dodged, none on Player 2's. [Full video (MP4)](media/addUnitType-wol.mp4).
+
+![unitTypeTechs in WoL, key off](media/addUnitType-wol-control.gif)
+
+*In WoL, key off (the same data):* the game drops the effect, and nobody rolls. [Full video (MP4)](media/addUnitType-wol-control.mp4).
+
+```
+unitTypeTechs [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.00' subtype ='AddUnitType' unittype ='AbstractDodge' relativity ='Absolute'>
+    <Target type ='ProtoUnit'>Pikeman</Target></Effect>
+```
+
+- **In WoL today:** a marker type sits on a proto for every player, so a card that unlocks a feature needs a second proto.
+- **Effect:** the player's copy of the target proto gains or loses an abstract type. Everything that tests the unit sees it at once:
+  `dodgeAnyUnit`, `dodgeChance`, `healNonIdle`, `overhealSources`, `spreadAnyAccuracy`, the damage bonuses and a `<Target>` by that type.
+- **What does not follow:** stock's table of protos by type, built from the data and shared by all players. KB counts and queries by
+  type, and so an AI's `kbUnitCount`, stay as the data says (read in the code, not tested in game).
+- **`unittype`:** an abstract type that exists when the techs are read. A proto's name or an unknown one is logged and the effect dropped.
+- **Base proto:** a type the base has comes back when a `RemoveUnitType` ends, and is not lost when an `AddUnitType` ends. Several
+  techs count: a `RemoveUnitType` wins while it runs.
+- **First techs:** an effect in a civ's first tech reaches every player of that civ.
+- **Saved games:** nothing to do: the effects run again after a load.
+- **Changes the simulation:** every player needs the same setting and data.
+- **Log:** `unitTypeTechs: applied`, and with `log` `unitTypeTechs: proto Pikeman (player's copy), AddUnitType type 3884: bit on`.
+- **Tested in WoL (2026-11-06):** the numbers above; 0 rolls key off; the bits held through a load in a new process; ending the
+  effects, through `Age0Egyptian`, which stock applies and removes at a scenario's start; a `<Target>` by abstract type reached
+  the copy; beside WoL's DLL, 54 rolls on one player; an AI skirmish of 100 s with no XS error. Not tested: `kbUnitCount` in game,
+  `healNonIdle`, `overhealSources`, `spreadAnyAccuracy` (only `dodgeChance` was driven), multiplayer, recorded games.
 
 ### Interface
 
