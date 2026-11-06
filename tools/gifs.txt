@@ -172,3 +172,5 @@ damageOverTime-model-wol 2 20 2
 damageOverTime-model-wol-control 2 20 2
 overhealHitpointBars-maxonly-wol 3 14 1
 overhealHitpointBars-maxonly-wol-control 3 14 1
+lifespanAfterConstruction-countdown-wol 2 30 2
+lifespanAfterConstruction-countdown-wol-control 2 30 2
