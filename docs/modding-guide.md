@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 08:01 | [`linkedResource`](#linkedresource) | Added. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
 | Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
 | Thursday 2026-11-05 14:06 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Thursday 2026-11-05 14:06 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
@@ -3608,6 +3609,8 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
   which now shares the name hook, still gives its x3. An AI that builds Sawmills and multiplayer were not tested.
 
 #### linkedResource
+
+**Added:** Friday 2026-11-06 08:01 · **Filmed in WoL:** Friday 2026-11-06 08:01
 
 ![linkedResource in WoL](media/linkedResource-wol.gif)
 
