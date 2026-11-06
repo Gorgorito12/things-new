@@ -39,6 +39,7 @@ set(UHC_SOURCES
   src/features/broadside.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
+  src/features/unittypetechs.cpp
   src/features/detonation.cpp
   src/features/hctargets.cpp
   src/features/cratepriority.cpp

@@ -283,6 +283,7 @@ dataLint [log] [file]         while the data loads, says what it asks for and th
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
+unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
 veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners

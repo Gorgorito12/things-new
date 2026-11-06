@@ -28,9 +28,12 @@ constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
 constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
 constexpr std::size_t kEffectFlags = 9;                // bit 40h: allactions="1", read before the subtype
+constexpr std::uint8_t kEffectAfterLoad = 0x20;         // in those flags
 constexpr std::size_t kProtoActions = 0x44;            // the action set
 constexpr std::size_t kActionList = 0x1C;              // in the set: the array of actions, and its count at +20h
 constexpr std::size_t kActionId = 4;                   // in an action
+constexpr std::size_t kTypeNames = 0x190;              // in the database: the unit type name table
+constexpr std::size_t kFirstAbstract = 0x19B0;         // in the database: the first abstract type's ID
 
 using NameLookupFn = std::int32_t(__thiscall*)(void* db, const char* name);
 const auto kNameLookup = reinterpret_cast<NameLookupFn>(&UhcTechSubtypeLookupStock);
@@ -40,11 +43,18 @@ using ActionIdByNameFn = std::int32_t(__thiscall*)(void* db, const void* attribu
 const auto kActionIdByName = reinterpret_cast<ActionIdByNameFn>(0x005E0C64);
 using ActionByIdFn = char*(__thiscall*)(const void* set, std::int32_t id);
 const auto kActionById = reinterpret_cast<ActionByIdFn>(0x0048D22E);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+using NameBucketFn = std::int32_t(__thiscall*)(const void* table, const char* name);
+const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
+using NameFindFn = bool(__thiscall*)(const void* table, const char* name, std::int32_t bucket, std::int32_t* id);
+const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
 
 struct Subtype {
   const char* name;
   uhc::TechSubtypeHandler handler;              // on a proto
   uhc::TechActionSubtypeHandler actionHandler;  // or on its actions
+  uhc::TechTypeSubtypeHandler typeHandler;      // or with a unit type
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
@@ -69,6 +79,31 @@ bool ReadAction(void* db, const char* name, char* effect, const char* node) {
     uhc::Log(L"tech subtypes: a %hs effect names an unknown action; effect dropped", name);
     return false;
   }
+  return true;
+}
+
+// The attribute unittype, into the field the action's ID uses.
+bool ReadType(void* db, const char* name, char* effect, const char* node) {
+  const void* attribute = nullptr;
+  if (!kXmlAttribute(node, "unittype", &attribute) || attribute == nullptr) {
+    uhc::Log(L"tech subtypes: a %hs effect names no unittype; effect dropped", name);
+    return false;
+  }
+  const char* text = kXmlText(attribute);
+  const char* table = static_cast<const char*>(db) + kTypeNames;
+  std::int32_t id = -1;
+  if (text == nullptr || !kNameFind(table, text, kNameBucket(table, text), &id) || id < 0) {
+    uhc::Log(L"tech subtypes: a %hs effect names the unknown unit type %hs; effect dropped", name,
+             text == nullptr ? "" : text);
+    return false;
+  }
+  if (id < *reinterpret_cast<const std::int32_t*>(static_cast<const char*>(db) + kFirstAbstract)) {
+    uhc::Log(L"tech subtypes: a %hs effect names %hs, a proto and not an abstract type; effect dropped", name, text);
+    return false;
+  }
+  *reinterpret_cast<std::int32_t*>(effect + kEffectAction) = id;
+  // A proto's types are not in a saved game: the pass after a load, 0x94DDEA, runs the effects with this flag again.
+  effect[kEffectFlags] = static_cast<char>(effect[kEffectFlags] | kEffectAfterLoad);
   return true;
 }
 
@@ -140,6 +175,9 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
     if (g_subtypes[i].actionHandler != nullptr && !ReadAction(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
+    if (g_subtypes[i].typeHandler != nullptr && !ReadType(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
+      return -1;
+    }
     return kFirstId + static_cast<std::int32_t>(i);
   }
   if (g_unknown != nullptr) {
@@ -157,6 +195,10 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
     return false;
   }
   const Subtype& subtype = g_subtypes[index];
+  if (subtype.typeHandler != nullptr) {
+    subtype.typeHandler(proto, base, actionId, unapply != 0);
+    return true;
+  }
   if (subtype.actionHandler != nullptr) {
     return RunOnActions(subtype, proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0, actionId,
                         allActions != 0);
@@ -167,10 +209,14 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
 
 namespace uhc {
 
-bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({name, handler, nullptr}); }
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({name, handler, nullptr, nullptr}); }
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
-  return Add({name, nullptr, handler});
+  return Add({name, nullptr, handler, nullptr});
+}
+
+bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler) {
+  return Add({name, nullptr, nullptr, handler});
 }
 
 bool OnUnknownTechSubtype(UnknownTechSubtype callback) {
