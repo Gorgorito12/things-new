@@ -4512,8 +4512,7 @@ buildingWorkRateAuras [log]
   `CommandResearch`, `Maintain`, or `through g_uhcBwrTrainGetter` for the Train call when
   `noTrainNearEnemyTC` owns it.
 - **Limits:**
-  - train, research, `Maintain`, build, heal and repair speed: not gathering, which has its own auras. Each rate comes from its own
-    rate and are not covered;
+  - train, research, `Maintain`, build, heal and repair speed. Gathering has its own auras;
   - the panel still shows the proto's `BuildingWorkRate`, and the aura's tooltip has no line
     for this stat;
   - with `log`, a unit is logged once per unit ID and factor in a session, so a unit of a later
