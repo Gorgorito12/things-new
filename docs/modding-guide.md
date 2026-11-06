@@ -30,11 +30,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
+| Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
+| Friday 2026-11-06 11:33 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Friday 2026-11-06 08:01 | [`linkedResource`](#linkedresource) | Added. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
 | Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
-| Thursday 2026-11-05 14:06 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
-| Thursday 2026-11-05 14:06 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
-| Thursday 2026-11-05 14:06 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -3535,7 +3535,7 @@ autoGatherScaleByContained
 
 #### unitResourceAuras
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Thursday 2026-11-05 14:06
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
@@ -3747,7 +3747,7 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 
 #### resourceGatherAuras
 
-**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 14:06
+**Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
 ![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
 
@@ -4201,7 +4201,7 @@ liveBuildingWorkRate [log]
 
 #### buildingWorkRateAuras
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Thursday 2026-11-05 14:06
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
 ![buildingWorkRateAuras in WoL](media/buildingWorkRateAuras-wol.gif)
 
