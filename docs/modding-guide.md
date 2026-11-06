@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added.  |  |
+| Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added.  |  |
 | Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
 | Friday 2026-11-06 11:33 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
@@ -108,8 +110,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. Shows WoL's 52 `AI4\*.personality` files in game setup. | The personality files. |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | Nothing. |
-| [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages, with file and line, to the log. | **new** | Nothing. | confirmed |
-| [`dataLint`](#datalint) | Says while the data loads what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. |
 | Wednesday 2026-10-28 10:56 | [`ignoreRegistryPath`](#ignoreregistrypath) | Added. Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | Nothing. |
 | Wednesday 2026-10-28 10:56 | [`deckCardCount`](#deckcardcount) | Added. Raises the 25-card deck cap. | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). |
@@ -388,6 +388,8 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
 
 #### xsErrorLog
 
+**Added:** Friday 2026-11-06 12:56
+
 ```
 xsErrorLog [lines]
 ```
@@ -403,6 +405,8 @@ xsErrorLog [lines]
   unknown rule, a division by zero and a recursion of 400 print nothing, and an unbounded recursion ended the game.
 
 #### dataLint
+
+**Added:** Friday 2026-11-06 12:52
 
 ```
 dataLint [log] [file]
