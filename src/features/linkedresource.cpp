@@ -349,7 +349,7 @@ std::int32_t __stdcall UhcLinkedInventory(char* inventory, std::int32_t resource
     return 0;
   }
   char* mine = SourceOf(world, *link);
-  if (mine == nullptr) {
+  if (mine == nullptr || resource != link->resource) {
     return 0;
   }
   *result = kInventoryAdd(InventoryOf(mine), link->resource, amount) ? 1 : 0;
@@ -358,8 +358,9 @@ std::int32_t __stdcall UhcLinkedInventory(char* inventory, std::int32_t resource
   return 1;
 }
 
-// From the AutoGather update, before the add 0x4C3798. *amount is what it would pay: an action with the tag pays
-// what its source holds, and the source loses it.
+// From the AutoGather update, before the add 0x4C3798. *amount is what it would pay, with the player's handicap in it:
+// an action with the tag pays from what its source holds. As in the gather tick, the source loses the amount before the
+// handicap and the player gets it after.
 void __stdcall UhcLinkedAutoGather(const char* action, std::int32_t resource, float* amount) {
   if (g_uhcLinkedOn == 0 || !(*amount > 0.0f)) {
     return;
@@ -376,7 +377,10 @@ void __stdcall UhcLinkedAutoGather(const char* action, std::int32_t resource, fl
   char* mine = link == nullptr ? nullptr : SourceOf(world, *link);
   char* inventory = InventoryOf(mine != nullptr ? mine : unit);
   const float have = inventory == nullptr ? 0.0f : kListGet(inventory + 4, resource);
-  const float take = have < *amount ? have : *amount;
+  const char* player = Field<const char*>(unit, 0x44);
+  const float handicap = player == nullptr ? 1.0f : Field<float>(player, 0x37C);
+  const float wanted = handicap > 0.0f ? *amount / handicap : *amount;
+  const float take = have < wanted ? have : wanted;
   if (take > 0.0f) {
     kInventoryAdd(inventory, resource, -take);
     if (mine != nullptr) {
@@ -384,7 +388,7 @@ void __stdcall UhcLinkedAutoGather(const char* action, std::int32_t resource, fl
       kCheckState(mine);
     }
   }
-  *amount = take;
+  *amount = handicap > 0.0f ? take * handicap : take;
 }
 }
 

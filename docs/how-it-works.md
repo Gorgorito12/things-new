@@ -2718,8 +2718,9 @@ times a second, looks for a mine for the ones with none (FUN_004A1C55 around the
 `+B8h`) and copies the mine's entry into the building's inventory with 0x58EF83. The head of 0x49A5E6, the add every take goes
 through (0x4ED124 in the gather tick), sends a negative add on a linked inventory to the mine's and runs 0x482152 on the
 mine, whichever of the eight callers it comes from. A positive add stays on the building and the next copy overwrites it.
-In the AutoGather update, 0x4C378A hands the amount to the C++ code, which takes it from the source and writes back what
-was there; the add at 0x4C3798 stays, because `resourceDebt` reads its return address. Two paths of that update are not
+In the AutoGather update, 0x4C378A hands the amount to the C++ code. That amount has the player's handicap `[player+37Ch]` in it, so
+the code takes it divided by the handicap from the source, as the gather tick takes before it multiplies, and writes back what
+that pays; the add at 0x4C3798 stays, because `resourceDebt` reads its return address. Two paths of that update are not
 hooked: a `SingleUse` action pays the unit's whole inventory at 0x6A7E85, and `AddResourcesToInventory` adds to it at
 0x4C0F7B.
 

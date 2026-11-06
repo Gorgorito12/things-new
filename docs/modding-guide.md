@@ -3685,8 +3685,8 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
     `cResourceGold` and `aiPlanAddUnitType`, as WoL's scripts do for the Tupi Wigham. With `aiTaskUnitWork` alone, only the trickle paid;
   - `aiPlanGetState` gives −1 for any plan that is gone, and a finished plan is gone too: −1 is not a failure.
 - **Handicap:** every pay is multiplied by the player's handicap. A villager takes x from the mine and pays x × handicap, as in
-  stock. An AutoGather pays its rate × handicap, and the key takes that same amount from the source, so with a handicap of 2 the
-  trickle empties a mine twice as fast as its rate says.
+  stock, and `<GatherLinkedResource>` does the same: the source loses the rate and the player gets the rate × handicap. A mine lasts the
+  same at any handicap. How DE does this was not checked: its exe does not finish a REA analysis.
 - **Not covered:** DE's `AreaHeal`: the stock `Heal` action on a building healed nobody around it, idle or not, so a heal
   needs an aura. `GatherableByAllies` and Influence.
 - **Do not combine:** the stock tags `<SingleUse>` and `<AddResourcesToInventory>` on the building's AutoGather. The first pays
@@ -3711,10 +3711,10 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
   100 s and no XS error. Villagers were ordered by console (`uiWorkAtPointer` with the camera on the target).
   **Japanese skirmish:** placed and built by three villagers with the monastery's model, linked at 9.0 m, lost the 200-gold mine,
   and linked to the Mine at 11.0 m. The human's handicap there was 2.0, from `gameplayer1handicap` 100 in the profile (1.0 with 0):
-  the trickle paid 0.99/s, and on a stock Mine with the key off villagers took 1.8/s and paid 3.6/s. **German AI**, handicap 0.65
-  (`aiWoLMain.xs`, Moderate): a plain build plan built it in 60 s and it linked at 6.0 m. The trickle alone took and paid
-  0.327/s. With a gather plan, 3 settlers and the trickle, the Mine lost 2.11/s and the AI gained 1.48/s, which is 1.8 × 0.65 +
-  0.325; no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
+  on a stock Mine with the key off villagers took 1.8/s and paid 3.6/s. With the Dutch at that handicap, the trickle took 0.506/s and
+  paid 1.012/s, and with 3 villagers on the building 2.319/s and 4.638/s. In a scenario, handicap 1, 0.499/s both ways. **German
+  AI**, handicap 0.65 (`aiWoLMain.xs`, Moderate): a plain build plan built it in 60 s and it linked at 6.0 m. With a gather plan, 3
+  settlers and the trickle, the Mine lost 2.28/s and the AI gained 1.48/s; no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
   1386.66 and the player at 613.24, a sum of 2000; key off, the Mine stayed at 2000.
   Not tested: `createSimpleBuildPlan`, an AI that chooses it with no rule of yours, allies gathering, multiplayer.
 
