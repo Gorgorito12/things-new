@@ -2106,8 +2106,8 @@ during the game and its byte `+1A95h` was 0.
 **Not covered:** a Nomad start was not driven (TAD's skirmish setup has no Nomad option); a
 `TownCenter` from `<startingunit>`; the AI scripts, which expect a Town Center (a tagged AI got
 its Market and settlers, then stayed idle), and the engine's AI auto-base FUN_004CF222; the age-up
-picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B), the `Maintain` spawn
-gate (0x492FD6) and the water shipment point `[hc+190h]`, which all look for `TownCenter` itself.
+picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B) and the `Maintain` spawn
+gate (0x492FD6), which all look for `TownCenter` itself.
 
 ### transformSpan
 

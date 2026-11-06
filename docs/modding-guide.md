@@ -1575,8 +1575,7 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
   - the engine's automatic AI main base;
   - the age-up picker (`uiPoliticianUI`);
   - the start camera (it looks for `TownCenter`, then `CoveredWagon`, `Explorer`, …);
-  - the `trPlayerToggleAllowTCSpawning` gate on `Maintain`;
-  - the water shipment point.
+  - the `trPlayerToggleAllowTCSpawning` gate on `Maintain`.
 
   The [`startingTC`](#startingtc) section lists the rest.
 - **With other keys:** [`startingTC`](#startingtc) can be on too: the two share the hook that sets
@@ -2258,8 +2257,9 @@ multiarmor
 
   Up to 8 armors per proto. An effect on a damage type the proto has no armor for starts from 0 (so
   `BasePercent` changes nothing there).
-- **What stays as it is:** the unit panel shows the last armor only, and saved games do not keep the
-  other armors' tech changes (a loaded game has their data values).
+- **What stays as it is:** the unit panel shows the last armor only.
+- **Saved games:** the other armors' tech changes are not saved, but a load applies the effects again: tested on 2026-11-06, a
+  `Pikeman` hit `HonorGuard` for 19 with an `Armor` effect on `Hand`, and for 19 again after a load in a new process.
 - **Log:** `multiarmor: protos keep one armor per damage type; ...`; `multiarmor: <Proto> has N
   armors` for the first proto with several; `multiarmor: an Armor effect changed damage type T of
   <Proto> (now V; stock type S kept)` the first time an effect goes to another armor;
@@ -5915,6 +5915,8 @@ the code. Saved games were tested only where a section says so.
   `protoy.xml` when a recorded game plays back, because the map is generated again.
 - **`damageOverTime`** keeps its poisons in the DLL, not in the game state: a saved game loads without
   the poisons that were running.
+- **`overhealDecay`** keeps its delays in the DLL: a loaded game forgets them, and a unit is noted again at
+  its next gain above the reference.
 - **`buildingWorkRateAuras`:** its modifiers are saved with the game, but a game loaded without the
   key ignores them.
 - **`decimalPopulation`** stores every population K times larger, and saved games keep it so: load them

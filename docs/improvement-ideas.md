@@ -9,6 +9,31 @@ public export allowlist.
 Status words: **data** = no DLL change; **small / medium / large** = DLL work; **RE** = needs
 reverse engineering first; **verify** = an in-game check before deciding.
 
+## Checked on 2026-11-06
+
+The notes below date from 2026-11-02. A review of the code and the exe (static, not played) changed these:
+
+- **Wrong:** the water shipment point looks for `HomeCityWaterSpawnFlag`, never for a Town Center. `damageOverTime` wraps
+  TakeDamage, not death. `AbilityButtonRecharge` was misnamed: 0x45EE37 reads the cost, now site `AbilityButtonCost`.
+- **Already done:** `cantBeSlowed` covers `AttachSnare`; the Maori age up; `techPrereqRecheck` has its KB null guard and
+  rechecks once per update; `hcShipmentPointFallback` has the keyword `FirstTC`.
+- **Smaller than it looks:** of WoL's actions that never reach `spreadAnyAccuracy`, most are unread tags. Only 7 referenced
+  actions have values of their own: 5 `InstantBallistics` and 2 `TargetGround`. A trainer held with a queue cannot move in
+  stock either. `abilitySlots 8` already shows every WoL ability. Whether a button lacks a recharge is unproven: stock
+  computes a ratio at 0x6952D7.
+- **Not to do unless WoL asks,** with the reason:
+  - `NumberProjectiles`: JTMaston does not need it.
+  - The `Poison` flag: stock's event does nothing (0xB1BE43), and no data reaches the bit.
+  - The engine AI's base, the start camera and a Nomad start: JTMaston said only the Pa needs FirstTC, and nothing starts a Nomad
+    game in a normal setup.
+  - `trPlayerToggleAllowTCSpawning`: nothing in WoL's data uses it.
+  - `InstantBallistics` spread: waits for JTMaston (#2).
+  - `techPrereqRecheck` by events, `Volatile` hysteresis and team counts: polling already answers in the same update, and
+    none of WoL's 9 `<TypeCount>` techs is `Volatile`.
+  - Hotkey contexts for mixed selections: that is stock's rule.
+  - `abilitySlots` by buttons and the wonder panel's 8: no WoL case.
+  - Transforming at expiry and hold conditions in `lifespanAfterConstruction`: WoL's `*Maturing` already end in a unit.
+
 ## Cross-cutting
 
 These come up in several sections below. Building them once makes the later items cheaper.
@@ -242,7 +267,6 @@ The guide lists what still looks for the `TownCenter` proto; close that list:
 - **Engine AI main base** (0x4CF222); the XS scripts are WoL's part (a tagged AI got its Market
   and settlers, then stayed idle). *small*
 - **`trPlayerToggleAllowTCSpawning`** gate on `Maintain`. *small*
-- **Water shipment point** (`hcShipmentPointFallback` does not cover it). *small*
 - `CoveredWagon` build limit, Town Center repair cost. *minor*
 - **Better replacement rule:** when the first town center dies, pick among the live marked
   buildings (oldest or nearest) at once instead of waiting for the next one added; option for a

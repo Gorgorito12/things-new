@@ -15,7 +15,7 @@ Contents:
 
 Contract: [abilitySlots](../porting-to-another-dll.md#abilityslots).
 
-Sites: `AbilityPage11Branch` `0x4C5AEB` (16 B), `AbilitySlotCopies` `0x695BB6` (76 B), `AbilityNthCall` `0x696C0B` (101 B), `AbilityButtonRecharge` `0x696C70` (11 B).
+Sites: `AbilityPage11Branch` `0x4C5AEB` (16 B), `AbilitySlotCopies` `0x695BB6` (76 B), `AbilityNthCall` `0x696C0B` (101 B), `AbilityButtonCost` `0x696C70` (11 B).
 
 ### src/features/abilityslots.cpp
 
@@ -89,7 +89,7 @@ extern "C" {
 void UhcAbilityButtonHook();
 
 // Called by the hook when GetNth returned true for n >= 6: the unit gets a button that stock
-// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid or a recharging one).
+// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid; a recharging one was not checked).
 void __stdcall UhcAbilitySlotsLogButton(const char* unit, std::int32_t n, std::int32_t record, std::int32_t power,
                                         std::int32_t enabled) {
   ForgetOtherGames();
@@ -126,7 +126,7 @@ Outcome ApplyAbilitySlots(const Config& config) {
     }
   }
   if (!VerifyAll("abilitySlots", {&sites::kAbilitySlotCopies, &sites::kAbilityPage11Branch, &sites::kAbilityNthCall,
-                                  &sites::kAbilityButtonRecharge})) {
+                                  &sites::kAbilityButtonCost})) {
     return Outcome::kFailed;
   }
   // mov edi,5 at 0x695BD2, the do-while's count: the imm32 starts one byte in. N-1 >= 5, so the
@@ -134,7 +134,7 @@ Outcome ApplyAbilitySlots(const Config& config) {
   if (!WriteDword(sites::kAbilitySlotCopies.va + 0x1D, static_cast<std::uint32_t>(*slots - 1))) {
     return Outcome::kFailed;
   }
-  if (log && !WriteJmp(sites::kAbilityButtonRecharge.va, reinterpret_cast<const void*>(&UhcAbilityButtonHook), 5)) {
+  if (log && !WriteJmp(sites::kAbilityButtonCost.va, reinterpret_cast<const void*>(&UhcAbilityButtonHook), 5)) {
     return Outcome::kFailed;
   }
   Log(L"abilitySlots: the command panel asks for %d abilities per unit (stock %d)%ls", *slots, kStockSlots,
@@ -160,8 +160,8 @@ include common.inc
 UhcAbilitySlotsLogButton PROTO STDCALL unit:DWORD, n:DWORD, recordIndex:DWORD, power:DWORD, enabled:DWORD
 
 .data
-rechargeLeft    dd 0045EE37h    ; float thiscall(obj): GetNth's recharge out value, returned in ST0
-rechargeNext    dd 00696C75h    ; fcomp dword ptr [0B84BE4h] (compares that result with 0.0)
+costTotal       dd 0045EE37h    ; float thiscall(list): total of the ResList GetNth filled, the ability's cost, in ST0
+costNext        dd 00696C75h    ; fcomp dword ptr [0B84BE4h] (compares that result with 0.0)
 
 .code
 
@@ -187,8 +187,8 @@ UhcAbilityButtonHook PROC
     call UhcAbilitySlotsLogButton
     popad
 stock:
-    call rechargeLeft               ; stolen 0x696C70, ECX unchanged
-    jmp rechargeNext
+    call costTotal                  ; stolen 0x696C70, ECX unchanged
+    jmp costNext
 UhcAbilityButtonHook ENDP
 
 END

@@ -386,7 +386,7 @@ SITES = [
     # test al,al / lea ecx,[esp+58h] / jne 696C70h; the log hook reads n and GetNth's out slots
     ("AbilityNthCall", 0x696C0B, 0x65),
     # abilitySlots log: call 45EE37h on GetNth's "true" path, and the fcomp it continues at
-    ("AbilityButtonRecharge", 0x696C70, 11),
+    ("AbilityButtonCost", 0x696C70, 11),
     # wonderPanelSkipAuras (cold chunk of FUN_004586B1, wonder power panel refresh): the eight
     # argument pushes, mov ecx,[esp+5Ch] (the ability manager) and push 0 (n) of the panel's
     # ability request; the hook re-pushes these arguments in this order

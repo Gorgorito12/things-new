@@ -19,7 +19,7 @@
 //   hooks on the Armor (5Ch) case of applyData (0x8FAE52) and unapplyData (0x8FC144) apply it;
 // - a copied proto (0x67E011, the per-player clone) gets a copy of the table, and a destroyed one
 //   (0x58633D) loses it.
-// The table is not saved in saved games: a loaded game has each proto's data values again.
+// The table is not saved in saved games, but a load applies the effects again, so it comes back.
 #include <windows.h>
 
 #include <cstdint>

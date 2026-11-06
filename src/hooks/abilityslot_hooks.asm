@@ -10,8 +10,8 @@ include common.inc
 UhcAbilitySlotsLogButton PROTO STDCALL unit:DWORD, n:DWORD, recordIndex:DWORD, power:DWORD, enabled:DWORD
 
 .data
-rechargeLeft    dd 0045EE37h    ; float thiscall(obj): GetNth's recharge out value, returned in ST0
-rechargeNext    dd 00696C75h    ; fcomp dword ptr [0B84BE4h] (compares that result with 0.0)
+costTotal       dd 0045EE37h    ; float thiscall(list): total of the ResList GetNth filled, the ability's cost, in ST0
+costNext        dd 00696C75h    ; fcomp dword ptr [0B84BE4h] (compares that result with 0.0)
 
 .code
 
@@ -37,8 +37,8 @@ UhcAbilityButtonHook PROC
     call UhcAbilitySlotsLogButton
     popad
 stock:
-    call rechargeLeft               ; stolen 0x696C70, ECX unchanged
-    jmp rechargeNext
+    call costTotal                  ; stolen 0x696C70, ECX unchanged
+    jmp costNext
 UhcAbilityButtonHook ENDP
 
 END
