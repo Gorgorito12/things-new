@@ -53,32 +53,39 @@ ENABLE = ("\r\n\t\t\t<Effect type ='Data' amount ='1.00' subtype ='Enable' relat
           "\t\t\t\t<Target type ='ProtoUnit'>UhcMonastery</Target></Effect>")
 AI_RULE = """
 
-// uhc test: one monastery by the mine nearest to the Town Center. The stock scripts know nothing of this building.
-// A build plan for it dies at once, so a settler is tasked directly once the plan is gone.
+// uhc test: one monastery by the mine nearest to the Town Center, through a plain build plan, and a gather plan for it.
+// The scripts know nothing of this building: these two plans are all it takes. The spot is on the far side of
+// the mine, as a mine can sit so close to the Town Center that nothing fits between them.
 rule uhcMonasteryBuild
 active
 minInterval 5
 {
    int proto = kbGetProtoUnitID("UhcMonastery");
    static int plan = -1;
-   static int settler = -1;
-   if (kbUnitCount(cMyID, proto, cUnitStateAlive) > 0)
+   int building = getUnit(proto, cMyID, cUnitStateAlive);
+   if (building >= 0)
    {
-      aiChat(1, "uhc: built at " + xsGetTime());
+      // As the scripts do for a Tupi Wigham: a gather plan filtered on the building, as stock gatherers never pick it.
+      int gather = aiPlanCreate("Monastery Gather", cPlanGather);
+      aiPlanSetBaseID(gather, kbBaseGetMainID(cMyID));
+      aiPlanSetVariableInt(gather, cGatherPlanResourceUnitTypeFilter, 0, proto);
+      aiPlanSetVariableInt(gather, cGatherPlanResourceType, 0, cResourceGold);
+      aiPlanAddUnitType(gather, gEconUnit, 3, 3, 3);
+      aiPlanSetDesiredPriority(gather, 90);
+      aiPlanSetActive(gather);
+      aiChat(1, "uhc: built " + building + " at " + xsGetTime() + ", gather plan " + gather);
       xsDisableSelf();
       return;
    }
-   int foundation = getUnit(proto, cMyID, cUnitStateBuilding);
-   if (foundation >= 0)
+   if (plan >= 0)
    {
-      aiTaskUnitWork(settler, foundation);
-      aiChat(1, "uhc: foundation " + foundation + " settler " + settler);
-      return;
-   }
-   if ((plan >= 0) && (aiPlanGetState(plan) >= 0))
-   {
-      aiChat(1, "uhc: plan " + plan + " state " + aiPlanGetState(plan));
-      return;
+      if (aiPlanGetState(plan) >= 0)
+      {
+         aiChat(1, "uhc: plan " + plan + " state " + aiPlanGetState(plan));
+         return;
+      }
+      if (kbUnitCount(cMyID, proto, cUnitStateBuilding) > 0)
+         return;
    }
    int tc = getUnit(cUnitTypeTownCenter, cMyID);
    if (tc < 0)
@@ -101,22 +108,10 @@ minInterval 5
       return;
    int mine = kbUnitQueryGetResult(query, 0);
    vector position = kbUnitGetPosition(mine);
-   position = position + xsVectorNormalize(base - position) * 9.0;
-   if (plan < 0)
-   {
-      plan = createLocationBuildPlan(proto, 1, 100, true, -1, position, 2);
-      aiPlanSetVariableFloat(plan, cBuildPlanCenterPositionDistance, 0, 6.0);
-      aiChat(1, "uhc: plan " + plan + " by mine " + mine);
-      return;
-   }
-   int available = 0;
-   if (kbProtoUnitAvailable(proto) == true)
-      available = 1;
-   settler = getUnit(gEconUnit, cMyID);
-   int tasked = 0;
-   if (aiTaskUnitBuild(settler, proto, position) == true)
-      tasked = 1;
-   aiChat(1, "uhc: plan gone, available " + available + ", settler " + settler + " tasked " + tasked);
+   position = position + xsVectorNormalize(position - base) * 9.0;
+   plan = createLocationBuildPlan(proto, 1, 100, true, -1, position, 2);
+   aiPlanSetVariableFloat(plan, cBuildPlanCenterPositionDistance, 0, 6.0);
+   aiChat(1, "uhc: plan " + plan + " by mine " + mine + ", " + xsVectorLength(kbUnitGetPosition(mine) - base) + " m from the TC");
 }
 """.replace("\n", "\r\n")
 

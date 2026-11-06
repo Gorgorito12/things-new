@@ -3676,9 +3676,17 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 - **Placing:** anywhere: there is no socket or snap, and it looks for a mine once a second while it has none. As a foundation
   it takes nothing and links when finished. A builder needs it in its `<Train>` list and the civ needs an `Enable` effect
   on it in a tech, or the game says it is "not obtainable by your civilization".
-- **The AI:** WoL's AI scripts do not know the building, so an AI builds it only with a rule of your own. With a test rule, the
-  German AI's build plan died within 5 s for a reason not found, and `aiTaskUnitBuild` built it. Its settlers did not work
-  it in the two windows measured, so it paid by the trickle alone.
+- **The AI:** WoL's AI scripts do not know the building, so an AI builds and works it only with a rule of your own
+  (`AI_RULE` in `tools/monastery_testdata.py`):
+  - to build: `createLocationBuildPlan(proto, 1, 100, true, -1, site, 2)`, then `cBuildPlanCenterPositionDistance` 6. The site
+    needs room: `orchard.xml` wants 8 m from any building, and a site between the mine and the Town Center failed. The side
+    of the mine away from the Town Center worked;
+  - to work it: a `cPlanGather` plan with `cGatherPlanResourceUnitTypeFilter` = the proto, `cGatherPlanResourceType` =
+    `cResourceGold` and `aiPlanAddUnitType`, as WoL's scripts do for the Tupi Wigham. With `aiTaskUnitWork` alone, only the trickle paid;
+  - `aiPlanGetState` gives −1 for any plan that is gone, and a finished plan is gone too: −1 is not a failure.
+- **Handicap:** every pay is multiplied by the player's handicap. A villager takes x from the mine and pays x × handicap, as in
+  stock. An AutoGather pays its rate × handicap, and the key takes that same amount from the source, so with a handicap of 2 the
+  trickle empties a mine twice as fast as its rate says.
 - **Not covered:** DE's `AreaHeal`: the stock `Heal` action on a building healed nobody around it, idle or not, so a heal
   needs an aura. `GatherableByAllies` and Influence.
 - **Do not combine:** the stock tags `<SingleUse>` and `<AddResourcesToInventory>` on the building's AutoGather. The first pays
@@ -3702,13 +3710,13 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
   player summing 2000 from its first second. A skirmish with the key on, no tagged building: the AI had 14 units at
   100 s and no XS error. Villagers were ordered by console (`uiWorkAtPointer` with the camera on the target).
   **Japanese skirmish:** placed and built by three villagers with the monastery's model, linked at 9.0 m, lost the 200-gold mine,
-  and linked to the Mine at 11.0 m, where the trickle took 1.035/s and paid 1.035/s. In that skirmish the game pays villagers
-  twice what they take, key or not: on a stock Mine with the key off, 1.8/s taken and 3.6/s paid. **German AI:** built by the
-  test rule 21 m from its Town Center, linked at 6.0 m, the Mine lost 26.61 and the AI gained 26.61 in 81 s; 27 units at
-  5:48 and no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
+  and linked to the Mine at 11.0 m. The human's handicap there was 2.0, from `gameplayer1handicap` 100 in the profile (1.0 with 0):
+  the trickle paid 0.99/s, and on a stock Mine with the key off villagers took 1.8/s and paid 3.6/s. **German AI**, handicap 0.65
+  (`aiWoLMain.xs`, Moderate): a plain build plan built it in 60 s and it linked at 6.0 m. The trickle alone took and paid
+  0.327/s. With a gather plan, 3 settlers and the trickle, the Mine lost 2.11/s and the AI gained 1.48/s, which is 1.8 × 0.65 +
+  0.325; no XS error. **Beside WoL's DLL** (`dinput8.dll`, its `uhc.dll` `c070d138`): applied, the three hooks reached, the Mine at
   1386.66 and the player at 613.24, a sum of 2000; key off, the Mine stayed at 2000.
-  Not tested: an AI's build plan, or its villagers working it, allies gathering, multiplayer. Not explained: the trickle
-  of 0.5 in the data ran at 1.035/s in the Japanese skirmish and 0.327/s for the German AI, while the take and the pay matched.
+  Not tested: `createSimpleBuildPlan`, an AI that chooses it with no rule of yours, allies gathering, multiplayer.
 
 #### resourceGatherAuras
 
