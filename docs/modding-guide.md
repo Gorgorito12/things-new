@@ -1433,6 +1433,17 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
   ([overhealSources](#overhealsources)), and on the stock game (2026-10-29), where damaged units healed
   to full with the key and stayed at 90 without. XPTrickle and Gathering were not tested in game.
 
+![The weight of a dancer in WoL](media/danceBonusCivs-weight-wol.gif)
+
+*In WoL (Ethiopians, 9 dancers, `<DanceWeight>3`, a test Gathering dance):* the selected miner's rate is in the panel.
+[Full video (MP4)](media/danceBonusCivs-weight-wol.mp4). [Control, no tag](media/danceBonusCivs-weight-wol-control.mp4).
+
+- **`<DanceWeight>N</DanceWeight>`** in a proto: that unit counts as N dancers, from 0 to 1000, instead of 1 for a villager and 2 for
+  any other unit. Tested: 1.19/s with no dance, 1.74/s, 2.88/s with weight 3 (expected ×2.35, measured ×2.42, not explained),
+  1.20/s with weight 0.
+- **The fire pit** is now found through a memory of where it is in the player's list, without changing what the game finds.
+  With 60 miners no gain could be measured: 0.36–0.39 ms against 0.39–0.46 ms, other games running.
+
 #### wonderCivUnitType
 
 **Added:** Tuesday 2026-11-03 07:25 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
@@ -2205,6 +2216,7 @@ Attacks, armor, and what a hit does.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
+| [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
 | [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
@@ -3403,6 +3415,30 @@ removeConversionRestriction
 - **Simulation:** yes.
 - **Status:** not confirmed: one test with the Sioux war chief, on the stock game, was inconclusive.
 
+#### snareValues
+
+![snareValues in WoL](media/snareValues-wol.gif)
+
+*In WoL (Pikeman against Crossbowman, `SnareFactor` 0.3, `SnareDuration` 6):* the log shows each snare.
+[Full video (MP4)](media/snareValues-wol.mp4). [Control, key off](media/snareValues-wol-control.mp4).
+
+```
+snareValues [log]
+```
+
+```xml
+<SnareFactor>0.3</SnareFactor>      <!-- a speed factor, from 0 to 10 -->
+<SnareDuration>6</SnareDuration>    <!-- seconds, above 0 -->
+```
+
+- **In WoL today:** every `<TargetSpeedBoost>` is 0.65 for 3 s.
+- **Where:** in a `<ProtoAction>` or tactics `<action>` with `<TargetSpeedBoost>`, after `<Name>`.
+- **By tech:** the Data subtypes `SnareFactor` and `SnareDuration`, with `action` or `allactions`. `Assign` sets, `BasePercent`
+  multiplies the tag's value, `Absolute` adds. A duration of 0 or less means no snare.
+- **With other keys:** after `cantBeSlowed`, whose rules stay. `<AttachSnare>` is apart.
+- **Tested in WoL (2026-11-06):** stock 0.65 for 2.93 s; tags 0.3 and 6 s; a tech 0.5 and 12 s, also after a load; a duration of 0, none;
+  bad tags logged. An AI skirmish of 100 s had 15 units and no XS error. Not tested: beside WoL's DLL, multiplayer.
+
 ### Gathering and farms
 
 Resources, gatherers, and what pays for them.
@@ -4418,6 +4454,9 @@ buildingWorkRateAuras [log]
   Center, 7 villagers against 2 at the TC out of range; without the key, 2 and 2. On the stock game
   (2026-10-29), `Maintain`: 11 units against 2, with `liveBuildingWorkRate` and `noTrainNearEnemyTC` on in
   the same run. Research speed, the removal of the aura, powers and saved games were not tested.
+- **The panel's number:** `{currentUnitBuildingWorkRate}` and `{currentUnitBuildingWorkRateFloat}` give the rate the unit works at:
+  3.00 under an aura x3, 1.00 beside it. WoL's interface does not show them: a gadget has to name them.
+  [Video](media/buildingWorkRateAuras-panel-wol.mp4), [control](media/buildingWorkRateAuras-panel-wol-control.mp4).
 
 #### maintainWaitForPop
 
@@ -5537,6 +5576,9 @@ transformInventory [all] [scale] [<UnitType>] [log]
   (2026-10-29), a test tech covered a change of resource type, a unit with no inventory, a unit with the
   same types (kept) and a new proto with no resources (kept without `all`). `all`, `scale`, a marker,
   revolutions and a conversion after a transform were not tested.
+- **By effect:** `inventory='keep'`, `'rebuild'` or `'scale'` on a `TransformUnit` effect decides over the cfg: keep is stock, rebuild is
+  `all`, scale is `all scale`. A transform with no effect, a turn back or a revolution, follows the cfg.
+  [Video](media/transformInventory-effect-wol.mp4), [control with keep](media/transformInventory-effect-wol-control.mp4).
 
 #### transformSpan
 

@@ -2740,6 +2740,17 @@ modifier: its take asks `AuraClaim`.
 **Why it is safe.** The mark lives in game state, so every machine and a saved game see the same thing, and the filter runs only for
 targets the action does not hold yet.
 
+### snareValues
+
+A jmp at 0x4DD207, after what `cantBeSlowed` writes, pushes the action's values and calls the creator 0x4DD22D. EBP is the attacker's unit
+action; `[ebp+4]` the player's copy of the tactics action. **Why it is safe:** the values are data and tech effects, the same on every machine.
+
+### danceBonusCivs: the fire pit
+
+The head of getFirePit 0x4819EF keeps, per player, the place of the first unit of the type, keyed by the list's count, its last ID and a
+counter of transforms. The stock lookup 0x48195C then starts at that place. **Why it is safe:** the memory is a fact about the list, not of
+a step, so a UI call between updates cannot change a result. The dancer count is hooked at 0x9C1604, after its stale workers.
+
 ### linkedResource
 
 Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagged unit to an ID-ordered map. The tick, four
