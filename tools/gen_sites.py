@@ -495,6 +495,9 @@ SITES = [
     # int thiscall(unit, stat, value, -1f, -1f, 0, op, ms, -1, -1, exclusive), ret 28h, -1 without
     # an action manager [unit+58h]; it allocates the modifier record [[unit+0B4h]+0C8h] if missing
     ("SnareTargetCheck", 0x4DD1DE, 0x23),
+    # the part of SnareCreate after what cantBeSlowed writes: push 0BB8h, and the pushes up to the creator
+    ("SnareDurationPush", 0x4DD207, 5),
+    ("SnareCreateTail", 0x4DD20C, 0x21),
     ("SnareApply", 0x4DD22D, 0x82),
     # snareOnlyHitUnit: the modifier init 0x4B3D44 ([+64h] stat, [+68h] value, [+78h] op, flag
     # 15h or 14h by duration, flag 16h exclusive)
@@ -568,6 +571,11 @@ SITES = [
     # [edi+80h],0 / je 4904BBh (no unit list: no regeneration)
     ("DanceRegenGate", 0x490486, 0x11),
     ("DanceRegenBranch", 0x679E66, 0xD),
+    # the head of getFirePit: mov eax,[0C66234h]; the lookup it calls, thiscall(player, type, startId, 0, -1)
+    ("FirePitHead", 0x4819EF, 5),
+    ("UnitOfTypeLookup", 0x48195C, 0xC),
+    # the dancer count 0x9C1577: mov eax,[eax+5Ch] / test eax,eax / je 9C161Fh
+    ("DancerProtoRead", 0x9C1604, 7),
     # startingTC (FUN_0049874F, Player::addUnit, ESI = player, EDI = unit): cmp dword ptr
     # [esi+4F0h],0 / jl 506B2Ah, FirstTC (the placementrules keyword) is only set while it is
     # still -1, and the exit pop ebx / pop ebp / pop edi / mov al,1 / pop esi / ret 8 after it
@@ -823,6 +831,8 @@ SITES = [
     # showGatherRate: the data refs' current unit, [[[0C67310h]+920h]+13Ch] in world
     # [[0C66234h]+13Ch], as currentUnitBuildingWorkRate FUN_006F49B1 looks it up
     ("CurrentUnitRef", 0x6F49B1, 0x41),
+    # fld dword ptr [edx+0D0h] in it: the rate the panel shows
+    ("CurrentUnitRateRead", 0x6F49FC, 6),
     # showGatherRate: the proto flag test 0x45EE02 (thiscall(proto, bit), ret 4), bitset
     # [proto+50h] / count [proto+54h]
     ("ProtoFlag", 0x45EE02, 0x35),

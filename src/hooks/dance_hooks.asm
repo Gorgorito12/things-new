@@ -14,6 +14,8 @@ option casemap :none
 include common.inc
 
 UhcDanceCivAllowed PROTO STDCALL kind:DWORD, player:DWORD, civ:DWORD
+UhcFirePit PROTO STDCALL player:DWORD
+UhcDancerWeight PROTO STDCALL unitProto:DWORD
 
 .data
 trainNext       dd 008D47B1h    ; je 8D47CFh, then the XPSioux, XPAztec and XPSPC compares
@@ -23,9 +25,52 @@ xpDance         dd 004E0E29h    ; call 4819EFh / jmp 679D72h
 gatherNext      dd 004ECD59h    ; je 4ECD7Dh, then the other three compares
 gatherDance     dd 004ECD7Dh    ; call 4819EFh / jmp 679DECh
 regenNext       dd 00490491h    ; je 679E66h (near), then the other three compares
+firePitNext     dd 004819F4h    ; mov edx,[eax+140h], the rest of getFirePit
+dancerType      dd 009C160Bh    ; push 16h / mov ecx,eax / call 44CAC4h: EAX = the proto
+dancerOther     dd 009C161Fh    ; add [esp+10h],2: a dancer that is not a villager
+dancerNext      dd 009C1629h    ; add esi,1, the next worker
 regenDance      dd 00679E66h    ; cmp dword ptr [edi+80h],0 / je 4904BBh, then the fire pit
 
 .code
+
+; Replaces 0x4819EF, the head of getFirePit, thiscall(player), no arguments: mov eax,[0C66234h]. EDX
+; and ECX are free on return, as they are after the stock body.
+UhcFirePitHook PROC
+    TRACE_ONCE "danceBonusCivs fire pit (0x4819EF)"
+    push ecx
+    push ecx
+    call UhcFirePit
+    pop ecx
+    cmp eax, -1
+    je stock
+    ret
+stock:
+    mov eax, dword ptr ds:[0C66234h]    ; replaced
+    jmp firePitNext
+UhcFirePitHook ENDP
+
+; Replaces 0x9C1604 in the dancer count 0x9C1577, with EAX = the worker unit: mov eax,[eax+5Ch] /
+; test eax,eax / je 9C161Fh. The stale workers it removes are handled before this. [esp+10h] is the
+; count; EAX, ECX and EDX are free at every exit but the type test, which wants the proto in EAX.
+UhcDancerHook PROC
+    TRACE_ONCE "danceBonusCivs dancer (0x9C1604)"
+    mov eax, dword ptr [eax+5Ch]        ; replaced
+    test eax, eax                       ; replaced
+    je other
+    push eax
+    push eax
+    call UhcDancerWeight
+    mov ecx, eax
+    pop eax
+    test ecx, ecx
+    jl stock
+    add dword ptr [esp+10h], ecx
+    jmp dancerNext
+stock:
+    jmp dancerType
+other:
+    jmp dancerOther
+UhcDancerHook ENDP
 
 ; Replaces 0x8D47AB in FUN_008D4790 (train rate, thiscall; ret 4 with the trained proto ID).
 ; ECX = player; the fire pit lookup at the continuation takes it as this.
