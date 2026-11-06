@@ -66,9 +66,15 @@ ICON_DARK = (24, 20, 16)
 # Each glyph is a list of (x, y, outer radius, inner radius), in fractions of the half width.
 GLYPHS = {
     "wood": ((-0.40, 0.30, 0.38, 0.0), (0.40, 0.30, 0.38, 0.0), (0.0, -0.36, 0.38, 0.0)),  # three log ends
-    "food": ((0.0, 0.14, 0.62, 0.0), (0.0, -0.56, 0.11, 0.0), (0.0, -0.70, 0.11, 0.0), (0.16, -0.72, 0.11, 0.0)),  # a fruit
+    "food": ((-0.24, -0.24, 0.50, 0.0), (0.0, 0.0, 0.38, 0.0), (0.16, 0.16, 0.26, 0.0)),  # the meat of a drumstick
     "gold": ((0.0, 0.0, 0.76, 0.46), (0.0, 0.0, 0.20, 0.0)),  # a coin
 }
+# What a glyph draws over itself in ICON_ACCENT: a block holds one of the two colours, as a DXT3 block has two.
+GLYPH_ACCENTS = {
+    "food": ((0.30, 0.30, 0.11, 0.0), (0.40, 0.40, 0.11, 0.0), (0.50, 0.50, 0.11, 0.0), (0.58, 0.58, 0.11, 0.0),
+             (0.72, 0.54, 0.15, 0.0), (0.54, 0.72, 0.15, 0.0)),  # its bone
+}
+ICON_ACCENT = (245, 235, 210)
 # The rings of displayedRange, by radius in metres, a thin line of RANGE_LINE metres in a neutral colour.
 RANGES = (4, 6, 8, 10, 12, 14, 16, 20, 24, 30)
 RANGE_LINE = 0.30
@@ -131,29 +137,36 @@ def glyph_cover(u, v, glyph, grow):
     return 0.0
 
 
-def icon_block(size, colours, glyph):
+def icon_block(size, colours, glyph, accent=()):
     """DXT3 blocks of an icon: the glyph in its colour on a dark edge, alpha from four samples per side."""
     samples = 4
-    alpha, inside = [], []
+    whole = glyph + accent
+    alpha, inside, over = [], [], []
     for y in range(size):
-        alpha_row, inside_row = [], []
+        alpha_row, inside_row, over_row = [], [], []
         for x in range(size):
-            total = core = 0.0
+            total = core = bone = 0.0
             for sy in range(samples):
                 for sx in range(samples):
                     u = (x + (sx + 0.5) / samples) / size * 2 - 1
                     v = (y + (sy + 0.5) / samples) / size * 2 - 1
-                    total += glyph_cover(u, v, glyph, ICON_OUTLINE)
-                    core += glyph_cover(u, v, glyph, 0.0)
+                    total += glyph_cover(u, v, whole, ICON_OUTLINE)
+                    core += glyph_cover(u, v, whole, 0.0)
+                    bone += glyph_cover(u, v, accent, 0.0)
             alpha_row.append(round(total / samples ** 2 * 15))
             inside_row.append(core / samples ** 2 >= 0.5)
+            over_row.append(bone / samples ** 2 >= 0.5)
         alpha.append(alpha_row)
         inside.append(inside_row)
-    main, dark = rgb565(colours[0]), rgb565(ICON_DARK)
+        over.append(over_row)
+    dark = rgb565(ICON_DARK)
     out = bytearray()
     for by in range(0, size, 4):
         for bx in range(0, size, 4):
             indices = 0
+            bones = sum(over[by + y][bx + x] for y in range(4) for x in range(4))
+            solid = sum(inside[by + y][bx + x] for y in range(4) for x in range(4))
+            main = rgb565(ICON_ACCENT if bones * 2 > solid else colours[0])
             for y in range(4):
                 row = 0
                 for x in range(4):
@@ -164,9 +177,9 @@ def icon_block(size, colours, glyph):
     return bytes(out)
 
 
-def icon_ddt(colours, glyph, size=SIZE):
+def icon_ddt(colours, glyph, accent=(), size=SIZE):
     mips = int(math.log2(size)) - 1
-    levels = [icon_block(size >> i, colours, glyph) for i in range(mips)]
+    levels = [icon_block(size >> i, colours, glyph, accent) for i in range(mips)]
     out = b"RTS3" + bytes((0, 1, 8, mips)) + struct.pack("<II", size, size)
     offset = len(out) + 8 * mips
     for level in levels:
@@ -381,7 +394,7 @@ def main():
                 wanted[f"{texture}.ddt"] = ddt(colour, side, *building_shape(radius))
         if name in GLYPHS:
             wanted[f"aura_{name}.xml"] = text(xml(name, marker=True))
-            wanted[f"icon_{name}.ddt"] = icon_ddt(colour, GLYPHS[name])
+            wanted[f"icon_{name}.ddt"] = icon_ddt(colour, GLYPHS[name], GLYPH_ACCENTS.get(name, ()))
             for _, size, height in ICON_HEIGHTS:
                 wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", ICON_SIDE, height, 0))
     for radius in RANGES:

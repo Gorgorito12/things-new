@@ -3534,7 +3534,7 @@ unitResourceAuras [log]
 
 ![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
 
-*In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a fruit
+*In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a drumstick
 over the bush and the two carcasses, and no mark on the live Deer, the live Sheep or the Plantation.
 [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
 
