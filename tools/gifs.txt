@@ -186,3 +186,5 @@ buildingWorkRateAuras-panel-wol 4 8 1
 buildingWorkRateAuras-panel-wol-control 4 8 1
 transformInventory-effect-wol 8 11 1
 transformInventory-effect-wol-control 8 11 1
+showGatherRate-group-wol 2 12 1
+showGatherRate-group-wol-control 2 12 1

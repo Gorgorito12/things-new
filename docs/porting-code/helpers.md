@@ -3950,6 +3950,11 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
 // Writes the hook the first time (after checking the site's stock bytes) and adds row.
 bool AddUnitPanelRow(UnitPanelRow row);
 
+// One key may also write the row for a selection of several units: `row` gets the panel and the
+// selection group (IDs [group+10h], count [group+14h]). The single-unit rows do not run for a group.
+using UnitPanelGroupRow = bool(__stdcall*)(const char* panel, const char* selection);
+void SetUnitPanelGroupRow(UnitPanelGroupRow row);
+
 }  // namespace uhc
 ```
 
@@ -4026,6 +4031,7 @@ void SetGadget(void* gadget, std::uint32_t style, const wchar_t* text) {
 
 uhc::UnitPanelRow g_rows[kMaxRows] = {};
 std::size_t g_rowCount = 0;
+uhc::UnitPanelGroupRow g_groupRow = nullptr;
 bool g_installed = false;
 
 }  // namespace
@@ -4040,7 +4046,13 @@ void __stdcall UhcUnitPanelRows(const char* panel, const char* unit) {
     return;
   }
   const char* selection = kCurrentSelection();
-  if (selection == nullptr || Field<std::int32_t>(selection, 0x14) != 1 || Field<std::uint8_t>(selection, 0x21) != 0) {
+  if (selection == nullptr || Field<std::uint8_t>(selection, 0x21) != 0) {
+    return;
+  }
+  if (Field<std::int32_t>(selection, 0x14) != 1) {
+    if (g_groupRow != nullptr) {
+      g_groupRow(panel, selection);
+    }
     return;
   }
   for (std::size_t i = g_rowCount; i > 0; --i) {
@@ -4063,6 +4075,8 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
   SetGadget(valueGadget, kValueStyle, value);
   return true;
 }
+
+void SetUnitPanelGroupRow(UnitPanelGroupRow row) { g_groupRow = row; }
 
 bool AddUnitPanelRow(UnitPanelRow row) {
   if (g_rowCount == kMaxRows) {
