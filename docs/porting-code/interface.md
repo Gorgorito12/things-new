@@ -89,7 +89,8 @@ extern "C" {
 void UhcAbilityButtonHook();
 
 // Called by the hook when GetNth returned true for n >= 6: the unit gets a button that stock
-// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid; a recharging one was not checked).
+// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid). The panel's loop over the 36 cells
+// (0x695202..0x695440) draws the recharge on any button, so one past the sixth gets it too.
 void __stdcall UhcAbilitySlotsLogButton(const char* unit, std::int32_t n, std::int32_t record, std::int32_t power,
                                         std::int32_t enabled) {
   ForgetOtherGames();

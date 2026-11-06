@@ -19,8 +19,8 @@ The notes below date from 2026-11-02. A review of the code and the exe (static, 
   rechecks once per update; `hcShipmentPointFallback` has the keyword `FirstTC`.
 - **Smaller than it looks:** of WoL's actions that never reach `spreadAnyAccuracy`, most are unread tags. Only 7 referenced
   actions have values of their own: 5 `InstantBallistics` and 2 `TargetGround`. A trainer held with a queue cannot move in
-  stock either. `abilitySlots 8` already shows every WoL ability. Whether a button lacks a recharge is unproven: stock
-  computes a ratio at 0x6952D7.
+  stock either. `abilitySlots 8` already shows every WoL ability. A button does show its recharge: stock draws it for the 36
+  cells (0x695202..0x695440), seen on the Town Center's ceasefire in `docs/media/ceasefire-wol.mp4`.
 - **Not to do unless WoL asks,** with the reason:
   - `NumberProjectiles`: JTMaston does not need it.
   - The `Poison` flag: stock's event does nothing (0xB1BE43), and no data reaches the bit.
@@ -189,8 +189,8 @@ First: the event-driven version and the hysteresis.
 
 - **Count buttons, not records.** A disabled ability still uses a slot, so N must be at least the
   longest list. Loop until N *visible* abilities are collected; N becomes "max buttons". *small*
-- **Recharge on the button** or "ready in 12 s" in the tooltip; the per-player charge and period
-  were located for the ceasefire. *medium*
+- **Recharge on the button:** stock already draws it, a sweep over a red button. Left: "ready in 12 s" in the
+  tooltip; the per-player charge and period were located for the ceasefire. *medium*
 - **Locked abilities greyed** with the requirement in the tooltip, instead of hidden. *small*
 - **Order:** a position tag in the record, or "enabled first". *small*
 - **A second page** ("more" button): the grid stays 6×6 and what does not fit is not drawn. *large*
@@ -202,7 +202,7 @@ First: the event-driven version and the hysteresis.
 - **Tests:** the monk's `AlwaysDisabledInGrid` aura at position 7 (WoL's real case); two players
   with different N (should be harmless, UI only).
 
-First: count buttons, then recharge on the button.
+First: count buttons.
 
 ## `lifespanAfterConstruction`
 
