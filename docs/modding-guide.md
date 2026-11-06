@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-06 14:15 | [`unitTypeTechs`](#unittypetechs) | Added. Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | The effects in your techs. |
 | Friday 2026-11-06 13:55 | [`snareValues`](#snarevalues) | Filmed in WoL, with a control. The factor and length of `<TargetSpeedBoost>`, per action and by tech. | The tags on the action. |
 | Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
 | Friday 2026-11-06 13:11 | [`firstTC`](#firsttc) | Added.  |  |
@@ -5689,6 +5690,8 @@ transformSpan [log]
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
 
 #### unitTypeTechs
+
+**Added:** Friday 2026-11-06 14:15
 
 ![unitTypeTechs in WoL](media/addUnitType-wol.gif)
 
