@@ -60,6 +60,7 @@ const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 const auto kGatherPointValid = reinterpret_cast<GatherPointValidFn>(0x0085302C);
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 
+bool g_installed = false;
 bool g_warn = false;
 std::wstring g_warnText = L"No shipment point: cards on their way are refunded.";
 DWORD g_lastWarn = 0;
@@ -291,6 +292,34 @@ namespace uhc {
 // FUN_004C6B9E returns the unit shipments arrive at. When the stored one is gone it searches a
 // fixed list of 10 unit types; this extends that list. Choice order is the cfg order, then the
 // stock unit-query order, so every machine with the same cfg picks the same building.
+bool AddFirstTcShipmentPoint() {
+  for (const std::string& name : g_typeNames) {
+    if (IsFirstTcKeyword(name)) {
+      return true;
+    }
+  }
+  if (g_uhcGatherFallbackCount >= kMaxFallbackTypes) {
+    Log(L"hcShipmentPointFallback: no room for FirstTC");
+    return false;
+  }
+  if (!VerifyAll("firstTC shipment point",
+                 {&sites::kFirstTcSet, &sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
+                  &sites::kUnitByIdNull, &sites::kGatherPointValid})) {
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("firstTC shipment point", {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore,
+                                              &sites::kGatherFallbackBlock}) ||
+        !WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_typeNames.insert(g_typeNames.begin(), kFirstTcKeyword);
+  g_uhcGatherFallbackCount = static_cast<std::int32_t>(g_typeNames.size());
+  return true;
+}
+
 Outcome ApplyHcShipmentPointFallback(const Config& config) {
   const Config::Args* names = config.First("hcShipmentPointFallback");
   if (names == nullptr) {
@@ -366,6 +395,7 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
       (replace && !WriteJmp(sites::kGatherSearchStart.va, reinterpret_cast<const void*>(&UhcHcGatherReplaceHook), 7))) {
     return Outcome::kFailed;
   }
+  g_installed = true;
   Log(L"hcShipmentPointFallback: %d extra types %ls%ls%ls%ls (multiplayer unverified)", g_uhcGatherFallbackCount,
       replace ? L"instead of the stock list" : L"after the stock list",
       firstTc ? L", including each player's first town center (FirstTC)" : L"", lastResort ? L", and a last resort" : L"",

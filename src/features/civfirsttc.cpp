@@ -243,6 +243,14 @@ bool __stdcall UhcCivFirstTcMatches(const char* player, std::int32_t protoId, co
   return true;
 }
 
+// From the test of flag 136 when a unit is created, with the key firstTC: true for the player's FirstTC
+// of its civ's <firstTC> proto, which then asks for the town starting units as a TownCenter does.
+bool __stdcall UhcCivFirstTcColonyFlag(const char* unit) {
+  const char* player = Field<const char*>(unit, 0x44);
+  return player != nullptr && !g_tags.empty() && Field<std::int32_t>(player, 0x4F0) == Field<std::int32_t>(unit, 0x10) &&
+         CivFirstTcProto(player) == UnitProto(unit) && UnitProto(unit) >= 0 && !NomadStart();
+}
+
 // From the town starting units hook (EDI = player): the proto to query instead of TownCenter, or
 // -1. Only when the player's FirstTC is alive, of the civ's <firstTC> proto, its own, and a colony
 // starts at it, the same test as FUN_007C238E (0x7C2407).
@@ -349,6 +357,7 @@ std::int32_t __fastcall UhcRmPlaceObjectDef(char* def, void*, std::int32_t playe
 }
 
 void UhcCivFirstTcTownHook();
+void UhcCivFirstTcColonyHook();
 }
 
 namespace uhc {
@@ -396,6 +405,13 @@ Outcome ApplyCivFirstTc(const Config& config) {
   }
   // Replaces mov ebx,[ecx+5E08h] at 0x679AC8; the hook re-executes it.
   if (!WriteJmp(0x00679AC8, reinterpret_cast<const void*>(&UhcCivFirstTcTownHook), 6)) {
+    return Outcome::kFailed;
+  }
+  // firstTC derives from the tag what civFirstTC asks of the data: StartingColonyBuilding and the shipment
+  // point. <starttypes> in placementrules\colonies.xml stays data.
+  if (alias && (!VerifyAll("firstTC", {&sites::kStartColonyFlagRead}) ||
+                !WriteJmp(sites::kStartColonyFlagRead.va, reinterpret_cast<const void*>(&UhcCivFirstTcColonyHook), 6) ||
+                !AddFirstTcShipmentPoint())) {
     return Outcome::kFailed;
   }
   Log(L"civFirstTC: a civ's <firstTC> proto in civs.xml replaces the TownCenter random maps place for its players "

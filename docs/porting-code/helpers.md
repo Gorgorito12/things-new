@@ -288,6 +288,9 @@ inline constexpr Site kPoliticianCosts2{"PoliticianCosts2", 0x0081943D, kPolitic
 inline constexpr std::uint8_t kGatherFallbackExitBytes[] = {0x5D, 0x5F, 0x5E, 0x33, 0xC0, 0x5B, 0x59, 0xC2, 0x04, 0x00};
 inline constexpr Site kGatherFallbackExit{"GatherFallbackExit", 0x00669E2E, kGatherFallbackExitBytes, sizeof(kGatherFallbackExitBytes)};
 
+inline constexpr std::uint8_t kStartColonyFlagReadBytes[] = {0x8B, 0x50, 0x50, 0x8A, 0x42, 0x11};
+inline constexpr Site kStartColonyFlagRead{"StartColonyFlagRead", 0x006A2130, kStartColonyFlagReadBytes, sizeof(kStartColonyFlagReadBytes)};
+
 inline constexpr std::uint8_t kGatherSearchStartBytes[] = {0x8B, 0x4C, 0x24, 0x0C, 0x8B, 0x51, 0x08};
 inline constexpr Site kGatherSearchStart{"GatherSearchStart", 0x004C6BCF, kGatherSearchStartBytes, sizeof(kGatherSearchStartBytes)};
 
@@ -2167,6 +2170,9 @@ Outcome ApplyFallenHeroTacticsFix(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
+// Puts FirstTC first in hcShipmentPointFallback's list, and installs its hook if the key is off. For firstTC,
+// which applies after that key.
+bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
@@ -3204,10 +3210,12 @@ include common.inc
 
 UhcCivTagDispatch PROTO STDCALL node:DWORD, civ:DWORD  ; civtags.cpp; true: a registered tag, consumed
 UhcCivFirstTcTownProto PROTO STDCALL player:DWORD      ; the proto for the town units, or -1
+UhcCivFirstTcColonyFlag PROTO STDCALL unit:DWORD       ; true: this unit counts as StartingColonyBuilding
 
 .data
 civTagResume    dd 0052BB0Fh    ; jle 52B43Dh / jmp 52C066h: the stock unknown-tag path, on the flags
 civTagNext      dd 0052B43Dh    ; the next child of the <civ> node
+colonyFlagResume dd 006A2136h   ; and eax,1 / mov [esp+74h],eax: the rest of the test of flag 136
 townQueryResume dd 00679ACEh    ; push ebp / push esi / mov esi,[edi+80h]: the query of proto EBX
 
 .code
@@ -3251,6 +3259,30 @@ UhcCivFirstTcTownHook PROC
 done:
     jmp townQueryResume
 UhcCivFirstTcTownHook ENDP
+
+; Replaces 0x6A2130..0x6A2135 with the key firstTC, at the creation of a unit, ESI: the test of flag 136 of its
+; proto, StartingColonyBuilding. A civ's <firstTC> building counts as having it, without writing the proto,
+; which every civ shares. AL is what `and eax,1` reads; EAX's other bytes do not matter there.
+UhcCivFirstTcColonyHook PROC
+    TRACE_ONCE "firstTC colony flag (0x6A2130)"
+    mov edx, dword ptr [eax+50h]    ; stolen 0x6A2130
+    mov al, byte ptr [edx+11h]      ; stolen 0x6A2133
+    test al, 1
+    jne done
+    push eax
+    push ecx
+    push edx
+    push esi
+    call UhcCivFirstTcColonyFlag
+    test al, al
+    pop edx
+    pop ecx
+    pop eax
+    je done
+    or al, 1
+done:
+    jmp colonyFlagResume
+UhcCivFirstTcColonyHook ENDP
 
 END
 ```

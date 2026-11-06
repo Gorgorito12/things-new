@@ -108,6 +108,9 @@ Outcome ApplyFallenHeroTacticsFix(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
+// Puts FirstTC first in hcShipmentPointFallback's list, and installs its hook if the key is off. For firstTC,
+// which applies after that key.
+bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 

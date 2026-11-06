@@ -940,7 +940,7 @@ Contract: [civFirstTC](../porting-to-another-dll.md#civfirsttc).
 
 Besides the core helpers, it needs: [`civtags.h`](helpers.md#civ-tags).
 
-Sites: `CivById` `0x405C2E` (24 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `ProtoById` `0x45316E` (30 B), `CivOfPlayer` `0x4539D3` (16 B), `ProtoFlag` `0x45EE02` (53 B), `FirstTcChunk` `0x506B2A` (17 B), `FirstTcProtoCheck` `0x506B3B` (17 B), `ProtoByName` `0x5A2346` (32 B), `TownStartQuery` `0x679AC1` (21 B), `TownStartSpawn` `0x679B50` (26 B), `FirstTcSet` `0x67ABD4` (14 B), `TownStartColonyLoop` `0x7C2407` (49 B), `RmNomadStart` `0x90B683` (25 B), `RmItemFootprint` `0x924B1D` (158 B), `RmPlace` `0x925936` (111 B), `RmPlaceCall` `0x925F45` (14 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `CivById` `0x405C2E` (24 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `ProtoById` `0x45316E` (30 B), `CivOfPlayer` `0x4539D3` (16 B), `ProtoFlag` `0x45EE02` (53 B), `FirstTcChunk` `0x506B2A` (17 B), `FirstTcProtoCheck` `0x506B3B` (17 B), `ProtoByName` `0x5A2346` (32 B), `TownStartQuery` `0x679AC1` (21 B), `TownStartSpawn` `0x679B50` (26 B), `FirstTcSet` `0x67ABD4` (14 B), `StartColonyFlagRead` `0x6A2130` (6 B), `TownStartColonyLoop` `0x7C2407` (49 B), `RmNomadStart` `0x90B683` (25 B), `RmItemFootprint` `0x924B1D` (158 B), `RmPlace` `0x925936` (111 B), `RmPlaceCall` `0x925F45` (14 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/civfirsttc.cpp
 
@@ -1190,6 +1190,14 @@ bool __stdcall UhcCivFirstTcMatches(const char* player, std::int32_t protoId, co
   return true;
 }
 
+// From the test of flag 136 when a unit is created, with the key firstTC: true for the player's FirstTC
+// of its civ's <firstTC> proto, which then asks for the town starting units as a TownCenter does.
+bool __stdcall UhcCivFirstTcColonyFlag(const char* unit) {
+  const char* player = Field<const char*>(unit, 0x44);
+  return player != nullptr && !g_tags.empty() && Field<std::int32_t>(player, 0x4F0) == Field<std::int32_t>(unit, 0x10) &&
+         CivFirstTcProto(player) == UnitProto(unit) && UnitProto(unit) >= 0 && !NomadStart();
+}
+
 // From the town starting units hook (EDI = player): the proto to query instead of TownCenter, or
 // -1. Only when the player's FirstTC is alive, of the civ's <firstTC> proto, its own, and a colony
 // starts at it, the same test as FUN_007C238E (0x7C2407).
@@ -1296,6 +1304,7 @@ std::int32_t __fastcall UhcRmPlaceObjectDef(char* def, void*, std::int32_t playe
 }
 
 void UhcCivFirstTcTownHook();
+void UhcCivFirstTcColonyHook();
 }
 
 namespace uhc {
@@ -1345,6 +1354,13 @@ Outcome ApplyCivFirstTc(const Config& config) {
   if (!WriteJmp(0x00679AC8, reinterpret_cast<const void*>(&UhcCivFirstTcTownHook), 6)) {
     return Outcome::kFailed;
   }
+  // firstTC derives from the tag what civFirstTC asks of the data: StartingColonyBuilding and the shipment
+  // point. <starttypes> in placementrules\colonies.xml stays data.
+  if (alias && (!VerifyAll("firstTC", {&sites::kStartColonyFlagRead}) ||
+                !WriteJmp(sites::kStartColonyFlagRead.va, reinterpret_cast<const void*>(&UhcCivFirstTcColonyHook), 6) ||
+                !AddFirstTcShipmentPoint())) {
+    return Outcome::kFailed;
+  }
   Log(L"civFirstTC: a civ's <firstTC> proto in civs.xml replaces the TownCenter random maps place for its players "
       L"(not in a Nomad start) and is their first town center (FirstTC)%ls (multiplayer unverified)",
       log ? L", every substitution logged" : L"");
@@ -1369,10 +1385,12 @@ include common.inc
 
 UhcCivTagDispatch PROTO STDCALL node:DWORD, civ:DWORD  ; civtags.cpp; true: a registered tag, consumed
 UhcCivFirstTcTownProto PROTO STDCALL player:DWORD      ; the proto for the town units, or -1
+UhcCivFirstTcColonyFlag PROTO STDCALL unit:DWORD       ; true: this unit counts as StartingColonyBuilding
 
 .data
 civTagResume    dd 0052BB0Fh    ; jle 52B43Dh / jmp 52C066h: the stock unknown-tag path, on the flags
 civTagNext      dd 0052B43Dh    ; the next child of the <civ> node
+colonyFlagResume dd 006A2136h   ; and eax,1 / mov [esp+74h],eax: the rest of the test of flag 136
 townQueryResume dd 00679ACEh    ; push ebp / push esi / mov esi,[edi+80h]: the query of proto EBX
 
 .code
@@ -1416,6 +1434,30 @@ UhcCivFirstTcTownHook PROC
 done:
     jmp townQueryResume
 UhcCivFirstTcTownHook ENDP
+
+; Replaces 0x6A2130..0x6A2135 with the key firstTC, at the creation of a unit, ESI: the test of flag 136 of its
+; proto, StartingColonyBuilding. A civ's <firstTC> building counts as having it, without writing the proto,
+; which every civ shares. AL is what `and eax,1` reads; EAX's other bytes do not matter there.
+UhcCivFirstTcColonyHook PROC
+    TRACE_ONCE "firstTC colony flag (0x6A2130)"
+    mov edx, dword ptr [eax+50h]    ; stolen 0x6A2130
+    mov al, byte ptr [edx+11h]      ; stolen 0x6A2133
+    test al, 1
+    jne done
+    push eax
+    push ecx
+    push edx
+    push esi
+    call UhcCivFirstTcColonyFlag
+    test al, al
+    pop edx
+    pop ecx
+    pop eax
+    je done
+    or al, 1
+done:
+    jmp colonyFlagResume
+UhcCivFirstTcColonyHook ENDP
 
 END
 ```
