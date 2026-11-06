@@ -626,9 +626,9 @@ END
 
 Contract: [displayedRange](../porting-to-another-dll.md#displayedrange).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `ModelById` `0x405E83` (6 B), `UnitById` `0x44CC6D` (58 B), `CurrentSelectionGroup` `0x453B28` (33 B), `BoneNameLookup` `0x58E506` (10 B), `ModelPathLookup` `0x58F68F` (10 B), `UnitAttachModel` `0x9C04F3` (8 B), `UnitRemoveModel` `0x9C2885` (8 B), `UnitHasModel` `0x9C28DE` (8 B).
+Sites: `UnitById` `0x44CC6D` (58 B), `CurrentSelectionGroup` `0x453B28` (33 B).
 
 ### src/features/displayrange.cpp
 
@@ -654,34 +654,21 @@ Sites: `ModelById` `0x405E83` (6 B), `UnitById` `0x44CC6D` (58 B), `CurrentSelec
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../unitmodels.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
 namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
-constexpr std::uint32_t kModelTable = 0x00C66240;
-constexpr std::uint32_t kBoneTable = 0x00D6F478;
 constexpr std::uint32_t kTickMs = 250;
 constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 20, 24, 30};  // the sizes make_rings.py writes
 
 using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
-using ModelIdFn = std::int32_t(__thiscall*)(void* table, const wchar_t* path, std::int32_t a, std::int32_t b, std::int32_t c);
-using BoneIdFn = std::int32_t(__thiscall*)(void* table, const char* name);
-using ModelByIdFn = const void*(__thiscall*)(void* table, std::int32_t model);
-using HasModelFn = bool(__thiscall*)(const char* unit, std::int32_t model);
-using AttachModelFn = bool(__thiscall*)(char* unit, const void* object, std::int32_t bone, std::int32_t flag);
-using RemoveModelFn = void(__thiscall*)(char* unit, std::int32_t model);
 
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
-const auto kModelId = reinterpret_cast<ModelIdFn>(0x0058F68F);
-const auto kBoneId = reinterpret_cast<BoneIdFn>(0x0058E506);
-const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
-const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
-const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
-const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
 
 struct Range {
   bool show = false;
@@ -738,15 +725,11 @@ std::int32_t ModelFor(float metres) {
   if (found != g_models.end()) {
     return found->second;
   }
-  void* table = *reinterpret_cast<void**>(kModelTable);
-  std::int32_t model = -1;
-  if (table != nullptr) {
-    wchar_t path[64];
-    swprintf_s(path, L"effects\\uhc_rings\\range_%d.xml", radius);
-    model = kModelId(table, path, 1, 0, 0);
-    if (g_log) {
-      uhc::Log(L"displayedRange: %ls is model %d", path, model);
-    }
+  wchar_t path[64];
+  swprintf_s(path, L"effects\\uhc_rings\\range_%d.xml", radius);
+  const std::int32_t model = uhc::ModelOfPath(path);
+  if (g_log) {
+    uhc::Log(L"displayedRange: %ls is model %d", path, model);
   }
   g_models[radius] = model;
   return model;
@@ -754,7 +737,7 @@ std::int32_t ModelFor(float metres) {
 
 void Release(const char* world, std::int32_t id, std::int32_t model) {
   if (char* unit = const_cast<char*>(kUnitById(world, id))) {
-    kRemoveModel(unit, model);
+    uhc::RemoveUnitModel(unit, model);
   }
   if (g_log) {
     uhc::Log(L"displayedRange: ring off unit %d", id);
@@ -806,15 +789,14 @@ void Tick(char* world, std::int32_t) {
       continue;
     }
     const std::int32_t model = ModelFor(found->second.metres);
-    void* table = *reinterpret_cast<void**>(kModelTable);
-    if (model == -1 || table == nullptr) {
+    if (model == -1) {
       continue;
     }
     if (g_bone == -2) {
-      g_bone = kBoneId(reinterpret_cast<void*>(kBoneTable), "bonethatdoesntexist");
+      g_bone = uhc::NoBone();
     }
-    const void* object = kModelById(table, model);
-    if (object != nullptr && !kHasModel(unit, model) && kAttachModel(unit, object, g_bone, 0)) {
+    const uhc::ModelHang hang = uhc::HangUnitModel(unit, model, g_bone);
+    if (hang == uhc::ModelHang::kHung || hang == uhc::ModelHang::kNotInGame) {
       g_hung[id] = model;
       if (g_log) {
         uhc::Log(L"displayedRange: ring of %.1f m on unit %d (%hs)", static_cast<double>(found->second.metres), id,
@@ -840,9 +822,8 @@ Outcome ApplyDisplayedRange(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById, &sites::kModelById,
-                                    &sites::kUnitHasModel, &sites::kUnitAttachModel, &sites::kUnitRemoveModel,
-                                    &sites::kModelPathLookup, &sites::kBoneNameLookup}) ||
+  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById}) ||
+      !VerifyUnitModels("displayedRange") ||
       !AddProtoTagHandler("DisplayRange", &ReadShow) || !AddProtoTagHandler("DisplayedRange", &ReadMetres) ||
       !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
@@ -1500,7 +1481,7 @@ END
 
 Contract: [unitResourceAuras](../porting-to-another-dll.md#unitresourceauras).
 
-Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `UnitIsDead` `0x4802C6` (16 B), `CheckState` `0x482152` (16 B), `InventoryAdd` `0x49A5E6` (16 B), `PlayerAddResource` `0x49A98A` (16 B), `MainResource` `0x4DBEC1` (16 B), `UnitAttachModel` `0x9C04F3` (8 B), `UnitRemoveModel` `0x9C2885` (8 B), `UnitHasModel` `0x9C28DE` (8 B), `AuraScan` `0x9CFF9A` (16 B), `UnitResourceAuraEntry` `0x9D033E` (8 B), `AuraModelBlock` `0x9D053F` (9 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
@@ -1559,6 +1540,7 @@ Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitB
 #include "../prototags.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
+#include "../unitmodels.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
@@ -1572,7 +1554,6 @@ constexpr std::int32_t kStatUnitResource = 0x41;  // as in unitresource_hooks.as
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
 constexpr std::int32_t kFlagEndless = 0x24;        // proto flag tested at 0x4ED062
 constexpr std::uint32_t kMaxStepMs = 5000;         // a longer gap (a load, a pause) pays this much
-constexpr std::uint32_t kModelTable = 0x00C66240;  // the table of models; read as at 0x9D054A
 constexpr std::uint32_t kRingSweepMs = 1000;       // how often the auras that hung rings are checked
 constexpr float kMinAmount = 1.0e-6f;
 constexpr int kMaxLogLines = 200;
@@ -1596,10 +1577,6 @@ using InventoryAddFn = bool(__thiscall*)(char* inventory, std::int32_t resource,
 using PlayerAddFn = bool(__thiscall*)(char* player, std::int32_t resource, float amount, bool flag);
 using CheckStateFn = void(__thiscall*)(char* unit);
 using ProtoBitFn = bool(__thiscall*)(const char* proto, std::int32_t bit);
-using ModelByIdFn = const void*(__thiscall*)(void* table, std::int32_t model);
-using HasModelFn = bool(__thiscall*)(const char* unit, std::int32_t model);
-using AttachModelFn = bool(__thiscall*)(char* unit, const void* object, std::int32_t bone, std::int32_t flag);
-using RemoveModelFn = void(__thiscall*)(char* unit, std::int32_t model);
 
 const auto kIsBuilt = reinterpret_cast<UnitTestFn>(0x0044DDB4);
 const auto kIsDead = reinterpret_cast<UnitTestFn>(0x004802C6);
@@ -1612,10 +1589,6 @@ const auto kPlayerAdd = reinterpret_cast<PlayerAddFn>(0x0049A98A);
 const auto kCheckState = reinterpret_cast<CheckStateFn>(0x00482152);
 const auto kProtoFlag = reinterpret_cast<ProtoBitFn>(0x0045EE02);
 const auto kIsAbstractIndex = reinterpret_cast<ProtoBitFn>(0x0044CAC4);
-const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
-const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
-const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
-const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
 using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
 using NameBucketFn = std::int32_t(__thiscall*)(const char* table, const char* name);
 using NameFindFn = bool(__thiscall*)(const char* table, const char* name, std::int32_t bucket, std::int32_t* id);
@@ -1733,23 +1706,18 @@ void CheckRingWorld(const char* world, std::uint32_t now) {
   g_ringTime = now;
 }
 
-// As the stock update does at 0x9D054A..0x9D059C. False: the unit has no visual yet, and the next
-// update tries again. A model that is not in the game is taken as hung, or it would be hung again on
-// every update: the engine accepts it and shows nothing.
+// False: the unit has no visual yet, and the next update tries again. A model that is not in the game is
+// taken as hung, or it would be hung again on every update: the engine accepts it and shows nothing.
 bool HangRing(const char* world, std::int32_t id, std::int32_t model, std::int32_t bone, const char* tactics) {
   char* unit = const_cast<char*>(kUnitById(world, id));
-  void* table = *reinterpret_cast<void**>(kModelTable);
-  if (unit == nullptr || table == nullptr) {
+  const uhc::ModelHang hang = uhc::HangUnitModel(unit, model, bone);
+  if (hang == uhc::ModelHang::kRetry) {
     return false;
   }
-  if (kHasModel(unit, model)) {
+  if (hang == uhc::ModelHang::kAlready) {
     return true;
   }
-  const void* object = kModelById(table, model);
-  if (object == nullptr || !kAttachModel(unit, object, bone, 0)) {
-    return false;
-  }
-  if (!kHasModel(unit, model)) {
+  if (hang == uhc::ModelHang::kNotInGame) {
     if (!g_ringModelWarned) {
       g_ringModelWarned = true;
       uhc::Log(L"unitResourceAuras: the action %d has a <ModelAttachment> that is not in the game: no ring shows",
@@ -1769,7 +1737,7 @@ void ReleaseRing(const char* world, std::int32_t id, std::int32_t model) {
   }
   g_ringUsers.erase(users);
   if (char* unit = const_cast<char*>(kUnitById(world, id))) {
-    kRemoveModel(unit, model);
+    uhc::RemoveUnitModel(unit, model);
     if (g_log && g_logLines < kMaxLogLines) {
       ++g_logLines;
       uhc::Log(L"unitResourceAuras: ring off unit %d", id);

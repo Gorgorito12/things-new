@@ -35,6 +35,7 @@ PAGES = {
         "Modifier walk": ["src/modifiers.h"],
         "Unit panel row (the minimized interface)": ["src/unitpanel.h", "src/unitpanel.cpp", "src/hooks/unitpanelrow_hooks.asm"],
         "Name lists": ["src/namelists.h", "src/namelists.cpp"],
+        "Models on a unit": ["src/unitmodels.h", "src/unitmodels.cpp"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
@@ -117,7 +118,7 @@ HELPER_OF = {
     "config.h": "cfg-reader", "features.h": "results", "unittypes.h": "extra-abstract-unit-types",
     "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "civtags.h": "civ-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
-    "namelists.h": "name-lists",
+    "namelists.h": "name-lists", "unitmodels.h": "models-on-a-unit",
 }
 LANG = {".cpp": "cpp", ".h": "cpp", ".asm": "asm", ".inc": "asm"}
 

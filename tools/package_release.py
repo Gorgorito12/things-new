@@ -176,6 +176,7 @@ are data: copy that folder to the game's art\\effects and name one in an aura, w
 <modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
 aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
+veterancyBonus shows rank_1.xml to rank_3.xml over a unit with a rank when the folder is there.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -278,7 +279,7 @@ linkedResource [log]          a resource building takes the stock of the mine be
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
-veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills
+veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back
@@ -322,7 +323,7 @@ def main(argv):
         z.writestr(f"{top}/beside-another-dll/dinput8.dll", proxy)
         z.writestr(f"{top}/beside-another-dll/engine-ext/engine-ext.cfg",
                    template_cfg(version, f"# engine-ext\\engine-ext.cfg template for dinput8.dll {version}."))
-        for ring in sorted((ROOT / "tools" / "rings").glob("ring_*")):
+        for ring in sorted((ROOT / "tools" / "rings").glob("*")):
             z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
         z.writestr(f"{top}/LICENSE.txt", license_text)
         z.writestr(f"{top}/README.txt", readme(version))

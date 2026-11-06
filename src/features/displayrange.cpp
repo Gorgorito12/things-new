@@ -19,34 +19,21 @@
 #include "../log.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../unitmodels.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
 namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
-constexpr std::uint32_t kModelTable = 0x00C66240;
-constexpr std::uint32_t kBoneTable = 0x00D6F478;
 constexpr std::uint32_t kTickMs = 250;
 constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 20, 24, 30};  // the sizes make_rings.py writes
 
 using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
-using ModelIdFn = std::int32_t(__thiscall*)(void* table, const wchar_t* path, std::int32_t a, std::int32_t b, std::int32_t c);
-using BoneIdFn = std::int32_t(__thiscall*)(void* table, const char* name);
-using ModelByIdFn = const void*(__thiscall*)(void* table, std::int32_t model);
-using HasModelFn = bool(__thiscall*)(const char* unit, std::int32_t model);
-using AttachModelFn = bool(__thiscall*)(char* unit, const void* object, std::int32_t bone, std::int32_t flag);
-using RemoveModelFn = void(__thiscall*)(char* unit, std::int32_t model);
 
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
-const auto kModelId = reinterpret_cast<ModelIdFn>(0x0058F68F);
-const auto kBoneId = reinterpret_cast<BoneIdFn>(0x0058E506);
-const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
-const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
-const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
-const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
 
 struct Range {
   bool show = false;
@@ -103,15 +90,11 @@ std::int32_t ModelFor(float metres) {
   if (found != g_models.end()) {
     return found->second;
   }
-  void* table = *reinterpret_cast<void**>(kModelTable);
-  std::int32_t model = -1;
-  if (table != nullptr) {
-    wchar_t path[64];
-    swprintf_s(path, L"effects\\uhc_rings\\range_%d.xml", radius);
-    model = kModelId(table, path, 1, 0, 0);
-    if (g_log) {
-      uhc::Log(L"displayedRange: %ls is model %d", path, model);
-    }
+  wchar_t path[64];
+  swprintf_s(path, L"effects\\uhc_rings\\range_%d.xml", radius);
+  const std::int32_t model = uhc::ModelOfPath(path);
+  if (g_log) {
+    uhc::Log(L"displayedRange: %ls is model %d", path, model);
   }
   g_models[radius] = model;
   return model;
@@ -119,7 +102,7 @@ std::int32_t ModelFor(float metres) {
 
 void Release(const char* world, std::int32_t id, std::int32_t model) {
   if (char* unit = const_cast<char*>(kUnitById(world, id))) {
-    kRemoveModel(unit, model);
+    uhc::RemoveUnitModel(unit, model);
   }
   if (g_log) {
     uhc::Log(L"displayedRange: ring off unit %d", id);
@@ -171,15 +154,14 @@ void Tick(char* world, std::int32_t) {
       continue;
     }
     const std::int32_t model = ModelFor(found->second.metres);
-    void* table = *reinterpret_cast<void**>(kModelTable);
-    if (model == -1 || table == nullptr) {
+    if (model == -1) {
       continue;
     }
     if (g_bone == -2) {
-      g_bone = kBoneId(reinterpret_cast<void*>(kBoneTable), "bonethatdoesntexist");
+      g_bone = uhc::NoBone();
     }
-    const void* object = kModelById(table, model);
-    if (object != nullptr && !kHasModel(unit, model) && kAttachModel(unit, object, g_bone, 0)) {
+    const uhc::ModelHang hang = uhc::HangUnitModel(unit, model, g_bone);
+    if (hang == uhc::ModelHang::kHung || hang == uhc::ModelHang::kNotInGame) {
       g_hung[id] = model;
       if (g_log) {
         uhc::Log(L"displayedRange: ring of %.1f m on unit %d (%hs)", static_cast<double>(found->second.metres), id,
@@ -205,9 +187,8 @@ Outcome ApplyDisplayedRange(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById, &sites::kModelById,
-                                    &sites::kUnitHasModel, &sites::kUnitAttachModel, &sites::kUnitRemoveModel,
-                                    &sites::kModelPathLookup, &sites::kBoneNameLookup}) ||
+  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById}) ||
+      !VerifyUnitModels("displayedRange") ||
       !AddProtoTagHandler("DisplayRange", &ReadShow) || !AddProtoTagHandler("DisplayedRange", &ReadMetres) ||
       !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
