@@ -16,6 +16,12 @@
 // - <AttachTickText>RRGGBB</AttachTickText>: each tick shows the damage dealt over the unit in
 //   that colour, for the local player only (floatingtext.h); "damageOverTime noticktext" in
 //   uhc.cfg turns it off on that machine.
+// - <AttachModel>path.xml</AttachModel>: the unit carries that model while poisoned, as an aura's
+//   <modelattachment> (unitmodels.h). A visual: nothing reaches the simulation.
+//
+// Saved games: a copy of each running poison lives on the poisoned unit, in markers (savedmarkers.h): a
+// header of stat 63h and the stacks' ends in markers of stat 64h. They are written at each change, in the
+// simulation, so on every machine, and the table is rebuilt from them when another game is running (SyncWorld).
 #include <windows.h>
 
 #include <algorithm>
@@ -27,6 +33,7 @@
 #include <cwchar>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../actiontags.h"
@@ -35,6 +42,8 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../savedmarkers.h"
+#include "../unitmodels.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
@@ -65,6 +74,8 @@ const auto kSnare = reinterpret_cast<SnareFn>(0x004DD22D);
 constexpr std::int32_t kMaxStacks = 100;
 constexpr std::uint32_t kSnareSlackMs = 250;  // the snare outlasts the next tick by this much
 constexpr std::uint32_t kDefaultTickColour = 0xFF40FF40;
+constexpr std::int32_t kStatDot = 0x63;       // words: tag, next tick, attacker, source (proto << 16 | action name)
+constexpr std::int32_t kStatDotStacks = 0x64; // words: tag, three stacks' ends, 0 when unused
 
 template <typename T>
 T& Field(const char* base, std::uint32_t offset) {
@@ -191,6 +202,8 @@ struct Attachment {
   std::int32_t maxStacks = 1;    // <AttachMaxStacks>
   float snare = -1.0f;           // <AttachSnare>: the speed factor while poisoned; < 0 none
   std::uint32_t tickColour = 0;  // <AttachTickText>: ARGB of the tick text; 0 none
+  std::wstring modelPath;        // <AttachModel>; empty none
+  std::int32_t model = kUnresolved;
 };
 
 // Filled while protoy.xml is parsed, keyed by proto ID and action name, since every player's
@@ -213,9 +226,12 @@ struct Dot {
   std::uint32_t end = 0;                 // the last stack's end
   std::vector<std::uint32_t> stacks;     // each stack's end, in game time order of expiry
   // From the latest hit's action.
+  ActionKey source = {-1, -1};
   std::int32_t maxStacks = 1;
   float snare = -1.0f;
   std::uint32_t tickColour = 0;
+  std::int32_t model = -1;  // <AttachModel> of the first hit, -1 none
+  bool hung = false;        // this poison counts in g_modelUsers
 };
 
 // Ordered by key, so every machine applies the ticks in the same order.
@@ -223,6 +239,10 @@ std::map<DotKey, Dot> g_dots;
 const char* g_dotWorld = nullptr;
 std::uint32_t g_lastTime = 0;
 std::uint32_t g_lastStep = 0;
+std::map<std::pair<std::int32_t, std::int32_t>, std::int32_t> g_modelUsers;  // {unit, model}: the poisons showing it
+std::int32_t g_noBone = -1;
+bool g_models = false;  // the sites of unitmodels.h are as in stock
+bool g_loggedNoModel = false;
 
 extern "C" void UhcDotTakeDamageStock();
 const auto kTakeDamageStock = reinterpret_cast<TakeDamageFn>(&UhcDotTakeDamageStock);
@@ -342,25 +362,195 @@ void ResetForDataLoad(char*) {
   g_loggedUntagged.clear();
   g_attachingName = kUnresolved;
   g_dots.clear();
+  g_modelUsers.clear();
   g_dotWorld = nullptr;
 }
 
-// Drops every poison when another game is running: a new or loaded game can reuse the old
-// world's address, so the test is the world's step count [world+F8h], which the world update
-// raises by exactly 1 per step (0x481A87), and the game time going back. While poisons run, Tick
-// sees every step; with none running, a jump only clears an empty map.
+std::uint32_t Tag(const DotKey& key) {
+  return static_cast<std::uint32_t>(key.attachment) << 8 | static_cast<std::uint32_t>(key.player);
+}
+
+// The model of <AttachModel>, -1 for none. The path table exists once a game runs.
+std::int32_t ModelOf(Attachment& attachment) {
+  if (!g_models || attachment.modelPath.empty()) {
+    return -1;
+  }
+  if (attachment.model == kUnresolved) {
+    attachment.model = uhc::ModelOfPath(attachment.modelPath.c_str());
+    if (attachment.model < 0) {
+      uhc::Log(L"damageOverTime: <AttachModel>%ls is not in the game; no model shown", attachment.modelPath.c_str());
+    }
+  }
+  return attachment.model;
+}
+
+// The copy of a poison on its unit. Only words change in place; a marker is made only when the unit lacks one.
+void SaveDot(char* unit, const DotKey& key, const Dot& dot) {
+  namespace markers = uhc::markers;
+  const std::uint32_t tag = Tag(key);
+  char* header = markers::Find(unit, kStatDot, tag);
+  if (header == nullptr) {
+    header = markers::Take(unit, kStatDot);
+  }
+  if (header == nullptr) {
+    return;
+  }
+  markers::Word(header, 0) = tag;
+  markers::Word(header, 1) = dot.nextTick;
+  markers::Word(header, 2) = static_cast<std::uint32_t>(dot.attacker);
+  markers::Word(header, 3) =
+      static_cast<std::uint32_t>(dot.source.proto) << 16 | (static_cast<std::uint32_t>(dot.source.name) & 0xFFFF);
+  std::size_t next = 0;
+  auto fill = [&](char* marker) {
+    for (int word = 1; word < markers::kWords; ++word) {
+      markers::Word(marker, word) = next < dot.stacks.size() ? dot.stacks[next++] : 0;
+    }
+  };
+  markers::ForEach(unit, kStatDotStacks, [&](char* marker) {
+    if (markers::Word(marker, 0) == tag) {
+      if (next < dot.stacks.size()) {
+        fill(marker);
+      } else {
+        markers::Free(marker);
+      }
+    }
+    return true;
+  });
+  while (next < dot.stacks.size()) {
+    char* marker = markers::Take(unit, kStatDotStacks);
+    if (marker == nullptr) {
+      return;
+    }
+    markers::Word(marker, 0) = tag;
+    fill(marker);
+  }
+}
+
+// The poison ended on a unit that is still there.
+void ClearSavedDot(char* unit, const DotKey& key) {
+  namespace markers = uhc::markers;
+  const std::uint32_t tag = Tag(key);
+  auto freeOwn = [tag](char* marker) {
+    if (markers::Word(marker, 0) == tag) {
+      markers::Free(marker);
+    }
+    return true;
+  };
+  markers::ForEach(unit, kStatDot, freeOwn);
+  markers::ForEach(unit, kStatDotStacks, freeOwn);
+}
+
+// The table from the markers of a game that just started or loaded: the walk over the world's units runs once.
+void Rebuild(const char* world) {
+  namespace markers = uhc::markers;
+  g_dots.clear();
+  g_modelUsers.clear();
+  if (g_attachingName == kUnresolved) {
+    g_attachingName = ActionNameIndex(L"Attaching");
+  }
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* units = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = units[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    markers::ForEach(unit, kStatDot, [&](char* header) {
+      const std::uint32_t tag = markers::Word(header, 0);
+      if (tag == markers::kFree) {
+        return true;
+      }
+      Dot dot;
+      dot.nextTick = markers::Word(header, 1);
+      dot.attacker = static_cast<std::int32_t>(markers::Word(header, 2));
+      const std::uint32_t source = markers::Word(header, 3);
+      dot.source = {static_cast<std::int32_t>(source >> 16), static_cast<std::int32_t>(source & 0xFFFF)};
+      markers::ForEach(unit, kStatDotStacks, [&](char* marker) {
+        if (markers::Word(marker, 0) == tag) {
+          for (int word = 1; word < markers::kWords; ++word) {
+            if (markers::Word(marker, word) != 0) {
+              dot.stacks.push_back(markers::Word(marker, word));
+            }
+          }
+        }
+        return true;
+      });
+      if (dot.stacks.empty()) {
+        return true;
+      }
+      std::sort(dot.stacks.begin(), dot.stacks.end(),
+                [](std::uint32_t a, std::uint32_t b) { return static_cast<std::int32_t>(a - b) < 0; });
+      dot.end = dot.stacks.back();
+      const auto found = g_attachments.find(dot.source);
+      if (found != g_attachments.end()) {
+        dot.maxStacks = found->second.maxStacks;
+        dot.snare = found->second.snare;
+        dot.tickColour = found->second.tickColour;
+        dot.model = ModelOf(found->second);
+      }
+      g_dots[DotKey{Field<std::int32_t>(unit, 0x10), static_cast<std::int32_t>(tag >> 8),
+                    static_cast<std::int32_t>(tag & 0xFF)}] = std::move(dot);
+      return true;
+    });
+  }
+  if (!g_dots.empty()) {
+    uhc::Log(L"damageOverTime: %u running poison(s) found in the saved game", static_cast<unsigned>(g_dots.size()));
+  }
+}
+
+// Another game is running: a new or loaded game can reuse the old world's address, so the test is
+// the world's step count [world+F8h], which the world update raises by exactly 1 per step (0x481A87), and
+// the game time going back. The world tick sees every step of the main world.
 void SyncWorld(const char* world, std::uint32_t now) {
   const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
   if (world != g_dotWorld || !Reached(now, g_lastTime) || step - g_lastStep > 1) {
-    if (!g_dots.empty()) {
-      uhc::Log(L"damageOverTime: another game started; %u running poison(s) dropped",
-               static_cast<unsigned>(g_dots.size()));
-    }
-    g_dots.clear();
     g_dotWorld = world;
+    Rebuild(world);
   }
   g_lastTime = now;
   g_lastStep = step;
+}
+
+// Hangs the poison's model, from the world tick: a unit can have no visual yet, so it tries again.
+void ShowModel(char* target, std::int32_t targetId, Dot& dot) {
+  if (dot.model < 0 || dot.hung) {
+    return;
+  }
+  if (g_noBone < 0) {
+    g_noBone = uhc::NoBone();
+  }
+  const uhc::ModelHang hang = uhc::HangUnitModel(target, dot.model, g_noBone);
+  if (hang == uhc::ModelHang::kRetry) {
+    return;
+  }
+  if (hang == uhc::ModelHang::kNotInGame) {
+    uhc::RemoveUnitModel(target, dot.model);
+    if (!g_loggedNoModel) {
+      g_loggedNoModel = true;
+      uhc::Log(L"damageOverTime: an <AttachModel> is not in the game; no model shown");
+    }
+    dot.model = -1;
+    return;
+  }
+  dot.hung = true;
+  ++g_modelUsers[{targetId, dot.model}];
+}
+
+// The poison ends. target is null when the unit is gone.
+void ReleaseModel(char* target, std::int32_t targetId, const Dot& dot) {
+  if (!dot.hung) {
+    return;
+  }
+  const auto users = g_modelUsers.find({targetId, dot.model});
+  if (users != g_modelUsers.end() && --users->second > 0) {
+    return;
+  }
+  if (users != g_modelUsers.end()) {
+    g_modelUsers.erase(users);
+  }
+  if (target != nullptr) {
+    uhc::RemoveUnitModel(target, dot.model);  // the corpse does not keep it
+  }
 }
 
 // One-time diagnostics: each reason is logged the first time it happens, so a modder can see
@@ -373,7 +563,8 @@ bool g_loggedFirstTick = false;
 // "damageOverTime log" in uhc.cfg: every poison start, refresh, tick and end, for tuning data.
 bool g_logEvery = false;
 
-void Attach(char* target, std::int32_t player, std::int32_t attacker, const Attachment& source) {
+void Attach(char* target, std::int32_t player, std::int32_t attacker, const ActionKey& sourceKey,
+            Attachment& source) {
   const std::int32_t attachment = source.proto;
   const char* world = MainWorld();
   const char* proto = nullptr;
@@ -410,12 +601,14 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Atta
   Dot& dot = it->second;
   if (added) {
     dot.nextTick = now + TickInterval(attaching);
+    dot.model = ModelOf(source);
   }
   // A new hit by the player's units makes that unit the attacker and takes its action's options.
   // It adds a stack that ends Lifespan (the current one) from now; at the stack limit it renews the
   // oldest stack instead. With one stack this restarts the duration. The tick timer keeps running.
   // Capped so the end stays within the 2^31 ms window that Reached() compares.
   dot.attacker = attacker;
+  dot.source = sourceKey;
   dot.maxStacks = source.maxStacks;
   dot.snare = source.snare;
   dot.tickColour = source.tickColour;
@@ -432,6 +625,7 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Atta
   if (added) {
     Snare(target, attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
   }
+  SaveDot(target, key, dot);
   if (!g_loggedFirstPoison || g_logEvery) {
     g_loggedFirstPoison = true;
     uhc::Log(L"damageOverTime: %ls: unit %d (%hs) by player %d, proto %d, stack %u/%d, every %u ms until game time "
@@ -456,18 +650,18 @@ float ApplyTick(char* target, char* attaching, const DotKey& key, const Dot& dot
                           0, 0, 1, notify, -2, 1);
 }
 
-void Tick(char* world) {
-  if (world != MainWorld()) {
-    return;  // other worlds run the same update; the function itself compares this with [game+13Ch]
-  }
-  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
-  SyncWorld(world, now);
+void Tick(char* world, std::uint32_t now) {
   for (auto it = g_dots.begin(); it != g_dots.end();) {
     const DotKey& key = it->first;
     Dot& dot = it->second;
     char* target = UnitById(world, key.target);
     bool alive = target != nullptr && IsAlive(target);
+    if (alive) {
+      ShowModel(target, key.target, dot);
+    }
+    bool ticked = false;
     while (alive && Reached(now, dot.nextTick) && Reached(dot.end, dot.nextTick)) {
+      ticked = true;
       const char* proto = nullptr;
       char* attaching = PlayerAttaching(world, key.player, key.attachment, &proto);
       if (attaching == nullptr) {
@@ -505,8 +699,15 @@ void Tick(char* world) {
         uhc::Log(L"damageOverTime: poison on unit %d ended at game time %u: %ls", key.target, now,
                  !alive ? (target == nullptr ? L"unit gone" : L"unit dead or not damageable") : L"expired");
       }
+      ReleaseModel(target, key.target, dot);
+      if (target != nullptr) {
+        ClearSavedDot(target, key);
+      }
       it = g_dots.erase(it);
     } else {
+      if (ticked) {
+        SaveDot(target, key, dot);
+      }
       ++it;
     }
   }
@@ -526,7 +727,8 @@ void DotActionTag(const uhc::ActionTag& tag) {
   const bool stacks = _wcsicmp(name, L"AttachMaxStacks") == 0;
   const bool snare = _wcsicmp(name, L"AttachSnare") == 0;
   const bool tickText = _wcsicmp(name, L"AttachTickText") == 0;
-  if (!attach && !stacks && !snare && !tickText) {
+  const bool model = _wcsicmp(name, L"AttachModel") == 0;
+  if (!attach && !stacks && !snare && !tickText && !model) {
     return;
   }
   const char* protoName = Field<const char*>(proto, 0x10);
@@ -539,6 +741,15 @@ void DotActionTag(const uhc::ActionTag& tag) {
     }
     g_attachments[key].protoName = Narrow(text);
     uhc::Log(L"damageOverTime: %hs/%ls attaches %ls", protoName, ActionName(key.name), text);
+    return;
+  }
+  if (model) {
+    if (text == nullptr || *text == L'\0') {
+      uhc::Log(L"damageOverTime: %hs/%ls: empty <AttachModel>; ignored", protoName, ActionName(key.name));
+      return;
+    }
+    g_attachments[key].modelPath = text;
+    uhc::Log(L"damageOverTime: %hs/%ls: poisoned units carry %ls", protoName, ActionName(key.name), text);
     return;
   }
   wchar_t* end = nullptr;
@@ -591,7 +802,7 @@ float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::i
     const ActionKey key{proto, Field<std::int32_t>(action, 0x04)};
     const auto it = g_attachments.find(key);
     if (it != g_attachments.end() && Resolve(it->second)) {
-      Attach(unit, player, attacker, it->second);
+      Attach(unit, player, attacker, key, it->second);
     } else if (g_logEvery && it == g_attachments.end() && g_loggedUntagged.size() < 200 &&
                g_loggedUntagged.try_emplace(key, true).second) {
       const char* database = Database();
@@ -608,8 +819,13 @@ float __fastcall UhcDotTakeDamage(char* unit, void*, std::int32_t player, std::i
 
 // After each world update (the shared wrapper of worldtick.cpp).
 void DotWorldTick(char* world, std::int32_t) {
+  if (world != MainWorld()) {
+    return;  // other worlds run the same update; the function itself compares this with [game+13Ch]
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  SyncWorld(world, now);
   if (!g_dots.empty()) {
-    Tick(world);
+    Tick(world, now);
   }
 }
 
@@ -641,13 +857,17 @@ Outcome ApplyDamageOverTime(const Config& config) {
       !uhc::VerifyFloatingText("damageOverTime") || !OnDatabaseLoad(&ResetForDataLoad)) {
     return Outcome::kFailed;
   }
+  g_models = VerifyUnitModels("damageOverTime models");
+  if (!g_models) {
+    Log(L"damageOverTime: <AttachModel> shows nothing: its sites are not stock");
+  }
   if (!AddActionTagHandler(&DotActionTag) ||
       !WriteJmp(sites::kDotTakeDamageEntry.va, reinterpret_cast<const void*>(&UhcDotTakeDamageHook), 6) ||
       !uhc::AddWorldTick(&DotWorldTick)) {
     return Outcome::kFailed;
   }
   Log(L"damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with "
-      L"<AttachMaxStacks>, <AttachSnare> and <AttachTickText>%ls (multiplayer unverified)",
+      L"<AttachMaxStacks>, <AttachSnare>, <AttachTickText> and <AttachModel>%ls (multiplayer unverified)",
       g_noTickText ? L"; tick texts off on this machine" : L"");
   return Outcome::kApplied;
 }
