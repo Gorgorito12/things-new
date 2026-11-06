@@ -15,7 +15,9 @@ Contents:
 
 Contract: [danceBonusCivs](../porting-to-another-dll.md#dancebonuscivs).
 
-Sites: `DanceRegenGate` `0x490486` (17 B), `DanceXpGate` `0x4E0DFA` (13 B), `DanceXpBranch` `0x4E0E29` (10 B), `DanceGatherGate` `0x4ECD4E` (13 B), `DanceGatherBranch` `0x4ECD7D` (10 B), `DanceRegenBranch` `0x679E66` (13 B), `DanceTrainGate` `0x8D47A6` (13 B), `DanceTrainBranch` `0x8D47CF` (13 B).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `UnitOfTypeLookup` `0x48195C` (12 B), `FirePitHead` `0x4819EF` (5 B), `DanceRegenGate` `0x490486` (17 B), `DanceXpGate` `0x4E0DFA` (13 B), `DanceXpBranch` `0x4E0E29` (10 B), `DanceGatherGate` `0x4ECD4E` (13 B), `DanceGatherBranch` `0x4ECD7D` (10 B), `DanceRegenBranch` `0x679E66` (13 B), `DanceTrainGate` `0x8D47A6` (13 B), `DanceTrainBranch` `0x8D47CF` (13 B), `DancerProtoRead` `0x9C1604` (7 B).
 
 ### src/features/dance.cpp
 
@@ -36,15 +38,32 @@ Sites: `DanceRegenGate` `0x490486` (17 B), `DanceXpGate` `0x4E0DFA` (13 B), `Dan
 // dances exactly as the native civs do. Nothing else about the civ changes (a key that makes a civ
 // native everywhere would be broader, and the XP compare is easy to miss). The hooks are in
 // hooks/dance_hooks.asm.
+//
+// Each of those reads walks the player's units to find the fire pit, every time: with no fire pit, all
+// of them, once per gatherer per tick. getFirePit 0x4819EF now remembers, per player, where the first
+// unit of the type is in the list, or that there is none, for as long as the list and the protos stay
+// the same. The answer is never taken from memory: the stock lookup still decides, starting at that
+// place, so a foundation, a dead unit and the rest of its filter stay stock. It is a cache of a fact
+// about the list, not of a game step, so a UI call between two updates cannot change what the next
+// update reads, and every machine gets what stock gives.
+//
+// <DanceWeight>N</DanceWeight> in a proto: that many dancers, instead of 1 for a villager and 2 for any
+// other unit (the count 0x9C1577, read by the strength and the tooltips).
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <cwchar>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../prototags.h"
+#include "../unittypes.h"
+#include "../transformcalls.h"
 
 namespace {
 
@@ -121,6 +140,43 @@ std::uint8_t KindBit(std::int32_t kind) {
 
 // Kinds already logged per player ID, for the game world and game time they were logged in.
 constexpr std::int32_t kMaxPlayers = 32;
+
+// getFirePit's memory. firstIndex: where the first unit of the type is in the list, -1 none.
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using UnitOfTypeFn = std::int32_t(__thiscall*)(const char* player, std::int32_t type, std::int32_t startId, bool flag,
+                                               std::int32_t other);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kUnitOfType = reinterpret_cast<UnitOfTypeFn>(0x0048195C);
+constexpr std::int32_t kFirePitType = 0x52;  // AbstractFirePit, after the protos
+
+struct PitMemory {
+  const char* world = nullptr;
+  std::uint32_t generation = 0;
+  std::int32_t count = -1;
+  std::int32_t last = -1;
+  std::int32_t firstIndex = -1;
+};
+PitMemory g_pits[kMaxPlayers] = {};
+std::uint32_t g_protoGeneration = 1;
+std::uint32_t g_pitTime = 0;
+
+// A transform changes a unit's proto with the list as it was.
+float BeforeTransform(const char*) { return 0.0f; }
+void AfterTransform(char*, float) { ++g_protoGeneration; }
+
+const char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0) {
+    return nullptr;
+  }
+  const std::int32_t index = id & 0x3FFFF;
+  if (index >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  const char* unit = Field<const char**>(world, 0x0C)[index];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+std::unordered_map<std::int32_t, std::int32_t> g_weights;  // by proto ID
 std::uint8_t g_loggedKinds[kMaxPlayers] = {};
 const char* g_logWorld = nullptr;
 std::uint32_t g_logTime = 0;
@@ -183,6 +239,61 @@ void UhcDanceTrainHook();
 void UhcDanceXpHook();
 void UhcDanceGatherHook();
 void UhcDanceRegenHook();
+void UhcFirePitHook();
+void UhcDancerHook();
+
+// The head of getFirePit: what it returns, or -1 for the stock code to run.
+const char* __stdcall UhcFirePit(const char* player) {
+  char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (player == nullptr || world == nullptr || database == nullptr) {
+    return reinterpret_cast<const char*>(-1);
+  }
+  const std::int32_t id = Field<std::int32_t>(player, 0x00);
+  if (id < 0 || id >= kMaxPlayers) {
+    return reinterpret_cast<const char*>(-1);
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (now < g_pitTime) {
+    ++g_protoGeneration;  // another game in the same world object
+  }
+  g_pitTime = now;
+  const std::int32_t type = Field<std::int32_t>(database, 0x19B0) + kFirePitType;
+  const std::int32_t count = Field<std::int32_t>(player, 0xFC);
+  const std::int32_t* list = Field<const std::int32_t*>(player, 0xF8);
+  const std::int32_t last = count > 0 ? list[count - 1] : -1;
+  PitMemory& pit = g_pits[id];
+  if (pit.world != world || pit.generation != g_protoGeneration || pit.count != count || pit.last != last) {
+    pit.world = world;
+    pit.generation = g_protoGeneration;
+    pit.count = count;
+    pit.last = last;
+    pit.firstIndex = -1;
+    for (std::int32_t i = 0; i < count; ++i) {
+      const char* unit = UnitById(world, list[i]);
+      const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+      if (proto != nullptr && kProtoIsType(proto, type)) {
+        pit.firstIndex = i;
+        break;
+      }
+    }
+  }
+  if (pit.firstIndex < 0) {
+    return nullptr;
+  }
+  const std::int32_t start = pit.firstIndex == 0 ? -1 : list[pit.firstIndex - 1];
+  return UnitById(world, kUnitOfType(player, type, start, false, -1));
+}
+
+// From the dancer count: the proto's weight, or -1 for stock's count.
+std::int32_t __stdcall UhcDancerWeight(const char* proto) {
+  if (g_weights.empty()) {
+    return -1;
+  }
+  const auto found = g_weights.find(Field<std::int32_t>(proto, 0x04));
+  return found == g_weights.end() ? -1 : found->second;
+}
 
 // From the four hooks, in place of the first native compare. kind = the reader's DanceBonusType,
 // player = its this, civ = the player's first civ ID (-1 when it has none). True if the civ is
@@ -211,10 +322,49 @@ bool __stdcall UhcDanceCivAllowed(std::int32_t kind, const char* player, std::in
 }
 }
 
+namespace {
+
+bool __cdecl ReadWeight(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  wchar_t* end = nullptr;
+  const long weight = text == nullptr ? -1 : std::wcstol(text, &end, 10);
+  if (text == nullptr || end == text || weight < 0 || weight > 1000) {
+    uhc::Log(L"danceBonusCivs: proto %d: <DanceWeight> needs a whole number from 0 to 1000; ignored",
+             Field<std::int32_t>(proto, 0x04));
+    return true;
+  }
+  g_weights[Field<std::int32_t>(proto, 0x04)] = static_cast<std::int32_t>(weight);
+  return true;
+}
+
+void NewDatabase(char*) {
+  g_weights.clear();
+  ++g_protoGeneration;
+}
+
+}  // namespace
+
 namespace uhc {
 
 namespace {
 bool g_gatesInstalled = false;
+bool g_extrasInstalled = false;
+
+// The fire pit's memory and the weights. Neither is needed for the dances to work, so a site another
+// DLL patched leaves them off and the key on.
+void InstallExtras(const char* feature) {
+  if (g_extrasInstalled) {
+    return;
+  }
+  g_extrasInstalled = true;
+  if (!VerifyAll(feature, {&sites::kFirePitHead, &sites::kUnitOfTypeLookup, &sites::kDancerProtoRead}) ||
+      !AddProtoTagHandler("DanceWeight", &ReadWeight) || !OnDatabaseLoad(&NewDatabase) ||
+      !AddTransformObserver({&BeforeTransform, &AfterTransform}) ||
+      !WriteJmp(sites::kFirePitHead.va, reinterpret_cast<const void*>(&UhcFirePitHook), 5) ||
+      !WriteJmp(sites::kDancerProtoRead.va, reinterpret_cast<const void*>(&UhcDancerHook), 7)) {
+    Log(L"%hs: no fire pit memory and no <DanceWeight>; the dances work as they did", feature);
+  }
+}
 }  // namespace
 
 // The four dance gates, installed once (danceBonusCivs and nativeCivs share them).
@@ -244,6 +394,7 @@ bool InstallDanceGates(const char* feature) {
     }
   }
   g_gatesInstalled = true;
+  InstallExtras(feature);
   return true;
 }
 
@@ -311,6 +462,8 @@ option casemap :none
 include common.inc
 
 UhcDanceCivAllowed PROTO STDCALL kind:DWORD, player:DWORD, civ:DWORD
+UhcFirePit PROTO STDCALL player:DWORD
+UhcDancerWeight PROTO STDCALL unitProto:DWORD
 
 .data
 trainNext       dd 008D47B1h    ; je 8D47CFh, then the XPSioux, XPAztec and XPSPC compares
@@ -320,9 +473,52 @@ xpDance         dd 004E0E29h    ; call 4819EFh / jmp 679D72h
 gatherNext      dd 004ECD59h    ; je 4ECD7Dh, then the other three compares
 gatherDance     dd 004ECD7Dh    ; call 4819EFh / jmp 679DECh
 regenNext       dd 00490491h    ; je 679E66h (near), then the other three compares
+firePitNext     dd 004819F4h    ; mov edx,[eax+140h], the rest of getFirePit
+dancerType      dd 009C160Bh    ; push 16h / mov ecx,eax / call 44CAC4h: EAX = the proto
+dancerOther     dd 009C161Fh    ; add [esp+10h],2: a dancer that is not a villager
+dancerNext      dd 009C1629h    ; add esi,1, the next worker
 regenDance      dd 00679E66h    ; cmp dword ptr [edi+80h],0 / je 4904BBh, then the fire pit
 
 .code
+
+; Replaces 0x4819EF, the head of getFirePit, thiscall(player), no arguments: mov eax,[0C66234h]. EDX
+; and ECX are free on return, as they are after the stock body.
+UhcFirePitHook PROC
+    TRACE_ONCE "danceBonusCivs fire pit (0x4819EF)"
+    push ecx
+    push ecx
+    call UhcFirePit
+    pop ecx
+    cmp eax, -1
+    je stock
+    ret
+stock:
+    mov eax, dword ptr ds:[0C66234h]    ; replaced
+    jmp firePitNext
+UhcFirePitHook ENDP
+
+; Replaces 0x9C1604 in the dancer count 0x9C1577, with EAX = the worker unit: mov eax,[eax+5Ch] /
+; test eax,eax / je 9C161Fh. The stale workers it removes are handled before this. [esp+10h] is the
+; count; EAX, ECX and EDX are free at every exit but the type test, which wants the proto in EAX.
+UhcDancerHook PROC
+    TRACE_ONCE "danceBonusCivs dancer (0x9C1604)"
+    mov eax, dword ptr [eax+5Ch]        ; replaced
+    test eax, eax                       ; replaced
+    je other
+    push eax
+    push eax
+    call UhcDancerWeight
+    mov ecx, eax
+    pop eax
+    test ecx, ecx
+    jl stock
+    add dword ptr [esp+10h], ecx
+    jmp dancerNext
+stock:
+    jmp dancerType
+other:
+    jmp dancerOther
+UhcDancerHook ENDP
 
 ; Replaces 0x8D47AB in FUN_008D4790 (train rate, thiscall; ret 4 with the trained proto ID).
 ; ECX = player; the fire pit lookup at the continuation takes it as this.

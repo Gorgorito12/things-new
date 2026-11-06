@@ -1125,9 +1125,9 @@ Outcome ApplyTransformSpan(const Config& config) {
 
 Contract: [transformInventory](../porting-to-another-dll.md#transforminventory).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `IsA` `0x44D7FA` (105 B), `ResListCopy` `0x480A73` (73 B), `ResListScale` `0x480B94` (126 B), `InventoryFree` `0x4BA757` (80 B), `ResListTotal` `0x58EF02` (129 B), `InventorySeed` `0x67DE0D` (30 B), `InventoryRecreate` `0x9BFE5A` (110 B), `TransformProtoLookup` `0x9C754C` (22 B), `TransformKbRemove` `0x9C75CF` (86 B), `TransformInvHook` `0x9C7625` (23 B), `TransformPushProto` `0x9C763C` (3 B), `TransformKbReAdd` `0x9C766F` (35 B).
+Sites: `XmlText` `0x402733` (9 B), `IsA` `0x44D7FA` (105 B), `ResListCopy` `0x480A73` (73 B), `ResListScale` `0x480B94` (126 B), `InventoryFree` `0x4BA757` (80 B), `ResListTotal` `0x58EF02` (129 B), `XmlAttribute` `0x598F37` (16 B), `InventorySeed` `0x67DE0D` (30 B), `InventoryRecreate` `0x9BFE5A` (110 B), `TransformProtoLookup` `0x9C754C` (22 B), `TransformKbRemove` `0x9C75CF` (86 B), `TransformInvHook` `0x9C7625` (23 B), `TransformPushProto` `0x9C763C` (3 B), `TransformKbReAdd` `0x9C766F` (35 B).
 
 ### src/features/transforminv.cpp
 
@@ -1157,16 +1157,22 @@ Sites: `IsA` `0x44D7FA` (105 B), `ResListCopy` `0x480A73` (73 B), `ResListScale`
 // its inventory is freed, as trUnitChangeProtoUnit does (0x4729D0). Units already gathering the
 // target keep their old resource type, so after a cross-type rebuild they stop at their next
 // gather tick and must be re-tasked.
+//
+// inventory='keep', 'rebuild' or 'scale' on a TransformUnit effect decides for that effect, over the
+// cfg: keep leaves the inventory as stock does, rebuild is "all", and scale is "all scale". A transform
+// that no effect runs, as a revolution or a turn back, follows the cfg.
 #include <bit>
 #include <cstdint>
 #include <cstring>
 #include <cwchar>
 #include <string>
+#include <unordered_map>
 
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../transformcalls.h"
 #include "../unittypes.h"
 
 namespace {
@@ -1189,6 +1195,15 @@ const auto kResListCopy = reinterpret_cast<ResListCopyFn>(0x00480A73);
 const auto kResListScale = reinterpret_cast<ResListScaleFn>(0x00480B94);
 const auto kFreeInventory = reinterpret_cast<FreeInventoryFn>(0x004BA757);
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+
+enum class Mode { kCfg, kKeep, kRebuild, kScale };
+std::unordered_map<void*, Mode> g_modes;  // by effect, from inventory='...'
+Mode g_running = Mode::kCfg;              // of the effect that is applying
 
 bool g_all = false;          // "all": rebuild same-type inventories too, free them when the new proto has none
 bool g_scale = false;        // "scale": keep the fraction of the old InitialResource not yet gathered
@@ -1268,7 +1283,12 @@ void __stdcall UhcTransformInventory(char* unit, const char* newProto) {
   if (block == nullptr || newProto == nullptr) {
     return;
   }
-  if (g_typeGiven && (g_type < 0 || !kProtoIsType(newProto, g_type))) {
+  if (g_running == Mode::kKeep) {
+    return;
+  }
+  const bool all = g_all || g_running == Mode::kRebuild || g_running == Mode::kScale;
+  const bool scale = g_running == Mode::kScale || (g_running == Mode::kCfg && g_scale);
+  if (g_running == Mode::kCfg && g_typeGiven && (g_type < 0 || !kProtoIsType(newProto, g_type))) {
     return;
   }
   const auto count = static_cast<std::int32_t>(Global(kResourceCount));
@@ -1285,7 +1305,7 @@ void __stdcall UhcTransformInventory(char* unit, const char* newProto) {
     if (inventory == nullptr) {
       return;  // no resources before or after: nothing to do
     }
-    if (!g_all) {
+    if (!all) {
       if (g_log) {
         uhc::Log(L"transformInventory: unit %d (%hs -> %hs) keeps its inventory %ls (the new proto has no "
                  L"resources; \"all\" frees it)",
@@ -1303,7 +1323,7 @@ void __stdcall UhcTransformInventory(char* unit, const char* newProto) {
     return;
   }
 
-  if (!g_all && inventory != nullptr && oldRes != nullptr && SameTypes(oldRes, newRes, count)) {
+  if (!all && inventory != nullptr && oldRes != nullptr && SameTypes(oldRes, newRes, count)) {
     if (g_log) {
       uhc::Log(L"transformInventory: unit %d (%hs -> %hs) keeps its inventory %ls (same resource types)", id,
                ProtoName(oldProto), ProtoName(newProto), Describe(inventory + 4, count).c_str());
@@ -1314,7 +1334,7 @@ void __stdcall UhcTransformInventory(char* unit, const char* newProto) {
   // The fraction of the old InitialResource still in the inventory, read before the copy. Single
   // precision division of two game values: the same result on every machine with this build.
   float factor = 1.0f;
-  if (g_scale && inventory != nullptr && oldRes != nullptr) {
+  if (scale && inventory != nullptr && oldRes != nullptr) {
     const float oldTotal = Total(oldRes);
     if (oldTotal > kEpsilon) {
       factor = Total(inventory + 4) / oldTotal;
@@ -1357,6 +1377,40 @@ void __stdcall UhcTransformInventory(char* unit, const char* newProto) {
 }
 }
 
+namespace {
+
+void ReadEffect(void* effect, const void* node) {
+  const void* text = nullptr;
+  if (!kXmlAttribute(node, "inventory", &text) || text == nullptr) {
+    return;
+  }
+  const char* value = kXmlText(text);
+  if (_stricmp(value, "keep") == 0) {
+    g_modes[effect] = Mode::kKeep;
+  } else if (_stricmp(value, "rebuild") == 0) {
+    g_modes[effect] = Mode::kRebuild;
+  } else if (_stricmp(value, "scale") == 0) {
+    g_modes[effect] = Mode::kScale;
+  } else {
+    uhc::Log(L"transformInventory: inventory='%hs' is not keep, rebuild or scale; ignored", value);
+    return;
+  }
+  if (g_log) {
+    uhc::Log(L"transformInventory: an effect has inventory='%hs'", value);
+  }
+}
+
+void BeforeApply(void* effect) {
+  const auto found = g_modes.find(effect);
+  g_running = found == g_modes.end() ? Mode::kCfg : found->second;
+}
+
+void AfterApply(void*) { g_running = Mode::kCfg; }
+
+void NewDatabase(char*) { g_modes.clear(); }
+
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyTransformInventory(const Config& config) {
@@ -1392,7 +1446,7 @@ Outcome ApplyTransformInventory(const Config& config) {
                  {&sites::kTransformInvHook, &sites::kTransformProtoLookup, &sites::kTransformKbRemove,
                   &sites::kTransformPushProto, &sites::kTransformKbReAdd, &sites::kInventorySeed,
                   &sites::kInventoryRecreate, &sites::kInventoryFree, &sites::kResListCopy, &sites::kResListScale,
-                  &sites::kResListTotal, &sites::kIsA})) {
+                  &sites::kResListTotal, &sites::kIsA, &sites::kXmlAttribute, &sites::kXmlText})) {
     return Outcome::kFailed;
   }
   if (typeGiven && !RequestAbstractUnitType(typeName.c_str(), &g_type)) {
@@ -1404,6 +1458,9 @@ Outcome ApplyTransformInventory(const Config& config) {
   g_typeGiven = typeGiven;
   if (!WriteJmp(sites::kTransformInvHook.va, reinterpret_cast<const void*>(&UhcTransformInventoryHook), 7)) {
     return Outcome::kFailed;
+  }
+  if (!OnDatabaseLoad(&NewDatabase) || !AddTransformEffectReader({&ReadEffect, &BeforeApply, &AfterApply})) {
+    Log(L"transformInventory: no inventory= on effects; the key works from the cfg");
   }
   Log(L"transformInventory: units transformed in place (TransformUnit, revolution)%hs%hs take their new proto's "
       L"InitialResource %ls%ls%ls (multiplayer unverified)",
