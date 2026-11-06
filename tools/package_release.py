@@ -222,7 +222,8 @@ removeFameRestriction         Fame, XP and shipment costs and icons
 removeConversionRestriction   ConvertGuardian works on any unit
 hcShipmentPointFallback ...   when no stock fallback building is left, the shipment point
                               moves to the building types you list; FirstTC = the
-                              player's first town center (with startingTC or civFirstTC)
+                              player's first town center (with startingTC or civFirstTC);
+                              LastResort = any building, then a hero
 healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
 smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt unit
                               (listed types first) instead of the first one

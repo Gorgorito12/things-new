@@ -10,8 +10,10 @@ include common.inc
 EXTERNDEF g_uhcGatherFallbackTypes:DWORD    ; proto IDs, resolved on first use
 EXTERNDEF g_uhcGatherFallbackCount:SDWORD
 UhcResolveGatherFallbackTypes PROTO STDCALL
+UhcGatherLastResortUnit PROTO STDCALL hc:DWORD ; any building, then a hero, of the player, or 0
 UhcGatherFirstTcUnit PROTO STDCALL hc:DWORD   ; the player's FirstTC if it is a valid point, else 0
 
+LAST_RESORT_ENTRY EQU -3                    ; the same for the keyword LastResort
 FIRST_TC_ENTRY EQU -2                       ; g_uhcGatherFallbackTypes entry of the keyword FirstTC
 
 .data
@@ -54,6 +56,8 @@ nextType:
     mov edx, g_uhcGatherFallbackTypes[eax*4]
     cmp edx, FIRST_TC_ENTRY
     je firstTc
+    cmp edx, LAST_RESORT_ENTRY
+    je lastResort
     cmp edx, -1
     je typeDone
     mov eax, dword ptr [esp+10h]    ; home city
@@ -130,6 +134,14 @@ firstTc:
     je typeDone
     mov edi, eax
     jmp storeAndReturn              ; 0x4C6CB2: stores [hc+18Ch] when [esp+18h]==1, returns EDI
+lastResort:
+    TRACE_ONCE "hcShipmentPointFallback LastResort (0x669E2E)"
+    push dword ptr [esp+10h]        ; home city (address taken before the push)
+    call UhcGatherLastResortUnit    ; Unit* or 0; clobbers EAX/ECX/EDX only
+    test eax, eax
+    je typeDone
+    mov edi, eax
+    jmp storeAndReturn
 notFound:
     pop ebp                         ; stolen 0x669E2E..0x669E32
     pop edi

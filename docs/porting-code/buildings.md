@@ -3344,7 +3344,9 @@ END
 
 Contract: [hcShipmentPointFallback](../porting-to-another-dll.md#hcshipmentpointfallback).
 
-Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
 
 ### src/features/shipments.cpp
 
@@ -3355,7 +3357,9 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerById
 // uhc.cfg, in order. An entry is a proto unit name, or the keyword FirstTC: the player's first town
 // center, the unit ID at [player+4F0h] that the placement rules call FirstTC. Stock makes only a
 // TownCenter FirstTC, which the stock list already tries first, so FirstTC is useful with
-// startingTC (a marked building can be FirstTC). The hook is in hooks/shipment_hooks.asm.
+// startingTC (a marked building can be FirstTC). The keyword LastResort, best listed last, takes any
+// building of the player, else a hero (the Explorer), so that a shipment always has somewhere to go.
+// The hook is in hooks/shipment_hooks.asm.
 #include <windows.h>
 
 #include <cstdint>
@@ -3366,6 +3370,7 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerById
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unittypes.h"
 
 namespace {
 
@@ -3373,11 +3378,14 @@ constexpr int kMaxFallbackTypes = 64;
 // The entry of the keyword FirstTC; -1 is an unknown proto, >= 0 a proto ID.
 constexpr std::int32_t kFirstTcEntry = -2;
 constexpr char kFirstTcKeyword[] = "FirstTC";
+constexpr std::int32_t kLastResortEntry = -3;
+constexpr char kLastResortKeyword[] = "LastResort";
 
 // Engine layout (docs/engine-symbols.md, "Home city gather point").
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
 constexpr std::uint32_t kHcPlayer = 0x08;          // home city: its player; [player+0] the player ID
 constexpr std::uint32_t kPlayerFirstTc = 0x4F0;    // unit ID of the player's first town center; -1 none
+constexpr std::uint32_t kPlayerUnits = 0xF8;       // the IDs of the player's units; +4 their count
 constexpr std::uint32_t kUnitId = 0x10;
 constexpr std::uint32_t kUnitOwner = 0x44;  // the owning Player*
 constexpr std::uint32_t kUnitProto = 0x5C;  // proto; [proto+10h] its name
@@ -3386,12 +3394,14 @@ constexpr int kMaxLoggedPlayers = 32;
 using PlayerByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
 using UnitByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
 using GatherPointValidFn = bool(__thiscall*)(const char* hc, const char* unit);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
 
 const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 // The check stock applies to the stored point and to every candidate: not null, alive (unit vtable
 // slot A4h), 0x44DDB4 true, 0x4802C6 not 1.
 const auto kGatherPointValid = reinterpret_cast<GatherPointValidFn>(0x0085302C);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 
 // Proto names from uhc.cfg; resolved to IDs only once the game database exists.
 std::vector<std::string> g_typeNames;
@@ -3400,6 +3410,10 @@ std::vector<std::string> g_typeNames;
 // never reads them, so they cannot make two machines disagree.
 const char* g_loggedWorld = nullptr;
 std::int32_t g_loggedFirstTc[kMaxLoggedPlayers];
+std::int32_t g_loggedLastResort[kMaxLoggedPlayers];
+
+std::int32_t g_buildingType = -1;
+std::int32_t g_heroType = -1;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3418,6 +3432,7 @@ const char* ProtoName(const char* unit) {
 }
 
 bool IsFirstTcKeyword(const std::string& name) { return _stricmp(name.c_str(), kFirstTcKeyword) == 0; }
+bool IsLastResortKeyword(const std::string& name) { return _stricmp(name.c_str(), kLastResortKeyword) == 0; }
 
 void LogFirstTcPick(const char* world, std::int32_t playerId, const char* unit) {
   if (playerId < 0 || playerId >= kMaxLoggedPlayers) {
@@ -3428,6 +3443,9 @@ void LogFirstTcPick(const char* world, std::int32_t playerId, const char* unit) 
     for (std::int32_t& id : g_loggedFirstTc) {
       id = -1;
     }
+    for (std::int32_t& id : g_loggedLastResort) {
+      id = -2;
+    }
   }
   const std::int32_t id = Field<std::int32_t>(unit, kUnitId);
   if (g_loggedFirstTc[playerId] == id) {
@@ -3436,6 +3454,33 @@ void LogFirstTcPick(const char* world, std::int32_t playerId, const char* unit) 
   g_loggedFirstTc[playerId] = id;
   uhc::Log(L"hcShipmentPointFallback: player %d's shipment point -> unit %d (%hs), its first town center (FirstTC)",
            playerId, id, ProtoName(unit));
+}
+
+// The same for LastResort, with -1 for nothing left. Log only.
+void LogLastResort(const char* world, std::int32_t playerId, const char* unit) {
+  if (playerId < 0 || playerId >= kMaxLoggedPlayers) {
+    return;
+  }
+  if (world != g_loggedWorld) {
+    g_loggedWorld = world;
+    for (std::int32_t& id : g_loggedFirstTc) {
+      id = -1;
+    }
+    for (std::int32_t& id : g_loggedLastResort) {
+      id = -2;
+    }
+  }
+  const std::int32_t id = unit == nullptr ? -1 : Field<std::int32_t>(unit, kUnitId);
+  if (g_loggedLastResort[playerId] == id) {
+    return;
+  }
+  g_loggedLastResort[playerId] = id;
+  if (unit == nullptr) {
+    uhc::Log(L"hcShipmentPointFallback: player %d has no building and no hero: shipments have no point", playerId);
+  } else {
+    uhc::Log(L"hcShipmentPointFallback: player %d's shipment point -> unit %d (%hs), the last resort", playerId, id,
+             ProtoName(unit));
+  }
 }
 
 }  // namespace
@@ -3459,11 +3504,55 @@ void __stdcall UhcResolveGatherFallbackTypes() {
       uhc::Log(L"hcShipmentPointFallback: FirstTC -> each player's first town center (FirstTC)");
       continue;
     }
+    if (IsLastResortKeyword(g_typeNames[i])) {
+      g_uhcGatherFallbackTypes[i] = kLastResortEntry;
+      uhc::Log(L"hcShipmentPointFallback: LastResort -> any building of the player, then a hero");
+      continue;
+    }
     const int id = database == nullptr ? -1 : protoIdByName(database, g_typeNames[i].c_str());
     g_uhcGatherFallbackTypes[i] = id;
     uhc::Log(L"hcShipmentPointFallback: %hs -> proto %d%ls", g_typeNames[i].c_str(), id,
              id < 0 ? L" (unknown proto; skipped)" : L"");
   }
+}
+
+// Called from the hook for a LastResort entry. The first of the player's units, in the order of the player's
+// list, that is a building and passes the stock check 0x85302C, else the first such hero, else null. The list is
+// the simulation's, so every machine picks the same unit. It writes no game state, as a FirstTC entry; the walk
+// runs only for a player with no point at all.
+const char* __stdcall UhcGatherLastResortUnit(const char* hc) {
+  char* world = World();
+  if (world == nullptr || hc == nullptr) {
+    return nullptr;
+  }
+  const char* hcPlayer = Field<const char*>(hc, kHcPlayer);
+  if (hcPlayer == nullptr) {
+    return nullptr;
+  }
+  const std::int32_t playerId = Field<std::int32_t>(hcPlayer, 0x00);
+  const char* player = kPlayerById(world, playerId);
+  if (player == nullptr) {
+    return nullptr;
+  }
+  const auto* ids = Field<const std::int32_t*>(player, kPlayerUnits);
+  const std::int32_t count = Field<std::int32_t>(player, kPlayerUnits + 4);
+  const char* hero = nullptr;
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = kUnitById(world, ids[i]);
+    const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, kUnitProto);
+    if (proto == nullptr || !kGatherPointValid(hc, unit)) {
+      continue;
+    }
+    if (kProtoIsType(proto, g_buildingType)) {
+      LogLastResort(world, playerId, unit);
+      return unit;
+    }
+    if (hero == nullptr && kProtoIsType(proto, g_heroType)) {
+      hero = unit;
+    }
+  }
+  LogLastResort(world, playerId, hero);
+  return hero;
 }
 
 // Called from the hook for a FirstTC entry, [esp+10h] of FUN_004C6B9E = the home city. Returns the
@@ -3520,8 +3609,10 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
     return Outcome::kFailed;
   }
   bool firstTc = false;
+  bool lastResort = false;
   for (const std::string& name : *names) {
     firstTc = firstTc || IsFirstTcKeyword(name);
+    lastResort = lastResort || IsLastResortKeyword(name);
   }
   // FirstTC also reads [player+4F0h] (set at 0x67ABD4), player and unit by ID and the stored point
   // check; no feature writes those sites.
@@ -3532,10 +3623,16 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
                            &sites::kUnitByIdNull, &sites::kGatherPointValid})
               : VerifyAll("hcShipmentPointFallback",
                           {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock});
-  if (!verified) {
+  if (!verified || (lastResort && !VerifyAll("hcShipmentPointFallback LastResort",
+                                             {&sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
+                                              &sites::kUnitByIdNull, &sites::kGatherPointValid, &sites::kIsA}))) {
     return Outcome::kFailed;
   }
-  if (firstTc && config.First("startingTC") == nullptr && config.First("civFirstTC") == nullptr) {
+  if (lastResort && (!RequestAbstractUnitType("Building", &g_buildingType) ||
+                     !RequestAbstractUnitType("Hero", &g_heroType))) {
+    return Outcome::kFailed;
+  }
+  if (firstTc && config.First("firstTC") == nullptr && config.First("startingTC") == nullptr && config.First("civFirstTC") == nullptr) {
     Log(L"hcShipmentPointFallback: FirstTC without startingTC: a first town center can only be a TownCenter, which "
         L"the stock list already tries first");
   }
@@ -3547,8 +3644,9 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
   if (!WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
     return Outcome::kFailed;
   }
-  Log(L"hcShipmentPointFallback: %d extra types after the stock list%ls (multiplayer unverified)",
-      g_uhcGatherFallbackCount, firstTc ? L", including each player's first town center (FirstTC)" : L"");
+  Log(L"hcShipmentPointFallback: %d extra types after the stock list%ls%ls (multiplayer unverified)",
+      g_uhcGatherFallbackCount, firstTc ? L", including each player's first town center (FirstTC)" : L"",
+      lastResort ? L", and a last resort" : L"");
   return Outcome::kApplied;
 }
 
@@ -3570,8 +3668,10 @@ include common.inc
 EXTERNDEF g_uhcGatherFallbackTypes:DWORD    ; proto IDs, resolved on first use
 EXTERNDEF g_uhcGatherFallbackCount:SDWORD
 UhcResolveGatherFallbackTypes PROTO STDCALL
+UhcGatherLastResortUnit PROTO STDCALL hc:DWORD ; any building, then a hero, of the player, or 0
 UhcGatherFirstTcUnit PROTO STDCALL hc:DWORD   ; the player's FirstTC if it is a valid point, else 0
 
+LAST_RESORT_ENTRY EQU -3                    ; the same for the keyword LastResort
 FIRST_TC_ENTRY EQU -2                       ; g_uhcGatherFallbackTypes entry of the keyword FirstTC
 
 .data
@@ -3614,6 +3714,8 @@ nextType:
     mov edx, g_uhcGatherFallbackTypes[eax*4]
     cmp edx, FIRST_TC_ENTRY
     je firstTc
+    cmp edx, LAST_RESORT_ENTRY
+    je lastResort
     cmp edx, -1
     je typeDone
     mov eax, dword ptr [esp+10h]    ; home city
@@ -3690,6 +3792,14 @@ firstTc:
     je typeDone
     mov edi, eax
     jmp storeAndReturn              ; 0x4C6CB2: stores [hc+18Ch] when [esp+18h]==1, returns EDI
+lastResort:
+    TRACE_ONCE "hcShipmentPointFallback LastResort (0x669E2E)"
+    push dword ptr [esp+10h]        ; home city (address taken before the push)
+    call UhcGatherLastResortUnit    ; Unit* or 0; clobbers EAX/ECX/EDX only
+    test eax, eax
+    je typeDone
+    mov edi, eax
+    jmp storeAndReturn
 notFound:
     pop ebp                         ; stolen 0x669E2E..0x669E32
     pop edi
