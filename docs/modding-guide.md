@@ -4513,8 +4513,7 @@ buildingWorkRateAuras [log]
   `noTrainNearEnemyTC` owns it.
 - **Limits:**
   - train, research, `Maintain`, build, heal and repair speed. Gathering has its own auras;
-  - the panel still shows the proto's `BuildingWorkRate`, and the aura's tooltip has no line
-    for this stat;
+  - the aura's tooltip has no line for this stat;
   - with `log`, a unit is logged once per unit ID and factor in a session, so a unit of a later
     game with the same ID and factor is not logged again;
   - the value 0x40 that stands for the new stat is this DLL's choice. Another DLL that adds its own
