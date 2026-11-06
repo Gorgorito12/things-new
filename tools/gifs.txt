@@ -196,3 +196,9 @@ firstTC-derived-wol 2 36 3
 firstTC-derived-wol-control 2 36 3
 addUnitType-wol 2 24 2
 addUnitType-wol-control 2 24 2
+noTrainNearEnemyTC-refuse-wol 2 16 2
+noTrainNearEnemyTC-refuse-wol-control 2 16 2
+buildingWorkRateAuras-build-wol 2 26 2
+buildingWorkRateAuras-build-wol-control 2 26 2
+noCorpseDopples-expire-wol 0 24 2
+noCorpseDopples-expire-wol-control 0 24 2
