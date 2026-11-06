@@ -2717,6 +2717,9 @@ bool SkipsWait(const char* member, std::uint32_t site) {
 
 }  // namespace
 
+// For snareValues: a modifier that is a snare, by the same test.
+extern "C" bool __stdcall UhcIsSnareModifier(const char* action) { return IsSnare(action); }
+
 extern "C" {
 void UhcSnareGroupPaceHook();
 void UhcSnareSlotWaitHook();
@@ -3072,7 +3075,7 @@ Contract: [snareValues](../porting-to-another-dll.md#snarevalues).
 
 Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `SnareDurationPush` `0x4DD207` (5 B), `SnareCreateTail` `0x4DD20C` (33 B).
+Sites: `SnareStatsSumCall` `0x49F26A` (5 B), `SnareDurationPush` `0x4DD207` (5 B), `SnareCreateTail` `0x4DD20C` (33 B).
 
 ### src/features/snarevalues.cpp
 
@@ -3087,6 +3090,12 @@ Sites: `SnareDurationPush` `0x4DD207` (5 B), `SnareCreateTail` `0x4DD20C` (33 B)
 // SnareDuration change them for one player's copy of the action, through the stock value function, from
 // the tag's value as base. A tech that leaves a duration of 0 or less means no snare: the creator takes a
 // duration of 0 as a modifier with no end.
+//
+// With `strongest`, of the snares on a unit the slowest counts. The sum stops at the first exclusive modifier, so
+// stock lets the oldest snare hide a stronger one. The unit's recompute has one call of the velocity sum, 0x49F26A,
+// with the list of its modifiers, which it builds each time. The key puts the strongest snare in the place of the
+// first one, then runs the sum. Nothing is kept: when a snare ends, the next recompute finds the next strongest, so
+// durations need no care, and <AttachSnare> counts too, as it is the same modifier.
 #include <compare>
 #include <cstdint>
 #include <cstdlib>
@@ -3104,6 +3113,7 @@ Sites: `SnareDurationPush` `0x4DD207` (5 B), `SnareCreateTail` `0x4DD20C` (33 B)
 #include "../unittypes.h"
 
 extern "C" void UhcSnareValuesHook();
+extern "C" bool __stdcall UhcIsSnareModifier(const char* action);  // snare.cpp
 
 namespace {
 
@@ -3113,6 +3123,14 @@ constexpr int kMaxLogLines = 200;
 
 using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
 const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+struct ModifierArray {
+  char** data;
+  std::int32_t count;
+};
+
+using VelocitySumFn = void(__thiscall*)(void* record, const char* unit, ModifierArray* list);
+const auto kVelocitySum = reinterpret_cast<VelocitySumFn>(0x004B3C48);
 
 struct ActionKey {
   std::int32_t proto;
@@ -3134,6 +3152,7 @@ std::map<ActionKey, Values> g_values;                   // by proto and action, 
 std::unordered_map<const char*, TechValues> g_tech;     // by the player's copy of the action
 bool g_log = false;
 int g_logLines = 0;
+int g_strongestLines = 0;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3149,6 +3168,36 @@ void NewDatabase(char*) {
   g_values.clear();
   g_tech.clear();
   g_logLines = 0;
+  g_strongestLines = 0;
+}
+
+// Takes the call at 0x49F26A.
+void __fastcall StrongestSnare(void* record, void*, const char* unit, ModifierArray* list) {
+  std::int32_t first = -1;
+  std::int32_t best = -1;
+  for (std::int32_t i = 0; i < list->count; ++i) {
+    if (!UhcIsSnareModifier(list->data[i])) {
+      continue;
+    }
+    if (first < 0) {
+      first = i;
+      best = i;
+    } else if (Field<float>(list->data[i], 0x68) < Field<float>(list->data[best], 0x68)) {
+      best = i;
+    }
+  }
+  if (best != first) {
+    if (g_log && g_strongestLines < kMaxLogLines) {
+      ++g_strongestLines;
+      uhc::Log(L"snareValues: unit %d: the strongest snare, %g, over the first, %g", Field<std::int32_t>(unit, 0x10),
+               static_cast<double>(Field<float>(list->data[best], 0x68)),
+               static_cast<double>(Field<float>(list->data[first], 0x68)));
+    }
+    char* swap = list->data[first];
+    list->data[first] = list->data[best];
+    list->data[best] = swap;
+  }
+  kVelocitySum(record, unit, list);
 }
 
 void ActionTagRead(const uhc::ActionTag& tag) {
@@ -3220,20 +3269,27 @@ Outcome ApplySnareValues(const Config& config) {
   if (args == nullptr) {
     return Outcome::kNotConfigured;
   }
+  bool strongest = false;
   for (const std::string& arg : *args) {
-    if (_stricmp(arg.c_str(), "log") != 0) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "strongest") == 0) {
+      strongest = true;
+    } else {
       Log(L"snareValues: unknown option %hs; feature not applied", arg.c_str());
       return Outcome::kFailed;
     }
-    g_log = true;
   }
   if (!VerifyAll("snareValues", {&sites::kSnareDurationPush, &sites::kSnareCreateTail}) ||
+      (strongest && !VerifyAll("snareValues", {&sites::kSnareStatsSumCall})) ||
       !AddActionTagHandler(&ActionTagRead) || !OnDatabaseLoad(&NewDatabase) ||
       !AddTechActionSubtype("SnareFactor", &Change<true>) || !AddTechActionSubtype("SnareDuration", &Change<false>) ||
-      !WriteJmp(sites::kSnareDurationPush.va, reinterpret_cast<const void*>(&UhcSnareValuesHook), 5)) {
+      !WriteJmp(sites::kSnareDurationPush.va, reinterpret_cast<const void*>(&UhcSnareValuesHook), 5) ||
+      (strongest && !WriteCall(sites::kSnareStatsSumCall.va, reinterpret_cast<const void*>(&StrongestSnare)))) {
     return Outcome::kFailed;
   }
-  Log(L"snareValues: <SnareFactor>, <SnareDuration> and their Data subtypes are on (multiplayer unverified)");
+  Log(L"snareValues: <SnareFactor>, <SnareDuration> and their Data subtypes are on%ls (multiplayer unverified)",
+      strongest ? L", and the strongest snare counts" : L"");
   return Outcome::kApplied;
 }
 

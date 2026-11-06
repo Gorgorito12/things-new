@@ -203,6 +203,9 @@ bool SkipsWait(const char* member, std::uint32_t site) {
 
 }  // namespace
 
+// For snareValues: a modifier that is a snare, by the same test.
+extern "C" bool __stdcall UhcIsSnareModifier(const char* action) { return IsSnare(action); }
+
 extern "C" {
 void UhcSnareGroupPaceHook();
 void UhcSnareSlotWaitHook();

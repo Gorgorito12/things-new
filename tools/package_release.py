@@ -299,7 +299,7 @@ killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
 teamKillBounty [log]          the XP of a marked victim goes to the killer's team
 cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
-snareValues [log]             SnareFactor and SnareDuration by action and by tech
+snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading

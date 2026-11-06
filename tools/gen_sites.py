@@ -520,6 +520,8 @@ SITES = [
     # snareOnlyHitUnit: the collector's per-action step 0x49F34B (type [+60h], children at
     # [+40h]) and its list loop 0x49F397 ({count +0, data +8})
     ("SnareCollector", 0x49F34B, 0x79),
+    # snareValues strongest: the only call of the velocity sum, in the unit's recompute
+    ("SnareStatsSumCall", 0x49F26A, 5),
     # snareOnlyHitUnit: the velocity modifier sum 0x4B3C48 / 0x4B3C7D and its two cold chunks
     ("SnareModifierSum", 0x4B3C48, 0xB7),
     ("SnareModifierSumEnd", 0x4E2A8E, 0x1B),
