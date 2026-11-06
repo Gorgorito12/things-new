@@ -252,7 +252,7 @@ gaiaSocketsOnly [UnitType] [log]  socketed buildings only on sockets owned by Ga
 customHotkeyContexts [log]    keymap contexts <ProtoName>Accel: hotkeys for new buildings
 snareOnlyHitUnit [log]        a snared unit no longer slows the group it moves with
 techRenameEffect [log]        tech effect SetTechName: rename a tech per player
-noCorpseDopples [UnitType] [log]   dead marked units (hunt carcasses) leave no dopple
+noCorpseDopples [UnitType] [expire=S] [log]   dead marked units (hunt carcasses) leave no dopple
 danceBonusCivs Civ ... [log]  fire pit train/XP/gather/regen dances for more civs
 startingTC [UnitType] [log]   marked buildings count as a player's first town center
                               (FirstTC in placementrules), like TownCenter
