@@ -108,6 +108,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-02 19:51 | [`noAILimitV2`](#noailimitv2) | Added. Shows WoL's 52 `AI4\*.personality` files in game setup. | The personality files. |
 | Thursday 2026-10-29 06:39 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Added. Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. |
 | Wednesday 2026-10-28 19:12 | [`multipleInstances`](#multipleinstances) | Added. Lets this copy of the game run while a copy from another folder is running. | Nothing. |
+| [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages, with file and line, to the log. | **new** | Nothing. | confirmed |
+| [`dataLint`](#datalint) | Says while the data loads what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | Wednesday 2026-10-28 16:34 | [`bufferedFileReads`](#bufferedfilereads) | Added. Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | Nothing. |
 | Wednesday 2026-10-28 10:56 | [`ignoreRegistryPath`](#ignoreregistrypath) | Added. Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | Nothing. |
 | Wednesday 2026-10-28 10:56 | [`deckCardCount`](#deckcardcount) | Added. Raises the 25-card deck cap. | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). |
@@ -383,6 +385,38 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
   need the same setting.
 - **Status:** confirmed in single player, on the stock game: on a 25-minute save, `verify` checked 7.5
   million buffered reads against the file and found no mismatch. Not tested in WoL or in multiplayer.
+
+#### xsErrorLog
+
+```
+xsErrorLog [lines]
+```
+
+- **In WoL today:** a broken AI script shows only `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'`, and the AI does
+  nothing. `tools/re/trace_xs.py` was the only way to see the cause.
+- **Effect:** the XS compiler's messages go to `UHC.log`, or `engine-ext\engine-ext.log`, with file and line, for at most `lines`
+  lines (200 by default). The log says when it stops. It changes nothing in the game, so players may set it differently.
+- **Log:** `xsErrorLog: applied`, `hook reached: xsErrorLog report (0x43A3A4)`, `hook reached: xsErrorLog message (0xA5667F)`, and
+  `xsErrorLog: C:\...\AI4\aiWoLMain.xs(33806): Error 0324: invalid expression, likely is not enclosed by parentheses.`
+- **Tested in WoL (2026-11-06):** a broken script gave its 6 messages and Error 0003, key off none; a cap of 3 stopped and said so;
+  beside WoL's DLL, the same lines. A clean skirmish of 165 s reached neither hook. Not shown: a runtime message. Array errors, an
+  unknown rule, a division by zero and a recursion of 400 print nothing, and an unbounded recursion ended the game.
+
+#### dataLint
+
+```
+dataLint [log] [file]
+```
+
+- **What it does:** while the data loads, it says what the data asks for and the game drops: unknown `<UnitType>`, proto and action
+  tags, Data subtypes, `<ModifyType>` names with no stat, `<ProtoAction>` names not in the unit's tactics, and effects the game
+  deletes. Stock says nothing about any of them.
+- **Output:** one line per name, with how many times and the first proto or tech, up to 40 per kind, then a summary. `log`: all of
+  them. `file`: the whole report, with every deleted effect, in `dataLint.txt` next to the log.
+- **No effect on the game:** it changes nothing, and nothing runs after the load.
+- **Tested in WoL (2026-11-06):** 105 names on WoL's data, among them about 518 `TechStatus` effects on techs that do not exist and 88
+  `<ModifyType>GATHER`. One typo per kind was caught. Beside WoL's DLL too. The load time was not measured well, as other games
+  were running. Not covered: unknown `<Flag>` names, and why an effect was deleted.
 
 #### multipleInstances
 

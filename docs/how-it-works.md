@@ -3201,6 +3201,22 @@ default) with its file offset.
 - `perfFileLog` counts the game's calls against the ones made to Windows. A session with the
   buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows.
 
+### xsErrorLog
+
+Both XS reporters, 0x43A3A4 and 0xA5667F, print through a callback at `[log]` that the shipped game leaves empty. A jmp over the
+6 bytes of each head hands the stack to C++, which formats with the stock 0x435D99 and writes to the log; the stub replays
+`sub esp,804h`. **Why it is safe:** both are cdecl, so EAX, ECX and EDX are free at the head, the formatter is stock, and neither runs
+in a clean game.
+
+### dataLint
+
+Reads the exe's own failure exits while the data loads: the `<UnitType>` handler's 0x5FCB61, the proto tag find at 0x5F62A2, the
+`<ProtoAction>` look-up at 0x5FA202, and in the effect parse the false setData at 0x6205E9 and the unknown type at 0x65BC56, plus the
+shared action tag, ModifyType and Data subtype hooks. The tech parser's loop 0x61FDB8 keeps the current `<Tech>` node to name it,
+and the summary is written when the call 0x61FE4A returns.
+
+**Why it is safe.** Each hook re-executes what it replaces and only records a name, and all of that code runs while the data loads.
+
 ### multipleInstances
 
 **Why it exists.** The game allows one running copy per machine (0x55A185).
