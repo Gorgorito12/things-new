@@ -376,12 +376,12 @@ PARTICLE = (
         externalwindinfluencevar=0.000 externalwinddelay=0.000 externalwinddelayvar=0.000 riverflowinfluence=0.000
         riverflowinfluencevar=0.000 minangularvelocity=0.000 maxangularvelocity=0.000 xaxis=0.000 xaxisvar=0.000
         yaxis=0.000 yaxisvar=0.000 zaxis=0.000 zaxisvar=0.000"""),
-    ("collision", "numtypes=0 terraininteractiontype=-1 terrainheight=0.000 terrainheightvar=0.000"),
+    ("collision", "numtypes=0 terraininteractiontype={terrain} terrainheight={terrainheight} terrainheightvar=0.000"),
     ("collisionstages", ""),
 )
 
 
-def particle(texture, radius, height=0.2, appearance=2):
+def particle(texture, radius, height=0.2, appearance=2, ground=True):
     out = "<particlefile>\n"
     for section, fields in PARTICLE:
         if fields is None:
@@ -389,7 +389,8 @@ def particle(texture, radius, height=0.2, appearance=2):
                     f"\t\t\t<material>0</material>\n\t\t\t<weight>1.000</weight>\n\t\t</stage>\n\t</{section}>\n")
         elif fields:
             out += f"\t<{section}>\n"
-            for field in fields.format(radius=radius, height=height, appearance=appearance).split():
+            for field in fields.format(radius=radius, height=height, appearance=appearance, terrain=1 if ground else -1,
+                                       terrainheight="0.200" if ground else "0.000").split():
                 key, value = field.split("=")
                 out += f"\t\t<{key}>{value}</{key}>\n"
             out += f"\t</{section}>\n"
@@ -417,7 +418,7 @@ def main():
             wanted[f"aura_{name}.xml"] = text(xml(name, marker=True))
             wanted[f"icon_{name}.ddt"] = icon_ddt(colour, GLYPHS[name], GLYPH_ACCENTS.get(name, ()))
             for _, size, height in ICON_HEIGHTS:
-                wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", ICON_SIDE, height, 0))
+                wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", ICON_SIDE, height, 0, ground=False))
     for rank, colour in RANKS.items():
         name = f"rank_{rank}"
         glyph = tuple(circle for y in RANK_ARMS[rank] for circle in chevron(y))

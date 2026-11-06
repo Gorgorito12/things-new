@@ -5799,6 +5799,7 @@ The bone is that word on purpose, as in `EconomicAuraKM`: with no such bone, the
 | speed | blue | moves faster | `effects\uhc_rings\ring_speed.xml` |
 
 Each ring is a wide band in its colour, fading to a lighter one, and a thin line inside it, 70% opaque, so the ground shows through.
+It stays on the ground on a slope: the particle has `terraininteractiontype` 1 and `terrainheight` 0.2, the setting stock's low effects use. A `<decal>` is not drawn on a hung model (tried), and that is why the rings are particles.
 
 **4. The same file works on anything.** The `.xml` picks the size by what it hangs on, with `<logic type="UnitType">`:
 

@@ -164,8 +164,8 @@
 	</forces>
 	<collision>
 		<numtypes>0</numtypes>
-		<terraininteractiontype>-1</terraininteractiontype>
-		<terrainheight>0.000</terrainheight>
+		<terraininteractiontype>1</terraininteractiontype>
+		<terrainheight>0.200</terrainheight>
 		<terrainheightvar>0.000</terrainheightvar>
 	</collision>
 	<collisionstages/>
