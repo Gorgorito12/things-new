@@ -267,6 +267,10 @@ SITES = [
     # (cmp [esi+74h],0 / jg), stores [edi+6Ch] in [esi+64h], or with the trainer flag 9Eh
     # (YPForceTrainAtBaseTrainPoints, call 44D063h) the base proto's (call 45316Eh) [eax+6Ch]
     ("TrainPointsProto", 0x9EAC3D, 0x29),
+    # buildingWorkRateAuras: the rate lookup 0x487C45 in the heal tick and in the build tick (traced in game), each
+    # with the action in ESI
+    ("BwrRateCallHeal", 0x9E0CCF, 5),
+    ("BwrRateCallBuild", 0x9D3D7B, 5),
     # noTrainNearEnemyTC refuse: sub esp,1Ch / push ebx / push ebp / push esi, the head of the enqueue
     ("TrainEnqueueHead", 0x9EAC35, 6),
     ("TrainPointsSet", 0x9EB19F, 0x43),

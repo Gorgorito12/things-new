@@ -14,6 +14,7 @@ UhcBwrPanelRate PROTO STDCALL unit:DWORD
 
 .data
 panelNext       dd 006F4A02h    ; jne 6F4A0Dh
+rateLookup      dd 00487C45h    ; float thiscall(tactics action, target), ret 4
 workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
 
 .code
@@ -63,5 +64,28 @@ UhcBwrPanelHook PROC
     popfd
     jmp panelNext
 UhcBwrPanelHook ENDP
+; Target of the calls of the rate lookup 0x487C45 in the heal tick (0x9E0CCF) and the build tick (0x9D3D7B).
+; Each has the action in ESI, so [esi+10h] is the unit that works, and each writes EAX, ECX and EDX
+; before reading them. ST0 = the rate, times the unit's BuildingWorkRate factor.
+UhcBwrRateCall PROC
+    TRACE_ONCE "buildingWorkRateAuras (calls of 0x487C45)"
+    push dword ptr [esp+4]          ; the target
+    call rateLookup                 ; ST0 = the stock rate; pops the target
+    mov eax, dword ptr [esi+10h]    ; the unit
+    test eax, eax
+    je done
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je done
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je done
+    push dword ptr [esp]            ; caller: the return address, for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+done:
+    ret 4
+UhcBwrRateCall ENDP
 
 END

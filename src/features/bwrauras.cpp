@@ -1,5 +1,6 @@
 // buildingWorkRateAuras: an aura (or any other stat modifier) whose ModifyType is BuildingWorkRate
-// changes how fast the units it reaches train, research and spawn their Maintain units.
+// changes how fast the units it reaches train, research and spawn their Maintain units, and how fast
+// they heal and build.
 //
 // Stock: ModifyType names are read by FUN_005F5645, for the tactics tag <ModifyType> (0x5FC8AE,
 // stored unchecked in the byte [action+B8h]) and for the <unitModify> powers (0x5F3EFA, which
@@ -25,6 +26,11 @@
 // key: the factor then multiplies the proto's live rate. The data refs currentUnitBuildingWorkRate and
 // its Float twin, the panel's number, read the proto (0x6F49FC): they now read the rate the unit works at,
 // the building's own copy and the factor. The hooks are in hooks/bwraura_hooks.asm.
+//
+//
+// Heal and build read their rate through 0x487C45, which has 22 callers (gather too), so the callee is
+// left alone: only the calls that add the work go to UhcBwrRateCall, with the worker in [esi+10h]. The
+// calls that only ask whether the rate is above 0 stay stock.
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -41,6 +47,7 @@
 
 extern "C" {
 void UhcBwrAuraCall();
+void UhcBwrRateCall();
 void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
 void UhcBwrPanelHook();
 }
@@ -66,6 +73,17 @@ constexpr Caller kCallers[] = {
     {0x009E65F7, 0x009E65FC, L"Research"},
     {0x009D58D4, 0x009D58D9, L"CommandResearch"},
     {0x006AB23F, 0x006AB244, L"Maintain"},
+};
+
+// The calls of the rate lookup that add the work.
+struct RateCaller {
+  std::uint32_t call;
+  std::uint32_t ret;
+  const wchar_t* name;
+};
+constexpr RateCaller kRateCallers[] = {
+    {0x009E0CCF, 0x009E0CD4, L"Heal"},
+    {0x009D3D7B, 0x009D3D80, L"Build"},
 };
 
 // The list the stock sum reads, {data +0, count +4}: the layout of the collector's list 0xCF0718.
@@ -123,6 +141,11 @@ float Factor(const char* unit) {
 
 const wchar_t* CallerName(std::uint32_t ret) {
   for (const Caller& caller : kCallers) {
+    if (caller.ret == ret) {
+      return caller.name;
+    }
+  }
+  for (const RateCaller& caller : kRateCallers) {
     if (caller.ret == ret) {
       return caller.name;
     }
@@ -227,7 +250,8 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
                   &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
                   &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
                   &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
-                  &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead})) {
+                  &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead, &sites::kBwrRateCallHeal,
+                  &sites::kBwrRateCallBuild})) {
     return Outcome::kFailed;
   }
   if (!GetterHeadIsKnown()) {
@@ -251,6 +275,11 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
       return Outcome::kFailed;
     }
   }
+  for (const RateCaller& caller : kRateCallers) {
+    if (!WriteCall(caller.call, reinterpret_cast<const void*>(&UhcBwrRateCall))) {
+      return Outcome::kFailed;
+    }
+  }
   g_uhcBwrTrainGetter = reinterpret_cast<void*>(&UhcBwrAuraCall);
   if (!WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
     return Outcome::kFailed;
@@ -260,8 +289,8 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
         L"gets the factor only through that hook's call of g_uhcBwrTrainGetter",
         sites::kBwrTrainCall.va);
   }
-  Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research "
-      L"and Maintain speed%ls (multiplayer unverified)",
+  Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research, "
+      L"Maintain, heal and build speed%ls (multiplayer unverified)",
       kStatBuildingWorkRate, log ? L", every change of a unit's factor logged" : L"");
   return Outcome::kApplied;
 }

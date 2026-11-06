@@ -301,7 +301,7 @@ teamKillBounty [log]          the XP of a marked victim goes to the killer's tea
 cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [log]             SnareFactor and SnareDuration by action and by tech
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
-                              research and Maintain speed
+                              research, Maintain, heal and build speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
