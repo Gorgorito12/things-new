@@ -1584,9 +1584,10 @@ void Build(std::int32_t ownId, Share& share, const char* database) {
       for (const auto& member : share.members) {
         known = known || member.first == id;
       }
-      if (!known) {
-        share.members.emplace_back(id, entry.weight);
+      if (known) {
+        continue;  // the first entry that reaches a proto sets its weight, for the others and for itself
       }
+      share.members.emplace_back(id, entry.weight);
       if (id == ownId) {
         share.ownWeight = entry.weight;
       }
