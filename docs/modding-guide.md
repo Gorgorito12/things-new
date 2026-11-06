@@ -2939,6 +2939,15 @@ cantBeSlowed [log]
 *In WoL, key off (the same data):* the two that survive end with 261 and 155. The game skips a tag it does not know.
 [Full video (MP4)](media/veterancyBonus-wol-control.mp4).
 
+![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
+
+*In WoL, with `art\effects\uhc_rings` (Dutch, 3 `Hussar` against 9 `Crossbowman`):* each rank shows its chevrons over the
+unit: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
+
+![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
+
+*In WoL, key off (the same scene):* no marks. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
+
 ```
 veterancyBonus [log]
 ```
@@ -2959,6 +2968,14 @@ veterancyBonus [log]
   hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
+- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, and a rank above the
+  third keeps the gold one. With no such folder the log says so once and the bonuses work as before. Display only: it
+  changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
+  our own: DE's are images in its selection panel.
+- **Tested in WoL (2026-11-06, marks):** ranks 1 to 3 shown; the mark left at death; a `TransformUnit` Hussar → Cuirassier kept it;
+  a saved game loaded with it; with the folder gone, one log line and no crash. 1214 fps against 1252 with the key off, update
+  0.17 ms against 0.16, no frame over 50 ms with the key on (60 s, `perfprobe.py`). An AI skirmish of 100 s had 19 units and no XS
+  error. Not tested: a transform to a proto with no rows, a rank above the third, multiplayer, recorded games.
 - **Transforms:** a `TransformUnit` tech keeps the count, and gives the bonuses of the **new** proto's rows for those kills: a
   proto with no rows has none until it becomes one with rows. A trigger's `Change Unit Type` takes another path and is not
   covered.

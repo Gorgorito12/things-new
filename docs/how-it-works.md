@@ -2711,6 +2711,13 @@ step, so one that dies in the loop is not touched again; the list belongs to the
 game clock and an ID-ordered map make the result the same on every machine. Stat 41h reaches no stock reader in an
 aura: the update does not run; in a power's `<unitModify>` the name is accepted and has no effect.
 
+### veterancyBonus: the rank marks
+
+A kill that reaches a rank and a transform queue the unit's ID. A world tick every 250 ms of game time hangs `rank_N.xml` through
+`unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
+`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. **Why it is safe:** a model is a
+visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
+
 ### linkedResource
 
 Three hooks and a tick. The head of the inventory recreate 0x9BFE5A adds a tagged unit to an ID-ordered map. The tick, four
