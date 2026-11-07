@@ -2,7 +2,9 @@
 
 Usage: python -I tools/guide_dates.py [--check]
 
-Each feature section of "5. Feature reference" (a "#### key" heading) gets, right under its heading:
+Each feature section of "5. Feature reference" (a "#### key" heading) starts with one line in italics
+that says in plain words what the feature does. It is written by hand, and a section without it is an
+error. Under that line the section gets:
 - the day, date and time its key was added: the first commit whose src/features.h names the key;
 - the same for its latest test video: the newest commit of docs/media/<key>-wol*.mp4. A video that
   is not committed yet counts as "now", so run this before the commit that adds it.
@@ -115,13 +117,16 @@ def update(text):
         added = min(found)
         filmed = [videos[s] for s in (VIDEO_ALIASES.get(k.lower(), k.lower()) for k in keys) if s in videos]
         filmed = max(filmed) if filmed else None
-        rest = re.sub(r"\A\n?(\*\*Added:\*\*[^\n]*\n)+", "", rest)
+        summary = re.match(r"\A\n?(\*[^*\n][^\n]*\*)\n", rest)
+        if summary is None:
+            sys.exit(f"guide_dates: {heading} has no one-line description under its heading")
+        rest = re.sub(r"\A\n?(\*\*Added:\*\*[^\n]*\n)+", "", rest[summary.end():])
         rest = rest.lstrip("\n")
         if filmed is not None:
             lines = f"**Added:** {stamp(added)} · **Filmed in WoL:** {stamp(filmed)}\n"
         else:
             lines = f"**Added:** {stamp(added)}\n"
-        out.append(f"#### {heading}\n\n{lines}\n{rest}")
+        out.append(f"#### {heading}\n\n{summary.group(1)}\n\n{lines}\n{rest}")
         what, status = next((rows[k] for k in keys if k in rows), ("", ""))
         link = ", ".join(f"[`{k}`]({anchor(heading)})" for k in keys)
         entries.append((added, filmed, link, first_sentence(what), status))

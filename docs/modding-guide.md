@@ -33,9 +33,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 14:15 | [`unitTypeTechs`](#unittypetechs) | Added. Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | The effects in your techs. |
 | Friday 2026-11-06 13:55 | [`snareValues`](#snarevalues) | Filmed in WoL, with a control. The factor and length of `<TargetSpeedBoost>`, per action and by tech. | The tags on the action. |
 | Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
-| Friday 2026-11-06 13:11 | [`firstTC`](#firsttc) | Added.  |  |
-| Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added.  |  |
-| Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added.  |  |
+| Friday 2026-11-06 13:11 | [`firstTC`](#firsttc) | Added. One line for `civFirstTC` and `startingTC`, with the town units and shipments worked out from the civ's tag. | `<firstTC>` in `civs.xml`, and the proto in `placementrules\colonies.xml` `<starttypes>`. |
+| Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added. Writes the XS compiler's messages to the log, with file and line. | Nothing. |
+| Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added. While the data loads, lists what it asks for and the game drops. | Nothing. |
 | Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
 | Friday 2026-11-06 11:33 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
@@ -305,7 +305,7 @@ The tables have a column, **WoL's DLL**:
 | **for tests** | A tool for testing. Don't port it. |
 
 The features are grouped by what they change. Each group starts with a table of its keys;
-each feature's section starts with the day, date and time it was added. [Latest changes](#latest-changes) lists them all by date.
+each feature's section starts with one line on what it does, then the day, date and time it was added. [Latest changes](#latest-changes) lists them all by date.
 
 - [Game files and startup](#game-files-and-startup): Where the game reads its data, how it reads it, and how it starts.
 - [Population, decks and limits](#population-decks-and-limits): Caps that are fixed in the exe.
@@ -328,10 +328,14 @@ Where the game reads its data, how it reads it, and how it starts.
 |---|---|---|---|---|
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | **new** | Nothing. | confirmed (single player) |
+| [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages to the log, with file and line. | **new** | Nothing. | confirmed |
+| [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | for tests | Nothing. | confirmed (two copies, single player) |
 | [`compatMode`](#compatmode) | Offers every 32-bit display mode as a 16-bit mode too. | **in `wol.cfg`** | Nothing. | confirmed |
 
 #### ignoreRegistryPath
+
+*The game loads the mod's files from its own folder instead of the Steam install.*
 
 **Added:** Wednesday 2026-10-28 10:56
 
@@ -350,6 +354,8 @@ ignoreRegistryPath
 - **Status:** confirmed: every test in this guide depends on it.
 
 #### bufferedFileReads
+
+*The game reads its files more efficiently, so it loads faster and stutters less.*
 
 **Added:** Wednesday 2026-10-28 16:34
 
@@ -392,6 +398,8 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
 
 #### xsErrorLog
 
+*The log shows why an AI script failed to compile, with its file and line.*
+
 **Added:** Friday 2026-11-06 12:56
 
 ```
@@ -410,6 +418,8 @@ xsErrorLog [lines]
 
 #### dataLint
 
+*Lists, while loading, everything in the mod's data that the game silently ignores.*
+
 **Added:** Friday 2026-11-06 12:52
 
 ```
@@ -427,6 +437,8 @@ dataLint [log] [file]
   were running. Not covered: unknown `<Flag>` names, and why an effect was deleted.
 
 #### multipleInstances
+
+*Lets this copy of the game run beside a copy from another folder.*
 
 **Added:** Wednesday 2026-10-28 19:12
 
@@ -470,6 +482,8 @@ A tool for testing, not for WoL's players: nothing needs porting.
 
 #### compatMode
 
+*Brings back the 16-bit display modes that current graphics drivers no longer list.*
+
 **Added:** Tuesday 2026-11-03 10:43
 
 ```
@@ -500,6 +514,8 @@ Caps that are fixed in the exe.
 | [`enableAllTeams`](#enableallteams) | Teams 3 and 4 in the single-player game setup. | **in `wol.cfg`** | Nothing. | partly confirmed |
 
 #### basePop and extraPop
+
+*Raises the maximum population a player can reach.*
 
 **Added:** Wednesday 2026-10-28 10:56 · **Filmed in WoL:** Wednesday 2026-11-04 11:29
 
@@ -542,6 +558,8 @@ extraPop <N>             N from 0 to 10000, 50 in the exe
   where the stock 200/250 limits stayed active.
 
 #### decimalPopulation
+
+*Units and population buildings can use fractions, such as half a population slot.*
 
 **Added:** Thursday 2026-10-29 21:24 · **Filmed in WoL:** Wednesday 2026-11-04 09:59
 
@@ -639,6 +657,8 @@ decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in s
 
 #### deckCardCount
 
+*Home city decks can hold more than 25 cards.*
+
 **Added:** Wednesday 2026-10-28 10:56
 
 ```
@@ -672,6 +692,8 @@ deckCardCount <N>        N from 20 to 10000
 
 #### selectionLimit
 
+*Changes how many units fit in one selection.*
+
 **Added:** Monday 2026-11-02 20:33 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![selectionLimit in WoL](media/selectionLimit-wol.gif)
@@ -698,6 +720,8 @@ selectionLimit N
   key, 50.
 
 #### noAILimit
+
+*Game setup lists every AI personality in the folder, not just the built-in ones.*
 
 **Added:** Wednesday 2026-10-28 10:56
 
@@ -739,6 +763,8 @@ noAILimit
 
 #### noAILimitV2
 
+*The version of noAILimit that WoL uses: game setup lists all its AI personalities.*
+
 **Added:** Monday 2026-11-02 19:51
 
 ```
@@ -758,6 +784,8 @@ noAILimitV2
   `ai22` first) with WoL's own DLL and with this one.
 
 #### enableAllTeams
+
+*Single-player game setup also offers Teams 3 and 4.*
 
 **Added:** Monday 2026-11-02 20:40 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -802,6 +830,8 @@ New names the game's data and scripts can use.
 
 #### customAbstractTypes
 
+*A mod can create its own unit categories for its data, techs, auras and scripts.*
+
 **Added:** Monday 2026-11-02 20:04
 
 ```
@@ -837,6 +867,8 @@ customAbstractTypes [file]
   `cUnitTypeAbstractWoLHandCavalry`.
 
 #### customProtoUnitCommands
+
+*A mod can add its own command buttons to units and buildings.*
 
 **Added:** Tuesday 2026-11-03 08:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -887,6 +919,8 @@ customProtoUnitCommands [file]
   only added the names showed no button and wrote past it; the key enlarges the array.
 
 #### customHotkeyContexts
+
+*Units and buildings added by a mod can have their own hotkeys.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -993,6 +1027,8 @@ customHotkeyContexts [log]
 
 #### techRenameEffect
 
+*A tech can rename another tech, only for the players it reaches.*
+
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![techRenameEffect in WoL](media/techRenameEffect-wol.gif)
@@ -1080,6 +1116,8 @@ enableTechRenameEffect [log]     the same key under WoL's name
 
 #### customSyscalls
 
+*Loads plugins that add new functions to AI, map, trigger and UI scripts.*
+
 **Added:** Monday 2026-11-02 20:13 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![customSyscalls in WoL](media/customSyscalls-wol.gif)
@@ -1122,6 +1160,8 @@ customSyscalls [file or pattern ...]
 
 #### customCheats
 
+*Cheats added by plugins work when typed in the chat.*
+
 **Added:** Monday 2026-11-02 20:47 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![customCheats in WoL](media/customCheats-wol.gif)
@@ -1149,6 +1189,8 @@ customCheats
   all` spawned 50 Cannons in a skirmish; none without the key. Cheats do not run in a scenario.
 
 #### kbUnitSyscalls
+
+*AI scripts can ask about a unit's resources, its workers and which units target it.*
 
 **Added:** Tuesday 2026-11-03 08:16 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -1192,6 +1234,8 @@ kbUnitSyscalls
   window (every gatherer was already working its target).
 
 #### auraStacking
+
+*Several carriers of the same aura no longer multiply it, and an aura can skip chosen units.*
 
 **Added:** Friday 2026-11-06 13:44 · **Filmed in WoL:** Friday 2026-11-06 13:44
 
@@ -1250,10 +1294,13 @@ What the exe decides by civ.
 | [`wonderCivUnitType`](#wondercivunittype) | `Rangatira` may start the Maori age-up. Without it, the Maori cannot age up. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | **new** | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
+| [`firstTC`](#firsttc) | One line for `civFirstTC` and `startingTC`, with the town units and shipments worked out from the civ's tag. | **new** | `<firstTC>` in `civs.xml`, and the proto in `placementrules\colonies.xml` `<starttypes>`. | confirmed (single player) |
 | [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for each of WoL's 29 `XPRevolution<Name>` techs, not only O'Higgins. | **in `wol.cfg`** | A banner texture per revolution. | partly confirmed |
 | [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | **in `wol.cfg`** | Two icon textures. | not tested in game |
 
 #### asianCivs
+
+*Chosen civs count as Asian: consulate, exports and age-up by wonders.*
 
 **Added:** Monday 2026-11-02 20:27 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -1294,6 +1341,8 @@ asianCivs Civ [Civ ...] [log]
 
 #### nativeCivs
 
+*Chosen civs count as native: fire pit, dances and age-up by council.*
+
 **Added:** Monday 2026-11-02 21:19 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![nativeCivs in WoL](media/nativeCivs-wol.gif)
@@ -1329,6 +1378,8 @@ nativeCivs Civ [Civ ...]
 
 #### twoScoutCivs
 
+*Chosen civs get the interface of the civs that start with two heroes.*
+
 **Added:** Monday 2026-11-02 21:10
 
 ```
@@ -1345,6 +1396,8 @@ twoScoutCivs Civ [Civ ...]
   dialog, which names the heroes.
 
 #### bigButtonCivs and noBigButtonBlds
+
+*Chooses which civs get the command panel's big button, and which buildings don't.*
 
 **Added:** Monday 2026-11-02 21:19
 
@@ -1364,6 +1417,8 @@ noBigButtonBlds Proto [Proto ...]
   selected; a building of a listed proto was not checked.
 
 #### danceBonusCivs
+
+*Chosen civs can use the fire pit dances that normally work only for native civs.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -1463,6 +1518,8 @@ danceBonusCivs <Civ> [<Civ> ...] [log]     civ names as in civs.xml; several lin
 
 #### wonderCivUnitType
 
+*Chosen units can start a wonder age-up.*
+
 **Added:** Tuesday 2026-11-03 07:25 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![wonderCivUnitType in WoL](media/wonderCivUnitType-wol.gif)
@@ -1491,6 +1548,8 @@ wonderCivUnitType Proto [Proto ...]
   the key the same click opened nothing.
 
 #### startingTC
+
+*Another building can act as a player's first Town Center, and replace one that is lost.*
 
 **Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 11:13
 
@@ -1602,6 +1661,8 @@ startingTC [<UnitType>] [log]          default AbstractStartingTC
   the town center was already dead.
 
 #### civFirstTC
+
+*Each civ can start random maps with its own building instead of a Town Center.*
 
 **Added:** Thursday 2026-10-29 12:03 · **Filmed in WoL:** Wednesday 2026-11-04 11:29
 
@@ -1744,6 +1805,8 @@ In `civs.xml`, inside a `<civ>`, next to its `<startingunit>` entries:
 
 #### firstTC
 
+*One line that sets up a civ's own starting building, with its starting units and shipments.*
+
 **Added:** Friday 2026-11-06 13:11
 
 ```
@@ -1771,6 +1834,8 @@ crates come to the Market, and a card's workers arrive there. [Full video (MP4)]
 
 #### customRevolutionBanners
 
+*Each revolution shows its own banner, not just O'Higgins.*
+
 **Added:** Wednesday 2026-10-28 10:56
 
 ```
@@ -1792,6 +1857,8 @@ customRevolutionBanners
   names.
 
 #### removeFameRestriction
+
+*Age-up screens show Fame, XP and shipment costs, and home city cards show Fame and XP icons.*
 
 **Added:** Wednesday 2026-10-28 10:56
 
@@ -1832,6 +1899,8 @@ Who heals, whom, and how far.
 | [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | **new** | `overhealHitpointBars`. | confirmed |
 
 #### healNonIdle
+
+*Chosen healers also heal units that are moving or fighting.*
 
 **Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -1890,6 +1959,8 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 
 #### smartHealTargets
 
+*Healers go for the units that need healing most, not the first they find.*
+
 **Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
@@ -1942,6 +2013,8 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
   was not tested.
 
 #### overhealHitpointBars
+
+*Health bars treat a unit's normal health as 100 %, and show any extra as overheal.*
 
 **Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 15:18
 
@@ -2119,6 +2192,8 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 
 #### overhealSources
 
+*Only chosen healers can heal a unit above its normal health.*
+
 **Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-04 15:18
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
@@ -2187,6 +2262,8 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
     multiplayer.
 
 #### overhealDecay
+
+*Extra health above a unit's normal maximum slowly wears off.*
 
 **Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-04 15:18
 
@@ -2268,6 +2345,8 @@ Attacks, armor, and what a hit does.
   both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
 
 #### detonationDeath
+
+*A unit can deal area damage around itself when it dies.*
 
 **Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 10:21
 
@@ -2376,6 +2455,8 @@ detonationDeath [log]
 
 #### multiarmor
 
+*A unit can have a different armor against each damage type.*
+
 **Added:** Tuesday 2026-11-03 09:33 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![multiarmor in WoL](media/multiarmor-wol.gif)
@@ -2430,6 +2511,8 @@ multiarmor
 
 #### dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
+*Any chosen unit can dodge hits like the Japanese monk, with its own dodge and critical sounds.*
+
 **Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![dodgeAnyUnit and the sound keys in WoL](media/dodgeAnyUnit-wol.gif)
@@ -2445,8 +2528,6 @@ times). A GIF has no sound: the log is what shows it. [Full video (MP4)](media/d
 
 *In WoL, keys off (the same scene):* no settler dodges, and no sound set is logged.
 [Full video (MP4)](media/dodgeAnyUnit-wol-control.mp4).
-
-**Added:** Wednesday 2026-10-28 19:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ```
 dodgeAnyUnit [<UnitType>] [log]          default AbstractDodge
@@ -2507,6 +2588,8 @@ criticalSoundSet <UnitType> <SoundSet>   one line per unit type; the first match
   text was not checked.
 
 #### dodgeChance
+
+*Each unit type can have its own chance to dodge ranged hits, melee hits or both.*
 
 **Added:** Thursday 2026-10-29 16:57 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -2580,6 +2663,8 @@ One line per rule; several lines add up, and the first rule that matches a hit d
   Not tested: multiplayer, siege hits.
 
 #### damageOverTime
+
+*Attacks can poison a target, which keeps taking damage after the hit.*
 
 **Added:** Wednesday 2026-10-28 16:34 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -2813,6 +2898,8 @@ Settlers as targets):* each poisoned unit wears the ring, and a corpse does not.
 
 #### spreadAnyAccuracy
 
+*Missed shots follow the data's spread, and chosen units' shots scatter and damage where they land.*
+
 **Added:** Friday 2026-10-30 10:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![spreadAnyAccuracy in WoL](media/spreadAnyAccuracy-wol.gif)
@@ -2931,6 +3018,8 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 
 #### accuracyTechs
 
+*Techs can change how accurate an attack is.*
+
 **Added:** Thursday 2026-11-05 09:22 · **Filmed in WoL:** Thursday 2026-11-05 10:29
 
 ![accuracyTechs in WoL](media/accuracyTechs-wol.gif)
@@ -2984,6 +3073,8 @@ accuracyTechs [log]
   - Not tested: multiplayer.
 
 #### broadsideMuzzleLimit
+
+*Ships can fire their broadsides from more than 6 cannons per side.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -3055,6 +3146,8 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 
 #### cantBeSlowed
 
+*Chosen units can't be slowed by attacks, and chosen attackers can't slow others.*
+
 **Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Thursday 2026-11-05 09:39
 
 ![cantBeSlowed in WoL](media/cantBeSlowed-wol.gif)
@@ -3111,6 +3204,8 @@ cantBeSlowed [log]
   had no line. The hook was reached in the first fight (`hook reached: cantBeSlowed (0x4DD201)`). Not tested: a poison's
   `AttachSnare` from a `CannotSnare` unit, multiplayer.
 #### veterancyBonus
+
+*Units grow stronger as they get kills.*
 
 **Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Thursday 2026-11-05 10:17
 
@@ -3198,6 +3293,8 @@ veterancyBonus [log]
 
 #### snareOnlyHitUnit
 
+*A slowed unit no longer slows the group moving with it.*
+
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![snareOnlyHitUnit in WoL](media/snareOnlyHitUnit-wol.gif)
@@ -3252,6 +3349,8 @@ snareOnlyHitUnit [log]
   end of the map at 50 s with the key and about 54 s without, positions sampled once a second.
 
 #### killBountyTechs, resourceBounty and teamKillBounty
+
+*Techs can change kill rewards, which can pay resources or reach the killer's whole team.*
 
 **Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Thursday 2026-11-05 09:39
 
@@ -3339,6 +3438,8 @@ teamKillBounty [log]
 
 #### pillageGold
 
+*Chosen units steal gold from enemies whose buildings they hit.*
+
 **Added:** Thursday 2026-11-05 13:29 · **Filmed in WoL:** Thursday 2026-11-05 13:29
 
 ![pillageGold in WoL](media/pillageGold-wol.gif)
@@ -3411,6 +3512,8 @@ pillageGold [log]
 
 #### rofFix, stunMovingTargetFix, noDamageOnUnbuiltFoundations and fallenHeroTacticsFix
 
+*Four combat fixes: attack timing, stuns, damage to foundations and knocked-out units' tactics.*
+
 **Added:** Tuesday 2026-11-03 11:26
 
 ```
@@ -3441,6 +3544,8 @@ them WoL plays as it does with its own DLL.
 
 #### removeConversionRestriction
 
+*The action that converts treasure guardians can convert any unit.*
+
 **Added:** Wednesday 2026-10-28 10:56
 
 ```
@@ -3457,6 +3562,8 @@ removeConversionRestriction
 - **Status:** not confirmed: one test with the Sioux war chief, on the stock game, was inconclusive.
 
 #### snareValues
+
+*Each attack or tech can set how much and how long it slows a target.*
 
 **Added:** Friday 2026-11-06 13:25 · **Filmed in WoL:** Friday 2026-11-06 13:55
 
@@ -3521,6 +3628,8 @@ Resources, gatherers, and what pays for them.
 
 #### gatherFix
 
+*Units gather at the rate set in the data, whatever their animation does.*
+
 **Added:** Tuesday 2026-11-03 11:15 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![gatherFix in WoL](media/gatherFix-wol.gif)
@@ -3551,6 +3660,8 @@ gatherFix
   367.3.
 
 #### showGatherRate
+
+*The unit panel shows how fast a gathering unit collects resources.*
 
 **Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:20
 
@@ -3655,6 +3766,8 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
 
 #### workRateByAbstractType
 
+*Techs that boost gathering from a category, like mines, also reach units' specific rates.*
+
 **Added:** Wednesday 2026-11-04 16:29 · **Filmed in WoL:** Wednesday 2026-11-04 16:29
 
 ![workRateByAbstractType in WoL](media/workRateByAbstractType-wol.gif)
@@ -3721,6 +3834,8 @@ workRateByAbstractType [UnitType ...] [log | log=<Proto>]
 
 #### autoGatherScaleByContained
 
+*A building's automatic income grows with the units inside it.*
+
 **Added:** Wednesday 2026-11-04 17:03 · **Filmed in WoL:** Wednesday 2026-11-04 17:03
 
 ![autoGatherScaleByContained in WoL](media/autoGatherScaleByContained-wol.gif)
@@ -3767,6 +3882,8 @@ autoGatherScaleByContained
   argument: `FAILED`.
 
 #### unitResourceAuras
+
+*An aura earns resources from the units in its range, such as nearby trees.*
 
 **Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
@@ -3870,6 +3987,8 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
   which now shares the name hook, still gives its x3. An AI that builds Sawmills and multiplayer were not tested.
 
 #### linkedResource
+
+*A resource building draws its income from a mine beside it.*
 
 **Added:** Friday 2026-11-06 08:01 · **Filmed in WoL:** Friday 2026-11-06 08:01
 
@@ -3980,6 +4099,8 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 
 #### resourceGatherAuras
 
+*Auras can boost gathering of a single resource or one kind of target.*
+
 **Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
 ![resourceGatherAuras in WoL](media/resourceGatherAuras-wol.gif)
@@ -4041,6 +4162,8 @@ resourceGatherAuras [log]
   the ring hooks reached. Multiplayer not tested.
 
 #### resourceDebt
+
+*Ongoing drains can take a resource below zero; other costs still stop at zero.*
 
 **Added:** Wednesday 2026-11-04 18:04 · **Filmed in WoL:** Thursday 2026-11-05 08:01
 
@@ -4120,6 +4243,8 @@ resourceDebt [Food] [Wood] [Gold] [log]       no resource: the three
 
 #### cratePriority
 
+*Chooses the order in which each civ's units gather crates.*
+
 **Added:** Thursday 2026-11-05 09:22 · **Filmed in WoL:** Thursday 2026-11-05 10:29
 
 ![cratePriority in WoL](media/cratePriority-wol.gif)
@@ -4163,6 +4288,8 @@ cratePriority all Gold Wood Food
   - Not tested: multiplayer.
 
 #### enableFarmAnim, enableRectFarmAnim and farmingRadius
+
+*A mod's farm buildings get Mill or Rice Paddy gathering, and their own work area.*
 
 **Added:** Tuesday 2026-11-03 06:49 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -4215,6 +4342,8 @@ farmingRadius Index X Z [Index X Z ...]
 
 #### nowalkfarm
 
+*Farmers stay in their spot instead of moving around the farm.*
+
 **Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![nowalkfarm in WoL](media/nowalkfarm-wol.gif)
@@ -4238,6 +4367,8 @@ nowalkfarm
   33–47 m each without it, gathering in both cases.
 
 #### betterfreedynamicunit
+
+*Free units that scale with game time grow smoothly, not in 2-minute steps.*
 
 **Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -4267,6 +4398,8 @@ betterfreedynamicunit
   3 Sheep with the key and 4 without; at 420 s, 7 and 8.
 
 #### marketUnits
+
+*Owning a chosen unit lets a player trade resources as if they had a Market.*
 
 **Added:** Monday 2026-11-02 21:10 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -4316,6 +4449,8 @@ How buildings train, spawn, live and get replaced.
 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | **new** | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
 
 #### liveBuildingWorkRate
+
+*Techs that speed up training also reach existing buildings and queued units.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -4433,6 +4568,8 @@ liveBuildingWorkRate [log]
     logged the error, and the key was not applied.
 
 #### buildingWorkRateAuras
+
+*Auras can change how fast units train, research, build, heal and repair.*
 
 **Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Friday 2026-11-06 11:33
 
@@ -4557,6 +4694,8 @@ buildingWorkRateAuras [log]
 
 #### maintainWaitForPop
 
+*Automatically produced units wait for population room instead of being lost.*
+
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![maintainWaitForPop in WoL](media/maintainWaitForPop-wol.gif)
@@ -4631,6 +4770,8 @@ after room at 150 s; key off, at 245.9 s, a whole cycle later. Batches and
 
 #### trainSingleAbstractType
 
+*Chosen units leave the building one at a time, not as a group.*
+
 **Added:** Tuesday 2026-11-03 07:25 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![trainSingleAbstractType in WoL](media/trainSingleAbstractType-wol.gif)
@@ -4659,6 +4800,8 @@ trainSingleAbstractType [UnitType]
   proto's `BuildLimit` is 3).
 
 #### noTrainNearEnemyTC
+
+*Chosen units can't train while standing near an enemy Town Center.*
 
 **Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 09:54
 
@@ -4815,6 +4958,8 @@ noTrainNearEnemyTC <meters> [<UnitType>] [near <UnitType>|FirstTC]... [nowarn | 
 
 #### lifespanAfterConstruction
 
+*A building's limited lifetime starts when it is finished, not when it is placed.*
+
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![lifespanAfterConstruction in WoL](media/lifespanAfterConstruction-wol.gif)
@@ -4906,6 +5051,8 @@ down. [Full video (MP4)](media/lifespanAfterConstruction-countdown-wol.mp4).
 
 #### gaiaSocketsOnly
 
+*Socket buildings, like Trading Posts, can only go on sockets no player owns.*
+
 **Added:** Thursday 2026-10-29 06:39
 
 ```
@@ -4958,6 +5105,8 @@ gaiaSocketsOnly [<UnitType>] [log]       no unit type: every socket follows the 
 
 #### repairWallGlobal
 
+*One button repairs all of a player's walls.*
+
 **Added:** Tuesday 2026-11-03 10:43 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
 ![repairWallGlobal in WoL](media/repairWallGlobal-wol.gif)
@@ -4986,6 +5135,8 @@ repairWallGlobal
   one call; without the key the call did nothing.
 
 #### hcShipmentPointFallback
+
+*Shipments find a new arrival point when none of the usual buildings is left.*
 
 **Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
 
@@ -5094,6 +5245,8 @@ workers arrive at the Market. [Full video (MP4)](media/hcShipmentPointFallback-r
   `warn=No_point_for_shipments`: the line showed. Not tested: `replace` in a loaded game or with an AI, beside WoL's DLL, multiplayer.
 
 #### sharedBuildLimit
+
+*Different units can share one build limit, even across a team.*
 
 **Added:** Thursday 2026-11-05 09:26 · **Filmed in WoL:** Thursday 2026-11-05 09:26
 
@@ -5219,6 +5372,8 @@ sharedBuildLimit [log]
   - Not tested: `FreeHomeCityUnitShipped` with room, an AI's own home city card at the limit, multiplayer.
 #### doNotQueue
 
+*A chosen unit skips the queue and trains first.*
+
 **Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 10:29
 
 ![doNotQueue in WoL](media/doNotQueue-wol.gif)
@@ -5285,6 +5440,8 @@ doNotQueue [log]
 
 #### nextResearchFree
 
+*A tech can make a building's next research free.*
+
 **Added:** Thursday 2026-11-05 09:33 · **Filmed in WoL:** Thursday 2026-11-05 10:29
 
 ![nextResearchFree in WoL](media/nextResearchFree-wol.gif)
@@ -5330,6 +5487,8 @@ nextResearchFree [log]
   - Not tested: `CommandResearch` (0x9D54CF: its hook was not reached), an AI using the effect, a type as target, multiplayer.
 
 #### trainBatchSize
+
+*Sets how many of a unit train together in one batch.*
 
 **Added:** Thursday 2026-11-05 07:53 · **Filmed in WoL:** Thursday 2026-11-05 07:53
 
@@ -5384,6 +5543,8 @@ trainBatchSize [log]
   - Not tested: multiplayer.
 
 #### costEscalationTechs
+
+*Techs can change how fast a unit's cost rises as more are trained.*
 
 **Added:** Thursday 2026-11-05 07:36 · **Filmed in WoL:** Thursday 2026-11-05 07:36
 
@@ -5446,6 +5607,8 @@ What happens when a tech activates or a unit changes proto.
 
 #### hcTargetTechs
 
+*A tech can affect the owner's enemies, or every player.*
+
 **Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 10:21
 
 ![hcTargetTechs in WoL](media/hcTargetTechs-wol.gif)
@@ -5495,6 +5658,8 @@ hcTargetTechs [log]
     multiplayer.
 
 #### techPrereqRecheck
+
+*Techs that depend on unit counts unlock or lock as soon as the count changes.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -5595,6 +5760,8 @@ techPrereqRecheck [N] [full] [log]       N: check each player every N world upda
 
 #### transformUpdatesLOS
 
+*A transformed unit gets the line of sight of its new form.*
+
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
 ![transformUpdatesLOS in WoL](media/transformUpdatesLOS-wol.gif)
@@ -5651,6 +5818,8 @@ transformUpdatesLOS [log]
   the hook and was already right. Revolutions were not tested.
 
 #### transformInventory
+
+*A transformed unit gets the resources of its new form.*
 
 **Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -5746,6 +5915,8 @@ transformInventory [all] [scale] [<UnitType>] [log]
 
 #### transformSpan
 
+*A unit transformed by a tech turns back after a set time.*
+
 **Added:** Thursday 2026-11-05 09:57 · **Filmed in WoL:** Thursday 2026-11-05 10:29
 
 ![transformSpan in WoL](media/transformSpan-wol.gif)
@@ -5798,6 +5969,8 @@ transformSpan [log]
 
 #### unitTypeTechs
 
+*A tech can add or remove a unit category for one player only.*
+
 **Added:** Friday 2026-11-06 14:15
 
 ![unitTypeTechs in WoL](media/addUnitType-wol.gif)
@@ -5849,6 +6022,8 @@ What the panels and the fog of war show.
 
 #### displayedRange
 
+*A selected unit shows a ring on the ground marking its range.*
+
 **Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Friday 2026-11-06 07:32
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
@@ -5886,6 +6061,8 @@ displayedRange [log]
   screen. Not tested: 24 and 30 m, a saved game, multiplayer.
 
 #### abilitySlots
+
+*The command panel can show more than 6 abilities per unit.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -5950,6 +6127,8 @@ abilitySlots <N> [log]      N from 6 (the exe's value) to 36
   Explorer got buttons when their techs turned on, and none without the key.
 
 #### wonderPanelSkipAuras
+
+*The wonder power panel skips passive auras and shows the wonder's real power.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -6019,6 +6198,8 @@ wonderPanelSkipAuras [log]
 
 #### explorerUnits
 
+*Chosen units get a hero's name and knockout message.*
+
 **Added:** Monday 2026-11-02 21:10
 
 ```
@@ -6041,6 +6222,8 @@ explorerUnits Proto Type StringID [Proto Type StringID ...]
   list).
 
 #### noCorpseDopples
+
+*Dead units, such as hunted animals, don't stay as ghosts in the fog of war.*
 
 **Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
