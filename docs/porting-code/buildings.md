@@ -5069,6 +5069,11 @@ bool IsDead(const char* unit) {  // state bit 11
 
 // Replaces trUnitDestroy's call of the unit removal: thiscall(world, id, a, b), ret 0Ch.
 void __fastcall Destroy(char* world, void*, std::int32_t id, std::int32_t a, std::int32_t b) {
+  static bool traced = false;
+  if (!traced) {
+    traced = true;
+    uhc::Log(L"hook reached: unit destroys (0x9828E7)");
+  }
   char* unit = UnitById(world, id);
   if (unit != nullptr && !IsDead(unit) && (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit)) {
     for (std::size_t i = 0; i < g_destroyCount; ++i) {
@@ -5080,6 +5085,11 @@ void __fastcall Destroy(char* world, void*, std::int32_t id, std::int32_t a, std
 
 // Replaces the drain's call of the kill handler: thiscall(unit, a, b, c), ret 0Ch, like the handler.
 void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+  static bool traced = false;
+  if (!traced) {
+    traced = true;
+    uhc::Log(L"hook reached: unit deaths (0x493D8F)");
+  }
   for (std::size_t i = 0; i < g_count; ++i) {
     g_observers[i](unit, a, b, c);
   }
