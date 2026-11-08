@@ -165,7 +165,6 @@ displayedRange-wol-control 0 12 1
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
-ceasefire-wol 2 34 3
 doNotQueue-shipment-wol 5 36 3
 doNotQueue-shipment-wol-control 5 36 3
 maintainWaitForPop-factory-wol 2 40 3
