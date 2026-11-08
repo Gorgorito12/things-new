@@ -1368,6 +1368,16 @@ SITES = [
     # the building on a socket, 0xA01A20, int thiscall(world, const float* pos, Proto* socketProto),
     # ret 8 (trPlayerControlsSocket's lookup): its prologue (14 B)
     ("SocketOccupant", 0xA01A20, 0x0E),
+    # annexFacing, the AI: in an AI build plan's placement test FUN_0073D62B (EBP = the plan's data, EAX = the
+    # player), lea ebx,[esp+38h] / push ebx (the forward's address) / lea edi,[ebp+50h], before PLACE at 0x73D7E3
+    ("AnnexAiPlaceSite", 0x73D7D2, 8),
+    # annexFacing, the AI's scan of candidate spots for a build plan: fchs / fstp [esp+60h] / call [esi+14h] (PLACE
+    # with the world's axes, its arguments pushed); the continuation is the call
+    ("AnnexAiScanSite", 0x87DB9F, 9),
+    # the trigger Destroy (trUnitDestroy 0x98282F): its single call of the unit removal 0x4726B2(world, id, 0, 1),
+    # thiscall, ret 0Ch; and the removal's head, verify only
+    ("DestroyRemoveCall", 0x9828E7, 5),
+    ("UnitRemoveHead", 0x4726B2, 6),
 ]
 
 

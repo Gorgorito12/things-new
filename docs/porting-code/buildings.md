@@ -4263,7 +4263,7 @@ Contract: [annexFacing](../porting-to-another-dll.md#annexfacing).
 
 Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `DetonationKillCall` `0x493D8F` (5 B), `UnitCreate` `0x498ACC` (9 B), `UnitsNearPoint` `0x4A1C55` (248 B), `KillQueueAsk` `0x4B4DC2` (8 B), `AnnexForwardSite` `0x7D7CF1` (7 B), `AnnexCreateCall` `0x7D80CF` (5 B), `AnnexGhostSite` `0x96E4E7` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `UnitRemoveHead` `0x4726B2` (6 B), `DetonationKillCall` `0x493D8F` (5 B), `UnitCreate` `0x498ACC` (9 B), `UnitsNearPoint` `0x4A1C55` (248 B), `KillQueueAsk` `0x4B4DC2` (8 B), `AnnexForwardSite` `0x7D7CF1` (7 B), `AnnexCreateCall` `0x7D80CF` (5 B), `AnnexGhostSite` `0x96E4E7` (11 B), `DestroyRemoveCall` `0x9828E7` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/annexfacing.cpp
 
@@ -4882,6 +4882,14 @@ using DeathObserver = void (*)(char* unit, std::uint32_t a, std::uint32_t b, std
 // keys add them (their kFeatures order, the same on every machine).
 bool AddDeathObserver(DeathObserver observer);
 
+// The trigger effect Destroy (the syscall trUnitDestroy, 0x98282F) removes each selected unit at once through
+// the world's unit removal 0x4726B2(id, 0, 1), from its single call 0x9828E7, and never reaches the kill queue.
+// An observer added here is called there, with the flags 0 0 0, before the removal and only for a unit that is
+// alive and not dead (state bit 11 clear). It is a separate list: a key that should act on Destroy adds its
+// observer to both. The removal's 62 other callers (a corpse's end, a transform's old unit, a game's end, the
+// editor) are not observed.
+bool AddDestroyObserver(DeathObserver observer);
+
 }  // namespace uhc
 ```
 
@@ -4906,6 +4914,38 @@ const auto kKill = reinterpret_cast<KillFn>(0x004B4F70);
 uhc::DeathObserver g_observers[kMaxObservers] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+
+using RemoveFn = void(__thiscall*)(char* world, std::int32_t id, std::int32_t a, std::int32_t b);
+const auto kRemove = reinterpret_cast<RemoveFn>(0x004726B2);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+
+uhc::DeathObserver g_destroyObservers[kMaxObservers] = {};
+std::size_t g_destroyCount = 0;
+bool g_destroyInstalled = false;
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (world == nullptr || id < 0 || (id & 0x3FFFF) >= *reinterpret_cast<const std::int32_t*>(world + 0x10)) {
+    return nullptr;
+  }
+  char* unit = (*reinterpret_cast<char* const* const*>(world + 0x0C))[id & 0x3FFFF];
+  return unit != nullptr && *reinterpret_cast<const std::int32_t*>(unit + 0x10) == id ? unit : nullptr;
+}
+
+bool IsDead(const char* unit) {  // state bit 11
+  const auto* bits = *reinterpret_cast<const std::uint8_t* const*>(unit + 4);
+  return bits != nullptr && *reinterpret_cast<const std::uint32_t*>(unit + 8) > 11 && (bits[1] & 0x08) != 0;
+}
+
+// Replaces trUnitDestroy's call of the unit removal: thiscall(world, id, a, b), ret 0Ch.
+void __fastcall Destroy(char* world, void*, std::int32_t id, std::int32_t a, std::int32_t b) {
+  char* unit = UnitById(world, id);
+  if (unit != nullptr && !IsDead(unit) && (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit)) {
+    for (std::size_t i = 0; i < g_destroyCount; ++i) {
+      g_destroyObservers[i](unit, 0, 0, 0);
+    }
+  }
+  kRemove(world, id, a, b);
+}
 
 // Replaces the drain's call of the kill handler: thiscall(unit, a, b, c), ret 0Ch, like the handler.
 void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
@@ -4932,6 +4972,22 @@ bool AddDeathObserver(DeathObserver observer) {
     g_installed = true;
   }
   g_observers[g_count++] = observer;
+  return true;
+}
+
+bool AddDestroyObserver(DeathObserver observer) {
+  if (g_destroyCount == kMaxObservers) {
+    Log(L"unit destroys: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_destroyInstalled) {
+    if (!VerifyAll("unit destroys", {&sites::kDestroyRemoveCall, &sites::kUnitRemoveHead}) ||
+        !WriteCall(sites::kDestroyRemoveCall.va, reinterpret_cast<const void*>(&Destroy))) {
+      return false;
+    }
+    g_destroyInstalled = true;
+  }
+  g_destroyObservers[g_destroyCount++] = observer;
   return true;
 }
 

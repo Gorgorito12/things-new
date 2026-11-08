@@ -1821,6 +1821,18 @@ inline constexpr Site kNpButton{"NpButton", 0x00462317, kNpButtonBytes, sizeof(k
 inline constexpr std::uint8_t kSocketOccupantBytes[] = {0x81, 0xEC, 0x00, 0x04, 0x00, 0x00, 0x55, 0x8B, 0xAC, 0x24, 0x0C, 0x04, 0x00, 0x00};
 inline constexpr Site kSocketOccupant{"SocketOccupant", 0x00A01A20, kSocketOccupantBytes, sizeof(kSocketOccupantBytes)};
 
+inline constexpr std::uint8_t kAnnexAiPlaceSiteBytes[] = {0x8D, 0x5C, 0x24, 0x38, 0x53, 0x8D, 0x7D, 0x50};
+inline constexpr Site kAnnexAiPlaceSite{"AnnexAiPlaceSite", 0x0073D7D2, kAnnexAiPlaceSiteBytes, sizeof(kAnnexAiPlaceSiteBytes)};
+
+inline constexpr std::uint8_t kAnnexAiScanSiteBytes[] = {0xD9, 0xE0, 0xD9, 0x5C, 0x24, 0x60, 0xFF, 0x56, 0x14};
+inline constexpr Site kAnnexAiScanSite{"AnnexAiScanSite", 0x0087DB9F, kAnnexAiScanSiteBytes, sizeof(kAnnexAiScanSiteBytes)};
+
+inline constexpr std::uint8_t kDestroyRemoveCallBytes[] = {0xE8, 0xC6, 0xFD, 0xAE, 0xFF};
+inline constexpr Site kDestroyRemoveCall{"DestroyRemoveCall", 0x009828E7, kDestroyRemoveCallBytes, sizeof(kDestroyRemoveCallBytes)};
+
+inline constexpr std::uint8_t kUnitRemoveHeadBytes[] = {0x83, 0xEC, 0x18, 0x53, 0x55, 0x56};
+inline constexpr Site kUnitRemoveHead{"UnitRemoveHead", 0x004726B2, kUnitRemoveHeadBytes, sizeof(kUnitRemoveHeadBytes)};
+
 }  // namespace uhc::sites
 ```
 

@@ -18,4 +18,12 @@ using DeathObserver = void (*)(char* unit, std::uint32_t a, std::uint32_t b, std
 // keys add them (their kFeatures order, the same on every machine).
 bool AddDeathObserver(DeathObserver observer);
 
+// The trigger effect Destroy (the syscall trUnitDestroy, 0x98282F) removes each selected unit at once through
+// the world's unit removal 0x4726B2(id, 0, 1), from its single call 0x9828E7, and never reaches the kill queue.
+// An observer added here is called there, with the flags 0 0 0, before the removal and only for a unit that is
+// alive and not dead (state bit 11 clear). It is a separate list: a key that should act on Destroy adds its
+// observer to both. The removal's 62 other callers (a corpse's end, a transform's old unit, a game's end, the
+// editor) are not observed.
+bool AddDestroyObserver(DeathObserver observer);
+
 }  // namespace uhc

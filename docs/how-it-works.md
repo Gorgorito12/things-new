@@ -138,7 +138,8 @@ The hooks are MASM files in `src/hooks/`.
 - **Shared hooks.** A site that two keys need is hooked once by a shared module that calls each key's
   function in `kFeatures` order: the world update (`worldtick.cpp`, `AddWorldTick`), the unknown
   tags of an action (`actiontags.cpp`, `AddActionTagHandler`, at 0x5FA11E) and every unit's death
-  (`deathobservers.cpp`, `AddDeathObserver`, the drain's call 0x493D8F; `detonationDeath`, `annexFacing`).
+  (`deathobservers.cpp`, `AddDeathObserver`, the drain's call 0x493D8F; `detonationDeath`, `annexFacing`), with a
+  second list for the trigger `Destroy` (`AddDestroyObserver`, its call 0x9828E7 of the unit removal; `annexFacing`).
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
   first time execution passes. It preserves every register, the flags and ESP, so it can sit at
   the top of any hook.
