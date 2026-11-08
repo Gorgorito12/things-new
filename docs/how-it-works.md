@@ -1104,8 +1104,9 @@ With the cfg var `ballisticPrecalcHits` (on in the game's own `Startup\gamey.cfg
 rolls the action's accuracy: a hit flies to its target and damages it; a miss is moved by
 uniform(-r, r) on x and z, with a hardcoded `r = min(0.25 × d, 5)`, and **deals no damage at all**
 where it lands. `PerfectAccuracy` skips the roll (a hit). `InstantBallistics` and `TargetGround`
-shots never reach that code. The tactics tags `<MaxSpread>` and `<SpreadFactor>` (Age of Mythology
-leftovers) are not read.
+shots never reach that code: an `InstantBallistics` shot is a sure hit (mode 1), whose tracer flies to the
+impact point and whose target takes the attack when it arrives. The tactics tags `<MaxSpread>` and
+`<SpreadFactor>` (Age of Mythology leftovers) are not read.
 
 **Data.** The key adds a handler to the shared action tag hook (`src/actiontags.cpp`, below). For a
 child named `MaxSpread` or `SpreadFactor` (case-insensitive) of a `.tactics` `<action>` or a `protoy`
@@ -1130,7 +1131,7 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
 0x5FA623 (a tactics `<action>`, FUN_005FA5B3). Any other caller goes straight on to the next child.
 `damageOverTime`'s handler keeps reading only `<ProtoAction>` tags.
 
-**Shots: three hooks.**
+**Shots: five hooks.**
 1. **Hit roll** (0x499890, over `cmp ebx,2 / je 4CEF7Bh`, 9 B). EBX holds the roll's result. A miss
    goes on to the miss hook, as in stock. For any other result, a C++ call checks the shooting unit
    `[esp+0E8h]`: if its proto (the player's copy, `[unit+5Ch]`) has the marker type (is-a 0x44D7FA),
@@ -1156,19 +1157,40 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
    0x4CF026, so the two random draws 0x422648(sync RNG, stream 2, -r, r) are the stock code's.
    FUN_004CEF8C has no other caller, and outside the miss hook the globals hold 0.25 and 5.0.
 
+4. **Instant shot** (0x4A9455, over `mov [esi+20h],1`, 7 B, before the stock `jmp 4998A0h`). An
+   `InstantBallistics` shot leaves the precalculated block there (the `jne` at 0x499801 is the only
+   branch to it), in the launch's frame. For a marked shooter with a target unit and a projectile unit,
+   the hook selects the action's values and calls FUN_004CEF8C on the impact point `[esp+28h]`, as the
+   miss hook does. The instant launch 0x4A958F then copies that point to `[projectile+70h]`, so the
+   tracer flies there. The mode stays 1. An offset shot (r > 1e-6, so the two draws ran) is remembered
+   by its projectile unit's ID until its arrival.
+5. **Applier** (0x49BE95, over `sub esp,1D8h`, 6 B: the head of FUN_0049BE95(projectile, targetId,
+   point), which every hit and landing of every projectile calls). A C++ call may rewrite the two
+   arguments in place, and the mode, before the stock body runs:
+   - a remembered instant shot of a marked shooter (still alive), mode 1: the point `[projectile+70h]`
+     inside the target's obstruction (distance 0 by the unit's vtable slot B8h, the engine's own
+     distance to an obstruction) is a stock hit. Otherwise, with `<DamageArea>` the mode becomes 3, the
+     target −1 and the point a copy of `[projectile+70h]`, so the stock area path damages around that
+     point; without, the target becomes the unit at the point, or −1, for which the stock body returns
+     at once (no damage);
+   - a ground shot (mode 3) of a marked shooter, with no live target and no `<DamageArea>`: the target
+     becomes the unit at the landing point (the point argument), if any. The stock body then damages it
+     through TakeDamage, as for any hit.
+
+   **The unit at a point:** FUN_004A1C55 (the spatial query `noTrainNearEnemyTC` uses) with a radius of
+   0.01 and `precise`, then the units whose obstruction distance to the point is 0; not the shooter or
+   the projectile unit, alive (vtable slot A4h), not of proto flag 0Ah `Projectile` (the area damage
+   skips those too), and not a Gaia unit of the abstract type `Resource` (trees, mines, hunts, crates).
+   Of several, the nearest centre in x and z, then the lowest ID.
+
 **What it does not cover.**
-- `InstantBallistics` shots (sure hits, 0x4A9455 jumps past the block): they never reach the roll. `TargetGround`
-  shots, which do not reach it either, have their own hook (below).
-  <!-- private:begin -->
-  In WoL's tactics, 304 of the 647
-  actions with spread tags; the others, including the current shotgun files, are covered
-  ([engine-symbols.md](engine-symbols.md), "Consequence for WoL's shotguns").
-  <!-- private:end -->
 - Shots with no target unit: the block is skipped and the flight physics decide. With
   `ballisticPrecalcHits` off, a marked shooter still goes through the block (below).
-- A marked unit without `<DamageArea>` deals no damage: its ground shots land with nothing to hit
-  (seen in game: marked Longbowmen left every musketeer at full HP). Mark only area attacks.
-  WoL's shotguns are area attacks. <!-- private -->
+- A stray shot whose shooter died before it arrived keeps the stock result (the marker is read from the
+  live shooter).
+- Saved games do not keep the set of offset instant shots in flight: one fired just before a save hits
+  its target after the load. The set is cleared on every data load and on another game (the world tick:
+  a step count that jumps, or the game time going back).
 - `NumberProjectiles` (one projectile per shot, as in stock); dynamic per-player protos that techs
   create (IDs from 100000 up) do not match the base proto's key and keep the stock values.
 
@@ -1196,16 +1218,44 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
 **Determinism.** The values come from the data and the marker from the proto, the same on every
 machine. The random draws are the stock code's, on the sync RNG, in the same order; a marked shot
 draws the same two numbers a stock miss would (or none when r ≤ 1e-6, as in stock). The roll still
-runs for marked units, so the RNG stream advances as in stock. The table is a `std::map` read by key;
-the log reads the simulation and never writes it.
+runs for marked units, so the RNG stream advances as in stock. A marked instant shot adds those two
+draws (stock instant shots draw nothing), on every machine alike. The table is a `std::map` read by key;
+the set of offset instant shots is keyed by projectile unit ID (the same on every machine), read by key
+and trimmed from its lowest ID past 512 entries. The unit at a point comes from the simulation's own
+query and obstruction distance, and ties go to the nearest centre, then the lowest ID, never to an
+address or a list order. The log reads the simulation and never writes it.
 
 **Performance.** Per shot through the block: one C++ call with an is-a bit test (hits); per miss, one
-`std::map` lookup (about 600 entries with the stock data) and the stock function. No allocation per
-shot. Not measured with `perfStats`.
+`std::map` lookup (about 600 entries with the stock data) and the stock function. The applier hook runs
+on every projectile hit or landing of the game: a mode and flag test, then, only for ground shots
+without area or remembered instant shots, a unit lookup and the is-a test; the spatial query only for a
+marked shot that strays. No allocation per shot. Measured in game (2026-11-08, `perfprobe.py`, 60 s of
+four marked Skirmishers shooting nine Mortars): key on 590 fps, world update 0.16 ms per frame, main
+thread 76 %, no frame over 50 ms; key off 595 fps, 0.17 ms, 78 %, one frame over 50 ms.
 
 A TargetGround shot leaves its lead at 0x4C4DEC with no roll. For a marked shooter the hook runs the miss offset 0x4CEF8C on the point at
 `[esp+28h]` and leaves the mode at 3. At 0x4997AE a marked shooter goes on into the precalculated block when the cfg var is off.
 Unmarked shooters take the stock path in both.
+
+**Why the instant and applier hooks are safe.**
+- The instant hook runs in the launch's frame (0x499801 → 0x4A9455 with no push in between), saves every
+  register around both calls and leaves through `jmp 4998A0h`, the stock continuation, which writes EDI,
+  ECX and EAX before reading them and reads no flag first. FUN_004CEF8C keeps EBX, ESI, EDI and EBP and
+  leaves the x87 stack empty.
+- The applier hook sits at a function head (no branch lands inside the 6 bytes, `cs` scan); it saves
+  every register and only writes the two stack arguments, which belong to the callee (thiscall), and
+  the projectile's mode, which the stock body reads next (0x4CB80C) exactly as for a stock ground shot.
+- The spatial query writes the obstruction manager's scratch list `[[world+260h]+4ECh]`; the stock
+  area path inside the same function runs its own query on that list (0x462E95 → 0x462DBA), so no
+  caller of the applier relies on it. The projectile update keeps its in-flight hits in a list of its
+  own (`[esp+0B0h]`).
+- Mode 3 with target −1 is the stock state of a landing ground shot (0x50B131); a mode-1 shot with no
+  live target is the stock state of a shot whose target died (the body returns at 0x4CB80F).
+- The instant arrival (0x49C151, state 3 of the projectile) passes the target `[esi+8]` and a zero vector:
+  for the area case the hook passes its own copy of the point instead. Sites `SpreadInstantMode`,
+  `SpreadInstantLaunch`, `SpreadApplierHead` and `SpreadInstantArrival` check those bytes.
+- In game (2026-11-08) every one of 162 logged instant arrivals reached the applier with the very point the
+  launch had drawn.
 
 ### liveBuildingWorkRate
 

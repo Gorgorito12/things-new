@@ -88,7 +88,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 12:48 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`dodgeSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset), [`criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Filmed in WoL, with a control. Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. |
 | Wednesday 2026-11-04 12:48 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
 | Wednesday 2026-11-04 12:48 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. |
-| Wednesday 2026-11-04 12:48 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. |
+| Wednesday 2026-11-04 12:48 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units, `InstantBallistics` included, scatter like that whatever their accuracy and hit what it lands on. | The tags are there; the unit type or proto name of the units that should always scatter, in the cfg. |
 | Wednesday 2026-11-04 12:48 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`maintainWaitForPop`](#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
@@ -2331,7 +2331,7 @@ Attacks, armor, and what a hit does.
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | **new** | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. | confirmed (single player) |
-| [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units scatter like that whatever their accuracy, dealing its area damage where it lands. | **new** | The tags are there; a `<DamageArea>` on the attacks that should always scatter, and their unit type or proto name in the cfg. | confirmed (single player) |
+| [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units, `InstantBallistics` included, scatter like that whatever their accuracy and hit what it lands on. | **new** | The tags are there; the unit type or proto name of the units that should always scatter, in the cfg. | confirmed (single player) |
 | [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
@@ -2898,7 +2898,7 @@ Settlers as targets):* each poisoned unit wears the ring, and a corpse does not.
 
 #### spreadAnyAccuracy
 
-*Missed shots follow the data's spread, and chosen units' shots scatter and damage where they land.*
+*Missed shots follow the data's spread, and chosen units' shots, musket shots included, scatter and hit what they land on.*
 
 **Added:** Friday 2026-10-30 10:12 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
 
@@ -2916,6 +2916,20 @@ point up to 3 m away, and it hurts whoever stands within 1 m of it.
 target. In this melee-range fight the total damage is about the same either way, with or without the
 key. [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
 
+![spreadAnyAccuracy on InstantBallistics shots in WoL](media/spreadAnyAccuracy-instant-wol.gif)
+
+*In WoL, with `spreadAnyAccuracy Skirmisher log` (the Skirmishers are selected):* four Skirmishers (WoL's own
+`wolInfantryRanged.tactics`: `InstantBallistics`, `maxspread` 5, `spreadfactor` 0.25, no `DamageArea`) fire at
+nine Mortars. Each tracer flies to its own point up to 5 m off; a shot that lands on another Mortar hurts that one,
+the others hit nothing. After 47 s of game time the most hurt Mortar had lost 12 HP, and seven had lost some.
+[Full video (MP4)](media/spreadAnyAccuracy-instant-wol.mp4).
+
+![spreadAnyAccuracy on InstantBallistics shots in WoL, key off](media/spreadAnyAccuracy-instant-wol-control.gif)
+
+*In WoL, key off (the same scene):* every musket shot is a sure hit on its target: the nearest Mortar is down
+from 300 to 36 HP at 47 s, and the eight others are untouched.
+[Full video (MP4)](media/spreadAnyAccuracy-instant-wol-control.mp4).
+
 ![spreadAnyAccuracy on a ground shot in WoL](media/spreadAnyAccuracy-ground-wol.gif)
 
 *In WoL, with `spreadAnyAccuracy log` (Ethiopians, test data: a marked Catapult, `SpreadFactor` 2.8, `MaxSpread` 10):* its shots at
@@ -2930,8 +2944,8 @@ key. [Full video (MP4)](media/spreadAnyAccuracy-wol-control.mp4).
 spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
 ```
 
-- **In WoL today:** each ranged shot that is not `InstantBallistics` rolls its `Accuracy` when it is
-  fired (the roll also counts the distance, so even accuracy 1.0 misses about 8 % of the shots at 16 m).
+- **In WoL today:** an `InstantBallistics` shot (most muskets) is a sure hit on its target. Each other ranged
+  shot rolls its `Accuracy` when it is fired (the roll also counts the distance, so even accuracy 1.0 misses about 8 % of the shots at 16 m).
   A hit flies to its target and damages it. A miss lands at a random point up to `r` away on each axis,
   with `r = min(0.25 × distance, 5)` for every unit, and **deals no damage at all**, not even with
   `<DamageArea>`. The `<maxspread>` and `<spreadfactor>` lines of WoL's tactics files (317 files, 647
@@ -2948,7 +2962,15 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
     `PerfectAccuracy` included): each shot lands at the offset point as a **ground shot** (what
     grenades and mortars fire) and deals its attack where it lands. With `<DamageArea>` the units
     within that radius of the point take the damage, the target included when it is close enough;
-    without `<DamageArea>` the shot hits nothing.
+    without `<DamageArea>` the shot hits the unit it lands on, if any.
+  - **Their `InstantBallistics` shots** (sure hits in the exe, which never roll) scatter the same way:
+    the tracer flies to a point drawn with the same formula and the same random draws. If that point
+    is inside the target's footprint, the target takes the hit as before. If not: with `<DamageArea>`
+    the area damage lands at the point; without it, the shot hits the unit whose footprint holds the
+    point (any player's, the shooter's own side included, as a stray bullet would), or nothing.
+  - **"The unit it lands on":** a unit whose footprint (its obstruction) holds the point, alive, not a
+    projectile, and not a Gaia resource (trees, mines, hunts, crates: a shot passes them). If two
+    hold it, the nearest centre wins. Its damage, armor and bonuses are those of a normal hit.
   - Unmarked units keep their hits; only their misses change.
 - **WoL needs:**
 
@@ -2973,23 +2995,32 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
       </ProtoAction>
   ```
 
-  Mark only units whose attack has `<DamageArea>`, such as shotguns: a marked attack without area
-  does no damage. The marker is registered by the DLL, like `healNonIdle`'s; an existing type or
-  proto name works too (`spreadAnyAccuracy Escopetero`).
+  A marked attack without `<DamageArea>` hits only what its shots land on: with WoL's usual
+  `maxspread` 5 and `spreadfactor` 0.25 a musket at 16 m scatters up to 4 m each way, so most shots at a
+  lone soldier hit nothing (see "Status" below). Give the attacks that should stay precise small values.
+  The marker is registered by the DLL, like `healNonIdle`'s; an existing type or proto name works too
+  (`spreadAnyAccuracy Escopetero`). The DLL also looks up the type `Resource` (for the Gaia resources a
+  stray shot passes); the log says `unit types: Resource -> <ID> ..., already defined`.
 - **Ground shots:** a marked unit's `TargetGround` shot scatters with the action's values. It stays a ground shot, so it deals its area
-  damage where it lands. Against a building the same Catapult went through the roll instead.
+  damage where it lands, or without `<DamageArea>` hits the unit it lands on. Against a building the same Catapult went through the roll instead.
 - **`ballisticPrecalcHits` off:** a marked unit still scatters, and other units stay as stock.
 - **Not covered:**
-  - actions with `<InstantBallistics>` (sure hits: most muskets), 304 of WoL's 647 actions with spread tags. Almost all are tags
-    nothing reads; only 5 referenced actions have values of their own;
-  - `<NumberProjectiles>`: a shot is still one projectile.
+  - shots with no target unit (the flight physics decide them);
+  - `<NumberProjectiles>`: a shot is still one projectile;
+  - a stray shot whose shooter died before it landed acts as in the exe (an instant shot hits its target, a
+    ground shot without `<DamageArea>` hits nothing);
+  - saved games do not keep which instant shots in flight were scattered: one fired just before the save
+    hits its target after the load.
 - **`log`:** one line per value that differs from the exe's 5 / 0.25 (the first 200 per data load),
-  and the first 5 offset shots of each attack (at most 100): who shot, a miss or a marked shot, `r`
-  and the values used. Invalid values are logged with or without `log`.
+  the first 5 offset shots of each attack (at most 100): who shot, a miss or a marked shot, `r`
+  and the values used; the first 5 landings of each marked attack (at most 100): where it landed and
+  what it hit; and a count per game at 25, 50, 100, 200, ... marked shots. Invalid values are logged
+  with or without `log`.
 - **Log:**
   - at startup, `spreadAnyAccuracy: <MaxSpread> and <SpreadFactor> are read per action (stock 5.0
-    and 0.25) and every miss uses them; units of unittype X scatter every precalculated shot
-    (multiplayer unverified)` (with `log`: `…; values and shots logged …`);
+    and 0.25) and every miss uses them; units of unittype X scatter every precalculated and
+    InstantBallistics shot, and a stray shot hits what it lands on (multiplayer unverified)` (with `log`:
+    `…; values and shots logged …`);
   - while the data loads, `unit types: X -> <ID> …`, `hook reached: action tag (0x5FA11E)` and,
     for each invalid value, `spreadAnyAccuracy: Escopetero/VolleyRangedAttack (protoy):
     <MaxSpread>abc</MaxSpread> is not a number from 0 to 100; ignored` (or `… before the action's
@@ -3001,10 +3032,31 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
     0.25` (once per data load). With `log`: `spreadAnyAccuracy: shot by unit 20
     (xpAenna/VolleyRangedAttack): marked unit, a hit made a ground shot at the offset point, r =
     3.00 m (SpreadFactor 1.50, MaxSpread 3.00)` or `shot by unit 1 (Crossbowman/VolleyRangedAttack):
-    a miss, r = 20.00 m (SpreadFactor 2.00, MaxSpread 20.00)`.
+    a miss, r = 20.00 m (SpreadFactor 2.00, MaxSpread 20.00)`; for `InstantBallistics`, `shot by unit 2
+    (Skirmisher/VolleyRangedAttack): marked unit, an InstantBallistics shot aimed at the offset point, at
+    (48.6, 38.7), r = 4.02 m (...)`, then at its landing `shot by unit 0 (Skirmisher/VolleyRangedAttack)
+    lands at (53.1, 41.1) (instant, 3.44 m from its target's obstruction): it hits unit 4 (Settler, player 2,
+    at 53.0, 41.0)` (or `it hits nothing`, `the area damage lands there`, `inside its target's obstruction,
+    the target takes the hit`); a ground shot without `DamageArea` says `(a ground shot)`. The count:
+    `spreadAnyAccuracy: 100 marked shots so far: InstantBallistics 10 on the target, 0 area damage at the
+    point, 14 on another unit, 76 on nothing; ground shots without DamageArea 0 on a unit, 0 on nothing`.
+    The hooks: `hook reached: spreadAnyAccuracy instant shot (0x4A9455)` and `… attack applier (0x49BE95)`.
 - **Simulation:** yes (where shots land and what they damage; it also adds a unit type, which
   changes the unit type count).
 - **Status:** confirmed in single player.
+  - **In WoL (2026-11-08), `InstantBallistics` and stray hits, WoL's data unchanged:**
+    - four marked Skirmishers against nine Mortars (videos): over 200 marked shots of that scene (two runs),
+      21 landed on the target, 39 on another Mortar and 140 on nothing; in the take the hits spread over seven
+      Mortars, the most hurt at 288 / 300 HP after 47 s. Key off: the target was at 36 HP, the others untouched;
+    - four marked `WOLMAORITrenchRifleman` (`InstantBallistics`, `DamageArea` 2): of 50 shots, 5 inside the
+      target and 45 as area damage at the point; all nine Mortars took damage;
+    - four marked Crossbowmen (arrows, no `DamageArea`), whose marked shots did no damage at all before: of 50
+      ground shots, 11 hit the Mortar they landed on and 39 nothing;
+    - every logged landing was the point the launch drew (162 instant shots compared one by one); a saved game
+      loaded and the fight went on; a skirmish of 110 s against a German AI with `spreadAnyAccuracy
+      AbstractRangedInfantry log`: the AI built and trained, no `XS: Error`;
+    - `perfprobe.py`, 60 s of the Skirmisher scene each: key on 590 fps, update 0.16 ms, main thread 76 %, no
+      frame over 50 ms; key off 595 fps, 0.17 ms, 78 %, one frame over 50 ms.
   - **In WoL (2026-11-04):** WoL's own Escopeteros, as in the videos. The total damage in that fight at
     melee range is about the same with and without the key.
   - **On the stock game (2026-10-30):** values read from a tactics file (20 / 2) and from `<ProtoAction>`
@@ -3013,8 +3065,8 @@ spreadAnyAccuracy [<UnitType>] [log]     default AbstractSpreadAnyAccuracy
     accuracy 1 or `PerfectAccuracy`, every shot a ground shot; marked archers with `DamageArea` 2.5
     killed by area hits, and without it hit nothing; marked Grenadiers (`TargetGround`) never reached
     the hooks; a skirmish against two AIs played normally.
-  - **Not tested:** multiplayer, saved games. The area damage of the ground shots was seen on HP, the
-    landing points only on video.
+  - **Not tested:** multiplayer. The area damage of the ground shots was seen on HP, the
+    landing points only on video and in the log.
 
 #### accuracyTechs
 

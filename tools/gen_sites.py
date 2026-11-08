@@ -219,6 +219,18 @@ SITES = [
     # spreadAnyAccuracy, verify only: the two random draws uniform(-r, r) of FUN_004CEF8C
     # (0x422648 on the sync RNG 0xC66588, stream 2) that the hook leaves to the stock code
     ("SpreadDraws", 0x4CF037, 0x40),
+    # spreadAnyAccuracy, InstantBallistics: the launch's branch from the jne at 0x499801,
+    # mov [esi+20h],1 (replaced, 7 bytes) / jmp 4998A0h; and, verify only, the instant
+    # launch that copies the impact point [esp+28h] to [projectile+70h]: push -1.0 /
+    # lea edx,[esp+2Ch] / push edx / mov ecx,esi / call 4A95A5h / jmp 4999BEh
+    ("SpreadInstantMode", 0x4A9455, 12),
+    ("SpreadInstantLaunch", 0x4A958F, 0x16),
+    # spreadAnyAccuracy: the head of the attack applier FUN_0049BE95 (thiscall(projectile,
+    # targetId, point), ret 8): sub esp,1D8h (replaced, 6 bytes) / mov edx,[0C66234h]
+    ("SpreadApplierHead", 0x49BE95, 12),
+    # spreadAnyAccuracy, verify only: the instant arrival's call of the applier with the target
+    # [esi+8] (mov edx,[esi+8] / lea ecx,[esp+24h] / push ecx / push edx / mov ecx,esi ...)
+    ("SpreadInstantArrival", 0x49C151, 0x28),
     # dodgeAnyUnit (FUN_0049ACAA, "is this hit dodged?"): mov eax,[esi+5Ch] / mov eax,[eax+4],
     # the target's proto ID, and the first compare with the cached ypMonkJapanese ID
     ("DodgeProtoCheck", 0x49ACE5, 12),

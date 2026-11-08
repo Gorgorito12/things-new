@@ -143,11 +143,9 @@ First: validation and `append` with display-name order.
 
 ## `spreadAnyAccuracy`
 
-- **Cover `InstantBallistics` and `TargetGround`:** 304 and 122 of WoL's 647 spread actions never
-  reach the hook; today the key serves only shotguns. *medium, RE*
 - **Remove the `ballisticPrecalcHits` dependency** and cover shots with no target unit. *medium*
-- **Warn at load** for a marked action without `<DamageArea>` (it deals no damage); a default
-  impact radius so a pellet landing on a unit hits it. *small*
+- **Warn at load** for a marked action with large spread values and no `<DamageArea>` (since 2026-11-08 its
+  stray shots hit only what they land on, so most miss a lone soldier). *small*
 - **`NumberProjectiles`:** N projectiles per shot, each with its own landing point and area,
   damage split. Real pellets, visible. *medium*
 - **Spread shape:** stock draws a square (per-axis); `<SpreadShape>` circle, gaussian, or a cone
@@ -158,9 +156,11 @@ First: validation and `append` with display-name order.
 - **Per-action flag** `<SpreadAlways>` instead of a per-unit marker (a unit with a shotgun and a
   grenade is marked whole). *small*
 - **UI:** spread range and pellets in the stat panel through the `showGatherRate` row hook.
-- **Pending tests:** multiplayer, saved games, area damage of ground shots near allies.
+- **Pending tests:** multiplayer, area damage of ground shots near allies.
+- **Done (2026-11-08):** `InstantBallistics` shots and `TargetGround` shots of marked units scatter; a stray shot
+  hits what it lands on.
 
-First: `InstantBallistics`.
+First: `NumberProjectiles`.
 
 ## `techPrereqRecheck`
 
