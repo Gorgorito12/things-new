@@ -32,6 +32,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 |---|---|---|---|
 | Sunday 2026-11-08 10:23 | [`annexFacing`](#annexfacing) | Added. An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) is turned to face the building it belongs to when it is placed, in steps of 90 degrees, and falls at once when that building dies. | The tag on the annexes; a placement distance that leaves room for the turned annex. |
 | Sunday 2026-11-08 10:10 | [`containedUnitsROF`](#containedunitsrof) | Added. An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | The attribute on the attacks that want it (none has it today). |
+| Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
 | Friday 2026-11-06 14:15 | [`unitTypeTechs`](#unittypetechs) | Added. Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | The effects in your techs. |
 | Friday 2026-11-06 13:55 | [`snareValues`](#snarevalues) | Filmed in WoL, with a control. The factor and length of `<TargetSpeedBoost>`, per action and by tech. | The tags on the action. |
 | Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
@@ -6217,8 +6218,69 @@ What the panels and the fog of war show.
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
 | [`displayedRange`](#displayedrange) | A selected unit shows a ring of the radius of `<DisplayedRange>`. | **new** | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. | confirmed |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
+| [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
+
+#### nativePreview
+
+*Clicking a native village with no Trading Post shows what its Trading Post would offer: units and techs, which you can read but not buy.*
+
+**Added:** Sunday 2026-11-08 10:31 · **Filmed in WoL:** Sunday 2026-11-08 10:31
+
+![nativePreview in WoL](media/nativePreview-wol.gif)
+
+*In WoL, with `nativePreview log` (Ethiopians, a Carib socket placed by a test map, no Trading Post on it):* the
+selected Carib Settlement shows the Trading Post's panel for the Caribs: the Blowgunner and five techs, greyed, with the
+age marks a real Trading Post shows. The cursor rests on Carib Warrior Societies, whose rollover is the stock one
+("not available until Age 3"); three clicks on it do nothing, and the gold stays at 2000.
+[Full video (MP4)](media/nativePreview-wol.mp4).
+
+![nativePreview in WoL, key off](media/nativePreview-wol-control.gif)
+
+*In WoL, key off (the same scene and cursor):* the stock settlement panel, its portrait and quote, and no buttons.
+[Full video (MP4)](media/nativePreview-wol-control.mp4).
+
+```
+nativePreview [tagged] [log] [<BuildingProto>]
+```
+
+```xml
+<Unit name="SocketCaribs">
+    <NativePreview/>       <!-- read only with "tagged" -->
+</Unit>
+```
+
+- **In WoL today:** a native socket shows its portrait and a quote; what its Trading Post offers is listed only in the
+  socket's tooltip, by name, and the techs' rollovers (cost, effects, required age) are seen only once the post stands.
+- **Effect:** selecting a native socket with no building on it shows, in place of that panel, the command panel of the
+  local player's Trading Post, with only the native's entries:
+  - the `<Train>` entries the native's age tech enables (its `Data` effects of subtype `Enable`), and the `<Tech>` entries
+    it makes obtainable or active (its `TechStatus` effects);
+  - each button is disabled and has its normal rollover. A tech whose prerequisite is another tech is hidden until that
+    one is researched, and a unit or tech that needs a later age shows its age mark, as on a real Trading Post;
+  - a click or a shift-click does nothing: the buttons have no command.
+- **Which sockets:** a proto with the unit type `NativeSocket` and a `<SubCiv>`. With `tagged`, only those whose proto
+  also has `<NativePreview/>` (DE's tag). A socket with a Trading Post on it (tested; a foundation counts too, by the
+  same lookup, untested), a trade route socket and every other unit keep the stock panels.
+- **The building:** `TradingPost` by default; a proto name in the key uses that proto's list instead.
+- **Same set as a real Trading Post (tested):** the Cree preview showed the Tracker and the Coureur des Bois (age II) and
+  4 techs; a Trading Post built on that socket by the same player showed the same 2 units and 4 techs, with the same
+  age marks. The Carib one shows 1 unit and 5 techs (Champion Caribs waits for Carib Warrior Societies).
+- **What it does not show:** the Trading Post's commands (gather point, eject, delete) and the native's big button.
+- **Multiplayer:** display only. The panel is this machine's, no command is sent, and nothing in the game changes.
+- **Log:** `nativePreview: an empty native socket shows the panel of TradingPost for its native, read-only`, and with
+  `log`, once per socket and game, `nativePreview: socket 4 (SocketCaribs, Caribs): 1 unit(s) and 6 tech(s) of
+  TradingPost, read-only` (the entries collected; the panel hides the techs that wait for another tech).
+- **Performance:** measured with `perfprobe.py`, 60 s each, the same scene: the preview 926 fps and 0.23 ms of update a
+  frame, the key off (stock settlement panel) 1046 fps and 0.13 ms, an own Settler's command panel 829 fps and 0.2 ms; no
+  frame over 50 ms in any. The cost is the one of any command panel.
+- **Tested in WoL (2026-11-08):** Caribs and Cree sockets placed by a test map (the map also needs
+  `rmAllocateSubCivs`/`rmSetSubCiv` for a Trading Post to be built there), Ethiopian player: the preview, its rollovers,
+  clicks (no change of resources or units), a real Trading Post on the Cree socket (same set, and its socket keeps the
+  stock panel), a saved game loaded, a trade route socket (stock), the key off, and a 100 s skirmish against the AI with
+  no XS error. Not tested: `tagged` and another building proto, a native whose age tech enables units through another
+  tech, hotkeys (a socket enters no hotkey context), the panel chooser's other modes (`[ui+3CCh]` not 0), multiplayer.
 
 #### displayedRange
 

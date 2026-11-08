@@ -117,6 +117,7 @@ PAGES = {
     "interface": ("Interface", {
         "abilitySlots": ["src/features/abilityslots.cpp", "src/hooks/abilityslot_hooks.asm"],
         "wonderPanelSkipAuras": ["src/features/wonderpanel.cpp", "src/hooks/wonderpanel_hooks.asm"],
+        "nativePreview": ["src/features/nativepreview.cpp", "src/hooks/nativepreview_hooks.asm"],
         "noCorpseDopples": ["src/features/dopples.cpp", "src/hooks/dopple_hooks.asm"],
     }),
 }

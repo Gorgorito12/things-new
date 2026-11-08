@@ -1718,4 +1718,52 @@ inline constexpr Site kUnitCreate{"UnitCreate", 0x00498ACC, kUnitCreateBytes, si
 inline constexpr std::uint8_t kAnnexGhostSiteBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00};
 inline constexpr Site kAnnexGhostSite{"AnnexGhostSite", 0x0096E4E7, kAnnexGhostSiteBytes, sizeof(kAnnexGhostSiteBytes)};
 
+inline constexpr std::uint8_t kNpSocketPanelBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x91, 0x40, 0x01, 0x00, 0x00, 0x8B, 0x46, 0x5C};
+inline constexpr Site kNpSocketPanel{"NpSocketPanel", 0x00645FE7, kNpSocketPanelBytes, sizeof(kNpSocketPanelBytes)};
+
+inline constexpr std::uint8_t kNpSocketPanelSkipBytes[] = {0x8B, 0x6C, 0x24, 0x1C};
+inline constexpr Site kNpSocketPanelSkip{"NpSocketPanelSkip", 0x00454354, kNpSocketPanelSkipBytes, sizeof(kNpSocketPanelSkipBytes)};
+
+inline constexpr std::uint8_t kNpSubCivBytes[] = {0x8B, 0xCB, 0xE8, 0x1F, 0x64, 0xE7, 0xFF, 0x3C, 0xFF};
+inline constexpr Site kNpSubCiv{"NpSubCiv", 0x00646124, kNpSubCivBytes, sizeof(kNpSubCivBytes)};
+
+inline constexpr std::uint8_t kNpSubCivSkipBytes[] = {0x80, 0x7C, 0x24, 0x16, 0x00};
+inline constexpr Site kNpSubCivSkip{"NpSubCivSkip", 0x00646163, kNpSubCivSkipBytes, sizeof(kNpSubCivSkipBytes)};
+
+inline constexpr std::uint8_t kNpGateBytes[] = {0x8B, 0x50, 0x0C, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x3B, 0x91, 0xC0, 0x03, 0x00, 0x00};
+inline constexpr Site kNpGate{"NpGate", 0x0046193E, kNpGateBytes, sizeof(kNpGateBytes)};
+
+inline constexpr std::uint8_t kNpProtoBytes[] = {0x8B, 0x5E, 0x5C, 0x81, 0xC3, 0xE8, 0x00, 0x00, 0x00, 0x6A, 0x01};
+inline constexpr Site kNpProto{"NpProto", 0x00461BBD, kNpProtoBytes, sizeof(kNpProtoBytes)};
+
+inline constexpr std::uint8_t kNpCollectBytes[] = {0x8A, 0x4C, 0x06, 0x02, 0x84, 0xC9, 0x0F, 0x84, 0x18, 0x01, 0x1D, 0x00};
+inline constexpr Site kNpCollect{"NpCollect", 0x004C58AD, kNpCollectBytes, sizeof(kNpCollectBytes)};
+
+inline constexpr std::uint8_t kNpCollectAppendBytes[] = {0x8B, 0x13, 0x0F, 0xB6, 0x44, 0x32, 0x04};
+inline constexpr Site kNpCollectAppend{"NpCollectAppend", 0x004C59F5, kNpCollectAppendBytes, sizeof(kNpCollectAppendBytes)};
+
+inline constexpr std::uint8_t kNpCollectSkipBytes[] = {0x8B, 0x44, 0x24, 0x40};
+inline constexpr Site kNpCollectSkip{"NpCollectSkip", 0x00461C3F, kNpCollectSkipBytes, sizeof(kNpCollectSkipBytes)};
+
+inline constexpr std::uint8_t kNpTechLayoutBytes[] = {0x8B, 0x7C, 0x24, 0x28, 0x57, 0x8B, 0xCE, 0xE8, 0xA3, 0x48, 0x06, 0x00};
+inline constexpr Site kNpTechLayout{"NpTechLayout", 0x004620B9, kNpTechLayoutBytes, sizeof(kNpTechLayoutBytes)};
+
+inline constexpr std::uint8_t kNpTechBuildBytes[] = {0x8B, 0x4F, 0x58};
+inline constexpr Site kNpTechBuild{"NpTechBuild", 0x00462172, kNpTechBuildBytes, sizeof(kNpTechBuildBytes)};
+
+inline constexpr std::uint8_t kNpLayoutNextBytes[] = {0x8B, 0x44, 0x24, 0x68};
+inline constexpr Site kNpLayoutNext{"NpLayoutNext", 0x0046268A, kNpLayoutNextBytes, sizeof(kNpLayoutNextBytes)};
+
+inline constexpr std::uint8_t kNpTechNoPrereqBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x57, 0x8B};
+inline constexpr Site kNpTechNoPrereq{"NpTechNoPrereq", 0x004C7330, kNpTechNoPrereqBytes, sizeof(kNpTechNoPrereqBytes)};
+
+inline constexpr std::uint8_t kNpTechPrereqAgeBytes[] = {0x83, 0xEC, 0x0C, 0x53, 0x55, 0x56, 0x57, 0x8B};
+inline constexpr Site kNpTechPrereqAge{"NpTechPrereqAge", 0x004C5DDA, kNpTechPrereqAgeBytes, sizeof(kNpTechPrereqAgeBytes)};
+
+inline constexpr std::uint8_t kNpButtonBytes[] = {0x8B, 0x5C, 0x24, 0x1C, 0x83, 0xFB, 0x06, 0x0F, 0x8D, 0xE9, 0x4C, 0x23, 0x00};
+inline constexpr Site kNpButton{"NpButton", 0x00462317, kNpButtonBytes, sizeof(kNpButtonBytes)};
+
+inline constexpr std::uint8_t kSocketOccupantBytes[] = {0x81, 0xEC, 0x00, 0x04, 0x00, 0x00, 0x55, 0x8B, 0xAC, 0x24, 0x0C, 0x04, 0x00, 0x00};
+inline constexpr Site kSocketOccupant{"SocketOccupant", 0x00A01A20, kSocketOccupantBytes, sizeof(kSocketOccupantBytes)};
+
 }  // namespace uhc::sites

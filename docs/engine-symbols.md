@@ -614,6 +614,34 @@ The in-game measurements read the actions from memory once a second (`docs/moddi
 | `ability` UI command | 0x7DDC52 | partly confirmed | `ability(int record, int unitId, bool doWhenNotSelected)`: the record by index through 0x44E702 (0x7DDCCC); no slot limit. |
 | Proto command entries | `[proto+E8h]`, 6-byte records | scoping | `{word id, byte kind (0 Train, 1 Tech, 2 Command), byte page, byte column}`, appended by 0x5F5F05, which skips its duplicate check for page 11. |
 
+### Native socket preview (for `nativePreview`, WoL #43, 2026-11-08)
+
+Static reading with REA (Ghidra) and capstone; evidence `rea/evidence/age3y-b1a1dab7/nativepreview-impl-20261108.json`
+(`ev_f6b79952…` assembly of FUN_0046188E, `ev_d4287893…` its tech filters, `ev_071a32ee…` the chooser chunk FUN_006460CE,
+`ev_1d58b897…` the two rollover builders) and the main session's `nativepreview-20261108.json` (`ev_77fc4050…`); runtime
+traces (`trace_exec.py`) and memory reads in WoL. [O] observed, [I] inferred.
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Bottom panel chooser | FUN_00454270 (+ chunks 0x4BC55C, 0x645FE7.., 0x6460CE..0x6464DF) | confirmed, in game | [O] Runs hundreds of times a second (8780 calls in 13 s, traced). `this` = the in-game UI; `[ui+58h]` the command grid (its byte `[+342h]` = 1 stops the grid refresh at 0x4614C4; set through 0x454245 / 0x45447D), `[ui+78h]` and `[ui+1A0h]`, `[ui+1A4h]` (a unit's info panel, `[panel+178h]` = unit ID), `[ui+1A8h]` SocketPanel2, `[ui+1B8h]` the nugget panel; show 0x447F7B, hide 0x448F13 (`thiscall([[0xC66244]+44h], handle)`). Mode `[ui+3CCh]` (0 in the tests). |
+| Chooser: Socket | 0x4BC5E6 (`push 4Bh / call 44CAC4h`) → 0x645FE7 | confirmed, in game | [O] A Socket that is not proto `[db+5FD0h]` sets `[esp+15h]` = 1 → the settlement panel. `[esp+16h]` = AbstractNugget (type by name 0xB9F478). A unit no test claims jumps to 0x454354 with `[esp+12h]` = 1 and keeps the grid. |
+| Chooser: native socket, mode not 0 | 0x646124 | scoping | [O] `<SubCiv>` (0x4BC54A) and type 4Bh → hide `[ui+78h]`, `[esp+17h]` = 1. Not reached in the tests. |
+| Panel update | FUN_004614A2 (vtable slot 20h of the grid gadget, called from 0x460D8E while visible) | confirmed, in game | [O] Calls the refresh 0x46188E unless `[grid+342h]`; afterwards `cmp [sel+0Ch], local` at 0x4615BA, the non-own branch 0x69789E (allies only). |
+| Refresh gate | 0x46193E..0x46194D | confirmed, in game | [O] `mov edx,[eax+0Ch] / mov ecx,[0C66234h] / cmp edx,[ecx+3C0h] / jne 4627E8h`; EAX = the selection (0x453B28: `+0Ch` player, `+10h` IDs, `+14h` count). |
+| Entries | 0x461BBD | confirmed | [O] `mov ebx,[esi+5Ch] / add ebx,0E8h`; `[esp+8Ch]` keeps it. 0x461BD8 (bigButtonCivs) is 2 instructions later. |
+| Collection body | cold chunk 0x4C58AD (from 0x461C39), append 0x4C59F5, next 0x461C3F | confirmed | [O] Kind byte `[esi+eax+2]`; Train 0x6959D1, Tech 0x4C58C2 (0x4C5725 and 0x4C5B17 on the player `[esp+20h]`), Command 0x4C5A50; each needs `[unit+58h]` (the unit `[esp+28h]`). Append: `{index [esp+40h], column, -1, -1}` to 0xCF05FC (0x4C6048), page to 0xCF05F0 (0x444FD3). |
+| Layout, tech | 0x461E2C; 0x4620B9 `call 4C6968h` (can research here); 0x462115..0x462136 prerequisites; build-up 0x462172 | confirmed, in game | [O] 0x4C7330 `bool thiscall(techEntry, unit)`, `ret 4`: 1 with no prerequisite. 0x4C5DDA `int thiscall(techEntry, player, unit)`, `ret 8`: -1 when a non-age prerequisite is unmet (skip, 0x46268A), else the age index → `[esp+6Ch]`. Rollover 0x4C737C (reads only `[unit+5Ch]` of the unit). |
+| Layout, train | 0x695C7B | scoping | [O] 0x8F7AA5(age) false → disabled, age mark 0x8D6806(protoId); rollover 0x70F25D (no unit). |
+| Button join | 0x462317 | confirmed, in game | [O] `[esp+24h]` state (0 enabled, 1 disabled, 2 red, 3), `[esp+6Ch]` age mark (0x4C5574 draws it for state 1), `[esp+1C0h]` click and `[esp+3C0h]` shift-click commands (strings), `[esp+2C0h]` overlay text. The big-button slots (tech flags 27, 36, 37, 39; 0x696652) bypass it. |
+| Building on a socket | 0xA01A20 | confirmed, in game | [O] `int thiscall(world, const float* pos, Proto* socketProto)`, `ret 8`: a point query (0x462E95, 256 units) for a unit whose `<SocketUnitType>` matches (0x466C31); its ID or -1. Used by `trPlayerControlsSocket` (0x982203). A built Trading Post counted in game. |
+| `<SubCiv>` | `[proto+1D1h]` byte, 0xFF none; handler 0x5FCD00 | confirmed, in game | [O] Civ ID through 0x58E71F. Read by 0x4BC54A. SocketCaribs 62, SocketCree 65 in WoL. |
+| Civ age techs | `[civ+50h]` 8-byte entries (first dword the tech ID), count `[civ+54h]` | confirmed, in game | [O] Parsed at 0x52C526 (`<AgeTech>`, string 0xBCF598), stored by 0x52C5F5. Caribs: tech 19 (NativeCarib). Read by 0x4C5725 and 0x4C5B17. |
+| Tech effects | NodeData `+24h` array of `BEffect*`, count `+28h` | confirmed, in game | [O] Appended by 0x6204DB. |
+| TechStatus effect | vtable 0xB969B0, ctor 0x620B4D, 14h B, setData 0x6211B5 | confirmed, in game | [O] `+0Ch` tech ID, `+10h` status: 0 unobtainable, 1 obtainable, 2 active (0x6210E4). |
+| Data effect | vtable 0xB9E5A8, ctor 0x620BAC, 20h B, setData 0x6205F6 | confirmed, in game | [O] `+4` the target unittype ID, `+0Ch` subtype (`Enable` = 10h, registered at 0x524F2B), `+18h` amount, `+1Ch` relativity. NativeCarib's three Enable effects target 421, 347 and 363 (NatBlowgunWarrior). |
+| Socket unit | `[unit+58h]` 0, `[unit+88h]` 255, `[proto+E8h]` none | confirmed (memory) | [O] A socket has no action list. |
+| Trading Post placement | needs the map's sub-civs | confirmed, in game | [O] On a test map without `rmAllocateSubCivs`/`rmSetSubCiv` a Trading Post ghost snapped to the socket but stayed invalid ("must be built near a Native settlement"); with them it was built and the Cree alliance applied. [I] PLACE checks the socket's native against the game's sub-civs. |
+
 ### Player powers and the ceasefire (WoL #14, 2026-10-30)
 
 A power is cast per player, not per unit: the button of any unit only spends the player's charge of

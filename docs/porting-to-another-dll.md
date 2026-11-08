@@ -19,7 +19,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
-| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `noCorpseDopples` | [interface](porting-code/interface.md) |
+| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
 The code pages are the code itself, C++ and MASM, generated from `src/` with `tools/porting_code.py`, so
@@ -256,6 +256,7 @@ Each key's page has the code of every file below, the helpers it needs and its s
 | [`src/features/broadside.cpp`](../src/features/broadside.cpp), [`src/hooks/broadside_hooks.asm`](../src/hooks/broadside_hooks.asm) | `broadsideMuzzleLimit`. | unittypes (only with a UnitType), sites `Broadside*`, your cfg reader (`Config::All`) |
 | [`src/features/abilityslots.cpp`](../src/features/abilityslots.cpp), [`src/hooks/abilityslot_hooks.asm`](../src/hooks/abilityslot_hooks.asm) | `abilitySlots`. | sites `Ability*` (not `AbilityByIndex`), `WriteDword`, your cfg reader (`Config::Int`) |
 | [`src/features/wonderpanel.cpp`](../src/features/wonderpanel.cpp), [`src/hooks/wonderpanel_hooks.asm`](../src/hooks/wonderpanel_hooks.asm) | `wonderPanelSkipAuras`. | sites `WonderPanel*`, `NthVisibleAbility`, `AbilityByIndex`, `WriteCall`, your cfg reader |
+| [`src/features/nativepreview.cpp`](../src/features/nativepreview.cpp), [`src/hooks/nativepreview_hooks.asm`](../src/hooks/nativepreview_hooks.asm) | `nativePreview`. | prototags, unittypes (`RequestAbstractUnitType`, `OnDatabaseLoad`), sites `Np*`, `SocketOccupant`, `IsA`, `PlayerProtoEntry`, `ProtoByName`, your cfg reader |
 | [`src/features/lifespan.cpp`](../src/features/lifespan.cpp), [`src/hooks/lifespan_hooks.asm`](../src/hooks/lifespan_hooks.asm) | `lifespanAfterConstruction`. | unittypes (and `OnDatabaseLoad` for `log`), sites `Lifespan*`, `Fade*`, `IsBuilt*`, `IsA*`, `WriteBytes`, your cfg reader |
 | [`src/features/sockets.cpp`](../src/features/sockets.cpp), [`src/hooks/socket_hooks.asm`](../src/hooks/socket_hooks.asm) | `gaiaSocketsOnly`. | unittypes (only with a UnitType), sites `GaiaSocket*`, your cfg reader |
 | [`src/features/hotkeys.cpp`](../src/features/hotkeys.cpp), [`src/hooks/hotkey_hooks.asm`](../src/hooks/hotkey_hooks.asm) | `customHotkeyContexts`. | sites `Hotkey*`, `WriteCall`, your cfg reader |
@@ -806,6 +807,24 @@ Code: [interface](porting-code/interface.md#wonderpanelskipauras).
     nothing else.
 - **Log callback** (only with `log`): `UhcWonderPanelLogAbility(unit, n, record, power)`, stdcall,
   for n > 0; it logs once per record.
+
+### nativePreview
+
+Code: [interface](porting-code/interface.md#nativepreview).
+
+- **Globals:** `g_uhcNpActive` (1 while a refresh builds a preview) and `g_uhcNpEntries` (`&[building+E8h]`).
+- **Chooser** (FUN_00454270, many calls a second): at `0x645FE7` (ESI = the first selected unit) a previewed socket
+  jumps to `0x454354`; at `0x646124` (EBX = the unit) it jumps to `0x646163`. Any other unit re-executes the stolen
+  instructions (the second one includes `call 4BC54Ah`). Cache the answer per unit and simulation step.
+- **Refresh** (FUN_0046188E): the gate at `0x46193E` returns the local player in EDX for a previewed socket and sets
+  the globals; `0x461BBD` loads EBX = `g_uhcNpEntries` in a preview; `0x4C58AD` sends a native entry to `0x4C59F5`
+  and any other to `0x461C3F`; `0x4620B9` calls `0x4C7330` and `0x4C5DDA` on the tech entry (`ret 4`, `ret 8`) and
+  goes to `0x462172` with `[esp+24h]` = 1, or to `0x46268A` on -1; `0x462317` sets `[esp+24h]` = 1 and empties the
+  strings at `[esp+1C0h]` and `[esp+3C0h]`.
+- **The native's sets:** the civ `[proto+1D1h]`, its age techs `[civ+50h]` (count `[civ+54h]`, 8-byte entries), each
+  tech's effects `[NodeData+24h]` (count `+28h`): `TechStatus` (vtable `0xB969B0`, tech `+0Ch`, status `+10h`) and
+  `Data` `Enable` (vtable `0xB9E5A8`, subtype `+0Ch` = 10h, target `+4`, amount `+18h`).
+- **Occupied socket:** `0xA01A20(world, &unit+14h, socketProto)`, `ret 8`, returns a building's ID or -1.
 
 ### lifespanAfterConstruction
 

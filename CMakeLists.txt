@@ -83,6 +83,7 @@ set(UHC_SOURCES
   src/features/smartheal.cpp
   src/features/snare.cpp
   src/features/sockets.cpp
+  src/features/nativepreview.cpp
   src/features/spread.cpp
   src/features/startingtc.cpp
   src/features/techprereq.cpp
@@ -149,6 +150,7 @@ set(UHC_SOURCES
   src/hooks/smartheal_hooks.asm
   src/hooks/snare_hooks.asm
   src/hooks/socket_hooks.asm
+  src/hooks/nativepreview_hooks.asm
   src/hooks/spread_hooks.asm
   src/hooks/startingtc_hooks.asm
   src/hooks/techprereq_hooks.asm

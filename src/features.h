@@ -64,6 +64,7 @@ Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
 Outcome ApplyAbilitySlots(const Config& config);
 Outcome ApplyWonderPanelSkipAuras(const Config& config);
+Outcome ApplyNativePreview(const Config& config);
 Outcome ApplyLifespanAfterConstruction(const Config& config);
 Outcome ApplyGaiaSocketsOnly(const Config& config);
 Outcome ApplyCustomHotkeyContexts(const Config& config);
@@ -162,6 +163,7 @@ inline constexpr Feature kFeatures[] = {
     {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
     {"abilitySlots", ApplyAbilitySlots},
     {"wonderPanelSkipAuras", ApplyWonderPanelSkipAuras},
+    {"nativePreview", ApplyNativePreview},
     {"lifespanAfterConstruction", ApplyLifespanAfterConstruction},
     {"gaiaSocketsOnly", ApplyGaiaSocketsOnly},
     {"customHotkeyContexts", ApplyCustomHotkeyContexts},
@@ -245,7 +247,7 @@ inline constexpr const char* kHandledKeys[] = {
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
-    "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
+    "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",

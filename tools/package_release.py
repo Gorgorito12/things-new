@@ -246,6 +246,8 @@ broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles p
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
+nativePreview [tagged] [log] [Proto]   an empty native socket shows its Trading Post's
+                              units and techs, read-only
 lifespanAfterConstruction [UnitType] [log]   a marked building's Lifespan starts when
                               its construction ends, not when it is placed
 gaiaSocketsOnly [UnitType] [log]  socketed buildings only on sockets owned by Gaia

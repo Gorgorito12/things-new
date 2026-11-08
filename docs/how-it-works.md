@@ -1638,6 +1638,71 @@ stock does for an aura. With `log`, a success at n > 0 calls the C++ logger.
 - UI only: the refresh runs for the local player's units, and the button sends the same `ability`
   UI command a command panel button sends.
 
+### nativePreview
+
+**The stock panels.** Two pieces of the bottom bar decide what a selected native socket shows.
+1. **The chooser**, FUN_00454270 (it runs many times a second): it looks at the first selected unit, and for a Socket
+   (unit type 4Bh, not the proto `[db+5FD0h]`) it jumps to `0x645FE7`, which sets "socket" (`[esp+15h]`), and then shows
+   the settlement panel instead of the command grid (`[ui+58h]`, whose byte `[+342h]` = 1 stops its refresh). A unit no
+   test claims leaves `[esp+12h]` = 1, and the grid stays as `0x45447D` left it (`[+342h]` = 0).
+2. **The command panel refresh**, FUN_0046188E: it leaves at `0x46194D` unless the selection's player `[sel+0Ch]` is the
+   local player `[game+3C0h]`. It collects the entries of the selected unit's proto (`[proto+E8h]`, 6-byte records
+   `{word id, kind 0 Train / 1 Tech / 2 Command, page, column}`) in a first loop, whose body is the cold chunk at
+   `0x4C58AD`: a Train entry only if the player's proto is available (`0x8F7AA5` / `0x8D66AB`), a Tech entry only through
+   `0x4C5725` and `0x4C5B17`, and any of them only if the unit has actions (`[unit+58h]`). A second loop lays the buttons
+   out: a tech passes "can this unit research it" (`0x4C6968`) and the prerequisite test (`0x4C7330`, then `0x4C5DDA`:
+   -1 hides it, an age index puts the age mark on it), then is built at `0x462172` (rollover `0x4C737C`, icon, cost); a
+   unit is built at `0x695C7B` (rollover `0x70F25D`, the age mark from `0x8D6806` when it is not available). Every grid
+   button joins at `0x462317`, with its state in `[esp+24h]` (0 enabled, 1 disabled), its age mark in `[esp+6Ch]` and
+   its click and shift-click commands in the strings at `[esp+1C0h]` and `[esp+3C0h]`.
+
+A socket proto has no entries and no actions. A Trading Post proto has one list for every native, and the panel shows
+the entries the player's alliance made available.
+
+**The preview.** A socket gets one when its proto has `NativeSocket` (and, with `tagged`, `<NativePreview/>`), a
+`<SubCiv>` (`[proto+1D1h]`, a civ ID, 0xFF for none; read at `0x5FCD50`), and no building of its socket type stands on
+it: `0xA01A20(world, &unit+14h, socketProto)`, the lookup `trPlayerControlsSocket` uses, returns the building's ID or -1.
+The native's sets are read once per civ and database from its age techs (`[civ+50h]`, 8-byte entries whose first dword is
+the tech ID, count `[civ+54h]`): each tech's effects (`[NodeData+24h]`, count `[+28h]`); a `TechStatus` effect (vtable
+`0xB969B0`: target `[+0Ch]`, status byte `[+10h]`, 1 obtainable, 2 active, the latter followed) adds a tech, and a `Data`
+effect (vtable `0xB9E5A8`) of subtype `Enable` (`[+0Ch]` = 10h) with an amount `[+18h]` above 0 adds its target proto
+(`[+4]`). Seven hooks:
+- `0x645FE7` (chooser): a previewed socket jumps to `0x454354`, as a unit no test claims, so the command grid stays and
+  refreshes. The answer is kept for one simulation step of one unit, since the chooser runs hundreds of times a second.
+- `0x646124` (chooser, the mode where `[ui+3CCh]` is not 0): a previewed socket skips the test that hides the command
+  panel for a socket with a `<SubCiv>`.
+- `0x46193E` (refresh): the gate compares the local player with itself for a previewed socket, and turns the preview on
+  for this refresh (it is cleared at every gate).
+- `0x461BBD`: the entries are the local player's copy (`0x45311B`) of the building, `TradingPost` by default.
+- `0x4C58AD`: in a preview the collection decides itself: a Train entry of an enabled unit, or a Tech entry of a tech
+  in the set, goes straight to the stock append at `0x4C59F5`; any other entry, every command and every tech the layout
+  would put in a big-button slot (tech flags 27, 36, 37, 39) go to the next entry.
+- `0x4620B9`: a tech skips "can research here" and the status tests, keeps the prerequisite test (so a tech that waits
+  for another tech stays hidden and an age prerequisite gives the age mark), and goes to the build-up as disabled.
+- `0x462317`: every button of a preview is disabled and its two command strings are emptied.
+
+**Why it is safe.**
+- Nothing writes game state: the hooks change which panel the chooser keeps, which entries the refresh collects and how
+  it draws them. The functions called (`0xA01A20`, `0x45311B`, `0x44D7FA`, `0x5A2346`, `0x4C7330`, `0x4C5DDA`) only read.
+- No command is sent: a button with an empty command does nothing when clicked, and the socket enters no hotkey context
+  (the selection qualification takes the local player's units only).
+- The rest of the refresh with a Gaia unit: after the refresh, FUN_004614A2 compares `[sel+0Ch]` with the local player
+  again and takes its non-own branch (`0x69789E`), the one for allies. The rollover builders read the unit only for
+  `[unit+5Ch]` (`0x4C737C`) or not at all (`0x70F25D`); `[unit+58h]` = 0 skips the action reads; `[unit+B4h]` exists.
+- Registers: the gate keeps EAX (the selection) and reloads ECX as in stock; the entries hook writes only EBX and the
+  flags before the next write; the collection hook's targets reload EAX and do not read ECX or EDX; the tech hook
+  re-executes the stolen `mov edi,[esp+28h]`, and its two calls are thiscall on the tech entry, `ret 4` and `ret 8`,
+  keeping EBX, ESI, EDI and EBP; the button hook re-executes the stolen `mov ebx,[esp+1Ch] / cmp ebx,6`, whose flags
+  reach the `jge`. The chooser hooks call a C++ function that keeps EBX, ESI, EDI and EBP, and re-execute the stolen
+  loads (and the stolen `call 4BC54Ah`) on the stock path; at both of their targets EAX, ECX and EDX are reloaded.
+- No branch lands inside any overwritten range (checked over the whole `.text`); `0x461BBD` and `0x4620B9` are branch
+  targets, which land on the hooks' own start.
+- The preview flag is set at every gate and only read by hooks inside the same refresh, after the gate.
+- Performance: the chooser asks once per simulation step while a Socket is selected; the button hook adds one compare
+  per button. Measured with `perfprobe.py`, 60 s each: 0.23 ms of update a frame with the preview, 0.13 ms with the
+  stock settlement panel, 0.2 ms with an own Settler's command panel, and no frame over 50 ms: the preview costs what
+  any command panel costs.
+
 ### lifespanAfterConstruction
 
 **The stock lifespan.** `<Lifespan>` is a float in seconds at `[proto+ACh]`. It is armed once, in

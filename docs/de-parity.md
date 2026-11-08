@@ -344,6 +344,8 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] A flag on the 45 native sockets: while no trading post stands, it enables a preview of the
   native settlement (guide p21). What the preview shows is not described. It works with DE's socket-build command chain
   (`SocketBuildProtoUnit`, `SocketBuildCommandID`, `SocketSubCivAlliance`), all absent from legacy.
+- Built in legacy on 2026-11-08 as `nativePreview` ([modding guide](modding-guide.md#nativepreview)): the tag is read
+  with `tagged`; the preview is the Trading Post's own panel, filtered by the native's age tech, read-only.
 
 ### #44 Building rotated or annexed by its builder
 
