@@ -136,8 +136,9 @@ The hooks are MASM files in `src/hooks/`.
   `techPrereqRecheck`, `maintainWaitForPop` and `lifespanAfterConstruction` use it to drop state
   that belongs to the old data.
 - **Shared hooks.** A site that two keys need is hooked once by a shared module that calls each key's
-  function in `kFeatures` order: the world update (`worldtick.cpp`, `AddWorldTick`) and the unknown
-  tags of an action (`actiontags.cpp`, `AddActionTagHandler`, at 0x5FA11E).
+  function in `kFeatures` order: the world update (`worldtick.cpp`, `AddWorldTick`), the unknown
+  tags of an action (`actiontags.cpp`, `AddActionTagHandler`, at 0x5FA11E) and every unit's death
+  (`deathobservers.cpp`, `AddDeathObserver`, the drain's call 0x493D8F; `detonationDeath`, `annexFacing`).
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
   first time execution passes. It preserves every register, the flags and ESP, so it can sit at
   the top of any hook.
@@ -937,7 +938,9 @@ gone or inside another is dropped; a new game or a data load forgets everything.
 Every death goes through one queue. TakeDamage, a lifespan, a trigger's kill and the rest ask 0x4B4DC2, which appends the unit and
 three flag bytes to the world's list at `[world+8DCh]`, and the drain 0x493D46 calls the kill handler 0x4B4F70 from one single
 call, 0x493D8F. `Destroy` does not pass there. The key wraps that call, so it runs before the handler sets the dead bit,
-with the unit still valid as an attacker.
+with the unit still valid as an attacker. Since `annexFacing` (2026-11-08) the call is the shared death observer
+(`deathobservers.cpp`, `AddDeathObserver`): one call written there, each key's observer run in `kFeatures` order before the
+stock handler, and the site verified once by the shared module instead of by this key.
 
 The blast is the stock area damage 0x4C9D89, `thiscall(world, unitId, action, point, multiplier, 0, 0, -1, int* out, bool, Vector*
 offset)`, `ret 28h`, in the same call a unit makes for an attack around itself at 0x6A4A6B: its own position, multiplier 1, the

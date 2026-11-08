@@ -23,6 +23,7 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/deathobservers.cpp
   src/unitpanel.cpp
   src/unitmodels.cpp
   src/actiontags.cpp

@@ -5723,7 +5723,7 @@ Contract: [detonationDeath](../porting-to-another-dll.md#detonationdeath).
 
 Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationKillCall` `0x493D8F` (5 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/detonation.cpp
 
@@ -5733,7 +5733,7 @@ Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `Ov
 //
 // Every death goes through one queue: TakeDamage, a lifespan, a delete and the rest ask 0x4B4DC2, and the
 // queue's drain 0x493D46 calls the kill handler 0x4B4F70 for each, from a single call, 0x493D8F. The key
-// wraps that call. Before the stock handler runs, the unit still exists, so the stock area damage
+// observes that call through the shared wrapper (deathobservers.h). Before the stock handler runs, the unit still exists, so the stock area damage
 // 0x4C9D89 gets it as the attacker, in the same call the game makes for a unit that hits around
 // itself (0x6A4A6B). Units that die from the blast join the queue, and the drain reads its count again,
 // so a chain runs one by one and does not recurse.
@@ -5766,6 +5766,7 @@ Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `Ov
 #include <string>
 #include <unordered_map>
 
+#include "../deathobservers.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -5782,7 +5783,6 @@ bool OverhealAddHookInstalled();
 
 namespace {
 
-constexpr std::uint32_t kKillCall = 0x00493D8F;
 constexpr std::size_t kUnitState = 4;       // bit array; +8h its size in bits
 constexpr std::size_t kUnitId = 0x10;
 constexpr std::size_t kUnitPosition = 0x14;
@@ -5798,8 +5798,6 @@ constexpr std::uint32_t kAreaFlagBit = 6;    // what the stock caller reads and 
 constexpr std::uint32_t kZeroVector = 0x00CF0618;
 constexpr int kMaxLogLines = 200;
 
-using KillFn = void(__thiscall*)(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c);
-const auto kKill = reinterpret_cast<KillFn>(0x004B4F70);
 using AreaFn = void(__thiscall*)(const char* world, std::int32_t unit, char* action, const void* point, float multiplier,
                                  std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t* hit, std::uint32_t flag,
                                  const void* offset);
@@ -6010,14 +6008,13 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, boo
   }
 }
 
-// Replaces the drain's call of the kill handler.
-void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+// Before the drain's call of the kill handler (the shared death observer).
+void Kill(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
   const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + kUnitId);
   const bool deleted = g_deleting.erase(id) > 0;
   g_asked.erase(id);
   g_decay.erase(id);
   Detonate(unit, a, b, c, deleted);
-  kKill(unit, a, b, c);
 }
 
 // Replaces the delete executor's call of the HP setter (a proto without flag 0Dh): the blast first,
@@ -6153,14 +6150,14 @@ Outcome ApplyDetonationDeath(const Config& config) {
   }
   // overhealSources or overhealDecay may already have written the add-HP hook: its bytes are then ours.
   const Site* addEntry = OverhealAddHookInstalled() ? &sites::kHpSetter : &sites::kOverhealAddEntry;
-  if (!VerifyAll("detonationDeath", {&sites::kDetonationKillCall, &sites::kDetonationAreaHead, addEntry, &sites::kHpSetter,
+  if (!VerifyAll("detonationDeath", {&sites::kDetonationAreaHead, addEntry, &sites::kHpSetter,
                                      &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot, &sites::kKillQueueAsk,
                                      &sites::kDeleteSetHpCall, &sites::kDeleteKillCall, &sites::kDetonationTakeDamageHp}) ||
       !AddProtoTagHandler("DetonationProtoAction", &ReadDetonation) ||
       !AddProtoTagHandler("DetonationCommand", &ReadCommand) ||
       !AddProtoTagHandler("DetonationHitpointThreshold", &ReadThreshold) ||
       !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) || !OnDatabaseLoad(&Forget) ||
-      !WriteCall(kKillCall, reinterpret_cast<const void*>(&Kill)) ||
+      !AddDeathObserver(&Kill) ||
       !WriteCall(kDeleteSetHpCall, reinterpret_cast<const void*>(&DeleteSetHp)) ||
       !WriteCall(kDeleteKillCall, reinterpret_cast<const void*>(&DeleteKill)) || !InstallOverhealAddHook() ||
       !AddWorldTick(&Tick)) {

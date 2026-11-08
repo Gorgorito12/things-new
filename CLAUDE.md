@@ -65,6 +65,7 @@ Rules:
   - `AddCivTagHandler` (`civtags.*`, the civs.xml unknown-tag path 0x52BB07; `civFirstTC` (or its alias `firstTC`) and `sharedBuildLimit` read their civ tags there);
   - `AddTransformObserver` (`transformcalls.*`, the seven calls of 0x9C754C); a key's own transform calls `TransformUnit`;
   - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
+  - `AddDeathObserver` (`deathobservers.*`, the kill queue drain's call 0x493D8F of the kill handler; `detonationDeath` and `annexFacing` observe every death there);
   - `AddSyscall` (`syscalls.*`, the group sites);
   - the attack applier's head 0x49BE95, hooked by `spreadAnyAccuracy` (`spread_hooks.asm`): every projectile hit and landing goes through it, so a key that needs that site extends that hook;
   - `AuraClaim` (`aurastacking.h`): a take that replaces the aura update asks it, as the filter 0x9D0633 does not see it;
