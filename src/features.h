@@ -42,6 +42,7 @@ Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
+Outcome ApplyAnnexFacing(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
@@ -213,6 +214,8 @@ inline constexpr Feature kFeatures[] = {
     // After overhealDecay: its threshold uses the same add-HP hook, and overhealSources verifies the
     // stock bytes of that entry.
     {"detonationDeath", ApplyDetonationDeath},
+    // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
+    {"annexFacing", ApplyAnnexFacing},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
@@ -241,7 +244,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

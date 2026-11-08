@@ -149,6 +149,8 @@ constexpr KnownTag kKnownTags[] = {
     {L"SharedBuildLimitUnitType", "sharedBuildLimit"},
     {L"SharedBuildLimitUnitTypes", "sharedBuildLimit"},
     {L"SettlerBuildLimit", "sharedBuildLimit"},
+    {L"AnnexOf", "annexFacing"},
+    {L"AnnexRange", "annexFacing"},
     {L"TeamBuildLimit", "sharedBuildLimit"},
     {L"TrainBatchSize", "trainBatchSize"},
     {L"DontTrainInBatches", "trainBatchSize"},

@@ -81,6 +81,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 13:58 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Filmed in WoL, with a control. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
 | Wednesday 2026-11-04 13:58 | [`repairWallGlobal`](#repairwallglobal) | Filmed in WoL, with a control. A UI syscall that repairs every wall of the local player. | A button or hotkey that calls `repairWallGlobal()`. |
 | Wednesday 2026-11-04 13:58 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Filmed in WoL, with a control. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
+| [`annexFacing`](#annexfacing) | An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) is turned to face the building it belongs to when it is placed, in steps of 90 degrees, and falls at once when that building dies. | **new** | The tag on the annexes; a placement distance that leaves room for the turned annex. | confirmed (single player) |
 | Wednesday 2026-11-04 12:48 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. |
 | Wednesday 2026-11-04 12:48 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
 | Wednesday 2026-11-04 12:48 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. |
@@ -5717,6 +5718,77 @@ costEscalationTechs [log]
   - `BasePercent` 1.10 then `Absolute` 0.05 on 1.015: the cost at 3 alive was 119, which is 75 × 1.1665³.
   - Not tested: multiplayer.
 
+#### annexFacing
+
+*An annex turns to face the building it belongs to, and falls with it.*
+
+![annexFacing in WoL](media/annexFacing-wol.gif)
+
+*In WoL, with `annexFacing log` (a loaded saved game; test data: `<AnnexOf>Barracks</AnnexOf>` on `WOLTorp`):* the four Torps
+around the Barracks each face it, the east one built by the Barracks itself, the others by a villager. At 540 s a trigger
+kills the Barracks and the four Torps fall with it at once (`unit 0 died: its annex 9 falls with it (found by the rule)`;
+the log lines at the start are from an earlier run of the same save). [Full video (MP4)](media/annexFacing-wol.mp4).
+
+![annexFacing in WoL, key off](media/annexFacing-wol-control.gif)
+
+*In WoL, key off (the same data):* the Torps keep the ghost's stock angle, the same on every side, and stand after the
+Barracks dies. [Full video (MP4)](media/annexFacing-wol-control.mp4).
+
+```
+annexFacing [log]
+```
+
+```xml
+<Unit name="WOLTorp">
+    <AnnexOf>Barracks</AnnexOf>       <!-- the parent: a unit type or a proto -->
+    <AnnexRange>12</AnnexRange>       <!-- optional: metres from the parent's footprint to the annex's centre, default 12 -->
+</Unit>
+```
+
+- **In WoL today:** a building that "trains" a building (`<Train>` on Barracks, Stable, Church, `IrishHouse`, Market) places it
+  at the ghost's angle, and the annex outlives its parent. JTMaston's #44; the four pairs are only test cases.
+- **Which way it turns:** to the parent's side it stands on. The annex's front points at the parent, lined up with the parent's
+  own axes, so a parent turned 22.5° gets annexes turned 22.5° too. The turn is fixed at placement.
+- **The parent:** the building in the build command (the one that "trains" the annex) when it is of the type, yours and within
+  `AnnexRange`; otherwise the nearest one of yours of the type in range (an annex a villager builds). No parent in range: the
+  stock angle.
+- **The placement preview turns too** before the click, and its green or red follows the turned shape, because the game's
+  obstruction and placement test turn with the building (a proto with `<Flag>DontRotateObstruction</Flag>` keeps a square
+  footprint).
+- **Give the annex room in its placement file.** `distanceatmostfromtype` measures from the annex's centre to the parent's
+  footprint. Facing the parent, the annex's `ObstructionRadiusZ` points at it, so the distance must be at least that radius
+  plus a gap: the Torp (radius Z 4) did not fit with `annexTorp.xml`'s 4 and fitted with 6 (the test data).
+- **When the parent dies, its annexes die at once**, as by a trigger's kill (their own death and rubble), in the same update.
+  Another parent's annexes live, even beside it. `Destroy` (a trigger) skips the game's kill queue, so annexes stay then.
+- **Saved games:** the angle is saved with the building. The link is not: after loading, an annex's parent is the building of
+  the type, yours, in range, that it faces (its front lined up with that building and pointing to it), the nearest.
+- **Multiplayer:** the turn is made by the build command's own execution on every machine, from game state only, and the
+  falls by the death of the parent: every player needs the same setting and data. Not played in multiplayer.
+- **In WoL's data, two things block the test case itself, with or without the key:**
+  - the Barracks cannot place its Torp: the game takes the first action of the Barracks' tactic that can work on the Torp,
+    and in `barracks.tactics` that is `SpawnSpawner`, which is inactive, so the order is refused. With `BuildAnnex` moved first
+    in the `Normal` tactic (the test data) the Barracks builds it;
+  - a Barracks that built one Torp is refused a second build order (the game keeps the building's last build target), so
+    the other Torps of the test were placed by a villager.
+- **Log:** `annexFacing: the proto tags AnnexOf and AnnexRange are on`, `hook reached: annexFacing ghost (0x96E4E7)`,
+  `hook reached: annexFacing build command (0x7D7CF1)`, and with `log`: `annexFacing: proto 2814 at 37.2, 38.7, player 1:
+  faces unit 0 (its builder), forward -1.000, 0.000 -> -1.000, 0.000`, `annexFacing: unit 6 (proto 2814) is the annex of
+  unit 0`, `annexFacing: unit 0 died: its annex 9 falls with it (linked at placement)`.
+- **Tested in WoL (2026-11-08, Ethiopians, scenario, test data):**
+  - The premise, key off: a Torp turned 90° by the stock wheel rotation did not fit east of a Barracks where the unturned
+    one fitted, and fitted north of it where the unturned one overlapped: the footprint turns.
+  - Four Torps around one Barracks: east `-1, 0` (yaw −90°), west `1, 0` (90°), north `0, -1` (0°), south `0, 1` (180°), each
+    facing it; the preview showed the same angle before each click.
+  - A Barracks turned 22° (`trUnitCreate` takes whole degrees): Torps at yaw −112° and 158°, lined up with it.
+  - Two Barracks 10 m apart: the Torp between them, built by the left one, faced it and fell with it; the right one's Torp
+    lived. After loading, the rule picked the left one for that Torp (the right one is in range, behind it).
+  - A trigger's kill of the first Barracks: its four Torps died at once, linked; the same after loading the saved game, found
+    by the rule. The saved game kept every Torp's angle.
+  - Key off: the Torps kept the stock angle (`0, -1` on every side) and stood after the Barracks died.
+  - A skirmish against a Swedish AI (`wolOscar`) with the key and the test data, 100 s: no XS error, the AI built a house and
+    had 9 settlers; it placed no Torp in that time. Bad option (`annexFacing banana`): logged, `FAILED`, nothing written.
+  - Not tested: multiplayer, recorded games, an AI that builds annexes, the other WoL pairs (Stable, Church, Market).
+
 ### Techs and transforms
 
 What happens when a tech activates or a unit changes proto.
@@ -6605,15 +6677,16 @@ stay at the ghost's angle.
 - **Both directions:** a step up turns the ghost +22.5° and a step down −22.5°, so a full turn is 16 steps. Stock's
   `uiWheelRotatePlacedUnit` is the same for the Asian wonders' special powers.
 - **A building that must not turn:** `<Flag>NotRotateable</Flag>`, a stock flag, on its proto: the ghost keeps its angle.
-- **What it does not do:** turn a building that already stands, or turn it to face its builder (#44).
+- **What it does not do:** turn a building that already stands, or turn it to face its builder: that is
+  [`annexFacing`](#annexfacing) (#44).
 - **Wheel alone:** with the Shift line, the wheel alone zooms and does not turn. `map("mousez", "building", …)`, the form stock
   uses in its `specialpower` block, turns with the wheel alone and takes the zoom away while placing; the zoom comes back
   when placing ends, and that line does not fire with Shift held.
 - **Tested in WoL (2026-11-06):** with the real wheel and Shift, the ghost went from yaw −180° to −157.5°, −135°, −112.5° up and
   back down to −135°, −157.5°. Placed at −90°, the foundation and the finished building, 2500 HP, had −90°. With no line in
   `gamey.con`, Shift + wheel did not turn it. By console, a saved game loaded with the yaw, and argument 0 did nothing.
-  With `NotRotateable` on the proto the ghost stayed at −180°. Not tested: a rotated building's obstruction, multiplayer,
-  recorded games.
+  With `NotRotateable` on the proto the ghost stayed at −180°. The obstruction turns too (2026-11-08): a `WOLTorp` turned 90°
+  did not fit where the unturned one did, and fitted where it overlapped. Not tested: multiplayer, recorded games.
 
 ## 7. Multiplayer, saved games and replays
 

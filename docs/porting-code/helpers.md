@@ -1761,6 +1761,18 @@ inline constexpr Site kTacticReset3{"TacticReset3", 0x009D6BE7, kTacticReset3Byt
 inline constexpr std::uint8_t kTacticReset4Bytes[] = {0x6A, 0x00, 0xE8, 0x77, 0xB8, 0xB0, 0xFF};
 inline constexpr Site kTacticReset4{"TacticReset4", 0x009EBB0B, kTacticReset4Bytes, sizeof(kTacticReset4Bytes)};
 
+inline constexpr std::uint8_t kAnnexForwardSiteBytes[] = {0x8D, 0x87, 0xA8, 0x00, 0x00, 0x00, 0x50};
+inline constexpr Site kAnnexForwardSite{"AnnexForwardSite", 0x007D7CF1, kAnnexForwardSiteBytes, sizeof(kAnnexForwardSiteBytes)};
+
+inline constexpr std::uint8_t kAnnexCreateCallBytes[] = {0xE8, 0xF8, 0x09, 0xCC, 0xFF};
+inline constexpr Site kAnnexCreateCall{"AnnexCreateCall", 0x007D80CF, kAnnexCreateCallBytes, sizeof(kAnnexCreateCallBytes)};
+
+inline constexpr std::uint8_t kUnitCreateBytes[] = {0x56, 0x57, 0x8B, 0xF9, 0x8D, 0x4F, 0x20, 0xE8, 0xC7};
+inline constexpr Site kUnitCreate{"UnitCreate", 0x00498ACC, kUnitCreateBytes, sizeof(kUnitCreateBytes)};
+
+inline constexpr std::uint8_t kAnnexGhostSiteBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00};
+inline constexpr Site kAnnexGhostSite{"AnnexGhostSite", 0x0096E4E7, kAnnexGhostSiteBytes, sizeof(kAnnexGhostSiteBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2182,6 +2194,7 @@ Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
+Outcome ApplyAnnexFacing(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
@@ -2353,6 +2366,8 @@ inline constexpr Feature kFeatures[] = {
     // After overhealDecay: its threshold uses the same add-HP hook, and overhealSources verifies the
     // stock bytes of that entry.
     {"detonationDeath", ApplyDetonationDeath},
+    // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
+    {"annexFacing", ApplyAnnexFacing},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
@@ -2381,7 +2396,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

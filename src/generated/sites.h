@@ -1706,4 +1706,16 @@ inline constexpr Site kTacticReset3{"TacticReset3", 0x009D6BE7, kTacticReset3Byt
 inline constexpr std::uint8_t kTacticReset4Bytes[] = {0x6A, 0x00, 0xE8, 0x77, 0xB8, 0xB0, 0xFF};
 inline constexpr Site kTacticReset4{"TacticReset4", 0x009EBB0B, kTacticReset4Bytes, sizeof(kTacticReset4Bytes)};
 
+inline constexpr std::uint8_t kAnnexForwardSiteBytes[] = {0x8D, 0x87, 0xA8, 0x00, 0x00, 0x00, 0x50};
+inline constexpr Site kAnnexForwardSite{"AnnexForwardSite", 0x007D7CF1, kAnnexForwardSiteBytes, sizeof(kAnnexForwardSiteBytes)};
+
+inline constexpr std::uint8_t kAnnexCreateCallBytes[] = {0xE8, 0xF8, 0x09, 0xCC, 0xFF};
+inline constexpr Site kAnnexCreateCall{"AnnexCreateCall", 0x007D80CF, kAnnexCreateCallBytes, sizeof(kAnnexCreateCallBytes)};
+
+inline constexpr std::uint8_t kUnitCreateBytes[] = {0x56, 0x57, 0x8B, 0xF9, 0x8D, 0x4F, 0x20, 0xE8, 0xC7};
+inline constexpr Site kUnitCreate{"UnitCreate", 0x00498ACC, kUnitCreateBytes, sizeof(kUnitCreateBytes)};
+
+inline constexpr std::uint8_t kAnnexGhostSiteBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00};
+inline constexpr Site kAnnexGhostSite{"AnnexGhostSite", 0x0096E4E7, kAnnexGhostSiteBytes, sizeof(kAnnexGhostSiteBytes)};
+
 }  // namespace uhc::sites

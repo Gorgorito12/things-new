@@ -42,6 +42,7 @@ set(UHC_SOURCES
   src/features/costescalation.cpp
   src/features/unittypetechs.cpp
   src/features/detonation.cpp
+  src/features/annexfacing.cpp
   src/features/hctargets.cpp
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
@@ -170,6 +171,7 @@ set(UHC_SOURCES
   src/hooks/datalint_hooks.asm
   src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm
+  src/hooks/annexfacing_hooks.asm
   src/hooks/xslog_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm

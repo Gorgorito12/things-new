@@ -1322,6 +1322,17 @@ SITES = [
     ("TacticReset2", 0x7D8F07, 0x07),
     ("TacticReset3", 0x9D6BE7, 0x07),
     ("TacticReset4", 0x9EBB0B, 0x07),
+    # annexFacing: in the build command's executor FUN_007D79D6 (EDI = the command, EBX = the player's proto,
+    # EBP = the player), lea eax,[edi+0A8h] / push eax before the right vector 0x423792 is computed from the
+    # forward at [edi+0A8h]; the continuation is the push
+    ("AnnexForwardSite", 0x7D7CF1, 7),
+    # annexFacing: the executor's call of the unit creation 0x498ACC(world, proto, player, position, forward,
+    # 0, -1, 0, -1), thiscall, ret 20h; and the head of the creation, verify only
+    ("AnnexCreateCall", 0x7D80CF, 5),
+    ("UnitCreate", 0x498ACC, 9),
+    # annexFacing: in the placement ghost's update FUN_0096E062 (ESI = the ghost's visual), mov eax,[0C66234h]
+    # / mov ecx,[eax+13Ch] before the placement test 0x96E531 with the visual's position, forward and right
+    ("AnnexGhostSite", 0x96E4E7, 11),
 ]
 
 

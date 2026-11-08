@@ -104,6 +104,8 @@ PAGES = {
         "lifespanAfterConstruction": ["src/features/lifespan.cpp", "src/hooks/lifespan_hooks.asm"],
         "gaiaSocketsOnly": ["src/features/sockets.cpp", "src/hooks/socket_hooks.asm"],
         "hcShipmentPointFallback": ["src/features/shipments.cpp", "src/hooks/shipment_hooks.asm"],
+        "annexFacing": ["src/features/annexfacing.cpp", "src/hooks/annexfacing_hooks.asm", "src/deathobservers.h",
+                        "src/deathobservers.cpp"],
     }),
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],

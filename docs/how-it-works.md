@@ -3153,6 +3153,64 @@ through a wrapper that adds the others, and the hook returns the real limit to t
 
 Names resolve at the first use through the table `<UnitType>` reads, `[db+190h]` (0x58E685, 0x40295B), which holds protos and
 abstract types, and the members through the is-a test 0x44D7FA, which takes both.
+### annexFacing
+
+**[O] What the build command carries.** The command of type 3 (sender 0x82F548) holds the unit IDs of its builders at
+`[cmd+40h]` (count `+44h`), the proto at `+8Ch`, the position at `+90h` and the forward at `+A8h`. Its executor
+FUN_007D79D6 (`ECX` = the command, the player at `[arg+4]`) computes the right vector at 0x7D7CF1..0x7D7D0C as
+`0x423792(world up 0xC66544, &right, &forward)`, i.e. up × forward, tests the placement at 0x7D7EC7 with
+`PLACE(proto, player, &pos, &forward, &right, 1, 7, 0, 0, 0, 0)` (world vtable +14h, FUN_0050703D), and creates the
+foundation at 0x7D80CF with `0x498ACC(world, proto, player, pos, forward, 0, -1, 0, -1)`; the new unit's ID goes to
+`[cmd+B8h]`, which also makes a second run of the same command return at once.
+
+**[O] Obstruction and placement turn.** PLACE builds the footprint with FUN_00506B60(proto, pos, forward, right): the
+corners are `pos ± forward × ObstructionRadiusZ ± right × ObstructionRadiusX` when the proto's flag bit 27 is set, and
+the world axes otherwise. Bit 27 is set by default and cleared by `<Flag>DontRotateObstruction</Flag>` (0x5F66D1 →
+0x5F63AB); a unit's own obstruction comes from the same function with its axes `[unit+20h]` and `[unit+38h]`
+(0x9C0CE3, 0x9C2A58). In game a Torp (3 × 4) turned 90° was refused on the east of a Barracks where the unturned one
+fitted, and fitted on its north where the unturned one overlapped: the obstruction and the placement test turn with
+it. `distanceatmostfromtype` measures from the ghost's centre to the parent's footprint (unit slot B8h): 3.5 m passed
+and 4.3 m failed against distance 4.
+
+**The hook.** At 0x7D7CF1 (`lea eax,[edi+0A8h]`), before the right vector is computed, the helper reads the proto's
+`<AnnexOf>`. The parent is the command's unit of that type (is-a 0x44D7FA), of the same player, alive, whose footprint
+distance (slot B8h) to the position is within `<AnnexRange>` (default 12 m), the nearest if several; with none of them
+(a villager built it), the nearest such unit of the player found by the world's query 0x4A1C55 with `precise` 1. The
+forward becomes the parent's axis among ±forward and ±right (x and z, normalised) whose dot product with the
+direction annex → parent is the largest. Then the stock code computes the right vector from it, tests the placement
+and creates the foundation, so obstruction, placement and model all use the turned axes. No parent: stock forward.
+Every machine runs the same command on the same state (`DistanceTo`, the query and the is-a test read game state
+only), so all reach the same forward.
+
+**The ghost.** FUN_0096E062 updates the placement ghost (`ESI` = its visual, `[0xC67300]+200h`): it moves it and tests
+the placement at 0x96E531 with the visual's position `+4`, forward `+10h` and right `+28h`. The hook at 0x96E4E7 (`mov
+eax,[0C66234h]`, the first line of that test's arguments) turns the visual of a tagged proto (`[0xC67300]+1FCh`) the
+same way, for the local player (`[game+3C0h]`) and the nearest parent (the UI's selection is not read), and sets
+`[visual+7Dh]`, as the stock rotation 0x9BC546 does. The green or red test, and the forward that `uiBuildAtPointer`
+(0x7E6DE8) copies through 0x96DF2F into the command, are then the turned ones. It writes only the local UI object.
+
+**The link.** The executor's creation call 0x7D80CF is rewritten to a wrapper that calls 0x498ACC and, when its forward
+pointer is the command whose forward the hook set, keeps `annex ID → parent ID` in a `std::map`. Unit deaths reach the
+shared death observer: an annex that dies leaves the map; for a unit whose proto is the parent type of some tag, the
+query around it (its larger obstruction radius × 2 + range + 8 m, `precise` 0) lists the units of the same player with
+a tagged proto of that parent type, and each one whose parent is the dying unit is asked to die through 0x4B4DC2
+`(0, 0, 0)`, a trigger's kill. The drain reads its count again, so they die in the same drain, after the parent. The
+parent of an annex not in the map (a loaded game: the map is not saved) is found by a rule: the units of the type, of
+its player, within range, that it faces (its forward parallel to one of their axes, `|cos| ≥ 0.999`, and pointing to
+their side); the nearest. A new world, time going back or a missed step clears the map (a world tick and the same
+check at each use).
+
+**Why it is safe.** The hooks keep every register and the flags (pushfd/pushad) and re-execute the replaced line; the
+forward hook's continuation 0x7D7CF7 pushes `EAX`, which the replayed `lea` writes; the ghost hook's 0x96E4EC reads
+`EAX`, which the replayed `mov` writes. No branch lands inside either 5-byte write (checked over the whole `.text`).
+The creation wrapper has the stock frame (thiscall, 8 arguments, `ret 20h`). A proto without the tag costs a hash
+lookup at each build command, at each ghost update, and at each death a loop of is-a tests over the tags.
+
+**[I]/unknown.** The AI: its build plans test the placement with their own forward (0x73D7E3); the executor then turns
+the annex, and a spot that only fits unturned is refused, so the plan tries again (not seen: in a 100 s skirmish the AI built
+no annex). Multiplayer and recorded games: not played; the turn rides on the command's own execution. `Destroy` (the
+trigger) does not pass the kill queue, so the annexes stay. A converted parent keeps its annexes.
+
 ### doNotQueue
 
 A unit's action list `[manager+14h]` (`+0` count, `+8` pointers) holds all its actions: in a Barracks 16 fixed ones (idle,

@@ -1,6 +1,8 @@
 # name, start and length in the video's seconds, speed, and an optional area w:h:x:y. See tools/make_gifs.py.
 abilitySlots-wol 2 20 2
 abilitySlots-wol-control 2 20 2
+annexFacing-wol 8 12 1
+annexFacing-wol-control 0 12 1
 asianCivs-wol 2 20 2
 asianCivs-wol-control 2 20 2
 basePop-wol 2 8 2
