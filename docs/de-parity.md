@@ -514,12 +514,14 @@ counts, is in `requests-findings.md`, Appendix A.
    enough? If you need real debt, what should it do: block training and building, show the stockpile
    in red, or something else?
 7. **#25.** By the code, your `barn.tactics` works already: its AutoGather runs only while a unit is
-   inside. Do you also need the rate to grow with the number of units inside?
+   inside. Do you also need the rate to grow with the number of units inside? *Answered (2026-10-30):* yes, built as
+   `autoGatherScaleByContained`; *2026-11-08:* rate of fire too, with `target="ROF"` on any attack.
 8. **#33.** Stock legacy orders crates by civ: coin first for the Dutch, wood first for the Ottomans
    and Indians, food first for everyone else. What should the setting be: an order per civ, or a
    priority per crate unit type?
 9. **#40, #44.** For #40: is the request for units, for shipments, or for both? For #44: which
-   building, and what should the builder decide?
+   building, and what should the builder decide? *Answered:* #40 both (2026-10-30); #44 (2026-11-08): an annex faces
+   its builder in steps of 90 degrees, fixed at placement, and falls with it; WoL's four cases are only tests.
 
 ## Verification
 
