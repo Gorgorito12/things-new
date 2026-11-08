@@ -6,18 +6,18 @@ what each feature does in WoL (the `wol.cfg` line, the data, the log, the videos
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
 
-This page covers every key the modding guide marks **new**, 34 keys in all:
+This page covers every key the modding guide marks **new**, 65 keys in all:
 
 | Theme | Keys | Code |
 |---|---|---|
-| Game files | `bufferedFileReads` | [game-files](porting-code/game-files.md) |
+| Game files | `bufferedFileReads`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
-| Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
+| Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `detonationDeath` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree` | [buildings](porting-code/buildings.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath` | [combat](porting-code/combat.md) |
+| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `annexFacing` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -77,6 +77,11 @@ says so:
 | `SpreadMissStub` | `0x4CEF7B` | `0x11` B | 7 B at `0x4CEF7B` | `8D 44 24 28 50 8B CE` (`lea eax,[esp+28h]; push eax; mov ecx,esi`) | the miss stub (`call 4CEF8Ch; jmp 499899h`); spreadAnyAccuracy miss hook |
 | `SpreadRadius` | `0x4CF00B` | `0x2C` B | 27 B at `0x4CF00B` | `D8 0D EC 0A BA 00 D9 54 24 0C D8 1D F8 0A BA 00 DF E0 F6 C4 41 0F 84 BD 3C 01 00` (`fmul [0BA0AECh]; fst [esp+0Ch]; fcomp [0BA0AF8h]; fnstsw ax; test ah,41h; je 4E2CE3h`) | the radius of the miss offset FUN_004CEF8C; spreadAnyAccuracy radius hook (continuation 0x4CF026, the `r > 1e-6` test) |
 | `SpreadDraws` | `0x4CF037` | `0x40` B | — | — | the offset's two random draws, which the radius hook leaves to the stock code |
+| `SpreadPrecalcGate` | `0x4997AE` | 8 B | 8 B at `0x4997AE` | `84 C0 0F 84 F1 00 00 00` (`test al,al; je 4998A7h`) | the launch's test of the cfg var `ballisticPrecalcHits`; spreadAnyAccuracy precalc hook (continuations `0x4997B6`, `0x4998A7`) |
+| `SpreadGroundStore` | `0x4C4DEC` | 12 B | 7 B at `0x4C4DEC` | `C7 46 20 03 00 00 00` (`mov dword [esi+20h],3`) | where a `TargetGround` shot leaves its lead, up to the `jmp 4998A7h` after it; spreadAnyAccuracy ground hook (continues at that `jmp`, `0x4C4DF3`) |
+| `SpreadInstantMode` | `0x4A9455` | 12 B | 7 B at `0x4A9455` | `C7 46 20 01 00 00 00` (`mov dword [esi+20h],1`) | the `InstantBallistics` branch of the launch, up to the `jmp 4998A0h` after it; spreadAnyAccuracy instant hook (continues at `0x4998A0`) |
+| `SpreadApplierHead` | `0x49BE95` | 12 B | 6 B at `0x49BE95` | `81 EC D8 01 00 00` (`sub esp,1D8h`) | head of the attack applier FUN_0049BE95, which every projectile hit and landing calls; spreadAnyAccuracy applier hook (continues at `0x49BE9B`), a shared hook |
+| `SpreadInstantLaunch`, `SpreadInstantArrival` | `0x4A958F`, `0x49C151` | `0x16`, `0x28` B | — | — | the instant launch that copies the impact point to `[projectile+70h]`, and the instant arrival's call of the applier |
 | `DotTakeDamageEntry` | `0x49B3D9` | 14 B | 6 B at `0x49B3D9` | `81 EC 8C 00 00 00` (`sub esp,8Ch`) | entry of TakeDamage FUN_0049B3D9; damageOverTime hit hook |
 | `DotWorldUpdateEntry` | `0x481A57` | 8 B | 5 B at `0x481A57` | `83 EC 0C 53 55` (`sub esp,0Ch; push ebx; push ebp`) | entry of the world update FUN_00481A57; the shared tick wrapper (`worldtick.cpp`: damageOverTime, overhealDecay) |
 | `HpSetter` | `0x4820A1` | `0x22` B | — | — | the HP setter overhealDecay calls (verified only) |
@@ -126,6 +131,14 @@ says so:
 | `TechRenameRegister` | `0x524CAA` | `0x1C` B | 7 B at `0x524CB5` | `83 BE 04 35 00 00 00` (`cmp dword ptr [esi+3504h],0`) | after the last stock effect type registration in FUN_0052277E; techRenameEffect registration hook |
 | `TechRenameFactoryDefault` | `0x62146F` | `0x13` B | 5 B at `0x62146F` | `68 1F 05 00 00` (`push 51Fh`) | default case of the effect factory FUN_00620535; techRenameEffect factory hook |
 | `TechRenameTypeByName`, `TechRenameFactoryHead`, `TechRenameEffectParse`, `TechRenameEffectCtor`, `TechRenameEffectVtable`, `TechRenameApplyCall`, `TechRenameLocalTechNode` | `0x61FF1B`, `0x620535`, `0x6205C7`, `0x620B8F`, `0xB965C0`, `0x7F80FD`, `0x8D0005` | `0x10`, `0x0F`, `0x2D`, `0x1D`, `0x44`, `0x17`, `0x27` B | — | — | the type lookup, the factory head and the parse around the hook, the BEffect ctor and vtable (`.rdata`) the effect copies, the apply dispatcher's call and the player's tech node function |
+| `AnnexForwardSite` | `0x7D7CF1` | 7 B | 6 B at `0x7D7CF1` | `8D 87 A8 00 00 00` (`lea eax,[edi+0A8h]`) | the build command's executor FUN_007D79D6, before the right vector; annexFacing forward hook (continues at `0x7D7CF7`) |
+| `AnnexCreateCall` | `0x7D80CF` | 5 B | 5 B at `0x7D80CF` (a `call` to the wrapper) | `E8 F8 09 CC FF` (`call 498ACCh`) | the executor's unit creation; annexFacing link |
+| `AnnexGhostSite` | `0x96E4E7` | 11 B | 5 B at `0x96E4E7` | `A1 34 62 C6 00` (`mov eax,[0C66234h]`) | the placement ghost's update FUN_0096E062, before its placement test; annexFacing ghost hook (continues at `0x96E4EC`) |
+| `AnnexAiPlaceSite` | `0x73D7D2` | 8 B | 5 B at `0x73D7D2` | `8D 5C 24 38 53` (`lea ebx,[esp+38h]; push ebx`) | an AI build plan's placement test FUN_0073D62B, before PLACE at `0x73D7E3`; annexFacing (continues at `0x73D7D7`) |
+| `AnnexAiScanSite` | `0x87DB9F` | 9 B | 6 B at `0x87DB9F` | `D9 E0 D9 5C 24 60` (`fchs; fstp [esp+60h]`) | the AI's scan of candidate spots, before its PLACE `call [esi+14h]`; annexFacing (continues at `0x87DBA5`) |
+| `DetonationKillCall` | `0x493D8F` | 5 B | 5 B at `0x493D8F` (a `call` to the wrapper) | `E8 DC 11 02 00` (`call 4B4F70h`) | the kill queue drain's call of the kill handler; the shared death observer (`deathobservers.cpp`: detonationDeath, annexFacing) |
+| `DestroyRemoveCall` | `0x9828E7` | 5 B | 5 B at `0x9828E7` (a `call` to the wrapper) | `E8 C6 FD AE FF` (`call 4726B2h`) | trUnitDestroy's call of the unit removal; the shared Destroy observer (`deathobservers.cpp`: annexFacing) |
+| `UnitCreate`, `UnitRemoveHead`, `KillQueueAsk` | `0x498ACC`, `0x4726B2`, `0x4B4DC2` | 9, 6, 8 B | — | — | the heads of the unit creation and removal the wrappers call, and the kill queue's ask annexFacing calls |
 | `NoCorpseDoppleCreate` | `0x49534D` | `0x24` B | 8 B at `0x49534D` | `8B 44 24 2C 8B 4C 24 54` (`mov eax,[esp+2Ch]; mov ecx,[esp+54h]`) | dopple creation in the unit visibility update FUN_0048679A, through `call 4DB3D0h` and `jmp 486A30h`; noCorpseDopples |
 | `NoCorpseDoppleGaiaCheck`, `NoCorpseDoppleSkip`, `NoCorpseDoppleAliveCall` | `0x4F1088`, `0x486A30`, `0x4868FA` | `0x11`, `0x17`, `0x15` B | — | — | the second way into the site, the "no dopple" exit the hook takes, and the stock virtual isAlive call it imitates |
 | `DanceTrainGate`, `DanceXpGate`, `DanceGatherGate`, `DanceRegenGate` | `0x8D47A6`, `0x4E0DFA`, `0x4ECD4E`, `0x490486` | 13, 13, 13, 17 B | 6 B each at `0x8D47AB`, `0x4E0DFF`, `0x4ECD53`, `0x49048B` | `3B 05 50 FB C6 00` (`cmp eax,[0C6FB50h]`) at each | the first native civ compare of the four dance readers; danceBonusCivs. Each range covers the civ load before it and the `je` after it |
@@ -214,7 +227,9 @@ new keys was compared with that list:
 No other new key overlaps: none of their sites, and none of the addresses their code writes directly,
 is in the list. That covers `transformInventory`, `noTrainNearEnemyTC`, the overheal keys,
 `techPrereqRecheck`, `transformUpdatesLOS`, `abilitySlots`, `lifespanAfterConstruction`,
-`snareOnlyHitUnit`, `civFirstTC`, `showGatherRate` and the unit panel row. `bufferedFileReads` writes in
+`snareOnlyHitUnit`, `civFirstTC`, `showGatherRate` and the unit panel row. Checked against the same list on
+2026-11-08: the sites of `containedUnitsROF`, `nativePreview`, `annexFacing`, the death observers and spreadAnyAccuracy's
+hooks at `0x4997AE`, `0x4C4DEC`, `0x4A9455` and `0x49BE95` are not in it either. `bufferedFileReads` writes in
 the import table, which the list shows as a whole because Windows fills it at load: check that no other
 code wraps those six imports.
 
@@ -294,7 +309,7 @@ compiled.
 | `Config::First`, `All`, `Int` | The key's first line, every line, or an integer. | `IUHCConfig`. `broadsideMuzzleLimit`, `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys read every line; `abilitySlots` an integer. |
 | `Apply…` returning `Outcome` | One function per key. | `BaseFeature`: put the body in the feature's install method. |
 | `RequestAbstractUnitType`, `OnDatabaseLoad` | Registers a type, and calls a feature on every data load. | [See below](#extra-abstract-unit-types). |
-| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
+| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
 
 A `trackable_memory_patch` restores its bytes when it is destroyed, so keep the patch objects alive for the
 life of the game.
@@ -487,9 +502,12 @@ Code: [buildings](porting-code/buildings.md#hcshipmentpointfallback).
 ### detonationDeath
 
 Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHandler`, in the
-[helpers](porting-code/helpers.md#proto-tags).
+[helpers](porting-code/helpers.md#proto-tags), and `AddDeathObserver`, in the
+[helpers](porting-code/helpers.md#death-observers).
 
-- **Sites:** a `call` at `0x493D8F` (to `0x4B4F70`). Check it against your DLL first.
+- **Sites:** a `call` at `0x493D8F` (to `0x4B4F70`), the kill queue drain's call of the kill handler. It is written once by
+  `deathobservers.cpp`, which runs every key's observer (`AddDeathObserver`, in `kFeatures` order) before the stock
+  handler; `annexFacing` adds its observer there too. Check it against your DLL first.
 - **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage.
 
 ### damageOverTime
@@ -575,10 +593,41 @@ Code: [combat](porting-code/combat.md#spreadanyaccuracy).
 - **Radius hook** at `0x4CF00B` (27 B) in FUN_004CEF8C, ST0 = d: `fmul [g_uhcSpreadFactor]; fst
   [esp+0Ch]; fcomp [g_uhcSpreadMax]; fnstsw ax`; if r > MaxSpread, `[esp+0Ch] = MaxSpread`; jump to
   `0x4CF026` (the stock `r > 1e-6` test and the two draws). The x87 stack is empty on leaving.
-- **Engine calls:** 0x44D7FA (is-a) and the stock FUN_004CEF8C; reads the action-name table for the
-  log.
+- **Ground hook** at `0x4C4DEC` (7 B: `mov [esi+20h],3`), where a `TargetGround` shot leaves its lead with no roll, in the
+  launch's frame. It re-executes the store; for a marked shooter (`UhcSpreadMarkedGround(shooter = [esp+0E8h])`) it calls
+  `UhcSpreadSelect`, FUN_004CEF8C on the impact point `[esp+28h]` and `UhcSpreadDone`, all inside `pushad`/`popad`. The
+  shot stays a ground shot (3). It continues at the stock `jmp 4998A7h` at `0x4C4DF3`.
+- **Precalc gate** at `0x4997AE` (8 B: `test al,al / je 4998A7h`, the test of the cfg var `ballisticPrecalcHits`, EBX = the
+  unit action). It re-executes the test: AL ≠ 0 continues at `0x4997B6`; otherwise a marked shooter
+  (`UhcSpreadIsMarked`) goes on into the block at `0x4997B6` too, and any other unit skips it at `0x4998A7`.
+- **Instant hook** at `0x4A9455` (7 B: `mov [esi+20h],1`, before the stock `jmp 4998A0h`), where an `InstantBallistics`
+  shot leaves the precalculated block (the `jne` at `0x499801` is the only branch to it). It re-executes the store;
+  `UhcSpreadInstantSelect(projectile, unitAction, shooter, target)` returns AL = 1 for a marked shooter with a target,
+  and then the hook calls FUN_004CEF8C on `[esp+28h]` and `UhcSpreadInstantDone(projectile, point)`, which remembers the
+  shot by its projectile unit's ID and puts the stock values back. It continues at `0x4998A0`; the instant launch
+  `0x4A958F` (verify only) copies the point to `[projectile+70h]`. The mode stays 1.
+- **Applier hook** at `0x49BE95` (6 B: `sub esp,1D8h`), the head of the attack applier FUN_0049BE95,
+  `thiscall(projectile, targetId, point)`, `ret 8`, which every projectile hit and landing calls.
+  `UhcSpreadApply(projectile, &targetId, &point)`, inside `pushad`/`popad`, may rewrite both arguments and the mode
+  `[projectile+20h]`; the hook then re-executes `sub esp,1D8h` and continues at `0x49BE9B`:
+  - a remembered instant shot of a live marked shooter whose point `[projectile+70h]` is inside the target's
+    obstruction is a stock hit; otherwise, with `<DamageArea>`, mode 3, target -1 and a copy of the point (the area
+    damage lands there), and without it, the target becomes the unit at the point, or -1 (no damage);
+  - **a stray shot without `<DamageArea>`:** a ground shot (mode 3) of a marked shooter with no live target hits the
+    unit whose obstruction holds the point where it lands, if any; the stock body damages it through TakeDamage.
+
+  This head is a shared hook: a key that needs it extends this hook, never a second `jmp`. Verify only the instant
+  arrival's call of the applier at `0x49C151`.
+- **The unit at a point:** FUN_004A1C55 with a radius of 0.01 and `precise`, then the units at obstruction distance 0
+  (vtable slot B8h); not the shooter or the projectile unit, alive (slot A4h), not of proto flag 0Ah (`0x45EE02`), not
+  a Gaia unit of the type `Resource`; of several, the nearest centre in x and z, then the lowest ID.
+- **World tick** (`AddWorldTick`): another game (a step count that jumps, or the game time going back) clears the
+  remembered instant shots; so does every data load.
+- **Engine calls:** 0x44D7FA (is-a), the stock FUN_004CEF8C, 0x4A1C55 (the spatial query), 0x44CC6D (unit by ID) and
+  0x45EE02 (proto flag); reads the action-name table for the log.
 - **If WoL's DLL already reads action tags at 0x5FA11E,** add these two tags to your handler instead
-  of a second hook; if it changes the launch at 0x499890 or the miss offset, merge the logic there.
+  of a second hook; if it changes the launch at 0x499890, the miss offset or the applier's head 0x49BE95, merge the
+  logic there.
 
 ### containedUnitsROF
 
@@ -615,6 +664,53 @@ Code: [game-files](porting-code/game-files.md#bufferedfilereads).
   `verify` argument checks this against the file.
 - **Why it can differ between players:** it changes how the bytes are fetched, not which bytes.
 - **The design:** [how-it-works.md](how-it-works.md#bufferedfilereads).
+
+### xsErrorLog
+
+Code: [game-files](porting-code/game-files.md#xserrorlog).
+
+- **Sites:** a 6-byte `jmp` at `0x43A3A4` (`81 EC 04 08 00 00`: `sub esp,804h`), the head of the reporter FUN_0043A3A4,
+  `void cdecl(log, file, line, format, ...)`, continue at `0x43A3AA`; and a 6-byte `jmp` at `0xA5667F` (the same bytes),
+  the head of FUN_00A5667F, `void cdecl(log, format, ...)`, which carries Error 0003, continue at `0xA56685`. Verify only
+  the stock formatter `0x435D99` (`51 8B 44 24 0C 57`), which the C++ side calls.
+- **The hooks:** both reporters are cdecl, so EAX, ECX and EDX are free at the head. Each hook passes the address of the
+  first argument to `UhcXsReport` / `UhcXsMessage` (stdcall), which format the message with `0x435D99` into a 1 KB buffer
+  and write it to the log, then re-executes `sub esp,804h` and jumps to the continuation. The stock body still runs: it
+  prints only through the callback at `[log]`, which the shipped game leaves empty.
+- **Changes:** nothing in the game; at most `maxLines` lines (default 200), then one line that says it stopped. Neither
+  reporter runs in a clean game.
+- **Test:** an XS file with an error: the log shows the file, the line and the message.
+
+### dataLint
+
+Code: [data](porting-code/data.md#datalint). It needs `AddActionTagHandler`, `OnUnknownModifyType` and
+`OnUnknownTechSubtype`, in the [helpers](porting-code/helpers.md) (action tags, modify types, tech subtypes), and
+`OnDatabaseLoad`.
+
+- **Sites,** all on code that runs only while the data loads. Each hook does what the stock code there does and only
+  records a name:
+  - a 5-byte `jmp` at `0x5FCB61` (`68 B4 0E 00 00`: `push 0EB4h`), the failure of the `<UnitType>` handler `0x5F62D4`:
+    EDI = the name (0 for an empty node), `[esp+14h]` = the proto; re-execute the push, continue at `0x5FCB66`;
+  - an 8-byte `jmp` at `0x5F62A2` (`84 C0 74 16 8B 54 24 14`: `test al,al / je / mov edx,[esp+14h]`), after the proto tag
+    table's find in the proto parser `0x5F611D`: a found tag continues at `0x5F62AA`; an unknown one (ESI = its name,
+    EBX = the proto) is recorded and goes to the next child at `0x5F62BC`;
+  - a 6-byte `jmp` at `0x5FA202` (`0F 84 89 26 00 00`: `je 5FC891h`), a `<ProtoAction>` whose action is not in the
+    proto's set: recorded, then `0x5FC891`; an existing action continues at `0x5FA208`;
+  - the `call` at `0x61FE4A` (`E8 B3 FE FF FF`, of the tech parser `0x61FD02`), the last thing the data load reads: the
+    hook swaps only the return address, calls the parser, then writes the summary and returns;
+  - a 7-byte `jmp` at `0x61FDB8` (`8B F0 8B CE 8B 51 18`), the tech parser's loop over the `<Tech>` nodes: keep the node
+    (EAX) in `g_uhcLintTech`, re-execute the three instructions, continue at `0x61FDBF`;
+  - a 6-byte `jmp` at `0x6205E9` (`0F 84 DB 18 00 00`: `je 621ECAh`, setData false in the effect parse): recorded with
+    the node EDI, then `0x621ECA`; otherwise `0x6205EF`. This range is inside `TechRenameEffectParse`, which
+    `techRenameEffect` verifies, so dataLint is applied after it;
+  - a 5-byte `jmp` at `0x65BC56` (`68 12 05 00 00`: `push 512h`, an unknown effect type): recorded, then the push, and
+    continue at `0x65BC5B`.
+- **Shared sources:** the action tag hook, the ModifyType name hook and the Data subtype hook. Each can fail beside
+  another DLL that holds its site; the key still applies with the rest and logs how many of the three it has.
+- **Changes:** nothing in the game. Each name is kept once, with its count and the first proto or tech; at the end of the
+  load the log gets at most 40 lines per kind (all of them with `log`), and with `file` the whole report goes to
+  `dataLint.txt`, next to the log.
+- **Known tags:** a new tag that a key reads goes in `kKnownTags`, or dataLint reports it as unknown.
 
 ### multipleInstances
 
@@ -957,6 +1053,49 @@ Code: [combat](porting-code/combat.md#snareonlyhitunit).
   `0x6AA56A` (EAX = group, ESI = the member's **ID**, looked up as at `0x4F9EB7`; `0x6AA570`).
   Snared member: skip both instructions; otherwise re-execute them.
 
+### snareValues
+
+Code: [combat](porting-code/combat.md#snarevalues). It needs `AddActionTagHandler` and `AddTechActionSubtype`, in the
+[helpers](porting-code/helpers.md), `OnDatabaseLoad`, and the function `UhcIsSnareModifier` of `snare.cpp`
+(snareOnlyHitUnit), which `strongest` calls.
+
+- **Site:** a 5-byte `jmp` at `0x4DD207` (`68 B8 0B 00 00`: `push 0BB8h`, the 3000 ms); verify only `0x4DD20C`
+  (`SnareCreateTail`, `0x21` B), the pushes up to the creator. The stack already holds the creator's last three
+  arguments, pushed by stock or by `cantBeSlowed`, whose hook continues here: apply snareValues after cantBeSlowed. ESI =
+  the target, EBP = the attacker's unit action. `UhcSnareValues(unitAction, &factor, &ms)` (stdcall) gives the action's
+  values; the hook pushes `ms, 2, 0, -1f, -1f, factor, 0`, calls the creator `0x4DD22D` with ECX = the target and leaves
+  at `0x48FA49`, as stock's `jmp 48FA49h` does. With ms = 0 it drops the three arguments and creates no snare: the
+  creator reads a duration of 0 as a modifier with no end.
+- **Values:** by (proto ID `[proto+4]`, action name index `[action+4]`), from `<SnareFactor>` (0 to 10) and
+  `<SnareDuration>` (seconds above 0), default 0.65 and 3 s, cleared on each data load. The Data subtypes `SnareFactor`
+  and `SnareDuration` change one player's copy of the action through the stock value function `0x7F892A`, from the tag's
+  value as base.
+- **`strongest`:** the `call` at `0x49F26A` (`E8 D9 49 01 00`, of the velocity sum `0x4B3C48`), the only one, in the
+  unit's recompute, goes to a `__fastcall` wrapper. It swaps the snare with the lowest factor `[modifier+68h]` into the
+  first snare's place in the list the recompute has just built, then calls the sum. Nothing is kept.
+- **Test:** a Pikeman's snare on a Crossbowman: the stock 0.65 for about 3 s, the tags' values with them, and no snare with
+  a tech that leaves a duration of 0.
+
+### auraStacking
+
+Code: [combat](porting-code/combat.md#aurastacking). It needs `AddActionTagHandler`, `OnDatabaseLoad` and the modifier walk
+`modifiers.h`, in the [helpers](porting-code/helpers.md).
+
+- **Filter:** the `call` at `0x9D0633` (`E8 00 FC FF FF`, of the filter `0x9D0238`, `bool thiscall(action, target)`,
+  `ret 4`), its only call in the aura update FUN_009D033E, goes to `UhcAuraFilterHook`. It calls the stock filter, then
+  refuses a target of a `<ForbidUnitType>` (or `<ForbidAbstractType>`) type and, for a `<NoStack>` aura, a target that
+  holds a modifier with this aura's mark. Verify only the filter's head (6 B).
+- **Mark:** a 5-byte `jmp` at `0x9D0675` (`8B D8 83 FB FF`: `mov ebx,eax / cmp ebx,-1`), right after the creator
+  `0x4DD22D`, with EAX = the new modifier's ID, EBX = the target, ESI = the action. For a `<NoStack>` aura it writes the
+  mark `((proto ID + 1) << 14) | action name index` in `[modifier+84h]`, a field stock saves and loads and nothing reads,
+  then re-executes both instructions and continues at `0x9D067A`.
+- **`AuraClaim`** (`aurastacking.h`): `unitResourceAuras` makes no modifier and its take does not reach the filter, so it
+  asks `AuraClaim(world, proto, name, owner, target, now)`, which holds one owner per target and aura while that owner
+  lives and comes back within 7 s. Without auraStacking, make it return true.
+- **Not covered:** the second applier FUN_009D7328, for actions with no range, has no filter.
+- **Test:** two carriers of the same `<NoStack>` aura around one unit: it holds one modifier, and the other carrier takes
+  it when the holder dies or the unit leaves its range.
+
 ### techRenameEffect
 
 Code: [data](porting-code/data.md#techrenameeffect).
@@ -1147,6 +1286,26 @@ Code: [buildings](porting-code/buildings.md#costescalationtechs). It needs `AddT
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#costescalationtechs): the button's cost changes
   and the food drops by it.
 
+### unitTypeTechs
+
+Code: [buildings](porting-code/buildings.md#unittypetechs). It needs `AddTechTypeSubtype`, in the
+[helpers](porting-code/helpers.md#tech-subtypes), and `OnDatabaseLoad`.
+
+- **No site of its own:** the Data subtypes `AddUnitType` and `RemoveUnitType` come through the tech subtype hooks (the
+  head `0x61FF5D`, the call `0x6206B2`, `0x8F978D` and `0x8FB051`), shared with every key that adds a Data subtype.
+  `AddTechTypeSubtype` reads the effect's `unittype` into `[effect+10h]` (an abstract type: a proto or an unknown name
+  drops the effect) and sets flag 20h in `[effect+9]`, so the pass after a load `0x94DDEA` runs the effect again: a
+  proto's type bits are not in a saved game.
+- **What it writes:** one bit of the player's copy of the proto, in the buffer `[proto+30h]` (`[proto+34h]` bits),
+  indexed from the first abstract ID `[database+19B0h]`. The per-player clone `0x67E011` gives each copy its own buffer,
+  so the change reaches that player alone, and the is-a test `0x44D7FA` reads it at once. The bit is on when the base
+  proto has it or some `AddUnitType` runs, and no `RemoveUnitType` runs; the counts are per copy and type, and a new
+  world or data load clears them.
+- **Not changed:** stock's table of protos by type behind `0x453326` (the KB's counts and queries), built from the data
+  and shared by every player.
+- **Test:** a tech with `AddUnitType` of a marker type for one player: that player's units get the marker's feature, and
+  the other player's do not.
+
 ### sharedBuildLimit
 
 Code: [buildings](porting-code/buildings.md#sharedbuildlimit). It needs `AddProtoTagHandler`, in the
@@ -1182,6 +1341,37 @@ Code: [buildings](porting-code/buildings.md#nextresearchfree). It needs `AddTech
 - **Sites:** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and `0x9D5548`, of `0x480A73`.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#nextresearchfree): the next research takes
   nothing, and its cancel gives nothing back.
+
+### annexFacing
+
+Code: [buildings](porting-code/buildings.md#annexfacing). It needs `AddProtoTagHandler`, `AddWorldTick`,
+`OnDatabaseLoad`, and `AddDeathObserver` and `AddDestroyObserver`, in the
+[helpers](porting-code/helpers.md#death-observers).
+
+- **Forward hook:** a 6-byte `jmp` at `0x7D7CF1` (`8D 87 A8 00 00 00`: `lea eax,[edi+0A8h]`) in the build command's
+  executor FUN_007D79D6, before the right vector `0x423792`, the placement test and the creation. EDI = the command,
+  EBX = the player's copy of the proto, EBP = the player. For a proto with `<AnnexOf>`, the helper may write the forward
+  at `[edi+0A8h]`; the hook keeps every register and the flags, re-executes the `lea` and continues at `0x7D7CF7`.
+- **Link:** the `call` at `0x7D80CF` (`E8 F8 09 CC FF`, of the unit creation `0x498ACC`, thiscall on the world with 8
+  arguments, `ret 20h`) goes to a `__fastcall` wrapper that calls it and keeps annex ID → parent ID. Verify only the
+  creation's head (9 B).
+- **Ghost hook:** a 5-byte `jmp` at `0x96E4E7` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`) in the placement ghost's update
+  FUN_0096E062, before its placement test, ESI = the ghost's visual: the helper may turn the visual's axes (the local UI
+  only); every register and the flags are kept, then the `mov`, and it continues at `0x96E4EC`.
+- **AI hooks:** a 5-byte `jmp` at `0x73D7D2` (`8D 5C 24 38 53`: `lea ebx,[esp+38h] / push ebx`) in an AI build plan's
+  placement test FUN_0073D62B, before PLACE at `0x73D7E3` (EBP = the plan's data, position `+50h`, proto `+ACh`; EAX =
+  the player), continue at `0x73D7D7`; and a 6-byte `jmp` at `0x87DB9F` (`D9 E0 D9 5C 24 60`: `fchs / fstp [esp+60h]`)
+  in the AI's scan of candidate spots, with PLACE's arguments already pushed, continue at its `call [esi+14h]` at
+  `0x87DBA5`. Both write only the caller's forward and right, never a vector inside the exe image, and keep every
+  register and the flags.
+- **Deaths:** one observer in both lists of `deathobservers.*`: the kill queue drain's call `0x493D8F` (`E8 DC 11 02 00`,
+  of the kill handler `0x4B4F70`) and trUnitDestroy's call `0x9828E7` (`E8 C6 FD AE FF`, of the unit removal `0x4726B2`;
+  verify only its head, 6 B). A dying parent's annexes are asked to die through `0x4B4DC2(0, 0, 0)` (verify only, 8 B),
+  as a trigger's kill; they die in the same drain.
+- **Several parents:** `<AnnexOf>` is repeatable: a unit of any listed type or proto can be the parent.
+- **WoL's DLL:** none of these sites is in its 287 patched ranges (`wol-memdiff.txt`). It was not run beside that DLL.
+- **Test:** Torps on four sides of a Barracks face it, and a trigger's kill of the Barracks drops them at once and not
+  another Barracks' Torps.
 
 ### noTrainNearEnemyTC
 
@@ -1438,6 +1628,23 @@ Code: [gathering](porting-code/gathering.md#resourcedebt).
 - **The return addresses that have no floor** are constants in the helper: `0x4E0CFE`, `0x4C379D`, `0x4ED1F3`. A hook of yours on
   those three calls changes nothing as long as the stock return address stays on the stack.
 
+### displayedRange
+
+Code: [gathering](porting-code/gathering.md#displayedrange). It needs `AddProtoTagHandler`, `AddWorldTick`,
+`OnDatabaseLoad` and the models on a unit, `unitmodels.*`, in the [helpers](porting-code/helpers.md).
+
+- **No site of its own.** The tags `<DisplayRange>` and `<DisplayedRange>` come through the shared proto tag hook
+  (`0x51DB0F`); a world tick does the rest. Verify only the selection `0x453B28` (`CurrentSelectionGroup`), the unit by ID
+  `0x44CC6D` and the model functions (`VerifyUnitModels`).
+- **The tick,** four times a second of game time, for the game's world only: it compares the local selection of
+  `0x453B28` (IDs `[group+10h]`, count `[group+14h]`) with the units that hold a ring. A selected unit whose proto has
+  both tags gets the model `effects\uhc_rings\range_<N>.xml`, N the radius nearest to `<DisplayedRange>` among 4, 6, 8,
+  10, 12, 14, 16, 20, 24 and 30, on the bone `bonethatdoesntexist` (at its feet); a unit that leaves the selection loses
+  it. A model that is not in the game is skipped.
+- **Changes:** only what the local player sees: the selection is only read, and a model is a visual of the unit.
+- **Test:** with the ring files in `art\effects\uhc_rings`, select a unit with both tags: the ring is at its feet, and
+  goes when the unit is deselected.
+
 ### showGatherRate
 
 Code: [gathering](porting-code/gathering.md#showgatherrate).
@@ -1476,6 +1683,31 @@ Code: [gathering](porting-code/gathering.md#showgatherrate).
   `[action+61h]` = 5; `[action+10h]` = the unit; resource < `[db+80h]`; rate > 0; age in
   `[world+108h]` ms within max(2500, 2000 × elapsed), at most 60000; `[player+338h]` = 0; the
   target, if found, not `0x44CAC4(proto, 58h)`.
+
+### linkedResource
+
+Code: [gathering](porting-code/gathering.md#linkedresource). It needs `AddProtoTagHandler`, `AddActionTagHandler`,
+`AddWorldTick` and `OnDatabaseLoad`.
+
+- **Inventory add:** a 5-byte `jmp` at `0x49A5E6` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`), the head of the add every
+  take goes through, `bool thiscall(inventory, resource, float)`, `ret 8`. While the data has a tagged proto
+  (`g_uhcLinkedOn`), `UhcLinkedInventory` may handle the add (a negative add on a linked inventory goes to the mine's,
+  then the state check `0x482152` runs on the mine) and the hook returns its result; otherwise the trampoline
+  `UhcLinkedInventoryStock` re-executes the `mov` and continues at `0x49A5EB`. The C++ side calls that trampoline, never
+  the hooked head.
+- **Inventory recreate:** a 9-byte `jmp` at `0x9BFE5A` (`56 8B F1 8B 86 B4 00 00 00`), the head of `thiscall(unit)`,
+  which returns the inventory: the hook runs the stock body (the three instructions, then `0x9BFE63`), then
+  `UhcLinkedRegister(unit)` adds a tagged unit to the links, and it returns the inventory in EAX.
+- **AutoGather pay:** a 7-byte `jmp` at `0x4C378A` (`8B 7C 24 10 8B 56 10`: `mov edi,[esp+10h] / mov edx,[esi+10h]`),
+  with ESI = the action, EBX = the resource, `[esp+10h]` = the amount: `UhcLinkedAutoGather` takes the amount from the
+  mine or the building's own stock and writes back what that pays; the two instructions are re-executed, continue at
+  `0x4C3791`. The add at `0x4C3798` stays stock, because `resourceDebt` reads its return address.
+- **Order:** the first two heads are inside ranges that `unitResourceAuras` (`InventoryAdd`) and `transformInventory`
+  (`InventoryRecreate`) verify, so linkedResource is applied after them (after `resourceDebt` in `kFeatures`).
+- **The tick:** once a second for a building with no mine, the units of the type around it (FUN_004A1C55, the is-a test,
+  the distance slot `+B8h`); every 250 ms of game time, the mine's main resource entry is copied into the building's
+  inventory with `0x58EF83`. The links are by unit ID in an ordered map; a new game forgets them.
+- **Test:** a tagged building by a Mine, with villagers on it: the Mine's stock falls, not the building's own.
 
 ### buildingWorkRateAuras
 
@@ -1676,8 +1908,11 @@ Code: [population](porting-code/population.md#decimalpopulation).
 ## 7. What is not verified
 
 - **In WoL (updated 2026-11-04):** the features below ran on WoL's exe and data, with this project's DLL
-  replacing WoL's in a test copy, single player, each with a run without its key. None has run next to
-  WoL's own DLL, so a clash with its patches can only be read from
+  replacing WoL's in a test copy, single player, each with a run without its key. Next to WoL's own DLL
+  they ran only from `dinput8.dll` ([section 8](#8-beside-wols-dll-without-porting)), on 2026-11-05 and 2026-11-06:
+  the keys whose sites WoL holds failed `VerifyAll` as intended, the others applied and most reached their hooks, and a
+  few were checked by effect ([wol-uhc-map.md](wol-uhc-map.md#running-beside-wols-dll-dinput8dll-2026-11-05)). No port
+  into WoL's DLL was built, so a clash inside it can only be read from
   [section 1](#1-check-that-you-can-use-the-sites).
   - **Filmed, with the key off as control:** `healNonIdle`, `smartHealTargets`, `dodgeAnyUnit`,
     `dodgeChance`, `damageOverTime`, `spreadAnyAccuracy`, `liveBuildingWorkRate`,

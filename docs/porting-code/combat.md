@@ -5721,7 +5721,7 @@ END
 
 Contract: [detonationDeath](../porting-to-another-dll.md#detonationdeath).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`deathobservers.h`](helpers.md#death-observers), [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
 

@@ -1,6 +1,7 @@
 // annexFacing: an annex faces the building it belongs to, in steps of 90 degrees, and falls with it.
 //
-//   <AnnexOf>Barracks</AnnexOf>     a unit type or a proto, in the annex's proto
+//   <AnnexOf>Barracks</AnnexOf>     a unit type or a proto, in the annex's proto; repeatable, and a unit of any of
+//                                   them can be the parent
 //   <AnnexRange>12</AnnexRange>     metres from the parent's footprint to the annex's centre, default 12
 //
 // The build command (type 3) carries the forward direction of the placed building to every machine; its executor
@@ -14,11 +15,19 @@
 // The placement ghost turns the same way before the click (the hook at 0x96E4E7, before the ghost's placement test
 // in 0x96E062): only the local player's view and its green or red test change, never the game.
 //
+// The AI chooses a spot with the world's axes, in two tests: the scan of candidate spots (the hook at 0x87DB9F,
+// before its PLACE at 0x87DBA5) and a build plan's own test FUN_0073D62B (the hook at 0x73D7D2, before PLACE at
+// 0x73D7E3), whose forward the plan's build command carries. Both face the annex by the same rule, writing only the
+// caller's forward and right, so the scan keeps only spots where the turned annex fits. They run where the AI runs;
+// the executor still turns the annex on every machine.
+//
 // The link: the creation call is wrapped, and the new unit's ID is kept with its parent's (by unit ID, the same on
-// every machine). When a unit dies (the shared death observer), every annex linked to it, or found by the same rule
-// when no link was kept (a saved game: links are not saved), is killed at once through the kill queue, as a
-// trigger's kill. The rule for an annex without a link: the units of its parent type, of its player, in range,
-// that it faces (its forward is one of their axes and points to their side); the nearest of them.
+// every machine). When a unit dies (the shared death observer, AddDeathObserver) or a trigger's Destroy removes it
+// (AddDestroyObserver: trUnitDestroy's call 0x9828E7 of the unit removal 0x4726B2, which never reaches the kill
+// queue), every annex linked to it, or found by the same rule when no link was kept (a saved game: links are not
+// saved), is killed at once through the kill queue, as a trigger's kill. The rule for an annex without a link: the
+// units of its parent type, of its player, in range, that it faces (its forward is one of their axes and points to
+// their side); the nearest of them.
 #include <cmath>
 #include <cstdarg>
 #include <cstdint>

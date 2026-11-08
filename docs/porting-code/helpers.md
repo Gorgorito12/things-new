@@ -21,6 +21,7 @@ Contents:
 - [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
+- [Death observers](#death-observers)
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
 - [Name lists](#name-lists)
@@ -4110,6 +4111,153 @@ std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t st
       kFloatingText(TextManager(), &string, time1, time2, Field<std::int32_t>(unit, 0x10), motion, colour, 1.0f, 0, -1);
   kBStringFree(&string);
   return shown;
+}
+
+}  // namespace uhc
+```
+
+## Death observers
+
+### src/deathobservers.h
+
+```cpp
+// Every death of a unit, shared by the keys that act on it (detonationDeath, annexFacing). The kill queue's
+// drain 0x493D46 calls the kill handler 0x4B4F70 for each unit asked to die (TakeDamage, a lifespan, a delete, a
+// trigger's kill and the rest ask 0x4B4DC2), from a single call, 0x493D8F. One call is written there, whichever
+// keys are on, and it runs every observer before the stock handler.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// Called with the unit and the handler's three flags, before the stock handler, while the unit is whole. The
+// handler returns at once for a unit whose state bit 11 is set, so an observer that needs a real death checks it.
+// A kill asked from an observer joins the queue, and the drain reads its count again: the unit dies in the same
+// drain, after this one, with no recursion.
+using DeathObserver = void (*)(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c);
+
+// Writes the call the first time (after checking the site's stock bytes) and adds the observer, in the order the
+// keys add them (their kFeatures order, the same on every machine).
+bool AddDeathObserver(DeathObserver observer);
+
+// The trigger effect Destroy (the syscall trUnitDestroy, 0x98282F) removes each selected unit at once through
+// the world's unit removal 0x4726B2(id, 0, 1), from its single call 0x9828E7, and never reaches the kill queue.
+// An observer added here is called there, with the flags 0 0 0, before the removal and only for a unit that is
+// alive and not dead (state bit 11 clear). It is a separate list: a key that should act on Destroy adds its
+// observer to both. The removal's 62 other callers (a corpse's end, a transform's old unit, a game's end, the
+// editor) are not observed.
+bool AddDestroyObserver(DeathObserver observer);
+
+}  // namespace uhc
+```
+
+### src/deathobservers.cpp
+
+```cpp
+#include "deathobservers.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+
+using KillFn = void(__thiscall*)(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c);
+const auto kKill = reinterpret_cast<KillFn>(0x004B4F70);
+
+uhc::DeathObserver g_observers[kMaxObservers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+using RemoveFn = void(__thiscall*)(char* world, std::int32_t id, std::int32_t a, std::int32_t b);
+const auto kRemove = reinterpret_cast<RemoveFn>(0x004726B2);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+
+uhc::DeathObserver g_destroyObservers[kMaxObservers] = {};
+std::size_t g_destroyCount = 0;
+bool g_destroyInstalled = false;
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (world == nullptr || id < 0 || (id & 0x3FFFF) >= *reinterpret_cast<const std::int32_t*>(world + 0x10)) {
+    return nullptr;
+  }
+  char* unit = (*reinterpret_cast<char* const* const*>(world + 0x0C))[id & 0x3FFFF];
+  return unit != nullptr && *reinterpret_cast<const std::int32_t*>(unit + 0x10) == id ? unit : nullptr;
+}
+
+bool IsDead(const char* unit) {  // state bit 11
+  const auto* bits = *reinterpret_cast<const std::uint8_t* const*>(unit + 4);
+  return bits != nullptr && *reinterpret_cast<const std::uint32_t*>(unit + 8) > 11 && (bits[1] & 0x08) != 0;
+}
+
+// Replaces trUnitDestroy's call of the unit removal: thiscall(world, id, a, b), ret 0Ch.
+void __fastcall Destroy(char* world, void*, std::int32_t id, std::int32_t a, std::int32_t b) {
+  static bool traced = false;
+  if (!traced) {
+    traced = true;
+    uhc::Log(L"hook reached: unit destroys (0x9828E7)");
+  }
+  char* unit = UnitById(world, id);
+  if (unit != nullptr && !IsDead(unit) && (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit)) {
+    for (std::size_t i = 0; i < g_destroyCount; ++i) {
+      g_destroyObservers[i](unit, 0, 0, 0);
+    }
+  }
+  kRemove(world, id, a, b);
+}
+
+// Replaces the drain's call of the kill handler: thiscall(unit, a, b, c), ret 0Ch, like the handler.
+void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+  static bool traced = false;
+  if (!traced) {
+    traced = true;
+    uhc::Log(L"hook reached: unit deaths (0x493D8F)");
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_observers[i](unit, a, b, c);
+  }
+  kKill(unit, a, b, c);
+}
+
+}  // namespace
+
+namespace uhc {
+
+bool AddDeathObserver(DeathObserver observer) {
+  if (g_count == kMaxObservers) {
+    Log(L"unit deaths: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("unit deaths", {&sites::kDetonationKillCall}) ||
+        !WriteCall(sites::kDetonationKillCall.va, reinterpret_cast<const void*>(&Kill))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_observers[g_count++] = observer;
+  return true;
+}
+
+bool AddDestroyObserver(DeathObserver observer) {
+  if (g_destroyCount == kMaxObservers) {
+    Log(L"unit destroys: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_destroyInstalled) {
+    if (!VerifyAll("unit destroys", {&sites::kDestroyRemoveCall, &sites::kUnitRemoveHead}) ||
+        !WriteCall(sites::kDestroyRemoveCall.va, reinterpret_cast<const void*>(&Destroy))) {
+      return false;
+    }
+    g_destroyInstalled = true;
+  }
+  g_destroyObservers[g_destroyCount++] = observer;
+  return true;
 }
 
 }  // namespace uhc

@@ -191,6 +191,7 @@ decimalPopulation [K] [log]   population with decimals (PopulationCount 0.5), st
 noAILimit                     every AI3\\*.personality file in game setup
 noAILimitV2                   the same list, hooked later (cfgs that use this name)
 customAbstractTypes [file]    abstract unit types from an XML file
+                              (default data\\uhc\\customabstracttypes.xml)
 customProtoUnitCommands [file]   command types (buttons) from an XML file
 multiarmor                    one armor per damage type; Armor effects follow damagetype
 betterfreedynamicunit         dynamic free units grow smoothly with game time
@@ -201,7 +202,6 @@ fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits
-                              (default data\\uhc\\customabstracttypes.xml)
 customSyscalls [files]        load .upl plugins and their XS syscalls
 customCheats                  the cheats plugins register work in the chat
 asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders)
@@ -234,7 +234,9 @@ dodgeChance T P [tech X | notech] [ranged | melee | all] [log]   dodge chance P 
                               unit type, with a tech (YPDodge by default) and a hit filter
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
 spreadAnyAccuracy [UnitType] [log]   <MaxSpread>/<SpreadFactor> per attack for every miss;
-                              marked units scatter every shot (area damage where it lands)
+                              marked units scatter every shot, InstantBallistics ones too
+                              (area damage where it lands; a stray shot without DamageArea
+                              hits the unit it lands on)
 liveBuildingWorkRate [log]    BuildingWorkRate techs also speed up existing buildings,
                               TrainPoints techs units already queued or training
 techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units are

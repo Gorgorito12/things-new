@@ -1135,7 +1135,7 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
 0x5FA623 (a tactics `<action>`, FUN_005FA5B3). Any other caller goes straight on to the next child.
 `damageOverTime`'s handler keeps reading only `<ProtoAction>` tags.
 
-**Shots: five hooks.**
+**Shots: seven hooks.**
 1. **Hit roll** (0x499890, over `cmp ebx,2 / je 4CEF7Bh`, 9 B). EBX holds the roll's result. A miss
    goes on to the miss hook, as in stock. For any other result, a C++ call checks the shooting unit
    `[esp+0E8h]`: if its proto (the player's copy, `[unit+5Ch]`) has the marker type (is-a 0x44D7FA),
@@ -1186,10 +1186,17 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
    the projectile unit, alive (vtable slot A4h), not of proto flag 0Ah `Projectile` (the area damage
    skips those too), and not a Gaia unit of the abstract type `Resource` (trees, mines, hunts, crates).
    Of several, the nearest centre in x and z, then the lowest ID.
+6. **Ground shot** (0x4C4DEC, over `mov [esi+20h],3`, 7 B, before the stock `jmp 4998A7h` it continues at). A
+   `TargetGround` shot leaves its lead there with no roll, in the launch's frame. For a marked shooter the hook runs the
+   miss offset FUN_004CEF8C on the point at `[esp+28h]` with the action's values, as the miss hook does, and leaves the
+   mode at 3. Everything is saved around the call. Unmarked shooters take the stock path.
+7. **Precalc gate** (0x4997AE, over `test al,al / je 4998A7h`, 8 B: the test of the cfg var `ballisticPrecalcHits`).
+   With the var on, or for a marked shooter with it off, the launch goes on into the precalculated block at 0x4997B6;
+   any other unit skips the block at 0x4998A7, as in stock.
 
 **What it does not cover.**
 - Shots with no target unit: the block is skipped and the flight physics decide. With
-  `ballisticPrecalcHits` off, a marked shooter still goes through the block (below).
+  `ballisticPrecalcHits` off, a marked shooter still goes through the block (hook 7).
 - A stray shot whose shooter died before it arrived keeps the stock result (the marker is read from the
   live shooter).
 - Saved games do not keep the set of offset instant shots in flight: one fired just before a save hits
@@ -1236,10 +1243,6 @@ without area or remembered instant shots, a unit lookup and the is-a test; the s
 marked shot that strays. No allocation per shot. Measured in game (2026-11-08, `perfprobe.py`, 60 s of
 four marked Skirmishers shooting nine Mortars): key on 590 fps, world update 0.16 ms per frame, main
 thread 76 %, no frame over 50 ms; key off 595 fps, 0.17 ms, 78 %, one frame over 50 ms.
-
-A TargetGround shot leaves its lead at 0x4C4DEC with no roll. For a marked shooter the hook runs the miss offset 0x4CEF8C on the point at
-`[esp+28h]` and leaves the mode at 3. At 0x4997AE a marked shooter goes on into the precalculated block when the cfg var is off.
-Unmarked shooters take the stock path in both.
 
 **Why the instant and applier hooks are safe.**
 - The instant hook runs in the launch's frame (0x499801 → 0x4A9455 with no push in between), saves every
@@ -3268,7 +3271,7 @@ check at each use).
 
 **Why it is safe.** The hooks keep every register and the flags (pushfd/pushad) and re-execute the replaced line; the
 forward hook's continuation 0x7D7CF7 pushes `EAX`, which the replayed `lea` writes; the ghost hook's 0x96E4EC reads
-`EAX`, which the replayed `mov` writes. No branch lands inside either 5-byte write (checked over the whole `.text`).
+`EAX`, which the replayed `mov` writes. No branch lands inside either write, 6 B at 0x7D7CF1 and 5 B at 0x96E4E7 (checked over the whole `.text`).
 The creation wrapper has the stock frame (thiscall, 8 arguments, `ret 20h`). A proto without the tag costs a hash
 lookup at each build command, at each ghost update, and at each death a loop of is-a tests over the tags.
 
@@ -3597,7 +3600,7 @@ and watched with `PrintWindow`, and both work without focus.
 - **Outside the simulation** (`bufferedFileReads`): change only how data reaches the game, never
   what it receives.
 - **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
-  `overhealHitpointBars`, `showGatherRate`): change only what the local player sees or which keys
+  `overhealHitpointBars`, `showGatherRate`, `nativePreview`, `displayedRange`): change only what the local player sees or which keys
   work; every button or key sends the same command as stock. `showGatherRate`'s record hook runs in
   the gather code on every machine, but only copies values into the DLL's own memory.
 - **Logs never feed back:** every `log` option only writes `UHC.log`; its dedupe tables decide
