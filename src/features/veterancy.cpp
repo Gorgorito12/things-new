@@ -457,9 +457,13 @@ extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills%ls, rank %d%ls%g", Field<std::int32_t>(attacker, 0x10),
-             Field<std::int32_t>(proto, 8), kills, reached ? L", a new rank" : L"", rank, reached ? L", x" : L"",
-             reached ? static_cast<double>(applied) : 0.0);
+    if (reached) {
+      uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills, a new rank, rank %d, x%g", Field<std::int32_t>(attacker, 0x10),
+               Field<std::int32_t>(proto, 8), kills, rank, static_cast<double>(applied));
+    } else {
+      uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills, rank %d", Field<std::int32_t>(attacker, 0x10),
+               Field<std::int32_t>(proto, 8), kills, rank);
+    }
   }
 }
 

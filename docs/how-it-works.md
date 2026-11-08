@@ -1157,15 +1157,15 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
    FUN_004CEF8C has no other caller, and outside the miss hook the globals hold 0.25 and 5.0.
 
 **What it does not cover.**
-- `InstantBallistics` shots (sure hits, 0x4A9455 jumps past the block) and `TargetGround` shots
-  (mode 3 from 0x4C4DD9): they never reach the roll.
+- `InstantBallistics` shots (sure hits, 0x4A9455 jumps past the block): they never reach the roll. `TargetGround`
+  shots, which do not reach it either, have their own hook (below).
   <!-- private:begin -->
-  In WoL's tactics, 304 and 122 of the 647
-  actions with spread tags; the 222 others, including the current shotgun files, are covered
+  In WoL's tactics, 304 of the 647
+  actions with spread tags; the others, including the current shotgun files, are covered
   ([engine-symbols.md](engine-symbols.md), "Consequence for WoL's shotguns").
   <!-- private:end -->
-- Shots with no target unit, and every shot while `ballisticPrecalcHits` is off (a mod's startup
-  cfg could drop it): the block is skipped and the flight physics decide.
+- Shots with no target unit: the block is skipped and the flight physics decide. With
+  `ballisticPrecalcHits` off, a marked shooter still goes through the block (below).
 - A marked unit without `<DamageArea>` deals no damage: its ground shots land with nothing to hit
   (seen in game: marked Longbowmen left every musketeer at full HP). Mark only area attacks.
   WoL's shotguns are area attacks. <!-- private -->
@@ -2741,7 +2741,9 @@ aura: the update does not run; in a power's `<unitModify>` the name is accepted 
 
 A kill that reaches a rank and a transform queue the unit's ID. A world tick every 250 ms of game time hangs `rank_N.xml` through
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
-`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. **Why it is safe:** a model is a
+`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
+`HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`tools/make_rings.py`, `RANK_LIFT`): the HP
+bar scales with the camera like the world, so the gap stays at every zoom. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking

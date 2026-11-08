@@ -27,7 +27,6 @@ The notes below date from 2026-11-02. A review of the code and the exe (static, 
   - The engine AI's base, the start camera and a Nomad start: JTMaston said only the Pa needs FirstTC, and nothing starts a Nomad
     game in a normal setup.
   - `trPlayerToggleAllowTCSpawning`: nothing in WoL's data uses it.
-  - `InstantBallistics` spread: waits for JTMaston (#2).
   - `techPrereqRecheck` by events, `Volatile` hysteresis and team counts: polling already answers in the same update, and
     none of WoL's 9 `<TypeCount>` techs is `Volatile`.
   - Hotkey contexts for mixed selections: that is stock's rule.
