@@ -219,6 +219,18 @@ SITES = [
     # spreadAnyAccuracy, verify only: the two random draws uniform(-r, r) of FUN_004CEF8C
     # (0x422648 on the sync RNG 0xC66588, stream 2) that the hook leaves to the stock code
     ("SpreadDraws", 0x4CF037, 0x40),
+    # spreadAnyAccuracy, InstantBallistics: the launch's branch from the jne at 0x499801,
+    # mov [esi+20h],1 (replaced, 7 bytes) / jmp 4998A0h; and, verify only, the instant
+    # launch that copies the impact point [esp+28h] to [projectile+70h]: push -1.0 /
+    # lea edx,[esp+2Ch] / push edx / mov ecx,esi / call 4A95A5h / jmp 4999BEh
+    ("SpreadInstantMode", 0x4A9455, 12),
+    ("SpreadInstantLaunch", 0x4A958F, 0x16),
+    # spreadAnyAccuracy: the head of the attack applier FUN_0049BE95 (thiscall(projectile,
+    # targetId, point), ret 8): sub esp,1D8h (replaced, 6 bytes) / mov edx,[0C66234h]
+    ("SpreadApplierHead", 0x49BE95, 12),
+    # spreadAnyAccuracy, verify only: the instant arrival's call of the applier with the target
+    # [esi+8] (mov edx,[esi+8] / lea ecx,[esp+24h] / push ecx / push edx / mov ecx,esi ...)
+    ("SpreadInstantArrival", 0x49C151, 0x28),
     # dodgeAnyUnit (FUN_0049ACAA, "is this hit dodged?"): mov eax,[esi+5Ch] / mov eax,[eax+4],
     # the target's proto ID, and the first compare with the cached ypMonkJapanese ID
     ("DodgeProtoCheck", 0x49ACE5, 12),
@@ -1199,6 +1211,29 @@ SITES = [
     # autoGatherScaleByContained: the entry of the AutoGather rate getter, push ecx / push ebx /
     # mov ebx,[esp+0Ch], and the test ebx,ebx it continues at. No branch lands inside.
     ("AutoGatherRateEntry", 0x49EBE4, 8),
+    # containedUnitsROF: the ScaleByContainedUnits handler of the action parser FUN_005F98A0 (lea eax,[esp+10h] /
+    # push eax / mov ecx,edi / mov [esp+14h],ebx / call 59B526h, the read of the text), then cmp dword ptr
+    # [esp+10h],1 / mov eax,[ebp+64h] (replaced, 8 B at 0x5FEE0C), the jne 5FE713h it continues at, and or byte
+    # [eax+2],4 / jmp 5FA126h. Reached only through je 5FEDFCh at 0x5F9AED. The parser's next child, mov
+    # eax,[esp+1Ch], the hook's other continuation.
+    ("RofScaleTag", 0x5FEDFC, 0x27),
+    ("RofNextChild", 0x5FA126, 4),
+    # containedUnitsROF: the reads of the tactics ROF [action+34h] that set an attack's wait, each replaced with
+    # its next instruction (5 B; no branch lands inside), up to the delay call 48FA69h: after an attack that did
+    # not fire, mov edi,[edi+34h] / test edi,edi / jbe / mov eax,[esi+10h] / mov ecx,[eax+58h] / push edi / call
+    # (0x48A821) and mov edi,[edi+34h] / test edi,edi / jbe / mov ecx,[esi+10h] / mov ecx,[ecx+58h] / push edi /
+    # call (0x48A99A); mov esi,[esi+34h] / test esi,esi / jbe / mov ecx,[ebp+10h] / mov ecx,[ecx+58h] / push esi /
+    # call (0x48EA0C); after a shot (ranged and melee join at 0x48F892) mov eax,[ebp+4] / cmp eax,ebx / je /
+    # mov eax,[eax+34h] / cmp eax,ebx (replaced at 0x48F8B5) / jbe / mov esi,eax / ... / push esi / call
+    # (0x48F8E9); where an attack begins, mov eax,[esi+4] / push ebx / mov ebx,[eax+34h] / mov eax,[esi+6Ch]
+    # (replaced, 6 B at 0x4A1189) / test eax,eax / jne 6A79C3h / test ebx,ebx / jbe. The delay function
+    # 0x48FA69(action manager, ms), verify only.
+    ("RofWaitA", 0x48A821, 0x17),
+    ("RofWaitB", 0x48A99A, 0x17),
+    ("RofWaitC", 0x48EA0C, 0x17),
+    ("RofShot", 0x48F8AE, 0x40),
+    ("RofAnim", 0x4A1185, 0x1A),
+    ("RofDelay", 0x48FA69, 0x2A),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
@@ -1287,6 +1322,62 @@ SITES = [
     ("TacticReset2", 0x7D8F07, 0x07),
     ("TacticReset3", 0x9D6BE7, 0x07),
     ("TacticReset4", 0x9EBB0B, 0x07),
+    # annexFacing: in the build command's executor FUN_007D79D6 (EDI = the command, EBX = the player's proto,
+    # EBP = the player), lea eax,[edi+0A8h] / push eax before the right vector 0x423792 is computed from the
+    # forward at [edi+0A8h]; the continuation is the push
+    ("AnnexForwardSite", 0x7D7CF1, 7),
+    # annexFacing: the executor's call of the unit creation 0x498ACC(world, proto, player, position, forward,
+    # 0, -1, 0, -1), thiscall, ret 20h; and the head of the creation, verify only
+    ("AnnexCreateCall", 0x7D80CF, 5),
+    ("UnitCreate", 0x498ACC, 9),
+    # annexFacing: in the placement ghost's update FUN_0096E062 (ESI = the ghost's visual), mov eax,[0C66234h]
+    # / mov ecx,[eax+13Ch] before the placement test 0x96E531 with the visual's position, forward and right
+    ("AnnexGhostSite", 0x96E4E7, 11),
+    # nativePreview, in the bottom panel chooser FUN_00454270 (ESI / EBX = the first selected unit).
+    # A selected Socket (type 4Bh) gets the settlement panel here: mov ecx,[0C66234h] /
+    # mov edx,[ecx+140h] / mov eax,[esi+5Ch] (15 B); the end of the unit tests, where a unit none of
+    # them claims goes on (0x4BC5D7 jumps there for no unit): mov ebp,[esp+1Ch] (4 B)
+    ("NpSocketPanel", 0x645FE7, 0x0F),
+    ("NpSocketPanelSkip", 0x454354, 0x04),
+    # a socket with a <SubCiv> hides the command panel: mov ecx,ebx / call 4BC54Ah /
+    # cmp al,0FFh (9 B); not such a socket: cmp byte [esp+16h],0 (5 B)
+    ("NpSubCiv", 0x646124, 0x09),
+    ("NpSubCivSkip", 0x646163, 0x05),
+    # nativePreview, in the command panel refresh FUN_0046188E. The gate: mov edx,[eax+0Ch] (the
+    # selection's player) / mov ecx,[0C66234h] / cmp edx,[ecx+3C0h] (the local player) (15 B)
+    ("NpGate", 0x46193E, 0x0F),
+    # the entries: mov ebx,[esi+5Ch] / add ebx,0E8h / push 1 (11 B)
+    ("NpProto", 0x461BBD, 0x0B),
+    # the collection's kind test: mov cl,[esi+eax+2] / test cl,cl / je 6959D1h (12 B); its append
+    # mov edx,[ebx] / movzx eax,byte [edx+esi+4] (7 B) and its next entry mov eax,[esp+40h] (4 B)
+    ("NpCollect", 0x4C58AD, 0x0C),
+    ("NpCollectAppend", 0x4C59F5, 0x07),
+    ("NpCollectSkip", 0x461C3F, 0x04),
+    # the tech layout: mov edi,[esp+28h] / push edi / mov ecx,esi / call 4C6968h (12 B); the
+    # button build-up it reaches through 0x4C6918: mov ecx,[edi+58h] (3 B)
+    ("NpTechLayout", 0x4620B9, 0x0C),
+    ("NpTechBuild", 0x462172, 0x03),
+    # the layout's next entry: mov eax,[esp+68h] (4 B); the prerequisite tests the preview calls:
+    # 0x4C7330 (thiscall(techEntry, unit), ret 4) and 0x4C5DDA (thiscall(techEntry, player, unit),
+    # ret 8), their prologues
+    ("NpLayoutNext", 0x46268A, 0x04),
+    ("NpTechNoPrereq", 0x4C7330, 0x06),
+    ("NpTechPrereqAge", 0x4C5DDA, 0x08),
+    # every grid button: mov ebx,[esp+1Ch] / cmp ebx,6 / jge 69700Dh (13 B)
+    ("NpButton", 0x462317, 0x0D),
+    # the building on a socket, 0xA01A20, int thiscall(world, const float* pos, Proto* socketProto),
+    # ret 8 (trPlayerControlsSocket's lookup): its prologue (14 B)
+    ("SocketOccupant", 0xA01A20, 0x0E),
+    # annexFacing, the AI: in an AI build plan's placement test FUN_0073D62B (EBP = the plan's data, EAX = the
+    # player), lea ebx,[esp+38h] / push ebx (the forward's address) / lea edi,[ebp+50h], before PLACE at 0x73D7E3
+    ("AnnexAiPlaceSite", 0x73D7D2, 8),
+    # annexFacing, the AI's scan of candidate spots for a build plan: fchs / fstp [esp+60h] / call [esi+14h] (PLACE
+    # with the world's axes, its arguments pushed); the continuation is the call
+    ("AnnexAiScanSite", 0x87DB9F, 9),
+    # the trigger Destroy (trUnitDestroy 0x98282F): its single call of the unit removal 0x4726B2(world, id, 0, 1),
+    # thiscall, ret 0Ch; and the removal's head, verify only
+    ("DestroyRemoveCall", 0x9828E7, 5),
+    ("UnitRemoveHead", 0x4726B2, 6),
 ]
 
 

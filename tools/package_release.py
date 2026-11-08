@@ -191,6 +191,7 @@ decimalPopulation [K] [log]   population with decimals (PopulationCount 0.5), st
 noAILimit                     every AI3\\*.personality file in game setup
 noAILimitV2                   the same list, hooked later (cfgs that use this name)
 customAbstractTypes [file]    abstract unit types from an XML file
+                              (default data\\uhc\\customabstracttypes.xml)
 customProtoUnitCommands [file]   command types (buttons) from an XML file
 multiarmor                    one armor per damage type; Armor effects follow damagetype
 betterfreedynamicunit         dynamic free units grow smoothly with game time
@@ -201,7 +202,6 @@ fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits
-                              (default data\\uhc\\customabstracttypes.xml)
 customSyscalls [files]        load .upl plugins and their XS syscalls
 customCheats                  the cheats plugins register work in the chat
 asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders)
@@ -234,7 +234,9 @@ dodgeChance T P [tech X | notech] [ranged | melee | all] [log]   dodge chance P 
                               unit type, with a tech (YPDodge by default) and a hit filter
 dodgeSoundSet T S, criticalSoundSet T S   sound set for a type's dodge / critical hit
 spreadAnyAccuracy [UnitType] [log]   <MaxSpread>/<SpreadFactor> per attack for every miss;
-                              marked units scatter every shot (area damage where it lands)
+                              marked units scatter every shot, InstantBallistics ones too
+                              (area damage where it lands; a stray shot without DamageArea
+                              hits the unit it lands on)
 liveBuildingWorkRate [log]    BuildingWorkRate techs also speed up existing buildings,
                               TrainPoints techs units already queued or training
 techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units are
@@ -246,6 +248,8 @@ broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles p
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
+nativePreview [tagged] [log] [Proto]   an empty native socket shows its Trading Post's
+                              units and techs, read-only
 lifespanAfterConstruction [UnitType] [log]   a marked building's Lifespan starts when
                               its construction ends, not when it is placed
 gaiaSocketsOnly [UnitType] [log]  socketed buildings only on sockets owned by Gaia
@@ -276,6 +280,8 @@ showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
+containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
+                              the units inside (ROF / count, at most DamageFactorCap)
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura
@@ -293,6 +299,7 @@ detonationDeath [log]         <DetonationProtoAction> fires an action when a uni
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
 sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
+annexFacing [log]             <AnnexOf> annexes face their parent building and fall with it
 doNotQueue [log]              <DoNotQueue/> trains a proto, and a card with that tech flag ships, ahead of the queue
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty

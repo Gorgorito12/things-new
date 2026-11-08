@@ -10,16 +10,16 @@ Every key, with what it needs and how far it was tested, is in the
 
 | Theme | Keys |
 |---|---|
-| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `multipleInstances`, `compatMode` |
+| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `xsErrorLog`, `dataLint`, `multipleInstances`, `compatMode` |
 | **Population, decks and limits** | `basePop`, `extraPop`, `decimalPopulation`, `deckCardCount`, `selectionLimit`, `noAILimit`, `noAILimitV2`, `enableAllTeams` |
-| **New data and scripting** | `customAbstractTypes`, `customProtoUnitCommands`, `customHotkeyContexts`, `techRenameEffect`, `customSyscalls`, `customCheats`, `kbUnitSyscalls` |
+| **New data and scripting** | `customAbstractTypes`, `customProtoUnitCommands`, `customHotkeyContexts`, `techRenameEffect`, `customSyscalls`, `customCheats`, `kbUnitSyscalls`, `auraStacking` |
 | **Civs** | `asianCivs`, `nativeCivs`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`, `danceBonusCivs`, `wonderCivUnitType`, `firstTC`, `startingTC`, `civFirstTC`, `customRevolutionBanners`, `removeFameRestriction` |
 | **Healing and hit points** | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` |
-| **Combat** | `multiarmor`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `rofFix`, `stunMovingTargetFix`, `noDamageOnUnbuiltFoundations`, `fallenHeroTacticsFix`, `removeConversionRestriction` |
-| **Gathering and farms** | `gatherFix`, `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits` |
-| **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback` |
-| **Techs and transforms** | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory` |
-| **Interface** | `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples` |
+| **Combat** | `detonationDeath`, `multiarmor`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `containedUnitsROF`, `broadsideMuzzleLimit`, `cantBeSlowed`, `veterancyBonus`, `snareOnlyHitUnit`, `snareValues`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `pillageGold`, `rofFix`, `stunMovingTargetFix`, `noDamageOnUnbuiltFoundations`, `fallenHeroTacticsFix`, `removeConversionRestriction` |
+| **Gathering and farms** | `gatherFix`, `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `cratePriority`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits` |
+| **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `trainBatchSize`, `costEscalationTechs`, `annexFacing` |
+| **Techs and transforms** | `hcTargetTechs`, `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `unitTypeTechs` |
+| **Interface** | `nativePreview`, `displayedRange`, `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples` |
 
 ## Status
 
@@ -38,7 +38,9 @@ In any other mod:
 <!-- private:end -->
 1. **Get the release zip** from [Releases](https://github.com/Gorgorito12/tad-engine-extensions/releases).
    It holds `UHC.dll`, a `Startup\uhc.cfg` with every key commented out, a short `README.txt` and the
-   license.
+   license, plus `beside-another-dll\` (`dinput8.dll` and its `engine-ext\engine-ext.cfg`, the same
+   code for a game that keeps another `UHC.dll`) and `art\effects\uhc_rings\` (the aura rings,
+   for the mod's `art` folder).
 2. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder plus your files.
    Never modify the Steam install.
 <!-- private:begin -->

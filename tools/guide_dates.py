@@ -6,8 +6,10 @@ Each feature section of "5. Feature reference" (a "#### key" heading) starts wit
 that says in plain words what the feature does. It is written by hand, and a section without it is an
 error. Under that line the section gets:
 - the day, date and time its key was added: the first commit whose src/features.h names the key;
-- the same for its latest test video: the newest commit of docs/media/<key>-wol*.mp4. A video that
-  is not committed yet counts as "now", so run this before the commit that adds it.
+- the same for its latest test video: the newest commit of docs/media/<key>-wol*.mp4 or
+  docs/media/<key>-<suffix>-wol*.mp4. A video counts for the longest key of the section headings
+  (or video name of VIDEO_ALIASES) that its name before "-wol" equals or starts with, followed by
+  "-". A video that is not committed yet counts as "now", so run this before the commit that adds it.
 
 "## Latest changes" lists every section, newest first. Its table holds the latest change of each
 section: a new test video counts as new.
@@ -27,7 +29,7 @@ SECTION_5, SECTION_6 = "## 5. Feature reference", "## 6. Editing the game data"
 LATEST = "## Latest changes"
 NEXT_AFTER_LATEST = "## Adding these features to WoL"
 
-# A key whose video is not named after it.
+# A key whose video is not named after it (its own videos count too).
 VIDEO_ALIASES = {"dodgeanyunit": "dodge", "dodgechance": "dodge", "overhealsources": "overhealhitpointbars",
                  "overhealdecay": "overhealhitpointbars"}
 
@@ -55,8 +57,15 @@ def key_added_dates():
     return added
 
 
-def video_dates():
-    """Video stem (lowercase, without -wol...) -> the date of its newest test video."""
+def video_key(stem, known):
+    """The longest known name (lowercase) that the stem equals or starts with followed by "-"."""
+    stem = stem.lower()
+    matches = [k for k in known if stem == k or stem.startswith(k + "-")]
+    return max(matches, key=len) if matches else None
+
+
+def video_dates(known):
+    """Known key or video name (lowercase) -> the date of its newest test video."""
     dates = {}
     log = git("log", "--format=@%aI", "--name-only", "--diff-filter=AM", "--", "docs/media/*-wol*.mp4")
     when = None
@@ -64,13 +73,15 @@ def video_dates():
         if line.startswith("@"):
             when = datetime.datetime.fromisoformat(line[1:]).replace(tzinfo=None)
         elif line:
-            stem = pathlib.Path(line).name.split("-wol")[0].lower()
-            dates.setdefault(stem, when)  # the log is newest first
+            key = video_key(pathlib.Path(line).name.split("-wol")[0], known)
+            if key is not None:
+                dates.setdefault(key, when)  # the log is newest first
     now = datetime.datetime.now()
     for line in git("status", "--porcelain", "--", "docs/media").splitlines():
-        match = re.search(r"([^/\s]+)-wol[^/\s]*\.mp4", line)
-        if match:
-            dates[match.group(1).lower()] = now
+        match = re.search(r"([^/\s]+?)-wol[^/\s]*\.mp4", line)
+        key = video_key(match.group(1), known) if match else None
+        if key is not None:
+            dates[key] = now
     return dates
 
 
@@ -102,7 +113,9 @@ def update(text):
     start, end = text.index(SECTION_5), text.index(SECTION_6)
     body = text[start:end]
     parts = re.split(r"(?m)^(?=#### )", body)
-    added_dates, videos = key_added_dates(), video_dates()
+    known = {k.lower() for part in parts[1:] for k in section_keys(part.split("\n", 1)[0][5:].strip())}
+    known |= set(VIDEO_ALIASES.values())
+    added_dates, videos = key_added_dates(), video_dates(known)
     rows = index_rows(body)
     entries = []
     out = [parts[0]]
@@ -115,7 +128,8 @@ def update(text):
         if not found:
             sys.exit(f"guide_dates: no commit of src/features.h names {heading}")
         added = min(found)
-        filmed = [videos[s] for s in (VIDEO_ALIASES.get(k.lower(), k.lower()) for k in keys) if s in videos]
+        names = {n for k in keys for n in (k.lower(), VIDEO_ALIASES.get(k.lower(), k.lower()))}
+        filmed = [videos[s] for s in names if s in videos]
         filmed = max(filmed) if filmed else None
         summary = re.match(r"\A\n?(\*[^*\n][^\n]*\*)\n", rest)
         if summary is None:

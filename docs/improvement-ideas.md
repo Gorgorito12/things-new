@@ -33,6 +33,19 @@ The notes below date from 2026-11-02. A review of the code and the exe (static, 
   - `abilitySlots` by buttons and the wonder panel's 8: no WoL case.
   - Transforming at expiry and hold conditions in `lifespanAfterConstruction`: WoL's `*Maturing` already end in a unit.
 
+## Done on 2026-11-08
+
+Marked in the sections below where they had an item: the `ballisticPrecalcHits` dependency (2026-11-06), accuracy by
+techs (`accuracyTechs`), `firstTC`, `inventory=` on a `TransformUnit` effect, and these, built on 2026-11-08:
+
+- `spreadAnyAccuracy`: `InstantBallistics` shots of marked units scatter, and a stray shot hits what it lands on (#2).
+- `containedUnitsROF`: `<ScaleByContainedUnits target="ROF">` divides an attack's ROF by the units inside (#25).
+- `nativePreview`: an empty native socket shows its Trading Post's units and techs, read-only (#43).
+- `annexFacing`: an annex faces its parent building, also when the AI places it, and falls with it (#44).
+- Shared death hooks: `AddDeathObserver` (the kill queue's call 0x493D8F) and `AddDestroyObserver` (a trigger's
+  `Destroy`), in `src/deathobservers.*`.
+- `veterancyBonus`: the rank marks no longer cover the HP bar.
+
 ## Cross-cutting
 
 These come up in several sections below. Building them once makes the later items cheaper.
@@ -143,29 +156,33 @@ First: validation and `append` with display-name order.
 
 ## `spreadAnyAccuracy`
 
-- **Cover `InstantBallistics` and `TargetGround`:** 304 and 122 of WoL's 647 spread actions never
-  reach the hook; today the key serves only shotguns. *medium, RE*
-- **Remove the `ballisticPrecalcHits` dependency** and cover shots with no target unit. *medium*
-- **Warn at load** for a marked action without `<DamageArea>` (it deals no damage); a default
-  impact radius so a pellet landing on a unit hits it. *small*
+- **Done (2026-11-06, commit b1d0778):** the `ballisticPrecalcHits` dependency is gone. **Cover shots with no target
+  unit:** still open. *medium*
+- **Warn at load** for a marked action with large spread values and no `<DamageArea>` (since 2026-11-08 its
+  stray shots hit only what they land on, so most miss a lone soldier). *small*
 - **`NumberProjectiles`:** N projectiles per shot, each with its own landing point and area,
-  damage split. Real pellets, visible. *medium*
+  damage split. Real pellets, visible. *medium*; not to do unless WoL asks (JTMaston does not need it, see
+  "Checked on 2026-11-06").
 - **Spread shape:** stock draws a square (per-axis); `<SpreadShape>` circle, gaussian, or a cone
   along the firing line with lateral and depth values. *small*
 - **Damage falloff** with distance from the landing point; `<MinSpread>`. *small*
 - **Modifiable by techs:** `MaxSpread`, `SpreadFactor`, accuracy as `Data` subtypes (#45). *small
-  with the registry*
+  with the registry*. Accuracy is done: `accuracyTechs` (2026-11-05), the subtype `Accuracy`; `MaxSpread` and
+  `SpreadFactor` are still open.
 - **Per-action flag** `<SpreadAlways>` instead of a per-unit marker (a unit with a shotgun and a
   grenade is marked whole). *small*
 - **UI:** spread range and pellets in the stat panel through the `showGatherRate` row hook.
-- **Pending tests:** multiplayer, saved games, area damage of ground shots near allies.
+- **Pending tests:** multiplayer, area damage of ground shots near allies.
+- **Done (2026-11-08):** `InstantBallistics` shots and `TargetGround` shots of marked units scatter; a stray shot
+  hits what it lands on.
 
-First: `InstantBallistics`.
+First: shots with no target unit, then the load warning.
 
 ## `techPrereqRecheck`
 
 - **Event-driven instead of polling.** Hook unit creation (site known from `ForceToGaia`) and
-  death (`damageOverTime` wraps it) and call the stock `setDirty` (0x506A41) for the owner only
+  death (now the shared `AddDeathObserver` in `src/deathobservers.*`, the kill queue's call 0x493D8F, with
+  `AddDestroyObserver` for a trigger's `Destroy`) and call the stock `setDirty` (0x506A41) for the owner only
   when the unit's type is named by some `<TypeCount>`. Zero cost when nothing happens, same
   update reaction, no `N` parameter. Build a watched-type bitset at tree load. *medium*
 - **Other prerequisite kinds:** the type byte says `TypeCount` is 0 and there are more; inventory
@@ -270,7 +287,8 @@ The guide lists what still looks for the `TownCenter` proto; close that list:
 - **Better replacement rule:** when the first town center dies, pick among the live marked
   buildings (oldest or nearest) at once instead of waiting for the next one added; option for a
   later `TownCenter` to replace a provisional marked building. *small*
-- **Merge with `civFirstTC`** into `firstTC`, with a table "which TownCenter check follows what".
+- **Merge with `civFirstTC`** into `firstTC`, with a table "which TownCenter check follows what". The key is done:
+  `firstTC` (2026-11-06), one line for both; the table is not.
 - **Tests:** multiplayer, a converted Town Center, `FirstTC` in `hcShipmentPointFallback` with
   `startingTC`, a Nomad start through the editor.
 
@@ -280,7 +298,8 @@ First: age-up and the camera.
 
 - **One tag does it all:** derive from `<firstTC>` the `StartingColonyBuilding` flag, the
   `colonies.xml` start type and the shipment point, instead of three data edits plus a cfg line.
-  *small*
+  *small*. **Done (2026-11-06) as `firstTC`** for the flag and the shipment point; the `<starttypes>` entry in
+  `colonies.xml` is still a data edit.
 - **Test the `TownCenter` flags** a Market lacks (`ColonyPlacementCenter`, `HasGatherPoint`,
   `AllowAutoGarrison`, `ShowGarrisonButton`) and grant the needed ones. *verify*
 - **Nomad start:** a built `<firstTC>` proto becomes FirstTC; better, the civ's wagon offers its
@@ -295,14 +314,15 @@ First: age-up and the camera.
 - The same out-of-scope list as `startingTC`.
 - **Tests:** multiplayer, a real Nomad, recorded games, a building other than the Market.
 
-First: derive the three data steps from the tag, then Nomad.
+First: Nomad (two of the three data steps are derived by `firstTC`).
 
 ## `transformInventory`
 
 - **Re-task the gatherer:** a villager on a crate whose type changes stops at its next tick and
   must be re-tasked; reassign it to the new type or re-issue the order. *small*
 - **Decide in the data:** `inventory='rebuild|keep|scale|free'` on the `TransformUnit` effect,
-  cfg as default (WoL has 64 such effects with different intents). *small*
+  cfg as default (WoL has 64 such effects with different intents). *small*. **Done (2026-11-06)** for
+  `keep`, `rebuild` and `scale`; `free` is not built.
 - **`transformRefresh`:** one key that refreshes everything derived on an in-place transform:
   LOS, inventory, population count, build limits, garrison capacity, abilities, hotkey context,
   `Lifespan`, plus #41's timer. One code path for `TransformUnit`, revolutions, the trigger and

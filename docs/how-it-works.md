@@ -136,8 +136,10 @@ The hooks are MASM files in `src/hooks/`.
   `techPrereqRecheck`, `maintainWaitForPop` and `lifespanAfterConstruction` use it to drop state
   that belongs to the old data.
 - **Shared hooks.** A site that two keys need is hooked once by a shared module that calls each key's
-  function in `kFeatures` order: the world update (`worldtick.cpp`, `AddWorldTick`) and the unknown
-  tags of an action (`actiontags.cpp`, `AddActionTagHandler`, at 0x5FA11E).
+  function in `kFeatures` order: the world update (`worldtick.cpp`, `AddWorldTick`), the unknown
+  tags of an action (`actiontags.cpp`, `AddActionTagHandler`, at 0x5FA11E) and every unit's death
+  (`deathobservers.cpp`, `AddDeathObserver`, the drain's call 0x493D8F; `detonationDeath`, `annexFacing`), with a
+  second list for the trigger `Destroy` (`AddDestroyObserver`, its call 0x9828E7 of the unit removal; `annexFacing`).
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
   first time execution passes. It preserves every register, the flags and ESP, so it can sit at
   the top of any hook.
@@ -937,7 +939,9 @@ gone or inside another is dropped; a new game or a data load forgets everything.
 Every death goes through one queue. TakeDamage, a lifespan, a trigger's kill and the rest ask 0x4B4DC2, which appends the unit and
 three flag bytes to the world's list at `[world+8DCh]`, and the drain 0x493D46 calls the kill handler 0x4B4F70 from one single
 call, 0x493D8F. `Destroy` does not pass there. The key wraps that call, so it runs before the handler sets the dead bit,
-with the unit still valid as an attacker.
+with the unit still valid as an attacker. Since `annexFacing` (2026-11-08) the call is the shared death observer
+(`deathobservers.cpp`, `AddDeathObserver`): one call written there, each key's observer run in `kFeatures` order before the
+stock handler, and the site verified once by the shared module instead of by this key.
 
 The blast is the stock area damage 0x4C9D89, `thiscall(world, unitId, action, point, multiplier, 0, 0, -1, int* out, bool, Vector*
 offset)`, `ret 28h`, in the same call a unit makes for an attack around itself at 0x6A4A6B: its own position, multiplier 1, the
@@ -1104,8 +1108,9 @@ With the cfg var `ballisticPrecalcHits` (on in the game's own `Startup\gamey.cfg
 rolls the action's accuracy: a hit flies to its target and damages it; a miss is moved by
 uniform(-r, r) on x and z, with a hardcoded `r = min(0.25 × d, 5)`, and **deals no damage at all**
 where it lands. `PerfectAccuracy` skips the roll (a hit). `InstantBallistics` and `TargetGround`
-shots never reach that code. The tactics tags `<MaxSpread>` and `<SpreadFactor>` (Age of Mythology
-leftovers) are not read.
+shots never reach that code: an `InstantBallistics` shot is a sure hit (mode 1), whose tracer flies to the
+impact point and whose target takes the attack when it arrives. The tactics tags `<MaxSpread>` and
+`<SpreadFactor>` (Age of Mythology leftovers) are not read.
 
 **Data.** The key adds a handler to the shared action tag hook (`src/actiontags.cpp`, below). For a
 child named `MaxSpread` or `SpreadFactor` (case-insensitive) of a `.tactics` `<action>` or a `protoy`
@@ -1130,7 +1135,7 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
 0x5FA623 (a tactics `<action>`, FUN_005FA5B3). Any other caller goes straight on to the next child.
 `damageOverTime`'s handler keeps reading only `<ProtoAction>` tags.
 
-**Shots: three hooks.**
+**Shots: seven hooks.**
 1. **Hit roll** (0x499890, over `cmp ebx,2 / je 4CEF7Bh`, 9 B). EBX holds the roll's result. A miss
    goes on to the miss hook, as in stock. For any other result, a C++ call checks the shooting unit
    `[esp+0E8h]`: if its proto (the player's copy, `[unit+5Ch]`) has the marker type (is-a 0x44D7FA),
@@ -1156,19 +1161,47 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
    0x4CF026, so the two random draws 0x422648(sync RNG, stream 2, -r, r) are the stock code's.
    FUN_004CEF8C has no other caller, and outside the miss hook the globals hold 0.25 and 5.0.
 
+4. **Instant shot** (0x4A9455, over `mov [esi+20h],1`, 7 B, before the stock `jmp 4998A0h`). An
+   `InstantBallistics` shot leaves the precalculated block there (the `jne` at 0x499801 is the only
+   branch to it), in the launch's frame. For a marked shooter with a target unit and a projectile unit,
+   the hook selects the action's values and calls FUN_004CEF8C on the impact point `[esp+28h]`, as the
+   miss hook does. The instant launch 0x4A958F then copies that point to `[projectile+70h]`, so the
+   tracer flies there. The mode stays 1. An offset shot (r > 1e-6, so the two draws ran) is remembered
+   by its projectile unit's ID until its arrival.
+5. **Applier** (0x49BE95, over `sub esp,1D8h`, 6 B: the head of FUN_0049BE95(projectile, targetId,
+   point), which every hit and landing of every projectile calls). A C++ call may rewrite the two
+   arguments in place, and the mode, before the stock body runs:
+   - a remembered instant shot of a marked shooter (still alive), mode 1: the point `[projectile+70h]`
+     inside the target's obstruction (distance 0 by the unit's vtable slot B8h, the engine's own
+     distance to an obstruction) is a stock hit. Otherwise, with `<DamageArea>` the mode becomes 3, the
+     target −1 and the point a copy of `[projectile+70h]`, so the stock area path damages around that
+     point; without, the target becomes the unit at the point, or −1, for which the stock body returns
+     at once (no damage);
+   - a ground shot (mode 3) of a marked shooter, with no live target and no `<DamageArea>`: the target
+     becomes the unit at the landing point (the point argument), if any. The stock body then damages it
+     through TakeDamage, as for any hit.
+
+   **The unit at a point:** FUN_004A1C55 (the spatial query `noTrainNearEnemyTC` uses) with a radius of
+   0.01 and `precise`, then the units whose obstruction distance to the point is 0; not the shooter or
+   the projectile unit, alive (vtable slot A4h), not of proto flag 0Ah `Projectile` (the area damage
+   skips those too), and not a Gaia unit of the abstract type `Resource` (trees, mines, hunts, crates).
+   Of several, the nearest centre in x and z, then the lowest ID.
+6. **Ground shot** (0x4C4DEC, over `mov [esi+20h],3`, 7 B, before the stock `jmp 4998A7h` it continues at). A
+   `TargetGround` shot leaves its lead there with no roll, in the launch's frame. For a marked shooter the hook runs the
+   miss offset FUN_004CEF8C on the point at `[esp+28h]` with the action's values, as the miss hook does, and leaves the
+   mode at 3. Everything is saved around the call. Unmarked shooters take the stock path.
+7. **Precalc gate** (0x4997AE, over `test al,al / je 4998A7h`, 8 B: the test of the cfg var `ballisticPrecalcHits`).
+   With the var on, or for a marked shooter with it off, the launch goes on into the precalculated block at 0x4997B6;
+   any other unit skips the block at 0x4998A7, as in stock.
+
 **What it does not cover.**
-- `InstantBallistics` shots (sure hits, 0x4A9455 jumps past the block): they never reach the roll. `TargetGround`
-  shots, which do not reach it either, have their own hook (below).
-  <!-- private:begin -->
-  In WoL's tactics, 304 of the 647
-  actions with spread tags; the others, including the current shotgun files, are covered
-  ([engine-symbols.md](engine-symbols.md), "Consequence for WoL's shotguns").
-  <!-- private:end -->
 - Shots with no target unit: the block is skipped and the flight physics decide. With
-  `ballisticPrecalcHits` off, a marked shooter still goes through the block (below).
-- A marked unit without `<DamageArea>` deals no damage: its ground shots land with nothing to hit
-  (seen in game: marked Longbowmen left every musketeer at full HP). Mark only area attacks.
-  WoL's shotguns are area attacks. <!-- private -->
+  `ballisticPrecalcHits` off, a marked shooter still goes through the block (hook 7).
+- A stray shot whose shooter died before it arrived keeps the stock result (the marker is read from the
+  live shooter).
+- Saved games do not keep the set of offset instant shots in flight: one fired just before a save hits
+  its target after the load. The set is cleared on every data load and on another game (the world tick:
+  a step count that jumps, or the game time going back).
 - `NumberProjectiles` (one projectile per shot, as in stock); dynamic per-player protos that techs
   create (IDs from 100000 up) do not match the base proto's key and keep the stock values.
 
@@ -1196,16 +1229,40 @@ tags of both callers, told apart by the return address `[esp+0C0h]`: 0x5FA213 (`
 **Determinism.** The values come from the data and the marker from the proto, the same on every
 machine. The random draws are the stock code's, on the sync RNG, in the same order; a marked shot
 draws the same two numbers a stock miss would (or none when r ≤ 1e-6, as in stock). The roll still
-runs for marked units, so the RNG stream advances as in stock. The table is a `std::map` read by key;
-the log reads the simulation and never writes it.
+runs for marked units, so the RNG stream advances as in stock. A marked instant shot adds those two
+draws (stock instant shots draw nothing), on every machine alike. The table is a `std::map` read by key;
+the set of offset instant shots is keyed by projectile unit ID (the same on every machine), read by key
+and trimmed from its lowest ID past 512 entries. The unit at a point comes from the simulation's own
+query and obstruction distance, and ties go to the nearest centre, then the lowest ID, never to an
+address or a list order. The log reads the simulation and never writes it.
 
 **Performance.** Per shot through the block: one C++ call with an is-a bit test (hits); per miss, one
-`std::map` lookup (about 600 entries with the stock data) and the stock function. No allocation per
-shot. Not measured with `perfStats`.
+`std::map` lookup (about 600 entries with the stock data) and the stock function. The applier hook runs
+on every projectile hit or landing of the game: a mode and flag test, then, only for ground shots
+without area or remembered instant shots, a unit lookup and the is-a test; the spatial query only for a
+marked shot that strays. No allocation per shot. Measured in game (2026-11-08, `perfprobe.py`, 60 s of
+four marked Skirmishers shooting nine Mortars): key on 590 fps, world update 0.16 ms per frame, main
+thread 76 %, no frame over 50 ms; key off 595 fps, 0.17 ms, 78 %, one frame over 50 ms.
 
-A TargetGround shot leaves its lead at 0x4C4DEC with no roll. For a marked shooter the hook runs the miss offset 0x4CEF8C on the point at
-`[esp+28h]` and leaves the mode at 3. At 0x4997AE a marked shooter goes on into the precalculated block when the cfg var is off.
-Unmarked shooters take the stock path in both.
+**Why the instant and applier hooks are safe.**
+- The instant hook runs in the launch's frame (0x499801 → 0x4A9455 with no push in between), saves every
+  register around both calls and leaves through `jmp 4998A0h`, the stock continuation, which writes EDI,
+  ECX and EAX before reading them and reads no flag first. FUN_004CEF8C keeps EBX, ESI, EDI and EBP and
+  leaves the x87 stack empty.
+- The applier hook sits at a function head (no branch lands inside the 6 bytes, `cs` scan); it saves
+  every register and only writes the two stack arguments, which belong to the callee (thiscall), and
+  the projectile's mode, which the stock body reads next (0x4CB80C) exactly as for a stock ground shot.
+- The spatial query writes the obstruction manager's scratch list `[[world+260h]+4ECh]`; the stock
+  area path inside the same function runs its own query on that list (0x462E95 → 0x462DBA), so no
+  caller of the applier relies on it. The projectile update keeps its in-flight hits in a list of its
+  own (`[esp+0B0h]`).
+- Mode 3 with target −1 is the stock state of a landing ground shot (0x50B131); a mode-1 shot with no
+  live target is the stock state of a shot whose target died (the body returns at 0x4CB80F).
+- The instant arrival (0x49C151, state 3 of the projectile) passes the target `[esi+8]` and a zero vector:
+  for the area case the hook passes its own copy of the point instead. Sites `SpreadInstantMode`,
+  `SpreadInstantLaunch`, `SpreadApplierHead` and `SpreadInstantArrival` check those bytes.
+- In game (2026-11-08) every one of 162 logged instant arrivals reached the applier with the very point the
+  launch had drawn.
 
 ### liveBuildingWorkRate
 
@@ -1584,6 +1641,71 @@ stock does for an aura. With `log`, a success at n > 0 calls the C++ logger.
   wonder) shows the same button.
 - UI only: the refresh runs for the local player's units, and the button sends the same `ability`
   UI command a command panel button sends.
+
+### nativePreview
+
+**The stock panels.** Two pieces of the bottom bar decide what a selected native socket shows.
+1. **The chooser**, FUN_00454270 (it runs many times a second): it looks at the first selected unit, and for a Socket
+   (unit type 4Bh, not the proto `[db+5FD0h]`) it jumps to `0x645FE7`, which sets "socket" (`[esp+15h]`), and then shows
+   the settlement panel instead of the command grid (`[ui+58h]`, whose byte `[+342h]` = 1 stops its refresh). A unit no
+   test claims leaves `[esp+12h]` = 1, and the grid stays as `0x45447D` left it (`[+342h]` = 0).
+2. **The command panel refresh**, FUN_0046188E: it leaves at `0x46194D` unless the selection's player `[sel+0Ch]` is the
+   local player `[game+3C0h]`. It collects the entries of the selected unit's proto (`[proto+E8h]`, 6-byte records
+   `{word id, kind 0 Train / 1 Tech / 2 Command, page, column}`) in a first loop, whose body is the cold chunk at
+   `0x4C58AD`: a Train entry only if the player's proto is available (`0x8F7AA5` / `0x8D66AB`), a Tech entry only through
+   `0x4C5725` and `0x4C5B17`, and any of them only if the unit has actions (`[unit+58h]`). A second loop lays the buttons
+   out: a tech passes "can this unit research it" (`0x4C6968`) and the prerequisite test (`0x4C7330`, then `0x4C5DDA`:
+   -1 hides it, an age index puts the age mark on it), then is built at `0x462172` (rollover `0x4C737C`, icon, cost); a
+   unit is built at `0x695C7B` (rollover `0x70F25D`, the age mark from `0x8D6806` when it is not available). Every grid
+   button joins at `0x462317`, with its state in `[esp+24h]` (0 enabled, 1 disabled), its age mark in `[esp+6Ch]` and
+   its click and shift-click commands in the strings at `[esp+1C0h]` and `[esp+3C0h]`.
+
+A socket proto has no entries and no actions. A Trading Post proto has one list for every native, and the panel shows
+the entries the player's alliance made available.
+
+**The preview.** A socket gets one when its proto has `NativeSocket` (and, with `tagged`, `<NativePreview/>`), a
+`<SubCiv>` (`[proto+1D1h]`, a civ ID, 0xFF for none; read at `0x5FCD50`), and no building of its socket type stands on
+it: `0xA01A20(world, &unit+14h, socketProto)`, the lookup `trPlayerControlsSocket` uses, returns the building's ID or -1.
+The native's sets are read once per civ and database from its age techs (`[civ+50h]`, 8-byte entries whose first dword is
+the tech ID, count `[civ+54h]`): each tech's effects (`[NodeData+24h]`, count `[+28h]`); a `TechStatus` effect (vtable
+`0xB969B0`: target `[+0Ch]`, status byte `[+10h]`, 1 obtainable, 2 active, the latter followed) adds a tech, and a `Data`
+effect (vtable `0xB9E5A8`) of subtype `Enable` (`[+0Ch]` = 10h) with an amount `[+18h]` above 0 adds its target proto
+(`[+4]`). Seven hooks:
+- `0x645FE7` (chooser): a previewed socket jumps to `0x454354`, as a unit no test claims, so the command grid stays and
+  refreshes. The answer is kept for one simulation step of one unit, since the chooser runs hundreds of times a second.
+- `0x646124` (chooser, the mode where `[ui+3CCh]` is not 0): a previewed socket skips the test that hides the command
+  panel for a socket with a `<SubCiv>`.
+- `0x46193E` (refresh): the gate compares the local player with itself for a previewed socket, and turns the preview on
+  for this refresh (it is cleared at every gate).
+- `0x461BBD`: the entries are the local player's copy (`0x45311B`) of the building, `TradingPost` by default.
+- `0x4C58AD`: in a preview the collection decides itself: a Train entry of an enabled unit, or a Tech entry of a tech
+  in the set, goes straight to the stock append at `0x4C59F5`; any other entry, every command and every tech the layout
+  would put in a big-button slot (tech flags 27, 36, 37, 39) go to the next entry.
+- `0x4620B9`: a tech skips "can research here" and the status tests, keeps the prerequisite test (so a tech that waits
+  for another tech stays hidden and an age prerequisite gives the age mark), and goes to the build-up as disabled.
+- `0x462317`: every button of a preview is disabled and its two command strings are emptied.
+
+**Why it is safe.**
+- Nothing writes game state: the hooks change which panel the chooser keeps, which entries the refresh collects and how
+  it draws them. The functions called (`0xA01A20`, `0x45311B`, `0x44D7FA`, `0x5A2346`, `0x4C7330`, `0x4C5DDA`) only read.
+- No command is sent: a button with an empty command does nothing when clicked, and the socket enters no hotkey context
+  (the selection qualification takes the local player's units only).
+- The rest of the refresh with a Gaia unit: after the refresh, FUN_004614A2 compares `[sel+0Ch]` with the local player
+  again and takes its non-own branch (`0x69789E`), the one for allies. The rollover builders read the unit only for
+  `[unit+5Ch]` (`0x4C737C`) or not at all (`0x70F25D`); `[unit+58h]` = 0 skips the action reads; `[unit+B4h]` exists.
+- Registers: the gate keeps EAX (the selection) and reloads ECX as in stock; the entries hook writes only EBX and the
+  flags before the next write; the collection hook's targets reload EAX and do not read ECX or EDX; the tech hook
+  re-executes the stolen `mov edi,[esp+28h]`, and its two calls are thiscall on the tech entry, `ret 4` and `ret 8`,
+  keeping EBX, ESI, EDI and EBP; the button hook re-executes the stolen `mov ebx,[esp+1Ch] / cmp ebx,6`, whose flags
+  reach the `jge`. The chooser hooks call a C++ function that keeps EBX, ESI, EDI and EBP, and re-execute the stolen
+  loads (and the stolen `call 4BC54Ah`) on the stock path; at both of their targets EAX, ECX and EDX are reloaded.
+- No branch lands inside any overwritten range (checked over the whole `.text`); `0x461BBD` and `0x4620B9` are branch
+  targets, which land on the hooks' own start.
+- The preview flag is set at every gate and only read by hooks inside the same refresh, after the gate.
+- Performance: the chooser asks once per simulation step while a Socket is selected; the button hook adds one compare
+  per button. Measured with `perfprobe.py`, 60 s each: 0.23 ms of update a frame with the preview, 0.13 ms with the
+  stock settlement panel, 0.2 ms with an own Settler's command panel, and no frame over 50 ms: the preview costs what
+  any command panel costs.
 
 ### lifespanAfterConstruction
 
@@ -2682,6 +2804,53 @@ ST0 by the factor, with the attack code's rule.
 bytes. Every caller gets the same rate: the update 0x48D16E, both panels (0x6992BD, 0x69B005), and the two that
 look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simulation state only.
 
+### containedUnitsROF
+
+**The tag.** The stock handler of `<ScaleByContainedUnits>` (0x5FEDFC) reads the text as an integer into `[esp+10h]`
+(0 when it is empty or not a number) and sets bit 18 only for 1. The hook replaces `cmp dword ptr [esp+10h],1 / mov
+eax,[ebp+64h]` at 0x5FEE0C (8 bytes). For an action read from a tactics file or a `<ProtoAction>` (the parser's return
+address `[esp+0C0h]` is 0x5FA623 or 0x5FA213), it calls `UhcContainedRofTag(node, proto, action, value, return)`, which
+reads the attribute `target` with the XML attribute getter 0x598F37:
+- none, or `Damage`: the hook re-executes the two instructions and goes on at 0x5FEE14, the stock test;
+- `ROF`, on (an empty text, or 1): bit 18 is cleared (no damage multiplier), bit 17 (`ActiveIfContainsUnits`) is set,
+  and `{proto ID, action name index}` goes in a table; the hook jumps to the parser's next child 0x5FA126. Off (`0`): bit
+  18 is cleared, the entry dropped.
+
+A later tag of the same action replaces the entry (and clears bit 17 if the entry had set it). The table is cleared on
+every data load (`OnDatabaseLoad`), and the tags are read again, a saved game's load included.
+
+**The interval.** Every attack (vtable 0xB96278: `HandAttack`, `RangedAttack` and the other types of the class) waits
+through 0x48FA69(action manager, ms), which applies the ROF modifiers. Five reads of the tactics ROF `[action+34h]` feed it
+or the attack's animation rate, and each is replaced by a jmp to a hook that re-executes it, passes the value through
+`UhcContainedRofScale(unitAction, rof)` and re-executes what follows:
+
+| Site | Bytes | What it is | Unit action in |
+|---|---|---|---|
+| 0x4A1189 | `mov ebx,[eax+34h] / mov eax,[esi+6Ch]` | an attack begins: the animation's rate `[unit+0B0h]` | ESI |
+| 0x48F8B5 | `mov eax,[eax+34h] / cmp eax,ebx` | after a shot, melee or ranged: the wait | EBP |
+| 0x48A821, 0x48A99A | `mov edi,[edi+34h] / test edi,edi` | the update, after an attack that did not fire | ESI |
+| 0x48EA0C | `mov esi,[esi+34h] / test esi,esi` | the attack step, the same case | EBP |
+
+`UhcContainedRofScale` finds the table entry of `{[[unit+5Ch]+4], [[ua+4]+4]}`, the proto ID and action name index that
+every player's copy keeps. Without one it returns the value. Otherwise the factor follows the stock damage rule
+(0x4996C7..0x49970A): the count `[unit+74h]`, or `DamageFactorCap` `[action+48h]` when the count is above it and it is
+above 0; the interval is ROF / factor, rounded down, at least 1 ms. A factor of 0 returns the ROF: that is only reached
+when the modder cleared bit 17 again, because the target search 0x487F7A skips an action with bit 17 and no unit inside.
+An override ROF (`[[ua+6Ch]+28h]`) is not divided: the stock code uses it in place of the value the hook returns
+(0x4A1191) or never reads the tactics ROF (0x48F8A8, 0x48A7FC, 0x48A88B, 0x48E9E0).
+
+**Why it is safe.**
+- No branch lands inside the replaced bytes (a `cs` scan of every rel8/rel32 branch). Each hook re-executes the instruction
+  that sets the flags its continuation tests (`test` / `cmp` before `jbe`), so the branches see the stock flags. At
+  0x4A1189 the next instruction is `test eax,eax`; at 0x5FEE0C the stock test or the next-child code sets EAX and the flags.
+- `pushad` / `popad` keep every register but the one the hook writes. The C function returns an integer; no x87 value is
+  live at any of the five sites.
+- With no action carrying the attribute, `g_uhcContainedRofCount` is 0 and the hooks skip the call: a compare and a branch
+  per attack.
+- Deterministic: the count, the cap and the ROF are simulation state, the table is keyed by IDs, the division is the same
+  code on every machine, and the log never feeds back.
+- Not covered: the panel's ROF text and the AI's own damage estimate read the data's ROF.
+
 ### unitResourceAuras
 
 An `AutoRangedModify` action's update is FUN_009D033E, `void thiscall(action)`, a vtable slot with no direct caller.
@@ -3053,6 +3222,82 @@ through a wrapper that adds the others, and the hook returns the real limit to t
 
 Names resolve at the first use through the table `<UnitType>` reads, `[db+190h]` (0x58E685, 0x40295B), which holds protos and
 abstract types, and the members through the is-a test 0x44D7FA, which takes both.
+### annexFacing
+
+**[O] What the build command carries.** The command of type 3 (sender 0x82F548) holds the unit IDs of its builders at
+`[cmd+40h]` (count `+44h`), the proto at `+8Ch`, the position at `+90h` and the forward at `+A8h`. Its executor
+FUN_007D79D6 (`ECX` = the command, the player at `[arg+4]`) computes the right vector at 0x7D7CF1..0x7D7D0C as
+`0x423792(world up 0xC66544, &right, &forward)`, i.e. up × forward, tests the placement at 0x7D7EC7 with
+`PLACE(proto, player, &pos, &forward, &right, 1, 7, 0, 0, 0, 0)` (world vtable +14h, FUN_0050703D), and creates the
+foundation at 0x7D80CF with `0x498ACC(world, proto, player, pos, forward, 0, -1, 0, -1)`; the new unit's ID goes to
+`[cmd+B8h]`, which also makes a second run of the same command return at once.
+
+**[O] Obstruction and placement turn.** PLACE builds the footprint with FUN_00506B60(proto, pos, forward, right): the
+corners are `pos ± forward × ObstructionRadiusZ ± right × ObstructionRadiusX` when the proto's flag bit 27 is set, and
+the world axes otherwise. Bit 27 is set by default and cleared by `<Flag>DontRotateObstruction</Flag>` (0x5F66D1 →
+0x5F63AB); a unit's own obstruction comes from the same function with its axes `[unit+20h]` and `[unit+38h]`
+(0x9C0CE3, 0x9C2A58). In game a Torp (3 × 4) turned 90° was refused on the east of a Barracks where the unturned one
+fitted, and fitted on its north where the unturned one overlapped: the obstruction and the placement test turn with
+it. `distanceatmostfromtype` measures from the ghost's centre to the parent's footprint (unit slot B8h): 3.5 m passed
+and 4.3 m failed against distance 4.
+
+**The hook.** At 0x7D7CF1 (`lea eax,[edi+0A8h]`), before the right vector is computed, the helper reads the proto's
+`<AnnexOf>`. The parent is the command's unit of that type (is-a 0x44D7FA), of the same player, alive, whose footprint
+distance (slot B8h) to the position is within `<AnnexRange>` (default 12 m), the nearest if several; with none of them
+(a villager built it), the nearest such unit of the player found by the world's query 0x4A1C55 with `precise` 1. The
+forward becomes the parent's axis among ±forward and ±right (x and z, normalised) whose dot product with the
+direction annex → parent is the largest. Then the stock code computes the right vector from it, tests the placement
+and creates the foundation, so obstruction, placement and model all use the turned axes. No parent: stock forward.
+Every machine runs the same command on the same state (`DistanceTo`, the query and the is-a test read game state
+only), so all reach the same forward.
+
+**The ghost.** FUN_0096E062 updates the placement ghost (`ESI` = its visual, `[0xC67300]+200h`): it moves it and tests
+the placement at 0x96E531 with the visual's position `+4`, forward `+10h` and right `+28h`. The hook at 0x96E4E7 (`mov
+eax,[0C66234h]`, the first line of that test's arguments) turns the visual of a tagged proto (`[0xC67300]+1FCh`) the
+same way, for the local player (`[game+3C0h]`) and the nearest parent (the UI's selection is not read), and sets
+`[visual+7Dh]`, as the stock rotation 0x9BC546 does. The green or red test, and the forward that `uiBuildAtPointer`
+(0x7E6DE8) copies through 0x96DF2F into the command, are then the turned ones. It writes only the local UI object.
+
+**The link.** The executor's creation call 0x7D80CF is rewritten to a wrapper that calls 0x498ACC and, when its forward
+pointer is the command whose forward the hook set, keeps `annex ID → parent ID` in a `std::map`. Unit deaths reach the
+shared death observer: an annex that dies leaves the map; for a unit whose proto is the parent type of some tag, the
+query around it (its larger obstruction radius × 2 + range + 8 m, `precise` 0) lists the units of the same player with
+a tagged proto of that parent type, and each one whose parent is the dying unit is asked to die through 0x4B4DC2
+`(0, 0, 0)`, a trigger's kill. The drain reads its count again, so they die in the same drain, after the parent. The
+parent of an annex not in the map (a loaded game: the map is not saved) is found by a rule: the units of the type, of
+its player, within range, that it faces (its forward parallel to one of their axes, `|cos| ≥ 0.999`, and pointing to
+their side); the nearest. A new world, time going back or a missed step clears the map (a world tick and the same
+check at each use).
+
+**Why it is safe.** The hooks keep every register and the flags (pushfd/pushad) and re-execute the replaced line; the
+forward hook's continuation 0x7D7CF7 pushes `EAX`, which the replayed `lea` writes; the ghost hook's 0x96E4EC reads
+`EAX`, which the replayed `mov` writes. No branch lands inside either write, 6 B at 0x7D7CF1 and 5 B at 0x96E4E7 (checked over the whole `.text`).
+The creation wrapper has the stock frame (thiscall, 8 arguments, `ret 20h`). A proto without the tag costs a hash
+lookup at each build command, at each ghost update, and at each death a loop of is-a tests over the tags.
+
+**[O] The AI (2026-11-08).** An AI build plan chooses its spot in two steps, both with the world's axes: the scan of
+candidate spots (PLACE at 0x87DBA5, after the axes are stored on the stack up to 0x87DBA1) and the plan's own test
+FUN_0073D62B (PLACE at 0x73D7E3, the forward at `lea ebx,[esp+38h]`, the right pushed before it, the plan's position
+`[plan+50h]`, its proto `[plan+ACh]`, the player in `EAX`); the build command it then sends (0x73DA17) carries the
+forward of that test. With the plan's test turned but the scan not, the scan kept a spot that fitted only unturned (east of
+the Barracks, where the turned Torp overlaps it), and the plan tested that spot again and again (188 times in 150 s, until
+the log's cap; 3 of 4 annexes placed). Both tests now face the annex, writing the caller's two vectors (never a vector inside
+the exe image), so the scan keeps only spots where the turned annex fits: 4 of 4 placed, each tested once. The plan runs where the AI runs; the
+executor still turns the annex on every machine.
+
+**[O] Destroy (2026-11-08).** The trigger effect `Destroy` runs `trUnitDestroy` (0x98282F), which calls the world's unit
+removal 0x4726B2(id, 0, 1) for each selected unit from one call, 0x9828E7, and never reaches the kill queue. The removal has
+62 other callers (a corpse's end, a replaced unit, the editor, the end of a game), so only that call is wrapped: the shared
+module's second list (`AddDestroyObserver`) is called there for a unit alive and not dead, before the removal. `annexFacing`
+registers the same observer in both lists, and its annexes are asked to die through the kill queue. `detonationDeath` is not
+in the second list: a destroyed unit gave no blast before and gives none now.
+
+**Several parents.** `<AnnexOf>` is repeatable: a unit of any of the listed types or protos can be the parent.
+
+**[I]/unknown.** Multiplayer and recorded games: not played; the turn rides on the command's own execution. A converted
+parent keeps its annexes only by the link of the session: its death does not reach them, since the annex's owner differs
+(the rule wants the same player).
+
 ### doNotQueue
 
 A unit's action list `[manager+14h]` (`+0` count, `+8` pointers) holds all its actions: in a Barracks 16 fixed ones (idle,
@@ -3355,7 +3600,7 @@ and watched with `PrintWindow`, and both work without focus.
 - **Outside the simulation** (`bufferedFileReads`): change only how data reaches the game, never
   what it receives.
 - **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
-  `overhealHitpointBars`, `showGatherRate`): change only what the local player sees or which keys
+  `overhealHitpointBars`, `showGatherRate`, `nativePreview`, `displayedRange`): change only what the local player sees or which keys
   work; every button or key sends the same command as stock. `showGatherRate`'s record hook runs in
   the gather code on every machine, but only copies values into the DLL's own memory.
 - **Logs never feed back:** every `log` option only writes `UHC.log`; its dedupe tables decide

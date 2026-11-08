@@ -116,7 +116,7 @@ To test:
 
 `tools/xmbedit.py from-xml <in.xml> <out.xmb> --compress` compiles an edited XML; compiling the stock `protoy.xml` gives the stock XMB document byte for byte (decompressed).
 
-**More WoL copies.** `C:\AoE3-UHC-WoLReal2`, `3`, `4` and `5` are robocopies (12 GB each; 3 and 4 from `C:\WoL-Test`, 2026-11-05), to run four tests at once. `C:\WoL-Test` is in Spanish and has ReShade, so a copy made from it needs the English `data\stringtabley.xml` of another copy (the Spanish one stays as `.es-la`) and `d3d9.dll` renamed to `d3d9.dll.off`. Pass `--bed C:\AoE3-UHC-WoLReal3`. The last character of the folder picks the window's corner of the monitor: 2 top right, 3 bottom left, 4 bottom right. A data edit in one copy does not reach the others. They share `My Games`, so the profile (`Users3`) is one: a test that edits it runs with no other game open.
+**More WoL copies.** `C:\AoE3-UHC-WoLReal2`, `3`, `4` and `5` are robocopies (12 GB each; 3 and 4 from `C:\WoL-Test`, 2026-11-05), to run tests beside `C:\AoE3-UHC-WoLReal`, up to four at once. `C:\WoL-Test` is in Spanish and has ReShade, so a copy made from it needs the English `data\stringtabley.xml` of another copy (the Spanish one stays as `.es-la`) and `d3d9.dll` renamed to `d3d9.dll.off`. Pass `--bed C:\AoE3-UHC-WoLReal3`. The last character of the folder picks the window's corner of the monitor: 2 top right, 3 bottom left, 4 bottom right, anything else top left (`place_window` in `tools/testbed.py`). Copy 5 therefore opens at the same corner as `C:\AoE3-UHC-WoLReal`: do not run those two at once. A data edit in one copy does not reach the others. They share `My Games`, so the profile (`Users3`) is one: a test that edits it runs with no other game open.
 
 **Second test copy.** `C:\AoE3-UHC-Poison` is a robocopy of the test bed (2026-10-28) for `damageOverTime`, so tests do not disturb `C:\AoE3-UHC-Test`, which other sessions use:
 - its cfg is `ignoreRegistryPath` and `damageOverTime log`;
@@ -402,8 +402,16 @@ The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_ho
 9. **Document it:**
    - a row in [uhc-address-map.md](uhc-address-map.md), "Beyond upstream";
    - the engine functions in [engine-symbols.md](engine-symbols.md);
-   - a section in [modding-guide.md](modding-guide.md);
-   - a line in [examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg).
+   - in [modding-guide.md](modding-guide.md), section 5: a row in its theme's table, and its own section,
+     whose first line is one line in italics saying in plain words what the key does (`guide_dates.py`
+     refuses a section without it);
+   - `python -I tools/guide_dates.py`, for the day, date and time of the feature in the guide;
+   - its source files in `PAGES` of `tools/porting_code.py`, under a section named as its heading in
+     section 4 of [porting-to-another-dll.md](porting-to-another-dll.md), then
+     `python -I tools/porting_code.py`;
+   - the key in the key list of `README.txt`, in `tools/package_release.py`;
+   - a line in [examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg), commented;
+   - `python -I tools/export_public.py --check`.
 
 Test data goes in the test copy only. For example, add a marker unit type with
 `tools/xmbedit.py add-unittype`.

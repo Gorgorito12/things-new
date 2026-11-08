@@ -23,6 +23,7 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/deathobservers.cpp
   src/unitpanel.cpp
   src/unitmodels.cpp
   src/actiontags.cpp
@@ -41,6 +42,7 @@ set(UHC_SOURCES
   src/features/costescalation.cpp
   src/features/unittypetechs.cpp
   src/features/detonation.cpp
+  src/features/annexfacing.cpp
   src/features/hctargets.cpp
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
@@ -81,6 +83,7 @@ set(UHC_SOURCES
   src/features/smartheal.cpp
   src/features/snare.cpp
   src/features/sockets.cpp
+  src/features/nativepreview.cpp
   src/features/spread.cpp
   src/features/startingtc.cpp
   src/features/techprereq.cpp
@@ -107,6 +110,7 @@ set(UHC_SOURCES
   src/features/workrate.cpp
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
+  src/features/containedrof.cpp
   src/features/unitresource.cpp
   src/features/gatherauras.cpp
   src/features/resourcedebt.cpp
@@ -146,6 +150,7 @@ set(UHC_SOURCES
   src/hooks/smartheal_hooks.asm
   src/hooks/snare_hooks.asm
   src/hooks/socket_hooks.asm
+  src/hooks/nativepreview_hooks.asm
   src/hooks/spread_hooks.asm
   src/hooks/startingtc_hooks.asm
   src/hooks/techprereq_hooks.asm
@@ -157,6 +162,7 @@ set(UHC_SOURCES
   src/hooks/workrate_hooks.asm
   src/hooks/workratetype_hooks.asm
   src/hooks/gatherscale_hooks.asm
+  src/hooks/containedrof_hooks.asm
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
@@ -167,6 +173,7 @@ set(UHC_SOURCES
   src/hooks/datalint_hooks.asm
   src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm
+  src/hooks/annexfacing_hooks.asm
   src/hooks/xslog_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm

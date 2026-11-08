@@ -32,6 +32,7 @@ PAGES = {
         "Tech subtypes": ["src/techsubtypes.h", "src/techsubtypes.cpp", "src/hooks/techsubtype_hooks.asm"],
         "Modify types": ["src/modifytypes.h", "src/modifytypes.cpp", "src/hooks/modifytype_hooks.asm"],
         "Floating text": ["src/floatingtext.h", "src/floatingtext.cpp"],
+        "Death observers": ["src/deathobservers.h", "src/deathobservers.cpp"],
         "Modifier walk": ["src/modifiers.h"],
         "Unit panel row (the minimized interface)": ["src/unitpanel.h", "src/unitpanel.cpp", "src/hooks/unitpanelrow_hooks.asm"],
         "Name lists": ["src/namelists.h", "src/namelists.cpp"],
@@ -67,6 +68,7 @@ PAGES = {
         "dodgeAnyUnit, dodgeSoundSet and criticalSoundSet": ["src/features/dodge.cpp", "src/hooks/dodge_hooks.asm"],
         "damageOverTime": ["src/features/damageovertime.cpp", "src/hooks/dot_hooks.asm"],
         "spreadAnyAccuracy": ["src/features/spread.cpp", "src/hooks/spread_hooks.asm"],
+        "containedUnitsROF": ["src/features/containedrof.cpp", "src/hooks/containedrof_hooks.asm"],
         "accuracyTechs": ["src/features/accuracy.cpp"],
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],
@@ -103,6 +105,7 @@ PAGES = {
         "lifespanAfterConstruction": ["src/features/lifespan.cpp", "src/hooks/lifespan_hooks.asm"],
         "gaiaSocketsOnly": ["src/features/sockets.cpp", "src/hooks/socket_hooks.asm"],
         "hcShipmentPointFallback": ["src/features/shipments.cpp", "src/hooks/shipment_hooks.asm"],
+        "annexFacing": ["src/features/annexfacing.cpp", "src/hooks/annexfacing_hooks.asm"],
     }),
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],
@@ -114,6 +117,7 @@ PAGES = {
     "interface": ("Interface", {
         "abilitySlots": ["src/features/abilityslots.cpp", "src/hooks/abilityslot_hooks.asm"],
         "wonderPanelSkipAuras": ["src/features/wonderpanel.cpp", "src/hooks/wonderpanel_hooks.asm"],
+        "nativePreview": ["src/features/nativepreview.cpp", "src/hooks/nativepreview_hooks.asm"],
         "noCorpseDopples": ["src/features/dopples.cpp", "src/hooks/dopple_hooks.asm"],
     }),
 }
@@ -123,6 +127,7 @@ HELPER_OF = {
     "generated/sites.h": "site-table", "site.h": "site-table", "patch.h": "patching", "log.h": "log",
     "config.h": "cfg-reader", "features.h": "results", "unittypes.h": "extra-abstract-unit-types",
     "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "civtags.h": "civ-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
+    "deathobservers.h": "death-observers",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
     "namelists.h": "name-lists", "unitmodels.h": "models-on-a-unit",
     "savedmarkers.h": "state-kept-for-a-saved-game",

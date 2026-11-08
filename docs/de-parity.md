@@ -83,7 +83,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 2 | Shotgun spread | No spread. A shotgun is one `InstantBallistics` hit on an `InvisibleProjectile` with `DamageArea` and `DamageCap` | Reads all those tags already | **data only** (see #2); spread itself: built as `spreadAnyAccuracy` (2026-10-30) |
 | 23 | Decimal population | Nothing; pop counts are integers | — | L, no DE spec |
 | 24 | Negative trickles, debt | `ResourceTrickleRate` with negative amounts, clamped by `Minimum/MaximumResourceTrickleRate`; no debt rule | Has those subtypes; default min 0, max 10; a stockpile never goes below 0 | negative trickle: **data only** (lower the minimum); debt: S–M |
-| 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M |
+| 25 | Garrison-scaled trickle / ROF | Garrison scaling only on attacks (`ScaleByContainedUnits`, `ScaleByContainedUnitType`); economy scales with population (`PopulationScaling`) | `ActiveIfContainsUnits` already gates AutoGather; `ScaleByContainedUnits` is read only by attacks | gate: **data only**; scaling: M; built as `autoGatherScaleByContained` (2026-11-04) and `containedUnitsROF` (2026-11-08) |
 | 26 | Buildings that gather | Modify type `UnitResource` on an `AutoRangedModify` aura (the Swedish Torp) | Built: `unitResourceAuras` | M |
 | 29 | Shared / team build limits | `UseSharedBuildLimit` + `SharedBuildLimitUnit` + `SharedBuildLimitUnitTypes` (with `weight`); `TeamBuildLimit` | Absent (`TCBuildLimit` only); every check goes through one limit and one count function | flags S, lists L; all five names read as elements (2026-11-05) ; `EnableSharedBuildLimit` built (2026-11-05), the two subtypes with a name not |
 | 30 | Shared settler limit | Flag `SettlerBuildLimit` + type `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName` | Absent | S–M; the three names built in `sharedBuildLimit` (2026-11-05) |
@@ -99,10 +99,11 @@ Sizes, following the Design rule in wol-requests.md:
 | 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` is a tech flag, read by the Research action; legacy has a shipment queue `[hc+288h]`, whose flag `YPRecalcHCTrainQueuePointsWhenShipped` (bit 39h) is read at 0x858508. DE's shipments not checked | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
 | 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons as chevrons of our own (2026-11-06); DE's are HUD images in its selection panel |
-| 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI |
-| 44 | Building rotated / annexed by its builder | Nothing by the builder; in-place building upgrades (`ForceMutate`, `RevertUpgrade`). The player can turn a building while placing it (see below) | Placement rotation: stock, only the key binding is missing | by the builder: needs a design |
+| 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI; built as `nativePreview` (2026-11-08) |
+| 44 | Building rotated / annexed by its builder | Nothing by the builder; in-place building upgrades (`ForceMutate`, `RevertUpgrade`). The player can turn a building while placing it (see below) | Placement rotation: stock, only the key binding is missing | by the builder: needs a design; built with JTMaston's design as `annexFacing` (2026-11-08) |
 
-**Where to start** [I]:
+**Where to start** [I] (historical, 2026-10-30: every item of this table has since been built, the DE subtypes
+`SharedBuildLimitUnit` and `AddSharedBuildLimitUnitType` of #29 excepted; see wol-requests.md):
 - **S:** #38 (the snare code is mapped), #35 (the payment already has a team mode), #30, and the flag parts of #29 and #31.
 - **M:** #41, #37, #33 and #26.
 - **Data only, today:** #2, the negative trickle of #24, and the garrison gate of #25.
@@ -152,6 +153,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] Nothing in the guide or the data mentions debt or a negative stockpile.
 - [I] A data test may already answer part of it: set `MinimumResourceTrickleRate` below 0 and see
   whether the stockpile goes down. See "Legacy findings" below.
+- Built as [`resourceDebt`](modding-guide.md#resourcedebt) (2026-11-04; reworked on 2026-11-05 to JTMaston's rule: only trickles and the rates of units go below 0).
 
 ### #25 Garrison-scaled attack, extended to trickles or rate of fire
 
@@ -166,6 +168,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] WoL's `barn.tactics` already puts `ActiveIfContainsUnits` on an AutoGather action.
 - [I] If legacy honours that flag on AutoGather, a garrison-gated trickle already works; scaling
   it by the count would be new.
+- Built as [`autoGatherScaleByContained`](modding-guide.md#autogatherscalebycontained) (2026-11-04, AutoGather) and [`containedUnitsROF`](modding-guide.md#containedunitsrof) (2026-11-08, rate of fire with `target="ROF"`).
 
 ### #26 Buildings that gather
 
@@ -199,6 +202,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] DE's parser for `SharedBuildLimitUnit` is plaintext (fn 0x102AAD0).
 - [I] The flags fit marker types. The lists (`SharedBuildLimitUnitTypes`, `weight`) need proto
   parsing or a cfg mapping.
+- Built as [`sharedBuildLimit`](modding-guide.md#sharedbuildlimit) (2026-11-05), with DE's tag names and `EnableSharedBuildLimit`; `SharedBuildLimitUnit` and `AddSharedBuildLimitUnitType` are not built.
 
 ### #30 Settler build limit shared by a unit type
 
@@ -213,6 +217,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   - `LogicalTypeSettlerBuildLimit` can be an abstract type registered by `unittypes.*`;
   - the flag can be a marker;
   - `SettlerProtoName` can be read from `civs.xml` the way `civFirstTC` reads `<firstTC>`.
+- Built in [`sharedBuildLimit`](modding-guide.md#sharedbuildlimit) (2026-11-05), DE's three names included.
 
 ### #31 Per-unit military batch limit
 
@@ -224,6 +229,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   protos (Cannon, Minuteman…).
 - [O] DE's parser is plaintext (fn 0x102E830). Legacy has only the player-wide
   `PlayerSpecificTrainLimitPerAction`.
+- Built as [`trainBatchSize`](modding-guide.md#trainbatchsize) (2026-11-05), with the subtype and both flags read (`ForceBatchTrain` with no effect).
 
 ### #32 Economic aura per resource
 
@@ -235,6 +241,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
     gatherer.
 - [I] DE splits by what is gathered, not by resource. A plantation is not a `MineGatherRate`
   target unless it is a mined resource; this is the plantation question Q4 again.
+- Built as [`resourceGatherAuras`](modding-guide.md#resourcegatherauras) (2026-11-04): DE's four target classes and one modify type per resource.
 
 ### #33 Crate gather priority
 
@@ -242,6 +249,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   guide p17) and the subtype `EnableAutoCrateGather`.
 - [O] DE's strings name crate types (`AbstractCoinCrate`, `AbstractFoodCrate`,
   `AbstractWoodCrate`) and log `doAutoCrateGather`. [I] DE probably still orders crates in code.
+- Built as [`cratePriority`](modding-guide.md#cratepriority) (2026-11-05), one cfg line per civ.
 
 ### #34 Kill bounty modifiable by techs
 
@@ -257,6 +265,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   it to its fort). WoL's data uses
   `subtype='Bounty'` 10 times. WoL's DLL contains the string `KillBounty`. [I] It may already
   parse that subtype.
+- Built as [`killBountyTechs` and `resourceBounty`](modding-guide.md#killbountytechs-resourcebounty-and-teamkillbounty) (2026-11-05); not `BountyResourceOverride`, as agreed.
 
 ### #35 `TeamKillBounty`
 
@@ -264,6 +273,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   p20). It is in DE's flag table but on no DE proto.
 - [I] A marker type and one hook where the bounty is paid. Unknown in DE: whether each teammate
   gets the full amount.
+- Built as [`teamKillBounty`](modding-guide.md#killbountytechs-resourcebounty-and-teamkillbounty) (2026-11-05): each teammate gets the full amount.
 
 ### #36 Cards that target enemies or all players
 
@@ -276,6 +286,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] DE also adds direct subtypes: `EnemyShipmentDelay` and `BlockRandomCard` (p102).
 - [I] A DE-compatible design is `CreatePower` plus an enemy or team target set for legacy's
   `GeneralEffect`. That is larger than a tech flag. A tech flag would be WoL's own interface.
+- Built as [`hcTargetTechs`](modding-guide.md#hctargettechs) (2026-11-05), WoL's tech flags, not `CreatePower`.
 
 ### #37 `NextResearchIsFree`
 
@@ -285,6 +296,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   wagon).
 - [I] Per proto or per building, and cleared after one use, are not documented: the code that reads
   the flag is the research path.
+- Built as [`nextResearchFree`](modding-guide.md#nextresearchfree) (2026-11-05), also under DE's subtype name `SetNextResearchFree`.
 
 ### #38 `CantBeSlowed`
 
@@ -297,6 +309,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] Legacy creates the snare at one known site: 0x4DD1DE → 0x4DD22D (engine-symbols.md, "Snare and
   group movement").
 - [I] Both flags are markers, with one test at that site. This is the cheapest item.
+- Built as [`cantBeSlowed`](modding-guide.md#cantbeslowed) (2026-11-05), both flags as unit types.
 
 ### #39 `DetonationDeath`
 
@@ -310,6 +323,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   `deMercBattleship`, whose card sets flag id 241 through `ProtoUnitFlag`.
 - [O] DE's parsers for the four attributes are plaintext (fn 0x101C840, 0x101CAF0, 0x101CD70).
 - [O] Legacy already has the tactics flag `SelfDestruct`.
+- Built as [`detonationDeath`](modding-guide.md#detonationdeath) (2026-11-05), the four attributes.
 
 ### #40 Train a unit ahead of the queue
 
@@ -318,6 +332,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   action). Legacy has a tech flag of the same name, which WoL uses on 16 techs, read by the Research action's
   slot 58h, 0x9E5EAD, only under the world byte `[world+6910h]`.
 - [I] Nothing found in DE's guide orders shipments; DE's code was not checked.
+- Built as [`doNotQueue`](modding-guide.md#donotqueue) (units 2026-11-05, shipments 2026-11-06).
 
 ### #41 Reversible transformation on a timer
 
@@ -327,6 +342,7 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   absent (0/0).
 - [I] The smallest port is `<reversible/>` on legacy's own `SwapUnit`. It depends on what legacy does
   when `activetime` ends.
+- Built as [`transformSpan`](modding-guide.md#transformspan) (2026-11-05), JTMaston's `transformspan` on `TransformUnit`, not DE's `SwapUnit`.
 
 ### #42 Veterancy bonus
 
@@ -338,12 +354,15 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] `Data\veterancydata.xml` defines the ranks: `numkills` 1, 2 and 3, with an icon (bronze,
   silver, gold), a string and a colour. [I] What counts as one kill is not established.
 - [O] Legacy has `ExperienceUnit`, which counts kills with no effect (guide p16).
+- Built as [`veterancyBonus`](modding-guide.md#veterancybonus) (2026-11-05), with DE's two subtypes; rank marks of our own (2026-11-06).
 
 ### #43 `NativePreview`
 
 - [O] A flag on the 45 native sockets: while no trading post stands, it enables a preview of the
   native settlement (guide p21). What the preview shows is not described. It works with DE's socket-build command chain
   (`SocketBuildProtoUnit`, `SocketBuildCommandID`, `SocketSubCivAlliance`), all absent from legacy.
+- Built in legacy on 2026-11-08 as `nativePreview` ([modding guide](modding-guide.md#nativepreview)): the tag is read
+  with `tagged`; the preview is the Trading Post's own panel, filtered by the native's age tech, read-only.
 
 ### #44 Building rotated or annexed by its builder
 
@@ -501,24 +520,32 @@ counts, is in `requests-findings.md`, Appendix A.
 2. **#29, #30, #31.** Should the keys use DE's names? Those are `UseSharedBuildLimit`,
    `SharedBuildLimitUnit`, `SharedBuildLimitUnitTypes` (with `weight`), `TeamBuildLimit`,
    `SettlerBuildLimit` + `LogicalTypeSettlerBuildLimit` + civ `SettlerProtoName`, `TrainBatchSize`
-   and `DontTrainInBatches`. Data written for DE would then work unchanged.
+   and `DontTrainInBatches`. Data written for DE would then work unchanged. *Answered (2026-10-30, second batch in
+   wol-requests.md):* use DE's names, without a "DE" prefix; built that way in `sharedBuildLimit` and `trainBatchSize`.
 3. **#32.** DE splits gather auras by target class (natural food, trees, mines, farms), not by
-   resource. Is that what you need, given the plantation case (Q4)?
+   resource. Is that what you need, given the plantation case (Q4)? *No recorded answer:* `resourceGatherAuras` built
+   both, DE's target classes and a rate per resource.
 4. **#34.** Which part of DE's bounty system do you need? The options are a tech that scales a
    unit's bounty (`KillBounty`), bounties in other resources (`resourcetype`), or extra resources for
-   killing a type (`BountyResourceOverride`). Does your DLL already parse `KillBounty`?
+   killing a type (`BountyResourceOverride`). Does your DLL already parse `KillBounty`? *Answered (2026-10-30):*
+   `KillBounty` techs and `resourcetype` bounties, plus `TeamKillBounty`, not `BountyResourceOverride`; built as
+   `killBountyTechs`, `resourceBounty` and `teamKillBounty`.
 5. **#36.** DE does this with a power, not a tech flag: `CreatePower`, then a timed `EnemyEffect` or
-   `TeamEffect` power. Would that work for your cards?
+   `TeamEffect` power. Would that work for your cards? *Answered (2026-10-30):* he did not understand the comparison,
+   so his original request was built: the tech flags `HCTargetEnemy` and `HCTargetAll` (`hcTargetTechs`).
 6. **#24.** A negative trickle already works in data, but the stockpile stops at 0: lower
    `MinimumResourceTrickleRate` below 0 together with the negative `ResourceTrickleRate`. Is that
    enough? If you need real debt, what should it do: block training and building, show the stockpile
-   in red, or something else?
+   in red, or something else? *Answered (2026-11-05):* a stockpile goes below 0 only through the global trickle, unit
+   AutoGather and gathering, a tech never leaves a player negative, and there are no penalties; built that way as
+   `resourceDebt`.
 7. **#25.** By the code, your `barn.tactics` works already: its AutoGather runs only while a unit is
    inside. Do you also need the rate to grow with the number of units inside? *Answered (2026-10-30):* yes, built as
    `autoGatherScaleByContained`; *2026-11-08:* rate of fire too, with `target="ROF"` on any attack.
 8. **#33.** Stock legacy orders crates by civ: coin first for the Dutch, wood first for the Ottomans
    and Indians, food first for everyone else. What should the setting be: an order per civ, or a
-   priority per crate unit type?
+   priority per crate unit type? *Answered (2026-10-30):* he did not understand the question, so the design is an order
+   per civ (`cratePriority`).
 9. **#40, #44.** For #40: is the request for units, for shipments, or for both? For #44: which
    building, and what should the builder decide? *Answered:* #40 both (2026-10-30); #44 (2026-11-08): an annex faces
    its builder in steps of 90 degrees, fixed at placement, and falls with it; WoL's four cases are only tests.

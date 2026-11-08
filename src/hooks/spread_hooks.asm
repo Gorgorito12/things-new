@@ -13,6 +13,9 @@ UhcSpreadSelect PROTO STDCALL :DWORD, :DWORD
 UhcSpreadDone PROTO STDCALL            ; returns the hit result to store: 2 or 3
 UhcSpreadIsMarked PROTO STDCALL :DWORD
 UhcSpreadMarkedGround PROTO STDCALL :DWORD
+UhcSpreadInstantSelect PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
+UhcSpreadInstantDone PROTO STDCALL :DWORD, :DWORD
+UhcSpreadApply PROTO STDCALL :DWORD, :DWORD, :DWORD
 
 EXTERNDEF g_uhcSpreadFactor:DWORD       ; float: SpreadFactor of the shot being offset (stock 0.25)
 EXTERNDEF g_uhcSpreadMax:DWORD          ; float: MaxSpread of the shot being offset (stock 5.0)
@@ -25,6 +28,8 @@ radiusCheck         dd 004CF026h    ; fld [esp+0Ch] / fcomp [1e-6]: the stock "r
 afterGround         dd 004C4DF3h    ; jmp 4998A7h, after the store of the ground shot
 precalcGo           dd 004997B6h    ; test edi,edi: the precalculated block's next test
 precalcSkip         dd 004998A7h    ; past the block
+instantGo           dd 004998A0h    ; mov edi,[esp+0ECh]: the launch after the mode store
+applierGo           dd 0049BE9Bh    ; mov edx,[0C66234h]: the applier after its sub esp,1D8h
 
 .code
 
@@ -125,6 +130,59 @@ UhcSpreadPrecalcHook PROC
 go:
     jmp precalcGo
 UhcSpreadPrecalcHook ENDP
+
+; Replaces mov [esi+20h],1 (7 bytes) at 0x4A9455, where an InstantBallistics shot leaves the
+; precalculated block (the jne at 0x499801, its only branch) before the stock jmp 4998A0h, in the
+; launch's frame (see the hit hook: [esp+18h] the unit action, [esp+0E8h] the shooting unit,
+; [esp+0ECh] the target unit, [esp+28h] the impact point). For a marked shooter with a target, the
+; point moves as a miss's does, by FUN_004CEF8C with the action's values; the instant launch
+; 0x4A958F then copies it to [projectile+70h], where the shot flies. The mode stays 1: the
+; applier hook decides at the arrival what the shot hits. Everything is saved around the calls,
+; and the continuation 0x4998A0 reads no flag before writing them.
+UhcSpreadInstantHook PROC
+    TRACE_ONCE "spreadAnyAccuracy instant shot (0x4A9455)"
+    mov dword ptr [esi+20h], 1          ; stolen
+    pushad
+    push dword ptr [esp+20h+0ECh]       ; the target unit (or 0)
+    push dword ptr [esp+24h+0E8h]       ; the shooting unit
+    push dword ptr [esp+28h+18h]        ; the unit action
+    push esi                            ; the projectile
+    call UhcSpreadInstantSelect         ; AL = 1: offset this shot (the values are selected)
+    test al, al
+    popad
+    je done
+    pushad
+    lea eax, dword ptr [esp+20h+28h]    ; the impact point
+    push eax
+    mov ecx, esi                        ; the projectile
+    call missOffsetFn
+    lea eax, dword ptr [esp+20h+28h]    ; the impact point, now offset
+    push eax
+    push esi
+    call UhcSpreadInstantDone           ; the log, the shot remembered, the stock values back
+    popad
+done:
+    jmp instantGo
+UhcSpreadInstantHook ENDP
+
+; Replaces sub esp,1D8h (6 bytes) at 0x49BE95, the head of the attack applier FUN_0049BE95
+; (thiscall(projectile, targetId, point), ret 8; every caller enters at its head). ECX = the
+; projectile, [esp+4] the target ID, [esp+8] the point. The C++ call may rewrite those two
+; arguments and the projectile's mode [ecx+20h], so that a marked unit's stray shot hits what it
+; lands on; the stock body then runs on them. The flags are free at a function's head.
+UhcSpreadApplyHook PROC
+    TRACE_ONCE "spreadAnyAccuracy attack applier (0x49BE95)"
+    pushad
+    lea eax, dword ptr [esp+20h+8]      ; the point argument
+    push eax
+    lea eax, dword ptr [esp+24h+4]      ; the target ID argument
+    push eax
+    push ecx                            ; the projectile
+    call UhcSpreadApply
+    popad
+    sub esp, 1D8h                       ; stolen
+    jmp applierGo
+UhcSpreadApplyHook ENDP
 
 ; Replaces fmul [0BA0AECh] (0.25) / fst [esp+0Ch] / fcomp [0BA0AF8h] (5.0) / fnstsw ax / test ah,41h /
 ; je 4E2CE3h (27 bytes) at 0x4CF00B in FUN_004CEF8C, with ST0 = d, the 2D distance from the

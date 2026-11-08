@@ -1,6 +1,8 @@
 # name, start and length in the video's seconds, speed, and an optional area w:h:x:y. See tools/make_gifs.py.
 abilitySlots-wol 2 20 2
 abilitySlots-wol-control 2 20 2
+annexFacing-wol 8 12 1
+annexFacing-wol-control 0 12 1
 asianCivs-wol 2 20 2
 asianCivs-wol-control 2 20 2
 basePop-wol 2 8 2
@@ -163,7 +165,6 @@ displayedRange-wol-control 0 12 1
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
-ceasefire-wol 2 34 3
 doNotQueue-shipment-wol 5 36 3
 doNotQueue-shipment-wol-control 5 36 3
 maintainWaitForPop-factory-wol 2 40 3
@@ -190,6 +191,8 @@ showGatherRate-group-wol 2 12 1
 showGatherRate-group-wol-control 2 12 1
 spreadAnyAccuracy-ground-wol 4 12 1
 spreadAnyAccuracy-ground-wol-control 4 12 1
+spreadAnyAccuracy-instant-wol 2 24 2
+spreadAnyAccuracy-instant-wol-control 2 24 2
 hcShipmentPointFallback-replace-wol 2 42 4
 hcShipmentPointFallback-replace-wol-control 2 42 4
 firstTC-derived-wol 2 36 3
@@ -212,3 +215,7 @@ sharedBuildLimit-wagon-wol 6 54 5
 sharedBuildLimit-wagon-wol-control 6 54 5
 sharedBuildLimit-team-wol 8 66 6
 sharedBuildLimit-team-wol-control 8 66 6
+containedUnitsROF-wol 4 36 3
+containedUnitsROF-wol-control 4 36 3
+nativePreview-wol 2 12 1
+nativePreview-wol-control 2 12 1

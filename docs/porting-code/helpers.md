@@ -21,6 +21,7 @@ Contents:
 - [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
+- [Death observers](#death-observers)
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
 - [Name lists](#name-lists)
@@ -374,6 +375,18 @@ inline constexpr Site kSpreadRadius{"SpreadRadius", 0x004CF00B, kSpreadRadiusByt
 
 inline constexpr std::uint8_t kSpreadDrawsBytes[] = {0xD9, 0x44, 0x24, 0x0C, 0x53, 0x57, 0xD9, 0xE0, 0x8B, 0x7C, 0x24, 0x14, 0xD9, 0x5C, 0x24, 0x0C, 0x8B, 0x5C, 0x24, 0x0C, 0x57, 0x53, 0x6A, 0x02, 0xB9, 0x88, 0x65, 0xC6, 0x00, 0xE8, 0xEF, 0x35, 0xF5, 0xFF, 0xD8, 0x06, 0x57, 0x53, 0x6A, 0x02, 0xD9, 0x1E, 0xB9, 0x88, 0x65, 0xC6, 0x00, 0xE8, 0xDD, 0x35, 0xF5, 0xFF, 0xD8, 0x46, 0x08, 0x5F, 0x5B, 0xD9, 0x5E, 0x08, 0xB0, 0x01, 0x5E, 0x59};
 inline constexpr Site kSpreadDraws{"SpreadDraws", 0x004CF037, kSpreadDrawsBytes, sizeof(kSpreadDrawsBytes)};
+
+inline constexpr std::uint8_t kSpreadInstantModeBytes[] = {0xC7, 0x46, 0x20, 0x01, 0x00, 0x00, 0x00, 0xE9, 0x3F, 0x04, 0xFF, 0xFF};
+inline constexpr Site kSpreadInstantMode{"SpreadInstantMode", 0x004A9455, kSpreadInstantModeBytes, sizeof(kSpreadInstantModeBytes)};
+
+inline constexpr std::uint8_t kSpreadInstantLaunchBytes[] = {0x68, 0x00, 0x00, 0x80, 0xBF, 0x8D, 0x54, 0x24, 0x2C, 0x52, 0x8B, 0xCE, 0xE8, 0x05, 0x00, 0x00, 0x00, 0xE9, 0x19, 0x04, 0xFF, 0xFF};
+inline constexpr Site kSpreadInstantLaunch{"SpreadInstantLaunch", 0x004A958F, kSpreadInstantLaunchBytes, sizeof(kSpreadInstantLaunchBytes)};
+
+inline constexpr std::uint8_t kSpreadApplierHeadBytes[] = {0x81, 0xEC, 0xD8, 0x01, 0x00, 0x00, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kSpreadApplierHead{"SpreadApplierHead", 0x0049BE95, kSpreadApplierHeadBytes, sizeof(kSpreadApplierHeadBytes)};
+
+inline constexpr std::uint8_t kSpreadInstantArrivalBytes[] = {0x8B, 0x56, 0x08, 0x8D, 0x4C, 0x24, 0x24, 0x51, 0x52, 0x8B, 0xCE, 0xC7, 0x44, 0x24, 0x2C, 0x00, 0x00, 0x00, 0x00, 0xC7, 0x44, 0x24, 0x30, 0x00, 0x00, 0x00, 0x00, 0xC7, 0x44, 0x24, 0x34, 0x00, 0x00, 0x00, 0x00, 0xE8, 0x1C, 0xFD, 0xFF, 0xFF};
+inline constexpr Site kSpreadInstantArrival{"SpreadInstantArrival", 0x0049C151, kSpreadInstantArrivalBytes, sizeof(kSpreadInstantArrivalBytes)};
 
 inline constexpr std::uint8_t kDodgeProtoCheckBytes[] = {0x8B, 0x46, 0x5C, 0x8B, 0x40, 0x04, 0x3B, 0x81, 0x88, 0x5E, 0x00, 0x00};
 inline constexpr Site kDodgeProtoCheck{"DodgeProtoCheck", 0x0049ACE5, kDodgeProtoCheckBytes, sizeof(kDodgeProtoCheckBytes)};
@@ -1602,6 +1615,30 @@ inline constexpr Site kActionRateSet{"ActionRateSet", 0x005FA2FC, kActionRateSet
 inline constexpr std::uint8_t kAutoGatherRateEntryBytes[] = {0x51, 0x53, 0x8B, 0x5C, 0x24, 0x0C, 0x85, 0xDB};
 inline constexpr Site kAutoGatherRateEntry{"AutoGatherRateEntry", 0x0049EBE4, kAutoGatherRateEntryBytes, sizeof(kAutoGatherRateEntryBytes)};
 
+inline constexpr std::uint8_t kRofScaleTagBytes[] = {0x8D, 0x44, 0x24, 0x10, 0x50, 0x8B, 0xCF, 0x89, 0x5C, 0x24, 0x14, 0xE8, 0x1A, 0xC7, 0xF9, 0xFF, 0x83, 0x7C, 0x24, 0x10, 0x01, 0x8B, 0x45, 0x64, 0x0F, 0x85, 0xF9, 0xF8, 0xFF, 0xFF, 0x80, 0x48, 0x02, 0x04, 0xE9, 0x03, 0xB3, 0xFF, 0xFF};
+inline constexpr Site kRofScaleTag{"RofScaleTag", 0x005FEDFC, kRofScaleTagBytes, sizeof(kRofScaleTagBytes)};
+
+inline constexpr std::uint8_t kRofNextChildBytes[] = {0x8B, 0x44, 0x24, 0x1C};
+inline constexpr Site kRofNextChild{"RofNextChild", 0x005FA126, kRofNextChildBytes, sizeof(kRofNextChildBytes)};
+
+inline constexpr std::uint8_t kRofWaitABytes[] = {0x8B, 0x7F, 0x34, 0x85, 0xFF, 0x0F, 0x86, 0x9A, 0xDE, 0x01, 0x00, 0x8B, 0x46, 0x10, 0x8B, 0x48, 0x58, 0x57, 0xE8, 0x31, 0x52, 0x00, 0x00};
+inline constexpr Site kRofWaitA{"RofWaitA", 0x0048A821, kRofWaitABytes, sizeof(kRofWaitABytes)};
+
+inline constexpr std::uint8_t kRofWaitBBytes[] = {0x8B, 0x7F, 0x34, 0x85, 0xFF, 0x0F, 0x86, 0x30, 0x8A, 0x02, 0x00, 0x8B, 0x4E, 0x10, 0x8B, 0x49, 0x58, 0x57, 0xE8, 0xB8, 0x50, 0x00, 0x00};
+inline constexpr Site kRofWaitB{"RofWaitB", 0x0048A99A, kRofWaitBBytes, sizeof(kRofWaitBBytes)};
+
+inline constexpr std::uint8_t kRofWaitCBytes[] = {0x8B, 0x76, 0x34, 0x85, 0xF6, 0x0F, 0x86, 0x68, 0x9B, 0x01, 0x00, 0x8B, 0x4D, 0x10, 0x8B, 0x49, 0x58, 0x56, 0xE8, 0x46, 0x10, 0x00, 0x00};
+inline constexpr Site kRofWaitC{"RofWaitC", 0x0048EA0C, kRofWaitCBytes, sizeof(kRofWaitCBytes)};
+
+inline constexpr std::uint8_t kRofShotBytes[] = {0x8B, 0x45, 0x04, 0x3B, 0xC3, 0x74, 0x09, 0x8B, 0x40, 0x34, 0x3B, 0xC3, 0x76, 0x02, 0x8B, 0xF0, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x82, 0x08, 0x01, 0x00, 0x00, 0x8B, 0x55, 0x78, 0x33, 0xC9, 0x3B, 0xC2, 0x76, 0x08, 0x2B, 0xC2, 0x8B, 0xC8, 0x3B, 0xF1, 0x72, 0x02, 0x2B, 0xF1, 0x8B, 0x45, 0x10, 0x8B, 0x48, 0x58, 0x56, 0xE8, 0x7B, 0x01, 0x00, 0x00};
+inline constexpr Site kRofShot{"RofShot", 0x0048F8AE, kRofShotBytes, sizeof(kRofShotBytes)};
+
+inline constexpr std::uint8_t kRofAnimBytes[] = {0x8B, 0x46, 0x04, 0x53, 0x8B, 0x58, 0x34, 0x8B, 0x46, 0x6C, 0x85, 0xC0, 0x0F, 0x85, 0x2C, 0x68, 0x20, 0x00, 0x85, 0xDB, 0x0F, 0x86, 0x9B, 0x00, 0x00, 0x00};
+inline constexpr Site kRofAnim{"RofAnim", 0x004A1185, kRofAnimBytes, sizeof(kRofAnimBytes)};
+
+inline constexpr std::uint8_t kRofDelayBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x8B, 0xF1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x91, 0x08, 0x01, 0x00, 0x00, 0x8B, 0x4E, 0x04, 0x85, 0xC9, 0x8B, 0x44, 0x24, 0x0C, 0x89, 0x96, 0xB8, 0x00, 0x00, 0x00, 0x89, 0x86, 0xBC, 0x00, 0x00, 0x00};
+inline constexpr Site kRofDelay{"RofDelay", 0x0048FA69, kRofDelayBytes, sizeof(kRofDelayBytes)};
+
 inline constexpr std::uint8_t kUnitResourceAuraEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x10};
 inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E, kUnitResourceAuraEntryBytes, sizeof(kUnitResourceAuraEntryBytes)};
 
@@ -1724,6 +1761,78 @@ inline constexpr Site kTacticReset3{"TacticReset3", 0x009D6BE7, kTacticReset3Byt
 
 inline constexpr std::uint8_t kTacticReset4Bytes[] = {0x6A, 0x00, 0xE8, 0x77, 0xB8, 0xB0, 0xFF};
 inline constexpr Site kTacticReset4{"TacticReset4", 0x009EBB0B, kTacticReset4Bytes, sizeof(kTacticReset4Bytes)};
+
+inline constexpr std::uint8_t kAnnexForwardSiteBytes[] = {0x8D, 0x87, 0xA8, 0x00, 0x00, 0x00, 0x50};
+inline constexpr Site kAnnexForwardSite{"AnnexForwardSite", 0x007D7CF1, kAnnexForwardSiteBytes, sizeof(kAnnexForwardSiteBytes)};
+
+inline constexpr std::uint8_t kAnnexCreateCallBytes[] = {0xE8, 0xF8, 0x09, 0xCC, 0xFF};
+inline constexpr Site kAnnexCreateCall{"AnnexCreateCall", 0x007D80CF, kAnnexCreateCallBytes, sizeof(kAnnexCreateCallBytes)};
+
+inline constexpr std::uint8_t kUnitCreateBytes[] = {0x56, 0x57, 0x8B, 0xF9, 0x8D, 0x4F, 0x20, 0xE8, 0xC7};
+inline constexpr Site kUnitCreate{"UnitCreate", 0x00498ACC, kUnitCreateBytes, sizeof(kUnitCreateBytes)};
+
+inline constexpr std::uint8_t kAnnexGhostSiteBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00};
+inline constexpr Site kAnnexGhostSite{"AnnexGhostSite", 0x0096E4E7, kAnnexGhostSiteBytes, sizeof(kAnnexGhostSiteBytes)};
+
+inline constexpr std::uint8_t kNpSocketPanelBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x91, 0x40, 0x01, 0x00, 0x00, 0x8B, 0x46, 0x5C};
+inline constexpr Site kNpSocketPanel{"NpSocketPanel", 0x00645FE7, kNpSocketPanelBytes, sizeof(kNpSocketPanelBytes)};
+
+inline constexpr std::uint8_t kNpSocketPanelSkipBytes[] = {0x8B, 0x6C, 0x24, 0x1C};
+inline constexpr Site kNpSocketPanelSkip{"NpSocketPanelSkip", 0x00454354, kNpSocketPanelSkipBytes, sizeof(kNpSocketPanelSkipBytes)};
+
+inline constexpr std::uint8_t kNpSubCivBytes[] = {0x8B, 0xCB, 0xE8, 0x1F, 0x64, 0xE7, 0xFF, 0x3C, 0xFF};
+inline constexpr Site kNpSubCiv{"NpSubCiv", 0x00646124, kNpSubCivBytes, sizeof(kNpSubCivBytes)};
+
+inline constexpr std::uint8_t kNpSubCivSkipBytes[] = {0x80, 0x7C, 0x24, 0x16, 0x00};
+inline constexpr Site kNpSubCivSkip{"NpSubCivSkip", 0x00646163, kNpSubCivSkipBytes, sizeof(kNpSubCivSkipBytes)};
+
+inline constexpr std::uint8_t kNpGateBytes[] = {0x8B, 0x50, 0x0C, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x3B, 0x91, 0xC0, 0x03, 0x00, 0x00};
+inline constexpr Site kNpGate{"NpGate", 0x0046193E, kNpGateBytes, sizeof(kNpGateBytes)};
+
+inline constexpr std::uint8_t kNpProtoBytes[] = {0x8B, 0x5E, 0x5C, 0x81, 0xC3, 0xE8, 0x00, 0x00, 0x00, 0x6A, 0x01};
+inline constexpr Site kNpProto{"NpProto", 0x00461BBD, kNpProtoBytes, sizeof(kNpProtoBytes)};
+
+inline constexpr std::uint8_t kNpCollectBytes[] = {0x8A, 0x4C, 0x06, 0x02, 0x84, 0xC9, 0x0F, 0x84, 0x18, 0x01, 0x1D, 0x00};
+inline constexpr Site kNpCollect{"NpCollect", 0x004C58AD, kNpCollectBytes, sizeof(kNpCollectBytes)};
+
+inline constexpr std::uint8_t kNpCollectAppendBytes[] = {0x8B, 0x13, 0x0F, 0xB6, 0x44, 0x32, 0x04};
+inline constexpr Site kNpCollectAppend{"NpCollectAppend", 0x004C59F5, kNpCollectAppendBytes, sizeof(kNpCollectAppendBytes)};
+
+inline constexpr std::uint8_t kNpCollectSkipBytes[] = {0x8B, 0x44, 0x24, 0x40};
+inline constexpr Site kNpCollectSkip{"NpCollectSkip", 0x00461C3F, kNpCollectSkipBytes, sizeof(kNpCollectSkipBytes)};
+
+inline constexpr std::uint8_t kNpTechLayoutBytes[] = {0x8B, 0x7C, 0x24, 0x28, 0x57, 0x8B, 0xCE, 0xE8, 0xA3, 0x48, 0x06, 0x00};
+inline constexpr Site kNpTechLayout{"NpTechLayout", 0x004620B9, kNpTechLayoutBytes, sizeof(kNpTechLayoutBytes)};
+
+inline constexpr std::uint8_t kNpTechBuildBytes[] = {0x8B, 0x4F, 0x58};
+inline constexpr Site kNpTechBuild{"NpTechBuild", 0x00462172, kNpTechBuildBytes, sizeof(kNpTechBuildBytes)};
+
+inline constexpr std::uint8_t kNpLayoutNextBytes[] = {0x8B, 0x44, 0x24, 0x68};
+inline constexpr Site kNpLayoutNext{"NpLayoutNext", 0x0046268A, kNpLayoutNextBytes, sizeof(kNpLayoutNextBytes)};
+
+inline constexpr std::uint8_t kNpTechNoPrereqBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x57, 0x8B};
+inline constexpr Site kNpTechNoPrereq{"NpTechNoPrereq", 0x004C7330, kNpTechNoPrereqBytes, sizeof(kNpTechNoPrereqBytes)};
+
+inline constexpr std::uint8_t kNpTechPrereqAgeBytes[] = {0x83, 0xEC, 0x0C, 0x53, 0x55, 0x56, 0x57, 0x8B};
+inline constexpr Site kNpTechPrereqAge{"NpTechPrereqAge", 0x004C5DDA, kNpTechPrereqAgeBytes, sizeof(kNpTechPrereqAgeBytes)};
+
+inline constexpr std::uint8_t kNpButtonBytes[] = {0x8B, 0x5C, 0x24, 0x1C, 0x83, 0xFB, 0x06, 0x0F, 0x8D, 0xE9, 0x4C, 0x23, 0x00};
+inline constexpr Site kNpButton{"NpButton", 0x00462317, kNpButtonBytes, sizeof(kNpButtonBytes)};
+
+inline constexpr std::uint8_t kSocketOccupantBytes[] = {0x81, 0xEC, 0x00, 0x04, 0x00, 0x00, 0x55, 0x8B, 0xAC, 0x24, 0x0C, 0x04, 0x00, 0x00};
+inline constexpr Site kSocketOccupant{"SocketOccupant", 0x00A01A20, kSocketOccupantBytes, sizeof(kSocketOccupantBytes)};
+
+inline constexpr std::uint8_t kAnnexAiPlaceSiteBytes[] = {0x8D, 0x5C, 0x24, 0x38, 0x53, 0x8D, 0x7D, 0x50};
+inline constexpr Site kAnnexAiPlaceSite{"AnnexAiPlaceSite", 0x0073D7D2, kAnnexAiPlaceSiteBytes, sizeof(kAnnexAiPlaceSiteBytes)};
+
+inline constexpr std::uint8_t kAnnexAiScanSiteBytes[] = {0xD9, 0xE0, 0xD9, 0x5C, 0x24, 0x60, 0xFF, 0x56, 0x14};
+inline constexpr Site kAnnexAiScanSite{"AnnexAiScanSite", 0x0087DB9F, kAnnexAiScanSiteBytes, sizeof(kAnnexAiScanSiteBytes)};
+
+inline constexpr std::uint8_t kDestroyRemoveCallBytes[] = {0xE8, 0xC6, 0xFD, 0xAE, 0xFF};
+inline constexpr Site kDestroyRemoveCall{"DestroyRemoveCall", 0x009828E7, kDestroyRemoveCallBytes, sizeof(kDestroyRemoveCallBytes)};
+
+inline constexpr std::uint8_t kUnitRemoveHeadBytes[] = {0x83, 0xEC, 0x18, 0x53, 0x55, 0x56};
+inline constexpr Site kUnitRemoveHead{"UnitRemoveHead", 0x004726B2, kUnitRemoveHeadBytes, sizeof(kUnitRemoveHeadBytes)};
 
 }  // namespace uhc::sites
 ```
@@ -2136,6 +2245,7 @@ Outcome ApplySpreadAnyAccuracy(const Config& config);
 Outcome ApplyLiveBuildingWorkRate(const Config& config);
 Outcome ApplyWorkRateByAbstractType(const Config& config);
 Outcome ApplyAutoGatherScaleByContained(const Config& config);
+Outcome ApplyContainedUnitsROF(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
@@ -2145,6 +2255,7 @@ Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
+Outcome ApplyAnnexFacing(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
@@ -2166,6 +2277,7 @@ Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
 Outcome ApplyAbilitySlots(const Config& config);
 Outcome ApplyWonderPanelSkipAuras(const Config& config);
+Outcome ApplyNativePreview(const Config& config);
 Outcome ApplyLifespanAfterConstruction(const Config& config);
 Outcome ApplyGaiaSocketsOnly(const Config& config);
 Outcome ApplyCustomHotkeyContexts(const Config& config);
@@ -2241,6 +2353,7 @@ inline constexpr Feature kFeatures[] = {
     {"liveBuildingWorkRate", ApplyLiveBuildingWorkRate},
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
+    {"containedUnitsROF", ApplyContainedUnitsROF},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
@@ -2263,6 +2376,7 @@ inline constexpr Feature kFeatures[] = {
     {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
     {"abilitySlots", ApplyAbilitySlots},
     {"wonderPanelSkipAuras", ApplyWonderPanelSkipAuras},
+    {"nativePreview", ApplyNativePreview},
     {"lifespanAfterConstruction", ApplyLifespanAfterConstruction},
     {"gaiaSocketsOnly", ApplyGaiaSocketsOnly},
     {"customHotkeyContexts", ApplyCustomHotkeyContexts},
@@ -2315,6 +2429,8 @@ inline constexpr Feature kFeatures[] = {
     // After overhealDecay: its threshold uses the same add-HP hook, and overhealSources verifies the
     // stock bytes of that entry.
     {"detonationDeath", ApplyDetonationDeath},
+    // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
+    {"annexFacing", ApplyAnnexFacing},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
@@ -2343,8 +2459,8 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "unittypetechs",
-    "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "lifespanafterconstruction",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
@@ -3995,6 +4111,153 @@ std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t st
       kFloatingText(TextManager(), &string, time1, time2, Field<std::int32_t>(unit, 0x10), motion, colour, 1.0f, 0, -1);
   kBStringFree(&string);
   return shown;
+}
+
+}  // namespace uhc
+```
+
+## Death observers
+
+### src/deathobservers.h
+
+```cpp
+// Every death of a unit, shared by the keys that act on it (detonationDeath, annexFacing). The kill queue's
+// drain 0x493D46 calls the kill handler 0x4B4F70 for each unit asked to die (TakeDamage, a lifespan, a delete, a
+// trigger's kill and the rest ask 0x4B4DC2), from a single call, 0x493D8F. One call is written there, whichever
+// keys are on, and it runs every observer before the stock handler.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// Called with the unit and the handler's three flags, before the stock handler, while the unit is whole. The
+// handler returns at once for a unit whose state bit 11 is set, so an observer that needs a real death checks it.
+// A kill asked from an observer joins the queue, and the drain reads its count again: the unit dies in the same
+// drain, after this one, with no recursion.
+using DeathObserver = void (*)(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c);
+
+// Writes the call the first time (after checking the site's stock bytes) and adds the observer, in the order the
+// keys add them (their kFeatures order, the same on every machine).
+bool AddDeathObserver(DeathObserver observer);
+
+// The trigger effect Destroy (the syscall trUnitDestroy, 0x98282F) removes each selected unit at once through
+// the world's unit removal 0x4726B2(id, 0, 1), from its single call 0x9828E7, and never reaches the kill queue.
+// An observer added here is called there, with the flags 0 0 0, before the removal and only for a unit that is
+// alive and not dead (state bit 11 clear). It is a separate list: a key that should act on Destroy adds its
+// observer to both. The removal's 62 other callers (a corpse's end, a transform's old unit, a game's end, the
+// editor) are not observed.
+bool AddDestroyObserver(DeathObserver observer);
+
+}  // namespace uhc
+```
+
+### src/deathobservers.cpp
+
+```cpp
+#include "deathobservers.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+
+using KillFn = void(__thiscall*)(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c);
+const auto kKill = reinterpret_cast<KillFn>(0x004B4F70);
+
+uhc::DeathObserver g_observers[kMaxObservers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+using RemoveFn = void(__thiscall*)(char* world, std::int32_t id, std::int32_t a, std::int32_t b);
+const auto kRemove = reinterpret_cast<RemoveFn>(0x004726B2);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+
+uhc::DeathObserver g_destroyObservers[kMaxObservers] = {};
+std::size_t g_destroyCount = 0;
+bool g_destroyInstalled = false;
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (world == nullptr || id < 0 || (id & 0x3FFFF) >= *reinterpret_cast<const std::int32_t*>(world + 0x10)) {
+    return nullptr;
+  }
+  char* unit = (*reinterpret_cast<char* const* const*>(world + 0x0C))[id & 0x3FFFF];
+  return unit != nullptr && *reinterpret_cast<const std::int32_t*>(unit + 0x10) == id ? unit : nullptr;
+}
+
+bool IsDead(const char* unit) {  // state bit 11
+  const auto* bits = *reinterpret_cast<const std::uint8_t* const*>(unit + 4);
+  return bits != nullptr && *reinterpret_cast<const std::uint32_t*>(unit + 8) > 11 && (bits[1] & 0x08) != 0;
+}
+
+// Replaces trUnitDestroy's call of the unit removal: thiscall(world, id, a, b), ret 0Ch.
+void __fastcall Destroy(char* world, void*, std::int32_t id, std::int32_t a, std::int32_t b) {
+  static bool traced = false;
+  if (!traced) {
+    traced = true;
+    uhc::Log(L"hook reached: unit destroys (0x9828E7)");
+  }
+  char* unit = UnitById(world, id);
+  if (unit != nullptr && !IsDead(unit) && (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit)) {
+    for (std::size_t i = 0; i < g_destroyCount; ++i) {
+      g_destroyObservers[i](unit, 0, 0, 0);
+    }
+  }
+  kRemove(world, id, a, b);
+}
+
+// Replaces the drain's call of the kill handler: thiscall(unit, a, b, c), ret 0Ch, like the handler.
+void __fastcall Kill(char* unit, void*, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
+  static bool traced = false;
+  if (!traced) {
+    traced = true;
+    uhc::Log(L"hook reached: unit deaths (0x493D8F)");
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_observers[i](unit, a, b, c);
+  }
+  kKill(unit, a, b, c);
+}
+
+}  // namespace
+
+namespace uhc {
+
+bool AddDeathObserver(DeathObserver observer) {
+  if (g_count == kMaxObservers) {
+    Log(L"unit deaths: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("unit deaths", {&sites::kDetonationKillCall}) ||
+        !WriteCall(sites::kDetonationKillCall.va, reinterpret_cast<const void*>(&Kill))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_observers[g_count++] = observer;
+  return true;
+}
+
+bool AddDestroyObserver(DeathObserver observer) {
+  if (g_destroyCount == kMaxObservers) {
+    Log(L"unit destroys: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_destroyInstalled) {
+    if (!VerifyAll("unit destroys", {&sites::kDestroyRemoveCall, &sites::kUnitRemoveHead}) ||
+        !WriteCall(sites::kDestroyRemoveCall.va, reinterpret_cast<const void*>(&Destroy))) {
+      return false;
+    }
+    g_destroyInstalled = true;
+  }
+  g_destroyObservers[g_destroyCount++] = observer;
+  return true;
 }
 
 }  // namespace uhc
