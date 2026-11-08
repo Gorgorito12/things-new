@@ -3222,8 +3222,8 @@ cantBeSlowed [log]
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` (Dutch, 3 `Hussar` against 9 `Crossbowman`):* each rank shows its chevrons over the
-unit: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
+*In WoL, with `art\effects\uhc_rings` (Ethiopians, 3 `Hussar` against 9 `Crossbowman`):* each rank shows its chevrons over
+the unit's HP bar, clear of it: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
 
@@ -3253,6 +3253,10 @@ veterancyBonus [log]
   third keeps the gold one. With no such folder the log says so once and the bonuses work as before. Display only: it
   changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
   our own: DE's are images in its selection panel.
+- **Above the HP bar (2026-11-08):** the marks sat on the bar, and the three gold chevrons covered it. Every rank now starts from
+  the same lowest chevron, higher up. Bar and mark scale alike with the camera, so the gap holds at any zoom: seen at the default
+  camera and close up, on cavalry, infantry and artillery. Units packed together can still put a mark over a neighbour's bar.
+  Not checked: ships, buildings.
 - **Tested in WoL (2026-11-06, marks):** ranks 1 to 3 shown; the mark left at death; a `TransformUnit` Hussar → Cuirassier kept it;
   a saved game loaded with it; with the folder gone, one log line and no crash. 1214 fps against 1252 with the key off, update
   0.17 ms against 0.16, no frame over 50 ms with the key on (60 s, `perfprobe.py`). An AI skirmish of 100 s had 19 units and no XS

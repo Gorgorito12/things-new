@@ -79,10 +79,12 @@ GLYPH_ACCENTS = {
 }
 ICON_ACCENT = (245, 235, 210)
 # The marks of veterancyBonus' ranks: one, two and three chevrons in bronze, silver and gold, floating over the
-# unit with no ring.
+# unit with no ring. Every rank starts from the same lowest chevron and grows upward, and RANK_LIFT metres over the
+# aura icons keeps that chevron clear of the HP bar: bar and mark scale alike with the camera's zoom.
 RANKS = {1: (205, 127, 50), 2: (200, 205, 215), 3: (255, 205, 40)}
-RANK_ARMS = {1: (0.14,), 2: (-0.14, 0.38), 3: (-0.38, 0.10, 0.58)}
+RANK_ARMS = {1: (-0.38,), 2: (-0.38, 0.10), 3: (-0.38, 0.10, 0.58)}
 RANK_SIDE = 0.75
+RANK_LIFT = 1.15
 
 
 def chevron(y):
@@ -425,7 +427,7 @@ def main():
         wanted[f"{name}.xml"] = text(xml("", logic=icon_logic(name)))
         wanted[f"icon_{name}.ddt"] = icon_ddt((colour, colour), glyph)
         for _, size, height in ICON_HEIGHTS:
-            wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", RANK_SIDE, height + 0.7, 0))
+            wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", RANK_SIDE, height + RANK_LIFT, 0))
     for radius in RANGES:
         side = 256 if radius <= 16 else 512
         wanted[f"range_{radius}.ddt"] = ddt(RANGE_COLOURS, side, *range_shape(radius))

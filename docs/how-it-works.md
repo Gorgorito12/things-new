@@ -2741,7 +2741,9 @@ aura: the update does not run; in a power's `<unitModify>` the name is accepted 
 
 A kill that reaches a rank and a transform queue the unit's ID. A world tick every 250 ms of game time hangs `rank_N.xml` through
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
-`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. **Why it is safe:** a model is a
+`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
+`HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`tools/make_rings.py`, `RANK_LIFT`): the HP
+bar scales with the camera like the world, so the gap stays at every zoom. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
