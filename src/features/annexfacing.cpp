@@ -41,6 +41,8 @@
 extern "C" {
 void UhcAnnexForwardHook();  // hooks/annexfacing_hooks.asm
 void UhcAnnexGhostHook();
+void UhcAnnexAiPlaceHook();
+void UhcAnnexAiScanHook();
 }
 
 namespace {
@@ -78,8 +80,9 @@ const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
 const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
 
 struct Annex {
-  std::string typeName;
-  std::int32_t type = -2;  // -2: not looked up yet, -1: unknown
+  std::vector<std::string> names;    // the <AnnexOf> lines: any of them is a parent
+  std::vector<std::int32_t> types;   // their IDs, once looked up
+  bool resolved = false;
   float range = kDefaultRange;
 };
 
@@ -154,11 +157,12 @@ bool __cdecl ReadAnnexOf(void*, const char* node, char* proto) {
     return true;
   }
   Annex& annex = g_protos[id];
-  annex.typeName.clear();
+  std::string name;
   for (const wchar_t* c = text; *c != 0; ++c) {
-    annex.typeName.push_back(static_cast<char>(*c));
+    name.push_back(static_cast<char>(*c));
   }
-  annex.type = -2;
+  annex.names.push_back(name);
+  annex.resolved = false;
   if (g_log) {
     uhc::Log(L"annexFacing: proto %d is an annex of %ls", id, text);
   }
@@ -185,25 +189,45 @@ void NewDatabase(char*) {
   g_logLines = 0;
 }
 
+// Looks the parent types up once; 0 when the annex has one at least, -1 when none of its names is known.
 std::int32_t TypeOf(Annex& annex) {
-  if (annex.type != -2) {
-    return annex.type;
+  if (!annex.resolved) {
+    const char* game = Game();
+    const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+    if (database == nullptr) {
+      return -1;
+    }
+    annex.resolved = true;
+    annex.types.clear();
+    const char* table = database + 0x190;
+    for (const std::string& name : annex.names) {
+      std::int32_t id = -1;
+      const std::int32_t bucket = kNameBucket(table, name.c_str());
+      if (kNameFind(table, name.c_str(), bucket, &id)) {
+        annex.types.push_back(id);
+      } else {
+        uhc::Log(L"annexFacing: <AnnexOf>%hs names no unit type or proto; ignored", name.c_str());
+      }
+    }
   }
-  annex.type = -1;
-  const char* game = Game();
-  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
-  if (database == nullptr || annex.typeName.empty()) {
-    return -1;
+  return annex.types.empty() ? -1 : 0;
+}
+
+bool IsParentProto(const char* proto, const Annex& annex) {
+  for (const std::int32_t type : annex.types) {
+    if (kProtoIsType(proto, type)) {
+      return true;
+    }
   }
-  const char* table = database + 0x190;
-  std::int32_t id = -1;
-  const std::int32_t bucket = kNameBucket(table, annex.typeName.c_str());
-  if (kNameFind(table, annex.typeName.c_str(), bucket, &id)) {
-    annex.type = id;
-  } else {
-    uhc::Log(L"annexFacing: <AnnexOf>%hs names no unit type or proto; ignored", annex.typeName.c_str());
+  return false;
+}
+
+std::string NamesOf(const Annex& annex) {
+  std::string text;
+  for (const std::string& name : annex.names) {
+    text += (text.empty() ? "" : "/") + name;
   }
-  return annex.type;
+  return text;
 }
 
 const Annex* AnnexOf(std::int32_t protoId) {
@@ -211,14 +235,14 @@ const Annex* AnnexOf(std::int32_t protoId) {
   return found == g_protos.end() ? nullptr : &found->second;
 }
 
-// A unit that can be the parent of an annex of `type`, owned by `player`.
-bool CanBeParent(const char* unit, std::int32_t type, std::int32_t player) {
+// A unit that can be the parent of `annex`, owned by `player`.
+bool CanBeParent(const char* unit, const Annex& annex, std::int32_t player) {
   const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
-  return proto != nullptr && PlayerOf(unit) == player && kProtoIsType(proto, type) && IsAlive(unit) && !IsDead(unit);
+  return proto != nullptr && PlayerOf(unit) == player && IsParentProto(proto, annex) && IsAlive(unit) && !IsDead(unit);
 }
 
 // The nearest parent around `point`, by distance to its footprint, then by the lower unit ID.
-std::int32_t NearestParent(char* world, const float* point, std::int32_t type, std::int32_t player, float range,
+std::int32_t NearestParent(char* world, const float* point, const Annex& annex, std::int32_t player, float range,
                            std::int32_t skip) {
   g_found.count = 0;
   kUnitsNear(world, point, range, 1, &g_found);
@@ -227,7 +251,7 @@ std::int32_t NearestParent(char* world, const float* point, std::int32_t type, s
   for (std::int32_t i = 0; i < g_found.count; ++i) {
     const std::int32_t id = g_found.data[i];
     const char* unit = kUnitById(world, id);
-    if (id == skip || !CanBeParent(unit, type, player)) {
+    if (id == skip || !CanBeParent(unit, annex, player)) {
       continue;
     }
     const float distance = DistanceTo(unit, point);
@@ -266,7 +290,7 @@ bool FacingAxis(const char* parent, const float* point, float* x, float* z) {
 }
 
 // The rule for an annex with no kept link: the parents in range it faces, the nearest.
-std::int32_t ParentByRule(char* world, const char* annexUnit, const Annex& annex, std::int32_t type) {
+std::int32_t ParentByRule(char* world, const char* annexUnit, const Annex& annex) {
   const auto* point = reinterpret_cast<const float*>(annexUnit + 0x14);
   const float fx = Field<float>(annexUnit, 0x20);
   const float fz = Field<float>(annexUnit, 0x28);
@@ -279,7 +303,7 @@ std::int32_t ParentByRule(char* world, const char* annexUnit, const Annex& annex
   float bestDistance = 0.0f;
   for (const std::int32_t id : ids) {
     const char* unit = kUnitById(world, id);
-    if (id == self || !CanBeParent(unit, type, player)) {
+    if (id == self || !CanBeParent(unit, annex, player)) {
       continue;
     }
     const float distance = DistanceTo(unit, point);
@@ -360,8 +384,7 @@ void OnDeath(char* unit, std::uint32_t, std::uint32_t, std::uint32_t) {
   // The annexes this unit can be the parent of: every tagged proto whose type it is.
   float reach = 0.0f;
   for (auto& [protoId, annex] : g_protos) {
-    const std::int32_t type = TypeOf(annex);
-    if (type >= 0 && kProtoIsType(proto, type) && annex.range > reach) {
+    if (TypeOf(annex) >= 0 && IsParentProto(proto, annex) && annex.range > reach) {
       reach = annex.range;
     }
   }
@@ -385,12 +408,11 @@ void OnDeath(char* unit, std::uint32_t, std::uint32_t, std::uint32_t) {
     if (tagged == g_protos.end()) {
       continue;
     }
-    const std::int32_t type = TypeOf(tagged->second);
-    if (type < 0 || !kProtoIsType(proto, type)) {
+    if (TypeOf(tagged->second) < 0 || !IsParentProto(proto, tagged->second)) {
       continue;
     }
     const auto link = g_links.find(annexId);
-    const std::int32_t parent = link != g_links.end() ? link->second : ParentByRule(world, annexUnit, tagged->second, type);
+    const std::int32_t parent = link != g_links.end() ? link->second : ParentByRule(world, annexUnit, tagged->second);
     if (parent == id) {
       doomed.push_back(annexUnit);
       LogLine(L"annexFacing: unit %d died: its annex %d falls with it (%ls)", id, annexId,
@@ -432,7 +454,7 @@ void __stdcall UhcAnnexForward(char* command, const char* proto, const char* pla
   float bestDistance = 0.0f;
   for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
     const char* unit = kUnitById(world, ids[i]);
-    if (!CanBeParent(unit, type, playerId)) {
+    if (!CanBeParent(unit, tagged->second, playerId)) {
       continue;
     }
     const float distance = DistanceTo(unit, point);
@@ -444,14 +466,14 @@ void __stdcall UhcAnnexForward(char* command, const char* proto, const char* pla
   }
   const bool builder = parent >= 0;
   if (!builder) {
-    parent = NearestParent(world, point, type, playerId, tagged->second.range, -1);
+    parent = NearestParent(world, point, tagged->second, playerId, tagged->second.range, -1);
   }
   const char* parentUnit = parent < 0 ? nullptr : kUnitById(world, parent);
   float x = 0.0f;
   float z = 0.0f;
   if (parentUnit == nullptr || !FacingAxis(parentUnit, point, &x, &z)) {
     LogLine(L"annexFacing: proto %d at %.1f, %.1f: no %hs of player %d in %.1f m, stock forward", protoId,
-            static_cast<double>(point[0]), static_cast<double>(point[2]), tagged->second.typeName.c_str(), playerId,
+            static_cast<double>(point[0]), static_cast<double>(point[2]), NamesOf(tagged->second).c_str(), playerId,
             static_cast<double>(tagged->second.range));
     return;
   }
@@ -483,7 +505,8 @@ void __stdcall UhcAnnexGhost(char* visual) {
     return;
   }
   const auto* point = reinterpret_cast<const float*>(visual + 4);
-  const std::int32_t parent = NearestParent(world, point, type, Field<std::int32_t>(game, 0x3C0), tagged->second.range, -1);
+  const std::int32_t parent =
+      NearestParent(world, point, tagged->second, Field<std::int32_t>(game, 0x3C0), tagged->second.range, -1);
   const char* parentUnit = parent < 0 ? nullptr : kUnitById(world, parent);
   float x = 0.0f;
   float z = 0.0f;
@@ -500,6 +523,65 @@ void __stdcall UhcAnnexGhost(char* visual) {
   right[1] = up[2] * x - up[0] * z;
   right[2] = up[0] * 0.0f - up[1] * x;
   visual[0x7D] = 1;
+}
+
+// From the hook at 0x73D7D2: an AI build plan's placement test (FUN_0073D62B), before PLACE at 0x73D7E3 with the
+// plan's position `[plan+50h]`, the proto `[plan+ACh]` and the player. The test and the build command the plan sends
+// after it (0x73DA17, from the same locals) then use the faced axes, so the plan keeps only spots where the turned
+// annex fits, which the executor's own turn then accepts. The plan runs on the machine that hosts the AI; the
+// executor turns the annex the same way on every machine whatever forward the command carries.
+// Faces `forward` and `right` (the caller's buffers) for a tagged proto at `point`; false when it changed nothing.
+bool FaceForPlacement(float* forward, float* right, const float* point, std::int32_t protoId, std::int32_t player,
+                      std::int32_t* parentOut) {
+  if (g_protos.empty() || forward == nullptr || right == nullptr || point == nullptr) {
+    return false;
+  }
+  const auto inImage = [](const void* p) {
+    const auto a = reinterpret_cast<std::uintptr_t>(p);
+    return a >= 0x00400000 && a < 0x00F22000;
+  };
+  const auto tagged = g_protos.find(protoId);
+  char* world = World();
+  if (tagged == g_protos.end() || world == nullptr || TypeOf(tagged->second) < 0 || inImage(forward) || inImage(right)) {
+    return false;
+  }
+  const std::int32_t parent = NearestParent(world, point, tagged->second, player, tagged->second.range, -1);
+  const char* parentUnit = parent < 0 ? nullptr : kUnitById(world, parent);
+  float x = 0.0f;
+  float z = 0.0f;
+  if (parentUnit == nullptr || !FacingAxis(parentUnit, point, &x, &z)) {
+    return false;
+  }
+  forward[0] = x;
+  forward[1] = 0.0f;
+  forward[2] = z;
+  right[0] = z;  // the world's up x forward, as the executor's 0x423792
+  right[1] = 0.0f;
+  right[2] = -x;
+  *parentOut = parent;
+  return true;
+}
+
+void __stdcall UhcAnnexAiPlace(float* forward, float* right, const float* point, std::int32_t protoId,
+                               std::int32_t player) {
+  std::int32_t parent = -1;
+  static float lastX = -1.0f;
+  static float lastZ = -1.0f;
+  if (FaceForPlacement(forward, right, point, protoId, player, &parent) && (point[0] != lastX || point[2] != lastZ)) {
+    lastX = point[0];
+    lastZ = point[2];
+    LogLine(L"annexFacing: AI plan, player %d, proto %d at %.1f, %.1f: tested facing unit %d, forward %.3f, %.3f", player,
+            protoId, static_cast<double>(point[0]), static_cast<double>(point[2]), parent,
+            static_cast<double>(forward[0]), static_cast<double>(forward[2]));
+  }
+}
+
+// From the hook at 0x87DB9F: the AI's scan of candidate spots for a build plan (PLACE at 0x87DBA5 with the world's
+// axes); the spots it keeps are those where the faced annex fits. No log: it runs for every candidate.
+void __stdcall UhcAnnexAiScan(float* forward, float* right, const float* point, std::int32_t protoId,
+                              std::int32_t player) {
+  std::int32_t parent = -1;
+  FaceForPlacement(forward, right, point, protoId, player, &parent);
 }
 
 }  // extern "C"
@@ -520,9 +602,13 @@ Outcome ApplyAnnexFacing(const Config& config) {
   }
   if (!VerifyAll("annexFacing", {&sites::kAnnexForwardSite, &sites::kAnnexCreateCall, &sites::kAnnexGhostSite,
                                  &sites::kUnitCreate, &sites::kUnitsNearPoint, &sites::kUnitById, &sites::kIsA,
-                                 &sites::kKillQueueAsk, &sites::kUnitAliveSlot}) ||
+                                 &sites::kKillQueueAsk, &sites::kUnitAliveSlot, &sites::kAnnexAiPlaceSite,
+                                 &sites::kAnnexAiScanSite}) ||
       !AddProtoTagHandler("AnnexOf", &ReadAnnexOf) || !AddProtoTagHandler("AnnexRange", &ReadRange) ||
       !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick) || !AddDeathObserver(&OnDeath) ||
+      !AddDestroyObserver(&OnDeath) ||
+      !WriteJmp(sites::kAnnexAiPlaceSite.va, reinterpret_cast<const void*>(&UhcAnnexAiPlaceHook), 5) ||
+      !WriteJmp(sites::kAnnexAiScanSite.va, reinterpret_cast<const void*>(&UhcAnnexAiScanHook), 6) ||
       !WriteJmp(sites::kAnnexForwardSite.va, reinterpret_cast<const void*>(&UhcAnnexForwardHook), 6) ||
       !WriteCall(kCreateCall, reinterpret_cast<const void*>(&Create)) ||
       !WriteJmp(sites::kAnnexGhostSite.va, reinterpret_cast<const void*>(&UhcAnnexGhostHook), 5)) {

@@ -5744,7 +5744,7 @@ annexFacing [log]
 
 ```xml
 <Unit name="WOLTorp">
-    <AnnexOf>Barracks</AnnexOf>       <!-- the parent: a unit type or a proto -->
+    <AnnexOf>Barracks</AnnexOf>       <!-- the parent: a unit type or a proto; repeat the line for several -->
     <AnnexRange>12</AnnexRange>       <!-- optional: metres from the parent's footprint to the annex's centre, default 12 -->
 </Unit>
 ```
@@ -5756,6 +5756,9 @@ annexFacing [log]
 - **The parent:** the building in the build command (the one that "trains" the annex) when it is of the type, yours and within
   `AnnexRange`; otherwise the nearest one of yours of the type in range (an annex a villager builds). No parent in range: the
   stock angle.
+- **Several parents:** `<AnnexOf>` may be repeated (`WOLHof`: `Church` and `IrishHouse`); any of them can be the parent.
+- **The AI turns them too** (2026-11-08): an AI build plan tests its spots and its final spot with the turned annex, so it keeps
+  only spots where the turned annex fits. No AI script of WoL builds annexes today; a test rule did.
 - **The placement preview turns too** before the click, and its green or red follows the turned shape, because the game's
   obstruction and placement test turn with the building (a proto with `<Flag>DontRotateObstruction</Flag>` keeps a square
   footprint).
@@ -5763,11 +5766,25 @@ annexFacing [log]
   footprint. Facing the parent, the annex's `ObstructionRadiusZ` points at it, so the distance must be at least that radius
   plus a gap: the Torp (radius Z 4) did not fit with `annexTorp.xml`'s 4 and fitted with 6 (the test data).
 - **When the parent dies, its annexes die at once**, as by a trigger's kill (their own death and rubble), in the same update.
-  Another parent's annexes live, even beside it. `Destroy` (a trigger) skips the game's kill queue, so annexes stay then.
+  Another parent's annexes live, even beside it. A trigger's `Destroy` of the parent kills them too (2026-11-08; `Destroy` skips
+  the game's kill queue, so the key watches that trigger's call itself; `detonationDeath` still gives no blast on a `Destroy`).
+- **A converted parent** (a trigger's `Convert`) keeps nothing: the link wants the same owner, so when the converted parent dies
+  later its old annexes stand, and after a load the rule does not give them to it either. They stay the old owner's, unattached.
+  Unchanged on purpose: tell us if they should follow the parent, or fall when it is converted.
 - **Saved games:** the angle is saved with the building. The link is not: after loading, an annex's parent is the building of
   the type, yours, in range, that it faces (its front lined up with that building and pointing to it), the nearest.
 - **Multiplayer:** the turn is made by the build command's own execution on every machine, from game state only, and the
   falls by the death of the parent: every player needs the same setting and data. Not played in multiplayer.
+- **What WoL's data allows for the four pairs (2026-11-08):**
+  - `WOLPaddock` beside a `Stable` (radii 3 × 5): `annexPaddock.xml`'s 5 is enough, as the Paddock's radius Z is 4.
+  - `WOLHof` beside a `Church`: `annexHof.xml`'s 4 is too short, as for the Torp; 6 worked. `IrishHouse` trains the Hof but
+    has no `BuildAnnex` rate for it, and the file wants a `Church` within 4 (a placement file has no "or"), so an `IrishHouse`
+    alone cannot place one.
+  - `WOLMaypole` beside a `Market`: placed and built at once, 2 m from the Market, in spite of the file's
+    `obstructionatleastfromtype ... 5 ... Building`. It is square (2 × 2), so its turn changes only the model.
+  - `church.tactics` and `autogatherer.tactics` (the Market's) have `Spawn…` actions before `BuildAnnex`, as `barracks.tactics`
+    has `SpawnSpawner`: the test data put `BuildAnnex` first in all three. The Church and the Market then placed their own
+    annex.
 - **In WoL's data, two things block the test case itself, with or without the key:**
   - the Barracks cannot place its Torp: the game takes the first action of the Barracks' tactic that can work on the Torp,
     and in `barracks.tactics` that is `SpawnSpawner`, which is inactive, so the order is refused. With `BuildAnnex` moved first
@@ -5791,7 +5808,16 @@ annexFacing [log]
   - Key off: the Torps kept the stock angle (`0, -1` on every side) and stood after the Barracks died.
   - A skirmish against a Swedish AI (`wolOscar`) with the key and the test data, 100 s: no XS error, the AI built a house and
     had 9 settlers; it placed no Torp in that time. Bad option (`annexFacing banana`): logged, `FAILED`, nothing written.
-  - Not tested: multiplayer, recorded games, an AI that builds annexes, the other WoL pairs (Stable, Church, Market).
+  - **Round 2 (2026-11-08, test data for all four pairs, `<AnnexOf>` on each):**
+    - A Swedish AI (`wolOscar`) with a test rule that asks for 4 Torps by its Barracks: 4 placed in 170 s, each tested once, each
+      facing it (west ones `1, 0`, east ones `-1, 0`). With the AI's final test turned but not its scan of spots, it placed 3 and
+      then tested one spot east of the Barracks 188 times, where only the unturned Torp fits. No XS error in either.
+    - Four `WOLPaddock` around a `Stable`, three `WOLHof` around a `Church` (the fourth side was off the map) and three
+      `WOLMaypole` around a `Market`: each faced its parent, the first one built by the parent itself.
+    - A trigger's `Destroy` of a Barracks: its 2 Torps fell; the `Stable`'s 4 Paddocks, the `Church`'s 3 Hofs and the
+      `Market`'s 3 Maypoles fell with them at their kills; after loading the saved game, the same, found by the rule.
+    - A Barracks converted to the enemy by a trigger, then killed: its Torp stood, in the game and after loading.
+    - Not tested: multiplayer, recorded games, a real conversion by a unit, an `IrishHouse` as parent in game.
 
 ### Techs and transforms
 

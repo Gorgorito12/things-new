@@ -3272,10 +3272,28 @@ forward hook's continuation 0x7D7CF7 pushes `EAX`, which the replayed `lea` writ
 The creation wrapper has the stock frame (thiscall, 8 arguments, `ret 20h`). A proto without the tag costs a hash
 lookup at each build command, at each ghost update, and at each death a loop of is-a tests over the tags.
 
-**[I]/unknown.** The AI: its build plans test the placement with their own forward (0x73D7E3); the executor then turns
-the annex, and a spot that only fits unturned is refused, so the plan tries again (not seen: in a 100 s skirmish the AI built
-no annex). Multiplayer and recorded games: not played; the turn rides on the command's own execution. `Destroy` (the
-trigger) does not pass the kill queue, so the annexes stay. A converted parent keeps its annexes.
+**[O] The AI (2026-11-08).** An AI build plan chooses its spot in two steps, both with the world's axes: the scan of
+candidate spots (PLACE at 0x87DBA5, after the axes are stored on the stack up to 0x87DBA1) and the plan's own test
+FUN_0073D62B (PLACE at 0x73D7E3, the forward at `lea ebx,[esp+38h]`, the right pushed before it, the plan's position
+`[plan+50h]`, its proto `[plan+ACh]`, the player in `EAX`); the build command it then sends (0x73DA17) carries the
+forward of that test. With the plan's test turned but the scan not, the scan kept a spot that fitted only unturned (east of
+the Barracks, where the turned Torp overlaps it), and the plan tested that spot again and again (188 times in 150 s, until
+the log's cap; 3 of 4 annexes placed). Both tests now face the annex, writing the caller's two vectors (never a vector inside
+the exe image), so the scan keeps only spots where the turned annex fits: 4 of 4 placed, each tested once. The plan runs where the AI runs; the
+executor still turns the annex on every machine.
+
+**[O] Destroy (2026-11-08).** The trigger effect `Destroy` runs `trUnitDestroy` (0x98282F), which calls the world's unit
+removal 0x4726B2(id, 0, 1) for each selected unit from one call, 0x9828E7, and never reaches the kill queue. The removal has
+62 other callers (a corpse's end, a replaced unit, the editor, the end of a game), so only that call is wrapped: the shared
+module's second list (`AddDestroyObserver`) is called there for a unit alive and not dead, before the removal. `annexFacing`
+registers the same observer in both lists, and its annexes are asked to die through the kill queue. `detonationDeath` is not
+in the second list: a destroyed unit gave no blast before and gives none now.
+
+**Several parents.** `<AnnexOf>` is repeatable: a unit of any of the listed types or protos can be the parent.
+
+**[I]/unknown.** Multiplayer and recorded games: not played; the turn rides on the command's own execution. A converted
+parent keeps its annexes only by the link of the session: its death does not reach them, since the annex's owner differs
+(the rule wants the same player).
 
 ### doNotQueue
 
