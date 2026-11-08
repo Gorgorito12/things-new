@@ -37,7 +37,7 @@ python -I tools/export_public.py --check
 
 There are no unit tests. Every copy of the game, with its data and how to drive it, is in [`docs/developer-guide.md`, section 2](docs/developer-guide.md#2-a-safe-test-bed). The main ones:
 
-- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`), and `C:\AoE3-UHC-WoLReal2`, `3` and `4`, copies to run beside it, one per agent. `C:\WoL-Test` is the control with WoL's DLL.
+- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`), and `C:\AoE3-UHC-WoLReal2`, `3`, `4` and `5`, copies to run beside it, one per agent. `5` opens at the same corner of the screen as `C:\AoE3-UHC-WoLReal` (top left), so not both at once. `C:\WoL-Test` is the control with WoL's DLL.
 - `C:\AoE3-UHC-Test`, and private copies per feature (`-Poison`, `-WoL`, `-Spread`).
 
 `python -I tools/testbed.py` plays a test with no clicks: `deploy`, `map`, `launch`, `scenario`, `skirmish`, `wait`, `log`, `units`, `shot`, `close`, `record`. `skirmish` uses posted clicks, so it needs no cursor or focus ([`docs/wol-migration.md`, "Skirmish route"](docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)). Put a `timeout` on every `wait`: when a game ends the clock stops and `wait` never returns.
@@ -60,7 +60,7 @@ Rules:
   - `AddWorldTick` (`worldtick.*`, 0x481A57);
   - `AddActionTagHandler` (`actiontags.*`, 0x5FA11E);
   - `AddModifyType` (`modifytypes.*`, 0x5FE6D7);
-  - `AddTechSubtype`, `AddTechActionSubtype` and `AddTechTypeSubtype` (`techsubtypes.*`, the call 0x6206D7, 0x8F978D, 0x8FB051);
+  - `AddTechSubtype`, `AddTechActionSubtype` and `AddTechTypeSubtype` (`techsubtypes.*`, all three on the same sites: the name lookup's head 0x61FF5D, the call 0x6206B2 that reads the attribute's subtype, and the apply and unapply switches 0x8F978D and 0x8FB051);
   - `AddProtoTagHandler` (`prototags.*`, 0x51DB0F);
   - `AddCivTagHandler` (`civtags.*`, the civs.xml unknown-tag path 0x52BB07; `civFirstTC` (or its alias `firstTC`) and `sharedBuildLimit` read their civ tags there);
   - `AddTransformObserver` (`transformcalls.*`, the seven calls of 0x9C754C); a key's own transform calls `TransformUnit`;
@@ -79,7 +79,7 @@ Rules:
   - `uhc-address-map.md`, `engine-symbols.md`, `binaries.md`: sites, names and hashes, with a status per row;
   - `wol-migration.md`, `wol-requests.md`, `wol-uhc-map.md`: WoL's progress, requests and DLL; pick the next item in the first two;
   - `de-parity.md`, `de-architecture.md`: how DE does it. Read-only install, no DE code or data in the repo or the DLL.
-- `examples/Startup/uhc.cfg`: every implemented key, commented; the release template is generated from it.
+- `examples/Startup/uhc.cfg`: every implemented key, commented; the release template is generated from it. The dev keys `perfStats`, `perfAutoExec`, `perfExecFile` and `perfFileLog` are not in it: they are documented only in `docs/performance.md`, "Benchmark harness".
 - `README.md`: short. Key status lives in the modding guide.
 - `tools/`: usage in `tools/README.md`.
 - `reference/AoE3UnHardcoded/` (gitignored): the original. **It has no license:** read it for addresses and behavior, never copy its code. Zydis (MIT) is the only clearly reusable dependency.

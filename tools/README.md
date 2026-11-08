@@ -64,7 +64,8 @@ An existing zip is kept unless `--force` is given. The procedure around it is in
 [developer-guide.md, section 7](../docs/developer-guide.md#7-making-a-release).
 
 The zip also holds `beside-another-dll/`: `dinput8.dll` and `engine-ext/engine-ext.cfg`, for a game that keeps another
-`UHC.dll`. The script stops if `dinput8.dll` is missing, is not this version, or lacks `DirectInput8Create`.
+`UHC.dll`. The script stops if `dinput8.dll` is missing, is not this version, or lacks `DirectInput8Create`, and
+prints its SHA-256 too. The aura rings of `tools/rings` go in `art/effects/uhc_rings/`, for a game's `art` folder.
 
 ## bar.py
 
