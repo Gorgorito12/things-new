@@ -2732,6 +2732,53 @@ ST0 by the factor, with the attack code's rule.
 bytes. Every caller gets the same rate: the update 0x48D16E, both panels (0x6992BD, 0x69B005), and the two that
 look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simulation state only.
 
+### containedUnitsROF
+
+**The tag.** The stock handler of `<ScaleByContainedUnits>` (0x5FEDFC) reads the text as an integer into `[esp+10h]`
+(0 when it is empty or not a number) and sets bit 18 only for 1. The hook replaces `cmp dword ptr [esp+10h],1 / mov
+eax,[ebp+64h]` at 0x5FEE0C (8 bytes). For an action read from a tactics file or a `<ProtoAction>` (the parser's return
+address `[esp+0C0h]` is 0x5FA623 or 0x5FA213), it calls `UhcContainedRofTag(node, proto, action, value, return)`, which
+reads the attribute `target` with the XML attribute getter 0x598F37:
+- none, or `Damage`: the hook re-executes the two instructions and goes on at 0x5FEE14, the stock test;
+- `ROF`, on (an empty text, or 1): bit 18 is cleared (no damage multiplier), bit 17 (`ActiveIfContainsUnits`) is set,
+  and `{proto ID, action name index}` goes in a table; the hook jumps to the parser's next child 0x5FA126. Off (`0`): bit
+  18 is cleared, the entry dropped.
+
+A later tag of the same action replaces the entry (and clears bit 17 if the entry had set it). The table is cleared on
+every data load (`OnDatabaseLoad`), and the tags are read again, a saved game's load included.
+
+**The interval.** Every attack (vtable 0xB96278: `HandAttack`, `RangedAttack` and the other types of the class) waits
+through 0x48FA69(action manager, ms), which applies the ROF modifiers. Five reads of the tactics ROF `[action+34h]` feed it
+or the attack's animation rate, and each is replaced by a jmp to a hook that re-executes it, passes the value through
+`UhcContainedRofScale(unitAction, rof)` and re-executes what follows:
+
+| Site | Bytes | What it is | Unit action in |
+|---|---|---|---|
+| 0x4A1189 | `mov ebx,[eax+34h] / mov eax,[esi+6Ch]` | an attack begins: the animation's rate `[unit+0B0h]` | ESI |
+| 0x48F8B5 | `mov eax,[eax+34h] / cmp eax,ebx` | after a shot, melee or ranged: the wait | EBP |
+| 0x48A821, 0x48A99A | `mov edi,[edi+34h] / test edi,edi` | the update, after an attack that did not fire | ESI |
+| 0x48EA0C | `mov esi,[esi+34h] / test esi,esi` | the attack step, the same case | EBP |
+
+`UhcContainedRofScale` finds the table entry of `{[[unit+5Ch]+4], [[ua+4]+4]}`, the proto ID and action name index that
+every player's copy keeps. Without one it returns the value. Otherwise the factor follows the stock damage rule
+(0x4996C7..0x49970A): the count `[unit+74h]`, or `DamageFactorCap` `[action+48h]` when the count is above it and it is
+above 0; the interval is ROF / factor, rounded down, at least 1 ms. A factor of 0 returns the ROF: that is only reached
+when the modder cleared bit 17 again, because the target search 0x487F7A skips an action with bit 17 and no unit inside.
+An override ROF (`[[ua+6Ch]+28h]`) is not divided: the stock code uses it in place of the value the hook returns
+(0x4A1191) or never reads the tactics ROF (0x48F8A8, 0x48A7FC, 0x48A88B, 0x48E9E0).
+
+**Why it is safe.**
+- No branch lands inside the replaced bytes (a `cs` scan of every rel8/rel32 branch). Each hook re-executes the instruction
+  that sets the flags its continuation tests (`test` / `cmp` before `jbe`), so the branches see the stock flags. At
+  0x4A1189 the next instruction is `test eax,eax`; at 0x5FEE0C the stock test or the next-child code sets EAX and the flags.
+- `pushad` / `popad` keep every register but the one the hook writes. The C function returns an integer; no x87 value is
+  live at any of the five sites.
+- With no action carrying the attribute, `g_uhcContainedRofCount` is 0 and the hooks skip the call: a compare and a branch
+  per attack.
+- Deterministic: the count, the cap and the ROF are simulation state, the table is keyed by IDs, the division is the same
+  code on every machine, and the log never feeds back.
+- Not covered: the panel's ROF text and the AI's own damage estimate read the data's ROF.
+
 ### unitResourceAuras
 
 An `AutoRangedModify` action's update is FUN_009D033E, `void thiscall(action)`, a vtable slot with no direct caller.

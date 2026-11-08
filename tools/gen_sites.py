@@ -1211,6 +1211,29 @@ SITES = [
     # autoGatherScaleByContained: the entry of the AutoGather rate getter, push ecx / push ebx /
     # mov ebx,[esp+0Ch], and the test ebx,ebx it continues at. No branch lands inside.
     ("AutoGatherRateEntry", 0x49EBE4, 8),
+    # containedUnitsROF: the ScaleByContainedUnits handler of the action parser FUN_005F98A0 (lea eax,[esp+10h] /
+    # push eax / mov ecx,edi / mov [esp+14h],ebx / call 59B526h, the read of the text), then cmp dword ptr
+    # [esp+10h],1 / mov eax,[ebp+64h] (replaced, 8 B at 0x5FEE0C), the jne 5FE713h it continues at, and or byte
+    # [eax+2],4 / jmp 5FA126h. Reached only through je 5FEDFCh at 0x5F9AED. The parser's next child, mov
+    # eax,[esp+1Ch], the hook's other continuation.
+    ("RofScaleTag", 0x5FEDFC, 0x27),
+    ("RofNextChild", 0x5FA126, 4),
+    # containedUnitsROF: the reads of the tactics ROF [action+34h] that set an attack's wait, each replaced with
+    # its next instruction (5 B; no branch lands inside), up to the delay call 48FA69h: after an attack that did
+    # not fire, mov edi,[edi+34h] / test edi,edi / jbe / mov eax,[esi+10h] / mov ecx,[eax+58h] / push edi / call
+    # (0x48A821) and mov edi,[edi+34h] / test edi,edi / jbe / mov ecx,[esi+10h] / mov ecx,[ecx+58h] / push edi /
+    # call (0x48A99A); mov esi,[esi+34h] / test esi,esi / jbe / mov ecx,[ebp+10h] / mov ecx,[ecx+58h] / push esi /
+    # call (0x48EA0C); after a shot (ranged and melee join at 0x48F892) mov eax,[ebp+4] / cmp eax,ebx / je /
+    # mov eax,[eax+34h] / cmp eax,ebx (replaced at 0x48F8B5) / jbe / mov esi,eax / ... / push esi / call
+    # (0x48F8E9); where an attack begins, mov eax,[esi+4] / push ebx / mov ebx,[eax+34h] / mov eax,[esi+6Ch]
+    # (replaced, 6 B at 0x4A1189) / test eax,eax / jne 6A79C3h / test ebx,ebx / jbe. The delay function
+    # 0x48FA69(action manager, ms), verify only.
+    ("RofWaitA", 0x48A821, 0x17),
+    ("RofWaitB", 0x48A99A, 0x17),
+    ("RofWaitC", 0x48EA0C, 0x17),
+    ("RofShot", 0x48F8AE, 0x40),
+    ("RofAnim", 0x4A1185, 0x1A),
+    ("RofDelay", 0x48FA69, 0x2A),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add

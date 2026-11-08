@@ -896,6 +896,20 @@ the Gathering dance (FUN_004ECD39) in "Dances".
 | Contained count | `[unit+74h]` | confirmed, in game | 2, 4 and 6 units inside gave those factors. Not to be confused with the worker array `[unit+98h]`. |
 | AutoGather rate getter | 0x49EBE4, `float thiscall(action, int resource)`, `ret 4` | confirmed (`cs`, in game) | `[action+4]` tactics action, `[action+10h]` unit. Five callers: 0x48D16E (the update, × elapsed), 0x6992BD and 0x69B005 (panels), 0x69D232, 0x9CFE1E. Adds the rate of units on a shrine (`AbstractShrine`, 0x58) to its result. |
 
+**Rate of fire (for `containedUnitsROF`, WoL #25, 2026-11-08).** Evidence: `cs` on the stock exe (no REA: another session
+owned it), hardware read breakpoints on a Blockhouse's ROF `[tacticsAction+34h]` while it fought (`trace_writes.py --rw`), an
+execute trace of 0x48F8A0, and the action manager's timer polled from memory, in WoL (`C:\AoE3-UHC-WoLReal3`).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| ScaleByContainedUnits handler | 0x5FEDFC (reached by `je 5FEDFCh` at 0x5F9AED) | confirmed (`cs`, in game) | `[esp+10h]` = EBX (0, the compare call's third argument), then 0x59B526(node, &out): the text through 0x402733 (BString → `char*`) and `sscanf("%d")` (0x59A71D, format 0xBA282C); `cmp [esp+10h],1` → `or byte [eax+2],4`, else `and byte [eax+2],0FBh` (0x5FE713). **[O]** An empty tag or a non-number leaves 0, so it clears bit 18; only the text `1` sets it. EBP = the action, EDI = the tag's node; same frame as 0x5FA11E (`[esp+0C0h]` return address, `[esp+0C4h]` proto). No attribute is read. |
+| Attack unit actions | vtable 0xB96278 for factory types 4 (`HandAttack`), 0Ah, 0Fh (`RangedAttack`), 28h | confirmed (memory) | One class for melee and ranged. `[ua+4]` tactics action, `[ua+10h]` unit, `[ua+68h]` shots so far, `[ua+6Ch]` an override object (its `+28h` an ROF in ms, its `+8` a count), `[ua+78h]` the time the attack began. The tactics action is shared by every unit of the player's proto; a unit's attack is a new unit action each time (the list `[[unit+58h]+14h]` holds another). |
+| Attack begins | 0x4A1185..0x4A1234 | confirmed (`cs`, in game: one read per attack) | `[esi+78h]` = now (0x4A1175); EBX = ROF `[[esi+4]+34h]` (0x4A1189), replaced by `[[esi+6Ch]+28h]` when that is above 0 (cold 0x6A79C3); `[unit+0B0h]` = (anim length × 1000 + …) / ROF (0x4A1234), the attack animation's rate. |
+| Shot | 0x48F7F0..0x48F8E9, in the attack step (frame 2B0h) | confirmed (`cs`, in game) | Tactics flag bit 9 picks 0x4DCFE2 (no projectile, `je 4DD167h` at 0x48F832) or the launch 0x499422 (0x48F88D); both reach 0x48F892. `[ebp+68h]` += 1 (0x48F8A0); without an override, ESI = ROF (0x48F8B5); minus the time since `[ebp+78h]` when that is smaller (0x48F8D4..0x48F8E0); then 0x48FA69(`[unit+58h]`, ESI). **[O]** Melee (a Pikeman's `MeleeHandAttack`) and ranged (a Blockhouse) both ran 0x48F8B5. |
+| Attack wait | 0x48FA69, `thiscall(actionManager, int ms)`, `ret 4` | confirmed (`cs`, in game) | `[mgr+0B8h]` = now `[world+108h]`, `[mgr+0BCh]` = ms × the unit's ROF modifier (`[[[unit+0B4h]+0C8h]+34h]`, 1.0 without a record; rounded down). `rofFix` keeps orders from clearing `[+0B8h]`. Seven callers, all in the attack class: 0x48A80C, 0x48A8A3, 0x48E9F0 (the override ROF), 0x48A833, 0x48A9AC, 0x48EA1E (tactics ROF after an attack that did not fire; tactics flag bit 15 decides, 0x4A8539 / 0x4A8680 / 0x4B338F), 0x48F8E9 (after a shot). **[O]** In game only 0x4A1189 and 0x48F8B5 read the ROF while a Blockhouse fought; the three others were not seen. |
+| ActiveIfContainsUnits readers | 0x487F7A (target search: `[unit+74h]` ≤ 0 skips the action, 0x4A19AB), 0x4B2CC3 (cold 0x68D8B6), 0x947B3B, 0x9E3A01 | confirmed (`cs`; in game: a Blockhouse with bit 17 and nobody inside did not attack, a Pikeman neither) | |
+| Stock damage form with nobody inside | 0x4996C7 | confirmed in game | The attack still fires every ROF (20 a minute for a 3 s Blockhouse) and the factor 0 makes its damage 0. |
+
 ### Resource auras (for `unitResourceAuras`, WoL #26, 2026-11-04)
 
 | What | Where | Status | Notes |

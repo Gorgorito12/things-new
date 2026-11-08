@@ -214,3 +214,5 @@ sharedBuildLimit-wagon-wol 6 54 5
 sharedBuildLimit-wagon-wol-control 6 54 5
 sharedBuildLimit-team-wol 8 66 6
 sharedBuildLimit-team-wol-control 8 66 6
+containedUnitsROF-wol 4 36 3
+containedUnitsROF-wol-control 4 36 3

@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 34 keys in all:
 | Data and scripting | `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `detonationDeath` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `detonationDeath` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
@@ -578,6 +578,27 @@ Code: [combat](porting-code/combat.md#spreadanyaccuracy).
   log.
 - **If WoL's DLL already reads action tags at 0x5FA11E,** add these two tags to your handler instead
   of a second hook; if it changes the launch at 0x499890 or the miss offset, merge the logic there.
+
+### containedUnitsROF
+
+Code: [combat](porting-code/combat.md#containedunitsrof).
+
+- **State, all in `containedrof.cpp`:** a `std::map` keyed by (proto ID `[proto+4]`, action name index `[action+4]`) of the
+  actions with `target="ROF"`, cleared by `OnDatabaseLoad`, and its size in `g_uhcContainedRofCount`, which the hooks test
+  before calling C++.
+- **Tag hook:** an 8-byte `jmp` at `0x5FEE0C` (`83 7C 24 10 01 8B 45 64`: `cmp dword ptr [esp+10h],1; mov eax,[ebp+64h]`)
+  in the stock `ScaleByContainedUnits` handler. EDI = the tag's node, EBP = the action, `[esp+0C4h]` = the proto,
+  `[esp+0C0h]` = the parser's return address (0x5FA213 or 0x5FA623). `UhcContainedRofTag` reads the attribute with
+  0x598F37 / 0x402733; it returns 0 (re-execute both instructions, continue at `0x5FEE14`) or 1 (bits 17 and 18 already
+  written; continue at `0x5FA126`). This tag is a stock one, so the unknown-tag hook at 0x5FA11E never sees it.
+- **ROF hooks:** five `jmp`s over a read of `[tacticsAction+34h]` and the instruction after it, each re-executed around
+  `int __stdcall UhcContainedRofScale(unitAction, rof)` (inside `pushad`/`popad`): `0x4A1189` (6 B, `8B 58 34 8B 46 6C`,
+  continue `0x4A118F`, unit action ESI), `0x48F8B5` (5 B, `8B 40 34 3B C3`, continue `0x48F8BA`, EBP), `0x48A821` and
+  `0x48A99A` (5 B, `8B 7F 34 85 FF`, continue +5, ESI), `0x48EA0C` (5 B, `8B 76 34 85 F6`, continue `0x48EA11`, EBP).
+- **No range of WoL's DLL overlaps** any of these sites (its 287 patched ranges, `wol-memdiff.txt`).
+
+Check it in the game: put `<scalebycontainedunits target="ROF"></scalebycontainedunits>` on a Blockhouse's `RangedAttack`:
+empty, it does not fire; with 2 settlers inside it fires every 1.5 s instead of 3 s.
 
 ### bufferedFileReads
 

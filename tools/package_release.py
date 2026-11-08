@@ -276,6 +276,8 @@ showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
+containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
+                              the units inside (ROF / count, at most DamageFactorCap)
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura

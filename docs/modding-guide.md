@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Sunday 2026-11-08 10:10 | [`containedUnitsROF`](#containedunitsrof) | Added. An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | The attribute on the attacks that want it (none has it today). |
 | Friday 2026-11-06 14:15 | [`unitTypeTechs`](#unittypetechs) | Added. Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | The effects in your techs. |
 | Friday 2026-11-06 13:55 | [`snareValues`](#snarevalues) | Filmed in WoL, with a control. The factor and length of `<TargetSpeedBoost>`, per action and by tech. | The tags on the action. |
 | Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
@@ -2333,6 +2334,7 @@ Attacks, armor, and what a hit does.
 | [`damageOverTime`](#damageovertime) | Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | **new** | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. | confirmed (single player) |
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units, `InstantBallistics` included, scatter like that whatever their accuracy and hit what it lands on. | **new** | The tags are there; the unit type or proto name of the units that should always scatter, in the cfg. | confirmed (single player) |
 | [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
+| [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
@@ -3123,6 +3125,73 @@ accuracyTechs [log]
   - A saved game: the enemy still at 100 HP after loading, and still 15 s later.
   - A skirmish with a European AI (`wolOtto`) and both this key and `cratePriority` on: no XS error, 15 units at 120 s.
   - Not tested: multiplayer.
+
+#### containedUnitsROF
+
+*A building, or any unit that holds units, attacks faster with more units inside.*
+
+**Added:** Sunday 2026-11-08 10:10 · **Filmed in WoL:** Sunday 2026-11-08 10:10
+
+![containedUnitsROF in WoL](media/containedUnitsROF-wol.gif)
+
+*In WoL, with `containedUnitsROF log` (a Blockhouse whose `RangedAttack` has `target="ROF"`, test data; scenario
+players, the Blockhouse selected):* it does not fire while empty; two settlers go in at 30 s and it fires every 1.5 s,
+two more at 55 s and it fires every 0.75 s. The log at the bottom gives the interval. The enemy settlers fall faster.
+[Full video (MP4)](media/containedUnitsROF-wol.mp4).
+
+![containedUnitsROF in WoL, key off](media/containedUnitsROF-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* the Blockhouse fires every 3 s, empty or full.
+[Full video (MP4)](media/containedUnitsROF-wol-control.mp4).
+
+```
+containedUnitsROF [log]
+```
+
+- **In WoL today:** `<ScaleByContainedUnits>` multiplies only the damage of a ranged attack. The exe reads the tag's text
+  as a number and only `1` turns it on, so an empty tag does nothing. It never reads an attribute. No WoL action has the
+  attribute yet.
+- **Effect:** an attack whose `<ScaleByContainedUnits>` has `target="ROF"` (any case) waits its ROF divided by the
+  units inside, at most `<DamageFactorCap>` when the action has one. Its damage stays the data's. With nobody inside it
+  does not attack at all, as with `<ActiveIfContainsUnits>`. Melee (`HandAttack`) and ranged attacks both work. No
+  `target`, or `target="Damage"`: the stock damage multiplier. On an AutoGather action, use
+  [`autoGatherScaleByContained`](#autogatherscalebycontained).
+
+  ```xml
+  <action>
+      <name stringid="38133">RangedAttack</name>
+      ...
+      <scalebycontainedunits target="ROF"></scalebycontainedunits>
+      <damagefactorcap>3</damagefactorcap>
+  </action>
+  ```
+
+  The tag also works in a `<ProtoAction>` of `protoy.xml`. An empty tag, or `1`, turns it on; `0` turns it off. When an
+  action has the tag twice (its tactics file, then its `<ProtoAction>`), the last one counts.
+- **The rate:** ROF 3 s with 2 inside is 1.5 s; with 4 inside and a cap of 3, 1 s. Rate-of-fire techs and auras still
+  multiply the result, as in stock. An empty building waits; with `<ActiveIfContainsUnits>0</ActiveIfContainsUnits>`
+  written after the tag, it fires at its own ROF instead.
+- **Not covered:** the panel still shows the data's ROF, and the AI's own estimate of the unit's damage per second does
+  not know the speed-up. A ROF that something other than the action sets (an ability's own) is not divided.
+- **Log:** `containedUnitsROF: applied`, `hook reached: containedUnitsROF tag (0x5FEE0C)`, `attack start (0x4A1189)` and
+  `shot (0x48F8B5)`. With `log`, one line per action that has the attribute while the data loads, and a line each time
+  the interval of one changes: `Blockhouse/RangedAttack (unit 0, player 1): 2 inside, cap -1.00, ROF 3000 -> 1500 ms`
+  (at most 100).
+- **Simulation:** changes combat: every player needs the same line.
+- **Saved games:** nothing to keep: the tag is read again when the game loads, and the count is the units inside.
+- **Tested in WoL (2026-11-08), shots counted from the game's own timer (the wait each attack starts), per game minute:**
+  - Blockhouse (`RangedAttack`, ROF 3 s, `target="ROF"`): 0 with nobody inside, 38.4 with 2, 78.5 with 4. With
+    `<damagefactorcap>3</damagefactorcap>`: 0, 38.5 and 58.4.
+  - Melee: a Pikeman given `<MaxContained>4</MaxContained>`, `AbstractVillager` and the attribute on its
+    `MeleeHandAttack` in `protoy.xml` (ROF 1.5 s), settlers put inside by a trigger: 0, 78.4 with 2, 157 with 4.
+  - The stock tag with the key on (`<scalebycontainedunits>1</scalebycontainedunits>`, no attribute): 20 a minute with 0,
+    2 or 4 inside, and the damage per shot 0, then about twice and four times the base, as without the key.
+  - Key off with the attribute: 20 a minute for the Blockhouse and 40 for the Pikeman, inside or not.
+  - A saved game at 2 inside: after the load, 76.9 a minute with 4 inside and none once they left.
+  - A skirmish with a European AI (`wolOtto`) for 100 s: no XS error, 10 settlers and a Manor.
+  - 30 Crossbowmen against 30 Hussars and two Blockhouses with units inside, 60 s: 787 fps, update 0.2 ms, no frame over
+    50 ms; key off 728 fps, update 0.2 ms, none over 50 ms.
+  - Not tested: multiplayer, beside WoL's DLL, a ship or another unit that really holds units in WoL's data.
 
 #### broadsideMuzzleLimit
 
@@ -3927,8 +3996,8 @@ autoGatherScaleByContained
   </action>
   ```
 
-- **Not covered:** the rest of JTMaston's #25, rate of fire. WoL has no AutoGather action with the tag today, so the
-  key changes nothing until one is added.
+- **Not covered:** rate of fire, which is [`containedUnitsROF`](#containedunitsrof). WoL has no AutoGather action with the
+  tag today, so the key changes nothing until one is added.
 - **Log:** `autoGatherScaleByContained: applied`, `hook reached: autoGatherScaleByContained (0x49EBE4)`.
 - **Simulation:** changes gathering: every player needs the same line.
 - **Saved games:** nothing to keep: the rate is computed from the units inside.

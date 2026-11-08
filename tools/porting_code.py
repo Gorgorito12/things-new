@@ -67,6 +67,7 @@ PAGES = {
         "dodgeAnyUnit, dodgeSoundSet and criticalSoundSet": ["src/features/dodge.cpp", "src/hooks/dodge_hooks.asm"],
         "damageOverTime": ["src/features/damageovertime.cpp", "src/hooks/dot_hooks.asm"],
         "spreadAnyAccuracy": ["src/features/spread.cpp", "src/hooks/spread_hooks.asm"],
+        "containedUnitsROF": ["src/features/containedrof.cpp", "src/hooks/containedrof_hooks.asm"],
         "accuracyTechs": ["src/features/accuracy.cpp"],
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],

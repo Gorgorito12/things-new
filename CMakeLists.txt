@@ -107,6 +107,7 @@ set(UHC_SOURCES
   src/features/workrate.cpp
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
+  src/features/containedrof.cpp
   src/features/unitresource.cpp
   src/features/gatherauras.cpp
   src/features/resourcedebt.cpp
@@ -157,6 +158,7 @@ set(UHC_SOURCES
   src/hooks/workrate_hooks.asm
   src/hooks/workratetype_hooks.asm
   src/hooks/gatherscale_hooks.asm
+  src/hooks/containedrof_hooks.asm
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
