@@ -75,6 +75,7 @@ set(UHC_SOURCES
   src/features/overheal.cpp
   src/features/overhealdecay.cpp
   src/features/overhealsources.cpp
+  src/features/steadybars.cpp
   src/features/plugins.cpp
   src/features/perf.cpp
   src/features/selection.cpp
@@ -146,6 +147,7 @@ set(UHC_SOURCES
   src/hooks/notrainneartc_hooks.asm
   src/hooks/overheal_hooks.asm
   src/hooks/overhealsources_hooks.asm
+  src/hooks/steadybar_hooks.asm
   src/hooks/shipment_hooks.asm
   src/hooks/smartheal_hooks.asm
   src/hooks/snare_hooks.asm

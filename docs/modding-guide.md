@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
 | Sunday 2026-11-08 10:23 | [`annexFacing`](#annexfacing) | Added. An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) faces the building it belongs to, also when the AI places it, and falls when that building dies or is destroyed. | The tag on the annexes; a placement distance that leaves room for the turned annex. |
 | Sunday 2026-11-08 10:10 | [`containedUnitsROF`](#containedunitsrof) | Added. An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | The attribute on the attacks that want it (none has it today). |
@@ -6257,6 +6258,7 @@ What the panels and the fog of war show.
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
+| [`steadyHitpointBars`](#steadyhitpointbars) | The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | **new** | Nothing. | confirmed (single player, UI) |
 
 #### nativePreview
 
@@ -6594,6 +6596,55 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 - **Tested in WoL (2026-11-06, expire):** with `expire=20`, dopples made at 8.2 s ended at 28.2 s; saved at 38 s with `expire=45`, they kept
   their time and ended at 53.2 s. Not tested: beside WoL's DLL, multiplayer.
 
+#### steadyHitpointBars
+
+*The health bars over units stay still instead of jumping up and down while the units fight or move.*
+
+**Added:** Monday 2026-11-09 08:13 · **Filmed in WoL:** Monday 2026-11-09 08:13
+
+![steadyHitpointBars in WoL](media/steadyHitpointBars-wol.gif)
+
+*In WoL, with `steadyHitpointBars log` (Ethiopians, 3 `Hussar` and 3 `Pikeman` against 16 `Settler` and 3 `Crossbowman`,
+the ranks of `veterancyBonus` on, the selected units' bars shown):* the Hussars charge, fight and stand; each bar keeps
+one height over its rider, and the rank chevrons stay just above it. [Full video (MP4)](media/steadyHitpointBars-wol.mp4).
+
+![steadyHitpointBars in WoL, key off](media/steadyHitpointBars-wol-control.gif)
+
+*In WoL, key off (the same scene):* a Hussar's bar drops by about 9 px when it swings or gallops and comes back when it
+stands, also under a steady chevron. [Full video (MP4)](media/steadyHitpointBars-wol-control.mp4).
+
+```
+steadyHitpointBars [UnitType ...] [log]
+```
+
+- **In WoL today:** a unit's floating HP bar sits on the `HITPOINTBAR` tag of its current animation. A Hussar's idle
+  animation has the tag, about 4.1 m up; its gallop has none, nor do some of its other animations, and then the game puts
+  the bar at a height from the data instead, lower. So the bar jumps between the two each time the unit changes
+  animation, every couple of seconds in a fight. The `veterancyBonus` chevrons, which hang at a fixed height, make it plain to see.
+- **Effect:** each unit's bar keeps the height of its tag: the highest the tag reached over the last 3 to 6 seconds of
+  animations that have it, and the middle of its sideways and forward sway. While the animation has no tag, the bar
+  stays there. It moves towards a new height by at most 1.5 m a second, so a change of stance never jumps.
+- **Which units:** every unit with a floating bar, or with types listed (unit types or proto names, up to 8), only the
+  units of those types.
+- **Buildings and ships:** a model whose tag does not move keeps its bar exactly where it was (a Caravel's tag is still
+  at 9.86 m); a building without the tag, such as WoL's Barracks, keeps the stock place. A unit whose tag was never seen
+  keeps the stock bar.
+- **With `overhealHitpointBars segment`:** the orange segment is drawn at the bar's place, so it follows it.
+- **With `veterancyBonus`:** the chevrons do not follow the tag at all (they hang on the unit, at a height per kind of
+  unit); with the key, the bar stays at its idle height, where the chevrons were set to sit above it.
+- **Multiplayer:** display only. Every player can have it or not, with other types.
+- **Log:** `steadyHitpointBars: floating HP bars hold their position (every unit) (display only)`, and with `log`, once
+  per proto: `steadyHitpointBars: unit 0 (Hussar): the bar holds at height 4.15 in model space; over 3 s the tag went
+  from 4.07 to 4.15 (...), and 1244 of 4269 frames had no tag`.
+- **Performance:** measured with `perfprobe.py`, 60 s each, the fight above: 1349 fps, 0.64 ms of render a frame and
+  83 % of the main thread with the key; 1275 fps, 0.68 ms and 86 % without; no frame over 50 ms in either.
+- **Tested in WoL (2026-11-09):** measured on the masters frame by frame: without the key, 7 of the 26 bars seen standing
+  for 4 s or more moved by 6 to 28 px (a Hussar's: 9 px, back and forth); with it, none moved by more than 1 px once
+  tracking errors were checked (2 px across 22 s of torch attacks on a Barracks, 1 px across 24 s of melee). Also a
+  Hussar charge, Settlers, a Caravel and a Fluyt, a Barracks, a saved game loaded, and a 100 s skirmish against a
+  European AI with no XS error. Not tested: an orange segment on screen (no Hussar was above its 100 % in this data),
+  types listed in the key, beside WoL's DLL, multiplayer.
+
 ## 6. Editing the game data
 
 Work on a copy of the WoL folder.
@@ -6800,7 +6851,7 @@ the code. Saved games were tested only where a section says so.
   which keys work, or only what the log says: `ignoreRegistryPath`, `bufferedFileReads`, `multipleInstances`, `compatMode`,
   `selectionLimit`, `customHotkeyContexts`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`,
   `customRevolutionBanners`, `overhealHitpointBars`, `showGatherRate`, `abilitySlots`,
-  `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `xsErrorLog`, `dataLint`,
+  `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `xsErrorLog`, `dataLint`,
   `dodgeSoundSet` and `criticalSoundSet`.
 - **Everything else changes the game state,** or a list every machine must agree on. A difference
   between players can desynchronize the game. Each section has a **Simulation** line.

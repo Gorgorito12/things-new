@@ -752,6 +752,20 @@ SITES = [
     # (player ID) / push [esp+10h] (fill) / push 1.0 (scale) / push ecx / mov ecx,[[0C66234h]+13Ch]
     # (world) / call 45FB71h, and the replaced jmp 4516B3h after it
     ("OverhealSegmentQueue", 0x45FB3F, 0x32),
+    # steadyHitpointBars, the floating bar's position in the bar chunk: cmp [esi+60h],0 / jz (no
+    # visual) / v = [0C66550h..58h] at [esp+2Ch] / call 45F22Dh(ECX = unit; [[0C6DF88h]] the
+    # HITPOINTBAR tag, 0, &v, 0, 0), the hooked test al,al / jz 460633h (0x45FB24, 8 bytes: no tag in
+    # the animation), and the continuation lea ecx,[esp+18h] / push ecx / lea edx,[esp+30h] / push edx
+    # / lea ecx,[esp+7Ch] / call 406BDBh(&v, &out), v through the unit's matrix [esp+74h]
+    ("SteadyBarBone", 0x45FAE2, 0x5D),
+    # steadyHitpointBars: the fallback without the tag (cold, 0x460633..0x46067B): the unit's position
+    # [[esp+48h]], its y + ([0x4605C1(unit, &tmp)+4] + [[unit+0B4h]+24h]) x [unit+0A8h] + 1.0, then
+    # jmp 45FB3Fh, the queueing
+    ("SteadyBarFallback", 0x460633, 0x49),
+    # steadyHitpointBars: FUN_0045F22D, bool thiscall(unit, tag, byte, vec3* out, byte world, int):
+    # [unit+60h] the visual, 0x45F1DC its tag position in model space (0x45F072 interpolates the
+    # animation file's track at the visual's clock [visual+8]); with world = 0 copied to out as is
+    ("BoneLocalPosition", 0x45F22D, 0x5F),
     # overhealHitpointBars segment: the queue function FUN_0045FB71, thiscall(world, pos*, scale,
     # fill, player, colour byte), ret 14h: grows [world+8D0h] to count [world+8D4h] + 1 (0x408308)
     # and fills a 28-byte record (+0 position, +0Ch scale, +10h fill, +14h player, +18h byte)

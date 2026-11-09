@@ -80,6 +80,7 @@ Outcome ApplyNoTrainNearEnemyTc(const Config& config);
 Outcome ApplyOverhealHitpointBars(const Config& config);
 Outcome ApplyOverhealSources(const Config& config);
 Outcome ApplyOverhealDecay(const Config& config);
+Outcome ApplySteadyHitpointBars(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
@@ -218,6 +219,7 @@ inline constexpr Feature kFeatures[] = {
     {"detonationDeath", ApplyDetonationDeath},
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
+    {"steadyHitpointBars", ApplySteadyHitpointBars},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
@@ -250,7 +252,7 @@ inline constexpr const char* kHandledKeys[] = {
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
-    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "showgatherrate",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };

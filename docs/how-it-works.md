@@ -2765,6 +2765,55 @@ Musketeer` decayed 3 HP/s (2 % of 150); `2% 1 Pikeman` left the Musketeer at 165
 against the AI (home city world present), a marked Explorer stayed at its 100 % (180) while
 regenerating; without the key it reached 220.
 
+### steadyHitpointBars
+
+**The stock position.** The bar chunk of the unit visual update (0x45FAA2..0x45FB6C; ESI = unit) places the floating
+bar before it queues it (0x45FB71):
+- with a visual (`[unit+60h]`), v = the vector at 0xC66550 (`[esp+2Ch]`), then `call 45F22Dh` (ECX = unit; arguments
+  `[[0C6DF88h]]`, inferred to be the `HITPOINTBAR` tag's ID, 0, &v, 0, 0). FUN_0045F22D, `bool thiscall(unit, tag, byte,
+  vec3* out, byte world, int)`, `ret 14h`, asks the visual (0x45F1DC) for the tag's position in model space and copies it
+  to `out` (with `world` = 1 it would go through the unit's own matrix, 0x4843DA). 0x45F1DC takes the animation file of
+  the visual's current animation (0x45F01C: the file index `[[visual]+54h][[[visual+18h]+10h]]`, the file
+  `[[[0C66240h]+0C13Ch]+index*4]`) and 0x45F072 looks the tag up in its name table (`[file+8]`, 0x407405) and
+  interpolates its track (`[file+34h]`, 12-byte keys) at the visual's clock `[visual+8]` over the duration `[file+58h]`;
+  a file of duration 0 returns its first key. AL = 0 when the file has no such tag;
+- `test al,al / jz 460633h` (0x45FB24); with the tag, 0x406BDB(&v, &out) takes v to the world with the unit's matrix
+  `[esp+74h]` into `[esp+18h]`, the bar's position;
+- without a visual or the tag, the cold block 0x460633 copies the unit's position `[[esp+48h]]` and adds
+  (`[0x4605C1(unit, &tmp)+4]` + `[[unit+0B4h]+24h]`) x `[unit+0A8h]` + 1.0 to its y, then rejoins at 0x45FB3F.
+
+The tag is a sampled track per animation file, with no rest pose: an animation without it puts the bar at the other
+height. Observed with a trace: a Hussar's idle file has the tag at 4.07..4.15 (model y), its gallop has none (2000 of
+4698 calls without it in one charge); a Settler's stays at 2.97, a Caravel's at 9.86; a Barracks never had it.
+
+**The hook** (`hooks/steadybar_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x45FB24 | `test al,al / jz 460633h` (8 B; AL = tag found, v at `[esp+2Ch]`, ESI = unit) | `UhcSteadyBarLocal(unit, &v, AL)`: AL = 1, v holds the steady position | 0x45FB2C (AL = 1) or 0x460633 (AL = 0) |
+
+`UhcSteadyBarLocal` keeps, per unit pointer (checked against the unit ID `[unit+10h]` and the proto `[unit+5Ch]`, so a
+reused pointer or a transform starts over), two buckets of 3 s of "tag time" (time counted only while the tag is found,
+at most 100 ms per call): the lowest and highest x, y and z of v. The target is the highest y and the middle of x and z
+over both buckets, and the output moves toward it by at most 1.5 model units a second of real time. With the tag, v is
+replaced by the output; without it, v is set to the output (AL = 1) once the unit's tag was seen, else AL = 0 and the
+stock fallback runs. A static tag gives lo = hi = v, so the output is v itself: a building or a ship whose tag does not
+move keeps its exact place. Units that are not of a listed type (is-a 0x44D7FA, cached per proto) return the stock AL
+untouched. The map is cleared when the world `[[0C66234h]+13Ch]` changes and purged of units unseen for 10 s.
+
+The `overhealHitpointBars` segment is queued at 0x45FB6C from `[esp+18h]`, after 0x406BDB, so it follows the bar. The
+rank marks of `veterancyBonus` hang on the bone `bonethatdoesntexist` (the unit's origin) at a fixed height per class,
+so they never followed the tag.
+
+**Why it is safe.**
+- The site decodes at instruction boundaries (0x45FB24 `test al,al`, 0x45FB26 `jz` rel32) and no reference lands at
+  0x45FB25..0x45FB2B (REA: no xref to 0x45FB2C); both continuations are the stock targets of the `jz`.
+- On both paths EAX, ECX, EDX and the flags are written before they are read (0x45FB2C: `lea ecx` / `push ecx` / `lea
+  edx`; 0x460633: `mov eax,[esp+48h]` / `mov ecx,[eax]` / `mov edx,[eax+4]`); the helper keeps EBX, ESI, EDI and EBP,
+  and the x87 stack is empty at the site and after the helper.
+- Display only: the chunk only places what is drawn this frame (one caller of the queue, 0x45FB67); the clock is the
+  real one, which only this machine's drawing reads. A map lookup per bar per frame; no allocation once a unit is in it.
+
 ### workRateByAbstractType
 
 An action's rates are a list of `{unittype ID, rate, -1}` (`[action+0Ch]`, count `[action+10h]`, 0Ch bytes
