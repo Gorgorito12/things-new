@@ -30,12 +30,12 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Monday 2026-11-09 08:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
 | Sunday 2026-11-08 10:23 | [`annexFacing`](#annexfacing) | Added. An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) faces the building it belongs to, also when the AI places it, and falls when that building dies or is destroyed. | The tag on the annexes; a placement distance that leaves room for the turned annex. |
 | Sunday 2026-11-08 10:10 | [`containedUnitsROF`](#containedunitsrof) | Added. An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | The attribute on the attacks that want it (none has it today). |
 | Sunday 2026-11-08 09:58 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Filmed in WoL, with a control. Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units, `InstantBallistics` included, scatter like that whatever their accuracy and hit what it lands on. | The tags are there; the unit type or proto name of the units that should always scatter, in the cfg. |
-| Sunday 2026-11-08 09:13 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Friday 2026-11-06 16:04 | [`sharedBuildLimit`](#sharedbuildlimit) | Filmed in WoL, with a control. Protos share a build limit: by unit type, with weights, or across a team. | The tags on the protos that share. |
 | Friday 2026-11-06 15:02 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Filmed in WoL, with a control. Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | An `AutoRangedModify` action (or a power) with that `ModifyType`. |
 | Friday 2026-11-06 14:35 | [`customHotkeyContexts`](#customhotkeycontexts) | Filmed in WoL, with a control. Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. |
@@ -3333,23 +3333,24 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Sunday 2026-11-08 09:13
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Monday 2026-11-09 08:30
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
 *In WoL, with the key (Ethiopians, 3 `Hussar` against 9 `Crossbowman`, rows ×1.5 damage at 1 kill, ×1.5 hit points at 2,
-×2 damage at 3):* two hussars survive with 413 and 345 hit points, and the log shows the ranks.
+×2 damage at 3; [`steadyHitpointBars`](#steadyhitpointbars) on in all four videos, so the bars do not jump):* two hussars survive
+with 504 and 346 hit points, and the log shows the ranks.
 [Full video (MP4)](media/veterancyBonus-wol.mp4).
 
 ![veterancyBonus in WoL, key off](media/veterancyBonus-wol-control.gif)
 
-*In WoL, key off (the same data):* the two that survive end with 261 and 155. The game skips a tag it does not know.
+*In WoL, key off (the same data):* the two that survive end with 299 and 113. The game skips a tag it does not know.
 [Full video (MP4)](media/veterancyBonus-wol-control.mp4).
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` (Ethiopians, 3 `Hussar` against 9 `Crossbowman`):* each rank shows its chevrons over
-the unit's HP bar, clear of it: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
+*In WoL, with `art\effects\uhc_rings` (the same scene and rows):* each rank shows its chevrons over the unit's HP bar, clear of
+it: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
 
