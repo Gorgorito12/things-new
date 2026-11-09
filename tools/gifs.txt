@@ -89,6 +89,8 @@ spreadAnyAccuracy-wol 5 24 2
 spreadAnyAccuracy-wol-control 5 24 2
 startingTC-wol 2 46 3
 startingTC-wol-control 2 30 3
+steadyHitpointBars-wol 16 12 1
+steadyHitpointBars-wol-control 28 12 1
 techPrereqRecheck-wol 2 22 2
 techPrereqRecheck-wol-control 2 22 2
 techRenameEffect-wol 2 22 2

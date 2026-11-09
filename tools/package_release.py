@@ -247,6 +247,8 @@ transformUpdatesLOS [log]     units transformed by a tech or revolution get the 
 broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
+steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
+                              instead of jumping with its animations
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
 nativePreview [tagged] [log] [Proto]   an empty native socket shows its Trading Post's
                               units and techs, read-only

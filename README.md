@@ -30,7 +30,7 @@ Every key, with what it needs and how far it was tested, is in the
 | **Gathering and farms** | `gatherFix`, `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `cratePriority`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits` |
 | **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `trainBatchSize`, `costEscalationTechs`, `annexFacing` |
 | **Techs and transforms** | `hcTargetTechs`, `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `unitTypeTechs` |
-| **Interface** | `nativePreview`, `displayedRange`, `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples` |
+| **Interface** | `nativePreview`, `displayedRange`, `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples`, `steadyHitpointBars` |
 
 ## Status
 

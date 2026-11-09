@@ -19,7 +19,7 @@ This page covers every key the modding guide marks **new**, 65 keys in all:
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `annexFacing` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
-| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples` | [interface](porting-code/interface.md) |
+| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
 The code pages are the code itself, C++ and MASM, generated from `src/` with `tools/porting_code.py`, so
@@ -176,6 +176,8 @@ says so:
 | `HealTickAdd` | `0x9E0CCF` | `0x26` B | 5 B at `0x9E0CE9` | `E8 B5 16 AA FF` (`call 4823A3h`) | the heal tick's heal; overhealSources |
 | `HealSearchRatio` | `0x9CD982` | `0x18` B | 5 B at `0x9CD984` | `E8 0C 19 A9 FF` (`call 45F295h`) | the heal search's first ratio; overhealSources |
 | `HpBarQueue`, `DynamicVbLock`, `DynamicVbFull` | `0x45FB71`, `0x40A6A2`, `0x40A689` | `0x6F`, `0x45`, `0x19` B | — | — | the queue the segment hook calls, and the vertex buffer's size check; `segment` |
+| `SteadyBarBone` | `0x45FAE2` | `0x5D` B | 8 B at `0x45FB24` (`jmp` + 3 NOP) | `84 C0 0F 84 07 0B 00 00` (`test al,al; jz 460633h`) | the floating bar chunk, after the HITPOINTBAR tag lookup `call 45F22Dh`; steadyHitpointBars |
+| `SteadyBarFallback`, `BoneLocalPosition` | `0x460633`, `0x45F22D` | `0x49`, `0x5F` B | — | — | the stock position without the tag, and the tag lookup; steadyHitpointBars |
 | `OverhealInfoProto`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag` | `0x9AF33B`, `0x480408`, `0x45F295`, `0x5F5CE3`, `0x5F5D39` | `0x19`, `0x26`, `0x48`, 6, 6 B | — | — | where ObjectInfo stores the database proto, the getter the hooks call, the ratio the helper mirrors, and the stores that put InitialHitpoints / MaxHitpoints at `[proto+9Ch]` / `[proto+98h]`; overhealHitpointBars (also `IsA`, `IsATrue`) |
 | `GatherTickRate` | `0x4ED02A` | `0x26` B | 8 B at `0x4ED044` (`jmp` + 3 NOP) | `D8 4C 24 30 D9 54 24 14` (`fmul [esp+30h]; fst [esp+14h]`) | the gather tick's rate per second in ST0 (FUN_004ECD87); showGatherRate record hook (continues at `0x4ED04C`) |
 | `GatherTickHead`, `GatherTickPushEbp`, `GatherTickPushEbx`, `GatherTickGatherer`, `GatherTickPlayerRate`, `GatherTickPlayerBlock`, `GatherTickAddResource` | `0x4ECD87`, `0x4ECDCC`, `0x4ECE16`, `0x4ECE6D`, `0x4ED130`, `0x4ED1A4`, `0x4ED1E1` | `0x14`, 7, `0x0A`, `0x15`, `0x2A`, `0x14`, `0x12` B | — | — | the tick's frame and ESI, the non-null gatherer and player, and the multiplier, shrine and defeated tests and the add that the record and its reader mirror |
@@ -229,7 +231,8 @@ is in the list. That covers `transformInventory`, `noTrainNearEnemyTC`, the over
 `techPrereqRecheck`, `transformUpdatesLOS`, `abilitySlots`, `lifespanAfterConstruction`,
 `snareOnlyHitUnit`, `civFirstTC`, `showGatherRate` and the unit panel row. Checked against the same list on
 2026-11-08: the sites of `containedUnitsROF`, `nativePreview`, `annexFacing`, the death observers and spreadAnyAccuracy's
-hooks at `0x4997AE`, `0x4C4DEC`, `0x4A9455` and `0x49BE95` are not in it either. `bufferedFileReads` writes in
+hooks at `0x4997AE`, `0x4C4DEC`, `0x4A9455` and `0x49BE95` are not in it either, nor (2026-11-09) steadyHitpointBars'
+`0x45FB24` and the ranges it verifies, `0x45FAE2`..`0x45FB3E`, `0x460633`..`0x46067B` and `0x45F22D`..`0x45F28B`. `bufferedFileReads` writes in
 the import table, which the list shows as a whole because Windows fills it at load: check that no other
 code wraps those six imports.
 
@@ -278,6 +281,7 @@ Each key's page has the code of every file below, the helpers it needs and its s
 | [`src/features/snare.cpp`](../src/features/snare.cpp), [`src/hooks/snare_hooks.asm`](../src/hooks/snare_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `snareOnlyHitUnit`. `modifiers.h` holds the read-only walk over a unit's modifier actions (`WalkModifiers`, `ModifierList`), shared with `buildingWorkRateAuras`. | sites `Snare*`, your cfg reader |
 | [`src/features/techrename.cpp`](../src/features/techrename.cpp), [`src/hooks/techrename_hooks.asm`](../src/hooks/techrename_hooks.asm) | `techRenameEffect`. | sites `TechRename*`, your cfg reader |
 | [`src/features/dopples.cpp`](../src/features/dopples.cpp), [`src/hooks/dopple_hooks.asm`](../src/hooks/dopple_hooks.asm) | `noCorpseDopples`. | unittypes, sites `NoCorpseDopple*`, your cfg reader |
+| [`src/features/steadybars.cpp`](../src/features/steadybars.cpp), [`src/hooks/steadybar_hooks.asm`](../src/hooks/steadybar_hooks.asm) | `steadyHitpointBars`. | unittypes (only with a UnitType), sites `SteadyBar*`, `BoneLocalPosition`, `IsA`, your cfg reader |
 | [`src/features/dance.cpp`](../src/features/dance.cpp), [`src/hooks/dance_hooks.asm`](../src/hooks/dance_hooks.asm) | `danceBonusCivs`. | sites `Dance*`, your cfg reader (`Config::All`) |
 | [`src/features/startingtc.cpp`](../src/features/startingtc.cpp), [`src/hooks/startingtc_hooks.asm`](../src/hooks/startingtc_hooks.asm) | `startingTC`, and the FirstTC proto hook it shares with `civFirstTC` (`InstallFirstTcProtoHook`, `UhcStartingTcProtoHook`). | unittypes, sites `FirstTcGate`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot`, `IsA`, `WriteBytes`; the data symbol `g_uhcCivFirstTcOn` and the function `UhcCivFirstTcMatches` (defined in `civfirsttc.cpp`; without that feature, define the global as 0 and a stub that returns false); your cfg reader |
 | [`src/features/civfirsttc.cpp`](../src/features/civfirsttc.cpp), [`src/hooks/civfirsttc_hooks.asm`](../src/hooks/civfirsttc_hooks.asm) | `civFirstTC`. | the startingTC files above for the shared proto hook; sites `CivTagUnknown`, `CivTagNextNode`, `CivById`, `CivOfPlayer`, `ProtoByName`, `ProtoById`, `ProtoFlag`, `RmPlaceCall`, `RmPlace`, `RmItemFootprint`, `RmNomadStart`, `TownStartQuery`, `TownStartSpawn`, `TownStartColonyLoop`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `PlayerById`, `UnitById`, `UnitAliveSlot`; `WriteCall`, `UhcTraceHook` (the wrapper's trace line is written from C++); your cfg reader |
@@ -1137,6 +1141,28 @@ Code: [interface](porting-code/interface.md#nocorpsedopples).
     EAX/ECX/EDX and the stack as on entry;
   - otherwise: `mov eax,[esp+2Ch]; mov ecx,[esp+54h]; jmp 495355h`.
 
+### steadyHitpointBars
+
+Code: [interface](porting-code/interface.md#steadyhitpointbars).
+
+- **Hook** at `0x45FB24`, in the floating bar chunk of the unit visual update, 8 bytes (`jmp` + 3 NOP) over `test al,al
+  / jz 460633h`:
+  - entry state: ESI = the unit, AL = 1 when `0x45F22D` found the HITPOINTBAR tag in the current animation, and then
+    `[esp+2Ch]` holds its position in model space (x, y, z floats); EAX, ECX, EDX and the flags are free; the x87 stack
+    is empty;
+  - call `bool __stdcall UhcSteadyBarLocal(unit, float* v = esp+2Ch, int found = AL)` and keep EBX, ESI, EDI, EBP;
+  - AL = 1: `jmp 45FB2Ch` (the stock path takes v to the world with the unit's matrix); AL = 0: `jmp 460633h` (the
+    stock fallback, the unit's position plus a height from data).
+- **Helper:** per unit pointer (with the unit ID `[unit+10h]` and the proto `[unit+5Ch]`: a change starts over), the
+  lowest and highest x, y and z of v in two buckets of 3 s of time with the tag (each call counts at most 100 ms). The
+  target is the highest y and the middle of x and z; the output moves toward it by at most 1.5 units a second. With the
+  tag, write the output to v and return 1; without it, write the output and return 1 once the tag was seen, else
+  return 0. A unit not of a listed type (`0x44D7FA`, cached per proto) returns `found` as it is. Clear the map when the
+  world `[[0C66234h]+13Ch]` changes; drop units unseen for 10 s.
+- **Display only:** the real clock is fine, as only this machine's drawing reads it; nothing is written to the unit.
+- **With `overhealHitpointBars segment`:** its hook at `0x45FB6C` reads `[esp+18h]` after `0x406BDB`, so the segment
+  follows the steady bar with no change.
+
 ### danceBonusCivs
 
 Code: [civs](porting-code/civs.md#dancebonuscivs).
@@ -1799,7 +1825,8 @@ Code: [population](porting-code/population.md#decimalpopulation).
   - `maintainWaitForPop [UnitType] [log]` (default `AbstractMaintainWaitForPop`),
     `lifespanAfterConstruction [UnitType] [log]` (default `AbstractLifespanAfterConstruction`),
     `noCorpseDopples [UnitType] [log]` (default `AbstractNoCorpseDopple`),
-    `gaiaSocketsOnly [UnitType] [log]` (no default: every socket);
+    `gaiaSocketsOnly [UnitType] [log]` (no default: every socket),
+    `steadyHitpointBars [UnitType ...] [log]` (up to 8; no type: every unit);
   - `broadsideMuzzleLimit <N> [UnitType] [log]`, N from 1 to 255, one line;
   - `abilitySlots <N> [log]`, N from 6 to 36;
   - `techRenameEffect [log]`, also read as `enableTechRenameEffect`;
@@ -1920,7 +1947,7 @@ Code: [population](porting-code/population.md#decimalpopulation).
     `transformInventory`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`,
     `lifespanAfterConstruction`, `customHotkeyContexts`, `snareOnlyHitUnit`, `techRenameEffect`,
     `noCorpseDopples`, `danceBonusCivs`, `noTrainNearEnemyTC`, `startingTC`, `showGatherRate`,
-    `decimalPopulation` and the three overheal keys.
+    `decimalPopulation`, `steadyHitpointBars` and the three overheal keys.
   - **Partly:** `snareOnlyHitUnit`'s gain was measured in one run each way: the group arrived
     at 50 s with the key and about 54 s without.
   - **Test data, not WoL's own:** poison, the test techs and auras, the Outpost's lifespan, the
