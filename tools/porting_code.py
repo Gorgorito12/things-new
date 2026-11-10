@@ -41,6 +41,7 @@ PAGES = {
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
+        "fastVertexFill": ["src/features/vertexfill.cpp", "src/hooks/clothfill_hooks.asm"],
         "xsErrorLog": ["src/features/xslog.cpp", "src/hooks/xslog_hooks.asm"],
     }),
     "population": ("Population", {

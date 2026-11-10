@@ -3568,6 +3568,72 @@ default) with its file offset.
 - `perfFileLog` counts the game's calls against the ones made to Windows. A session with the
   buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows.
 
+### fastVertexFill
+
+**The stock code.** FUN_0040D25B draws the cloth flags (the flags that wave on buildings and ships): `thiscall(flag
+manager [0xC67364], byte frontOnly, byte lowDetail)`, `ret 8`, called by the world draw at 0x450684 and by 0x42922A at
+0x429429. For each visible flag (`[mgr+68h]`, 34h bytes each) whose grid differs from the one before it, it:
+- takes `columns × rows × 2` vertices of 32 bytes (one side only with `frontOnly`) from the renderer's shared dynamic
+  vertex buffer, 0x40A6A2(renderer, count, 20h, &first) → 0x40A5B1. That buffer (`[renderer+660h]`: `{buffer, size,
+  used, byte}`) is created at 0x5AE7D5 with `CreateVertexBuffer(0x200000, D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0,
+  D3DPOOL_DEFAULT)` and locked with `D3DLOCK_NOOVERWRITE | D3DLOCK_NOSYSLOCK` (0x1800), or with `D3DLOCK_DISCARD`
+  (0x2800) when the piece does not fit;
+- fills it in two loops (0x40D523..0x40D654) from the simulated cloth, `[mgr+3Ch+index*4]`, 32 bytes per vertex with
+  `[mgr+14h]` vertices in a row: position (3 floats), normal (3 floats), U, V. Per vertex it writes the front side
+  (position and normal copied, U × `[flag+1Ch]`, V × `[flag+20h]` − `[flag+24h]`), and then the back side, half the lock
+  further: the same vertex with the normal × −1.0 (`[0xB856B8]`);
+- unlocks (0x40D67A) and draws.
+
+The back vertex is built from the front vertex the loop has just written (0x40D5C0..0x40D5FD): three `fld [eax+k]` and
+five `mov ecx,[eax+k]`, where EAX points into the lock. A dynamic write-only buffer is write-combined memory: writes
+are batched, and a read is not cached. At runtime the lock points into a region with protection `PAGE_READWRITE |
+PAGE_WRITECOMBINE` (0x404), and in a late game 99 % of the function's main-thread samples sit on the eight instructions
+that follow those reads: 5.5 to 7.8 % of the main thread with a flag in view, against 0.1 % for everything else the
+function does.
+The measurements are in [performance.md](performance.md), §11, "fastVertexFill". <!-- private -->
+
+**The hook** (`hooks/clothfill_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x40D523 | `mov ecx,[esp+18h]` / `mov edx,[esp+4Ch]` (8 B), and the loops after them | `UhcClothFillRecords(front, back, source, pitch, columns, rows, &uv, frontOnly)` | 0x40D655 (`mov ebp,[esp+34h]`, the loops' exit) |
+| 0x40D659, `verify` only | `mov ecx,[0C66044h]` (6 B) | `UhcClothFillCompare()`, then the stolen line | 0x40D65F |
+
+`UhcClothFillRecords` writes what the two loops write, in the same row and column order, but takes the back vertex
+from the source vertex again. Its float operations are the stock ones, on the x87 stack and in the stock order (`fld
+uv[0]` / `fmul source U`; `fld uv[1]` / `fmul source V` / `fsub uv[2]`; `fld normal` / `fmul [0B856B8h]`), so the
+rounding is the same whatever the control word is. The U and V results are stored twice from the same register (`fst`,
+`fstp`) where stock stores once and copies the dword; the normal is loaded from the source, whose dword stock had
+copied to the front vertex unchanged.
+
+**`verify`** leaves the stock loops in place: the hook at 0x40D523 first fills a buffer of the DLL with the same
+arguments (`UhcClothFillShadow`, laid out as the lock is, pre-filled with 0xCD and with a guard after it), re-executes
+the two stolen lines and jumps to the stock loop at 0x40D52B. Before the Unlock, `UhcClothFillCompare` compares the
+lock with that buffer, vertex by vertex, and checks that nothing else in it was written. The first fill also logs
+where the lock points (`VirtualQuery`) and the buffer's usage and pool (`GetDesc`).
+
+**Why it is safe.**
+- No branch or pointer from outside lands in 0x40D523..0x40D654 (every direct branch of `.text` and every dword of the
+  image was checked); 0x40D523 is reached only by falling through the row test `jle 40D659h` at 0x40D51D. 0x40D659 is a
+  branch target (of that `jle`), so the `verify` hook starts exactly there.
+- At 0x40D655 and after it, EAX, ECX, EDX and EBP are loaded before they are read (0x40D655 EBP, 0x40D659 ECX, 0x40D65F
+  EAX, 0x40D682 EDX). EBX must be `[esp+60h]`, which is what it holds at 0x40D523 and what stock reloads at 0x40D617; the
+  routine keeps EBX, ESI and EDI. The stack slots the stock loops use as counters and pointers (`[esp+28h]`, `[esp+2Ch]`,
+  `[esp+30h]`, `[esp+5Ch]`) are written again at 0x40D68A before anything reads them. The x87 stack is empty at the site
+  and after the routine.
+- Display only: the routine reads the cloth vertices and writes the locked vertex buffer, nothing else. No clock, no
+  random number, no game state; the bytes are the stock ones, so the picture is the same.
+- Nothing is kept between calls, so a new game, a loaded game and a device reset need nothing: the routine gets the
+  pointer of each lock from the game. Tested with the device created again twice (`res(1920, 1200)` and back) and the
+  window minimized and restored.
+
+**Checks.**
+- `fastVertexFill verify` compared 76,365 fills (10.5 million vertices) of a 60 s late-game run with the stock loops,
+  and 105,340 fills (15.6 million vertices) of a five-player skirmish in a large mod: no mismatch, and no write outside
+  the vertices.
+- With the key the function leaves the main thread's samples (0.00 % against 5.5 to 7.8 %), and the DLL as a whole
+  takes 0.1 % of them.
+
 ### xsErrorLog
 
 Both XS reporters, 0x43A3A4 and 0xA5667F, print through a callback at `[log]` that the shipped game leaves empty. A jmp over the
@@ -3646,8 +3712,8 @@ and watched with `PrintWindow`, and both work without focus.
   value is copied or read as the stock code would, with no new float operation. The one exception
   is `transformInventory scale`: a single-precision division of two game values, the same on every
   machine with the same build.
-- **Outside the simulation** (`bufferedFileReads`): change only how data reaches the game, never
-  what it receives.
+- **Outside the simulation** (`bufferedFileReads`, `fastVertexFill`): change only how data reaches the game
+  or the video card, never what they receive.
 - **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
   `overhealHitpointBars`, `showGatherRate`, `nativePreview`, `displayedRange`): change only what the local player sees or which keys
   work; every button or key sends the same command as stock. `showGatherRate`'s record hook runs in

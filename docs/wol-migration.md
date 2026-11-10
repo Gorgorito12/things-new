@@ -164,6 +164,7 @@ by console, `record --background --crop 960x640 --master`, GIF from the lossless
 | `deckCardCount` | a big deck | **not filmed**: it needs a home city of high level, and the bed's home cities are the user's real ones |
 | `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | **not filmed**: a Spanish skirmish in Age IV listed no revolution at the TC, so the banner hook did not run; WoL has no Fame or XP icons; the conversion was not driven |
 | `bufferedFileReads`, `multipleInstances` | load time; two copies | not filmed: nothing to see on screen. `multipleInstances background` ran under most videos |
+| `fastVertexFill` | five-player skirmish (Dutch; German, British, French and Spanish AIs), then Highlanders against Jaegers at an Ethiopian Town Center | not filmed: the picture is the same by design (`verify`: 105,340 fills, 0 mismatches). Applied beside the other keys, hook reached; FPS not measured in WoL |
 
 ## WoL's always-on patches (inventory, 2026-11-03)
 

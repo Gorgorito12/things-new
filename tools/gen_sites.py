@@ -1392,6 +1392,17 @@ SITES = [
     # thiscall, ret 0Ch; and the removal's head, verify only
     ("DestroyRemoveCall", 0x9828E7, 5),
     ("UnitRemoveHead", 0x4726B2, 6),
+    # fastVertexFill, the cloth flag draw 0x40D25B. Verify only: the lock of the shared dynamic vertex buffer
+    # (call 40A6A2h with stride 20h), the half count (cdq / sub / sar) and the height test, up to jle 40D659h.
+    ("ClothFillSetup", 0x40D4EB, 0x38),
+    # fastVertexFill: the fill loops, from mov ecx,[esp+18h] / mov edx,[esp+4Ch] (the 8 bytes replaced) to their exit
+    # mov ebp,[esp+34h] at 0x40D655 (the continuation). No branch from outside lands inside.
+    ("ClothFillLoop", 0x40D523, 0x136),
+    # fastVertexFill verify: mov ecx,[0C66044h] before the Unlock (6 bytes replaced), then mov eax,[ecx+660h] (the
+    # continuation), the buffer test and call [ecx+30h]
+    ("ClothFillUnlock", 0x40D659, 0x24),
+    # fastVertexFill: the float -1.0 the stock loop scales the back side's normals by (.rdata; read by the hook)
+    ("ClothFillBackScale", 0xB856B8, 4),
 ]
 
 

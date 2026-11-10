@@ -6,11 +6,11 @@ what each feature does in WoL (the `wol.cfg` line, the data, the log, the videos
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
 
-This page covers every key the modding guide marks **new**, 65 keys in all:
+This page covers every key the modding guide marks **new**, 66 keys in all:
 
 | Theme | Keys | Code |
 |---|---|---|
-| Game files | `bufferedFileReads`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
+| Game files | `bufferedFileReads`, `fastVertexFill`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
@@ -178,6 +178,9 @@ says so:
 | `HpBarQueue`, `DynamicVbLock`, `DynamicVbFull` | `0x45FB71`, `0x40A6A2`, `0x40A689` | `0x6F`, `0x45`, `0x19` B | — | — | the queue the segment hook calls, and the vertex buffer's size check; `segment` |
 | `SteadyBarBone` | `0x45FAE2` | `0x5D` B | 8 B at `0x45FB24` (`jmp` + 3 NOP) | `84 C0 0F 84 07 0B 00 00` (`test al,al; jz 460633h`) | the floating bar chunk, after the HITPOINTBAR tag lookup `call 45F22Dh`; steadyHitpointBars |
 | `SteadyBarFallback`, `BoneLocalPosition` | `0x460633`, `0x45F22D` | `0x49`, `0x5F` B | — | — | the stock position without the tag, and the tag lookup; steadyHitpointBars |
+| `ClothFillLoop` | `0x40D523` | `0x136` B | 8 B at `0x40D523` (`jmp` + 3 NOP) | `8B 4C 24 18 8B 54 24 4C` (`mov ecx,[esp+18h]; mov edx,[esp+4Ch]`) | the cloth flag draw's two fill loops, up to their exit `0x40D655`; fastVertexFill replaces them |
+| `ClothFillUnlock` | `0x40D659` | `0x24` B | 6 B at `0x40D659` (`jmp` + 1 NOP), only with `verify` | `8B 0D 44 60 C6 00` (`mov ecx,[0C66044h]`) | before the vertex buffer's Unlock; fastVertexFill's compare |
+| `ClothFillSetup`, `ClothFillBackScale` | `0x40D4EB`, `0xB856B8` | `0x38`, 4 B | — | — | the lock and the half count the hook's entry state comes from, and the float −1.0 the routine reads; fastVertexFill |
 | `OverhealInfoProto`, `MaxHitpointsGetter`, `HealthRatio`, `InitialHitpointsTag`, `MaxHitpointsTag` | `0x9AF33B`, `0x480408`, `0x45F295`, `0x5F5CE3`, `0x5F5D39` | `0x19`, `0x26`, `0x48`, 6, 6 B | — | — | where ObjectInfo stores the database proto, the getter the hooks call, the ratio the helper mirrors, and the stores that put InitialHitpoints / MaxHitpoints at `[proto+9Ch]` / `[proto+98h]`; overhealHitpointBars (also `IsA`, `IsATrue`) |
 | `GatherTickRate` | `0x4ED02A` | `0x26` B | 8 B at `0x4ED044` (`jmp` + 3 NOP) | `D8 4C 24 30 D9 54 24 14` (`fmul [esp+30h]; fst [esp+14h]`) | the gather tick's rate per second in ST0 (FUN_004ECD87); showGatherRate record hook (continues at `0x4ED04C`) |
 | `GatherTickHead`, `GatherTickPushEbp`, `GatherTickPushEbx`, `GatherTickGatherer`, `GatherTickPlayerRate`, `GatherTickPlayerBlock`, `GatherTickAddResource` | `0x4ECD87`, `0x4ECDCC`, `0x4ECE16`, `0x4ECE6D`, `0x4ED130`, `0x4ED1A4`, `0x4ED1E1` | `0x14`, 7, `0x0A`, `0x15`, `0x2A`, `0x14`, `0x12` B | — | — | the tick's frame and ESI, the non-null gatherer and player, and the multiplier, shrine and defeated tests and the add that the record and its reader mirror |
@@ -232,7 +235,8 @@ is in the list. That covers `transformInventory`, `noTrainNearEnemyTC`, the over
 `snareOnlyHitUnit`, `civFirstTC`, `showGatherRate` and the unit panel row. Checked against the same list on
 2026-11-08: the sites of `containedUnitsROF`, `nativePreview`, `annexFacing`, the death observers and spreadAnyAccuracy's
 hooks at `0x4997AE`, `0x4C4DEC`, `0x4A9455` and `0x49BE95` are not in it either, nor (2026-11-09) steadyHitpointBars'
-`0x45FB24` and the ranges it verifies, `0x45FAE2`..`0x45FB3E`, `0x460633`..`0x46067B` and `0x45F22D`..`0x45F28B`. `bufferedFileReads` writes in
+`0x45FB24` and the ranges it verifies, `0x45FAE2`..`0x45FB3E`, `0x460633`..`0x46067B` and `0x45F22D`..`0x45F28B`, nor (2026-11-10)
+fastVertexFill's `0x40D4EB`..`0x40D67C` (the list has nothing between `0x4099BC` and `0x415587`). `bufferedFileReads` writes in
 the import table, which the list shows as a whole because Windows fills it at load: check that no other
 code wraps those six imports.
 
@@ -282,6 +286,7 @@ Each key's page has the code of every file below, the helpers it needs and its s
 | [`src/features/techrename.cpp`](../src/features/techrename.cpp), [`src/hooks/techrename_hooks.asm`](../src/hooks/techrename_hooks.asm) | `techRenameEffect`. | sites `TechRename*`, your cfg reader |
 | [`src/features/dopples.cpp`](../src/features/dopples.cpp), [`src/hooks/dopple_hooks.asm`](../src/hooks/dopple_hooks.asm) | `noCorpseDopples`. | unittypes, sites `NoCorpseDopple*`, your cfg reader |
 | [`src/features/steadybars.cpp`](../src/features/steadybars.cpp), [`src/hooks/steadybar_hooks.asm`](../src/hooks/steadybar_hooks.asm) | `steadyHitpointBars`. | unittypes (only with a UnitType), sites `SteadyBar*`, `BoneLocalPosition`, `IsA`, your cfg reader |
+| [`src/features/vertexfill.cpp`](../src/features/vertexfill.cpp), [`src/hooks/clothfill_hooks.asm`](../src/hooks/clothfill_hooks.asm) | `fastVertexFill`. | sites `ClothFill*`, your cfg reader |
 | [`src/features/dance.cpp`](../src/features/dance.cpp), [`src/hooks/dance_hooks.asm`](../src/hooks/dance_hooks.asm) | `danceBonusCivs`. | sites `Dance*`, your cfg reader (`Config::All`) |
 | [`src/features/startingtc.cpp`](../src/features/startingtc.cpp), [`src/hooks/startingtc_hooks.asm`](../src/hooks/startingtc_hooks.asm) | `startingTC`, and the FirstTC proto hook it shares with `civFirstTC` (`InstallFirstTcProtoHook`, `UhcStartingTcProtoHook`). | unittypes, sites `FirstTcGate`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot`, `IsA`, `WriteBytes`; the data symbol `g_uhcCivFirstTcOn` and the function `UhcCivFirstTcMatches` (defined in `civfirsttc.cpp`; without that feature, define the global as 0 and a stub that returns false); your cfg reader |
 | [`src/features/civfirsttc.cpp`](../src/features/civfirsttc.cpp), [`src/hooks/civfirsttc_hooks.asm`](../src/hooks/civfirsttc_hooks.asm) | `civFirstTC`. | the startingTC files above for the shared proto hook; sites `CivTagUnknown`, `CivTagNextNode`, `CivById`, `CivOfPlayer`, `ProtoByName`, `ProtoById`, `ProtoFlag`, `RmPlaceCall`, `RmPlace`, `RmItemFootprint`, `RmNomadStart`, `TownStartQuery`, `TownStartSpawn`, `TownStartColonyLoop`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `PlayerById`, `UnitById`, `UnitAliveSlot`; `WriteCall`, `UhcTraceHook` (the wrapper's trace line is written from C++); your cfg reader |
@@ -668,6 +673,30 @@ Code: [game-files](porting-code/game-files.md#bufferedfilereads).
   `verify` argument checks this against the file.
 - **Why it can differ between players:** it changes how the bytes are fetched, not which bytes.
 - **The design:** [how-it-works.md](how-it-works.md#bufferedfilereads).
+
+### fastVertexFill
+
+Code: [game-files](porting-code/game-files.md#fastvertexfill).
+
+- **Hook** at `0x40D523`, in the cloth flag draw FUN_0040D25B, 8 bytes (`jmp` + 3 NOP) over `mov ecx,[esp+18h] / mov
+  edx,[esp+4Ch]`. It replaces the two fill loops that follow, up to `0x40D654`:
+  - entry state: EAX = half the vertex count of the lock, ESI = the flag manager, EDI = the source buffer's index,
+    `[esp+14h]` rows (above 0), `[esp+18h]` columns, `[esp+4Ch]` the locked pointer, `[esp+50h]`, `[esp+54h]`,
+    `[esp+58h]` the U scale, V scale and V offset (floats), `[esp+70h]` the byte "front side only"; the x87 stack is
+    empty;
+  - call `void __stdcall UhcClothFillRecords(front = [esp+4Ch], back = front + EAX*20h, src = [esi+edi*4+3Ch], pitch =
+    [esi+14h], columns, rows, uv = esp+50h, frontOnly)`;
+  - `jmp 40D655h` with EBX, ESI and EDI as they were; EAX, ECX, EDX and EBP are free.
+- **The routine:** per row and column, the source vertex `src + (pitch*row + column)*20h` (8 dwords) gives the front
+  vertex (dwords 0 to 5 copied; `fld uv[0] / fmul [src+18h]`; `fld uv[1] / fmul [src+1Ch] / fsub uv[2]`) and, unless
+  `frontOnly`, the back vertex (dwords 0 to 2 copied; dwords 3 to 5 `fld [src+k] / fmul [0B856B8h] / fstp`; the U and V
+  results stored a second time from the same register).
+- **Must preserve:** the bytes in the lock. Keep the float operations on the x87 stack, in that order: with SSE, or
+  with `a*b - c` reordered, the last bit can differ from stock. Never read the locked pointer.
+- **`verify`:** hook `0x40D659` (6 bytes, `mov ecx,[0C66044h]`, continue at `0x40D65F`; it is also the target of the
+  `jle` at `0x40D51D`), keep the stock loops (re-execute the two instructions and `jmp 40D52Bh`), and compare.
+- **Why it can differ between players:** it writes vertex data only; the bytes are the stock ones.
+- **The design:** [how-it-works.md](how-it-works.md#fastvertexfill).
 
 ### xsErrorLog
 
@@ -1827,6 +1856,7 @@ Code: [population](porting-code/population.md#decimalpopulation).
     `noCorpseDopples [UnitType] [log]` (default `AbstractNoCorpseDopple`),
     `gaiaSocketsOnly [UnitType] [log]` (no default: every socket),
     `steadyHitpointBars [UnitType ...] [log]` (up to 8; no type: every unit);
+  - `fastVertexFill [log] [verify]`;
   - `broadsideMuzzleLimit <N> [UnitType] [log]`, N from 1 to 255, one line;
   - `abilitySlots <N> [log]`, N from 6 to 36;
   - `techRenameEffect [log]`, also read as `enableTechRenameEffect`;
@@ -1950,6 +1980,9 @@ Code: [population](porting-code/population.md#decimalpopulation).
     `decimalPopulation`, `steadyHitpointBars` and the three overheal keys.
   - **Partly:** `snareOnlyHitUnit`'s gain was measured in one run each way: the group arrived
     at 50 s with the key and about 54 s without.
+  - **Checked, not filmed:** `fastVertexFill` (2026-11-10) draws the same picture by design. In WoL its `verify`
+    argument compared 105,340 fills (15.6 million vertices) of a skirmish with the stock code: no mismatch. Its
+    gain was measured on the stock game only (+7 % at 1920×1080 and 2560×1600), and it did not run from `dinput8.dll`.
   - **Test data, not WoL's own:** poison, the test techs and auras, the Outpost's lifespan, the
     aura before a wonder's power, and overheal's `MaxHitpoints` were added to the test copy for the
     video and removed after. WoL's data has no `SetTechName` effect, no wonder with two abilities and

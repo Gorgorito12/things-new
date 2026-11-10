@@ -21,7 +21,7 @@ Every key, with what it needs and how far it was tested, is in the
 
 | Theme | Keys |
 |---|---|
-| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `xsErrorLog`, `dataLint`, `multipleInstances`, `compatMode` |
+| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `xsErrorLog`, `dataLint`, `multipleInstances`, `compatMode` |
 | **Population, decks and limits** | `basePop`, `extraPop`, `decimalPopulation`, `deckCardCount`, `selectionLimit`, `noAILimit`, `noAILimitV2`, `enableAllTeams` |
 | **New data and scripting** | `customAbstractTypes`, `customProtoUnitCommands`, `customHotkeyContexts`, `techRenameEffect`, `customSyscalls`, `customCheats`, `kbUnitSyscalls`, `auraStacking` |
 | **Civs** | `asianCivs`, `nativeCivs`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`, `danceBonusCivs`, `wonderCivUnitType`, `firstTC`, `startingTC`, `civFirstTC`, `customRevolutionBanners`, `removeFameRestriction` |

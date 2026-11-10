@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Tuesday 2026-11-10 12:54 | [`fastVertexFill`](#fastvertexfill) | Added. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Monday 2026-11-09 08:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
@@ -332,6 +333,7 @@ Where the game reads its data, how it reads it, and how it starts.
 |---|---|---|---|---|
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | **new** | Nothing. | confirmed (single player) |
+| [`fastVertexFill`](#fastvertexfill) | Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | **new** | Nothing. | confirmed (single player) |
 | [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages to the log, with file and line. | **new** | Nothing. | confirmed |
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | for tests | Nothing. | confirmed (two copies, single player) |
@@ -399,6 +401,66 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
   need the same setting.
 - **Status:** confirmed in single player, on the stock game: on a 25-minute save, `verify` checked 7.5
   million buffered reads against the file and found no mismatch. Not tested in WoL or in multiplayer.
+
+#### fastVertexFill
+
+*The game draws its waving flags with less work, so it runs at more frames per second when flags are on screen.*
+
+**Added:** Tuesday 2026-11-10 12:54
+
+```
+fastVertexFill [log] [verify]
+```
+
+- **In the game today:** the flags that wave on Town Centers, other buildings and ships are cloth: a grid of
+  points the game moves every frame. To draw a flag, the exe writes the grid into video memory twice, once for
+  each side of the cloth, and it builds the second side by reading back the first one it has just written. Video
+  memory of that kind is made for writing; reading from it is very slow. With flags on screen, that reading
+  alone took 5.5 to 7.8 % of the game's main thread in the test below.
+- **Effect:** the second side is built from the game's own copy of the grid. The flags get the same bytes, so
+  the picture is the same, and the frame is shorter.
+- **Measured** in a late 8-AI game of the stock game ([performance.md](performance.md), §11, "fastVertexFill"),
+  60 s per run, with stock Direct3D 9 on an NVIDIA RTX 4090; each number is one run:
+
+  | Window | Without | With | Change | Render time per frame | The flags' share of the main thread |
+  |---|---|---|---|---|---|
+  | 1920×1080 | 188.7 / 193.5 FPS | 203.4 / 204.0 FPS | **+7 %** | 3.05 → 2.72 ms | 6.5–7.0 % → 0.0 % |
+  | 2560×1600 | 201.8 / 203.7 FPS | 217.9 / 216.8 FPS | **+7 %** | 2.80 → 2.49 ms | 5.5–5.6 % → 0.0 % |
+  | 3840×2160 | 190.5 / 188.5 FPS | 198.8 / 210.7 FPS | **+8 %** (+4 % and +12 %) | 3.05 → 2.70 ms | 7.4–7.8 % → 0.0 % |
+  | 1280×720 (no flag drawn) | 253.4 FPS | 256.9 FPS | none (within noise) | 1.79 → 1.76 ms | 0.0 % → 0.0 % |
+
+  The simulation's time per frame, the frames over 50 ms (0 or 1 per run either way) and the memory did not
+  change. In WoL it ran a skirmish and a fight, but its frame rate was not measured.
+- **With DXVK** (a Direct3D 9 to Vulkan wrapper some players use): the same reading made DXVK 3.1.1 slower
+  than stock Direct3D 9 in this test (179.6 FPS). With the key it gave 237.2 FPS, with no `dxvk.conf` (one run each).
+- **Limits:**
+  - it only helps while cloth flags are on screen; with none, the code does not run and nothing changes;
+  - the gain follows how many flags are drawn, in the view or in the water's reflection: in the test, one Town
+    Center's flag was on screen at 2560×1600, and at 1280×720 the camera showed none;
+  - it was measured on one PC. How slow that reading is depends on the video driver, so the gain can be smaller
+    or larger on another card.
+- **WoL needs:** nothing.
+  - `verify` is a correctness test: the stock code fills the flags, and every fill is compared, byte for byte,
+    with what the key would have written. It is slower than stock.
+  - `log` writes the session's counts at exit.
+- **Log:**
+  - at startup, `fastVertexFill: the cloth flags' vertices are built without reading the locked vertex buffer
+    (display only: same bytes)`;
+  - `hook reached: fastVertexFill cloth flag fill (0x40D523)` the first time a flag is drawn;
+  - with `verify`, at exit: `fastVertexFill verify: N fills checked against the stock loops (V vertices), M
+    mismatches, …`. M must be 0.
+- **Simulation:** no. It changes how the flags' vertices reach the video card, not which vertices, and it
+  touches nothing the game rules read, so players do not need the same setting.
+- **Status:** confirmed in single player (2026-11-10).
+  - On the stock game: `verify` compared 76,365 fills (10.5 million vertices) of a 60 s run of a 25-minute
+    save with the stock code and found no mismatch; the game also changed resolution twice (a new Direct3D
+    device each time) and was minimized and restored with the key on.
+  - In WoL, beside the other keys of this guide: `verify` compared 105,340 fills (15.6 million vertices) of a
+    five-player skirmish (a Dutch player and German, British, French and Spanish AIs, 2.4 game minutes) with no
+    mismatch and no XS error; with the key on, Highlanders and Jaegers fought beside an Ethiopian Town Center
+    and its flag was drawn.
+  - Not tested: multiplayer, a full-length game, other video cards and drivers, and beside WoL's DLL (the
+    addresses it uses are not among those WoL's DLL patches).
 
 #### xsErrorLog
 
@@ -6849,7 +6911,7 @@ the code. Saved games were tested only where a section says so.
 - **Every player needs the same DLL, the same `wol.cfg` and the same data.** That is how WoL ships
   already, and it is the safe rule for every key.
 - **Keys that may differ between players,** because they change only what the local player sees or
-  which keys work, or only what the log says: `ignoreRegistryPath`, `bufferedFileReads`, `multipleInstances`, `compatMode`,
+  which keys work, or only what the log says: `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `multipleInstances`, `compatMode`,
   `selectionLimit`, `customHotkeyContexts`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`,
   `customRevolutionBanners`, `overhealHitpointBars`, `showGatherRate`, `abilitySlots`,
   `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `xsErrorLog`, `dataLint`,

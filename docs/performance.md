@@ -54,6 +54,11 @@ GPU the game uses. It was written for the "late-game lag and stutter" investigat
   render objects. The particle update (0.54 ms) looked like the one self-contained piece that could move to a
   worker. The safety check for that (§11, "particleWorker: safety check") found it is not self-contained: pass 0
   draws the particles it updates, and both share the game's pose code, which writes global buffers. Not built.
+- **`fastVertexFill` (§11, 2026-11-10; display only):** the cloth flags' draw 0x40D25B builds the back side of each
+  flag by reading back the vertices it has just written to a locked write-only vertex buffer, which is
+  write-combined memory. That read-back alone was 5.5–7.8 % of the main thread. The key builds both sides from the
+  source: +7 % FPS at 1920×1080 and 2560×1600, +8 % at 3840×2160, nothing at 1280×720 where no flag was drawn; the
+  same bytes (`verify`: 10.5 M vertices, 0 mismatches). It also turns DXVK without options from −11 % into +17 %.
 
 ## 1. Frame pacing and timers
 
@@ -364,7 +369,7 @@ Hottest exe functions (native run; `ev_e25829f2…`):
 
 | Share | Function | Role |
 |---|---|---|
-| 5.2 % | FUN_0040d25b | Renderer: shader/material parameters (`blendColor`, `pixelxformColor`) |
+| 5.2 % | FUN_0040d25b | Renderer: the cloth flags' draw. Read here as "shader/material parameters" from its strings `blendColor` and `pixelxformColor`; §11, "fastVertexFill", has what it does. |
 | 3.5 % | FUN_0044d863 / FUN_0044d898 | Small float tests, many callers |
 | 2.4 % | FUN_00407a06 | Vector math |
 | 2.2 % | FUN_00485f10 | Large spatial query with float vectors |
@@ -629,7 +634,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
 | DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is one loop in 0x40D25B that reads back from a locked buffer (§11). **With `d3d9.cachedWriteOnlyBuffers = True` in `dxvk.conf` that loop costs nothing and DXVK beats stock: +14 % at 2560×1600, +18 % at 3840×2160, +14 % at 720p**, no frame over 50 ms, the picture unchanged on the frames compared. FPU state kept (0x007F), +225–255 MB of address space. Without the option: not recommended. With it: the only D3D layer measured that is faster than stock, as a user-side setup; a multiplayer game and a full-length game come before it is recommended. |
-| The read-back loop in 0x40D25B (0x40D5C0…0x40D5FD) on stock D3D9 | DLL feature | Not built [I]. It is 5.6–7.5 % of the main thread at 2560×1600 and above (§11), and DXVK's cached buffers make it free. A key that makes the second copy read from the source record instead of the locked buffer could give stock D3D9 up to that share. The function and its buffer are not analysed yet. |
+| The read-back loop in 0x40D25B (0x40D5C0…0x40D5FD): `fastVertexFill` | DLL feature, opt-in, display only | **Implemented and measured** (§11, "fastVertexFill"). 0x40D25B draws the cloth flags; the loop reads eight values per back-side vertex from a locked `DYNAMIC \| WRITEONLY` vertex buffer (write-combined memory, `PAGE_WRITECOMBINE` at runtime). The key's routine reads the source instead and writes the same bytes: on stock D3D9 **+7 % FPS at 1920×1080 and 2560×1600, +8 % at 3840×2160**, nothing at 1280×720 (no flag drawn); the function goes from 5.5–7.8 % of the main thread to 0.0 %. `verify`: 76,365 fills, 10.5 M vertices, 0 mismatches. With DXVK 3.1.1 and no `dxvk.conf`: 179.6 → 237.2 FPS (one run each). Not tested in multiplayer; it does not touch the simulation. |
 | dgVoodoo2 (D3D9 → D3D11) | wrapper | Measured (§11): −5…−8 % FPS; FPU state kept. Not recommended. |
 | `RunAsFastAsPossible`, `fixedUpdate`, `MinRandUpdate`, `syncUpdateInterval`, the 100 ms cap | — | Rejected: they change the simulation. |
 
@@ -781,7 +786,7 @@ core) [O].
     0x40D5C0…0x40D5FD, which copies 32-byte records from `[eax]` to `[edx]` and scales three floats by
     `[0xB856B8]` (`cs`). Both pointers come from one buffer that 0x40A6A2 returns (0x40D4F9, stride 20h): the
     loop first writes each record at `[eax]` (0x40D549…0x40D5BB) and then **reads it back** to write a second,
-    scaled copy at `[edx]` [O]. [I] 0x40A6A2 locks a write-only vertex buffer, and reading from the uncached
+    scaled copy at `[edx]` [O]. [I, confirmed in "fastVertexFill" below] 0x40A6A2 locks a write-only vertex buffer, and reading from the uncached
     memory DXVK maps for it is what costs. The options below test that.
   - Other threads [O]: DXVK's submission thread `d3d9.dll+0x290460` takes 18 % of a core in place of the NVIDIA
     driver's worker (27 %); the process uses 120 % of a core against 126 %.
@@ -893,6 +898,10 @@ protection's hook. That rules out D3D11 call counts and hooked Present times.
    stock D3D9 also pays for. Two things follow: (a) DXVK with that option is worth offering as an optional,
    user-side setup once a multiplayer game and a full-length game have been run with it; (b) the loop is a
    candidate for a small DLL key on stock D3D9 (≤ 6–7 % [I]; §10).
+
+   **Update (2026-11-10, 12:51): (b) is built, as `fastVertexFill`** ("fastVertexFill" below): +7 % on stock D3D9
+   at 1920×1080 and 2560×1600 and +8 % at 3840×2160, with the same bytes in the vertex buffer. With the key on, DXVK
+   needs no option either (237.2 FPS in one run).
 2. **Not a render thread fed by a snapshot.** It is the only large prize (+75–80 % [I]), but the render and the
    simulation write each other's objects, a race there is a desync, and DE never did it either.
 3. **Yes, split work inside the render, the way DE does, starting with particles:** the particle update on a
@@ -978,10 +987,126 @@ python -I rea/evidence/age3y-b1a1dab7/particleworker-20261110/lockflag.py <pid>
 The tracer was started while the bench recorded and detached by itself after 30 s; the game went on and closed
 normally (the §11 incident did not repeat).
 
+### fastVertexFill: the read-back loop on stock D3D9 (2026-11-10)
+
+The question left by the DXVK runs: is the loop 0x40D5C0…0x40D5FD slow on stock Direct3D 9 for the same reason,
+and can the DLL remove that cost without a wrapper? Evidence: REA bundle
+`rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110.json`, runtime files and scripts in `fastvertexfill-20261110/`.
+
+**What the function is** [O] (`ev_20b69500…`, `ev_f342b619…`, `cs`). 0x40D25B is the draw of the **cloth flags**,
+the flags that wave on buildings and ships (manager `[0xC67364]`; callers: the world draw at 0x450684, so twice a
+frame, and 0x42922A at 0x429429). §8 called it "shader/material parameters" after its two strings. Per queued flag it
+takes `columns × rows × 2` vertices of 32 bytes from the renderer's shared dynamic vertex buffer, fills them, unlocks
+and draws:
+- **The buffer** (`[renderer+660h]`): `CreateVertexBuffer(0x200000, 0x208 = D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY,
+  FVF 0, D3DPOOL_DEFAULT)` at 0x5AE7D5; locked by 0x40A6A2 → 0x40A5B1 with 0x1800 (`NOOVERWRITE | NOSYSLOCK`), or
+  0x2800 (`DISCARD | NOSYSLOCK`) from offset 0 when the piece does not fit.
+- **The fill** (0x40D523…0x40D654): per vertex of the simulated cloth (position, normal, U, V) it writes the front
+  side at `[eax]` (0x40D549…0x40D5BB: six dwords copied, U and V scaled), and then the back side at `[edx]`, half the
+  lock further (0x40D5C0…0x40D5FD): the normal times −1.0 (`[0xB856B8]`) and the other five dwords copied. **All eight
+  values of the back vertex are read from the front vertex just written to the lock**, not from the source: `fld
+  [eax-4]`, `fld [eax]`, `fld [eax+4]`, and `mov ecx,[eax-10h]`, `[eax-0Ch]`, `[eax-8]`, `[eax+8]`, `[eax+0Ch]`.
+  With `frontOnly` (the first argument) the second block is skipped.
+
+**Where the samples are** [O]. The instruction addresses of today's stock D3D9 base runs (`bench-vk2-base*.csv.stacks.gz`,
+`fastvertexfill-20261110/eiphist.py`; a sample shows the instruction that was waiting, i.e. the one after a slow load):
+
+| Run | Samples in 0x40D25B | Front side 0x40D549…0x40D5BE | Back side 0x40D5C0…0x40D5FD |
+|---|---|---|---|
+| 2560×1600, base 1 | 632 of 10,801 (5.85 %) | 4 | 623 (98.7 %) |
+| 2560×1600, base 3 | 633 of 10,883 (5.82 %) | 4 | 627 (99.4 %) |
+| 3840×2160 | 814 of 10,775 (7.55 %) | 1 | 811 (99.8 %) |
+| 1280×720 | 0 of 10,832 | — | — |
+| DXVK, `cachedWriteOnlyBuffers` | 6 of 10,704 (0.06 %) | 4 | 2 |
+
+Inside the back side, the samples sit only on the eight instructions that follow a read of `[eax+k]`, 9–16 % each
+(e.g. base 1: 100, 67, 86, 74, 67, 57, 85, 85), and on nothing else. Reading the source and writing both sides costs
+nothing measurable (the front side, and the DXVK row). So on stock D3D9 the cost is the read-back, not the copy.
+**At runtime** [O] (run `fvf-verify1`: the key's `verify` mode leaves the stock loops in place and logs the lock):
+- the lock points at 0x13200000, in private memory with protection 0x404 = `PAGE_READWRITE | PAGE_WRITECOMBINE`
+  (a 14 MB region); `GetDesc` on the buffer gives usage 0x208, pool 0 (`D3DPOOL_DEFAULT`), 2,097,152 bytes. In the
+  WoL bed: 0x14400000, the same protection and description. Under DXVK without options: 0x14CC0000, also 0x404;
+- about 940 fills and 126,000 vertices a second at 186 FPS: **5 fills and about 680 vertices per frame**, with one
+  Town Center's flag in view (a 12 × 8 grid; the fills are a mix of one side, 96 vertices, and two sides, 192). [I]
+  That is about two two-sided fills, 1,500 reads of the lock, per frame for 0.27 ms: over 100 ns per read;
+- at 1920×1080 the save's camera lands on open sea with no flag on screen, and the loop still takes 6.5–7.0 %; at
+  1280×720 it does not run. [?] Which flags are queued there (the water's reflection view is one candidate).
+
+**The fix** [O]. Candidates: (a) fill a scratch buffer and copy it to the lock; (b) create or lock the buffer
+another way; (c) keep the loop's writes and take the back vertex from the source vertex. (c) was built, as the key
+`fastVertexFill [log] [verify]`: it is the smallest change, adds no copy, and gives the same bytes by construction
+(the same x87 operations on the same inputs; [how-it-works.md](how-it-works.md#fastvertexfill)). (b) was rejected:
+the buffer is shared by every dynamic draw of the renderer (dozens of readers of `[renderer+660h]`), what a lock without
+`WRITEONLY` returns is up to the driver, and it would change memory use for all of them. The hook replaces the two
+loops 0x40D523…0x40D654 with one routine call per lock; no other key and none of WoL's patched ranges
+(`wol-memdiff.txt`: nothing between 0x4099BC and 0x415587) touches them.
+
+**`verify`** [O]: the stock loops fill the lock, and each fill is compared, byte for byte, with what the routine
+wrote into a buffer of the DLL from the same arguments:
+
+| Run | Fills | Vertices | Mismatches |
+|---|---|---|---|
+| `uhcbench25`, 60 s, stock D3D9, 2560×1600 | 76,365 | 10,462,368 | 0 |
+| The same under DXVK 3.1.1 | 46,272 | 6,307,968 | 0 |
+| WoL bed, five-player skirmish (four European AIs), 2.4 game minutes, 1920×1080 | 105,340 | 15,581,088 | 0 |
+
+**A/B** [O] (2026-11-10, 12:05–12:51; §11's procedure, 60 s per run, the same DLL in every run, only the cfg line
+differs; base and key runs alternated; besides the probe itself, no other process above 5 % of a core during any run):
+
+| Run | FPS | p5 FPS | Update / render (game's timers, ms) | Main thread | GPU 3D | 0x40D25B, share of main-thread samples | Frames over 50 ms |
+|---|---|---|---|---|---|---|---|
+| 2560×1600 base (two runs) | 201.8 / 203.7 | 182 / 188 | 2.13–2.15 / 2.77–2.83 | 94–95 % | 11 % | 5.58 / 5.52 % | 0 / 0 |
+| &nbsp;&nbsp;`fastVertexFill` (two runs) | 217.9 / 216.8 (**+7.2 %**) | 187 / 196 | 2.13 / 2.48–2.50 | 94–95 % | 14 % | 0.00 / 0.00 % | 0 / 0 |
+| 1920×1080 base (two runs) | 188.7 / 193.5 | 166 / 167 | 2.19–2.25 / 3.01–3.08 | 95 % | 18 % | 6.98 / 6.51 % | 1 / 0 |
+| &nbsp;&nbsp;`fastVertexFill` (two runs) | 203.4 / 204.0 (**+6.6 %**) | 178 / 175 | 2.19–2.26 / 2.69–2.75 | 94–95 % | 19 % | 0.00 / 0.01 % | 0 / 0 |
+| 3840×2160 base (two runs) | 190.5 / 188.5 | 170 / 161 | 2.24–2.26 / 3.03–3.07 | 95 % | 15 % | 7.82 / 7.44 % | 0 / 0 |
+| &nbsp;&nbsp;`fastVertexFill` (two runs) | 198.8 / 210.7 (**+8.0 %**) | 165 / 193 | 2.12–2.27 / 2.63–2.77 | 93–95 % | 18 % | 0.00 / 0.03 % | 1 / 0 |
+| 1280×720 base / `fastVertexFill` | 253.4 / 256.9 (+1.4 %) | 226 / 227 | 2.16 / 1.79 against 2.15 / 1.76 | 95 % / 93 % | 14 % / 13 % | 0.00 / 0.00 % | 0 / 0 |
+| `fastVertexFill verify`, 2560×1600 | 186.2 | 165 | 2.20 / 3.18 | 94 % | 11 % | 5.06 % | 0 |
+| DXVK 3.1.1, no `dxvk.conf`, 2560×1600: base / `fastVertexFill` | 179.6 / 237.2 (**+32 %**) | 158 / 220 | 2.29 / 3.28 against 2.07 / 2.14 | 98 % / 98 % | 10 % / 11 % | 21.64 / 0.00 % | 0 / 0 |
+
+- **Stock D3D9** [O]: the render time falls by 0.31–0.35 ms per frame (2.80 → 2.49 at 2560×1600, 3.05 → 2.72 at
+  1920×1080, 3.05 → 2.70 at 3840×2160) and the update time does not move. The gain is about what the function's
+  share predicts. With the key `UHC.dll` as a whole is 0.1 % of the main thread's samples, the same as at 720p where
+  the routine does not run, so the fill itself costs nothing measurable. Address space (927–936 MB) and the frames
+  over 50 ms are unchanged. The two key runs at 3840×2160 differ by 6 % (198.8 and 210.7); the other pairs agree to 1 %.
+- **1920×1080** [O]: the base is slower than at 2560×1600 because the save's camera lands elsewhere (open sea,
+  water and its reflection: GPU 18 %), not because of the resolution. The loop's share is 6.5–7.0 % there.
+- **1280×720** [O]: the loop does not run in this save, and the key changes nothing (+1.4 %, inside the noise).
+- **DXVK without options** [O]: one run each. The key removes the loop that made DXVK slower than stock (§11,
+  "A/B runs"): 237.2 FPS is +17 % over today's stock base (202.8) and above the 224.9 FPS of
+  `d3d9.cachedWriteOnlyBuffers = True`. So DXVK needs no `dxvk.conf` when the key is on [I: one run, not compared in
+  the same session with the option].
+- **Picture** [O]: screen grabs 30 s into each run (`fastvertexfill-20261110/*.screen.png`): the Town Center's flag is
+  drawn and waves with the key as without it; nothing else differs. The runs are not frame-synchronous, so the
+  byte comparison of `verify` is the proof, not the grabs.
+- **Stability** [O]: with the key, `res(1920, 1200)` and `res(2560, 1600)` by console (the log shows a new
+  `CreateDevice` each time, so the vertex buffer was created again), then the window minimized (no frame presented)
+  and restored: frames went on after each step, and the game left and closed with exit code 0 (`fvf-device`). A
+  saved game is what every run loads. `fastVertexFill bogus` logs the unknown argument and FAILED, and writes nothing.
+- **WoL** [O] (bed `C:\AoE3-UHC-WoLReal2`, its own cfg plus the 34 enabled lines of `examples/Startup/uhc.cfg` it lacks
+  and `xsErrorLog`): no FAILED line; `verify` in a five-player skirmish as in the table, the AIs built and gathered,
+  no XS message; then the key itself in a scenario (a Town Center, 12 Highlanders against 12 Jaegers): hook reached,
+  83,848 fills, the flag drawn, the fight ran. FPS was not measured there.
+- **Not tested** [?]: multiplayer, a full-length game, §8's battle view, another GPU or driver, the `dinput8.dll`
+  build beside WoL's DLL at runtime.
+
+Commands (bed `C:\AoE3-UHC-Test`, one game, the bench lock held; `run.py backup` first and `run.py restore` last):
+```
+python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/eiphist.py <bench-*.csv.stacks.gz> ...
+python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/run.py bench fvf-base1 2560x1600
+python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/run.py bench fvf-key1 2560x1600 --key "fastVertexFill log"
+python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/run.py bench fvf-verify1 2560x1600 --key "fastVertexFill verify"
+python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/dxvkrun.py fvf-dxvk-key 2560x1600 --key "fastVertexFill"
+python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/devtest.py fvf-device "fastVertexFill log"
+```
+The scripts' paths are those of that session's worktree and scratch folder: edit them first.
+
 ### To reproduce
 
 ```
 git apply rea/evidence/age3y-b1a1dab7/multicore-20261110/probe.patch      # local only, never commit
+
 cmake --build build --config Release                                      # copy UHC.dll to the bed
 python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/bench2.py <label> [--probe] [--res WxH] [--devflags hw|nomt] [--set <profile option>=<value>] --seconds 60
 python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/summ.py <label> ...        # FPS, CPU, GPU per run

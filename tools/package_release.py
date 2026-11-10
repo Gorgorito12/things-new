@@ -312,6 +312,7 @@ snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by te
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
+fastVertexFill                waving flags drawn without reading video memory: more fps with flags on screen
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
 
