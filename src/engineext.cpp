@@ -25,6 +25,7 @@
 namespace uhc {
 const wchar_t kLogFile[] = L"engine-ext\\engine-ext.log";
 const wchar_t kDataFolder[] = L"engine-ext\\";
+const wchar_t kOptionsFile[] = L"engine-ext\\uhc-options.cfg";
 }  // namespace uhc
 
 namespace {

@@ -1403,6 +1403,22 @@ SITES = [
     ("ClothFillUnlock", 0x40D659, 0x24),
     # fastVertexFill: the float -1.0 the stock loop scales the back side's normals by (.rdata; read by the hook)
     ("ClothFillBackScale", 0xB856B8, 4),
+    # rendererOption: the options screen's name lookup 0x932264 (thiscall on the "GameOptions" settings, called only
+    # from the four field builders 0x78BEC5, 0x78C0C0, 0x78C417, 0x78D722). Its not-found return at 0x9322A1
+    # (pop edi / or eax,-1 / pop esi, the 5 bytes replaced; branched to from 0x93227B and 0x932295 only) goes on at
+    # pop ecx / ret 4 (0x9322A6).
+    ("OptionNameLookup", 0x932264, 0x46),
+    # rendererOption: the settings' type getter 0x553028; its out-of-range return xor al,al / ret 4 at 0x6B794B is
+    # reached only from the jae at 0x55302F, and the hook replaces it.
+    ("OptionTypeGetter", 0x553028, 0x1C),
+    ("OptionTypeRange", 0x6B794B, 5),
+    # rendererOption: the int getter 0x402E6A; its out-of-range return xor al,al / ret 8 at 0x6B7676 is reached only
+    # from the jae at 0x402E73, and the hook replaces it.
+    ("OptionIntGetter", 0x402E6A, 0x3A),
+    ("OptionIntGetRange", 0x6B7676, 5),
+    # rendererOption: the int setter 0x518AE0; its failure return pop edi / xor al,al / pop esi / ret 8 at 0x518B26
+    # (out of range from 0x518AEB, wrong type from 0x518B15; nothing lands inside it) is replaced by the hook.
+    ("OptionIntSetter", 0x518AE0, 0x4D),
 ]
 
 
