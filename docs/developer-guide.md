@@ -669,9 +669,15 @@ Modders download a zip, so they never need a compiler. The version has a single 
        Startup\uhc.cfg     examples/Startup/uhc.cfg with every key commented out
        beside-another-dll\ dinput8.dll and engine-ext\engine-ext.cfg, for a game that keeps another UHC.dll
        art\effects\uhc_rings\  the aura rings of tools/rings
+       dxvk\d3d9.dll, dxvk\LICENSE.txt   DXVK 3.1.1 (x32) and its zlib license, for rendererOption
        README.txt          the modder's quick start
        LICENSE.txt
    ```
+
+   DXVK is not in git. Put its files in `rea\vendor\dxvk-3.1.1\` (gitignored) first, or pass `--dxvk <folder>`:
+   `d3d9.dll` from the `x32` folder of `dxvk-3.1.1.tar.gz` (github.com/doitsujin/dxvk, release v3.1.1) and `LICENSE`
+   from the same tag. The script stops if either is missing, or if the DLL's SHA-256 is not `265888c3…f01497fa`, the
+   build `rendererOption` was tested with.
 
    It prints the SHA-256 of the zip and of the DLL, and refuses to replace an existing zip
    unless given `--force`. The game exe is never included: it is Microsoft's binary, and each

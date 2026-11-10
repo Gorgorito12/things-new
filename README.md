@@ -21,7 +21,7 @@ Every key, with what it needs and how far it was tested, is in the
 
 | Theme | Keys |
 |---|---|
-| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `xsErrorLog`, `dataLint`, `multipleInstances`, `compatMode` |
+| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `xsErrorLog`, `dataLint`, `multipleInstances`, `compatMode` |
 | **Population, decks and limits** | `basePop`, `extraPop`, `decimalPopulation`, `deckCardCount`, `selectionLimit`, `noAILimit`, `noAILimitV2`, `enableAllTeams` |
 | **New data and scripting** | `customAbstractTypes`, `customProtoUnitCommands`, `customHotkeyContexts`, `techRenameEffect`, `customSyscalls`, `customCheats`, `kbUnitSyscalls`, `auraStacking` |
 | **Civs** | `asianCivs`, `nativeCivs`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`, `danceBonusCivs`, `wonderCivUnitType`, `firstTC`, `startingTC`, `civFirstTC`, `customRevolutionBanners`, `removeFameRestriction` |
@@ -50,8 +50,8 @@ In any other mod:
 1. **Get the release zip** from [Releases](https://github.com/Gorgorito12/tad-engine-extensions/releases).
    It holds `UHC.dll`, a `Startup\uhc.cfg` with every key commented out, a short `README.txt` and the
    license, plus `beside-another-dll\` (`dinput8.dll` and its `engine-ext\engine-ext.cfg`, the same
-   code for a game that keeps another `UHC.dll`) and `art\effects\uhc_rings\` (the aura rings,
-   for the mod's `art` folder).
+   code for a game that keeps another `UHC.dll`), `art\effects\uhc_rings\` (the aura rings,
+   for the mod's `art` folder) and `dxvk\` (DXVK's `d3d9.dll`, for `rendererOption`).
 2. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder plus your files.
    Never modify the Steam install.
 <!-- private:begin -->
@@ -99,6 +99,9 @@ the loader patch. The DLL checks its host and does nothing in any other exe.
 ## Credits and license
 
 - This project's code is under the [MIT license](LICENSE).
+- The release zip ships [DXVK](https://github.com/doitsujin/dxvk) 3.1.1 (its 32-bit `d3d9.dll`, unmodified)
+  for `rendererOption`: Copyright (c) 2017 Philip Rebohle and its contributors, under the zlib license
+  (`dxvk\LICENSE.txt` in the zip). It is not in this repository.
 <!-- private:begin -->
 - The concept, the loader and the original patch addresses come from
   [AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). It has no license, so none of its
