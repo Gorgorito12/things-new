@@ -633,7 +633,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | Frame-time statistics and device logging (`perfStats`) | DLL feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
-| DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is one loop in 0x40D25B that reads back from a locked buffer (§11). **With `d3d9.cachedWriteOnlyBuffers = True` in `dxvk.conf` that loop costs nothing and DXVK beats stock: +14 % at 2560×1600, +18 % at 3840×2160, +14 % at 720p**, no frame over 50 ms, the picture unchanged on the frames compared. FPU state kept (0x007F), +225–255 MB of address space. Without the option: not recommended. With it: the only D3D layer measured that is faster than stock, as a user-side setup; a multiplayer game and a full-length game come before it is recommended. |
+| DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is one loop in 0x40D25B that reads back from a locked buffer (§11). **With `d3d9.cachedWriteOnlyBuffers = True` in `dxvk.conf` that loop costs nothing and DXVK beats stock: +14 % at 2560×1600, +18 % at 3840×2160, +14 % at 720p**, no frame over 50 ms, the picture unchanged on the frames compared. FPU state kept (0x007F), +225–255 MB of address space. Without the option: not recommended. With it: the only D3D layer measured that is faster than stock (**+19 % at 1920×1080** too). **In WoL (§11, "DXVK in WoL")**: +16…+25 % in a base view at four points of a 32-minute game and +17 % in a battle, at 1920×1080; a whole 32-minute game, minimize, device re-creation, save and load without a fault; the same picture; the same x87 control word during play. It adds 225–255 MB to WoL's 1.5 GB of address space, so it needs WoL's large-address-aware exe, and it leaves the stutter as it is. **Recommended to WoL's players as an optional, user-side setup for single player.** Multiplayer is untested: a LAN game could not be formed between two copies on one PC. |
 | The read-back loop in 0x40D25B (0x40D5C0…0x40D5FD): `fastVertexFill` | DLL feature, opt-in, display only | **Implemented and measured** (§11, "fastVertexFill"). 0x40D25B draws the cloth flags; the loop reads eight values per back-side vertex from a locked `DYNAMIC \| WRITEONLY` vertex buffer (write-combined memory, `PAGE_WRITECOMBINE` at runtime). The key's routine reads the source instead and writes the same bytes: on stock D3D9 **+7 % FPS at 1920×1080 and 2560×1600, +8 % at 3840×2160**, nothing at 1280×720 (no flag drawn); the function goes from 5.5–7.8 % of the main thread to 0.0 %. `verify`: 76,365 fills, 10.5 M vertices, 0 mismatches. With DXVK 3.1.1 and no `dxvk.conf`: 179.6 → 237.2 FPS (one run each). Not tested in multiplayer; it does not touch the simulation. |
 | dgVoodoo2 (D3D9 → D3D11) | wrapper | Measured (§11): −5…−8 % FPS; FPU state kept. Not recommended. |
 | `RunAsFastAsPossible`, `fixedUpdate`, `MinRandUpdate`, `syncUpdateInterval`, the 100 ms cap | — | Rejected: they change the simulation. |
@@ -756,6 +756,7 @@ core) [O].
 | &nbsp;&nbsp;both options | 227.2 (+16 %) | 198 | 2.15 / 2.27 | 98 % | 17 % | — |
 | &nbsp;&nbsp;3840×2160: base / `cachedWriteOnlyBuffers` | 183.4 / 217.2 (**+18 %**) | 166 / 198 | 2.31 / 3.17 against 2.17 / 2.44 | 96 % / 98 % | 13 % / 17 % | — |
 | &nbsp;&nbsp;1280×720: base / `cachedWriteOnlyBuffers` | 241.7 / 275.0 (+14 %) | 218 / 249 | 2.21 / 1.96 against 2.15 / 1.49 | 90 % / 98 % | 12 % / 5 % | — |
+| &nbsp;&nbsp;1920×1080, 12:55–13:00: base / `cachedWriteOnlyBuffers` (two runs each) | 187.5, 189.6 / 222.7, 226.9 (**+19 %**) | 165, 163 / 192, 190 | 2.23–2.24 / 3.04–3.11 against 2.11–2.17 / 2.35–2.37 | 95 % / 98–99 % | 18 % / 6 % | — |
 
 - **Resolution** [O]: the GPU stays at 8–15 %. The CPU render time follows what is on screen: a larger
   window shows more of the map (475 → 1,051 draws per frame), so 720p is faster for the CPU, not for the GPU.
@@ -823,8 +824,18 @@ core) [O].
     (`VBCSCompiler`, 24–60 % of a core) overlapped two base runs and both `cachedWriteOnlyBuffers` runs at
     2560×1600; the clean base run gave 197.8, so the effect is within 1 %. A run at 10:05, while a whole-disk `find`
     was running, was discarded.
-  - **Not tested** [?]: multiplayer (only the FPU state after CreateDevice is known), a full-length game, §8's
-    battle view, another GPU or driver, and the control word during play.
+  - **1920×1080** (12:55–13:15) [O]: 188.6 → 224.8 FPS (**+19 %**, two pairs), no frame over 50 ms, 0x40D25B
+    5.8–7.0 % → 0.0 %, address space 932–935 → 1,155–1,172 MB. Two more pairs driven through `testbed.py` gave
+    183.4 → 216.8 (+18 %) and 183.1 → 213.4 (+17 %); one more DXVK window was discarded (another session's compiler
+    at 69 % of a core).
+  - **The saved camera does not show one scene at every resolution** [O]: at 1920×1080 and 1280×720 the loaded save
+    shows open sea and unexplored map (the view box sits on the south edge of the minimap); at 2560×1600 and
+    3840×2160 it shows player 1's Town Center. `uiLookAtUnit` on that Town Center did not move the camera in this
+    bed [?]. So each resolution is its own A/B pair: the base rows of different resolutions are not one series, and
+    "Resolution" above compares two scenes.
+  - **Tested later the same day in WoL** ("DXVK in WoL" below): a full-length game, a battle view, the control word
+    during play. **Still not tested** [?]: multiplayer (a LAN game could not be formed on one PC), another GPU or
+    driver, exclusive fullscreen.
 
 ### What each path could gain
 
@@ -902,6 +913,11 @@ protection's hook. That rules out D3D11 call counts and hooked Present times.
    **Update (2026-11-10, 12:51): (b) is built, as `fastVertexFill`** ("fastVertexFill" below): +7 % on stock D3D9
    at 1920×1080 and 2560×1600 and +8 % at 3840×2160, with the same bytes in the vertex buffer. With the key on, DXVK
    needs no option either (237.2 FPS in one run).
+
+   **Update (2026-11-10, 13:40): (a) is done for WoL, except multiplayer** ("DXVK in WoL" below): +16…+25 % at
+   1920×1080 at four points of a 32-minute game and +17 % in a battle, no fault in the whole game, the same picture
+   and the same FPU state in play. It is recommended to WoL's players for single player. A LAN game between two
+   copies on one PC could not be formed, so multiplayer sync stays open.
 2. **Not a render thread fed by a snapshot.** It is the only large prize (+75–80 % [I]), but the render and the
    simulation write each other's objects, a race there is a desync, and DE never did it either.
 3. **Yes, split work inside the render, the way DE does, starting with particles:** the particle update on a
@@ -1101,6 +1117,215 @@ python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/dxvkrun.py fvf-dxv
 python -I rea/evidence/age3y-b1a1dab7/fastvertexfill-20261110/devtest.py fvf-device "fastVertexFill log"
 ```
 The scripts' paths are those of that session's worktree and scratch folder: edit them first.
+
+### DXVK in WoL (2026-11-10)
+
+The question: does DXVK with `d3d9.cachedWriteOnlyBuffers = True` hold in Wars of Liberty (more units, far more
+data), in a full-length game, in a battle view and in multiplayer, well enough to recommend it to WoL's players?
+
+**Setup** [O].
+- Bed `C:\AoE3-UHC-WoLReal`: WoL's exe (`0a277f14…`, large-address-aware: perfStats reports 4,095 MB of user address
+  space), the bed's own `UHC.dll` (`cbff1bf3…`, the build of 2026-11-09) and cfg (`perfStats`, `perfExecFile`,
+  `multipleInstances background`). 1920×1080 windowed, Very High shaders, 32-bit, vsync off, the game never focused.
+- DXVK: `x32\d3d9.dll` of v3.1.1 (`265888c3…`) and a one-line `dxvk.conf` next to the exe. Stock: neither file.
+- **Cache: DXVK's default location**, `%LOCALAPPDATA%\dxvk`. The file there is named after the exe's name, so WoL
+  found the one the stock game left on 2026-10-28 ("Found cache file … 64 shaders (277 kB)") and never added to it:
+  WoL draws with the same 64 shaders. A truly cold run therefore needs empty folders: one run had
+  `DXVK_SHADER_CACHE_PATH` and `__GL_SHADER_DISK_CACHE_PATH` pointed at new ones ("Created cache file").
+- Ryzen 7 7800X3D, RTX 4090, NVIDIA 621.14, Windows 11.
+- **The game**: a skirmish on ESOC High Plains, five players, free for all, Hard, the profile's game speed (the clock
+  ran 2.0–2.1 game seconds per real second). Player 1 (Dutch) does nothing: `config("AIvsAI")` did not make it an AI
+  here [O]. The other four are European AIs: `wolOtto`, `wolVictoria`, `wolNapoleon`, `wolIsabel`
+  (`tools/ai_personality.py`).
+- **Two kinds of window**, all 60 s with `perfprobe --sample-hz 200`:
+  - *Saves.* The stock game was saved at 8.2, 14.3, 21.7 and 32.5 game minutes (456 units at the last one). Each save
+    was then loaded once per variant, the map revealed (`fog()`, `blackmap()`) and the camera put on a unit that
+    exists in every save: Queen Victoria's first Town Center (the base view), or a Zouave in a fight inside
+    Bismarck's town (the battle view). These are the comparable numbers.
+  - *Live.* Two whole games, one per variant, with the camera where the game starts it (player 1's idle base, fog
+    on). The setup screen draws a new random seed for each game, so they are two different games compared at the
+    same game times.
+- The machine was quiet in every window (no other process over 5 % of a core, no other game, 14 GB free).
+
+**Comparable windows on the saves, 1920×1080** [O]. DXVK = v3.1.1 with `d3d9.cachedWriteOnlyBuffers = True`.
+
+| View, game minutes | Variant | FPS | p5 FPS | Update / render ms | Main thread | GPU 3D | Frames over 50 / 100 ms | Address space / working set, MB | 0x40D25B |
+|---|---|---|---|---|---|---|---|---|---|
+| Base, 8.6–10.7 | stock | 249.6 | 184 | 1.45 / 2.64 | 95 % | 12 % | 7 / 6 | 1,476 / 920 | 12.0 % |
+| | DXVK | 309.2 (**+24 %**) | 217 | 1.36 / 1.95 | 98 % | 12 % | 6 / 6 | 1,728 / 1,011 | 0.1 % |
+| Base, 14.6–16.7 | stock | 216.8 | 147 | 1.63 / 2.97 | 95 % | 12 % | 8 / 7 | 1,516 / 949 | 9.9 % |
+| | DXVK | 250.8 (**+16 %**) | 181 | 1.61 / 2.42 | 98 % | 15 % | 8 / 8 | 1,751 / 1,033 | 0.1 % |
+| Base, 22.1–24.1 | stock | 171.8 | 123 | 2.29 / 3.61 | 96 % | 12 % | 4 / 3 | 1,582 / 974 | 10.6 % |
+| | DXVK | 208.7 (**+21 %**) | 163 | 2.14 / 2.74 | 98 % | 10 % | 6 / 5 | 1,806 / 1,093 | 0.2 % |
+| Base, 32.8–34.9 | stock | 157.2 | 118 | 2.38 / 4.04 | 96 % | 12 % | 5 / 5 | 1,563 / 986 | 14.3 % |
+| | DXVK | 196.1 (**+25 %**) | 143 | 2.24 / 2.95 | 99 % | 9 % | 7 / 7 | 1,807 / 1,076 | 0.1 % |
+| Battle, 32.8–34.9 | stock (two runs) | 133.6 / 139.5 | 92 / 99 | 2.47–2.54 / 4.80–5.01 | 97 % | 11 % | 7 / 6 and 5 / 5 | 1,567 / 999 | 7.7–8.4 % |
+| | DXVK (two runs) | 159.9 / 160.8 (**+17 %**) | 116 / 119 | 2.34–2.43 / 3.96–3.98 | 98 % | 9 % | 9 / 8 and 7 / 5 | 1,817 / 1,129 | 0.0–0.1 % |
+| | DXVK, cold caches | 155.4 (+14 %) | 112 | 2.42 / 4.15 | 98 % | 9 % | 6 / 6 | 1,818 / 1,127 | 0.1 % |
+
+**The two live games at the same game times, 1920×1080** [O] (player 1's idle base on screen; different games):
+
+| Game minutes | Stock: FPS (p5) | Update / render ms | Frames over 50 / 100 ms | Address space / working set, MB | DXVK: FPS (p5) | Update / render ms | Frames over 50 / 100 ms | Address space / working set, MB |
+|---|---|---|---|---|---|---|---|---|
+| 5.2–7.5 | 444.2 (284) | 1.15 / 1.22 | 14 / 11 | 1,514 / 956 | 552.4 (402) | 1.10 / 0.88 | 9 / 8 | 1,784 / 1,083 |
+| 12.2–14.3 | 383.6 (270) | 1.30 / 1.36 | 7 / 6 | 1,476 / 917 | 409.9 (268) | 1.36 / 1.09 | 7 / 6 | 1,798 / 1,091 |
+| 20.2–22.2 | 343.1 (225) | 1.66 / 1.27 | 5 / 4 | 1,533 / 956 | 390.5 (260) | 1.58 / 1.05 | 7 / 7 | 1,787 / 1,090 |
+| 30.2–32.4 | 328.6 (260) | 1.67 / 1.41 | 5 / 5 | 1,582 / 1,010 | 442.4 (372) | 1.39 / 0.90 | 4 / 3 | 1,806 / 1,077 |
+
+In every live window the main thread was at 92–94 % (stock) and 98–99 % (DXVK), the GPU at 20–22 % and 10–12 %. In
+the stock game an AI's resign dialog paused the game 41 s into the 20-minute window; its rows are left out (39 of
+55 s kept). The harness now answers that dialog (`wv.py`).
+
+**What the numbers say.**
+- **DXVK with the option is faster in every comparable window: +16…+25 % in the base view, +17 % in the battle
+  view** (160.4 against 136.6 FPS, two runs each; the two stock runs differ by 4 %) [O]. p5 FPS rises the same way
+  (119 against 96 in the battle).
+- **The gain is the render part** [O]: 3.96–3.98 ms against 4.80–5.01 in the battle, 2.95 against 4.04 in the late
+  base view; the update part stays within 0.1–0.2 ms. The GPU sits at 9–15 % in both.
+- **The read-back loop of 0x40D25B (the cloth flags' draw, "fastVertexFill" above) costs WoL more than the stock
+  game** [O]: 7.7–14.3 % of the main thread's samples on stock D3D9 at 1920×1080 (5.6–7.0 % on `uhcbench25`), all of
+  it in 0x40D5C0…0x40D5FD, and 0.0–0.2 % with DXVK. The rest of the gain is `ntdll.dll` (7.7–8.1 % → 3.3–3.7 %) and
+  `nvd3dum.dll` (1.5–1.6 % → none).
+- **The `fastVertexFill` key was not in these runs** (the bed ran the DLL of 2026-11-09). [I] On stock D3D9 it
+  should remove that 8–14 % of WoL's main thread without a wrapper, about half of what DXVK gains here; [?] not
+  measured in WoL.
+- **One cost goes the other way** [O]: `deformerdlly.dll` (skinning) on the main thread is 2.9–4.2 % on stock and
+  9.7–11.5 % with DXVK. [I] The skinning code writes its vertices into the same kind of buffer, and those writes cost
+  more with DXVK's copy; [?] whether another buffer option removes it. DXVK's submission thread takes 24 % of a core
+  where the NVIDIA driver's worker took 35 %, so the process uses less CPU in total (134 % against 141 %).
+- **Stutter is the game's, in both** [O]: 3–8 frames over 100 ms per 60 s window with either renderer, the longest
+  350–510 ms in all but one window, and the session totals match (live games: 150 over 100 ms in 498,137 frames on stock, 155 in 517,825
+  with DXVK; a save run: 69–71 on stock, 69–73 with DXVK, the load included). §9 traces these to file loads inside
+  the simulation, and WoL has more of them than the stock game (no frame over 100 ms in any `uhcbench25` window).
+- **Cold caches** [O]: 155.4 FPS against 160.4 warm (−3 %), p5 112 against 118, 6 frames over 50 ms against 7–9
+  warm and 5–7 stock. So the first run shows no shader-compile hitch one could tell from the game's own stutter.
+- **Two runs of one save diverge with the same renderer** [O]: 34.9 minutes into the two stock battle runs the
+  players had 62 / 154 / 187 and 71 / 147 / 188 units, and the Town Center got another random name. A single-player
+  game steps with the frame times, so a different outcome between stock and DXVK in single player says nothing
+  about multiplayer sync.
+
+**Memory** [O].
+- WoL alone is large: 1,476–1,582 MB of address space on stock D3D9 from minute 5 on (the stock game: 924–933 MB at
+  minute 25), working set 917–1,010 MB, peak 1,042 MB.
+- DXVK adds **225–255 MB**: 1,728–1,818 MB of address space, working set 1,011–1,129 MB, peak 1,129 MB. It did not
+  grow over the 32-minute game (1,784 MB at minute 5, 1,806 MB at minute 32), nor after two device re-creations
+  and a load (1,792 MB).
+- WoL's exe is large-address-aware, so the process has 4,095 MB: DXVK uses 44 % of it and leaves 2.2 GB. **An exe
+  without that flag has 2,047 MB, and DXVK in WoL would sit at 89 % of it** (stock WoL: 77 %). DXVK is only safe in
+  WoL with the large-address-aware exe WoL ships.
+
+**Stability with DXVK** [O] (the live game, 16.5 minutes of real time, 32.6 of game time, 517,825 frames):
+- No crash, no hang, no error dialog; `leaveGame()` returned to the menu and a posted `WM_CLOSE` ended the process
+  with perfStats' exit line written. The seven save runs with DXVK also loaded, ran and closed cleanly.
+- **Minimize for 10 s and restore**: frames and the game clock went on (441 FPS after it).
+- **Device re-creation**: `res(1600, 900)` and `res(1920, 1080)` by console. The game releases its device and creates
+  a new one each time (perfStats: two more `CreateDevice`, hr 0); 461 and 488 FPS after them, the picture right, the
+  address space no larger (1,724 and 1,742 MB). The Reset the game issues at every start also works ("Device reset" in
+  DXVK's log).
+- **Save and load**: five saves during the game, one of them loaded in the same session: the clock resumed where
+  the save was made, 451 FPS. (While a save is written the game presents nothing for some seconds, with either
+  renderer.)
+- **Not done** [?]: exclusive fullscreen and Alt+Tab out of it. The bed runs windowed with `multipleInstances
+  background`, and `renderWindow()` would have switched the user's monitor to 1920×1080. Players who run
+  fullscreen should check Alt+Tab first.
+
+**Picture** [O]. PrintWindow shots of the same save at the same moment, stock against DXVK, in the base view at
+minutes 22 and 33 and in the battle at minute 33, plus the fogged view of the live games:
+- terrain, cliffs' shadows, building and unit shadows, units, flags, smoke and fire, the black map and its edge, the
+  minimap, the score list, tooltips and the command panel look the same; nothing missing, no wrong texture;
+- the static part of the command panel differs by 0.07 of 255 per channel on average, and the whole frames' mean
+  colour by 0.5 of 255 (the games had diverged by then, so the units are not in the same places);
+- **water**: High Plains has none. It was compared on the home city screen of both copies in the multiplayer attempt
+  (WoL's Amsterdam: sea, sky, ships) and in the stock game's 1920×1080 runs (open sea and the fog's edge): the same;
+- PrintWindow returned a black frame for 5 of the 18 stock shots and for none of the 18 with DXVK: that is the
+  capture, not the game (frames were being presented).
+
+**FPU state** [O]. perfStats logs it after CreateDevice: x87 control word 0x007F and MXCSR 0x1FA0 in every run of
+both variants (0x1FA2 after the two re-creations: one more sticky flag, the masks and rounding unchanged). **During
+play it can be read too**: `wv.py fpu` suspends the main thread for an instant 300 times, reads its WOW64 context
+(`CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS`) and resumes it.
+- **x87 control word in WoL**: 0x027F in 97.7–99.7 % of the samples and 0x0E7F in the rest (inside the exe: a
+  truncating conversion), in all 8 stock sample sets and all 11 with DXVK, from minute 8 to minute 35. No other value.
+- **The same on the stock game with 10,000 samples per variant** (`uhcbench25`, 1920×1080; stock / DXVK): 0x027F
+  96.6 % / 96.1 %, 0x0E7F 3.2 % / 3.7 %, 0x137F 0.20 % / 0.21 %, 0x037F 0.02 % / 0.02 %. 0x137F is the exe's own C
+  runtime: 0x45F5B1 loads control word 0x133F before an `fprem` loop (0x45F637), and every such sample sits at
+  0x45F5C2…0x45F63C (`cs`). A 3,000-sample pair had shown it 5 times with DXVK and never on stock: that was chance.
+- **MXCSR** (masks, rounding, FZ, DAZ): 0x1F80, or 0x9F80 (flush-to-zero set) in 0–4 % of the samples on stock and
+  2–12 % with DXVK. With the module recorded (the 10,000-sample pair): 86 of 109 such samples on stock and 222 of 235
+  with DXVK are inside `deformerdlly.dll`, nearly all the rest in system DLLs. It is the skinning code's own mode,
+  sampled more often because skinning takes more of the main thread with DXVK.
+- So DXVK leaves the simulation's floating-point state as stock D3D9 does, during play as well as after CreateDevice.
+
+**Multiplayer: not tested. A LAN game could not be formed between two copies on this PC** [O] (16 minutes of
+attempts, 13:18–13:34):
+- **The route exists and needs no login**: `doMPSetup(false)` by console opens the LAN home city screen; its Play
+  (client 181, 1029 at 1920×1080) opens "LAN / Direct IP"; Host Game is at (1377, 365), the Direct IP box at
+  (975, 889), Connect at (1329, 891). Posted `WM_CHAR` messages fill the edit boxes (`postchars.py`), so a
+  `background` copy can be driven through it.
+- Copy A (`C:\AoE3-UHC-WoLReal`, DXVK + conf) hosted: its setup screen showed "IP address: 192.168.68.70", with UDP
+  2297 and 2299 bound. Copy B (`C:\AoE3-UHC-WoLReal2`, stock D3D9, the same `UHC.dll` and cfg) never listed the game
+  (both copies bind UDP 2297 on the same address), so it connected by Direct IP.
+- The host's first answer: "A user by that name already exists in the game" (both copies read one profile). With
+  `optionskirmishnickname` changed for B (profile edit, B restarted), every attempt ended about 2 s after Connect in
+  **"Failed to Join Game."** (string 21422), the host's screen unchanged.
+- That text is reason 2 of the disconnect handler 0x8B5728 (`cs`). Reason 7 is "An error occurred connecting to
+  host", and the join request's own refusals (full, version mismatch, denied, name) have their messages in
+  0x8BBC2D. [I] So the request reaches the host and is not refused; the peer connection after it fails.
+- **During each attempt both copies bind UDP 2300 on the same address** [O]: a datagram sent there reaches one of
+  the two sockets only.
+  - With `OverrideAddress="192.168.56.1"` in B's `Startup\user.cfg` (another local address of this PC; set by
+    console it had no effect) B binds 192.168.56.1:2297 and :2300, and the join fails the same way. B's first socket
+    stays on 0.0.0.0, [I] so the host still sees B at the host's own address.
+  - Also without effect: `dontDetectNAT` in both copies, another profile GUID for B, the same AI personality files,
+    hosting again. `data\`, the exe, the plugins and the AI scripts of the two beds hash the same.
+- Not ruled out [?]: the product key the two copies share, and Windows Firewall, which holds inbound Block rules for
+  both beds' exes (left alone: changing them needs an administrator and the user's decision).
+- **So multiplayer sync with DXVK is still open.** A LAN test needs a second PC or a virtual machine: one side stock,
+  one side DXVK, `units` and the game clock compared on both.
+
+**Verdict.** DXVK 3.1.1 with `d3d9.cachedWriteOnlyBuffers = True` can be recommended to WoL's players as an optional,
+user-side setup **for single player**, with these caveats:
+1. Both files or neither: the 32-bit `d3d9.dll` and a `dxvk.conf` with that line, next to `age3y.exe`. Without the
+   line DXVK is slower than stock ("A/B runs"). To undo, delete the two files.
+2. Only with WoL's own large-address-aware exe ("Memory").
+3. It raises the frame rate (+16…+25 % here at 1920×1080). It does not touch the stutter: the frames over 100 ms are
+   the game's and are as many as before.
+4. One PC was measured (RTX 4090, NVIDIA 621.14, Windows 11). Untested [?]: another GPU or driver, an integrated GPU
+   (DXVK 2 and later need Vulkan 1.3), exclusive fullscreen with Alt+Tab.
+5. **Multiplayer is not validated.** What is known: the simulation thread's floating-point state is the same in play
+   as on stock D3D9, and [I] DXVK replaces nothing the simulation reads. No multiplayer game has been run with it,
+   so it should not be called multiplayer-safe until a LAN game between a stock PC and a DXVK PC stays in sync.
+
+**To reproduce.** Scripts and results: `rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/` (`summary.txt` has every
+window; `*.csv`, `.samples.txt`, `.stacks.gz`, `.UHC.log`, `.dxvk.log`, the shots and the `cmp-*.png` pairs). The
+scripts hold this session's paths (the DXVK folder, the profile): edit them first. Back up the shared profile and
+restore it byte for byte afterwards; no other game may run.
+```
+python -I tools/testbed.py --bed C:\AoE3-UHC-WoLReal profile backup
+python -I rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/setprofile.py "<My Games>\Wars of Liberty\Users3\NewProfile3.xml" gamenumplayers=5 "gamefilename=ESOC_High Plains" "gamemapname=ESOC High Plains" gamefreeforall=true gamedifficulty=3
+python -I tools/ai_personality.py C:\AoE3-UHC-WoLReal wolOtto wolVictoria wolNapoleon wolIsabel
+bash rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/live.sh live-stock base 5 12 20 30     # the long game, a window and a save at each minute
+bash rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/live.sh live-dxvk dxvk 5 12 20 30      # + stab.py after minute 20: minimize, res(), save and load
+python -I rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/findfight.py C:\AoE3-UHC-WoLReal  # in a running game: the unit IDs of a fight and of each town
+python -I rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/wolsave.py s32b-stock1 wolvk-a32 --reveal --look 2097477           # one window on a save
+python -I rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/wolsave.py s32b-dxvk1 wolvk-a32 --dxvk --reveal --look 2097477     # the same with DXVK + dxvk.conf
+bash rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/chain1.sh                               # the rest of the save table, the cold run included
+python -I rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/wv.py fpu C:\AoE3-UHC-WoLReal 300  # x87 control word and MXCSR of the main thread, in play
+python -I rea/evidence/age3y-b1a1dab7/dxvk-wol-20261110/table.py s32b-stock1 s32b-dxvk1    # table rows
+python -I tools/ai_personality.py C:\AoE3-UHC-WoLReal restore
+```
+The stock game's four saves are kept in `saves/` there: copy them to `<My Games>\Wars of Liberty\Savegame` for
+the save runs and delete them afterwards. `gamemapname` must be the map's display name in the bed's language, or the
+setup screen falls back to the first map of its list. The stock game of this section was driven by hand with the
+steps of `live.sh`. Playing real skirmishes also changes files this procedure does not restore: the home city of the
+profile (`Savegame\sp_<city>_homecity.xml`, `LastHomeCityY.xml`) and the AI's memory of the player
+(`<My Games>\Wars of Liberty\AI4\<personality>.personality`): back those up too.
+
+The stock game's 1920×1080 pairs: `runconf.sh vk3-base-1080 base 1920x1080` and
+`runconf.sh vk3-cached-1080 dxvk 1920x1080 "d3d9.cachedWriteOnlyBuffers = True"` ("To reproduce" below), and
+`FPU=10000 TAG=tcm bash chain3b.sh 1920x1080` in `dxvk-wol-20261110/` for the control word samples. The multiplayer
+attempt: both beds with one `UHC.dll` and cfg (each its own `perfExecFile`), `dxvkset.py <bed> dxvk|base`, then the
+clicks above.
 
 ### To reproduce
 
