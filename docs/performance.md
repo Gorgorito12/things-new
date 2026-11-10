@@ -50,7 +50,9 @@ GPU the game uses. It was written for the "late-game lag and stutter" investigat
 - **Multi-core or D3D11 (§11, 2026-11-10):** all Direct3D 9 calls cost 0.49 ms of a 4.96 ms frame, so a D3D11
   renderer alone gains at most about 11 %; dgVoodoo's D3D11 path lost 5–8 %. Overlapping update and render
   could give up to about +80 %, but the render writes into simulation objects and the simulation calls into
-  render objects. The particle update (0.54 ms) is the one self-contained piece that could move to a worker.
+  render objects. The particle update (0.54 ms) looked like the one self-contained piece that could move to a
+  worker. The safety check for that (§11, "particleWorker: safety check") found it is not self-contained: pass 0
+  draws the particles it updates, and both share the game's pose code, which writes global buffers. Not built.
 
 ## 1. Frame pacing and timers
 
@@ -618,7 +620,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 |---|---|---|
 | Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | DLL feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
 | The stutters' remaining work: granny building newly loaded models and animations | — | Open. It is CPU work on the main thread. Preloading would trade memory and load time for it. |
-| Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. §11 measures the parts: the particle update (0.54 ms of 4.96) is the only self-contained one. |
+| Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. §11 measures the parts: the particle update (0.54 ms of 4.96) looked like the only self-contained one. Its safety check (§11, "particleWorker: safety check") rejected it: pass 0 reads what it writes, and it races with the world draw on the pose code's global buffers. |
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
 | Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Measured in a local build (§11): no change beyond noise. Dropping MULTITHREADED is unsafe, because the loading-screen thread calls Direct3D. Back buffers only matter with vsync on. |
 | Frame-time statistics and device logging (`perfStats`) | DLL feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
@@ -819,6 +821,84 @@ protection's hook. That rules out D3D11 call counts and hooked Present times.
    worker during pass 0, one call site (0x408498) and a join before pass 1, visual only (≤ +12 % [I]). If it holds
    up in game, A/B and an AI skirmish, the CPU preparation of the world passes is the next step (≤ +30 % with
    particles [I]), with the bounding-box and bit writes of the pass-0 walk to solve first.
+
+   **Result (2026-11-10): not built.** The safety check below found two blockers before any code was written:
+   pass 0 draws the particles of the same frame, and the particle update and the world draw both run the pose
+   code 0x407272, which writes a global pose buffer, a global matrix and a global cache. The allocator is not a
+   blocker. No overlap is left that would beat the ±3 % noise, so the prize of point 3 is gone for particles.
+
+### particleWorker: safety check (2026-11-10)
+
+The planned key `particleWorker`: at 0x408498 hand the particle update 0x408AAB to a worker thread, go on with
+pass 0, join before pass 1 (the call 0x40BB9B, `push 1` / `call 0x40BCF0`, `ecx = [[0xC66244]+60h]`). The check
+came first, as asked. Evidence: REA bundle `rea/evidence/age3y-b1a1dab7/particleworker-20261110.json` (33 records),
+runtime files and scripts in `particleworker-20261110/`.
+
+**Frame order** [O] (`ev_b43a5f13…`, `ev_9632d14a…`): 0x408488 `0x408FEB` on the particle manager
+`[[0xC66240]+C1A0h]` → 0x408498 particle update → 0x4084A3 a loop over `[[0xC66240]+C1A4h]` (0xAD9032 per item)
+→ `IsIconic` (0x4084DE) → world render 0x40B9BA: pass 0 0x40BA32, 0x415B51, pass 1 0x40BB9B, then **the main
+particle draw 0x40BC6E** (`0x418CFB(pos, 0, 0)`) → UI → Present.
+
+**Blocker 1: pass 0 draws the particles of the same frame** [O].
+- 0x418CFB is the particle draw (`ev_903075e4…`): it walks the manager's draw list `[mgr+154h]` / count `[mgr+158h]`,
+  which the update fills (0x41C51B `add ecx,154h` / `call 0x401F74`), reads each emitter's particle state, and
+  clears the count when its third argument is 0.
+- Its callers are 0x40BAFE (the main draw, after pass 1), **0x4597A4** and 0x779CE9 (`ev_08f05b15…`). 0x4597A4 is
+  pass 0's world view (§11; containment `ev_51672f93…`): after the world draw it calls `0x418CFB(0xC6657C, ebx, 1)`
+  at 0x459C70, a filtered draw (emitters whose type has byte `+45h` set) that keeps the list.
+- Runtime (`trace-pose.txt`, 30 s of `uhcbench25`): 0x459C70 ran **619 times, as often as the main draw 0x40BC6E
+  (619)**: every frame. The join would have to come before 0x459C70, not before pass 1.
+
+**Blocker 2: the pose code's global buffers** [O].
+- The update places emitters attached to model bones: 0x408E36 → 0x408F21 → 0x423ED3 → 0x423C6E → 0x407380 /
+  0x407272 (call graph `ev_31f599cd…`, 582 functions reachable by direct calls; plus an indirect callback
+  through `[0xC665DC]` at 0x423F8A whose targets are unknown [?]).
+- 0x407272 (`ev_f83d7cd0…`) is the shared "world matrix of a model bone" helper. On a miss it calls
+  `GrannySampleModelAnimations(instance, 0, bone+1, [[0xC67318]+8])` into **one global local pose**, then
+  `GrannyGetWorldMatrixFromLocalPose(…, 0xC6FC38)` into **one global matrix**, and copies 40h bytes into an entry
+  of **the global cache `[0xC67318]`** (0x405C49 lookup with create = 1, then 0x422E81). None of it is locked.
+- The world draw of pass 0 runs the same helper per model batch (0x4510C3 → 0x44EA4B → 0x407380 → 0x407272, §11).
+  Runtime, same 30 s: 0x407272 ran 127,157 times (≈ 205 per frame); by caller chain [I, stack-scanned] about
+  42,400 came through 0x423D55 (the particle path) and 72,600 through 0x44EA8C / 0x451446 (the draw). The two would
+  run at the same time on one global pose and one global matrix: wrong bone matrices at best, a corrupted cache
+  entry at worst.
+- The simulation also reads this cache: 0x49CDD5 → 0x422CDD (§11's terrain-effect placement, 3,200 hits in the
+  trace). A cache entry torn by the race could therefore reach the simulation later [I]: a desync risk, not only a
+  visual one.
+
+**Not a blocker: the allocator** [O].
+- Every `new` goes through `0x401234` with `ecx = 0xC66010` (`ev_58499e96…`, `ev_dc3e6cc9…`). At runtime that
+  object's vtable is at 0x1000D188, in `rockalldll.dll` (base 0x10000000). Its alloc slot (+14h) calls the heap's
+  bucket allocator 0x1000AB30, which takes a lock (`lock cmpxchg`; on contention 0x100070F0, a wait [I]: the DLL
+  imports `CreateSemaphoreA` and `WaitForSingleObject`) when the lock object's byte `+20h` is set (`alloc.txt`).
+- In the running game every bucket from 4 to 8,192 bytes has that byte at 1 and no owner thread (`lockflag.txt`).
+  The path above 32,768 bytes (0x1000ACC0) was not read [?].
+
+**What overlap is left** [I]. Joining before 0x459C70 still leaves the world draw of pass 0 (0.50 of its 0.70 ms)
+in the window, and that is where blocker 2 sits. Before the world draw only the 0x4084A3 loop, the pass-0 walk
+and the frustum test remain, about 0.2 ms. At most about 4 % even if perfect, inside the ±3 % noise of these runs,
+and the 582-function update was not audited against them. A lock around 0x407272 would serialize a third of the
+update's pose calls against the draw's, and would still leave the unaudited rest.
+
+**Other overlaps** [I]: after Present against the next simulation update is worse. The simulation reads the same
+pose cache (above) and creates and removes emitters: code outside the render reaches `[[0xC66240]+C1A0h]`, e.g.
+0x4CAB7C, 0x4E3D77, 0x9D8226, 0x9F91A6 (`cs`, `finddisp.py`).
+
+**Verdict:** `particleWorker` is not safe as specified and was not built. Nothing in `src/` changed. Making the
+particle update thread-safe would mean giving the pose helper per-thread buffers and a locked cache (or a
+per-thread copy of 0x407272 inside the DLL), splitting the pass-0 particle draw out of the window, and auditing the
+rest of the update's 582 functions. That is the restructuring §9 rejected, for ≤ 12 % in the best case.
+
+Runtime commands (bed `C:\AoE3-UHC-Test`, one game, nothing else running):
+```
+python -I tools/legacybench.py trace-particles --bed C:/AoE3-UHC-Test --seconds 150 --hz 0
+set UHC_GAME_DIR=C:\AoE3-UHC-Test
+python -I tools/re/trace_exec.py trace-pose.txt 0x407272=pose 0x423c6e=emitter-attach 0x459c70=pass0-particle-draw 0x40bc6e=main-particle-draw --minutes 0.5 --max-per-chain 2
+python -I rea/evidence/age3y-b1a1dab7/particleworker-20261110/allocprobe.py <pid>
+python -I rea/evidence/age3y-b1a1dab7/particleworker-20261110/lockflag.py <pid>
+```
+The tracer was started while the bench recorded and detached by itself after 30 s; the game went on and closed
+normally (the §11 incident did not repeat).
 
 ### To reproduce
 
