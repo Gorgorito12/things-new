@@ -6,5 +6,6 @@ namespace uhc {
 
 extern const wchar_t kLogFile[];    // the log
 extern const wchar_t kDataFolder[];  // the default folder of the keys' data files, with a final backslash
+extern const wchar_t kOptionsFile[];  // what the options menu stores for the DLL (rendererOption), next to the log
 
 }  // namespace uhc

@@ -38,9 +38,12 @@ PAGES = {
         "Name lists": ["src/namelists.h", "src/namelists.cpp"],
         "Models on a unit": ["src/unitmodels.h", "src/unitmodels.cpp"],
         "State kept for a saved game": ["src/savedmarkers.h"],
+        "Direct3D hooks": ["src/d3d9hooks.h", "src/d3d9hooks.cpp"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
+        "fastVertexFill": ["src/features/vertexfill.cpp", "src/hooks/clothfill_hooks.asm"],
+        "rendererOption": ["src/features/renderer.cpp", "src/hooks/rendereroption_hooks.asm"],
         "xsErrorLog": ["src/features/xslog.cpp", "src/hooks/xslog_hooks.asm"],
     }),
     "population": ("Population", {

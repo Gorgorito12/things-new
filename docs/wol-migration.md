@@ -164,6 +164,7 @@ by console, `record --background --crop 960x640 --master`, GIF from the lossless
 | `deckCardCount` | a big deck | **not filmed**: it needs a home city of high level, and the bed's home cities are the user's real ones |
 | `customRevolutionBanners`, `removeFameRestriction`, `removeConversionRestriction` | the WoL keys of these upstream features | **not filmed**: a Spanish skirmish in Age IV listed no revolution at the TC, so the banner hook did not run; WoL has no Fame or XP icons; the conversion was not driven |
 | `bufferedFileReads`, `multipleInstances` | load time; two copies | not filmed: nothing to see on screen. `multipleInstances background` ran under most videos |
+| `fastVertexFill` | five-player skirmish (Dutch; German, British, French and Spanish AIs), then Highlanders against Jaegers at an Ethiopian Town Center | not filmed: the picture is the same by design (`verify`: 105,340 fills, 0 mismatches; 158,397 on a 32-minute save). Applied beside the other keys, hook reached. **FPS in WoL (2026-11-10): +13 % at 1920×1080, +17 % at 2560×1440** on a Town Center of a 32-minute save, +17 % in a battle; beside WoL's own DLL (`dinput8.dll`) +14 to +15 % ([performance.md](performance.md), §11, "fastVertexFill in WoL") |
 
 ## WoL's always-on patches (inventory, 2026-11-03)
 
@@ -206,6 +207,8 @@ hot path, `--perf` in every video, vary the civ).
 | Run | Copy | fps avg | frames > 50 ms | main CPU | Notes |
 |---|---|---|---|---|---|
 | 2026-11-02, 30 s, early game, Ethiopians vs AI Indians | WoLReal (ours) | ~350 | 2 | 93 % | `record --perf-csv` during the `customSyscalls` video |
+| 2026-11-10, 60 s per run, a 32-minute save (five players), Town Center view, `fastVertexFill` off / on | WoLReal (ours) | 162.2 → 182.9 (1920×1080), 152.6 → 178.5 (2560×1440) | 4–12 either way | 95–97 % | two to four alternated pairs per size; DXVK with no `dxvk.conf`: 97.0 → 194.3. performance.md §11, "fastVertexFill in WoL" |
+| 2026-11-10, the same save and view, `fastVertexFill` off / on | WoL-Test (WoL's DLL + our `dinput8.dll`, ReShade) | 152.5 → 176.0 (1920×1080), 153.8 → 174.8 (2560×1440) | 4–11 either way | 95–97 % | ReShade's `d3d9.dll` in both: compare on with off only |
 
 Pending: the A/B baseline against the control (`perfprobe.py`, 120 s, same scenario), and the
 load-time A/B for `customAbstractTypes`.

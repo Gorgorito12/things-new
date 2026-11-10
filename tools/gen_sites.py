@@ -1392,6 +1392,33 @@ SITES = [
     # thiscall, ret 0Ch; and the removal's head, verify only
     ("DestroyRemoveCall", 0x9828E7, 5),
     ("UnitRemoveHead", 0x4726B2, 6),
+    # fastVertexFill, the cloth flag draw 0x40D25B. Verify only: the lock of the shared dynamic vertex buffer
+    # (call 40A6A2h with stride 20h), the half count (cdq / sub / sar) and the height test, up to jle 40D659h.
+    ("ClothFillSetup", 0x40D4EB, 0x38),
+    # fastVertexFill: the fill loops, from mov ecx,[esp+18h] / mov edx,[esp+4Ch] (the 8 bytes replaced) to their exit
+    # mov ebp,[esp+34h] at 0x40D655 (the continuation). No branch from outside lands inside.
+    ("ClothFillLoop", 0x40D523, 0x136),
+    # fastVertexFill verify: mov ecx,[0C66044h] before the Unlock (6 bytes replaced), then mov eax,[ecx+660h] (the
+    # continuation), the buffer test and call [ecx+30h]
+    ("ClothFillUnlock", 0x40D659, 0x24),
+    # fastVertexFill: the float -1.0 the stock loop scales the back side's normals by (.rdata; read by the hook)
+    ("ClothFillBackScale", 0xB856B8, 4),
+    # rendererOption: the options screen's name lookup 0x932264 (thiscall on the "GameOptions" settings, called only
+    # from the four field builders 0x78BEC5, 0x78C0C0, 0x78C417, 0x78D722). Its not-found return at 0x9322A1
+    # (pop edi / or eax,-1 / pop esi, the 5 bytes replaced; branched to from 0x93227B and 0x932295 only) goes on at
+    # pop ecx / ret 4 (0x9322A6).
+    ("OptionNameLookup", 0x932264, 0x46),
+    # rendererOption: the settings' type getter 0x553028; its out-of-range return xor al,al / ret 4 at 0x6B794B is
+    # reached only from the jae at 0x55302F, and the hook replaces it.
+    ("OptionTypeGetter", 0x553028, 0x1C),
+    ("OptionTypeRange", 0x6B794B, 5),
+    # rendererOption: the int getter 0x402E6A; its out-of-range return xor al,al / ret 8 at 0x6B7676 is reached only
+    # from the jae at 0x402E73, and the hook replaces it.
+    ("OptionIntGetter", 0x402E6A, 0x3A),
+    ("OptionIntGetRange", 0x6B7676, 5),
+    # rendererOption: the int setter 0x518AE0; its failure return pop edi / xor al,al / pop esi / ret 8 at 0x518B26
+    # (out of range from 0x518AEB, wrong type from 0x518B15; nothing lands inside it) is replaced by the hook.
+    ("OptionIntSetter", 0x518AE0, 0x4D),
 ]
 
 

@@ -27,6 +27,7 @@ Contents:
 - [Name lists](#name-lists)
 - [Models on a unit](#models-on-a-unit)
 - [State kept for a saved game](#state-kept-for-a-saved-game)
+- [Direct3D hooks](#direct3d-hooks)
 
 ## Site table
 
@@ -1843,6 +1844,36 @@ inline constexpr Site kDestroyRemoveCall{"DestroyRemoveCall", 0x009828E7, kDestr
 inline constexpr std::uint8_t kUnitRemoveHeadBytes[] = {0x83, 0xEC, 0x18, 0x53, 0x55, 0x56};
 inline constexpr Site kUnitRemoveHead{"UnitRemoveHead", 0x004726B2, kUnitRemoveHeadBytes, sizeof(kUnitRemoveHeadBytes)};
 
+inline constexpr std::uint8_t kClothFillSetupBytes[] = {0x8D, 0x54, 0x24, 0x48, 0x52, 0x6A, 0x20, 0x51, 0x8B, 0x0D, 0x44, 0x60, 0xC6, 0x00, 0xE8, 0xA4, 0xD1, 0xFF, 0xFF, 0x85, 0xC0, 0x89, 0x44, 0x24, 0x4C, 0x74, 0xB4, 0x8B, 0x44, 0x24, 0x44, 0x8B, 0x4C, 0x24, 0x14, 0x99, 0x2B, 0xC2, 0xD1, 0xF8, 0x85, 0xC9, 0xC7, 0x44, 0x24, 0x30, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x8E, 0x36, 0x01, 0x00, 0x00};
+inline constexpr Site kClothFillSetup{"ClothFillSetup", 0x0040D4EB, kClothFillSetupBytes, sizeof(kClothFillSetupBytes)};
+
+inline constexpr std::uint8_t kClothFillLoopBytes[] = {0x8B, 0x4C, 0x24, 0x18, 0x8B, 0x54, 0x24, 0x4C, 0xC1, 0xE1, 0x05, 0xC1, 0xE0, 0x05, 0x8D, 0x6A, 0x10, 0x8D, 0x44, 0x10, 0x10, 0x89, 0x4C, 0x24, 0x5C, 0x89, 0x6C, 0x24, 0x28, 0x89, 0x44, 0x24, 0x2C, 0xE9, 0xE3, 0x00, 0x00, 0x00, 0x8B, 0x4E, 0x14, 0xD9, 0x44, 0x24, 0x50, 0x0F, 0xAF, 0x4C, 0x24, 0x30, 0x8B, 0x5C, 0xBE, 0x3C, 0x03, 0xCD, 0xC1, 0xE1, 0x05, 0x8B, 0x1C, 0x0B, 0x89, 0x58, 0xF0, 0x8B, 0x5C, 0xBE, 0x3C, 0x8B, 0x5C, 0x0B, 0x04, 0x89, 0x58, 0xF4, 0x8B, 0x5C, 0xBE, 0x3C, 0x8B, 0x5C, 0x19, 0x08, 0x89, 0x58, 0xF8, 0x8B, 0x5C, 0xBE, 0x3C, 0x8B, 0x5C, 0x19, 0x0C, 0x89, 0x58, 0xFC, 0x8B, 0x5C, 0xBE, 0x3C, 0x8B, 0x5C, 0x19, 0x10, 0x89, 0x18, 0x8B, 0x5C, 0xBE, 0x3C, 0x8B, 0x5C, 0x19, 0x14, 0x89, 0x58, 0x04, 0x8B, 0x5C, 0xBE, 0x3C, 0xD8, 0x4C, 0x19, 0x18, 0xD9, 0x58, 0x08, 0x8B, 0x5C, 0xBE, 0x3C, 0xD9, 0x44, 0x24, 0x54, 0xD8, 0x4C, 0x19, 0x1C, 0x8A, 0x4C, 0x24, 0x70, 0x84, 0xC9, 0xD8, 0x64, 0x24, 0x58, 0xD9, 0x58, 0x0C, 0x75, 0x40, 0xD9, 0x40, 0xFC, 0xD8, 0x0D, 0xB8, 0x56, 0xB8, 0x00, 0xD9, 0x5A, 0xFC, 0xD9, 0x00, 0xD8, 0x0D, 0xB8, 0x56, 0xB8, 0x00, 0xD9, 0x1A, 0xD9, 0x40, 0x04, 0xD8, 0x0D, 0xB8, 0x56, 0xB8, 0x00, 0xD9, 0x5A, 0x04, 0x8B, 0x48, 0xF0, 0x89, 0x4A, 0xF0, 0x8B, 0x48, 0xF4, 0x89, 0x4A, 0xF4, 0x8B, 0x48, 0xF8, 0x89, 0x4A, 0xF8, 0x8B, 0x48, 0x08, 0x89, 0x4A, 0x08, 0x8B, 0x48, 0x0C, 0x89, 0x4A, 0x0C, 0x8B, 0x4C, 0x24, 0x18, 0x83, 0xC0, 0x20, 0x83, 0xC2, 0x20, 0x45, 0x3B, 0xE9, 0x0F, 0x8C, 0x36, 0xFF, 0xFF, 0xFF, 0x8B, 0x4C, 0x24, 0x5C, 0x8B, 0x5C, 0x24, 0x60, 0x8B, 0x44, 0x24, 0x30, 0x8B, 0x54, 0x24, 0x14, 0x40, 0x3B, 0xC2, 0x89, 0x44, 0x24, 0x30, 0x7D, 0x29, 0x8B, 0x44, 0x24, 0x18, 0x33, 0xED, 0x85, 0xC0, 0x7E, 0xE5, 0x8B, 0x44, 0x24, 0x28, 0x8B, 0x54, 0x24, 0x2C, 0x8B, 0xD8, 0x03, 0xD9, 0x89, 0x5C, 0x24, 0x28, 0x8B, 0xDA, 0x03, 0xD9, 0x89, 0x5C, 0x24, 0x2C, 0x8B, 0xFF, 0xE9, 0xF4, 0xFE, 0xFF, 0xFF, 0x8B, 0x6C, 0x24, 0x34};
+inline constexpr Site kClothFillLoop{"ClothFillLoop", 0x0040D523, kClothFillLoopBytes, sizeof(kClothFillLoopBytes)};
+
+inline constexpr std::uint8_t kClothFillUnlockBytes[] = {0x8B, 0x0D, 0x44, 0x60, 0xC6, 0x00, 0x8B, 0x81, 0x60, 0x06, 0x00, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x23, 0x83, 0x2B, 0x00, 0x8B, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x19, 0x83, 0x2B, 0x00, 0x8B, 0x08, 0x50, 0xFF, 0x51, 0x30};
+inline constexpr Site kClothFillUnlock{"ClothFillUnlock", 0x0040D659, kClothFillUnlockBytes, sizeof(kClothFillUnlockBytes)};
+
+inline constexpr std::uint8_t kClothFillBackScaleBytes[] = {0x00, 0x00, 0x80, 0xBF};
+inline constexpr Site kClothFillBackScale{"ClothFillBackScale", 0x00B856B8, kClothFillBackScaleBytes, sizeof(kClothFillBackScaleBytes)};
+
+inline constexpr std::uint8_t kOptionNameLookupBytes[] = {0x51, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x10, 0x85, 0xFF, 0xC7, 0x44, 0x24, 0x08, 0x00, 0x00, 0x00, 0x00, 0x8D, 0xB1, 0x34, 0x02, 0x00, 0x00, 0x74, 0x24, 0x57, 0x8B, 0xCE, 0xE8, 0x8B, 0xFA, 0xAC, 0xFF, 0x8D, 0x4C, 0x24, 0x08, 0x51, 0x50, 0x57, 0x8B, 0xCE, 0xE8, 0x20, 0xFB, 0xAC, 0xFF, 0x84, 0xC0, 0x74, 0x0A, 0x8B, 0x44, 0x24, 0x08, 0x5F, 0x5E, 0x59, 0xC2, 0x04, 0x00, 0x5F, 0x83, 0xC8, 0xFF, 0x5E, 0x59, 0xC2, 0x04, 0x00};
+inline constexpr Site kOptionNameLookup{"OptionNameLookup", 0x00932264, kOptionNameLookupBytes, sizeof(kOptionNameLookupBytes)};
+
+inline constexpr std::uint8_t kOptionTypeGetterBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x3B, 0x41, 0x08, 0x0F, 0x83, 0x16, 0x49, 0x16, 0x00, 0x8B, 0x49, 0x04, 0x8D, 0x04, 0x80, 0x8A, 0x04, 0x08, 0x83, 0xE0, 0x0F, 0xC2, 0x04, 0x00};
+inline constexpr Site kOptionTypeGetter{"OptionTypeGetter", 0x00553028, kOptionTypeGetterBytes, sizeof(kOptionTypeGetterBytes)};
+
+inline constexpr std::uint8_t kOptionTypeRangeBytes[] = {0x32, 0xC0, 0xC2, 0x04, 0x00};
+inline constexpr Site kOptionTypeRange{"OptionTypeRange", 0x006B794B, kOptionTypeRangeBytes, sizeof(kOptionTypeRangeBytes)};
+
+inline constexpr std::uint8_t kOptionIntGetterBytes[] = {0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x3B, 0x48, 0x08, 0x0F, 0x83, 0xFD, 0x47, 0x2B, 0x00, 0x8B, 0x54, 0x24, 0x08, 0x8D, 0x0C, 0x89, 0x03, 0x48, 0x04, 0x52, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x02, 0x0F, 0x85, 0x02, 0xF0, 0x2B, 0x00, 0x8B, 0x49, 0x01, 0x8B, 0x54, 0x24, 0x04, 0x89, 0x0A, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0xC2, 0x08, 0x00};
+inline constexpr Site kOptionIntGetter{"OptionIntGetter", 0x00402E6A, kOptionIntGetterBytes, sizeof(kOptionIntGetterBytes)};
+
+inline constexpr std::uint8_t kOptionIntGetRangeBytes[] = {0x32, 0xC0, 0xC2, 0x08, 0x00};
+inline constexpr Site kOptionIntGetRange{"OptionIntGetRange", 0x006B7676, kOptionIntGetRangeBytes, sizeof(kOptionIntGetRangeBytes)};
+
+inline constexpr std::uint8_t kOptionIntSetterBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x8B, 0xF1, 0x3B, 0x7E, 0x08, 0x73, 0x39, 0x8B, 0x44, 0x24, 0x10, 0x8D, 0x0C, 0xBF, 0x03, 0x4E, 0x04, 0x50, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x02, 0x0F, 0x85, 0x61, 0x93, 0x1A, 0x00, 0x8B, 0x54, 0x24, 0x04, 0x89, 0x51, 0x01, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x84, 0xC0, 0x74, 0x0F, 0x57, 0x8B, 0xCE, 0xE8, 0x8E, 0xFF, 0xFF, 0xFF, 0x5F, 0xB0, 0x01, 0x5E, 0xC2, 0x08, 0x00, 0x5F, 0x32, 0xC0, 0x5E, 0xC2, 0x08, 0x00};
+inline constexpr Site kOptionIntSetter{"OptionIntSetter", 0x00518AE0, kOptionIntSetterBytes, sizeof(kOptionIntSetterBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2305,8 +2336,13 @@ Outcome ApplyOverhealDecay(const Config& config);
 Outcome ApplySteadyHitpointBars(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
+Outcome ApplyRendererOption(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
+Outcome ApplyFastVertexFill(const Config& config);
+// True once fastVertexFill replaced the cloth flags' fill loops in this run (applied, not `verify`). rendererOption
+// reads it when the game calls Direct3DCreate9, after every key has applied.
+bool FastVertexFillActive();
 Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
@@ -2454,8 +2490,11 @@ inline constexpr Feature kFeatures[] = {
     {"buildingWorkRateAuras", ApplyBuildingWorkRateAuras},
     // After the keys that verify the sites it writes as stock bytes; before the plugins, as a plugin may read its log.
     {"dataLint", ApplyDataLint},
+    // Before perfStats: it replaces the Direct3DCreate9 the game gets (d3d9hooks.h), which perfStats then observes.
+    {"rendererOption", ApplyRendererOption},
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
+    {"fastVertexFill", ApplyFastVertexFill},
     {"xsErrorLog", ApplyXsErrorLog},
     {"multipleInstances", ApplyMultipleInstances},
     // Last: plugins load once every other hook is in place.
@@ -2475,7 +2514,7 @@ inline constexpr const char* kHandledKeys[] = {
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
-    "buildingworkrateauras", "xserrorlog", "datalint", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads",
+    "buildingworkrateauras", "xserrorlog", "datalint", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
@@ -4928,4 +4967,212 @@ inline void Free(char* marker) {
 }
 
 }  // namespace uhc::markers
+```
+
+## Direct3D hooks
+
+### src/d3d9hooks.h
+
+```cpp
+// The game's Direct3D 9 entry points, owned here for every key that needs them: the IAT slot 0xB84164 of
+// d3d9!Direct3DCreate9 (the exe's only d3d9 import, bound at load time, no delay load), then
+// IDirect3D9::CreateDevice and IDirect3DDevice9::Reset / Present through their vtables. One owner, so two keys
+// never write the same slot or vtable entry twice.
+//
+// rendererOption may first replace the Direct3DCreate9 the game gets (a D3D9 implementation loaded from another
+// folder); the observers (perfStats, rendererOption's first-frame check) then see whichever device that creates.
+// Neither changes the game's calls or their arguments.
+#pragma once
+
+#include <windows.h>
+
+#include <d3d9.h>
+
+namespace uhc {
+
+using Direct3DCreate9Fn = IDirect3D9*(WINAPI*)(UINT);
+
+// The Direct3DCreate9 the exe imports: what the IAT slot held when this was first called, checked against
+// GetProcAddress of the d3d9.dll loaded with the exe. nullptr (logged with `who`) if another DLL changed the slot.
+Direct3DCreate9Fn StockDirect3DCreate9(const char* who);
+
+// The Direct3DCreate9 the game gets in the end, in place of the stock one. Once, before any AddD3D9Observer
+// (rendererOption is before perfStats in kFeatures). False (logged) if the slot is not stock.
+bool ReplaceDirect3DCreate9(Direct3DCreate9Fn create, const char* who);
+
+// Each callback may be null. They run on the thread that makes the call (the game's main thread), in the order
+// the observers were added.
+struct D3D9Observer {
+  void (*afterCreateDevice)(UINT adapter, D3DDEVTYPE type, DWORD flags, const D3DPRESENT_PARAMETERS* pp,
+                            HRESULT hr, IDirect3DDevice9* device);
+  void (*afterReset)(const D3DPRESENT_PARAMETERS* pp, HRESULT hr);
+  void (*beforePresent)();
+  void (*afterPresent)(HRESULT hr);
+};
+
+// Adds an observer. The first one points the IAT slot at the wrapper. False (logged with `who`) if the slot is
+// neither stock nor what ReplaceDirect3DCreate9 wrote.
+bool AddD3D9Observer(const D3D9Observer& observer, const char* who);
+
+}  // namespace uhc
+```
+
+### src/d3d9hooks.cpp
+
+```cpp
+#include "d3d9hooks.h"
+
+#include <cstdint>
+
+#include "log.h"
+#include "patch.h"
+
+namespace uhc {
+namespace {
+
+// IAT slot of d3d9!Direct3DCreate9 (docs/engine-symbols.md, "IAT slots"). It holds a runtime address, so it is
+// checked against GetProcAddress instead of generated/sites.h.
+constexpr std::uint32_t kSlot = 0x00B84164;
+constexpr int kCreateDeviceIndex = 16;  // IDirect3D9
+constexpr int kResetIndex = 16;         // IDirect3DDevice9
+constexpr int kPresentIndex = 17;       // IDirect3DDevice9
+constexpr int kMaxObservers = 4;
+
+using CreateDeviceFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3D9*, UINT, D3DDEVTYPE, HWND, DWORD,
+                                                   D3DPRESENT_PARAMETERS*, IDirect3DDevice9**);
+using ResetFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DPRESENT_PARAMETERS*);
+using PresentFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const RECT*, const RECT*, HWND, const RGNDATA*);
+
+bool g_stockChecked = false;
+Direct3DCreate9Fn g_stock = nullptr;
+Direct3DCreate9Fn g_create = nullptr;   // what the game gets in the end: stock, or the replacement
+bool g_wrapped = false;                 // the slot holds Direct3DCreate9Hook
+
+D3D9Observer g_observers[kMaxObservers] = {};
+int g_observerCount = 0;
+
+CreateDeviceFn g_createDevice = nullptr;
+ResetFn g_reset = nullptr;
+PresentFn g_present = nullptr;
+
+std::uint32_t Address(const void* p) { return static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(p)); }
+
+// Points vtable entry `index` of a COM object at `hook`, keeping the original. A d3d9 implementation shares one
+// vtable between all objects of a class, so a second object finds the hook already in place.
+template <typename Fn>
+bool HookVtable(void* object, int index, Fn hook, Fn* original) {
+  void** entry = *reinterpret_cast<void***>(object) + index;
+  if (*entry == reinterpret_cast<void*>(hook)) {
+    return true;
+  }
+  *original = reinterpret_cast<Fn>(*entry);
+  return WriteDword(Address(entry), Address(reinterpret_cast<void*>(hook)));
+}
+
+HRESULT STDMETHODCALLTYPE PresentHook(IDirect3DDevice9* device, const RECT* source, const RECT* dest, HWND window,
+                                      const RGNDATA* dirty) {
+  for (int i = 0; i < g_observerCount; ++i) {
+    if (g_observers[i].beforePresent != nullptr) {
+      g_observers[i].beforePresent();
+    }
+  }
+  const HRESULT hr = g_present(device, source, dest, window, dirty);
+  for (int i = 0; i < g_observerCount; ++i) {
+    if (g_observers[i].afterPresent != nullptr) {
+      g_observers[i].afterPresent(hr);
+    }
+  }
+  return hr;
+}
+
+HRESULT STDMETHODCALLTYPE ResetHook(IDirect3DDevice9* device, D3DPRESENT_PARAMETERS* pp) {
+  const HRESULT hr = g_reset(device, pp);
+  for (int i = 0; i < g_observerCount; ++i) {
+    if (g_observers[i].afterReset != nullptr) {
+      g_observers[i].afterReset(pp, hr);
+    }
+  }
+  return hr;
+}
+
+HRESULT STDMETHODCALLTYPE CreateDeviceHook(IDirect3D9* d3d, UINT adapter, D3DDEVTYPE type, HWND focus, DWORD flags,
+                                           D3DPRESENT_PARAMETERS* pp, IDirect3DDevice9** device) {
+  const HRESULT hr = g_createDevice(d3d, adapter, type, focus, flags, pp, device);
+  IDirect3DDevice9* created = SUCCEEDED(hr) && device != nullptr ? *device : nullptr;
+  if (created != nullptr && (!HookVtable(created, kPresentIndex, &PresentHook, &g_present) ||
+                             !HookVtable(created, kResetIndex, &ResetHook, &g_reset))) {
+    Log(L"d3d9 hooks: could not hook the device vtable; no Present or Reset observers");
+  }
+  for (int i = 0; i < g_observerCount; ++i) {
+    if (g_observers[i].afterCreateDevice != nullptr) {
+      g_observers[i].afterCreateDevice(adapter, type, flags, pp, hr, created);
+    }
+  }
+  return hr;
+}
+
+IDirect3D9* WINAPI Direct3DCreate9Hook(UINT sdkVersion) {
+  IDirect3D9* d3d = g_create(sdkVersion);
+  if (d3d != nullptr && !HookVtable(d3d, kCreateDeviceIndex, &CreateDeviceHook, &g_createDevice)) {
+    Log(L"d3d9 hooks: could not hook IDirect3D9::CreateDevice");
+  }
+  return d3d;
+}
+
+}  // namespace
+
+Direct3DCreate9Fn StockDirect3DCreate9(const char* who) {
+  if (!g_stockChecked) {
+    g_stockChecked = true;
+    HMODULE d3d9 = GetModuleHandleW(L"d3d9.dll");
+    void* real = d3d9 != nullptr ? reinterpret_cast<void*>(GetProcAddress(d3d9, "Direct3DCreate9")) : nullptr;
+    if (real != nullptr && *reinterpret_cast<void* const*>(kSlot) == real) {
+      g_stock = reinterpret_cast<Direct3DCreate9Fn>(real);
+      g_create = g_stock;
+    }
+  }
+  if (g_stock == nullptr) {
+    Log(L"%hs: IAT slot 0x%08X does not point at d3d9!Direct3DCreate9", who, kSlot);
+  }
+  return g_stock;
+}
+
+bool ReplaceDirect3DCreate9(Direct3DCreate9Fn create, const char* who) {
+  if (StockDirect3DCreate9(who) == nullptr) {
+    return false;
+  }
+  if (g_wrapped || g_create != g_stock || create == nullptr) {
+    Log(L"%hs: Direct3DCreate9 is already wrapped or replaced", who);
+    return false;
+  }
+  if (!WriteDword(kSlot, Address(reinterpret_cast<void*>(create)))) {
+    return false;
+  }
+  g_create = create;
+  return true;
+}
+
+bool AddD3D9Observer(const D3D9Observer& observer, const char* who) {
+  if (StockDirect3DCreate9(who) == nullptr) {
+    return false;
+  }
+  if (g_observerCount == kMaxObservers) {
+    Log(L"%hs: too many Direct3D observers", who);
+    return false;
+  }
+  if (!g_wrapped) {
+    if (*reinterpret_cast<void* const*>(kSlot) != reinterpret_cast<void*>(g_create)) {
+      Log(L"%hs: IAT slot 0x%08X was changed by another DLL", who, kSlot);
+      return false;
+    }
+    if (!WriteDword(kSlot, Address(reinterpret_cast<void*>(&Direct3DCreate9Hook)))) {
+      return false;
+    }
+    g_wrapped = true;
+  }
+  g_observers[g_observerCount++] = observer;
+  return true;
+}
+
+}  // namespace uhc
 ```

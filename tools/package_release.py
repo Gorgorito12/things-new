@@ -1,6 +1,6 @@
 """Build the release zip that modders download: dist/UHC-<version>.zip.
 
-Usage: python -I tools/package_release.py [--force]
+Usage: python -I tools/package_release.py [--force] [--dxvk <folder>]
 
 Run it from the repository root after a Release build (docs/developer-guide.md, "Making a
 release"). It checks build/Release/UHC.dll first and stops if:
@@ -14,9 +14,12 @@ The zip holds one folder, UHC-<version>/, with:
   beside-another-dll/dinput8.dll              the same code, for a game that keeps another UHC.dll
   beside-another-dll/engine-ext/engine-ext.cfg  the same template, for that DLL
   art/effects/uhc_rings/  the aura rings of tools/rings, for a game's art folder
+  dxvk/d3d9.dll, dxvk/LICENSE.txt   DXVK 3.1.1 (32-bit) and its zlib license, for rendererOption
   LICENSE.txt
   README.txt         the quick start for modders
 The game exe is not included: each modder patches their own copy with the loader's patcher.
+DXVK is not in git: its d3d9.dll (x32 of the 3.1.1 release, SHA-256 checked) and its LICENSE come from
+rea/vendor/dxvk-3.1.1/ (gitignored), or the folder given with --dxvk; the script stops if either is missing.
 An existing zip is kept unless --force is given. The SHA-256 of the zip and the DLL are printed.
 """
 import hashlib
@@ -28,6 +31,8 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPO_URL = "https://github.com/Gorgorito12/tad-engine-extensions"
+DXVK_VERSION = "3.1.1"
+DXVK_D3D9_SHA256 = "265888c31ca78dffa290c39cb7e50bfb02762590e41927906e46fb32f01497fa"
 
 
 def fail(message):
@@ -103,6 +108,23 @@ def check_proxy(dll, version):
         fail(f"dinput8.dll is not version {version}; rebuild after changing CMakeLists.txt")
     check_fresh(dll, lambda p: True)
     return data
+
+
+def read_dxvk(folder):
+    """DXVK's 32-bit d3d9.dll and its license, checked against the release this DLL was tested with."""
+    dll, license_file = folder / "d3d9.dll", folder / "LICENSE"
+    if not dll.exists() or not license_file.exists():
+        fail(f"{folder} must hold DXVK {DXVK_VERSION}'s x32 d3d9.dll and its LICENSE (from the "
+             f"v{DXVK_VERSION} release and tag of github.com/doitsujin/dxvk); see docs/developer-guide.md, "
+             f"section 7")
+    data = dll.read_bytes()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != DXVK_D3D9_SHA256:
+        fail(f"{dll} has SHA-256 {digest}, not DXVK {DXVK_VERSION}'s x32 d3d9.dll ({DXVK_D3D9_SHA256})")
+    text = license_file.read_text(encoding="utf-8")
+    if "zlib" not in text:
+        fail(f"{license_file} is not DXVK's zlib license")
+    return data, text.replace("\r\n", "\n").replace("\n", "\r\n")
 
 
 def template_cfg(version, title=None):
@@ -312,17 +334,34 @@ snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by te
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
 bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
+fastVertexFill                waving flags drawn without reading video memory: more fps with flags on screen
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
+rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options
+                              menu: Vulkan (DXVK, from dxvk\\) at the next start, more fps
 
 What each key needs from your mod, and how well it is tested: see the guide.
 No feature has been tested in multiplayer yet. License: MIT, see LICENSE.txt.
+
+Vulkan renderer (rendererOption)
+--------------------------------
+The dxvk folder holds DXVK {DXVK_VERSION} (https://github.com/doitsujin/dxvk), a Direct3D 9 to
+Vulkan translation layer by Philip Rebohle and its contributors, under the zlib license
+(dxvk\\LICENSE.txt). It is shipped unmodified. With rendererOption on, copy the dxvk folder next
+to the game's exe and add the Renderer field to data\\options.xml (see the guide). The menu
+entry picks the renderer for the next start; DirectX 9 stays the default. If a start with
+Vulkan fails before its first frame, the next start goes back to DirectX 9 on its own. To
+remove it, delete the dxvk folder.
 """
     return text.replace("\n", "\r\n")
 
 
 def main(argv):
     force = "--force" in argv
+    dxvk_folder = ROOT / "rea" / "vendor" / f"dxvk-{DXVK_VERSION}"
+    if "--dxvk" in argv:
+        dxvk_folder = pathlib.Path(argv[argv.index("--dxvk") + 1])
+    dxvk_dll, dxvk_license = read_dxvk(dxvk_folder)
     version = read_version()
     dll_path = ROOT / "build" / "Release" / "UHC.dll"
     dll = check_dll(dll_path, version)
@@ -341,6 +380,8 @@ def main(argv):
                    template_cfg(version, f"# engine-ext\\engine-ext.cfg template for dinput8.dll {version}."))
         for ring in sorted((ROOT / "tools" / "rings").glob("*")):
             z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
+        z.writestr(f"{top}/dxvk/d3d9.dll", dxvk_dll)
+        z.writestr(f"{top}/dxvk/LICENSE.txt", dxvk_license)
         z.writestr(f"{top}/LICENSE.txt", license_text)
         z.writestr(f"{top}/README.txt", readme(version))
     print(f"wrote {out.relative_to(ROOT)}")

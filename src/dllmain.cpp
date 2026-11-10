@@ -14,6 +14,7 @@
 namespace uhc {
 const wchar_t kLogFile[] = L"UHC.log";
 const wchar_t kDataFolder[] = L"data\\uhc\\";
+const wchar_t kOptionsFile[] = L"uhc-options.cfg";
 }  // namespace uhc
 
 namespace {

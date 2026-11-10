@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
+| Tuesday 2026-11-10 17:34 | [`rendererOption`](#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
 | Monday 2026-11-09 08:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
@@ -332,6 +334,8 @@ Where the game reads its data, how it reads it, and how it starts.
 |---|---|---|---|---|
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | **new** | Nothing. | confirmed (single player) |
+| [`fastVertexFill`](#fastvertexfill) | Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | **new** | Nothing. | confirmed (single player) |
+| [`rendererOption`](#rendereroption) | Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | **new** | The field in `data\options.xml` and the `dxvk` folder. | confirmed (single player) |
 | [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages to the log, with file and line. | **new** | Nothing. | confirmed |
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | for tests | Nothing. | confirmed (two copies, single player) |
@@ -399,6 +403,224 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
   need the same setting.
 - **Status:** confirmed in single player, on the stock game: on a 25-minute save, `verify` checked 7.5
   million buffered reads against the file and found no mismatch. Not tested in WoL or in multiplayer.
+
+#### fastVertexFill
+
+*The game draws its waving flags with less work, so it runs at more frames per second when flags are on screen.*
+
+**Added:** Tuesday 2026-11-10 12:54 · **Filmed in WoL:** Tuesday 2026-11-10 17:34
+
+![fastVertexFill in WoL](media/fastVertexFill-wol.gif)
+
+*In WoL, with `fastVertexFill` (the 32-minute five-player save of the tables below, map revealed, the camera still on
+Queen Victoria's first Town Center, 1920×1080, Direct3D 9):* the British flags on the Town Center and the houses
+wave as usual. The picture is the same as without the key by design, since the same bytes reach the video card; only
+the frame rate changes. The overlay at the top gives the frame rate once a second: 184 FPS on average over the 32 s
+take, the render part 3.1 ms per frame.
+[Full video (MP4)](media/fastVertexFill-wol.mp4).
+
+![fastVertexFill in WoL, key off](media/fastVertexFill-wol-control.gif)
+
+*In WoL, key off (the same save, camera and window):* the same flags and the same picture, at 155 FPS on average,
+the render part 4.0 ms: the key gave +19 % in this pair of takes (one take each, measured while the video was being
+recorded; the tables below have the 60 s runs).
+[Full video (MP4)](media/fastVertexFill-wol-control.mp4).
+
+```
+fastVertexFill [log] [verify]
+```
+
+- **In the game today:** the flags that wave on Town Centers, other buildings and ships are cloth: a grid of
+  points the game moves every frame. To draw a flag, the exe writes the grid into video memory twice, once for
+  each side of the cloth, and it builds the second side by reading back the first one it has just written. Video
+  memory of that kind is made for writing; reading from it is very slow. With flags on screen, that reading
+  alone took 5.5 to 7.8 % of the game's main thread in the test below.
+- **Effect:** the second side is built from the game's own copy of the grid. The flags get the same bytes, so
+  the picture is the same, and the frame is shorter.
+- **Measured** in a late 8-AI game of the stock game ([performance.md](performance.md), §11, "fastVertexFill"),
+  60 s per run, with stock Direct3D 9 on an NVIDIA RTX 4090; each number is one run:
+
+  | Window | Without | With | Change | Render time per frame | The flags' share of the main thread |
+  |---|---|---|---|---|---|
+  | 1920×1080 | 188.7 / 193.5 FPS | 203.4 / 204.0 FPS | **+7 %** | 3.05 → 2.72 ms | 6.5–7.0 % → 0.0 % |
+  | 2560×1600 | 201.8 / 203.7 FPS | 217.9 / 216.8 FPS | **+7 %** | 2.80 → 2.49 ms | 5.5–5.6 % → 0.0 % |
+  | 3840×2160 | 190.5 / 188.5 FPS | 198.8 / 210.7 FPS | **+8 %** (+4 % and +12 %) | 3.05 → 2.70 ms | 7.4–7.8 % → 0.0 % |
+  | 1280×720 (no flag drawn) | 253.4 FPS | 256.9 FPS | none (within noise) | 1.79 → 1.76 ms | 0.0 % → 0.0 % |
+
+  The simulation's time per frame, the frames over 50 ms (0 or 1 per run either way) and the memory did not
+  change.
+- **Measured in WoL** (2026-11-10, [performance.md](performance.md), §11, "fastVertexFill in WoL"): a 32-minute
+  five-player save (four European AIs, 456 units), 60 s per run, stock Direct3D 9, the same PC. WoL keeps the
+  window inside the monitor, so the runs asked at 2560×1600 and 3840×2160 drew 2560×1440. The flags take more of
+  the frame in WoL than in the stock game, so the gain is larger:
+
+  | View | Window | Without | With | Change | Render time per frame | The flags' share of the main thread |
+  |---|---|---|---|---|---|---|
+  | A Town Center, map revealed | 1920×1080 | 162.5 / 161.8 FPS | 180.0 / 185.7 FPS | **+13 %** | 3.90 → 3.27 ms | 12–13 % → 0.0 % |
+  | A Town Center, map revealed | 2560×1440 (four pairs) | 141.8–166.5 FPS (mean 152.6) | 174.6–182.6 FPS (mean 178.5) | **+17 %** (+8 to +24 % per pair) | 3.72–4.34 → 3.17–3.36 ms | 11.5–13.6 % → 0.0 % |
+  | A battle in a town | 2560×1440 | 126.0 FPS | 147.3 FPS | **+17 %** | 5.33 → 4.30 ms | 7.7 % → 0.0 % |
+  | The save's own camera (player 1's base) | 2560×1440 | 276.0 FPS | 316.4 FPS | **+15 %** (lowest 5 %: 135 → 238) | 1.55 → 1.26 ms | 4.2 % → 0.0 % |
+
+  The simulation's time per frame did not rise, and the frames over 50 ms (4–12 per run, WoL's own file loads)
+  were the same with and without the key. Most runs had another program using up to 1.6 cores of the 16.
+- **With DXVK** (a Direct3D 9 to Vulkan wrapper some players use): the same reading made DXVK 3.1.1 slower
+  than stock Direct3D 9 in this test (179.6 FPS). With the key it gave 237.2 FPS, with no `dxvk.conf` (one run each).
+  In WoL, at 2560×1440 on the Town Center (one run each): DXVK with no `dxvk.conf` 97.0 FPS without the key (the
+  flags 38.5 % of the main thread) and **194.3 FPS with it**; with `d3d9.cachedWriteOnlyBuffers = True`, 179.6 and
+  187.0 FPS. With the key on, DXVK needs no `dxvk.conf` in WoL either, and both are ahead of stock Direct3D 9 with
+  the key (178.5 FPS).
+- **Limits:**
+  - it only helps while cloth flags are on screen; with none, the code does not run and nothing changes;
+  - the gain follows how many flags are drawn, in the view or in the water's reflection: in the test, one Town
+    Center's flag was on screen at 2560×1600, and at 1280×720 the camera showed none;
+  - it was measured on one PC. How slow that reading is depends on the video driver, so the gain can be smaller
+    or larger on another card.
+- **WoL needs:** nothing.
+  - `verify` is a correctness test: the stock code fills the flags, and every fill is compared, byte for byte,
+    with what the key would have written. It is slower than stock.
+  - `log` writes the session's counts at exit.
+- **Log:**
+  - at startup, `fastVertexFill: the cloth flags' vertices are built without reading the locked vertex buffer
+    (display only: same bytes)`;
+  - `hook reached: fastVertexFill cloth flag fill (0x40D523)` the first time a flag is drawn;
+  - with `verify`, at exit: `fastVertexFill verify: N fills checked against the stock loops (V vertices), M
+    mismatches, …`. M must be 0.
+- **Simulation:** no. It changes how the flags' vertices reach the video card, not which vertices, and it
+  touches nothing the game rules read, so players do not need the same setting.
+- **Status:** confirmed in single player (2026-11-10).
+  - On the stock game: `verify` compared 76,365 fills (10.5 million vertices) of a 60 s run of a 25-minute
+    save with the stock code and found no mismatch; the game also changed resolution twice (a new Direct3D
+    device each time) and was minimized and restored with the key on.
+  - In WoL, beside the other keys of this guide: `verify` compared 105,340 fills (15.6 million vertices) of a
+    five-player skirmish (a Dutch player and German, British, French and Spanish AIs, 2.4 game minutes) with no
+    mismatch and no XS error; with the key on, Highlanders and Jaegers fought beside an Ethiopian Town Center
+    and its flag was drawn. On the 32-minute save of the table above, `verify` compared 158,397 fills (17.5
+    million vertices): no mismatch.
+  - Beside WoL's own `uhc.dll` (2026-11-10), with the `dinput8.dll` of this project in a WoL install (WoL's
+    `uhc.dll`, `wol.cfg` and `data\uhc` untouched, their hashes the same after): `dinput8.dll 0.3.0`,
+    `fastVertexFill: applied`, no FAILED; the hook was reached; `verify` compared 129,140 fills (15.4 million
+    vertices) with no mismatch; in a skirmish against a German AI (Otto von Bismarck, 29 units after 4 minutes)
+    `xsErrorLog` logged no XS message, the Town Center's flag was drawn, and two resolution changes and a
+    minimize and restore went on drawing. Frame rate on the same save, the key line on and off, two runs each:
+    152.5 → 176.0 FPS (**+15 %**) at 1920×1080 and 153.8 → 174.8 FPS (**+14 %**) at 2560×1440. That install has
+    ReShade's `d3d9.dll`, so these numbers include ReShade: compare them with each other, not with the table above.
+    Removing `dinput8.dll` and `engine-ext\` gives WoL's main menu again.
+  - Not tested: multiplayer, a full-length game, other video cards and drivers.
+
+#### rendererOption
+
+*Adds a Renderer choice to the options menu: DirectX 9, or Vulkan for more frames per second.*
+
+**Added:** Tuesday 2026-11-10 14:43 · **Filmed in WoL:** Tuesday 2026-11-10 17:34
+
+![rendererOption in WoL: the menu](media/rendererOption-wol.gif)
+
+*In WoL, with `fastVertexFill` and `rendererOption log`, at the main menu (1920×1080):* Options → Graphics Options
+shows the Renderer entry on DirectX 9. The cursor rests on it and its tooltip shows; the list opens, Vulkan (DXVK) is
+picked, and OK goes back to the main menu with the choice stored (`uhc-options.cfg`: `renderer vulkan`; the log:
+`Vulkan chosen in the menu; it takes effect at the next start`).
+[Full video (MP4)](media/rendererOption-wol.mp4).
+
+![rendererOption in WoL: the game with Vulkan](media/rendererOption-vulkan-wol.gif)
+
+*The next start, with Vulkan (DXVK 3.1.1 loaded from `dxvk\`, no DXVK option since `fastVertexFill` is on), in the
+late save and Town Center view of `fastVertexFill`'s videos:* 203 FPS on average over the 32 s take, the render part
+2.7 ms per frame. The picture is the same as with DirectX 9.
+[Full video (MP4)](media/rendererOption-vulkan-wol.mp4).
+
+![rendererOption in WoL, control: DirectX 9](media/rendererOption-wol-control.gif)
+
+*Control, DirectX 9 chosen (both keys on, the same scene):* the same picture at 182 FPS on average, the render part
+3.2 ms: Vulkan gave +12 % in this pair of takes (one take each, filmed while the video was being recorded).
+[Full video (MP4)](media/rendererOption-wol-control.mp4).
+
+```
+rendererOption [vulkan|dx9] [folder=<dir>] [log] [conf=<DXVK options>]
+```
+
+- **In WoL today:** the game draws with Direct3D 9. A player can install DXVK (a free library that runs Direct3D 9
+  games on Vulkan) by hand, two files next to the exe, and with the right option it is faster
+  ([performance.md](performance.md), §11, "DXVK in WoL"); nothing in the game offers it.
+- **Effect:** Options → Graphics shows a **Renderer** list with *DirectX 9* and *Vulkan (DXVK)*. The choice is used
+  from the next start. With Vulkan, the DLL loads DXVK's `d3d9.dll` from the `dxvk` folder next to the exe. No file
+  next to the exe changes and the profile is not touched: the choice is kept in `uhc-options.cfg` next to `UHC.log`.
+  DirectX 9 stays the default.
+- **DXVK's option:** without [`fastVertexFill`](#fastvertexfill), DXVK is only fast with
+  `d3d9.cachedWriteOnlyBuffers = True`, so the DLL gives it that option. With `fastVertexFill` on, the slow read-back
+  that option works around is gone, and DXVK gets no option. The log says which one and why.
+- **WoL needs:**
+  1. the `dxvk` folder of the release zip (DXVK 3.1.1's 32-bit `d3d9.dll` and its license) next to `age3y.exe`;
+  2. the field in `data\options.xml`, in the Graphics group (here after Anti-alias Quality). Plain text works; the
+     first `<value>` is DirectX 9, the second Vulkan:
+
+     ```xml
+     <field>
+         DropDown
+         <name>OptionRenderer</name>
+         <label>Renderer</label>
+         <value>DirectX 9</value>
+         <value>Vulkan (DXVK)</value>
+         <tooltip>Vulkan draws the game through DXVK (the dxvk folder): usually more frames per second. Takes effect when the game starts again.</tooltip>
+     </field>
+     ```
+  3. WoL's large-address-aware exe, which WoL ships: DXVK takes about 250 MB more address space.
+- **Arguments:** `vulkan` or `dx9` is the choice of a player who never picked one (default `dx9`); `folder=<dir>` is
+  where `d3d9.dll` is, relative to the exe or absolute (default `dxvk`); `log` logs every read and write of the entry;
+  `conf=` replaces DXVK's options and takes the rest of the line (several options separated by `;`). A player who
+  sets `DXVK_CONFIG` in Windows' environment keeps it.
+- **During a match** the entry is greyed out, as the other options that need a restart.
+- **If Vulkan fails:** no `dxvk` folder, a broken `d3d9.dll`, or no Vulkan on the PC: the game starts with DirectX 9
+  and the log says why. If a start with Vulkan crashes or hangs before its first frame, the next start uses DirectX 9
+  and stores it, so the player can always get back to the menu.
+- **Log:**
+  - at startup, `rendererOption: <path>\uhc-options.cfg: Vulkan` (or `DirectX 9`, or `no choice stored yet`), then
+    `rendererOption: Vulkan: <path>\dxvk\d3d9.dll loaded at 0x…; the game's Direct3DCreate9 is DXVK's`; then
+    `rendererOption: no DXVK options (fastVertexFill is on, …)` or `rendererOption: DXVK_CONFIG=d3d9.cachedWriteOnlyBuffers
+    = True (fastVertexFill is off, failed or in verify mode)`, `Direct3DCreate9(0x20) answered by DXVK`,
+    `CreateDevice -> hr 0x00000000` and `first frame presented (hr 0x00000000); start marker removed`;
+  - when the options screen opens, `rendererOption: options screen field OptionRenderer (…); shows Vulkan`;
+  - on Apply, `rendererOption: Vulkan chosen in the menu; it takes effect at the next start`;
+  - DXVK's own log, `dxvk\age3y_d3d9.log`: `Found config env: d3d9.cachedWriteOnlyBuffers = True` near its top when
+    the option is given.
+- **Limits:**
+  - **a restart is needed** to change the renderer;
+  - one PC was measured (an NVIDIA RTX 4090): another card or driver, an integrated GPU (DXVK needs Vulkan 1.3) and
+    exclusive fullscreen with Alt+Tab are untested;
+  - **multiplayer is untested** (see "Simulation");
+  - about 250 MB more address space, so only with a large-address-aware exe;
+  - it does not touch the stutters (the frames over 100 ms), which come from the game's file loads.
+- **Simulation:** no. It changes which library draws, not what the game computes, and the x87 control word of the
+  game's main thread stays as with Direct3D 9. Players may choose differently, but no multiplayer game has been run
+  with DXVK yet.
+- **Measured** in WoL ([performance.md](performance.md), §11, "rendererOption"), a late five-player save, the camera on
+  a Town Center, 60 s per run, on an NVIDIA RTX 4090:
+
+  | Window | Direct3D 9 + `fastVertexFill` | Vulkan from the menu + `fastVertexFill` (the default: no DXVK option) | the same with the option | DXVK installed by hand, with the option, no `fastVertexFill` |
+  |---|---|---|---|---|
+  | 1920×1080 | 180.6 FPS | **196.5 / 194.4** (+8 %) | 182.8 / 178.9 | 181.3 |
+  | 2560×1440 | 180.7 FPS | **200.2 / 194.0** (+9 %) | 184.5 / 190.0 | 188.6 |
+
+  Vulkan chosen in the menu is as fast as DXVK installed by hand (178.7 and 191.2 FPS with the same option, within
+  1.5 %). The PC was not idle during these runs (a browser used about half a core), so take the numbers as a
+  comparison between the variants.
+- **Status:** confirmed in single player (2026-11-10), on WoL's exe and data:
+  - the menu: the entry shows in Graphics Options (English and Spanish copies), the choice survives a restart, and
+    the profile written after Options → OK is byte for byte the one a game without the key writes (both change
+    only `optionrefreshrate`, which the stock screen rewrites);
+  - the switch: Vulkan → restart → DXVK 3.1.1 loaded from `dxvk\`, the device created, the first frame presented; back
+    to DirectX 9 → restart → the system's Direct3D 9;
+  - the safety net: no `dxvk` folder, a `d3d9.dll` that is not a DLL, and a start marker left behind: all three
+    started with DirectX 9 and said why in the log (the third also stored DirectX 9);
+  - with Vulkan from the menu: a 32-minute save with four AIs played 3.5 game minutes (the AIs fought and built), then
+    minimize and restore, two resolution changes, a save and its load: no fault, frames and the game clock went on;
+    with every key of `examples\Startup\uhc.cfg` and `fastVertexFill`: 40 keys applied, none failed; the x87 control
+    word 0x007F after CreateDevice and 0x027F in play, as with Direct3D 9;
+  - beside WoL's own DLL (`dinput8.dll`, with `engine-ext\`): the entry shows and switches, DXVK loads and draws, and
+    removing it leaves WoL's folder byte for byte as it was. ReShade, which that copy has as `d3d9.dll` next to the
+    exe, is not used with Vulkan (DXVK is loaded by its full path), so ReShade's effects are off while Vulkan is
+    chosen.
+  - Not tested: multiplayer, another video card or driver, exclusive fullscreen and Alt+Tab, a stock (not
+    large-address-aware) exe with DXVK.
 
 #### xsErrorLog
 
@@ -6849,7 +7071,7 @@ the code. Saved games were tested only where a section says so.
 - **Every player needs the same DLL, the same `wol.cfg` and the same data.** That is how WoL ships
   already, and it is the safe rule for every key.
 - **Keys that may differ between players,** because they change only what the local player sees or
-  which keys work, or only what the log says: `ignoreRegistryPath`, `bufferedFileReads`, `multipleInstances`, `compatMode`,
+  which keys work, or only what the log says: `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `multipleInstances`, `compatMode`,
   `selectionLimit`, `customHotkeyContexts`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`,
   `customRevolutionBanners`, `overhealHitpointBars`, `showGatherRate`, `abilitySlots`,
   `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `xsErrorLog`, `dataLint`,

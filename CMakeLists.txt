@@ -32,6 +32,7 @@ set(UHC_SOURCES
   src/prototags.cpp
   src/civtags.cpp
   src/techsubtypes.cpp
+  src/d3d9hooks.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp
@@ -78,6 +79,8 @@ set(UHC_SOURCES
   src/features/steadybars.cpp
   src/features/plugins.cpp
   src/features/perf.cpp
+  src/features/vertexfill.cpp
+  src/features/renderer.cpp
   src/features/selection.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
@@ -127,6 +130,8 @@ set(UHC_SOURCES
   src/hooks/unitlist_hooks.asm
   src/hooks/broadside_hooks.asm
   src/hooks/cheat_hooks.asm
+  src/hooks/clothfill_hooks.asm
+  src/hooks/rendereroption_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
   src/hooks/civ_hooks.asm

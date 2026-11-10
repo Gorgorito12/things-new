@@ -1124,6 +1124,22 @@ ResList get in "Resource inventories".
 | Unit getCarryCapacity | 0x494503, `float thiscall(unit, int r)`, `ret 4` | confirmed (`cs`) | `0x4944E5([unit+5Ch], r)`: the proto's capacity. Site `UnitCarryCapacity`. |
 | Player unit list | `[player+F8h]` (unit IDs), `[player+FCh]` (count) | inference; in game (counts) | The list `kbUnitGetNumberTargeters` walks. |
 
+### Settings objects and the options screen (for `rendererOption`, 2026-11-10)
+
+REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/renderer-20261110.json`; `cs` = capstone
+over the file bytes. The profile's game options are one of these settings objects.
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Settings object | vtable 0xBA3854, 0xE54 bytes; ctor FUN_00518E3B(index, name, table, count) | confirmed (`ev_d5d3621f…`) | `[+4]` 5-byte entries (byte: low nibble type 1 float, 2 int, 3 ?, 5 bool, 9 string, high nibble flags; then 4 bytes value or pointer), `[+8]` count, `[+20h]` index, `[+24h]` kind, `[+2Ch]` name (0x104 wchar), `[+234h]` name → ID map (insert 0x598DEF, find 0x401D10 / 0x401DB3). |
+| Settings factory | FUN_00518CC9(name, kind, …) on the manager 0xC66688 | confirmed (`ev_ec20813d…`) | kind 0: the game settings table 0xD840E0, 0x172 entries; kind 1: the option table 0xD91778, 0x5D (93) entries (the only reference to it, 0x55093C). The object goes in the manager's list `[+C20h]`; lookup by name 0x402C76 (`thiscall(0xC66688, name)`). |
+| Option table | 0xD91778, 93 × 0x88 bytes | confirmed (bytes) | `u32 id; wchar name[64]; u32 flags` (e.g. 0x49 `OptionMinimizedUI`, 0x5C `OptionWonderPowerUI`). Flag 0x40 (in the entry byte's high nibble): the field may change during a match. |
+| Option name → ID | 0x932264, `thiscall(obj, const wchar_t*)`, `ret 4` | confirmed (`ev_0d116bfb…`, `cs`) | -1 if not found (0x9322A1, reached from 0x93227B and 0x932295). Called only by the options screen's field builders (0x78BEC5 CheckBox, 0x78C0C0 Slider, 0x78C417 Edit, 0x78D722 DropDown). `rendererOption` hooks the not-found return (site `OptionNameLookup`). |
+| Option type | 0x553028, `thiscall(obj, id) -> al`, `ret 4` | confirmed (`cs`) | Out of range → 0x6B794B `xor al,al / ret 4`, reached only from 0x55302F (sites `OptionTypeGetter`, `OptionTypeRange`). |
+| Option int get / set | 0x402E6A `(id, int* out)`, 0x518AE0 `(id, int value)`, both `ret 8` | confirmed (`cs`) | Get out of range → 0x6B7676 (`xor al,al / ret 8`, only from 0x402E73); set fails through 0x518B26 (range 0x518AEB, type 0x518B15). Sites `OptionIntGetter`, `OptionIntGetRange`, `OptionIntSetter`. Other accessors with the same range check: bool 0x402CE9, float 0x44738A, string 0x9325C4 / 0x518B57, flag test 0xA41707. |
+| Options screen | options.xml loader at 0x78EC63; section FUN_0078E87D; field type FUN_0078E67F; DropDown FUN_0078D66A; apply FUN_0078D052 (from 0x78E1F4); change check FUN_0078D1E4 | confirmed (`ev_f384e120…`, `ev_bcf44188…`, `ev_d8c8392b…`) | `[screen+E4h]` = the "GameOptions" settings (0x78EE59). Field vtable +30h set ID, +34h get ID, +24h enable. Value ↔ entry: 0x78C8BC / 0x78C76A map IDs 9 (resolution), 0Ah (bit depth) and 30h (refresh rate) through lists, any other int is the entry's index (`ev_340d304f…`). |
+| Profile settings reader | FUN_00553044 | partial (`cs`) | Reads `<Settings>` / `<Setting>` (strings 0xBE29B0, 0xBE2BF8) with its own lookup, not 0x932264. |
+
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
@@ -1157,6 +1173,10 @@ performance.md).
 | 0x408399 | Render (game `vtable[78h]`) | Particles 0x408AAB, world 0x40B9BA, UI 0x41C6D3, Present wrapper 0x41CA31, then `_control87(0x9001F, 0xFFFFF)`. Probe times per call site in [performance.md](performance.md) §11. `ev_91eb3a47…` (perf-20261110). |
 | 0x40B9BA (+0x40BAFE) | World render | 0x40BAFE is its tail (`jmp` at 0x40BAB3). Calls 0x40BCF0(0) and 0x40BCF0(1): `vtable[14h]` of each view with the pass index; the world view is 0x45084C (pass 0 → 0x459719 → 0x4597A4, pass 1 → 0x450A4E). `ev_89f7c631…`, `ev_13da66a1…`, `ev_faaa8ead…`. |
 | 0x408AAB | Particle update | Walks the emitters, updates them (0x408E36 → 0x425018 → 0x424A9B / 0x424E33) and sorts them by distance (0x4087F3). Visual state only. `ev_084ed1cb…`, `ev_d8d52214…`. |
+| 0x40D25B | Cloth flag draw | `thiscall(flag manager [0xC67364], byte frontOnly, byte lowDetail)`, `ret 8`; callers 0x450684 (world draw 0x44FC96, after the batch flushes) and 0x429429 (0x42922A), both after the cfg test of `[0xC67338]`. Sets render state 16h (`D3DRS_CULLMODE`) through 0x4203AB to 3 (CCW), or to 1 (none) with `frontOnly`, and restores it at the end. Then per queued flag (`[mgr+68h]`: count, `+10h` data, 34h bytes each: `+0` the index of its record in `[mgr+24h]`, `+4` passed to 0x40BEA5; the record: `+0Ch` source buffer index, `+10h` columns, `+14h` rows, `+1Ch/+20h/+24h` U scale, V scale, V offset, `+2Ch` a byte that picks the shader `[mgr+7Ch]` with `pixelxformColor` (0xBE0974) or `[mgr+80h]` with `blendColor` (0xB9A914), set from `+30h` through 0x405C87) it fills vertices when the grid or the source buffer differs from the previous flag's, and draws through 0x40D039 (indices from 0x42042E). The queue's count is zeroed at the end. It is the cloth flags' draw, not "shader/material parameters" (the reading of [performance.md](performance.md) §8, from those two strings). REA `ev_20b69500…`, `ev_f342b619…` (fastvertexfill-20261110). |
+| 0x40D523..0x40D654 | Cloth flag vertex fill | Two loops over rows `[esp+14h]` and columns `[esp+18h]`: source vertex `[mgr+3Ch+index*4] + ([mgr+14h]*row + column)*20h` (position, normal, U, V) → front vertex at EAX−10h (U × `[esp+50h]`, V × `[esp+54h]` − `[esp+58h]`), then at 0x40D5C0..0x40D5FD the back vertex at EDX−10h, read back from the front one, normal × −1.0 (`[0xB856B8]`); skipped with `frontOnly` (`[esp+70h]`). `fastVertexFill` replaces them. |
+| 0x40A6A2 / 0x40A5B1 | Dynamic vertex buffer: take a piece | 0x40A6A2 `thiscall(renderer, count, stride, int* first)`, `ret 0Ch`: aligns `used` to the stride and calls 0x40A5B1(`[renderer+660h]`, bytes, &offset), which locks `{buffer, size, used, byte reset}` at `used` with flags 0x1800 (`NOOVERWRITE \| NOSYSLOCK`), or from 0 with 0x2800 (`DISCARD \| NOSYSLOCK`) when the piece does not fit or `reset` is set, and writes a zero to the first and last byte under SEH. Returns the pointer; the caller unlocks (`[buffer]->vtable[30h]`). `cs`; REA `ev_9e4dad98…`. |
+| 0x5AE756 | Dynamic vertex buffer: create | When `[renderer+660h]` is null: size 0x200000 (or a cfg value, the lookup 0x46A144 of the ID at `[[0xD6FBC8]]`), `device->CreateVertexBuffer(size, 0x208, 0, 0, &record[0], 0)` at 0x5AE7D5: `D3DUSAGE_DYNAMIC \| D3DUSAGE_WRITEONLY`, FVF 0, `D3DPOOL_DEFAULT`. `cs`; REA `ev_4b205dae…`. At runtime (2026-11-10, `fastVertexFill verify`): `GetDesc` gives usage 0x208, pool 0, 2,097,152 bytes, and the lock points into private memory with protection 0x404 (`PAGE_READWRITE \| PAGE_WRITECOMBINE`). |
 | 0x48241C | Unit bounding box | `thiscall(unit)`: rebuilds `[unit+B4h]+34h…+74h` from the model bounds and orientation through 0x422DC6; calls `_control87(0x9001F)`. Reached by the simulation and, through 0x4592FE (which clears dirty bit `[[unit+4]+5]` & 8 and sets bit 5 of `[[unit+4]+1]`), by the render. `ev_de03df52…`; writes seen with `trace_writes.py` (2026-11-10). |
 | 0x452D7B…0x452DC5 | Per-unit spring (render) | In 0x452B8E under the per-unit draw: damped spring on `[unit+B4h]+DCh/+E0h` with the frame time. Zeroed by the simulation at 0x47253F (0x4722E6). Hardware write breakpoint, 2026-11-10. |
 | 0x468450 | File stream open | Checks for the `l33t` compressed header (inflate stream, vtable 0xBA3318); otherwise uses a raw stream. `ev_bb0bb32c…`. |
@@ -1174,7 +1194,8 @@ All 15 are **confirmed** by parsing the stock exe's import table (2026-10-27, Py
 every slot resolves to the named KERNEL32/USER32 import.
 
 Timing, threads and Direct3D (confirmed the same way, 2026-10-28): timeGetTime 0xB8400C ·
-timeEndPeriod 0xB84010 · timeBeginPeriod 0xB84014 · Direct3DCreate9 0xB84164 · GetSystemInfo 0xB841D0 ·
+timeEndPeriod 0xB84010 · timeBeginPeriod 0xB84014 · Direct3DCreate9 0xB84164 (the exe's only d3d9 import, bound at
+load, no delay load; written only by `src/d3d9hooks.cpp`, for `rendererOption` and `perfStats`) · GetSystemInfo 0xB841D0 ·
 QueryPerformanceCounter 0xB8426C · QueryPerformanceFrequency 0xB84270 · CreateEventW 0xB84274 ·
 CreateThread 0xB84314 · Sleep 0xB84324 · WaitForSingleObject 0xB84328 · SleepEx 0xB84364 ·
 GetTickCount 0xB843A4 · SetThreadPriority 0xB843E0 · SetPriorityClass 0xB843E4 · GetPriorityClass 0xB843E8 ·
