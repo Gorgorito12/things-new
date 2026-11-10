@@ -11,9 +11,11 @@
 // value is the dropdown's index: 0 = the first <value> (DirectX 9), 1 = the second (Vulkan).
 //
 // The switch, at start (before the game's entry point, before Direct3DCreate9 is ever called): with Vulkan chosen,
-// the key sets DXVK_CONFIG (default "d3d9.cachedWriteOnlyBuffers = True", or `conf=`) and DXVK_LOG_PATH, loads
+// the key sets DXVK_LOG_PATH, loads
 // <dir>\d3d9.dll by its full path and gives the game its Direct3DCreate9 through the shared IAT slot owner
-// (src/d3d9hooks.h). The exe's own d3d9 import (the system's, or whatever d3d9.dll sits next to the exe) stays
+// (src/d3d9hooks.h). When the game calls it, after every key has applied, the wrapper sets DXVK_CONFIG: nothing with
+// fastVertexFill on (it removes the read-back the option works around), "d3d9.cachedWriteOnlyBuffers = True" without
+// it; `conf=` overrides both. The exe's own d3d9 import (the system's, or whatever d3d9.dll sits next to the exe) stays
 // loaded and unused.
 //
 // The safety net: a missing or unloadable DLL, a missing export, or a null from its Direct3DCreate9 fall back to the
@@ -65,6 +67,10 @@ std::wstring g_markerPath;
 Direct3DCreate9Fn g_stockCreate = nullptr;
 Direct3DCreate9Fn g_dxvkCreate = nullptr;
 bool g_firstFrameSeen = false;
+bool g_confGiven = false;     // conf= on the key's line
+std::string g_conf;           // its text
+bool g_envPreset = false;     // DXVK_CONFIG was in the environment before the game started
+bool g_confDecided = false;
 
 const wchar_t* ChoiceName(int choice) { return choice == kVulkan ? L"Vulkan" : L"DirectX 9"; }
 
@@ -181,8 +187,42 @@ bool StoreChoice(int choice) {
   return true;
 }
 
+// DXVK reads DXVK_CONFIG when its Direct3DCreate9 builds its instance (Config::getUserConfig), so the options are
+// chosen here, after every key has applied: with fastVertexFill on, the read-back loop that
+// d3d9.cachedWriteOnlyBuffers works around no longer runs, and DXVK gets no options; without it (off, failed or
+// `verify`), it gets the option. `conf=` overrides both; a DXVK_CONFIG of the player's environment is left alone.
+void DecideDxvkConfig() {
+  if (g_confDecided) {
+    return;
+  }
+  g_confDecided = true;
+  if (g_envPreset) {
+    Log(L"rendererOption: DXVK_CONFIG is already set in the environment; left as it is");
+    return;
+  }
+  std::string conf;
+  const wchar_t* why;
+  if (g_confGiven) {
+    conf = g_conf;
+    why = L"conf= of the key";
+  } else if (FastVertexFillActive()) {
+    why = L"fastVertexFill is on, so the read-back that d3d9.cachedWriteOnlyBuffers avoids does not run";
+  } else {
+    conf = kDefaultConf;
+    why = L"fastVertexFill is off, failed or in verify mode";
+  }
+  if (conf.empty()) {
+    SetEnvironmentVariableW(L"DXVK_CONFIG", nullptr);
+    Log(L"rendererOption: no DXVK options (%ls)", why);
+  } else {
+    SetEnvironmentVariableW(L"DXVK_CONFIG", Widen(conf).c_str());
+    Log(L"rendererOption: DXVK_CONFIG=%hs (%ls)", conf.c_str(), why);
+  }
+}
+
 // What the game gets in place of Direct3DCreate9 when Vulkan is used.
 IDirect3D9* WINAPI RendererCreate9(UINT sdkVersion) {
+  DecideDxvkConfig();
   IDirect3D9* d3d = g_dxvkCreate(sdkVersion);
   if (d3d != nullptr) {
     Log(L"rendererOption: Direct3DCreate9(0x%X) answered by DXVK", sdkVersion);
@@ -208,7 +248,7 @@ void AfterPresent(HRESULT hr) {
 }
 
 // Loads DXVK and makes it the game's Direct3DCreate9. False (logged) if the game stays on DirectX 9.
-bool UseVulkan(const std::wstring& folder, const std::string& conf) {
+bool UseVulkan(const std::wstring& folder) {
   g_stockCreate = StockDirect3DCreate9("rendererOption");
   if (g_stockCreate == nullptr) {
     Log(L"rendererOption: Vulkan not used (another DLL holds the Direct3DCreate9 import)");
@@ -220,12 +260,7 @@ bool UseVulkan(const std::wstring& folder, const std::string& conf) {
     return false;
   }
   wchar_t existing[2];
-  if (GetEnvironmentVariableW(L"DXVK_CONFIG", existing, 2) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) {
-    SetEnvironmentVariableW(L"DXVK_CONFIG", Widen(conf).c_str());
-    Log(L"rendererOption: DXVK_CONFIG=%hs", conf.c_str());
-  } else {
-    Log(L"rendererOption: DXVK_CONFIG is already set in the environment; left as it is");
-  }
+  g_envPreset = !(GetEnvironmentVariableW(L"DXVK_CONFIG", existing, 2) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND);
   if (GetEnvironmentVariableW(L"DXVK_LOG_PATH", existing, 2) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) {
     std::wstring logPath = folder;
     if (!logPath.empty() && logPath.back() == L'\\') {
@@ -233,9 +268,14 @@ bool UseVulkan(const std::wstring& folder, const std::string& conf) {
     }
     SetEnvironmentVariableW(L"DXVK_LOG_PATH", logPath.c_str());
   }
+  // A broken DLL or a missing dependency fails here with an error code, never with a Windows dialog.
+  DWORD oldMode = 0;
+  SetThreadErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX, &oldMode);
   HMODULE module = LoadLibraryExW(dll.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+  const DWORD loadError = GetLastError();
+  SetThreadErrorMode(oldMode, nullptr);
   if (module == nullptr) {
-    Log(L"rendererOption: cannot load %ls (error %lu); using DirectX 9", dll.c_str(), GetLastError());
+    Log(L"rendererOption: cannot load %ls (error %lu); using DirectX 9", dll.c_str(), loadError);
     return false;
   }
   g_dxvkCreate = reinterpret_cast<Direct3DCreate9Fn>(GetProcAddress(module, "Direct3DCreate9"));
@@ -306,7 +346,6 @@ Outcome ApplyRendererOption(const Config& config) {
   }
   int initial = kDx9;
   std::wstring folder = L"dxvk";
-  std::string conf = kDefaultConf;
   for (std::size_t i = 0; i < args->size(); ++i) {
     const std::string& arg = (*args)[i];
     const std::string lower = Lower(arg);
@@ -319,9 +358,10 @@ Outcome ApplyRendererOption(const Config& config) {
     } else if (lower.rfind("folder=", 0) == 0 && arg.size() > 7) {
       folder = Widen(arg.substr(7));
     } else if (lower.rfind("conf=", 0) == 0) {
-      conf = arg.substr(5);  // the rest of the line: DXVK options may hold spaces
+      g_confGiven = true;
+      g_conf = arg.substr(5);  // the rest of the line: DXVK options may hold spaces; empty: none
       for (std::size_t j = i + 1; j < args->size(); ++j) {
-        conf += " " + (*args)[j];
+        g_conf += " " + (*args)[j];
       }
       break;
     } else {
@@ -368,7 +408,7 @@ Outcome ApplyRendererOption(const Config& config) {
   }
 
   if (choice == kVulkan) {
-    UseVulkan(folder, conf);
+    UseVulkan(folder);
   } else {
     Log(L"rendererOption: DirectX 9");
   }

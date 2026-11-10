@@ -225,6 +225,12 @@ extern "C" void __stdcall UhcClothFillCompare() {
 
 namespace uhc {
 
+namespace {
+bool g_active = false;  // the routine replaces the stock loops in this run (not `verify`)
+}  // namespace
+
+bool FastVertexFillActive() { return g_active; }
+
 Outcome ApplyFastVertexFill(const Config& config) {
   const auto* args = config.First("fastVertexFill");
   if (args == nullptr) {
@@ -256,6 +262,7 @@ Outcome ApplyFastVertexFill(const Config& config) {
     if (!WriteJmp(sites::kClothFillLoop.va, reinterpret_cast<const void*>(&UhcClothFillHook), 8)) {
       return Outcome::kFailed;
     }
+    g_active = true;
     Log(L"fastVertexFill: the cloth flags' vertices are built without reading the locked vertex buffer%ls (display "
         L"only: same bytes)",
         g_log ? L", log" : L"");

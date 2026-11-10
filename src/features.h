@@ -87,6 +87,9 @@ Outcome ApplyRendererOption(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
 Outcome ApplyFileIo(const Config& config);
 Outcome ApplyFastVertexFill(const Config& config);
+// True once fastVertexFill replaced the cloth flags' fill loops in this run (applied, not `verify`). rendererOption
+// reads it when the game calls Direct3DCreate9, after every key has applied.
+bool FastVertexFillActive();
 Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
