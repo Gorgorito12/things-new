@@ -32,6 +32,7 @@ set(UHC_SOURCES
   src/prototags.cpp
   src/civtags.cpp
   src/techsubtypes.cpp
+  src/d3d9hooks.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp
