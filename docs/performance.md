@@ -47,6 +47,10 @@ GPU the game uses. It was written for the "late-game lag and stutter" investigat
   - frames over 100 ms dropped from 11 to 3, and stutter time from 2.3 s to 0.9 s per 150 s;
   - time in `ReadFile` per session fell from 14.9 s to 1.0 s, which also speeds up loading.
   - What remains is granny building the newly loaded data.
+- **Multi-core or D3D11 (§11, 2026-11-10):** all Direct3D 9 calls cost 0.49 ms of a 4.96 ms frame, so a D3D11
+  renderer alone gains at most about 11 %; dgVoodoo's D3D11 path lost 5–8 %. Overlapping update and render
+  could give up to about +80 %, but the render writes into simulation objects and the simulation calls into
+  render objects. The particle update (0.54 ms) is the one self-contained piece that could move to a worker.
 
 ## 1. Frame pacing and timers
 
@@ -500,9 +504,10 @@ file-open log.
   the gain would be about +30 % FPS. The real gain would be well below that, and the crash and desync risks are high.
 - **No multiplayer-safe multi-core change has a good cost/benefit ratio here.**
 - **The Definitive Edition was measured the same way** ([de-architecture.md](de-architecture.md)). Its
-  main thread still saturates in a battle (91–95 %), and the simulation is still on it. It adds a render
-  thread (45–61 % of a core), a PopcornFX particle pool and streaming texture loads; in total it uses
-  about 2.1 cores. The render-thread part is the "pipelining" ruled out above for a binary patch.
+  main thread still saturates in a battle (91–95 %), and the simulation is still on it. It adds a
+  PopcornFX particle pool, streaming texture loads and a sound thread; in total it uses about 2.1 cores.
+  The thread first read as a render thread (45–61 % of a core) is the sound thread: DE renders and
+  presents on its main thread (§11, "How DE does it", 2026-11-10).
 - **The stutters have a concrete multiplayer-safe lever:** buffered file reads (§10). The bytes stay the same and
   far fewer syscalls are made. `ZwReadFile` was 48 % of the stutter samples.
 
@@ -613,14 +618,225 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 |---|---|---|
 | Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | DLL feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
 | The stutters' remaining work: granny building newly loaded models and animations | — | Open. It is CPU work on the main thread. Preloading would trade memory and load time for it. |
-| Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. |
+| Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. §11 measures the parts: the particle update (0.54 ms of 4.96) is the only self-contained one. |
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
-| Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Not built. d3d9.dll is about 3 % of the main thread. Back buffers only matter with vsync on. |
+| Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Measured in a local build (§11): no change beyond noise. Dropping MULTITHREADED is unsafe, because the loading-screen thread calls Direct3D. Back buffers only matter with vsync on. |
 | Frame-time statistics and device logging (`perfStats`) | DLL feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
 | DXVK | wrapper | Measured: −28 % FPS in a late game. FPU state kept (0x007F). Not recommended. |
+| dgVoodoo2 (D3D9 → D3D11) | wrapper | Measured (§11): −5…−8 % FPS; FPU state kept. Not recommended. |
 | `RunAsFastAsPossible`, `fixedUpdate`, `MinRandUpdate`, `syncUpdateInterval`, the 100 ms cap | — | Rejected: they change the simulation. |
+
+## 11. Multi-core or D3D11 (2026-11-10)
+
+The question: should legacy be sped up by moving work to more cores, or by a Direct3D 11 renderer? This
+section measures the render side of the frame, what it shares with the simulation, and what Direct3D costs.
+Every statement is marked **[O]** observed (REA listing, bytes, or a runtime measurement), **[I]** inferred,
+or **[?]** open.
+
+### Method
+
+- **Static.** REA (Ghidra 12.1.4) on the stock exe; records in `rea/evidence/age3y-b1a1dab7/perf-20261110.json`
+  (37 records), cited by ID prefix. `cs` = capstone over the file bytes.
+- **Probe build.** A local, uncommitted build of `src/features/perf.cpp`
+  (`rea/evidence/age3y-b1a1dab7/multicore-20261110/probe.patch`). With `UHC_PROBE=1` in the environment:
+  - 68 exe `call rel32` sites are pointed at generated stubs that time the callee with `rdtsc`
+    (inclusive time, nesting-safe, the same length as the call, so nothing is relocated);
+  - every `IDirect3DDevice9` method (slots 3–118) is wrapped the same way, and counts calls made from a
+    thread other than the device's creator, and calls made while the update part runs;
+  - it records the x87 control word at every update entry and every Present;
+  - every 16th frame it copies the first 0x400 bytes of every unit, 0x200 bytes of each unit's `[unit+B4h]`
+    object and 0x8000 bytes of the world before the render call, and counts the dwords that changed after it.
+  - `UHC_DEVFLAGS=hw|nomt` changes the CreateDevice behavior flags.
+  - Overhead: 201.6 FPS with the probe against 194.6–201.4 without it [O].
+- **Runs.** `uhcbench25` in `C:\AoE3-UHC-Test`, driven like `tools/legacybench.py` (the camera where the save left
+  it, as in `bench-threadval`, not the battle view of §9), 60 s each, `perfprobe --sample-hz 200`,
+  Very High shaders, 16-bit, windowed, vsync off, 2560×1600 unless stated. One run per setting; two baselines
+  gave 194.6 and 201.4 FPS, so treat ±3 % as noise.
+- **Files.** `rea/evidence/age3y-b1a1dab7/bench-{ab-*,probe-*,probe1110}.csv` (+ `.samples.txt`, `.stacks.gz`,
+  `.UHC.log`); the summaries and scripts in `multicore-20261110/`.
+
+### The render frame
+
+`vtable[78h]` of the game is **0x408399** [O] (`ev_91eb3a47…`). It ends with `_control87(0x9001F, 0xFFFFF)`.
+Times are the probe's inclusive ms per frame at 2560×1600 (201.5 FPS, frame 4.96 ms) [O]:
+
+| Step | Function (call site) | ms/frame | What it is |
+|---|---|---|---|
+| **Update** | 0x405248 (0x405530) | **2.12** | Simulation and AI (§9). |
+| **Render** | 0x408399 (0x4056AC) | **2.73** | |
+| └ particles | 0x408AAB (0x408498) | 0.54 | Walks the particle emitters, updates them (0x408E36 → 0x425018 → 0x424A9B / 0x424E33: velocity, gravity, drag) and sorts them by distance. Its state is visual only (`ev_084ed1cb…`, `ev_d8d52214…`). |
+| └ world | 0x40B9BA (0x40858D) | 1.71 | 0x40BAFE is its tail, reached by a `jmp` at 0x40BAB3, not a separate pass (`ev_89f7c631…`). |
+| &nbsp;&nbsp;└ views, pass 0 | 0x40BCF0(0) (0x40BA32) | 0.70 | Calls `vtable[14h]` of each view; the world view 0x45084C(0) → 0x459719 → 0x4597A4: a walk 0x459637 → 0x4593CB, a frustum between two horizontal clip planes (0x411409, 0.06), then the world draw 0x44FC96 (0.50) (`ev_13da66a1…`, `ev_faaa8ead…`). Its purpose is not established [?]: setting `optiongrfxenableshadows` or `optiongrfxwaterreflections` to false in the profile left it at 0.70–0.72 ms. |
+| &nbsp;&nbsp;└ 0x415B51 | (0x40BA4A) | 0.12 | Extra per-view draws (0x459E7C, 0x415BA4, 0x417D69, a loop over `[world+860h]`) (`ev_966f6457…`). |
+| &nbsp;&nbsp;└ views, pass 1 | 0x40BCF0(1) (0x40BB9B) | 0.85 | The main view: 0x45084C(1) → 0x450A4E → world draw 0x44FC96 (0.84). |
+| └ UI | 0x41C6D3 (0x4085E8) | 0.22 | |
+| └ Present wrapper | 0x41CA31 (0x408620) | 0.21 | `IDirect3DDevice9::Present` itself: 0.21. |
+| └ the rest | | 0.05 | |
+
+Inside the two world draws (1.34 ms together) [O]: batch flush 0x4516D9 0.69 (of it model batches 0x4510C3 0.34,
+163 calls per frame), material parameters 0x40D25B 0.32, 0x4524EE 0.21, the rest 0.13. The per-unit call 0x452392
+(47 per frame) costs nothing measurable: it queues, and the flush draws. Animation is evaluated there, per model
+batch (0x4510C3 → 0x44EA4B → 0x407380 → 0x407272 → granny).
+
+**A correction to §9.** Its stack chains have stale return addresses in the middle. 0x424A9B and 0x424E33 are
+particle code, not passes, and "0x40BAFE main world pass 20.5 %" plus "0x40B9BA other world passes 18.7 %" are one
+function. The per-pass split above comes from the probe's timers, not from stacks.
+
+**What the render costs, by kind** (render 2.73 ms = 100 %):
+
+| Kind | ms/frame | Share of render | Evidence |
+|---|---|---|---|
+| (a) Direct3D calls (all device methods, driver included) | 0.49 (Present 0.21, the other 3,862 calls 0.28) | 18 % | [O] probe; d3d9 + nvd3dum + win32u are 6.2 % of main-thread samples |
+| (b) CPU work that reads simulation state and writes render state | ≈ 2.2 (particles 0.54, world passes ≈ 1.4 without their D3D calls, UI 0.22) | ≈ 80 % | [O] timers; the D3D split inside the world passes is [I] |
+| (c) Writes into simulation objects | no separate time: inside (b) | — | [O], below |
+
+The NVIDIA driver already runs its own worker thread beside the game (`nvd3dum.dll+0x4633B4`, 20–35 % of a
+core) [O].
+
+### What the render shares with the simulation
+
+- **Writes from the render into simulation objects** [O]:
+  - Across the render call, the first 0x400 bytes of every unit and 0x8000 bytes of the world never changed
+    (778 sampled frames, 1.84 M unit reads). Fields of the object at `[unit+B4h]` did: `+34h…+74h`, `+DCh/+E0h`
+    (34,631 changes, 1.9 % of unit samples) and `+174h…+1B0h`. The same object holds the per-player
+    visibility mask at `+ACh` that the AI reads (`kbUnitVisible`, [engine-symbols.md](engine-symbols.md)).
+  - `+DCh/+E0h` is a damped spring integrated with the frame time at 0x452D7B…0x452DC5 (in 0x452B8E, under the
+    per-unit draw 0x452392 and the batch flush; hardware write breakpoint, `multicore-20261110/trace-sub.txt`). The
+    simulation zeroes it at 0x47253F (0x4722E6, world update). It is visual state stored in a simulation object.
+  - `+34h…+74h` is a bounding box rebuilt by 0x48241C from the unit's model bounds and orientation
+    (`ev_de03df52…`). The render reaches it through 0x4592FE in the pass-0 walk when the unit's dirty bit
+    (`[[unit+4]+5]` bit 3) is set, clears that bit, and sets or clears bit 5 of `[[unit+4]+1]`. The simulation
+    calls 0x48241C from 0x487A21, 0x48DD3F and others (`cs`). So whichever side comes first does the
+    recomputation. 0x48241C also calls `_control87(0x9001F, 0xFFFFF)`.
+  - Whether the simulation reads that box or bit 5 for decisions is not established [?].
+- **Calls from the simulation into render objects** [O]:
+  - the model and pose code (0x44EA87 → 0x407380, 0x4073F9 → 0x407272 → granny) is entered about 1.5 times per
+    frame while the update runs (18,424 times in 12,450 frames); one caller is 0x49CD3E, which takes a model
+    point (0x44EA4B) and places a terrain effect (`ev_9c30aa30…`; purpose [I]);
+  - `IDirect3DDevice9::CreateTexture` is called 10–16 times per minute from inside the update: textures loaded
+    on demand.
+- **Direct3D off the main thread** [O]: in every probe run, 13–14 frames of device calls (Present,
+  BeginScene/EndScene, Clear, SetRenderState, SetTexture, DrawPrimitive, SetStreamSource) came from another
+  thread before the match, and none during it. With `+noIntroCinematics` that is the loading-screen thread
+  0x5A1FF1 (§3) [I]. So `D3DCREATE_MULTITHREADED` is needed, and dropping it is not safe.
+- **FPU** [O]: the x87 control word was 0x027F at every update entry and every Present in all probe runs
+  (stock d3d9 and dgVoodoo). It is 0x007F only right after CreateDevice; the game sets 53-bit precision again
+  at the end of every render and inside 0x48241C. A different D3D layer can only matter for sync if it changes
+  the control word inside a call made during the update (only CreateTexture was seen there) [I].
+
+### A/B runs (60 s each)
+
+| Run | FPS | p5 FPS | Update / render (game's timers, ms) | Main thread | GPU 3D | Draws per frame |
+|---|---|---|---|---|---|---|
+| Base 2560×1600 (two runs) | 201.4 / 194.6 | 180 / 169 | 2.22–2.34 / 2.76–2.80 | 95 % | 10–11 % | 919 |
+| 1280×720 | 239.1 (+19 %) | 214 | 2.19 / 2.00 | 90 % | 15 % | 475 |
+| 3840×2160 | 188.2 (−7 %) | 166 | 2.24 / 3.09 | 95 % | 14 % | 1,051 |
+| HARDWARE vertex processing (flags 0x44) | 202.9 | 177 | 2.26 / 2.71 | 95 % | 11 % | — |
+| No MULTITHREADED (flags 0x80) | 200.5 | 173 | 2.27 / 2.75 | 94 % | 10 % | — |
+| dgVoodoo2 2.87.6, D3D9 → D3D11 FL 11.0 | 185.0 (−5…−8 %) | 163 | 2.36 / 3.07 | 99 % | 18 % | 931 |
+
+- **Resolution** [O]: the GPU stays at 8–15 %. The CPU render time follows what is on screen: a larger
+  window shows more of the map (475 → 1,051 draws per frame), so 720p is faster for the CPU, not for the GPU.
+- **Device flags** [O]: both created the device (hr 0) and ran the save; both are within noise. They are not levers.
+- **dgVoodoo2** [O]: the official `dgVoodoo2_87_6.zip` (SHA-256 `9afa4933…`; `MS\x86\D3D9.dll` `060cb161…`), with
+  `OutputAPI = d3d11_fl11_0`, `AdapterIDType = nvidia`, `VRAM = 2048` and no watermark
+  (`multicore-20261110/dgVoodoo.conf`). It drives the game; the picture was not inspected. Its device calls cost
+  0.77 ms per frame against 0.49 (Present 0.06 against 0.21, the other calls 0.71 against 0.28), and its
+  `d3d9.dll` is 9.2 % of main-thread samples. The x87 control word was unchanged (0x007F after CreateDevice, 0x027F
+  in play). MXCSR after CreateDevice was 0x1FBD instead of 0x1FA0: only the sticky exception flags differ, the
+  masks and rounding do not [O]. It was removed from the bed afterwards.
+
+### What each path could gain
+
+Measured base: frame 4.96 ms = update 2.1–2.2 + render 2.7–2.8 + 0.1. The battle view of §9: 4.3 + 5.4.
+
+| Path | Upper bound (perfect overlap) | What it needs | Multiplayer risk | Effort |
+|---|---|---|---|---|
+| **Render on a second thread with a simulation snapshot** (pipelining) | frame = max(update, render): **+75–80 %** here and in the §9 battle [I, Amdahl] | A per-frame copy of everything the render reads (unit transforms, `[unit+B4h]`, models and poses, particles, UI state); moving the render's writes (the spring, the bounding box, the dirty and visibility bits) out of simulation objects; answering the simulation's pose queries and texture loads without the render's objects. The copy's own cost comes off the gain [?]. | High: any of those shared fields read by the simulation while the render thread writes it is a race, and a race in the simulation is a desync | Very high: an ownership rewrite of unit, visual and particle code in a closed exe |
+| **Split work inside the render** | Particles (0.54) on a worker beside pass 0 (0.70): ≤ +12 %. The world passes' CPU part (≈ 1.4) on two threads with submission kept on the main thread: ≤ +16 %. Both: **≤ +30 %** [I] | Particles: one call site (0x408498) and a join before pass 1; a thread-safety check of the particle code and the allocator. The world passes: D3D9 cannot record command lists, so the CPU preparation would have to be split from the D3D calls inside 0x44FC96 / 0x4516D9 | Low for particles (visual only; they use the table at 0xC6BBB0, not the simulation RNG [O]). Medium for the world passes, because of the bounding-box and bit writes in the pass-0 walk | Medium for particles; high for the world passes |
+| **Direct3D 11 renderer** | All D3D9 calls cost 0.49 ms: **≤ +11 %** even if free. dgVoodoo's D3D11 path measured **−5…−8 %**, DXVK (§8) −28 % | A real gain needs D3D11 deferred contexts, i.e. the same multithreaded restructuring as the split above, plus a new renderer | Low if the D3D layer keeps the x87 control word (dgVoodoo does) | Wrapper: none; a native renderer: very high |
+
+**Reading** [I]: the main thread's time is game code, not Direct3D. A D3D11 renderer by itself buys at most
+about a tenth. The large prize is overlapping update and render (+75–80 %), and it is blocked by shared mutable
+state in both directions, which is the costly and risky part. The cheapest real step is to run the particle
+update on a worker during pass 0 (≤ +12 %).
+
+### How DE does it
+
+Measured on 2026-11-10 on AoE3 DE, the build of [de-architecture.md](de-architecture.md):
+- offline skirmish, 8 players (7 Hard AIs), California, deathmatch;
+- 3840×2160, the profile's `optionfpslimit` 60, vsync off, the camera on a battle;
+- evidence and scripts in `rea/evidence/aoe3de-31fad98f/runtime-20261110/`.
+
+**Method: from outside the process only.**
+- Per-thread CPU: `threadprobe.py`.
+- Stack samples: suspend the thread (about 0.1 ms), copy its stack, resume it, then walk the copy with
+  dbghelp. 50 Hz on chosen threads, 4 Hz on all 120.
+- A 1 kHz phase probe of the main thread, which looks for the return addresses of the frame steps in the
+  stack copy (22 µs per sample).
+- Microsoft public symbols for the system DLLs.
+
+**Frida was not used [O].** In DE's process, ntdll's `Wow64PrepareForException` pointer is set to
+RVA 0x2206DC9, in the protection region; in a plain 64-bit process it is null. Frida's exception
+handler on x64 Windows installs itself through that same pointer, so attaching it would have replaced the
+protection's hook. That rules out D3D11 call counts and hooked Present times.
+
+| Question | Finding |
+|---|---|
+| Render thread? | **None.** [O] Only the main thread calls `d3d11.dll`. It uses immediate-context methods (`CContext::TID3D11DeviceContext_*`): Map, SetShaderResources, IASetVertexBuffers, DrawIndexed, DrawIndexedInstancedIndirect and compute UAVs. It also calls `CDXGISwapChain::Present`, through the Steam overlay's hook. No `CommandList` or deferred-context symbol appeared on any thread in about 21,000 samples; the other threads with d3d11 frames are the NVIDIA driver's own (about 55, almost all waiting). |
+| The "render thread" of de-architecture.md | **It is the sound thread** [O]: it creates DirectSound buffers, decodes MP3 through ACM (`l3codeca.acm`) and reads files. Its CPU follows battle noise: 11–20 % of a core, 75 % in a large battle. Its `KiUserExceptionDispatcher` samples are illegal-instruction exceptions (0xC000001D) at fn 0xA31FF0+0 and +0x63, an encrypted function in its decode path, dispatched through the protection's hook [O]. [I] This is a protection cost, not rendering. |
+| Main-thread frame (30 s, 1,772 frames) | [O] 59.1 fps against the 60 cap. Frame time: mean 16.9 ms, median 17.0, p99 25.0, max 35.4 (1 ms resolution); 1 % low 34 fps. 1,617 frames slept in the limiter. Per frame: **update 9.0 ms** (fn 0x124B1A0 → mode-stack update fn 0x151340, obstruction manager inside); **render 4.1 ms** (fn 0xAB14F0); other 0.35 ms; limiter sleep 3.5 ms. |
+| Inside the render (stacks, share of main samples) | [O] Mode render fn 0xAB1210 → fn 0x151780: 7.7 %. Scene draw fn 0x749DC0: 2.9 % (draw issuer fn 0x76A7D0). UI fn 0xAAD710: 2.8 %. PopcornFX runtime fn 0x779440: 1.2 %. Present wrapper fn 0x756830. All D3D11 and DXGI time: **2.4 % of main ≈ 0.4 ms per frame**; Present alone is 0.25 %. |
+| Off the main thread (CPU per 16.9 ms frame, large battle) | [O] Main 13.7 ms; sound 12.7; PopcornFX pool 5.7 (16 threads); engine and CRT workers 2.3; protection 2.2; NVIDIA driver 1.3. Process 2.27 cores. |
+| Handoffs | [O] Main wakes the PopcornFX workers with a semaphore from fn 0x779440 and seldom waits for them (0.1 % of its samples). Inside the scene draw it waits on an engine fork/join (fn 0x76C4F0 → 0x1B74E30, 0.4 %). 7 of 10 busy PopcornFX samples fell in the main thread's update [I: particles run asynchronously and overlap the next update]. No snapshot or command buffer goes to another render thread, because there is none. [?] The GPU queue depth (frames in flight). |
+| Frame limiter fn 0xA4F530 (decrypted in memory) | [O] It applies `optionfpslimit`, raising values from 0 to 30 up to 30. When the window is not active the cap is 15 fps, and when minimized 5. Each frame it sleeps with `Sleep(1)` until 2 ms are left, then spins on `Sleep(0)`. Losing focus therefore cuts the main thread to about 30 % and must be avoided in measurements. |
+
+**What it means for legacy** [I]:
+- **DE's D3D11 port is not multi-threaded rendering.** It has no render thread and no deferred contexts, and
+  its main thread still runs update then render each frame, like legacy. Its D3D11 calls cost about 0.4 ms
+  per frame, close to legacy's D3D9 calls (0.49 ms above). D3D11 alone did not buy DE more cores.
+- **The render's share of DE's frame is smaller** than legacy's: 4.1 of 13.4 busy ms against 2.7 of
+  4.96 here (and 5.4 of 9.7 in the §9 battle). Likely reasons: GPU instancing (indirect draws, compute) and
+  particles moved to a worker pool.
+- **What DE runs in parallel is the "split work inside the render" row above:**
+  - particles on a pool, kicked from the render and simulated alongside the next update;
+  - engine fork/join jobs (terrain, model instances);
+  - sound decoding on its own thread.
+
+  That is the path to copy, starting with particles. DE gives no precedent for a render thread fed by a
+  simulation snapshot.
+- **DE's simulation still dominates its frame:** 9.0 ms, 67 % of busy time.
+
+### Recommendation (2026-11-10)
+
+1. **Not a Direct3D 11 renderer.** All of legacy's D3D9 calls cost 0.49 ms of a 4.96 ms frame (≤ +11 % even if
+   free), a D3D9→D3D11 wrapper lost 5–8 % and DXVK 28 %, and DE's own D3D11 port did not make it multi-threaded.
+2. **Not a render thread fed by a snapshot.** It is the only large prize (+75–80 % [I]), but the render and the
+   simulation write each other's objects, a race there is a desync, and DE never did it either.
+3. **Yes, split work inside the render, the way DE does, starting with particles:** the particle update on a
+   worker during pass 0, one call site (0x408498) and a join before pass 1, visual only (≤ +12 % [I]). If it holds
+   up in game, A/B and an AI skirmish, the CPU preparation of the world passes is the next step (≤ +30 % with
+   particles [I]), with the bounding-box and bit writes of the pass-0 walk to solve first.
+
+### To reproduce
+
+```
+git apply rea/evidence/age3y-b1a1dab7/multicore-20261110/probe.patch      # local only, never commit
+cmake --build build --config Release                                      # copy UHC.dll to the bed
+python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/bench2.py <label> [--probe] [--res WxH] [--devflags hw|nomt] [--set <profile option>=<value>] --seconds 60
+python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/summ.py <label> ...        # FPS, CPU, GPU per run
+python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/probeparse.py <label>      # per-pass ms from <label>.UHC.log
+git checkout -- src/features/perf.cpp
+```
+
+`bench2.py` edits the shared profile (resolution, options): back it up first. The bed's cfg needs `perfStats`
+and `perfExecFile`.
+
+**Incident.** After `tools/re/trace_writes.py` detached from a running bench, the game stopped presenting frames
+with its main thread at 100 % (in `MultiByteToWideChar` / `CompareStringW`) and had to be killed. It is not known
+whether the tracer caused it.
 
 ## Next steps
 
@@ -636,13 +852,17 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
    - Then decide whether a preload is worth its memory, with Large-Address-Aware as a fallback.
 3. The zero-code A/B runs (§10, cfg row).
 4. Open questions:
-   - which passes call the world draw 0x44FC96 under 0x408399 (shadows, reflections?);
+   - which passes call the world draw 0x44FC96 under 0x408399: answered in §11 (pass 0 of the views and the
+     main view), except what pass 0 renders;
    - what the `[world+148h]` loop 0x4910CF updates;
    - whether 0x94CF27 / 0x94DAE1 / 0x7F7E97 is the XS interpreter;
    - why `[world+FCh]` read about 12,800 minutes on `uhcbench25` (only its rate is used, as the sim clock);
    - the reader of `AlwaysActive`;
    - what `disableMidUpdateRender` changes at 0x482532;
-   - whether any D3D call happens off the main thread (the loading-screen thread is a candidate).
+   - whether any D3D call happens off the main thread: answered in §11 (yes, about 14 frames from
+     another thread while loading, very likely the loading-screen thread; none during a match);
+   - whether the simulation reads the fields the render writes (§11): the bounding box at `[unit+B4h]+34h`
+     and bit 5 of `[[unit+4]+1]`.
 5. Answered for single player: FUN_00771a3a and FUN_00b5a3f2 (§1) do not run during a match.
    - Neither appears in the 27,183 late-game samples of §9.
    - FUN_00771a3a is the wait for "outstanding ESO tasks": `SleepEx(1,1)` plus a `PeekMessageA` pump, for up
