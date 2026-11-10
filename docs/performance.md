@@ -59,6 +59,8 @@ GPU the game uses. It was written for the "late-game lag and stutter" investigat
   write-combined memory. That read-back alone was 5.5–7.8 % of the main thread. The key builds both sides from the
   source: +7 % FPS at 1920×1080 and 2560×1600, +8 % at 3840×2160, nothing at 1280×720 where no flag was drawn; the
   same bytes (`verify`: 10.5 M vertices, 0 mismatches). It also turns DXVK without options from −11 % into +17 %.
+  In WoL the read-back is 12–14 % of the main thread and the key gives +13 to +17 % (§11, "fastVertexFill in WoL"),
+  also beside WoL's own DLL (`dinput8.dll` build: +14 to +15 %).
 
 ## 1. Frame pacing and timers
 
@@ -1103,9 +1105,9 @@ differs; base and key runs alternated; besides the probe itself, no other proces
 - **WoL** [O] (bed `C:\AoE3-UHC-WoLReal2`, its own cfg plus the 34 enabled lines of `examples/Startup/uhc.cfg` it lacks
   and `xsErrorLog`): no FAILED line; `verify` in a five-player skirmish as in the table, the AIs built and gathered,
   no XS message; then the key itself in a scenario (a Town Center, 12 Highlanders against 12 Jaegers): hook reached,
-  83,848 fills, the flag drawn, the fight ran. FPS was not measured there.
-- **Not tested** [?]: multiplayer, a full-length game, §8's battle view, another GPU or driver, the `dinput8.dll`
-  build beside WoL's DLL at runtime.
+  83,848 fills, the flag drawn, the fight ran. FPS: "fastVertexFill in WoL" below.
+- **Not tested** [?]: multiplayer, a full-length game, another GPU or driver. (WoL's frame rate, a battle view and
+  the `dinput8.dll` build beside WoL's DLL: "fastVertexFill in WoL" below.)
 
 Commands (bed `C:\AoE3-UHC-Test`, one game, the bench lock held; `run.py backup` first and `run.py restore` last):
 ```
@@ -1326,6 +1328,105 @@ The stock game's 1920×1080 pairs: `runconf.sh vk3-base-1080 base 1920x1080` and
 `FPU=10000 TAG=tcm bash chain3b.sh 1920x1080` in `dxvk-wol-20261110/` for the control word samples. The multiplayer
 attempt: both beds with one `UHC.dll` and cfg (each its own `perfExecFile`), `dxvkset.py <bed> dxvk|base`, then the
 clicks above.
+
+### fastVertexFill in WoL (2026-11-10)
+
+The questions: how much does `fastVertexFill` gain in Wars of Liberty, and does the `dinput8.dll` build carry it
+beside WoL's own `uhc.dll`? Scripts and every run's files: `rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/`
+(`fvfwol.py`, `chainA.sh`, `chainB.sh`, `skirm.py`, `summary.txt`, `table.py`).
+
+**Setup** [O].
+- The save: `wolvk-a32` of "DXVK in WoL" above (32.5 game minutes, five players, four European AIs, 456 units),
+  copied into the Savegame folder for the runs and removed after. Each run loads it by console, unpauses and records
+  60 s with `perfprobe --sample-hz 200`. Views: *Town Center* (`fog()`, `blackmap()`, camera on unit 552, Victoria's
+  first Town Center), *battle* (the same, camera on unit 2097477, a fight in a town) and *saved* (the save's own
+  camera, player 1's base, fog on).
+- A/B: the same DLL in every run (this session's build, `b9dde220…`); base and key runs alternated, and the cfg
+  differs only by the line `fastVertexFill log`. Labels and files: `<view><res>-<pair>-off|on`.
+- **WoL keeps the window inside the monitor** [O]: the runs asked at 2560×1600 and at 3840×2160 created a
+  2560×1440 device (perfStats' `CreateDevice` line; 32-bit, format 21), so both are 2560×1440 here. The stock bed
+  draws the sizes it is asked (format 23), as in the table above.
+- **Other load** [O]: from 14:20 on, other programs never left the PC quiet (Brave at about 55 %, another session's
+  scripts, compilers, Blender). The rule became: repeat a window when the other processes took more than 1.6
+  cores of the 16 in all (`LOUD`, up to three tries), keep it marked `BUSY` otherwise. `tc2560-a-on` stayed `LOUD`
+  in three tries (180.4 / 182.8 / 180.1 FPS, one other process at 99–128 %); the last is kept. The four 1920×1080
+  runs (before 14:00) were quiet.
+
+**A/B in `C:\AoE3-UHC-WoLReal`** (WoL's exe, our `UHC.dll` with the bed's cfg) [O]:
+
+| View, window | Base FPS (p5) | `fastVertexFill` FPS (p5) | Change | Update / render ms | 0x40D25B | Frames over 50 ms |
+|---|---|---|---|---|---|---|
+| Town Center, 1920×1080, pair a | 162.5 (123) | 180.0 (143) | +10.8 % | 2.43 / 3.89 → 2.31 / 3.34 | 12.1 → 0.0 % | 9 → 10 |
+| Town Center, 1920×1080, pair b | 161.8 (121) | 185.7 (128) | +14.8 % | 2.40 / 3.91 → 2.29 / 3.20 | 13.0 → 0.0 % | 11 → 7 |
+| Town Center, 2560×1440 (asked 2560×1600), a | 166.5 (122) | 180.1 (120) | +8.2 % | 2.42 / 3.72 → 2.51 / 3.17 | 12.0 → 0.0 % | 5 → 11 |
+| Town Center, 2560×1440 (asked 2560×1600), b | 142.9 (98) | 176.7 (127) | +23.7 % | 2.92 / 4.34 → 2.45 / 3.36 | 11.9 → 0.0 % | 7 → 6 |
+| Town Center, 2560×1440 (asked 3840×2160), a | 141.8 (100) | 174.6 (130) | +23.1 % | 2.88 / 4.33 → 2.53 / 3.34 | 13.6 → 0.0 % | 8 → 12 |
+| Town Center, 2560×1440 (asked 3840×2160), b | 159.1 (112) | 182.6 (134) | +14.8 % | 2.51 / 3.95 → 2.37 / 3.23 | 11.5 → 0.0 % | 4 → 5 |
+| Battle, 2560×1440 | 126.0 (78) | 147.3 (102) | +16.9 % | 2.79 / 5.33 → 2.66 / 4.30 | 7.7 → 0.0 % | 10 → 5 |
+| Saved camera, 2560×1440 | 276.0 (135) | 316.4 (238) | +14.6 % | 2.30 / 1.55 → 1.96 / 1.26 | 4.2 → 0.0 % | 8 → 5 |
+| `fastVertexFill verify`, Town Center, 2560×1440 | 116.5 (80) | | | 2.96 / 5.78 | 10.5 % | 6 |
+
+- **The gain** [O]: Town Center view, means of the pairs: 162.2 → 182.9 FPS (+12.8 %) at 1920×1080, 152.6 → 178.5
+  (+17.0 %) at 2560×1440. The render part falls by 0.4–1.0 ms per frame. The read-back's share was 11.5–13.6 % of
+  the main thread in this view (the stock game: 5.5–7.8 %), all of it in 0x40D5C0…0x40D5FD, and 0.0 % with the
+  key. The base runs spread more than the key runs (141.8–166.5 against 174.6–182.6), as they met more of the
+  other load; the pair with the quietest machine (a, asked 2560×1600) gave the smallest gain, +8.2 %. [I] So +8 %
+  is a safe floor for this view on this PC, and +13 to +17 % the typical figure.
+- **Memory and stutter** [O]: address space 1,545–1,591 MB either way; the frames over 50 ms are WoL's own (§9's file
+  loads; 4–12 per window with or without the key).
+- **`verify`** [O]: 158,397 fills, 17,541,216 vertices, 0 mismatches, 0 writes outside the vertices, 0 fills skipped.
+  The lock is at 0x14C00000 with protection 0x404 (write-combined), the buffer `DYNAMIC | WRITEONLY`, pool 0.
+- **DXVK 3.1.1 in WoL**, Town Center, 2560×1440, one run each (warm caches of `scratchpad\dxvkrun`) [O]:
+
+  | Variant | FPS (p5) | Update / render ms | 0x40D25B |
+  |---|---|---|---|
+  | DXVK, no `dxvk.conf` | 97.0 (59) | 3.68 / 7.95 | 38.5 % |
+  | DXVK, no `dxvk.conf` + `fastVertexFill` | **194.3** (137) | 2.38 / 2.93 | 0.0 % |
+  | DXVK, `d3d9.cachedWriteOnlyBuffers = True` | 179.6 (139) | 2.51 / 3.19 | 0.2 % |
+  | DXVK, `d3d9.cachedWriteOnlyBuffers = True` + `fastVertexFill` | 187.0 (122) | 2.39 / 3.11 | 0.0 % |
+
+  Without the key, DXVK with no options is far slower than stock in WoL (97.0 against 152.6 FPS), because the
+  read-back takes 38.5 % of the main thread there. With the key, both DXVK variants are ahead of stock D3D9 with
+  the key (178.5): no `dxvk.conf` 194.3, the option 187.0. [I] One run each, 4 % apart: in WoL, with the key on,
+  DXVK needs no `dxvk.conf`. The best combination measured is DXVK with no conf plus the key (+27 % over stock
+  D3D9 without the key in this view). Without the key, the option is still needed.
+
+**Beside WoL's DLL** (`C:\WoL-Test`: WoL's exe, `uhc.dll` `c070d138…`, `wol.cfg`, `data\uhc`; our `dinput8.dll`
+with `engine-ext\engine-ext.cfg` = `perfStats`, `perfExecFile C:\WoL-Test\uhc-exec.txt`, `multipleInstances
+background` and the key line) [O]:
+- Startup: `dinput8.dll 0.3.0`, `fastVertexFill: applied`, `UHCMain: 3 applied, 0 failed` (4 and 0 with
+  `xsErrorLog`); `hook reached: fastVertexFill cloth flag fill (0x40D523)`; 175,695 fills in the first run.
+- The save made with our `UHC.dll` loads with WoL's DLL.
+- `verify` (2560×1440): 129,140 fills, 15,437,928 vertices, 0 mismatches.
+- A skirmish (`skirm.py`; the profile's setup, a Dutch player against `wolOtto`, left alone by
+  `tools/ai_personality.py` and restored after; `xsErrorLog` on): the AI had 29 units after about 4 game minutes,
+  the log has no XS message, the Town Center's flag is drawn (`bs-skirmish.tc.png`); `res(1600, 900)` and
+  `res(1920, 1080)` (two more `CreateDevice`, hr 0) and a minimize for 10 s and restore: frames and the clock went on
+  after each step (657–1,074 FPS); `leaveGame()` and close, perfStats' exit line written.
+- FPS, the save's Town Center view, line on and off alternated, two pairs per size. **This install has ReShade's
+  `d3d9.dll` (left in place), so these numbers include ReShade**: compare on with off, not with the table above.
+
+  | Window | Base FPS | `fastVertexFill` FPS | Change | Render ms | 0x40D25B |
+  |---|---|---|---|---|---|
+  | 1920×1080 | 153.0 / 151.9 | 173.5 / 178.5 | **+15.4 %** | 4.18–4.22 → 3.37–3.51 | 11.8–14.0 → 0.0 % |
+  | 2560×1440 (asked 2560×1600) | 153.5 / 154.1 | 177.6 / 171.9 | **+13.6 %** | 4.07–4.23 → 3.39–3.47 | 11.0–12.1 → 0.0 % |
+
+- Uninstall: `dinput8.dll` and `engine-ext\` deleted, the game started to WoL's main menu
+  (`bs-uninstalled-menu.png`) and closed; `uhc.dll`, `wol.cfg`, `age3y.exe`, ReShade's `d3d9.dll` and `data\uhc` have
+  the hashes recorded before the first run, and the folder's top level has the same names.
+
+**Not tested** [?]: multiplayer, a full-length game, another GPU or driver, WoL at 3840×2160 (it needs a monitor
+that size).
+
+Commands (the bench lock held; `fvfwol.py backup` first, `fvfwol.py restore` and `tools/ai_personality.py <bed>
+restore` last; copy `wolvk-a32.age3Ysav` from `dxvk-wol-20261110/saves/` to `<My Games>\Wars of Liberty\Savegame`
+and delete it after; copy `build\Release\UHC.dll` into the WoLReal bed):
+```
+python -I tools/ai_personality.py C:\AoE3-UHC-WoLReal wolOtto wolVictoria wolNapoleon wolIsabel   # as the save was made
+bash rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/chainA.sh tc1080 tc2560 tc4k battle saved verify dxvk
+bash rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/chainB.sh install first ab1080 ab2560 verify skirmish uninstall
+python -I rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/table.py tc battle saved bs                 # the kept run of each label
+```
 
 ### To reproduce
 

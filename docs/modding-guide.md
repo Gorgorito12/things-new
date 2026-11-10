@@ -430,9 +430,27 @@ fastVertexFill [log] [verify]
   | 1280×720 (no flag drawn) | 253.4 FPS | 256.9 FPS | none (within noise) | 1.79 → 1.76 ms | 0.0 % → 0.0 % |
 
   The simulation's time per frame, the frames over 50 ms (0 or 1 per run either way) and the memory did not
-  change. In WoL it ran a skirmish and a fight, but its frame rate was not measured.
+  change.
+- **Measured in WoL** (2026-11-10, [performance.md](performance.md), §11, "fastVertexFill in WoL"): a 32-minute
+  five-player save (four European AIs, 456 units), 60 s per run, stock Direct3D 9, the same PC. WoL keeps the
+  window inside the monitor, so the runs asked at 2560×1600 and 3840×2160 drew 2560×1440. The flags take more of
+  the frame in WoL than in the stock game, so the gain is larger:
+
+  | View | Window | Without | With | Change | Render time per frame | The flags' share of the main thread |
+  |---|---|---|---|---|---|---|
+  | A Town Center, map revealed | 1920×1080 | 162.5 / 161.8 FPS | 180.0 / 185.7 FPS | **+13 %** | 3.90 → 3.27 ms | 12–13 % → 0.0 % |
+  | A Town Center, map revealed | 2560×1440 (four pairs) | 141.8–166.5 FPS (mean 152.6) | 174.6–182.6 FPS (mean 178.5) | **+17 %** (+8 to +24 % per pair) | 3.72–4.34 → 3.17–3.36 ms | 11.5–13.6 % → 0.0 % |
+  | A battle in a town | 2560×1440 | 126.0 FPS | 147.3 FPS | **+17 %** | 5.33 → 4.30 ms | 7.7 % → 0.0 % |
+  | The save's own camera (player 1's base) | 2560×1440 | 276.0 FPS | 316.4 FPS | **+15 %** (lowest 5 %: 135 → 238) | 1.55 → 1.26 ms | 4.2 % → 0.0 % |
+
+  The simulation's time per frame did not rise, and the frames over 50 ms (4–12 per run, WoL's own file loads)
+  were the same with and without the key. Most runs had another program using up to 1.6 cores of the 16.
 - **With DXVK** (a Direct3D 9 to Vulkan wrapper some players use): the same reading made DXVK 3.1.1 slower
   than stock Direct3D 9 in this test (179.6 FPS). With the key it gave 237.2 FPS, with no `dxvk.conf` (one run each).
+  In WoL, at 2560×1440 on the Town Center (one run each): DXVK with no `dxvk.conf` 97.0 FPS without the key (the
+  flags 38.5 % of the main thread) and **194.3 FPS with it**; with `d3d9.cachedWriteOnlyBuffers = True`, 179.6 and
+  187.0 FPS. With the key on, DXVK needs no `dxvk.conf` in WoL either, and both are ahead of stock Direct3D 9 with
+  the key (178.5 FPS).
 - **Limits:**
   - it only helps while cloth flags are on screen; with none, the code does not run and nothing changes;
   - the gain follows how many flags are drawn, in the view or in the water's reflection: in the test, one Town
@@ -458,9 +476,18 @@ fastVertexFill [log] [verify]
   - In WoL, beside the other keys of this guide: `verify` compared 105,340 fills (15.6 million vertices) of a
     five-player skirmish (a Dutch player and German, British, French and Spanish AIs, 2.4 game minutes) with no
     mismatch and no XS error; with the key on, Highlanders and Jaegers fought beside an Ethiopian Town Center
-    and its flag was drawn.
-  - Not tested: multiplayer, a full-length game, other video cards and drivers, and beside WoL's DLL (the
-    addresses it uses are not among those WoL's DLL patches).
+    and its flag was drawn. On the 32-minute save of the table above, `verify` compared 158,397 fills (17.5
+    million vertices): no mismatch.
+  - Beside WoL's own `uhc.dll` (2026-11-10), with the `dinput8.dll` of this project in a WoL install (WoL's
+    `uhc.dll`, `wol.cfg` and `data\uhc` untouched, their hashes the same after): `dinput8.dll 0.3.0`,
+    `fastVertexFill: applied`, no FAILED; the hook was reached; `verify` compared 129,140 fills (15.4 million
+    vertices) with no mismatch; in a skirmish against a German AI (Otto von Bismarck, 29 units after 4 minutes)
+    `xsErrorLog` logged no XS message, the Town Center's flag was drawn, and two resolution changes and a
+    minimize and restore went on drawing. Frame rate on the same save, the key line on and off, two runs each:
+    152.5 → 176.0 FPS (**+15 %**) at 1920×1080 and 153.8 → 174.8 FPS (**+14 %**) at 2560×1440. That install has
+    ReShade's `d3d9.dll`, so these numbers include ReShade: compare them with each other, not with the table above.
+    Removing `dinput8.dll` and `engine-ext\` gives WoL's main menu again.
+  - Not tested: multiplayer, a full-length game, other video cards and drivers.
 
 #### xsErrorLog
 
