@@ -33,6 +33,7 @@ GPU the game uses. It was written for the "late-game lag and stutter" investigat
 - **Measured in a late 8-AI game (§8):** the main thread runs at about 95 % of one core, 77 % of it in the game's own code.
   The GPU sits at 10–13 % even at 4K.
   - DXVK lowers FPS by 28 % there, and by 14 % in §11's procedure (2560×1600); at 720p it is 6 % faster.
+    With `d3d9.cachedWriteOnlyBuffers = True` it is 14–18 % faster than stock at every resolution tried (§11).
   - Skinning and Direct3D are too small a share for a DLL feature to win much.
 - **Split of a late-game frame (§9, stack sampling):** update (simulation) 43.5 %, render 55.6 %. The game's
   own timers agree: 4.3 ms and 5.4 ms per frame.
@@ -627,7 +628,8 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | Frame-time statistics and device logging (`perfStats`) | DLL feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
-| DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is the game's own code, mostly one vertex-copy loop in 0x40D25B (§11). FPU state kept (0x007F), +240 MB of address space. Not recommended. |
+| DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is one loop in 0x40D25B that reads back from a locked buffer (§11). **With `d3d9.cachedWriteOnlyBuffers = True` in `dxvk.conf` that loop costs nothing and DXVK beats stock: +14 % at 2560×1600, +18 % at 3840×2160, +14 % at 720p**, no frame over 50 ms, the picture unchanged on the frames compared. FPU state kept (0x007F), +225–255 MB of address space. Without the option: not recommended. With it: the only D3D layer measured that is faster than stock, as a user-side setup; a multiplayer game and a full-length game come before it is recommended. |
+| The read-back loop in 0x40D25B (0x40D5C0…0x40D5FD) on stock D3D9 | DLL feature | Not built [I]. It is 5.6–7.5 % of the main thread at 2560×1600 and above (§11), and DXVK's cached buffers make it free. A key that makes the second copy read from the source record instead of the locked buffer could give stock D3D9 up to that share. The function and its buffer are not analysed yet. |
 | dgVoodoo2 (D3D9 → D3D11) | wrapper | Measured (§11): −5…−8 % FPS; FPU state kept. Not recommended. |
 | `RunAsFastAsPossible`, `fixedUpdate`, `MinRandUpdate`, `syncUpdateInterval`, the 100 ms cap | — | Rejected: they change the simulation. |
 
@@ -743,6 +745,12 @@ core) [O].
 | &nbsp;&nbsp;DXVK cold (empty DXVK and driver caches) | 173.9 (−16 %) | 120 | 2.48 / 3.32 | 97 % | 10 % | — |
 | &nbsp;&nbsp;DXVK warm (two runs) | 178.7 / 177.1 (**−14 %**) | 157 / 154 | 2.33–2.41 / 3.26–3.29 | 97–98 % | 8–9 % | — |
 | &nbsp;&nbsp;1280×720: base / DXVK warm | 261.5 / 277.9 (+6 %) | 222 / 246 | 2.09 / 1.74 against 2.10 / 1.51 | 94 % / 98 % | 13 % / 5 % | — |
+| **DXVK 3.1.1 with a `dxvk.conf`, 10:25–10:55**: base again (three runs) | 195.9 / 196.4 / 197.8 | 164 / 157 / 176 | 2.28–2.31 / 2.79–2.84 | 93–95 % | 9–10 % | — |
+| &nbsp;&nbsp;`d3d9.cachedWriteOnlyBuffers = True` (two runs) | 223.8 / 226.0 (**+14 %**) | 186 / 196 | 2.22–2.27 / 2.23–2.26 | 97–98 % | 10 % | — |
+| &nbsp;&nbsp;`d3d9.allowDirectBufferMapping = False` | 222.1 (+13 %) | 200 | 2.21 / 2.30 | 98 % | 19 % | — |
+| &nbsp;&nbsp;both options | 227.2 (+16 %) | 198 | 2.15 / 2.27 | 98 % | 17 % | — |
+| &nbsp;&nbsp;3840×2160: base / `cachedWriteOnlyBuffers` | 183.4 / 217.2 (**+18 %**) | 166 / 198 | 2.31 / 3.17 against 2.17 / 2.44 | 96 % / 98 % | 13 % / 17 % | — |
+| &nbsp;&nbsp;1280×720: base / `cachedWriteOnlyBuffers` | 241.7 / 275.0 (+14 %) | 218 / 249 | 2.21 / 1.96 against 2.15 / 1.49 | 90 % / 98 % | 12 % / 5 % | — |
 
 - **Resolution** [O]: the GPU stays at 8–15 %. The CPU render time follows what is on screen: a larger
   window shows more of the map (475 → 1,051 draws per frame), so 720p is faster for the CPU, not for the GPU.
@@ -771,9 +779,10 @@ core) [O].
     `ntdll.dll` fell from 8 % to 2.4 %; `d3d9.dll` stayed at 3.7–3.8 % (DXVK's own) against 4.0 % (stock).
     0x40D25B (§8's material-parameter function) went from **6.2 % to 21.2 % exclusive**, almost all in the loop
     0x40D5C0…0x40D5FD, which copies 32-byte records from `[eax]` to `[edx]` and scales three floats by
-    `[0xB856B8]` (`cs`). [I] `[edx]` is a locked vertex buffer, and the memory DXVK returns from Lock is slower to
-    write than the NVIDIA D3D9 driver's; not checked. DXVK's options `d3d9.allowDirectBufferMapping` and
-    `d3d9.cachedWriteOnlyBuffers` would be the first things to try; they were not tested.
+    `[0xB856B8]` (`cs`). Both pointers come from one buffer that 0x40A6A2 returns (0x40D4F9, stride 20h): the
+    loop first writes each record at `[eax]` (0x40D549…0x40D5BB) and then **reads it back** to write a second,
+    scaled copy at `[edx]` [O]. [I] 0x40A6A2 locks a write-only vertex buffer, and reading from the uncached
+    memory DXVK maps for it is what costs. The options below test that.
   - Other threads [O]: DXVK's submission thread `d3d9.dll+0x290460` takes 18 % of a core in place of the NVIDIA
     driver's worker (27 %); the process uses 120 % of a core against 126 %.
   - **FPU** [O]: after CreateDevice x87 control word 0x007F and MXCSR 0x1FA0 in every DXVK run, as stock. The
@@ -781,6 +790,36 @@ core) [O].
   - **Memory** [O]: address space 1,163–1,179 MB against 924–925 (**+240–255 MB**, of the 2 GB a non-LAA exe gets);
     peak working set 545–591 MB against 500–502, private (perfStats) 145–166 MB against 91–95.
   - It was removed from the bed afterwards; the bed's files, cfg and profile hash as before.
+- **DXVK with buffer options** (2026-11-10, 10:25–10:55, warm cache, a `dxvk.conf` next to the exe with only the
+  options named; names and defaults from v3.1.1's `src/d3d9/d3d9_options.cpp`) [O]:
+  - `d3d9.cachedWriteOnlyBuffers` (default False) puts write-only buffers in cached system memory instead of
+    host-visible VRAM. `d3d9.allowDirectBufferMapping` defaults to **True** and is not in the release's `dxvk.conf`,
+    so the value to test is False: dynamic buffers then get a staging copy. The log's "Effective configuration"
+    showed each option taken.
+  - **Each of them removes the read-back loop**: 0x40D25B falls from 21 % of the main thread's samples to
+    0.0–0.1 %, and DXVK goes from −14 % to **+13…+16 % over stock** (224.9 against 196.7 FPS for
+    `cachedWriteOnlyBuffers`, two runs against three). The three settings are within noise of each other;
+    without direct mapping DXVK's submission thread takes 35–37 % of a core instead of 21 %, so
+    `cachedWriteOnlyBuffers = True` alone is the one to use.
+  - **Stock D3D9 pays for the same loop**: 5.6–6.2 % of the main thread at 2560×1600 and 7.5 % at 3840×2160; at
+    1280×720 it does not run at all (0.0 % in base and DXVK). So about half of the gain is that loop, and the rest
+    is what DXVK already showed at 720p: `ntdll.dll` 7.7 % → 2.6 % and no `nvd3dum.dll` (1.6 %) on the main thread.
+    Render time 2.23–2.26 ms against 2.79–2.84; update unchanged.
+  - **Resolution**: +18 % at 3840×2160 and +14 % at 1280×720, one pair of runs each. At 720p the option changes
+    nothing (275.0 against 277.9 without it); base there varied from 239 to 262 FPS between today's runs.
+  - **Frames over 50 ms**: none in the window in any DXVK run (one in one base run); session totals 24–26 with
+    DXVK, 24–35 base.
+  - **Picture**: one screen grab per run at mid-run, compared with base at half size: terrain, shadows, smoke,
+    flags, units and UI look the same; no missing or corrupt geometry. The game did not crash. That is one frame
+    per run, not a visual test.
+  - **FPU**: 0x007F and MXCSR 0x1FA0 after CreateDevice in all eight DXVK runs. **Memory**: address space
+    1,148–1,156 MB against 924–933 (+225 MB); peak working set 587–612 MB against 493–506.
+  - **Conditions**: base was 4 % lower than at 09:15 (196–198 against 204–208) [?]. Another session's C# builds
+    (`VBCSCompiler`, 24–60 % of a core) overlapped two base runs and both `cachedWriteOnlyBuffers` runs at
+    2560×1600; the clean base run gave 197.8, so the effect is within 1 %. A run at 10:05, while a whole-disk `find`
+    was running, was discarded.
+  - **Not tested** [?]: multiplayer (only the FPU state after CreateDevice is known), a full-length game, §8's
+    battle view, another GPU or driver, and the control word during play.
 
 ### What each path could gain
 
@@ -790,7 +829,7 @@ Measured base: frame 4.96 ms = update 2.1–2.2 + render 2.7–2.8 + 0.1. The ba
 |---|---|---|---|---|
 | **Render on a second thread with a simulation snapshot** (pipelining) | frame = max(update, render): **+75–80 %** here and in the §9 battle [I, Amdahl] | A per-frame copy of everything the render reads (unit transforms, `[unit+B4h]`, models and poses, particles, UI state); moving the render's writes (the spring, the bounding box, the dirty and visibility bits) out of simulation objects; answering the simulation's pose queries and texture loads without the render's objects. The copy's own cost comes off the gain [?]. | High: any of those shared fields read by the simulation while the render thread writes it is a race, and a race in the simulation is a desync | Very high: an ownership rewrite of unit, visual and particle code in a closed exe |
 | **Split work inside the render** | Particles (0.54) on a worker beside pass 0 (0.70): ≤ +12 %. The world passes' CPU part (≈ 1.4) on two threads with submission kept on the main thread: ≤ +16 %. Both: **≤ +30 %** [I] | Particles: one call site (0x408498) and a join before pass 1; a thread-safety check of the particle code and the allocator. The world passes: D3D9 cannot record command lists, so the CPU preparation would have to be split from the D3D calls inside 0x44FC96 / 0x4516D9 | Low for particles (visual only; they use the table at 0xC6BBB0, not the simulation RNG [O]). Medium for the world passes, because of the bounding-box and bit writes in the pass-0 walk | Medium for particles; high for the world passes |
-| **Direct3D 11 renderer** | All D3D9 calls cost 0.49 ms: **≤ +11 %** even if free. dgVoodoo's D3D11 path measured **−5…−8 %**, DXVK −14 % here (−28 % in §8's 4K battle, +6 % at 720p) | A real gain needs D3D11 deferred contexts, i.e. the same multithreaded restructuring as the split above, plus a new renderer | Low if the D3D layer keeps the x87 control word (dgVoodoo does) | Wrapper: none; a native renderer: very high |
+| **Direct3D 11 renderer** | All D3D9 calls cost 0.49 ms: **≤ +11 %** even if free. dgVoodoo's D3D11 path measured **−5…−8 %**, DXVK −14 % here (−28 % in §8's 4K battle, +6 % at 720p), and **+14…+18 %** with `d3d9.cachedWriteOnlyBuffers = True`: more than the D3D calls cost, because it also removes a read-back loop of the game (5.6–7.5 % of the main thread) | A real gain needs D3D11 deferred contexts, i.e. the same multithreaded restructuring as the split above, plus a new renderer | Low if the D3D layer keeps the x87 control word (dgVoodoo does) | Wrapper: none; a native renderer: very high |
 
 **Reading** [I]: the main thread's time is game code, not Direct3D. A D3D11 renderer by itself buys at most
 about a tenth. The large prize is overlapping update and render (+75–80 %), and it is blocked by shared mutable
@@ -847,6 +886,13 @@ protection's hook. That rules out D3D11 call counts and hooked Present times.
 
 1. **Not a Direct3D 11 renderer.** All of legacy's D3D9 calls cost 0.49 ms of a 4.96 ms frame (≤ +11 % even if
    free), a D3D9→D3D11 wrapper lost 5–8 % and DXVK 14 % (28 % at 4K), and DE's own D3D11 port did not make it multi-threaded.
+
+   **Update (2026-11-10, 10:55): DXVK with one option is faster than stock.** `d3d9.cachedWriteOnlyBuffers = True`
+   gave +14 % at 2560×1600, +18 % at 3840×2160 and +14 % at 720p ("A/B runs"). That does not change this point: it
+   is a wrapper, not a renderer to write, and half of its gain is a read-back loop of the game (0x40D25B) that
+   stock D3D9 also pays for. Two things follow: (a) DXVK with that option is worth offering as an optional,
+   user-side setup once a multiplayer game and a full-length game have been run with it; (b) the loop is a
+   candidate for a small DLL key on stock D3D9 (≤ 6–7 % [I]; §10).
 2. **Not a render thread fed by a snapshot.** It is the only large prize (+75–80 % [I]), but the render and the
    simulation write each other's objects, a race there is a desync, and DE never did it either.
 3. **Yes, split work inside the render, the way DE does, starting with particles:** the particle update on a
@@ -958,6 +1004,18 @@ python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/bench2.py vk-dxvk-cold 
 python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/bench2.py vk-dxvk-warm1 --seconds 60   # and warm2; vk-dxvk-720 with --res 1280x720
 del C:\AoE3-UHC-Test\d3d9.dll                                                          # then vk-base-720 with --res 1280x720
 python -I rea/evidence/age3y-b1a1dab7/multicore-20261110/summ.py vk-base1 vk-base2 vk-dxvk-cold vk-dxvk-warm1 vk-dxvk-warm2 vk-base-720 vk-dxvk-720
+```
+The option runs (labels `vk2-*`) use `dxvk-20261110/runconf.sh <label> base|dxvk <WxH> ["<dxvk.conf line>" ...]`:
+it copies `d3d9.dll` and writes `dxvk.conf` into the bed, runs `bench2.py`, takes a screen grab 30 s into the
+recording (`screengrab.py`; the window must not be covered), logs the machine's other CPU use (`othercpu.py`),
+prints the summary line, the FPU line and the share of 0x40D25B, and removes both files again. Its paths are
+those of that session's scratch folder: edit them first.
+```
+bash rea/evidence/age3y-b1a1dab7/dxvk-20261110/runconf.sh vk2-base1 base 2560x1600
+bash rea/evidence/age3y-b1a1dab7/dxvk-20261110/runconf.sh vk2-cached dxvk 2560x1600 "d3d9.cachedWriteOnlyBuffers = True"
+bash rea/evidence/age3y-b1a1dab7/dxvk-20261110/runconf.sh vk2-nodirect dxvk 2560x1600 "d3d9.allowDirectBufferMapping = False"
+bash rea/evidence/age3y-b1a1dab7/dxvk-20261110/runconf.sh vk2-both dxvk 2560x1600 "d3d9.cachedWriteOnlyBuffers = True" "d3d9.allowDirectBufferMapping = False"
+bash rea/evidence/age3y-b1a1dab7/dxvk-20261110/runconf.sh vk2-cached-4k dxvk 3840x2160 "d3d9.cachedWriteOnlyBuffers = True"   # and vk2-base-4k, vk2-*-720
 ```
 DXVK's logs and the cold run's caches: `rea/evidence/age3y-b1a1dab7/dxvk-20261110/`. The module and function shares
 are in each run's `.csv.samples.txt`.
