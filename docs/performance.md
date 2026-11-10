@@ -637,6 +637,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
 | DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is one loop in 0x40D25B that reads back from a locked buffer (§11). **With `d3d9.cachedWriteOnlyBuffers = True` in `dxvk.conf` that loop costs nothing and DXVK beats stock: +14 % at 2560×1600, +18 % at 3840×2160, +14 % at 720p**, no frame over 50 ms, the picture unchanged on the frames compared. FPU state kept (0x007F), +225–255 MB of address space. Without the option: not recommended. With it: the only D3D layer measured that is faster than stock (**+19 % at 1920×1080** too). **In WoL (§11, "DXVK in WoL")**: +16…+25 % in a base view at four points of a 32-minute game and +17 % in a battle, at 1920×1080; a whole 32-minute game, minimize, device re-creation, save and load without a fault; the same picture; the same x87 control word during play. It adds 225–255 MB to WoL's 1.5 GB of address space, so it needs WoL's large-address-aware exe, and it leaves the stutter as it is. **Recommended to WoL's players as an optional, user-side setup for single player.** Multiplayer is untested: a LAN game could not be formed between two copies on one PC. |
 | The read-back loop in 0x40D25B (0x40D5C0…0x40D5FD): `fastVertexFill` | DLL feature, opt-in, display only | **Implemented and measured** (§11, "fastVertexFill"). 0x40D25B draws the cloth flags; the loop reads eight values per back-side vertex from a locked `DYNAMIC \| WRITEONLY` vertex buffer (write-combined memory, `PAGE_WRITECOMBINE` at runtime). The key's routine reads the source instead and writes the same bytes: on stock D3D9 **+7 % FPS at 1920×1080 and 2560×1600, +8 % at 3840×2160**, nothing at 1280×720 (no flag drawn); the function goes from 5.5–7.8 % of the main thread to 0.0 %. `verify`: 76,365 fills, 10.5 M vertices, 0 mismatches. With DXVK 3.1.1 and no `dxvk.conf`: 179.6 → 237.2 FPS (one run each). Not tested in multiplayer; it does not touch the simulation. |
+| DXVK from the options menu (`rendererOption`) | DLL feature, opt-in, display only | **Implemented and measured** (§11, "rendererOption"). A Renderer entry (DirectX 9 / Vulkan) in WoL's options menu; Vulkan loads DXVK 3.1.1 from `dxvk\` at the next start. As fast as DXVK installed by hand (within 1.5 %). DXVK's option follows `fastVertexFill`: none with it on (+5…+8 % over passing `d3d9.cachedWriteOnlyBuffers = True`), the option without it. With `fastVertexFill`, +8…+9 % over Direct3D 9 with `fastVertexFill` in a late Town Center view. A missing or broken DXVK, or a start that presents no frame, falls back to DirectX 9. Multiplayer untested. |
 | dgVoodoo2 (D3D9 → D3D11) | wrapper | Measured (§11): −5…−8 % FPS; FPU state kept. Not recommended. |
 | `RunAsFastAsPossible`, `fixedUpdate`, `MinRandUpdate`, `syncUpdateInterval`, the 100 ms cap | — | Rejected: they change the simulation. |
 
@@ -1427,6 +1428,43 @@ bash rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/chainA.sh tc1080 tc2560 tc4k b
 bash rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/chainB.sh install first ab1080 ab2560 verify skirmish uninstall
 python -I rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/table.py tc battle saved bs                 # the kept run of each label
 ```
+
+### rendererOption: DXVK from the options menu (2026-11-10)
+
+`rendererOption` ([modding guide](modding-guide.md#rendereroption)) puts a Renderer entry in the options menu and, with
+Vulkan chosen, loads DXVK 3.1.1 from `dxvk\` at the next start. The question here: is DXVK started that way as fast as
+DXVK installed by hand, and which DXVK option is best with `fastVertexFill` on?
+
+**Setup** [O]. Bed `C:\AoE3-UHC-WoLReal` with this branch's `UHC.dll`, WoL's cfg plus `perfStats`; the stock game's
+save `wolvk-a32` (32.5 game minutes, five players), map revealed, the camera on Queen Victoria's first Town Center
+(unit 552, a view with flags), 60 s per window, `perfprobe --sample-hz 200`
+(`rea/evidence/age3y-b1a1dab7/renderer-20261110/rsave.py`, `chain-ab2.sh`). The window was 1920×1080 or 2560×1440 (the
+monitor's size). **The PC was not quiet**: the user's browser took about 52 % of one core in every window, and in the
+1920×1080 block another session's compiler (`VBCSCompiler`, `testhost`) took 13–46 % of a core in 5 of 7 windows. The
+pairs were interleaved (F, FC, F, FC) so that load hits both. Ryzen 7 7800X3D, RTX 4090, NVIDIA 621.14.
+
+| Variant | 1920×1080 FPS | render ms | 2560×1440 FPS | render ms |
+|---|---|---|---|---|
+| Vulkan from the menu + `fastVertexFill`, no DXVK option (the key's default with `fastVertexFill` on) | **196.5 / 194.4** | 2.93 / 2.90 | **200.2 / 194.0** | 2.91 / 2.97 |
+| the same with `conf=d3d9.cachedWriteOnlyBuffers = True` | 182.8 / 178.9 | 3.26 / 3.25 | 184.5 / 190.0 | 3.18 / 3.09 |
+| Vulkan from the menu, no `fastVertexFill` (the key's default: the option) | 178.7 | 3.28 | 191.2 | 3.02 |
+| DXVK + `dxvk.conf` installed by hand next to the exe, no key, no `fastVertexFill` | 181.3 | 3.20 | 188.6 | 3.07 |
+| Direct3D 9 + `fastVertexFill` | 180.6 | 3.24 | 180.7 | 3.27 |
+
+**What it says** [O]:
+- **The menu's DXVK is the hand-installed DXVK**: 178.7 against 181.3 FPS at 1920×1080 and 191.2 against 188.6 at
+  2560×1440, within 1.5 % either way, with the same option (DXVK's logs: `Found config env:` against `Found config
+  file: dxvk.conf`, both `d3d9.cachedWriteOnlyBuffers = True`).
+- **With `fastVertexFill` on, DXVK is faster without the option**: 195.5 against 180.9 FPS (+8 %) at 1920×1080 and
+  197.1 against 187.3 (+5 %) at 2560×1440, two runs each; the render part 2.9 ms against 3.1–3.3 ms. The cloth fill's
+  share of the main thread is 0.0–0.1 % in all of them. So the key passes no option when `fastVertexFill` is on, and
+  `d3d9.cachedWriteOnlyBuffers = True` when it is off (without `fastVertexFill` the option is what makes DXVK fast:
+  "DXVK in WoL" above).
+- **Against Direct3D 9 with `fastVertexFill`**: +8 % (1920×1080) and +9 % (2560×1440) for the key's default.
+- The simulation's part (update 2.2–2.5 ms) and the frames over 50 ms (4–10 per window, the game's file loads) are
+  alike in every variant. x87 control word in play (300 samples per window): 0x027F, and 0x0E7F in 0.7–2 % of the
+  samples, inside the exe (once in `granny2.dll`), in every window of both renderers, as in "DXVK in WoL".
+- Address space 1,795–1,824 MB with DXVK against 1,561–1,562 MB with Direct3D 9: +235–260 MB, as before.
 
 ### To reproduce
 

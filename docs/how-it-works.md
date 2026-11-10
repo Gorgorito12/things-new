@@ -3634,6 +3634,99 @@ where the lock points (`VirtualQuery`) and the buffer's usage and pool (`GetDesc
 - With the key the function leaves the main thread's samples (0.00 % against 5.5 to 7.8 %), and the DLL as a whole
   takes 0.1 % of them.
 
+### rendererOption
+
+Two parts: an entry of the options menu that the exe has no room for, and a switch at start that gives the game
+another Direct3D 9 implementation (DXVK, Direct3D 9 on Vulkan).
+
+**The options menu (stock).** `data\options.xml` lists groups, sections and fields; each field names an option variable
+in `<name>`. The screen (FUN_0078E87D for a section, FUN_0078E67F per field type) works on one settings object,
+`[screen+E4h]`, looked up by name ("GameOptions", `[0xC672BC]`) in the settings manager 0xC66688 (0x78EE54). That object
+(vtable 0xBA3854, built by FUN_00518E3B) has a fixed list of entries: its type-1 table 0xD91778 has 93 of them, 0x88
+bytes each (`u32 id`, 64 wide characters of name, `u32 flags`); `[obj+4]` holds 5 bytes per entry (low nibble the type:
+1 float, 2 int, 5 bool, 9 string; then the value), `[obj+8]` the count, `[obj+24h]` the kind (1 for options), `[obj+234h]`
+a name → ID map. The profile reads and writes the same entries as `<Setting Name="…">` (FUN_00553044). Per field:
+- the DropDown builder FUN_0078D66A resolves `<name>` with 0x932264 (`thiscall(obj, const wchar_t*)`, -1 if not found;
+  called only by the four field builders), reads the type with 0x553028 and the value with 0x402E6A (int) or 0x9325C4
+  (string), and maps the value to the selected entry (0x78C8BC; only IDs 9, 0Ah and 30h are mapped through lists, any
+  other int is the entry's index);
+- in a running game the field is enabled only if the entry's flags hold 0x40 (0xA41707);
+- on Apply, FUN_0078D052 maps the selection back (0x78C76A) and writes it with 0x518AE0 (int).
+
+Every accessor compares the ID with `[obj+8]` and fails beyond it: 0x553028 and 0x402E6A through cold blocks that only
+they reach (0x6B794B `xor al,al / ret 4`, 0x6B7676 `xor al,al / ret 8`), 0x518AE0 through its own failure return
+0x518B26.
+
+**The virtual option (`hooks/rendereroption_hooks.asm`).** One more option, `OptionRenderer`, with nothing added to the
+table, the settings object or the profile:
+
+| Site | Replaced | Hook does | Continues at |
+|---|---|---|---|
+| 0x9322A1, the name lookup's not-found return | `pop edi / or eax,-1 / pop esi` (5 B) | `UhcRendererOptionLookup(name, obj)`: `OptionRenderer` (any case) on an options object (`[obj+24h]` = 1) gives the ID 0x55480001, anything else -1 | 0x9322A6 (`pop ecx / ret 4`) |
+| 0x6B794B, the type getter's out-of-range return | `xor al,al / ret 4` | that ID: type 2 (int); any other: as stock | its own `ret 4` |
+| 0x6B7676, the int getter's out-of-range return | `xor al,al / ret 8` | that ID: writes the stored choice to `*out`, returns 1 | its own `ret 8` |
+| 0x518B26, the int setter's failure return | `pop edi / xor al,al / pop esi / ret 8` | that ID: `UhcRendererOptionSet(value)` stores the choice, returns 1 | its own `ret 8` |
+
+The value is the dropdown's index: 0 is the first `<value>` (DirectX 9), 1 the second (Vulkan). A new value is written
+at once to `uhc-options.cfg` next to the log (a line `renderer dx9|vulkan`, written to a temporary file and moved over the
+old one). The entry has no flag 0x40, so it is greyed out during a match, as the stock options that need a restart are.
+
+**The switch.** Everything happens in the DLL's start function, before the game's entry point, so before the game calls
+`Direct3DCreate9`:
+1. the stored choice (or the key's `vulkan` / `dx9` when none is stored yet);
+2. if `uhc-vulkan-start.tmp` is still there, the last start with Vulkan presented no frame: the key stores and uses
+   DirectX 9;
+3. with Vulkan: `DXVK_LOG_PATH` = the folder, unless the player's environment sets it; `LoadLibraryExW(<folder>\d3d9.dll,
+   LOAD_WITH_ALTERED_SEARCH_PATH)` by full path, with `SEM_FAILCRITICALERRORS` so a broken file gives an error code
+   and no Windows dialog; `GetProcAddress("Direct3DCreate9")`, then the shared IAT slot owner (`d3d9hooks.*`) puts a
+   wrapper of it in the import slot 0xB84164. The start marker is written, and an observer of the first `Present`
+   deletes it.
+
+DXVK reads `DXVK_CONFIG` when its `Direct3DCreate9` builds its instance (`Config::getUserConfig`, after a `dxvk.conf`,
+whose keys it overrides; options split on `;`), and logs `Found config env: …`. So the wrapper sets it just before it
+calls DXVK, when every key has applied:
+- `fastVertexFill` on (applied, not `verify`): no `DXVK_CONFIG`. The option `d3d9.cachedWriteOnlyBuffers` makes DXVK
+  keep a copy of write-only buffers, which only pays off when the game reads them back; with `fastVertexFill` the
+  game's one such loop (the cloth flags) no longer reads them;
+- `fastVertexFill` off, FAILED or in `verify` mode: `d3d9.cachedWriteOnlyBuffers = True`;
+- `conf=` on the key's line overrides both (empty: no options), and a `DXVK_CONFIG` already in the player's environment
+  is left alone.
+
+The exe's own d3d9 import, bound at load time, stays loaded and unused.
+
+**The shared Direct3D hooks (`d3d9hooks.*`).** The exe imports one d3d9 function, `Direct3DCreate9`, through 0xB84164
+(no delay load). The module checks once that the slot holds what `GetProcAddress` gives for the loaded `d3d9.dll`,
+accepts one replacement (`ReplaceDirect3DCreate9`) and then observers (`AddD3D9Observer`): the slot points at a wrapper
+that hooks `IDirect3D9::CreateDevice` (vtable 16) of the object it returns, and CreateDevice hooks `Present` (17) and
+`Reset` (16) of the device. Each vtable entry is written by this module only, once; observers run in the order they were
+added (`rendererOption`, then `perfStats`).
+
+**The safety net.**
+- No `d3d9.dll` in the folder, a DLL that does not load, or no `Direct3DCreate9` in it: logged, DirectX 9 for this
+  start, the choice kept.
+- DXVK's `Direct3DCreate9` returns null (it does when Vulkan cannot start): the wrapper logs it and calls the stock one.
+- A start that crashes or hangs before its first frame leaves the marker: the next start uses and stores DirectX 9.
+- The slot is not the stock one (another DLL took it): Vulkan is not used, logged.
+
+**Why it is safe.**
+- The four sites are reached only from their own functions (every direct branch of `.text` was checked), and the
+  game's own IDs (0 to 92, and -1) take the stock instructions in the hooks. No caller can see a difference: the not-found
+  path returns the stock -1 for every other name, and the replaced returns give `al` = 0 as stock.
+- 0x932264 is called only by the options screen's four field builders, so the extra name exists only there. The
+  profile's reader has its own lookup and never sees it.
+- What is live: at 0x9322A6 the stock code pops ECX and returns, so the hook may use ECX and EDX; in the accessor
+  hooks EAX is the result and ECX / EDX are volatile across a call, as in stock. The x87 stack is not touched.
+- Display only: the choice decides which library draws; no game value, clock or random number is read or changed. The
+  x87 control word of the main thread stays as with stock Direct3D 9 (see the checks).
+- Nothing is kept per game: a new or loaded game, a device reset or a resolution change need nothing.
+
+**Checks.**
+- At runtime the options object is the one the code expects: the lookup hook logs `settings 0x…, 93 options` and
+  `[obj+24h]` = 1; the four hooks are reached when the Graphics page opens and on OK.
+- A profile written after Options → OK with the key is byte for byte the profile written by the same steps without it.
+- DXVK's log shows `Found config env: d3d9.cachedWriteOnlyBuffers = True` when the option is passed and no config line
+  when `fastVertexFill` is on; the x87 control word after CreateDevice is 0x007F with either renderer.
+
 ### xsErrorLog
 
 Both XS reporters, 0x43A3A4 and 0xA5667F, print through a callback at `[log]` that the shipped game leaves empty. A jmp over the
@@ -3712,8 +3805,8 @@ and watched with `PrintWindow`, and both work without focus.
   value is copied or read as the stock code would, with no new float operation. The one exception
   is `transformInventory scale`: a single-precision division of two game values, the same on every
   machine with the same build.
-- **Outside the simulation** (`bufferedFileReads`, `fastVertexFill`): change only how data reaches the game
-  or the video card, never what they receive.
+- **Outside the simulation** (`bufferedFileReads`, `fastVertexFill`, `rendererOption`): change only how data reaches
+  the game or the video card, or which library draws, never what the game computes.
 - **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
   `overhealHitpointBars`, `showGatherRate`, `nativePreview`, `displayedRange`): change only what the local player sees or which keys
   work; every button or key sends the same command as stock. `showGatherRate`'s record hook runs in

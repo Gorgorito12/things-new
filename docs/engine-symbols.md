@@ -1124,6 +1124,22 @@ ResList get in "Resource inventories".
 | Unit getCarryCapacity | 0x494503, `float thiscall(unit, int r)`, `ret 4` | confirmed (`cs`) | `0x4944E5([unit+5Ch], r)`: the proto's capacity. Site `UnitCarryCapacity`. |
 | Player unit list | `[player+F8h]` (unit IDs), `[player+FCh]` (count) | inference; in game (counts) | The list `kbUnitGetNumberTargeters` walks. |
 
+### Settings objects and the options screen (for `rendererOption`, 2026-11-10)
+
+REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/renderer-20261110.json`; `cs` = capstone
+over the file bytes. The profile's game options are one of these settings objects.
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Settings object | vtable 0xBA3854, 0xE54 bytes; ctor FUN_00518E3B(index, name, table, count) | confirmed (`ev_d5d3621f…`) | `[+4]` 5-byte entries (byte: low nibble type 1 float, 2 int, 3 ?, 5 bool, 9 string, high nibble flags; then 4 bytes value or pointer), `[+8]` count, `[+20h]` index, `[+24h]` kind, `[+2Ch]` name (0x104 wchar), `[+234h]` name → ID map (insert 0x598DEF, find 0x401D10 / 0x401DB3). |
+| Settings factory | FUN_00518CC9(name, kind, …) on the manager 0xC66688 | confirmed (`ev_ec20813d…`) | kind 0: the game settings table 0xD840E0, 0x172 entries; kind 1: the option table 0xD91778, 0x5D (93) entries (the only reference to it, 0x55093C). The object goes in the manager's list `[+C20h]`; lookup by name 0x402C76 (`thiscall(0xC66688, name)`). |
+| Option table | 0xD91778, 93 × 0x88 bytes | confirmed (bytes) | `u32 id; wchar name[64]; u32 flags` (e.g. 0x49 `OptionMinimizedUI`, 0x5C `OptionWonderPowerUI`). Flag 0x40 (in the entry byte's high nibble): the field may change during a match. |
+| Option name → ID | 0x932264, `thiscall(obj, const wchar_t*)`, `ret 4` | confirmed (`ev_0d116bfb…`, `cs`) | -1 if not found (0x9322A1, reached from 0x93227B and 0x932295). Called only by the options screen's field builders (0x78BEC5 CheckBox, 0x78C0C0 Slider, 0x78C417 Edit, 0x78D722 DropDown). `rendererOption` hooks the not-found return (site `OptionNameLookup`). |
+| Option type | 0x553028, `thiscall(obj, id) -> al`, `ret 4` | confirmed (`cs`) | Out of range → 0x6B794B `xor al,al / ret 4`, reached only from 0x55302F (sites `OptionTypeGetter`, `OptionTypeRange`). |
+| Option int get / set | 0x402E6A `(id, int* out)`, 0x518AE0 `(id, int value)`, both `ret 8` | confirmed (`cs`) | Get out of range → 0x6B7676 (`xor al,al / ret 8`, only from 0x402E73); set fails through 0x518B26 (range 0x518AEB, type 0x518B15). Sites `OptionIntGetter`, `OptionIntGetRange`, `OptionIntSetter`. Other accessors with the same range check: bool 0x402CE9, float 0x44738A, string 0x9325C4 / 0x518B57, flag test 0xA41707. |
+| Options screen | options.xml loader at 0x78EC63; section FUN_0078E87D; field type FUN_0078E67F; DropDown FUN_0078D66A; apply FUN_0078D052 (from 0x78E1F4); change check FUN_0078D1E4 | confirmed (`ev_f384e120…`, `ev_bcf44188…`, `ev_d8c8392b…`) | `[screen+E4h]` = the "GameOptions" settings (0x78EE59). Field vtable +30h set ID, +34h get ID, +24h enable. Value ↔ entry: 0x78C8BC / 0x78C76A map IDs 9 (resolution), 0Ah (bit depth) and 30h (refresh rate) through lists, any other int is the entry's index (`ev_340d304f…`). |
+| Profile settings reader | FUN_00553044 | partial (`cs`) | Reads `<Settings>` / `<Setting>` (strings 0xBE29B0, 0xBE2BF8) with its own lookup, not 0x932264. |
+
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
@@ -1178,7 +1194,8 @@ All 15 are **confirmed** by parsing the stock exe's import table (2026-10-27, Py
 every slot resolves to the named KERNEL32/USER32 import.
 
 Timing, threads and Direct3D (confirmed the same way, 2026-10-28): timeGetTime 0xB8400C ·
-timeEndPeriod 0xB84010 · timeBeginPeriod 0xB84014 · Direct3DCreate9 0xB84164 · GetSystemInfo 0xB841D0 ·
+timeEndPeriod 0xB84010 · timeBeginPeriod 0xB84014 · Direct3DCreate9 0xB84164 (the exe's only d3d9 import, bound at
+load, no delay load; written only by `src/d3d9hooks.cpp`, for `rendererOption` and `perfStats`) · GetSystemInfo 0xB841D0 ·
 QueryPerformanceCounter 0xB8426C · QueryPerformanceFrequency 0xB84270 · CreateEventW 0xB84274 ·
 CreateThread 0xB84314 · Sleep 0xB84324 · WaitForSingleObject 0xB84328 · SleepEx 0xB84364 ·
 GetTickCount 0xB843A4 · SetThreadPriority 0xB843E0 · SetPriorityClass 0xB843E4 · GetPriorityClass 0xB843E8 ·
