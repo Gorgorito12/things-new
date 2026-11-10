@@ -3,17 +3,6 @@
 Engine extensions for Age of Empires III: The Asian Dynasties (Steam). A DLL removes hard-coded limits
 and adds new engine features, and a mod turns each one on with a line in its cfg file.
 
-<!-- private:begin -->
-It loads through the community loader, as a from-scratch successor to
-[AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). Every patch site was checked
-against the stock exe, the known defects of the original are fixed, and most of the new features
-answer Wars of Liberty's requests.
-<!-- private:end -->
-<!-- public:begin
-It loads through the community loader, and it checks every patch site against the stock exe before
-it writes there.
-public:end -->
-
 ## Features
 
 Every key, with what it needs and how far it was tested, is in the
@@ -55,8 +44,7 @@ In any other mod:
 2. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder plus your files.
    Never modify the Steam install.
 <!-- private:begin -->
-3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`, from
-   [AoE3UnHardcoded/Release](https://github.com/danielpereira/AoE3UnHardcoded/tree/master/Release). It must
+3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`, It must
    be the unmodified Steam exe.
 <!-- private:end -->
 <!-- public: 3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`. It must be the unmodified Steam exe. -->
@@ -99,14 +87,7 @@ the loader patch. The DLL checks its host and does nothing in any other exe.
 ## Credits and license
 
 - This project's code is under the [MIT license](LICENSE).
-- The release zip ships [DXVK](https://github.com/doitsujin/dxvk) 3.1.1 (its 32-bit `d3d9.dll`, unmodified)
-  for `rendererOption`: Copyright (c) 2017 Philip Rebohle and its contributors, under the zlib license
-  (`dxvk\LICENSE.txt` in the zip). It is not in this repository.
-<!-- private:begin -->
-- The concept, the loader and the original patch addresses come from
-  [AoE3UnHardcoded](https://github.com/danielpereira/AoE3UnHardcoded). It has no license, so none of its
-  code is included: its addresses were leads, and each one was checked against the stock exe.
-- WoL's `uhc.dll` was studied as a black box ([notes](docs/wol-uhc-map.md)). None of its code is included.
+
 <!-- private:end -->
 - Age of Empires is a trademark of Microsoft. This project is not affiliated with or endorsed by
   Microsoft.
