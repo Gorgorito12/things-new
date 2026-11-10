@@ -30,8 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Tuesday 2026-11-10 14:43 | [`rendererOption`](#rendereroption) | Added. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
-| Tuesday 2026-11-10 12:54 | [`fastVertexFill`](#fastvertexfill) | Added. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
+| Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
+| Tuesday 2026-11-10 17:34 | [`rendererOption`](#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
 | Monday 2026-11-09 08:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
@@ -408,7 +408,23 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
 
 *The game draws its waving flags with less work, so it runs at more frames per second when flags are on screen.*
 
-**Added:** Tuesday 2026-11-10 12:54
+**Added:** Tuesday 2026-11-10 12:54 · **Filmed in WoL:** Tuesday 2026-11-10 17:34
+
+![fastVertexFill in WoL](media/fastVertexFill-wol.gif)
+
+*In WoL, with `fastVertexFill` (the 32-minute five-player save of the tables below, map revealed, the camera still on
+Queen Victoria's first Town Center, 1920×1080, Direct3D 9):* the British flags on the Town Center and the houses
+wave as usual. The picture is the same as without the key by design, since the same bytes reach the video card; only
+the frame rate changes. The overlay at the top gives the frame rate once a second: 184 FPS on average over the 32 s
+take, the render part 3.1 ms per frame.
+[Full video (MP4)](media/fastVertexFill-wol.mp4).
+
+![fastVertexFill in WoL, key off](media/fastVertexFill-wol-control.gif)
+
+*In WoL, key off (the same save, camera and window):* the same flags and the same picture, at 155 FPS on average,
+the render part 4.0 ms: the key gave +19 % in this pair of takes (one take each, measured while the video was being
+recorded; the tables below have the 60 s runs).
+[Full video (MP4)](media/fastVertexFill-wol-control.mp4).
 
 ```
 fastVertexFill [log] [verify]
@@ -495,7 +511,28 @@ fastVertexFill [log] [verify]
 
 *Adds a Renderer choice to the options menu: DirectX 9, or Vulkan for more frames per second.*
 
-**Added:** Tuesday 2026-11-10 14:43
+**Added:** Tuesday 2026-11-10 14:43 · **Filmed in WoL:** Tuesday 2026-11-10 17:34
+
+![rendererOption in WoL: the menu](media/rendererOption-wol.gif)
+
+*In WoL, with `fastVertexFill` and `rendererOption log`, at the main menu (1920×1080):* Options → Graphics Options
+shows the Renderer entry on DirectX 9. The cursor rests on it and its tooltip shows; the list opens, Vulkan (DXVK) is
+picked, and OK goes back to the main menu with the choice stored (`uhc-options.cfg`: `renderer vulkan`; the log:
+`Vulkan chosen in the menu; it takes effect at the next start`).
+[Full video (MP4)](media/rendererOption-wol.mp4).
+
+![rendererOption in WoL: the game with Vulkan](media/rendererOption-vulkan-wol.gif)
+
+*The next start, with Vulkan (DXVK 3.1.1 loaded from `dxvk\`, no DXVK option since `fastVertexFill` is on), in the
+late save and Town Center view of `fastVertexFill`'s videos:* 203 FPS on average over the 32 s take, the render part
+2.7 ms per frame. The picture is the same as with DirectX 9.
+[Full video (MP4)](media/rendererOption-vulkan-wol.mp4).
+
+![rendererOption in WoL, control: DirectX 9](media/rendererOption-wol-control.gif)
+
+*Control, DirectX 9 chosen (both keys on, the same scene):* the same picture at 182 FPS on average, the render part
+3.2 ms: Vulkan gave +12 % in this pair of takes (one take each, filmed while the video was being recorded).
+[Full video (MP4)](media/rendererOption-wol-control.mp4).
 
 ```
 rendererOption [vulkan|dx9] [folder=<dir>] [log] [conf=<DXVK options>]
