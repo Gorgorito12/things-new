@@ -70,7 +70,7 @@ city: never click near it.
 The profile's home city is the Ethiopians (one of WoL's `asianCivs`). Client coordinates at
 1920 x 1080: main menu "Un jugador" (257, 803), "Escaramuza" (689, 803), home city "Jugar"
 (181, 1029), setup "Jugar" (477, 979); the map list opens at (1557, 437) and "Mapas ESOC" is
-(1487, 635). Use ESOC maps: the user reports the `*NEW*` maps are broken. Wait 5 s between menu
+(1487, 635). Use ESOC maps: the user reports the `*NEW*` maps are broken (not reproduced yet: "NEW" Levant ran 9/9 by the editor and 3/3 by skirmish without a crash, and the setup screen falls back to "NEW" Barbary Coast for any quoted map name; see [wol-maps.md](wol-maps.md)). Wait 5 s between menu
 clicks, 10–12 s before each "Jugar", about 55 s for the game to load.
 
 ## Progress

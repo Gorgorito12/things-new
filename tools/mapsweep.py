@@ -25,8 +25,12 @@ Options:
 Results: ok, crash (the process died: code, EIP, module from the crash watch or the event log), hang
 (window not responding, or the world clock stood still 60 s), xs-error (the run went on but
 engine-ext.log got xsErrorLog lines: the copy's cfg needs xsErrorLog), timeout (a step did not finish
-and the game still answers), launch-failed. The CSV is resumable: a run already in it is skipped, so
-the sweep can be stopped and started again. Rows also list the units per player once the map runs.
+and the game still answers), launch-failed, wrong-map (skirmish: the game compiled another map
+than the one asked, seen by the time of Age3RM<file>.dmp.txt in My Games). The CSV is resumable: a
+run already in it (same map, players, seed and route) is skipped, so the sweep can be stopped and
+started again; use one CSV per copy of the game when the copies differ. Rows also list the units per
+player once the map runs; the map's trigger script (My Games/Trigger3/trigtemp.xs, shared by
+every copy of the mod: parallel copies can overwrite each other's) is kept in <evidence>/runs/.
 
 The copy needs testbed.py's harness: perfExecFile and multipleInstances background in the cfg the
 exe reads (engine-ext\\engine-ext.cfg beside another UHC.dll). Before each run the sweep waits for
@@ -36,7 +40,10 @@ did not start is never touched: the sweep refuses to begin while the copy is alr
 Skirmish route: the profile (Users3\\*.xml of the copy's My Games folder) is backed up when the
 sweep starts and restored byte for byte when it ends, as are the AI personalities
 (tools/ai_personality.py ... restore); the home city and the AI's memory files are copied back too.
-The game is closed before each profile edit (it rewrites the profile when it exits).
+The game is closed before each profile edit (it rewrites the profile when it exits). The setup screen
+restores the profile's map by its shown name, except a name that starts with a quote ("NEW" Levant):
+then it falls back to the list's first map, "NEW" Barbary Coast, so such a map is picked in the list
+with posted clicks (start_skirmish).
 """
 import csv
 import ctypes
@@ -272,9 +279,22 @@ def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
     if route == "scenario":
         rc, out = testbed(bed, "scenario", map_name, "--players", str(players), "--seed", str(seed), timeout=900)
     else:
-        rc, out = testbed(bed, "skirmish", timeout=600)
+        dmp = T.my_games(bed) / T.bed_profile(bed)["rm"] / f"Age3RM{map_name}.dmp.txt"
+        dmp_before = dmp.stat().st_mtime if dmp.exists() else 0
+        rc, out = start_skirmish(bed, map_name, evidence / "shots" / f"{tag}.setup.png")
     step = route
+    if rc == 0 and route == "skirmish" and not (dmp.exists() and dmp.stat().st_mtime > dmp_before):
+        # The game writes Age3RM<file>.dmp.txt when it compiles a map: no new one = another map ran.
+        folder = dmp.parent
+        newest = max(folder.glob("Age3RM*.dmp.txt"), key=lambda q: q.stat().st_mtime, default=None)
+        rc, out = 5, f"the setup played another map: newest dump {newest.name if newest else 'none'}"
     if rc == 0:
+        # The map's triggers, compiled at the start from My Games\Trigger3\trigtemp.xs (a file every
+        # copy of the mod shares): kept for an xs-error.
+        trig = T.my_games(bed) / "Trigger3" / "trigtemp.xs"
+        if trig.exists():
+            (evidence / "runs").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(trig, evidence / "runs" / f"{tag}.trigtemp.xs")
         row["units"] = unit_counts(bed)
         rc, out = testbed(bed, "wait", str(seconds), "--hang", "60", timeout=int(seconds * 10 + 200))
         step = "wait"
@@ -287,6 +307,9 @@ def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
         game.ended()  # waits for the crash watch to write its report
     elif rc == 4:
         row["result"] = "hang"
+    elif rc == 5:
+        row["result"] = "wrong-map"
+        game.close()
     else:
         row["result"] = "timeout"
     if row["result"] in ("hang", "timeout"):
@@ -332,6 +355,52 @@ def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
 
 
 # --- the skirmish route's profile ----------------------------------------------------------------
+
+# The setup screen's map list (client coordinates at 1920 x 1080): it opens at LIST_OPEN, shows 9 rows
+# from LIST_ROW0 one LIST_STEP apart, and its down arrow scrolls one row. The 11 map sets (Mapas ...)
+# come first, then the maps sorted by the name shown. The setup restores the profile's map by that
+# name (gamemapname), but never a name that starts with a quote ("NEW" Levant): then it shows the
+# list's first map, "NEW" Barbary Coast, so such a map is picked in the list with posted clicks.
+LIST_OPEN, LIST_DOWN, LIST_ROW0, LIST_STEP, LIST_ROWS, LIST_SETS = (1557, 437), (1733, 818), (1520, 484), 38, 9, 11
+
+
+def list_index(bed, map_name):
+    folder = bed / T.bed_profile(bed)["rm"]
+    names = sorted(display_name(bed, p.stem) for p in folder.glob("*.xs") if (folder / f"{p.stem}.xml").exists())
+    return LIST_SETS + names.index(display_name(bed, map_name))
+
+
+def start_skirmish(bed, map_name, setup_shot):
+    """From the main menu to a running skirmish on the profile's setup, picking a quoted map in the
+    list. Returns (exit code as testbed's, message)."""
+    for handle in T._WATCHED.values():  # this process may have watched an earlier game
+        T.D.k32.CloseHandle(handle)
+    T._WATCHED.clear()
+    lock = T.start_lock()
+    try:
+        for x, y, pause in T.SKIRMISH_CLICKS:
+            T.posted_click(x, y)
+            time.sleep(pause)
+        if display_name(bed, map_name).startswith('"'):
+            index = list_index(bed, map_name)
+            T.posted_click(*LIST_OPEN)
+            time.sleep(2)
+            scroll = max(0, index - (LIST_ROWS - 1))
+            for _ in range(scroll):
+                T.posted_click(*LIST_DOWN)
+                time.sleep(0.3)
+            T.posted_click(LIST_ROW0[0], LIST_ROW0[1] + LIST_STEP * (index - scroll))
+            time.sleep(4)
+        testbed(bed, "shot", str(setup_shot), "2", timeout=60)
+        proc = T.process()
+        before = T.game_time(proc) or 0
+        T.posted_click(*T.SKIRMISH_PLAY)
+        T.wait_until(lambda: (T.game_time(proc) or 0) > before + 2000, 240, 1, "the skirmish to start")
+        return 0, f"skirmish running, game time {T.game_time(proc)} ms"
+    except SystemExit as e:
+        return (e.code if isinstance(e.code, int) else 1), str(e.code)
+    finally:
+        lock.unlink(missing_ok=True)
 
 def display_name(bed, map_name):
     """The name the setup screen shows: the .xml's displayName, or its displayNameID's string."""
