@@ -31,10 +31,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
 | Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
+| Wednesday 2026-11-11 15:50 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
+| Wednesday 2026-11-11 15:50 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
-| Wednesday 2026-11-11 15:49 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
-| Wednesday 2026-11-11 15:49 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Wednesday 2026-11-11 15:49 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -2121,7 +2121,7 @@ Who heals, whom, and how far.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | **new** | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). | confirmed (automatic healing) |
-| [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | **new** | Nothing (unit types or proto names are optional). | confirmed |
+| [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | **new** | Nothing (unit types or proto names are optional). | confirmed |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | **new** | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. | confirmed (single player, UI) |
 | [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | **new** | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
 | [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | **new** | `overhealHitpointBars`. | confirmed |
@@ -2222,7 +2222,7 @@ healNonIdle [<UnitType>] [moving] [fighting] [busyRate=<percent>]   default Abst
 
 *Healers go for the units that need healing most, not the first they find.*
 
-**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
+**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-11 15:50
 
 ![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
 
@@ -2237,9 +2237,35 @@ four settlers are hit at once (90, 70, 45 and 33 % HP); the `NAnurse` heals the 
 at 45 % 4 m away, while the one at 33 % waits at 50 HP; the settlers at 70 and 90 % wait too.
 [Full video (MP4)](media/smartHealTargets-wol-control.mp4).
 
+![smartHealTargets switch=20 in WoL](media/smartHealTargets-switch-wol.gif)
+
+*In WoL, with `smartHealTargets switch=20 log` (a `NAnurse`, three settlers hit at 18, 23 and 25 s; all selected):* the
+nurse heals the first settler from 33 %; when the second falls to 47 % she leaves the first at 70 % (more than 20 %
+higher) and heals the one at 20 % at once, then tops the three up in turns. [Full video (MP4)](media/smartHealTargets-switch-wol.mp4).
+
+![smartHealTargets without switch in WoL](media/smartHealTargets-switch-wol-control.gif)
+
+*In WoL, `smartHealTargets log` without `switch` (the same scene):* she heals the first settler to full while the one at 20 %
+waits at 30 HP for about 5 s. [Full video (MP4)](media/smartHealTargets-switch-wol-control.mp4).
+
 ```
-smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
+smartHealTargets [<UnitType> ...] [switch=<percent>] [log]   up to 8 types, in priority order
 ```
+
+- **`switch=<percent>`** (1 to 100; default off): stock never looks again while a heal runs. With the option, once a
+  second of game time, a heal this search started is checked against the units the search would accept now: if one
+  ranks at the target's listed type or before it and its HP ratio is lower than the target's by more than the margin
+  (`switch=20`: a target at 70 % is left for a unit below 50 %), the heal ends as when the target is full, and the
+  healer's next search takes the best unit, as above. The margin keeps it from flipping back and forth: a unit only a
+  little worse does not interrupt. A heal the player ordered is never checked.
+- **Measured in WoL (2026-11-11),** the scene above: with `switch=20` the settler hit to 20 % at 25 s was healed from
+  that second; without it, from about 29.5 s, after the first one was full. All three were full by about 56 s either way.
+  With a gap of 17 % (63 % against 47 %), no switch.
+- **Saved games:** the healer's last pick lives in the DLL, so after a load a heal started before the save is not
+  checked (it runs to the end as without the option); every heal started after the load is. The same on every machine
+  that loads the save. Tested: a save while the nurse healed the first settler, loaded: she healed it to full, then
+  switched as usual.
+- **A bad option** stops the key: `smartHealTargets: switch=0: expected switch=<percent>, 1 to 100; feature not applied`.
 
 - **In WoL today:** an idle healer looks for a unit to heal on its own: it asks for the units around it
   and heals the **first** one that passes every test (damaged, alive, idle, a valid heal
@@ -2264,13 +2290,17 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
   ratio, nearest, lowest unit ID (multiplayer unverified)`; in a game `hook reached:
   smartHealTargets candidate (0x9CDA36)` and `pick (0x9CDA58)`; with `log`, every pick (the first
   200): `smartHealTargets: unit 0 (Surgeon) heals unit 4 (Settler, rank 0, HP ratio 0.333, 10.0
-  m) among 4 candidates; stock would heal unit 1 (Settler, HP ratio 0.900)`.
+  m) among 4 candidates; stock would heal unit 1 (Settler, HP ratio 0.900)`. With `switch`, the startup line adds `; a
+  running heal switches to a candidate more than 20 % lower`, a game `hook reached: smartHealTargets switch
+  (0x9E0C3A)`, and `log` each switch: `smartHealTargets: unit 0 (NAnurse) leaves unit 1 (Settler, rank 0, HP ratio
+  0.703) for a better candidate, unit 2 (Settler, rank 0, HP ratio 0.467; switch margin 0.20)`.
 - **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
   registered as a marker unit type, which changes the unit type count.
 - **Status:** confirmed in single player. In WoL (2026-11-04), a `NAnurse` with four settlers hit at once
   healed them in the order 33, 45, 70, 90 %; without the key it took the first the query returned, at
   45 %. On the stock game (2026-10-29), with a listed type, that type came first, and with
-  `healNonIdle` both hooks ran. A skirmish against the AI with the key on played normally. Multiplayer
+  `healNonIdle` both hooks ran. A skirmish against the AI with the key on played normally. `switch` (2026-11-11):
+  the numbers above, a saved game, an AI skirmish of 100 s with every heal key on and no XS error. Multiplayer
   was not tested.
 
 #### overhealHitpointBars
@@ -2455,7 +2485,7 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 
 *Only chosen healers can heal a unit above its normal health.*
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-11 15:50
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
 
@@ -2526,7 +2556,7 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 
 *Extra health above a unit's normal maximum slowly wears off.*
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-11 15:50
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 

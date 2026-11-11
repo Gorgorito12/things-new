@@ -497,10 +497,10 @@ First: regeneration in combat (the rate and the split are done).
 - **Exclude types** (`-Settler`). *small*
 - **Safety:** prefer targets without enemies nearby (the spatial query `noTrainNearEnemyTC`
   uses). *small*
-- **Switch target mid-heal** when another candidate is much worse, with hysteresis. *small*
+- **Switch target mid-heal** when another candidate is much worse, with hysteresis. *small*. **Done (2026-11-11)** as `switch=<percent>` (re-checked once a second from the heal tick; not kept in saved games).
 - **Per-healer lists** (`Surgeon: AbstractInfantry`, `AbstractMonk: AbstractHero`); a `range`
   option. *small*
 - **Tests:** multiplayer (deterministic by design); measure with many healers.
 - Doc: the guide section repeats the "New in this DLL" line twice.
 
-First: switching with hysteresis and the safety weight.
+First: the safety weight (switching is done).

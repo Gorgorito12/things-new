@@ -814,6 +814,23 @@ decode at instruction boundaries and nothing branches into the stolen bytes (0x9
 at its first byte from 0x9CD92A and the loop's end). `healNonIdle`'s hook at 0x9CD9C7 is a
 different site in the same loop, and both work together.
 
+**`switch=<percent>`.** The search is only called for an idle healer (0x68C14E), so nothing looks again while a heal
+runs. The option adds a hook at the start of the healing state (8) of the heal tick FUN_009E0B53: `mov ecx,[esi+24h] /
+push 8 / mov [esp+14h],ecx` (9 B at 0x9E0C3A, after `cmp al,8 / jne`; nothing branches into it). `UhcSmartHealRecheck
+(healer, target)` acts only on a heal this search started: the pick hook notes, per healer ID, the target it returned
+and the second of game time (`[world+108h]` / 1000). Once per new second it calls the stock search itself,
+`0x9CD865(owner = [healer+58h])` (the call 0x68C14E makes; it checks `[owner+4]` = healer), as a dry run: the range
+hook records only candidates whose rank is at most the target's and whose stock ratio is below the target's minus the
+margin, and the pick hook, seeing the dry run, returns null, so the search leaves through its no-target exit and starts
+nothing (the search writes only the shared query `[world+184h]`, which every search refills). The target itself is no
+candidate (0x9C2E40(5, 8) counts its healer). With a candidate the hook jumps to the tick's end path 0x9E0D3F
+(`vtbl+34h(10)`, the stack as for the stock jumps there); the healer is idle, and its next stock search picks the best
+unit, which beats the old target. Otherwise the stolen bytes run and it goes on at 0x9E0C43. The re-check is in the
+heal tick, inside the healer's own update, the same context as the stock idle search; it uses only game time, unit
+IDs, ratios and the stock tests. The notes live in the DLL (an `unordered_map` looked up by ID, never walked), cleared
+on each data load; a loaded game has none, so a heal started before the save is not checked. Sites `HealTickHealing`,
+`HealTickEnd`, `HealSearchHead`.
+
 **No healer marker.** The search is the same function for every healer type, and the change only
 reorders units the stock rules already accept, so a global key is enough; a mod that wants a
 healer to prefer some units lists their types.

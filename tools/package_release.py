@@ -248,8 +248,9 @@ hcShipmentPointFallback ...   when no stock fallback building is left, the shipm
                               LastResort = any building, then a hero
 healNonIdle [UnitType] [moving] [fighting] [busyRate=P]   marked healers heal busy
                               units (moving, fighting, ...), at P % on a busy one
-smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt unit
-                              (listed types first) instead of the first one
+smartHealTargets [UnitType ...] [switch=P] [log]   automatic healing picks the most
+                              hurt unit (listed types first) instead of the first one;
+                              switch: leaves a heal for a unit more than P % lower
 damageOverTime [log] [noticktext]   poison: attacks with <AttachProtoUnit> damage over
                               time (+ AttachMaxStacks, AttachSnare, AttachTickText)
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
