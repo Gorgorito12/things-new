@@ -1,5 +1,6 @@
-// overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [log]: the HP bars and HP texts of marked
-// units take InitialHitpoints as 100 %, not MaxHitpoints; with "segment" the HP above it shows.
+// overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=Label]] [log]: the
+// HP bars and HP texts of marked units take InitialHitpoints as 100 %, not MaxHitpoints; with
+// "segment" the HP above it shows.
 //
 // A unit is created with its proto's InitialHitpoints ([proto+9Ch], 0x498390 in FUN_00498274)
 // and is healed up to MaxHitpoints ([proto+98h]); a Hitpoints tech adds the same amount to both
@@ -32,10 +33,13 @@
 // segment colour. The stat row's HP text uses the UI markup <color=r, g, b> for the colour. A unit
 // at or below its 100 %, and every unmarked unit (whose HP never exceeds its max), keeps the stock
 // bar and texts. The selection panel's bar under the portrait is one of three progress bar gadgets
-// (green, yellow, red) of uiunitselection.xml; "segment" also fills a fourth one, when the mod's UI
-// data has it: unitselectionpanel-unitHealthBarOverheal, looked up by name as the panel looks up
-// the stock three (0xAB7C2F), filled with the group's average overheal share and raised above them
-// after each refresh (0x4C83DF). Its look and place are the UI data's; without it nothing changes.
+// (green, yellow, red) of uiunitselection.xml, looked up by name at panel creation; "segment" adds
+// no gadget and shows the overheal on the game's own green one ([panel+310h]): after each refresh
+// (0x4C83DF), while every selected unit is at or above its 100 % and the group's average overheal
+// share is above 0, the green part is filled short (1 - that share) and the bar's background
+// drawable [bar+140h] gets the overheal texture (vtable +7Ch, as the setter 0x5CAF02 calls it;
+// ui\ingame\ingame_ui_health_yellow, or "bar=<texture>"), so the right end shows it. When the
+// overheal ends the UI data's texture, ui\ingame\ui_health_bar, is put back.
 //
 // "stat[=Label]": the stat panel gets an "Overheal" row right after the HP row (0x4D76DB) for a
 // marked unit, 'overheal/capacity' (HP above the 100 % / max above it, truncated like the HP row),
