@@ -262,24 +262,95 @@ DE parity and extras, in rough order.
 ## Batch of 2026-11-11 (JTMaston, Discord, relayed by the user)
 
 His order, numbered on from #47. By his rule the bugs (#49, #59, #60) come first. Nothing below was started. "Lead" is where
-the RE starts; addresses come from earlier work and still need checking for these cases.
+the RE starts; addresses come from earlier work and still need checking for these cases. As for the batch of 2026-10-30, the
+user's rule applies: build what he asked for, and where he left something open the design is ours ("Designs" below). Only
+#57 waits for him.
 
-| # | Request | Kind | Lead | Notes | Status |
-|---|---|---|---|---|---|
-| 48 | A cannon's projectile that damages every unit it flies over, before and after its target ("monster truck", like Age II's Scorpion). A new tactics action type `DirectionalAttack`, with the usual attack tags plus one range: either the projectile's reach before it lands, with `maxrange` as the range at which the unit targets and fires, or the firing range, with `maxrange` as where the projectile lands. Test with the `Falconet`. | new mechanic | The attack applier's head 0x49BE95 (every projectile hit and landing, `spreadAnyAccuracy`'s hook, to be extended, not hooked again); the projectile's flight update; the action type table (a new type name). | *large.* To ask: which of the two range readings; whether allies and Gaia are hit; whether each unit hit lowers the damage or stops the shot; once per unit or per frame it overlaps. | open |
-| 49 | Bug: on WoL's buildings, a bone with the impact type `Wood` in a `.dmg` file throws its splinters on the player's screen, not at the building. Repro: change a `.dmg` of an ME building. | bug | Strings `impacttype`, `Wood` and the `.dmg` loader; the place where the impact effect gets its position (bone vs. camera). | To check first: does a stock building with `Wood` do it too, and do WoL's buildings lack the bone the `.dmg` names? | open |
-| 50 | Custom impact types, e.g. one with a metal sound for hits on modern ships. | hardcode | The table of impact type names (where `Wood` and the others are registered), and what each one selects (sound set, particles). | Related: #49, same code. | open |
-| 51 | Custom walls: more protos that build as walls, shown as a row of corners and sections between a point A and a point B. Probably a proto attribute that groups a corner proto with its section protos. Test with GW's barbed wire protos. | hardcode | The wall placement code: the stock wall protos' names and the line-placement mode they trigger. | *large.* To ask: the tag's form (a group name on each proto, or the corner naming its sections), gates, and whether the AI must build them. | open |
-| 52 | Units that, when killed (not when deleted), make an area attack with no target, like a petard or a cannon shot that needs no target. | new mechanic | — | **Already built** as #39, [`detonationDeath`](modding-guide.md#detonationdeath): `<DetonationProtoAction>` fires the action when the unit dies, with no target (tested in WoL: a killed Settler took 4 `Coureur` with it). A delete gives no blast unless the proto has `<DetonationCommand>`, as he asks. To ask: whether something is missing. | built (#39) |
-| 53 | A floating inventory bar, like the HP bar but for the unit's resources (DE has it), shown only while Alt is held, not by default. | UI | The floating HP bar's draw 0x45FAAF and its vertex fill (the `overhealHitpointBars segment` hooks); the keyboard state for Alt. | Display only, no effect on the simulation. To ask: which units (gatherers, crates, mines, all), one bar or one per resource, and colours. | open |
-| 54 | Question: is the resource yield unlocked as in DE? | question | — | **No.** Built: DE's aura types by gather target and by resource (`resourceGatherAuras`, #32), buildings that gather (`unitResourceAuras`, #26) and `linkedResource`. Not built: DE's `ResourceGatherRate` / `ResourceYield` auras, which act on the gather site, not on the gatherer ([de-parity](de-parity.md)). Legacy has no `Yield` subtype: a `WorkRate` effect on the AutoGather action does it. To ask: which DE feature he means. | question |
-| 55 | Tactics action attribute `numberOfShots`, a number, default 1: the unit fires that many shots before its reload animation. Or fix `NumberProjectiles`, which does nothing, and give it this behavior. | hardcode | The attack action's ROF and reload cycle; the shared action tag hook 0x5FA11E (`AddActionTagHandler`) for the tag. | TAD has no parser for `NumberProjectiles` ([engine-symbols](engine-symbols.md)), so "fixing" it is a new tag either way. On 2026-10-30 he said `numberprojectiles` was not needed (#2); this is a new meaning. To ask: the interval between shots, and whether the ROF counts from the first or the last shot. | open |
-| 56 | `UseBigHugeButton` on buildings other than the consulate, so any clickable tech of any civ can use it; and `UseBigHugeButton` as in DE. | hardcode | The command panel's big button 0x461BD8 (`bigButtonCivs` / `noBigButtonBlds`, both WoL's own keys, which hold that site beside WoL's DLL); the ability record's flag 2 `UseBigButton` ([engine-symbols](engine-symbols.md)). | To check: what DE's tag is called and does, in its data and guide. | open |
-| 57 | A proto attribute for a custom random cost per unit. | new mechanic | — | Not clear. To ask: a cost drawn at random between two values on each train, or something else (what "random" is). | question |
-| 58 | In LAN lobbies, players pick their profile icon instead of the civ personality's, from a folder where WoL puts custom DDTs (ESOC online had something like it). | UI / lobby | The multiplayer setup screen and where it takes the personality's portrait. | *large.* Every player must see the others' icons, so the choice has to travel with the lobby's player data; a DDT a player lacks needs a fallback. Not the simulation. | open |
-| 59 | Bug: the AIs still attack a submarine in stealth mode, maybe any stealthed unit. | bug | String `Stealth`; the visibility test of the AI's unit queries (`kbUnitQuery*`) and of the engine's own targeting. | To check first: whether it is the XS scripts or the exe; whether a human player's units do it too (#60). | open |
-| 60 | Bug: stealthed units can still be auto-attacked by enemies whose tags normally allow it. | bug | The automatic target search's filter and its visibility test. | Likely the same missing test as #59. | open |
-| 61 | Up to 5 age-up choices, as in DE; and politicians researchable in buildings other than the Town Center. | hardcode | The age-up picker, which looks for the `TownCenter` proto at 0x7E6905 / 0x7E803F ([engine-symbols](engine-symbols.md), the #3 scoping), with the calls 0x7E6919 and 0x7E8050 that WoL's `wonderCiv` uses. | WoL's DLL patches near there: check beside it. | open |
-| 62 | The King of the Hill timer set by the number of players or teams. | new mechanic | Strings `KingOfTheHill` / `KOTH`: first find whether the timer is in the exe, a random map script or a trigger. | If it is in script or data, it is a data fix. To ask: the formula (seconds per player, or a table). | open |
-| 63 | `<OrPrereqs qty="N">`: how many of the prerequisites must be met to research or activate the tech. | new mechanic | The per-tech update FUN_005094D8 (OrPrereqs is status bit 21) and the evaluator FUN_005094B4 ([engine-symbols](engine-symbols.md), `techPrereqRecheck`'s sites). | *small to medium.* `techPrereqRecheck` already hooks that update. | open |
-| 64 | Per-player counters of the cards sent from each age, for `Data` techs that send units in a number equal to the cards sent from age X. | new mechanic | The shipment send (the home city queue `[hc+288h]`, `doNotQueue`'s site) for the counters; a tech effect that reads them. | To ask: the effect's form, e.g. an attribute on the effect that names the age and multiplies its amount. | question |
+| # | Request | Kind | Lead | Status |
+|---|---|---|---|---|
+| 48 | A cannon's projectile that damages every unit it flies over, before and after its target ("monster truck", like Age II's Scorpion). A new tactics action type `DirectionalAttack`, with the usual attack tags plus one range: either the projectile's reach before it lands, with `maxrange` as the range at which the unit targets and fires, or the firing range, with `maxrange` as where the projectile lands. Test with the `Falconet`. | The attack applier's head 0x49BE95 (every projectile hit and landing, `spreadAnyAccuracy`'s hook, to be extended, not hooked again); the projectile's flight update; how an action's type is read from the tactics. | open, design ours |
+| 49 | Bug: on WoL's buildings, a bone with the impact type `Wood` in a `.dmg` file throws its splinters on the player's screen, not at the building. Repro: change a `.dmg` of an ME building. | Strings `impacttype`, `Wood` and the `.dmg` loader; where the impact effect takes its position (bone vs. camera). | open |
+| 50 | Custom impact types, e.g. one with a metal sound for hits on modern ships. | The table of impact type names (where `Wood` and the others are registered) and what each selects (sound set, particles). Same code as #49. | open, design ours |
+| 51 | Custom walls: more protos that build as walls, shown as a row of corners and sections between a point A and a point B. Probably a proto attribute that groups them. Test with GW's barbed wire protos. | The wall placement code: how it finds the stock wall protos (a name lookup cached at load, like the `TownCenter` ID at `db+5E08h`, is the likely form) and the line-placement mode. `AbstractWall` is type bit 54 (39 protos). | open, design ours |
+| 52 | Units that, when killed (not when deleted), make an area attack with no target, like a petard or a cannon shot that needs no target. | — | **Already built** as #39, [`detonationDeath`](modding-guide.md#detonationdeath): `<DetonationProtoAction>` fires the action when the unit dies, with no target (tested in WoL: a killed Settler took 4 `Coureur` with it). A delete gives no blast unless the proto has `<DetonationCommand>`, as he asks. |
+| 53 | A floating inventory bar, like the HP bar but for the unit's resources (DE has it), shown only while Alt is held, not by default. | The floating HP bar's draw 0x45FAAF and its vertex fill (the `overhealHitpointBars segment` hooks); whether units with no HP bar (trees, mines) go through that draw at all. | open, design ours |
+| 54 | Question: is the resource yield unlocked as in DE? | **No.** Built: DE's aura types by gather target and by resource (`resourceGatherAuras`, #32), buildings that gather (`unitResourceAuras`, #26) and `linkedResource`. Not built: DE's `ResourceGatherRate` / `ResourceYield` auras, which act on the gather site, not on the gatherer ([de-parity](de-parity.md)). Legacy has no `Yield` subtype: a `WorkRate` effect on the AutoGather action does it. | answered; design ours |
+| 55 | Tactics action attribute `numberOfShots`, a number, default 1: the unit fires that many shots before its reload animation. Or fix `NumberProjectiles`, which does nothing, and give it this behavior. | The attack action's ROF and reload cycle; the shared action tag hook 0x5FA11E (`AddActionTagHandler`) for the tag. | open, design ours |
+| 56 | `UseBigHugeButton` on buildings other than the consulate, so any clickable tech of any civ can use it; and `UseBigHugeButton` as in DE. | Where the consulate's techs get their big buttons (a proto or type test in the command panel FUN_0046188E); the command panel's big button 0x461BD8 (`bigButtonCivs` / `noBigButtonBlds`, WoL's own keys, which hold that site beside WoL's DLL); the ability record's flag 2 `UseBigButton` ([engine-symbols](engine-symbols.md)). | open, design ours |
+| 57 | A proto attribute for a custom random cost per unit. | — | **question**: what "random" is (see Designs) |
+| 58 | In LAN lobbies, players pick their profile icon instead of the civ personality's, from a folder where WoL puts custom DDTs (ESOC online had something like it). | The multiplayer setup screen, where it takes the personality's portrait, and how a player's lobby settings reach the others (`GameSettings`, as in [observer-mode](observer-mode.md)). | open, design ours |
+| 59 | Bug: the AIs still attack a submarine in stealth mode, maybe any stealthed unit. | String `Stealth`; the visibility test of the AI's unit queries (`kbUnitQuery*`) and of the engine's own targeting. | open |
+| 60 | Bug: stealthed units can still be auto-attacked by enemies whose tags normally allow it. | The automatic target search's filter and its visibility test. Likely the same missing test as #59. | open |
+| 61 | Up to 5 age-up choices, as in DE; and politicians researchable in buildings other than the Town Center. | The age-up picker, which looks for the `TownCenter` proto at 0x7E6905 / 0x7E803F ([engine-symbols](engine-symbols.md), the #3 scoping), with the calls 0x7E6919 and 0x7E8050 that WoL's `wonderCiv` uses: check beside WoL's DLL. | open, design ours |
+| 62 | The King of the Hill timer set by the number of players or teams. | Strings `KingOfTheHill` / `KOTH`: first whether the timer is in the exe, a random map script or a trigger. | open, design ours |
+| 63 | `<OrPrereqs qty="N">`: how many of the prerequisites must be met to research or activate the tech. | The per-tech update FUN_005094D8 (OrPrereqs is status bit 21) and the evaluator FUN_005094B4 ([engine-symbols](engine-symbols.md)); `techPrereqRecheck` already hooks that update. | open, design ours |
+| 64 | Per-player counters of the cards sent from each age, for `Data` techs that send units in a number equal to the cards sent from age X. | The shipment send (the home city queue `[hc+288h]`, `doNotQueue`'s site) for the counters; the tech effect's amount for the use. | open, design ours |
+
+### Designs (ours, 2026-11-11)
+
+Decided without JTMaston, so that the work can start; each is a default he can change. "Check" is what the RE or a test on the
+Windows machine must settle first (this was written in a session with no exe, REA or game).
+
+- **#48 `DirectionalAttack`.** His first reading: `maxrange` stays the range at which the unit targets and fires, so the
+  targeting code, the AI and the range display need nothing; a new tag `<DirectionalRange>` is the distance from the shooter
+  at which the shot lands (default: twice the distance to the target). The shot flies the line shooter → target → that point.
+  Each unit whose obstruction the line crosses within `<DirectionalWidth>` (default 1 m) takes the action's damage once per
+  shot, through the stock TakeDamage with that action, so armor, bonuses, multipliers and the action's `DamageFlags` (Gaia,
+  self, ally) apply as on any hit. No falloff by default; `<DirectionalFalloff>` (a factor per unit hit, e.g. 0.8) is
+  optional. Units are taken in the order of their distance along the line, so every machine hits the same ones. **Check:**
+  whether tactics accept a new action type name, or the cheaper form, a tag `<Directional>` on a ranged attack, is the one
+  to build (his name kept either way); the flight update, to hit units as the shot passes rather than all at the landing.
+- **#49 `Wood` splinters.** No design until the repro. **Check:** a stock building with a `Wood` bone (does it happen
+  there?); whether the bone the `.dmg` names exists in WoL's model. A missing bone that leaves the effect at a default
+  place would be a data fix (or a DLL fallback to the unit's origin); a wrong position in the exe is a DLL fix.
+- **#50 custom impact types.** As `customAbstractTypes`: a file listing new names, registered after the stock ones, each
+  picking its sound set and particles the way the stock types do. **Check:** whether impact types are a fixed list in the
+  exe (then the registry) or names read from a data file (then a data change).
+- **#51 custom walls.** The corner (connector) proto names its pieces, so one place defines a wall set:
+  `<WallSection length="5">BarbedWire5</WallSection>`, `<WallSection length="2">BarbedWire2</WallSection>`, optional
+  `<WallGate>BarbedWireGate</WallGate>`. Building that corner proto from a build button starts the stock A-to-B placement
+  with that set instead of the stock protos; the build limits, costs and placement rules are each proto's own. No tag:
+  stock walls as before. **Check:** how the placement finds `WallConnector` and the straight pieces (if they are cached
+  IDs, the hook swaps them for the set of the proto being placed); whether the AI's wall code uses the same path; GW's
+  barbed wire protos in WoL's data (if absent, copies of the stock wall protos renamed).
+- **#53 inventory bar.** Key `inventoryBars [UnitType ...] [always] [log]`: a second floating bar under the HP bar for
+  units with a resource inventory (mines, trees, crates, herds, hunts, gathering buildings), its width the amount left over
+  the proto's `InitialResource`, in a colour per resource (food, wood, gold, others). Shown only while Alt is held (the key
+  state is read on the frame; `always` shows it all the time). Display only, so each player may have it or not. **Check:**
+  units with no HP bar (trees) may never reach the bar draw, which then needs a draw of its own; how DE lays it out.
+- **#54 resource yield.** If it is DE's `ResourceYield` aura type: a new `<ModifyType>ResourceYield</ModifyType>` through
+  `AddModifyType`: gatherers working a resource unit inside the aura gather it ×factor. **Check:** DE's guide and data (the
+  install on the Windows machine) for what the name does.
+- **#55 `numberOfShots`.** A new tag, **not** `NumberProjectiles`: WoL's tactics already carry `numberprojectiles` 94 times
+  ([de-parity](de-parity.md), #2), shotguns with 3 to 6 and artillery and the Schwarzlose with up to 12, so giving that tag
+  this meaning would turn all of them into bursts. `<NumberOfShots>N</NumberOfShots>`: the unit fires N shots per cycle,
+  `<ShotInterval>` seconds apart (default 0.25), each with its own accuracy roll and damage; the ROF counts from the last
+  shot; a target that dies mid-burst ends the burst. **Check:** where the attack cycle waits for the ROF, and whether the
+  attack animation can play again for the extra shots or the shots must come without it.
+- **#56 big buttons.** A tech flag `<Flag>UseBigHugeButton</Flag>`: a tech with it shows as the big button in any
+  building's command panel, for any civ, as the consulate's do. **Check:** DE's tag name and meaning in its guide and data;
+  what makes the consulate's buttons big in legacy (a proto test, a type, or the tech).
+- **#57 random cost.** Two readings: (a) a cost drawn between two values each time the unit is trained (deterministic: the
+  game's synced random), (b) the cost of the "random" choice of something (a random unit or card). Wait for JTMaston.
+- **#58 lobby icons.** Key `playerIcons <folder>` (default a folder next to `data\uhc`): every `.ddt` in it is a choice;
+  a button by the player's name in the LAN setup opens the list. The choice travels with the player's lobby settings; a
+  player who lacks the file sees the civ's portrait. Interface only. **Check:** a free per-player lobby setting the game
+  sends, or a message of our own; how the portrait is taken today.
+- **#59, #60 stealth.** One fix if one test is missing: a stealthed unit that no enemy unit detects is no target for the
+  automatic search, the engine's AI and the XS queries; a direct order of a human player follows stock. **Check:** whether
+  the XS AI picks it through a query that ignores visibility (then the fix is in the query) or the engine; whether a stealthed unit
+  in the stock game's data has the same bug.
+- **#61 age-up.** `ageUpChoices N` (up to 5): the picker shows up to N politicians. Buildings of a marker type
+  (`AbstractAgeUpBuilding`, registered like `healNonIdle`'s) can research age-up techs, as the Town Center does.
+  **Check:** the picker's fixed count and layout; the `TownCenter` test at 0x7E6905 / 0x7E803F; WoL's patches there.
+- **#62 KOTH timer.** If the timer is in the exe: `kothTimer <seconds> [perPlayer <s>] [perTeam <s>]`, the time is
+  `seconds + perPlayer × players + perTeam × teams`. If it is in a random map script or a trigger, a data fix. **Check:**
+  where the timer comes from.
+- **#63 `OrPrereqs qty`.** `qty` absent or 1: stock (any one). `qty="N"`: at least N of the listed prerequisites; N at or
+  above their count: all of them. The value is read when the tech loads and kept by tech ID; the evaluator counts instead
+  of stopping at the first met. Works with `techPrereqRecheck`. **Check:** where the OrPrereqs node is parsed (for the
+  attribute), and the evaluator's loop.
+- **#64 card counters.** Per player, one counter per age, the cards sent from that age, counted when a card is sent (the moment it
+  is spent, not when it arrives), kept in the game's state so that a saved game keeps them. Use: an attribute on a tech
+  effect, `cardsSentAge="2"` (or `"any"`), multiplies its amount by that counter. An XS syscall to read them is a small
+  addition. **Check:** how a card's age is stored; how WoL's `Data` techs send units, to pick the effect form.
