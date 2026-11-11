@@ -1856,8 +1856,17 @@ when it is gone. Gaia and the attacker's own units do not count.
 
 The state lives in the game, not in the DLL: everything is a stat modifier made by 0x4DD22D, the call of snares and auras, with
 0 ms, so no time limit. The count is a modifier of stat 62h, which no code reads, with the kills in `[+68h]`; it is read back
-by the walk of `modifiers.h`. Each row reached adds a multiply modifier of its total divided by the total of the row before,
-because modifiers multiply. So the save, the stat code and the panel need nothing more, and nothing is left to clean up.
+by the walk of `modifiers.h`. Each row reached adds a multiply modifier (operation 2) of its total divided by the total of the
+row before, or for `op="add"` an add modifier (operation 1) of the difference, so the total from that rank on is the row's.
+So the save, the stat code and the panel need nothing more, and nothing is left to clean up.
+
+**The stat sum.** FUN_004B3C7D(float* value, list, stat) walks the unit's modifiers of that stat oldest first: operation 0
+sets, 1 adds, 2 multiplies, and an exclusive one (flag 16h) stops the walk. Its callers start Speed (0) from the proto's
+velocity `[proto+80h]` (0x4B3C48) and MaxHP (1) from `[proto+98h]` (0x4B3A0E); every other stock stat (2..8, 0Bh, 0Dh, 0Eh,
+0x4B3A41..0x4B3C1C) from 1.0, a factor. So an add row is in hit points or speed for those two and a fraction of the base
+for the rest, and a multiply and an add of one stat depend on their order. The creator 0x4DD22D → 0x4B3D9E → init 0x4B3D44
+stores the operation as given (`[+78h]`), with no check. A transform replays the rows reached one by one, as the kills made
+them, so it gives the same order and result.
 
 The modifier of `MaxHP` scales the current hit points. A transform in place, 0x9C754C, ends the unit's modifiers, so its seven
 calls go through a wrapper that reads the count before and, after it, adds the count back and one multiply modifier per stat
@@ -1866,6 +1875,14 @@ does not come through 0x9C754C.
 
 Rows: `<VeterancyBonus>`, through `prototags.*`; `modifytype` goes through the stock parser 0x5F5645, so the names of
 `AddModifyType` work too. The rows are kept by proto ID in a map that only the load writes.
+
+**Default rows and rank names.** `veterancy.xml` (`hostfiles.h`'s data folder) is read at the key's start with the
+`xmllist.h` file reader and a small element parser of the key's own. Its unit types and `modifytype` names are resolved at the
+first lookup after each database load, through the table `[database+190h]` (0x58E685 bucket, 0x40295B find) and 0x5F5645 on
+a BString: by then the protos and every key's `<ModifyType>` names exist. A unit's rows are its proto's own, else the first
+default whose type its player's copy has (0x44D7FA); no list per proto is kept, so a type a tech adds counts at once. The
+lookup runs on a kill, at a transform, in the one walk after a load and in the panel row of one selected unit. Names made of
+digits are string IDs, read with 0x58EA52 when shown; the panel row's colour is the string table's `<color=r, g, b>` markup.
 
 - **Observed in game:** see the tests in the modding guide.
 
@@ -2961,7 +2978,8 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
 `HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`tools/make_rings.py`, `RANK_LIFT`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. **Why it is safe:** a model is a
+bar scales with the camera like the world, so the gap stays at every zoom. Ranks 4 and 5 add stars over rank 3's chevrons: their
+sprite is larger around the same centre, with the glyph scaled down by as much, so the chevrons land where rank 3's do. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking

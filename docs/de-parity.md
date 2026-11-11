@@ -355,6 +355,8 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   silver, gold), a string and a colour. [I] What counts as one kill is not established.
 - [O] Legacy has `ExperienceUnit`, which counts kills with no effect (guide p16).
 - Built as [`veterancyBonus`](modding-guide.md#veterancybonus) (2026-11-05), with DE's two subtypes; rank marks of our own (2026-11-06).
+- 2026-11-11: rows by unit type (`veterancy.xml`, so the 36 protos need no copy), `op="add"` rows (DE's `RangeAbsolute`
+  has no legacy stat: legacy has no `Range` modifier), rank names and colours as in `veterancydata.xml`, and five marks.
 
 ### #43 `NativePreview`
 

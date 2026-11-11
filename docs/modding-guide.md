@@ -30,9 +30,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-11 15:35 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
-| Monday 2026-11-09 08:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
 | Sunday 2026-11-08 10:23 | [`annexFacing`](#annexfacing) | Added. An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) faces the building it belongs to, also when the AI places it, and falls when that building dies or is destroyed. | The tag on the annexes; a placement distance that leaves room for the turned annex. |
@@ -2566,7 +2566,7 @@ Attacks, armor, and what a hit does.
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
-| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills. | **new** | The rows on the protos that want them. | confirmed |
+| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
@@ -3555,7 +3555,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Monday 2026-11-09 08:30
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Wednesday 2026-11-11 15:35
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3571,15 +3571,20 @@ with 504 and 346 hit points, and the log shows the ranks.
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` (the same scene and rows):* each rank shows its chevrons over the unit's HP bar, clear of
-it: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
+*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (Ethiopians, 2 `Hussar` against 10 `Crossbowman`; the
+Hussar has no rows of its own, so it takes the `AbstractCavalry` defaults; the Crossbowman's own row replaces the
+`AbstractInfantry` one):* each rank shows its mark over the unit's HP bar, clear of it: one bronze chevron, two silver,
+three gold, then one white star over the gold chevrons at rank 4 and two at rank 5, and the floating text gives the
+rank's name in its colour (`Veteran` in bronze, `Champion` in gold). The surviving Hussar ends at rank 5 with 8 kills.
+[Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
 
-*In WoL, key off (the same scene):* no marks. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
+*In WoL, key off (the same scene, the rings folder and `veterancy.xml` still there):* no marks and no names, and both
+Hussars die. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
 
 ```
-veterancyBonus [log]
+veterancyBonus [log] [file.xml]
 ```
 
 ```xml
@@ -3587,19 +3592,71 @@ veterancyBonus [log]
     <VeterancyBonus kills="1" modifytype="Damage">1.5</VeterancyBonus>
     <VeterancyBonus kills="2" modifytype="MaxHP">1.5</VeterancyBonus>
     <VeterancyBonus kills="3" modifytype="Damage">2.0</VeterancyBonus>
+    <VeterancyBonus kills="4" modifytype="MaxHP" op="add">50</VeterancyBonus>
 </Unit>
+```
+
+`data\uhc\veterancy.xml` (`engine-ext\veterancy.xml` for the `dinput8.dll` build; another file with `veterancyBonus
+log my.xml`), optional, holds rows by unit type and the names of the ranks:
+
+```xml
+<Veterancy>
+    <VeterancyDefault unittype="AbstractCavalry">
+        <VeterancyBonus kills="1" modifytype="Damage">1.5</VeterancyBonus>
+        <VeterancyBonus kills="2" modifytype="MaxHP" op="add">100</VeterancyBonus>
+        <VeterancyBonus kills="3" modifytype="Damage" op="add">0.5</VeterancyBonus>
+        <VeterancyBonus kills="4" modifytype="Damage">2.0</VeterancyBonus>
+        <VeterancyBonus kills="5" modifytype="MaxHP" op="add">200</VeterancyBonus>
+    </VeterancyDefault>
+    <VeterancyDefault unittype="AbstractInfantry">
+        <VeterancyBonus kills="1" modifytype="Damage">1.3</VeterancyBonus>
+    </VeterancyDefault>
+    <VeterancyRank rank="1" name="Veteran" color="CD7F32"/>
+    <VeterancyRank rank="2" name="Elite" color="C8CDD7"/>
+    <VeterancyRank rank="3" name="Champion" color="FFCD28"/>
+    <VeterancyRank rank="4" name="32485" color="E04040"/>
+    <VeterancyRank rank="5" name="Legend" color="40C0FF"/>
+</Veterancy>
 ```
 
 - **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
 - **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
   ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
-  distinct `kills` value, and reaching one shows `Rank N` over the unit.
+  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name.
+- **Default rows (2026-11-11):** a `<VeterancyDefault unittype="...">` of `veterancy.xml` gives its rows to every proto of
+  that unit type (an abstract type or a proto name) that has **no** `<VeterancyBonus>` of its own: a proto's own rows replace
+  the defaults entirely, they are not added to them. A proto of two listed types takes the first block of the file that it
+  matches. The type is the player's copy's, so a tech that adds a unit type (`unitTypeTechs`) counts. In the video the
+  Crossbowman's own row (×1.2) won over the `AbstractInfantry` default (×1.3), and the Hussar, with no rows, took the
+  `AbstractCavalry` ones.
+- **Adding instead of multiplying (2026-11-11):** `op="add"` on a row (`op="mul"` is the default) adds the value, again
+  **in all**: `+0.5` then `+0.8` is `+0.8` from that rank on. What it adds to depends on the stat, as in the game's own
+  stat sum: `MaxHP` and `Speed` start from the unit's own hit points and speed, so `op="add">100` is 100 hit points more;
+  every other stat (`Damage`, `ROF`, `LOS`, `Armor`, the gather rates...) is a factor that starts at 1.0, so `op="add">0.5` is
+  +50 % of the base, added, not multiplied. Legacy has no `Range` stat, so DE's `RangeAbsolute` +1 has no equivalent. The
+  game applies a unit's modifiers of one stat oldest first, so a multiply row and an add row of the same stat give
+  `(1 × 1.5) + 0.5` or `(1 + 0.5) × 1.5` by which rank came first: in the test, ×1.5 at 1 kill, +0.5 at 3 and ×2.0 at 4 made
+  a Hussar's hit on a Settler 26.4 (base) → 39.6 → 52.8 → 70.4, that is ×2.667 = `(1.5 + 0.5) × 2.0/1.5`; the panel's hand
+  attack read 49 at rank 2 and 88 at rank 5 (×1.5 and ×2.667 of 33). `MaxHP` +100 then +200 took the max from 352 to 452 and 552, and the current hit points rise in
+  proportion, as with ×.
+- **Rank names and colours (2026-11-11):** `<VeterancyRank rank="N" name="..." color="RRGGBB"/>` names a rank and gives it a
+  colour (a leading `#` is accepted). A `name` made of digits is a string ID of the string table (`32485` showed `Hero`).
+  The floating text over the unit shows the name in that colour, and the unit panel's row shows it too, coloured with the
+  string table's `<color=r, g, b>` markup (`Legend` in light blue, `6 kills`). A rank with no `<VeterancyRank>` stays
+  `Rank N`, in gold. The names are display only.
+- **The file:** missing, it is no error (no defaults, no names); named on the cfg line and missing, or not well-formed XML,
+  the key is not applied and the log says why. A row without `kills`, `modifytype` or a value, an `op` other than `mul` or
+  `add`, a `kills` below 1, a multiplier of 0 or less, an add of 0, an unknown `modifytype` or `unittype`, a rank below 1, a
+  colour that is not six hex digits and an unknown element are each logged and skipped; the unit types and `modifytype`
+  names are read at the first kill of a game, so those lines come then. The file can be UTF-8 or UTF-16.
 - **What counts as a kill:** the killing blow of a unit, in melee or at range, on a unit of another player. **Not** Gaia, so
   hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
-- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, and a rank above the
-  third keeps the gold one. With no such folder the log says so once and the bonuses work as before. Display only: it
+- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, then at ranks 4 and 5
+  the three gold chevrons with one or two white stars over them (2026-11-11); a rank above the fifth keeps rank 5's mark.
+  The stars sit over the chevrons, away from the HP bar, and the chevrons stay where rank 3 has them. With no such folder
+  the log says so once and the bonuses work as before. Display only: it
   changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
   our own: DE's are images in its selection panel.
 - **Above the HP bar (2026-11-08):** the marks sat on the bar, and the three gold chevrons covered it. Every rank now starts from
@@ -3624,12 +3681,21 @@ veterancyBonus [log]
   amount 2 (`Assign`) on player 1: player 1's Pikemen logged `rank 1, x2` and player 2's `rank 1, x1.5`; with
   `VeterancyEnable` 0 player 1's logged no rank. A tech cannot add or change the rows themselves. A tech that
   changes a stat works with the rows as with any modifier.
-- **Interface:** no bronze, silver or gold icons: `Rank N` over the unit is all it shows. Damage and hit points in the panel are
-  the game's, with the modifiers.
+- **Interface:** the rank marks above, the floating text when a rank is reached and the unit panel's row; DE's rank icons in
+  the selection panel are not there. Damage and hit points in the panel are the game's, with the modifiers.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
 - **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: veterancyBonus kill (0x4D4F37)`, and with `log`:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
-  `veterancyBonus: unit 0 keeps 4 kills as proto 324`. A row without `kills`, `modifytype` or a value is logged and ignored.
+  `veterancyBonus: unit 0 keeps 4 kills as proto 324`; an add row logs `+0.5` where a multiply row logs `x1.5`, and the first
+  kill of a game logs `veterancyBonus: 5 default rows for unit type AbstractCavalry (3654)`. A row without `kills`,
+  `modifytype` or a value is logged and ignored.
+- **Tested in WoL (2026-11-11, default rows, `op="add"`, names, ranks 4 and 5):** the data above, with `steadyHitpointBars`.
+  The hits and the panel as given above; a saved game at rank 5 and 6 kills loaded with its mark, `Legend`, `6 kills`,
+  370/552 hit points and 88 hand attack; an AI skirmish of 100 s (`wolOtto`, Germans) with the defaults on its cavalry and
+  infantry: the AI built and gathered, no `XS: Error`; a file of bad rows and a malformed file as described; the control,
+  key off, the same scene: no marks, both Hussars dead. 880 to 1200 fps, no frame over 50 ms (`--perf`). Not tested: a
+  transform to or from a proto that takes defaults, multiplayer, a `perfprobe.py` A/B (the new work runs on a kill, at the
+  first kill of a game and in the panel row of one selected unit).
 - **Tested in WoL (2026-11-05):**
   - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
   - With `transformSpan` on the same units: Hussars of 2 kills went to Dragoon and back in 15 s and kept their count; one killed as a Dragoon and came back with 3. `36 applied, 0 failed`.

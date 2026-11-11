@@ -198,7 +198,7 @@ are data: copy that folder to the game's art\\effects and name one in an aura, w
 <modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
 aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
-veterancyBonus shows rank_1.xml to rank_3.xml over a unit with a rank when the folder is there.
+veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the folder is there.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -314,7 +314,8 @@ resourceGatherAuras [log]     ModifyType names for one kind of target or one res
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
-veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark
+veterancyBonus [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark;
+                              data\\uhc\\veterancy.xml: rows by unit type, rank names and colours
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back
