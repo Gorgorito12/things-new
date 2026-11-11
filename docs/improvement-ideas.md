@@ -385,7 +385,7 @@ First: the ordering with `smartHealTargets`.
 ## `overhealDecay`
 
 - **Hold conditions:** no decay in combat, while garrisoned, or while a source healer is within X
-  m (`holdNear <type> <m>`). Removes the "the monk re-heals it" micro. *small*
+  m (`holdNear <type> <m>`). Removes the "the monk re-heals it" micro. *small*. **Done (2026-11-11)** for the healer: `holdNear <UnitType> <metres>` (same player only); combat and garrison remain.
 - **Curve and rate per type:** percent of the remaining overheal, accelerating, `Musketeer=2
   Hussar=4`. *small*
 - **Floor other than 100 %** (100 % + N). *small*
@@ -393,7 +393,7 @@ First: the ordering with `smartHealTargets`.
 - **Saved games:** the delay since the last gain lives in the DLL; persist or document. *small*
 - **Tests:** multiplayer (game-time, deterministic).
 
-First: hold conditions.
+First: the hold in combat and while garrisoned.
 
 ## `showGatherRate`
 

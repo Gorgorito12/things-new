@@ -2804,6 +2804,16 @@ gone, dead or unmarked units are forgotten. A unit at or below its reference is 
 last gain is less than `delay` ago waits; otherwise HP = max(HP − rate × elapsed, reference)
 through the stock setter FUN_004820A1(unit, value, 0).
 
+**`holdNear`.** For a unit past its delay, before the decay, each `holdNear` entry runs the world's spatial query
+FUN_004A1C55(world, &[unit+14h], metres, 1, list) (`noTrainNearEnemyTC`'s: the IDs of the units whose distance to the
+point, their vtable slot B8h, to their edge, is at most the radius; it fills the obstruction manager's scratch list
+and copies it out). Any listed unit that is not the unit, has the same owner `[u+44h]`, is of the type (is-a
+0x44D7FA), alive (`vtbl+A4h`) and built (0x44DDB4) holds it: the unit is skipped for this tick. Only whether one exists
+decides, not the query's order (the logged one is the first found). The query runs in the world tick, after the stock
+update, outside any loop over units, and only for units past their delay, so its cost follows the number of
+overhealed units. The list is the DLL's and is reused. Sites `UnitsNearPoint`, `IsBuilt` (verified only with
+`holdNear`).
+
 **The setter's effects** (REA `ev_b83c97e4…`, `ev_241c1390…`): it stores HP, clamps it to [0, max]
 (the per-unit override through 0x6A2CB3), updates the damage visuals of a unit with damage stages
 (0x48223F(22h), 0x9CB73E per stage) and the animation state (0x48233B(7) → 0x487A21); with a

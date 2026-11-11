@@ -31,8 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
 | Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Wednesday 2026-11-11 15:52 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
 | Wednesday 2026-11-11 15:51 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Wednesday 2026-11-11 15:51 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
@@ -2124,7 +2124,7 @@ Who heals, whom, and how far.
 | [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | **new** | Nothing (unit types or proto names are optional). | confirmed |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | **new** | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. | confirmed (single player, UI) |
 | [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | **new** | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
-| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | **new** | `overhealHitpointBars`. | confirmed |
+| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | **new** | `overhealHitpointBars`. | confirmed |
 
 #### healNonIdle
 
@@ -2588,7 +2588,7 @@ overhealSources [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]   defaul
 
 *Extra health above a unit's normal maximum slowly wears off.*
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-11 15:51
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-11 15:52
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 
@@ -2601,9 +2601,34 @@ regenerate, and the decay takes back what goes above the 100 %: he stays at `400
 *In WoL, key off (the same scene):* he regenerates past his 100 %, and the panel climbs with it:
 `447/400`, `Overheal: 47/80`, on the way to 480. [Full video (MP4)](media/overhealDecay-wol-control.mp4).
 
+![overhealDecay holdNear in WoL](media/overhealDecay-holdnear-wol.gif)
+
+*In WoL, with `overhealDecay 2 1 holdNear xpAenna 12 holdNear xpMedicineMan 12 log` (and `overhealSources
+AbstractOverhealer cap=110 rate=50`; the Tomahawk and the Aenna beside it selected):* the source medicine man takes the
+Tomahawk to `165/150` and is removed at 20 s; the Aenna, 2 m away, holds the overheal at 165 until it is removed at 34 s;
+then 2 HP/s back to 150 at 41.6 s. [Full video (MP4)](media/overhealDecay-holdnear-wol.mp4).
+
+![overhealDecay without holdNear in WoL](media/overhealDecay-holdnear-wol-control.gif)
+
+*In WoL, `overhealDecay 2 1 log` without `holdNear` (the same scene; `overhealSources` with no cap, so it starts at
+180):* the decay starts when the medicine man goes at 20 s, with the Aenna still there: 180 to 150 by 34.9 s.
+[Full video (MP4)](media/overhealDecay-holdnear-wol-control.mp4).
+
 ```
-overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
+overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres> ...] [log]
 ```
+
+- **`holdNear <UnitType> <metres>`** (up to 4; more than 0, at most 200 m): a unit due to decay keeps its HP while a
+  unit of that type (or proto) **of the same player**, alive and built, other than itself, is within that distance
+  (measured to the other unit's edge, as the game's own area queries do). Allies' units do not hold it: an ally's
+  healer does not change a player's own decay. A held moment is skipped, not saved up: the decay resumes at the same
+  rate when no such unit is near (the `delay` still counts from the last gain). Typical: `holdNear AbstractOverhealer
+  12`, so the overheal lasts while a source healer stays with the unit, and the "re-heal it" micro goes.
+- **A bad `holdNear`** stops the key: `overhealDecay: expected holdNear <UnitType> <metres> (more than 0, at most 200;
+  up to 4); feature not applied`.
+- **Measured in WoL (2026-11-11),** the scene above: held at 165.0 from 20 to 34 s, then 163.1, 159.6, 156.0, 152.7 and
+  150.0 at 41.5 s; the same after loading a game saved at 26 s (165 until 34 s, 150.0 at 41.6 s). Without `holdNear`,
+  179.8 at 19.9 s down to 150.0 at 34.9 s.
 
 - **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its types mark the units and its
   100 % (`InitialHitpoints`, scaled when an aura changes the max) is where the decay stops.
@@ -2628,9 +2653,15 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
   `overhealDecay: unit N (Tomahawk) decays from 165.0 toward its 100 % 150.0 at 2.00 HP/s` and
   `… is back at its 100 % 150.0`. Without `overhealHitpointBars`: `overhealDecay: needs
   overhealHitpointBars, …; feature not applied`; a bad rate: `overhealDecay: expected <HP per
-  second>[%] [delay seconds] [UnitType ...] [log], …; feature not applied`.
+  second>[%] [delay seconds] [UnitType ...] [log], …; feature not applied`. With `holdNear`, the startup line adds `;
+  held while their player has a unit of xpAenna within 12.0 m`, and `log` writes each start and end of a hold (the
+  first 200): `overhealDecay: unit 1 (xpTomahawk) holds its overheal at HP 165.0: unit 2 (xpAenna) of xpAenna is within
+  12.0 m` and `… decays again from HP 165.0: no unit that holds it is near`.
 - **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
   registered as a marker unit type.
+- **Saved games:** the delay goes on after a load. Saved at 11 s with `overhealDecay 5 20`, the decay ran from 24.2 s
+  to 30.2 s in both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
+  `holdNear` keeps nothing of its own: it looks again on every tick.
 - **Status:** confirmed in single player.
   - **In WoL (2026-11-04):** with `overhealDecay 2 1`, Menelik II, marked, stayed at `400/400` while he
     regenerated; without the key he went to `447/400` and on. With `overhealDecay 2 3`, a Tomahawk fell
@@ -2639,7 +2670,10 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
     down to 150, and naming another proto left that unit alone; other players' units decay too; poison
     (`damageOverTime`) ticked normally; a skirmish against the AI played normally. Only the game world
     decays: the world update also runs for the home city's world, which the key ignores.
-  - **Not tested:** multiplayer.
+  - **`holdNear` (2026-11-11, WoL):** the numbers above, a saved game, an AI skirmish of 100 s with every heal and
+    overheal key on and no XS error.
+  - **Not tested:** multiplayer; `holdNear` with a unit of another player beside the unit (the Gaia unit tried for it
+    attacked the Tomahawk).
 
 ### Combat
 
@@ -2665,8 +2699,6 @@ Attacks, armor, and what a hit does.
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
-- **Saved games:** the delay goes on after a load. Saved at 11 s with `overhealDecay 5 20`, the decay ran from 24.2 s to 30.2 s in
-  both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
 
 #### detonationDeath
 

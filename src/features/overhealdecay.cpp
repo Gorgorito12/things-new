@@ -16,7 +16,14 @@
 // Saved games: a noted unit carries a marker of stat 65h (savedmarkers.h) with the time of its last gain. The
 // add-HP hook can run inside an update over the unit's own actions, so it only names the unit: the world tick
 // writes the marker. When another game is running the table is rebuilt from the markers.
+//
+// "holdNear <UnitType> <metres>" (up to 4): a unit due to decay keeps its HP on any tick where a
+// unit of that type owned by the same player (not allies), alive and built, other than itself, is
+// within <metres>: the world's spatial query FUN_004A1C55 (noTrainNearEnemyTC's), which measures
+// to the other unit's edge. Only whether one exists counts, not the query's order. A held tick is
+// skipped, not saved up: the decay goes on at the same rate once no such unit is near.
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
@@ -55,11 +62,24 @@ constexpr std::size_t kMaxTypes = 8;
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
 constexpr std::int32_t kStatNoted = 0x65;  // words: 1, the game time of the last gain
 
+constexpr std::size_t kMaxHolds = 4;
+
+// The list FUN_004A1C55 fills (the engine's dynamic array: data, count, capacity).
+struct IdList {
+  std::int32_t* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
 using SetHpFn = void(__thiscall*)(char* unit, float value, std::int32_t flag);
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
 using IsAliveFn = bool(__thiscall*)(const char* unit);
+using IsBuiltFn = bool(__thiscall*)(const char* unit);
+using UnitsNearFn = std::int32_t(__thiscall*)(char* world, const float* point, float radius, char precise, IdList* out);
 const auto kSetHp = reinterpret_cast<SetHpFn>(0x004820A1);
 const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
+const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
+const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -72,6 +92,19 @@ std::uint32_t g_delayMs = 0;
 std::int32_t g_types[kMaxTypes] = {-1, -1, -1, -1, -1, -1, -1, -1};
 std::int32_t g_typeCount = 0;
 bool g_log = false;
+
+// "holdNear <UnitType> <metres>": the types (IDs set on each data load) and their distances.
+struct Hold {
+  std::int32_t type = -1;
+  float metres = 0.0f;
+  std::string name;
+};
+Hold g_holds[kMaxHolds];
+std::size_t g_holdCount = 0;
+IdList g_found = {nullptr, 0, 0};  // FUN_004A1C55's output, reused
+std::set<std::int32_t> g_heldUnits;  // "log" only: the units held now, so each start and end is one line
+int g_holdLines = 0;
+constexpr int kMaxHoldLines = 200;
 
 // Noted units by unit ID (so every machine walks them in the same order): the game time of their
 // last gain above the reference.
@@ -152,6 +185,60 @@ void Note(const char* unit, bool restartDelay) {
 void Reset(char*) {
   g_units.clear();
   g_changed.clear();
+  g_heldUnits.clear();
+}
+
+// "holdNear": a unit of a hold type owned by the unit's player, alive and built, other than the
+// unit, within that hold's distance (the spatial query's own test, to that unit's edge). Only
+// whether one exists decides; *by is the first found, for the log.
+bool Held(char* world, const char* unit, const char** by, const Hold** hold) {
+  const char* owner = Field<const char*>(unit, 0x44);
+  if (owner == nullptr) {
+    return false;
+  }
+  const auto* position = reinterpret_cast<const float*>(unit + 0x14);
+  for (std::size_t h = 0; h < g_holdCount; ++h) {
+    if (g_holds[h].type < 0) {
+      continue;
+    }
+    kUnitsNear(world, position, g_holds[h].metres, 1, &g_found);
+    for (std::int32_t i = 0; i < g_found.count && g_found.data != nullptr; ++i) {
+      const char* other = UnitById(world, g_found.data[i]);
+      const char* proto = other == nullptr ? nullptr : Field<const char*>(other, 0x5C);
+      if (proto == nullptr || other == unit || Field<const char*>(other, 0x44) != owner ||
+          !kIsA(proto, g_holds[h].type) || !IsAlive(other) || !kIsBuilt(other)) {
+        continue;
+      }
+      *by = other;
+      *hold = &g_holds[h];
+      return true;
+    }
+  }
+  return false;
+}
+
+// "log": one line when a unit starts or stops being held (at most kMaxHoldLines).
+void LogHold(std::int32_t id, const char* unit, bool held, const char* by, const Hold* hold) {
+  if (!g_log || g_holdLines >= kMaxHoldLines) {
+    return;
+  }
+  const bool was = g_heldUnits.count(id) != 0;
+  if (held == was) {
+    return;
+  }
+  ++g_holdLines;
+  if (held) {
+    g_heldUnits.insert(id);
+    uhc::Log(L"overhealDecay: unit %d (%hs) holds its overheal at HP %.1f: unit %d (%hs) of %hs is within %.1f m%ls",
+             id, ProtoName(unit), static_cast<double>(Field<float>(unit, 0x64)), Field<std::int32_t>(by, 0x10),
+             ProtoName(by), hold->name.c_str(), static_cast<double>(hold->metres),
+             g_holdLines == kMaxHoldLines ? L" (further holds not logged)" : L"");
+  } else {
+    g_heldUnits.erase(id);
+    uhc::Log(L"overhealDecay: unit %d (%hs) decays again from HP %.1f: no unit that holds it is near%ls", id,
+             ProtoName(unit), static_cast<double>(Field<float>(unit, 0x64)),
+             g_holdLines == kMaxHoldLines ? L" (further holds not logged)" : L"");
+  }
 }
 
 void WriteMarker(char* unit, std::uint32_t lastGain) {
@@ -177,6 +264,7 @@ void Rebuild(const char* world) {
   namespace markers = uhc::markers;
   g_units.clear();
   g_changed.clear();
+  g_heldUnits.clear();
   const std::int32_t count = Field<std::int32_t>(world, 0x10);
   char* const* units = Field<char* const*>(world, 0x0C);
   for (std::int32_t i = 0; i < count; ++i) {
@@ -228,6 +316,7 @@ void DecayTick(char* world, std::int32_t) {
       if (unit != nullptr) {
         ClearMarker(unit);
       }
+      g_heldUnits.erase(it->first);
       it = g_units.erase(it);
       continue;
     }
@@ -239,12 +328,23 @@ void DecayTick(char* world, std::int32_t) {
                  ProtoName(unit), static_cast<double>(reference));
       }
       ClearMarker(unit);
+      g_heldUnits.erase(it->first);
       it = g_units.erase(it);
       continue;
     }
     if (now - it->second < g_delayMs) {
       ++it;
       continue;
+    }
+    if (g_holdCount > 0) {
+      const char* by = nullptr;
+      const Hold* hold = nullptr;
+      const bool held = Held(world, unit, &by, &hold);
+      LogHold(it->first, unit, held, by, hold);
+      if (held) {
+        ++it;
+        continue;
+      }
     }
     const float perSecond = g_percent ? reference * g_rate * 0.01f : g_rate;
     float value = hp - perSecond * static_cast<float>(elapsed) * 0.001f;
@@ -313,6 +413,21 @@ Outcome ApplyOverhealDecay(const Config& config) {
     const std::string& arg = (*args)[i];
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_log = true;
+    } else if (_stricmp(arg.c_str(), "holdNear") == 0) {
+      char* end = nullptr;
+      const std::string* metres = i + 2 < args->size() ? &(*args)[i + 2] : nullptr;
+      const double value = metres == nullptr ? 0.0 : std::strtod(metres->c_str(), &end);
+      if (metres == nullptr || g_holdCount == kMaxHolds || end != metres->c_str() + metres->size() ||
+          metres->empty() || !(value > 0.0) || value > 200.0) {
+        Log(L"overhealDecay: expected holdNear <UnitType> <metres> (more than 0, at most 200; up to %u); feature not "
+            L"applied",
+            static_cast<unsigned>(kMaxHolds));
+        return Outcome::kFailed;
+      }
+      g_holds[g_holdCount].name = (*args)[i + 1];
+      g_holds[g_holdCount].metres = static_cast<float>(value);
+      ++g_holdCount;
+      i += 2;
     } else if (i == 1 && ParseSeconds(arg, &g_delayMs)) {
       // the delay
     } else if (typeNames.size() == kMaxTypes) {
@@ -325,11 +440,17 @@ Outcome ApplyOverhealDecay(const Config& config) {
   const Site* addEntry = OverhealAddHookInstalled() ? &sites::kHpSetter : &sites::kOverhealAddEntry;
   if (!VerifyAll("overhealDecay", {addEntry, &sites::kHpSetter, &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot,
                                    &sites::kIsA, &sites::kRegenAddHp, &sites::kDanceRegenAddHp}) ||
+      (g_holdCount > 0 && !VerifyAll("overhealDecay holdNear", {&sites::kUnitsNearPoint, &sites::kIsBuilt})) ||
       !OnDatabaseLoad(&Reset)) {
     return Outcome::kFailed;
   }
   for (std::size_t i = 0; i < typeNames.size(); ++i) {
     if (!RequestAbstractUnitType(typeNames[i].c_str(), &g_types[i])) {
+      return Outcome::kFailed;
+    }
+  }
+  for (std::size_t i = 0; i < g_holdCount; ++i) {
+    if (!RequestAbstractUnitType(g_holds[i].name.c_str(), &g_holds[i].type)) {
       return Outcome::kFailed;
     }
   }
@@ -346,10 +467,18 @@ Outcome ApplyOverhealDecay(const Config& config) {
   for (const std::string& name : typeNames) {
     names += ", " + name;
   }
+  std::string holds;
+  for (std::size_t i = 0; i < g_holdCount; ++i) {
+    char text[32];
+    std::snprintf(text, sizeof text, " %.1f m", static_cast<double>(g_holds[i].metres));
+    holds += (holds.empty() ? "; held while their player has a unit of " : ", or of ") + g_holds[i].name + " within" +
+             text;
+  }
   Log(L"overhealDecay: marked units above their 100 %% lose %.2f %ls per second of game time, %.1f s after their "
-      L"last gain, down to it%hs%ls (multiplayer unverified)",
+      L"last gain, down to it%hs%hs%ls (multiplayer unverified)",
       static_cast<double>(g_rate), g_percent ? L"% of it" : L"HP", g_delayMs / 1000.0,
-      names.empty() ? "" : (" (units of" + names.substr(1) + " only)").c_str(), g_log ? L"; logged" : L"");
+      names.empty() ? "" : (" (units of" + names.substr(1) + " only)").c_str(), holds.c_str(),
+      g_log ? L"; logged" : L"");
   return Outcome::kApplied;
 }
 

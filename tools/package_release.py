@@ -301,8 +301,10 @@ overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=Texture] [stat[=Labe
 overhealSources [UnitType [cap=P] [rate=P] ...] [log]   only marked healers
                               (AbstractOverhealer) heal overheal units above
                               InitialHitpoints; per type a cap and a rate above it
-overhealDecay R[%] [D] [UnitType ...] [log]   overheal above InitialHitpoints decays
-                              at R HP/s, D s after the last heal (Overwatch style)
+overhealDecay R[%] [D] [UnitType ...] [holdNear Type M] [log]   overheal above
+                              InitialHitpoints decays at R HP/s, D s after the last
+                              heal (Overwatch style); not while an own unit of Type is
+                              within M metres
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
