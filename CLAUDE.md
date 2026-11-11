@@ -67,6 +67,7 @@ Rules:
   - `AddUnitPanelRow` (`unitpanel.*`, 0x699456);
   - `AddDeathObserver` (`deathobservers.*`, the kill queue drain's call 0x493D8F of the kill handler; `detonationDeath` and `annexFacing` observe every death there; `AddDestroyObserver`, its second list, is the trigger `Destroy`'s call 0x9828E7 of the unit removal, which skips the kill queue: `annexFacing` only);
   - `AddSyscall` (`syscalls.*`, the group sites);
+  - `AddResearchPayer` (`researchpay.*`: the research payment calls 0x9E67E1 and 0x9D54CF and the refund copies 0x9E68A0 and 0x9D5548; a key claims a research with a share of its cost);
   - the attack applier's head 0x49BE95, hooked by `spreadAnyAccuracy` (`spread_hooks.asm`): every projectile hit and landing goes through it, so a key that needs that site extends that hook;
   - `d3d9hooks.*`: the IAT slot 0xB84164 of `Direct3DCreate9` and the CreateDevice / Reset / Present vtable entries. `ReplaceDirect3DCreate9` (only `rendererOption`, before any observer) swaps the D3D9 the game gets; `AddD3D9Observer` (`perfStats`, `rendererOption`) watches the device. Never write the slot or those vtable entries elsewhere;
   - `AuraClaim` (`aurastacking.h`): a take that replaces the aura update asks it, as the filter 0x9D0633 does not see it;

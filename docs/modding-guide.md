@@ -6024,8 +6024,9 @@ nextResearchFree [log]
   back**.
 - **Removal:** taking the effect away takes that many turns from the count, down to 0. Not tested in game.
 - **Multiplayer:** it changes the simulation: every player needs the same setting.
-- **Log:** `nextResearchFree: the Data subtype NextResearchIsFree is on`, `hook reached: nextResearchFree research
-  (0x9E67E1)`, and with `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444: a free research, 0 left`.
+- **Log:** `nextResearchFree: the Data subtype NextResearchIsFree is on`, `hook reached: research payment (0x9E67E1)`
+  (`nextResearchFree research (0x9E67E1)` before 2026-11-11, when the payment became a hook other keys share), and with
+  `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444: a free research, 0 left`.
 - **Tested in WoL (2026-11-05):**
   - One turn, three researches of 300 wood: 2000, 2000, 1700, 1400, and a cancel of the third gave back 300. Key off: 2000,
     1700, 1400, 1100.

@@ -23,6 +23,7 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/researchpay.cpp
   src/deathobservers.cpp
   src/unitpanel.cpp
   src/unitmodels.cpp
@@ -188,7 +189,7 @@ set(UHC_SOURCES
   src/hooks/aurastacking_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/veterancy_hooks.asm
-  src/hooks/freeresearch_hooks.asm
+  src/hooks/researchpay_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm

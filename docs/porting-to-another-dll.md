@@ -326,7 +326,7 @@ compiled.
 | `Config::First`, `All`, `Int` | The key's first line, every line, or an integer. | `IUHCConfig`. `broadsideMuzzleLimit`, `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys read every line; `abilitySlots` an integer. |
 | `Apply…` returning `Outcome` | One function per key. | `BaseFeature`: put the body in the feature's install method. |
 | `RequestAbstractUnitType`, `OnDatabaseLoad` | Registers a type, and calls a feature on every data load. | [See below](#extra-abstract-unit-types). |
-| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
+| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver`, `AddResearchPayer` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
 
 A `trackable_memory_patch` restores its bytes when it is destroyed, so keep the patch objects alive for the
 life of the game.
@@ -1430,9 +1430,12 @@ Code: [buildings](porting-code/buildings.md#donotqueue). It needs `AddProtoTagHa
 ### nextResearchFree
 
 Code: [buildings](porting-code/buildings.md#nextresearchfree). It needs `AddTechSubtype`, in the
-[helpers](porting-code/helpers.md#tech-subtypes), and `OnDatabaseLoad`.
+[helpers](porting-code/helpers.md#tech-subtypes), `OnDatabaseLoad`, and `AddResearchPayer`, the
+[research payment](porting-code/helpers.md#research-payment).
 
-- **Sites:** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and `0x9D5548`, of `0x480A73`.
+- **Sites (the research payment's):** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and
+  `0x9D5548`, of `0x480A73`. Its claim takes a research with a share of 0: the payment is skipped and the refund copy
+  emptied.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#nextresearchfree): the next research takes
   nothing, and its cancel gives nothing back.
 

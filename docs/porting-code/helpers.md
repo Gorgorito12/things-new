@@ -28,6 +28,7 @@ Contents:
 - [Models on a unit](#models-on-a-unit)
 - [State kept for a saved game](#state-kept-for-a-saved-game)
 - [Direct3D hooks](#direct3d-hooks)
+- [Research payment](#research-payment)
 
 ## Site table
 
@@ -5193,4 +5194,217 @@ bool AddD3D9Observer(const D3D9Observer& observer, const char* who) {
 }
 
 }  // namespace uhc
+```
+
+## Research payment
+
+### src/researchpay.h
+
+```cpp
+// The payment of a research, shared by every key that changes what a research costs (nextResearchFree,
+// researchGrants): one call at each of the two payment sites (0x9E67E1 Research, 0x9D54CF CommandResearch) and
+// at each of the two copies of the cost into the action for a cancel's refund (0x9E68A0, 0x9D5548).
+#pragma once
+
+namespace uhc {
+
+// Asked before a research is paid, in the order the keys added them (their kFeatures order), until one claims
+// it. `action` is the Research or CommandResearch action being set up ([action+10h] its unit; its tech is not
+// written yet), `player` the paying player, `cost` the tech's cost list (a ResList). Return true to claim the
+// payment with *share of the cost, 0 (free) to 1 (the full cost); the claim spends nothing yet.
+using ResearchPayClaim = bool (*)(const char* action, const char* player, const char* cost, float* share);
+
+// Called for every research that was paid and whose action is set up, claimed or not, for each key in order:
+// [action+68h] is the tech ID, and the refund copy holds what was paid. `claimed` is set for the key whose claim
+// it was, with its share; the others get 1. A claim whose share the player could not pay is dropped: that
+// research does not start, and nothing is called.
+using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
+
+// Writes the hooks the first time, after checking the stock bytes of the four sites.
+bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
+
+}  // namespace uhc
+```
+
+### src/researchpay.cpp
+
+```cpp
+// A research is paid when its action is set up, which is when it is queued: 0x8D946A(player, cost) at 0x9E67E1 in
+// the Research action's start 0x9E667A (EBP = the action) and at 0x9D54CF in the CommandResearch action's
+// 0x9D543F (ESI = the action). On success each start writes the tech ID to [action+68h], then copies the cost
+// into the action for a cancel's refund: 0x480A73 at 0x9E68A0 (to +74h) and at 0x9D5548 (to +7Ch).
+//
+// Both payment calls go to UhcResearchPay (hooks/researchpay_hooks.asm), which asks the payers in order. With no
+// claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
+// the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
+// share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+#include "researchpay.h"
+
+#include <cstdint>
+#include <cstring>
+#include <vector>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+void UhcResearchPayHook();
+void UhcCommandResearchPayHook();
+}
+
+namespace {
+
+constexpr std::size_t kMaxPayers = 4;
+constexpr std::uint32_t kResearchCopyCall = 0x009E68A0;         // to [action+74h]
+constexpr std::uint32_t kCommandResearchCopyCall = 0x009D5548;  // to [action+7Ch]
+constexpr std::uint32_t kResListCount = 0x00C6DF38;             // the entries of every ResList
+
+using PayFn = bool(__thiscall*)(void* player, const void* cost);
+using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
+using CostFillFn = void(__thiscall*)(void* cost, float value);
+using CostScaleFn = void(__thiscall*)(void* cost, float factor);
+const auto kPay = reinterpret_cast<PayFn>(0x008D946A);
+const auto kCostCopy = reinterpret_cast<CostCopyFn>(0x00480A73);
+const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
+const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
+
+struct Payer {
+  uhc::ResearchPayClaim claim;
+  uhc::ResearchPayStarted started;
+};
+
+Payer g_payers[kMaxPayers] = {};
+std::size_t g_payerCount = 0;
+bool g_installed = false;
+
+// The payment just claimed and paid, for the copy that follows it.
+const Payer* g_pending = nullptr;
+const char* g_pendingAction = nullptr;
+float g_pendingShare = 1.0f;
+
+// A ResList laid out as the game's: +0 the encoded entries, +4 the encoded total.
+struct ResList {
+  std::uint32_t* entries;
+  std::uint32_t total;
+};
+
+bool PayShare(void* player, const void* cost, float share) {
+  if (share <= 0.0f) {
+    return true;
+  }
+  const auto* list = static_cast<const ResList*>(cost);
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(kResListCount);
+  if (share >= 1.0f || list == nullptr || list->entries == nullptr || count <= 0) {
+    return kPay(player, cost);
+  }
+  std::vector<std::uint32_t> entries(list->entries, list->entries + count);
+  ResList scaled{entries.data(), list->total};
+  kCostScale(&scaled, share);
+  return kPay(player, &scaled);
+}
+
+void* CopyCost(void* cost, const void* from, std::uint32_t offset) {
+  void* result = kCostCopy(cost, from);
+  char* action = static_cast<char*>(cost) - offset;
+  const Payer* payer = action == g_pendingAction ? g_pending : nullptr;
+  const float share = payer != nullptr ? g_pendingShare : 1.0f;
+  g_pending = nullptr;
+  g_pendingAction = nullptr;
+  if (share <= 0.0f) {
+    kCostFill(cost, 0.0f);
+  } else if (share < 1.0f) {
+    kCostScale(cost, share);
+  }
+  for (std::size_t i = 0; i < g_payerCount; ++i) {
+    const bool claimed = payer == &g_payers[i];
+    g_payers[i].started(action, claimed ? share : 1.0f, claimed);
+  }
+  return result;
+}
+
+void* __fastcall CopyResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x74); }
+void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x7C); }
+
+}  // namespace
+
+// From the two hooks, instead of the payment. The action is the one being set up.
+extern "C" bool __stdcall UhcResearchPay(const char* action, void* player, const void* cost) {
+  g_pending = nullptr;
+  for (std::size_t i = 0; i < g_payerCount; ++i) {
+    float share = 1.0f;
+    if (!g_payers[i].claim(action, static_cast<const char*>(player), static_cast<const char*>(cost), &share)) {
+      continue;
+    }
+    share = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
+    if (!PayShare(player, cost, share)) {
+      return false;  // the research does not start; nothing was spent
+    }
+    g_pending = &g_payers[i];
+    g_pendingAction = action;
+    g_pendingShare = share;
+    return true;
+  }
+  return kPay(player, cost);
+}
+
+namespace uhc {
+
+bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started) {
+  if (g_payerCount == kMaxPayers) {
+    Log(L"research payment: more than %u keys", static_cast<unsigned>(kMaxPayers));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kResearchPayCall, &sites::kCommandResearchPayCall,
+                             &sites::kResearchCostCopyCall, &sites::kCommandResearchCostCopyCall,
+                             &sites::kResListCopy, &sites::kResListScale}) ||
+        !WriteCall(sites::kResearchPayCall.va, reinterpret_cast<const void*>(&UhcResearchPayHook)) ||
+        !WriteCall(sites::kCommandResearchPayCall.va, reinterpret_cast<const void*>(&UhcCommandResearchPayHook)) ||
+        !WriteCall(kResearchCopyCall, reinterpret_cast<const void*>(&CopyResearchCost)) ||
+        !WriteCall(kCommandResearchCopyCall, reinterpret_cast<const void*>(&CopyCommandResearchCost))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_payers[g_payerCount++] = {claim, started};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/researchpay_hooks.asm
+
+```asm
+; The research payment (src/researchpay.cpp), shared by nextResearchFree and researchGrants. Both replace a call
+; of the payment 0x8D946A, whose argument, the cost, is already on the stack, and return to the stock code as
+; that call did: al, ret 4.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcResearchPay PROTO STDCALL action:DWORD, player:DWORD, cost:DWORD
+
+.code
+
+; The call at 0x9E67E1 in the Research action's start. ECX = the player, EBP = the action.
+UhcResearchPayHook PROC
+    TRACE_ONCE "research payment (0x9E67E1)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcResearchPay, ebp, ecx, eax
+    ret 4
+UhcResearchPayHook ENDP
+
+; The call at 0x9D54CF in the CommandResearch action's start. ECX = the player, ESI = the action.
+UhcCommandResearchPayHook PROC
+    TRACE_ONCE "command research payment (0x9D54CF)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcResearchPay, esi, ecx, eax
+    ret 4
+UhcCommandResearchPayHook ENDP
+
+END
 ```

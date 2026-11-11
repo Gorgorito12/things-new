@@ -3440,15 +3440,43 @@ flagged entry after the stock add. Entries move as bytes, as each owns its cost 
 in the entry, so a card that waits keeps it, and a saved game needs nothing more. The wrapper returns the new place, which the
 send gives to the shipment's models.
 
+### The research payment (shared)
+
+`src/researchpay.*`, `hooks/researchpay_hooks.asm`, used by `nextResearchFree` (and keys after it) through
+`AddResearchPayer(feature, claim, started)`.
+
+A research is paid when its action is set up, which is when it is queued: the queue routine FUN_009CCB39 (Research,
+callers 0x7D47D2, 0x7D7810, 0x9E6E45) makes the action (0x48D927(0xC)) and calls its start 0x9E667A, which pays with
+0x8D946A(player, cost) at 0x9E67E1, ECX the player looked up from its first argument (0x44CB21), EBP the action, the cost
+`[techStatus+10h]`. On success it writes `[action+64h]` = the player ID and `[action+68h]` = the tech ID, then copies the
+cost for a cancel's refund, 0x480A73 at 0x9E68A0 to `+74h`. The CommandResearch path is a research asked for by a command
+of `protounitcommands.xml` (its record in `[db+2968h]`, `+20h` the tech): the command class 0xB87978 (type 3Eh) calls
+FUN_009CCAAF, which makes an action of type 38h and calls 0x9D543F; that pays at 0x9D54CF (ECX the player, ESI the
+action), writes `[esi+68h]` = the tech and copies the cost at 0x9D5548 to `+7Ch` (REA `ev_13bfd5e0…`, `ev_55d37da8…`,
+`ev_d0df1de1…`, `ev_78a96c1c…`, 2026-11-11). 0x8D946A itself checks with 0x8D6BAE (each resource of the player at
+`[player+230h]` against the cost), or 0x8D6C1B when the world byte `[world+6912h]` is set (the team's resources), then
+subtracts (0x7E844B).
+
+- **The two payment calls** go to `UhcResearchPay(action, player, cost)`, which asks each key's claim in their
+  `kFeatures` order. No claim: the stock payment. A claim gives a share: 0 skips the payment; between 0 and 1 the cost is
+  copied as raw encoded entries into a local list (`[0xC6DF38]` entries, the total at `+4`), scaled by 0x480B94 and paid,
+  so the tech's own cost is never written; 1 pays as stock. A failed payment returns false, so the research does not
+  start and nothing is spent.
+- **The two copy calls** go to a wrapper that copies as stock, then, when the action is the one just claimed, fills the
+  copy with 0 (0x4E2617) or scales it (0x480B94) by the same share, so a cancel refunds what was paid. Then every key's
+  `started(action, share, claimed)` runs, the claiming key with `claimed` set: by then `[action+68h]` is the tech.
+
+**Why it is safe.** Each call keeps its stock frame: the hook reads the cost from its own argument and returns with
+`ret 4` and AL, as 0x8D946A does; the copy wrapper is a `__fastcall` with the stock `thiscall` frame. Nothing between the
+payment and the copy starts another research, so one pending claim is enough; it is cleared at the next payment, and
+the copy acts only for the action that was claimed.
+
 ### nextResearchFree
 
-A research is paid when its action starts: 0x8D946A at 0x9E67E1 (the Research action, EBP) and at 0x9D54CF (CommandResearch,
-ESI). Each action then copies the cost for a cancel's refund (0x480A73 at 0x9E68A0, to `+74h`, and at 0x9D5548, to `+7Ch`).
-
 The effect is a subtype through `AddTechSubtype`, which adds its amount to a count kept by the player's copy of the proto.
-Both payment calls go to a helper that reads the proto from the action's unit (`[[action+10h]+5Ch]`). With a count above 0 it
-takes one, returns true and leaves a mark, and the wrapper of the copy that follows empties the action's cost with
-0x4E2617, so a cancel refunds nothing. The count is forgotten when a database loads (`OnDatabaseLoad`), because a new game
+Its claim reads the proto from the action's unit (`[[action+10h]+5Ch]`): with a count above 0 it claims with a share of
+0, so the shared payment skips the payment and empties the action's copy of the cost, and a cancel refunds nothing. Its
+`started` takes one from the count. The count is forgotten when a database loads (`OnDatabaseLoad`), because a new game
 can reuse the address of a proto. It is not saved, and a load applies the effects again.
 
 - **Observed in game:** see the tests in the modding guide.
