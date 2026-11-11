@@ -87,7 +87,8 @@ the loader patch. The DLL checks its host and does nothing in any other exe.
 ## Credits and license
 
 - This project's code is under the [MIT license](LICENSE).
-
-<!-- private:end -->
+- The release zip ships [DXVK](https://github.com/doitsujin/dxvk) 3.1.1 (its 32-bit `d3d9.dll`, unmodified)
+  for `rendererOption`: Copyright (c) 2017 Philip Rebohle and its contributors, under the zlib license
+  (`dxvk\LICENSE.txt` in the zip). It is not in this repository.
 - Age of Empires is a trademark of Microsoft. This project is not affiliated with or endorsed by
   Microsoft.
