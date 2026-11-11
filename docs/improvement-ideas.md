@@ -377,7 +377,7 @@ First: percentage techs and the max-only subtype.
 - **Rate above 100 %** (half speed, or a cfg value). *small*. **Done (2026-11-11)** as `<UnitType> rate=<percent>`.
 - **Own regeneration exceptions** (heroes regenerate to max). *small*
 - **With `smartHealTargets`:** units below 100 % first, overheal after. *small*
-- **`AddUnitType` effect** (cross-cutting): "your surgeons now overheal" as a card.
+- **`AddUnitType` effect** (cross-cutting): "your surgeons now overheal" as a card. **Works (2026-11-11)** through `unitTypeTechs`: `AddUnitType` with the source type on one player's healers, tested in WoL.
 - **Tests:** multiplayer (simulation), the knocked-out hero case confirmed in the bed.
 
 First: the ordering with `smartHealTargets`.
@@ -482,7 +482,7 @@ First: the last resort with a warning, and `replace`.
   is the same change on another path. *verify*
 - **Follow the target** (escort mode) when it walks out of range; healing while the healer itself
   moves is the larger version. *medium / large*
-- **`AddUnitType` effect:** "your surgeons now heal in combat" as a card.
+- **`AddUnitType` effect:** "your surgeons now heal in combat" as a card. **Works (2026-11-11)** through `unitTypeTechs`: `AddUnitType` with the marker on one player's healers, tested in WoL.
 - **RE:** the per-player case `[player+4FCh]` in the idle test.
 - **Tests:** multiplayer.
 
