@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 # The version is shown in UHC.log and in the file's properties; bump it for every release
 # (docs/developer-guide.md, "Making a release").
-project(UHC VERSION 0.3.0 LANGUAGES CXX ASM_MASM)
+project(UHC VERSION 0.4.0 LANGUAGES CXX ASM_MASM)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
   message(FATAL_ERROR "age3y.exe is 32-bit: configure with -A Win32")
