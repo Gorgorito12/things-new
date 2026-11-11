@@ -298,8 +298,9 @@ overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=Texture] [stat[=Labe
                               of marked units use InitialHitpoints as 100 % (overheal up to
                               MaxHitpoints); segment: the HP above it in orange, Overwatch style
                               and on the portrait bar; stat: an Overheal row
-overhealSources [UnitType ...] [log]   only marked healers (AbstractOverhealer) heal
-                              overheal units above InitialHitpoints
+overhealSources [UnitType [cap=P] [rate=P] ...] [log]   only marked healers
+                              (AbstractOverhealer) heal overheal units above
+                              InitialHitpoints; per type a cap and a rate above it
 overhealDecay R[%] [D] [UnitType ...] [log]   overheal above InitialHitpoints decays
                               at R HP/s, D s after the last heal (Overwatch style)
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)

@@ -2737,9 +2737,18 @@ overheal (only the single-target heal action knows its healer).
 | Site | Stolen | Hook does | Continues at |
 |---|---|---|---|
 | 0x4823A3 | `push ecx / push esi / mov esi,ecx / cmp [esi+8],8` (8 B; ECX = unit, `[esp+4]` = amount) | `UhcOverhealAddHp(unit, &amount)`: a positive amount on a marked unit is lowered to reach at most the reference, unless `g_uhcOverhealAllow`; then the stolen bytes | 0x4823AB (`jbe`, on the stolen `cmp`) |
-| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | for a marked target and a healer of no source type: the reference; else the stock max | 0x9E0BC0 |
-| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = healer is a source, the stolen call, then 0 | 0x9E0CEE |
-| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | for a marked candidate and a normal healer: HP / reference (1.0 at the reference: no candidate); else the stock ratio | 0x9CD989 |
+| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | `UhcOverhealTickLimit` in ST0: for a marked target, the reference with a healer of no source type, min(reference × cap %, max) with a capped source; else the stock max | 0x9E0BC0 |
+| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = 1 + the index of the healer's first source type (0: none), the stolen call, then 0 | 0x9E0CEE |
+| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference with a normal healer, HP / cap limit with a capped source (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
+
+**`cap` and `rate`** (per source type, `g_options[i]`). In the add-HP hook, with `g_uhcOverhealAllow` = i + 1 (only
+the heal tick of a source healer sets it): with `rate`, the part of the amount above the reference becomes (HP +
+amount − max(HP, reference)) × rate / 100, the part below is kept; with `cap`, the amount is then lowered so that HP
+stops at reference × cap / 100. The tick's limit and the search's ratio above use the same limit, so the heal action
+ends when the unit reaches it (state 10) and a unit at its cap is no candidate, as a normal healer at the reference;
+without that a capped source would heal 0 HP forever. The C functions return a float in ST0 (x86 `__stdcall`), and
+change only EAX, ECX and EDX, as the stolen calls do. Without options every path calls what the hooks called before
+(`0x480408`, `UhcOverhealReferenceOf`, `0x45F295`, `UhcOverhealRatioOf`).
 
 **Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
 only lowers a positive amount; damage (negative amounts) and the setter's other callers are

@@ -373,14 +373,14 @@ First: percentage techs and the max-only subtype.
 
 - **Sources of any heal kind:** buildings, dances, powers, regeneration auras, matched by the
   source unit's type on every add-HP path, with per-path opt-ins (`area`, `regen`, `power`). *small*
-- **Cap per source** (`AbstractMonk=100% Surgeon=105%`). *small*
-- **Rate above 100 %** (half speed, or a cfg value). *small*
+- **Cap per source** (`AbstractMonk=100% Surgeon=105%`). *small*. **Done (2026-11-11)** as `<UnitType> cap=<percent>`.
+- **Rate above 100 %** (half speed, or a cfg value). *small*. **Done (2026-11-11)** as `<UnitType> rate=<percent>`.
 - **Own regeneration exceptions** (heroes regenerate to max). *small*
 - **With `smartHealTargets`:** units below 100 % first, overheal after. *small*
 - **`AddUnitType` effect** (cross-cutting): "your surgeons now overheal" as a card.
 - **Tests:** multiplayer (simulation), the knocked-out hero case confirmed in the bed.
 
-First: cap and rate per source, then the ordering with `smartHealTargets`.
+First: the ordering with `smartHealTargets`.
 
 ## `overhealDecay`
 
