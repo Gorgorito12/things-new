@@ -31,6 +31,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
 | Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
+| Wednesday 2026-11-11 15:49 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
+| Wednesday 2026-11-11 15:49 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
+| Wednesday 2026-11-11 15:49 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -55,8 +59,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added. Writes the XS compiler's messages to the log, with file and line. | Nothing. |
 | Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added. While the data loads, lists what it asks for and the game drops. | Nothing. |
 | Friday 2026-11-06 12:40 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
-| Friday 2026-11-06 12:40 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Friday 2026-11-06 12:40 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Friday 2026-11-06 12:40 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
 | Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
@@ -98,8 +100,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 13:58 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Filmed in WoL, with a control. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
 | Wednesday 2026-11-04 13:58 | [`repairWallGlobal`](#repairwallglobal) | Filmed in WoL, with a control. A UI syscall that repairs every wall of the local player. | A button or hotkey that calls `repairWallGlobal()`. |
 | Wednesday 2026-11-04 12:48 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
-| Wednesday 2026-11-04 12:48 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
-| Wednesday 2026-11-04 12:48 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-04 12:48 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
 | Wednesday 2026-11-04 12:48 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
@@ -2120,7 +2120,7 @@ Who heals, whom, and how far.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
-| [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | **new** | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). | confirmed (automatic healing) |
+| [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | **new** | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). | confirmed (automatic healing) |
 | [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | **new** | Nothing (unit types or proto names are optional). | confirmed |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | **new** | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. | confirmed (single player, UI) |
 | [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | **new** | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
@@ -2130,7 +2130,7 @@ Who heals, whom, and how far.
 
 *Chosen healers also heal units that are moving or fighting.*
 
-**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
 
 ![healNonIdle in WoL](media/healNonIdle-wol.gif)
 
@@ -2146,9 +2146,39 @@ only shrinks and it dies at about 57 s of game time, the enemy left at 70 HP. Th
 next.
 [Full video (MP4)](media/healNonIdle-wol-control.mp4).
 
+![healNonIdle busyRate=50 in WoL](media/healNonIdle-busyrate-wol.gif)
+
+*In WoL, with `healNonIdle busyRate=50` (the medicine man gets the marker by a tech, the same scene with a
+`WOLLineInfantry` walking in at 22 s; the two units are selected):* the medicine man heals the fighting Tomahawk at half
+speed: it falls from 150 to 46.6 HP and wins at about 54 s, then is healed to 150 at the full rate.
+[Full video (MP4)](media/healNonIdle-busyrate-wol.mp4).
+
+![healNonIdle busyRate 100 in WoL](media/healNonIdle-busyrate-wol-control.gif)
+
+*In WoL, `healNonIdle` with no option (busyRate 100, the same scene):* the Tomahawk stays between 126 and 135 HP through
+the fight and wins at 128.9. [Full video (MP4)](media/healNonIdle-busyrate-wol-control.mp4).
+
 ```
-healNonIdle [<UnitType>]      default AbstractHealNonIdle
+healNonIdle [<UnitType>] [moving] [fighting] [busyRate=<percent>]   default AbstractHealNonIdle, both states, 100
 ```
+
+- **`moving`, `fighting`:** the busy states a marked healer may heal. With neither, both (as before these options).
+  With one alone, the other keeps its stock test: with `moving`, a fighting unit is no candidate of the search and a heal
+  ends when its target fights; with `fighting`, the same for a moving unit. A unit doing anything else (gathering,
+  building) counts as before. The two tests are the ones the stock heal tick uses: "moving" is the target's current
+  action moving, "fighting" the exe's own fight test.
+- **`busyRate=<percent>`** (1 to 1000, default 100): a heal tick whose target is moving or fighting adds that percent of
+  what it would add; an idle target is healed at the full rate. `busyRate=50%` works too.
+- **A bad option** stops the key: `healNonIdle: busyRate=abc: expected busyRate=<percent>, 1 to 1000; feature not
+  applied`, or `…: expected healNonIdle [UnitType] [moving] [fighting] [busyRate=<percent>]; feature not applied`.
+- **Measured in WoL (2026-11-11),** the scene above, the Tomahawk's HP when the enemy dies: `busyRate=50` 46.6 (fight
+  from 28 to 54 s); no option 128.9; `moving` alone, not healed while fighting: it dies at about 50 s, the enemy left at
+  32 HP, as with the key off. Idle, the medicine man heals about 10 HP/s; at 50 % about 5 HP/s.
+- **Saved games:** nothing is kept in the DLL; the options act on each tick.
+- **Through a tech:** with [`unitTypeTechs`](#unittypetechs), `AddUnitType` with the marker on one player's healers
+  (`<Target type ='ProtoUnit'>xpMedicineMan</Target>`) turns the key on for that player only. Tested in WoL
+  (2026-11-11): Player 1's medicine man healed his fighting Tomahawk (it lost 4.3 HP/s and won at 77.6 HP), Player
+  2's, without the tech, did not heal his (6.3 HP/s, dead).
 
 - **In WoL today:** a healer (`Surgeon`, `NAnurse`, `xpMedicineMan`, a monk) only picks targets that are
   idle, and stops healing as soon as its target moves or fights. So a healer behind a line of infantry
@@ -2174,7 +2204,9 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 - **Monks and other fighting healers** may still choose to attack instead of heal: that is the unit's
   own behavior and is not changed. Pure healers such as `Surgeon`, `NAnurse` and `xpMedicineMan` show the
   feature best.
-- **Log:** `healNonIdle: healers of unittype X heal busy targets (multiplayer unverified)`; when
+- **Log:** `healNonIdle: healers of unittype X heal busy targets (multiplayer unverified)` (`moving (not fighting)` or
+  `fighting (not moving)` with one state; `…targets, at 50 % of their rate…` with busyRate, and in a game `hook reached:
+  healNonIdle busyRate (0x9E0CC7)`); when
   the data loads, `hook reached: abstract unit types (0x51BA31)` and
   `unit types: X -> <ID> (bit B of N), added` (or `already defined`); in a game,
   `hook reached: healNonIdle auto-search (0x9CD9C7)` and `hook reached: healNonIdle (0x9E0C79)`.
@@ -2183,13 +2215,14 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 - **Simulation:** yes. It also adds a unit type, which changes the unit type count.
 - **Status:** confirmed in WoL (2026-11-04), through the automatic search: the medicine man heals the
   fighting Tomahawk, which wins at full HP; without the key it dies at about 57 s. A direct order
-  (right-click) on a fighting unit was not verified.
+  (right-click) on a fighting unit was not verified. The options (2026-11-11): the numbers above, a saved game, an AI
+  skirmish of 100 s with every heal and overheal key on and no XS error. Not tested: `fighting` alone, multiplayer.
 
 #### smartHealTargets
 
 *Healers go for the units that need healing most, not the first they find.*
 
-**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
 
 ![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
 
@@ -2422,7 +2455,7 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 
 *Only chosen healers can heal a unit above its normal health.*
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Friday 2026-11-06 12:40
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
 
@@ -2493,7 +2526,7 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 
 *Extra health above a unit's normal maximum slowly wears off.*
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Friday 2026-11-06 12:40
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 

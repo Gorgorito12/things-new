@@ -146,6 +146,22 @@ SITES = [
     # healNonIdle (FUN_009CD865, a healer's automatic target search): mov ecx,[esi+58h] /
     # test / je, the "target is idle" call 0x44F1A7 / test al,al / je, and the next check
     ("HealAutoSearchIdle", 0x9CD9C0, 0x15),
+    # healNonIdle busyRate (FUN_009E0B53, the heal path): mov edx,[eax+104h] / mov eax,[eax+318h] /
+    # mov ecx,[esi+4] / push edi / mov [esp+0Ch],edx / mov [esp+14h],eax (replaced, 8 bytes at
+    # 0x9E0CC7): the two world factors of this tick's heal, stored before the rate lookup 0x9E0CCF
+    ("HealTickFactors", 0x9E0CB7, 0x18),
+    # the target-busy predicates of the heal tick, both thiscall(target's action manager):
+    # 0x4802D4(-1) "moving" (ret 4) and 0x9CA5AC "fighting"
+    ("HealTargetMoving", 0x4802D4, 0x12),
+    ("HealTargetFighting", 0x9CA5AC, 0x17),
+    # smartHealTargets switch (FUN_009E0B53, state 8 = healing): mov ecx,[esi+24h] / push 8 /
+    # mov [esp+14h],ecx (replaced, 9 bytes at 0x9E0C3A) / push 5 / mov ecx,edi / call 9C2E40h /
+    # cmp eax,1 / jg 9E0D3Fh (more than one healer: the action ends) and the end path 0x9E0D3F
+    ("HealTickHealing", 0x9E0C32, 0x23),
+    ("HealTickEnd", 0x9E0D3F, 0x0F),
+    # smartHealTargets switch: the head of the automatic heal search FUN_009CD865, thiscall(owner =
+    # the healer's action manager): sub esp,10h / push ebp / mov ebp,ecx / mov ecx,[ebp+4] / ...
+    ("HealSearchHead", 0x9CD865, 0x1E),
     # smartHealTargets (FUN_009CD865, the automatic heal search; EBP = owner, healer at [ebp+4],
     # EDI = the query, ESI = candidate): the loop head, cmp [edi+4],esi (the result count) / ... /
     # the entry's unit ID at [[edi]+[esp+10h]] / the unit table lookup / not the healer

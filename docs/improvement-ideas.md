@@ -473,8 +473,8 @@ First: the last resort with a warning, and `replace`.
 
 ## `healNonIdle`
 
-- **`moving` / `fighting` separately** (both tests sit in the same block). *small*
-- **Reduced rate on busy targets** (`busyRate=50%`), the balance knob. *small*
+- **`moving` / `fighting` separately** (both tests sit in the same block). *small*. **Done (2026-11-11)** as the options `moving` and `fighting`.
+- **Reduced rate on busy targets** (`busyRate=50%`), the balance knob. *small*. **Done (2026-11-11)** as `busyRate=<percent>`.
 - **"In combat" as a `smartHealTargets` criterion.** *small*
 - **Regeneration in combat:** the own regeneration and the dance require 3.5 s idle; the site is
   known. A marker for heroes or beasts. *small*
@@ -486,7 +486,7 @@ First: the last resort with a warning, and `replace`.
 - **RE:** the per-player case `[player+4FCh]` in the idle test.
 - **Tests:** multiplayer.
 
-First: the reduced rate and the moving / fighting split, then regeneration in combat.
+First: regeneration in combat (the rate and the split are done).
 
 ## `smartHealTargets`
 

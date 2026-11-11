@@ -756,6 +756,22 @@ Two filters stop a healer from healing a busy unit:
 "Healer of the marker type" is `0x44D7FA(proto = [healer+5Ch], typeId)`, the engine's is-a
 test. It accepts a proto ID as well as an abstract type ID.
 
+**`moving`, `fighting` and `busyRate`.** The two busy tests are thiscall functions of the target's action
+manager `[t+58h]`: `0x4802D4(-1)` (`ret 4`; the current action `[mgr+24h]` is a move) and `0x9CA5AC` (fighting).
+Both only read. With one state alone, or a busyRate other than 100, the tick hook at `0x9E0C79` runs them for a
+marked healer: an excluded state jumps to the tick's end path `0x9E0D3F` (state 10, as stock does), an allowed busy
+state notes the action (`g_uhcHealBusyAction = ESI`) and goes on to `0x9E0C9F`. With both states and busyRate 100 no
+test runs, as before. The search hook at `0x9CD9C7` runs the excluded state's test on the candidate's manager (the ECX
+of the stolen call) and answers AL = 0 for it, 1 otherwise. For the rate, a third hook replaces `mov [esp+0Ch],edx /
+mov [esp+14h],eax` (8 B at `0x9E0CC7`), where the heal path stores `[world+104h]` and `[world+318h]`; `0x9E0CD4` and
+`0x9E0CDA` multiply the rate `0x487C45` by them, and the product is both the HP added at `0x9E0CE9` and the action's
+total `[action+68h]` (`0x9E0CEE`). For the noted action the hook multiplies the stored `[world+318h]` by busyRate / 100
+(`fld / fmul / fstp` on the stack copy; the FPU stack is empty there) and clears the note, then jumps to `0x9E0CCF`.
+`0x9E0C9F..0x9E0CCF` has no exit, so the note is always consumed in the tick that set it, and the busy hook clears it
+on entry. The site sits between the ones `healNonIdle` (`HealIdleCheck`, to `0x9E0CA4`) and `overhealSources`
+(`HealTickAdd`, from `0x9E0CCF`) verify, so the keys' order does not matter. Sites `HealTickFactors`,
+`HealTargetMoving`, `HealTargetFighting`.
+
 How the sites were found:
 - Patching only the tick did nothing in game: the tick hook never ran, because the search never
   started a heal on a fighting unit.

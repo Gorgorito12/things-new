@@ -19,17 +19,27 @@ Contract: [healNonIdle](../porting-to-another-dll.md#healnonidle).
 
 Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `HealAutoSearchIdle` `0x9CD9C0` (21 B), `HealIdleCheck` `0x9E0C79` (44 B).
+Sites: `HealTargetMoving` `0x4802D4` (18 B), `HealTargetFighting` `0x9CA5AC` (23 B), `HealAutoSearchIdle` `0x9CD9C0` (21 B), `HealIdleCheck` `0x9E0C79` (44 B), `HealTickFactors` `0x9E0CB7` (24 B).
 
 ### src/features/heal.cpp
 
 ```cpp
-// healNonIdle: healers whose proto has a marker unittype (default AbstractHealNonIdle) heal
-// targets that are moving or fighting. Stock blocks them twice: the automatic target search
-// only takes idle targets, and each heal tick stops when the target moves or fights. Both
-// hooks are in hooks/heal_hooks.asm; the marker is registered as an extra abstract unit type
-// (unittypes.h), so protoy.xml can list it on any healer.
+// healNonIdle [UnitType] [moving] [fighting] [busyRate=<percent>]: healers whose proto has a
+// marker unittype (default AbstractHealNonIdle) heal targets that are moving or fighting. Stock
+// blocks them twice: the automatic target search only takes idle targets, and each heal tick
+// stops when the target moves or fights. Both hooks are in hooks/heal_hooks.asm; the marker is
+// registered as an extra abstract unit type (unittypes.h), so protoy.xml can list it on any healer.
+//
+// "moving" / "fighting" (both when neither is given): the busy states a marked healer may heal.
+// With only one, the other keeps its stock test, in the tick (the heal ends) and in the search
+// (no such candidate), through the same two predicates the stock tick calls. "busyRate=<percent>"
+// (1..1000, default 100): a tick whose target is moving or fighting heals that percent of the
+// normal amount; the tick hook notes the action, and a third hook in the heal path (0x9E0CC7)
+// scales the [world+318h] factor of that tick's heal. Every decision reads only simulation state.
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 #include "../features.h"
 #include "../generated/sites.h"
@@ -39,10 +49,31 @@ Sites: `HealAutoSearchIdle` `0x9CD9C0` (21 B), `HealIdleCheck` `0x9E0C79` (44 B)
 
 extern "C" {
 std::int32_t g_uhcHealNonIdleType = -1;
+std::int32_t g_uhcHealAllowMoving = 1;
+std::int32_t g_uhcHealAllowFighting = 1;
+std::int32_t g_uhcHealCheckBusy = 0;
+const char* g_uhcHealBusyAction = nullptr;
+float g_uhcHealBusyFactor = 1.0f;
 
 void UhcHealNonIdleHook();
 void UhcHealAutoSearchHook();
+void UhcHealBusyRateHook();
 }
+
+namespace {
+
+// "busyRate=50": an integer percent in [1, 1000].
+bool ParsePercent(const std::string& text, std::int32_t* percent) {
+  char* end = nullptr;
+  const long value = std::strtol(text.c_str(), &end, 10);
+  if (text.empty() || end != text.c_str() + text.size() || value < 1 || value > 1000) {
+    return false;
+  }
+  *percent = static_cast<std::int32_t>(value);
+  return true;
+}
+
+}  // namespace
 
 namespace uhc {
 
@@ -51,18 +82,65 @@ Outcome ApplyHealNonIdle(const Config& config) {
   if (args == nullptr) {
     return Outcome::kNotConfigured;
   }
-  const char* typeName = args->empty() ? "AbstractHealNonIdle" : args->front().c_str();
-  if (!VerifyAll("healNonIdle", {&sites::kHealIdleCheck, &sites::kHealAutoSearchIdle})) {
+  std::string typeName;
+  bool moving = false;
+  bool fighting = false;
+  std::int32_t busyRate = 100;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "moving") == 0) {
+      moving = true;
+    } else if (_stricmp(arg.c_str(), "fighting") == 0) {
+      fighting = true;
+    } else if (_strnicmp(arg.c_str(), "busyRate=", 9) == 0) {
+      std::string value = arg.substr(9);
+      if (!value.empty() && value.back() == '%') {
+        value.pop_back();
+      }
+      if (!ParsePercent(value, &busyRate)) {
+        Log(L"healNonIdle: %hs: expected busyRate=<percent>, 1 to 1000; feature not applied", arg.c_str());
+        return Outcome::kFailed;
+      }
+    } else if (typeName.empty() && arg.find('=') == std::string::npos) {
+      typeName = arg;
+    } else {
+      Log(L"healNonIdle: %hs: expected healNonIdle [UnitType] [moving] [fighting] [busyRate=<percent>]; feature not "
+          L"applied",
+          arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (typeName.empty()) {
+    typeName = "AbstractHealNonIdle";
+  }
+  if (!moving && !fighting) {
+    moving = fighting = true;
+  }
+  const bool scaled = busyRate != 100;
+  if (!VerifyAll("healNonIdle", {&sites::kHealIdleCheck, &sites::kHealAutoSearchIdle}) ||
+      (scaled && !VerifyAll("healNonIdle busyRate", {&sites::kHealTickFactors})) ||
+      ((scaled || !moving || !fighting) &&
+       !VerifyAll("healNonIdle states", {&sites::kHealTargetMoving, &sites::kHealTargetFighting}))) {
     return Outcome::kFailed;
   }
-  if (!RequestAbstractUnitType(typeName, &g_uhcHealNonIdleType)) {
+  if (!RequestAbstractUnitType(typeName.c_str(), &g_uhcHealNonIdleType)) {
     return Outcome::kFailed;
   }
+  g_uhcHealAllowMoving = moving ? 1 : 0;
+  g_uhcHealAllowFighting = fighting ? 1 : 0;
+  g_uhcHealCheckBusy = (scaled || !moving || !fighting) ? 1 : 0;
+  g_uhcHealBusyFactor = static_cast<float>(busyRate) / 100.0f;
   if (!WriteJmp(sites::kHealIdleCheck.va, reinterpret_cast<const void*>(&UhcHealNonIdleHook), 5) ||
-      !WriteJmp(0x009CD9C7, reinterpret_cast<const void*>(&UhcHealAutoSearchHook), 5)) {
+      !WriteJmp(0x009CD9C7, reinterpret_cast<const void*>(&UhcHealAutoSearchHook), 5) ||
+      (scaled && !WriteJmp(0x009E0CC7, reinterpret_cast<const void*>(&UhcHealBusyRateHook), 8))) {
     return Outcome::kFailed;
   }
-  Log(L"healNonIdle: healers of unittype %hs heal busy targets (multiplayer unverified)", typeName);
+  const wchar_t* states = moving && fighting ? L"busy" : moving ? L"moving (not fighting)" : L"fighting (not moving)";
+  if (scaled) {
+    Log(L"healNonIdle: healers of unittype %hs heal %ls targets, at %d %% of their rate (multiplayer unverified)",
+        typeName.c_str(), states, busyRate);
+  } else {
+    Log(L"healNonIdle: healers of unittype %hs heal %ls targets (multiplayer unverified)", typeName.c_str(), states);
+  }
   return Outcome::kApplied;
 }
 
@@ -72,7 +150,7 @@ Outcome ApplyHealNonIdle(const Config& config) {
 ### src/hooks/heal_hooks.asm
 
 ```asm
-; Hook for healNonIdle. Entered through a jmp written over the stock code; leaves through an
+; Hooks for healNonIdle. Entered through a jmp written over the stock code; leaves through an
 ; explicit jmp to a verified continuation (docs/engine-symbols.md, "Healing").
 .686
 .model flat, c
@@ -81,22 +159,34 @@ option casemap :none
 include common.inc
 
 EXTERNDEF g_uhcHealNonIdleType:SDWORD      ; unittype ID, set on each database load; -1 before
+EXTERNDEF g_uhcHealAllowMoving:SDWORD      ; 1: a marked healer heals a moving target
+EXTERNDEF g_uhcHealAllowFighting:SDWORD    ; 1: a marked healer heals a fighting target
+EXTERNDEF g_uhcHealCheckBusy:SDWORD        ; 1: a state is excluded or busyRate is not 100
+EXTERNDEF g_uhcHealBusyAction:DWORD        ; the heal action whose target is busy this tick, or 0
+EXTERNDEF g_uhcHealBusyFactor:REAL4        ; busyRate / 100
 
 .data
 protoIsType     dd 0044D7FAh    ; bool thiscall(proto, int unitTypeId): proto IDs and abstract types
 healPath        dd 009E0C9Fh    ; apply this tick's heal
 busyChecks      dd 009E0C80h    ; stock: push -1 / call 4802D4h (target moving?) / call 9CA5ACh
+tickEnd         dd 009E0D3Fh    ; the action's vtbl+34h(10): the heal ends
 targetIsIdle    dd 0044F1A7h    ; bool thiscall(actionManager): no current action, or an idle one
+targetMoving    dd 004802D4h    ; bool thiscall(actionManager, -1), ret 4: the current action moves
+targetFighting  dd 009CA5ACh    ; bool thiscall(actionManager): the unit fights
 autoSearchNext  dd 009CD9CCh    ; test al,al / je 9CDA3Fh (skip this candidate)
+factorsNext     dd 009E0CCFh    ; call 487C45h: the heal rate of the target
 
 .code
 
 ; Replaces 0x9E0C79..0x9E0C7D (mov ecx,[edi+58h] / test ecx,ecx) in FUN_009E0B53, where each heal
 ; tick stops if the target has a current action that is a move or a fight. EDI = target unit,
 ; ESI = heal action (healer unit at [esi+10h]). A healer whose proto is of the configured
-; unittype skips the busy test; any other healer runs the stock code unchanged.
+; unittype skips the busy test (with "moving" or "fighting" alone, only that state's test; with
+; busyRate, a busy target is noted for the factors hook); any other healer runs the stock code
+; unchanged.
 UhcHealNonIdleHook PROC
     TRACE_ONCE "healNonIdle (0x9E0C79)"
+    mov g_uhcHealBusyAction, 0
     cmp g_uhcHealNonIdleType, 0
     jl stock
     mov ecx, dword ptr [esi+10h]    ; healer unit
@@ -108,20 +198,64 @@ UhcHealNonIdleHook PROC
     push g_uhcHealNonIdleType
     call protoIsType
     test al, al
-    jne heal
+    jne marked
 stock:
     mov ecx, dword ptr [edi+58h]    ; stolen 0x9E0C79
     test ecx, ecx                   ; stolen 0x9E0C7C
     je heal                         ; stock 0x9E0C7E: no current action -> heal
     jmp busyChecks
+marked:
+    cmp g_uhcHealCheckBusy, 0
+    je heal                         ; both states, full rate: no test at all
+    mov ecx, dword ptr [edi+58h]
+    test ecx, ecx
+    je heal                         ; no current action: not busy
+    push -1
+    call targetMoving               ; the stock tick's first test
+    test al, al
+    je notMoving
+    cmp g_uhcHealAllowMoving, 0
+    je stop
+    mov g_uhcHealBusyAction, esi
+notMoving:
+    mov ecx, dword ptr [edi+58h]
+    call targetFighting             ; the stock tick's second test
+    test al, al
+    je heal
+    cmp g_uhcHealAllowFighting, 0
+    je stop
+    mov g_uhcHealBusyAction, esi
 heal:
     jmp healPath
+stop:
+    jmp tickEnd
 UhcHealNonIdleHook ENDP
+
+; Replaces mov [esp+0Ch],edx / mov [esp+14h],eax (8 bytes at 0x9E0CC7) in the heal path of
+; FUN_009E0B53, which store [world+104h] and [world+318h], the two factors of this tick's heal
+; (0x9E0CD4 and 0x9E0CDA multiply the rate 0x487C45 by them; the product is the HP added at
+; 0x9E0CE9 and the action's total at 0x9E0CF2). For the action the busy hook noted, the second
+; factor is multiplied by busyRate / 100. ESI = the action. The flags and ECX are written again
+; at 0x9E0CCF; the FPU stack is empty here and after the hook.
+UhcHealBusyRateHook PROC
+    TRACE_ONCE "healNonIdle busyRate (0x9E0CC7)"
+    mov dword ptr [esp+0Ch], edx    ; stolen 0x9E0CC7
+    mov dword ptr [esp+14h], eax    ; stolen 0x9E0CCB
+    cmp esi, g_uhcHealBusyAction
+    jne done
+    fld dword ptr [esp+14h]
+    fmul g_uhcHealBusyFactor
+    fstp dword ptr [esp+14h]
+done:
+    mov g_uhcHealBusyAction, 0
+    jmp factorsNext
+UhcHealBusyRateHook ENDP
 
 ; Replaces the call 44F1A7h at 0x9CD9C7 in FUN_009CD865, where a healer's automatic search skips
 ; every candidate that is not idle. ECX = the candidate's action manager ([esi+58h]),
 ; ESI = candidate, EBP = the search's owner, with the healer at [ebp+4]. For a healer of the
-; configured unittype the candidate counts as idle; any other healer runs the stock test.
+; configured unittype the candidate counts as idle unless it is in a state the cfg excludes
+; (moving without "moving", fighting without "fighting"); any other healer runs the stock test.
 UhcHealAutoSearchHook PROC
     TRACE_ONCE "healNonIdle auto-search (0x9CD9C7)"
     cmp g_uhcHealNonIdleType, 0
@@ -137,8 +271,26 @@ UhcHealAutoSearchHook PROC
     call protoIsType
     test al, al
     je restore
+    pop ecx                         ; the candidate's action manager
+    cmp g_uhcHealAllowMoving, 0
+    jne movingOk
+    push ecx
+    push -1
+    call targetMoving
     pop ecx
+    test al, al
+    jne reject
+movingOk:
+    cmp g_uhcHealAllowFighting, 0
+    jne accept
+    call targetFighting
+    test al, al
+    jne reject
+accept:
     mov al, 1
+    jmp autoSearchNext
+reject:
+    xor al, al
     jmp autoSearchNext
 restore:
     pop ecx
@@ -156,13 +308,13 @@ Contract: [smartHealTargets](../porting-to-another-dll.md#smarthealtargets).
 
 Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `IsA` `0x44D7FA` (105 B), `HealthRatio` `0x45F295` (72 B), `SmartHealLoop` `0x9CD923` (95 B), `SmartHealRange` `0x9CDA21` (30 B), `SmartHealLoopEnd` `0x9CDA3F` (64 B).
+Sites: `IsA` `0x44D7FA` (105 B), `HealthRatio` `0x45F295` (72 B), `HealSearchHead` `0x9CD865` (30 B), `SmartHealLoop` `0x9CD923` (95 B), `SmartHealRange` `0x9CDA21` (30 B), `SmartHealLoopEnd` `0x9CDA3F` (64 B), `HealTickHealing` `0x9E0C32` (35 B), `HealTickEnd` `0x9E0D3F` (15 B).
 
 ### src/features/smartheal.cpp
 
 ```cpp
-// smartHealTargets [UnitType ...] [log]: a healer's automatic search heals the best candidate, not
-// the first one.
+// smartHealTargets [UnitType ...] [switch=<percent>] [log]: a healer's automatic search heals the
+// best candidate, not the first one.
 //
 // FUN_009CD865 (the automatic heal search, called from 0x68C14E for an idle healer) runs a unit
 // query around the healer and walks its results ([query+0], 38h-byte entries, count [query+4], no
@@ -179,10 +331,24 @@ Sites: `IsA` `0x44D7FA` (105 B), `HealthRatio` `0x45F295` (72 B), `SmartHealLoop
 // the lowest unit ID: no memory address and no query order decides, so every machine picks the
 // same unit. The key applies to every healer: the search is the same function for all of them,
 // and the change only reorders units the stock rules already accept.
+//
+// "switch=<percent>": stock never searches again while a heal runs (the search is called only for
+// an idle healer). With the option, a hook at the start of the healing state of the heal tick
+// FUN_009E0B53 (0x9E0C3A) re-checks a heal this search started, once per second of game time per
+// healer: it calls the same search as a dry run (the pick hook returns nothing, so nothing starts),
+// in which a candidate counts only if it ranks at the target's type or before it and its HP ratio
+// is lower than the target's by more than the margin. If one does, the tick ends the heal through
+// its own end path 0x9E0D3F (state 10, as when the target is full); the healer is idle again and
+// the stock idle search picks the best unit, which that candidate beats the old target to. A heal
+// the player ordered is never re-checked. The last pick and re-check second of each healer live in
+// the DLL, so after a load only the heals started since then are re-checked.
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <cwchar>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../features.h"
@@ -195,11 +361,15 @@ namespace {
 
 constexpr std::size_t kMaxTypes = 8;
 constexpr int kMaxLoggedPicks = 200;
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+constexpr std::uint32_t kRecheckMs = 1000;         // game time between two re-checks of one healer
 
 using RatioFn = float(__thiscall*)(const char* unit);
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
+using SearchFn = bool(__thiscall*)(char* owner);
 const auto kHealthRatio = reinterpret_cast<RatioFn>(0x0045F295);
 const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
+const auto kHealSearch = reinterpret_cast<SearchFn>(0x009CD865);  // thiscall(the healer's action manager)
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -221,6 +391,37 @@ Candidate g_first;  // what stock would have healed, for the log
 int g_considered = 0;
 int g_loggedPicks = 0;
 bool g_log = false;
+
+// "switch=<percent>": the margin as a ratio; negative while the option is off.
+float g_switchMargin = -1.0f;
+int g_loggedSwitches = 0;
+
+// A dry run of the search from the re-check: only candidates that beat the current target by the
+// margin count, and the pick starts nothing.
+struct Recheck {
+  bool active = false;
+  std::int32_t rank = 0;  // the current target's
+  float ratio = 0.0f;     // the current target's
+  bool found = false;
+  Candidate best;
+};
+Recheck g_recheck;
+
+// Per healer ID: the target of the last heal this search started, and the second of game time of
+// its last re-check. A heal of another target (a player's order) is not re-checked.
+struct AutoHeal {
+  std::int32_t target = -1;
+  std::uint32_t second = 0;
+};
+std::unordered_map<std::int32_t, AutoHeal> g_autoHeals;
+
+std::uint32_t GameTime() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  return world == nullptr ? 0 : Field<std::uint32_t>(world, 0x108);
+}
+
+void ForgetHeals(char*) { g_autoHeals.clear(); }
 
 bool Better(const Candidate& a, const Candidate& b) {
   if (a.rank != b.rank) {
@@ -249,6 +450,25 @@ std::int32_t g_uhcSmartHealTypeCount = 0;
 
 void UhcSmartHealRangeHook();
 void UhcSmartHealPickHook();
+void UhcSmartHealSwitchHook();
+}
+
+namespace {
+
+// The index of the first listed type the unit is of; the type count for none.
+std::int32_t RankOf(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  for (std::int32_t i = 0; proto != nullptr && i < g_uhcSmartHealTypeCount; ++i) {
+    if (g_uhcSmartHealTypes[i] >= 0 && kIsA(proto, g_uhcSmartHealTypes[i])) {
+      return i;
+    }
+  }
+  return g_uhcSmartHealTypeCount;
+}
+
+}  // namespace
+
+extern "C" {
 
 // From the range hook (0x9CDA36), for a candidate that passed every stock test.
 void __stdcall UhcSmartHealConsider(const char* healer, const char* unit) {
@@ -258,15 +478,11 @@ void __stdcall UhcSmartHealConsider(const char* healer, const char* unit) {
   }
   Candidate c;
   c.unit = unit;
-  c.rank = g_uhcSmartHealTypeCount;
-  const char* proto = Field<const char*>(unit, 0x5C);
-  for (std::int32_t i = 0; proto != nullptr && i < g_uhcSmartHealTypeCount; ++i) {
-    if (g_uhcSmartHealTypes[i] >= 0 && kIsA(proto, g_uhcSmartHealTypes[i])) {
-      c.rank = i;
-      break;
-    }
-  }
+  c.rank = RankOf(unit);
   c.ratio = kHealthRatio(unit);
+  if (g_recheck.active && (c.rank > g_recheck.rank || !(c.ratio < g_recheck.ratio - g_switchMargin))) {
+    return;  // a dry run: not worth leaving the current target for
+  }
   const float dx = Field<float>(unit, 0x14) - Field<float>(healer, 0x14);
   const float dz = Field<float>(unit, 0x1C) - Field<float>(healer, 0x1C);
   c.distance2 = dx * dx + dz * dz;
@@ -288,8 +504,18 @@ const char* __stdcall UhcSmartHealPick(const char* healer) {
   const int considered = g_considered;
   g_healer = nullptr;
   g_considered = 0;
+  if (g_recheck.active) {  // a dry run: nothing starts
+    g_recheck.found = have;
+    g_recheck.best = best;
+    return nullptr;
+  }
   if (!have) {
     return nullptr;
+  }
+  if (g_switchMargin >= 0.0f) {
+    AutoHeal& heal = g_autoHeals[Field<std::int32_t>(healer, 0x10)];
+    heal.target = best.id;
+    heal.second = GameTime() / kRecheckMs;
   }
   if (g_log && g_loggedPicks < kMaxLoggedPicks) {
     ++g_loggedPicks;
@@ -302,6 +528,48 @@ const char* __stdcall UhcSmartHealPick(const char* healer) {
   }
   return best.unit;
 }
+
+// From the switch hook (0x9E0C3A), on each tick of a heal in its healing state: true ends the heal
+// (the tick's own end path), because a candidate beats its target by more than the margin.
+bool __stdcall UhcSmartHealRecheck(char* healer, const char* target) {
+  if (healer == nullptr || target == nullptr || g_switchMargin < 0.0f) {
+    return false;
+  }
+  const auto it = g_autoHeals.find(Field<std::int32_t>(healer, 0x10));
+  if (it == g_autoHeals.end() || it->second.target != Field<std::int32_t>(target, 0x10)) {
+    return false;  // not a heal the search started: a player's order is kept
+  }
+  const std::uint32_t second = GameTime() / kRecheckMs;
+  if (it->second.second == second) {
+    return false;
+  }
+  it->second.second = second;
+  char* owner = Field<char*>(healer, 0x58);  // the action manager the stock search is called with
+  if (owner == nullptr || Field<const char*>(owner, 0x04) != healer) {
+    return false;
+  }
+  g_recheck = Recheck{};
+  g_recheck.active = true;
+  g_recheck.rank = RankOf(target);
+  g_recheck.ratio = kHealthRatio(target);
+  kHealSearch(owner);
+  g_recheck.active = false;
+  if (!g_recheck.found) {
+    return false;
+  }
+  if (g_log && g_loggedSwitches < kMaxLoggedPicks) {
+    ++g_loggedSwitches;
+    uhc::Log(L"smartHealTargets: unit %d (%hs) leaves unit %d (%hs, rank %d, HP ratio %.3f) for a better candidate, "
+             L"unit %d (%hs, rank %d, HP ratio %.3f; switch margin %.2f)%ls",
+             Field<std::int32_t>(healer, 0x10), ProtoName(healer), Field<std::int32_t>(target, 0x10),
+             ProtoName(target), g_recheck.rank, static_cast<double>(g_recheck.ratio), g_recheck.best.id,
+             ProtoName(g_recheck.best.unit), g_recheck.best.rank, static_cast<double>(g_recheck.best.ratio),
+             static_cast<double>(g_switchMargin),
+             g_loggedSwitches == kMaxLoggedPicks ? L" (further switches not logged)" : L"");
+  }
+  g_autoHeals.erase(it);  // the next pick notes the new heal
+  return true;
+}
 }
 
 namespace uhc {
@@ -312,11 +580,28 @@ Outcome ApplySmartHealTargets(const Config& config) {
     return Outcome::kNotConfigured;
   }
   std::vector<std::string> typeNames;
+  std::int32_t switchPercent = -1;
   for (const std::string& arg : *args) {
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_log = true;
+    } else if (_strnicmp(arg.c_str(), "switch=", 7) == 0) {
+      std::string value = arg.substr(7);
+      if (!value.empty() && value.back() == '%') {
+        value.pop_back();
+      }
+      char* end = nullptr;
+      const long percent = std::strtol(value.c_str(), &end, 10);
+      if (value.empty() || end != value.c_str() + value.size() || percent < 1 || percent > 100) {
+        Log(L"smartHealTargets: %hs: expected switch=<percent>, 1 to 100; feature not applied", arg.c_str());
+        return Outcome::kFailed;
+      }
+      switchPercent = static_cast<std::int32_t>(percent);
+    } else if (arg.find('=') != std::string::npos) {
+      Log(L"smartHealTargets: %hs: expected [UnitType ...] [switch=<percent>] [log]; feature not applied", arg.c_str());
+      return Outcome::kFailed;
     } else if (typeNames.size() == kMaxTypes) {
-      Log(L"smartHealTargets: more than %u unit types (expected: [UnitType ...] [log]); feature not applied",
+      Log(L"smartHealTargets: more than %u unit types (expected: [UnitType ...] [switch=<percent>] [log]); feature "
+          L"not applied",
           static_cast<unsigned>(kMaxTypes));
       return Outcome::kFailed;
     } else {
@@ -324,7 +609,9 @@ Outcome ApplySmartHealTargets(const Config& config) {
     }
   }
   if (!VerifyAll("smartHealTargets", {&sites::kSmartHealLoop, &sites::kSmartHealRange, &sites::kSmartHealLoopEnd,
-                                      &sites::kHealthRatio, &sites::kIsA})) {
+                                      &sites::kHealthRatio, &sites::kIsA}) ||
+      (switchPercent > 0 && !VerifyAll("smartHealTargets switch", {&sites::kHealTickHealing, &sites::kHealTickEnd,
+                                                                   &sites::kHealSearchHead}))) {
     return Outcome::kFailed;
   }
   for (std::size_t i = 0; i < typeNames.size(); ++i) {
@@ -333,18 +620,32 @@ Outcome ApplySmartHealTargets(const Config& config) {
     }
   }
   g_uhcSmartHealTypeCount = static_cast<std::int32_t>(typeNames.size());
+  if (switchPercent > 0 && !OnDatabaseLoad(&ForgetHeals)) {
+    return Outcome::kFailed;
+  }
   // Replaces call 7FCF2Dh at 0x9CDA36 and pop esi / pop ebx / pop edi / xor al,al at 0x9CDA58.
   if (!WriteJmp(0x009CDA36, reinterpret_cast<const void*>(&UhcSmartHealRangeHook), 5) ||
       !WriteJmp(0x009CDA58, reinterpret_cast<const void*>(&UhcSmartHealPickHook), 5)) {
     return Outcome::kFailed;
   }
+  if (switchPercent > 0) {
+    g_switchMargin = static_cast<float>(switchPercent) / 100.0f;
+    // Replaces mov ecx,[esi+24h] / push 8 / mov [esp+14h],ecx at 0x9E0C3A.
+    if (!WriteJmp(0x009E0C3A, reinterpret_cast<const void*>(&UhcSmartHealSwitchHook), 9)) {
+      return Outcome::kFailed;
+    }
+  }
   std::string order;
   for (const std::string& name : typeNames) {
     order += name + ", ";
   }
+  wchar_t switching[96] = L"";
+  if (switchPercent > 0) {
+    swprintf_s(switching, L"; a running heal switches to a candidate more than %d %% lower", switchPercent);
+  }
   Log(L"smartHealTargets: automatic heal searches pick the best candidate: %hslowest HP ratio, nearest, lowest unit "
-      L"ID%ls (multiplayer unverified)",
-      order.c_str(), g_log ? L"; picks logged" : L"");
+      L"ID%ls%ls (multiplayer unverified)",
+      order.c_str(), switching, g_log ? L"; picks logged" : L"");
   return Outcome::kApplied;
 }
 
@@ -365,14 +666,40 @@ include common.inc
 
 UhcSmartHealConsider PROTO STDCALL healer:DWORD, unit:DWORD
 UhcSmartHealPick PROTO STDCALL healer:DWORD
+UhcSmartHealRecheck PROTO STDCALL healer:DWORD, target:DWORD   ; AL: end this heal
 
 .data
 inRange         dd 007FCF2Dh    ; bool thiscall(healer, unit, range), ret 8: the search's last test
 nextCandidate   dd 009CDA3Fh    ; the loop's step to the next query entry
 acceptCandidate dd 009CDA62h    ; healer vtbl+64h(1), then 0x9CBDC4(owner, [esi+10h]): heal ESI
 searchFailExit  dd 009CDA5Dh    ; pop ebp / add esp,10h / ret: AL = 0, no target
+healingNext     dd 009E0C43h    ; push 5 / mov ecx,edi / call 9C2E40h: the healing state goes on
+healEnd         dd 009E0D3Fh    ; the action's vtbl+34h(10): the heal ends, the healer goes idle
 
 .code
+
+; switch=<percent>: replaces mov ecx,[esi+24h] / push 8 / mov [esp+14h],ecx (9 bytes at 0x9E0C3A),
+; the start of the healing state (8) of the heal tick FUN_009E0B53 (ESI = the heal action, healer
+; at [esi+10h], EDI = target). UhcSmartHealRecheck may run the search as a dry run; when a
+; candidate beats the target by the margin, the tick ends through its own end path 0x9E0D3F (the
+; stack there is this one, as for the stock jumps to it). Otherwise the stolen bytes run again.
+; Every register is kept (pushad; popad leaves the flags of the test).
+UhcSmartHealSwitchHook PROC
+    TRACE_ONCE "smartHealTargets switch (0x9E0C3A)"
+    pushad
+    push edi                        ; target
+    push dword ptr [esi+10h]        ; healer
+    call UhcSmartHealRecheck
+    test al, al
+    popad
+    jne switchTarget
+    mov ecx, dword ptr [esi+24h]    ; stolen 0x9E0C3A
+    push 8                          ; stolen 0x9E0C3D
+    mov dword ptr [esp+14h], ecx    ; stolen 0x9E0C3F
+    jmp healingNext
+switchTarget:
+    jmp healEnd
+UhcSmartHealSwitchHook ENDP
 
 ; Replaces call 7FCF2Dh at 0x9CDA36 in the automatic heal search FUN_009CD865, the last of the
 ; stock tests: ECX = healer, the candidate and the action's range are pushed, ESI = candidate,
@@ -428,8 +755,9 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 ### src/features/overheal.cpp
 
 ```cpp
-// overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [log]: the HP bars and HP texts of marked
-// units take InitialHitpoints as 100 %, not MaxHitpoints; with "segment" the HP above it shows.
+// overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=<texture>] [stat[=Label]] [log]: the
+// HP bars and HP texts of marked units take InitialHitpoints as 100 %, not MaxHitpoints; with
+// "segment" the HP above it shows.
 //
 // A unit is created with its proto's InitialHitpoints ([proto+9Ch], 0x498390 in FUN_00498274)
 // and is healed up to MaxHitpoints ([proto+98h]); a Hitpoints tech adds the same amount to both
@@ -462,10 +790,13 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 // segment colour. The stat row's HP text uses the UI markup <color=r, g, b> for the colour. A unit
 // at or below its 100 %, and every unmarked unit (whose HP never exceeds its max), keeps the stock
 // bar and texts. The selection panel's bar under the portrait is one of three progress bar gadgets
-// (green, yellow, red) of uiunitselection.xml; "segment" also fills a fourth one, when the mod's UI
-// data has it: unitselectionpanel-unitHealthBarOverheal, looked up by name as the panel looks up
-// the stock three (0xAB7C2F), filled with the group's average overheal share and raised above them
-// after each refresh (0x4C83DF). Its look and place are the UI data's; without it nothing changes.
+// (green, yellow, red) of uiunitselection.xml, looked up by name at panel creation; "segment" adds
+// no gadget and shows the overheal on the game's own green one ([panel+310h]): after each refresh
+// (0x4C83DF), while every selected unit is at or above its 100 % and the group's average overheal
+// share is above 0, the green part is filled short (1 - that share) and the bar's background
+// drawable [bar+140h] gets the overheal texture (vtable +7Ch, as the setter 0x5CAF02 calls it;
+// ui\ingame\ingame_ui_health_yellow, or "bar=<texture>"), so the right end shows it. When the
+// overheal ends the UI data's texture, ui\ingame\ui_health_bar, is put back.
 //
 // "stat[=Label]": the stat panel gets an "Overheal" row right after the HP row (0x4D76DB) for a
 // marked unit, 'overheal/capacity' (HP above the 100 % / max above it, truncated like the HP row),
@@ -1565,7 +1896,19 @@ Sites: `IsA` `0x44D7FA` (105 B), `HealthRatio` `0x45F295` (72 B), `MaxHitpointsG
 //   unit at its reference is no candidate.
 // A source healer heals to MaxHitpoints, as in stock. The decisions read only the units' protos
 // and HP, the same on every machine.
+//
+// Per source type, "cap=<percent>" (100..1000) and "rate=<percent>" (1..1000) follow its name:
+// - cap: such a healer heals a marked unit to at most cap % of its reference (never above the max).
+//   The tick's limit (0x9E0BBB) and the search's ratio (0x9CD984) use it as they use the reference
+//   for a normal healer, so the heal ends there and a unit at its cap is no candidate; the add-HP
+//   hook lowers the amount to it;
+// - rate: the part of each of its heals that lands above the reference is that percent of what
+//   stock adds (below the reference the heal is unchanged).
+// The tick add hook sets g_uhcOverhealAllow to 1 + the index of the healer's first source type, so
+// the add-HP hook knows which options apply.
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <set>
 #include <string>
@@ -1580,6 +1923,7 @@ Sites: `IsA` `0x44D7FA` (105 B), `HealthRatio` `0x45F295` (72 B), `MaxHitpointsG
 
 extern "C" {
 float UhcOverhealReferenceOf(const char* unit);  // overheal_hooks.asm, cdecl
+float UhcOverhealRatioOf(const char* unit);
 std::int32_t UhcOverhealMarked(const char* proto);
 }
 
@@ -1593,18 +1937,29 @@ namespace {
 constexpr std::size_t kMaxTypes = 8;
 
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
+using UnitFloatFn = float(__thiscall*)(const char* unit);
 const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
+const auto kMaxHitpoints = reinterpret_cast<UnitFloatFn>(0x00480408);
+const auto kHealthRatio = reinterpret_cast<UnitFloatFn>(0x0045F295);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
 }
 
+// A source type's options: cap in % of the reference (0: none, the max), rate in % above it.
+struct SourceOptions {
+  std::int32_t cap = 0;
+  std::int32_t rate = 100;
+};
+SourceOptions g_options[kMaxTypes];
+
 bool g_log = false;
 bool g_cap = false;      // overhealSources is on
 bool g_addHooked = false;
 std::set<std::string, std::less<>> g_loggedCaps;     // proto names, "log" only
 std::set<std::string, std::less<>> g_loggedSources;  // healer proto names, "log" only
+std::set<std::string, std::less<>> g_loggedSourceCaps;  // proto names, "log" only
 
 const char* ProtoName(const char* unit) {
   const char* proto = Field<const char*>(unit, 0x5C);
@@ -1633,20 +1988,59 @@ void UhcOverhealTickMaxHook();
 void UhcOverhealTickAddHook();
 void UhcOverhealSearchRatioHook();
 
-bool __stdcall UhcOverhealIsSource(const char* healer) {
+// 1 + the index of the healer's first source type (cfg order), or 0 for a healer of none.
+std::int32_t __stdcall UhcOverhealSourceIndex(const char* healer) {
   const char* proto = healer == nullptr ? nullptr : Field<const char*>(healer, 0x5C);
   for (std::int32_t i = 0; proto != nullptr && i < g_uhcOverhealSourceTypeCount; ++i) {
     if (g_uhcOverhealSourceTypes[i] >= 0 && kIsA(proto, g_uhcOverhealSourceTypes[i])) {
-      return true;
+      return i + 1;
     }
   }
-  return false;
+  return 0;
 }
 
-// True for a marked target and a healer that gives no overheal: the heal stops at the reference.
-bool __stdcall UhcOverhealUseReference(const char* target, const char* healer) {
-  const char* proto = target == nullptr ? nullptr : Field<const char*>(target, 0x5C);
-  return proto != nullptr && UhcOverhealMarked(proto) != 0 && !UhcOverhealIsSource(healer);
+// The most HP this healer's heal action gives the target: the reference for a marked target and a
+// healer of no source type; cap % of the reference (at most the max) for a source type with a cap;
+// else the stock max. From the tick hook (0x9E0BBB), in ST0.
+float __stdcall UhcOverhealTickLimit(const char* target, const char* healer) {
+  const char* proto = Field<const char*>(target, 0x5C);
+  if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+    return kMaxHitpoints(target);
+  }
+  const std::int32_t source = UhcOverhealSourceIndex(healer);
+  if (source == 0) {
+    return UhcOverhealReferenceOf(target);
+  }
+  const float max = kMaxHitpoints(target);
+  const std::int32_t cap = g_options[source - 1].cap;
+  if (cap <= 0) {
+    return max;
+  }
+  const float limit = UhcOverhealReferenceOf(target) * (static_cast<float>(cap) * 0.01f);
+  return limit < max ? limit : max;
+}
+
+// The automatic search's ratio of a candidate for this healer (0x9CD984), in ST0: HP over the tick's
+// limit with the stock rules of 0x45F295 (0 below 1e-6, 1.0 from the limit on), so a unit at the
+// limit is no candidate; the stock ratio for an unmarked unit or a source without a cap.
+float __stdcall UhcOverhealSearchRatio(const char* candidate, const char* healer) {
+  const char* proto = Field<const char*>(candidate, 0x5C);
+  if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
+    return kHealthRatio(candidate);
+  }
+  const std::int32_t source = UhcOverhealSourceIndex(healer);
+  if (source == 0) {
+    return UhcOverhealRatioOf(candidate);
+  }
+  if (g_options[source - 1].cap <= 0) {
+    return kHealthRatio(candidate);
+  }
+  const float limit = UhcOverhealTickLimit(candidate, healer);
+  const float hp = Field<float>(candidate, 0x64);
+  if (!(limit >= 1e-6f)) {
+    return 0.0f;
+  }
+  return hp >= limit ? 1.0f : hp / limit;
 }
 
 // From the add-HP hook, before every HP addition: with overhealSources a positive amount on a marked
@@ -1665,6 +2059,26 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   }
   const float reference = UhcOverhealReferenceOf(unit);
   const float hp = Field<float>(unit, 0x64);
+  if (g_cap && g_uhcOverhealAllow > 0 && g_uhcOverhealAllow <= g_uhcOverhealSourceTypeCount) {
+    // A source healer's tick: its type's rate above the reference, then its cap.
+    const SourceOptions& options = g_options[g_uhcOverhealAllow - 1];
+    if (options.rate != 100 && hp + *amount > reference) {
+      const float below = hp < reference ? reference - hp : 0.0f;
+      *amount = below + (*amount - below) * (static_cast<float>(options.rate) * 0.01f);
+    }
+    if (options.cap > 0) {
+      const float limit = reference * (static_cast<float>(options.cap) * 0.01f);
+      if (hp + *amount > limit) {
+        if (g_log && FirstLog(g_loggedSourceCaps, ProtoName(unit))) {
+          uhc::Log(L"overhealSources: a source heal of unit %d (%hs) stops at its cap %.1f, %d %% of its 100 %% %.1f "
+                   L"(HP %.1f + %.2f); logged once per proto",
+                   Field<std::int32_t>(unit, 0x10), ProtoName(unit), static_cast<double>(limit), options.cap,
+                   static_cast<double>(reference), static_cast<double>(hp), static_cast<double>(*amount));
+        }
+        *amount = limit > hp ? limit - hp : 0.0f;
+      }
+    }
+  }
   if (!g_cap || g_uhcOverhealAllow != 0) {
     if (uhc::g_overhealGain != nullptr && hp + *amount > reference) {
       uhc::g_overhealGain(unit, g_uhcOverhealRegen == 0);
@@ -1673,10 +2087,11 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
       return;
     }
     if (g_log && hp + *amount > reference && FirstLog(g_loggedSources, ProtoName(unit))) {
-      uhc::Log(L"overhealSources: unit %d (%hs) is healed above its 100 %% %.1f by a source healer (HP %.1f + %.2f); "
-               L"logged once per proto",
+      const SourceOptions& options = g_options[(g_uhcOverhealAllow > 0 ? g_uhcOverhealAllow : 1) - 1];
+      uhc::Log(L"overhealSources: unit %d (%hs) is healed above its 100 %% %.1f by a source healer (HP %.1f + %.2f; "
+               L"rate %d %%); logged once per proto",
                Field<std::int32_t>(unit, 0x10), ProtoName(unit), static_cast<double>(reference),
-               static_cast<double>(hp), static_cast<double>(*amount));
+               static_cast<double>(hp), static_cast<double>(*amount), options.rate);
     }
     return;
   }
@@ -1721,8 +2136,31 @@ Outcome ApplyOverhealSources(const Config& config) {
   }
   std::vector<std::string> typeNames;
   for (const std::string& arg : *args) {
+    const bool cap = _strnicmp(arg.c_str(), "cap=", 4) == 0;
+    const bool rate = _strnicmp(arg.c_str(), "rate=", 5) == 0;
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_log = true;
+    } else if (cap || rate) {
+      std::string text = arg.substr(cap ? 4 : 5);
+      if (!text.empty() && text.back() == '%') {
+        text.pop_back();
+      }
+      char* end = nullptr;
+      const long value = std::strtol(text.c_str(), &end, 10);
+      const bool valid = !text.empty() && end == text.c_str() + text.size() && value <= 1000 && value >= (cap ? 100 : 1);
+      if (typeNames.empty() || !valid) {
+        Log(L"overhealSources: %hs: expected <UnitType> [cap=<percent>, 100 to 1000] [rate=<percent>, 1 to 1000] after "
+            L"each source type; feature not applied",
+            arg.c_str());
+        return Outcome::kFailed;
+      }
+      SourceOptions& options = g_options[typeNames.size() - 1];
+      (cap ? options.cap : options.rate) = static_cast<std::int32_t>(value);
+    } else if (arg.find('=') != std::string::npos) {
+      Log(L"overhealSources: %hs: expected [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]; feature not "
+          L"applied",
+          arg.c_str());
+      return Outcome::kFailed;
     } else if (typeNames.size() == kMaxTypes) {
       Log(L"overhealSources: more than %u unit types (expected: [UnitType ...] [log]); feature not applied",
           static_cast<unsigned>(kMaxTypes));
@@ -1752,8 +2190,20 @@ Outcome ApplyOverhealSources(const Config& config) {
     return Outcome::kFailed;
   }
   std::string names;
-  for (const std::string& name : typeNames) {
-    names += names.empty() ? name : ", " + name;
+  for (std::size_t i = 0; i < typeNames.size(); ++i) {
+    names += i == 0 ? typeNames[i] : ", " + typeNames[i];
+    const SourceOptions& options = g_options[i];
+    if (options.cap > 0 || options.rate != 100) {
+      char text[64];
+      if (options.cap <= 0) {
+        std::snprintf(text, sizeof text, " (rate %d %% above 100 %%)", options.rate);
+      } else if (options.rate == 100) {
+        std::snprintf(text, sizeof text, " (up to %d %%)", options.cap);
+      } else {
+        std::snprintf(text, sizeof text, " (up to %d %%, rate %d %% above 100 %%)", options.cap, options.rate);
+      }
+      names += text;
+    }
   }
   Log(L"overhealSources: only healers of unittype %hs heal marked units above their 100 %%; every other heal stops "
       L"there%ls (multiplayer unverified)",
@@ -1776,20 +2226,17 @@ option casemap :none
 
 include common.inc
 
-EXTERNDEF g_uhcOverhealAllow:SDWORD   ; 1 while a source healer's heal tick adds HP
+EXTERNDEF g_uhcOverhealAllow:SDWORD   ; 1 + source type index while a source healer's heal tick adds HP
 EXTERNDEF g_uhcOverhealRegen:SDWORD   ; 1 while a regeneration adds HP (overhealDecay)
 
-UhcOverhealAddHp PROTO STDCALL unit:DWORD, amount:DWORD         ; may lower [amount]
-UhcOverhealUseReference PROTO STDCALL target:DWORD, healer:DWORD  ; AL: a normal healer, a marked target
-UhcOverhealIsSource PROTO STDCALL healer:DWORD                   ; AL: the healer gives overheal
-UhcOverhealReferenceOf PROTO C unit:DWORD                         ; ST0 (overheal_hooks.asm)
-UhcOverhealRatioOf PROTO C unit:DWORD                             ; ST0 (overheal_hooks.asm)
+UhcOverhealAddHp PROTO STDCALL unit:DWORD, amount:DWORD             ; may lower [amount]
+UhcOverhealTickLimit PROTO STDCALL target:DWORD, healer:DWORD       ; ST0: the tick's "HP < this"
+UhcOverhealSearchRatio PROTO STDCALL candidate:DWORD, healer:DWORD  ; ST0: the search's ratio
+UhcOverhealSourceIndex PROTO STDCALL healer:DWORD                   ; EAX: 1 + source type index, 0 none
 
 .data
 addHpNext       dd 004823ABh    ; jbe 4823FEh: the adder after its stolen cmp [esi+8],8
 addHp           dd 004823A3h    ; thiscall(unit, amount, flag), ret 8: HP += amount (our hook first)
-maxHitpoints    dd 00480408h    ; float thiscall(unit): the stock max
-healthRatio     dd 0045F295h    ; float thiscall(unit): the stock HP / max
 tickMaxNext     dd 009E0BC0h    ; fcomp [edi+64h] / fnstsw / test ah,41h / jnp 9E0D3Fh: HP < max?
 tickAddNext     dd 009E0CEEh    ; fld [esp+10h] / fadd [esi+68h]: the tick's bookkeeping
 searchRatioNext dd 009CD989h    ; fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh: ratio < 1?
@@ -1820,36 +2267,28 @@ UhcOverhealAddHook ENDP
 
 ; Replaces call 480408h at 0x9E0BBB in the heal tick FUN_009E0B53 (ECX = EDI = target, ESI = the
 ; heal action, healer at [esi+10h]): each tick heals only while HP < this value, and ends the
-; action (state 10) otherwise. For a healer that gives no overheal and a marked target the value
-; is the target's reference, so the action ends there; else the stock max. The FPU stack is empty
-; at the site; ECX and EDX are written again after 0x9E0BC0 before they are read.
+; action (state 10) otherwise. UhcOverhealTickLimit returns it in ST0: for a marked target, the
+; reference with a healer that gives no overheal and the source's cap with a capped source, so the
+; action ends there; else the stock max (the stolen call's value). The FPU stack is empty at the
+; site; ECX and EDX are written again after 0x9E0BC0 before they are read, and EAX by fnstsw.
 UhcOverhealTickMaxHook PROC
     TRACE_ONCE "overhealSources heal tick (0x9E0BBB)"
     push dword ptr [esi+10h]        ; healer
     push edi                        ; target
-    call UhcOverhealUseReference
-    test al, al
-    jne useReference
-    mov ecx, edi
-    call maxHitpoints               ; stolen 0x9E0BBB
-    jmp tickMaxNext
-useReference:
-    push edi
-    call UhcOverhealReferenceOf
-    add esp, 4
+    call UhcOverhealTickLimit
     jmp tickMaxNext
 UhcOverhealTickMaxHook ENDP
 
 ; Replaces call 4823A3h at 0x9E0CE9, where the heal tick adds this tick's HP to the target (ECX =
 ; EDI = target, the amount and 1 pushed, ESI = the action). A source healer's heal is let through
-; above the reference: g_uhcOverhealAllow is set for the call and cleared after it.
+; above the reference: g_uhcOverhealAllow is set for the call to 1 + the index of its source type
+; (whose cap and rate the add-HP hook applies), and cleared after it.
 UhcOverhealTickAddHook PROC
     TRACE_ONCE "overhealSources heal (0x9E0CE9)"
     push ecx
     push dword ptr [esi+10h]        ; healer
-    call UhcOverhealIsSource
+    call UhcOverhealSourceIndex
     pop ecx
-    movzx eax, al
     mov g_uhcOverhealAllow, eax
     call addHp                      ; stolen 0x9E0CE9
     mov g_uhcOverhealAllow, 0
@@ -1858,23 +2297,15 @@ UhcOverhealTickAddHook ENDP
 
 ; Replaces the first call 45F295h at 0x9CD984 in the automatic heal search FUN_009CD865 (ECX =
 ; ESI = candidate, healer at [ebp+4]), whose result must be below 1.0 for the candidate to count.
-; For a healer that gives no overheal and a marked candidate it is HP / reference, so a unit at
-; its reference is no candidate; else the stock ratio. The second ratio call (the 1e-6 floor) is
-; stock.
+; UhcOverhealSearchRatio returns it in ST0: for a marked candidate, HP / reference with a healer
+; that gives no overheal and HP / cap with a capped source, so a unit at that limit is no
+; candidate; else the stock ratio. It changes EAX, ECX and EDX, as the stolen call does. The
+; second ratio call (the 1e-6 floor) is stock.
 UhcOverhealSearchRatioHook PROC
     TRACE_ONCE "overhealSources heal search (0x9CD984)"
     push dword ptr [ebp+4]          ; healer
     push esi                        ; candidate
-    call UhcOverhealUseReference
-    test al, al
-    jne useReference
-    mov ecx, esi
-    call healthRatio                ; stolen 0x9CD984
-    jmp searchRatioNext
-useReference:
-    push esi
-    call UhcOverhealRatioOf
-    add esp, 4
+    call UhcOverhealSearchRatio
     jmp searchRatioNext
 UhcOverhealSearchRatioHook ENDP
 
@@ -1907,7 +2338,7 @@ Contract: [overhealDecay](../porting-to-another-dll.md#overhealdecay).
 
 Besides the core helpers, it needs: [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `RegenAddHp` `0x49087C` (18 B), `DanceRegenAddHp` `0x67A036` (21 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `RegenAddHp` `0x49087C` (18 B), `UnitsNearPoint` `0x4A1C55` (248 B), `DanceRegenAddHp` `0x67A036` (21 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/overhealdecay.cpp
 
@@ -1930,7 +2361,14 @@ Sites: `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `HpSett
 // Saved games: a noted unit carries a marker of stat 65h (savedmarkers.h) with the time of its last gain. The
 // add-HP hook can run inside an update over the unit's own actions, so it only names the unit: the world tick
 // writes the marker. When another game is running the table is rebuilt from the markers.
+//
+// "holdNear <UnitType> <metres>" (up to 4): a unit due to decay keeps its HP on any tick where a
+// unit of that type owned by the same player (not allies), alive and built, other than itself, is
+// within <metres>: the world's spatial query FUN_004A1C55 (noTrainNearEnemyTC's), which measures
+// to the other unit's edge. Only whether one exists counts, not the query's order. A held tick is
+// skipped, not saved up: the decay goes on at the same rate once no such unit is near.
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
@@ -1969,11 +2407,24 @@ constexpr std::size_t kMaxTypes = 8;
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
 constexpr std::int32_t kStatNoted = 0x65;  // words: 1, the game time of the last gain
 
+constexpr std::size_t kMaxHolds = 4;
+
+// The list FUN_004A1C55 fills (the engine's dynamic array: data, count, capacity).
+struct IdList {
+  std::int32_t* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
 using SetHpFn = void(__thiscall*)(char* unit, float value, std::int32_t flag);
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
 using IsAliveFn = bool(__thiscall*)(const char* unit);
+using IsBuiltFn = bool(__thiscall*)(const char* unit);
+using UnitsNearFn = std::int32_t(__thiscall*)(char* world, const float* point, float radius, char precise, IdList* out);
 const auto kSetHp = reinterpret_cast<SetHpFn>(0x004820A1);
 const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
+const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
+const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -1986,6 +2437,19 @@ std::uint32_t g_delayMs = 0;
 std::int32_t g_types[kMaxTypes] = {-1, -1, -1, -1, -1, -1, -1, -1};
 std::int32_t g_typeCount = 0;
 bool g_log = false;
+
+// "holdNear <UnitType> <metres>": the types (IDs set on each data load) and their distances.
+struct Hold {
+  std::int32_t type = -1;
+  float metres = 0.0f;
+  std::string name;
+};
+Hold g_holds[kMaxHolds];
+std::size_t g_holdCount = 0;
+IdList g_found = {nullptr, 0, 0};  // FUN_004A1C55's output, reused
+std::set<std::int32_t> g_heldUnits;  // "log" only: the units held now, so each start and end is one line
+int g_holdLines = 0;
+constexpr int kMaxHoldLines = 200;
 
 // Noted units by unit ID (so every machine walks them in the same order): the game time of their
 // last gain above the reference.
@@ -2066,6 +2530,60 @@ void Note(const char* unit, bool restartDelay) {
 void Reset(char*) {
   g_units.clear();
   g_changed.clear();
+  g_heldUnits.clear();
+}
+
+// "holdNear": a unit of a hold type owned by the unit's player, alive and built, other than the
+// unit, within that hold's distance (the spatial query's own test, to that unit's edge). Only
+// whether one exists decides; *by is the first found, for the log.
+bool Held(char* world, const char* unit, const char** by, const Hold** hold) {
+  const char* owner = Field<const char*>(unit, 0x44);
+  if (owner == nullptr) {
+    return false;
+  }
+  const auto* position = reinterpret_cast<const float*>(unit + 0x14);
+  for (std::size_t h = 0; h < g_holdCount; ++h) {
+    if (g_holds[h].type < 0) {
+      continue;
+    }
+    kUnitsNear(world, position, g_holds[h].metres, 1, &g_found);
+    for (std::int32_t i = 0; i < g_found.count && g_found.data != nullptr; ++i) {
+      const char* other = UnitById(world, g_found.data[i]);
+      const char* proto = other == nullptr ? nullptr : Field<const char*>(other, 0x5C);
+      if (proto == nullptr || other == unit || Field<const char*>(other, 0x44) != owner ||
+          !kIsA(proto, g_holds[h].type) || !IsAlive(other) || !kIsBuilt(other)) {
+        continue;
+      }
+      *by = other;
+      *hold = &g_holds[h];
+      return true;
+    }
+  }
+  return false;
+}
+
+// "log": one line when a unit starts or stops being held (at most kMaxHoldLines).
+void LogHold(std::int32_t id, const char* unit, bool held, const char* by, const Hold* hold) {
+  if (!g_log || g_holdLines >= kMaxHoldLines) {
+    return;
+  }
+  const bool was = g_heldUnits.count(id) != 0;
+  if (held == was) {
+    return;
+  }
+  ++g_holdLines;
+  if (held) {
+    g_heldUnits.insert(id);
+    uhc::Log(L"overhealDecay: unit %d (%hs) holds its overheal at HP %.1f: unit %d (%hs) of %hs is within %.1f m%ls",
+             id, ProtoName(unit), static_cast<double>(Field<float>(unit, 0x64)), Field<std::int32_t>(by, 0x10),
+             ProtoName(by), hold->name.c_str(), static_cast<double>(hold->metres),
+             g_holdLines == kMaxHoldLines ? L" (further holds not logged)" : L"");
+  } else {
+    g_heldUnits.erase(id);
+    uhc::Log(L"overhealDecay: unit %d (%hs) decays again from HP %.1f: no unit that holds it is near%ls", id,
+             ProtoName(unit), static_cast<double>(Field<float>(unit, 0x64)),
+             g_holdLines == kMaxHoldLines ? L" (further holds not logged)" : L"");
+  }
 }
 
 void WriteMarker(char* unit, std::uint32_t lastGain) {
@@ -2091,6 +2609,7 @@ void Rebuild(const char* world) {
   namespace markers = uhc::markers;
   g_units.clear();
   g_changed.clear();
+  g_heldUnits.clear();
   const std::int32_t count = Field<std::int32_t>(world, 0x10);
   char* const* units = Field<char* const*>(world, 0x0C);
   for (std::int32_t i = 0; i < count; ++i) {
@@ -2142,6 +2661,7 @@ void DecayTick(char* world, std::int32_t) {
       if (unit != nullptr) {
         ClearMarker(unit);
       }
+      g_heldUnits.erase(it->first);
       it = g_units.erase(it);
       continue;
     }
@@ -2153,12 +2673,23 @@ void DecayTick(char* world, std::int32_t) {
                  ProtoName(unit), static_cast<double>(reference));
       }
       ClearMarker(unit);
+      g_heldUnits.erase(it->first);
       it = g_units.erase(it);
       continue;
     }
     if (now - it->second < g_delayMs) {
       ++it;
       continue;
+    }
+    if (g_holdCount > 0) {
+      const char* by = nullptr;
+      const Hold* hold = nullptr;
+      const bool held = Held(world, unit, &by, &hold);
+      LogHold(it->first, unit, held, by, hold);
+      if (held) {
+        ++it;
+        continue;
+      }
     }
     const float perSecond = g_percent ? reference * g_rate * 0.01f : g_rate;
     float value = hp - perSecond * static_cast<float>(elapsed) * 0.001f;
@@ -2227,6 +2758,21 @@ Outcome ApplyOverhealDecay(const Config& config) {
     const std::string& arg = (*args)[i];
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_log = true;
+    } else if (_stricmp(arg.c_str(), "holdNear") == 0) {
+      char* end = nullptr;
+      const std::string* metres = i + 2 < args->size() ? &(*args)[i + 2] : nullptr;
+      const double value = metres == nullptr ? 0.0 : std::strtod(metres->c_str(), &end);
+      if (metres == nullptr || g_holdCount == kMaxHolds || end != metres->c_str() + metres->size() ||
+          metres->empty() || !(value > 0.0) || value > 200.0) {
+        Log(L"overhealDecay: expected holdNear <UnitType> <metres> (more than 0, at most 200; up to %u); feature not "
+            L"applied",
+            static_cast<unsigned>(kMaxHolds));
+        return Outcome::kFailed;
+      }
+      g_holds[g_holdCount].name = (*args)[i + 1];
+      g_holds[g_holdCount].metres = static_cast<float>(value);
+      ++g_holdCount;
+      i += 2;
     } else if (i == 1 && ParseSeconds(arg, &g_delayMs)) {
       // the delay
     } else if (typeNames.size() == kMaxTypes) {
@@ -2239,11 +2785,17 @@ Outcome ApplyOverhealDecay(const Config& config) {
   const Site* addEntry = OverhealAddHookInstalled() ? &sites::kHpSetter : &sites::kOverhealAddEntry;
   if (!VerifyAll("overhealDecay", {addEntry, &sites::kHpSetter, &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot,
                                    &sites::kIsA, &sites::kRegenAddHp, &sites::kDanceRegenAddHp}) ||
+      (g_holdCount > 0 && !VerifyAll("overhealDecay holdNear", {&sites::kUnitsNearPoint, &sites::kIsBuilt})) ||
       !OnDatabaseLoad(&Reset)) {
     return Outcome::kFailed;
   }
   for (std::size_t i = 0; i < typeNames.size(); ++i) {
     if (!RequestAbstractUnitType(typeNames[i].c_str(), &g_types[i])) {
+      return Outcome::kFailed;
+    }
+  }
+  for (std::size_t i = 0; i < g_holdCount; ++i) {
+    if (!RequestAbstractUnitType(g_holds[i].name.c_str(), &g_holds[i].type)) {
       return Outcome::kFailed;
     }
   }
@@ -2260,10 +2812,18 @@ Outcome ApplyOverhealDecay(const Config& config) {
   for (const std::string& name : typeNames) {
     names += ", " + name;
   }
+  std::string holds;
+  for (std::size_t i = 0; i < g_holdCount; ++i) {
+    char text[32];
+    std::snprintf(text, sizeof text, " %.1f m", static_cast<double>(g_holds[i].metres));
+    holds += (holds.empty() ? "; held while their player has a unit of " : ", or of ") + g_holds[i].name + " within" +
+             text;
+  }
   Log(L"overhealDecay: marked units above their 100 %% lose %.2f %ls per second of game time, %.1f s after their "
-      L"last gain, down to it%hs%ls (multiplayer unverified)",
+      L"last gain, down to it%hs%hs%ls (multiplayer unverified)",
       static_cast<double>(g_rate), g_percent ? L"% of it" : L"HP", g_delayMs / 1000.0,
-      names.empty() ? "" : (" (units of" + names.substr(1) + " only)").c_str(), g_log ? L"; logged" : L"");
+      names.empty() ? "" : (" (units of" + names.substr(1) + " only)").c_str(), holds.c_str(),
+      g_log ? L"; logged" : L"");
   return Outcome::kApplied;
 }
 
