@@ -3442,7 +3442,7 @@ send gives to the shipment's models.
 
 ### The research payment (shared)
 
-`src/researchpay.*`, `hooks/researchpay_hooks.asm`, used by `nextResearchFree` (and keys after it) through
+`src/researchpay.*`, `hooks/researchpay_hooks.asm`, used by `nextResearchFree` and `researchGrants` through
 `AddResearchPayer(feature, claim, started)`.
 
 A research is paid when its action is set up, which is when it is queued: the queue routine FUN_009CCB39 (Research,
@@ -3480,6 +3480,69 @@ Its claim reads the proto from the action's unit (`[[action+10h]+5Ch]`): with a 
 can reuse the address of a proto. It is not saved, and a load applies the effects again.
 
 - **Observed in game:** see the tests in the modding guide.
+
+### researchGrants
+
+`src/features/researchgrants.cpp`, `hooks/researchgrant_hooks.asm`.
+
+- **Tags** (`AddProtoTagHandler`): the six `ResearchGrant*` tags, by proto ID, each checked for its range; a bad value
+  is logged and the tag skipped. A proto has grants only with a valid `ResearchGrantInterval`.
+- **Data subtypes** (`AddTechSubtype`): `ResearchGrantInterval` and `ResearchGrantMax` keep a value per player's copy of
+  the proto (looked up by pointer, checked against the copy's ID), computed by the stock value function 0x7F892A from the
+  tag's value; `ResearchGrantPoints` queues the points for the next world tick.
+- **The units** are a set of unit IDs, in ID order. The world tick (`AddWorldTick`) looks at 256 slots of the world's
+  unit table `[world+0Ch]` per update, round robin, and adds the living units of a tagged proto; a new game (another
+  world, the time going back or the step count jumping) walks the whole table once, and so does a `ResearchGrantPoints`
+  effect before it gives its points. A unit that is gone, dead or of another proto leaves the set.
+- **Points:** for each unit of the set that is built (0x44DDB4), the tick adds the game time `[world+108h]` since the last
+  tick to its timer and turns each interval into a point, up to the cap; at the cap the timer is 0. Points and timer are
+  words 1 and 2 of a saved marker (`savedmarkers.h`, stat 66h, word 0 `RGNT`).
+- **Spending:** the claim (after `nextResearchFree`'s) walks the set for the paying player's built, living units with a
+  point, in scope, and applies the rule of the modding guide: the total cost is the sum of 0x44EFFF over
+  `[[game+140h]+80h]` resources, and "can pay" is 0x8D6BAE, or 0x8D6C1B with `[world+6912h]` set. The unit with most
+  points wins, the first in ID order on a tie. Its `started` takes the point from the marker and, for a Time factor
+  other than 1, keeps (researching unit ID, tech ID) to factor; the next tick writes it as a second marker of stat 66h
+  (word 0 `RGTI`, word 1 the tech, word 2 the factor), and a new game reads those markers back. A research of the same
+  tech in that unit without a point (any key's `started` with `claimed` clear) drops the entry.
+- **Research time:** a Research update (FUN_009E648B, slot 3Ch of 0xB98078) adds `BuildingWorkRate x [world+30Ch] x
+  [player+37Ch] x [world+104h]` to its progress `[action+6Ch]` at 0x9E6622 (`fadd` / `fstp`), then calls the fraction
+  0x9E5F19 with the tech's status entry, which divides by the research points `[entry+18h]`; the update ends the research
+  when the fraction `[action+70h]` reaches 1.0 (0x9E662D). The CommandResearch update FUN_009D5843 does the same with
+  `[esi+70h]` at 0x9D58FF and the fraction 0x9D539B (`[esi+74h]`). Each hook replaces those 6 bytes: while
+  `g_uhcGrantTimed` (the number of entries) is 0 it adds the step as stock; otherwise it stores ST0, calls
+  `UhcGrantResearchStep(action, offset, entry, step)` inside `pushad` / `popad` and adds the result, the step divided by
+  the factor of (`[[action+10h]+10h]`, `[action+68h]`). The step that reaches the research points drops the entry, and
+  the next tick frees its marker. Both continue at the call of the fraction (0x9E6628, 0x9D5905), whose argument is
+  already pushed. A research in the other branch of the update (0x9E65A5..0x9E65F2: tech flag 4 with 0x454ED7) does not
+  pass the add and keeps its stock time.
+- **Panel:** `AddUnitPanelRow`, from the unit's marker and its player's copy of the proto.
+
+**Why it is safe.**
+- The step hooks: ST0 is the only value on the x87 stack there (the getter's result and three `fmul`), so the C function
+  has the whole stack; it returns its float in ST0, which the stock `fadd` / `fstp` then use. `pushad` / `popad` keep ECX
+  = ESI, which the fraction call takes, and EBX / EDI; the fraction's pushed argument stays where it is. The `cmp`
+  changes only the flags, which the next instructions do not read. No branch lands inside either site, and both are
+  instruction boundaries (capstone over `.text`, `rea/evidence/age3y-b1a1dab7/researchgrants_cs.txt`).
+- Markers are made (0x4DD22D) only by the world tick, after the world update, never inside a unit's action update; the
+  claim and `started` only write the words of a marker that exists.
+- Deterministic: the set and the tables are keyed by unit ID, the copy map by pointer is only looked up, the time is
+  game time, and the order is the set's. The sweep's cursor is not saved: a loaded game walks the whole table, so a unit
+  created in the few updates before the save starts its timer at the load instead of a few updates after its creation.
+- Cost: per update, one modifier walk per unit of the set and 256 slot reads; the step hooks are one compare while no
+  research has a Time factor.
+
+**A/B (2026-11-11),** the test scenario of the modding guide (Ethiopians, two tagged markets), 90 s of
+`tools/perfprobe.py` from the load, two researches at 50 s, two other test games running on the machine:
+
+| | key off | key on |
+|---|---|---|
+| frames over 50 ms | 0 | 0 |
+| main-thread CPU, mean | 89.1 % | 89.0 % |
+| longest frame, median of the seconds | 2.2 ms | 2.2 ms |
+| fps, median (uncapped) | 724 | 672 |
+
+The fps differ by 7 % at about 1.4 ms per frame with the GPU busy by the other games; the main thread did the same work.
+That run's second research was paid by the Market (a tie), so it had no Time factor.
 
 ### killBountyTechs, resourceBounty and teamKillBounty
 

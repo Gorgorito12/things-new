@@ -53,6 +53,7 @@ Outcome ApplyAuraStacking(const Config& config);
 Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
+Outcome ApplyResearchGrants(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
@@ -160,6 +161,8 @@ inline constexpr Feature kFeatures[] = {
     {"sharedBuildLimit", ApplySharedBuildLimit},
     {"doNotQueue", ApplyDoNotQueue},
     {"nextResearchFree", ApplyNextResearchFree},
+    // After nextResearchFree: a research it makes free is not asked of this key (the shared payment, researchpay.h).
+    {"researchGrants", ApplyResearchGrants},
     {"killBountyTechs", ApplyKillBountyTechs},
     {"teamKillBounty", ApplyTeamKillBounty},
     {"resourceBounty", ApplyResourceBounty},
@@ -256,7 +259,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

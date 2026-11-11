@@ -1025,6 +1025,15 @@ SITES = [
     ("CommandResearchPayCall", 0x9D54CF, 5),
     ("ResearchCostCopyCall", 0x9E68A0, 5),
     ("CommandResearchCostCopyCall", 0x9D5548, 5),
+    # researchGrants: the add of a research's step to its progress, fadd / fstp dword [esi+6Ch] in the Research
+    # update FUN_009E648B (ST0 the step, EBX the tech's status entry, already pushed), [esi+70h] in the
+    # CommandResearch update FUN_009D5843 (EDI the entry); each is followed by the call of its fraction, where
+    # the hook continues. The two affordability checks of the payment 0x8D946A: 0x8D6BAE, and 0x8D6C1B when the
+    # world byte [world+6912h] is set
+    ("ResearchProgressAdd", 0x9E6622, 11),
+    ("CommandResearchProgressAdd", 0x9D58FF, 11),
+    ("PayAffordCheck", 0x8D6BAE, 0x1E),
+    ("PaySharedAffordCheck", 0x8D6C1B, 0x1A),
     # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
     # arg 3 the proto ID, arg 4 the count
     ("TrainQueueCall1", 0x7560B5, 5),

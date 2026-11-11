@@ -1335,6 +1335,18 @@ inline constexpr Site kResearchCostCopyCall{"ResearchCostCopyCall", 0x009E68A0, 
 inline constexpr std::uint8_t kCommandResearchCostCopyCallBytes[] = {0xE8, 0x26, 0xB5, 0xAA, 0xFF};
 inline constexpr Site kCommandResearchCostCopyCall{"CommandResearchCostCopyCall", 0x009D5548, kCommandResearchCostCopyCallBytes, sizeof(kCommandResearchCostCopyCallBytes)};
 
+inline constexpr std::uint8_t kResearchProgressAddBytes[] = {0xD8, 0x46, 0x6C, 0xD9, 0x5E, 0x6C, 0xE8, 0xEC, 0xF8, 0xFF, 0xFF};
+inline constexpr Site kResearchProgressAdd{"ResearchProgressAdd", 0x009E6622, kResearchProgressAddBytes, sizeof(kResearchProgressAddBytes)};
+
+inline constexpr std::uint8_t kCommandResearchProgressAddBytes[] = {0xD8, 0x46, 0x70, 0xD9, 0x5E, 0x70, 0xE8, 0x91, 0xFA, 0xFF, 0xFF};
+inline constexpr Site kCommandResearchProgressAdd{"CommandResearchProgressAdd", 0x009D58FF, kCommandResearchProgressAddBytes, sizeof(kCommandResearchProgressAddBytes)};
+
+inline constexpr std::uint8_t kPayAffordCheckBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x40, 0x01, 0x00, 0x00, 0x53, 0x56, 0x33, 0xF6, 0x39, 0xB2, 0x80, 0x00, 0x00, 0x00, 0x57, 0x7E, 0x45, 0x8B, 0x5C, 0x24, 0x10, 0x8D, 0xB9};
+inline constexpr Site kPayAffordCheck{"PayAffordCheck", 0x008D6BAE, kPayAffordCheckBytes, sizeof(kPayAffordCheckBytes)};
+
+inline constexpr std::uint8_t kPaySharedAffordCheckBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x53, 0x55, 0x8B, 0xE9, 0x8B, 0x88, 0x40, 0x01, 0x00, 0x00, 0x33, 0xDB, 0x39, 0x99, 0x80, 0x00, 0x00, 0x00, 0x56, 0x57};
+inline constexpr Site kPaySharedAffordCheck{"PaySharedAffordCheck", 0x008D6C1B, kPaySharedAffordCheckBytes, sizeof(kPaySharedAffordCheckBytes)};
+
 inline constexpr std::uint8_t kTrainQueueCall1Bytes[] = {0xE8, 0x04, 0x82, 0x27, 0x00};
 inline constexpr Site kTrainQueueCall1{"TrainQueueCall1", 0x007560B5, kTrainQueueCall1Bytes, sizeof(kTrainQueueCall1Bytes)};
 
@@ -2325,6 +2337,7 @@ Outcome ApplyAuraStacking(const Config& config);
 Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
+Outcome ApplyResearchGrants(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
@@ -2432,6 +2445,8 @@ inline constexpr Feature kFeatures[] = {
     {"sharedBuildLimit", ApplySharedBuildLimit},
     {"doNotQueue", ApplyDoNotQueue},
     {"nextResearchFree", ApplyNextResearchFree},
+    // After nextResearchFree: a research it makes free is not asked of this key (the shared payment, researchpay.h).
+    {"researchGrants", ApplyResearchGrants},
     {"killBountyTechs", ApplyKillBountyTechs},
     {"teamKillBounty", ApplyTeamKillBounty},
     {"resourceBounty", ApplyResourceBounty},
@@ -2528,7 +2543,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
@@ -4915,7 +4930,8 @@ void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model)
 // so a unit keeps at most as many as it ever needed at once. A transform in place (0x9C754C) ends the unit's
 // modifiers, markers too: a key writes its state again at its next change.
 //
-// Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay.
+// Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
+// researchGrants (two kinds, told apart by word 0).
 #pragma once
 
 #include <cstdint>

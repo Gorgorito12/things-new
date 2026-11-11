@@ -157,6 +157,12 @@ constexpr KnownTag kKnownTags[] = {
     {L"DontTrainInBatches", "trainBatchSize"},
     {L"ForceBatchTrain", "trainBatchSize"},
     {L"VeterancyBonus", "veterancyBonus"},
+    {L"ResearchGrantInterval", "researchGrants"},
+    {L"ResearchGrantMax", "researchGrants"},
+    {L"ResearchGrantCost", "researchGrants"},
+    {L"ResearchGrantTime", "researchGrants"},
+    {L"ResearchGrantScope", "researchGrants"},
+    {L"ResearchGrantMinCost", "researchGrants"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

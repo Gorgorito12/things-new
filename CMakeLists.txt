@@ -49,6 +49,7 @@ set(UHC_SOURCES
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
   src/features/freeresearch.cpp
+  src/features/researchgrants.cpp
   src/features/cantslow.cpp
   src/features/snarevalues.cpp
   src/features/civfirsttc.cpp
@@ -190,6 +191,7 @@ set(UHC_SOURCES
   src/hooks/trainbatch_hooks.asm
   src/hooks/veterancy_hooks.asm
   src/hooks/researchpay_hooks.asm
+  src/hooks/researchgrant_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm

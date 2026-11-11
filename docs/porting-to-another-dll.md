@@ -6,7 +6,7 @@ what each feature does in WoL (the `wol.cfg` line, the data, the log, the videos
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
 
-This page covers every key the modding guide marks **new**, 67 keys in all:
+This page covers every key the modding guide marks **new**, 68 keys in all:
 
 | Theme | Keys | Code |
 |---|---|---|
@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 67 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `annexFacing` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1431,13 +1431,32 @@ Code: [buildings](porting-code/buildings.md#donotqueue). It needs `AddProtoTagHa
 
 Code: [buildings](porting-code/buildings.md#nextresearchfree). It needs `AddTechSubtype`, in the
 [helpers](porting-code/helpers.md#tech-subtypes), `OnDatabaseLoad`, and `AddResearchPayer`, the
-[research payment](porting-code/helpers.md#research-payment).
+[research payment](porting-code/helpers.md#research-payment) it shares with `researchGrants`.
 
 - **Sites (the research payment's):** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and
   `0x9D5548`, of `0x480A73`. Its claim takes a research with a share of 0: the payment is skipped and the refund copy
   emptied.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#nextresearchfree): the next research takes
   nothing, and its cancel gives nothing back.
+
+### researchGrants
+
+Code: [buildings](porting-code/buildings.md#researchgrants). It needs `AddProtoTagHandler`, `AddTechSubtype`,
+`AddWorldTick`, `AddUnitPanelRow`, `savedmarkers.h` (stat 66h) and `AddResearchPayer`, in the
+[helpers](porting-code/helpers.md#research-payment), and `OnDatabaseLoad`. It comes after `nextResearchFree`, so a research
+that key makes free is not asked of this one.
+
+- **Research payment:** the four `call`s of `nextResearchFree` above, written once by whichever key comes first. A claim
+  with a share between 0 and 1 pays a scaled copy of the cost (0x480B94 on a local list) and scales the refund copy the
+  same way.
+- **Step sites:** a 6-byte `jmp` + NOP at `0x9E6622` (`D8 46 6C D9 5E 6C`, `fadd` / `fstp dword [esi+6Ch]` in the
+  Research update), continue at `0x9E6628`; and at `0x9D58FF` (`D8 46 70 D9 5E 70`, the CommandResearch update),
+  continue at `0x9D5905`. ST0 is the step, ESI the action, EBX / EDI the tech's status entry. Check them against your DLL
+  first.
+- **Read only:** `0x8D6BAE` and `0x8D6C1B` (can the player pay), `0x44EFFF` (a cost entry), `0x44DDB4` (is built), the
+  alive slot of the unit vtable.
+- **Test:** the tags on a building, as in the [modding guide](modding-guide.md#researchgrants): its row counts points, a
+  research takes one and costs its share, and a building with a Time factor researches that much slower.
 
 ### annexFacing
 

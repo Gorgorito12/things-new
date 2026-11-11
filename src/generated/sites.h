@@ -1277,6 +1277,18 @@ inline constexpr Site kResearchCostCopyCall{"ResearchCostCopyCall", 0x009E68A0, 
 inline constexpr std::uint8_t kCommandResearchCostCopyCallBytes[] = {0xE8, 0x26, 0xB5, 0xAA, 0xFF};
 inline constexpr Site kCommandResearchCostCopyCall{"CommandResearchCostCopyCall", 0x009D5548, kCommandResearchCostCopyCallBytes, sizeof(kCommandResearchCostCopyCallBytes)};
 
+inline constexpr std::uint8_t kResearchProgressAddBytes[] = {0xD8, 0x46, 0x6C, 0xD9, 0x5E, 0x6C, 0xE8, 0xEC, 0xF8, 0xFF, 0xFF};
+inline constexpr Site kResearchProgressAdd{"ResearchProgressAdd", 0x009E6622, kResearchProgressAddBytes, sizeof(kResearchProgressAddBytes)};
+
+inline constexpr std::uint8_t kCommandResearchProgressAddBytes[] = {0xD8, 0x46, 0x70, 0xD9, 0x5E, 0x70, 0xE8, 0x91, 0xFA, 0xFF, 0xFF};
+inline constexpr Site kCommandResearchProgressAdd{"CommandResearchProgressAdd", 0x009D58FF, kCommandResearchProgressAddBytes, sizeof(kCommandResearchProgressAddBytes)};
+
+inline constexpr std::uint8_t kPayAffordCheckBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x40, 0x01, 0x00, 0x00, 0x53, 0x56, 0x33, 0xF6, 0x39, 0xB2, 0x80, 0x00, 0x00, 0x00, 0x57, 0x7E, 0x45, 0x8B, 0x5C, 0x24, 0x10, 0x8D, 0xB9};
+inline constexpr Site kPayAffordCheck{"PayAffordCheck", 0x008D6BAE, kPayAffordCheckBytes, sizeof(kPayAffordCheckBytes)};
+
+inline constexpr std::uint8_t kPaySharedAffordCheckBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x53, 0x55, 0x8B, 0xE9, 0x8B, 0x88, 0x40, 0x01, 0x00, 0x00, 0x33, 0xDB, 0x39, 0x99, 0x80, 0x00, 0x00, 0x00, 0x56, 0x57};
+inline constexpr Site kPaySharedAffordCheck{"PaySharedAffordCheck", 0x008D6C1B, kPaySharedAffordCheckBytes, sizeof(kPaySharedAffordCheckBytes)};
+
 inline constexpr std::uint8_t kTrainQueueCall1Bytes[] = {0xE8, 0x04, 0x82, 0x27, 0x00};
 inline constexpr Site kTrainQueueCall1{"TrainQueueCall1", 0x007560B5, kTrainQueueCall1Bytes, sizeof(kTrainQueueCall1Bytes)};
 

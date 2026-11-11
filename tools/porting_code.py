@@ -104,6 +104,7 @@ PAGES = {
         "sharedBuildLimit": ["src/features/sharedlimit.cpp", "src/hooks/sharedlimit_hooks.asm"],
         "doNotQueue": ["src/features/donotqueue.cpp"],
         "nextResearchFree": ["src/features/freeresearch.cpp"],
+        "researchGrants": ["src/features/researchgrants.cpp", "src/hooks/researchgrant_hooks.asm"],
         "maintainWaitForPop": ["src/features/maintain.cpp", "src/hooks/maintain_hooks.asm"],
         "noTrainNearEnemyTC": ["src/features/notrainneartc.cpp", "src/hooks/notrainneartc_hooks.asm"],
         "lifespanAfterConstruction": ["src/features/lifespan.cpp", "src/hooks/lifespan_hooks.asm"],

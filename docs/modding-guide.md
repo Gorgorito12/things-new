@@ -35,6 +35,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
 | Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Wednesday 2026-11-11 16:01 | [`researchGrants`](#researchgrants) | Added. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -4985,6 +4986,7 @@ How buildings train, spawn, live and get replaced.
 | [`sharedBuildLimit`](#sharedbuildlimit) | Protos share a build limit: by unit type, with weights, or across a team. | **new** | The tags on the protos that share. | confirmed |
 | [`doNotQueue`](#donotqueue) | `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | **new** | The tag on the protos that want it. | confirmed |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
+| [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
@@ -6025,8 +6027,10 @@ nextResearchFree [log]
 - **Removal:** taking the effect away takes that many turns from the count, down to 0. Not tested in game.
 - **Multiplayer:** it changes the simulation: every player needs the same setting.
 - **Log:** `nextResearchFree: the Data subtype NextResearchIsFree is on`, `hook reached: research payment (0x9E67E1)`
-  (`nextResearchFree research (0x9E67E1)` before 2026-11-11, when the payment became a hook other keys share), and with
-  `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444: a free research, 0 left`.
+  (`nextResearchFree research (0x9E67E1)` before 2026-11-11, when the payment became a hook shared with
+  [`researchGrants`](#researchgrants)), and with `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444:
+  a free research, 0 left`.
+- **With `researchGrants`:** a research this key makes free is not asked of that key, so it spends no grant point.
 - **Tested in WoL (2026-11-05):**
   - One turn, three researches of 300 wood: 2000, 2000, 1700, 1400, and a cancel of the third gave back 300. Key off: 2000,
     1700, 1400, 1100.
@@ -6036,6 +6040,124 @@ nextResearchFree [log]
     came back to 1, and a second research asked for by console did not start and logged nothing (not understood).
   - A skirmish with a European AI with the key on compiled and played; it did not use the effect.
   - Not tested: `CommandResearch` (0x9D54CF: its hook was not reached), an AI using the effect, a type as target, multiplayer.
+  - Again with the shared payment (2026-11-11), `researchGrants` off: the effect at 150 s, a research of 300 wood at the
+    Market free (4100 stayed 4100, refund copy 0), the next one at the Market paid 50 (4100 to 4050). With `researchGrants`
+    on, the free research left the Market's grant points at 4.
+
+#### researchGrants
+
+*A building gathers grant points over time, and each point makes one of its player's researches cheaper or free.*
+
+**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Wednesday 2026-11-11 16:01
+
+![researchGrants in WoL](media/researchGrants-wol.gif)
+
+*In WoL, with the key (Ethiopians, the Market with `ResearchGrantInterval` 20 and `ResearchGrantMax` 3, four test
+researches of 300 wood at the Town Center):* the Market's row in the unit panel counts its points and the seconds to the
+next one; the first three researches take no wood and a point each, the fourth, with no point left, takes 300.
+[Full video (MP4)](media/researchGrants-wol.mp4).
+
+![researchGrants in WoL, key off](media/researchGrants-wol-control.gif)
+
+*In WoL, key off (the same data):* no row, and each of the four researches takes 300 wood. The game skips the tags it
+does not know. [Full video (MP4)](media/researchGrants-wol-control.mp4).
+
+```
+researchGrants [log]
+```
+
+```xml
+<Unit name="Market">
+    <ResearchGrantInterval>240</ResearchGrantInterval>
+    <ResearchGrantMax>3</ResearchGrantMax>
+    <ResearchGrantCost>0</ResearchGrantCost>
+    <ResearchGrantTime>1</ResearchGrantTime>
+    <ResearchGrantScope>all</ResearchGrantScope>
+    <ResearchGrantMinCost>0</ResearchGrantMinCost>
+</Unit>
+```
+
+| Tag | Value | Default |
+|---|---|---|
+| `ResearchGrantInterval` | Game seconds per point, 1 to 36000. **Required**: a proto has grants only with it. | none |
+| `ResearchGrantMax` | The most points the building stores, 1 to 1000. | 1 |
+| `ResearchGrantCost` | The share of the cost paid with a point, 0 to 1: 0 is free, 0.5 half. | 0 |
+| `ResearchGrantTime` | The research time factor with a point, 0.01 to 100: 2 takes twice as long, 0.5 half as long. | 1 |
+| `ResearchGrantScope` | `all`: a research in any of the player's buildings; `self`: only one in this building. | `all` |
+| `ResearchGrantMinCost` | A point goes on a research the player could pay only when its total cost is at least this. | 0 |
+
+- **In WoL today:** nothing does this. Any civ and any building: the tags go on whatever proto should have them.
+- **Points:** every living, finished building of the proto gains a point per interval of game time, up to its cap. At
+  the cap its timer waits at 0; the timer starts again when a point is spent. A foundation gains nothing until it is
+  built. The points belong to the building: two Markets count apart.
+- **When a point is spent** (there is no button: the rule decides). When a research is paid, the paying player's
+  buildings with a point, in scope, are the candidates. A point goes on it when:
+  - the tech costs something (or the building's Time factor is not 1), and
+  - the player **cannot pay the full cost**, or the tech's total cost (all resources added) is **at least
+    `ResearchGrantMinCost`**.
+
+  With the default `ResearchGrantMinCost` 0 every research with a cost takes a point while there is one. Raise it to
+  keep the points for the expensive techs: cheaper ones then use a point only when the player is short of resources.
+  The building with the most points pays (the lowest unit ID on a tie, the same on every machine).
+- **What a point does:** the research costs `ResearchGrantCost` of its price (rounded as the game rounds costs), and
+  takes `ResearchGrantTime` times as long. With a share below 1 the player needs only that share.
+- **Cancel:** the research gives back what was paid (nothing for a free one, half for a half) and never the point, as
+  with `nextResearchFree`.
+- **Tech effects** (`type='Data'`, on the player's copy of the proto):
+  - `subtype='ResearchGrantInterval'` and `subtype='ResearchGrantMax'` change the interval and the cap from the tags'
+    values, with the stock relativity (`Absolute` adds, `Percent` and `BasePercent` multiply, `Assign` sets). A card of
+    -10 `Absolute` on a 20 s interval makes it 10 s.
+  - `subtype='ResearchGrantPoints'` gives that many points at once to each of the player's finished buildings of the
+    proto, up to the cap: "pay to skip the wait". Removing the tech takes nothing back.
+  - On a proto without `ResearchGrantInterval` they are logged and ignored.
+
+  ```xml
+  <Effect type='Data' amount='-10.00' subtype='ResearchGrantInterval' relativity='Absolute'>
+      <Target type='ProtoUnit'>Market</Target></Effect>
+  <Effect type='Data' amount='2.00' subtype='ResearchGrantPoints' relativity='Absolute'>
+      <Target type='ProtoUnit'>Market</Target></Effect>
+  ```
+- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14 s`, `3/3 (full)` or
+  `0/3 once built`.
+- **With `nextResearchFree`:** a research that key makes free spends no grant point.
+- **The AI** gets and spends points as players do: its researches go through the same payment.
+- **Saved games:** the points and the timer are kept on the building, and so is the Time factor of a research that
+  spent a point. The tech effects' values come back as the load applies the techs again.
+- **Limits:**
+  - destroying the building loses its points;
+  - a transform in place (`TransformUnit`, a revolution) clears them: the building starts again from 0;
+  - a building found at the start of a game, or created by a trigger, starts its timer when the key first sees it,
+    within a world update;
+  - the research cost shown on the button and in its tooltip is the full price.
+- **Multiplayer:** it changes the simulation: every player needs the same setting. It uses only game state and game
+  time; not tested in multiplayer.
+- **Simulation:** yes.
+- **Log:** `researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax
+  and ResearchGrantPoints are on`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research
+  step (0x9E6622)`; a bad value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
+  "2"; ignored`. With `log`: `unit 0 (Market) has 2/3 point(s) (game time 40000 ms)`, `unit 2 spends a point on tech
+  10544 in unit 2: cost x0.50, time x2.00, 1 left`, `tech 10544 in unit 2 is done (game time 103014 ms)`.
+- **Tested in WoL (2026-11-11),** scenario player 1 (Ethiopians) with a `Market` (interval 20, cap 3, cost 0, time 1,
+  scope all, `MinCost` 100 from the second run) and an Iroquois `WOLMarketIroquois` (interval 20, cap 2, cost 0.5, time
+  2, scope self), test techs of 300 wood and 20 research points:
+  - points at 20.0, 40.0 and 60.0 s, then the Market stayed at 3/3 and the Iroquois market at 2/2;
+  - three researches at the Town Center: free, wood 5300 kept, the Market's points 3, 2, 1, 0; the fourth paid 300 while
+    the Iroquois market still had a point (scope self);
+  - a research at the Iroquois market while it had more points than the Market: paid 150 (refund copy 150), and took
+    39.97 s (63.05 to 103.01 s) against 20 s for the same tech at the Town Center;
+  - `ResearchGrantPoints` +2 at 95 s: 1/3 to 3/3 at once; a card with interval -10 and cap +1 at 130 s: 4/4 at 140.0 s;
+  - `MinCost` 100: a research of 50 wood with 4800 wood paid 50 and kept the point; with 0 wood the same research took a
+    point and started free;
+  - a saved game at 70 s with 1/3 and the timer at 7.6 s: the same after the load, the next point at the time it was due
+    (82.7 s), and the Iroquois research kept its factor (done at 103.0 s, twice the stock time);
+  - the Market killed at 120 s: `unit 0 is gone`; a Market created by a trigger at 125 s gained its first point at 145.0 s;
+  - bad values on `Church` (-5, `everywhere`, 2, 0) logged and ignored; `ResearchGrantPoints` on `Barracks`, which has
+    no tags, logged and ignored;
+  - a skirmish against a German AI (`wolOtto`) with the tags on `TownCenter` too: it compiled and played (18 settlers, 2
+    manors at 4 min, no `XS: Error`), and the AI spent a point at 332 s on `wuolaristocrat` at its Town Center.
+  - Performance, 90 s from the load of the same scenario: see the A/B in `docs/how-it-works.md`.
+  - Not tested: `CommandResearch` (a research from a `protounitcommands.xml` command, 0x9D54CF / 0x9D58FF), a cancel,
+    a transform in place, multiplayer.
 
 #### trainBatchSize
 
