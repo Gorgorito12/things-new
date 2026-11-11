@@ -418,3 +418,168 @@ def home_city(proc, player):
         return 0
     p = proc.u32(proc.u32(w + 0x58) + 4 * player)
     return proc.u32(p + 0x84) if p else 0
+
+
+# --- Crash capture -------------------------------------------------------------------------------
+
+psapi = ctypes.WinDLL("psapi", use_last_error=True)
+psapi.EnumProcessModulesEx.argtypes = [wt.HANDLE, ctypes.POINTER(ctypes.c_void_p), wt.DWORD,
+                                       ctypes.POINTER(wt.DWORD), wt.DWORD]
+psapi.GetModuleFileNameExW.argtypes = [wt.HANDLE, ctypes.c_void_p, wt.LPWSTR, wt.DWORD]
+
+
+class _ModuleInfo(ctypes.Structure):
+    _fields_ = [("base", ctypes.c_void_p), ("size", wt.DWORD), ("entry", ctypes.c_void_p)]
+
+
+psapi.GetModuleInformation.argtypes = [wt.HANDLE, ctypes.c_void_p, ctypes.POINTER(_ModuleInfo), wt.DWORD]
+
+EXCEPTION_NAMES = {0xC0000005: "access violation", 0xC000001D: "illegal instruction",
+                   0xC0000094: "integer division by zero", 0xC00000FD: "stack overflow",
+                   0xC0000409: "stack buffer overrun", 0xC0000374: "heap corruption",
+                   0xC000008E: "float division by zero", 0xC0000090: "float invalid operation",
+                   0xE06D7363: "C++ exception", 0x80000003: "breakpoint"}
+# First-chance exceptions that are routine and never logged: C++ throws, thread naming, debug prints.
+ROUTINE = {0xE06D7363, 0x406D1388, 0x40010006, 0x4001000A}
+
+
+def modules32(handle):
+    """(base, size, path) of the 32-bit modules of a WOW64 process (LIST_MODULES_32BIT)."""
+    arr = (ctypes.c_void_p * 1024)()
+    need = wt.DWORD()
+    if not psapi.EnumProcessModulesEx(handle, arr, ctypes.sizeof(arr), ctypes.byref(need), 0x01):
+        return []
+    out = []
+    for i in range(min(need.value // ctypes.sizeof(ctypes.c_void_p), 1024)):
+        info = _ModuleInfo()
+        name = ctypes.create_unicode_buffer(520)
+        if arr[i] and psapi.GetModuleInformation(handle, arr[i], ctypes.byref(info), ctypes.sizeof(info)):
+            psapi.GetModuleFileNameExW(handle, arr[i], name, 520)
+            out.append((info.base or 0, info.size, name.value))
+    return out
+
+
+def module_of(mods, address):
+    for base, size, path in mods:
+        if base <= address < base + size:
+            return f"{os.path.basename(path)}+{address - base:#x}"
+    return "?"
+
+
+def crash_report(proc, thread, exc, address, info, first_chance):
+    """A dict with what a crash leaves: code, EIP, registers, the module of each address, the
+    stack's return addresses (call_chain) and its first words."""
+    ctx = (ctypes.c_ubyte * CTX_SIZE)()
+    struct.pack_into("<I", ctx, 0, CTX_FLAGS)
+    regs = {}
+    if thread and k32.Wow64GetThreadContext(thread, ctx):
+        regs = {name: reg(ctx, name) for name in OFF_REG}
+    mods = modules32(proc.handle)
+    esp = regs.get("esp", 0)
+    chain = proc.call_chain(esp, depth=16, scan=0x1000) if esp else []
+    stack = proc.read(esp, 64) if esp else None
+    report = {
+        "time": time.strftime("%Y-%m-%d %H:%M:%S"), "pid": proc.pid,
+        "code": f"{exc:#010x}", "name": EXCEPTION_NAMES.get(exc, ""),
+        "first_chance": bool(first_chance), "eip": f"{address:#x}", "module": module_of(mods, address),
+        "registers": {k: f"{v:#010x}" for k, v in regs.items()},
+        "call_chain": [f"{a:#x}" for a in chain],
+        "stack": [f"{w:#010x}" for (w,) in struct.iter_unpack("<I", stack)] if stack else [],
+    }
+    if exc == 0xC0000005 and len(info) >= 2:
+        report["access"] = {0: "read", 1: "write", 8: "execute"}.get(info[0], str(info[0]))
+        report["target"] = f"{info[1]:#x}"
+    return report
+
+
+def format_report(r):
+    lines = [f"{'first-chance' if r['first_chance'] else 'CRASH (second chance)'} {r['code']} {r['name']} "
+             f"at EIP {r['eip']} ({r['module']})"
+             + (f", {r['access']} of {r['target']}" if "access" in r else "")]
+    regs = r["registers"]
+    if regs:
+        lines.append("  " + " ".join(f"{k}={regs[k]}" for k in ("eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp")))
+    lines.append("  call chain: " + " ".join(r["call_chain"]))
+    return "\n".join(lines)
+
+
+def crash_watch(pid, log, report_path, deadline, first_chance_limit=20):
+    """Attaches and waits for the game to crash or exit, setting no breakpoint. A second-chance
+    (unhandled) exception is written to report_path as one JSON line and logged; the exception is
+    then passed on, so the game ends as it would have (with a debugger attached, Windows skips the
+    error report dialog). First-chance exceptions other than C++ throws and the like are logged too,
+    up to first_chance_limit, in case the game's own handler ends it.
+    Returns "crash", "exited" or "deadline" (then detaches and the game keeps running)."""
+    import json
+    dbg = Debugger(pid, log)
+    dbg.attach()
+    proc = Process(pid)
+    event = (ctypes.c_ubyte * 192)()
+    seen_first = 0
+    result = "deadline"
+    try:
+        while time.time() < deadline:
+            if not k32.WaitForDebugEvent(event, 500):
+                continue
+            code, epid, tid = struct.unpack_from("<III", event, 0)
+            status = DBG_CONTINUE
+            try:
+                if code == 1:  # EXCEPTION_DEBUG_EVENT
+                    exc = struct.unpack_from("<I", event, 16)[0]
+                    address = struct.unpack_from("<Q", event, 32)[0]
+                    nparams = struct.unpack_from("<I", event, 40)[0]
+                    info = [struct.unpack_from("<Q", event, 48 + 8 * i)[0] for i in range(min(nparams, 15))]
+                    first_chance = struct.unpack_from("<I", event, 168)[0]
+                    if exc in (0x80000003, 0x4000001F) and first_chance:
+                        status = DBG_CONTINUE  # the attach break-in
+                    else:
+                        status = DBG_NOT_HANDLED  # the game's own handlers decide
+                        if not first_chance or (exc not in ROUTINE and seen_first < first_chance_limit):
+                            r = crash_report(proc, dbg.threads.get(tid), exc, address, info, first_chance)
+                            r["tid"] = tid
+                            log(format_report(r))
+                            with open(report_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps(r) + "\n")
+                            if first_chance:
+                                seen_first += 1
+                            else:
+                                result = "crash"
+                elif code == 2:  # CREATE_THREAD
+                    dbg.threads[tid] = struct.unpack_from("<Q", event, 16)[0]
+                elif code in (3, 6):  # CREATE_PROCESS / LOAD_DLL: close the image file handle
+                    k32.CloseHandle(struct.unpack_from("<Q", event, 16)[0])
+                elif code == 4:  # EXIT_THREAD
+                    dbg.threads.pop(tid, None)
+                elif code == 5:  # EXIT_PROCESS
+                    exit_code = struct.unpack_from("<I", event, 16)[0]
+                    log(f"game exited, exit code {exit_code:#010x}")
+                    dbg.attached = False
+                    return result if result == "crash" else "exited"
+            finally:
+                k32.ContinueDebugEvent(epid, tid, status)
+    finally:
+        if dbg.attached:
+            dbg.detach()
+    return result
+
+
+def main(argv):
+    """crash [--out <file.jsonl>] [--log <file>] [--seconds N]: attach to the game (UHC_GAME_DIR picks
+    the copy among several) and wait until it crashes or exits; see crash_watch(). Stop it with Ctrl+C."""
+    import sys
+    if not argv or argv[0] != "crash":
+        raise SystemExit(main.__doc__)
+    out = argv[argv.index("--out") + 1] if "--out" in argv else "crash.jsonl"
+    log = Logger(argv[argv.index("--log") + 1] if "--log" in argv else os.path.splitext(out)[0] + ".log")
+    seconds = float(argv[argv.index("--seconds") + 1]) if "--seconds" in argv else 7 * 86400
+    pid = find_pid() or sys.exit("crash: no game running (set UHC_GAME_DIR to its folder)")
+    try:
+        result = crash_watch(pid, log, out, time.time() + seconds)
+    except KeyboardInterrupt:
+        result = "stopped"
+    log(f"crash watch ended: {result}")
+
+
+if __name__ == "__main__":
+    import sys
+    main(sys.argv[1:])
