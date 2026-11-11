@@ -3722,12 +3722,43 @@ default) with its file offset.
   freed while in use.
 - Each hook keeps `GetLastError` as Windows would leave it.
 
+**`readahead`** (2026-11-11). One worker thread of the DLL reads the block after the buffer:
+- **When.** After the game's thread fills the buffer with a whole block (one real read of the
+  buffer's size), it queues the next block's offset. A queued request whose block the game reaches
+  first is taken back, and the game's thread reads it as before.
+- **Its own handle.** The first request of a file opens a second handle with
+  `ReOpenFile(GENERIC_READ, FILE_SHARE_READ | WRITE | DELETE)`. The worker reads with a positioned
+  `ReadFile` (an `OVERLAPPED` offset on that synchronous handle), so the game's handle, its file
+  pointer and the real-pointer bookkeeping above are never touched. If the second handle cannot be
+  opened, that file simply gets no read-ahead.
+- **Use.** On a buffer miss, before any real read, the game's thread checks the read-ahead block:
+  - if it holds the requested position, the two buffers are swapped and the next block is queued;
+  - if the worker is reading exactly that block right now, the game's thread waits for it (the
+    log counts these waits and their time);
+  - otherwise the block is dropped and the game's thread reads.
+
+  The block is used only for the position it was read at, so the bytes are the file's bytes at
+  that offset, as with the plain buffer. A short read (end of file) or an error leaves the block
+  unused.
+- **Lifetime.** A file's state is reference-counted: the handle table holds one reference, and a
+  queued or in-flight block another. Closing the game's handle, a read from another thread or
+  `DuplicateHandle` drop the block (an in-flight one is discarded when it lands); the buffers and
+  the second handle are freed with the last reference, on whichever thread releases it.
+- **Locks.** The worker holds the file's critical section only to take and to publish a block,
+  never during its read; the game's thread waits for a block with `SleepConditionVariableCS`
+  on that section. The worker never takes the handle-table lock.
+- **Log at exit:** blocks asked of the worker, read, used by the game, waited for (and the time),
+  the buffer refills still read on the game's thread, and the files with no second handle.
+
 **Checks.**
 - `bufferedFileReads verify` reads every buffered request again with a real positioned
   `ReadFile` and compares the bytes. A full late-game session checked 7.5 million reads with no
   mismatch.
 - `perfFileLog` counts the game's calls against the ones made to Windows. A session with the
-  buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows.
+  buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows. The worker's reads
+  go through its own handle and are not in those counts.
+- `bufferedFileReads 64 readahead verify` on the stock game's 25-minute save checked 6.9 million
+  buffered reads, 0 mismatches.
 
 ### fastVertexFill
 

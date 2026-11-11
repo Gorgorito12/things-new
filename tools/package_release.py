@@ -340,7 +340,8 @@ cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
-bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
+bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster
+                              loading; readahead reads the next block on a worker thread
 fastVertexFill                waving flags drawn without reading video memory: more fps with flags on screen
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder

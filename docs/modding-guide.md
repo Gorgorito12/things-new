@@ -369,7 +369,7 @@ ignoreRegistryPath
 **Added:** Wednesday 2026-10-28 16:34
 
 ```
-bufferedFileReads [<KB>] [verify]      default 64 KB
+bufferedFileReads [<KB>] [readahead] [verify]      default 64 KB
 ```
 
 - **In WoL today:** the exe reads the archives (`art\Art*.bar`, `data\Data*.bar`, `sound\*.bar`, …) and
@@ -380,30 +380,47 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
 - **Effect:** every file the game opens for reading only gets a read-ahead buffer. One Windows read
   fills the buffer, and the game's small reads are served from memory. The game receives the
   same bytes.
-- **Measured** in a late 8-AI game of the stock game ([performance.md](performance.md), §9,
-  "bufferedFileReads A/B"), on a 150 s recording. It was not measured in WoL yet:
+- **Measured** ([performance.md](performance.md), §9, "readahead, and the first measurement in WoL"),
+  150 s recordings of a late save, two runs per setting, on a PC that other tests shared:
 
-  | | Without | With |
-  |---|---|---|
-  | Frames over 100 ms | 11 | 3 |
-  | Frames over 50 ms | 19 | 11 |
-  | Longest frame | 251 ms | 116 ms |
-  | Time in file reads, whole session (most of it loading) | 14.9 s | 1.0 s |
+  | | Stock, without | Stock, with | WoL, without | WoL, with |
+  |---|---|---|---|---|
+  | Frames over 100 ms | 3, 3 | 0, 0 | 13, 9 | 10, 11 |
+  | Frames over 50 ms | 4, 4 | 2, 2 | 17, 13 | 15, 14 |
+  | Longest frame | 189, 190 ms | 94, 97 ms | 508, 386 ms | 570, 396 ms |
+  | Time in file reads, whole session | 8.5, 8.7 s | 0.35, 0.35 s | 3.9, 3.9 s | 0.38, 0.40 s |
+  | Loading the save | 10.1, 10.0 s | 5.1, 5.5 s | 11.6, 11.4 s | 9.6, 9.4 s |
 
-- **What it does not fix:** most of the remaining stutter is the animation library (granny)
-  setting up the model it just read. That is processing work, not reading.
+- **What it does not fix:**
+  - **WoL's stutters are not file reads.** In WoL's slow frames, file reads and granny are 2 % each;
+    the time is in two pieces of the game's own code, not identified yet. So in WoL the key makes
+    loading faster and cuts the time spent reading, but it does not remove the stutters.
+  - In the stock game, most of what remains is the animation library (granny) unpacking a model or an
+    animation it meets for the first time: granny stores them compressed, and unpacking is processing
+    work, not reading ([performance.md](performance.md), §9, "The remaining stutters").
 - **WoL needs:** nothing.
   - `<KB>` (4 to 1024) is the buffer size per open file.
+  - `readahead` adds a worker thread: while the game uses one block of a file, the worker reads
+    the next one. It reads through a second handle of its own, so the game's file handle is never
+    touched, and a block is used only for the place in the file it was read from. **It moves about
+    30 % of the block reads off the game's thread in the stock game** (2,930 of ~10,450 per session),
+    and 14 % in WoL (2,450 of ~18,000); the rest are the first read after the game jumps to another place in an archive, which it
+    cannot guess. It changed no frame count in the runs above, so it is optional.
   - `verify` also reads every buffered request from the file for real and compares the two. It is
     a correctness test and makes reading slower.
 - **Log:**
-  - at startup, `bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)`;
+  - at startup, `bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)`,
+    followed by `; readahead: a worker thread reads the next block of each file` with `readahead`;
   - with `verify`, at exit: `bufferedFileReads verify: N buffered reads checked, M mismatches`.
-    M must be 0.
+    M must be 0;
+  - with `readahead`, at exit: `bufferedFileReads readahead: N blocks asked of the worker, N read,
+    N used by the game (N waited for, N ms in all); N buffer refills read on the game's thread; N files
+    without a second handle`.
 - **Simulation:** no. It changes how the bytes are fetched, not which bytes, so players do not
   need the same setting.
-- **Status:** confirmed in single player, on the stock game: on a 25-minute save, `verify` checked 7.5
-  million buffered reads against the file and found no mismatch. Not tested in WoL or in multiplayer.
+- **Status:** confirmed in single player, on the stock game and in WoL. `verify` found no mismatch:
+  7.5 million buffered reads on the stock game's 25-minute save, and with `readahead` 6.9 million there
+  and 3.0 million on a 32-minute WoL save. Not tested in multiplayer.
 
 #### fastVertexFill
 

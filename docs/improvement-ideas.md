@@ -435,23 +435,25 @@ First: `NoStack`, then the registry.
 
 The key does its job; these are the next steps of the performance plan.
 
-- **Zero-code A/B first:** `-demandLoadMeshes`, `megaPostLoadForceTextures` (does the game discard
-  and rebuild meshes?). *verify*
-- **Find the granny call** that takes the remaining slow-frame samples (resolve `granny2.dll`
-  exports as for `ntdll`). *RE*
+- **Zero-code A/B:** done 2026-11-11: `-demandLoadMeshes` and `megaPostLoadForceTextures` do nothing in this
+  exe (performance.md, §9).
+- **The granny call:** found 2026-11-11: Oodle1 decompression inside `GrannyReadEntireFile` (models) and
+  `GrannyReadFileSection` (animations). The levers are uncompressed `.gr2` files or a preload. *user's choice*
 - **`preloadList <file>`:** load at the loading screen what `perfFileLog` saw opened mid-match.
   Costs memory; needs `set_laa.py` first. *medium*
-- **Read-ahead on a worker thread:** the 17,797 remaining Windows reads still fall inside frames.
-  *small*
+- **Read-ahead on a worker thread:** done 2026-11-11 (`readahead`): about 30 % of block reads move off the
+  game's thread, no measured change in frames.
 - **Buffer size per extension**, with per-file statistics in the log at exit (buffered vs real
   reads). *small*
 - **Memory-mapped `.bar`** as an alternative, only with LAA. *medium*
 - **Thread safety:** the sound mixer reads on another thread; a lock per handle, and `verify`
   run with sound on. *verify*
 - **Loose files edited while running** may be served stale: document or invalidate by mtime.
-- **Pending:** a multiplayer game with the key on one side; a timed load with and without.
+- **WoL's stutters** are not file reads (performance.md, §9): identify 0x68FB04 / 0x94BC1D and the walk under
+  0x67A1FD with REA. *RE*
+- **Pending:** a multiplayer game with the key on one side.
 
-First: the cfg A/B and the worker-thread read-ahead.
+First: WoL's stutter functions, then the user's choice on `.gr2` decompression.
 
 ## `hcShipmentPointFallback`
 

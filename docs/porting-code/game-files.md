@@ -19,9 +19,13 @@ Contract: [bufferedFileReads](../porting-to-another-dll.md#bufferedfilereads).
 ### src/features/fileio.cpp
 
 ```cpp
-// bufferedFileReads [KB] [verify]: serves the exe's small ReadFile calls from a read-ahead buffer
-// per file. With `verify`, every buffered read is also made for real at the same offset and
-// compared, and mismatches are logged; that is a correctness test, not a speed-up.
+// bufferedFileReads [KB] [verify] [readahead]: serves the exe's small ReadFile calls from a
+// read-ahead buffer per file. With `verify`, every buffered read is also made for real at the same
+// offset and compared, and mismatches are logged; that is a correctness test, not a speed-up.
+// With `readahead`, a worker thread of this DLL reads the block after the one the game is
+// consuming, through a handle of its own (ReOpenFile), so that block is in memory when the game
+// gets there. The worker never uses the game's handle, so the game's file pointer and its reads
+// are untouched; a block is used only when it covers the position the game asks for.
 // The game's raw file stream (0x4683F4) issues one ReadFile per call, often for 4 bytes, so a
 // model or animation loaded during a match costs thousands of syscalls on the main thread
 // (docs/performance.md, section 9). The bytes returned are the same; only the syscalls change.
@@ -41,9 +45,11 @@ Contract: [bufferedFileReads](../porting-to-another-dll.md#bufferedfilereads).
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "../features.h"
@@ -78,6 +84,7 @@ DuplicateHandleFn g_duplicateHandle = nullptr;
 
 bool g_buffering = false;
 bool g_verify = false;
+bool g_readahead = false;
 DWORD g_bufferSize = 64 * 1024;
 volatile LONG g_verified = 0;
 volatile LONG g_mismatches = 0;
@@ -85,8 +92,32 @@ bool g_logging = false;
 LONGLONG g_logThresholdTicks = 0;
 LONGLONG g_qpcFrequency = 1;
 
+// `readahead` counters, logged at exit.
+volatile LONG g_aheadIssued = 0;    // blocks the worker was asked to read
+volatile LONG g_aheadRead = 0;      // blocks it read
+volatile LONG g_aheadUsed = 0;      // blocks the game's thread took instead of reading
+volatile LONG g_aheadWaits = 0;     // of those, how many it had to wait for
+volatile LONG g_aheadNoHandle = 0;  // files whose second handle could not be opened
+volatile LONG64 g_aheadWaitTicks = 0;
+volatile LONG g_refills = 0;        // buffer refills made on the game's thread
+
+// The block after the buffer, read by the worker thread. Guarded by FileState::lock, except that
+// `buf` is written by the worker while `state` is kInFlight, and `handle` is used by it then.
+struct ReadAhead {
+  enum State : std::uint8_t { kIdle, kQueued, kInFlight, kReady };
+  State state = kIdle;
+  bool discard = false;   // set while in flight: drop the result
+  bool disabled = false;  // no second handle; never tried again for this file
+  HANDLE handle = nullptr;  // ours, from ReOpenFile; never the game's handle
+  std::uint8_t* buf = nullptr;
+  std::int64_t start = 0;
+  DWORD len = 0;
+};
+
 struct FileState {
   CRITICAL_SECTION lock;
+  CONDITION_VARIABLE aheadDone = CONDITION_VARIABLE_INIT;
+  volatile LONG refs = 1;     // the handle table's, plus one while the worker has it queued
   std::wstring path;
   DWORD owner = 0;            // thread that opened it
   bool buffered = false;
@@ -95,6 +126,7 @@ struct FileState {
   std::int64_t bufStart = 0;  // file offset of buf[0]
   DWORD bufLen = 0;
   std::uint8_t* buf = nullptr;
+  ReadAhead ahead;
   // statistics
   std::uint32_t reads = 0;       // ReadFile calls by the game
   std::uint32_t smallReads = 0;  // of which 16 bytes or less
@@ -144,6 +176,17 @@ bool SyncPointer(FileState* s, HANDLE h) {
   return true;
 }
 
+// Drops the read-ahead block, queued, in flight or ready. Its buffer stays allocated until the
+// state is freed, because the worker may still be writing into it. Needs s->lock.
+void DropAhead(FileState* s) {
+  ReadAhead& a = s->ahead;
+  if (a.state == ReadAhead::kInFlight) {
+    a.discard = true;
+  } else {
+    a.state = ReadAhead::kIdle;  // a queued request is skipped when the worker reaches it
+  }
+}
+
 // Hands the handle back to the plain Win32 behavior. Needs s->lock.
 void StopBuffering(FileState* s, HANDLE h) {
   if (!s->buffered) {
@@ -155,7 +198,151 @@ void StopBuffering(FileState* s, HANDLE h) {
   s->bufLen = 0;
   std::free(s->buf);
   s->buf = nullptr;
+  DropAhead(s);
   SetLastError(error);
+}
+
+void Release(FileState* s) {
+  if (InterlockedDecrement(&s->refs) != 0) {
+    return;
+  }
+  std::free(s->buf);
+  std::free(s->ahead.buf);
+  if (s->ahead.handle != nullptr) {
+    g_closeHandle(s->ahead.handle);
+  }
+  DeleteCriticalSection(&s->lock);
+  delete s;
+}
+
+// The read-ahead worker: one thread, a queue of states with a kQueued block.
+SRWLOCK g_queueLock = SRWLOCK_INIT;
+CONDITION_VARIABLE g_queueReady = CONDITION_VARIABLE_INIT;
+std::deque<FileState*>* g_queue = nullptr;
+
+DWORD WINAPI AheadWorker(void*) {
+  for (;;) {
+    AcquireSRWLockExclusive(&g_queueLock);
+    while (g_queue->empty()) {
+      SleepConditionVariableSRW(&g_queueReady, &g_queueLock, INFINITE, 0);
+    }
+    FileState* s = g_queue->front();
+    g_queue->pop_front();
+    ReleaseSRWLockExclusive(&g_queueLock);
+
+    ReadAhead& a = s->ahead;
+    EnterCriticalSection(&s->lock);
+    if (a.state != ReadAhead::kQueued) {  // taken back by the game's thread
+      LeaveCriticalSection(&s->lock);
+      Release(s);
+      continue;
+    }
+    a.state = ReadAhead::kInFlight;
+    a.discard = false;
+    const std::int64_t at = a.start;
+    LeaveCriticalSection(&s->lock);
+
+    // A positioned read on our own synchronous handle: the game's handle and its file pointer
+    // are never touched.
+    OVERLAPPED where = {};
+    where.Offset = static_cast<DWORD>(at & 0xFFFFFFFF);
+    where.OffsetHigh = static_cast<DWORD>(at >> 32);
+    DWORD read = 0;
+    BOOL ok = g_readFile(a.handle, a.buf, g_bufferSize, &read, &where);
+    if (!ok && GetLastError() == ERROR_HANDLE_EOF) {
+      ok = TRUE;
+      read = 0;
+    }
+    InterlockedIncrement(&g_aheadRead);
+
+    EnterCriticalSection(&s->lock);
+    if (ok && read != 0 && !a.discard) {
+      a.state = ReadAhead::kReady;
+      a.len = read;
+    } else {
+      a.state = ReadAhead::kIdle;
+    }
+    a.discard = false;
+    WakeAllConditionVariable(&s->aheadDone);
+    LeaveCriticalSection(&s->lock);
+    Release(s);
+  }
+}
+
+// Asks the worker for the block at `at`, unless it already has it or is busy with another one.
+// Needs s->lock, on the thread that owns the buffered handle `h`.
+void ScheduleAhead(FileState* s, HANDLE h, std::int64_t at) {
+  ReadAhead& a = s->ahead;
+  if (a.disabled || a.state == ReadAhead::kInFlight) {
+    return;
+  }
+  if (a.state == ReadAhead::kReady && a.start == at) {
+    return;
+  }
+  if (a.state == ReadAhead::kQueued) {
+    a.start = at;  // still in the queue: it will read the new place
+    return;
+  }
+  if (a.handle == nullptr) {
+    // A second handle to the same file, with its own file pointer. It shares everything, so the
+    // game can still open, write, rename or delete the file as before.
+    const DWORD error = GetLastError();
+    const HANDLE own = ReOpenFile(h, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+    SetLastError(error);
+    if (own == INVALID_HANDLE_VALUE) {
+      a.disabled = true;
+      InterlockedIncrement(&g_aheadNoHandle);
+      return;
+    }
+    a.handle = own;
+  }
+  if (a.buf == nullptr) {
+    a.buf = static_cast<std::uint8_t*>(std::malloc(g_bufferSize));
+    if (a.buf == nullptr) {
+      a.disabled = true;
+      return;
+    }
+  }
+  a.start = at;
+  a.state = ReadAhead::kQueued;
+  InterlockedIncrement(&s->refs);
+  InterlockedIncrement(&g_aheadIssued);
+  AcquireSRWLockExclusive(&g_queueLock);
+  g_queue->push_back(s);
+  ReleaseSRWLockExclusive(&g_queueLock);
+  WakeConditionVariable(&g_queueReady);
+}
+
+// If the read-ahead block holds s->pos, makes it the buffer (waiting for it if the worker is
+// reading it right now) and returns true. Needs s->lock.
+bool TakeAhead(FileState* s) {
+  ReadAhead& a = s->ahead;
+  const auto covers = [&](DWORD len) { return s->pos >= a.start && s->pos < a.start + len; };
+  if (a.state == ReadAhead::kQueued && covers(g_bufferSize)) {
+    a.state = ReadAhead::kIdle;  // not started: reading it here is faster than waiting in line
+    return false;
+  }
+  if (a.state == ReadAhead::kInFlight && covers(g_bufferSize)) {
+    const LONGLONG start = Now();
+    InterlockedIncrement(&g_aheadWaits);
+    while (a.state == ReadAhead::kInFlight) {
+      SleepConditionVariableCS(&s->aheadDone, &s->lock, INFINITE);
+    }
+    InterlockedAdd64(&g_aheadWaitTicks, Now() - start);
+  }
+  if (a.state != ReadAhead::kReady) {
+    return false;
+  }
+  if (!covers(a.len)) {
+    a.state = ReadAhead::kIdle;  // the game went elsewhere
+    return false;
+  }
+  std::swap(s->buf, a.buf);
+  s->bufStart = a.start;
+  s->bufLen = a.len;
+  a.state = ReadAhead::kIdle;
+  InterlockedIncrement(&g_aheadUsed);
+  return true;
 }
 
 void Retire(FileState* s) {
@@ -178,9 +365,12 @@ void Retire(FileState* s) {
     }
     LeaveCriticalSection(&g_logLock);
   }
-  std::free(s->buf);
-  DeleteCriticalSection(&s->lock);
-  delete s;
+  // Nobody else holds it once it is out of the table, except the worker for a moment.
+  if (TryEnterCriticalSection(&s->lock)) {
+    DropAhead(s);
+    LeaveCriticalSection(&s->lock);
+  }
+  Release(s);
 }
 
 void Track(HANDLE h, const wchar_t* path, DWORD access, DWORD flags) {
@@ -228,11 +418,28 @@ BOOL BufferedRead(FileState* s, HANDLE h, std::uint8_t* out, DWORD n, LPDWORD go
       s->pos += take;
       continue;
     }
+    const DWORD rest = n - done;
+    if (g_readahead && s->buf != nullptr && TakeAhead(s)) {
+      if (s->bufLen == g_bufferSize) {
+        ScheduleAhead(s, h, s->bufStart + s->bufLen);
+      }
+      continue;
+    }
     if (!SyncPointer(s, h)) {
       *got = done;
       return done != 0;
     }
-    const DWORD rest = n - done;
+    if (!s->buffered) {
+      // Another thread used the handle while this one waited for the worker (TakeAhead releases
+      // the lock): from here on the handle is plain Win32, so the rest is read straight.
+      DWORD read = 0;
+      const BOOL ok = g_readFile(h, out + done, rest, &read, nullptr);
+      ++s->syscalls;
+      s->pos += read;
+      s->osPos = ok ? s->pos : -1;
+      *got = done + read;
+      return ok || *got != 0;
+    }
     if (rest >= g_bufferSize) {  // large reads go straight to the file
       DWORD read = 0;
       const BOOL ok = g_readFile(h, out + done, rest, &read, nullptr);
@@ -259,6 +466,7 @@ BOOL BufferedRead(FileState* s, HANDLE h, std::uint8_t* out, DWORD n, LPDWORD go
     DWORD read = 0;
     const BOOL ok = g_readFile(h, s->buf, g_bufferSize, &read, nullptr);
     ++s->syscalls;
+    InterlockedIncrement(&g_refills);
     if (!ok) {
       s->bufLen = 0;
       s->osPos = -1;
@@ -270,6 +478,9 @@ BOOL BufferedRead(FileState* s, HANDLE h, std::uint8_t* out, DWORD n, LPDWORD go
     s->osPos = s->pos + read;
     if (read == 0) {
       break;  // end of file
+    }
+    if (g_readahead && read == g_bufferSize) {
+      ScheduleAhead(s, h, s->bufStart + read);
     }
   }
   *got = done;
@@ -470,6 +681,12 @@ void AtExit() {
   if (g_verify) {
     Log(L"bufferedFileReads verify: %ld buffered reads checked, %ld mismatches", g_verified, g_mismatches);
   }
+  if (g_readahead) {
+    Log(L"bufferedFileReads readahead: %ld blocks asked of the worker, %ld read, %ld used by the game "
+        L"(%ld waited for, %.1f ms in all); %ld buffer refills read on the game's thread; %ld files without "
+        L"a second handle",
+        g_aheadIssued, g_aheadRead, g_aheadUsed, g_aheadWaits, Ms(g_aheadWaitTicks), g_refills, g_aheadNoHandle);
+  }
   if (!g_logging) {
     return;
   }
@@ -534,6 +751,8 @@ Outcome ApplyFileIo(const Config& config) {
     for (const std::string& arg : *args) {
       if (_stricmp(arg.c_str(), "verify") == 0) {
         g_verify = true;
+      } else if (_stricmp(arg.c_str(), "readahead") == 0) {
+        g_readahead = true;
       } else if (const unsigned long kb = std::strtoul(arg.c_str(), nullptr, 10); kb != 0) {
         g_bufferSize = std::clamp<unsigned long>(kb, 4, 1024) * 1024;
       }
@@ -561,6 +780,16 @@ Outcome ApplyFileIo(const Config& config) {
   g_files = new std::unordered_map<HANDLE, FileState*>();
   g_logLines = new std::vector<std::wstring>();
   InitializeCriticalSection(&g_logLock);
+  if (g_readahead) {
+    g_queue = new std::deque<FileState*>();
+    const HANDLE worker = CreateThread(nullptr, 64 * 1024, &AheadWorker, nullptr, STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
+    if (worker == nullptr) {
+      Log(L"bufferedFileReads: no read-ahead thread (error %lu); buffering without it", GetLastError());
+      g_readahead = false;
+    } else {
+      CloseHandle(worker);
+    }
+  }
 
   // Every slot was verified above; write them only now, so a failure leaves the IAT untouched.
   // The close and duplicate hooks go in first, so no tracked handle can be closed unseen.
@@ -578,8 +807,10 @@ Outcome ApplyFileIo(const Config& config) {
     }
   }
   if (g_buffering) {
-    Log(L"bufferedFileReads: read-only files get a %lu KB read-ahead buffer (multiplayer-safe: same bytes)%ls",
-        g_bufferSize / 1024, g_verify ? L"; verify mode: every buffered read is checked against a real one" : L"");
+    Log(L"bufferedFileReads: read-only files get a %lu KB read-ahead buffer (multiplayer-safe: same bytes)%ls%ls",
+        g_bufferSize / 1024,
+        g_readahead ? L"; readahead: a worker thread reads the next block of each file" : L"",
+        g_verify ? L"; verify mode: every buffered read is checked against a real one" : L"");
   }
   if (g_logging) {
     Log(L"perfFileLog: logging files with %.1f ms or more in ReadFile, at exit", thresholdMs);

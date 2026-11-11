@@ -564,6 +564,165 @@ The feature is in `src/features/fileio.cpp`; its design is in [how-it-works.md](
 - Multiplayer is not tested. The feature never changes the bytes the game receives, so it cannot
   desynchronize.
 
+### The remaining stutters: granny decompresses models and animations (2026-11-11)
+
+The question: which granny call takes the 47.6 % of slow-frame samples left after `bufferedFileReads`, and
+what does it do the first time a model or an animation is used? REA (Ghidra 12.1.4) on the stock exe and on
+`granny2.dll` (SHA-256 `114adfdd…3dab60`, 773 exports), and the stacks of the 2026-10-28 runs read again
+(`bench-buffered`, `bench-base-filelog`). Records: `rea/evidence/age3y-b1a1dab7/granny-stutter-20261111.json`
+(exe) and `granny2-114adfdd-oodle-20261111.json` (DLL). **[O]** observed, **[I]** inferred, **[?]** open.
+
+**Which call** **[O]**.
+- perfprobe keeps only return addresses into the exe. For the granny samples inside slow frames, the innermost
+  one is 0x58ED29 in 72 of 78: the return from `call [0xB8424C]` (`ReadFile`) at 0x58ED23, in the exe's file
+  read callback that granny calls (`GrannyInitializeFileReader`, how-it-works "bufferedFileReads"). It is a stale
+  value left in a granny frame by the last callback, not a live frame: the EIP is in granny's own code.
+- The next exe return address is the real caller. With the IAT names from `inspect_pe_imports`
+  (`ev_576b0ffa…`), it is one of two calls:
+
+  | Return address | Call | Function | Granny samples in slow frames (`bench-buffered` / `bench-base-filelog`) |
+  |---|---|---|---|
+  | 0x46D8B4 | `call [0xB847DC]` = `GrannyReadEntireFile` | FUN_0046D7C3, **model load** | 52 of 78 / 60 of 115 |
+  | 0x43B7D1 (and 0x43C0DF) | `call [0xB8472C]` = `GrannyReadFileSection` | FUN_0043B6D7, **animation load** (`.\grannyanimation.cpp`) | 20 of 78 / 26 of 115 |
+
+- **Inside granny**, 72 of the 78 samples (82 of 115 without the buffer) fall in three ranges: 0x500433D0…0x50043560,
+  0x50001300…0x50001420 and 0x50044800…0x50044C40. 0x500433D0 decodes one symbol of an adaptive model: a binary search
+  over 16-bit cumulative frequencies with a total of 0x4000, then a call to the range decoder at 0x50001400
+  (capstone over the file). Its callers include FUN_50044AE0, which is called only by 0x50031870 and 0x50031A30,
+  the functions that reference the strings `Oodle1Decompress` and `granny_oodle1_compression.cpp` (`ev_95c4fe50…`,
+  `ev_595e26bb…`, `ev_4b30eca1…`). **The CPU time is Oodle1 decompression of the `.gr2` file sections**, done inside
+  `GrannyReadEntireFile` / `GrannyReadFileSection` on the main thread.
+- Nearest-export names are misleading here: by the export table the hot addresses sit after
+  `_GrannyBuildRestWorldPose@20`, but they are internal functions.
+
+**What the first use of a model does** (FUN_0046D7C3, `ev_6ad7dc5f…`) **[O]**:
+1. builds the path, falls back to 0x58E8F0 if 0x469080 fails, and resets the x87 control word
+   (`_control87(0x9001F, 0xFFFFF)`);
+2. `GrannyReadEntireFile` through the game's reader: every section read and **decompressed**, then fixed up;
+3. `GrannyGetFileInfo`; unless the art tool is `ESPostExport`, `GrannyComputeBasisConversion` and
+   `GrannyTransformFile` into the game's axes;
+4. for each mesh: `GrannyNormalizeVertices` (when flagged), a vertex format chosen by the mesh's deformer type,
+   `GrannyNewMeshBinding` and `GrannyNewMeshDeformer`, vertex counts and sizes, then the game's own buffers
+   (0x46D56D);
+5. `GrannyFreeFileSection(file, 2)` when the model qualifies (0x46D1F5).
+
+**An animation's first use** (FUN_0043B6D7, `ev_f2df66ff…`) **[O]**: the game's file reader
+(`.\grannyanimation.cpp` line 0x86), `GrannyReadPartialFileFromReader`, then `GrannyReadFileSection` and
+`GrannyFixupFileSection` for every section (only section 0 when the type tag is 0x80000013), the basis
+conversion and `GrannyTransformAnimation` for each animation, and a `Bip01` bone record.
+
+**Callers.** FUN_0046D7C3 has 7 direct callers and FUN_0043B6D7 has 4 (`ev_04204135…`, `ev_106e97dd…`). In the
+slow frames both are reached from the world update (§9, "The stutters"); why the simulation needs a model or an
+animation there is **[?]** (the recursive evaluator 0x94CF27 is still not identified).
+
+**`-demandLoadMeshes` and `megaPostLoadForceTextures`** **[O]**:
+- They are ordinary cfg variables (§6). `gamey.cfg` defines `demandLoadMeshes` ("only load meshes on demand") and
+  has `//megaPostLoadForceTextures` ("slow, but needed to avoid glitching") commented out. A cfg line `-name`
+  undefines one; the A/B edits the bed's `Startup\gamey.cfg`.
+- `demandLoadMeshes`: registered at 0x57B022, ID stored at 0xD95C90, pointer slot 0xD95C8C. Its only reader is the
+  game's init FUN_0055A102 (0x55A2BC, `ev_87bf7b9a…`), which stores "defined" in the byte `[obj+888h]`. A scan of
+  every instruction of `.text` with displacement 888h finds two writes of that byte (0x55A2CF, and the constructor
+  at 0x55A768) and **no read**; the byte next to it, `+889h`, written by the same code, is read at 0x713332, so
+  the scan does find such reads.
+- `megaPostLoadForceTextures`: registered at 0x5744ED, ID stored at 0xD98F40. The exe's bytes hold that address
+  once, in the store: **no reader** (no pointer slot, no other reference).
+- **Inference:** both switches are left over from development and do nothing in this build. The runs below
+  check it.
+
+**Recommendation** **[I]**. After `bufferedFileReads`, what is left of the file-load stutter is Oodle1
+decompression of `.gr2` models and animations met for the first time in a match, on the main thread. The
+only lever left is **not to decompress during a match**:
+- **uncompressed `.gr2` files** (a data change: Granny has `GrannyConvertFileToRaw` / `GrannyCompressContentsOfFile`
+  exports, and loose files override the archives), trading disk space for the decoder's time; or
+- **a preload** at the loading screen of what `perfFileLog` saw opened mid-match, trading memory (the exe is not
+  large-address-aware) and load time.
+
+Neither is built; the user decides. Decompressing on a worker thread is not proposed: the loaders are called from
+the simulation, which needs the result in the same frame.
+
+### readahead, and the first measurement in WoL (2026-11-11)
+
+**What `readahead` adds:** a worker thread reads the next block of a buffered file (how-it-works,
+"bufferedFileReads"). **Setup:** `tools/legacybench.py` (no input, window never focused) in two beds, the
+cfg rewritten per run by a script that keeps everything else and adds `perfFileLog 1` and
+`multipleInstances background`:
+- **stock:** `C:\AoE3-UHC-Test`, save `uhcbench25` (8 AI, ~25 game minutes), the camera the save left;
+- **WoL:** `C:\AoE3-UHC-WoLReal4` (WoL with this DLL), save `wolvk-a32` (32 game minutes, from
+  `dxvk-wol-20261110/saves`), the camera the save left.
+
+Each run records 150 s after the load at 200 Hz. Other sessions ran one to three games at the same time
+on the 16-thread machine, so runs are only comparable with each other; the runs marked "not quiet" had
+another process over 20 % of a core when they started. Files: `rea/evidence/age3y-b1a1dab7/fileio-20261111/`
+(`bench-<run>.csv`, `.stacks.gz`, `.samples.txt`, `fio-<run>.UHC.log`, the driver scripts).
+
+**Correctness.** `bufferedFileReads 64 readahead verify`: stock 6,921,187 buffered reads checked, WoL 2,950,328,
+**0 mismatches** each (and again with the final build: 6,897,055 and 2,940,497 reads, 0 mismatches).
+
+**Stock game** (150 s):
+
+| | Key off (`st-off1`, `st-off2`) | `bufferedFileReads 64` (`st-buf1`, `st-buf2`) | `… readahead` (`st-ra1`, `st-ra2`) |
+|---|---|---|---|
+| Frames over 50 ms | 4, 4 | 2, 2 | 2, 2 |
+| Frames over 100 ms | 3, 3 | **0, 0** | **0, 0** |
+| Longest frame | 189, 190 ms | 94, 97 ms | 98, 95 ms |
+| FPS (mean) | 189, 182 | 186, 183 | 177, 183 |
+| Session time in `ReadFile` (game's handles) | 8.5, 8.7 s | 0.35, 0.35 s | 0.44, 0.36 s |
+| `ReadFile` calls made to Windows by the game's thread | 7.05 M, 7.04 M | 12,050, 11,902 | 9,497, 9,496 |
+| Blocks read ahead and used / asked | — | — | 2,932 / 9,584, 2,937 / 9,662 (**30 %**) |
+| Buffer refills still read on the game's thread | — | — | 7,512, 7,542 |
+| `ntdll` / `granny2.dll` inside the slow frames | 62 / 21 %, 68 / 23 % | 22 / 59 %, 14 / 71 % | 14 / 64 %, 11 / 61 % |
+
+**WoL** (150 s):
+
+| | Key off (`wol-off1`, `wol-off2`) | `bufferedFileReads 64` (`wol-buf1`, `wol-buf2`) | `… readahead` (`wol-ra1`, `wol-ra2`) |
+|---|---|---|---|
+| Frames over 50 ms | 17, 13 | 15, 14 | 14, 6 |
+| Frames over 100 ms | 13, 9 | 10, 11 | 10, 5 |
+| Longest frame | 508, 386 ms | 570, 396 ms | 355, 354 ms |
+| FPS (mean) | 310, 317 | 319, 315 | 316, 453 |
+| Session time in `ReadFile` | 3.9, 3.9 s | 0.38, 0.40 s | 0.38, 0.38 s |
+| `ReadFile` calls made to Windows | 3.00 M, 3.00 M | 18,314, 18,309 | 16,000, 15,868 |
+| Blocks read ahead and used / asked | — | — | 2,470 / 7,764, 2,440 / 7,710 (**32 %**) |
+| `ntdll` / `granny2.dll` inside the slow frames | 2.3 / 1.7 %, 2.0 / 2.1 % | 1.0 / 2.1 %, 1.0 / 2.3 % | 0.9 / 2.1 %, 0.4 / 1.6 % |
+
+`wol-ra2` ran at 453 FPS against ~315 in every other WoL run, with fewer slow frames: an outlier
+whose cause is not known (another session's load on the machine changed), so it is not taken as an effect.
+
+**Load time.** `legacybench` times the load from the moment the game takes `loadGame` to the end of the last
+frame over 50 ms after it (perfStats' slow-frame ring). Short runs with the final build:
+
+| Load of the save (s) | Key off | `bufferedFileReads 64` | `… readahead` |
+|---|---|---|---|
+| Stock, `uhcbench25` (`ld-st-*`) | 10.1, 10.0 | **5.1, 5.5** | 5.1, 5.1 |
+| WoL, `wolvk-a32` (`ld-wol-*`) | 11.6, 11.4 | **9.6, 9.4** | 12.1, 9.9 |
+
+- Stock: the load's longest frames shrink from 1.9 s + 4.1 s + 1.8 s to 0.7 s + 1.6 s + 1.0 s; the load
+  takes half the time. In WoL it gains about 2 s (−17 %): the frames of WoL's load are mostly something else
+  (3.6–3.9 s for the first one with or without the key). `wol-ra1` (12.1 s, its first frame 4.5 s against
+  3.6–3.9 s in the other seven) is the one outlier.
+- **A timer artifact, corrected.** A first version of the timer stopped waiting once no new slow frame had
+  been published for 3 s. A frame enters perfStats' ring only when it ends, so a load frame longer than
+  3 s (stock: 4.1 s) ended the wait early, and the key-off loads read 3.1–3.5 s, shorter than the buffered
+  ones (5.1 s). Profiling both loads (`--load-probe`, runs `lp-st-off` / `lp-st-buf`) showed it: 10.2 s of
+  frames over 50 ms without the key against 5.1 s with it, `ntdll` 62 % of them without and granny 38 %
+  with. The timer now restarts its wait while no frame is presented; the loads printed in the 150 s runs'
+  `.out` files are from the first version and are not used.
+
+**Reading.**
+- **Stock:** the key does what §9 measured: no frame over 100 ms instead of 3, the longest frame halved, and
+  `ReadFile` time per session down from 8.5 s to 0.35 s. `readahead` changes none of the frame numbers: it takes
+  about **30 % of the block reads** off the game's thread (2,930 of ~10,450 per session, 28 %; in WoL 2,450 of
+  ~18,000, 14 %), the rest are the first read after the game jumps to another place in an archive, which a
+  read-ahead of the next block cannot know. Its waits for a block in flight were 232–341 per session,
+  3.4–4.5 ms in all.
+- **WoL:** the reads are not what stutters. Inside WoL's slow frames `ntdll` is 2 % and granny 2 %; 63–70 % of
+  the samples are under 0x68FB04 (called by the game-mode update at 0x490010, next to the world update; its
+  leaf 0x94BC1D) and 24–29 % under 0x67A1FD inside the world update (a recursive walk through
+  0x42B273…0x42D8CE). Those functions are **[?]**, not identified. With the key, WoL's `ReadFile` time per
+  session still drops from 3.9 s to 0.38 s (3.0 M calls to 18,000), and loading is faster (above).
+- `readahead` is kept as an option: correct, cheap (one thread, one extra 64 KB buffer and handle per open
+  file it reads ahead), but with no measured effect on frames.
+
 ## Benchmark harness
 
 These parts of `src/features/perf.cpp` exist for measurement. The game behaves as stock with them.
@@ -628,13 +787,15 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | Lever | Kind | Status |
 |---|---|---|
 | Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | DLL feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
-| The stutters' remaining work: granny building newly loaded models and animations | — | Open. It is CPU work on the main thread. Preloading would trade memory and load time for it. |
+| `readahead` option of `bufferedFileReads`: a worker thread reads the next block of each buffered file | DLL feature, opt-in | **Implemented and measured** (§9, "readahead, and the first measurement in WoL"). `verify` 0 mismatches (stock and WoL). It moves about 30 % of the block reads off the game's thread; no measured change in frames over 50/100 ms, stock or WoL. |
+| The stutters' remaining work: Oodle1 decompression of `.gr2` models and animations met for the first time (`GrannyReadEntireFile` in FUN_0046D7C3, `GrannyReadFileSection` in FUN_0043B6D7) | data or DLL | Found (§9, "The remaining stutters"). Not built: uncompressed `.gr2` files or a preload are the levers; the user decides. |
+| WoL's stutters: CPU in 0x68FB04 (leaf 0x94BC1D) and in a recursive walk under 0x67A1FD | — | Found by sampling (§9); the functions are not identified. Not file reads, so `bufferedFileReads` does not shorten them. |
 | Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. §11 measures the parts: the particle update (0.54 ms of 4.96) looked like the only self-contained one. Its safety check (§11, "particleWorker: safety check") rejected it: pass 0 reads what it writes, and it races with the world draw on the pose code's global buffers. |
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
 | Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Measured in a local build (§11): no change beyond noise. Dropping MULTITHREADED is unsafe, because the loading-screen thread calls Direct3D. Back buffers only matter with vsync on. |
 | Frame-time statistics and device logging (`perfStats`) | DLL feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
 | Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
-| `-demandLoadMeshes`, `megaPostLoadForceTextures`, `useDeviceReset` | cfg | Planned A/B. |
+| `-demandLoadMeshes`, `megaPostLoadForceTextures` | cfg | **No effect** (§9, "The remaining stutters"): the first is stored at startup and never read, the second never read; the A/B runs match the key-off runs (3, 3 and 4 frames over 100 ms). `useDeviceReset` (§5) only matters on mode changes. |
 | DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is one loop in 0x40D25B that reads back from a locked buffer (§11). **With `d3d9.cachedWriteOnlyBuffers = True` in `dxvk.conf` that loop costs nothing and DXVK beats stock: +14 % at 2560×1600, +18 % at 3840×2160, +14 % at 720p**, no frame over 50 ms, the picture unchanged on the frames compared. FPU state kept (0x007F), +225–255 MB of address space. Without the option: not recommended. With it: the only D3D layer measured that is faster than stock (**+19 % at 1920×1080** too). **In WoL (§11, "DXVK in WoL")**: +16…+25 % in a base view at four points of a 32-minute game and +17 % in a battle, at 1920×1080; a whole 32-minute game, minimize, device re-creation, save and load without a fault; the same picture; the same x87 control word during play. It adds 225–255 MB to WoL's 1.5 GB of address space, so it needs WoL's large-address-aware exe, and it leaves the stutter as it is. **Recommended to WoL's players as an optional, user-side setup for single player.** Multiplayer is untested: a LAN game could not be formed between two copies on one PC. |
 | The read-back loop in 0x40D25B (0x40D5C0…0x40D5FD): `fastVertexFill` | DLL feature, opt-in, display only | **Implemented and measured** (§11, "fastVertexFill"). 0x40D25B draws the cloth flags; the loop reads eight values per back-side vertex from a locked `DYNAMIC \| WRITEONLY` vertex buffer (write-combined memory, `PAGE_WRITECOMBINE` at runtime). The key's routine reads the source instead and writes the same bytes: on stock D3D9 **+7 % FPS at 1920×1080 and 2560×1600, +8 % at 3840×2160**, nothing at 1280×720 (no flag drawn); the function goes from 5.5–7.8 % of the main thread to 0.0 %. `verify`: 76,365 fills, 10.5 M vertices, 0 mismatches. With DXVK 3.1.1 and no `dxvk.conf`: 179.6 → 237.2 FPS (one run each). Not tested in multiplayer; it does not touch the simulation. |
 | DXVK from the options menu (`rendererOption`) | DLL feature, opt-in, display only | **Implemented and measured** (§11, "rendererOption"). A Renderer entry (DirectX 9 / Vulkan) in WoL's options menu; Vulkan loads DXVK 3.1.1 from `dxvk\` at the next start. As fast as DXVK installed by hand (within 1.5 %). DXVK's option follows `fastVertexFill`: none with it on (+5…+8 % over passing `d3d9.cachedWriteOnlyBuffers = True`), the option without it. With `fastVertexFill`, +8…+9 % over Direct3D 9 with `fastVertexFill` in a late Town Center view. A missing or broken DXVK, or a start that presents no frame, falls back to DirectX 9. Multiplayer untested. |
@@ -1509,23 +1670,32 @@ bash rea/evidence/age3y-b1a1dab7/dxvk-20261110/runconf.sh vk2-cached-4k dxvk 384
 DXVK's logs and the cold run's caches: `rea/evidence/age3y-b1a1dab7/dxvk-20261110/`. The module and function shares
 are in each run's `.csv.samples.txt`.
 
+The `readahead` / WoL runs of §9 (2026-11-11) use the scripts in `rea/evidence/age3y-b1a1dab7/fileio-20261111/`:
+back up the bed's cfg (`uhc.cfg` or `wol.cfg`) and `gamey.cfg` as `*.fio-orig` first; `fio.py` rewrites them per
+run (adding `perfFileLog 1` and `multipleInstances background`), checks that the PC is quiet (`quiet.py`, marks the
+run otherwise) and calls `legacybench.py`; `summ.py` prints the tables. Restore the backups afterwards. The
+scripts hold that session's paths (worktree, output folder): edit them first.
+```
+python -I fio.py C:\AoE3-UHC-Test st-off1 off            # buf, ra, raverify, demand, mega
+python -I fio.py C:\AoE3-UHC-WoLReal4 wol-buf1 buf --save wolvk-a32   # the save copied into WoL's Savegame folder
+python -I fio.py C:\AoE3-UHC-Test lp-st-buf buf --seconds 5 --load-probe 20   # profile the load itself
+python -I summ.py st-off1 st-buf1 st-ra1 ...
+```
+The granny analysis of the old stacks is `granny.py` / `grannyeip.py` in the same folder.
+
 **Incident.** After `tools/re/trace_writes.py` detached from a running bench, the game stopped presenting frames
 with its main thread at 100 % (in `MultiByteToWideChar` / `CompareStringW`) and had to be killed. It is not known
 whether the tracer caused it.
 
 ## Next steps
 
-1. `bufferedFileReads` follow-ups:
-   - a multiplayer game with one player using it and the other not, to show it may differ between
-     players;
-   - a timed load with and without it.
-2. **The remaining stutter work.**
-   - Find which granny calls take the remaining slow-frame samples: resolve the
-     `granny2.dll` exports, as for `ntdll`.
-   - Find what the simulation loads on first use; in-match file opens are in the `perfFileLog`
-     output.
-   - Then decide whether a preload is worth its memory, with Large-Address-Aware as a fallback.
-3. The zero-code A/B runs (§10, cfg row).
+1. `bufferedFileReads` follow-up: a multiplayer game with one player using it and the other not, to show
+   it may differ between players.
+2. **The remaining stutter work** (found 2026-11-11, §9): Oodle1 decompression of `.gr2` files met for the first
+   time. The user decides between uncompressed `.gr2` files and a preload (memory; the exe is not LAA);
+   neither is built.
+3. **WoL's stutters** are CPU in 0x68FB04 / 0x94BC1D and under 0x67A1FD (§9, "readahead, and the first
+   measurement in WoL"): identify them with REA before anything else is tried for WoL.
 4. Open questions:
    - which passes call the world draw 0x44FC96 under 0x408399: answered in §11 (pass 0 of the views and the
      main view), except what pass 0 renders;
