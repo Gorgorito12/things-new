@@ -484,8 +484,8 @@ recorded their QPC windows, and 377 samples fall inside them.
   - the unit update, 0x482F50 → 0x48971A → 0x488A40;
   - 0x490960 → 0x4BF814 → 0x66A452 → 0x858299.
 
-  Both go through a recursive evaluator (0x94CF27 / 0x94DAE1 / 0x7F7E97, possibly the XS interpreter;
-  not identified).
+  Both go through a recursive evaluator (0x94CF27 / 0x94DAE1 / 0x7F7E97). Identified 2026-11-11: tech
+  activation and its effects, not the XS interpreter ("What WoL's stutters are" below).
 - **The reader does no buffering** (`ev_1c4e2090…`, `ev_bb0bb32c…`):
   - 0x4683F4 issues one `ReadFile` per call;
   - 0x599121 reads 4 bytes;
@@ -613,7 +613,8 @@ conversion and `GrannyTransformAnimation` for each animation, and a `Bip01` bone
 
 **Callers.** FUN_0046D7C3 has 7 direct callers and FUN_0043B6D7 has 4 (`ev_04204135…`, `ev_106e97dd…`). In the
 slow frames both are reached from the world update (§9, "The stutters"); why the simulation needs a model or an
-animation there is **[?]** (the recursive evaluator 0x94CF27 is still not identified).
+animation there is answered in part (2026-11-11): 0x94CF27 activates a tech and applies its effects ("What
+WoL's stutters are" below), and an effect can bring a unit whose model is new.
 
 **`-demandLoadMeshes` and `megaPostLoadForceTextures`** **[O]**:
 - They are ordinary cfg variables (§6). `gamey.cfg` defines `demandLoadMeshes` ("only load meshes on demand") and
@@ -723,6 +724,120 @@ frame over 50 ms after it (perfStats' slow-frame ring). Short runs with the fina
 - `readahead` is kept as an option: correct, cheap (one thread, one extra 64 KB buffer and handle per open
   file it reads ahead), but with no measured effect on frames.
 
+### What WoL's stutters are (2026-11-11)
+
+The question: what are 0x68FB04 / 0x94BC1D and 0x67A1FD, what triggers them, and what could be done about it.
+Sources: the stacks of the six WoL runs above read again (scripts in `rea/evidence/age3y-b1a1dab7/wolstutter-20261111/`),
+REA on the stock exe (bundle `rea/evidence/age3y-b1a1dab7/wol-stutter-20261111.json`; names in
+[engine-symbols.md](engine-symbols.md#last-in-line-and-the-xs-runtime-2026-11-11-wols-stutters)), capstone, and
+new runs of the same save (`wolvk-a32` in `C:\AoE3-UHC-WoLReal4`, `legacybench` plus two read-only probes,
+`xsprobe.py` and `hcsnap.py`, 40–100 s each, with no other game running). Run files and analyses are in
+`wolstutter-20261111/` too. **[O]** observed, **[I]** inferred, **[?]** open.
+
+**Two kinds of slow frame** **[O]**. Each slow frame of the six runs (900 s in all) is almost entirely one of two
+call chains:
+
+| | A: LastInLine recompute | B: AI script | (tech effects loading a model) |
+|---|---|---|---|
+| Chain | world update 0x481D51 → 0x491A40 → 0x4918A8 (its cold chunk 0x68FB0C, the "0x68FB04" of the table above) → 0x94BC1D → 0x4C5DBD | world update 0x481CE9 → 0x490960 → player update 0x67A1FD → `BAI::update` 0x720CA7 → `BXSRuntime::interpretRules` 0x428E1F → the XS interpreter 0x42CF3F / 0x42CEED / 0x42B496 (the "recursive walk" is XS functions calling XS functions) | 0x490960 → … → 0x94CF27 (tech activation) → effects 0x94DAE1 / 0x7F7E97 → granny |
+| Share of the frame's samples | 90–97 % | 90–100 % | — |
+| Frames over 50 ms (six runs) | **38**, all over 100 ms | 36, 20 over 100 ms | 5, 58–71 ms |
+| Time in them | **13.7 s** | 4.4 s | 0.3 s |
+| Length | 335–400 ms (to 570 ms with other work in the same frame); 60 samples ≈ 300 ms each time | 51–280 ms | |
+| When | 3–7 per run, irregular | every ~4.8 s real (~10 s of game time, sim speed 2.1×) in the first minute, rarer after | |
+
+In the stock game (`st-off1`, `st-buf1`) chain A appears 4 times in 150 s with 3–4 samples (15–20 ms) each, the
+AI script is 1.1 % of the main thread spread evenly (WoL: 2.1–2.3 %, in bursts), and neither makes a frame over 50 ms.
+
+**A: what 0x4918A8 does** **[O]** (REA `ev_011dfe82…`, `ev_22d59ab1…`). Every player has a tech tree
+(`[world+7Ch]`, one per player slot): one status entry per tech in `techtreey.xml`, each a bitset whose bit
+numbers are the tech flags (HomeCity 18, ForceLastInLine 22, YPNeverLastInLine 32, …; the table in
+engine-symbols). When the tree's byte `+11h` is set, the next world update recomputes **bit 16, "last in line"**,
+for every tech: a tech is last in line unless some other tech that the player can obtain has a prerequisite
+`TechStatus active` on it. The code finds that by scanning **every other tech and its prerequisite list** for
+each tech: count × (count + prerequisites) checks, about 10552 × (10552 + 5418) ≈ 1.7 × 10⁸ in WoL against
+2549 × (2549 + 906) ≈ 8.8 × 10⁶ in TAD. Ratio 19×; measured 300 ms against 15–20 ms. WoL has 10,552 techs, of
+which 1,396 are named in a `TechStatus` prerequisite (5,418 such prerequisites); TAD has 2,549 (237, 906).
+
+**A: what triggers it** **[O]** (`ev_d652dac7…`, `ev_d6296011…`, `ev_91f91cee…`). The byte is set by 0x94AE8C,
+called from tech activation (0x94CF27), "set obtainable" (0x94C33A) and "set unobtainable" (0x94CDB3) **only
+for a tech with the HomeCity flag**, plus three effect-side callers (0x8D002C, 0x8D554F, 0x8DCFC0, not read)
+and the forced update 0x852850. A shipment is the activation of a HomeCity tech, and a card that becomes
+available again is a status change of one. So **every home city shipment of any player, AI or human, costs one
+full recompute for that player**: 300 ms in WoL. Several in one world update cost one recompute per player.
+
+**A: checked in the game** **[O]** (run `wst-hc1`, 80 s, quiet machine). Two read-only probes ran beside
+`perfprobe`: one read EBP (the tree) whenever the sampled EIP was in the recompute's cold chunk, so the tree's
+player is known; the other read every player's status entries of the 4,518 HomeCity techs twice a second and
+logged each change.
+
+| Slow frame | Tree recomputed (player) | HomeCity status change seen (player, tech, bits 0–7) |
+|---|---|---|
+| 20.41 s, 384 ms | 2 | 20.63 s: p2 HCAdvancedTowerHouse, 49h → 6Bh (bits 1 and 5 set: activated) |
+| 36.52 s, 380 ms | 4 | 36.64 s: p4 HCUnlockFactory, 49h → 6Bh |
+| 50.38 s, 351 ms | 3 | 50.65 s: p3 HCShipCoinCrates3, 49h → 6Bh |
+| none | — | 27.13 s: p3 HCRoyalDecreePortuguese, 49h → 6Bh, **no** recompute |
+
+Each recompute is the player who had just sent a card, in the same frame (the snapshot sees it up to 0.5 s
+later). The 100 s run `wst-xs1` repeats the table (recomputes at 20.5 s, 37.8 s and 50.7 s for players 2, 4 and 3
+after the same cards, and the same card without one at 27.1 s) and adds two more: 94.5 s,
+player 3, right after HCShipFaris1 became obtainable (40h → 41h, the 0x94C33A path), and 98.7 s with no
+HomeCity change seen (the probe reads only status byte 0 and the count). One card (HomeCity and OrPrereqs)
+changed the same bits with no recompute in both runs: it was activated through some other path than
+0x94CF27 **[?]**. Earlier, console commands `trTechSetStatus(p, id, 2)` written through
+`perfExecFile` (run `wst-inj2`) caused nothing: no recompute, with HomeCity or other techs, so the console
+does not run that trigger function, or not like this **[?]**. The three natural recomputes came at the same
+times in every run of this save (20–21 s, 36–39 s, 50–52 s): the AI's shipments replay the same way.
+
+**A: what bit 16 is for** **[I]**. Its readers found in `.text` are three `push 10h; call 0x44D863` in the
+command-panel builders (strings `trainInSelectedByID`, `researchByID`, `uiBuildMode`): it decides which upgrade
+of a line the panel shows. The recompute ends with a UI refresh for the local player. Other access patterns
+were not searched, so a simulation reader is not excluded.
+
+**A: is it pure** **[O]**. The scan's two tests, 0x94BC1D (prerequisite lists of the definitions) and 0x4C5725
+(can the player obtain the tech), and every function they call down to the leaves (0x4804D1, 0x447F3C,
+0x4C5DA9, 0x4C5D86, 0x4C5CA1, 0x4C5D2E, 0x4C5AFB, 0x44D063, 0x8F7816, 0x94DC8C, 0x4C5DBD) write no memory but
+the stack (capstone walk of each). The recompute writes only bit 16 of each entry and clears the byte. The
+prerequisite lists are definition data, fixed after loading.
+
+**B: which XS code** **[O]** (run `wst-xs1`). `xsprobe.py` takes, from the sampled stack, the arguments of the
+outermost XS call (the return address 0x42D979 is followed by the program, the XS data and the function ID),
+reads the data's XS call stack (`[data+DCh]`, `[data+E0h]`) and names each function through
+`[[data+38h]+4·id]+4` → `*[[program+30h]+4·sym]` (0x421D22, 0x42B45A). In all 6 slow frames of the AI kind
+(58–226 ms), every XS sample is the same stack:
+
+`towerManager` → `rotateByReferencePoint` → `cos` or `sin` → `pow` or `fact`
+
+64 of 64 samples; player 7 in five frames, player 5 in one. Over the whole run, of 214 samples under the AI's
+`interpretRules`, 70 are in `towerManager`, 1 in `buildingMonitor`, and 143 had no XS function call on the
+stack to name.
+
+**B: why it is slow** **[O]** (WoL's `AI4\aiWoLMain.xs`, lines 906–971 and 4104–4380). XS has no sine or
+cosine, so the script computes them as Taylor series: for term i (up to 99) it calls `pow(n, j)` and
+`fact(j)`, each a loop of j steps, and stops when the term is exactly 0. Emulated in 32-bit floats:
+- an angle of 10–360° costs 390–690 loop steps per call: `fact(j)` overflows to infinity near j = 35 and the
+  term becomes 0;
+- an angle above about 400° makes `pow` overflow too: the term is inf/inf = NaN, never 0, and all 99 terms run:
+  **about 20,000 steps per call**, and the result is NaN.
+
+`rotateByReferencePoint` calls `cos` twice and `sin` twice. `towerManager` (`minInterval 10`) tries up to
+`numAttempts` = 1.5 × the tower build limit positions, each rotated by `towerAngle * aiRandInt(4 * numTestVecs)`
+degrees, i.e. up to four full turns (1,440° with `towerAngle` 45°). So most attempts take the 20,000-step path
+and return an invalid position **[I]**: the rule fails to place a tower and tries again 10 game seconds later,
+which matches the ~4.8 s real period at 2.1× speed.
+
+### Fix options (2026-11-11, for the user's decision; nothing built)
+
+| Cause | Where | What it would change | Multiplayer | Expected gain |
+|---|---|---|---|---|
+| A | **DLL key** (a hook at the head of 0x4918A8's slow path, or of 0x491A40's call): the same recompute with an index. Built once after loading: for each tech, the list of techs whose definition has a `TechStatus active` prerequisite on it (1,396 techs, 5,418 entries in WoL). For each tech i, test 0x4C5725 only on those, in ascending order, and set or clear bit 16 exactly as now (ForceLastInLine, YPNeverLastInLine, the template record for null entries). | Nothing the game sees: the same bits, from about 10,552 + 5,418 checks instead of 1.7 × 10⁸. A `verify` mode can run the original after it and compare every bit, as `bufferedFileReads verify` does. | Safe by construction if the bits match (they are a pure function of the same data, and the tests write nothing); one player with it and another without compute the same bits. The `verify` mode proves it per recompute. | All 38 A frames of the six runs: 13.7 s of 18.4 s of slow frames (**74 %**), every frame over 300 ms. Each becomes about 1 ms (estimate). The stock game loses its 15–20 ms frames too. |
+| A | DLL, smaller: skip the inner scan for a tech no definition names in a `TechStatus active` prerequisite (9,156 of 10,552 in WoL), and leave the rest to the original loop. | Same bits. | Same as above. | The scan still runs for the 1,396 named techs: about 1,396 × 16,000 ≈ 2.2 × 10⁷ checks, ~40 ms by the measured rate. Simpler, but leaves a frame over 30 ms per shipment. |
+| A | Data (Maston) | Fewer techs: the cost grows with the square of the tech count, so a 10 % smaller `techtreey.xml` saves 19 %. No flag avoids it: any HomeCity tech triggers it. | Same data on every client, as for any data change. | Small unless thousands of techs go. Not a real fix. |
+| A | DLL, not recommended: skip the recompute for players other than the local one. | Bit 16 of the other players' entries goes stale. | Unsafe unless no simulation code reads bit 16, which was not proven. | Same as the index, for 7 of 8 players. |
+| B | **Data (Maston), `aiWoLMain.xs`**: in `sin` / `cos`, reduce the angle to −180…180° first, and build each term from the previous one (`term *= −x² / ((2i)(2i+1))`) instead of calling `pow` and `fact`; 8–10 terms give float precision. Or a 360-entry table filled once. | The same values for small angles; for angles over ~400° real values instead of NaN, so `towerManager` places towers where it now fails (an AI behavior change, and a fix). About 10–30 steps per call instead of 400–20,000. | The AI runs in the simulation on every machine; like any WoL script change, all players need the same version. | All 36 AI frames of the six runs: 4.4 s of 18.4 s (**24 %**), up to 280 ms. |
+| B | DLL: native `sin` / `cos` syscalls through `customSyscalls` / `AddSyscall`, which the script would call. | Same as above, faster still. | The result must be bit-identical on every machine: a software routine, not the x87 `fsin`. Needs the script change anyway. | Same. |
+| B | DLL, not recommended: spread the AI's rules over more updates, or a faster XS interpreter. | Changes when the AI acts / a large rewrite. | Changing when rules run changes the simulation: a desync with a player who does not have it. | — |
+
 ## Benchmark harness
 
 These parts of `src/features/perf.cpp` exist for measurement. The game behaves as stock with them.
@@ -789,7 +904,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | DLL feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
 | `readahead` option of `bufferedFileReads`: a worker thread reads the next block of each buffered file | DLL feature, opt-in | **Implemented and measured** (§9, "readahead, and the first measurement in WoL"). `verify` 0 mismatches (stock and WoL). It moves about 30 % of the block reads off the game's thread; no measured change in frames over 50/100 ms, stock or WoL. |
 | The stutters' remaining work: Oodle1 decompression of `.gr2` models and animations met for the first time (`GrannyReadEntireFile` in FUN_0046D7C3, `GrannyReadFileSection` in FUN_0043B6D7) | data or DLL | Found (§9, "The remaining stutters"). Not built: uncompressed `.gr2` files or a preload are the levers; the user decides. |
-| WoL's stutters: CPU in 0x68FB04 (leaf 0x94BC1D) and in a recursive walk under 0x67A1FD | — | Found by sampling (§9); the functions are not identified. Not file reads, so `bufferedFileReads` does not shorten them. |
+| WoL's stutters (§9, "What WoL's stutters are"): **A** the LastInLine recompute 0x4918A8, quadratic in the tech count, run for a player after each status change of a HomeCity tech (every shipment): 300–400 ms in WoL, 74 % of the slow-frame time; **B** the AI rule `towerManager`, whose `sin` / `cos` are Taylor series in XS (`BAI::update` → `BXSRuntime::interpretRules`): 50–280 ms, 24 % | DLL feature (A); WoL's AI script (B) | Identified 2026-11-11, not built. A: an indexed recompute giving the same bits, multiplayer-safe by construction, with a `verify` mode (§9, "Fix options"). B: a script fix for Maston; a DLL change of when rules run would desync. |
 | Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. §11 measures the parts: the particle update (0.54 ms of 4.96) looked like the only self-contained one. Its safety check (§11, "particleWorker: safety check") rejected it: pass 0 reads what it writes, and it races with the world draw on the pose code's global buffers. |
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
 | Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Measured in a local build (§11): no change beyond noise. Dropping MULTITHREADED is unsafe, because the loading-screen thread calls Direct3D. Back buffers only matter with vsync on. |
@@ -1694,13 +1809,17 @@ whether the tracer caused it.
 2. **The remaining stutter work** (found 2026-11-11, §9): Oodle1 decompression of `.gr2` files met for the first
    time. The user decides between uncompressed `.gr2` files and a preload (memory; the exe is not LAA);
    neither is built.
-3. **WoL's stutters** are CPU in 0x68FB04 / 0x94BC1D and under 0x67A1FD (§9, "readahead, and the first
-   measurement in WoL"): identify them with REA before anything else is tried for WoL.
+3. **WoL's stutters** are identified (§9, "What WoL's stutters are", 2026-11-11): the LastInLine recompute
+   after each HomeCity tech status change (74 % of the slow-frame time) and the AI's XS rules (24 %). The user
+   decides among the fix options there; the indexed recompute is the candidate DLL key. For B, the report
+   on `towerManager`'s `sin` / `cos` (Taylor series with `pow` / `fact`, NaN above ~400°) goes to Maston.
+   Open: why the HCRoyalDecreePortuguese activation did not trigger a recompute.
 4. Open questions:
    - which passes call the world draw 0x44FC96 under 0x408399: answered in §11 (pass 0 of the views and the
      main view), except what pass 0 renders;
    - what the `[world+148h]` loop 0x4910CF updates;
-   - whether 0x94CF27 / 0x94DAE1 / 0x7F7E97 is the XS interpreter;
+   - whether 0x94CF27 / 0x94DAE1 / 0x7F7E97 is the XS interpreter: answered 2026-11-11, no: tech activation and
+     its effects (§9, "What WoL's stutters are");
    - why `[world+FCh]` read about 12,800 minutes on `uhcbench25` (only its rate is used, as the sim clock);
    - the reader of `AlwaysActive`;
    - what `disableMidUpdateRender` changes at 0x482532;
