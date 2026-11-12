@@ -3826,6 +3826,65 @@ where the lock points (`VirtualQuery`) and the buffer's usage and pool (`GetDesc
 - With the key the function leaves the main thread's samples (0.00 % against 5.5 to 7.8 %), and the DLL as a whole
   takes 0.1 % of them.
 
+### fastLastInLine
+
+**The stock code.** Every player has a tech tree (`[world+7Ch]`, one per player slot): one status entry per tech, each
+a bitset whose bit numbers are the tech flags (HomeCity 18, ForceLastInLine 22, YPNeverLastInLine 32, …). Bit 16 is not
+a flag: it is "last in line", which the command panels read to pick the upgrade of a line they show. FUN_004918A8,
+`thiscall(tree, Player*)`, `ret 4`, recomputes it when the tree's byte `+11h` is set. The tech status update 0x491A40
+calls it for each live player on every world update (at 0x491A39), and the forced update 0x852850 calls it too. The
+byte is set by 0x94AE8C, which tech activation (0x94CF27), "set obtainable" (0x94C33A) and "set unobtainable"
+(0x94CDB3) call only for a HomeCity tech: a home city shipment, or a card that becomes available again.
+
+The recompute, in the cold chunk 0x68FB0C..0x68FC51, does for each non-null entry i:
+- bit 22 set: set bit 16;
+- otherwise scan every other entry j (the template record `[[db+5D9Ch]+0Ch] + 24h·j` when j's entry is null): if j's
+  definition has a prerequisite "TechStatus active i" (0x94BC1D: type byte `+5` = 1, status byte `+0Ch` = 2, tech
+  `+8`) and the player can obtain j (0x4C5725), clear bit 16 and stop;
+- no such j: clear bit 16 when bit 32 is set, set it otherwise.
+
+Then, for the local player (`[game+3C0h]`), it calls slot 1 of the UI object `[game+920h]` with 0. The scan is
+entries × (entries + prerequisites) tests. A tree of 2,500 techs takes 15–20 ms; one of 10,500 techs, 340–590 ms,
+after every shipment of every player.
+
+**The hook** (`hooks/lastinline_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x4918A8, the function's head | `push ecx` / `cmp dword ptr [esp+8],0` / `push ebp` / `mov ebp,ecx` (9 B) | No player or a clean tree: `ret 4`, as stock. Otherwise `UhcLastInLine(tree, player)`; 0 → `ret 4`; 1 → the stolen lines | `ret 4`, or 0x4918B3 (the stock dirty test) |
+| 0x68FC1B, `verify` only | `mov eax,[0C66234h]` (5 B) | `UhcLastInLineCompare(tree = EBP)`, then the stolen line | 0x68FC20 |
+
+`UhcLastInLine` builds an index once per data load (and again when the database, the template array or the tech count
+changes): for each tech ID t, the techs j whose definition has a "TechStatus active t" prerequisite, from the template
+records' definitions (the same definitions every player's entries point to). For entry i it tests only those j, in
+ascending order, with the stock 0x94BC1D and 0x4C5725, and writes bit 16 as the stock loop does; it clears `+11h` and
+makes the UI call for the local player. A j outside the index fails 0x94BC1D in the stock loop anyway, so the result is
+the same with fewer tests: about 10,500 + 5,300 instead of 1.7 × 10⁸, 0.4–1.6 ms. A tree whose count differs from the
+template count, or a missing database, goes to the stock code.
+
+**`verify`** computes the bits without writing them, returns 1 so that the stock loop runs, and at its exit compares
+bit 16 of every entry with the key's. Each recompute logs the player, the entries, the bits that differ and both times.
+
+**Why it is safe.**
+- The two tests and everything they call (0x4804D1, 0x447F3C, 0x4C5DA9, 0x4C5D86, 0x4C5CA1, 0x4C5D2E, 0x4C5AFB,
+  0x44D063, 0x8F7816, 0x94DC8C, 0x4C5DBD) write no memory but the stack (a walk of every instruction of each), so testing
+  fewer j changes nothing but the time. The bits written are the stock ones, so players may set the key differently.
+- The prerequisite lists belong to the definitions, which are read with the data and not changed during a game (no key
+  of this DLL adds techs at runtime). A data load clears the index.
+- `VerifyAll` checks the whole function, its cold chunk, 0x94BC1D, 0x4C5DBD and the head of 0x4C5725 against the stock
+  bytes: beside another DLL that patched any of them, the key logs FAILED and writes nothing.
+
+**Checks.** `fastLastInLine verify`, 0 bits differ in every recompute:
+- a 32-minute five-player save of a mod with 10,542 techs (index: 1,371 techs named in a TechStatus active
+  prerequisite, 5,325 pairs): 14 recomputes, 147,588 entries; the key 0.42–1.59 ms, the stock loop 335–585 ms;
+- a new 1v1 skirmish of the same mod: 7 recomputes, 73,794 entries; the first call, which builds the index, 8 ms;
+- the same save with the `dinput8.dll` build beside the mod's own DLL: 6 recomputes, 63,252 entries;
+- the stock game's 25-minute save (2,549 techs, 906 pairs): 4 recomputes, 10,196 entries; 0.05–0.37 ms against
+  16.4–16.8 ms.
+
+With the key, two interleaved 150 s A/B pairs on the mod's save went from 12 and 15 frames over 50 ms (longest
+382 and 384 ms) to 3 and 3 (longest 191 and 243 ms, none of them the recompute).
+
 ### rendererOption
 
 Two parts: an entry of the options menu that the exe has no room for, and a switch at start that gives the game
@@ -3999,6 +4058,8 @@ and watched with `PrintWindow`, and both work without focus.
   machine with the same build.
 - **Outside the simulation** (`bufferedFileReads`, `fastVertexFill`, `rendererOption`): change only how data reaches
   the game or the video card, or which library draws, never what the game computes.
+- **The same result, fewer steps** (`fastLastInLine`): computes the bits the stock loop writes, with the stock tests,
+  skipping only tests that cannot pass; the tests write nothing. `verify` compares every bit with the stock loop.
 - **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
   `overhealHitpointBars`, `showGatherRate`, `nativePreview`, `displayedRange`): change only what the local player sees or which keys
   work; every button or key sends the same command as stock. `showGatherRate`'s record hook runs in

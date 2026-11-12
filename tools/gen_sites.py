@@ -1428,6 +1428,19 @@ SITES = [
     ("ClothFillUnlock", 0x40D659, 0x24),
     # fastVertexFill: the float -1.0 the stock loop scales the back side's normals by (.rdata; read by the hook)
     ("ClothFillBackScale", 0xB856B8, 4),
+    # fastLastInLine: the LastInLine recompute FUN_004918A8, thiscall(tree, Player*), ret 4, whole: the head (push ecx /
+    # cmp [esp+8],0 / push ebp / mov ebp,ecx, the 9 bytes replaced), the dirty test (jne 68FB0Ch at 0x4918B7, re-entered
+    # at 0x4918B3 by the fallback) and the exit pop ebp / pop ecx / ret 4 at 0x4918BD. Callers 0x491A39 and 0x852882.
+    ("LastInLineHead", 0x4918A8, 0x1A),
+    # fastLastInLine: its cold chunk 0x68FB0C..0x68FC51, the loop the key replaces (verify only); `verify` writes a jmp
+    # over mov eax,[0C66234h] at 0x68FC1B, the loop's exit (also the target of jle 68FC1Bh at 0x68FB16), and goes on at
+    # 0x68FC20.
+    ("LastInLineScan", 0x68FB0C, 0x146),
+    # fastLastInLine: the two tests the loop calls and the key calls too: "definition has TechStatus active <id>"
+    # 0x94BC1D (with the prerequisite getter 0x4C5DBD) and "player can obtain" 0x4C5725's head (verify only)
+    ("ProtoTechHasActivePrereq", 0x94BC1D, 0x4C),
+    ("PrereqListGet", 0x4C5DBD, 0x1D),
+    ("PlayerCanObtainTechHead", 0x4C5725, 0x16),
     # rendererOption: the options screen's name lookup 0x932264 (thiscall on the "GameOptions" settings, called only
     # from the four field builders 0x78BEC5, 0x78C0C0, 0x78C417, 0x78D722). Its not-found return at 0x9322A1
     # (pop edi / or eax,-1 / pop esi, the 5 bytes replaced; branched to from 0x93227B and 0x932295 only) goes on at

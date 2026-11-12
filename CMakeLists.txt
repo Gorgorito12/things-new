@@ -82,6 +82,7 @@ set(UHC_SOURCES
   src/features/plugins.cpp
   src/features/perf.cpp
   src/features/vertexfill.cpp
+  src/features/lastinline.cpp
   src/features/renderer.cpp
   src/features/selection.cpp
   src/features/sharedlimit.cpp
@@ -133,6 +134,7 @@ set(UHC_SOURCES
   src/hooks/broadside_hooks.asm
   src/hooks/cheat_hooks.asm
   src/hooks/clothfill_hooks.asm
+  src/hooks/lastinline_hooks.asm
   src/hooks/rendereroption_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm

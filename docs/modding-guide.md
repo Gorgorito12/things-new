@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-11 18:28 | [`fastLastInLine`](#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 16:01 | [`researchGrants`](#researchgrants) | Added. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Wednesday 2026-11-11 15:52 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
 | Wednesday 2026-11-11 15:51 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
@@ -336,6 +337,7 @@ Where the game reads its data, how it reads it, and how it starts.
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | **new** | Nothing. | confirmed (single player) |
 | [`fastVertexFill`](#fastvertexfill) | Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | **new** | Nothing. | confirmed (single player) |
+| [`fastLastInLine`](#fastlastinline) | Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | **new** | Nothing. | confirmed (single player) |
 | [`rendererOption`](#rendereroption) | Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | **new** | The field in `data\options.xml` and the `dxvk` folder. | confirmed (single player) |
 | [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages to the log, with file and line. | **new** | Nothing. | confirmed |
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
@@ -524,6 +526,45 @@ fastVertexFill [log] [verify]
     ReShade's `d3d9.dll`, so these numbers include ReShade: compare them with each other, not with the table above.
     Removing `dinput8.dll` and `engine-ext\` gives WoL's main menu again.
   - Not tested: multiplayer, a full-length game, other video cards and drivers.
+
+#### fastLastInLine
+
+*The game no longer freezes for a third of a second each time a player gets a home city shipment.*
+
+**Added:** Wednesday 2026-11-11 18:28
+
+```
+fastLastInLine [log] [verify]
+```
+
+- **In the game today:** after a home city shipment (or a card that becomes available again), the game works out
+  for that player which tech of each line is "last in line", the one the command panels show. It does it by
+  testing every tech against every other tech and its prerequisites. With WoL's 10,542 techs that is about
+  170 million tests: a frame of 340–590 ms, once per shipment of any player, AI or human. In a 32-minute
+  five-player save these frames were 74 % of all the time spent in frames over 50 ms
+  ([performance.md](performance.md), §9, "What WoL's stutters are").
+- **Effect:** the DLL builds once, when the data loads, the list of which techs require which tech, and tests
+  only those, with the game's own tests. The result is the same bits; the work takes 0.4–1.6 ms.
+- **`verify`** lets the game's own code run as well and compares every bit with the DLL's; each recompute logs
+  a line with the bits that differ (must be 0) and both times. `log` writes a line per recompute.
+- **WoL needs:** nothing.
+- **Multiplayer:** the game computes exactly the same thing, so players may set it differently. Not tested in
+  multiplayer.
+- **Measured in WoL** (the 32-minute five-player save, 150 s per run, key off and on in turns):
+
+  | | Off | On | Off | On |
+  |---|---|---|---|---|
+  | Frames over 50 ms | 12 | **3** | 15 | **3** |
+  | Frames over 100 ms | 6 | **1** | 11 | **2** |
+  | Longest frame | 382 ms | **191 ms** | 384 ms | **243 ms** |
+
+  What is left over 100 ms is mostly the AI's `towerManager` rule, whose `sin` and `cos` are slow in
+  `aiWoLMain.xs`; a fixed copy of that file is described in [performance.md](performance.md), §9, "What WoL's
+  stutters are".
+- **Status:** confirmed in single player. `verify` found 0 differing bits in 31 recomputes: 14 on the save, 7 in a
+  new skirmish, 6 with WoL's own DLL and our `dinput8.dll` (applied, hooks reached, nothing failed), 4 in the stock
+  game. Not tested in multiplayer. No video: the change is a freeze that no longer happens, which a GIF does not
+  show; the frame times are above.
 
 #### rendererOption
 

@@ -343,6 +343,7 @@ buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change trai
 bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster
                               loading; readahead reads the next block on a worker thread
 fastVertexFill                waving flags drawn without reading video memory: more fps with flags on screen
+fastLastInLine [log] [verify]  no freeze after a home city shipment in a mod with many techs
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options

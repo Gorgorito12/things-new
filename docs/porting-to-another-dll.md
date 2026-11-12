@@ -10,7 +10,7 @@ This page covers every key the modding guide marks **new**, 68 keys in all:
 
 | Theme | Keys | Code |
 |---|---|---|
-| Game files | `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
+| Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
@@ -181,6 +181,9 @@ says so:
 | `ClothFillLoop` | `0x40D523` | `0x136` B | 8 B at `0x40D523` (`jmp` + 3 NOP) | `8B 4C 24 18 8B 54 24 4C` (`mov ecx,[esp+18h]; mov edx,[esp+4Ch]`) | the cloth flag draw's two fill loops, up to their exit `0x40D655`; fastVertexFill replaces them |
 | `ClothFillUnlock` | `0x40D659` | `0x24` B | 6 B at `0x40D659` (`jmp` + 1 NOP), only with `verify` | `8B 0D 44 60 C6 00` (`mov ecx,[0C66044h]`) | before the vertex buffer's Unlock; fastVertexFill's compare |
 | `ClothFillSetup`, `ClothFillBackScale` | `0x40D4EB`, `0xB856B8` | `0x38`, 4 B | — | — | the lock and the half count the hook's entry state comes from, and the float −1.0 the routine reads; fastVertexFill |
+| `LastInLineHead` | `0x4918A8` | `0x1A` B | 9 B at `0x4918A8` (`jmp` + 4 NOP) | `51 83 7C 24 08 00 55 8B E9` (`push ecx; cmp dword ptr [esp+8],0; push ebp; mov ebp,ecx`) | the head of the LastInLine recompute FUN_004918A8; fastLastInLine returns or re-executes it and goes on at `0x4918B3` |
+| `LastInLineScan` | `0x68FB0C` | `0x146` B | 5 B at `0x68FC1B`, only with `verify` | `A1 34 62 C6 00` (`mov eax,[0C66234h]`) | its cold chunk, the loop the key replaces; `verify` compares at the loop's exit and goes on at `0x68FC20` |
+| `ProtoTechHasActivePrereq`, `PrereqListGet`, `PlayerCanObtainTechHead` | `0x94BC1D`, `0x4C5DBD`, `0x4C5725` | `0x4C`, `0x1D`, `0x16` B | — | — | the two tests the loop and the key call; fastLastInLine |
 | `OptionNameLookup` | `0x932264` | `0x46` B | 5 B at `0x9322A1` | `5F 83 C8 FF 5E` (`pop edi; or eax,-1; pop esi`) | the option name lookup's not-found return, before `pop ecx; ret 4` at `0x9322A6`; rendererOption |
 | `OptionTypeGetter`, `OptionTypeRange` | `0x553028`, `0x6B794B` | `0x1C`, 5 B | 5 B at `0x6B794B` | `32 C0 C2 04 00` (`xor al,al; ret 4`) | the option type getter and its out-of-range return (reached only from `0x55302F`); rendererOption |
 | `OptionIntGetter`, `OptionIntGetRange` | `0x402E6A`, `0x6B7676` | `0x3A`, 5 B | 5 B at `0x6B7676` | `32 C0 C2 08 00` (`xor al,al; ret 8`) | the option int getter and its out-of-range return (reached only from `0x402E73`); rendererOption |
