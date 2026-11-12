@@ -30,12 +30,12 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 13:46 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
 | Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
 | Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
 | Thursday 2026-11-12 11:40 | [`menuOptions`](#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
-| Wednesday 2026-11-11 16:01 | [`researchGrants`](#researchgrants) | Added. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
 | Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
@@ -6238,19 +6238,26 @@ nextResearchFree [log]
 
 *A building gathers grant points over time, and each point makes one of its player's researches cheaper or free.*
 
-**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Wednesday 2026-11-11 16:01
+**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Thursday 2026-11-12 13:46
 
 ![researchGrants in WoL](media/researchGrants-wol.gif)
 
-*In WoL, with the key (Ethiopians, the Market with `ResearchGrantInterval` 20 and `ResearchGrantMax` 3, four test
-researches of 300 wood at the Town Center):* the Market's row in the unit panel counts its points and the seconds to the
-next one; the first three researches take no wood and a point each, the fourth, with no point left, takes 300.
+*In WoL, with the key (Dutch skirmish against a German AI; test data of `tools/grant_testdata.py`: the Market with
+`ResearchGrantInterval` 20, `ResearchGrantMax` 3, `ResearchGrantCost` 0 and `ResearchGrantScope` `self`, and four test
+techs of 300 wood on its buttons; 1200 wood; the Market stays selected):* the `Research grants` row of the Market's
+panel counts the points and the seconds to the next one: 1/3 at 20 s of game time, 2/3 at 40 s (where the GIF starts)
+and `3/3 (full)` at 60 s. Four researches are then started at that
+Market by console, about 4 s apart: the first three take no wood (the wood stays at 1200) and one point each (2/3, 1/3,
+0/3, and the timer starts again), and the fourth, with no point left, takes 300 (1200 to 900). Each research shows in
+the Market's queue and its button leaves the panel. A point comes back 20 s after the first was spent. The GIF shows the
+resources, the Market and its panel; the full video also shows the queue and the buttons.
 [Full video (MP4)](media/researchGrants-wol.mp4).
 
 ![researchGrants in WoL, key off](media/researchGrants-wol-control.gif)
 
-*In WoL, key off (the same data):* no row, and each of the four researches takes 300 wood. The game skips the tags it
-does not know. [Full video (MP4)](media/researchGrants-wol-control.mp4).
+*In WoL, key off (the same data, map and console commands):* no `Research grants` row, and each of the four researches
+takes 300 wood: 1200, 900, 600, 300, 0. The game skips the tags it does not know.
+[Full video (MP4)](media/researchGrants-wol-control.mp4).
 
 ```
 researchGrants [log]
@@ -6346,6 +6353,10 @@ researchGrants [log]
   - a skirmish against a German AI (`wolOtto`) with the tags on `TownCenter` too: it compiled and played (18 settlers, 2
     manors at 4 min, no `XS: Error`), and the AI spent a point at 332 s on `wuolaristocrat` at its Town Center.
   - Performance, 90 s from the load of the same scenario: see the A/B in `docs/how-it-works.md`.
+  - filmed again (2026-11-12) with scope `self`, so the building that holds the points is the one that researches:
+    Dutch skirmish, the Market (interval 20, cap 3) with four test techs of 300 wood (`tools/grant_testdata.py`):
+    points at 20.0, 40.0 and 60.0 s, three researches free at 63.1, 67.5 and 72.1 s (1200 wood kept, 2, 1 and 0
+    points left), the fourth at 77.2 s paid 300, the next point at 83.1 s; key off, 1200 to 0 in four steps.
   - Not tested: `CommandResearch` (a research from a `protounitcommands.xml` command, 0x9D54CF / 0x9D58FF), a cancel,
     a transform in place, multiplayer.
 

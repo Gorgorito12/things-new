@@ -234,5 +234,5 @@ overhealSources-cap-wol 1 18 1.5
 overhealSources-cap-wol-control 1 18 1.5
 overhealDecay-holdnear-wol 2 22 2
 overhealDecay-holdnear-wol-control 2 22 2
-researchGrants-wol 9 18 1.5
-researchGrants-wol-control 9 18 1.5
+researchGrants-wol 10 24 2 920:704:0:0
+researchGrants-wol-control 10 24 2 920:704:0:0
