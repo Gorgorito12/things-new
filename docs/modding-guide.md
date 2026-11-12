@@ -30,7 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Thursday 2026-11-12 15:54 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
+| Thursday 2026-11-12 15:52 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
 | Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
@@ -4350,7 +4350,7 @@ the attackers catch it. It lost 1070 HP. [Full video (MP4)](media/snareValues-st
 
 *A unit in stealth stays hidden from enemies, ships and other large units too, so enemies and the AI no longer attack it.*
 
-**Added:** Thursday 2026-11-12 15:51 · **Filmed in WoL:** Thursday 2026-11-12 15:54
+**Added:** Thursday 2026-11-12 15:51 · **Filmed in WoL:** Thursday 2026-11-12 15:52
 
 ![stealthTargeting in WoL](media/stealthTargeting-wol.gif)
 
