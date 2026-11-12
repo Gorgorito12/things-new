@@ -1361,6 +1361,15 @@ SITES = [
     ("TacticReset2", 0x7D8F07, 0x07),
     ("TacticReset3", 0x9D6BE7, 0x07),
     ("TacticReset4", 0x9EBB0B, 0x07),
+    # impactBoneFix: the two calls of the model's bone frame getter FUN_00407272 (thiscall(model, bone,
+    # vec3* pos, vec3* axisC, vec3* axisB, vec3* axisA, ...), ret 1Ch) in the visual's dummy attachment update,
+    # and the test al,al / je they continue at. Path 1 (FUN_004BE0xx): type in EDI, the axes at
+    # [esp+24h], [esp+30h], [esp+40h] after the call; path 2 (FUN_004BE7xx): type in EBX, the axes at
+    # [esp+20h], [esp+30h], [esp+40h].
+    ("ImpactBoneFrame1", 0x4BE21E, 0x0D),
+    ("ImpactBoneFrame2", 0x4BE88D, 0x0D),
+    # the bone frame getter's head (verify only)
+    ("BoneFrameGetter", 0x407272, 0x08),
     # annexFacing: in the build command's executor FUN_007D79D6 (EDI = the command, EBX = the player's proto,
     # EBP = the player), lea eax,[edi+0A8h] / push eax before the right vector 0x423792 is computed from the
     # forward at [edi+0A8h]; the continuation is the push

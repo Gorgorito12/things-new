@@ -1745,6 +1745,15 @@ inline constexpr Site kTacticReset3{"TacticReset3", 0x009D6BE7, kTacticReset3Byt
 inline constexpr std::uint8_t kTacticReset4Bytes[] = {0x6A, 0x00, 0xE8, 0x77, 0xB8, 0xB0, 0xFF};
 inline constexpr Site kTacticReset4{"TacticReset4", 0x009EBB0B, kTacticReset4Bytes, sizeof(kTacticReset4Bytes)};
 
+inline constexpr std::uint8_t kImpactBoneFrame1Bytes[] = {0xE8, 0x4F, 0x90, 0xF4, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0x0F, 0x59, 0x02, 0x00};
+inline constexpr Site kImpactBoneFrame1{"ImpactBoneFrame1", 0x004BE21E, kImpactBoneFrame1Bytes, sizeof(kImpactBoneFrame1Bytes)};
+
+inline constexpr std::uint8_t kImpactBoneFrame2Bytes[] = {0xE8, 0xE0, 0x89, 0xF4, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0x91, 0x01, 0x00, 0x00};
+inline constexpr Site kImpactBoneFrame2{"ImpactBoneFrame2", 0x004BE88D, kImpactBoneFrame2Bytes, sizeof(kImpactBoneFrame2Bytes)};
+
+inline constexpr std::uint8_t kBoneFrameGetterBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x24, 0x85, 0xC0};
+inline constexpr Site kBoneFrameGetter{"BoneFrameGetter", 0x00407272, kBoneFrameGetterBytes, sizeof(kBoneFrameGetterBytes)};
+
 inline constexpr std::uint8_t kAnnexForwardSiteBytes[] = {0x8D, 0x87, 0xA8, 0x00, 0x00, 0x00, 0x50};
 inline constexpr Site kAnnexForwardSite{"AnnexForwardSite", 0x007D7CF1, kAnnexForwardSiteBytes, sizeof(kAnnexForwardSiteBytes)};
 
