@@ -101,6 +101,10 @@ Sizes, following the Design rule in wol-requests.md:
 | 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons as chevrons of our own (2026-11-06); DE's are HUD images in its selection panel |
 | 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI; built as `nativePreview` (2026-11-08) |
 | 44 | Building rotated / annexed by its builder | Nothing by the builder; in-place building upgrades (`ForceMutate`, `RevertUpgrade`). The player can turn a building while placing it (see below) | Placement rotation: stock, only the key binding is missing | by the builder: needs a design; built with JTMaston's design as `annexFacing` (2026-11-08) |
+| 54 | Resource yield (Tier 5) | `yield` per `<Rate>` entry; subtypes `Yield`, `YieldSpecific`, `YieldBonus`; modify type `ResourceYield` | One `<Yield>` per action, on all resources, but trees only for the `Indians`/`SPCIndians` civs (gather tick 0x4ED0A6); no subtype | M (attribute + subtypes) |
+| 56, 57 | `UseBigHugeButton` (Tier 5) | Command flag, unused in DE's data; the tech flag only on `ypPickConsulateTech` | Tech flag 27h → big slot 3 for any unit (0x462067); the "Consulate only" check not found | S if data, M for the command flag |
+| 58 | "Random" cost per unit (Tier 5) | Nothing | Nothing; `CostEscalation`, `DynamicCost`, `FreeHomeCityMerc` are the nearest | M, meaning to agree |
+| 62 | 5 age-up choices; politicians outside the TC (Tier 5) | XAML dialog, `uiShowAgeUpDialogInSelected` | Dialog already holds 5 (0x8191FE); the picker wants the TownCenter (0x7E6905, 0x7E803F) | S outside the TC; the 5 limit not located |
 
 **Where to start** [I] (historical, 2026-10-30: every item of this table has since been built, the DE subtypes
 `SharedBuildLimitUnit` and `AddSharedBuildLimitUnitType` of #29 excepted; see wol-requests.md):
@@ -376,6 +380,161 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
   and strings: the code was not read with REA, whose analysis of the DE exe does not finish.
 - [O] **Legacy has all of it** (2026-11-06): the same console command, the forward direction in the build command and
   `NotRotateable`. Only the key binding is missing: modding guide, "Rotating a building while placing it".
+
+## Tier 5 questions (2026-11-12)
+
+JTMaston's second list ([wol-requests.md](wol-requests.md#tier-5-jtmastons-second-list-2026-11-12)) has four items
+that depend on DE. **DE** was read through its guide, its decoded data and `tools/re/pe64.py` (strings and xrefs). DE's
+code that uses these names was not reached: their strings have no code xref, and most of DE's code is encrypted on disk
+(de-architecture.md). **Legacy** was read with capstone, a linear sweep of `.text` (listings in
+`rea/evidence/age3y-b1a1dab7/tier5-de-parity-cs.txt`), then with REA (Ghidra 12.1.4, snapshot `age3y-b1a1dab7-rea68`),
+bundle `rea/evidence/age3y-b1a1dab7/tier5-de-parity-20261112.json`:
+- `ev_3d68330a…` pseudocode of the gather tick FUN_004ECD87 (#54);
+- `ev_8c0b34fa…` 0x4ED10A is in FUN_004ECD87; `ev_3f262aea…` Ghidra files the cold chunk 0x6A8AEA..0x6A8CEC (with
+  0x6A8B11 and 0x6A8B27) under FUN_0068DD0B, a boundary artifact: only the gather tick jumps there;
+- `ev_db72e459…` 0x462067 is in the command panel refresh FUN_0046188E (#56);
+- `ev_7605c6e9…` pseudocode of the politician list builder FUN_00818EE5, and `ev_727c1786…` 0x8191FE in it (#62);
+- `ev_057d53a7…` Ghidra has no function at 0x7E6905 (the age-up picker is read in capstone only).
+
+**[?]** marks what is unknown.
+
+### #54 Resource yield, "unlocked as in DE"
+
+**What yield is.** It sets how long a resource lasts: the gatherer gets the full amount, and the target loses
+amount / yield. With 1.5 a tree lasts 1.5 times longer for the same income.
+
+**DE.**
+- [O] DE has four interfaces. Pages are the guide's; every name is also in the exe's strings (`pe64.py strings`):
+  - a `yield` attribute on any `<Rate>` entry of a gather action, so the yield is per target type:
+    `<Rate type='Tree' yield='1.2'>0.5</Rate>` (p23, "from the original AoE3DE release onwards");
+  - the Data subtype `Yield` (`action`, `unittype`, relativity) and `YieldSpecific` (which adds `resource`), both under
+    the guide's "Definitive Edition" heading (p85–86, p106);
+  - the player subtype `YieldBonus`, a global multiplier on all gathering (p103), and the trigger
+    `trPlayerSetGlobalYield`;
+  - the modify type `ResourceYield` for an aura, applied to the gather site (p35). No DE tactics file uses it.
+- [O] The guide calls the legacy tactics tag `<Yield>` (one value per action) "deprecated from the AoE3DE original
+  release onwards", and says that legacy hardcodes it "to be only applied for wood gathering" for Indian villagers (p24).
+- [O] DE's data:
+  - no `<Yield>` tag is left, and `yield=` is on 8 `deFurTrade` rate entries in `protoy`;
+  - `techtreey` has 138 `subtype="Yield"` effects: 102 on `Gather` (by `unittype`: `Gold` 21,
+    `AbstractMountainMonastery` 18, `Tree` 13, `AbstractMine` 13, `Huntable` 12, `deFishingHole` 12, berry bushes, ...),
+    the others on AutoGather actions;
+  - DE's `ypSettlerIndian` has no yield any more. The bonus moved into techs such as `ypMarketGangsaw` (`Yield` 1.5
+    on `Tree`).
+
+**Legacy.**
+- [O] Legacy has one float per action, `[protoaction+50h]`. It is read from `<Yield>` in tactics and in the `protoy`
+  `<ProtoAction>` overrides (handler 0x5FE6E2, from the name compare at 0x5F9D91 with string 0xBCA8A0; 1.0 when the
+  text does not parse).
+  - [I] The 1.0 written at 0x91A3CB, in what looks like the action's constructor, is the default when the tag is absent.
+- [O] Legacy has no Data subtype for it. The only other `Yield` string (0xBCD8C8) is a tag of the second `<Unit>` tag
+  table (0x51D920). The subtype names in `[db+3500h]` have no such entry. Nothing reads a `yield` attribute on `<Rate>`.
+- [O] **The hardcode** is in the gather tick FUN_004ECD87, at the take (0x4ED05B..0x4ED124, `ev_3d68330a…`):
+  - a target whose proto has flag 24h is not drained at all (0x4ED05F);
+  - a yield below 1e-6 takes another path (0x6A8B11: 0x514AA1 with 0, 0). [?] What that path does was not read.
+  - When the first civ of the gatherer's player (`[[action+10h]+44h]`) is `Indians` or `SPCIndians`, the yield counts
+    only if the target has the abstract type `Tree`; any other target uses 1.0 (0x6A8B27..0x6A8B3D).
+    - The civ IDs are cached at `[0xC6FB48]` / `[0xC6FB4C]` by 0x8D03C3 / 0x8D0433.
+    - `Tree` is abstract index 12h, registered at 0x51A8B5, and tested with `push 12h / call 44CAC4h` at 0x6A8B2E.
+  - Every other civ: the yield applies to **every resource** that action gathers (0x4ED10A).
+  - Then the target loses amount / yield (`fdiv` at 0x4ED115; the inventory add 0x49A5E6 at 0x4ED124). The
+    player's payment (0x4ED13A onward) does not use the yield.
+- [O] So the stock "Indian wood" rule tests the civ, not the unit, and this is the only read of the yield in the gather
+  tick.
+- [O] WoL already uses `<Yield>`: `WOLJornalero` 2.0 (twice) and `JavaneseLabourer` 1.5, each placed right after
+  `<Rate type="Tree">`. [I] It reads as if meant for trees only. In legacy it applies to everything that action
+  gathers, except for a player whose civ is `Indians`, who gets it on trees only.
+
+**What a key needs** (`yieldTargets` is a working name):
+- the `yield` attribute on `<Rate>`: a side table per (tactics action, rate index), filled by a hook in the stock `Rate`
+  handler (`AddActionTagHandler` does not apply, because `Rate` is a tag stock already knows);
+- the gather tick: a hook at 0x4ED0A6 (up to 0x4ED10A) that finds the rate entry the target matched (the rule of the
+  rate lookup 0x487C45). It uses that entry's yield when set, else the action's `<Yield>` with the stock rules;
+- the Data subtypes `Yield` and `YieldSpecific` through `AddTechActionSubtype`, applied and unapplied as `WorkRate`;
+- optional: `YieldBonus` (one float per player, a factor in the same hook), `ResourceYield` as a modify type
+  (`AddModifyType`, read on the target in the same hook), and an option that drops the civ rule;
+- hot path: the gather tick runs for every gatherer, so A/B it with `perfprobe.py`.
+- **Size:** M for the attribute and the hook, M for the two subtypes, S each for `ResourceYield` and `YieldBonus` on
+  top.
+- **Answer to the question:** no, legacy is not "unlocked". It has one yield per action, applied to all resources
+  (trees only for the two Indian civs), and no tech can change it.
+
+### #58 A "random" cost per unit
+
+- [O] DE has no proto attribute for a random or varying cost. Bounded searches found none: DE's strings (`random`,
+  `cost`, `price`, `variance`, `variation`), the guide's 996 entries, and DE's decoded `protoy`, `techtreey`, `civs` and
+  `protounitcommands`.
+- [O] What DE and legacy have near it:
+  - `CostEscalation` (legacy proto tag, p3): the cost grows with every instance alive or queued. #46 already made it a
+    tech target (`costEscalationTechs`);
+  - `DynamicCost` (legacy tech flag, p51): a tech's cost scales with the number of enemy units. DE adds
+    `DynamicCostKBStat` and `KBStatFactorCap` (p50);
+  - `FreeHomeCityMerc` (legacy subtype, p82–83): a card ships a random count, between amount/2 and amount, of one
+    random proto of a type;
+  - `FreeHomeCityUnitRandom` (DE, p89; 29 effects, the outlaw and mercenary cards) ships `amount` units picked at
+    random from a type or a list. `SendRandomCard` and `BlockRandomCard` are DE too (p100, p102). Legacy has none of
+    these three;
+  - `RandomTech` is in WoL's DLL (`BUHCRandomTechEffect`), not in stock legacy.
+- [?] What the request means. Readings to put to JTMaston:
+  1. each unit trained costs a random amount in a range set on its proto (for example
+     `<RandomCost resourcetype="Gold" min="80" max="120"/>`), drawn when it is queued;
+  2. a cost per player, drawn once at the start of the game;
+  3. a weight per unit for random shipments (how much of a `FreeHomeCityUnitRandom` amount one unit uses).
+- **What a key needs** (reading 1): the Train action keeps a cost record per queued entry (`+8`, engine-symbols.md,
+  "Train action"). So the hook goes where the cost is computed for the payment, and the refund uses the copied record.
+  The draw must use the synced random (0x422648) so multiplayer stays in step, and the UI shows the base cost or the
+  range. **Size:** M. Readings 2 and 3: S–M. There is no DE behaviour to copy.
+
+### #56, #57 `UseBigHugeButton`
+
+- [O] DE: `UseBigHugeButton` is a `protounitcommands.xml` flag (guide p40, "Definitive Edition"): a command takes "the
+  Big Huge/Consulate option button".
+  - No DE command uses it. DE's only tech with the legacy tech flag `YPUseBigHugeButton` is `ypPickConsulateTech`, as
+    in legacy.
+  - DE's other button flags there: `UseBigButton`, `UseBigButton2`/`3`, `UseMediumButton`/`2`/`3`, and the tech flag
+    `DEUseMediumButton`.
+  - [?] Whether DE lifted a restriction of the tech flag: DE's code was not reached (`UseBigHugeButton` has no code
+    xref in `pe64.py`).
+- [O] Legacy: the tech flag `YPUseBigHugeButton` is bit 27h (its parser returns 27h at 0x6B1298).
+  - In the tech layout of the command panel (FUN_0046188E, `ev_db72e459…`) four flags send a tech to a big-button slot
+    instead of the grid (0x461F90..0x4620A7; slots set at 0x69660D..0x696639): 1Bh `NativeDance` slot 0, 24h slot 1
+    and 25h slot 2 (the `YPUseBigButton2`/`3` flags), 27h slot 3.
+  - The loop 0x4626D2 → 0x6972E0 draws the slots; slot 3 is the gadget `[ui+2FCh]`.
+- [O] No proto, civ or culture test was found on that path: a tech with the flag goes to slot 3 on whatever unit lists
+  it.
+- [?] Where "Consulate only" comes from was not found. The candidates are the UI layout (which panels define the slot-3
+  gadget), the click (`ypPickConsulateTech` opens the Consulate's choice), and the Consulate's own panel. One test in
+  game would decide it: the flag on a WoL tech of another building.
+- **What a key needs:** if that test shows the button working elsewhere, #56 is data only. Otherwise a hook at the
+  failing check. For #57 (DE's command flag), the command collection (0x4C5A50) sends a tagged command to a big-button
+  slot, and its click sends the command. **Size:** S if data only, M for the command flag.
+
+### #62 Five age-up choices; politicians outside the Town Center
+
+- [O] DE has:
+  - `uiPoliticianUI(%d, %d, %s, %s)`, one argument more than legacy's;
+  - `uiShowAgeUpDialogInSelected` and a XAML dialog (`uipoliticiandlg.xaml`);
+  - the civ tag `PoliticianBaseStringID` (p46), and the tech flags `FakeAgeUpgrade` and `DEAllegianceUnlock`
+    (p53–54).
+  - [?] DE's limit on choices, and the code that opens the dialog from another building, were not reached.
+- [O] Legacy's European dialog already holds five:
+  - gadgets `PoliticianDlg-Size1Politicians` .. `Size5Politicians`, bound at 0x818ABE..0x818B86 into
+    `[dlg+224h]`..`[dlg+234h]`, and five politician slots (loop to 5 at 0x818DBA);
+  - the list builder FUN_00818EE5 (`ev_7605c6e9…`) walks the player's politician list. It keeps each entry of the next
+    age that the selected unit can research (0x4C6968, the command panel's "can research here" test) and stops at
+    five (0x8191FE).
+  - [?] So the limit JTMaston meets is elsewhere: the Asian and native dialogs, the home city's politician unlocks, or
+    WoL's data. To ask: which civ and which age shows fewer.
+- [O] Legacy outside the Town Center:
+  - the command panel builds the age-up button `uiPoliticianUI(%d, %d, %s)` (string 0xC31A78) for a tech with flag 4
+    `AgeUpgrade` (0x461EF5 → 0x6962B5 → 0x6962E5) or flag 1Ch `RevoltTech` (0x461F4A → 0x69642B → 0x69646B), on any
+    unit;
+  - but the picker that opens the dialog requires the selected unit's proto to be the TownCenter (`[db+5E08h]`) for a
+    non-native civ, or the abstract type 16h `AbstractVillager` for a native civ (0x454ED7(player, 1)). The tests are
+    at 0x7E68F8..0x7E6920 and 0x7E8025..0x7E8057 (engine-symbols.md lists them under "Out of scope").
+- **What a key needs:** a cfg list of protos, or a proto tag, accepted at those two compares; the list builder already
+  filters by the selected unit. **Size:** S for outside the Town Center. For more than five, [?] until the limit is
+  located.
 
 ## What legacy does today
 
