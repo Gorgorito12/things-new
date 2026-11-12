@@ -28,6 +28,7 @@ Contents:
 - [Models on a unit](#models-on-a-unit)
 - [State kept for a saved game](#state-kept-for-a-saved-game)
 - [Direct3D hooks](#direct3d-hooks)
+- [Research payment](#research-payment)
 
 ## Site table
 
@@ -310,6 +311,24 @@ inline constexpr Site kHealIdleCheck{"HealIdleCheck", 0x009E0C79, kHealIdleCheck
 
 inline constexpr std::uint8_t kHealAutoSearchIdleBytes[] = {0x8B, 0x4E, 0x58, 0x85, 0xC9, 0x74, 0x78, 0xE8, 0xDB, 0x17, 0xA8, 0xFF, 0x84, 0xC0, 0x74, 0x6F, 0x8B, 0x4E, 0x5C, 0x85, 0xC9};
 inline constexpr Site kHealAutoSearchIdle{"HealAutoSearchIdle", 0x009CD9C0, kHealAutoSearchIdleBytes, sizeof(kHealAutoSearchIdleBytes)};
+
+inline constexpr std::uint8_t kHealTickFactorsBytes[] = {0x8B, 0x90, 0x04, 0x01, 0x00, 0x00, 0x8B, 0x80, 0x18, 0x03, 0x00, 0x00, 0x8B, 0x4E, 0x04, 0x57, 0x89, 0x54, 0x24, 0x0C, 0x89, 0x44, 0x24, 0x14};
+inline constexpr Site kHealTickFactors{"HealTickFactors", 0x009E0CB7, kHealTickFactorsBytes, sizeof(kHealTickFactorsBytes)};
+
+inline constexpr std::uint8_t kHealTargetMovingBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x0F, 0x84, 0x0C, 0x0D, 0x00, 0x00, 0x8B, 0x4C, 0x24, 0x04, 0x83, 0xF9, 0xFF};
+inline constexpr Site kHealTargetMoving{"HealTargetMoving", 0x004802D4, kHealTargetMovingBytes, sizeof(kHealTargetMovingBytes)};
+
+inline constexpr std::uint8_t kHealTargetFightingBytes[] = {0x51, 0x8B, 0x41, 0x04, 0x53, 0x8B, 0x98, 0x98, 0x00, 0x00, 0x00, 0x05, 0x94, 0x00, 0x00, 0x00, 0x55, 0x56, 0x33, 0xD2, 0x85, 0xDB, 0x57};
+inline constexpr Site kHealTargetFighting{"HealTargetFighting", 0x009CA5AC, kHealTargetFightingBytes, sizeof(kHealTargetFightingBytes)};
+
+inline constexpr std::uint8_t kHealTickHealingBytes[] = {0x3C, 0x08, 0x0F, 0x85, 0x0E, 0x01, 0x00, 0x00, 0x8B, 0x4E, 0x24, 0x6A, 0x08, 0x89, 0x4C, 0x24, 0x14, 0x6A, 0x05, 0x8B, 0xCF, 0xE8, 0xF4, 0x21, 0xFE, 0xFF, 0x83, 0xF8, 0x01, 0x0F, 0x8F, 0xEA, 0x00, 0x00, 0x00};
+inline constexpr Site kHealTickHealing{"HealTickHealing", 0x009E0C32, kHealTickHealingBytes, sizeof(kHealTickHealingBytes)};
+
+inline constexpr std::uint8_t kHealTickEndBytes[] = {0x8B, 0x16, 0x6A, 0x0A, 0x8B, 0xCE, 0xFF, 0x52, 0x34, 0x5F, 0x5E, 0x59, 0xC2, 0x04, 0x00};
+inline constexpr Site kHealTickEnd{"HealTickEnd", 0x009E0D3F, kHealTickEndBytes, sizeof(kHealTickEndBytes)};
+
+inline constexpr std::uint8_t kHealSearchHeadBytes[] = {0x83, 0xEC, 0x10, 0x55, 0x8B, 0xE9, 0x8B, 0x4D, 0x04, 0x8B, 0x41, 0x5C, 0x8B, 0x40, 0x44, 0x85, 0xC0, 0x89, 0x44, 0x24, 0x0C, 0x75, 0x07, 0x32, 0xC0, 0x5D, 0x83, 0xC4, 0x10, 0xC3};
+inline constexpr Site kHealSearchHead{"HealSearchHead", 0x009CD865, kHealSearchHeadBytes, sizeof(kHealSearchHeadBytes)};
 
 inline constexpr std::uint8_t kSmartHealLoopBytes[] = {0x39, 0x77, 0x04, 0x89, 0x74, 0x24, 0x14, 0x0F, 0x8E, 0x28, 0x01, 0x00, 0x00, 0x89, 0x74, 0x24, 0x10, 0x90, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x91, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x07, 0x8B, 0x4C, 0x24, 0x10, 0x8B, 0x0C, 0x01, 0x85, 0xC9, 0x0F, 0x8C, 0xED, 0x00, 0x00, 0x00, 0x8B, 0xC1, 0x25, 0xFF, 0xFF, 0x03, 0x00, 0x3B, 0x42, 0x10, 0x0F, 0x8D, 0xDD, 0x00, 0x00, 0x00, 0x8B, 0x52, 0x0C, 0x8B, 0x34, 0x82, 0x85, 0xF6, 0x0F, 0x84, 0xCF, 0x00, 0x00, 0x00, 0x39, 0x4E, 0x10, 0x0F, 0x85, 0xC6, 0x00, 0x00, 0x00, 0x3B, 0x75, 0x04, 0x0F, 0x84, 0xBD, 0x00, 0x00, 0x00};
 inline constexpr Site kSmartHealLoop{"SmartHealLoop", 0x009CD923, kSmartHealLoopBytes, sizeof(kSmartHealLoopBytes)};
@@ -1316,6 +1335,18 @@ inline constexpr Site kResearchCostCopyCall{"ResearchCostCopyCall", 0x009E68A0, 
 inline constexpr std::uint8_t kCommandResearchCostCopyCallBytes[] = {0xE8, 0x26, 0xB5, 0xAA, 0xFF};
 inline constexpr Site kCommandResearchCostCopyCall{"CommandResearchCostCopyCall", 0x009D5548, kCommandResearchCostCopyCallBytes, sizeof(kCommandResearchCostCopyCallBytes)};
 
+inline constexpr std::uint8_t kResearchProgressAddBytes[] = {0xD8, 0x46, 0x6C, 0xD9, 0x5E, 0x6C, 0xE8, 0xEC, 0xF8, 0xFF, 0xFF};
+inline constexpr Site kResearchProgressAdd{"ResearchProgressAdd", 0x009E6622, kResearchProgressAddBytes, sizeof(kResearchProgressAddBytes)};
+
+inline constexpr std::uint8_t kCommandResearchProgressAddBytes[] = {0xD8, 0x46, 0x70, 0xD9, 0x5E, 0x70, 0xE8, 0x91, 0xFA, 0xFF, 0xFF};
+inline constexpr Site kCommandResearchProgressAdd{"CommandResearchProgressAdd", 0x009D58FF, kCommandResearchProgressAddBytes, sizeof(kCommandResearchProgressAddBytes)};
+
+inline constexpr std::uint8_t kPayAffordCheckBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x40, 0x01, 0x00, 0x00, 0x53, 0x56, 0x33, 0xF6, 0x39, 0xB2, 0x80, 0x00, 0x00, 0x00, 0x57, 0x7E, 0x45, 0x8B, 0x5C, 0x24, 0x10, 0x8D, 0xB9};
+inline constexpr Site kPayAffordCheck{"PayAffordCheck", 0x008D6BAE, kPayAffordCheckBytes, sizeof(kPayAffordCheckBytes)};
+
+inline constexpr std::uint8_t kPaySharedAffordCheckBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x53, 0x55, 0x8B, 0xE9, 0x8B, 0x88, 0x40, 0x01, 0x00, 0x00, 0x33, 0xDB, 0x39, 0x99, 0x80, 0x00, 0x00, 0x00, 0x56, 0x57};
+inline constexpr Site kPaySharedAffordCheck{"PaySharedAffordCheck", 0x008D6C1B, kPaySharedAffordCheckBytes, sizeof(kPaySharedAffordCheckBytes)};
+
 inline constexpr std::uint8_t kTrainQueueCall1Bytes[] = {0xE8, 0x04, 0x82, 0x27, 0x00};
 inline constexpr Site kTrainQueueCall1{"TrainQueueCall1", 0x007560B5, kTrainQueueCall1Bytes, sizeof(kTrainQueueCall1Bytes)};
 
@@ -1856,6 +1887,21 @@ inline constexpr Site kClothFillUnlock{"ClothFillUnlock", 0x0040D659, kClothFill
 inline constexpr std::uint8_t kClothFillBackScaleBytes[] = {0x00, 0x00, 0x80, 0xBF};
 inline constexpr Site kClothFillBackScale{"ClothFillBackScale", 0x00B856B8, kClothFillBackScaleBytes, sizeof(kClothFillBackScaleBytes)};
 
+inline constexpr std::uint8_t kLastInLineHeadBytes[] = {0x51, 0x83, 0x7C, 0x24, 0x08, 0x00, 0x55, 0x8B, 0xE9, 0x74, 0x0A, 0x80, 0x7D, 0x11, 0x00, 0x0F, 0x85, 0x4F, 0xE2, 0x1F, 0x00, 0x5D, 0x59, 0xC2, 0x04, 0x00};
+inline constexpr Site kLastInLineHead{"LastInLineHead", 0x004918A8, kLastInLineHeadBytes, sizeof(kLastInLineHeadBytes)};
+
+inline constexpr std::uint8_t kLastInLineScanBytes[] = {0x53, 0x33, 0xDB, 0x39, 0x5D, 0x08, 0xC6, 0x45, 0x11, 0x00, 0x0F, 0x8E, 0xFF, 0x00, 0x00, 0x00, 0x56, 0x57, 0x8B, 0x45, 0x04, 0x8B, 0x04, 0x98, 0x33, 0xFF, 0x3B, 0xC7, 0x0F, 0x84, 0xDF, 0x00, 0x00, 0x00, 0x83, 0x78, 0x08, 0x16, 0x76, 0x1A, 0x8B, 0x48, 0x04, 0x8A, 0x51, 0x02, 0x83, 0xE2, 0x40, 0x89, 0x54, 0x24, 0x10, 0x76, 0x0B, 0x8B, 0xC1, 0x80, 0x48, 0x02, 0x01, 0xE9, 0xBF, 0x00, 0x00, 0x00, 0x3B, 0x7D, 0x08, 0x0F, 0x8D, 0x83, 0x00, 0x00, 0x00, 0x89, 0x7C, 0x24, 0x10, 0x8D, 0x09, 0x3B, 0xFB, 0x74, 0x67, 0x85, 0xFF, 0x7C, 0x63, 0x3B, 0x7D, 0x08, 0x7D, 0x5E, 0x8B, 0x45, 0x04, 0x8B, 0x34, 0xB8, 0x85, 0xF6, 0x75, 0x1D, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x91, 0x40, 0x01, 0x00, 0x00, 0x8B, 0x8A, 0x9C, 0x5D, 0x00, 0x00, 0x8B, 0x71, 0x0C, 0x03, 0x74, 0x24, 0x10, 0x85, 0xF6, 0x74, 0x37, 0x8B, 0x04, 0x98, 0x8B, 0x00, 0x85, 0xC0, 0x75, 0x05, 0x83, 0xC8, 0xFF, 0xEB, 0x02, 0x8B, 0x00, 0x50, 0x8B, 0xCE, 0xE8, 0x74, 0xC0, 0x2B, 0x00, 0x84, 0xC0, 0x74, 0x1B, 0x8B, 0x36, 0x85, 0xF6, 0x75, 0x05, 0x83, 0xCE, 0xFF, 0xEB, 0x02, 0x8B, 0x36, 0x8B, 0x4C, 0x24, 0x18, 0x56, 0xE8, 0x61, 0x5B, 0xE3, 0xFF, 0x3C, 0x01, 0x74, 0x0D, 0x83, 0x44, 0x24, 0x10, 0x24, 0x83, 0xC7, 0x01, 0x3B, 0x7D, 0x08, 0x7C, 0x88, 0x3B, 0x7D, 0x08, 0x7C, 0x24, 0x8B, 0x55, 0x04, 0x8B, 0x04, 0x9A, 0x83, 0x78, 0x08, 0x20, 0x76, 0x0F, 0x8B, 0x48, 0x04, 0x8A, 0x51, 0x04, 0x83, 0xE2, 0x01, 0x89, 0x54, 0x24, 0x10, 0x77, 0x09, 0x8B, 0x40, 0x04, 0x80, 0x48, 0x02, 0x01, 0xEB, 0x0F, 0x8B, 0x45, 0x04, 0x8B, 0x04, 0x98, 0x83, 0xC0, 0x04, 0x8B, 0x00, 0x80, 0x60, 0x02, 0xFE, 0x83, 0xC3, 0x01, 0x3B, 0x5D, 0x08, 0x0F, 0x8C, 0x05, 0xFF, 0xFF, 0xFF, 0x5F, 0x5E, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x20, 0x09, 0x00, 0x00, 0x85, 0xC9, 0x5B, 0x0F, 0x84, 0x8E, 0x1C, 0xE0, 0xFF, 0x8B, 0x54, 0x24, 0x0C, 0x8B, 0x12, 0x3B, 0x90, 0xC0, 0x03, 0x00, 0x00, 0x0F, 0x85, 0x7C, 0x1C, 0xE0, 0xFF, 0x8B, 0x01, 0x5D, 0x83, 0xC4, 0x04, 0xC7, 0x44, 0x24, 0x04, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x60, 0x04};
+inline constexpr Site kLastInLineScan{"LastInLineScan", 0x0068FB0C, kLastInLineScanBytes, sizeof(kLastInLineScanBytes)};
+
+inline constexpr std::uint8_t kProtoTechHasActivePrereqBytes[] = {0x55, 0x56, 0x8B, 0x31, 0x57, 0x83, 0xC6, 0x1C, 0x33, 0xFF, 0x80, 0x7E, 0x04, 0x00, 0x76, 0x2C, 0x8B, 0x6C, 0x24, 0x10, 0x57, 0x8B, 0xCE, 0xE8, 0x84, 0xA1, 0xB7, 0xFF, 0x85, 0xC0, 0x74, 0x11, 0x80, 0x78, 0x05, 0x01, 0x75, 0x0B, 0x80, 0x78, 0x0C, 0x02, 0x75, 0x05, 0x39, 0x68, 0x08, 0x74, 0x13, 0x0F, 0xB6, 0x46, 0x04, 0x83, 0xC7, 0x01, 0x3B, 0xF8, 0x7C, 0xD8, 0x5F, 0x5E, 0x32, 0xC0, 0x5D, 0xC2, 0x04, 0x00, 0x5F, 0x5E, 0xB0, 0x01, 0x5D, 0xC2, 0x04, 0x00};
+inline constexpr Site kProtoTechHasActivePrereq{"ProtoTechHasActivePrereq", 0x0094BC1D, kProtoTechHasActivePrereqBytes, sizeof(kProtoTechHasActivePrereqBytes)};
+
+inline constexpr std::uint8_t kPrereqListGetBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x10, 0x0F, 0xB6, 0x51, 0x04, 0x3B, 0xC2, 0x7D, 0x08, 0x8B, 0x09, 0x8B, 0x04, 0x81, 0xC2, 0x04, 0x00, 0x33, 0xC0, 0xC2, 0x04, 0x00};
+inline constexpr Site kPrereqListGet{"PrereqListGet", 0x004C5DBD, kPrereqListGetBytes, sizeof(kPrereqListGetBytes)};
+
+inline constexpr std::uint8_t kPlayerCanObtainTechHeadBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x55, 0x8B, 0xE9, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x49, 0x7C, 0x85, 0xC9, 0x56, 0x57};
+inline constexpr Site kPlayerCanObtainTechHead{"PlayerCanObtainTechHead", 0x004C5725, kPlayerCanObtainTechHeadBytes, sizeof(kPlayerCanObtainTechHeadBytes)};
+
 inline constexpr std::uint8_t kOptionNameLookupBytes[] = {0x51, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x10, 0x85, 0xFF, 0xC7, 0x44, 0x24, 0x08, 0x00, 0x00, 0x00, 0x00, 0x8D, 0xB1, 0x34, 0x02, 0x00, 0x00, 0x74, 0x24, 0x57, 0x8B, 0xCE, 0xE8, 0x8B, 0xFA, 0xAC, 0xFF, 0x8D, 0x4C, 0x24, 0x08, 0x51, 0x50, 0x57, 0x8B, 0xCE, 0xE8, 0x20, 0xFB, 0xAC, 0xFF, 0x84, 0xC0, 0x74, 0x0A, 0x8B, 0x44, 0x24, 0x08, 0x5F, 0x5E, 0x59, 0xC2, 0x04, 0x00, 0x5F, 0x83, 0xC8, 0xFF, 0x5E, 0x59, 0xC2, 0x04, 0x00};
 inline constexpr Site kOptionNameLookup{"OptionNameLookup", 0x00932264, kOptionNameLookupBytes, sizeof(kOptionNameLookupBytes)};
 
@@ -2306,6 +2352,7 @@ Outcome ApplyAuraStacking(const Config& config);
 Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
+Outcome ApplyResearchGrants(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
@@ -2343,6 +2390,7 @@ Outcome ApplyFastVertexFill(const Config& config);
 // True once fastVertexFill replaced the cloth flags' fill loops in this run (applied, not `verify`). rendererOption
 // reads it when the game calls Direct3DCreate9, after every key has applied.
 bool FastVertexFillActive();
+Outcome ApplyFastLastInLine(const Config& config);
 Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyPlugins(const Config& config);
@@ -2413,6 +2461,8 @@ inline constexpr Feature kFeatures[] = {
     {"sharedBuildLimit", ApplySharedBuildLimit},
     {"doNotQueue", ApplyDoNotQueue},
     {"nextResearchFree", ApplyNextResearchFree},
+    // After nextResearchFree: a research it makes free is not asked of this key (the shared payment, researchpay.h).
+    {"researchGrants", ApplyResearchGrants},
     {"killBountyTechs", ApplyKillBountyTechs},
     {"teamKillBounty", ApplyTeamKillBounty},
     {"resourceBounty", ApplyResourceBounty},
@@ -2495,6 +2545,7 @@ inline constexpr Feature kFeatures[] = {
     {"perfStats/perfAutoExec", ApplyPerfStats},
     {"bufferedFileReads/perfFileLog", ApplyFileIo},
     {"fastVertexFill", ApplyFastVertexFill},
+    {"fastLastInLine", ApplyFastLastInLine},
     {"xsErrorLog", ApplyXsErrorLog},
     {"multipleInstances", ApplyMultipleInstances},
     // Last: plugins load once every other hook is in place.
@@ -2509,12 +2560,12 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
-    "buildingworkrateauras", "xserrorlog", "datalint", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill",
+    "buildingworkrateauras", "xserrorlog", "datalint", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
@@ -4896,7 +4947,8 @@ void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model)
 // so a unit keeps at most as many as it ever needed at once. A transform in place (0x9C754C) ends the unit's
 // modifiers, markers too: a key writes its state again at its next change.
 //
-// Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay.
+// Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
+// researchGrants (two kinds, told apart by word 0).
 #pragma once
 
 #include <cstdint>
@@ -5175,4 +5227,217 @@ bool AddD3D9Observer(const D3D9Observer& observer, const char* who) {
 }
 
 }  // namespace uhc
+```
+
+## Research payment
+
+### src/researchpay.h
+
+```cpp
+// The payment of a research, shared by every key that changes what a research costs (nextResearchFree,
+// researchGrants): one call at each of the two payment sites (0x9E67E1 Research, 0x9D54CF CommandResearch) and
+// at each of the two copies of the cost into the action for a cancel's refund (0x9E68A0, 0x9D5548).
+#pragma once
+
+namespace uhc {
+
+// Asked before a research is paid, in the order the keys added them (their kFeatures order), until one claims
+// it. `action` is the Research or CommandResearch action being set up ([action+10h] its unit; its tech is not
+// written yet), `player` the paying player, `cost` the tech's cost list (a ResList). Return true to claim the
+// payment with *share of the cost, 0 (free) to 1 (the full cost); the claim spends nothing yet.
+using ResearchPayClaim = bool (*)(const char* action, const char* player, const char* cost, float* share);
+
+// Called for every research that was paid and whose action is set up, claimed or not, for each key in order:
+// [action+68h] is the tech ID, and the refund copy holds what was paid. `claimed` is set for the key whose claim
+// it was, with its share; the others get 1. A claim whose share the player could not pay is dropped: that
+// research does not start, and nothing is called.
+using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
+
+// Writes the hooks the first time, after checking the stock bytes of the four sites.
+bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
+
+}  // namespace uhc
+```
+
+### src/researchpay.cpp
+
+```cpp
+// A research is paid when its action is set up, which is when it is queued: 0x8D946A(player, cost) at 0x9E67E1 in
+// the Research action's start 0x9E667A (EBP = the action) and at 0x9D54CF in the CommandResearch action's
+// 0x9D543F (ESI = the action). On success each start writes the tech ID to [action+68h], then copies the cost
+// into the action for a cancel's refund: 0x480A73 at 0x9E68A0 (to +74h) and at 0x9D5548 (to +7Ch).
+//
+// Both payment calls go to UhcResearchPay (hooks/researchpay_hooks.asm), which asks the payers in order. With no
+// claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
+// the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
+// share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+#include "researchpay.h"
+
+#include <cstdint>
+#include <cstring>
+#include <vector>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+void UhcResearchPayHook();
+void UhcCommandResearchPayHook();
+}
+
+namespace {
+
+constexpr std::size_t kMaxPayers = 4;
+constexpr std::uint32_t kResearchCopyCall = 0x009E68A0;         // to [action+74h]
+constexpr std::uint32_t kCommandResearchCopyCall = 0x009D5548;  // to [action+7Ch]
+constexpr std::uint32_t kResListCount = 0x00C6DF38;             // the entries of every ResList
+
+using PayFn = bool(__thiscall*)(void* player, const void* cost);
+using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
+using CostFillFn = void(__thiscall*)(void* cost, float value);
+using CostScaleFn = void(__thiscall*)(void* cost, float factor);
+const auto kPay = reinterpret_cast<PayFn>(0x008D946A);
+const auto kCostCopy = reinterpret_cast<CostCopyFn>(0x00480A73);
+const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
+const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
+
+struct Payer {
+  uhc::ResearchPayClaim claim;
+  uhc::ResearchPayStarted started;
+};
+
+Payer g_payers[kMaxPayers] = {};
+std::size_t g_payerCount = 0;
+bool g_installed = false;
+
+// The payment just claimed and paid, for the copy that follows it.
+const Payer* g_pending = nullptr;
+const char* g_pendingAction = nullptr;
+float g_pendingShare = 1.0f;
+
+// A ResList laid out as the game's: +0 the encoded entries, +4 the encoded total.
+struct ResList {
+  std::uint32_t* entries;
+  std::uint32_t total;
+};
+
+bool PayShare(void* player, const void* cost, float share) {
+  if (share <= 0.0f) {
+    return true;
+  }
+  const auto* list = static_cast<const ResList*>(cost);
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(kResListCount);
+  if (share >= 1.0f || list == nullptr || list->entries == nullptr || count <= 0) {
+    return kPay(player, cost);
+  }
+  std::vector<std::uint32_t> entries(list->entries, list->entries + count);
+  ResList scaled{entries.data(), list->total};
+  kCostScale(&scaled, share);
+  return kPay(player, &scaled);
+}
+
+void* CopyCost(void* cost, const void* from, std::uint32_t offset) {
+  void* result = kCostCopy(cost, from);
+  char* action = static_cast<char*>(cost) - offset;
+  const Payer* payer = action == g_pendingAction ? g_pending : nullptr;
+  const float share = payer != nullptr ? g_pendingShare : 1.0f;
+  g_pending = nullptr;
+  g_pendingAction = nullptr;
+  if (share <= 0.0f) {
+    kCostFill(cost, 0.0f);
+  } else if (share < 1.0f) {
+    kCostScale(cost, share);
+  }
+  for (std::size_t i = 0; i < g_payerCount; ++i) {
+    const bool claimed = payer == &g_payers[i];
+    g_payers[i].started(action, claimed ? share : 1.0f, claimed);
+  }
+  return result;
+}
+
+void* __fastcall CopyResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x74); }
+void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x7C); }
+
+}  // namespace
+
+// From the two hooks, instead of the payment. The action is the one being set up.
+extern "C" bool __stdcall UhcResearchPay(const char* action, void* player, const void* cost) {
+  g_pending = nullptr;
+  for (std::size_t i = 0; i < g_payerCount; ++i) {
+    float share = 1.0f;
+    if (!g_payers[i].claim(action, static_cast<const char*>(player), static_cast<const char*>(cost), &share)) {
+      continue;
+    }
+    share = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
+    if (!PayShare(player, cost, share)) {
+      return false;  // the research does not start; nothing was spent
+    }
+    g_pending = &g_payers[i];
+    g_pendingAction = action;
+    g_pendingShare = share;
+    return true;
+  }
+  return kPay(player, cost);
+}
+
+namespace uhc {
+
+bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started) {
+  if (g_payerCount == kMaxPayers) {
+    Log(L"research payment: more than %u keys", static_cast<unsigned>(kMaxPayers));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kResearchPayCall, &sites::kCommandResearchPayCall,
+                             &sites::kResearchCostCopyCall, &sites::kCommandResearchCostCopyCall,
+                             &sites::kResListCopy, &sites::kResListScale}) ||
+        !WriteCall(sites::kResearchPayCall.va, reinterpret_cast<const void*>(&UhcResearchPayHook)) ||
+        !WriteCall(sites::kCommandResearchPayCall.va, reinterpret_cast<const void*>(&UhcCommandResearchPayHook)) ||
+        !WriteCall(kResearchCopyCall, reinterpret_cast<const void*>(&CopyResearchCost)) ||
+        !WriteCall(kCommandResearchCopyCall, reinterpret_cast<const void*>(&CopyCommandResearchCost))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_payers[g_payerCount++] = {claim, started};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/researchpay_hooks.asm
+
+```asm
+; The research payment (src/researchpay.cpp), shared by nextResearchFree and researchGrants. Both replace a call
+; of the payment 0x8D946A, whose argument, the cost, is already on the stack, and return to the stock code as
+; that call did: al, ret 4.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcResearchPay PROTO STDCALL action:DWORD, player:DWORD, cost:DWORD
+
+.code
+
+; The call at 0x9E67E1 in the Research action's start. ECX = the player, EBP = the action.
+UhcResearchPayHook PROC
+    TRACE_ONCE "research payment (0x9E67E1)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcResearchPay, ebp, ecx, eax
+    ret 4
+UhcResearchPayHook ENDP
+
+; The call at 0x9D54CF in the CommandResearch action's start. ECX = the player, ESI = the action.
+UhcCommandResearchPayHook PROC
+    TRACE_ONCE "command research payment (0x9D54CF)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcResearchPay, esi, ecx, eax
+    ret 4
+UhcCommandResearchPayHook ENDP
+
+END
 ```

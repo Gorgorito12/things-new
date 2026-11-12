@@ -756,6 +756,22 @@ Two filters stop a healer from healing a busy unit:
 "Healer of the marker type" is `0x44D7FA(proto = [healer+5Ch], typeId)`, the engine's is-a
 test. It accepts a proto ID as well as an abstract type ID.
 
+**`moving`, `fighting` and `busyRate`.** The two busy tests are thiscall functions of the target's action
+manager `[t+58h]`: `0x4802D4(-1)` (`ret 4`; the current action `[mgr+24h]` is a move) and `0x9CA5AC` (fighting).
+Both only read. With one state alone, or a busyRate other than 100, the tick hook at `0x9E0C79` runs them for a
+marked healer: an excluded state jumps to the tick's end path `0x9E0D3F` (state 10, as stock does), an allowed busy
+state notes the action (`g_uhcHealBusyAction = ESI`) and goes on to `0x9E0C9F`. With both states and busyRate 100 no
+test runs, as before. The search hook at `0x9CD9C7` runs the excluded state's test on the candidate's manager (the ECX
+of the stolen call) and answers AL = 0 for it, 1 otherwise. For the rate, a third hook replaces `mov [esp+0Ch],edx /
+mov [esp+14h],eax` (8 B at `0x9E0CC7`), where the heal path stores `[world+104h]` and `[world+318h]`; `0x9E0CD4` and
+`0x9E0CDA` multiply the rate `0x487C45` by them, and the product is both the HP added at `0x9E0CE9` and the action's
+total `[action+68h]` (`0x9E0CEE`). For the noted action the hook multiplies the stored `[world+318h]` by busyRate / 100
+(`fld / fmul / fstp` on the stack copy; the FPU stack is empty there) and clears the note, then jumps to `0x9E0CCF`.
+`0x9E0C9F..0x9E0CCF` has no exit, so the note is always consumed in the tick that set it, and the busy hook clears it
+on entry. The site sits between the ones `healNonIdle` (`HealIdleCheck`, to `0x9E0CA4`) and `overhealSources`
+(`HealTickAdd`, from `0x9E0CCF`) verify, so the keys' order does not matter. Sites `HealTickFactors`,
+`HealTargetMoving`, `HealTargetFighting`.
+
 How the sites were found:
 - Patching only the tick did nothing in game: the tick hook never ran, because the search never
   started a heal on a fighting unit.
@@ -797,6 +813,23 @@ range hook keeps EBX, ESI, EDI and EBP (pushad); 0x9CDA3F writes EAX before read
 decode at instruction boundaries and nothing branches into the stolen bytes (0x9CDA58 is entered
 at its first byte from 0x9CD92A and the loop's end). `healNonIdle`'s hook at 0x9CD9C7 is a
 different site in the same loop, and both work together.
+
+**`switch=<percent>`.** The search is only called for an idle healer (0x68C14E), so nothing looks again while a heal
+runs. The option adds a hook at the start of the healing state (8) of the heal tick FUN_009E0B53: `mov ecx,[esi+24h] /
+push 8 / mov [esp+14h],ecx` (9 B at 0x9E0C3A, after `cmp al,8 / jne`; nothing branches into it). `UhcSmartHealRecheck
+(healer, target)` acts only on a heal this search started: the pick hook notes, per healer ID, the target it returned
+and the second of game time (`[world+108h]` / 1000). Once per new second it calls the stock search itself,
+`0x9CD865(owner = [healer+58h])` (the call 0x68C14E makes; it checks `[owner+4]` = healer), as a dry run: the range
+hook records only candidates whose rank is at most the target's and whose stock ratio is below the target's minus the
+margin, and the pick hook, seeing the dry run, returns null, so the search leaves through its no-target exit and starts
+nothing (the search writes only the shared query `[world+184h]`, which every search refills). The target itself is no
+candidate (0x9C2E40(5, 8) counts its healer). With a candidate the hook jumps to the tick's end path 0x9E0D3F
+(`vtbl+34h(10)`, the stack as for the stock jumps there); the healer is idle, and its next stock search picks the best
+unit, which beats the old target. Otherwise the stolen bytes run and it goes on at 0x9E0C43. The re-check is in the
+heal tick, inside the healer's own update, the same context as the stock idle search; it uses only game time, unit
+IDs, ratios and the stock tests. The notes live in the DLL (an `unordered_map` looked up by ID, never walked), cleared
+on each data load; a loaded game has none, so a heal started before the save is not checked. Sites `HealTickHealing`,
+`HealTickEnd`, `HealSearchHead`.
 
 **No healer marker.** The search is the same function for every healer type, and the change only
 reorders units the stock rules already accept, so a global key is enough; a mod that wants a
@@ -1856,8 +1889,17 @@ when it is gone. Gaia and the attacker's own units do not count.
 
 The state lives in the game, not in the DLL: everything is a stat modifier made by 0x4DD22D, the call of snares and auras, with
 0 ms, so no time limit. The count is a modifier of stat 62h, which no code reads, with the kills in `[+68h]`; it is read back
-by the walk of `modifiers.h`. Each row reached adds a multiply modifier of its total divided by the total of the row before,
-because modifiers multiply. So the save, the stat code and the panel need nothing more, and nothing is left to clean up.
+by the walk of `modifiers.h`. Each row reached adds a multiply modifier (operation 2) of its total divided by the total of the
+row before, or for `op="add"` an add modifier (operation 1) of the difference, so the total from that rank on is the row's.
+So the save, the stat code and the panel need nothing more, and nothing is left to clean up.
+
+**The stat sum.** FUN_004B3C7D(float* value, list, stat) walks the unit's modifiers of that stat oldest first: operation 0
+sets, 1 adds, 2 multiplies, and an exclusive one (flag 16h) stops the walk. Its callers start Speed (0) from the proto's
+velocity `[proto+80h]` (0x4B3C48) and MaxHP (1) from `[proto+98h]` (0x4B3A0E); every other stock stat (2..8, 0Bh, 0Dh, 0Eh,
+0x4B3A41..0x4B3C1C) from 1.0, a factor. So an add row is in hit points or speed for those two and a fraction of the base
+for the rest, and a multiply and an add of one stat depend on their order. The creator 0x4DD22D → 0x4B3D9E → init 0x4B3D44
+stores the operation as given (`[+78h]`), with no check. A transform replays the rows reached one by one, as the kills made
+them, so it gives the same order and result.
 
 The modifier of `MaxHP` scales the current hit points. A transform in place, 0x9C754C, ends the unit's modifiers, so its seven
 calls go through a wrapper that reads the count before and, after it, adds the count back and one multiply modifier per stat
@@ -1866,6 +1908,14 @@ does not come through 0x9C754C.
 
 Rows: `<VeterancyBonus>`, through `prototags.*`; `modifytype` goes through the stock parser 0x5F5645, so the names of
 `AddModifyType` work too. The rows are kept by proto ID in a map that only the load writes.
+
+**Default rows and rank names.** `veterancy.xml` (`hostfiles.h`'s data folder) is read at the key's start with the
+`xmllist.h` file reader and a small element parser of the key's own. Its unit types and `modifytype` names are resolved at the
+first lookup after each database load, through the table `[database+190h]` (0x58E685 bucket, 0x40295B find) and 0x5F5645 on
+a BString: by then the protos and every key's `<ModifyType>` names exist. A unit's rows are its proto's own, else the first
+default whose type its player's copy has (0x44D7FA); no list per proto is kept, so a type a tech adds counts at once. The
+lookup runs on a kill, at a transform, in the one walk after a load and in the panel row of one selected unit. Names made of
+digits are string IDs, read with 0x58EA52 when shown; the panel row's colour is the string table's `<color=r, g, b>` markup.
 
 - **Observed in game:** see the tests in the modding guide.
 
@@ -2687,9 +2737,18 @@ overheal (only the single-target heal action knows its healer).
 | Site | Stolen | Hook does | Continues at |
 |---|---|---|---|
 | 0x4823A3 | `push ecx / push esi / mov esi,ecx / cmp [esi+8],8` (8 B; ECX = unit, `[esp+4]` = amount) | `UhcOverhealAddHp(unit, &amount)`: a positive amount on a marked unit is lowered to reach at most the reference, unless `g_uhcOverhealAllow`; then the stolen bytes | 0x4823AB (`jbe`, on the stolen `cmp`) |
-| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | for a marked target and a healer of no source type: the reference; else the stock max | 0x9E0BC0 |
-| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = healer is a source, the stolen call, then 0 | 0x9E0CEE |
-| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | for a marked candidate and a normal healer: HP / reference (1.0 at the reference: no candidate); else the stock ratio | 0x9CD989 |
+| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | `UhcOverhealTickLimit` in ST0: for a marked target, the reference with a healer of no source type, min(reference × cap %, max) with a capped source; else the stock max | 0x9E0BC0 |
+| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = 1 + the index of the healer's first source type (0: none), the stolen call, then 0 | 0x9E0CEE |
+| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference with a normal healer, HP / cap limit with a capped source (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
+
+**`cap` and `rate`** (per source type, `g_options[i]`). In the add-HP hook, with `g_uhcOverhealAllow` = i + 1 (only
+the heal tick of a source healer sets it): with `rate`, the part of the amount above the reference becomes (HP +
+amount − max(HP, reference)) × rate / 100, the part below is kept; with `cap`, the amount is then lowered so that HP
+stops at reference × cap / 100. The tick's limit and the search's ratio above use the same limit, so the heal action
+ends when the unit reaches it (state 10) and a unit at its cap is no candidate, as a normal healer at the reference;
+without that a capped source would heal 0 HP forever. The C functions return a float in ST0 (x86 `__stdcall`), and
+change only EAX, ECX and EDX, as the stolen calls do. Without options every path calls what the hooks called before
+(`0x480408`, `UhcOverhealReferenceOf`, `0x45F295`, `UhcOverhealRatioOf`).
 
 **Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
 only lowers a positive amount; damage (negative amounts) and the setter's other callers are
@@ -2744,6 +2803,16 @@ forgets every unit, and so does a data reload); for each unit, the unit table lo
 gone, dead or unmarked units are forgotten. A unit at or below its reference is forgotten; one whose
 last gain is less than `delay` ago waits; otherwise HP = max(HP − rate × elapsed, reference)
 through the stock setter FUN_004820A1(unit, value, 0).
+
+**`holdNear`.** For a unit past its delay, before the decay, each `holdNear` entry runs the world's spatial query
+FUN_004A1C55(world, &[unit+14h], metres, 1, list) (`noTrainNearEnemyTC`'s: the IDs of the units whose distance to the
+point, their vtable slot B8h, to their edge, is at most the radius; it fills the obstruction manager's scratch list
+and copies it out). Any listed unit that is not the unit, has the same owner `[u+44h]`, is of the type (is-a
+0x44D7FA), alive (`vtbl+A4h`) and built (0x44DDB4) holds it: the unit is skipped for this tick. Only whether one exists
+decides, not the query's order (the logged one is the first found). The query runs in the world tick, after the stock
+update, outside any loop over units, and only for units past their delay, so its cost follows the number of
+overhealed units. The list is the DLL's and is reused. Sites `UnitsNearPoint`, `IsBuilt` (verified only with
+`holdNear`).
 
 **The setter's effects** (REA `ev_b83c97e4…`, `ev_241c1390…`): it stores HP, clamps it to [0, max]
 (the per-unit override through 0x6A2CB3), updates the damage visuals of a unit with damage stages
@@ -2961,7 +3030,8 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
 `HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`tools/make_rings.py`, `RANK_LIFT`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. **Why it is safe:** a model is a
+bar scales with the camera like the world, so the gap stays at every zoom. Ranks 4 and 5 add stars over rank 3's chevrons: their
+sprite is larger around the same centre, with the glyph scaled down by as much, so the chevrons land where rank 3's do. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
@@ -3370,18 +3440,109 @@ flagged entry after the stock add. Entries move as bytes, as each owns its cost 
 in the entry, so a card that waits keeps it, and a saved game needs nothing more. The wrapper returns the new place, which the
 send gives to the shipment's models.
 
+### The research payment (shared)
+
+`src/researchpay.*`, `hooks/researchpay_hooks.asm`, used by `nextResearchFree` and `researchGrants` through
+`AddResearchPayer(feature, claim, started)`.
+
+A research is paid when its action is set up, which is when it is queued: the queue routine FUN_009CCB39 (Research,
+callers 0x7D47D2, 0x7D7810, 0x9E6E45) makes the action (0x48D927(0xC)) and calls its start 0x9E667A, which pays with
+0x8D946A(player, cost) at 0x9E67E1, ECX the player looked up from its first argument (0x44CB21), EBP the action, the cost
+`[techStatus+10h]`. On success it writes `[action+64h]` = the player ID and `[action+68h]` = the tech ID, then copies the
+cost for a cancel's refund, 0x480A73 at 0x9E68A0 to `+74h`. The CommandResearch path is a research asked for by a command
+of `protounitcommands.xml` (its record in `[db+2968h]`, `+20h` the tech): the command class 0xB87978 (type 3Eh) calls
+FUN_009CCAAF, which makes an action of type 38h and calls 0x9D543F; that pays at 0x9D54CF (ECX the player, ESI the
+action), writes `[esi+68h]` = the tech and copies the cost at 0x9D5548 to `+7Ch` (REA `ev_13bfd5e0…`, `ev_55d37da8…`,
+`ev_d0df1de1…`, `ev_78a96c1c…`, 2026-11-11). 0x8D946A itself checks with 0x8D6BAE (each resource of the player at
+`[player+230h]` against the cost), or 0x8D6C1B when the world byte `[world+6912h]` is set (the team's resources), then
+subtracts (0x7E844B).
+
+- **The two payment calls** go to `UhcResearchPay(action, player, cost)`, which asks each key's claim in their
+  `kFeatures` order. No claim: the stock payment. A claim gives a share: 0 skips the payment; between 0 and 1 the cost is
+  copied as raw encoded entries into a local list (`[0xC6DF38]` entries, the total at `+4`), scaled by 0x480B94 and paid,
+  so the tech's own cost is never written; 1 pays as stock. A failed payment returns false, so the research does not
+  start and nothing is spent.
+- **The two copy calls** go to a wrapper that copies as stock, then, when the action is the one just claimed, fills the
+  copy with 0 (0x4E2617) or scales it (0x480B94) by the same share, so a cancel refunds what was paid. Then every key's
+  `started(action, share, claimed)` runs, the claiming key with `claimed` set: by then `[action+68h]` is the tech.
+
+**Why it is safe.** Each call keeps its stock frame: the hook reads the cost from its own argument and returns with
+`ret 4` and AL, as 0x8D946A does; the copy wrapper is a `__fastcall` with the stock `thiscall` frame. Nothing between the
+payment and the copy starts another research, so one pending claim is enough; it is cleared at the next payment, and
+the copy acts only for the action that was claimed.
+
 ### nextResearchFree
 
-A research is paid when its action starts: 0x8D946A at 0x9E67E1 (the Research action, EBP) and at 0x9D54CF (CommandResearch,
-ESI). Each action then copies the cost for a cancel's refund (0x480A73 at 0x9E68A0, to `+74h`, and at 0x9D5548, to `+7Ch`).
-
 The effect is a subtype through `AddTechSubtype`, which adds its amount to a count kept by the player's copy of the proto.
-Both payment calls go to a helper that reads the proto from the action's unit (`[[action+10h]+5Ch]`). With a count above 0 it
-takes one, returns true and leaves a mark, and the wrapper of the copy that follows empties the action's cost with
-0x4E2617, so a cancel refunds nothing. The count is forgotten when a database loads (`OnDatabaseLoad`), because a new game
+Its claim reads the proto from the action's unit (`[[action+10h]+5Ch]`): with a count above 0 it claims with a share of
+0, so the shared payment skips the payment and empties the action's copy of the cost, and a cancel refunds nothing. Its
+`started` takes one from the count. The count is forgotten when a database loads (`OnDatabaseLoad`), because a new game
 can reuse the address of a proto. It is not saved, and a load applies the effects again.
 
 - **Observed in game:** see the tests in the modding guide.
+
+### researchGrants
+
+`src/features/researchgrants.cpp`, `hooks/researchgrant_hooks.asm`.
+
+- **Tags** (`AddProtoTagHandler`): the six `ResearchGrant*` tags, by proto ID, each checked for its range; a bad value
+  is logged and the tag skipped. A proto has grants only with a valid `ResearchGrantInterval`.
+- **Data subtypes** (`AddTechSubtype`): `ResearchGrantInterval` and `ResearchGrantMax` keep a value per player's copy of
+  the proto (looked up by pointer, checked against the copy's ID), computed by the stock value function 0x7F892A from the
+  tag's value; `ResearchGrantPoints` queues the points for the next world tick.
+- **The units** are a set of unit IDs, in ID order. The world tick (`AddWorldTick`) looks at 256 slots of the world's
+  unit table `[world+0Ch]` per update, round robin, and adds the living units of a tagged proto; a new game (another
+  world, the time going back or the step count jumping) walks the whole table once, and so does a `ResearchGrantPoints`
+  effect before it gives its points. A unit that is gone, dead or of another proto leaves the set.
+- **Points:** for each unit of the set that is built (0x44DDB4), the tick adds the game time `[world+108h]` since the last
+  tick to its timer and turns each interval into a point, up to the cap; at the cap the timer is 0. Points and timer are
+  words 1 and 2 of a saved marker (`savedmarkers.h`, stat 66h, word 0 `RGNT`).
+- **Spending:** the claim (after `nextResearchFree`'s) walks the set for the paying player's built, living units with a
+  point, in scope, and applies the rule of the modding guide: the total cost is the sum of 0x44EFFF over
+  `[[game+140h]+80h]` resources, and "can pay" is 0x8D6BAE, or 0x8D6C1B with `[world+6912h]` set. The unit with most
+  points wins, the first in ID order on a tie. Its `started` takes the point from the marker and, for a Time factor
+  other than 1, keeps (researching unit ID, tech ID) to factor; the next tick writes it as a second marker of stat 66h
+  (word 0 `RGTI`, word 1 the tech, word 2 the factor), and a new game reads those markers back. A research of the same
+  tech in that unit without a point (any key's `started` with `claimed` clear) drops the entry.
+- **Research time:** a Research update (FUN_009E648B, slot 3Ch of 0xB98078) adds `BuildingWorkRate x [world+30Ch] x
+  [player+37Ch] x [world+104h]` to its progress `[action+6Ch]` at 0x9E6622 (`fadd` / `fstp`), then calls the fraction
+  0x9E5F19 with the tech's status entry, which divides by the research points `[entry+18h]`; the update ends the research
+  when the fraction `[action+70h]` reaches 1.0 (0x9E662D). The CommandResearch update FUN_009D5843 does the same with
+  `[esi+70h]` at 0x9D58FF and the fraction 0x9D539B (`[esi+74h]`). Each hook replaces those 6 bytes: while
+  `g_uhcGrantTimed` (the number of entries) is 0 it adds the step as stock; otherwise it stores ST0, calls
+  `UhcGrantResearchStep(action, offset, entry, step)` inside `pushad` / `popad` and adds the result, the step divided by
+  the factor of (`[[action+10h]+10h]`, `[action+68h]`). The step that reaches the research points drops the entry, and
+  the next tick frees its marker. Both continue at the call of the fraction (0x9E6628, 0x9D5905), whose argument is
+  already pushed. A research in the other branch of the update (0x9E65A5..0x9E65F2: tech flag 4 with 0x454ED7) does not
+  pass the add and keeps its stock time.
+- **Panel:** `AddUnitPanelRow`, from the unit's marker and its player's copy of the proto.
+
+**Why it is safe.**
+- The step hooks: ST0 is the only value on the x87 stack there (the getter's result and three `fmul`), so the C function
+  has the whole stack; it returns its float in ST0, which the stock `fadd` / `fstp` then use. `pushad` / `popad` keep ECX
+  = ESI, which the fraction call takes, and EBX / EDI; the fraction's pushed argument stays where it is. The `cmp`
+  changes only the flags, which the next instructions do not read. No branch lands inside either site, and both are
+  instruction boundaries (capstone over `.text`, `rea/evidence/age3y-b1a1dab7/researchgrants_cs.txt`).
+- Markers are made (0x4DD22D) only by the world tick, after the world update, never inside a unit's action update; the
+  claim and `started` only write the words of a marker that exists.
+- Deterministic: the set and the tables are keyed by unit ID, the copy map by pointer is only looked up, the time is
+  game time, and the order is the set's. The sweep's cursor is not saved: a loaded game walks the whole table, so a unit
+  created in the few updates before the save starts its timer at the load instead of a few updates after its creation.
+- Cost: per update, one modifier walk per unit of the set and 256 slot reads; the step hooks are one compare while no
+  research has a Time factor.
+
+**A/B (2026-11-11),** the test scenario of the modding guide (Ethiopians, two tagged markets), 90 s of
+`tools/perfprobe.py` from the load, two researches at 50 s, two other test games running on the machine:
+
+| | key off | key on |
+|---|---|---|
+| frames over 50 ms | 0 | 0 |
+| main-thread CPU, mean | 89.1 % | 89.0 % |
+| longest frame, median of the seconds | 2.2 ms | 2.2 ms |
+| fps, median (uncapped) | 724 | 672 |
+
+The fps differ by 7 % at about 1.4 ms per frame with the GPU busy by the other games; the main thread did the same work.
+That run's second research was paid by the Market (a tie), so it had no Time factor.
 
 ### killBountyTechs, resourceBounty and teamKillBounty
 
@@ -3561,12 +3722,43 @@ default) with its file offset.
   freed while in use.
 - Each hook keeps `GetLastError` as Windows would leave it.
 
+**`readahead`** (2026-11-11). One worker thread of the DLL reads the block after the buffer:
+- **When.** After the game's thread fills the buffer with a whole block (one real read of the
+  buffer's size), it queues the next block's offset. A queued request whose block the game reaches
+  first is taken back, and the game's thread reads it as before.
+- **Its own handle.** The first request of a file opens a second handle with
+  `ReOpenFile(GENERIC_READ, FILE_SHARE_READ | WRITE | DELETE)`. The worker reads with a positioned
+  `ReadFile` (an `OVERLAPPED` offset on that synchronous handle), so the game's handle, its file
+  pointer and the real-pointer bookkeeping above are never touched. If the second handle cannot be
+  opened, that file simply gets no read-ahead.
+- **Use.** On a buffer miss, before any real read, the game's thread checks the read-ahead block:
+  - if it holds the requested position, the two buffers are swapped and the next block is queued;
+  - if the worker is reading exactly that block right now, the game's thread waits for it (the
+    log counts these waits and their time);
+  - otherwise the block is dropped and the game's thread reads.
+
+  The block is used only for the position it was read at, so the bytes are the file's bytes at
+  that offset, as with the plain buffer. A short read (end of file) or an error leaves the block
+  unused.
+- **Lifetime.** A file's state is reference-counted: the handle table holds one reference, and a
+  queued or in-flight block another. Closing the game's handle, a read from another thread or
+  `DuplicateHandle` drop the block (an in-flight one is discarded when it lands); the buffers and
+  the second handle are freed with the last reference, on whichever thread releases it.
+- **Locks.** The worker holds the file's critical section only to take and to publish a block,
+  never during its read; the game's thread waits for a block with `SleepConditionVariableCS`
+  on that section. The worker never takes the handle-table lock.
+- **Log at exit:** blocks asked of the worker, read, used by the game, waited for (and the time),
+  the buffer refills still read on the game's thread, and the files with no second handle.
+
 **Checks.**
 - `bufferedFileReads verify` reads every buffered request again with a real positioned
   `ReadFile` and compares the bytes. A full late-game session checked 7.5 million reads with no
   mismatch.
 - `perfFileLog` counts the game's calls against the ones made to Windows. A session with the
-  buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows.
+  buffer made 10.2 million `ReadFile` calls by the game and 17,797 to Windows. The worker's reads
+  go through its own handle and are not in those counts.
+- `bufferedFileReads 64 readahead verify` on the stock game's 25-minute save checked 6.9 million
+  buffered reads, 0 mismatches.
 
 ### fastVertexFill
 
@@ -3633,6 +3825,65 @@ where the lock points (`VirtualQuery`) and the buffer's usage and pool (`GetDesc
   the vertices.
 - With the key the function leaves the main thread's samples (0.00 % against 5.5 to 7.8 %), and the DLL as a whole
   takes 0.1 % of them.
+
+### fastLastInLine
+
+**The stock code.** Every player has a tech tree (`[world+7Ch]`, one per player slot): one status entry per tech, each
+a bitset whose bit numbers are the tech flags (HomeCity 18, ForceLastInLine 22, YPNeverLastInLine 32, …). Bit 16 is not
+a flag: it is "last in line", which the command panels read to pick the upgrade of a line they show. FUN_004918A8,
+`thiscall(tree, Player*)`, `ret 4`, recomputes it when the tree's byte `+11h` is set. The tech status update 0x491A40
+calls it for each live player on every world update (at 0x491A39), and the forced update 0x852850 calls it too. The
+byte is set by 0x94AE8C, which tech activation (0x94CF27), "set obtainable" (0x94C33A) and "set unobtainable"
+(0x94CDB3) call only for a HomeCity tech: a home city shipment, or a card that becomes available again.
+
+The recompute, in the cold chunk 0x68FB0C..0x68FC51, does for each non-null entry i:
+- bit 22 set: set bit 16;
+- otherwise scan every other entry j (the template record `[[db+5D9Ch]+0Ch] + 24h·j` when j's entry is null): if j's
+  definition has a prerequisite "TechStatus active i" (0x94BC1D: type byte `+5` = 1, status byte `+0Ch` = 2, tech
+  `+8`) and the player can obtain j (0x4C5725), clear bit 16 and stop;
+- no such j: clear bit 16 when bit 32 is set, set it otherwise.
+
+Then, for the local player (`[game+3C0h]`), it calls slot 1 of the UI object `[game+920h]` with 0. The scan is
+entries × (entries + prerequisites) tests. A tree of 2,500 techs takes 15–20 ms; one of 10,500 techs, 340–590 ms,
+after every shipment of every player.
+
+**The hook** (`hooks/lastinline_hooks.asm`):
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x4918A8, the function's head | `push ecx` / `cmp dword ptr [esp+8],0` / `push ebp` / `mov ebp,ecx` (9 B) | No player or a clean tree: `ret 4`, as stock. Otherwise `UhcLastInLine(tree, player)`; 0 → `ret 4`; 1 → the stolen lines | `ret 4`, or 0x4918B3 (the stock dirty test) |
+| 0x68FC1B, `verify` only | `mov eax,[0C66234h]` (5 B) | `UhcLastInLineCompare(tree = EBP)`, then the stolen line | 0x68FC20 |
+
+`UhcLastInLine` builds an index once per data load (and again when the database, the template array or the tech count
+changes): for each tech ID t, the techs j whose definition has a "TechStatus active t" prerequisite, from the template
+records' definitions (the same definitions every player's entries point to). For entry i it tests only those j, in
+ascending order, with the stock 0x94BC1D and 0x4C5725, and writes bit 16 as the stock loop does; it clears `+11h` and
+makes the UI call for the local player. A j outside the index fails 0x94BC1D in the stock loop anyway, so the result is
+the same with fewer tests: about 10,500 + 5,300 instead of 1.7 × 10⁸, 0.4–1.6 ms. A tree whose count differs from the
+template count, or a missing database, goes to the stock code.
+
+**`verify`** computes the bits without writing them, returns 1 so that the stock loop runs, and at its exit compares
+bit 16 of every entry with the key's. Each recompute logs the player, the entries, the bits that differ and both times.
+
+**Why it is safe.**
+- The two tests and everything they call (0x4804D1, 0x447F3C, 0x4C5DA9, 0x4C5D86, 0x4C5CA1, 0x4C5D2E, 0x4C5AFB,
+  0x44D063, 0x8F7816, 0x94DC8C, 0x4C5DBD) write no memory but the stack (a walk of every instruction of each), so testing
+  fewer j changes nothing but the time. The bits written are the stock ones, so players may set the key differently.
+- The prerequisite lists belong to the definitions, which are read with the data and not changed during a game (no key
+  of this DLL adds techs at runtime). A data load clears the index.
+- `VerifyAll` checks the whole function, its cold chunk, 0x94BC1D, 0x4C5DBD and the head of 0x4C5725 against the stock
+  bytes: beside another DLL that patched any of them, the key logs FAILED and writes nothing.
+
+**Checks.** `fastLastInLine verify`, 0 bits differ in every recompute:
+- a 32-minute five-player save of a mod with 10,542 techs (index: 1,371 techs named in a TechStatus active
+  prerequisite, 5,325 pairs): 14 recomputes, 147,588 entries; the key 0.42–1.59 ms, the stock loop 335–585 ms;
+- a new 1v1 skirmish of the same mod: 7 recomputes, 73,794 entries; the first call, which builds the index, 8 ms;
+- the same save with the `dinput8.dll` build beside the mod's own DLL: 6 recomputes, 63,252 entries;
+- the stock game's 25-minute save (2,549 techs, 906 pairs): 4 recomputes, 10,196 entries; 0.05–0.37 ms against
+  16.4–16.8 ms.
+
+With the key, two interleaved 150 s A/B pairs on the mod's save went from 12 and 15 frames over 50 ms (longest
+382 and 384 ms) to 3 and 3 (longest 191 and 243 ms, none of them the recompute).
 
 ### rendererOption
 
@@ -3807,6 +4058,8 @@ and watched with `PrintWindow`, and both work without focus.
   machine with the same build.
 - **Outside the simulation** (`bufferedFileReads`, `fastVertexFill`, `rendererOption`): change only how data reaches
   the game or the video card, or which library draws, never what the game computes.
+- **The same result, fewer steps** (`fastLastInLine`): computes the bits the stock loop writes, with the stock tests,
+  skipping only tests that cannot pass; the tests write nothing. `verify` compares every bit with the stock loop.
 - **Interface only** (`abilitySlots`, `wonderPanelSkipAuras`, `customHotkeyContexts`,
   `overhealHitpointBars`, `showGatherRate`, `nativePreview`, `displayedRange`): change only what the local player sees or which keys
   work; every button or key sends the same command as stock. `showGatherRate`'s record hook runs in

@@ -9,6 +9,7 @@ Every feature also needs the core [helpers](helpers.md): the site table, patchin
 Contents:
 - [bufferedFileReads](#bufferedfilereads)
 - [fastVertexFill](#fastvertexfill)
+- [fastLastInLine](#fastlastinline)
 - [rendererOption](#rendereroption)
 - [xsErrorLog](#xserrorlog)
 
@@ -19,9 +20,13 @@ Contract: [bufferedFileReads](../porting-to-another-dll.md#bufferedfilereads).
 ### src/features/fileio.cpp
 
 ```cpp
-// bufferedFileReads [KB] [verify]: serves the exe's small ReadFile calls from a read-ahead buffer
-// per file. With `verify`, every buffered read is also made for real at the same offset and
-// compared, and mismatches are logged; that is a correctness test, not a speed-up.
+// bufferedFileReads [KB] [verify] [readahead]: serves the exe's small ReadFile calls from a
+// read-ahead buffer per file. With `verify`, every buffered read is also made for real at the same
+// offset and compared, and mismatches are logged; that is a correctness test, not a speed-up.
+// With `readahead`, a worker thread of this DLL reads the block after the one the game is
+// consuming, through a handle of its own (ReOpenFile), so that block is in memory when the game
+// gets there. The worker never uses the game's handle, so the game's file pointer and its reads
+// are untouched; a block is used only when it covers the position the game asks for.
 // The game's raw file stream (0x4683F4) issues one ReadFile per call, often for 4 bytes, so a
 // model or animation loaded during a match costs thousands of syscalls on the main thread
 // (docs/performance.md, section 9). The bytes returned are the same; only the syscalls change.
@@ -41,9 +46,11 @@ Contract: [bufferedFileReads](../porting-to-another-dll.md#bufferedfilereads).
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "../features.h"
@@ -78,6 +85,7 @@ DuplicateHandleFn g_duplicateHandle = nullptr;
 
 bool g_buffering = false;
 bool g_verify = false;
+bool g_readahead = false;
 DWORD g_bufferSize = 64 * 1024;
 volatile LONG g_verified = 0;
 volatile LONG g_mismatches = 0;
@@ -85,8 +93,32 @@ bool g_logging = false;
 LONGLONG g_logThresholdTicks = 0;
 LONGLONG g_qpcFrequency = 1;
 
+// `readahead` counters, logged at exit.
+volatile LONG g_aheadIssued = 0;    // blocks the worker was asked to read
+volatile LONG g_aheadRead = 0;      // blocks it read
+volatile LONG g_aheadUsed = 0;      // blocks the game's thread took instead of reading
+volatile LONG g_aheadWaits = 0;     // of those, how many it had to wait for
+volatile LONG g_aheadNoHandle = 0;  // files whose second handle could not be opened
+volatile LONG64 g_aheadWaitTicks = 0;
+volatile LONG g_refills = 0;        // buffer refills made on the game's thread
+
+// The block after the buffer, read by the worker thread. Guarded by FileState::lock, except that
+// `buf` is written by the worker while `state` is kInFlight, and `handle` is used by it then.
+struct ReadAhead {
+  enum State : std::uint8_t { kIdle, kQueued, kInFlight, kReady };
+  State state = kIdle;
+  bool discard = false;   // set while in flight: drop the result
+  bool disabled = false;  // no second handle; never tried again for this file
+  HANDLE handle = nullptr;  // ours, from ReOpenFile; never the game's handle
+  std::uint8_t* buf = nullptr;
+  std::int64_t start = 0;
+  DWORD len = 0;
+};
+
 struct FileState {
   CRITICAL_SECTION lock;
+  CONDITION_VARIABLE aheadDone = CONDITION_VARIABLE_INIT;
+  volatile LONG refs = 1;     // the handle table's, plus one while the worker has it queued
   std::wstring path;
   DWORD owner = 0;            // thread that opened it
   bool buffered = false;
@@ -95,6 +127,7 @@ struct FileState {
   std::int64_t bufStart = 0;  // file offset of buf[0]
   DWORD bufLen = 0;
   std::uint8_t* buf = nullptr;
+  ReadAhead ahead;
   // statistics
   std::uint32_t reads = 0;       // ReadFile calls by the game
   std::uint32_t smallReads = 0;  // of which 16 bytes or less
@@ -144,6 +177,17 @@ bool SyncPointer(FileState* s, HANDLE h) {
   return true;
 }
 
+// Drops the read-ahead block, queued, in flight or ready. Its buffer stays allocated until the
+// state is freed, because the worker may still be writing into it. Needs s->lock.
+void DropAhead(FileState* s) {
+  ReadAhead& a = s->ahead;
+  if (a.state == ReadAhead::kInFlight) {
+    a.discard = true;
+  } else {
+    a.state = ReadAhead::kIdle;  // a queued request is skipped when the worker reaches it
+  }
+}
+
 // Hands the handle back to the plain Win32 behavior. Needs s->lock.
 void StopBuffering(FileState* s, HANDLE h) {
   if (!s->buffered) {
@@ -155,7 +199,151 @@ void StopBuffering(FileState* s, HANDLE h) {
   s->bufLen = 0;
   std::free(s->buf);
   s->buf = nullptr;
+  DropAhead(s);
   SetLastError(error);
+}
+
+void Release(FileState* s) {
+  if (InterlockedDecrement(&s->refs) != 0) {
+    return;
+  }
+  std::free(s->buf);
+  std::free(s->ahead.buf);
+  if (s->ahead.handle != nullptr) {
+    g_closeHandle(s->ahead.handle);
+  }
+  DeleteCriticalSection(&s->lock);
+  delete s;
+}
+
+// The read-ahead worker: one thread, a queue of states with a kQueued block.
+SRWLOCK g_queueLock = SRWLOCK_INIT;
+CONDITION_VARIABLE g_queueReady = CONDITION_VARIABLE_INIT;
+std::deque<FileState*>* g_queue = nullptr;
+
+DWORD WINAPI AheadWorker(void*) {
+  for (;;) {
+    AcquireSRWLockExclusive(&g_queueLock);
+    while (g_queue->empty()) {
+      SleepConditionVariableSRW(&g_queueReady, &g_queueLock, INFINITE, 0);
+    }
+    FileState* s = g_queue->front();
+    g_queue->pop_front();
+    ReleaseSRWLockExclusive(&g_queueLock);
+
+    ReadAhead& a = s->ahead;
+    EnterCriticalSection(&s->lock);
+    if (a.state != ReadAhead::kQueued) {  // taken back by the game's thread
+      LeaveCriticalSection(&s->lock);
+      Release(s);
+      continue;
+    }
+    a.state = ReadAhead::kInFlight;
+    a.discard = false;
+    const std::int64_t at = a.start;
+    LeaveCriticalSection(&s->lock);
+
+    // A positioned read on our own synchronous handle: the game's handle and its file pointer
+    // are never touched.
+    OVERLAPPED where = {};
+    where.Offset = static_cast<DWORD>(at & 0xFFFFFFFF);
+    where.OffsetHigh = static_cast<DWORD>(at >> 32);
+    DWORD read = 0;
+    BOOL ok = g_readFile(a.handle, a.buf, g_bufferSize, &read, &where);
+    if (!ok && GetLastError() == ERROR_HANDLE_EOF) {
+      ok = TRUE;
+      read = 0;
+    }
+    InterlockedIncrement(&g_aheadRead);
+
+    EnterCriticalSection(&s->lock);
+    if (ok && read != 0 && !a.discard) {
+      a.state = ReadAhead::kReady;
+      a.len = read;
+    } else {
+      a.state = ReadAhead::kIdle;
+    }
+    a.discard = false;
+    WakeAllConditionVariable(&s->aheadDone);
+    LeaveCriticalSection(&s->lock);
+    Release(s);
+  }
+}
+
+// Asks the worker for the block at `at`, unless it already has it or is busy with another one.
+// Needs s->lock, on the thread that owns the buffered handle `h`.
+void ScheduleAhead(FileState* s, HANDLE h, std::int64_t at) {
+  ReadAhead& a = s->ahead;
+  if (a.disabled || a.state == ReadAhead::kInFlight) {
+    return;
+  }
+  if (a.state == ReadAhead::kReady && a.start == at) {
+    return;
+  }
+  if (a.state == ReadAhead::kQueued) {
+    a.start = at;  // still in the queue: it will read the new place
+    return;
+  }
+  if (a.handle == nullptr) {
+    // A second handle to the same file, with its own file pointer. It shares everything, so the
+    // game can still open, write, rename or delete the file as before.
+    const DWORD error = GetLastError();
+    const HANDLE own = ReOpenFile(h, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+    SetLastError(error);
+    if (own == INVALID_HANDLE_VALUE) {
+      a.disabled = true;
+      InterlockedIncrement(&g_aheadNoHandle);
+      return;
+    }
+    a.handle = own;
+  }
+  if (a.buf == nullptr) {
+    a.buf = static_cast<std::uint8_t*>(std::malloc(g_bufferSize));
+    if (a.buf == nullptr) {
+      a.disabled = true;
+      return;
+    }
+  }
+  a.start = at;
+  a.state = ReadAhead::kQueued;
+  InterlockedIncrement(&s->refs);
+  InterlockedIncrement(&g_aheadIssued);
+  AcquireSRWLockExclusive(&g_queueLock);
+  g_queue->push_back(s);
+  ReleaseSRWLockExclusive(&g_queueLock);
+  WakeConditionVariable(&g_queueReady);
+}
+
+// If the read-ahead block holds s->pos, makes it the buffer (waiting for it if the worker is
+// reading it right now) and returns true. Needs s->lock.
+bool TakeAhead(FileState* s) {
+  ReadAhead& a = s->ahead;
+  const auto covers = [&](DWORD len) { return s->pos >= a.start && s->pos < a.start + len; };
+  if (a.state == ReadAhead::kQueued && covers(g_bufferSize)) {
+    a.state = ReadAhead::kIdle;  // not started: reading it here is faster than waiting in line
+    return false;
+  }
+  if (a.state == ReadAhead::kInFlight && covers(g_bufferSize)) {
+    const LONGLONG start = Now();
+    InterlockedIncrement(&g_aheadWaits);
+    while (a.state == ReadAhead::kInFlight) {
+      SleepConditionVariableCS(&s->aheadDone, &s->lock, INFINITE);
+    }
+    InterlockedAdd64(&g_aheadWaitTicks, Now() - start);
+  }
+  if (a.state != ReadAhead::kReady) {
+    return false;
+  }
+  if (!covers(a.len)) {
+    a.state = ReadAhead::kIdle;  // the game went elsewhere
+    return false;
+  }
+  std::swap(s->buf, a.buf);
+  s->bufStart = a.start;
+  s->bufLen = a.len;
+  a.state = ReadAhead::kIdle;
+  InterlockedIncrement(&g_aheadUsed);
+  return true;
 }
 
 void Retire(FileState* s) {
@@ -178,9 +366,12 @@ void Retire(FileState* s) {
     }
     LeaveCriticalSection(&g_logLock);
   }
-  std::free(s->buf);
-  DeleteCriticalSection(&s->lock);
-  delete s;
+  // Nobody else holds it once it is out of the table, except the worker for a moment.
+  if (TryEnterCriticalSection(&s->lock)) {
+    DropAhead(s);
+    LeaveCriticalSection(&s->lock);
+  }
+  Release(s);
 }
 
 void Track(HANDLE h, const wchar_t* path, DWORD access, DWORD flags) {
@@ -228,11 +419,28 @@ BOOL BufferedRead(FileState* s, HANDLE h, std::uint8_t* out, DWORD n, LPDWORD go
       s->pos += take;
       continue;
     }
+    const DWORD rest = n - done;
+    if (g_readahead && s->buf != nullptr && TakeAhead(s)) {
+      if (s->bufLen == g_bufferSize) {
+        ScheduleAhead(s, h, s->bufStart + s->bufLen);
+      }
+      continue;
+    }
     if (!SyncPointer(s, h)) {
       *got = done;
       return done != 0;
     }
-    const DWORD rest = n - done;
+    if (!s->buffered) {
+      // Another thread used the handle while this one waited for the worker (TakeAhead releases
+      // the lock): from here on the handle is plain Win32, so the rest is read straight.
+      DWORD read = 0;
+      const BOOL ok = g_readFile(h, out + done, rest, &read, nullptr);
+      ++s->syscalls;
+      s->pos += read;
+      s->osPos = ok ? s->pos : -1;
+      *got = done + read;
+      return ok || *got != 0;
+    }
     if (rest >= g_bufferSize) {  // large reads go straight to the file
       DWORD read = 0;
       const BOOL ok = g_readFile(h, out + done, rest, &read, nullptr);
@@ -259,6 +467,7 @@ BOOL BufferedRead(FileState* s, HANDLE h, std::uint8_t* out, DWORD n, LPDWORD go
     DWORD read = 0;
     const BOOL ok = g_readFile(h, s->buf, g_bufferSize, &read, nullptr);
     ++s->syscalls;
+    InterlockedIncrement(&g_refills);
     if (!ok) {
       s->bufLen = 0;
       s->osPos = -1;
@@ -270,6 +479,9 @@ BOOL BufferedRead(FileState* s, HANDLE h, std::uint8_t* out, DWORD n, LPDWORD go
     s->osPos = s->pos + read;
     if (read == 0) {
       break;  // end of file
+    }
+    if (g_readahead && read == g_bufferSize) {
+      ScheduleAhead(s, h, s->bufStart + read);
     }
   }
   *got = done;
@@ -470,6 +682,12 @@ void AtExit() {
   if (g_verify) {
     Log(L"bufferedFileReads verify: %ld buffered reads checked, %ld mismatches", g_verified, g_mismatches);
   }
+  if (g_readahead) {
+    Log(L"bufferedFileReads readahead: %ld blocks asked of the worker, %ld read, %ld used by the game "
+        L"(%ld waited for, %.1f ms in all); %ld buffer refills read on the game's thread; %ld files without "
+        L"a second handle",
+        g_aheadIssued, g_aheadRead, g_aheadUsed, g_aheadWaits, Ms(g_aheadWaitTicks), g_refills, g_aheadNoHandle);
+  }
   if (!g_logging) {
     return;
   }
@@ -534,6 +752,8 @@ Outcome ApplyFileIo(const Config& config) {
     for (const std::string& arg : *args) {
       if (_stricmp(arg.c_str(), "verify") == 0) {
         g_verify = true;
+      } else if (_stricmp(arg.c_str(), "readahead") == 0) {
+        g_readahead = true;
       } else if (const unsigned long kb = std::strtoul(arg.c_str(), nullptr, 10); kb != 0) {
         g_bufferSize = std::clamp<unsigned long>(kb, 4, 1024) * 1024;
       }
@@ -561,6 +781,16 @@ Outcome ApplyFileIo(const Config& config) {
   g_files = new std::unordered_map<HANDLE, FileState*>();
   g_logLines = new std::vector<std::wstring>();
   InitializeCriticalSection(&g_logLock);
+  if (g_readahead) {
+    g_queue = new std::deque<FileState*>();
+    const HANDLE worker = CreateThread(nullptr, 64 * 1024, &AheadWorker, nullptr, STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
+    if (worker == nullptr) {
+      Log(L"bufferedFileReads: no read-ahead thread (error %lu); buffering without it", GetLastError());
+      g_readahead = false;
+    } else {
+      CloseHandle(worker);
+    }
+  }
 
   // Every slot was verified above; write them only now, so a failure leaves the IAT untouched.
   // The close and duplicate hooks go in first, so no tracked handle can be closed unseen.
@@ -578,8 +808,10 @@ Outcome ApplyFileIo(const Config& config) {
     }
   }
   if (g_buffering) {
-    Log(L"bufferedFileReads: read-only files get a %lu KB read-ahead buffer (multiplayer-safe: same bytes)%ls",
-        g_bufferSize / 1024, g_verify ? L"; verify mode: every buffered read is checked against a real one" : L"");
+    Log(L"bufferedFileReads: read-only files get a %lu KB read-ahead buffer (multiplayer-safe: same bytes)%ls%ls",
+        g_bufferSize / 1024,
+        g_readahead ? L"; readahead: a worker thread reads the next block of each file" : L"",
+        g_verify ? L"; verify mode: every buffered read is checked against a real one" : L"");
   }
   if (g_logging) {
     Log(L"perfFileLog: logging files with %.1f ms or more in ReadFile, at exit", thresholdMs);
@@ -1063,6 +1295,448 @@ UhcClothFillUnlockHook PROC
     mov ecx, dword ptr ds:[0C66044h]
     jmp unlockNext
 UhcClothFillUnlockHook ENDP
+
+END
+```
+
+## fastLastInLine
+
+Contract: [fastLastInLine](../porting-to-another-dll.md#fastlastinline).
+
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `TechTemplateFallback` `0x48050F` (27 B), `LastInLineHead` `0x4918A8` (26 B), `PlayerCanObtainTechHead` `0x4C5725` (22 B), `PrereqListGet` `0x4C5DBD` (29 B), `LastInLineScan` `0x68FB0C` (326 B), `ProtoTechHasActivePrereq` `0x94BC1D` (76 B).
+
+### src/features/lastinline.cpp
+
+```cpp
+// fastLastInLine [log] [verify]: the "last in line" recompute of a player's tech tree through an index.
+//
+// FUN_004918A8 (thiscall(tree, Player*), ret 4; called by the tech status update 0x491A40 at 0x491A39 for each live
+// player on every world update, and by the forced update 0x852850) runs when the tree's byte [tree+11h] is set. That
+// byte is set when a HomeCity tech changes status (activation 0x94CF27, obtainable 0x94C33A, unobtainable 0x94CDB3,
+// through 0x94AE8C): every home city shipment. The recompute, in its cold chunk 0x68FB0C, sets or clears status bit 16
+// ("last in line") of every entry of the tree:
+//   - a null entry is left alone;
+//   - bit 22 (ForceLastInLine) set: bit 16 set;
+//   - else, if some other entry j (the template record [[db+5D9Ch]+0Ch]+24h*j when j's entry is null) has in its
+//     definition's prerequisites a "TechStatus active <this tech>" (0x94BC1D) and the player can obtain j (0x4C5725):
+//     bit 16 cleared;
+//   - else bit 16 cleared when bit 32 (YPNeverLastInLine) is set, set otherwise.
+// Then, for the local player ([game+3C0h]), the UI object [game+920h] gets its vtable slot 1 with 0.
+// Finding "some other entry j" is a scan of every entry and its prerequisites: entries x (entries + prerequisites)
+// tests, 1.7e8 in a 10,552-tech tree, about 300 ms; the scan runs again after every shipment of any player.
+//
+// The key computes the same bits with an index built from the template records once per data load: for each tech ID
+// t, the techs j whose definition has a TechStatus prerequisite of type 1, status 2 (active) and tech t. For entry i
+// it tests only those j, in ascending order, with the stock 0x94BC1D and 0x4C5725, so the decision is the stock one;
+// it only skips the j that cannot pass the first test. Both tests write no memory (docs/performance.md, §9), so
+// testing fewer of them changes nothing else. The bits are the same, so players may set the key differently.
+//
+// The hook replaces the head of 0x4918A8 (hooks/lastinline_hooks.asm). When the index does not match the tree (a
+// tree of another size, no database) it hands the call to the stock code.
+// `verify` lets the stock loop run as well: the key computes its bits first without writing them, and a second hook
+// at the loop's exit (0x68FC1B) compares them with what the stock loop wrote, entry by entry, and logs the times of
+// both. `log` writes a line per recompute.
+#include <windows.h>
+
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +140h database, +3C0h local player ID, +920h a UI object
+constexpr std::uint32_t kRecordStride = 0x24;      // template status records, [[db+5D9Ch]+0Ch]
+constexpr int kMaxMismatchLines = 20;
+constexpr std::uint32_t kLastInLineScanExit = 0x0068FC1B;  // mov eax,[0C66234h], inside sites::kLastInLineScan
+
+// bool thiscall(entry, techId), ret 4: the entry's definition has a "TechStatus active techId" prerequisite.
+using HasActivePrereqFn = bool(__thiscall*)(const void* entry, std::int32_t techId);
+const auto kHasActivePrereq = reinterpret_cast<HasActivePrereqFn>(0x0094BC1D);
+// bool thiscall(Player*, techId), ret 4: the player can obtain the tech.
+using CanObtainFn = bool(__thiscall*)(void* player, std::int32_t techId);
+const auto kCanObtain = reinterpret_cast<CanObtainFn>(0x004C5725);
+// void thiscall(ui, 0): what the stock recompute tail-jumps to for the local player.
+using UiRefreshFn = void(__thiscall*)(void* ui, std::int32_t);
+
+template <typename T>
+T& Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<T*>(const_cast<char*>(static_cast<const char*>(base)) + offset);
+}
+
+char* Game() { return *reinterpret_cast<char**>(kGameGlobal); }
+
+bool g_log = false;
+bool g_verify = false;
+
+// The index: g_first[t]..g_first[t+1] in g_dependents are the template indices j whose definition requires tech ID t
+// active; slot `count` stands for the ID -1 (a prerequisite whose tech was not found, and what the stock loop uses
+// for an entry without a definition). Built for one database, template array and count.
+std::vector<std::uint32_t> g_first;
+std::vector<std::int32_t> g_dependents;
+bool g_built = false;
+const char* g_builtDatabase = nullptr;
+const char* g_builtRecords = nullptr;
+std::int32_t g_builtCount = -1;
+
+// Counters for the log.
+std::uint64_t g_recomputes = 0;
+std::uint64_t g_fallbacks = 0;
+std::uint64_t g_tests = 0;
+double g_ticksPerMs = 0.0;
+std::int64_t g_ticks = 0;
+
+// `verify`: the bits the key computed for the recompute in progress (0 = entry left alone, 1 = set, 2 = cleared).
+std::vector<std::uint8_t> g_expected;
+const void* g_pendingTree = nullptr;
+std::int32_t g_pendingPlayer = -1;
+LARGE_INTEGER g_stockStart{};
+std::int64_t g_fastTicks = 0;
+std::uint64_t g_checked = 0;
+std::uint64_t g_checkedEntries = 0;
+std::uint64_t g_mismatches = 0;
+int g_mismatchLines = 0;
+
+std::int64_t Now() {
+  LARGE_INTEGER t{};
+  QueryPerformanceCounter(&t);
+  return t.QuadPart;
+}
+
+double Ms(std::int64_t ticks) { return g_ticksPerMs > 0.0 ? static_cast<double>(ticks) / g_ticksPerMs : 0.0; }
+
+// A definition's prerequisites: array at def+1Ch, its length in the byte def+20h (0x94BC1D, 0x4C5DBD). A TechStatus
+// prerequisite has type byte +5 = 1, status byte +0Ch (2 = active) and the tech ID at +8.
+void Build(const char* database, const char* records, std::int32_t count) {
+  g_first.assign(static_cast<std::size_t>(count) + 2, 0);
+  g_dependents.clear();
+  g_built = true;
+  g_builtDatabase = database;
+  g_builtRecords = records;
+  g_builtCount = count;
+  std::vector<std::vector<std::int32_t>> lists(static_cast<std::size_t>(count) + 1);
+  std::size_t total = 0;
+  std::size_t outOfRange = 0;
+  for (std::int32_t j = 0; j < count; ++j) {
+    const char* def = Field<const char*>(records, kRecordStride * static_cast<std::uint32_t>(j));
+    if (def == nullptr) {
+      continue;
+    }
+    const char* const* list = Field<const char* const*>(def, 0x1C);
+    const std::uint8_t length = Field<std::uint8_t>(def, 0x20);
+    for (std::uint8_t k = 0; list != nullptr && k < length; ++k) {
+      const char* p = list[k];
+      if (p == nullptr || Field<std::uint8_t>(p, 0x05) != 1 || Field<std::uint8_t>(p, 0x0C) != 2) {
+        continue;
+      }
+      const std::int32_t target = Field<std::int32_t>(p, 0x08);
+      if (target < -1 || target >= count) {
+        ++outOfRange;  // matches no entry: their IDs are 0..count-1, or -1
+        continue;
+      }
+      auto& l = lists[static_cast<std::size_t>(target == -1 ? count : target)];
+      if (l.empty() || l.back() != j) {  // one entry per (target, j)
+        l.push_back(j);
+        ++total;
+      }
+    }
+  }
+  g_dependents.reserve(total);
+  std::size_t named = 0;
+  for (std::int32_t t = 0; t <= count; ++t) {
+    g_first[static_cast<std::size_t>(t)] = static_cast<std::uint32_t>(g_dependents.size());
+    const auto& l = lists[static_cast<std::size_t>(t)];
+    named += l.empty() ? 0 : 1;
+    g_dependents.insert(g_dependents.end(), l.begin(), l.end());
+  }
+  g_first[static_cast<std::size_t>(count) + 1] = static_cast<std::uint32_t>(g_dependents.size());
+  uhc::Log(L"fastLastInLine: index of %d techs: %u named in a TechStatus active prerequisite, %u (tech, dependent) "
+           L"pairs%ls",
+           count, static_cast<unsigned>(named), static_cast<unsigned>(total),
+           outOfRange != 0 ? L"; some prerequisites name a tech outside the tree and are ignored" : L"");
+}
+
+// From the database load hook: the next recompute builds the index of the new techtree.
+void ResetForDataLoad(char*) { g_built = false; }
+
+// The tech ID a status entry or template record stands for: [[x]+0], or -1 for a null definition (as the stock loop).
+std::int32_t TechId(const void* entry) {
+  const std::int32_t* def = Field<const std::int32_t*>(entry, 0x00);
+  return def == nullptr ? -1 : *def;
+}
+
+// Computes bit 16 of every entry as the stock loop does. With `write`, writes it; otherwise stores it in g_expected.
+// Returns false when the index does not fit this tree (the caller then runs the stock code).
+bool Compute(const char* tree, void* player, bool write) {
+  char* game = Game();
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  const char* templates = database == nullptr ? nullptr : Field<const char*>(database, 0x5D9C);
+  const char* records = templates == nullptr ? nullptr : Field<const char*>(templates, 0x0C);
+  const std::int32_t templateCount = templates == nullptr ? -1 : Field<std::int32_t>(templates, 0x10);
+  const char* const* entries = Field<const char* const*>(tree, 0x04);
+  const std::int32_t count = Field<std::int32_t>(tree, 0x08);
+  if (records == nullptr || templateCount <= 0 || count != templateCount || entries == nullptr) {
+    return false;
+  }
+  if (!g_built || database != g_builtDatabase || records != g_builtRecords || templateCount != g_builtCount) {
+    Build(database, records, templateCount);
+  }
+  if (!write) {
+    g_expected.assign(static_cast<std::size_t>(count), 0);
+  }
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* e = entries[i];
+    if (e == nullptr) {
+      continue;
+    }
+    const std::uint32_t bitCount = Field<std::uint32_t>(e, 0x08);
+    std::uint8_t* bits = Field<std::uint8_t*>(e, 0x04);
+    bool set;
+    if (bitCount > 0x16 && (bits[2] & 0x40) != 0) {  // ForceLastInLine
+      set = true;
+    } else {
+      bool found = false;
+      const std::int32_t id = TechId(e);
+      if (id >= -1 && id < count) {
+        const std::size_t slot = static_cast<std::size_t>(id == -1 ? count : id);
+        const std::uint32_t end = g_first[slot + 1];
+        for (std::uint32_t k = g_first[slot]; k < end && !found; ++k) {
+          const std::int32_t j = g_dependents[k];
+          if (j == i) {
+            continue;
+          }
+          const char* pj = entries[j];
+          if (pj == nullptr) {
+            pj = records + kRecordStride * static_cast<std::uint32_t>(j);
+          }
+          ++g_tests;
+          found = kHasActivePrereq(pj, id) && kCanObtain(player, TechId(pj));
+        }
+      }
+      set = !found && !(bitCount > 0x20 && (bits[4] & 0x01) != 0);  // YPNeverLastInLine keeps it clear
+    }
+    if (write) {
+      bits[2] = static_cast<std::uint8_t>(set ? (bits[2] | 0x01) : (bits[2] & 0xFE));
+    } else {
+      g_expected[static_cast<std::size_t>(i)] = set ? 1 : 2;
+    }
+  }
+  return true;
+}
+
+void AtExit() {
+  if (g_verify) {
+    uhc::Log(L"fastLastInLine verify: %llu recomputes checked against the stock loop (%llu entries), %llu bits "
+             L"differ",
+             g_checked, g_checkedEntries, g_mismatches);
+  } else {
+    uhc::Log(L"fastLastInLine: %llu recomputes (%llu dependency tests, %.1f ms in all), %llu handed to the stock code",
+             g_recomputes, g_tests, Ms(g_ticks), g_fallbacks);
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+void UhcLastInLineHook();
+void UhcLastInLineVerifyEndHook();
+
+// From the head of 0x4918A8 (the player is not null, [tree+11h] is set). Returns 0 when it did the recompute (the
+// hook returns), 1 when the stock code must run (the hook re-executes the head and enters it).
+std::uint32_t __stdcall UhcLastInLine(char* tree, char* player) {
+  const std::int64_t start = Now();
+  if (g_verify) {
+    g_pendingTree = nullptr;
+    if (Compute(tree, player, false)) {
+      g_pendingTree = tree;
+      g_pendingPlayer = Field<std::int32_t>(player, 0x00);
+      g_fastTicks = Now() - start;
+      QueryPerformanceCounter(&g_stockStart);
+    } else {
+      ++g_fallbacks;
+    }
+    return 1;
+  }
+  if (!Compute(tree, player, true)) {
+    ++g_fallbacks;
+    return 1;
+  }
+  Field<std::uint8_t>(tree, 0x11) = 0;
+  const std::int64_t ticks = Now() - start;
+  g_ticks += ticks;
+  ++g_recomputes;
+  if (g_log) {
+    uhc::Log(L"fastLastInLine: player %d, %d entries, %.2f ms", Field<std::int32_t>(player, 0x00),
+             Field<std::int32_t>(tree, 0x08), Ms(ticks));
+  }
+  char* game = Game();
+  void* ui = game == nullptr ? nullptr : Field<void*>(game, 0x920);
+  if (ui != nullptr && Field<std::int32_t>(player, 0x00) == Field<std::int32_t>(game, 0x3C0)) {
+    UiRefreshFn refresh = (*reinterpret_cast<UiRefreshFn**>(ui))[1];
+    refresh(ui, 0);
+  }
+  return 0;
+}
+
+// `verify`, at the stock loop's exit 0x68FC1B (EBP = the tree): compares its bits with the key's.
+void __stdcall UhcLastInLineCompare(const char* tree) {
+  const std::int64_t stockTicks = Now() - g_stockStart.QuadPart;
+  if (tree == nullptr || tree != g_pendingTree) {
+    return;
+  }
+  g_pendingTree = nullptr;
+  const char* const* entries = Field<const char* const*>(tree, 0x04);
+  const std::int32_t count = Field<std::int32_t>(tree, 0x08);
+  std::uint64_t differ = 0;
+  for (std::int32_t i = 0; i < count && static_cast<std::size_t>(i) < g_expected.size(); ++i) {
+    const char* e = entries[i];
+    const std::uint8_t want = g_expected[static_cast<std::size_t>(i)];
+    if (e == nullptr || want == 0) {
+      if ((e == nullptr) != (want == 0)) {
+        ++differ;
+      }
+      continue;
+    }
+    const bool stockSet = (Field<const std::uint8_t*>(e, 0x04)[2] & 0x01) != 0;
+    if (stockSet != (want == 1)) {
+      ++differ;
+      if (g_mismatchLines < kMaxMismatchLines) {
+        ++g_mismatchLines;
+        uhc::Log(L"fastLastInLine verify: MISMATCH, player %d, entry %d (tech %d): stock %ls bit 16, the key %ls it",
+                 g_pendingPlayer, i, TechId(e), stockSet ? L"set" : L"cleared", want == 1 ? L"sets" : L"clears");
+      }
+    }
+  }
+  ++g_checked;
+  g_checkedEntries += static_cast<std::uint64_t>(count);
+  g_mismatches += differ;
+  uhc::Log(L"fastLastInLine verify: player %d, %d entries: %llu bits differ; the key %.2f ms, the stock loop %.1f ms",
+           g_pendingPlayer, count, differ, Ms(g_fastTicks), Ms(stockTicks));
+}
+}
+
+namespace uhc {
+
+Outcome ApplyFastLastInLine(const Config& config) {
+  const auto* args = config.First("fastLastInLine");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "verify") == 0) {
+      g_verify = true;
+    } else {
+      Log(L"fastLastInLine: unknown argument '%hs' (expected: [log] [verify]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("fastLastInLine", {&sites::kLastInLineHead, &sites::kLastInLineScan,
+                                       &sites::kProtoTechHasActivePrereq, &sites::kPrereqListGet,
+                                       &sites::kPlayerCanObtainTechHead, &sites::kTechTemplateFallback})) {
+    return Outcome::kFailed;
+  }
+  LARGE_INTEGER frequency{};
+  if (QueryPerformanceFrequency(&frequency) && frequency.QuadPart > 0) {
+    g_ticksPerMs = static_cast<double>(frequency.QuadPart) / 1000.0;
+  }
+  if (!OnDatabaseLoad(&ResetForDataLoad)) {
+    return Outcome::kFailed;
+  }
+  if (g_verify &&
+      !WriteJmp(kLastInLineScanExit, reinterpret_cast<const void*>(&UhcLastInLineVerifyEndHook), 5)) {
+    return Outcome::kFailed;
+  }
+  if (!WriteJmp(sites::kLastInLineHead.va, reinterpret_cast<const void*>(&UhcLastInLineHook), 9)) {
+    return Outcome::kFailed;
+  }
+  std::atexit(AtExit);
+  if (g_verify) {
+    Log(L"fastLastInLine: verify mode: the stock loop recomputes \"last in line\" and every recompute is compared with "
+        L"the key's");
+  } else {
+    Log(L"fastLastInLine: \"last in line\" is recomputed through an index of the TechStatus prerequisites%ls (same "
+        L"bits as stock)",
+        g_log ? L", log" : L"");
+  }
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/lastinline_hooks.asm
+
+```asm
+; fastLastInLine (src/features/lastinline.cpp). Each hook is entered through a jmp written over the stock code,
+; replaces or re-executes what it overwrote, and leaves through an explicit jmp to a verified continuation or a ret
+; that the stock function would have made itself.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcLastInLine PROTO STDCALL tree:DWORD, player:DWORD
+UhcLastInLineCompare PROTO STDCALL tree:DWORD
+
+.data
+stockDirtyTest  dd 004918B3h    ; cmp byte ptr [ebp+11h],0 / jne 68FB0Ch, then pop ebp / pop ecx / ret 4
+scanExitNext    dd 0068FC20h    ; mov ecx,[eax+920h]: after the mov eax,[0C66234h] the verify hook replaces
+
+.code
+
+; Replaces 0x4918A8..0x4918B0 (push ecx / cmp dword ptr [esp+8],0 / push ebp / mov ebp,ecx), the head of the
+; LastInLine recompute, thiscall(tree = ECX, Player* = [esp+4]), ret 4. With no player or a clean tree it returns
+; as the stock code does (the stock pushes and pops ECX and EBP and writes nothing). Otherwise the C++ recompute runs;
+; when it returns 1 (verify, or an index that does not fit the tree) the head is re-executed and the stock dirty
+; test at 0x4918B3 takes over, with the stack laid out as the stock code expects: EBP and ECX pushed, EBP = the tree.
+; EAX, ECX and EDX are free in a thiscall; EBX, ESI, EDI and EBP are preserved by the stdcall.
+UhcLastInLineHook PROC
+    TRACE_ONCE "fastLastInLine (0x4918A8)"
+    cmp dword ptr [esp+4], 0        ; the player, as the stolen cmp [esp+8],0 after push ecx
+    je done
+    cmp byte ptr [ecx+11h], 0       ; the dirty byte, as 0x4918B3
+    je done
+    push ecx                        ; keep the tree
+    push dword ptr [esp+8]          ; Player*
+    push ecx                        ; tree
+    call UhcLastInLine
+    pop ecx
+    test eax, eax
+    jnz stock
+done:
+    ret 4
+stock:
+    push ecx                        ; stolen 0x4918A8
+    push ebp                        ; stolen 0x4918AE
+    mov ebp, ecx                    ; stolen 0x4918AF
+    jmp stockDirtyTest
+UhcLastInLineHook ENDP
+
+; `verify`: replaces mov eax,[0C66234h] at 0x68FC1B, where the stock loop ends (from its last iteration, and from
+; jle 68FC1Bh at 0x68FB16 when the tree is empty). EBP = the tree. Compares, re-executes the instruction and goes on.
+UhcLastInLineVerifyEndHook PROC
+    TRACE_ONCE "fastLastInLine verify (0x68FC1B)"
+    pushad
+    pushfd
+    push ebp
+    call UhcLastInLineCompare
+    popfd
+    popad
+    mov eax, dword ptr ds:[00C66234h]   ; stolen 0x68FC1B
+    jmp scanExitNext
+UhcLastInLineVerifyEndHook ENDP
 
 END
 ```

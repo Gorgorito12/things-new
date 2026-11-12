@@ -146,6 +146,22 @@ SITES = [
     # healNonIdle (FUN_009CD865, a healer's automatic target search): mov ecx,[esi+58h] /
     # test / je, the "target is idle" call 0x44F1A7 / test al,al / je, and the next check
     ("HealAutoSearchIdle", 0x9CD9C0, 0x15),
+    # healNonIdle busyRate (FUN_009E0B53, the heal path): mov edx,[eax+104h] / mov eax,[eax+318h] /
+    # mov ecx,[esi+4] / push edi / mov [esp+0Ch],edx / mov [esp+14h],eax (replaced, 8 bytes at
+    # 0x9E0CC7): the two world factors of this tick's heal, stored before the rate lookup 0x9E0CCF
+    ("HealTickFactors", 0x9E0CB7, 0x18),
+    # the target-busy predicates of the heal tick, both thiscall(target's action manager):
+    # 0x4802D4(-1) "moving" (ret 4) and 0x9CA5AC "fighting"
+    ("HealTargetMoving", 0x4802D4, 0x12),
+    ("HealTargetFighting", 0x9CA5AC, 0x17),
+    # smartHealTargets switch (FUN_009E0B53, state 8 = healing): mov ecx,[esi+24h] / push 8 /
+    # mov [esp+14h],ecx (replaced, 9 bytes at 0x9E0C3A) / push 5 / mov ecx,edi / call 9C2E40h /
+    # cmp eax,1 / jg 9E0D3Fh (more than one healer: the action ends) and the end path 0x9E0D3F
+    ("HealTickHealing", 0x9E0C32, 0x23),
+    ("HealTickEnd", 0x9E0D3F, 0x0F),
+    # smartHealTargets switch: the head of the automatic heal search FUN_009CD865, thiscall(owner =
+    # the healer's action manager): sub esp,10h / push ebp / mov ebp,ecx / mov ecx,[ebp+4] / ...
+    ("HealSearchHead", 0x9CD865, 0x1E),
     # smartHealTargets (FUN_009CD865, the automatic heal search; EBP = owner, healer at [ebp+4],
     # EDI = the query, ESI = candidate): the loop head, cmp [edi+4],esi (the result count) / ... /
     # the entry's unit ID at [[edi]+[esp+10h]] / the unit table lookup / not the healer
@@ -1009,6 +1025,15 @@ SITES = [
     ("CommandResearchPayCall", 0x9D54CF, 5),
     ("ResearchCostCopyCall", 0x9E68A0, 5),
     ("CommandResearchCostCopyCall", 0x9D5548, 5),
+    # researchGrants: the add of a research's step to its progress, fadd / fstp dword [esi+6Ch] in the Research
+    # update FUN_009E648B (ST0 the step, EBX the tech's status entry, already pushed), [esi+70h] in the
+    # CommandResearch update FUN_009D5843 (EDI the entry); each is followed by the call of its fraction, where
+    # the hook continues. The two affordability checks of the payment 0x8D946A: 0x8D6BAE, and 0x8D6C1B when the
+    # world byte [world+6912h] is set
+    ("ResearchProgressAdd", 0x9E6622, 11),
+    ("CommandResearchProgressAdd", 0x9D58FF, 11),
+    ("PayAffordCheck", 0x8D6BAE, 0x1E),
+    ("PaySharedAffordCheck", 0x8D6C1B, 0x1A),
     # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
     # arg 3 the proto ID, arg 4 the count
     ("TrainQueueCall1", 0x7560B5, 5),
@@ -1403,6 +1428,19 @@ SITES = [
     ("ClothFillUnlock", 0x40D659, 0x24),
     # fastVertexFill: the float -1.0 the stock loop scales the back side's normals by (.rdata; read by the hook)
     ("ClothFillBackScale", 0xB856B8, 4),
+    # fastLastInLine: the LastInLine recompute FUN_004918A8, thiscall(tree, Player*), ret 4, whole: the head (push ecx /
+    # cmp [esp+8],0 / push ebp / mov ebp,ecx, the 9 bytes replaced), the dirty test (jne 68FB0Ch at 0x4918B7, re-entered
+    # at 0x4918B3 by the fallback) and the exit pop ebp / pop ecx / ret 4 at 0x4918BD. Callers 0x491A39 and 0x852882.
+    ("LastInLineHead", 0x4918A8, 0x1A),
+    # fastLastInLine: its cold chunk 0x68FB0C..0x68FC51, the loop the key replaces (verify only); `verify` writes a jmp
+    # over mov eax,[0C66234h] at 0x68FC1B, the loop's exit (also the target of jle 68FC1Bh at 0x68FB16), and goes on at
+    # 0x68FC20.
+    ("LastInLineScan", 0x68FB0C, 0x146),
+    # fastLastInLine: the two tests the loop calls and the key calls too: "definition has TechStatus active <id>"
+    # 0x94BC1D (with the prerequisite getter 0x4C5DBD) and "player can obtain" 0x4C5725's head (verify only)
+    ("ProtoTechHasActivePrereq", 0x94BC1D, 0x4C),
+    ("PrereqListGet", 0x4C5DBD, 0x1D),
+    ("PlayerCanObtainTechHead", 0x4C5725, 0x16),
     # rendererOption: the options screen's name lookup 0x932264 (thiscall on the "GameOptions" settings, called only
     # from the four field builders 0x78BEC5, 0x78C0C0, 0x78C417, 0x78D722). Its not-found return at 0x9322A1
     # (pop edi / or eax,-1 / pop esi, the 5 bytes replaced; branched to from 0x93227B and 0x932295 only) goes on at

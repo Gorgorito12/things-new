@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 # The version is shown in UHC.log and in the file's properties; bump it for every release
 # (docs/developer-guide.md, "Making a release").
-project(UHC VERSION 0.3.0 LANGUAGES CXX ASM_MASM)
+project(UHC VERSION 0.4.0 LANGUAGES CXX ASM_MASM)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
   message(FATAL_ERROR "age3y.exe is 32-bit: configure with -A Win32")
@@ -23,6 +23,7 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/researchpay.cpp
   src/deathobservers.cpp
   src/unitpanel.cpp
   src/unitmodels.cpp
@@ -48,6 +49,7 @@ set(UHC_SOURCES
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
   src/features/freeresearch.cpp
+  src/features/researchgrants.cpp
   src/features/cantslow.cpp
   src/features/snarevalues.cpp
   src/features/civfirsttc.cpp
@@ -80,6 +82,7 @@ set(UHC_SOURCES
   src/features/plugins.cpp
   src/features/perf.cpp
   src/features/vertexfill.cpp
+  src/features/lastinline.cpp
   src/features/renderer.cpp
   src/features/selection.cpp
   src/features/sharedlimit.cpp
@@ -131,6 +134,7 @@ set(UHC_SOURCES
   src/hooks/broadside_hooks.asm
   src/hooks/cheat_hooks.asm
   src/hooks/clothfill_hooks.asm
+  src/hooks/lastinline_hooks.asm
   src/hooks/rendereroption_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
@@ -188,7 +192,8 @@ set(UHC_SOURCES
   src/hooks/aurastacking_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/veterancy_hooks.asm
-  src/hooks/freeresearch_hooks.asm
+  src/hooks/researchpay_hooks.asm
+  src/hooks/researchgrant_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm

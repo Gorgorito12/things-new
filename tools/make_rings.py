@@ -79,12 +79,42 @@ GLYPH_ACCENTS = {
 }
 ICON_ACCENT = (245, 235, 210)
 # The marks of veterancyBonus' ranks: one, two and three chevrons in bronze, silver and gold, floating over the
-# unit with no ring. Every rank starts from the same lowest chevron and grows upward, and RANK_LIFT metres over the
-# aura icons keeps that chevron clear of the HP bar: bar and mark scale alike with the camera's zoom.
-RANKS = {1: (205, 127, 50), 2: (200, 205, 215), 3: (255, 205, 40)}
-RANK_ARMS = {1: (-0.38,), 2: (-0.38, 0.10), 3: (-0.38, 0.10, 0.58)}
+# unit with no ring. In the texture a smaller y is higher on screen: every rank starts from the same top chevron
+# and grows down, and RANK_LIFT metres over the aura icons keeps the lowest one clear of the HP bar: bar and mark
+# scale alike with the camera's zoom. Ranks 4 and 5 are rank 3's gold chevrons, in the same place, with one or
+# two white stars over them: their sprite is RANK_SIDE times the scale that fits the stars, around the same centre,
+# so the chevrons do not move and the lowest one keeps its gap to the bar.
+RANKS = {1: (205, 127, 50), 2: (200, 205, 215), 3: (255, 205, 40), 4: (255, 205, 40), 5: (255, 205, 40)}
+RANK_ARMS = {1: (-0.38,), 2: (-0.38, 0.10), 3: (-0.38, 0.10, 0.58), 4: (-0.38, 0.10, 0.58), 5: (-0.38, 0.10, 0.58)}
+RANK_STARS = {4: ((0.0, -1.15),), 5: ((-0.40, -1.15), (0.40, -1.15))}
+RANK_STAR_RADIUS = 0.30  # from a star's centre to its points
+RANK_STAR_COLOUR = (250, 250, 240)
 RANK_SIDE = 0.75
 RANK_LIFT = 1.15
+
+
+def star(x, y):
+    """Circles of a five-pointed star with a point up: a core and five arms that thin to their points."""
+    out = [(x, y, 0.12, 0.0)]
+    for i in range(5):
+        angle = -math.pi / 2 + i * 2 * math.pi / 5
+        for step in range(1, 6):
+            t = step / 5
+            out.append((x + math.cos(angle) * RANK_STAR_RADIUS * t, y + math.sin(angle) * RANK_STAR_RADIUS * t,
+                        0.10 * (1 - t) + 0.035, 0.0))
+    return tuple(out)
+
+
+def rank_mark(rank):
+    """The glyph, the star accent and the scale of rank's sprite against RANK_SIDE (1 for ranks 1 to 3)."""
+    glyph = tuple(circle for y in RANK_ARMS[rank] for circle in chevron(y))
+    stars = tuple(circle for x, y in RANK_STARS.get(rank, ()) for circle in star(x, y))
+    if not stars:
+        return glyph, (), 1.0
+    reach = max(max(abs(x), abs(y)) + outer for x, y, outer, _ in glyph + stars) + ICON_OUTLINE
+    scale = reach / 0.98
+    shrink = lambda circles: tuple((x / scale, y / scale, outer / scale, inner / scale) for x, y, outer, inner in circles)
+    return shrink(glyph), shrink(stars), scale
 
 
 def chevron(y):
@@ -155,7 +185,7 @@ def glyph_cover(u, v, glyph, grow):
     return 0.0
 
 
-def icon_block(size, colours, glyph, accent=()):
+def icon_block(size, colours, glyph, accent=(), outline=ICON_OUTLINE, accent_colour=ICON_ACCENT):
     """DXT3 blocks of an icon: the glyph in its colour on a dark edge, alpha from four samples per side."""
     samples = 4
     whole = glyph + accent
@@ -168,7 +198,7 @@ def icon_block(size, colours, glyph, accent=()):
                 for sx in range(samples):
                     u = (x + (sx + 0.5) / samples) / size * 2 - 1
                     v = (y + (sy + 0.5) / samples) / size * 2 - 1
-                    total += glyph_cover(u, v, whole, ICON_OUTLINE)
+                    total += glyph_cover(u, v, whole, outline)
                     core += glyph_cover(u, v, whole, 0.0)
                     bone += glyph_cover(u, v, accent, 0.0)
             alpha_row.append(round(total / samples ** 2 * 15))
@@ -184,7 +214,7 @@ def icon_block(size, colours, glyph, accent=()):
             indices = 0
             bones = sum(over[by + y][bx + x] for y in range(4) for x in range(4))
             solid = sum(inside[by + y][bx + x] for y in range(4) for x in range(4))
-            main = rgb565(ICON_ACCENT if bones * 2 > solid else colours[0])
+            main = rgb565(accent_colour if bones * 2 > solid else colours[0])
             for y in range(4):
                 row = 0
                 for x in range(4):
@@ -195,9 +225,9 @@ def icon_block(size, colours, glyph, accent=()):
     return bytes(out)
 
 
-def icon_ddt(colours, glyph, accent=(), size=SIZE):
+def icon_ddt(colours, glyph, accent=(), size=SIZE, outline=ICON_OUTLINE, accent_colour=ICON_ACCENT):
     mips = int(math.log2(size)) - 1
-    levels = [icon_block(size >> i, colours, glyph, accent) for i in range(mips)]
+    levels = [icon_block(size >> i, colours, glyph, accent, outline, accent_colour) for i in range(mips)]
     out = b"RTS3" + bytes((0, 1, 8, mips)) + struct.pack("<II", size, size)
     offset = len(out) + 8 * mips
     for level in levels:
@@ -423,11 +453,16 @@ def main():
                 wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", ICON_SIDE, height, 0, ground=False))
     for rank, colour in RANKS.items():
         name = f"rank_{rank}"
-        glyph = tuple(circle for y in RANK_ARMS[rank] for circle in chevron(y))
+        glyph, stars, scale = rank_mark(rank)
         wanted[f"{name}.xml"] = text(xml("", logic=icon_logic(name)))
-        wanted[f"icon_{name}.ddt"] = icon_ddt((colour, colour), glyph)
+        if stars:
+            # A larger sprite: twice the texels, so they stay as dense as the others', and an edge as thick.
+            wanted[f"icon_{name}.ddt"] = icon_ddt((colour, colour), glyph, stars, SIZE * 2, ICON_OUTLINE / scale,
+                                                  RANK_STAR_COLOUR)
+        else:
+            wanted[f"icon_{name}.ddt"] = icon_ddt((colour, colour), glyph)
         for _, size, height in ICON_HEIGHTS:
-            wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", RANK_SIDE, height + RANK_LIFT, 0))
+            wanted[f"icon_{name}_{size}.particle"] = text(particle(f"icon_{name}", RANK_SIDE * scale, height + RANK_LIFT, 0))
     for radius in RANGES:
         side = 256 if radius <= 16 else 512
         wanted[f"range_{radius}.ddt"] = ddt(RANGE_COLOURS, side, *range_shape(radius))

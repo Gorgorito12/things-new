@@ -9,14 +9,40 @@ include common.inc
 
 UhcSmartHealConsider PROTO STDCALL healer:DWORD, unit:DWORD
 UhcSmartHealPick PROTO STDCALL healer:DWORD
+UhcSmartHealRecheck PROTO STDCALL healer:DWORD, target:DWORD   ; AL: end this heal
 
 .data
 inRange         dd 007FCF2Dh    ; bool thiscall(healer, unit, range), ret 8: the search's last test
 nextCandidate   dd 009CDA3Fh    ; the loop's step to the next query entry
 acceptCandidate dd 009CDA62h    ; healer vtbl+64h(1), then 0x9CBDC4(owner, [esi+10h]): heal ESI
 searchFailExit  dd 009CDA5Dh    ; pop ebp / add esp,10h / ret: AL = 0, no target
+healingNext     dd 009E0C43h    ; push 5 / mov ecx,edi / call 9C2E40h: the healing state goes on
+healEnd         dd 009E0D3Fh    ; the action's vtbl+34h(10): the heal ends, the healer goes idle
 
 .code
+
+; switch=<percent>: replaces mov ecx,[esi+24h] / push 8 / mov [esp+14h],ecx (9 bytes at 0x9E0C3A),
+; the start of the healing state (8) of the heal tick FUN_009E0B53 (ESI = the heal action, healer
+; at [esi+10h], EDI = target). UhcSmartHealRecheck may run the search as a dry run; when a
+; candidate beats the target by the margin, the tick ends through its own end path 0x9E0D3F (the
+; stack there is this one, as for the stock jumps to it). Otherwise the stolen bytes run again.
+; Every register is kept (pushad; popad leaves the flags of the test).
+UhcSmartHealSwitchHook PROC
+    TRACE_ONCE "smartHealTargets switch (0x9E0C3A)"
+    pushad
+    push edi                        ; target
+    push dword ptr [esi+10h]        ; healer
+    call UhcSmartHealRecheck
+    test al, al
+    popad
+    jne switchTarget
+    mov ecx, dword ptr [esi+24h]    ; stolen 0x9E0C3A
+    push 8                          ; stolen 0x9E0C3D
+    mov dword ptr [esp+14h], ecx    ; stolen 0x9E0C3F
+    jmp healingNext
+switchTarget:
+    jmp healEnd
+UhcSmartHealSwitchHook ENDP
 
 ; Replaces call 7FCF2Dh at 0x9CDA36 in the automatic heal search FUN_009CD865, the last of the
 ; stock tests: ECX = healer, the candidate and the action's range are pushed, ESI = candidate,

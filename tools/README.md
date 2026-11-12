@@ -15,7 +15,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` from git; run it before the commit of a new key or test video. | <!-- private -->
 | `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
 | `make_gifs.py` | Makes every test GIF to one standard (800 px, 8 fps, 12 s, 4 MB) from the masters in `rea/media-masters`, with the cuts in `gifs.txt`. `--check` fails on one out of it. |
-| `make_rings.py` | Draws the coloured aura rings in `tools/rings/`: for each, an `.xml`, its particles and textures by size, for `art/effects/uhc_rings/`. Also `aura_<resource>.xml`, the ring with a floating icon, and `range_<metres>.xml` for `displayedRange`, and `rank_<1-3>.xml`, the chevrons of `veterancyBonus`. `--check` compares them. |
+| `make_rings.py` | Draws the coloured aura rings in `tools/rings/`: for each, an `.xml`, its particles and textures by size, for `art/effects/uhc_rings/`. Also `aura_<resource>.xml`, the ring with a floating icon, and `range_<metres>.xml` for `displayedRange`, and `rank_<1-5>.xml`, the chevrons (and stars) of `veterancyBonus`. `--check` compares them. |
 | `sharedlimit_testdata.py` | `<bed> [--restore]`: a real `OutpostWagon` at the Town Center and a team's `ypGoat` limit in a WoL bed, for `sharedBuildLimit`. |
 | `monastery_testdata.py` | `<bed> [--model\|--ai\|--restore]`: `UhcMonastery` and `UhcSmallMine` in a WoL bed, for `linkedResource`; buildable with a monastery's model, and an AI rule that builds one. |
 | `torp_testdata.py` | `<bed> [--restore]`: the Torp's auras on `WOLSawmill` in a WoL bed, a panel row and two test techs, for `unitResourceAuras`. |
@@ -23,13 +23,14 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
+| [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
 | `ai_personality.py` | Leaves one AI personality in a test copy, so a skirmish's AI has that civ. |
 | [`re/inspect_unittypes.py`](#reinspect_unittypespy) | Shows a unit type's ID and the protos that carry it. |
-| `re/debugger.py` | The shared debugger and game-memory helpers the `re/` scripts use. |
+| `re/debugger.py` | The shared debugger and game-memory helpers the `re/` scripts use. `crash` mode: see [re/debugger.py crash](#redebuggerpy-crash). |
 | `perfprobe.py`, `set_laa.py` | Part of the performance work in progress; see [docs/performance.md](../docs/performance.md) and each script's docstring. |
 | `re/pe64.py` | Static helper for a large 64-bit exe (AoE3 DE): strings, RIP-relative xrefs, functions from `.pdata`, callers, thread-creation sites. Listings need capstone. See its docstring and [docs/de-architecture.md](../docs/de-architecture.md). |
 | `threadprobe.py` | Per-thread CPU, thread names and start addresses of any running process. By default it does not suspend the process or read its memory; `--sample-hz` briefly suspends the busiest threads to read their instruction pointer. |
-| `legacybench.py` | Unattended late-game benchmark in a test copy (default `C:\AoE3-UHC-Perf`): loads a save through `perfExecFile`, records with `perfprobe.py` (and `threadprobe.py`), closes the game. It sends no input and never activates the window. The game allows only one running copy per machine, so it refuses to start while another `age3y.exe` runs, unless the copy's cfg has `multipleInstances background`. |
+| `legacybench.py` | Unattended late-game benchmark in a test copy (default `C:\AoE3-UHC-Perf`): loads a save through `perfExecFile`, records with `perfprobe.py` (and `threadprobe.py`), closes the game. It sends no input and never activates the window. The game allows only one running copy per machine, so it refuses to start while another `age3y.exe` runs, unless the copy's cfg (`uhc.cfg`, or `wol.cfg` in a WoL copy) has `multipleInstances background`; it takes `testbed.py`'s launch lock while the game starts. It prints the load time (to the end of the last frame over 50 ms after `loadGame`, from perfStats' slow-frame ring), and `--load-probe <s>` also profiles the load itself. |
 | `gameui.py` | Drives a game window for unattended tests: screenshots, clicks, keys. Select the window with `--process` (age3y.exe or AoE3DE_s.exe). It moves the real cursor, so use it only with the machine owner's permission. |
 
 Never point a tool that writes at the Steam install. The data tools write only the output file
@@ -207,6 +208,12 @@ no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wa
 `units`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
 docstring lists their arguments.
 
+A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives
+the process's exit code, `0xc0000005` for an access violation), and 4 when it hangs: the window does
+not respond when the wait times out, or, in `wait`, the world clock stands still for `--hang` seconds
+(`UHC_HANG_SECONDS`, 60 by default; a paused or ended game stops the clock too). A plain timeout
+keeps exit code 1.
+
 Paths come from the copy's own exe and data (`profile` prints them): the cfg the loader reads
 (VA 0xC65083: `Startup\uhc.cfg`, or `Startup\wol.cfg` in a Wars of Liberty copy), the AI and
 random-map folders (`AI3`/`RM3`, or `AI4`/`RM4`), and the `My Games` folder (string 42265 of the
@@ -297,6 +304,53 @@ python -I tools/re/trace_exec.py <log> SPEC [SPEC ...] [--minutes N] [--max-per-
 `SPEC` is `ADDRESS[=LABEL][@UNIT]`, for example `0x9E0B53=heal-tick@[ecx+0x10]`. `UNIT`, when
 given, names a register or a `[register+offset]` slot that holds a unit pointer; the log then
 shows that unit's proto, owner and hit points. Each hit logs the registers and the call chain.
+
+## mapsweep.py
+
+```
+python -I tools/mapsweep.py --bed <copy> --csv <out.csv> [--maps A,B | --list FILE | --match RE]
+       [--players 2,4,8] [--seeds 1,2,3] [--seconds 30] [--route scenario|skirmish] [--ai wolOtto]
+       [--shard K/N] [--evidence DIR] [--no-debugger] [--dry-run]
+```
+
+Plays each map of the copy's map folder (every `.xs` with an `.xml`; the include libraries are
+skipped) through `testbed.py scenario` (the editor's `startRandomGame2`, saved and loaded as a
+scenario, players without AI) or, with `--route skirmish`, through the profile's skirmish with AIs,
+lets `--seconds` of game time pass, and appends one CSV row per run: `ok`, `crash` (exception code,
+EIP, module, call chain), `hang` (window not responding, or the world clock still for 60 s),
+`xs-error` (new `xsErrorLog` lines in the log), `timeout` or `launch-failed`, plus the units per
+player, the last log lines of the run and of `Age3Log.txt`. A row already in the CSV is skipped,
+so a stopped sweep starts again where it was. Per run it keeps the testbed output and both logs in
+`<evidence>/runs/`, a quarter-size shot in `<evidence>/shots/`, and the crash reports of
+`re/debugger.py crash` (attached to every game it starts) in `<evidence>/crash-*.jsonl`. Without
+the crash watch (`--no-debugger`), a crash's code and offset come from the Windows Application log
+(event 1000, "Application Error"; EIP = offset + 0x400000 for age3y.exe).
+
+The copy needs `perfExecFile`, `multipleInstances background` and `xsErrorLog` in the cfg its exe
+reads (`engine-ext\engine-ext.cfg` beside another `UHC.dll`). It refuses to start while a game
+runs in the copy, kills only games it started (after a hang or a timeout), and waits for 6 GB of
+free memory before each run (`UHC_SWEEP_MIN_FREE_GB`). Several copies can sweep at once with
+`--shard 0/3`, `1/3`, `2/3` and one CSV; `testbed.py`'s start lock staggers their launches, and the
+scenario names (`uhc-<map>`) differ because each map belongs to one shard. The skirmish route
+edits the shared profile, so it runs alone: it backs up the profile, the home cities and the AI
+memory files and restores them byte for byte at the end, and leaves `--ai` personalities in the
+copy (`ai_personality.py`, restored at the end).
+
+## re/debugger.py crash
+
+```
+set UHC_GAME_DIR=C:\WoL-Test
+python -I tools/re/debugger.py crash [--out crash.jsonl] [--log crash.log] [--seconds N]
+```
+
+Attaches to the running game without setting a breakpoint and waits until it exits. An unhandled
+(second-chance) exception is written as one JSON line: code, EIP and the module plus offset, the
+access (read, write, execute) and its address, the registers, `call_chain` (the return addresses
+on the stack, innermost first) and the first stack words; then it is passed on, so the game ends as
+it would have. Attached, Windows skips its error dialog, so the process ends at once instead of
+waiting on the dialog. The first 20 first-chance exceptions that are not routine (C++ throws,
+thread names, debug prints) are logged too, in case the game's own handler ends it. Killing it is
+safe: it sets no breakpoint.
 
 ## re/trace_xs.py
 

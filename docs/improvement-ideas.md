@@ -373,19 +373,19 @@ First: percentage techs and the max-only subtype.
 
 - **Sources of any heal kind:** buildings, dances, powers, regeneration auras, matched by the
   source unit's type on every add-HP path, with per-path opt-ins (`area`, `regen`, `power`). *small*
-- **Cap per source** (`AbstractMonk=100% Surgeon=105%`). *small*
-- **Rate above 100 %** (half speed, or a cfg value). *small*
+- **Cap per source** (`AbstractMonk=100% Surgeon=105%`). *small*. **Done (2026-11-11)** as `<UnitType> cap=<percent>`.
+- **Rate above 100 %** (half speed, or a cfg value). *small*. **Done (2026-11-11)** as `<UnitType> rate=<percent>`.
 - **Own regeneration exceptions** (heroes regenerate to max). *small*
 - **With `smartHealTargets`:** units below 100 % first, overheal after. *small*
-- **`AddUnitType` effect** (cross-cutting): "your surgeons now overheal" as a card.
+- **`AddUnitType` effect** (cross-cutting): "your surgeons now overheal" as a card. **Works (2026-11-11)** through `unitTypeTechs`: `AddUnitType` with the source type on one player's healers, tested in WoL.
 - **Tests:** multiplayer (simulation), the knocked-out hero case confirmed in the bed.
 
-First: cap and rate per source, then the ordering with `smartHealTargets`.
+First: the ordering with `smartHealTargets`.
 
 ## `overhealDecay`
 
 - **Hold conditions:** no decay in combat, while garrisoned, or while a source healer is within X
-  m (`holdNear <type> <m>`). Removes the "the monk re-heals it" micro. *small*
+  m (`holdNear <type> <m>`). Removes the "the monk re-heals it" micro. *small*. **Done (2026-11-11)** for the healer: `holdNear <UnitType> <metres>` (same player only); combat and garrison remain.
 - **Curve and rate per type:** percent of the remaining overheal, accelerating, `Musketeer=2
   Hussar=4`. *small*
 - **Floor other than 100 %** (100 % + N). *small*
@@ -393,7 +393,7 @@ First: cap and rate per source, then the ordering with `smartHealTargets`.
 - **Saved games:** the delay since the last gain lives in the DLL; persist or document. *small*
 - **Tests:** multiplayer (game-time, deterministic).
 
-First: hold conditions.
+First: the hold in combat and while garrisoned.
 
 ## `showGatherRate`
 
@@ -435,23 +435,25 @@ First: `NoStack`, then the registry.
 
 The key does its job; these are the next steps of the performance plan.
 
-- **Zero-code A/B first:** `-demandLoadMeshes`, `megaPostLoadForceTextures` (does the game discard
-  and rebuild meshes?). *verify*
-- **Find the granny call** that takes the remaining slow-frame samples (resolve `granny2.dll`
-  exports as for `ntdll`). *RE*
+- **Zero-code A/B:** done 2026-11-11: `-demandLoadMeshes` and `megaPostLoadForceTextures` do nothing in this
+  exe (performance.md, §9).
+- **The granny call:** found 2026-11-11: Oodle1 decompression inside `GrannyReadEntireFile` (models) and
+  `GrannyReadFileSection` (animations). The levers are uncompressed `.gr2` files or a preload. *user's choice*
 - **`preloadList <file>`:** load at the loading screen what `perfFileLog` saw opened mid-match.
   Costs memory; needs `set_laa.py` first. *medium*
-- **Read-ahead on a worker thread:** the 17,797 remaining Windows reads still fall inside frames.
-  *small*
+- **Read-ahead on a worker thread:** done 2026-11-11 (`readahead`): about 30 % of block reads move off the
+  game's thread, no measured change in frames.
 - **Buffer size per extension**, with per-file statistics in the log at exit (buffered vs real
   reads). *small*
 - **Memory-mapped `.bar`** as an alternative, only with LAA. *medium*
 - **Thread safety:** the sound mixer reads on another thread; a lock per handle, and `verify`
   run with sound on. *verify*
 - **Loose files edited while running** may be served stale: document or invalidate by mtime.
-- **Pending:** a multiplayer game with the key on one side; a timed load with and without.
+- **WoL's stutters** are not file reads (performance.md, §9): identify 0x68FB04 / 0x94BC1D and the walk under
+  0x67A1FD with REA. *RE*
+- **Pending:** a multiplayer game with the key on one side.
 
-First: the cfg A/B and the worker-thread read-ahead.
+First: WoL's stutter functions, then the user's choice on `.gr2` decompression.
 
 ## `hcShipmentPointFallback`
 
@@ -473,8 +475,8 @@ First: the last resort with a warning, and `replace`.
 
 ## `healNonIdle`
 
-- **`moving` / `fighting` separately** (both tests sit in the same block). *small*
-- **Reduced rate on busy targets** (`busyRate=50%`), the balance knob. *small*
+- **`moving` / `fighting` separately** (both tests sit in the same block). *small*. **Done (2026-11-11)** as the options `moving` and `fighting`.
+- **Reduced rate on busy targets** (`busyRate=50%`), the balance knob. *small*. **Done (2026-11-11)** as `busyRate=<percent>`.
 - **"In combat" as a `smartHealTargets` criterion.** *small*
 - **Regeneration in combat:** the own regeneration and the dance require 3.5 s idle; the site is
   known. A marker for heroes or beasts. *small*
@@ -482,11 +484,11 @@ First: the last resort with a warning, and `replace`.
   is the same change on another path. *verify*
 - **Follow the target** (escort mode) when it walks out of range; healing while the healer itself
   moves is the larger version. *medium / large*
-- **`AddUnitType` effect:** "your surgeons now heal in combat" as a card.
+- **`AddUnitType` effect:** "your surgeons now heal in combat" as a card. **Works (2026-11-11)** through `unitTypeTechs`: `AddUnitType` with the marker on one player's healers, tested in WoL.
 - **RE:** the per-player case `[player+4FCh]` in the idle test.
 - **Tests:** multiplayer.
 
-First: the reduced rate and the moving / fighting split, then regeneration in combat.
+First: regeneration in combat (the rate and the split are done).
 
 ## `smartHealTargets`
 
@@ -497,10 +499,10 @@ First: the reduced rate and the moving / fighting split, then regeneration in co
 - **Exclude types** (`-Settler`). *small*
 - **Safety:** prefer targets without enemies nearby (the spatial query `noTrainNearEnemyTC`
   uses). *small*
-- **Switch target mid-heal** when another candidate is much worse, with hysteresis. *small*
+- **Switch target mid-heal** when another candidate is much worse, with hysteresis. *small*. **Done (2026-11-11)** as `switch=<percent>` (re-checked once a second from the heal tick; not kept in saved games).
 - **Per-healer lists** (`Surgeon: AbstractInfantry`, `AbstractMonk: AbstractHero`); a `range`
   option. *small*
 - **Tests:** multiplayer (deterministic by design); measure with many healers.
 - Doc: the guide section repeats the "New in this DLL" line twice.
 
-First: switching with hysteresis and the safety weight.
+First: the safety weight (switching is done).

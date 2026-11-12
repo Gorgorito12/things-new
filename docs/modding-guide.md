@@ -30,9 +30,15 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 08:17 | [`fastLastInLine`](#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
+| Wednesday 2026-11-11 16:01 | [`researchGrants`](#researchgrants) | Added. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
+| Wednesday 2026-11-11 15:52 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
+| Wednesday 2026-11-11 15:51 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
+| Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
+| Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
+| Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
-| Monday 2026-11-09 08:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills. | The rows on the protos that want them. |
 | Monday 2026-11-09 08:13 | [`steadyHitpointBars`](#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
 | Sunday 2026-11-08 10:23 | [`annexFacing`](#annexfacing) | Added. An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) faces the building it belongs to, also when the AI places it, and falls when that building dies or is destroyed. | The tag on the annexes; a placement distance that leaves room for the turned annex. |
@@ -55,8 +61,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added. Writes the XS compiler's messages to the log, with file and line. | Nothing. |
 | Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added. While the data loads, lists what it asks for and the game drops. | Nothing. |
 | Friday 2026-11-06 12:40 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. |
-| Friday 2026-11-06 12:40 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Friday 2026-11-06 12:40 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time. | `overhealHitpointBars`. |
 | Friday 2026-11-06 12:40 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
 | Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
@@ -98,8 +102,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 13:58 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Filmed in WoL, with a control. Marked units leave a training building one at a time, not as a batch. | `AbstractTrainLimitOne` on the protos (36 have it). |
 | Wednesday 2026-11-04 13:58 | [`repairWallGlobal`](#repairwallglobal) | Filmed in WoL, with a control. A UI syscall that repairs every wall of the local player. | A button or hotkey that calls `repairWallGlobal()`. |
 | Wednesday 2026-11-04 12:48 | [`techRenameEffect`](#techrenameeffect) | Filmed in WoL, with a control. The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. |
-| Wednesday 2026-11-04 12:48 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
-| Wednesday 2026-11-04 12:48 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-04 12:48 | [`dodgeChance`](#dodgechance) | Filmed in WoL, with a control. A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. |
 | Wednesday 2026-11-04 12:48 | [`snareOnlyHitUnit`](#snareonlyhitunit) | Filmed in WoL, with a control. A snared unit no longer slows the group it moves with; only the hit unit slows. | Nothing. |
 | Wednesday 2026-11-04 12:48 | [`liveBuildingWorkRate`](#livebuildingworkrate) | Filmed in WoL, with a control. Makes `BuildingWorkRate` techs (train, research and `Maintain` speed) apply to buildings that already stand, not only to those completed after the tech, and `TrainPoints` techs to units already queued or in training. | Nothing. |
@@ -335,6 +337,7 @@ Where the game reads its data, how it reads it, and how it starts.
 | [`ignoreRegistryPath`](#ignoreregistrypath) | Reads the game data from WoL's folder (the exe's folder), and not from the Steam install in the registry. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`bufferedFileReads`](#bufferedfilereads) | Reads the game's files through a read-ahead buffer instead of millions of tiny reads, for fewer and shorter stutters and faster loading. | **new** | Nothing. | confirmed (single player) |
 | [`fastVertexFill`](#fastvertexfill) | Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | **new** | Nothing. | confirmed (single player) |
+| [`fastLastInLine`](#fastlastinline) | Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | **new** | Nothing. | confirmed (single player) |
 | [`rendererOption`](#rendereroption) | Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | **new** | The field in `data\options.xml` and the `dxvk` folder. | confirmed (single player) |
 | [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages to the log, with file and line. | **new** | Nothing. | confirmed |
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
@@ -368,7 +371,7 @@ ignoreRegistryPath
 **Added:** Wednesday 2026-10-28 16:34
 
 ```
-bufferedFileReads [<KB>] [verify]      default 64 KB
+bufferedFileReads [<KB>] [readahead] [verify]      default 64 KB
 ```
 
 - **In WoL today:** the exe reads the archives (`art\Art*.bar`, `data\Data*.bar`, `sound\*.bar`, …) and
@@ -379,30 +382,47 @@ bufferedFileReads [<KB>] [verify]      default 64 KB
 - **Effect:** every file the game opens for reading only gets a read-ahead buffer. One Windows read
   fills the buffer, and the game's small reads are served from memory. The game receives the
   same bytes.
-- **Measured** in a late 8-AI game of the stock game ([performance.md](performance.md), §9,
-  "bufferedFileReads A/B"), on a 150 s recording. It was not measured in WoL yet:
+- **Measured** ([performance.md](performance.md), §9, "readahead, and the first measurement in WoL"),
+  150 s recordings of a late save, two runs per setting, on a PC that other tests shared:
 
-  | | Without | With |
-  |---|---|---|
-  | Frames over 100 ms | 11 | 3 |
-  | Frames over 50 ms | 19 | 11 |
-  | Longest frame | 251 ms | 116 ms |
-  | Time in file reads, whole session (most of it loading) | 14.9 s | 1.0 s |
+  | | Stock, without | Stock, with | WoL, without | WoL, with |
+  |---|---|---|---|---|
+  | Frames over 100 ms | 3, 3 | 0, 0 | 13, 9 | 10, 11 |
+  | Frames over 50 ms | 4, 4 | 2, 2 | 17, 13 | 15, 14 |
+  | Longest frame | 189, 190 ms | 94, 97 ms | 508, 386 ms | 570, 396 ms |
+  | Time in file reads, whole session | 8.5, 8.7 s | 0.35, 0.35 s | 3.9, 3.9 s | 0.38, 0.40 s |
+  | Loading the save | 10.1, 10.0 s | 5.1, 5.5 s | 11.6, 11.4 s | 9.6, 9.4 s |
 
-- **What it does not fix:** most of the remaining stutter is the animation library (granny)
-  setting up the model it just read. That is processing work, not reading.
+- **What it does not fix:**
+  - **WoL's stutters are not file reads.** In WoL's slow frames, file reads and granny are 2 % each;
+    the time is in two pieces of the game's own code, not identified yet. So in WoL the key makes
+    loading faster and cuts the time spent reading, but it does not remove the stutters.
+  - In the stock game, most of what remains is the animation library (granny) unpacking a model or an
+    animation it meets for the first time: granny stores them compressed, and unpacking is processing
+    work, not reading ([performance.md](performance.md), §9, "The remaining stutters").
 - **WoL needs:** nothing.
   - `<KB>` (4 to 1024) is the buffer size per open file.
+  - `readahead` adds a worker thread: while the game uses one block of a file, the worker reads
+    the next one. It reads through a second handle of its own, so the game's file handle is never
+    touched, and a block is used only for the place in the file it was read from. **It moves about
+    30 % of the block reads off the game's thread in the stock game** (2,930 of ~10,450 per session),
+    and 14 % in WoL (2,450 of ~18,000); the rest are the first read after the game jumps to another place in an archive, which it
+    cannot guess. It changed no frame count in the runs above, so it is optional.
   - `verify` also reads every buffered request from the file for real and compares the two. It is
     a correctness test and makes reading slower.
 - **Log:**
-  - at startup, `bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)`;
+  - at startup, `bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)`,
+    followed by `; readahead: a worker thread reads the next block of each file` with `readahead`;
   - with `verify`, at exit: `bufferedFileReads verify: N buffered reads checked, M mismatches`.
-    M must be 0.
+    M must be 0;
+  - with `readahead`, at exit: `bufferedFileReads readahead: N blocks asked of the worker, N read,
+    N used by the game (N waited for, N ms in all); N buffer refills read on the game's thread; N files
+    without a second handle`.
 - **Simulation:** no. It changes how the bytes are fetched, not which bytes, so players do not
   need the same setting.
-- **Status:** confirmed in single player, on the stock game: on a 25-minute save, `verify` checked 7.5
-  million buffered reads against the file and found no mismatch. Not tested in WoL or in multiplayer.
+- **Status:** confirmed in single player, on the stock game and in WoL. `verify` found no mismatch:
+  7.5 million buffered reads on the stock game's 25-minute save, and with `readahead` 6.9 million there
+  and 3.0 million on a 32-minute WoL save. Not tested in multiplayer.
 
 #### fastVertexFill
 
@@ -506,6 +526,45 @@ fastVertexFill [log] [verify]
     ReShade's `d3d9.dll`, so these numbers include ReShade: compare them with each other, not with the table above.
     Removing `dinput8.dll` and `engine-ext\` gives WoL's main menu again.
   - Not tested: multiplayer, a full-length game, other video cards and drivers.
+
+#### fastLastInLine
+
+*The game no longer freezes for a third of a second each time a player gets a home city shipment.*
+
+**Added:** Thursday 2026-11-12 08:17
+
+```
+fastLastInLine [log] [verify]
+```
+
+- **In the game today:** after a home city shipment (or a card that becomes available again), the game works out
+  for that player which tech of each line is "last in line", the one the command panels show. It does it by
+  testing every tech against every other tech and its prerequisites. With WoL's 10,542 techs that is about
+  170 million tests: a frame of 340–590 ms, once per shipment of any player, AI or human. In a 32-minute
+  five-player save these frames were 74 % of all the time spent in frames over 50 ms
+  ([performance.md](performance.md), §9, "What WoL's stutters are").
+- **Effect:** the DLL builds once, when the data loads, the list of which techs require which tech, and tests
+  only those, with the game's own tests. The result is the same bits; the work takes 0.4–1.6 ms.
+- **`verify`** lets the game's own code run as well and compares every bit with the DLL's; each recompute logs
+  a line with the bits that differ (must be 0) and both times. `log` writes a line per recompute.
+- **WoL needs:** nothing.
+- **Multiplayer:** the game computes exactly the same thing, so players may set it differently. Not tested in
+  multiplayer.
+- **Measured in WoL** (the 32-minute five-player save, 150 s per run, key off and on in turns):
+
+  | | Off | On | Off | On |
+  |---|---|---|---|---|
+  | Frames over 50 ms | 12 | **3** | 15 | **3** |
+  | Frames over 100 ms | 6 | **1** | 11 | **2** |
+  | Longest frame | 382 ms | **191 ms** | 384 ms | **243 ms** |
+
+  What is left over 100 ms is mostly the AI's `towerManager` rule, whose `sin` and `cos` are slow in
+  `aiWoLMain.xs`; a fixed copy of that file is described in [performance.md](performance.md), §9, "What WoL's
+  stutters are".
+- **Status:** confirmed in single player. `verify` found 0 differing bits in 31 recomputes: 14 on the save, 7 in a
+  new skirmish, 6 with WoL's own DLL and our `dinput8.dll` (applied, hooks reached, nothing failed), 4 in the stock
+  game. Not tested in multiplayer. No video: the change is a freeze that no longer happens, which a GIF does not
+  show; the frame times are above.
 
 #### rendererOption
 
@@ -2120,17 +2179,17 @@ Who heals, whom, and how far.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
-| [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else). | **new** | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). | confirmed (automatic healing) |
-| [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID. | **new** | Nothing (unit types or proto names are optional). | confirmed |
+| [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | **new** | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). | confirmed (automatic healing) |
+| [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | **new** | Nothing (unit types or proto names are optional). | confirmed |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | **new** | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. | confirmed (single player, UI) |
-| [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`; every other heal stops there. | **new** | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
-| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time. | **new** | `overhealHitpointBars`. | confirmed |
+| [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | **new** | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
+| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | **new** | `overhealHitpointBars`. | confirmed |
 
 #### healNonIdle
 
 *Chosen healers also heal units that are moving or fighting.*
 
-**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Wednesday 2026-10-28 12:48 · **Filmed in WoL:** Wednesday 2026-11-11 15:49
 
 ![healNonIdle in WoL](media/healNonIdle-wol.gif)
 
@@ -2146,9 +2205,39 @@ only shrinks and it dies at about 57 s of game time, the enemy left at 70 HP. Th
 next.
 [Full video (MP4)](media/healNonIdle-wol-control.mp4).
 
+![healNonIdle busyRate=50 in WoL](media/healNonIdle-busyrate-wol.gif)
+
+*In WoL, with `healNonIdle busyRate=50` (the medicine man gets the marker by a tech, the same scene with a
+`WOLLineInfantry` walking in at 22 s; the two units are selected):* the medicine man heals the fighting Tomahawk at half
+speed: it falls from 150 to 46.6 HP and wins at about 54 s, then is healed to 150 at the full rate.
+[Full video (MP4)](media/healNonIdle-busyrate-wol.mp4).
+
+![healNonIdle busyRate 100 in WoL](media/healNonIdle-busyrate-wol-control.gif)
+
+*In WoL, `healNonIdle` with no option (busyRate 100, the same scene):* the Tomahawk stays between 126 and 135 HP through
+the fight and wins at 128.9. [Full video (MP4)](media/healNonIdle-busyrate-wol-control.mp4).
+
 ```
-healNonIdle [<UnitType>]      default AbstractHealNonIdle
+healNonIdle [<UnitType>] [moving] [fighting] [busyRate=<percent>]   default AbstractHealNonIdle, both states, 100
 ```
+
+- **`moving`, `fighting`:** the busy states a marked healer may heal. With neither, both (as before these options).
+  With one alone, the other keeps its stock test: with `moving`, a fighting unit is no candidate of the search and a heal
+  ends when its target fights; with `fighting`, the same for a moving unit. A unit doing anything else (gathering,
+  building) counts as before. The two tests are the ones the stock heal tick uses: "moving" is the target's current
+  action moving, "fighting" the exe's own fight test.
+- **`busyRate=<percent>`** (1 to 1000, default 100): a heal tick whose target is moving or fighting adds that percent of
+  what it would add; an idle target is healed at the full rate. `busyRate=50%` works too.
+- **A bad option** stops the key: `healNonIdle: busyRate=abc: expected busyRate=<percent>, 1 to 1000; feature not
+  applied`, or `…: expected healNonIdle [UnitType] [moving] [fighting] [busyRate=<percent>]; feature not applied`.
+- **Measured in WoL (2026-11-11),** the scene above, the Tomahawk's HP when the enemy dies: `busyRate=50` 46.6 (fight
+  from 28 to 54 s); no option 128.9; `moving` alone, not healed while fighting: it dies at about 50 s, the enemy left at
+  32 HP, as with the key off. Idle, the medicine man heals about 10 HP/s; at 50 % about 5 HP/s.
+- **Saved games:** nothing is kept in the DLL; the options act on each tick.
+- **Through a tech:** with [`unitTypeTechs`](#unittypetechs), `AddUnitType` with the marker on one player's healers
+  (`<Target type ='ProtoUnit'>xpMedicineMan</Target>`) turns the key on for that player only. Tested in WoL
+  (2026-11-11): Player 1's medicine man healed his fighting Tomahawk (it lost 4.3 HP/s and won at 77.6 HP), Player
+  2's, without the tech, did not heal his (6.3 HP/s, dead).
 
 - **In WoL today:** a healer (`Surgeon`, `NAnurse`, `xpMedicineMan`, a monk) only picks targets that are
   idle, and stops healing as soon as its target moves or fights. So a healer behind a line of infantry
@@ -2174,7 +2263,9 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 - **Monks and other fighting healers** may still choose to attack instead of heal: that is the unit's
   own behavior and is not changed. Pure healers such as `Surgeon`, `NAnurse` and `xpMedicineMan` show the
   feature best.
-- **Log:** `healNonIdle: healers of unittype X heal busy targets (multiplayer unverified)`; when
+- **Log:** `healNonIdle: healers of unittype X heal busy targets (multiplayer unverified)` (`moving (not fighting)` or
+  `fighting (not moving)` with one state; `…targets, at 50 % of their rate…` with busyRate, and in a game `hook reached:
+  healNonIdle busyRate (0x9E0CC7)`); when
   the data loads, `hook reached: abstract unit types (0x51BA31)` and
   `unit types: X -> <ID> (bit B of N), added` (or `already defined`); in a game,
   `hook reached: healNonIdle auto-search (0x9CD9C7)` and `hook reached: healNonIdle (0x9E0C79)`.
@@ -2183,13 +2274,14 @@ healNonIdle [<UnitType>]      default AbstractHealNonIdle
 - **Simulation:** yes. It also adds a unit type, which changes the unit type count.
 - **Status:** confirmed in WoL (2026-11-04), through the automatic search: the medicine man heals the
   fighting Tomahawk, which wins at full HP; without the key it dies at about 57 s. A direct order
-  (right-click) on a fighting unit was not verified.
+  (right-click) on a fighting unit was not verified. The options (2026-11-11): the numbers above, a saved game, an AI
+  skirmish of 100 s with every heal and overheal key on and no XS error. Not tested: `fighting` alone, multiplayer.
 
 #### smartHealTargets
 
 *Healers go for the units that need healing most, not the first they find.*
 
-**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-04 12:48
+**Added:** Thursday 2026-10-29 13:19 · **Filmed in WoL:** Wednesday 2026-11-11 15:50
 
 ![smartHealTargets in WoL](media/smartHealTargets-wol.gif)
 
@@ -2204,9 +2296,35 @@ four settlers are hit at once (90, 70, 45 and 33 % HP); the `NAnurse` heals the 
 at 45 % 4 m away, while the one at 33 % waits at 50 HP; the settlers at 70 and 90 % wait too.
 [Full video (MP4)](media/smartHealTargets-wol-control.mp4).
 
+![smartHealTargets switch=20 in WoL](media/smartHealTargets-switch-wol.gif)
+
+*In WoL, with `smartHealTargets switch=20 log` (a `NAnurse`, three settlers hit at 18, 23 and 25 s; all selected):* the
+nurse heals the first settler from 33 %; when the second falls to 47 % she leaves the first at 70 % (more than 20 %
+higher) and heals the one at 20 % at once, then tops the three up in turns. [Full video (MP4)](media/smartHealTargets-switch-wol.mp4).
+
+![smartHealTargets without switch in WoL](media/smartHealTargets-switch-wol-control.gif)
+
+*In WoL, `smartHealTargets log` without `switch` (the same scene):* she heals the first settler to full while the one at 20 %
+waits at 30 HP for about 5 s. [Full video (MP4)](media/smartHealTargets-switch-wol-control.mp4).
+
 ```
-smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
+smartHealTargets [<UnitType> ...] [switch=<percent>] [log]   up to 8 types, in priority order
 ```
+
+- **`switch=<percent>`** (1 to 100; default off): stock never looks again while a heal runs. With the option, once a
+  second of game time, a heal this search started is checked against the units the search would accept now: if one
+  ranks at the target's listed type or before it and its HP ratio is lower than the target's by more than the margin
+  (`switch=20`: a target at 70 % is left for a unit below 50 %), the heal ends as when the target is full, and the
+  healer's next search takes the best unit, as above. The margin keeps it from flipping back and forth: a unit only a
+  little worse does not interrupt. A heal the player ordered is never checked.
+- **Measured in WoL (2026-11-11),** the scene above: with `switch=20` the settler hit to 20 % at 25 s was healed from
+  that second; without it, from about 29.5 s, after the first one was full. All three were full by about 56 s either way.
+  With a gap of 17 % (63 % against 47 %), no switch.
+- **Saved games:** the healer's last pick lives in the DLL, so after a load a heal started before the save is not
+  checked (it runs to the end as without the option); every heal started after the load is. The same on every machine
+  that loads the save. Tested: a save while the nurse healed the first settler, loaded: she healed it to full, then
+  switched as usual.
+- **A bad option** stops the key: `smartHealTargets: switch=0: expected switch=<percent>, 1 to 100; feature not applied`.
 
 - **In WoL today:** an idle healer looks for a unit to heal on its own: it asks for the units around it
   and heals the **first** one that passes every test (damaged, alive, idle, a valid heal
@@ -2231,13 +2349,17 @@ smartHealTargets [<UnitType> ...] [log]   up to 8 types, in priority order
   ratio, nearest, lowest unit ID (multiplayer unverified)`; in a game `hook reached:
   smartHealTargets candidate (0x9CDA36)` and `pick (0x9CDA58)`; with `log`, every pick (the first
   200): `smartHealTargets: unit 0 (Surgeon) heals unit 4 (Settler, rank 0, HP ratio 0.333, 10.0
-  m) among 4 candidates; stock would heal unit 1 (Settler, HP ratio 0.900)`.
+  m) among 4 candidates; stock would heal unit 1 (Settler, HP ratio 0.900)`. With `switch`, the startup line adds `; a
+  running heal switches to a candidate more than 20 % lower`, a game `hook reached: smartHealTargets switch
+  (0x9E0C3A)`, and `log` each switch: `smartHealTargets: unit 0 (NAnurse) leaves unit 1 (Settler, rank 0, HP ratio
+  0.703) for a better candidate, unit 2 (Settler, rank 0, HP ratio 0.467; switch margin 0.20)`.
 - **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
   registered as a marker unit type, which changes the unit type count.
 - **Status:** confirmed in single player. In WoL (2026-11-04), a `NAnurse` with four settlers hit at once
   healed them in the order 33, 45, 70, 90 %; without the key it took the first the query returned, at
   45 %. On the stock game (2026-10-29), with a listed type, that type came first, and with
-  `healNonIdle` both hooks ran. A skirmish against the AI with the key on played normally. Multiplayer
+  `healNonIdle` both hooks ran. A skirmish against the AI with the key on played normally. `switch` (2026-11-11):
+  the numbers above, a saved game, an AI skirmish of 100 s with every heal key on and no XS error. Multiplayer
   was not tested.
 
 #### overhealHitpointBars
@@ -2422,7 +2544,7 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 
 *Only chosen healers can heal a unit above its normal health.*
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Friday 2026-11-06 12:40
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Wednesday 2026-11-11 15:51
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
 
@@ -2447,9 +2569,36 @@ a dance is not a source. [Full video (MP4)](media/overhealSources-dance-wol.mp4)
 *In WoL, key off (the same scene):* the dance takes it to `180/150`, `Overheal: 30/30`.
 [Full video (MP4)](media/overhealSources-dance-wol-control.mp4).
 
+![overhealSources cap and rate in WoL](media/overhealSources-cap-wol.gif)
+
+*In WoL, with `overhealSources AbstractOverhealer cap=110 rate=50 log` (Player 1's medicine man is a source through a
+tech; the Tomahawk, 150 of 180, selected; `overhealDecay 2 1` with `holdNear xpMedicineMan 12`):* hit to 105 at 18 s, it is
+healed at about 10 HP/s to 150, then at 5 HP/s, and stops at `165/150`, 110 %.
+[Full video (MP4)](media/overhealSources-cap-wol.mp4).
+
+![overhealSources without cap and rate in WoL](media/overhealSources-cap-wol-control.gif)
+
+*In WoL, `overhealSources AbstractOverhealer log` with no option (the same scene, `overhealDecay 2 1` without
+`holdNear`):* healed at 10 HP/s all the way to 180, its max; the decay then takes a little and the medicine man heals it
+back. [Full video (MP4)](media/overhealSources-cap-wol-control.mp4).
+
 ```
-overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 types
+overhealSources [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]   default AbstractOverhealer; up to 8 types
 ```
+
+- **`cap=<percent>`** (100 to 1000) after a source type: its healers heal a marked unit to at most that percent of its
+  100 %, and never above `MaxHitpoints` (the default, as before). Their heal action ends there and their search skips a
+  unit at its cap, as for a normal healer at the 100 %. `cap=100` makes the type a normal healer for marked units.
+- **`rate=<percent>`** (1 to 1000, default 100) after a source type: the part of each of its heals that lands above the
+  100 % is that percent of the stock amount; below the 100 % the heal is unchanged.
+- **Per type:** the options belong to the type they follow, e.g. `overhealSources AbstractMonk cap=105 Surgeon cap=120
+  rate=50`. A healer of several listed types takes the options of the first one listed. `50%` works too.
+- **A bad option** stops the key: `overhealSources: cap=110: expected <UnitType> [cap=<percent>, 100 to 1000]
+  [rate=<percent>, 1 to 1000] after each source type; feature not applied` (also for an option before any type).
+- **Measured in WoL (2026-11-11),** the scene above: 107.8 → 123.6 → 140.0 in steps of 1.6 s (about 10 HP/s), then
+  152.7 → 160.4 in 1.55 s (5.0 HP/s), held at 165.0; without the options 159.0 → 174.8 in 1.57 s (10 HP/s) up to 180.
+  At the start, a fresh Tomahawk (150) was taken to 165 by the source, 180 without the cap.
+- **Saved games:** nothing is kept in the DLL.
 
 - **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its unit types mark the units that
   have overheal, and its 100 % (`InitialHitpoints`, scaled when an aura changes the max) is the
@@ -2474,7 +2623,9 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
   in a game `hook reached: overhealSources heal search (0x9CD984)`, `heal tick (0x9E0BBB)`, `heal
   (0x9E0CE9)` and `overheal add HP (0x4823A3)`. With `log`, the first of each proto: `overhealSources:
   a heal of unit N (Tomahawk) stops at its 100 % 150.0 (…; not from a source healer)` and `…unit N
-  (Tomahawk) is healed above its 100 % 150.0 by a source healer (…)`. Without
+  (Tomahawk) is healed above its 100 % 150.0 by a source healer (…; rate 50 %)`; with a cap, `overhealSources: a
+  source heal of unit N (xpTomahawk) stops at its cap 165.0, 110 % of its 100 % 150.0 (…)`. The startup line lists the
+  options after each type: `AbstractOverhealer (up to 110 %, rate 50 % above 100 %)`. Without
   `overhealHitpointBars`: `overhealSources: needs overhealHitpointBars, …; feature not applied`.
 - **Simulation:** yes. Every machine needs the same line (and `overhealHitpointBars` with the same
   types). The source type is a new unit type, which changes the unit type count.
@@ -2486,6 +2637,9 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
     a marked unit at its 100 %, a direct order ended on arrival, and a unit's own regeneration stopped
     at its 100 %. A knocked-out hero still gets up, at about 40 % of its HP. A skirmish against the AI
     played normally.
+  - **`cap` and `rate` (2026-11-11, WoL):** the numbers above; the source type given to one player's medicine man by
+    an `AddUnitType` tech ([`unitTypeTechs`](#unittypetechs)): Player 1's took his fresh Tomahawk to 165; Player 2's Tomahawk, without
+    the tech, stayed at 150; an AI skirmish of 100 s with every heal and overheal key on, no XS error.
   - **Not tested:** powers (`PowerHeal` goes through the same add-HP entry, 0x7C378C / 0x8CCA6F),
     multiplayer.
 
@@ -2493,7 +2647,7 @@ overhealSources [<UnitType> ...] [log]   default AbstractOverhealer; up to 8 typ
 
 *Extra health above a unit's normal maximum slowly wears off.*
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Friday 2026-11-06 12:40
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Wednesday 2026-11-11 15:52
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 
@@ -2506,9 +2660,34 @@ regenerate, and the decay takes back what goes above the 100 %: he stays at `400
 *In WoL, key off (the same scene):* he regenerates past his 100 %, and the panel climbs with it:
 `447/400`, `Overheal: 47/80`, on the way to 480. [Full video (MP4)](media/overhealDecay-wol-control.mp4).
 
+![overhealDecay holdNear in WoL](media/overhealDecay-holdnear-wol.gif)
+
+*In WoL, with `overhealDecay 2 1 holdNear xpAenna 12 holdNear xpMedicineMan 12 log` (and `overhealSources
+AbstractOverhealer cap=110 rate=50`; the Tomahawk and the Aenna beside it selected):* the source medicine man takes the
+Tomahawk to `165/150` and is removed at 20 s; the Aenna, 2 m away, holds the overheal at 165 until it is removed at 34 s;
+then 2 HP/s back to 150 at 41.6 s. [Full video (MP4)](media/overhealDecay-holdnear-wol.mp4).
+
+![overhealDecay without holdNear in WoL](media/overhealDecay-holdnear-wol-control.gif)
+
+*In WoL, `overhealDecay 2 1 log` without `holdNear` (the same scene; `overhealSources` with no cap, so it starts at
+180):* the decay starts when the medicine man goes at 20 s, with the Aenna still there: 180 to 150 by 34.9 s.
+[Full video (MP4)](media/overhealDecay-holdnear-wol-control.mp4).
+
 ```
-overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
+overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres> ...] [log]
 ```
+
+- **`holdNear <UnitType> <metres>`** (up to 4; more than 0, at most 200 m): a unit due to decay keeps its HP while a
+  unit of that type (or proto) **of the same player**, alive and built, other than itself, is within that distance
+  (measured to the other unit's edge, as the game's own area queries do). Allies' units do not hold it: an ally's
+  healer does not change a player's own decay. A held moment is skipped, not saved up: the decay resumes at the same
+  rate when no such unit is near (the `delay` still counts from the last gain). Typical: `holdNear AbstractOverhealer
+  12`, so the overheal lasts while a source healer stays with the unit, and the "re-heal it" micro goes.
+- **A bad `holdNear`** stops the key: `overhealDecay: expected holdNear <UnitType> <metres> (more than 0, at most 200;
+  up to 4); feature not applied`.
+- **Measured in WoL (2026-11-11),** the scene above: held at 165.0 from 20 to 34 s, then 163.1, 159.6, 156.0, 152.7 and
+  150.0 at 41.5 s; the same after loading a game saved at 26 s (165 until 34 s, 150.0 at 41.6 s). Without `holdNear`,
+  179.8 at 19.9 s down to 150.0 at 34.9 s.
 
 - **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its types mark the units and its
   100 % (`InitialHitpoints`, scaled when an aura changes the max) is where the decay stops.
@@ -2533,9 +2712,15 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
   `overhealDecay: unit N (Tomahawk) decays from 165.0 toward its 100 % 150.0 at 2.00 HP/s` and
   `… is back at its 100 % 150.0`. Without `overhealHitpointBars`: `overhealDecay: needs
   overhealHitpointBars, …; feature not applied`; a bad rate: `overhealDecay: expected <HP per
-  second>[%] [delay seconds] [UnitType ...] [log], …; feature not applied`.
+  second>[%] [delay seconds] [UnitType ...] [log], …; feature not applied`. With `holdNear`, the startup line adds `;
+  held while their player has a unit of xpAenna within 12.0 m`, and `log` writes each start and end of a hold (the
+  first 200): `overhealDecay: unit 1 (xpTomahawk) holds its overheal at HP 165.0: unit 2 (xpAenna) of xpAenna is within
+  12.0 m` and `… decays again from HP 165.0: no unit that holds it is near`.
 - **Simulation:** yes, every machine needs the same line. A listed name that is not a type yet is
   registered as a marker unit type.
+- **Saved games:** the delay goes on after a load. Saved at 11 s with `overhealDecay 5 20`, the decay ran from 24.2 s
+  to 30.2 s in both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
+  `holdNear` keeps nothing of its own: it looks again on every tick.
 - **Status:** confirmed in single player.
   - **In WoL (2026-11-04):** with `overhealDecay 2 1`, Menelik II, marked, stayed at `400/400` while he
     regenerated; without the key he went to `447/400` and on. With `overhealDecay 2 3`, a Tomahawk fell
@@ -2544,7 +2729,10 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [log]
     down to 150, and naming another proto left that unit alone; other players' units decay too; poison
     (`damageOverTime`) ticked normally; a skirmish against the AI played normally. Only the game world
     decays: the world update also runs for the home city's world, which the key ignores.
-  - **Not tested:** multiplayer.
+  - **`holdNear` (2026-11-11, WoL):** the numbers above, a saved game, an AI skirmish of 100 s with every heal and
+    overheal key on and no XS error.
+  - **Not tested:** multiplayer; `holdNear` with a unit of another player beside the unit (the Gaia unit tried for it
+    attacked the Tomahawk).
 
 ### Combat
 
@@ -2566,12 +2754,10 @@ Attacks, armor, and what a hit does.
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
-| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills. | **new** | The rows on the protos that want them. | confirmed |
+| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
-- **Saved games:** the delay goes on after a load. Saved at 11 s with `overhealDecay 5 20`, the decay ran from 24.2 s to 30.2 s in
-  both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
 
 #### detonationDeath
 
@@ -3555,7 +3741,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Monday 2026-11-09 08:30
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Wednesday 2026-11-11 15:36
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3571,15 +3757,20 @@ with 504 and 346 hit points, and the log shows the ranks.
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` (the same scene and rows):* each rank shows its chevrons over the unit's HP bar, clear of
-it: one bronze, two silver, three gold. [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
+*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (Ethiopians, 2 `Hussar` against 10 `Crossbowman`; the
+Hussar has no rows of its own, so it takes the `AbstractCavalry` defaults; the Crossbowman's own row replaces the
+`AbstractInfantry` one):* each rank shows its mark over the unit's HP bar, clear of it: one bronze chevron, two silver,
+three gold, then one white star over the gold chevrons at rank 4 and two at rank 5, and the floating text gives the
+rank's name in its colour (`Veteran` in bronze, `Champion` in gold). The surviving Hussar ends at rank 5 with 8 kills.
+[Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
 
-*In WoL, key off (the same scene):* no marks. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
+*In WoL, key off (the same scene, the rings folder and `veterancy.xml` still there):* no marks and no names, and both
+Hussars die. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
 
 ```
-veterancyBonus [log]
+veterancyBonus [log] [file.xml]
 ```
 
 ```xml
@@ -3587,19 +3778,71 @@ veterancyBonus [log]
     <VeterancyBonus kills="1" modifytype="Damage">1.5</VeterancyBonus>
     <VeterancyBonus kills="2" modifytype="MaxHP">1.5</VeterancyBonus>
     <VeterancyBonus kills="3" modifytype="Damage">2.0</VeterancyBonus>
+    <VeterancyBonus kills="4" modifytype="MaxHP" op="add">50</VeterancyBonus>
 </Unit>
+```
+
+`data\uhc\veterancy.xml` (`engine-ext\veterancy.xml` for the `dinput8.dll` build; another file with `veterancyBonus
+log my.xml`), optional, holds rows by unit type and the names of the ranks:
+
+```xml
+<Veterancy>
+    <VeterancyDefault unittype="AbstractCavalry">
+        <VeterancyBonus kills="1" modifytype="Damage">1.5</VeterancyBonus>
+        <VeterancyBonus kills="2" modifytype="MaxHP" op="add">100</VeterancyBonus>
+        <VeterancyBonus kills="3" modifytype="Damage" op="add">0.5</VeterancyBonus>
+        <VeterancyBonus kills="4" modifytype="Damage">2.0</VeterancyBonus>
+        <VeterancyBonus kills="5" modifytype="MaxHP" op="add">200</VeterancyBonus>
+    </VeterancyDefault>
+    <VeterancyDefault unittype="AbstractInfantry">
+        <VeterancyBonus kills="1" modifytype="Damage">1.3</VeterancyBonus>
+    </VeterancyDefault>
+    <VeterancyRank rank="1" name="Veteran" color="CD7F32"/>
+    <VeterancyRank rank="2" name="Elite" color="C8CDD7"/>
+    <VeterancyRank rank="3" name="Champion" color="FFCD28"/>
+    <VeterancyRank rank="4" name="32485" color="E04040"/>
+    <VeterancyRank rank="5" name="Legend" color="40C0FF"/>
+</Veterancy>
 ```
 
 - **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
 - **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
   ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
-  distinct `kills` value, and reaching one shows `Rank N` over the unit.
+  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name.
+- **Default rows (2026-11-11):** a `<VeterancyDefault unittype="...">` of `veterancy.xml` gives its rows to every proto of
+  that unit type (an abstract type or a proto name) that has **no** `<VeterancyBonus>` of its own: a proto's own rows replace
+  the defaults entirely, they are not added to them. A proto of two listed types takes the first block of the file that it
+  matches. The type is the player's copy's, so a tech that adds a unit type (`unitTypeTechs`) counts. In the video the
+  Crossbowman's own row (×1.2) won over the `AbstractInfantry` default (×1.3), and the Hussar, with no rows, took the
+  `AbstractCavalry` ones.
+- **Adding instead of multiplying (2026-11-11):** `op="add"` on a row (`op="mul"` is the default) adds the value, again
+  **in all**: `+0.5` then `+0.8` is `+0.8` from that rank on. What it adds to depends on the stat, as in the game's own
+  stat sum: `MaxHP` and `Speed` start from the unit's own hit points and speed, so `op="add">100` is 100 hit points more;
+  every other stat (`Damage`, `ROF`, `LOS`, `Armor`, the gather rates...) is a factor that starts at 1.0, so `op="add">0.5` is
+  +50 % of the base, added, not multiplied. Legacy has no `Range` stat, so DE's `RangeAbsolute` +1 has no equivalent. The
+  game applies a unit's modifiers of one stat oldest first, so a multiply row and an add row of the same stat give
+  `(1 × 1.5) + 0.5` or `(1 + 0.5) × 1.5` by which rank came first: in the test, ×1.5 at 1 kill, +0.5 at 3 and ×2.0 at 4 made
+  a Hussar's hit on a Settler 26.4 (base) → 39.6 → 52.8 → 70.4, that is ×2.667 = `(1.5 + 0.5) × 2.0/1.5`; the panel's hand
+  attack read 49 at rank 2 and 88 at rank 5 (×1.5 and ×2.667 of 33). `MaxHP` +100 then +200 took the max from 352 to 452 and 552, and the current hit points rise in
+  proportion, as with ×.
+- **Rank names and colours (2026-11-11):** `<VeterancyRank rank="N" name="..." color="RRGGBB"/>` names a rank and gives it a
+  colour (a leading `#` is accepted). A `name` made of digits is a string ID of the string table (`32485` showed `Hero`).
+  The floating text over the unit shows the name in that colour, and the unit panel's row shows it too, coloured with the
+  string table's `<color=r, g, b>` markup (`Legend` in light blue, `6 kills`). A rank with no `<VeterancyRank>` stays
+  `Rank N`, in gold. The names are display only.
+- **The file:** missing, it is no error (no defaults, no names); named on the cfg line and missing, or not well-formed XML,
+  the key is not applied and the log says why. A row without `kills`, `modifytype` or a value, an `op` other than `mul` or
+  `add`, a `kills` below 1, a multiplier of 0 or less, an add of 0, an unknown `modifytype` or `unittype`, a rank below 1, a
+  colour that is not six hex digits and an unknown element are each logged and skipped; the unit types and `modifytype`
+  names are read at the first kill of a game, so those lines come then. The file can be UTF-8 or UTF-16.
 - **What counts as a kill:** the killing blow of a unit, in melee or at range, on a unit of another player. **Not** Gaia, so
   hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
-- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, and a rank above the
-  third keeps the gold one. With no such folder the log says so once and the bonuses work as before. Display only: it
+- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, then at ranks 4 and 5
+  the three gold chevrons with one or two white stars over them (2026-11-11); a rank above the fifth keeps rank 5's mark.
+  The stars sit over the chevrons, away from the HP bar, and the chevrons stay where rank 3 has them. With no such folder
+  the log says so once and the bonuses work as before. Display only: it
   changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
   our own: DE's are images in its selection panel.
 - **Above the HP bar (2026-11-08):** the marks sat on the bar, and the three gold chevrons covered it. Every rank now starts from
@@ -3624,12 +3867,21 @@ veterancyBonus [log]
   amount 2 (`Assign`) on player 1: player 1's Pikemen logged `rank 1, x2` and player 2's `rank 1, x1.5`; with
   `VeterancyEnable` 0 player 1's logged no rank. A tech cannot add or change the rows themselves. A tech that
   changes a stat works with the rows as with any modifier.
-- **Interface:** no bronze, silver or gold icons: `Rank N` over the unit is all it shows. Damage and hit points in the panel are
-  the game's, with the modifiers.
+- **Interface:** the rank marks above, the floating text when a rank is reached and the unit panel's row; DE's rank icons in
+  the selection panel are not there. Damage and hit points in the panel are the game's, with the modifiers.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
 - **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: veterancyBonus kill (0x4D4F37)`, and with `log`:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
-  `veterancyBonus: unit 0 keeps 4 kills as proto 324`. A row without `kills`, `modifytype` or a value is logged and ignored.
+  `veterancyBonus: unit 0 keeps 4 kills as proto 324`; an add row logs `+0.5` where a multiply row logs `x1.5`, and the first
+  kill of a game logs `veterancyBonus: 5 default rows for unit type AbstractCavalry (3654)`. A row without `kills`,
+  `modifytype` or a value is logged and ignored.
+- **Tested in WoL (2026-11-11, default rows, `op="add"`, names, ranks 4 and 5):** the data above, with `steadyHitpointBars`.
+  The hits and the panel as given above; a saved game at rank 5 and 6 kills loaded with its mark, `Legend`, `6 kills`,
+  370/552 hit points and 88 hand attack; an AI skirmish of 100 s (`wolOtto`, Germans) with the defaults on its cavalry and
+  infantry: the AI built and gathered, no `XS: Error`; a file of bad rows and a malformed file as described; the control,
+  key off, the same scene: no marks, both Hussars dead. 880 to 1200 fps, no frame over 50 ms (`--perf`). Not tested: a
+  transform to or from a proto that takes defaults, multiplayer, a `perfprobe.py` A/B (the new work runs on a kill, at the
+  first kill of a game and in the panel row of one selected unit).
 - **Tested in WoL (2026-11-05):**
   - Performance, with `resourceDebt`, `sharedBuildLimit`, `transformSpan`, `veterancyBonus` and `detonationDeath` on and off, twice each, on 320 units in combat, about 120 of them with a timer: update 0.72 and 0.68 ms on, 0.72 and 0.73 off, and no more frames over 50 ms. A key-specific A/B was not run, and that scene did not show gatherers at work, so the gather hooks of `resourceDebt` were not measured under load.
   - With `transformSpan` on the same units: Hussars of 2 kills went to Dragoon and back in 15 s and kept their count; one killed as a Dragoon and came back with 3. `36 applied, 0 failed`.
@@ -4792,6 +5044,7 @@ How buildings train, spawn, live and get replaced.
 | [`sharedBuildLimit`](#sharedbuildlimit) | Protos share a build limit: by unit type, with weights, or across a team. | **new** | The tags on the protos that share. | confirmed |
 | [`doNotQueue`](#donotqueue) | `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | **new** | The tag on the protos that want it. | confirmed |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
+| [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
@@ -5831,8 +6084,11 @@ nextResearchFree [log]
   back**.
 - **Removal:** taking the effect away takes that many turns from the count, down to 0. Not tested in game.
 - **Multiplayer:** it changes the simulation: every player needs the same setting.
-- **Log:** `nextResearchFree: the Data subtype NextResearchIsFree is on`, `hook reached: nextResearchFree research
-  (0x9E67E1)`, and with `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444: a free research, 0 left`.
+- **Log:** `nextResearchFree: the Data subtype NextResearchIsFree is on`, `hook reached: research payment (0x9E67E1)`
+  (`nextResearchFree research (0x9E67E1)` before 2026-11-11, when the payment became a hook shared with
+  [`researchGrants`](#researchgrants)), and with `log`: `nextResearchFree: proto 444: effect applied, 1 left`, `proto 444:
+  a free research, 0 left`.
+- **With `researchGrants`:** a research this key makes free is not asked of that key, so it spends no grant point.
 - **Tested in WoL (2026-11-05):**
   - One turn, three researches of 300 wood: 2000, 2000, 1700, 1400, and a cancel of the third gave back 300. Key off: 2000,
     1700, 1400, 1100.
@@ -5842,6 +6098,124 @@ nextResearchFree [log]
     came back to 1, and a second research asked for by console did not start and logged nothing (not understood).
   - A skirmish with a European AI with the key on compiled and played; it did not use the effect.
   - Not tested: `CommandResearch` (0x9D54CF: its hook was not reached), an AI using the effect, a type as target, multiplayer.
+  - Again with the shared payment (2026-11-11), `researchGrants` off: the effect at 150 s, a research of 300 wood at the
+    Market free (4100 stayed 4100, refund copy 0), the next one at the Market paid 50 (4100 to 4050). With `researchGrants`
+    on, the free research left the Market's grant points at 4.
+
+#### researchGrants
+
+*A building gathers grant points over time, and each point makes one of its player's researches cheaper or free.*
+
+**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Wednesday 2026-11-11 16:01
+
+![researchGrants in WoL](media/researchGrants-wol.gif)
+
+*In WoL, with the key (Ethiopians, the Market with `ResearchGrantInterval` 20 and `ResearchGrantMax` 3, four test
+researches of 300 wood at the Town Center):* the Market's row in the unit panel counts its points and the seconds to the
+next one; the first three researches take no wood and a point each, the fourth, with no point left, takes 300.
+[Full video (MP4)](media/researchGrants-wol.mp4).
+
+![researchGrants in WoL, key off](media/researchGrants-wol-control.gif)
+
+*In WoL, key off (the same data):* no row, and each of the four researches takes 300 wood. The game skips the tags it
+does not know. [Full video (MP4)](media/researchGrants-wol-control.mp4).
+
+```
+researchGrants [log]
+```
+
+```xml
+<Unit name="Market">
+    <ResearchGrantInterval>240</ResearchGrantInterval>
+    <ResearchGrantMax>3</ResearchGrantMax>
+    <ResearchGrantCost>0</ResearchGrantCost>
+    <ResearchGrantTime>1</ResearchGrantTime>
+    <ResearchGrantScope>all</ResearchGrantScope>
+    <ResearchGrantMinCost>0</ResearchGrantMinCost>
+</Unit>
+```
+
+| Tag | Value | Default |
+|---|---|---|
+| `ResearchGrantInterval` | Game seconds per point, 1 to 36000. **Required**: a proto has grants only with it. | none |
+| `ResearchGrantMax` | The most points the building stores, 1 to 1000. | 1 |
+| `ResearchGrantCost` | The share of the cost paid with a point, 0 to 1: 0 is free, 0.5 half. | 0 |
+| `ResearchGrantTime` | The research time factor with a point, 0.01 to 100: 2 takes twice as long, 0.5 half as long. | 1 |
+| `ResearchGrantScope` | `all`: a research in any of the player's buildings; `self`: only one in this building. | `all` |
+| `ResearchGrantMinCost` | A point goes on a research the player could pay only when its total cost is at least this. | 0 |
+
+- **In WoL today:** nothing does this. Any civ and any building: the tags go on whatever proto should have them.
+- **Points:** every living, finished building of the proto gains a point per interval of game time, up to its cap. At
+  the cap its timer waits at 0; the timer starts again when a point is spent. A foundation gains nothing until it is
+  built. The points belong to the building: two Markets count apart.
+- **When a point is spent** (there is no button: the rule decides). When a research is paid, the paying player's
+  buildings with a point, in scope, are the candidates. A point goes on it when:
+  - the tech costs something (or the building's Time factor is not 1), and
+  - the player **cannot pay the full cost**, or the tech's total cost (all resources added) is **at least
+    `ResearchGrantMinCost`**.
+
+  With the default `ResearchGrantMinCost` 0 every research with a cost takes a point while there is one. Raise it to
+  keep the points for the expensive techs: cheaper ones then use a point only when the player is short of resources.
+  The building with the most points pays (the lowest unit ID on a tie, the same on every machine).
+- **What a point does:** the research costs `ResearchGrantCost` of its price (rounded as the game rounds costs), and
+  takes `ResearchGrantTime` times as long. With a share below 1 the player needs only that share.
+- **Cancel:** the research gives back what was paid (nothing for a free one, half for a half) and never the point, as
+  with `nextResearchFree`.
+- **Tech effects** (`type='Data'`, on the player's copy of the proto):
+  - `subtype='ResearchGrantInterval'` and `subtype='ResearchGrantMax'` change the interval and the cap from the tags'
+    values, with the stock relativity (`Absolute` adds, `Percent` and `BasePercent` multiply, `Assign` sets). A card of
+    -10 `Absolute` on a 20 s interval makes it 10 s.
+  - `subtype='ResearchGrantPoints'` gives that many points at once to each of the player's finished buildings of the
+    proto, up to the cap: "pay to skip the wait". Removing the tech takes nothing back.
+  - On a proto without `ResearchGrantInterval` they are logged and ignored.
+
+  ```xml
+  <Effect type='Data' amount='-10.00' subtype='ResearchGrantInterval' relativity='Absolute'>
+      <Target type='ProtoUnit'>Market</Target></Effect>
+  <Effect type='Data' amount='2.00' subtype='ResearchGrantPoints' relativity='Absolute'>
+      <Target type='ProtoUnit'>Market</Target></Effect>
+  ```
+- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14 s`, `3/3 (full)` or
+  `0/3 once built`.
+- **With `nextResearchFree`:** a research that key makes free spends no grant point.
+- **The AI** gets and spends points as players do: its researches go through the same payment.
+- **Saved games:** the points and the timer are kept on the building, and so is the Time factor of a research that
+  spent a point. The tech effects' values come back as the load applies the techs again.
+- **Limits:**
+  - destroying the building loses its points;
+  - a transform in place (`TransformUnit`, a revolution) clears them: the building starts again from 0;
+  - a building found at the start of a game, or created by a trigger, starts its timer when the key first sees it,
+    within a world update;
+  - the research cost shown on the button and in its tooltip is the full price.
+- **Multiplayer:** it changes the simulation: every player needs the same setting. It uses only game state and game
+  time; not tested in multiplayer.
+- **Simulation:** yes.
+- **Log:** `researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax
+  and ResearchGrantPoints are on`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research
+  step (0x9E6622)`; a bad value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
+  "2"; ignored`. With `log`: `unit 0 (Market) has 2/3 point(s) (game time 40000 ms)`, `unit 2 spends a point on tech
+  10544 in unit 2: cost x0.50, time x2.00, 1 left`, `tech 10544 in unit 2 is done (game time 103014 ms)`.
+- **Tested in WoL (2026-11-11),** scenario player 1 (Ethiopians) with a `Market` (interval 20, cap 3, cost 0, time 1,
+  scope all, `MinCost` 100 from the second run) and an Iroquois `WOLMarketIroquois` (interval 20, cap 2, cost 0.5, time
+  2, scope self), test techs of 300 wood and 20 research points:
+  - points at 20.0, 40.0 and 60.0 s, then the Market stayed at 3/3 and the Iroquois market at 2/2;
+  - three researches at the Town Center: free, wood 5300 kept, the Market's points 3, 2, 1, 0; the fourth paid 300 while
+    the Iroquois market still had a point (scope self);
+  - a research at the Iroquois market while it had more points than the Market: paid 150 (refund copy 150), and took
+    39.97 s (63.05 to 103.01 s) against 20 s for the same tech at the Town Center;
+  - `ResearchGrantPoints` +2 at 95 s: 1/3 to 3/3 at once; a card with interval -10 and cap +1 at 130 s: 4/4 at 140.0 s;
+  - `MinCost` 100: a research of 50 wood with 4800 wood paid 50 and kept the point; with 0 wood the same research took a
+    point and started free;
+  - a saved game at 70 s with 1/3 and the timer at 7.6 s: the same after the load, the next point at the time it was due
+    (82.7 s), and the Iroquois research kept its factor (done at 103.0 s, twice the stock time);
+  - the Market killed at 120 s: `unit 0 is gone`; a Market created by a trigger at 125 s gained its first point at 145.0 s;
+  - bad values on `Church` (-5, `everywhere`, 2, 0) logged and ignored; `ResearchGrantPoints` on `Barracks`, which has
+    no tags, logged and ignored;
+  - a skirmish against a German AI (`wolOtto`) with the tags on `TownCenter` too: it compiled and played (18 settlers, 2
+    manors at 4 min, no `XS: Error`), and the AI spent a point at 332 s on `wuolaristocrat` at its Town Center.
+  - Performance, 90 s from the load of the same scenario: see the A/B in `docs/how-it-works.md`.
+  - Not tested: `CommandResearch` (a research from a `protounitcommands.xml` command, 0x9D54CF / 0x9D58FF), a cancel,
+    a transform in place, multiplayer.
 
 #### trainBatchSize
 
@@ -6467,7 +6841,13 @@ unitTypeTechs [log]
 - **Tested in WoL (2026-11-06):** the numbers above; 0 rolls key off; the bits held through a load in a new process; ending the
   effects, through `Age0Egyptian`, which stock applies and removes at a scenario's start; a `<Target>` by abstract type reached
   the copy; beside WoL's DLL, 54 rolls on one player; an AI skirmish of 100 s with no XS error. Not tested: `kbUnitCount` in game,
-  `healNonIdle`, `overhealSources`, `spreadAnyAccuracy` (only `dodgeChance` was driven), multiplayer, recorded games.
+  `spreadAnyAccuracy` (only `dodgeChance` was driven), multiplayer, recorded games.
+- **Tested in WoL (2026-11-11), the healing markers:** two test techs on Player 1 only, `AddUnitType` `AbstractHealNonIdle` and
+  `AbstractOverhealer` on `xpMedicineMan` (the log: `unitTypeTechs: proto xpMedicineMan (player's copy), AddUnitType type 3884: bit
+  on`, then 3885). Each side had a medicine man and a marked Tomahawk, the Tomahawks fighting each other: Player 1's healer chose and
+  healed his fighting Tomahawk ([`healNonIdle`](#healnonidle), `busyRate=50`), which lost 4.3 HP/s and won at 77.6 HP, and had taken
+  it to 165 of 150 before ([`overhealSources`](#overhealsources), `cap=110`); Player 2's healer, without the techs, never healed his
+  Tomahawk during the fight (6.3 HP/s, dead at 36 s) and left it at 150.
 
 ### Interface
 

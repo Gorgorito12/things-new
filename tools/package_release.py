@@ -198,7 +198,7 @@ are data: copy that folder to the game's art\\effects and name one in an aura, w
 <modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
 aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
-veterancyBonus shows rank_1.xml to rank_3.xml over a unit with a rank when the folder is there.
+veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the folder is there.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -246,9 +246,11 @@ hcShipmentPointFallback ...   when no stock fallback building is left, the shipm
                               moves to the building types you list; FirstTC = the
                               player's first town center (with startingTC or civFirstTC);
                               LastResort = any building, then a hero
-healNonIdle [UnitType]        marked healers heal busy units (moving, fighting, ...)
-smartHealTargets [UnitType ...] [log]   automatic healing picks the most hurt unit
-                              (listed types first) instead of the first one
+healNonIdle [UnitType] [moving] [fighting] [busyRate=P]   marked healers heal busy
+                              units (moving, fighting, ...), at P % on a busy one
+smartHealTargets [UnitType ...] [switch=P] [log]   automatic healing picks the most
+                              hurt unit (listed types first) instead of the first one;
+                              switch: leaves a heal for a unit more than P % lower
 damageOverTime [log] [noticktext]   poison: attacks with <AttachProtoUnit> damage over
                               time (+ AttachMaxStacks, AttachSnare, AttachTickText)
 dodgeAnyUnit [UnitType] [log] marked units dodge like the Japanese monk (tech YPDodge)
@@ -296,10 +298,13 @@ overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=Texture] [stat[=Labe
                               of marked units use InitialHitpoints as 100 % (overheal up to
                               MaxHitpoints); segment: the HP above it in orange, Overwatch style
                               and on the portrait bar; stat: an Overheal row
-overhealSources [UnitType ...] [log]   only marked healers (AbstractOverhealer) heal
-                              overheal units above InitialHitpoints
-overhealDecay R[%] [D] [UnitType ...] [log]   overheal above InitialHitpoints decays
-                              at R HP/s, D s after the last heal (Overwatch style)
+overhealSources [UnitType [cap=P] [rate=P] ...] [log]   only marked healers
+                              (AbstractOverhealer) heal overheal units above
+                              InitialHitpoints; per type a cap and a rate above it
+overhealDecay R[%] [D] [UnitType ...] [holdNear Type M] [log]   overheal above
+                              InitialHitpoints decays at R HP/s, D s after the last
+                              heal (Overwatch style); not while an own unit of Type is
+                              within M metres
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
@@ -314,7 +319,8 @@ resourceGatherAuras [log]     ModifyType names for one kind of target or one res
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
-veterancyBonus [log]          <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark
+veterancyBonus [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark;
+                              data\\uhc\\veterancy.xml: rows by unit type, rank names and colours
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back
@@ -326,6 +332,7 @@ sharedBuildLimit [log]        protos share a build limit, by type, with weights,
 annexFacing [log]             <AnnexOf> annexes face their parent building and fall with it
 doNotQueue [log]              <DoNotQueue/> trains a proto, and a card with that tech flag ships, ahead of the queue
 nextResearchFree [log]        a Data tech effect makes a building's next research free
+researchGrants [log]          <ResearchGrantInterval> buildings gather points that make researches cheaper or free
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
 teamKillBounty [log]          the XP of a marked victim goes to the killer's team
@@ -333,8 +340,10 @@ cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
-bufferedFileReads [KB]        buffered file reads: fewer stutters, faster loading
+bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster
+                              loading; readahead reads the next block on a worker thread
 fastVertexFill                waving flags drawn without reading video memory: more fps with flags on screen
+fastLastInLine [log] [verify]  no freeze after a home city shipment in a mod with many techs
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options

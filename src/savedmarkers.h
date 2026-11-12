@@ -5,7 +5,8 @@
 // so a unit keeps at most as many as it ever needed at once. A transform in place (0x9C754C) ends the unit's
 // modifiers, markers too: a key writes its state again at its next change.
 //
-// Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay.
+// Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
+// researchGrants (two kinds, told apart by word 0).
 #pragma once
 
 #include <cstdint>

@@ -7,20 +7,17 @@ option casemap :none
 
 include common.inc
 
-EXTERNDEF g_uhcOverhealAllow:SDWORD   ; 1 while a source healer's heal tick adds HP
+EXTERNDEF g_uhcOverhealAllow:SDWORD   ; 1 + source type index while a source healer's heal tick adds HP
 EXTERNDEF g_uhcOverhealRegen:SDWORD   ; 1 while a regeneration adds HP (overhealDecay)
 
-UhcOverhealAddHp PROTO STDCALL unit:DWORD, amount:DWORD         ; may lower [amount]
-UhcOverhealUseReference PROTO STDCALL target:DWORD, healer:DWORD  ; AL: a normal healer, a marked target
-UhcOverhealIsSource PROTO STDCALL healer:DWORD                   ; AL: the healer gives overheal
-UhcOverhealReferenceOf PROTO C unit:DWORD                         ; ST0 (overheal_hooks.asm)
-UhcOverhealRatioOf PROTO C unit:DWORD                             ; ST0 (overheal_hooks.asm)
+UhcOverhealAddHp PROTO STDCALL unit:DWORD, amount:DWORD             ; may lower [amount]
+UhcOverhealTickLimit PROTO STDCALL target:DWORD, healer:DWORD       ; ST0: the tick's "HP < this"
+UhcOverhealSearchRatio PROTO STDCALL candidate:DWORD, healer:DWORD  ; ST0: the search's ratio
+UhcOverhealSourceIndex PROTO STDCALL healer:DWORD                   ; EAX: 1 + source type index, 0 none
 
 .data
 addHpNext       dd 004823ABh    ; jbe 4823FEh: the adder after its stolen cmp [esi+8],8
 addHp           dd 004823A3h    ; thiscall(unit, amount, flag), ret 8: HP += amount (our hook first)
-maxHitpoints    dd 00480408h    ; float thiscall(unit): the stock max
-healthRatio     dd 0045F295h    ; float thiscall(unit): the stock HP / max
 tickMaxNext     dd 009E0BC0h    ; fcomp [edi+64h] / fnstsw / test ah,41h / jnp 9E0D3Fh: HP < max?
 tickAddNext     dd 009E0CEEh    ; fld [esp+10h] / fadd [esi+68h]: the tick's bookkeeping
 searchRatioNext dd 009CD989h    ; fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh: ratio < 1?
@@ -51,36 +48,28 @@ UhcOverhealAddHook ENDP
 
 ; Replaces call 480408h at 0x9E0BBB in the heal tick FUN_009E0B53 (ECX = EDI = target, ESI = the
 ; heal action, healer at [esi+10h]): each tick heals only while HP < this value, and ends the
-; action (state 10) otherwise. For a healer that gives no overheal and a marked target the value
-; is the target's reference, so the action ends there; else the stock max. The FPU stack is empty
-; at the site; ECX and EDX are written again after 0x9E0BC0 before they are read.
+; action (state 10) otherwise. UhcOverhealTickLimit returns it in ST0: for a marked target, the
+; reference with a healer that gives no overheal and the source's cap with a capped source, so the
+; action ends there; else the stock max (the stolen call's value). The FPU stack is empty at the
+; site; ECX and EDX are written again after 0x9E0BC0 before they are read, and EAX by fnstsw.
 UhcOverhealTickMaxHook PROC
     TRACE_ONCE "overhealSources heal tick (0x9E0BBB)"
     push dword ptr [esi+10h]        ; healer
     push edi                        ; target
-    call UhcOverhealUseReference
-    test al, al
-    jne useReference
-    mov ecx, edi
-    call maxHitpoints               ; stolen 0x9E0BBB
-    jmp tickMaxNext
-useReference:
-    push edi
-    call UhcOverhealReferenceOf
-    add esp, 4
+    call UhcOverhealTickLimit
     jmp tickMaxNext
 UhcOverhealTickMaxHook ENDP
 
 ; Replaces call 4823A3h at 0x9E0CE9, where the heal tick adds this tick's HP to the target (ECX =
 ; EDI = target, the amount and 1 pushed, ESI = the action). A source healer's heal is let through
-; above the reference: g_uhcOverhealAllow is set for the call and cleared after it.
+; above the reference: g_uhcOverhealAllow is set for the call to 1 + the index of its source type
+; (whose cap and rate the add-HP hook applies), and cleared after it.
 UhcOverhealTickAddHook PROC
     TRACE_ONCE "overhealSources heal (0x9E0CE9)"
     push ecx
     push dword ptr [esi+10h]        ; healer
-    call UhcOverhealIsSource
+    call UhcOverhealSourceIndex
     pop ecx
-    movzx eax, al
     mov g_uhcOverhealAllow, eax
     call addHp                      ; stolen 0x9E0CE9
     mov g_uhcOverhealAllow, 0
@@ -89,23 +78,15 @@ UhcOverhealTickAddHook ENDP
 
 ; Replaces the first call 45F295h at 0x9CD984 in the automatic heal search FUN_009CD865 (ECX =
 ; ESI = candidate, healer at [ebp+4]), whose result must be below 1.0 for the candidate to count.
-; For a healer that gives no overheal and a marked candidate it is HP / reference, so a unit at
-; its reference is no candidate; else the stock ratio. The second ratio call (the 1e-6 floor) is
-; stock.
+; UhcOverhealSearchRatio returns it in ST0: for a marked candidate, HP / reference with a healer
+; that gives no overheal and HP / cap with a capped source, so a unit at that limit is no
+; candidate; else the stock ratio. It changes EAX, ECX and EDX, as the stolen call does. The
+; second ratio call (the 1e-6 floor) is stock.
 UhcOverhealSearchRatioHook PROC
     TRACE_ONCE "overhealSources heal search (0x9CD984)"
     push dword ptr [ebp+4]          ; healer
     push esi                        ; candidate
-    call UhcOverhealUseReference
-    test al, al
-    jne useReference
-    mov ecx, esi
-    call healthRatio                ; stolen 0x9CD984
-    jmp searchRatioNext
-useReference:
-    push esi
-    call UhcOverhealRatioOf
-    add esp, 4
+    call UhcOverhealSearchRatio
     jmp searchRatioNext
 UhcOverhealSearchRatioHook ENDP
 

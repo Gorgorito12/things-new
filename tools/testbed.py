@@ -15,7 +15,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   scenario <map> [--seed N] [--players N]   editor route: generate <map>, save it as scenario
                              uhc-<map>, leave, load it as a game and unpause. Players have no AI.
                              With 3 players the map makes two teams, unlike a skirmish on a test map.
-  wait <seconds>             let that much game time pass (polls the world clock)
+  wait <seconds> [--hang N]  let that much game time pass (polls the world clock); exit code 3 if the
+                             game dies, 4 if its clock stands still N s (UHC_HANG_SECONDS, default
+                             60; 0 = never: a paused or ended game stops the clock too)
   state                      process, window, world and game time
   units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
                              (--los adds the unit's own line of sight and its proto's)
@@ -79,6 +81,10 @@ Map spec, one argument each:
 The game window is moved to the test monitor when it starts and before every real click or
 key: by default the primary monitor (the user's "monitor 1"); UHC_TEST_MONITOR=secondary picks
 the first other monitor, a number N picks the Nth monitor in Windows' order (\\\\.\\DISPLAYN). `monitors` lists them.
+
+Exit codes: 0 done, 1 an error or a timeout, 3 the game died while a command waited on it (the
+message gives its exit code, e.g. 0xc0000005 for an access violation), 4 it hung (window not
+responding at a timeout, or `wait`'s clock stood still).
 
 Console commands only reach the game through `perfExecFile <bed>\\uhc-exec.txt` in the bed's
 uhc.cfg (posted key presses never reach the console). Without `DontPauseWhenLosingFocus` the game
@@ -299,6 +305,11 @@ BED = None  # set by main(); every process and window lookup is limited to this 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
 k32.OpenProcess.restype = wt.HANDLE
 k32.QueryFullProcessImageNameW.argtypes = [wt.HANDLE, wt.DWORD, wt.LPWSTR, ctypes.POINTER(wt.DWORD)]
+k32.OpenProcess.argtypes = [wt.DWORD, wt.BOOL, wt.DWORD]
+k32.WaitForSingleObject.argtypes = [wt.HANDLE, wt.DWORD]
+k32.WaitForSingleObject.restype = wt.DWORD
+k32.GetExitCodeProcess.argtypes = [wt.HANDLE, ctypes.POINTER(wt.DWORD)]
+user32.IsHungAppWindow.argtypes = [wt.HWND]
 WNDENUMPROC = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
 user32.EnumWindows.argtypes = [WNDENUMPROC, wt.LPARAM]
 user32.GetWindowTextW.argtypes = [wt.HWND, wt.LPWSTR, ctypes.c_int]
@@ -356,7 +367,7 @@ def window(required=True):
 
 def process():
     pid = bed_pid()
-    return D.Process(pid) if pid else None
+    return watch(D.Process(pid)) if pid else None
 
 
 def game_time(proc):
@@ -406,18 +417,67 @@ def run_commands(bed, commands, timeout=60):
     while time.time() < deadline:
         if not path.exists():
             return True
+        check_alive("the console commands to run")
         time.sleep(0.25)
     path.unlink(missing_ok=True)
+    check_alive("the console commands to run")
+    if _WATCHED and window_hung():
+        hung("the console commands to run", f"not run after {timeout} s and the window is not responding")
     sys.exit("testbed: the exec file was not consumed; is perfExecFile in the bed's uhc.cfg and the game running?")
+
+
+# Exit codes: a plain failure or timeout keeps sys.exit's 1; a game that died or hung while a command
+# waited on it gets its own code, so scripts (tools/mapsweep.py) tell the three apart.
+EXIT_DIED, EXIT_HUNG = 3, 4
+HANG_SECONDS = float(os.environ.get("UHC_HANG_SECONDS", "60"))  # world clock frozen this long = hang
+_WATCHED = {}  # pid -> process handle (SYNCHRONIZE | QUERY_LIMITED) of the game this command saw
+
+
+def watch(proc):
+    """Remember this game process: the waits below then notice when it exits."""
+    if proc and proc.pid not in _WATCHED:
+        handle = k32.OpenProcess(0x00100000 | 0x1000, False, proc.pid)
+        if handle:
+            _WATCHED[proc.pid] = handle
+    return proc
+
+
+def died(pid, what):
+    code = wt.DWORD()
+    k32.GetExitCodeProcess(_WATCHED[pid], ctypes.byref(code))
+    print(f"testbed: the game died (pid {pid}, exit code {code.value:#010x}) while waiting for {what}",
+          file=sys.stderr)
+    raise SystemExit(EXIT_DIED)
+
+
+def check_alive(what):
+    for pid, handle in _WATCHED.items():
+        if k32.WaitForSingleObject(handle, 0) == 0:  # WAIT_OBJECT_0: the process has exited
+            died(pid, what)
+
+
+def window_hung():
+    """True if this copy's window has not taken a message for 5 s (IsHungAppWindow)."""
+    hwnd = window(required=False)
+    return bool(hwnd and user32.IsHungAppWindow(hwnd))
+
+
+def hung(what, why):
+    print(f"testbed: the game hung while waiting for {what}: {why}", file=sys.stderr)
+    raise SystemExit(EXIT_HUNG)
 
 
 def wait_until(predicate, timeout, step=0.5, what="condition"):
     deadline = time.time() + timeout
     while time.time() < deadline:
+        check_alive(what)
         value = predicate()
         if value:
             return value
         time.sleep(step)
+    check_alive(what)
+    if _WATCHED and window_hung():
+        hung(what, f"no answer after {timeout} s and the window is not responding")
     sys.exit(f"testbed: timed out waiting for {what}")
 
 
@@ -823,10 +883,27 @@ def state():
           f"world {w:#x}, game time {game_time(proc)} ms")
 
 
-def wait_game_time(seconds):
+def wait_game_time(seconds, hang=None):
+    """Lets that much game time pass. The game dying ends it with EXIT_DIED; the world clock standing
+    still for `hang` seconds (UHC_HANG_SECONDS, 60 by default; 0 = never) ends it with EXIT_HUNG, which
+    also covers a game that ended or was paused, as the clock stops then too."""
+    hang = HANG_SECONDS if hang is None else hang
     proc = process() or sys.exit("testbed: the game is not running")
-    start = game_time(proc) or 0
-    wait_until(lambda: (game_time(proc) or 0) - start >= seconds * 1000, seconds * 10 + 60, 0.5, "game time")
+    start = last = game_time(proc) or 0
+    since = time.time()
+    deadline = time.time() + seconds * 10 + 60
+    while (game_time(proc) or 0) - start < seconds * 1000:
+        check_alive("game time")
+        now = game_time(proc) or 0
+        if now != last:
+            last, since = now, time.time()
+        elif hang and time.time() - since >= hang:
+            why = ("no game window" if not window(required=False) else "the window is not responding"
+                   if window_hung() else "the window answers (the game is paused, ended, or its simulation is stuck)")
+            hung("game time", f"the world clock stood at {now} ms for {hang:g} s; {why}")
+        if time.time() > deadline:
+            sys.exit("testbed: timed out waiting for game time")
+        time.sleep(0.5)
     print(f"testbed: game time {start} -> {game_time(proc)} ms")
 
 
@@ -1567,7 +1644,7 @@ def main(argv):
         seed = int(args[args.index("--seed") + 1]) if "--seed" in args else 1234
         scenario(bed, args[0], seed, int(args[args.index("--players") + 1]) if "--players" in args else 2)
     elif cmd == "wait":
-        wait_game_time(float(args[0]))
+        wait_game_time(float(args[0]), float(args[args.index("--hang") + 1]) if "--hang" in args else None)
     elif cmd == "state":
         state()
     elif cmd == "units":

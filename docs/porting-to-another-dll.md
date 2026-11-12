@@ -6,18 +6,18 @@ what each feature does in WoL (the `wol.cfg` line, the data, the log, the videos
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
 
-This page covers every key the modding guide marks **new**, 67 keys in all:
+This page covers every key the modding guide marks **new**, 68 keys in all:
 
 | Theme | Keys | Code |
 |---|---|---|
-| Game files | `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
+| Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `annexFacing` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -181,6 +181,9 @@ says so:
 | `ClothFillLoop` | `0x40D523` | `0x136` B | 8 B at `0x40D523` (`jmp` + 3 NOP) | `8B 4C 24 18 8B 54 24 4C` (`mov ecx,[esp+18h]; mov edx,[esp+4Ch]`) | the cloth flag draw's two fill loops, up to their exit `0x40D655`; fastVertexFill replaces them |
 | `ClothFillUnlock` | `0x40D659` | `0x24` B | 6 B at `0x40D659` (`jmp` + 1 NOP), only with `verify` | `8B 0D 44 60 C6 00` (`mov ecx,[0C66044h]`) | before the vertex buffer's Unlock; fastVertexFill's compare |
 | `ClothFillSetup`, `ClothFillBackScale` | `0x40D4EB`, `0xB856B8` | `0x38`, 4 B | — | — | the lock and the half count the hook's entry state comes from, and the float −1.0 the routine reads; fastVertexFill |
+| `LastInLineHead` | `0x4918A8` | `0x1A` B | 9 B at `0x4918A8` (`jmp` + 4 NOP) | `51 83 7C 24 08 00 55 8B E9` (`push ecx; cmp dword ptr [esp+8],0; push ebp; mov ebp,ecx`) | the head of the LastInLine recompute FUN_004918A8; fastLastInLine returns or re-executes it and goes on at `0x4918B3` |
+| `LastInLineScan` | `0x68FB0C` | `0x146` B | 5 B at `0x68FC1B`, only with `verify` | `A1 34 62 C6 00` (`mov eax,[0C66234h]`) | its cold chunk, the loop the key replaces; `verify` compares at the loop's exit and goes on at `0x68FC20` |
+| `ProtoTechHasActivePrereq`, `PrereqListGet`, `PlayerCanObtainTechHead` | `0x94BC1D`, `0x4C5DBD`, `0x4C5725` | `0x4C`, `0x1D`, `0x16` B | — | — | the two tests the loop and the key call; fastLastInLine |
 | `OptionNameLookup` | `0x932264` | `0x46` B | 5 B at `0x9322A1` | `5F 83 C8 FF 5E` (`pop edi; or eax,-1; pop esi`) | the option name lookup's not-found return, before `pop ecx; ret 4` at `0x9322A6`; rendererOption |
 | `OptionTypeGetter`, `OptionTypeRange` | `0x553028`, `0x6B794B` | `0x1C`, 5 B | 5 B at `0x6B794B` | `32 C0 C2 04 00` (`xor al,al; ret 4`) | the option type getter and its out-of-range return (reached only from `0x55302F`); rendererOption |
 | `OptionIntGetter`, `OptionIntGetRange` | `0x402E6A`, `0x6B7676` | `0x3A`, 5 B | 5 B at `0x6B7676` | `32 C0 C2 08 00` (`xor al,al; ret 8`) | the option int getter and its out-of-range return (reached only from `0x402E73`); rendererOption |
@@ -326,7 +329,7 @@ compiled.
 | `Config::First`, `All`, `Int` | The key's first line, every line, or an integer. | `IUHCConfig`. `broadsideMuzzleLimit`, `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys read every line; `abilitySlots` an integer. |
 | `Apply…` returning `Outcome` | One function per key. | `BaseFeature`: put the body in the feature's install method. |
 | `RequestAbstractUnitType`, `OnDatabaseLoad` | Registers a type, and calls a feature on every data load. | [See below](#extra-abstract-unit-types). |
-| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
+| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver`, `AddResearchPayer` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
 
 A `trackable_memory_patch` restores its bytes when it is destroyed, so keep the patch objects alive for the
 life of the game.
@@ -1430,11 +1433,33 @@ Code: [buildings](porting-code/buildings.md#donotqueue). It needs `AddProtoTagHa
 ### nextResearchFree
 
 Code: [buildings](porting-code/buildings.md#nextresearchfree). It needs `AddTechSubtype`, in the
-[helpers](porting-code/helpers.md#tech-subtypes), and `OnDatabaseLoad`.
+[helpers](porting-code/helpers.md#tech-subtypes), `OnDatabaseLoad`, and `AddResearchPayer`, the
+[research payment](porting-code/helpers.md#research-payment) it shares with `researchGrants`.
 
-- **Sites:** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and `0x9D5548`, of `0x480A73`.
+- **Sites (the research payment's):** the `call`s at `0x9E67E1` and `0x9D54CF`, of `0x8D946A`, and at `0x9E68A0` and
+  `0x9D5548`, of `0x480A73`. Its claim takes a research with a share of 0: the payment is skipped and the refund copy
+  emptied.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#nextresearchfree): the next research takes
   nothing, and its cancel gives nothing back.
+
+### researchGrants
+
+Code: [buildings](porting-code/buildings.md#researchgrants). It needs `AddProtoTagHandler`, `AddTechSubtype`,
+`AddWorldTick`, `AddUnitPanelRow`, `savedmarkers.h` (stat 66h) and `AddResearchPayer`, in the
+[helpers](porting-code/helpers.md#research-payment), and `OnDatabaseLoad`. It comes after `nextResearchFree`, so a research
+that key makes free is not asked of this one.
+
+- **Research payment:** the four `call`s of `nextResearchFree` above, written once by whichever key comes first. A claim
+  with a share between 0 and 1 pays a scaled copy of the cost (0x480B94 on a local list) and scales the refund copy the
+  same way.
+- **Step sites:** a 6-byte `jmp` + NOP at `0x9E6622` (`D8 46 6C D9 5E 6C`, `fadd` / `fstp dword [esi+6Ch]` in the
+  Research update), continue at `0x9E6628`; and at `0x9D58FF` (`D8 46 70 D9 5E 70`, the CommandResearch update),
+  continue at `0x9D5905`. ST0 is the step, ESI the action, EBX / EDI the tech's status entry. Check them against your DLL
+  first.
+- **Read only:** `0x8D6BAE` and `0x8D6C1B` (can the player pay), `0x44EFFF` (a cost entry), `0x44DDB4` (is built), the
+  alive slot of the unit vtable.
+- **Test:** the tags on a building, as in the [modding guide](modding-guide.md#researchgrants): its row counts points, a
+  research takes one and costs its share, and a building with a Time factor researches that much slower.
 
 ### annexFacing
 

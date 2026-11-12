@@ -17,7 +17,7 @@ Every key, with what it needs and how far it was tested, is in the
 | **Healing and hit points** | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` |
 | **Combat** | `detonationDeath`, `multiarmor`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `containedUnitsROF`, `broadsideMuzzleLimit`, `cantBeSlowed`, `veterancyBonus`, `snareOnlyHitUnit`, `snareValues`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `pillageGold`, `rofFix`, `stunMovingTargetFix`, `noDamageOnUnbuiltFoundations`, `fallenHeroTacticsFix`, `removeConversionRestriction` |
 | **Gathering and farms** | `gatherFix`, `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `cratePriority`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits` |
-| **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `trainBatchSize`, `costEscalationTechs`, `annexFacing` |
+| **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `trainBatchSize`, `costEscalationTechs`, `annexFacing` |
 | **Techs and transforms** | `hcTargetTechs`, `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `unitTypeTechs` |
 | **Interface** | `nativePreview`, `displayedRange`, `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples`, `steadyHitpointBars` |
 
@@ -87,7 +87,8 @@ the loader patch. The DLL checks its host and does nothing in any other exe.
 ## Credits and license
 
 - This project's code is under the [MIT license](LICENSE).
-
-<!-- private:end -->
+- The release zip ships [DXVK](https://github.com/doitsujin/dxvk) 3.1.1 (its 32-bit `d3d9.dll`, unmodified)
+  for `rendererOption`: Copyright (c) 2017 Philip Rebohle and its contributors, under the zlib license
+  (`dxvk\LICENSE.txt` in the zip). It is not in this repository.
 - Age of Empires is a trademark of Microsoft. This project is not affiliated with or endorsed by
   Microsoft.

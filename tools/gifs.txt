@@ -119,8 +119,8 @@ unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
 veterancyBonus-wol 0 12 1
 veterancyBonus-wol-control 0 12 1
-veterancyBonus-icons-wol 1 24 2
-veterancyBonus-icons-wol-control 1 24 2
+veterancyBonus-icons-wol 9 24 2
+veterancyBonus-icons-wol-control 9 24 2
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 34 26 3
@@ -226,3 +226,13 @@ fastVertexFill-wol-control 4 12 1 1024:576:0:0
 rendererOption-wol 6 22 2 1160:652:340:0
 rendererOption-vulkan-wol 4 12 1 1024:576:0:0
 rendererOption-wol-control 4 12 1 1024:576:0:0
+healNonIdle-busyrate-wol 10 24 2
+healNonIdle-busyrate-wol-control 10 24 2
+smartHealTargets-switch-wol 2 24 2
+smartHealTargets-switch-wol-control 2 24 2
+overhealSources-cap-wol 1 18 1.5
+overhealSources-cap-wol-control 1 18 1.5
+overhealDecay-holdnear-wol 2 22 2
+overhealDecay-holdnear-wol-control 2 22 2
+researchGrants-wol 9 18 1.5
+researchGrants-wol-control 9 18 1.5
