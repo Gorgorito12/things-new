@@ -27,6 +27,11 @@ class Config {
 
   const std::map<std::string, std::vector<Args>>& entries() const { return entries_; }
 
+  // For the options menu's switches (menuoptions.h), before any key applies: a line of a key with no arguments,
+  // and the removal of every line of a key.
+  void Add(const std::string& key);
+  void Erase(const std::string& key);
+
  private:
   std::map<std::string, std::vector<Args>> entries_;  // keys are lowercase
 };

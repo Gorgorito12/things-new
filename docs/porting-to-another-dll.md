@@ -297,7 +297,7 @@ Each key's page has the code of every file below, the helpers it needs and its s
 | [`src/features/dopples.cpp`](../src/features/dopples.cpp), [`src/hooks/dopple_hooks.asm`](../src/hooks/dopple_hooks.asm) | `noCorpseDopples`. | unittypes, sites `NoCorpseDopple*`, your cfg reader |
 | [`src/features/steadybars.cpp`](../src/features/steadybars.cpp), [`src/hooks/steadybar_hooks.asm`](../src/hooks/steadybar_hooks.asm) | `steadyHitpointBars`. | unittypes (only with a UnitType), sites `SteadyBar*`, `BoneLocalPosition`, `IsA`, your cfg reader |
 | [`src/features/vertexfill.cpp`](../src/features/vertexfill.cpp), [`src/hooks/clothfill_hooks.asm`](../src/hooks/clothfill_hooks.asm) | `fastVertexFill`. | sites `ClothFill*`, your cfg reader |
-| [`src/features/renderer.cpp`](../src/features/renderer.cpp), [`src/hooks/rendereroption_hooks.asm`](../src/hooks/rendereroption_hooks.asm), [`src/d3d9hooks.h`](../src/d3d9hooks.h), [`src/d3d9hooks.cpp`](../src/d3d9hooks.cpp) | `rendererOption`. `d3d9hooks.*` owns the `Direct3DCreate9` import slot and the device's CreateDevice / Reset / Present entries; if WoL's DLL hooks them too, keep one owner. | sites `Option*`, `ExeFolder`, `kOptionsFile` (the file the choice goes to), your cfg reader |
+| [`src/features/renderer.cpp`](../src/features/renderer.cpp), [`src/menuoptions.h`](../src/menuoptions.h), [`src/menuoptions.cpp`](../src/menuoptions.cpp), [`src/hooks/menuoptions_hooks.asm`](../src/hooks/menuoptions_hooks.asm), [`src/d3d9hooks.h`](../src/d3d9hooks.h), [`src/d3d9hooks.cpp`](../src/d3d9hooks.cpp) | `rendererOption`. `d3d9hooks.*` owns the `Direct3DCreate9` import slot and the device's CreateDevice / Reset / Present entries; if WoL's DLL hooks them too, keep one owner. | sites `Option*`, `ExeFolder`, `kOptionsFile` (the file the choice goes to), your cfg reader |
 | [`src/features/dance.cpp`](../src/features/dance.cpp), [`src/hooks/dance_hooks.asm`](../src/hooks/dance_hooks.asm) | `danceBonusCivs`. | sites `Dance*`, your cfg reader (`Config::All`) |
 | [`src/features/startingtc.cpp`](../src/features/startingtc.cpp), [`src/hooks/startingtc_hooks.asm`](../src/hooks/startingtc_hooks.asm) | `startingTC`, and the FirstTC proto hook it shares with `civFirstTC` (`InstallFirstTcProtoHook`, `UhcStartingTcProtoHook`). | unittypes, sites `FirstTcGate`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `FirstTcRuleLookup`, `SetLifespanArm`, `UnitAliveSlot`, `IsA`, `WriteBytes`; the data symbol `g_uhcCivFirstTcOn` and the function `UhcCivFirstTcMatches` (defined in `civfirsttc.cpp`; without that feature, define the global as 0 and a stub that returns false); your cfg reader |
 | [`src/features/civfirsttc.cpp`](../src/features/civfirsttc.cpp), [`src/hooks/civfirsttc_hooks.asm`](../src/hooks/civfirsttc_hooks.asm) | `civFirstTC`. | the startingTC files above for the shared proto hook; sites `CivTagUnknown`, `CivTagNextNode`, `CivById`, `CivOfPlayer`, `ProtoByName`, `ProtoById`, `ProtoFlag`, `RmPlaceCall`, `RmPlace`, `RmItemFootprint`, `RmNomadStart`, `TownStartQuery`, `TownStartSpawn`, `TownStartColonyLoop`, `FirstTcChunk`, `FirstTcProtoCheck`, `FirstTcSet`, `PlayerById`, `UnitById`, `UnitAliveSlot`; `WriteCall`, `UhcTraceHook` (the wrapper's trace line is written from C++); your cfg reader |
@@ -709,22 +709,36 @@ Code: [game-files](porting-code/game-files.md#fastvertexfill).
 - **Why it can differ between players:** it writes vertex data only; the bytes are the stock ones.
 - **The design:** [how-it-works.md](how-it-works.md#fastvertexfill).
 
+### menuOptions
+
+Code: [game-files](porting-code/game-files.md#menuoptions).
+
+- **What it adds:** an Off / On entry of the options menu per key named on its line (`bufferedFileReads`,
+  `fastVertexFill`), through the same registry and hooks as `rendererOption` (below); fields `OptionBufferedReads` and
+  `OptionFastVertexFill` in `data\options.xml`, the snippet in the [modding guide](modding-guide.md#menuoptions).
+- **When:** after the cfg is read and before any key applies: for each named key, the stored choice (`<key> on|off` in
+  `uhc-options.cfg`), else the key's own line (present: on, absent: off), removes the key's lines (off) or adds an empty
+  one (on without a line). The keys then apply as usual. In a DLL whose keys read the cfg each on their own, do the same
+  before they run.
+- **Why it can differ between players:** only keys that change nothing of the simulation can be named.
+
 ### rendererOption
 
 Code: [game-files](porting-code/game-files.md#rendereroption).
 
 - **The menu's option:** WoL's `data\options.xml` gets a DropDown field whose `<name>` is `OptionRenderer`, with two
   `<value>` lines (DirectX 9 first, Vulkan second); the snippet is in the
-  [modding guide](modding-guide.md#rendereroption). Four hooks give that name an ID beyond the 93 options of the exe's
-  table (`0x55480001`) and serve it from the DLL:
+  [modding guide](modding-guide.md#rendereroption). The options menu's registry (`menuoptions.*`, shared with
+  `menuOptions`) gives each registered name an ID beyond the 93 options of the exe's table (`0x55480001` + its slot)
+  and serves it from the DLL with four hooks; each tests `ID - 0x55480001 < count` as one unsigned compare:
   - `0x9322A1` (5 B, `jmp`): EDI = the name (may be null), ESI = settings+234h; call
-    `int __stdcall UhcRendererOptionLookup(name, settings)` (that ID for `OptionRenderer` when `[settings+24h]` = 1, else
-    -1) with EAX as its result, `pop edi`, `pop esi`, `jmp 9322A6h`;
-  - `0x6B794B` (5 B): EAX = the ID; for that ID `mov al,2; ret 4`, else `xor al,al; ret 4`;
-  - `0x6B7676` (5 B): ECX = the ID, `[esp+8]` = out; for that ID store the choice in `*out`, `mov al,1; ret 8`, else
-    `xor al,al; ret 8`;
-  - `0x518B26` (5 B): EDI = the ID, `[esp+10h]` = the value; for that ID call `UhcRendererOptionSet(value)`, then `pop
-    edi; mov al,1; pop esi; ret 8`, else the stock `pop edi; xor al,al; pop esi; ret 8`.
+    `int __stdcall UhcMenuOptionLookup(name, settings)` (the option's ID for a registered name when `[settings+24h]` = 1,
+    else -1) with EAX as its result, `pop edi`, `pop esi`, `jmp 9322A6h`;
+  - `0x6B794B` (5 B): EAX = the ID; for an option `mov al,2; ret 4`, else `xor al,al; ret 4` with EAX as it came;
+  - `0x6B7676` (5 B): ECX = the ID, `[esp+8]` = out; for an option store its value in `*out`, `mov al,1; ret 8`, else
+    `xor al,al; ret 8` with ECX as it came;
+  - `0x518B26` (5 B): EDI = the ID, `[esp+10h]` = the value; for an option call `UhcMenuOptionSet(slot, value)`, then
+    `pop edi; mov al,1; pop esi; ret 8`, else the stock `pop edi; xor al,al; pop esi; ret 8`.
 - **The store:** the choice goes to a file of the DLL (`uhc-options.cfg`, a line `renderer dx9|vulkan`) at once, not to
   the profile. If WoL's DLL has its own settings file, it can keep it there.
 - **The switch:** in the DLL's start function, before the game's entry point: with Vulkan, set `DXVK_LOG_PATH`,

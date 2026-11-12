@@ -5,6 +5,7 @@
 #include "config.h"
 #include "features.h"
 #include "log.h"
+#include "menuoptions.h"
 
 namespace uhc {
 
@@ -43,6 +44,9 @@ void ApplyFeatures(const std::wstring& path) {
     return;
   }
   Log(L"UHCMain: %ls, %zu keys", path.c_str(), config.entries().size());
+  // menuOptions: the keys that follow the options menu are kept, added or removed by the stored choice first, so
+  // every key below sees only the cfg it applies with.
+  ApplyMenuSwitches(config);
 
   int applied = 0;
   int failed = 0;

@@ -11,6 +11,7 @@ Contents:
 - [fastVertexFill](#fastvertexfill)
 - [fastLastInLine](#fastlastinline)
 - [rendererOption](#rendereroption)
+- [menuOptions](#menuoptions)
 - [xsErrorLog](#xserrorlog)
 
 ## bufferedFileReads
@@ -1745,8 +1746,6 @@ END
 
 Contract: [rendererOption](../porting-to-another-dll.md#rendereroption).
 
-Sites: `OptionIntGetter` `0x402E6A` (58 B), `OptionIntSetter` `0x518AE0` (77 B), `OptionTypeGetter` `0x553028` (28 B), `OptionIntGetRange` `0x6B7676` (5 B), `OptionTypeRange` `0x6B794B` (5 B), `OptionNameLookup` `0x932264` (70 B).
-
 ### src/features/renderer.cpp
 
 ```cpp
@@ -1754,13 +1753,10 @@ Sites: `OptionIntGetter` `0x402E6A` (58 B), `OptionIntSetter` `0x518AE0` (77 B),
 // Choosing Vulkan makes the next start load DXVK's d3d9.dll from <dir> (default dxvk\ next to the exe) in place of
 // the system's Direct3D 9. Display only: nothing of the simulation changes.
 //
-// The menu. data\options.xml names an option variable per field; the screen resolves the name through 0x932264 on
-// the "GameOptions" settings object, then reads the value through 0x553028 (type) and 0x402E6A (int) and writes it on
-// Apply through 0x518AE0. That object holds a fixed list of 93 options (0xD91778, stride 0x88), saved in the profile.
-// The key adds a 94th without touching that list or the profile: a name lookup that finds nothing answers kVirtualId
-// for OptionRenderer, and the three accessors' out-of-range paths serve that ID from this DLL
-// (src/hooks/rendereroption_hooks.asm). The choice is kept in kOptionsFile (uhc-options.cfg next to the log). The
-// value is the dropdown's index: 0 = the first <value> (DirectX 9), 1 = the second (Vulkan).
+// The menu: the option OptionRenderer of the options menu's registry (src/menuoptions.h), with nothing added to the
+// game's option table or the profile. The choice is kept in kOptionsFile (uhc-options.cfg next to the log) as the line
+// `renderer dx9|vulkan`. The value is the dropdown's index: 0 = the first <value> (DirectX 9), 1 = the second
+// (Vulkan).
 //
 // The switch, at start (before the game's entry point, before Direct3DCreate9 is ever called): with Vulkan chosen,
 // the key sets DXVK_LOG_PATH, loads
@@ -1778,43 +1774,25 @@ Sites: `OptionIntGetter` `0x402E6A` (58 B), `OptionIntSetter` `0x518AE0` (77 B),
 
 #include <cctype>
 #include <cstdint>
-#include <cwchar>
 #include <string>
 #include <vector>
 
 #include "../d3d9hooks.h"
 #include "../features.h"
-#include "../generated/sites.h"
-#include "../hostfiles.h"
 #include "../log.h"
-#include "../patch.h"
+#include "../menuoptions.h"
 #include "../startup.h"
-
-extern "C" {
-void UhcRendererNameHook();
-void UhcRendererTypeHook();
-void UhcRendererGetHook();
-void UhcRendererSetHook();
-
-// The stored choice, as the dropdown's index (0 DirectX 9, 1 Vulkan). Read by UhcRendererGetHook.
-std::int32_t g_uhcRendererChoice = 0;
-}
 
 namespace uhc {
 namespace {
 
-// Keep in step with VIRTUAL_ID in rendereroption_hooks.asm.
-constexpr std::int32_t kVirtualId = 0x55480001;
 constexpr wchar_t kOptionName[] = L"OptionRenderer";
 constexpr int kDx9 = 0;
 constexpr int kVulkan = 1;
 constexpr char kDefaultConf[] = "d3d9.cachedWriteOnlyBuffers = True";
 constexpr wchar_t kMarkerName[] = L"uhc-vulkan-start.tmp";
-constexpr std::uint32_t kSettingsKind = 0x24;   // [settings+24h]: 1 for the options settings (FUN_00518CC9)
 
 bool g_log = false;
-bool g_lookupLogged = false;
-std::wstring g_optionsPath;
 std::wstring g_markerPath;
 Direct3DCreate9Fn g_stockCreate = nullptr;
 Direct3DCreate9Fn g_dxvkCreate = nullptr;
@@ -1838,105 +1816,11 @@ std::wstring Widen(const std::string& text) {
 
 bool Exists(const std::wstring& path) { return GetFileAttributesW(path.c_str()) != INVALID_FILE_ATTRIBUTES; }
 
-std::string ReadText(const std::wstring& path) {
-  std::string text;
-  HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
-  if (file == INVALID_HANDLE_VALUE) {
-    return text;
-  }
-  char buffer[4096];
-  DWORD read = 0;
-  while (ReadFile(file, buffer, sizeof(buffer), &read, nullptr) && read != 0) {
-    text.append(buffer, read);
-  }
-  CloseHandle(file);
-  return text;
-}
-
-bool WriteText(const std::wstring& path, const std::string& text) {
-  const std::wstring temp = path + L".new";
-  HANDLE file = CreateFileW(temp.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-  if (file == INVALID_HANDLE_VALUE) {
-    return false;
-  }
-  DWORD written = 0;
-  const bool ok = WriteFile(file, text.data(), static_cast<DWORD>(text.size()), &written, nullptr) != 0 &&
-                  written == text.size();
-  CloseHandle(file);
-  return ok && MoveFileExW(temp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
-}
-
 std::string Lower(std::string s) {
   for (char& c : s) {
     c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
   }
   return s;
-}
-
-// The `renderer` line of the options file: kVulkan, kDx9, or -1 if absent or unreadable.
-int ReadStoredChoice() {
-  const std::string text = ReadText(g_optionsPath);
-  std::size_t pos = 0;
-  while (pos < text.size()) {
-    std::size_t end = text.find('\n', pos);
-    if (end == std::string::npos) {
-      end = text.size();
-    }
-    std::string line = Lower(text.substr(pos, end - pos));
-    pos = end + 1;
-    while (!line.empty() && (line.back() == '\r' || line.back() == ' ' || line.back() == '\t')) {
-      line.pop_back();
-    }
-    if (line.rfind("renderer ", 0) == 0) {
-      const std::string value = line.substr(9);
-      if (value == "vulkan") {
-        return kVulkan;
-      }
-      if (value == "dx9") {
-        return kDx9;
-      }
-    }
-  }
-  return -1;
-}
-
-// Rewrites the options file with this choice, keeping its other lines.
-bool StoreChoice(int choice) {
-  const std::string text = ReadText(g_optionsPath);
-  std::string out;
-  bool replaced = false;
-  std::size_t pos = 0;
-  while (pos < text.size()) {
-    std::size_t end = text.find('\n', pos);
-    if (end == std::string::npos) {
-      end = text.size();
-    }
-    std::string line = text.substr(pos, end - pos);
-    pos = end + 1;
-    if (!line.empty() && line.back() == '\r') {
-      line.pop_back();
-    }
-    if (Lower(line).rfind("renderer ", 0) == 0) {
-      if (replaced) {
-        continue;
-      }
-      line = choice == kVulkan ? "renderer vulkan" : "renderer dx9";
-      replaced = true;
-    }
-    out += line + "\r\n";
-  }
-  if (out.empty()) {
-    out = "# The game's options menu writes this file (rendererOption). renderer: dx9 or vulkan, used at the next "
-          "start.\r\n";
-  }
-  if (!replaced) {
-    out += choice == kVulkan ? "renderer vulkan\r\n" : "renderer dx9\r\n";
-  }
-  if (!WriteText(g_optionsPath, out)) {
-    Log(L"rendererOption: cannot write %ls (error %lu)", g_optionsPath.c_str(), GetLastError());
-    return false;
-  }
-  return true;
 }
 
 // DXVK reads DXVK_CONFIG when its Direct3DCreate9 builds its instance (Config::getUserConfig), so the options are
@@ -2060,37 +1944,6 @@ bool UseVulkan(const std::wstring& folder) {
 
 }  // namespace
 
-extern "C" std::int32_t __stdcall UhcRendererOptionLookup(const wchar_t* name, const std::uint8_t* settings) {
-  if (name == nullptr || _wcsicmp(name, kOptionName) != 0 ||
-      *reinterpret_cast<const std::uint32_t*>(settings + kSettingsKind) != 1) {
-    return -1;
-  }
-  if (g_log || !g_lookupLogged) {
-    g_lookupLogged = true;
-    Log(L"rendererOption: options screen field %ls (settings 0x%08X, %u options); shows %ls", name,
-        static_cast<unsigned>(reinterpret_cast<std::uintptr_t>(settings)),
-        *reinterpret_cast<const std::uint32_t*>(settings + 8), ChoiceName(g_uhcRendererChoice));
-  }
-  return kVirtualId;
-}
-
-extern "C" void __stdcall UhcRendererOptionSet(std::int32_t value) {
-  if (value != kDx9 && value != kVulkan) {
-    Log(L"rendererOption: the menu wrote %d; ignored (only two entries: DirectX 9, Vulkan)", value);
-    return;
-  }
-  if (value == g_uhcRendererChoice) {
-    if (g_log) {
-      Log(L"rendererOption: Apply, still %ls", ChoiceName(value));
-    }
-    return;
-  }
-  g_uhcRendererChoice = value;
-  const bool stored = StoreChoice(value);
-  Log(L"rendererOption: %ls chosen in the menu%ls; it takes effect at the next start", ChoiceName(value),
-      stored ? L"" : L" (NOT stored)");
-}
-
 Outcome ApplyRendererOption(const Config& config) {
   const Config::Args* args = config.First("rendererOption");
   if (args == nullptr) {
@@ -2129,35 +1982,29 @@ Outcome ApplyRendererOption(const Config& config) {
     folder = ExeFolder() + folder;
   }
 
-  if (!VerifyAll("rendererOption", {&sites::kOptionNameLookup, &sites::kOptionTypeGetter, &sites::kOptionTypeRange,
-                                    &sites::kOptionIntGetter, &sites::kOptionIntGetRange, &sites::kOptionIntSetter})) {
+  const int slot = AddMenuOption({"rendererOption", kOptionName, "renderer", {"dx9", "vulkan"},
+                                  {L"DirectX 9", L"Vulkan"}, g_log});
+  if (slot < 0) {
     return Outcome::kFailed;
   }
-  g_optionsPath = ExeFolder() + kOptionsFile;
-  g_markerPath = g_optionsPath.substr(0, g_optionsPath.find_last_of(L'\\') + 1) + kMarkerName;
+  const std::wstring optionsPath = MenuOptionsPath();
+  g_markerPath = optionsPath.substr(0, optionsPath.find_last_of(L'\\') + 1) + kMarkerName;
 
-  int choice = ReadStoredChoice();
-  Log(L"rendererOption: %ls: %ls", g_optionsPath.c_str(),
-      choice < 0 ? L"no choice stored yet" : ChoiceName(choice));
+  int choice = MenuOptionStored(slot);
+  Log(L"rendererOption: %ls: %ls", optionsPath.c_str(), choice < 0 ? L"no choice stored yet" : ChoiceName(choice));
   if (choice < 0) {
     choice = initial;
   }
+  bool store = false;
   if (Exists(g_markerPath)) {
     DeleteFileW(g_markerPath.c_str());
     Log(L"rendererOption: the last start with Vulkan did not present a frame (marker %ls); DirectX 9 stored and "
         L"used",
         g_markerPath.c_str());
     choice = kDx9;
-    StoreChoice(kDx9);
+    store = true;
   }
-  g_uhcRendererChoice = choice;
-
-  if (!WriteJmp(sites::kOptionNameLookup.va + 0x3D, reinterpret_cast<const void*>(&UhcRendererNameHook), 5) ||
-      !WriteJmp(sites::kOptionTypeRange.va, reinterpret_cast<const void*>(&UhcRendererTypeHook), 5) ||
-      !WriteJmp(sites::kOptionIntGetRange.va, reinterpret_cast<const void*>(&UhcRendererGetHook), 5) ||
-      !WriteJmp(sites::kOptionIntSetter.va + 0x46, reinterpret_cast<const void*>(&UhcRendererSetHook), 5)) {
-    return Outcome::kFailed;
-  }
+  SetMenuOptionValue(slot, choice, store);
 
   if (choice == kVulkan) {
     UseVulkan(folder);
@@ -2170,28 +2017,413 @@ Outcome ApplyRendererOption(const Config& config) {
 }  // namespace uhc
 ```
 
-### src/hooks/rendereroption_hooks.asm
+## menuOptions
+
+Contract: [menuOptions](../porting-to-another-dll.md#menuoptions).
+
+Sites: `OptionIntGetter` `0x402E6A` (58 B), `OptionIntSetter` `0x518AE0` (77 B), `OptionTypeGetter` `0x553028` (28 B), `OptionIntGetRange` `0x6B7676` (5 B), `OptionTypeRange` `0x6B794B` (5 B), `OptionNameLookup` `0x932264` (70 B).
+
+### src/menuoptions.h
+
+```cpp
+// Options of this DLL in the game's options menu, with nothing added to the game's option table or the profile.
+//
+// data\options.xml names an option variable per field; the screen resolves the name through 0x932264 on the
+// "GameOptions" settings object, then reads the value through 0x553028 (type) and 0x402E6A (int) and writes it on
+// Apply through 0x518AE0. That object holds a fixed list of 93 options. A name lookup that finds nothing answers a
+// virtual ID for a registered option name (kFirstVirtualId upward, one per option, in the order they are added), and
+// the three accessors' out-of-range paths serve those IDs from this module (src/hooks/menuoptions_hooks.asm). Each
+// option is an int: the index of the dropdown's entry (0 = the first <value>). The choice is kept in kOptionsFile
+// (uhc-options.cfg next to the log), one line `<store key> <value word>` per option, and is used at the next start.
+//
+// Two kinds of users:
+// - a key that owns an option (rendererOption) calls AddMenuOption and reads the value itself;
+// - an on/off key of kMenuSwitches (menuoptions.cpp) follows the menu when the cfg names it on a `menuOptions` line:
+//   ApplyMenuSwitches decides it before any key applies. A key not named there follows its cfg line alone.
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "config.h"
+
+namespace uhc {
+
+// Keep in step with FIRST_VIRTUAL_ID in hooks/menuoptions_hooks.asm.
+inline constexpr std::int32_t kFirstVirtualId = 0x55480001;
+inline constexpr int kMaxMenuOptions = 16;
+
+struct MenuOption {
+  const char* feature;                // the key, for the log
+  const wchar_t* name;                // the field's <name> in data\options.xml, e.g. L"OptionRenderer"; any case
+  const char* storeKey;               // the first word of its line in uhc-options.cfg, e.g. "renderer"
+  std::vector<const char*> words;     // the stored word of each entry, by index (e.g. "dx9", "vulkan")
+  std::vector<const wchar_t*> labels; // the same entries for the log (e.g. L"DirectX 9", L"Vulkan")
+  bool log = false;                   // log every read and Apply, not only the first read
+};
+
+// Registers an option. The first call verifies and hooks the four menu sites. Returns the option's slot, or -1
+// (logged) if the sites are not stock, the table is full or the name is taken.
+int AddMenuOption(const MenuOption& option);
+
+// The value stored in uhc-options.cfg for this option: an entry's index, or -1 if there is none or it is not one
+// of the option's words.
+int MenuOptionStored(int slot);
+
+// What the menu shows from now on. With `store`, also writes it to uhc-options.cfg (false if that failed).
+bool SetMenuOptionValue(int slot, int value, bool store);
+
+// The full path of uhc-options.cfg.
+std::wstring MenuOptionsPath();
+
+// menuOptions <key> [<key> ...], before any key applies: each key named gets an entry, and is kept or added (on) or
+// removed (off) in `config` by the player's stored choice. Until the player chooses, its own cfg line decides:
+// present, on (with its arguments); absent, off. A chosen "on" without a cfg line applies the key with no arguments.
+void ApplyMenuSwitches(Config& config);
+
+}  // namespace uhc
+```
+
+### src/menuoptions.cpp
+
+```cpp
+// The options menu's registry (menuoptions.h). The hooks are in hooks/menuoptions_hooks.asm.
+#include "menuoptions.h"
+
+#include <windows.h>
+
+#include <cctype>
+#include <cwchar>
+
+#include "generated/sites.h"
+#include "hostfiles.h"
+#include "log.h"
+#include "patch.h"
+#include "startup.h"
+
+extern "C" {
+void UhcMenuNameHook();
+void UhcMenuTypeHook();
+void UhcMenuGetHook();
+void UhcMenuSetHook();
+
+// Read by the hooks: the number of options, and each one's value (the dropdown's index), by slot. The count is
+// raised only once the slot's value is in place.
+std::int32_t g_uhcMenuOptionCount = 0;
+std::int32_t g_uhcMenuOptionValues[uhc::kMaxMenuOptions] = {};
+}
+
+namespace uhc {
+namespace {
+
+// The on/off keys that menuOptions may hand to the menu. One line per key: the key, the field's <name> in
+// data\options.xml. The stored line is `<key> on|off`. Only keys that change nothing of the simulation belong here,
+// since each player chooses alone.
+struct MenuSwitch {
+  const char* key;
+  const wchar_t* name;
+};
+constexpr MenuSwitch kMenuSwitches[] = {
+    {"bufferedFileReads", L"OptionBufferedReads"},
+    {"fastVertexFill", L"OptionFastVertexFill"},
+};
+
+constexpr std::uint32_t kSettingsKind = 0x24;  // [settings+24h]: 1 for the options settings (FUN_00518CC9)
+
+struct Slot {
+  MenuOption option;
+  bool lookupLogged = false;
+};
+
+Slot g_slots[kMaxMenuOptions];
+int g_hooks = 0;  // 0 not tried, 1 installed, -1 failed
+
+std::string Lower(std::string s) {
+  for (char& c : s) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return s;
+}
+
+std::string ReadText(const std::wstring& path) {
+  std::string text;
+  HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+  if (file == INVALID_HANDLE_VALUE) {
+    return text;
+  }
+  char buffer[4096];
+  DWORD read = 0;
+  while (ReadFile(file, buffer, sizeof(buffer), &read, nullptr) && read != 0) {
+    text.append(buffer, read);
+  }
+  CloseHandle(file);
+  return text;
+}
+
+bool WriteText(const std::wstring& path, const std::string& text) {
+  const std::wstring temp = path + L".new";
+  HANDLE file = CreateFileW(temp.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (file == INVALID_HANDLE_VALUE) {
+    return false;
+  }
+  DWORD written = 0;
+  const bool ok = WriteFile(file, text.data(), static_cast<DWORD>(text.size()), &written, nullptr) != 0 &&
+                  written == text.size();
+  CloseHandle(file);
+  return ok && MoveFileExW(temp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
+}
+
+// Splits the file into lines without their line ends.
+std::vector<std::string> Lines(const std::string& text) {
+  std::vector<std::string> lines;
+  std::size_t pos = 0;
+  while (pos < text.size()) {
+    std::size_t end = text.find('\n', pos);
+    if (end == std::string::npos) {
+      end = text.size();
+    }
+    std::string line = text.substr(pos, end - pos);
+    pos = end + 1;
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();
+    }
+    lines.push_back(std::move(line));
+  }
+  return lines;
+}
+
+// True if the line is the option's: its store key, then a space.
+bool IsLineOf(const std::string& line, const MenuOption& option) {
+  const std::string prefix = Lower(option.storeKey) + " ";
+  return Lower(line).rfind(prefix, 0) == 0;
+}
+
+const wchar_t* Label(const MenuOption& option, int value) {
+  return value >= 0 && value < static_cast<int>(option.labels.size()) ? option.labels[value] : L"?";
+}
+
+bool Store(const MenuOption& option, int value) {
+  const std::wstring path = MenuOptionsPath();
+  std::string out;
+  bool replaced = false;
+  const std::string line = std::string(option.storeKey) + " " + option.words[value];
+  for (const std::string& old : Lines(ReadText(path))) {
+    if (IsLineOf(old, option)) {
+      if (!replaced) {
+        out += line + "\r\n";
+        replaced = true;
+      }
+      continue;
+    }
+    out += old + "\r\n";
+  }
+  if (out.empty()) {
+    out = "# The game's options menu writes this file: one option per line, used at the next start.\r\n";
+  }
+  if (!replaced) {
+    out += line + "\r\n";
+  }
+  if (!WriteText(path, out)) {
+    Log(L"%hs: cannot write %ls (error %lu)", option.feature, path.c_str(), GetLastError());
+    return false;
+  }
+  return true;
+}
+
+bool InstallHooks() {
+  if (g_hooks != 0) {
+    return g_hooks > 0;
+  }
+  g_hooks = -1;
+  if (!VerifyAll("menu options", {&sites::kOptionNameLookup, &sites::kOptionTypeGetter, &sites::kOptionTypeRange,
+                                  &sites::kOptionIntGetter, &sites::kOptionIntGetRange, &sites::kOptionIntSetter})) {
+    return false;
+  }
+  if (!WriteJmp(sites::kOptionNameLookup.va + 0x3D, reinterpret_cast<const void*>(&UhcMenuNameHook), 5) ||
+      !WriteJmp(sites::kOptionTypeRange.va, reinterpret_cast<const void*>(&UhcMenuTypeHook), 5) ||
+      !WriteJmp(sites::kOptionIntGetRange.va, reinterpret_cast<const void*>(&UhcMenuGetHook), 5) ||
+      !WriteJmp(sites::kOptionIntSetter.va + 0x46, reinterpret_cast<const void*>(&UhcMenuSetHook), 5)) {
+    return false;
+  }
+  g_hooks = 1;
+  return true;
+}
+
+}  // namespace
+
+std::wstring MenuOptionsPath() { return ExeFolder() + kOptionsFile; }
+
+int AddMenuOption(const MenuOption& option) {
+  const int slot = g_uhcMenuOptionCount;
+  if (slot >= kMaxMenuOptions) {
+    Log(L"%hs: no room for %ls in the options menu (%d options at most)", option.feature, option.name,
+        kMaxMenuOptions);
+    return -1;
+  }
+  for (int i = 0; i < slot; ++i) {
+    if (_wcsicmp(g_slots[i].option.name, option.name) == 0) {
+      Log(L"%hs: the options menu already has %ls (%hs)", option.feature, option.name, g_slots[i].option.feature);
+      return -1;
+    }
+  }
+  if (!InstallHooks()) {
+    Log(L"%hs: the options menu's sites are not stock; no %ls entry", option.feature, option.name);
+    return -1;
+  }
+  g_slots[slot].option = option;
+  g_uhcMenuOptionValues[slot] = 0;
+  g_uhcMenuOptionCount = slot + 1;
+  return slot;
+}
+
+int MenuOptionStored(int slot) {
+  const MenuOption& option = g_slots[slot].option;
+  for (const std::string& line : Lines(ReadText(MenuOptionsPath()))) {
+    if (!IsLineOf(line, option)) {
+      continue;
+    }
+    std::string value = Lower(line.substr(std::char_traits<char>::length(option.storeKey) + 1));
+    while (!value.empty() && (value.back() == ' ' || value.back() == '\t')) {
+      value.pop_back();
+    }
+    for (std::size_t i = 0; i < option.words.size(); ++i) {
+      if (value == option.words[i]) {
+        return static_cast<int>(i);
+      }
+    }
+  }
+  return -1;
+}
+
+bool SetMenuOptionValue(int slot, int value, bool store) {
+  g_uhcMenuOptionValues[slot] = value;
+  return !store || Store(g_slots[slot].option, value);
+}
+
+extern "C" std::int32_t __stdcall UhcMenuOptionLookup(const wchar_t* name, const std::uint8_t* settings) {
+  if (name == nullptr || *reinterpret_cast<const std::uint32_t*>(settings + kSettingsKind) != 1) {
+    return -1;
+  }
+  for (int i = 0; i < g_uhcMenuOptionCount; ++i) {
+    Slot& slot = g_slots[i];
+    if (_wcsicmp(name, slot.option.name) != 0) {
+      continue;
+    }
+    if (slot.option.log || !slot.lookupLogged) {
+      slot.lookupLogged = true;
+      Log(L"%hs: options screen field %ls (settings 0x%08X, %u options); shows %ls", slot.option.feature, name,
+          static_cast<unsigned>(reinterpret_cast<std::uintptr_t>(settings)),
+          *reinterpret_cast<const std::uint32_t*>(settings + 8), Label(slot.option, g_uhcMenuOptionValues[i]));
+    }
+    return kFirstVirtualId + i;
+  }
+  return -1;
+}
+
+extern "C" void __stdcall UhcMenuOptionSet(std::int32_t index, std::int32_t value) {
+  const MenuOption& option = g_slots[index].option;
+  if (value < 0 || value >= static_cast<int>(option.words.size())) {
+    Log(L"%hs: the menu wrote %d to %ls; ignored (it has %zu entries)", option.feature, value, option.name,
+        option.words.size());
+    return;
+  }
+  if (value == g_uhcMenuOptionValues[index]) {
+    if (option.log) {
+      Log(L"%hs: Apply, still %ls", option.feature, Label(option, value));
+    }
+    return;
+  }
+  const bool stored = SetMenuOptionValue(index, value, true);
+  Log(L"%hs: %ls chosen in the menu%ls; it takes effect at the next start", option.feature, Label(option, value),
+      stored ? L"" : L" (NOT stored)");
+}
+
+void ApplyMenuSwitches(Config& config) {
+  const std::vector<Config::Args>* lines = config.All("menuOptions");
+  if (lines == nullptr) {
+    return;
+  }
+  constexpr std::size_t kCount = sizeof(kMenuSwitches) / sizeof(kMenuSwitches[0]);
+  int following = 0;
+  bool failed = false;
+  bool named[kCount] = {};
+  for (const Config::Args& args : *lines) {
+    for (const std::string& word : args) {
+      bool found = false;
+      for (std::size_t i = 0; i < kCount; ++i) {
+        if (_stricmp(word.c_str(), kMenuSwitches[i].key) == 0) {
+          named[i] = found = true;
+        }
+      }
+      if (!found) {
+        std::string known;
+        for (const MenuSwitch& menuSwitch : kMenuSwitches) {
+          known += known.empty() ? "" : ", ";
+          known += menuSwitch.key;
+        }
+        Log(L"menuOptions: %hs cannot follow the options menu (these can: %hs); ignored", word.c_str(),
+            known.c_str());
+        failed = true;
+      }
+    }
+  }
+  for (std::size_t i = 0; i < kCount; ++i) {
+    if (!named[i]) {
+      continue;
+    }
+    const MenuSwitch& menuSwitch = kMenuSwitches[i];
+    // Until the player chooses, the key's own line decides: present, on; absent, off.
+    const bool inCfg = config.Has(menuSwitch.key);
+    const int slot = AddMenuOption({menuSwitch.key, menuSwitch.name, menuSwitch.key, {"off", "on"}, {L"off", L"on"}});
+    if (slot < 0) {
+      Log(L"menuOptions: %hs: no menu entry; the cfg alone decides", menuSwitch.key);
+      failed = true;
+      continue;
+    }
+    ++following;
+    const int stored = MenuOptionStored(slot);
+    const int value = stored >= 0 ? stored : (inCfg ? 1 : 0);
+    SetMenuOptionValue(slot, value, false);
+    Log(L"menuOptions: %hs follows %ls: %ls (%ls)", menuSwitch.key, menuSwitch.name, value != 0 ? L"on" : L"off",
+        stored >= 0         ? L"the player's choice"
+        : inCfg             ? L"no choice stored yet: its cfg line"
+                            : L"no choice stored yet: no cfg line");
+    if (value == 0 && inCfg) {
+      config.Erase(menuSwitch.key);
+    } else if (value != 0 && !inCfg) {
+      config.Add(menuSwitch.key);  // with its defaults
+    }
+  }
+  Log(L"menuOptions: %hs (%d keys follow the options menu)", failed ? "FAILED" : "applied", following);
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/menuoptions_hooks.asm
 
 ```asm
-; rendererOption (src/features/renderer.cpp): the options menu's virtual option OptionRenderer. The game's option
-; values live in a settings object (vtable 0BA3854h) with a fixed list of 93 entries; every accessor checks the ID
-; against [settings+8] and fails beyond it. These hooks take over that failure path for one ID the game never uses,
-; kVirtualId, which only the name lookup hook hands out. The game's own IDs never reach the new code but through the
-; stock failure paths, which return as before.
+; The options menu's registry (src/menuoptions.h): virtual options such as OptionRenderer. The game's option values
+; live in a settings object (vtable 0BA3854h) with a fixed list of 93 entries; every accessor checks the ID against
+; [settings+8] and fails beyond it. These hooks take over that failure path for the IDs FIRST_VIRTUAL_ID to
+; FIRST_VIRTUAL_ID + g_uhcMenuOptionCount - 1, which the game never uses and only the name lookup hook hands out.
+; The game's own IDs never reach the new code but through the stock failure paths, which return as before.
 .686
 .model flat, c
 option casemap :none
 
 include common.inc
 
-UhcRendererOptionLookup PROTO STDCALL optionName:DWORD, settings:DWORD
-UhcRendererOptionSet PROTO STDCALL value:DWORD
+UhcMenuOptionLookup PROTO STDCALL optionName:DWORD, settings:DWORD
+UhcMenuOptionSet PROTO STDCALL slot:DWORD, value:DWORD
 
-EXTERNDEF g_uhcRendererChoice:DWORD
+EXTERNDEF g_uhcMenuOptionCount:DWORD
+EXTERNDEF g_uhcMenuOptionValues:DWORD
 
-; The virtual option's ID: far beyond the 93 entries, and none of the IDs the options screen maps itself (9, 0Ah,
-; 30h). Keep it in step with kVirtualId in renderer.cpp.
-VIRTUAL_ID EQU 55480001h
+; The first virtual option's ID: far beyond the 93 entries, and none of the IDs the options screen maps itself
+; (9, 0Ah, 30h). Keep it in step with kFirstVirtualId in menuoptions.h.
+FIRST_VIRTUAL_ID EQU 55480001h
 
 .data
 lookupNext  dd 009322A6h    ; pop ecx / ret 4: the end of the name lookup
@@ -2200,58 +2432,66 @@ lookupNext  dd 009322A6h    ; pop ecx / ret 4: the end of the name lookup
 
 ; The name lookup 0x932264 (thiscall(settings, const wchar_t* name), ret 4) found no entry; it would return -1.
 ; On entry EDI = the name (may be null), ESI = settings+234h (its name map); [esp] the saved EDI, [esp+4] the saved
-; ESI. Replaces pop edi / or eax,-1 / pop esi. EAX = -1 or VIRTUAL_ID; ECX and EDX are free (the caller is told
+; ESI. Replaces pop edi / or eax,-1 / pop esi. EAX = -1 or a virtual ID; ECX and EDX are free (the caller is told
 ; nothing of them: the function ends with pop ecx / ret 4).
-UhcRendererNameHook PROC
-    TRACE_ONCE "rendererOption: option name lookup miss (0x9322A1)"
+UhcMenuNameHook PROC
+    TRACE_ONCE "menu options: option name lookup miss (0x9322A1)"
     lea eax, [esi-234h]
     push eax
     push edi
-    call UhcRendererOptionLookup
+    call UhcMenuOptionLookup
     pop edi
     pop esi
     jmp dword ptr [lookupNext]
-UhcRendererNameHook ENDP
+UhcMenuNameHook ENDP
 
 ; The type getter 0x553028 (thiscall(settings, id) -> al, ret 4) was given an ID beyond the entries. On entry
-; EAX = the ID, ECX = settings. Replaces xor al,al / ret 4. The virtual option is an int (type 2).
-UhcRendererTypeHook PROC
-    cmp eax, VIRTUAL_ID
-    jne notOurs
-    TRACE_ONCE "rendererOption: option type (0x6B794B)"
+; EAX = the ID, ECX = settings. Replaces xor al,al / ret 4. A virtual option is an int (type 2). Only EAX and the
+; flags change, and on the stock path EAX keeps its upper bytes.
+UhcMenuTypeHook PROC
+    sub eax, FIRST_VIRTUAL_ID
+    cmp eax, g_uhcMenuOptionCount
+    jae notOurs
+    TRACE_ONCE "menu options: option type (0x6B794B)"
     mov al, 2
     ret 4
 notOurs:
+    add eax, FIRST_VIRTUAL_ID
     xor al, al
     ret 4
-UhcRendererTypeHook ENDP
+UhcMenuTypeHook ENDP
 
 ; The int getter 0x402E6A (thiscall(settings, id, int* out) -> al, ret 8) was given an ID beyond the entries. On
-; entry EAX = settings, ECX = the ID, [esp+8] = out. Replaces xor al,al / ret 8.
-UhcRendererGetHook PROC
-    cmp ecx, VIRTUAL_ID
-    jne notOurs
-    TRACE_ONCE "rendererOption: option read (0x6B7676)"
+; entry EAX = settings, ECX = the ID, [esp+8] = out. Replaces xor al,al / ret 8. On the stock path ECX is the ID
+; again on return.
+UhcMenuGetHook PROC
+    sub ecx, FIRST_VIRTUAL_ID
+    cmp ecx, g_uhcMenuOptionCount
+    jae notOurs
+    TRACE_ONCE "menu options: option read (0x6B7676)"
     mov eax, [esp+8]
-    mov ecx, g_uhcRendererChoice
+    mov ecx, g_uhcMenuOptionValues[ecx*4]
     mov [eax], ecx
     mov al, 1
     ret 8
 notOurs:
+    add ecx, FIRST_VIRTUAL_ID
     xor al, al
     ret 8
-UhcRendererGetHook ENDP
+UhcMenuGetHook ENDP
 
 ; The int setter 0x518AE0 (thiscall(settings, id, int value) -> al, ret 8) failed: an ID beyond the entries
 ; (0x518AEB) or not an int (0x518B15). On entry EDI = the ID; [esp] the saved EDI, [esp+4] the saved ESI, [esp+0Ch]
 ; the ID, [esp+10h] the value. Replaces pop edi / xor al,al / pop esi / ret 8. ECX and EDX are volatile across the
-; call, as in stock.
-UhcRendererSetHook PROC
-    cmp edi, VIRTUAL_ID
-    jne notOurs
-    TRACE_ONCE "rendererOption: option write (0x518B26)"
+; call, as in stock. EDI is restored from the stack on both paths, so it holds the slot meanwhile.
+UhcMenuSetHook PROC
+    sub edi, FIRST_VIRTUAL_ID
+    cmp edi, g_uhcMenuOptionCount
+    jae notOurs
+    TRACE_ONCE "menu options: option write (0x518B26)"
     push dword ptr [esp+10h]
-    call UhcRendererOptionSet
+    push edi
+    call UhcMenuOptionSet
     pop edi
     mov al, 1
     pop esi
@@ -2261,7 +2501,7 @@ notOurs:
     xor al, al
     pop esi
     ret 8
-UhcRendererSetHook ENDP
+UhcMenuSetHook ENDP
 
 END
 ```

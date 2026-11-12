@@ -348,6 +348,8 @@ xsErrorLog [lines]            the XS compiler's and runtime's messages go to the
 multipleInstances [background]  run beside a copy of the game from another folder
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options
                               menu: Vulkan (DXVK, from dxvk\\) at the next start, more fps
+menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill on or off in the
+                              options menu, from the next start
 
 What each key needs from your mod, and how well it is tested: see the guide.
 No feature has been tested in multiplayer yet. License: MIT, see LICENSE.txt.

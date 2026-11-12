@@ -2155,6 +2155,11 @@ class Config {
 
   const std::map<std::string, std::vector<Args>>& entries() const { return entries_; }
 
+  // For the options menu's switches (menuoptions.h), before any key applies: a line of a key with no arguments,
+  // and the removal of every line of a key.
+  void Add(const std::string& key);
+  void Erase(const std::string& key);
+
  private:
   std::map<std::string, std::vector<Args>> entries_;  // keys are lowercase
 };
@@ -2274,6 +2279,10 @@ const std::vector<Config::Args>* Config::All(const std::string& key) const {
   const auto it = entries_.find(Lower(key));
   return it == entries_.end() ? nullptr : &it->second;
 }
+
+void Config::Add(const std::string& key) { entries_[Lower(key)].emplace_back(); }
+
+void Config::Erase(const std::string& key) { entries_.erase(Lower(key)); }
 
 std::optional<int> Config::Int(const std::string& key) const {
   const Args* args = First(key);
@@ -2425,6 +2434,8 @@ bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
+// menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
+// which of the keys it names the list then sees.
 inline constexpr Feature kFeatures[] = {
     // First: its types get their IDs before any other feature requests one.
     {"customAbstractTypes", ApplyCustomAbstractTypes},
@@ -2565,7 +2576,7 @@ inline constexpr const char* kHandledKeys[] = {
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
-    "buildingworkrateauras", "xserrorlog", "datalint", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
+    "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 
