@@ -16,6 +16,7 @@ Contents:
 - [snareOnlyHitUnit](#snareonlyhitunit)
 - [cantBeSlowed](#cantbeslowed)
 - [snareValues](#snarevalues)
+- [stealthTargeting](#stealthtargeting)
 - [killBountyTechs, resourceBounty and teamKillBounty](#killbountytechs-resourcebounty-and-teamkillbounty)
 - [pillageGold](#pillagegold)
 - [auraStacking](#aurastacking)
@@ -4224,6 +4225,198 @@ none:
     add esp, 0Ch
     jmp snareExit
 UhcSnareValuesHook ENDP
+
+END
+```
+
+## stealthTargeting
+
+Contract: [stealthTargeting](../porting-to-another-dll.md#stealthtargeting).
+
+Sites: `AttackActionForTarget` `0x489ECC` (14 B), `FootprintVisibility` `0x493040` (16 B), `FootprintHiddenTest` `0x493201` (11 B), `AttackActionNone` `0x4974C1` (11 B), `FootprintHiddenSkip` `0x4E0B1F` (13 B).
+
+### src/features/stealthtarget.cpp
+
+```cpp
+// stealthTargeting: a unit in stealth stays hidden from enemies, large units too, and is no target for a
+// player that does not see it.
+//
+// The stock Stealth action (protoaction type 47h, vtable 0xB982A8) sets unit state bit 42h while the unit
+// is in its stealth tactic (0x9E8AE5) and clears it when the action ends (0x9E892F); a unit of
+// AbstractCanSeeStealth in its LOS forces it out of the tactic (0x9E8C12..0x9E8CC7). The per-unit
+// visibility update 0x48679A passes the bit (0x486888) to the per-player visibility 0x486B1A, which writes
+// the mask of the players that see the unit, [[unit+B4h]+ACh] (0x486A60). Its small-unit branch skips every
+// non-allied player for a stealthed unit (0x486CD0 -> 0x4E0B12). Its footprint branch (0x493040), taken
+// when an obstruction radius is over 1.0 (ships, a submarine), never reads the argument: the next
+// instruction reuses its stack slot. So every enemy whose LOS covers a large stealthed unit sees it, its
+// units attack it on their own, and the AI finds it and sends units.
+//
+// Two hooks (hooks/stealthtarget_hooks.asm):
+// - at 0x493040, a stealthed unit sets the branch's own "only allies see it" byte, so the branch hides it
+//   from non-allied players as the small-unit branch does;
+// - at the head of 0x489ECC, which the auto-attack search, the unit queries that filter on "attackable"
+//   (0x499CE4) and the work orders ask for the attack action an attacker would use on a target, a
+//   stealthed target that the attacker's player does not see gets -1, "no attack action". That covers an
+//   order on a unit the player saw before it went into stealth (the AI's ships tried it in the test).
+// Both read only simulation state (the unit's state bits and the visibility mask), the same on every machine.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" void UhcStealthTargetHook();
+extern "C" void UhcStealthFootprintHook();
+
+namespace {
+
+constexpr int kMaxLogLines = 200;
+
+bool g_log = false;
+int g_logLines = 0;
+
+std::int32_t UnitId(const char* unit) { return *reinterpret_cast<const std::int32_t*>(unit + 0x10); }
+
+std::int32_t PlayerId(const char* unit) {
+  const char* player = *reinterpret_cast<const char* const*>(unit + 0x44);
+  return player == nullptr ? -1 : *reinterpret_cast<const std::int32_t*>(player);
+}
+
+std::int32_t ProtoId(const char* unit) {
+  const char* proto = *reinterpret_cast<const char* const*>(unit + 0x5C);
+  return proto == nullptr ? -1 : *reinterpret_cast<const std::int32_t*>(proto + 8);
+}
+
+}  // namespace
+
+// From the hook, only for a target whose stealth bit is set. True: the attacker's player does not see the
+// target, so it gets no attack action.
+extern "C" bool __stdcall UhcStealthHidden(const char* attacker, const char* target) {
+  if (attacker == nullptr || target == nullptr) {
+    return false;
+  }
+  const std::int32_t player = PlayerId(attacker);
+  if (player < 0 || player >= 32 || player == PlayerId(target)) {
+    return false;
+  }
+  const char* visual = *reinterpret_cast<const char* const*>(target + 0xB4);
+  if (visual == nullptr) {
+    return false;
+  }
+  const std::uint32_t seenBy = *reinterpret_cast<const std::uint32_t*>(visual + 0xAC);
+  if ((seenBy & (1u << player)) != 0) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"stealthTargeting: unit %d (proto %d, player %d) cannot target stealthed unit %d (proto %d, player %d)",
+             UnitId(attacker), ProtoId(attacker), player, UnitId(target), ProtoId(target), PlayerId(target));
+  }
+  return true;
+}
+
+namespace uhc {
+
+Outcome ApplyStealthTargeting(const Config& config) {
+  const Config::Args* args = config.First("stealthTargeting");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"stealthTargeting: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("stealthTargeting", {&sites::kAttackActionForTarget, &sites::kAttackActionNone,
+                                      &sites::kFootprintVisibility, &sites::kFootprintHiddenTest,
+                                      &sites::kFootprintHiddenSkip}) ||
+      !WriteJmp(sites::kFootprintVisibility.va, reinterpret_cast<const void*>(&UhcStealthFootprintHook), 8) ||
+      !WriteJmp(sites::kAttackActionForTarget.va, reinterpret_cast<const void*>(&UhcStealthTargetHook), 7)) {
+    return Outcome::kFailed;
+  }
+  Log(L"stealthTargeting: stealthed units, large ones too, are hidden from enemies and no target for a player that "
+      L"does not see them (multiplayer unverified)");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/stealthtarget_hooks.asm
+
+```asm
+; stealthTargeting (src/features/stealthtarget.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to a verified continuation, or returns -1 as the stock failure path does.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcStealthHidden PROTO STDCALL attacker:DWORD, target:DWORD
+
+.data
+attackActionNext dd 00489ED3h   ; push esi, after the four instructions this hook re-executes
+footprintNext    dd 00493048h   ; fnstcw [esp+68h], after the two instructions this hook re-executes
+
+.code
+
+; Replaces 0x493040..0x493047 (fld dword [esp+4Ch] / movzx edx, byte [esi+0Dh]), the start of the footprint
+; branch of the per-player visibility 0x486B1A, taken for a proto whose obstruction radius is over 1.0 (a ship,
+; a large unit). That branch never reads the stealth argument [esp+68h] (the next instruction overwrites its
+; slot), so enemies saw a large stealthed unit. Here a set stealth byte sets the local [esp+38h], the "only
+; allies see it" byte that the branch's player loop already honours (0x493201 -> 0x4E0B1F: a non-allied
+; player is skipped; an ally goes on to its LOS test), the same outcome as the stealth test of the small-unit
+; branch (0x486CD0 -> 0x4E0B12). Flags and registers are as the re-executed instructions leave them.
+UhcStealthFootprintHook PROC
+    TRACE_ONCE "stealthTargeting footprint (0x493040)"
+    cmp byte ptr [esp+68h], 0
+    je go
+    mov byte ptr [esp+38h], 1
+go:
+    fld dword ptr [esp+4Ch]
+    movzx edx, byte ptr [esi+0Dh]
+    jmp footprintNext
+UhcStealthFootprintHook ENDP
+
+; Replaces 0x489ECC..0x489ED2 (push ecx / push ebx / push ebp / mov ebp,[esp+10h]), the head of
+; int __thiscall(tactic, attacker, target, ...), ret 1Ch: the attack action the attacker would use on the
+; target, -1 for none. On entry [esp+4] = attacker, [esp+8] = target, ECX = this. A target whose unit state
+; bit 42h (stealth, set by the Stealth action's update 0x9E8AE5) is clear goes on at once. For a stealthed
+; one, UhcStealthHidden decides; when it is hidden from the attacker's player, the function returns -1 as
+; its own failure path 0x4974C1 does (or eax,-1 / ret 1Ch), and EBX, ESI, EDI, EBP are untouched.
+UhcStealthTargetHook PROC
+    TRACE_ONCE "stealthTargeting (0x489ECC)"
+    mov eax, [esp+8]
+    test eax, eax
+    je stock
+    cmp dword ptr [eax+8], 42h      ; the state bitset's bit count
+    jbe stock
+    mov edx, [eax+4]
+    test byte ptr [edx+8], 4        ; bit 42h
+    je stock
+    push ecx
+    push eax                        ; target
+    push dword ptr [esp+0Ch]        ; attacker ([esp+4] on entry)
+    call UhcStealthHidden
+    pop ecx
+    test al, al
+    jne refuse
+stock:
+    push ecx
+    push ebx
+    push ebp
+    mov ebp, [esp+10h]
+    jmp attackActionNext
+refuse:
+    or eax, -1
+    ret 1Ch
+UhcStealthTargetHook ENDP
 
 END
 ```

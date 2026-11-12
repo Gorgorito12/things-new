@@ -1941,6 +1941,21 @@ inline constexpr Site kOptionIntGetRange{"OptionIntGetRange", 0x006B7676, kOptio
 inline constexpr std::uint8_t kOptionIntSetterBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x8B, 0xF1, 0x3B, 0x7E, 0x08, 0x73, 0x39, 0x8B, 0x44, 0x24, 0x10, 0x8D, 0x0C, 0xBF, 0x03, 0x4E, 0x04, 0x50, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x02, 0x0F, 0x85, 0x61, 0x93, 0x1A, 0x00, 0x8B, 0x54, 0x24, 0x04, 0x89, 0x51, 0x01, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x84, 0xC0, 0x74, 0x0F, 0x57, 0x8B, 0xCE, 0xE8, 0x8E, 0xFF, 0xFF, 0xFF, 0x5F, 0xB0, 0x01, 0x5E, 0xC2, 0x08, 0x00, 0x5F, 0x32, 0xC0, 0x5E, 0xC2, 0x08, 0x00};
 inline constexpr Site kOptionIntSetter{"OptionIntSetter", 0x00518AE0, kOptionIntSetterBytes, sizeof(kOptionIntSetterBytes)};
 
+inline constexpr std::uint8_t kAttackActionForTargetBytes[] = {0x51, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x10, 0x56, 0x33, 0xDB, 0x3B, 0xEB, 0x8B, 0xF1};
+inline constexpr Site kAttackActionForTarget{"AttackActionForTarget", 0x00489ECC, kAttackActionForTargetBytes, sizeof(kAttackActionForTargetBytes)};
+
+inline constexpr std::uint8_t kAttackActionNoneBytes[] = {0x5F, 0x5E, 0x5D, 0x83, 0xC8, 0xFF, 0x5B, 0x59, 0xC2, 0x1C, 0x00};
+inline constexpr Site kAttackActionNone{"AttackActionNone", 0x004974C1, kAttackActionNoneBytes, sizeof(kAttackActionNoneBytes)};
+
+inline constexpr std::uint8_t kFootprintVisibilityBytes[] = {0xD9, 0x44, 0x24, 0x4C, 0x0F, 0xB6, 0x56, 0x0D, 0xD9, 0x7C, 0x24, 0x68, 0x0F, 0xB7, 0x44, 0x24};
+inline constexpr Site kFootprintVisibility{"FootprintVisibility", 0x00493040, kFootprintVisibilityBytes, sizeof(kFootprintVisibilityBytes)};
+
+inline constexpr std::uint8_t kFootprintHiddenTestBytes[] = {0x80, 0x7C, 0x24, 0x38, 0x00, 0x0F, 0x85, 0x13, 0xD9, 0x04, 0x00};
+inline constexpr Site kFootprintHiddenTest{"FootprintHiddenTest", 0x00493201, kFootprintHiddenTestBytes, sizeof(kFootprintHiddenTestBytes)};
+
+inline constexpr std::uint8_t kFootprintHiddenSkipBytes[] = {0x84, 0xC0, 0x0F, 0x85, 0xE5, 0x26, 0xFB, 0xFF, 0xE9, 0x28, 0x26, 0xFB, 0xFF};
+inline constexpr Site kFootprintHiddenSkip{"FootprintHiddenSkip", 0x004E0B1F, kFootprintHiddenSkipBytes, sizeof(kFootprintHiddenSkipBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2387,6 +2402,7 @@ Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
+Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
@@ -2513,6 +2529,7 @@ inline constexpr Feature kFeatures[] = {
     {"cantBeSlowed", ApplyCantBeSlowed},
     // After cantBeSlowed: its hook continues at the push this key writes.
     {"snareValues", ApplySnareValues},
+    {"stealthTargeting", ApplyStealthTargeting},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
@@ -2592,7 +2609,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

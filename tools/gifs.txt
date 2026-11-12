@@ -236,3 +236,7 @@ overhealDecay-holdnear-wol 2 22 2
 overhealDecay-holdnear-wol-control 2 22 2
 researchGrants-wol 17.5 12 1 800:310:170:115+800:250:686:624+800:125:0:680
 researchGrants-wol-control 18 12 1 800:310:170:115+800:250:686:624+800:125:0:680
+stealthTargeting-wol 11 12 1
+stealthTargeting-wol-control 11 12 1
+stealthTargeting-ai-wol 4 12 1
+stealthTargeting-ai-wol-control 4 12 1

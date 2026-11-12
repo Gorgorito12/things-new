@@ -7,9 +7,9 @@
 // visibility update 0x48679A passes the bit (0x486888) to the per-player visibility 0x486B1A, which writes
 // the mask of the players that see the unit, [[unit+B4h]+ACh] (0x486A60). Its small-unit branch skips every
 // non-allied player for a stealthed unit (0x486CD0 -> 0x4E0B12). Its footprint branch (0x493040), taken
-// when an obstruction radius is over 1.0 (ships, the WoL submarine), never reads the argument: the next
+// when an obstruction radius is over 1.0 (ships, a submarine), never reads the argument: the next
 // instruction reuses its stack slot. So every enemy whose LOS covers a large stealthed unit sees it, its
-// units attack it, and the AI finds it. That is WoL's #60 and #61.
+// units attack it on their own, and the AI finds it and sends units.
 //
 // Two hooks (hooks/stealthtarget_hooks.asm):
 // - at 0x493040, a stealthed unit sets the branch's own "only allies see it" byte, so the branch hides it

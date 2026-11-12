@@ -1157,6 +1157,27 @@ over the file bytes. The profile's game options are one of these settings object
 | Profile settings reader | FUN_00553044 | partial (`cs`) | Reads `<Settings>` / `<Setting>` (strings 0xBE29B0, 0xBE2BF8) with its own lookup, not 0x932264. |
 
 
+### Stealth and per-player visibility (for `stealthTargeting`, 2026-11-12)
+
+Evidence: REA `ev_bad9f213…` (strings), `ev_390e4491…` (`CheckIfCanStealth`), `ev_db33d956…` (`AbstractCanSeeStealth`),
+`ev_b3b3cbe0…` (action name `Stealth`), `ev_5a41a7e3…` (`unitToggleStealth`), `ev_9fc9c2ff…` (0x489ECC),
+`ev_3e7fba22…` (its callers), `ev_c9a4cfb6…` (0x4A1A0E); bundle `rea/evidence/age3y-b1a1dab7/stealth-60-61.json`. The rest
+by capstone (`cs`) and in game.
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| Action type `Stealth` | 47h (name 0xBD7980 at 0x52324A) | confirmed (`cs`) | Factory case 0x4EF7DF: `new(68h)`, ctor 0x9E877F, vtable 0xB982A8 (slot 0Ch end 0x9E890D, 3Ch update 0x9E8A26). |
+| Stealth state | unit state bit 42h (`[[unit+4]+8]` & 4, count `[unit+8]`) | confirmed (`cs`, in game) | Set by the update at 0x9E8AE5 (with a 0.6 modifier 0x4CD8FF and the visibility queue 0x482B8A), cleared by the end at 0x9E892F. Readers (`push 42h` + 0x44D863, or inline): the heal search 0x9CD9E2, the heal tick 0x9E0A9E / 0x9E0BFF, the visibility update 0x486888, the render 0x4CDB70, the UI 0x6EDBF2, 0x4C71FA, the saved-game load 0x9C5526. No target search reads it. |
+| Stealth detection | 0x9E8BB5..0x9E8CC7 | confirmed (`cs`) | Query 0x4A1C55 in the action's range `[action+24h]`; an enemy unit with `AbstractCanSeeStealth` (protoCount + 53h, 0x9E8C12), alive, built, with the unit within its LOS (0x48206D), makes 0x82FD72 send the owner a type-35h command (0x5695FC) that ends the tactic; the local player gets string 0xBF76. |
+| `CheckIfCanStealth` | tactic flag `[[tactic+14h]]` bit 10h (0x68DC87) | confirmed (`cs`) | Wide tag 0xBCA264. Tactic tags are wide strings: `AutoAttackType` 0xBCA2F4 → `[tactic+174h]` (0x5FBF45), `AttackType` 0xBCA314, `AutoRetarget` 0xBCA2A0. |
+| `unitToggleStealth` | UI syscall 0x7DD792 (registered at 0x53A22C) | in game | Toggles the selected units: `uiLookAtAndSelectUnit(id)` + `unitToggleStealth()` from the console. |
+| Visibility update | FUN_0048679A | confirmed (`cs`, write breakpoint) | Passes the stealth bit (0x486888) and 13 more arguments to 0x486B1A; writes the new mask `[[unit+B4h]+ACh]` at 0x486A60 and `+B0h` at 0x486A70. |
+| Per-player visibility | 0x486B1A, `thiscall(proto, ...)`, `ret 38h` | confirmed (`cs`) | Arg 14 (`[esp+68h]` in the loop) = stealthed. Small-unit branch: ally → 0x486A87; `[esp+38h]` set (proto flag 8, or 9 with arg 6 zero) → 0x4E0B05, stealth → 0x4E0B12: a non-ally is skipped (0x486E11). Footprint branch 0x493040, for `[proto+88h]` or `[proto+8Ch]` (obstruction radii) over 1.0 (0x486C0D, 0x486C24): LOS on every tile; tests only `[esp+38h]` (0x493201 → 0x4E0B1F); the stealth slot is overwritten at 0x493048 and used as a counter at 0x49312D. The bug of WoL #60/#61. |
+| Visibility mask | `[[unit+B4h]+ACh]` (players that see the unit), `+B0h` | in game | A stealthed spy (radius 0.49) kept 0x2; a stealthed submarine (Z 2.5) went 0x2 → 0x6 when enemy ships came in range (stock). |
+| Visible to a player (UI) | 0x4818F4 | confirmed (`cs`) | Reads the mask when `[world+6921h]`; its cold path 0x6A05CD uses the local player: not for simulation code. |
+| Attack action for a target | FUN_00489ECC, `int thiscall(tactic, attacker, target, ...)`, `ret 1Ch` | confirmed (REA `ev_9fc9c2ff…`) | -1 for none (0x4974C1). Checks the attacker, alliance (0x484E01), the relation when arg 4 is 1, proto bit 0Eh, both units built; no visibility. Callers include the unit query 0x499CE4 and the auto-attack scoring 0x4A893B (12 call sites). Site of `stealthTargeting`. |
+| Auto-attack range test | FUN_004A1A0E | confirmed (REA `ev_c9a4cfb6…`) | `thiscall(tactic, attacker, target, float)`: the target is of `[tactic+174h]` (AutoAttackType, 0x44D7FA), both built, and within range. Callers 0x4A8969, 0x94174E. |
+
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
 Full write-up and evidence: [performance.md](performance.md). REA bundles:

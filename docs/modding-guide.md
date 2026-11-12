@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 15:54 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
 | Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
@@ -2874,6 +2875,7 @@ Attacks, armor, and what a hit does.
 |---|---|---|---|---|
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
 | [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
+| [`stealthTargeting`](#stealthtargeting) | A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | **new** | Nothing. | confirmed (single player) |
 | [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
@@ -4343,6 +4345,53 @@ the attackers catch it. It lost 1070 HP. [Full video (MP4)](media/snareValues-st
   `<AttachSnare>` 0.5 over 0.8, 2.00 against 3.20, with `damageOverTime`, `snareOnlyHitUnit` and `cantBeSlowed` on; an AI skirmish of
   100 s had 16 units and no XS error; 1686 fps against 1639 with 60 units fighting and other games open, in a scene with no swap.
   Not tested: beside WoL's DLL, multiplayer.
+
+#### stealthTargeting
+
+*A unit in stealth stays hidden from enemies, ships and other large units too, so enemies and the AI no longer attack it.*
+
+**Added:** Thursday 2026-11-12 15:51 · **Filmed in WoL:** Thursday 2026-11-12 15:54
+
+![stealthTargeting in WoL](media/stealthTargeting-wol.gif)
+
+*In WoL, with `stealthTargeting` (a stealthed `gwSubmarine`, selected; a `Frigate` and a `Monitor` of player 2 appear 22 m away, in
+range):* they stay idle and the submarine keeps its 1000 HP. [Full video (MP4)](media/stealthTargeting-wol.mp4).
+
+![stealthTargeting in WoL, key off](media/stealthTargeting-wol-control.gif)
+
+*In WoL, key off (the same scene):* both ships fire at the stealthed submarine at once; it falls to 280 HP in 15 s.
+[Full video (MP4)](media/stealthTargeting-wol-control.mp4).
+
+![stealthTargeting against the AI in WoL](media/stealthTargeting-ai-wol.gif)
+
+*In WoL, with `stealthTargeting`, a skirmish against the German AI (British player, a stealthed submarine; the AI has a `Frigate`
+32 m away and a `Galleon` 50 m away):* the AI's ships stay out of the fight and the submarine keeps its 1000 HP.
+[Full video (MP4)](media/stealthTargeting-ai-wol.mp4).
+
+![stealthTargeting against the AI in WoL, key off](media/stealthTargeting-ai-wol-control.gif)
+
+*In WoL, key off (the same skirmish):* the AI's Frigate keeps firing at the stealthed submarine, and the AI sends a Galleon to it
+from 50 m. [Full video (MP4)](media/stealthTargeting-ai-wol-control.mp4).
+
+```
+stealthTargeting [log]
+```
+
+- **The bug (WoL #60 and #61):** the game hides a unit in stealth from every player but its owner and allies, but only for units
+  whose `ObstructionRadiusX` and `ObstructionRadiusZ` are at most 1.0. For a larger one, such as a ship or WoL's `gwSubmarine`
+  (Z 2.5), the visibility code takes another branch that forgets the stealth: every enemy whose line of sight covers it sees
+  it, its units attack it on their own, and the AI finds it and sends ships. Small units (a `xpSpy`, infantry, cavalry) were
+  already hidden. In WoL, the stealth units with a radius over 1.0 are `gwSubmarine`, `Steamboat` and `WoLHotAirBalloonFrench`.
+- **What the key does:** a large unit in stealth is hidden as a small one is. And no unit picks a stealthed unit its player does
+  not see as a target, so an order on a unit seen before it went into stealth (as the AI's ship tried) starts no attack.
+- **Unchanged:** a unit of `AbstractCanSeeStealth` that has it in its line of sight still forces it out of stealth, and the
+  owner and allies still see it. Area damage still hits it.
+- **With other keys:** none shares its sites.
+- **Tested in WoL (2026-11-12, single player):** key off, the stealthed submarine was seen by player 2 (visibility mask 0x6) as soon
+  as enemy ships appeared, and sunk; key on, the mask stayed 0x2 (its owner) and it took no damage over 50 s; the skirmish
+  against `wolOtto` (Germans) as above, with no XS error (the log shows one refused try of the AI's Frigate at the submarine); a stealthed `xpSpy` among 3 `Crossbowman`s and 2 `Hussar`s stayed
+  hidden with the key off too. Beside WoL's own DLL (`dinput8.dll`), `applied` and the submarine stayed hidden. 792 fps
+  against 776 with 80 units fighting (update 0.151 ms against 0.155). Not tested: multiplayer, a saved game.
 
 ### Gathering and farms
 

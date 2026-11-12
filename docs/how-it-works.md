@@ -3616,6 +3616,44 @@ which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is
 hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
 in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
 
+### stealthTargeting
+
+**Stealth in the stock exe.** The tactics action type `Stealth` (47h; factory case 0x4EF7DF, vtable 0xB982A8) runs while
+the unit is in its stealth tactic. Its update 0x9E8A26 sets unit state bit 42h (`or byte [[unit+4]+8], 4` at 0x9E8AE5)
+and queues the unit's visibility update (0x482B8A); its end 0x9E890D clears the bit (0x9E892F). Every few seconds the
+update queries the units in the action's range and, for an enemy of `AbstractCanSeeStealth` (the abstract type at
+protoCount + 53h, 0x9E8C12) that has the unit within its own LOS, sends the owner a command (type 35h, 0x82FD72) that
+takes the unit out of the tactic. The tactic tag `CheckIfCanStealth` is bit 10h of the tactic's flags (0x68DC87).
+
+**Where it failed.** The per-unit visibility update 0x48679A passes the bit (inlined at 0x486888) as the 14th argument
+of the per-player visibility 0x486B1A (`thiscall(proto, ...)`, `ret 38h`), which builds the mask of the players that see
+the unit, written to `[[unit+B4h]+ACh]` at 0x486A60. In its small-unit branch, a non-allied player is skipped for a
+stealthed unit (0x486CD0 → 0x4E0B12 → 0x486E11), before its LOS test. A proto whose `[proto+88h]` or `[proto+8Ch]`
+(the obstruction radii X and Z) is over 1.0 takes the footprint branch instead (`jp 0x493040` at 0x486C0D and
+0x486C24), which tests the LOS on every tile of the unit's rectangle: its player loop (0x493150..0x493321) reads only
+`[esp+38h]`, the "only allies see it" byte (set by proto flags 8 and 9), and the stack slot of the stealth argument is
+overwritten by its next instruction (`fnstcw [esp+68h]`, 0x493048) and later used as a loop counter (0x49312D). So
+enemies saw a large stealthed unit, found it as a target and attacked it; the AI saw it too. A write breakpoint on the
+mask of a stealthed submarine (obstruction Z 2.5) caught 0x486A60 writing 2 → 6 (player 2 added) when enemy ships came in
+range.
+
+**The hooks.** At 0x493040 (`fld [esp+4Ch]` / `movzx edx, byte [esi+0Dh]`, 8 bytes, re-executed; reached only by the two
+`jp`), a set stealth byte `[esp+68h]` sets `[esp+38h]` to 1: the footprint branch then skips non-allied players (0x493201
+→ 0x4E0B1F → 0x493154) and lets allies go on to their LOS test, as the small-unit branch does for stealth. The local
+byte was already written on the way in (0x486BF6 or 0x4841F5), and no other reader of it follows in that branch.
+The second hook is the head of 0x489ECC, `int thiscall(tactic, attacker, target, ...)`, `ret 1Ch`: the attack action the
+attacker would use on the target, -1 for none. Its callers include the unit queries that keep only attackable units
+(0x499CE4) and the auto-attack scoring (0x4A893B); the other call sites (12 by capstone, REA `ev_3e7fba22…`) were not
+each identified. In the AI test it refused one try of an AI ship at a submarine it had seen before. For a target with state bit 42h set, `UhcStealthHidden` returns -1 unless the attacker's player's bit
+is in the target's mask; every caller already handles -1. The test on the bit is inline, so other targets cost a
+few instructions.
+
+**Why it is safe.** The first hook changes only a local byte the branch already honours; flags and registers after it are
+as the two re-executed instructions leave them, and the code after 0x493048 does not read the flags. The second runs
+before the function's own pushes: ESP, EBX, ESI, EDI and EBP are untouched on both paths, and -1 leaves through the same
+`ret 1Ch` as the stock failure path 0x4974C1. The mask and the state bit are simulation state, computed for every player
+on every machine; the key reads no local player and no clock.
+
 ### Tech subtypes on the built tags: a value per player's copy
 
 A `Data` subtype's handler gets the player's copy of the proto and the base it was cloned from (`techsubtypes.h`),
