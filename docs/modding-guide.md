@@ -30,9 +30,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Thursday 2026-11-12 13:24 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 13:24 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Thursday 2026-11-12 13:24 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
+| Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
+| Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
+| Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
 | Thursday 2026-11-12 11:40 | [`menuOptions`](#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 16:01 | [`researchGrants`](#researchgrants) | Added. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
@@ -2471,7 +2471,7 @@ smartHealTargets [<UnitType> ...] [switch=<percent>] [log]   up to 8 types, in p
 
 *Health bars treat a unit's normal health as 100 %, and show any extra as overheal.*
 
-**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Thursday 2026-11-12 13:24
+**Added:** Thursday 2026-10-29 10:35 · **Filmed in WoL:** Thursday 2026-11-12 13:25
 
 ![overheal in WoL](media/overhealHitpointBars-wol.gif)
 
@@ -2667,7 +2667,7 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 
 *Only chosen healers can heal a unit above its normal health.*
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Thursday 2026-11-12 13:24
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Thursday 2026-11-12 13:25
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
 
@@ -2770,7 +2770,7 @@ overhealSources [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]   defaul
 
 *Extra health above a unit's normal maximum slowly wears off.*
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Thursday 2026-11-12 13:24
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Thursday 2026-11-12 13:25
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 
