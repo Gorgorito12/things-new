@@ -225,6 +225,8 @@ gatherFix                     gather on a fixed interval (the data's rate)
 rofFix, stunMovingTargetFix   orders keep the attack timer; stuns survive a moving target
 noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
+impactBoneFix [all]           impact effects hung on scaled bones keep their size
+customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits
@@ -342,6 +344,7 @@ resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
 teamKillBounty [log]          the XP of a marked victim goes to the killer's team
 cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
+stealthTargeting [log]        large units in stealth hidden from enemies; no attack on an unseen stealthed unit
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
 bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster

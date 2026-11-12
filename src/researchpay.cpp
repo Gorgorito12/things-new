@@ -7,6 +7,7 @@
 // claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
 // the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
 // share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+// PreviewResearchPay asks the same claims in the same order for a display of the price, and changes nothing.
 #include "researchpay.h"
 
 #include <cstdint>
@@ -39,6 +40,7 @@ const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
 const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
 
 struct Payer {
+  const char* feature;
   uhc::ResearchPayClaim claim;
   uhc::ResearchPayStarted started;
 };
@@ -57,6 +59,8 @@ struct ResList {
   std::uint32_t* entries;
   std::uint32_t total;
 };
+
+float ClampShare(float share) { return share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share); }
 
 bool PayShare(void* player, const void* cost, float share) {
   if (share <= 0.0f) {
@@ -100,12 +104,14 @@ void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { 
 // From the two hooks, instead of the payment. The action is the one being set up.
 extern "C" bool __stdcall UhcResearchPay(const char* action, void* player, const void* cost) {
   g_pending = nullptr;
+  const char* researcher = *reinterpret_cast<const char* const*>(action + 0x10);
   for (std::size_t i = 0; i < g_payerCount; ++i) {
     float share = 1.0f;
-    if (!g_payers[i].claim(action, static_cast<const char*>(player), static_cast<const char*>(cost), &share)) {
+    if (!g_payers[i].claim(researcher, static_cast<const char*>(player), static_cast<const char*>(cost), &share,
+                           false)) {
       continue;
     }
-    share = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
+    share = ClampShare(share);
     if (!PayShare(player, cost, share)) {
       return false;  // the research does not start; nothing was spent
     }
@@ -136,8 +142,20 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
     }
     g_installed = true;
   }
-  g_payers[g_payerCount++] = {claim, started};
+  g_payers[g_payerCount++] = {feature, claim, started};
   return true;
+}
+
+const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share) {
+  for (std::size_t i = 0; i < g_payerCount; ++i) {
+    float claimed = 1.0f;
+    if (g_payers[i].claim(researcher, player, cost, &claimed, true)) {
+      *share = ClampShare(claimed);
+      return g_payers[i].feature;
+    }
+  }
+  *share = 1.0f;
+  return nullptr;
 }
 
 }  // namespace uhc

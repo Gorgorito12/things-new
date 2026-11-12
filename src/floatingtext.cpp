@@ -62,7 +62,8 @@ bool CanShowUnitText(const char* unit) {
   return unit != nullptr && TextManager() != nullptr && kVisibleTo(unit, LocalPlayer());
 }
 
-std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour) {
+std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour,
+                          float lifeScale) {
   if (!CanShowUnitText(unit)) {
     return -1;
   }
@@ -73,6 +74,10 @@ std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t st
   std::int32_t time2 = 2000;
   kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime1), &time1);
   kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime2), &time2);
+  if (lifeScale != 1.0f && lifeScale > 0.0f) {
+    time1 = static_cast<std::int32_t>(static_cast<float>(time1) * lifeScale);
+    time2 = static_cast<std::int32_t>(static_cast<float>(time2) * lifeScale);
+  }
   BString string;
   if (stringId >= 0) {
     kBStringFromId(&string, stringId);

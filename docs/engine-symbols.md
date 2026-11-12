@@ -642,6 +642,18 @@ traces (`trace_exec.py`) and memory reads in WoL. [O] observed, [I] inferred.
 | Socket unit | `[unit+58h]` 0, `[unit+88h]` 255, `[proto+E8h]` none | confirmed (memory) | [O] A socket has no action list. |
 | Trading Post placement | needs the map's sub-civs | confirmed, in game | [O] On a test map without `rmAllocateSubCivs`/`rmSetSubCiv` a Trading Post ghost snapped to the socket but stayed invalid ("must be built near a Native settlement"); with them it was built and the Cree alliance applied. [I] PLACE checks the socket's native against the game's sub-civs. |
 
+### The price on a tech button (for `researchGrants`, 2026-11-12)
+
+REA (Ghidra) with evidence `rea/evidence/age3y-b1a1dab7/researchgrants-price-20261112.json`, capstone, and the game (WoL).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Tech rollover builder | FUN_004C737C, `cdecl(BString* text, techEntry*, player*, unit*, a5, ResList* costOverride, char a7, char a8)` | confirmed (REA `ev_8774d6a5…`, in game) | Clears the text (0x443910); the cost: `costOverride` or `[techEntry+10h]` copied by 0x480A73 at 0x4C73FD into a local list (`ev_06317089…`), whose cost line (0x4C8EE5) is left out when the total is at most 1e-6; then lines `\n*  %s` (prerequisite age in red, etc.). Callers (`ev_913c6a4f…`): 0x4622C5 (command panel), 0x703FAF (no player, no unit), 0x9AD7F1 and 0x9B7637 (other research panels, not identified; each builds a `researchByID(%d, %d, %d)` command first). |
+| Tech button call | 0x4622B5..0x4622CF in FUN_0046188E | confirmed (`ev_afcebe91…`, in game) | `push 1/1/0/1, edi (unit), ebx (player), esi (tech entry), lea ecx,[esp+30h]; call 4C737Ch; add esp,20h`. |
+| Button overlay text | `[esp+2C0h]` in FUN_0046188E, 256-char narrow buffer | confirmed (`ev_9abdeb84…`, in game) | Emptied per button at 0x461DBC (with `[esp+1C0h]` click and `[esp+3C0h]` shift-click commands); at 0x4625E2 its length, and when not empty 0x697233 sets it as the text of the button's overlay gadget (the Buy buttons' `125`). Empty for a stock tech. |
+| BString append | 0x443960, `thiscall(BString*, const wchar_t*, int len, int start)`, `ret 0Ch` | confirmed (bytes, in game) | `len` -1: to the end; `start` below 0: 0. The builder appends `</color>` this way. |
+| ResList fill | 0x4E2617, `thiscall(ResList*, float)`, `ret 4` | confirmed (bytes) | Every entry set to the value, encoded. |
+
 ### Player powers and the ceasefire (WoL #14, 2026-10-30)
 
 A power is cast per player, not per unit: the button of any unit only spends the player's charge of
@@ -1143,6 +1155,44 @@ over the file bytes. The profile's game options are one of these settings object
 | Option int get / set | 0x402E6A `(id, int* out)`, 0x518AE0 `(id, int value)`, both `ret 8` | confirmed (`cs`) | Get out of range → 0x6B7676 (`xor al,al / ret 8`, only from 0x402E73); set fails through 0x518B26 (range 0x518AEB, type 0x518B15). Sites `OptionIntGetter`, `OptionIntGetRange`, `OptionIntSetter`. Other accessors with the same range check: bool 0x402CE9, float 0x44738A, string 0x9325C4 / 0x518B57, flag test 0xA41707. |
 | Options screen | options.xml loader at 0x78EC63; section FUN_0078E87D; field type FUN_0078E67F; DropDown FUN_0078D66A; apply FUN_0078D052 (from 0x78E1F4); change check FUN_0078D1E4 | confirmed (`ev_f384e120…`, `ev_bcf44188…`, `ev_d8c8392b…`) | `[screen+E4h]` = the "GameOptions" settings (0x78EE59). Field vtable +30h set ID, +34h get ID, +24h enable. Value ↔ entry: 0x78C8BC / 0x78C76A map IDs 9 (resolution), 0Ah (bit depth) and 30h (refresh rate) through lists, any other int is the entry's index (`ev_340d304f…`). |
 | Profile settings reader | FUN_00553044 | partial (`cs`) | Reads `<Settings>` / `<Setting>` (strings 0xBE29B0, 0xBE2BF8) with its own lookup, not 0x932264. |
+
+
+### Stealth and per-player visibility (for `stealthTargeting`, 2026-11-12)
+
+Evidence: REA `ev_bad9f213…` (strings), `ev_390e4491…` (`CheckIfCanStealth`), `ev_db33d956…` (`AbstractCanSeeStealth`),
+`ev_b3b3cbe0…` (action name `Stealth`), `ev_5a41a7e3…` (`unitToggleStealth`), `ev_9fc9c2ff…` (0x489ECC),
+`ev_3e7fba22…` (its callers), `ev_c9a4cfb6…` (0x4A1A0E); bundle `rea/evidence/age3y-b1a1dab7/stealth-60-61.json`. The rest
+by capstone (`cs`) and in game.
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| Action type `Stealth` | 47h (name 0xBD7980 at 0x52324A) | confirmed (`cs`) | Factory case 0x4EF7DF: `new(68h)`, ctor 0x9E877F, vtable 0xB982A8 (slot 0Ch end 0x9E890D, 3Ch update 0x9E8A26). |
+| Stealth state | unit state bit 42h (`[[unit+4]+8]` & 4, count `[unit+8]`) | confirmed (`cs`, in game) | Set by the update at 0x9E8AE5 (with a 0.6 modifier 0x4CD8FF and the visibility queue 0x482B8A), cleared by the end at 0x9E892F. Readers (`push 42h` + 0x44D863, or inline): the heal search 0x9CD9E2, the heal tick 0x9E0A9E / 0x9E0BFF, the visibility update 0x486888, the render 0x4CDB70, the UI 0x6EDBF2, 0x4C71FA, the saved-game load 0x9C5526. No target search reads it. |
+| Stealth detection | 0x9E8BB5..0x9E8CC7 | confirmed (`cs`) | Query 0x4A1C55 in the action's range `[action+24h]`; an enemy unit with `AbstractCanSeeStealth` (protoCount + 53h, 0x9E8C12), alive, built, with the unit within its LOS (0x48206D), makes 0x82FD72 send the owner a type-35h command (0x5695FC) that ends the tactic; the local player gets string 0xBF76. |
+| `CheckIfCanStealth` | tactic flag `[[tactic+14h]]` bit 10h (0x68DC87) | confirmed (`cs`) | Wide tag 0xBCA264. Tactic tags are wide strings: `AutoAttackType` 0xBCA2F4 → `[tactic+174h]` (0x5FBF45), `AttackType` 0xBCA314, `AutoRetarget` 0xBCA2A0. |
+| `unitToggleStealth` | UI syscall 0x7DD792 (registered at 0x53A22C) | in game | Toggles the selected units: `uiLookAtAndSelectUnit(id)` + `unitToggleStealth()` from the console. |
+| Visibility update | FUN_0048679A | confirmed (`cs`, write breakpoint) | Passes the stealth bit (0x486888) and 13 more arguments to 0x486B1A; writes the new mask `[[unit+B4h]+ACh]` at 0x486A60 and `+B0h` at 0x486A70. |
+| Per-player visibility | 0x486B1A, `thiscall(proto, ...)`, `ret 38h` | confirmed (`cs`) | Arg 14 (`[esp+68h]` in the loop) = stealthed. Small-unit branch: ally → 0x486A87; `[esp+38h]` set (proto flag 8, or 9 with arg 6 zero) → 0x4E0B05, stealth → 0x4E0B12: a non-ally is skipped (0x486E11). Footprint branch 0x493040, for `[proto+88h]` or `[proto+8Ch]` (obstruction radii) over 1.0 (0x486C0D, 0x486C24): LOS on every tile; tests only `[esp+38h]` (0x493201 → 0x4E0B1F); the stealth slot is overwritten at 0x493048 and used as a counter at 0x49312D. The bug of WoL #60/#61. |
+| Visibility mask | `[[unit+B4h]+ACh]` (players that see the unit), `+B0h` | in game | A stealthed spy (radius 0.49) kept 0x2; a stealthed submarine (Z 2.5) went 0x2 → 0x6 when enemy ships came in range (stock). |
+| Visible to a player (UI) | 0x4818F4 | confirmed (`cs`) | Reads the mask when `[world+6921h]`; its cold path 0x6A05CD uses the local player: not for simulation code. |
+| Attack action for a target | FUN_00489ECC, `int thiscall(tactic, attacker, target, ...)`, `ret 1Ch` | confirmed (REA `ev_9fc9c2ff…`) | -1 for none (0x4974C1). Checks the attacker, alliance (0x484E01), the relation when arg 4 is 1, proto bit 0Eh, both units built; no visibility. Callers include the unit query 0x499CE4 and the auto-attack scoring 0x4A893B (12 call sites). Site of `stealthTargeting`. |
+| Auto-attack range test | FUN_004A1A0E | confirmed (REA `ev_c9a4cfb6…`) | `thiscall(tactic, attacker, target, float)`: the target is of `[tactic+174h]` (AutoAttackType, 0x44D7FA), both built, and within range. Callers 0x4A8969, 0x94174E. |
+
+### Impact types and impact effects (for `impactBoneFix` and `customImpactTypes`, 2026-11-12)
+
+REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/impact49-50.json`; `cs` = capstone over
+the file bytes; traces with `tools/re` hardware breakpoints in a WoL copy.<!-- private -->
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Impact type names | 0xBA4D70, 15 × `wchar[32]` | confirmed (bytes) | Wood, Stone, Flesh, Animal, TerrainGrass, Snow, Dirt, TerrainWater, TerrainDirt, TerrainStone, TerrainSnow, TerrainSand, RoofTile, ExitBuilding, Metal (14). |
+| Impact type by name | FUN_0059F436 (cdecl, the name's string object) | confirmed (`ev_89da6b7d…`, `cs`) | FUN_00443C10 compare, not case-sensitive; -1 at 0x59F464. Callers: FUN_004F04FE (`.dmg`), FUN_005F7F7C (`[proto+1B8h]`), FUN_0051E1DF (terrain types), FUN_005FEABF (`.impacteffect`). |
+| Damage template impact point | FUN_004F04FE | confirmed (`ev_89da6b7d…`) | `+10h` the bone's index among the damaged model's impact dummies, `+14h` the type, `+18h` prereq, `+1Ch` `mode="linked"`, `+0Ch` `impactEffectOffset`. |
+| `.impacteffect` loader | FUN_005FEABF; entry parser FUN_005FE922; entry init FUN_005FE875 (0x38 B) | confirmed (`ev_7d29d565…`, `ev_107075e1…`) | Lists at `[effect + 4 + type × 12]`, 15 of them; FUN_005FE8CD makes the weights `[entry+20h]` running sums. `meterCount` `[+C8h]`. Loaded through the manager `[[0C66234h]+0BB8h]` (FUN_0058F017). The archive's `.xmb` is read before a loose `.xml`. |
+| Impact spawn | FUN_0049C1E5 (thiscall(effect, pos, dir, ?, type, …), 8 args) | confirmed (`ev_79c38552…`) | -1 for a type above 14; the entry by FUN_0049C18C (weighted). A `particleSet` that is not a particle set is loaded as a visual and attached to the target's visual at the impact dummy (FUN_004CA908); else placed at the point (FUN_004828E6). Called at 0x49D86E (projectile hit) and 0x4CB30D (terrain). |
+| Impact point pick | FUN_0049ABA1 | confirmed (`ev_0bcda0ab…`) | Picks the template's point near the hit, throws its parts (FUN_004D3393), returns `[point+14h]`. |
+| Dummy attachment | FUN_004CA908(0, 0, dummy type, index, visual) | confirmed (`ev_6c015823…`) | A type 4 attachment record; the update resolves the dummy in the current model (FUN_00407402) and reads its frame with FUN_00407272 at 0x4BE21E and 0x4BE88D. |
+| Bone frame | FUN_00407272(bone, pos*, axis*, axis*, axis*, …), `ret 1Ch` | confirmed (`ev_a040ef98…`) | Copies rows of `GrannyGetWorldPose4x4` (or the sampled pose), scale included. |
 
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)

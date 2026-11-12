@@ -3474,10 +3474,15 @@ subtracts (0x7E844B).
   copy with 0 (0x4E2617) or scales it (0x480B94) by the same share, so a cancel refunds what was paid. Then every key's
   `started(action, share, claimed)` runs, the claiming key with `claimed` set: by then `[action+68h]` is the tech.
 
+- **The preview,** `PreviewResearchPay(researcher, player, cost, &share)`: the same claims, in the same order, with
+  `preview` set, for a display of the price (`researchGrants`' buttons). A claim answers as for a payment and changes
+  nothing; the preview returns the name of the key that would claim, and its share. A claim receives the action's unit
+  (`[action+10h]`), not the action, so the payment and the preview ask the same question.
+
 **Why it is safe.** Each call keeps its stock frame: the hook reads the cost from its own argument and returns with
 `ret 4` and AL, as 0x8D946A does; the copy wrapper is a `__fastcall` with the stock `thiscall` frame. Nothing between the
 payment and the copy starts another research, so one pending claim is enough; it is cleared at the next payment, and
-the copy acts only for the action that was claimed.
+the copy acts only for the action that was claimed. A preview writes nothing the payment reads.
 
 ### nextResearchFree
 
@@ -3524,6 +3529,25 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
   already pushed. A research in the other branch of the update (0x9E65A5..0x9E65F2: tech flag 4 with 0x454ED7) does not
   pass the add and keeps its stock time.
 - **Panel:** `AddUnitPanelRow`, from the unit's marker and its player's copy of the proto.
+- **The price shown** (display only; `noprice` leaves both sites alone). The rule is one function, `Choose`, which the
+  claim calls for a payment and, through `PreviewResearchPay`, for the display, so they cannot disagree. A preview
+  before the first tick of a game returns nothing, where the payment would rebuild the tables first.
+  - The tech rollover builder 0x4C737C (`cdecl(text, techEntry, player, unit, a5, costOverride, a7, a8)`; REA
+    `ev_8774d6a5…`) copies the tech's cost `[techEntry+10h]` (or `costOverride`) into a local list with 0x480A73 at
+    0x4C73FD (`ev_06317089…`; 0x4C78FA joins there with the override pushed) and writes the cost line from that list,
+    none when its total is at most 1e-6. A `WriteCall` there (`UhcGrantTipCostHook`) copies as stock, then, for the
+    entry's own cost, fills the list with 0 (0x4E2617) or scales it (0x480B94) by the previewed share. Its callers
+    (`ev_913c6a4f…`): the command panel 0x4622C5, two other research panels 0x9AD7F1 and 0x9B7637, and 0x703FAF (no
+    player, no unit: nothing changes).
+  - The command panel FUN_0046188E calls the builder for a tech button at 0x4622C5 (`ev_afcebe91…`) with ESI the entry,
+    EBX the player, EDI the unit and `[esp+30h]` the rollover; the button's overlay text, the narrow buffer
+    `[esp+2C0h]` (256 chars) that the Buy buttons use for their price, is emptied for each button at 0x461DBC and set on
+    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. A `WriteCall` at 0x4622C5 (`UhcGrantTechButtonHook`) calls the
+    builder with the same eight arguments, then `UhcGrantTechButton`: with a preview below the full price it writes the
+    word or price into the empty buffer, which it finds at the panel's `[esp+2C0h]` (ESP + 2E4h in the hook), and appends
+    the green line to the rollover with the BString append 0x443960 (`thiscall(text, wchar*, -1, -1)`, `ret 0Ch`).
+  - The floating text: `started` with `claimed` shows the label over the paying unit through `floatingtext.h` when its
+    owner is the local player and it is visible to them, with both stock times three times as long.
 
 **Why it is safe.**
 - The step hooks: ST0 is the only value on the x87 stack there (the getter's result and three `fmul`), so the C function
@@ -3538,6 +3562,13 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
   created in the few updates before the save starts its timer at the load instead of a few updates after its creation.
 - Cost: per update, one modifier walk per unit of the set and 256 slot reads; the step hooks are one compare while no
   research has a Time factor.
+- The display hooks: the panel cleans the builder's arguments itself (`add esp,20h`) and reloads EAX, ECX and EDX
+  before it reads them; EBX, ESI, EDI and EBP survive both calls (stdcall / cdecl). The cost hook returns the list in
+  EAX with `ret 4`, as 0x480A73, and the builder keeps nothing in EAX, ECX or EDX across that call. Both are display
+  only: the preview reads the units' markers and the player's resources, the overlay buffer and the rollover belong to
+  the UI, and the floating text is the UI's text manager; none of it reaches the simulation, so machines that show
+  different things stay in sync. Per refresh of the panel, a preview per tech button: a walk of the set (the player's
+  tagged buildings) and at most one afford check.
 
 **A/B (2026-11-11),** the test scenario of the modding guide (Ethiopians, two tagged markets), 90 s of
 `tools/perfprobe.py` from the load, two researches at 50 s, two other test games running on the machine:
@@ -3584,6 +3615,44 @@ which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is
 0x4DD1DE..0x4DD228 write ESI, EAX, ECX and EDX but never EBP, so at 0x4DD201 `[ebp+10h]` is still the attacker. The
 hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
 in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
+
+### stealthTargeting
+
+**Stealth in the stock exe.** The tactics action type `Stealth` (47h; factory case 0x4EF7DF, vtable 0xB982A8) runs while
+the unit is in its stealth tactic. Its update 0x9E8A26 sets unit state bit 42h (`or byte [[unit+4]+8], 4` at 0x9E8AE5)
+and queues the unit's visibility update (0x482B8A); its end 0x9E890D clears the bit (0x9E892F). Every few seconds the
+update queries the units in the action's range and, for an enemy of `AbstractCanSeeStealth` (the abstract type at
+protoCount + 53h, 0x9E8C12) that has the unit within its own LOS, sends the owner a command (type 35h, 0x82FD72) that
+takes the unit out of the tactic. The tactic tag `CheckIfCanStealth` is bit 10h of the tactic's flags (0x68DC87).
+
+**Where it failed.** The per-unit visibility update 0x48679A passes the bit (inlined at 0x486888) as the 14th argument
+of the per-player visibility 0x486B1A (`thiscall(proto, ...)`, `ret 38h`), which builds the mask of the players that see
+the unit, written to `[[unit+B4h]+ACh]` at 0x486A60. In its small-unit branch, a non-allied player is skipped for a
+stealthed unit (0x486CD0 → 0x4E0B12 → 0x486E11), before its LOS test. A proto whose `[proto+88h]` or `[proto+8Ch]`
+(the obstruction radii X and Z) is over 1.0 takes the footprint branch instead (`jp 0x493040` at 0x486C0D and
+0x486C24), which tests the LOS on every tile of the unit's rectangle: its player loop (0x493150..0x493321) reads only
+`[esp+38h]`, the "only allies see it" byte (set by proto flags 8 and 9), and the stack slot of the stealth argument is
+overwritten by its next instruction (`fnstcw [esp+68h]`, 0x493048) and later used as a loop counter (0x49312D). So
+enemies saw a large stealthed unit, found it as a target and attacked it; the AI saw it too. A write breakpoint on the
+mask of a stealthed submarine (obstruction Z 2.5) caught 0x486A60 writing 2 → 6 (player 2 added) when enemy ships came in
+range.
+
+**The hooks.** At 0x493040 (`fld [esp+4Ch]` / `movzx edx, byte [esi+0Dh]`, 8 bytes, re-executed; reached only by the two
+`jp`), a set stealth byte `[esp+68h]` sets `[esp+38h]` to 1: the footprint branch then skips non-allied players (0x493201
+→ 0x4E0B1F → 0x493154) and lets allies go on to their LOS test, as the small-unit branch does for stealth. The local
+byte was already written on the way in (0x486BF6 or 0x4841F5), and no other reader of it follows in that branch.
+The second hook is the head of 0x489ECC, `int thiscall(tactic, attacker, target, ...)`, `ret 1Ch`: the attack action the
+attacker would use on the target, -1 for none. Its callers include the unit queries that keep only attackable units
+(0x499CE4) and the auto-attack scoring (0x4A893B); the other call sites (12 by capstone, REA `ev_3e7fba22…`) were not
+each identified. In the AI test it refused one try of an AI ship at a submarine it had seen before. For a target with state bit 42h set, `UhcStealthHidden` returns -1 unless the attacker's player's bit
+is in the target's mask; every caller already handles -1. The test on the bit is inline, so other targets cost a
+few instructions.
+
+**Why it is safe.** The first hook changes only a local byte the branch already honours; flags and registers after it are
+as the two re-executed instructions leave them, and the code after 0x493048 does not read the flags. The second runs
+before the function's own pushes: ESP, EBX, ESI, EDI and EBP are untouched on both paths, and -1 leaves through the same
+`ret 1Ch` as the stock failure path 0x4974C1. The mask and the state bit are simulation state, computed for every player
+on every machine; the key reads no local player and no clock.
 
 ### Tech subtypes on the built tags: a value per player's copy
 
@@ -4060,6 +4129,61 @@ installs a `WH_CBT` hook for that thread only:
 
 A window that cannot be activated gets no keyboard input. The game is driven through `perfExecFile`
 and watched with `PrintWindow`, and both work without focus.
+
+### impactBoneFix
+
+A hit on a unit with a damage template picks one of its impact points (FUN_0049ABA1) and plays the projectile's
+impact effect for that point's type through the spawn FUN_0049C1E5. When the chosen entry's `particleSet` names an
+`.xml` (stock `cannon.impacteffect`'s `<wood>`: `effects\impacts\cannonball_impact_wood.xml`), the spawn loads that
+visual and hangs it on the target's visual as an attachment to the impact point's dummy (FUN_004CA908: dummy type
+`[[0D6F678h]]`, 35 in the tested game, and the point's index); a plain particle set is placed at the hit point instead
+(FUN_004828E6). Every frame the visual's dummy attachment update (two paths, from `0x4BE1EE` and `0x4BE863`) looks the
+dummy up in the current model (FUN_00407402) and reads its frame with FUN_00407272, which copies the rows of Granny's
+world pose matrix (`GrannyGetWorldPose4x4`) as they are: position and three axes, scale included. A model whose impact
+bones are scaled by 100 gives axes of length 100, and the attached particles are drawn a hundred times too big, over
+the whole view. Measured by a hardware breakpoint after the call (`0x4BE89A`): axes (100, 0, 0), (0, 99.995, 1.01),
+(0, −1.01, 99.995) on the scaled model, unit axes on a stock House.
+
+The key replaces the two calls of FUN_00407272 (`0x4BE21E` and `0x4BE88D`, 5 B each): the hook makes the call itself
+with the arguments the stock code pushed, and when it returned true and the dummy type (EDI on the first path, EBX on
+the second) is the impact type, scales the three axes to unit length (left alone within 0.01 of 1); then it continues
+at the stock `test al,al / je` (`0x4BE223`, `0x4BE892`). With `all`, every dummy type. EAX, ECX and EDX are kept for the
+continuation.
+
+**Why it is safe:** drawing only, after the frame is read; the position is not touched, a bone of length 1 is
+unchanged, and the getter's other callers (the damage template's part positions, FUN_0045F0D2) are not hooked.
+Evidence: `ev_a040ef98…` (FUN_00407272, FUN_0049C18C), `ev_79c38552…` (FUN_0049C1E5), `ev_6c015823…`
+(FUN_004CA908), `ev_0bcda0ab…` (FUN_0049ABA1); traces in `rea/evidence/age3y-b1a1dab7/impact49-50.json`'s folder.
+
+### customImpactTypes
+
+The impact types are 15 `wchar[32]` names at `0xBA4D70` (Wood … Metal); FUN_0059F436 compares a name with each
+(FUN_00443C10, not case-sensitive) and returns its index or −1. Its four callers: the damage template parser
+(FUN_004F04FE, `impacttype`), a proto's `<ImpactType>` (FUN_005F7F7C, `[proto+1B8h]`), the terrain types'
+`ImpactType` (FUN_0051E1DF) and the `.impacteffect` loader FUN_005FEABF (each element's name). An impact effect object
+holds one entry list per type at `[effect + 4 + type × 12]` (pointer, count, capacity; 15 of them, FUN_005FE8CD turns the
+entries' weights `[+20h]` into running sums), and the spawn FUN_0049C1E5 and the pick FUN_0049C18C refuse a type
+above 14.
+
+- **Names** (`0x59F464`, 7 B): the not-found end of FUN_0059F436 asks the DLL, which compares the name with the cfg's
+  names the same way and returns 15 + its index, then does the stock `pop edi / pop esi / pop ebx / ret`.
+- **Entries** (`0x5FEC74`, 21 B): for a stock type the hook runs the stock add (FUN_00401F74 on the type's list); for a
+  custom one it adds the entry, with the same function, to a list the DLL keeps for that effect object. The first
+  custom entry of a read starts the effect's lists empty, so an effect read again does not keep old entries.
+- **Weights** (`0x5FEC99`, 7 B; `0x5FEBE1` jumps there when the file has no element): after the stock FUN_005FE8CD,
+  the DLL makes the same running sums in its lists.
+- **Spawn** (`0x49D86E`, the projectile hit, and `0x4CB30D`, the terrain impact; 5 B each): for a type of 15 or more,
+  the DLL puts that type's list in the effect's slot 14 (Metal), calls FUN_0049C1E5 with type 14 and the other seven
+  arguments as pushed, puts slot 14 back, and drops the eight arguments as the callee would. The stock code then picks
+  the entry (FUN_0049C18C), plays its particle set, sound sets and fire, and keeps the effect's own rate limit
+  (`[effect+C8h..]`). A type with no entry returns −1 as in stock.
+
+**Why it is safe:** drawing and sound only. The lists are built at data load (an `std::map` keyed by the effect
+object), and the spawn looks one up per impact. Slot 14 is lent only for the length of one synchronous call. After the
+spawn, the caller reads the chosen entry again by type (`0x49D884`, `cmp eax,0Fh`) for the `ExitBuilding` values; for a
+custom type that read gives nothing, so no units are thrown out, as for a type with no entry. Evidence:
+`ev_89da6b7d…` (FUN_004F04FE, FUN_0059F436), `ev_7d29d565…` (FUN_005FE922, FUN_005FEABF), `ev_107075e1…`
+(FUN_005FE875, FUN_005FE8CD), `ev_a040ef98…` (FUN_0049C18C, FUN_00401F74, FUN_0051E1DF), `ev_79c38552…` (FUN_0049C1E5).
 
 ## 5. Rules that keep multiplayer deterministic
 

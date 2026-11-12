@@ -16,11 +16,14 @@ Contents:
 - [snareOnlyHitUnit](#snareonlyhitunit)
 - [cantBeSlowed](#cantbeslowed)
 - [snareValues](#snarevalues)
+- [stealthTargeting](#stealthtargeting)
 - [killBountyTechs, resourceBounty and teamKillBounty](#killbountytechs-resourcebounty-and-teamkillbounty)
 - [pillageGold](#pillagegold)
 - [auraStacking](#aurastacking)
 - [veterancyBonus](#veterancybonus)
 - [detonationDeath](#detonationdeath)
+- [impactBoneFix](#impactbonefix)
+- [customImpactTypes](#customimpacttypes)
 
 ## dodgeAnyUnit, dodgeSoundSet and criticalSoundSet
 
@@ -4228,6 +4231,198 @@ UhcSnareValuesHook ENDP
 END
 ```
 
+## stealthTargeting
+
+Contract: [stealthTargeting](../porting-to-another-dll.md#stealthtargeting).
+
+Sites: `AttackActionForTarget` `0x489ECC` (14 B), `FootprintVisibility` `0x493040` (16 B), `FootprintHiddenTest` `0x493201` (11 B), `AttackActionNone` `0x4974C1` (11 B), `FootprintHiddenSkip` `0x4E0B1F` (13 B).
+
+### src/features/stealthtarget.cpp
+
+```cpp
+// stealthTargeting: a unit in stealth stays hidden from enemies, large units too, and is no target for a
+// player that does not see it.
+//
+// The stock Stealth action (protoaction type 47h, vtable 0xB982A8) sets unit state bit 42h while the unit
+// is in its stealth tactic (0x9E8AE5) and clears it when the action ends (0x9E892F); a unit of
+// AbstractCanSeeStealth in its LOS forces it out of the tactic (0x9E8C12..0x9E8CC7). The per-unit
+// visibility update 0x48679A passes the bit (0x486888) to the per-player visibility 0x486B1A, which writes
+// the mask of the players that see the unit, [[unit+B4h]+ACh] (0x486A60). Its small-unit branch skips every
+// non-allied player for a stealthed unit (0x486CD0 -> 0x4E0B12). Its footprint branch (0x493040), taken
+// when an obstruction radius is over 1.0 (ships, a submarine), never reads the argument: the next
+// instruction reuses its stack slot. So every enemy whose LOS covers a large stealthed unit sees it, its
+// units attack it on their own, and the AI finds it and sends units.
+//
+// Two hooks (hooks/stealthtarget_hooks.asm):
+// - at 0x493040, a stealthed unit sets the branch's own "only allies see it" byte, so the branch hides it
+//   from non-allied players as the small-unit branch does;
+// - at the head of 0x489ECC, which the auto-attack search, the unit queries that filter on "attackable"
+//   (0x499CE4) and the work orders ask for the attack action an attacker would use on a target, a
+//   stealthed target that the attacker's player does not see gets -1, "no attack action". That covers an
+//   order on a unit the player saw before it went into stealth (the AI's ships tried it in the test).
+// Both read only simulation state (the unit's state bits and the visibility mask), the same on every machine.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" void UhcStealthTargetHook();
+extern "C" void UhcStealthFootprintHook();
+
+namespace {
+
+constexpr int kMaxLogLines = 200;
+
+bool g_log = false;
+int g_logLines = 0;
+
+std::int32_t UnitId(const char* unit) { return *reinterpret_cast<const std::int32_t*>(unit + 0x10); }
+
+std::int32_t PlayerId(const char* unit) {
+  const char* player = *reinterpret_cast<const char* const*>(unit + 0x44);
+  return player == nullptr ? -1 : *reinterpret_cast<const std::int32_t*>(player);
+}
+
+std::int32_t ProtoId(const char* unit) {
+  const char* proto = *reinterpret_cast<const char* const*>(unit + 0x5C);
+  return proto == nullptr ? -1 : *reinterpret_cast<const std::int32_t*>(proto + 8);
+}
+
+}  // namespace
+
+// From the hook, only for a target whose stealth bit is set. True: the attacker's player does not see the
+// target, so it gets no attack action.
+extern "C" bool __stdcall UhcStealthHidden(const char* attacker, const char* target) {
+  if (attacker == nullptr || target == nullptr) {
+    return false;
+  }
+  const std::int32_t player = PlayerId(attacker);
+  if (player < 0 || player >= 32 || player == PlayerId(target)) {
+    return false;
+  }
+  const char* visual = *reinterpret_cast<const char* const*>(target + 0xB4);
+  if (visual == nullptr) {
+    return false;
+  }
+  const std::uint32_t seenBy = *reinterpret_cast<const std::uint32_t*>(visual + 0xAC);
+  if ((seenBy & (1u << player)) != 0) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"stealthTargeting: unit %d (proto %d, player %d) cannot target stealthed unit %d (proto %d, player %d)",
+             UnitId(attacker), ProtoId(attacker), player, UnitId(target), ProtoId(target), PlayerId(target));
+  }
+  return true;
+}
+
+namespace uhc {
+
+Outcome ApplyStealthTargeting(const Config& config) {
+  const Config::Args* args = config.First("stealthTargeting");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"stealthTargeting: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("stealthTargeting", {&sites::kAttackActionForTarget, &sites::kAttackActionNone,
+                                      &sites::kFootprintVisibility, &sites::kFootprintHiddenTest,
+                                      &sites::kFootprintHiddenSkip}) ||
+      !WriteJmp(sites::kFootprintVisibility.va, reinterpret_cast<const void*>(&UhcStealthFootprintHook), 8) ||
+      !WriteJmp(sites::kAttackActionForTarget.va, reinterpret_cast<const void*>(&UhcStealthTargetHook), 7)) {
+    return Outcome::kFailed;
+  }
+  Log(L"stealthTargeting: stealthed units, large ones too, are hidden from enemies and no target for a player that "
+      L"does not see them (multiplayer unverified)");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/stealthtarget_hooks.asm
+
+```asm
+; stealthTargeting (src/features/stealthtarget.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to a verified continuation, or returns -1 as the stock failure path does.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcStealthHidden PROTO STDCALL attacker:DWORD, target:DWORD
+
+.data
+attackActionNext dd 00489ED3h   ; push esi, after the four instructions this hook re-executes
+footprintNext    dd 00493048h   ; fnstcw [esp+68h], after the two instructions this hook re-executes
+
+.code
+
+; Replaces 0x493040..0x493047 (fld dword [esp+4Ch] / movzx edx, byte [esi+0Dh]), the start of the footprint
+; branch of the per-player visibility 0x486B1A, taken for a proto whose obstruction radius is over 1.0 (a ship,
+; a large unit). That branch never reads the stealth argument [esp+68h] (the next instruction overwrites its
+; slot), so enemies saw a large stealthed unit. Here a set stealth byte sets the local [esp+38h], the "only
+; allies see it" byte that the branch's player loop already honours (0x493201 -> 0x4E0B1F: a non-allied
+; player is skipped; an ally goes on to its LOS test), the same outcome as the stealth test of the small-unit
+; branch (0x486CD0 -> 0x4E0B12). Flags and registers are as the re-executed instructions leave them.
+UhcStealthFootprintHook PROC
+    TRACE_ONCE "stealthTargeting footprint (0x493040)"
+    cmp byte ptr [esp+68h], 0
+    je go
+    mov byte ptr [esp+38h], 1
+go:
+    fld dword ptr [esp+4Ch]
+    movzx edx, byte ptr [esi+0Dh]
+    jmp footprintNext
+UhcStealthFootprintHook ENDP
+
+; Replaces 0x489ECC..0x489ED2 (push ecx / push ebx / push ebp / mov ebp,[esp+10h]), the head of
+; int __thiscall(tactic, attacker, target, ...), ret 1Ch: the attack action the attacker would use on the
+; target, -1 for none. On entry [esp+4] = attacker, [esp+8] = target, ECX = this. A target whose unit state
+; bit 42h (stealth, set by the Stealth action's update 0x9E8AE5) is clear goes on at once. For a stealthed
+; one, UhcStealthHidden decides; when it is hidden from the attacker's player, the function returns -1 as
+; its own failure path 0x4974C1 does (or eax,-1 / ret 1Ch), and EBX, ESI, EDI, EBP are untouched.
+UhcStealthTargetHook PROC
+    TRACE_ONCE "stealthTargeting (0x489ECC)"
+    mov eax, [esp+8]
+    test eax, eax
+    je stock
+    cmp dword ptr [eax+8], 42h      ; the state bitset's bit count
+    jbe stock
+    mov edx, [eax+4]
+    test byte ptr [edx+8], 4        ; bit 42h
+    je stock
+    push ecx
+    push eax                        ; target
+    push dword ptr [esp+0Ch]        ; attacker ([esp+4] on entry)
+    call UhcStealthHidden
+    pop ecx
+    test al, al
+    jne refuse
+stock:
+    push ecx
+    push ebx
+    push ebp
+    mov ebp, [esp+10h]
+    jmp attackActionNext
+refuse:
+    or eax, -1
+    ret 1Ch
+UhcStealthTargetHook ENDP
+
+END
+```
+
 ## killBountyTechs, resourceBounty and teamKillBounty
 
 Contract: [killBountyTechs, resourceBounty and teamKillBounty](../porting-to-another-dll.md#killbountytechs-resourcebounty-and-teamkillbounty).
@@ -6654,4 +6849,467 @@ Outcome ApplyDetonationDeath(const Config& config) {
 }
 
 }  // namespace uhc
+```
+
+## impactBoneFix
+
+Contract: [impactBoneFix](../porting-to-another-dll.md#impactbonefix).
+
+Sites: `BoneFrameGetter` `0x407272` (8 B), `ImpactBoneFrame1` `0x4BE21E` (13 B), `ImpactBoneFrame2` `0x4BE88D` (13 B).
+
+### src/features/impactbones.cpp
+
+```cpp
+// impactBoneFix [all] [log]: an impact effect that is a visual (an impacteffect particleSet naming an .xml, as
+// cannon.impacteffect's <wood> does) is attached to the dummy bone of the impact point it hit (FUN_004CA908 from
+// the impact spawn FUN_0049C1E5), and the visual's attachment update takes the bone's frame from the model
+// (FUN_00407272) with its scale. A model exported with its bones scaled by 100 (centimetres, as some mods'
+// buildings are) gives the attached effect axes of length 100, and its splinters cover the screen. Particle set
+// impacts (<stone>) are placed at the hit point and never read the bone, so only the visual ones break.
+//
+// The key scales the three axes the getter returns to unit length for the impact dummies (the type the damage
+// templates use, [[0D6F678h]]); with "all", for every dummy a visual is attached to. The position is kept.
+#include <cmath>
+#include <cstdint>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" void UhcImpactBoneFrame1();
+extern "C" void UhcImpactBoneFrame2();
+
+namespace {
+
+bool g_allDummies = false;
+bool g_log = false;
+bool g_loggedScale = false;
+
+constexpr float kTolerance = 0.01f;  // a bone this close to unit length is left as it is
+
+std::int32_t ImpactDummyType() {
+  const auto* holder = *reinterpret_cast<const std::int32_t* const*>(0x00D6F678);
+  return holder == nullptr ? -1 : *holder;
+}
+
+}  // namespace
+
+// Called after a successful FUN_00407272 in the dummy attachment update. frame is ESP after the call; the axes
+// are at frame+firstAxis, frame+30h and frame+40h, three floats each.
+extern "C" void __stdcall UhcFixDummyAxes(std::int32_t dummyType, char* frame, std::int32_t firstAxis) {
+  if (!g_allDummies && dummyType != ImpactDummyType()) {
+    return;
+  }
+  float* axes[3] = {reinterpret_cast<float*>(frame + firstAxis), reinterpret_cast<float*>(frame + 0x30),
+                    reinterpret_cast<float*>(frame + 0x40)};
+  for (float* axis : axes) {
+    const float length = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    if (!(length > 1e-6f) || std::fabs(length - 1.0f) <= kTolerance) {
+      continue;
+    }
+    if (g_log && !g_loggedScale) {
+      g_loggedScale = true;
+      uhc::Log(L"impactBoneFix: a dummy bone of type %d had an axis of length %.3f; scaled to 1", dummyType,
+               static_cast<double>(length));
+    }
+    axis[0] /= length;
+    axis[1] /= length;
+    axis[2] /= length;
+  }
+}
+
+namespace uhc {
+
+Outcome ApplyImpactBoneFix(const Config& config) {
+  const Config::Args* args = config.First("impactBoneFix");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "all") == 0) {
+      g_allDummies = true;
+    } else if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else {
+      Log(L"impactBoneFix: unknown argument '%hs' (expected all, log); not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("impactBoneFix", {&sites::kImpactBoneFrame1, &sites::kImpactBoneFrame2, &sites::kBoneFrameGetter})) {
+    return Outcome::kFailed;
+  }
+  if (!WriteJmp(sites::kImpactBoneFrame1.va, reinterpret_cast<const void*>(&UhcImpactBoneFrame1), 5) ||
+      !WriteJmp(sites::kImpactBoneFrame2.va, reinterpret_cast<const void*>(&UhcImpactBoneFrame2), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"impactBoneFix: effects attached to %ls bones get unit-length axes", g_allDummies ? L"any dummy" : L"impact");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/impactbone_hooks.asm
+
+```asm
+; Hooks for impactBoneFix (src/features/impactbones.cpp). Each replaces a call of the model's bone frame
+; getter FUN_00407272 in the visual's dummy attachment update (5 B), makes that call itself with the
+; arguments the stock code pushed, and, when it succeeded, lets UhcFixDummyAxes scale the three axis vectors
+; it wrote back to unit length. EAX (the getter's bool), ECX and EDX are kept; the stock test al,al / je
+; follows at the continuation. ESP after the call is the frame both paths read the axes from.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcFixDummyAxes PROTO STDCALL dummyType:DWORD, frame:DWORD, firstAxis:DWORD
+
+.data
+boneFrameGetter dd 00407272h
+continue1       dd 004BE223h   ; test al,al / je 4E3B3Ah
+continue2       dd 004BE892h   ; test al,al / je 4BEA2Bh
+
+.code
+
+; 0x4BE21E: EDI = the dummy type, the axes at [esp+24h], [esp+30h], [esp+40h] after the call.
+UhcImpactBoneFrame1 PROC
+    TRACE_ONCE "impactBoneFix dummy frame, path 1 (0x4BE21E)"
+    call boneFrameGetter
+    test al, al
+    jz done
+    push eax
+    push ecx
+    push edx
+    lea eax, [esp+0Ch]
+    push 24h
+    push eax
+    push edi
+    call UhcFixDummyAxes
+    pop edx
+    pop ecx
+    pop eax
+done:
+    jmp continue1
+UhcImpactBoneFrame1 ENDP
+
+; 0x4BE88D: EBX = the dummy type, the axes at [esp+20h], [esp+30h], [esp+40h] after the call.
+UhcImpactBoneFrame2 PROC
+    TRACE_ONCE "impactBoneFix dummy frame, path 2 (0x4BE88D)"
+    call boneFrameGetter
+    test al, al
+    jz done
+    push eax
+    push ecx
+    push edx
+    lea eax, [esp+0Ch]
+    push 20h
+    push eax
+    push ebx
+    call UhcFixDummyAxes
+    pop edx
+    pop ecx
+    pop eax
+done:
+    jmp continue2
+UhcImpactBoneFrame2 ENDP
+
+END
+```
+
+## customImpactTypes
+
+Contract: [customImpactTypes](../porting-to-another-dll.md#customimpacttypes).
+
+Sites: `StringCompareW` `0x443C10` (7 B), `ImpactSpawn` `0x49C1E5` (12 B), `ImpactSpawnUnit` `0x49D86E` (6 B), `ImpactSpawnTerrain` `0x4CB30D` (6 B), `ImpactTypeNotFound` `0x59F464` (7 B), `ImpactEffectAdd` `0x5FEC74` (24 B), `ImpactEffectWeights` `0x5FEC99` (11 B).
+
+### src/features/impacttypes.cpp
+
+```cpp
+// customImpactTypes <Name> [<Name> ...] [log]: impact types beyond the game's 15 (Wood, Stone, Flesh, Animal,
+// TerrainGrass, Snow, Dirt, TerrainWater, TerrainDirt, TerrainStone, TerrainSnow, TerrainSand, RoofTile,
+// ExitBuilding, Metal; the wchar[32] table at 0xBA4D70, read by FUN_0059F436).
+//
+// A type name is read in four places, all through FUN_0059F436: a damage template's impacttype (.dmg), a proto's
+// <ImpactType>, a terrain type's ImpactType, and the element names of an .impacteffect file. The key makes that
+// lookup answer 15 + the name's index for the names given here. An impact effect keeps one list of entries per
+// stock type inside its object ([effect + 4 + type * 12], 15 lists, FUN_005FE8CD); the entries of a custom type
+// go to a list the DLL keeps for that effect instead, built with the same list add (FUN_00401F74) and the same
+// cumulative weights. The spawn FUN_0049C1E5 refuses a type above 14, so at its two calls (the projectile hit and
+// the terrain impact) a custom type is played by lending its list to the effect's Metal slot for the stock call,
+// which then picks an entry and plays its particle set, sounds and fire as for any type, and giving the slot
+// back. Rendering and sound only: nothing here changes the simulation.
+#include <cstdint>
+#include <cstring>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" void UhcImpactTypeNotFoundHook();
+extern "C" void UhcImpactEffectAddHook();
+extern "C" void UhcImpactEffectWeightsHook();
+extern "C" void UhcImpactSpawnUnitHook();
+extern "C" void UhcImpactSpawnTerrainHook();
+
+namespace {
+
+constexpr std::int32_t kStockTypes = 15;
+constexpr std::int32_t kLentSlot = 14;  // Metal: its list is lent to a custom type for one spawn
+constexpr std::size_t kMaxCustom = 64;
+
+// The game's dynamic array of entry pointers, as at [effect + 4 + type * 12].
+struct EntryList {
+  void** data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using StringCompare = std::int32_t(__thiscall*)(const void* string, const wchar_t* text, std::int32_t, std::int32_t);
+using ListAdd = std::int32_t(__thiscall*)(EntryList* list, void* const* entry);
+using Spawn = std::int32_t(__thiscall*)(void* effect, std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t,
+                                        std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t);
+const auto kStringCompare = reinterpret_cast<StringCompare>(0x00443C10);
+const auto kListAdd = reinterpret_cast<ListAdd>(0x00401F74);
+const auto kSpawn = reinterpret_cast<Spawn>(0x0049C1E5);
+
+std::vector<std::wstring> g_names;
+bool g_log = false;
+// The custom lists of each impact effect, one per custom name. Data load only; an effect read again (or a
+// new one at a freed effect's address) starts from empty lists (g_parsing).
+std::map<const void*, std::vector<EntryList>> g_lists;
+const void* g_parsing = nullptr;
+std::vector<bool> g_loggedSpawn;
+
+}  // namespace
+
+extern "C" std::int32_t __stdcall UhcCustomImpactType(const void* name) {
+  for (std::size_t i = 0; i < g_names.size(); ++i) {
+    if (kStringCompare(name, g_names[i].c_str(), 0, -1) == 0) {
+      return kStockTypes + static_cast<std::int32_t>(i);
+    }
+  }
+  return -1;
+}
+
+extern "C" void __stdcall UhcAddCustomImpact(const void* effect, std::int32_t type, void* entry) {
+  const std::int32_t index = type - kStockTypes;
+  if (index < 0 || index >= static_cast<std::int32_t>(g_names.size())) {
+    return;  // cannot happen: only the lookup above makes such types
+  }
+  std::vector<EntryList>& lists = g_lists[effect];
+  if (g_parsing != effect) {
+    g_parsing = effect;
+    lists.assign(g_names.size(), EntryList{nullptr, 0, 0});  // a new read of this effect
+  }
+  kListAdd(&lists[static_cast<std::size_t>(index)], &entry);
+}
+
+extern "C" void __stdcall UhcFinishImpactEffect(const void* effect) {
+  if (g_parsing != effect) {
+    g_lists.erase(effect);  // read again with no custom entry
+  }
+  g_parsing = nullptr;
+  const auto found = g_lists.find(effect);
+  if (found == g_lists.end()) {
+    return;
+  }
+  // As FUN_005FE8CD does for the stock lists: each entry's weight [+20h] (0 counts as 1) becomes the running sum.
+  for (EntryList& list : found->second) {
+    std::int32_t sum = 0;
+    for (std::int32_t i = 0; i < list.count; ++i) {
+      char* entry = static_cast<char*>(list.data[i]);
+      if (entry == nullptr) {
+        continue;
+      }
+      std::int32_t& weight = *reinterpret_cast<std::int32_t*>(entry + 0x20);
+      sum += weight == 0 ? 1 : weight;
+      weight = sum;
+    }
+  }
+}
+
+extern "C" std::int32_t __stdcall UhcSpawnCustomImpact(char* effect, const std::uint32_t* args) {
+  const std::int32_t index = static_cast<std::int32_t>(args[3]) - kStockTypes;
+  const auto found = g_lists.find(effect);
+  if (effect == nullptr || index < 0 || index >= static_cast<std::int32_t>(g_names.size()) ||
+      found == g_lists.end() || found->second[static_cast<std::size_t>(index)].count <= 0) {
+    return -1;  // as the stock spawn does for a type with no entry
+  }
+  if (g_log && !g_loggedSpawn[static_cast<std::size_t>(index)]) {
+    g_loggedSpawn[static_cast<std::size_t>(index)] = true;
+    uhc::Log(L"customImpactTypes: first impact of type %ls (%d)", g_names[static_cast<std::size_t>(index)].c_str(),
+             kStockTypes + index);
+  }
+  EntryList* slot = reinterpret_cast<EntryList*>(effect + 4 + kLentSlot * 12);
+  const EntryList saved = *slot;
+  *slot = found->second[static_cast<std::size_t>(index)];
+  const std::int32_t result =
+      kSpawn(effect, args[0], args[1], args[2], kLentSlot, args[4], args[5], args[6], args[7]);
+  found->second[static_cast<std::size_t>(index)] = *slot;  // the spawn does not change a list; kept in step anyway
+  *slot = saved;
+  return result;
+}
+
+namespace uhc {
+
+Outcome ApplyCustomImpactTypes(const Config& config) {
+  const Config::Args* args = config.First("customImpactTypes");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  static const wchar_t* const kStock[] = {L"Wood",        L"Stone",        L"Flesh",       L"Animal",
+                                          L"TerrainGrass", L"Snow",         L"Dirt",        L"TerrainWater",
+                                          L"TerrainDirt", L"TerrainStone", L"TerrainSnow", L"TerrainSand",
+                                          L"RoofTile",    L"ExitBuilding", L"Metal"};
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
+    std::wstring name(arg.begin(), arg.end());
+    bool clash = name.empty() || name.size() >= 32;
+    for (const wchar_t* stock : kStock) {
+      clash = clash || _wcsicmp(stock, name.c_str()) == 0;
+    }
+    for (const std::wstring& other : g_names) {
+      clash = clash || _wcsicmp(other.c_str(), name.c_str()) == 0;
+    }
+    if (clash || g_names.size() >= kMaxCustom) {
+      Log(L"customImpactTypes: '%hs' is a stock or repeated name, too long (31 at most) or one too many (%u at most); "
+          L"not applied",
+          arg.c_str(), static_cast<unsigned>(kMaxCustom));
+      g_names.clear();
+      return Outcome::kFailed;
+    }
+    g_names.push_back(name);
+  }
+  if (g_names.empty()) {
+    Log(L"customImpactTypes: no type name given; not applied");
+    return Outcome::kFailed;
+  }
+  g_loggedSpawn.assign(g_names.size(), false);
+  if (!VerifyAll("customImpactTypes",
+                 {&sites::kImpactTypeNotFound, &sites::kImpactEffectAdd, &sites::kImpactEffectWeights,
+                  &sites::kImpactSpawnUnit, &sites::kImpactSpawnTerrain, &sites::kStringCompareW, &sites::kImpactSpawn})) {
+    return Outcome::kFailed;
+  }
+  if (!WriteJmp(sites::kImpactTypeNotFound.va, reinterpret_cast<const void*>(&UhcImpactTypeNotFoundHook), 7) ||
+      !WriteJmp(sites::kImpactEffectAdd.va, reinterpret_cast<const void*>(&UhcImpactEffectAddHook), 0x15) ||
+      !WriteJmp(sites::kImpactEffectWeights.va, reinterpret_cast<const void*>(&UhcImpactEffectWeightsHook), 7) ||
+      !WriteJmp(sites::kImpactSpawnUnit.va, reinterpret_cast<const void*>(&UhcImpactSpawnUnitHook), 5) ||
+      !WriteJmp(sites::kImpactSpawnTerrain.va, reinterpret_cast<const void*>(&UhcImpactSpawnTerrainHook), 5)) {
+    return Outcome::kFailed;
+  }
+  std::wstring list;
+  for (std::size_t i = 0; i < g_names.size(); ++i) {
+    list += (i == 0 ? L"" : L", ") + g_names[i] + L" (" + std::to_wstring(kStockTypes + static_cast<int>(i)) + L")";
+  }
+  Log(L"customImpactTypes: %ls", list.c_str());
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/impacttype_hooks.asm
+
+```asm
+; Hooks for customImpactTypes (src/features/impacttypes.cpp).
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcCustomImpactType   PROTO STDCALL nameString:DWORD
+UhcAddCustomImpact    PROTO STDCALL effect:DWORD, impactType:DWORD, entry:DWORD
+UhcFinishImpactEffect PROTO STDCALL effect:DWORD
+UhcSpawnCustomImpact  PROTO STDCALL effect:DWORD, args:DWORD
+
+.data
+listAdd       dd 00401F74h
+weights       dd 005FE8CDh
+spawn         dd 0049C1E5h
+addContinue   dd 005FEC89h   ; add ebp,1
+weightsCont   dd 005FECA0h   ; lea ecx,[esp+24h]
+unitContinue  dd 0049D873h   ; push eax
+terrainCont   dd 004CB312h   ; pop edi
+
+.code
+
+; 0x59F464, the not-found end of the impact type by name (EBX = the name's string object, EDI/ESI/EBX
+; still pushed). Replaces pop edi / pop esi / or eax,-1 / pop ebx / ret: EAX = 15 + the custom type's
+; index, or -1.
+UhcImpactTypeNotFoundHook PROC
+    TRACE_ONCE "customImpactTypes name lookup (0x59F464)"
+    push ebx
+    call UhcCustomImpactType
+    pop edi
+    pop esi
+    pop ebx
+    ret
+UhcImpactTypeNotFoundHook ENDP
+
+; 0x5FEC74, the add of a parsed entry to its type's list (EBX = the type, [esp+20h] = the impact effect,
+; [esp+14h] = the entry). Stock types run the stock add; custom ones go to the DLL's lists.
+UhcImpactEffectAddHook PROC
+    TRACE_ONCE "customImpactTypes impact effect entry (0x5FEC74)"
+    cmp ebx, 15
+    jge custom
+    mov edx, dword ptr [esp+20h]
+    lea eax, dword ptr [esp+14h]
+    lea ecx, dword ptr [ebx+ebx*2]
+    push eax
+    lea ecx, dword ptr [edx+ecx*4+4]
+    call listAdd
+    jmp addContinue
+custom:
+    push dword ptr [esp+14h]
+    push ebx
+    push dword ptr [esp+28h]      ; [esp+20h] before the two pushes
+    call UhcAddCustomImpact
+    jmp addContinue
+UhcImpactEffectAddHook ENDP
+
+; 0x5FEC99, the cumulative weights of the 15 stock lists (EBX = the impact effect); the custom lists get
+; theirs too.
+UhcImpactEffectWeightsHook PROC
+    TRACE_ONCE "customImpactTypes impact effect weights (0x5FEC99)"
+    mov ecx, ebx
+    call weights
+    push ebx
+    call UhcFinishImpactEffect
+    jmp weightsCont
+UhcImpactEffectWeightsHook ENDP
+
+; The two calls of the spawn FUN_0049C1E5: ECX = the impact effect, its 8 arguments on the stack, the type
+; 4th ([esp+0Ch]). A custom type is spawned by the DLL, which lends it a stock list for the stock call; the
+; 8 arguments are then dropped as the callee would have.
+SPAWN_HOOK MACRO hookName:REQ, traceText:REQ, continueAt:REQ
+hookName PROC
+    TRACE_ONCE traceText
+    cmp dword ptr [esp+0Ch], 15
+    jge custom
+    call spawn
+    jmp continueAt
+custom:
+    mov eax, esp
+    push eax
+    push ecx
+    call UhcSpawnCustomImpact
+    add esp, 20h
+    jmp continueAt
+hookName ENDP
+ENDM
+
+SPAWN_HOOK UhcImpactSpawnUnitHook, "customImpactTypes impact spawn, projectile hit (0x49D86E)", unitContinue
+SPAWN_HOOK UhcImpactSpawnTerrainHook, "customImpactTypes impact spawn, terrain (0x4CB30D)", terrainCont
+
+END
 ```

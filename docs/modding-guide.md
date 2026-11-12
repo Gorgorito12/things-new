@@ -30,7 +30,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Thursday 2026-11-12 13:45 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
+| Thursday 2026-11-12 17:40 | [`customImpactTypes`](#customimpacttypes) | Filmed in WoL, with a control. New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. |
+| Thursday 2026-11-12 16:03 | [`impactBoneFix`](#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
+| Thursday 2026-11-12 15:52 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
+| Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
 | Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
 | Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
@@ -2874,6 +2877,7 @@ Attacks, armor, and what a hit does.
 |---|---|---|---|---|
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
 | [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
+| [`stealthTargeting`](#stealthtargeting) | A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | **new** | Nothing. | confirmed (single player) |
 | [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
@@ -2890,6 +2894,8 @@ Attacks, armor, and what a hit does.
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
+| [`impactBoneFix`](#impactbonefix) | An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | **new** | Nothing. | confirmed (single player) |
+| [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
 #### detonationDeath
 
@@ -4343,6 +4349,156 @@ the attackers catch it. It lost 1070 HP. [Full video (MP4)](media/snareValues-st
   `<AttachSnare>` 0.5 over 0.8, 2.00 against 3.20, with `damageOverTime`, `snareOnlyHitUnit` and `cantBeSlowed` on; an AI skirmish of
   100 s had 16 units and no XS error; 1686 fps against 1639 with 60 units fighting and other games open, in a scene with no swap.
   Not tested: beside WoL's DLL, multiplayer.
+
+#### stealthTargeting
+
+*A unit in stealth stays hidden from enemies, ships and other large units too, so enemies and the AI no longer attack it.*
+
+**Added:** Thursday 2026-11-12 15:51 · **Filmed in WoL:** Thursday 2026-11-12 15:52
+
+![stealthTargeting in WoL](media/stealthTargeting-wol.gif)
+
+*In WoL, with `stealthTargeting` (a stealthed `gwSubmarine`, selected; a `Frigate` and a `Monitor` of player 2 appear 22 m away, in
+range):* they stay idle and the submarine keeps its 1000 HP. [Full video (MP4)](media/stealthTargeting-wol.mp4).
+
+![stealthTargeting in WoL, key off](media/stealthTargeting-wol-control.gif)
+
+*In WoL, key off (the same scene):* both ships fire at the stealthed submarine at once; it falls to 280 HP in 15 s.
+[Full video (MP4)](media/stealthTargeting-wol-control.mp4).
+
+![stealthTargeting against the AI in WoL](media/stealthTargeting-ai-wol.gif)
+
+*In WoL, with `stealthTargeting`, a skirmish against the German AI (British player, a stealthed submarine; the AI has a `Frigate`
+32 m away and a `Galleon` 50 m away):* the AI's ships stay out of the fight and the submarine keeps its 1000 HP.
+[Full video (MP4)](media/stealthTargeting-ai-wol.mp4).
+
+![stealthTargeting against the AI in WoL, key off](media/stealthTargeting-ai-wol-control.gif)
+
+*In WoL, key off (the same skirmish):* the AI's Frigate keeps firing at the stealthed submarine, and the AI sends a Galleon to it
+from 50 m. [Full video (MP4)](media/stealthTargeting-ai-wol-control.mp4).
+
+```
+stealthTargeting [log]
+```
+
+- **The bug (WoL #60 and #61):** the game hides a unit in stealth from every player but its owner and allies, but only for units
+  whose `ObstructionRadiusX` and `ObstructionRadiusZ` are at most 1.0. For a larger one, such as a ship or WoL's `gwSubmarine`
+  (Z 2.5), the visibility code takes another branch that forgets the stealth: every enemy whose line of sight covers it sees
+  it, its units attack it on their own, and the AI finds it and sends ships. Small units (a `xpSpy`, infantry, cavalry) were
+  already hidden. In WoL, the stealth units with a radius over 1.0 are `gwSubmarine`, `Steamboat` and `WoLHotAirBalloonFrench`.
+- **What the key does:** a large unit in stealth is hidden as a small one is. And no unit picks a stealthed unit its player does
+  not see as a target, so an order on a unit seen before it went into stealth (as the AI's ship tried) starts no attack.
+- **Unchanged:** a unit of `AbstractCanSeeStealth` that has it in its line of sight still forces it out of stealth, and the
+  owner and allies still see it. Area damage still hits it.
+- **With other keys:** none shares its sites.
+- **Tested in WoL (2026-11-12, single player):** key off, the stealthed submarine was seen by player 2 (visibility mask 0x6) as soon
+  as enemy ships appeared, and sunk; key on, the mask stayed 0x2 (its owner) and it took no damage over 50 s; the skirmish
+  against `wolOtto` (Germans) as above, with no XS error (the log shows one refused try of the AI's Frigate at the submarine); a stealthed `xpSpy` among 3 `Crossbowman`s and 2 `Hussar`s stayed
+  hidden with the key off too. Beside WoL's own DLL (`dinput8.dll`), `applied` and the submarine stayed hidden. 792 fps
+  against 776 with 80 units fighting (update 0.151 ms against 0.155). Not tested: multiplayer, a saved game.
+
+#### impactBoneFix
+
+*Cannon splinters land on the building they hit, instead of flying over the whole screen, on models whose impact bones are scaled.*
+
+**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Thursday 2026-11-12 16:03
+
+![impactBoneFix in WoL](media/impactBoneFix-wol.gif)
+
+*In WoL, with `impactBoneFix log` (a Persian `Mahalla` whose `mahalla1A/B/C.dmg` had `impacttype="wood"` on every impact
+point, hit by a Falconet; the Mahalla stays selected):* each cannonball plays the wood impact on the wall it hits: a burst
+of splinters, smoke and fire, at the size of the building. The log shows `a dummy bone of type 35 had an axis of length
+100.000; scaled to 1`. [Full video (MP4)](media/impactBoneFix-wol.mp4).
+
+![impactBoneFix in WoL, key off](media/impactBoneFix-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* every hit throws long grey streaks across the whole view, from the top of the
+screen down past the building: the same splinters, a hundred times too big.
+[Full video (MP4)](media/impactBoneFix-wol-control.mp4).
+
+```
+impactBoneFix [all] [log]
+```
+
+- **In WoL today:** JTMaston's #49. The Middle East buildings (Afghans, Persians, Saudis, Uzbeks: `art\WoL\buildings\ME`)
+  use `stone` and `rooftile`, and their `oasis*.dmg` uses `wood`; any of them with `wood` shows the bug.
+- **Why:** an impact effect whose `<particleset>` names an `.xml` (stock `cannon.impacteffect`'s `<wood>` names
+  `effects\impacts\cannonball_impact_wood.xml`) is a visual, and the game hangs it on the bone of the impact point it hit,
+  with the bone's whole frame. The bones of these models are scaled by 100 (the export's centimetres); the stock House's
+  have length 1. A `<particleset>` with a plain particle set name (`stone`, `rooftile`) is placed at the hit point and never
+  reads the bone, so it looks right. WoL's own DLL shows the same streaks: it is the data and the exe, not a DLL.
+- **Effect:** the three axes of the bone are brought to length 1 before the visual is placed; its position stays the
+  bone's. Bones of length 1 (every stock model) are not touched.
+- **`all`:** the same for any visual hung on a bone (flags, smoke, fire points), not only the impact points. Not needed for
+  #49; not tested.
+- **Without the key, in the data:** export the models with unscaled bones, or use a plain particle set in that element of
+  the `.impacteffect`.
+- **Simulation:** no, it is drawing only.
+- **Log:** `impactBoneFix: effects attached to impact bones get unit-length axes`, `hook reached: impactBoneFix dummy frame,
+  path 1 (0x4BE21E)` and `path 2 (0x4BE88D)`; with `log`, the first bone it scales and its length.
+- **Tested in WoL (2026-11-12):** the Mahalla with `wood`: streaks on screen with the key off, splinters on the walls with
+  it on; the stock House (`wood`, bones of length 1) looks the same either way; the Mahalla with its own `stone`: no streaks
+  either way. Beside WoL's own DLL, key off, the streaks show too. Not tested: `all`, ships, multiplayer.
+
+#### customImpactTypes
+
+*Adds new impact types, so a model can have its own hit effects and sounds, for example a metal sound for steel ships.*
+
+**Added:** Thursday 2026-11-12 16:03 · **Filmed in WoL:** Thursday 2026-11-12 17:40
+
+![customImpactTypes in WoL](media/customImpactTypes-wol.gif)
+
+*In WoL, with `customImpactTypes ShipMetal log` (test data: the Persian `Mahalla`'s `.dmg` with `impacttype="ShipMetal"`, and
+a `<shipmetal>` element in `cannon.impacteffect` with the particle set `cannonball_impact_water` and the sound sets
+`MeleeImpactMetal` and `Explosion`, compiled to `.xmb`; hit by a Falconet):* each hit throws a white water splash off the
+wall, the effect of the new type, and the log says `first impact of type ShipMetal (15)`. The sound is not in the video.
+[Full video (MP4)](media/customImpactTypes-wol.mp4).
+
+![customImpactTypes in WoL, key off](media/customImpactTypes-wol-control.gif)
+
+*In WoL, key off (the same data):* the game does not know `ShipMetal`: the hits play no effect of that type, only fire and
+smoke. [Full video (MP4)](media/customImpactTypes-wol-control.mp4).
+
+```
+customImpactTypes <Name> [<Name> ...] [log]
+```
+
+```xml
+<!-- art\effects\impacts\cannon.impacteffect (compiled to cannon.impacteffect.xmb) -->
+<shipmetal>
+    <particleset>cannonball_impact_stone</particleset>
+    <soundset>MeleeImpactMetal</soundset>
+    <soundset>Explosion</soundset>
+</shipmetal>
+
+<!-- the model's .dmg -->
+<impactpoint name="bone_impactpoint01" bone="bone_impactpoint01" impacttype="ShipMetal" ...>
+```
+
+- **In WoL today:** JTMaston's #50, a metallic sound for the modern ships.
+- **The stock types:** Wood, Stone, Flesh, Animal, TerrainGrass, Snow, Dirt, TerrainWater, TerrainDirt, TerrainStone,
+  TerrainSnow, TerrainSand, RoofTile, ExitBuilding and **Metal**. Metal is in the exe and works with data only, no key:
+  `impacttype="Metal"` in a `.dmg` and a `<metal>` element in the `.impacteffect` files (tested in WoL on 2026-11-12, key
+  off: the Mahalla showed the `<metal>` element's splash). No stock file uses it, so one metal type needs no DLL.
+- **Effect:** each name gets the number 15, 16, …, in cfg order; the names are not case-sensitive. A name is read where the
+  game reads an impact type: `impacttype` in a `.dmg`, a proto's `<ImpactType>`, a terrain type's `ImpactType`, and an
+  element name of an `.impacteffect`. An element of a custom type takes the stock attributes and children (`weight`,
+  `fireExistTime`, `particleSet`, `secondaryParticleSet`, `soundSet`, `anim`).
+- **Not for custom types:** the units thrown out of a building that is hit (`exitEffectSpawnChance` and the other values of
+  `ExitBuilding`). An `.impacteffect` with no element of the type plays nothing for it, as in stock.
+- **Edit the `.xmb`:** the game reads `cannon.impacteffect.xmb` from `Art1.bar` before a loose `cannon.impacteffect.xml`,
+  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). Compile it with
+  `python -I tools/xmbedit.py from-xml cannon.impacteffect.xml cannon.impacteffect.xmb --compress` and put both in
+  `art\effects\impacts`.
+- **Bad arguments:** a stock name, a repeated name, a name of 32 characters or more, or no name: logged, and the key is not
+  applied.
+- **Simulation:** no, it is drawing and sound only.
+- **Log:** `customImpactTypes: ShipMetal (15)`, `hook reached: customImpactTypes name lookup (0x59F464)`, `impact effect
+  entry (0x5FEC74)`, `impact effect weights (0x5FEC99)`, `impact spawn, projectile hit (0x49D86E)`; with `log`, the first
+  impact of each custom type.
+- **Tested in WoL (2026-11-12):** the Mahalla with `ShipMetal` and the `.xmb`: the splash on every hit with the key, none
+  without it; the stock `Metal`, key off. Not tested: a ship, a proto's or a terrain's `<ImpactType>`, the sound by ear,
+  multiplayer.
 
 ### Gathering and farms
 
@@ -6210,7 +6366,8 @@ nextResearchFree [log]
   researches; `relativity` is required by the game and not used.
 - **One count per proto:** two Markets of a player share it, and it does not reach another proto.
 - **No resources needed:** with 0 wood the button starts the research. The button and its tooltip still show the normal
-  price.
+  price, unless [`researchGrants`](#researchgrants) is on: its price display asks the shared payment, so that research
+  shows `Free` there.
 - **Cancel:** the free research gives nothing back, and the free turn is spent. A paid one refunds as usual.
 - **Saved games:** the count is not saved. A load applies the tech again, so an unused turn stays, but **a spent one comes
   back**.
@@ -6238,30 +6395,41 @@ nextResearchFree [log]
 
 *A building gathers grant points over time, and each point makes one of its player's researches cheaper or free.*
 
-**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Thursday 2026-11-12 13:45
+**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Thursday 2026-11-12 15:40
 
 ![researchGrants in WoL](media/researchGrants-wol.gif)
 
-*In WoL, with the key (Dutch skirmish against a German AI; test data of `tools/grant_testdata.py`: the Market with
+*In WoL, with the key (British skirmish against a French AI; test data of `tools/grant_testdata.py`: the Market with
 `ResearchGrantInterval` 20, `ResearchGrantMax` 3, `ResearchGrantCost` 0 and `ResearchGrantScope` `self`, and four test
-techs of 300 wood on its buttons; 1200 wood; the Market stays selected):* the `Research grants` row of the Market's
-panel counts the points and the seconds to the next one: 1/3 at 20 s of game time, 2/3 at 40 s (where the GIF starts)
-and `3/3 (full)` at 60 s. Four researches are then started at that
-Market by console, about 4 s apart: the first three take no wood (the wood stays at 1200) and one point each (2/3, 1/3,
-0/3, and the timer starts again), and the fourth, with no point left, takes 300 (1200 to 900). Each research shows in
-the Market's queue and its button leaves the panel. A point comes back 20 s after the first was spent. The GIF shows the
-resources, the Market and its panel; the full video also shows the queue and the buttons.
-[Full video (MP4)](media/researchGrants-wol.mp4).
+techs of 300 wood on its buttons, Optics, Public Lighting, Reservists and Mass Cavalry; 1200 wood; the Market stays
+selected; each research is started by a click on its button, after the pointer has rested on it):* until the first
+point (20 s of game time) the buttons are as stock; from then on every tech of the Market says `Free`, since with
+`ResearchGrantMinCost` 0 any research there would take a point. The `Research grants` row counts 1/3, 2/3 and `3/3
+(full)` at 20, 40 and 60 s. Then, about 5 s apart: the Optics rollover reads `Optics` / `Free research` (no cost line),
+the click starts it, `Free research` floats in green over the Market, the research shows in the queue, the row goes to
+2/3 and the wood stays at 1200; the same for Public Lighting (1/3) and Reservists (0/3). With no point left the buttons
+lose their word, the Mass Cavalry rollover shows its cost, 300 wood, and its click takes it (1200 to 900), with no
+floating text. A point comes back 20 s after the first was spent (84.2 s) and the buttons say `Free` again. The GIF
+stacks three parts of the frame at their own size: the Market, the queue with the buttons and the `Research grants`
+row, and the resources. [Full video (MP4)](media/researchGrants-wol.mp4).
 
 ![researchGrants in WoL, key off](media/researchGrants-wol-control.gif)
 
-*In WoL, key off (the same data, map and console commands):* no `Research grants` row, and each of the four researches
-takes 300 wood: 1200, 900, 600, 300, 0. The game skips the tags it does not know.
-[Full video (MP4)](media/researchGrants-wol-control.mp4).
+*In WoL, key off (the same data, map, civs and clicks):* no `Research grants` row, no word on the buttons and no
+floating text; each of the four researches takes 300 wood: 1200, 900, 600, 300, 0. The game skips the tags it does not
+know. [Full video (MP4)](media/researchGrants-wol-control.mp4).
 
 ```
-researchGrants [log]
+researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
 ```
+
+| Option | What it does |
+|---|---|
+| `notext` | No floating text over the building that pays a point. |
+| `text=<text>` | That text over the building instead of the label below, `_` for a space (at most 127 characters), or `text=<string table ID>`. |
+| `noprice` | The tech buttons and their rollovers show the stock price. |
+| `free=<text>` | The word on the button of a research that would be free (default `Free`, at most 31 characters, `_` for a space). |
+| `log` | Logs the points, each point spent, each floating text and each change of the price a button shows. |
 
 ```xml
 <Unit name="Market">
@@ -6300,6 +6468,19 @@ researchGrants [log]
   takes `ResearchGrantTime` times as long. With a share below 1 the player needs only that share.
 - **Cancel:** the research gives back what was paid (nothing for a free one, half for a half) and never the point, as
   with `nextResearchFree`.
+- **What the player sees** (only the player who owns the building; nothing of it changes the game):
+  - **The price on the button:** while a point would go on a research, its button in the command panel says `Free` (a
+    share of 0), the price after the share when the tech costs one resource (`150`), or the discount (`-50%`). Without
+    a point, or when the rule would keep the point, the button is as stock. The price is the payment's own answer, asked
+    the same way at each refresh of the panel (the same `ResearchGrantMinCost`, scope, building with most points and
+    resources of the player), so what the button shows is what the click takes. A research that `nextResearchFree`
+    would make free shows `Free` too.
+  - **The rollover:** the cost line shows the cost after the share (none for a free research, as for a stock tech that
+    costs nothing), and a green line ends it: `Free research`, `Grant -50%`, or `Research grant, ×2 time` for a point
+    that only changes the time (with `, ×2 time` added to the others when `ResearchGrantTime` is not 1).
+  - **The floating text:** when a point is spent, the same label shows in green over the building that paid it, for
+    three times as long as the stock dodge text (about 5 s of game time in the test; `text=` changes it, `notext`
+    removes it).
 - **Tech effects** (`type='Data'`, on the player's copy of the proto):
   - `subtype='ResearchGrantInterval'` and `subtype='ResearchGrantMax'` change the interval and the cap from the tags'
     values, with the stock relativity (`Absolute` adds, `Percent` and `BasePercent` multiply, `Assign` sets). A card of
@@ -6325,13 +6506,19 @@ researchGrants [log]
   - a transform in place (`TransformUnit`, a revolution) clears them: the building starts again from 0;
   - a building found at the start of a game, or created by a trigger, starts its timer when the key first sees it,
     within a world update;
-  - the research cost shown on the button and in its tooltip is the full price.
+  - the button's price is the price at the last refresh of the panel: resources that change between that refresh and
+    the click (another research paid in the same frame) can change the answer, and the click is what counts;
+  - only the command panel's buttons get the word on the button and the green line; two other research panels of the
+    game that build the same rollover (0x9AD7F1, 0x9B7637) get only the cost after the share.
 - **Multiplayer:** it changes the simulation: every player needs the same setting. It uses only game state and game
   time; not tested in multiplayer.
 - **Simulation:** yes.
 - **Log:** `researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax
-  and ResearchGrantPoints are on`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research
-  step (0x9E6622)`; a bad value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
+  and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that
+  pays a point`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research step (0x9E6622)`,
+  `hook reached: researchGrants tech button (0x4622C5)`, `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
+  with `log` also `the button of tech 10542 shows Free (cost x0.00)` and `"Free research" shown over unit 0`; a bad
+  value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
   "2"; ignored`. With `log`: `unit 0 (Market) has 2/3 point(s) (game time 40000 ms)`, `unit 2 spends a point on tech
   10544 in unit 2: cost x0.50, time x2.00, 1 left`, `tech 10544 in unit 2 is done (game time 103014 ms)`.
 - **Tested in WoL (2026-11-11),** scenario player 1 (Ethiopians) with a `Market` (interval 20, cap 3, cost 0, time 1,
@@ -6357,6 +6544,21 @@ researchGrants [log]
     Dutch skirmish, the Market (interval 20, cap 3) with four test techs of 300 wood (`tools/grant_testdata.py`):
     points at 20.0, 40.0 and 60.0 s, three researches free at 63.1, 67.5 and 72.1 s (1200 wood kept, 2, 1 and 0
     points left), the fourth at 77.2 s paid 300, the next point at 83.1 s; key off, 1200 to 0 in four steps.
+  - **the price and the floating text (2026-11-12),** British skirmish against a French AI (`wolNapoleon`), the same
+    data, every research started by a click on its button: the buttons as stock before the first point and `Free` on
+    all ten Market techs from 20 s; the rollover `Free research` with no cost line; clicks at 64.2, 69.2 and 74.3 s
+    free (1200 wood kept, `Free research` over the Market each time, 2, 1, 0 points); at 0 points the buttons lost
+    their word (`the button of tech 10545 shows the full price`), the rollover showed 300 wood, and the click at 79.5 s
+    took 300; the point back at 84.2 s. Key off, the same clicks: 1200, 900, 600, 300, 0, no word, no text. `noprice
+    notext`: applied without the two display hooks; `free=` with no text: logged, the key not applied.
+  - **beside WoL's own DLL** (`C:\WoL-Test` with our `dinput8.dll`, `researchGrants text=Grant_used free=Gratis log`
+    in `engine-ext.cfg`, 2026-11-12): `3 applied, 0 failed`, both display hooks reached, the buttons said `Gratis`, the
+    rollover `Free research`, a click spent a point (2 left) with `Grant used` over the Market; the French AI trained
+    units. The bed's exe, `uhc.dll`, `wol.cfg` and data hashed the same afterwards.
+  - **Performance of the display** (the same scene, the Market selected for 44 s of each take, `record --perf`): key
+    on 862 fps on average, 3 frames over 50 ms, main thread 82 %; key off 841 fps, 0 frames over 50 ms, 82 %. The
+    on takes had 2 or 3 frames over 50 ms (at most 65 ms) and the control none; where they fell was not measured. Both
+    ran in a background copy beside two other games.
   - Not tested: `CommandResearch` (a research from a `protounitcommands.xml` command, 0x9D54CF / 0x9D58FF), a cancel,
     a transform in place, multiplayer.
 

@@ -149,7 +149,10 @@ them from the lossless masters of `record --master`, kept in `rea/media-masters/
 cut of each one in `tools/gifs.txt`. A new video: move its `.mkv` there, add a line to that table, run
 `python -I tools/make_gifs.py <name>`. `--check` fails on any GIF out of the standard. A GIF over 4 MB is
 retried with fewer frames and colours, then with a shorter cut, and the script names it: check that its
-caption still holds.
+caption still holds. When the parts that must stay readable are too far apart for one 800 px area (a building, the
+command buttons and the resource column), give several 800 px wide areas joined by `+` (`800:260:150:20+800:200:690:610`):
+they are stacked top to bottom at native size. `record` repeats the last frame when PrintWindow returns a black
+picture, which a background copy does now and then.
 
 ### Driving the game unattended
 

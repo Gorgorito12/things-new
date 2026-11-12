@@ -6,10 +6,12 @@
 namespace uhc {
 
 // Asked before a research is paid, in the order the keys added them (their kFeatures order), until one claims
-// it. `action` is the Research or CommandResearch action being set up ([action+10h] its unit; its tech is not
-// written yet), `player` the paying player, `cost` the tech's cost list (a ResList). Return true to claim the
-// payment with *share of the cost, 0 (free) to 1 (the full cost); the claim spends nothing yet.
-using ResearchPayClaim = bool (*)(const char* action, const char* player, const char* cost, float* share);
+// it. `researcher` is the unit of the Research or CommandResearch action being set up ([action+10h]), `player`
+// the paying player, `cost` the tech's cost list (a ResList). Return true to claim the payment with *share of the
+// cost, 0 (free) to 1 (the full cost); the claim spends nothing yet. With `preview` set the question comes from a
+// display (PreviewResearchPay): answer as for a payment, and change nothing.
+using ResearchPayClaim = bool (*)(const char* researcher, const char* player, const char* cost, float* share,
+                                  bool preview);
 
 // Called for every research that was paid and whose action is set up, claimed or not, for each key in order:
 // [action+68h] is the tech ID, and the refund copy holds what was paid. `claimed` is set for the key whose claim
@@ -19,5 +21,10 @@ using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
 
 // Writes the hooks the first time, after checking the stock bytes of the four sites.
 bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
+
+// What the payment would do now with a research of `cost` by `researcher` for `player`: the keys are asked in the
+// same order, with `preview` set. Returns the name of the key that would claim it, with *share, or nullptr with
+// *share 1. For a display of the price: nothing is spent or remembered.
+const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share);
 
 }  // namespace uhc

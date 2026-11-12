@@ -52,6 +52,7 @@ set(UHC_SOURCES
   src/features/freeresearch.cpp
   src/features/researchgrants.cpp
   src/features/cantslow.cpp
+  src/features/stealthtarget.cpp
   src/features/snarevalues.cpp
   src/features/civfirsttc.cpp
   src/features/datalint.cpp
@@ -112,6 +113,8 @@ set(UHC_SOURCES
   src/features/compat.cpp
   src/features/gatherfix.cpp
   src/features/smallfixes.cpp
+  src/features/impactbones.cpp
+  src/features/impacttypes.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/veterancy.cpp
@@ -129,6 +132,8 @@ set(UHC_SOURCES
   src/hooks/freeunit_hooks.asm
   src/hooks/gather_hooks.asm
   src/hooks/foundation_hooks.asm
+  src/hooks/impactbone_hooks.asm
+  src/hooks/impacttype_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
   src/hooks/unitlist_hooks.asm
@@ -182,6 +187,7 @@ set(UHC_SOURCES
   src/hooks/modifytype_hooks.asm
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm
+  src/hooks/stealthtarget_hooks.asm
   src/hooks/datalint_hooks.asm
   src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm

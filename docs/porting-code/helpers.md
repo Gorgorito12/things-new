@@ -1341,6 +1341,27 @@ inline constexpr Site kResearchProgressAdd{"ResearchProgressAdd", 0x009E6622, kR
 inline constexpr std::uint8_t kCommandResearchProgressAddBytes[] = {0xD8, 0x46, 0x70, 0xD9, 0x5E, 0x70, 0xE8, 0x91, 0xFA, 0xFF, 0xFF};
 inline constexpr Site kCommandResearchProgressAdd{"CommandResearchProgressAdd", 0x009D58FF, kCommandResearchProgressAddBytes, sizeof(kCommandResearchProgressAddBytes)};
 
+inline constexpr std::uint8_t kTechButtonRolloverBytes[] = {0x6A, 0x01, 0x6A, 0x01, 0x6A, 0x00, 0x6A, 0x01, 0x57, 0x53, 0x8D, 0x4C, 0x24, 0x30, 0x56, 0x51, 0xE8, 0xB2, 0x50, 0x06, 0x00};
+inline constexpr Site kTechButtonRollover{"TechButtonRollover", 0x004622B5, kTechButtonRolloverBytes, sizeof(kTechButtonRolloverBytes)};
+
+inline constexpr std::uint8_t kButtonOverlayResetBytes[] = {0xC6, 0x84, 0x24, 0xC0, 0x02, 0x00, 0x00, 0x00};
+inline constexpr Site kButtonOverlayReset{"ButtonOverlayReset", 0x00461DBC, kButtonOverlayResetBytes, sizeof(kButtonOverlayResetBytes)};
+
+inline constexpr std::uint8_t kButtonOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0xC0, 0x02, 0x00, 0x00};
+inline constexpr Site kButtonOverlayRead{"ButtonOverlayRead", 0x004625E2, kButtonOverlayReadBytes, sizeof(kButtonOverlayReadBytes)};
+
+inline constexpr std::uint8_t kTechRolloverHeadBytes[] = {0x83, 0xEC, 0x40, 0x53, 0x8B, 0x5C, 0x24, 0x48, 0x55, 0x8B, 0xCB, 0xE8, 0x84, 0xC5, 0xF7, 0xFF};
+inline constexpr Site kTechRolloverHead{"TechRolloverHead", 0x004C737C, kTechRolloverHeadBytes, sizeof(kTechRolloverHeadBytes)};
+
+inline constexpr std::uint8_t kTechTipCostCopyBytes[] = {0x8D, 0x55, 0x10, 0x52, 0xE8, 0x71, 0x96, 0xFB, 0xFF};
+inline constexpr Site kTechTipCostCopy{"TechTipCostCopy", 0x004C73F9, kTechTipCostCopyBytes, sizeof(kTechTipCostCopyBytes)};
+
+inline constexpr std::uint8_t kBStringAppendBytes[] = {0x51, 0x53, 0x55, 0x8B, 0xE9, 0x8B, 0x5D, 0x00, 0x85, 0xDB, 0x0F, 0x84, 0x1F, 0x17, 0x00, 0x00};
+inline constexpr Site kBStringAppend{"BStringAppend", 0x00443960, kBStringAppendBytes, sizeof(kBStringAppendBytes)};
+
+inline constexpr std::uint8_t kResListFillBytes[] = {0x83, 0xEC, 0x0C, 0x57, 0x8B, 0xF9, 0x83, 0x3F, 0x00, 0x74, 0x6E};
+inline constexpr Site kResListFill{"ResListFill", 0x004E2617, kResListFillBytes, sizeof(kResListFillBytes)};
+
 inline constexpr std::uint8_t kPayAffordCheckBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x40, 0x01, 0x00, 0x00, 0x53, 0x56, 0x33, 0xF6, 0x39, 0xB2, 0x80, 0x00, 0x00, 0x00, 0x57, 0x7E, 0x45, 0x8B, 0x5C, 0x24, 0x10, 0x8D, 0xB9};
 inline constexpr Site kPayAffordCheck{"PayAffordCheck", 0x008D6BAE, kPayAffordCheckBytes, sizeof(kPayAffordCheckBytes)};
 
@@ -1803,6 +1824,36 @@ inline constexpr Site kTacticReset3{"TacticReset3", 0x009D6BE7, kTacticReset3Byt
 inline constexpr std::uint8_t kTacticReset4Bytes[] = {0x6A, 0x00, 0xE8, 0x77, 0xB8, 0xB0, 0xFF};
 inline constexpr Site kTacticReset4{"TacticReset4", 0x009EBB0B, kTacticReset4Bytes, sizeof(kTacticReset4Bytes)};
 
+inline constexpr std::uint8_t kImpactBoneFrame1Bytes[] = {0xE8, 0x4F, 0x90, 0xF4, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0x0F, 0x59, 0x02, 0x00};
+inline constexpr Site kImpactBoneFrame1{"ImpactBoneFrame1", 0x004BE21E, kImpactBoneFrame1Bytes, sizeof(kImpactBoneFrame1Bytes)};
+
+inline constexpr std::uint8_t kImpactBoneFrame2Bytes[] = {0xE8, 0xE0, 0x89, 0xF4, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0x91, 0x01, 0x00, 0x00};
+inline constexpr Site kImpactBoneFrame2{"ImpactBoneFrame2", 0x004BE88D, kImpactBoneFrame2Bytes, sizeof(kImpactBoneFrame2Bytes)};
+
+inline constexpr std::uint8_t kBoneFrameGetterBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x24, 0x85, 0xC0};
+inline constexpr Site kBoneFrameGetter{"BoneFrameGetter", 0x00407272, kBoneFrameGetterBytes, sizeof(kBoneFrameGetterBytes)};
+
+inline constexpr std::uint8_t kImpactTypeNotFoundBytes[] = {0x5F, 0x5E, 0x83, 0xC8, 0xFF, 0x5B, 0xC3};
+inline constexpr Site kImpactTypeNotFound{"ImpactTypeNotFound", 0x0059F464, kImpactTypeNotFoundBytes, sizeof(kImpactTypeNotFoundBytes)};
+
+inline constexpr std::uint8_t kImpactEffectAddBytes[] = {0x8B, 0x54, 0x24, 0x20, 0x8D, 0x44, 0x24, 0x14, 0x8D, 0x0C, 0x5B, 0x50, 0x8D, 0x4C, 0x8A, 0x04, 0xE8, 0xEB, 0x32, 0xE0, 0xFF, 0x83, 0xC5, 0x01};
+inline constexpr Site kImpactEffectAdd{"ImpactEffectAdd", 0x005FEC74, kImpactEffectAddBytes, sizeof(kImpactEffectAddBytes)};
+
+inline constexpr std::uint8_t kImpactEffectWeightsBytes[] = {0x8B, 0xCB, 0xE8, 0x2D, 0xFC, 0xFF, 0xFF, 0x8D, 0x4C, 0x24, 0x24};
+inline constexpr Site kImpactEffectWeights{"ImpactEffectWeights", 0x005FEC99, kImpactEffectWeightsBytes, sizeof(kImpactEffectWeightsBytes)};
+
+inline constexpr std::uint8_t kImpactSpawnUnitBytes[] = {0xE8, 0x72, 0xE9, 0xFF, 0xFF, 0x50};
+inline constexpr Site kImpactSpawnUnit{"ImpactSpawnUnit", 0x0049D86E, kImpactSpawnUnitBytes, sizeof(kImpactSpawnUnitBytes)};
+
+inline constexpr std::uint8_t kImpactSpawnTerrainBytes[] = {0xE8, 0xD3, 0x0E, 0xFD, 0xFF, 0x5F};
+inline constexpr Site kImpactSpawnTerrain{"ImpactSpawnTerrain", 0x004CB30D, kImpactSpawnTerrainBytes, sizeof(kImpactSpawnTerrainBytes)};
+
+inline constexpr std::uint8_t kStringCompareWBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57};
+inline constexpr Site kStringCompareW{"StringCompareW", 0x00443C10, kStringCompareWBytes, sizeof(kStringCompareWBytes)};
+
+inline constexpr std::uint8_t kImpactSpawnBytes[] = {0x83, 0xEC, 0x6C, 0x53, 0x56, 0x8B, 0xB4, 0x24, 0x84, 0x00, 0x00, 0x00};
+inline constexpr Site kImpactSpawn{"ImpactSpawn", 0x0049C1E5, kImpactSpawnBytes, sizeof(kImpactSpawnBytes)};
+
 inline constexpr std::uint8_t kAnnexForwardSiteBytes[] = {0x8D, 0x87, 0xA8, 0x00, 0x00, 0x00, 0x50};
 inline constexpr Site kAnnexForwardSite{"AnnexForwardSite", 0x007D7CF1, kAnnexForwardSiteBytes, sizeof(kAnnexForwardSiteBytes)};
 
@@ -1919,6 +1970,21 @@ inline constexpr Site kOptionIntGetRange{"OptionIntGetRange", 0x006B7676, kOptio
 
 inline constexpr std::uint8_t kOptionIntSetterBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x8B, 0xF1, 0x3B, 0x7E, 0x08, 0x73, 0x39, 0x8B, 0x44, 0x24, 0x10, 0x8D, 0x0C, 0xBF, 0x03, 0x4E, 0x04, 0x50, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x02, 0x0F, 0x85, 0x61, 0x93, 0x1A, 0x00, 0x8B, 0x54, 0x24, 0x04, 0x89, 0x51, 0x01, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x84, 0xC0, 0x74, 0x0F, 0x57, 0x8B, 0xCE, 0xE8, 0x8E, 0xFF, 0xFF, 0xFF, 0x5F, 0xB0, 0x01, 0x5E, 0xC2, 0x08, 0x00, 0x5F, 0x32, 0xC0, 0x5E, 0xC2, 0x08, 0x00};
 inline constexpr Site kOptionIntSetter{"OptionIntSetter", 0x00518AE0, kOptionIntSetterBytes, sizeof(kOptionIntSetterBytes)};
+
+inline constexpr std::uint8_t kAttackActionForTargetBytes[] = {0x51, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x10, 0x56, 0x33, 0xDB, 0x3B, 0xEB, 0x8B, 0xF1};
+inline constexpr Site kAttackActionForTarget{"AttackActionForTarget", 0x00489ECC, kAttackActionForTargetBytes, sizeof(kAttackActionForTargetBytes)};
+
+inline constexpr std::uint8_t kAttackActionNoneBytes[] = {0x5F, 0x5E, 0x5D, 0x83, 0xC8, 0xFF, 0x5B, 0x59, 0xC2, 0x1C, 0x00};
+inline constexpr Site kAttackActionNone{"AttackActionNone", 0x004974C1, kAttackActionNoneBytes, sizeof(kAttackActionNoneBytes)};
+
+inline constexpr std::uint8_t kFootprintVisibilityBytes[] = {0xD9, 0x44, 0x24, 0x4C, 0x0F, 0xB6, 0x56, 0x0D, 0xD9, 0x7C, 0x24, 0x68, 0x0F, 0xB7, 0x44, 0x24};
+inline constexpr Site kFootprintVisibility{"FootprintVisibility", 0x00493040, kFootprintVisibilityBytes, sizeof(kFootprintVisibilityBytes)};
+
+inline constexpr std::uint8_t kFootprintHiddenTestBytes[] = {0x80, 0x7C, 0x24, 0x38, 0x00, 0x0F, 0x85, 0x13, 0xD9, 0x04, 0x00};
+inline constexpr Site kFootprintHiddenTest{"FootprintHiddenTest", 0x00493201, kFootprintHiddenTestBytes, sizeof(kFootprintHiddenTestBytes)};
+
+inline constexpr std::uint8_t kFootprintHiddenSkipBytes[] = {0x84, 0xC0, 0x0F, 0x85, 0xE5, 0x26, 0xFB, 0xFF, 0xE9, 0x28, 0x26, 0xFB, 0xFF};
+inline constexpr Site kFootprintHiddenSkip{"FootprintHiddenSkip", 0x004E0B1F, kFootprintHiddenSkipBytes, sizeof(kFootprintHiddenSkipBytes)};
 
 }  // namespace uhc::sites
 ```
@@ -2366,6 +2432,7 @@ Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
+Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
@@ -2425,6 +2492,8 @@ Outcome ApplyRofFix(const Config& config);
 Outcome ApplyStunMovingTargetFix(const Config& config);
 Outcome ApplyNoDamageOnUnbuiltFoundations(const Config& config);
 Outcome ApplyFallenHeroTacticsFix(const Config& config);
+Outcome ApplyImpactBoneFix(const Config& config);
+Outcome ApplyCustomImpactTypes(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
@@ -2492,6 +2561,7 @@ inline constexpr Feature kFeatures[] = {
     {"cantBeSlowed", ApplyCantBeSlowed},
     // After cantBeSlowed: its hook continues at the push this key writes.
     {"snareValues", ApplySnareValues},
+    {"stealthTargeting", ApplyStealthTargeting},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
@@ -2519,6 +2589,8 @@ inline constexpr Feature kFeatures[] = {
     {"stunMovingTargetFix", ApplyStunMovingTargetFix},
     {"noDamageOnUnbuiltFoundations", ApplyNoDamageOnUnbuiltFoundations},
     {"fallenHeroTacticsFix", ApplyFallenHeroTacticsFix},
+    {"impactBoneFix", ApplyImpactBoneFix},
+    {"customImpactTypes", ApplyCustomImpactTypes},
     {"selectionLimit", ApplySelectionLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
@@ -2571,13 +2643,13 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc
@@ -4129,8 +4201,9 @@ bool CanShowUnitText(const char* unit);
 
 // Shows text (or, with stringId >= 0, that string table entry) over unit, in colour (ARGB), when
 // CanShowUnitText. The text does not rise. Returns the manager's index, or -1 when nothing was
-// shown (the engine also refuses an empty text).
-std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour);
+// shown (the engine also refuses an empty text). lifeScale stretches both of the text's stock times.
+std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour,
+                          float lifeScale = 1.0f);
 
 }  // namespace uhc
 ```
@@ -4202,7 +4275,8 @@ bool CanShowUnitText(const char* unit) {
   return unit != nullptr && TextManager() != nullptr && kVisibleTo(unit, LocalPlayer());
 }
 
-std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour) {
+std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour,
+                          float lifeScale) {
   if (!CanShowUnitText(unit)) {
     return -1;
   }
@@ -4213,6 +4287,10 @@ std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t st
   std::int32_t time2 = 2000;
   kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime1), &time1);
   kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime2), &time2);
+  if (lifeScale != 1.0f && lifeScale > 0.0f) {
+    time1 = static_cast<std::int32_t>(static_cast<float>(time1) * lifeScale);
+    time2 = static_cast<std::int32_t>(static_cast<float>(time2) * lifeScale);
+  }
   BString string;
   if (stringId >= 0) {
     kBStringFromId(&string, stringId);
@@ -5253,10 +5331,12 @@ bool AddD3D9Observer(const D3D9Observer& observer, const char* who) {
 namespace uhc {
 
 // Asked before a research is paid, in the order the keys added them (their kFeatures order), until one claims
-// it. `action` is the Research or CommandResearch action being set up ([action+10h] its unit; its tech is not
-// written yet), `player` the paying player, `cost` the tech's cost list (a ResList). Return true to claim the
-// payment with *share of the cost, 0 (free) to 1 (the full cost); the claim spends nothing yet.
-using ResearchPayClaim = bool (*)(const char* action, const char* player, const char* cost, float* share);
+// it. `researcher` is the unit of the Research or CommandResearch action being set up ([action+10h]), `player`
+// the paying player, `cost` the tech's cost list (a ResList). Return true to claim the payment with *share of the
+// cost, 0 (free) to 1 (the full cost); the claim spends nothing yet. With `preview` set the question comes from a
+// display (PreviewResearchPay): answer as for a payment, and change nothing.
+using ResearchPayClaim = bool (*)(const char* researcher, const char* player, const char* cost, float* share,
+                                  bool preview);
 
 // Called for every research that was paid and whose action is set up, claimed or not, for each key in order:
 // [action+68h] is the tech ID, and the refund copy holds what was paid. `claimed` is set for the key whose claim
@@ -5266,6 +5346,11 @@ using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
 
 // Writes the hooks the first time, after checking the stock bytes of the four sites.
 bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
+
+// What the payment would do now with a research of `cost` by `researcher` for `player`: the keys are asked in the
+// same order, with `preview` set. Returns the name of the key that would claim it, with *share, or nullptr with
+// *share 1. For a display of the price: nothing is spent or remembered.
+const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share);
 
 }  // namespace uhc
 ```
@@ -5282,6 +5367,7 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
 // claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
 // the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
 // share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+// PreviewResearchPay asks the same claims in the same order for a display of the price, and changes nothing.
 #include "researchpay.h"
 
 #include <cstdint>
@@ -5314,6 +5400,7 @@ const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
 const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
 
 struct Payer {
+  const char* feature;
   uhc::ResearchPayClaim claim;
   uhc::ResearchPayStarted started;
 };
@@ -5332,6 +5419,8 @@ struct ResList {
   std::uint32_t* entries;
   std::uint32_t total;
 };
+
+float ClampShare(float share) { return share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share); }
 
 bool PayShare(void* player, const void* cost, float share) {
   if (share <= 0.0f) {
@@ -5375,12 +5464,14 @@ void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { 
 // From the two hooks, instead of the payment. The action is the one being set up.
 extern "C" bool __stdcall UhcResearchPay(const char* action, void* player, const void* cost) {
   g_pending = nullptr;
+  const char* researcher = *reinterpret_cast<const char* const*>(action + 0x10);
   for (std::size_t i = 0; i < g_payerCount; ++i) {
     float share = 1.0f;
-    if (!g_payers[i].claim(action, static_cast<const char*>(player), static_cast<const char*>(cost), &share)) {
+    if (!g_payers[i].claim(researcher, static_cast<const char*>(player), static_cast<const char*>(cost), &share,
+                           false)) {
       continue;
     }
-    share = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
+    share = ClampShare(share);
     if (!PayShare(player, cost, share)) {
       return false;  // the research does not start; nothing was spent
     }
@@ -5411,8 +5502,20 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
     }
     g_installed = true;
   }
-  g_payers[g_payerCount++] = {claim, started};
+  g_payers[g_payerCount++] = {feature, claim, started};
   return true;
+}
+
+const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share) {
+  for (std::size_t i = 0; i < g_payerCount; ++i) {
+    float claimed = 1.0f;
+    if (g_payers[i].claim(researcher, player, cost, &claimed, true)) {
+      *share = ClampShare(claimed);
+      return g_payers[i].feature;
+    }
+  }
+  *share = 1.0f;
+  return nullptr;
 }
 
 }  // namespace uhc

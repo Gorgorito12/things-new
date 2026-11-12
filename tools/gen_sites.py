@@ -1032,6 +1032,20 @@ SITES = [
     # world byte [world+6912h] is set
     ("ResearchProgressAdd", 0x9E6622, 11),
     ("CommandResearchProgressAdd", 0x9D58FF, 11),
+    # researchGrants, the price shown: in the command panel refresh FUN_0046188E, the tech button's call of the
+    # rollover builder 0x4C737C (push 1/1/0/1, EDI the unit, EBX the player, ESI the tech entry, lea ecx,[esp+30h]
+    # the rollover; cdecl, add esp,20h after), and the reset and read of the button's overlay text [esp+2C0h]
+    # (0x461DBC, 0x4625E2), which tie the frame to that buffer; the builder's head (its arguments at
+    # [esp+50h].. once it pushed EBX and EBP) and its copy of the tech's cost [ebp+10h] into its local list
+    # (lea edx,[ebp+10h] / push edx / call 480A73h; 0x4C78FA pushes a cost it was given and joins at the call);
+    # the BString append 0x443960 (thiscall(text, wchar*, len, start), ret 0Ch) and the ResList fill 0x4E2617
+    ("TechButtonRollover", 0x4622B5, 0x15),
+    ("ButtonOverlayReset", 0x461DBC, 8),
+    ("ButtonOverlayRead", 0x4625E2, 7),
+    ("TechRolloverHead", 0x4C737C, 0x10),
+    ("TechTipCostCopy", 0x4C73F9, 9),
+    ("BStringAppend", 0x443960, 0x10),
+    ("ResListFill", 0x4E2617, 0x0B),
     ("PayAffordCheck", 0x8D6BAE, 0x1E),
     ("PaySharedAffordCheck", 0x8D6C1B, 0x1A),
     # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
@@ -1361,6 +1375,34 @@ SITES = [
     ("TacticReset2", 0x7D8F07, 0x07),
     ("TacticReset3", 0x9D6BE7, 0x07),
     ("TacticReset4", 0x9EBB0B, 0x07),
+    # impactBoneFix: the two calls of the model's bone frame getter FUN_00407272 (thiscall(model, bone,
+    # vec3* pos, vec3* axisC, vec3* axisB, vec3* axisA, ...), ret 1Ch) in the visual's dummy attachment update,
+    # and the test al,al / je they continue at. Path 1 (FUN_004BE0xx): type in EDI, the axes at
+    # [esp+24h], [esp+30h], [esp+40h] after the call; path 2 (FUN_004BE7xx): type in EBX, the axes at
+    # [esp+20h], [esp+30h], [esp+40h].
+    ("ImpactBoneFrame1", 0x4BE21E, 0x0D),
+    ("ImpactBoneFrame2", 0x4BE88D, 0x0D),
+    # the bone frame getter's head (verify only)
+    ("BoneFrameGetter", 0x407272, 0x08),
+    # customImpactTypes: the impact type by name FUN_0059F436 (15 wchar[32] names from 0xBA4D70) ends its
+    # not-found path with pop edi / pop esi / or eax,-1 / pop ebx / ret (EBX = the name's string object)
+    ("ImpactTypeNotFound", 0x59F464, 0x07),
+    # in the .impacteffect loader FUN_005FEABF, the add of a parsed entry to its type's list (EBX = the type,
+    # [esp+20h] = the impact effect, [esp+14h] = the entry): mov edx,[esp+20h] / lea eax,[esp+14h] /
+    # lea ecx,[ebx+ebx*2] / push eax / lea ecx,[edx+ecx*4+4] / call 401F74h, and the add ebp,1 it continues at
+    ("ImpactEffectAdd", 0x5FEC74, 0x18),
+    # the same loader's mov ecx,ebx / call 5FE8CDh (the 15 lists' cumulative weights; also reached from
+    # 0x5FEBE1 with no child), and the lea ecx,[esp+24h] it continues at
+    ("ImpactEffectWeights", 0x5FEC99, 0x0B),
+    # the two calls of the impact effect spawn FUN_0049C1E5 (thiscall(effect, pos, dir, ?, type, ...), 8 args,
+    # ret 20h; it returns -1 for a type above 14): from the projectile hit (0x49D86E) and the terrain impact
+    # (0x4CB30D), and the instruction each continues at
+    ("ImpactSpawnUnit", 0x49D86E, 0x06),
+    ("ImpactSpawnTerrain", 0x4CB30D, 0x06),
+    # the string compare FUN_00443C10 (thiscall(string, const wchar_t*, 0, -1), 0 when equal) and the spawn's
+    # head (verify only)
+    ("StringCompareW", 0x443C10, 0x07),
+    ("ImpactSpawn", 0x49C1E5, 0x0C),
     # annexFacing: in the build command's executor FUN_007D79D6 (EDI = the command, EBX = the player's proto,
     # EBP = the player), lea eax,[edi+0A8h] / push eax before the right vector 0x423792 is computed from the
     # forward at [edi+0A8h]; the continuation is the push
@@ -1457,6 +1499,20 @@ SITES = [
     # rendererOption: the int setter 0x518AE0; its failure return pop edi / xor al,al / pop esi / ret 8 at 0x518B26
     # (out of range from 0x518AEB, wrong type from 0x518B15; nothing lands inside it) is replaced by the hook.
     ("OptionIntSetter", 0x518AE0, 0x4D),
+    # stealthTargeting: the head of 0x489ECC, int thiscall(tactic, attacker, target, ...), ret 1Ch, which picks
+    # the attack action a unit would use on a target (-1: none). push ecx / push ebx / push ebp /
+    # mov ebp,[esp+10h] (7 bytes, nothing branches inside) is replaced; the hook goes on at push esi (0x489ED3).
+    # Its failure return or eax,-1 ... ret 1Ch is at 0x4974C1 (verify only).
+    ("AttackActionForTarget", 0x489ECC, 0x0E),
+    ("AttackActionNone", 0x4974C1, 0x0B),
+    # stealthTargeting: the footprint branch of the per-player visibility 0x486B1A (thiscall(proto, ...14 args),
+    # ret 38h), taken by the jp at 0x486C0D / 0x486C24 when [proto+88h] or [proto+8Ch] (the obstruction radii) is
+    # over 1.0. fld [esp+4Ch] / movzx edx,byte [esi+0Dh] (8 bytes, nothing branches inside) is replaced; the next
+    # instruction, fnstcw [esp+68h], overwrites the stealth argument. The hook goes on at 0x493048. The player
+    # loop's test of the "only allies see it" byte [esp+38h] (0x493201) and its skip 0x4E0B1F (verify only).
+    ("FootprintVisibility", 0x493040, 0x10),
+    ("FootprintHiddenTest", 0x493201, 0x0B),
+    ("FootprintHiddenSkip", 0x4E0B1F, 0x0D),
 ]
 
 
