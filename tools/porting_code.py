@@ -45,7 +45,8 @@ PAGES = {
         "bufferedFileReads": ["src/features/fileio.cpp"],
         "fastVertexFill": ["src/features/vertexfill.cpp", "src/hooks/clothfill_hooks.asm"],
         "fastLastInLine": ["src/features/lastinline.cpp", "src/hooks/lastinline_hooks.asm"],
-        "rendererOption": ["src/features/renderer.cpp", "src/hooks/rendereroption_hooks.asm"],
+        "rendererOption": ["src/features/renderer.cpp"],
+        "menuOptions": ["src/menuoptions.h", "src/menuoptions.cpp", "src/hooks/menuoptions_hooks.asm"],
         "xsErrorLog": ["src/features/xslog.cpp", "src/hooks/xslog_hooks.asm"],
     }),
     "population": ("Population", {

@@ -126,6 +126,8 @@ bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
+// menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
+// which of the keys it names the list then sees.
 inline constexpr Feature kFeatures[] = {
     // First: its types get their IDs before any other feature requests one.
     {"customAbstractTypes", ApplyCustomAbstractTypes},
@@ -266,7 +268,7 @@ inline constexpr const char* kHandledKeys[] = {
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
-    "buildingworkrateauras", "xserrorlog", "datalint", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
+    "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
 

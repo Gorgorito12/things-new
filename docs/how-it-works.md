@@ -3885,6 +3885,27 @@ bit 16 of every entry with the key's. Each recompute logs the player, the entrie
 With the key, two interleaved 150 s A/B pairs on the mod's save went from 12 and 15 frames over 50 ms (longest
 382 and 384 ms) to 3 and 3 (longest 191 and 243 ms, none of them the recompute).
 
+### menuOptions
+
+`menuOptions <key> …` hands on/off keys to the player, through the options menu's registry (see
+[rendererOption](#rendereroption), "The virtual options"). The keys that may be named are a table in `menuoptions.cpp`
+(`kMenuSwitches`: the key and its field's `<name>`), today `bufferedFileReads` (`OptionBufferedReads`) and
+`fastVertexFill` (`OptionFastVertexFill`) and `fastLastInLine` (`OptionFastLastInLine`); another key that changes nothing of the simulation takes one line there.
+
+It runs in `ApplyFeatures` after the cfg is read and before the first key of `kFeatures`, and edits the cfg those keys
+then see:
+1. each named key gets an option (`AddMenuOption`), with the stored line `<key> on|off`;
+2. the value: the player's stored choice; with none stored, the key's own cfg line (present: on, absent: off);
+3. off with a cfg line: every line of the key is removed, so the key does not apply; on without one: an empty line is
+   added, so the key applies with its defaults; otherwise the cfg is left as it is, arguments included.
+
+So a key not named on a `menuOptions` line behaves as before, and nothing changes during a game: a choice is used from
+the next start. An unknown name, or the menu sites not being stock, logs `menuOptions: FAILED` and leaves those keys to
+the cfg.
+
+A field of `options.xml` whose name is not registered gets -1 from the lookup, as in stock, and the screen
+shows it as an empty list (checked with and without the hooks), so a mod adds fields only for the keys it names.
+
 ### rendererOption
 
 Two parts: an entry of the options menu that the exe has no room for, and a switch at start that gives the game
@@ -3908,19 +3929,25 @@ Every accessor compares the ID with `[obj+8]` and fails beyond it: 0x553028 and 
 they reach (0x6B794B `xor al,al / ret 4`, 0x6B7676 `xor al,al / ret 8`), 0x518AE0 through its own failure return
 0x518B26.
 
-**The virtual option (`hooks/rendereroption_hooks.asm`).** One more option, `OptionRenderer`, with nothing added to the
-table, the settings object or the profile:
+**The virtual options (`menuoptions.*`, `hooks/menuoptions_hooks.asm`).** The options menu's registry, shared by
+`rendererOption` and [`menuOptions`](#menuoptions): more options, with nothing added to the table, the settings object
+or the profile. `AddMenuOption` registers a name (`OptionRenderer`, `OptionBufferedReads`, …) and gives it the ID
+0x55480001 + its slot (up to 16, in the order they are added; the IDs live only in memory); the first call verifies the
+six sites and writes the four hooks:
 
 | Site | Replaced | Hook does | Continues at |
 |---|---|---|---|
-| 0x9322A1, the name lookup's not-found return | `pop edi / or eax,-1 / pop esi` (5 B) | `UhcRendererOptionLookup(name, obj)`: `OptionRenderer` (any case) on an options object (`[obj+24h]` = 1) gives the ID 0x55480001, anything else -1 | 0x9322A6 (`pop ecx / ret 4`) |
-| 0x6B794B, the type getter's out-of-range return | `xor al,al / ret 4` | that ID: type 2 (int); any other: as stock | its own `ret 4` |
-| 0x6B7676, the int getter's out-of-range return | `xor al,al / ret 8` | that ID: writes the stored choice to `*out`, returns 1 | its own `ret 8` |
-| 0x518B26, the int setter's failure return | `pop edi / xor al,al / pop esi / ret 8` | that ID: `UhcRendererOptionSet(value)` stores the choice, returns 1 | its own `ret 8` |
+| 0x9322A1, the name lookup's not-found return | `pop edi / or eax,-1 / pop esi` (5 B) | `UhcMenuOptionLookup(name, obj)`: a registered name (any case) on an options object (`[obj+24h]` = 1) gives its ID, anything else -1 | 0x9322A6 (`pop ecx / ret 4`) |
+| 0x6B794B, the type getter's out-of-range return | `xor al,al / ret 4` | one of the IDs: type 2 (int); any other: as stock (EAX restored first) | its own `ret 4` |
+| 0x6B7676, the int getter's out-of-range return | `xor al,al / ret 8` | one of the IDs: writes the option's value to `*out`, returns 1 | its own `ret 8` |
+| 0x518B26, the int setter's failure return | `pop edi / xor al,al / pop esi / ret 8` | one of the IDs: `UhcMenuOptionSet(slot, value)` stores the choice, returns 1 | its own `ret 8` |
 
-The value is the dropdown's index: 0 is the first `<value>` (DirectX 9), 1 the second (Vulkan). A new value is written
-at once to `uhc-options.cfg` next to the log (a line `renderer dx9|vulkan`, written to a temporary file and moved over the
-old one). The entry has no flag 0x40, so it is greyed out during a match, as the stock options that need a restart are.
+Each hook tests `ID - 0x55480001 < count` as one unsigned compare, so the game's own IDs (below 93) never pass, and on
+the stock path the registers are as the stock code left them. The value is the dropdown's index: for
+`OptionRenderer`, 0 is the first `<value>` (DirectX 9), 1 the second (Vulkan). A new value is written at once to
+`uhc-options.cfg` next to the log, one line per option (`renderer dx9|vulkan`, `bufferedFileReads on|off`, …), to a
+temporary file moved over the old one, keeping the other lines. The entries have no flag 0x40, so they are greyed out
+during a match, as the stock options that need a restart are.
 
 **The switch.** Everything happens in the DLL's start function, before the game's entry point, so before the game calls
 `Direct3DCreate9`:

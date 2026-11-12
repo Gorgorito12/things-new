@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 11:40 | [`menuOptions`](#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 16:01 | [`researchGrants`](#researchgrants) | Added. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Wednesday 2026-11-11 15:52 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
@@ -339,6 +340,7 @@ Where the game reads its data, how it reads it, and how it starts.
 | [`fastVertexFill`](#fastvertexfill) | Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | **new** | Nothing. | confirmed (single player) |
 | [`fastLastInLine`](#fastlastinline) | Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | **new** | Nothing. | confirmed (single player) |
 | [`rendererOption`](#rendereroption) | Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | **new** | The field in `data\options.xml` and the `dxvk` folder. | confirmed (single player) |
+| [`menuOptions`](#menuoptions) | Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | **new** | A field per key in `data\options.xml`. | confirmed (single player) |
 | [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages to the log, with file and line. | **new** | Nothing. | confirmed |
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | for tests | Nothing. | confirmed (two copies, single player) |
@@ -400,7 +402,7 @@ bufferedFileReads [<KB>] [readahead] [verify]      default 64 KB
   - In the stock game, most of what remains is the animation library (granny) unpacking a model or an
     animation it meets for the first time: granny stores them compressed, and unpacking is processing
     work, not reading ([performance.md](performance.md), §9, "The remaining stutters").
-- **WoL needs:** nothing.
+- **WoL needs:** nothing. To let players switch it in the options menu, see [`menuOptions`](#menuoptions).
   - `<KB>` (4 to 1024) is the buffer size per open file.
   - `readahead` adds a worker thread: while the game uses one block of a file, the worker reads
     the next one. It reads through a second handle of its own, so the game's file handle is never
@@ -495,7 +497,7 @@ fastVertexFill [log] [verify]
     Center's flag was on screen at 2560×1600, and at 1280×720 the camera showed none;
   - it was measured on one PC. How slow that reading is depends on the video driver, so the gain can be smaller
     or larger on another card.
-- **WoL needs:** nothing.
+- **WoL needs:** nothing. To let players switch it in the options menu, see [`menuOptions`](#menuoptions).
   - `verify` is a correctness test: the stock code fills the flags, and every fill is compared, byte for byte,
     with what the key would have written. It is slower than stock.
   - `log` writes the session's counts at exit.
@@ -547,7 +549,11 @@ fastLastInLine [log] [verify]
   only those, with the game's own tests. The result is the same bits; the work takes 0.4–1.6 ms.
 - **`verify`** lets the game's own code run as well and compares every bit with the DLL's; each recompute logs
   a line with the bits that differ (must be 0) and both times. `log` writes a line per recompute.
-- **WoL needs:** nothing.
+- **WoL needs:** the line `fastLastInLine` in `wol.cfg`: then it is on for everyone. To let players turn it off in
+  the options menu, also name it on the [`menuOptions`](#menuoptions) line and add its `OptionFastLastInLine` field;
+  it still starts on, and stays on until a player switches it off. Checked in WoL (2026-11-12): with no choice
+  stored the entry shows On and the key applies; Off chosen in Graphics Options is stored, the next start does not
+  apply the key, and the entry reads back Off.
 - **Multiplayer:** the game computes exactly the same thing, so players may set it differently. Not tested in
   multiplayer.
 - **Measured in WoL** (the 32-minute five-player save, 150 s per run, key off and on in turns):
@@ -603,7 +609,7 @@ rendererOption [vulkan|dx9] [folder=<dir>] [log] [conf=<DXVK options>]
 - **Effect:** Options → Graphics shows a **Renderer** list with *DirectX 9* and *Vulkan (DXVK)*. The choice is used
   from the next start. With Vulkan, the DLL loads DXVK's `d3d9.dll` from the `dxvk` folder next to the exe. No file
   next to the exe changes and the profile is not touched: the choice is kept in `uhc-options.cfg` next to `UHC.log`.
-  DirectX 9 stays the default.
+  DirectX 9 stays the default. The same menu can switch other keys on or off: [`menuOptions`](#menuoptions).
 - **DXVK's option:** without [`fastVertexFill`](#fastvertexfill), DXVK is only fast with
   `d3d9.cachedWriteOnlyBuffers = True`, so the DLL gives it that option. With `fastVertexFill` on, the slow read-back
   that option works around is gone, and DXVK gets no option. The log says which one and why.
@@ -680,6 +686,105 @@ rendererOption [vulkan|dx9] [folder=<dir>] [log] [conf=<DXVK options>]
     chosen.
   - Not tested: multiplayer, another video card or driver, exclusive fullscreen and Alt+Tab, a stock (not
     large-address-aware) exe with DXVK.
+
+#### menuOptions
+
+*Lets the player switch some of the performance keys on or off in the game's options menu.*
+
+**Added:** Thursday 2026-11-12 11:40
+
+![menuOptions in WoL: Graphics Options](media/menuOptions-wol.png)
+
+*In WoL, with `rendererOption` and `menuOptions bufferedFileReads fastVertexFill` (1920×1080):* Options → Graphics
+Options with the three entries switched (Vulkan, buffered reads Off, flag drawing On) just before OK. No video: the
+switch itself is the same dropdown as the Renderer's, filmed in [`rendererOption`](#rendereroption).
+
+```
+menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill, fastLastInLine
+```
+
+- **In WoL today:** `bufferedFileReads` and `fastVertexFill` are on or off for every player as `wol.cfg` says; a
+  player who wants the other setting has to edit the cfg.
+- **Effect:** each key named on the line gets an Off / On entry in the options menu (Options → Graphics, next to
+  [`rendererOption`](#rendereroption)'s Renderer). The choice is used from the next start and kept in
+  `uhc-options.cfg` next to `UHC.log`, as the renderer's; the profile is not touched.
+- **Who decides, in order:**
+  1. a key **not** named on a `menuOptions` line: its own line in the cfg alone, as before;
+  2. a named key, once the player has chosen in the menu: the player's choice;
+  3. a named key the player never switched: its own line in the cfg. With the line (and its arguments, such as
+     `bufferedFileReads 64 readahead`), it starts on; without it, it starts off.
+
+  So the mod keeps control: it decides which keys players may switch, what each starts as, and the arguments a key
+  applies with. A key switched on in the menu with no line in the cfg applies with its defaults.
+- **WoL needs:** a field per key in `data\options.xml`, in the Graphics group (here after the Renderer field). The name
+  is fixed per key; the label and tooltip are free text; the first `<value>` is Off, the second On:
+
+  ```xml
+  <field>
+      DropDown
+      <name>OptionBufferedReads</name>
+      <label>Buffered file reads</label>
+      <value>Off</value>
+      <value>On</value>
+      <tooltip>Reads the game's files through a buffer instead of many tiny reads: faster loading, shorter stutters. Takes effect when the game starts again.</tooltip>
+  </field>
+  <field>
+      DropDown
+      <name>OptionFastVertexFill</name>
+      <label>Fast flag drawing</label>
+      <value>Off</value>
+      <value>On</value>
+      <tooltip>Draws the waving flags without reading back from video memory: more frames per second with flags on screen. Takes effect when the game starts again.</tooltip>
+  </field>
+  <field>
+      DropDown
+      <name>OptionFastLastInLine</name>
+      <label>No freeze on shipments</label>
+      <value>Off</value>
+      <value>On</value>
+      <tooltip>Removes the short freeze after each home city shipment. Takes effect when the game starts again.</tooltip>
+  </field>
+  ```
+
+  Add a field only for a key named on the `menuOptions` line: a field whose key is not named shows as an empty list,
+  as any `<name>` the game does not know. Without the fields, the menu is the stock one.
+- **Example** (`wol.cfg`): `bufferedFileReads` and `fastLastInLine` start on, `fastVertexFill` starts off, and players
+  can switch all three:
+
+  ```
+  menuOptions bufferedFileReads fastVertexFill fastLastInLine
+  bufferedFileReads
+  fastLastInLine
+  ```
+- **During a match** the entries are greyed out, as the other options that need a restart.
+- **Log:**
+  - at startup, before the keys: `menuOptions: bufferedFileReads follows OptionBufferedReads: on (no choice stored
+    yet: its cfg line)` (or `(the player's choice)`), one line per key, then `menuOptions: applied (2 keys follow the
+    options menu)`; then the key's own `applied` line, or none when it is off;
+  - when the options screen opens, `bufferedFileReads: options screen field OptionBufferedReads (…); shows on`;
+  - on Apply, `bufferedFileReads: off chosen in the menu; it takes effect at the next start`, and the line
+    `bufferedFileReads off` in `uhc-options.cfg`;
+  - a name that cannot follow the menu: `menuOptions: <name> cannot follow the options menu (these can: …); ignored`,
+    and `menuOptions: FAILED`; the other names still work.
+- **Simulation:** no. Both keys change how the game reads its files or feeds the video card, not what it computes, so
+  players may choose differently. Only such keys can be named; `fastLastInLine` (the same bits as stock) could be added
+  the same way, as one line of the DLL.
+- **Status:** confirmed in single player (2026-11-12), in WoL with this DLL, beside `rendererOption`, over seven
+  starts:
+  - the three entries show in Graphics Options with the start values (Renderer DirectX 9, buffered reads On from its
+    cfg line, flag drawing Off with no cfg line); switched to Vulkan / Off / On and OK: `uhc-options.cfg` holds
+    `renderer vulkan`, `bufferedFileReads off`, `fastVertexFill on`;
+  - the next start: DXVK loaded and drew, `fastVertexFill: applied` (no cfg line: its defaults) and its hook reached,
+    no `bufferedFileReads` line; the menu showed the stored values;
+  - switched back (DirectX 9 / On / Off), with a `fastVertexFill` line added to the cfg: the system's `d3d9.dll`,
+    `bufferedFileReads: applied`, and `fastVertexFill` not applied despite its cfg line (the player's choice wins);
+  - `menuOptions bogusKey`: logged, `menuOptions: FAILED`, and both keys followed their cfg lines alone although the
+    file said `fastVertexFill off`; the fields of keys not named showed as empty lists, as with no hook at all;
+  - WoL's own `options.xml` (no fields) with the line: the stock Graphics Options;
+  - the profile was byte for byte the same after every OK.
+
+  Not tested: multiplayer, `dinput8.dll` beside WoL's DLL, a choice made during a match (the entries are greyed out
+  there).
 
 #### xsErrorLog
 

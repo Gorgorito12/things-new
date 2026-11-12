@@ -108,6 +108,10 @@ const std::vector<Config::Args>* Config::All(const std::string& key) const {
   return it == entries_.end() ? nullptr : &it->second;
 }
 
+void Config::Add(const std::string& key) { entries_[Lower(key)].emplace_back(); }
+
+void Config::Erase(const std::string& key) { entries_.erase(Lower(key)); }
+
 std::optional<int> Config::Int(const std::string& key) const {
   const Args* args = First(key);
   if (args == nullptr || args->empty()) {
