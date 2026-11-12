@@ -2,7 +2,8 @@
 
 The standard: 800 px wide, 8 fps, at most 12 s, at most 4 MB. The cut of each GIF is in tools/gifs.txt:
 name, start and length in the video's seconds, speed and, when small text must stay readable, an area
-of the master as w:h:x:y. A GIF over the limit is tried again with
+of the master as w:h:x:y, or several areas of the GIF's width joined by '+', stacked top to bottom (parts of
+the frame too far apart for one area at native size). A GIF over the limit is tried again with
 fewer frames and colours, then with a shorter cut; the last resort is reported, so that its caption
 can be checked.
 
@@ -40,8 +41,22 @@ def table():
     return rows
 
 
+def areas(crop):
+    """The area filter: one w:h:x:y, or several joined by '+', stacked top to bottom (each as wide as the GIF,
+    so that parts of a frame too far apart for one area stay at native size)."""
+    if not crop:
+        return ""
+    parts = crop.split("+")
+    if len(parts) == 1:
+        return f"crop={crop},"
+    split = f"split={len(parts)}" + "".join(f"[s{i}]" for i in range(len(parts)))
+    cuts = "".join(f";[s{i}]crop={part}[c{i}]" for i, part in enumerate(parts))
+    stack = "".join(f"[c{i}]" for i in range(len(parts))) + f"vstack={len(parts)},"
+    return split + cuts + ";" + stack
+
+
 def encode(name, start, length, speed, crop, fps, colours, out):
-    area = f"crop={crop}," if crop else ""
+    area = areas(crop)
     video = (f"setpts=PTS/{speed},fps={fps},{area}scale={WIDTH}:-1:flags=lanczos,split[a][b];"
              f"[a]palettegen=max_colors={colours}:stats_mode=full[p];"
              "[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle")

@@ -1226,10 +1226,16 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None, mast
     gdi32.SetBkMode(small_dc, 2)                 # OPAQUE: each line on a black band
     gdi32.SetBkColor(small_dc, 0x000000)
     gdi32.SetTextColor(small_dc, 0x0000FFFF)     # yellow (COLORREF is 0x00BBGGRR)
+    last = [None]
+    gdi32.GetPixel.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int]
+    gdi32.GetPixel.restype = wt.DWORD
 
     def grab():
         user32.PrintWindow(hwnd, full_dc, 2)  # PW_RENDERFULLCONTENT
         gdi32.StretchBlt(small_dc, 0, 0, ow, oh, full_dc, sx, sy, sw, sh, 0x00CC0020)  # SRCCOPY
+        if last[0] is not None and not any(gdi32.GetPixel(small_dc, ow * (i + 1) // 6, oh * (j + 1) // 6) & 0xFFFFFF
+                                           for i in range(5) for j in range(5)):
+            return last[0]  # a black picture from PrintWindow (a missed paint, now and then): keep the last one
         if overlay is not None:
             for i, line in enumerate(overlay.text(time.perf_counter())):
                 gdi32.TextOutW(small_dc, 8, text_top + i * (line_height + 2), line, len(line))
@@ -1238,7 +1244,8 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None, mast
                 base = int(oh * LOG_BOTTOM)
                 gdi32.TextOutW(small_dc, 8, base - (i + 1) * (line_height + 2) - 4, line, len(line))
         gdi32.GetDIBits(small_dc, small, 0, oh, buf, bmi, 0)
-        return buf.raw
+        last[0] = buf.raw
+        return last[0]
 
     command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra",
                "-s", f"{ow}x{oh}", "-framerate", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "medium",
