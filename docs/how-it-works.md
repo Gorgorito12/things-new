@@ -3474,10 +3474,15 @@ subtracts (0x7E844B).
   copy with 0 (0x4E2617) or scales it (0x480B94) by the same share, so a cancel refunds what was paid. Then every key's
   `started(action, share, claimed)` runs, the claiming key with `claimed` set: by then `[action+68h]` is the tech.
 
+- **The preview,** `PreviewResearchPay(researcher, player, cost, &share)`: the same claims, in the same order, with
+  `preview` set, for a display of the price (`researchGrants`' buttons). A claim answers as for a payment and changes
+  nothing; the preview returns the name of the key that would claim, and its share. A claim receives the action's unit
+  (`[action+10h]`), not the action, so the payment and the preview ask the same question.
+
 **Why it is safe.** Each call keeps its stock frame: the hook reads the cost from its own argument and returns with
 `ret 4` and AL, as 0x8D946A does; the copy wrapper is a `__fastcall` with the stock `thiscall` frame. Nothing between the
 payment and the copy starts another research, so one pending claim is enough; it is cleared at the next payment, and
-the copy acts only for the action that was claimed.
+the copy acts only for the action that was claimed. A preview writes nothing the payment reads.
 
 ### nextResearchFree
 
@@ -3524,6 +3529,25 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
   already pushed. A research in the other branch of the update (0x9E65A5..0x9E65F2: tech flag 4 with 0x454ED7) does not
   pass the add and keeps its stock time.
 - **Panel:** `AddUnitPanelRow`, from the unit's marker and its player's copy of the proto.
+- **The price shown** (display only; `noprice` leaves both sites alone). The rule is one function, `Choose`, which the
+  claim calls for a payment and, through `PreviewResearchPay`, for the display, so they cannot disagree. A preview
+  before the first tick of a game returns nothing, where the payment would rebuild the tables first.
+  - The tech rollover builder 0x4C737C (`cdecl(text, techEntry, player, unit, a5, costOverride, a7, a8)`; REA
+    `ev_8774d6a5…`) copies the tech's cost `[techEntry+10h]` (or `costOverride`) into a local list with 0x480A73 at
+    0x4C73FD (`ev_06317089…`; 0x4C78FA joins there with the override pushed) and writes the cost line from that list,
+    none when its total is at most 1e-6. A `WriteCall` there (`UhcGrantTipCostHook`) copies as stock, then, for the
+    entry's own cost, fills the list with 0 (0x4E2617) or scales it (0x480B94) by the previewed share. Its callers
+    (`ev_913c6a4f…`): the command panel 0x4622C5, two other research panels 0x9AD7F1 and 0x9B7637, and 0x703FAF (no
+    player, no unit: nothing changes).
+  - The command panel FUN_0046188E calls the builder for a tech button at 0x4622C5 (`ev_afcebe91…`) with ESI the entry,
+    EBX the player, EDI the unit and `[esp+30h]` the rollover; the button's overlay text, the narrow buffer
+    `[esp+2C0h]` (256 chars) that the Buy buttons use for their price, is emptied for each button at 0x461DBC and set on
+    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. A `WriteCall` at 0x4622C5 (`UhcGrantTechButtonHook`) calls the
+    builder with the same eight arguments, then `UhcGrantTechButton`: with a preview below the full price it writes the
+    word or price into the empty buffer, which it finds at the panel's `[esp+2C0h]` (ESP + 2E4h in the hook), and appends
+    the green line to the rollover with the BString append 0x443960 (`thiscall(text, wchar*, -1, -1)`, `ret 0Ch`).
+  - The floating text: `started` with `claimed` shows the label over the paying unit through `floatingtext.h` when its
+    owner is the local player and it is visible to them, with both stock times three times as long.
 
 **Why it is safe.**
 - The step hooks: ST0 is the only value on the x87 stack there (the getter's result and three `fmul`), so the C function
@@ -3538,6 +3562,13 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
   created in the few updates before the save starts its timer at the load instead of a few updates after its creation.
 - Cost: per update, one modifier walk per unit of the set and 256 slot reads; the step hooks are one compare while no
   research has a Time factor.
+- The display hooks: the panel cleans the builder's arguments itself (`add esp,20h`) and reloads EAX, ECX and EDX
+  before it reads them; EBX, ESI, EDI and EBP survive both calls (stdcall / cdecl). The cost hook returns the list in
+  EAX with `ret 4`, as 0x480A73, and the builder keeps nothing in EAX, ECX or EDX across that call. Both are display
+  only: the preview reads the units' markers and the player's resources, the overlay buffer and the rollover belong to
+  the UI, and the floating text is the UI's text manager; none of it reaches the simulation, so machines that show
+  different things stay in sync. Per refresh of the panel, a preview per tech button: a walk of the set (the player's
+  tagged buildings) and at most one afford check.
 
 **A/B (2026-11-11),** the test scenario of the modding guide (Ethiopians, two tagged markets), 90 s of
 `tools/perfprobe.py` from the load, two researches at 50 s, two other test games running on the machine:

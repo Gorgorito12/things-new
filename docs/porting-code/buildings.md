@@ -2091,8 +2091,8 @@ const char* ProtoOf(const char* action) {
   return unit != nullptr ? *reinterpret_cast<const char* const*>(unit + 0x5C) : nullptr;
 }
 
-bool Claim(const char* action, const char*, const char*, float* share) {
-  const char* proto = ProtoOf(action);
+bool Claim(const char* researcher, const char*, const char*, float* share, bool) {
+  const char* proto = researcher != nullptr ? *reinterpret_cast<const char* const*>(researcher + 0x5C) : nullptr;
   const auto found = proto != nullptr ? g_free.find(proto) : g_free.end();
   if (found == g_free.end() || found->second <= 0) {
     return false;
@@ -2145,9 +2145,9 @@ Outcome ApplyNextResearchFree(const Config& config) {
 
 Contract: [researchGrants](../porting-to-another-dll.md#researchgrants).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`researchpay.h`](helpers.md#research-payment), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`prototags.h`](helpers.md#proto-tags), [`researchpay.h`](helpers.md#research-payment), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B), `CommandResearchProgressAdd` `0x9D58FF` (11 B), `ResearchProgressAdd` `0x9E6622` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `BStringAppend` `0x443960` (16 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ButtonOverlayReset` `0x461DBC` (8 B), `TechButtonRollover` `0x4622B5` (21 B), `ButtonOverlayRead` `0x4625E2` (7 B), `ResListCopy` `0x480A73` (73 B), `ResListScale` `0x480B94` (126 B), `TechRolloverHead` `0x4C737C` (16 B), `TechTipCostCopy` `0x4C73F9` (9 B), `ResListFill` `0x4E2617` (11 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B), `CommandResearchProgressAdd` `0x9D58FF` (11 B), `ResearchProgressAdd` `0x9E6622` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/researchgrants.cpp
 
@@ -2184,8 +2184,19 @@ Sites: `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `PayAffordCh
 // payment takes the Cost share; a cancel refunds what was paid and never the point. A Time factor other than 1
 // divides each step of that research's progress (two hooks on the add of the step, hooks/researchgrant_hooks.asm),
 // remembered by researching unit and tech ID, and saved as a second kind of marker on that unit.
+//
+// What the player sees (display only): the rule is one function, Choose, which the claim runs for a payment and,
+// through PreviewResearchPay (researchpay.h, every key in the payment's order), for the command panel. A tech button
+// whose research would get a share below 1 shows the free word or the price after it (its overlay text, the buffer the
+// Buy buttons use), and its rollover the cost after the share and a green label; the hook of the panel's call of the
+// rollover builder at 0x4622C5 and of the builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
+// floating text over the paying building, to its owner (floatingtext.h). Options: notext, text=, noprice, free=, log.
+#include <windows.h>
+
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
@@ -2197,6 +2208,7 @@ Sites: `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `PayAffordCh
 #include <vector>
 
 #include "../features.h"
+#include "../floatingtext.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -2212,6 +2224,8 @@ extern "C" {
 std::int32_t g_uhcGrantTimed = 0;  // researches with a Time factor in progress: the step hooks look only then
 void UhcGrantResearchStepHook();
 void UhcGrantCommandStepHook();
+void UhcGrantTechButtonHook();
+void UhcGrantTipCostHook();
 }
 
 namespace {
@@ -2233,6 +2247,17 @@ const auto kAfford = reinterpret_cast<AffordFn>(0x008D6BAE);
 const auto kSharedAfford = reinterpret_cast<AffordFn>(0x008D6C1B);
 const auto kResGet = reinterpret_cast<ResGetFn>(0x0044EFFF);
 const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+// The display (the tech button and its rollover)
+constexpr std::uint32_t kResListCount = 0x00C6DF38;  // the entries of every ResList
+using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
+using CostFillFn = void(__thiscall*)(void* cost, float value);
+using CostScaleFn = void(__thiscall*)(void* cost, float factor);
+using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
+const auto kCostCopy = reinterpret_cast<CostCopyFn>(0x00480A73);
+const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
+const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
+const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -2276,11 +2301,21 @@ bool g_checkTags = true;
 struct Claim {
   std::int32_t unit = -1;  // the unit that pays a point
   float time = 1.0f;
+  float cost = 0.0f;
 };
 Claim g_claim;
 
 bool g_log = false;
 int g_logLines = 0;
+
+// What the local player sees (display only: none of it feeds the simulation).
+constexpr std::uint32_t kTextColour = 0xFF60FF60;  // ARGB
+constexpr float kTextLife = 3.0f;                  // three times the dodge text's life: a research is rarer
+bool g_text = true;                // the floating text over the building that pays a point
+std::wstring g_customText;         // text=<text>: instead of the label
+std::int32_t g_textStringId = -1;  // text=<string table ID>
+bool g_price = true;               // the price on the tech button and in its rollover
+std::string g_freeWord = "Free";   // free=<text>: the button's word for a research that costs nothing
 
 bool LogOk() {
   if (!g_log || g_logLines >= kMaxLogLines) {
@@ -2757,17 +2792,16 @@ bool CanPay(const char* world, const char* player, const char* cost) {
   return Field<std::uint8_t>(world, 0x6912) != 0 ? kSharedAfford(player, cost) : kAfford(player, cost);
 }
 
-bool ClaimGrant(const char* action, const char* player, const char* cost, float* share) {
-  g_claim = Claim{};
-  const char* world = MainWorld();
-  if (world == nullptr || g_tags.empty() || player == nullptr) {
-    return false;
-  }
-  if (world != g_world) {
-    Sync(world);  // a research paid before the first tick of a loaded game
-  }
+struct Choice {
+  std::int32_t unit = -1;  // the unit that would pay a point
+  const Tags* tags = nullptr;
+};
+Choice g_preview;  // the last choice a preview found (display only)
+
+// The rule of a point, for the payment and for the display alike: the paying player's candidates, in scope, and
+// the one with most points (the lowest unit ID on a tie, as g_units is in ID order). Reads only.
+Choice Choose(const char* world, const char* player, const char* researcher, const char* cost) {
   const std::int32_t playerId = Field<std::int32_t>(player, 0);
-  const char* researcher = Field<const char*>(action, 0x10);
   const float total = TotalCost(cost);
   int canPay = -1;  // asked once, when a candidate needs it
   std::int32_t best = -1;
@@ -2799,12 +2833,167 @@ bool ClaimGrant(const char* action, const char* player, const char* cost, float*
     bestPoints = points;
     bestTags = tags;
   }
-  if (bestTags == nullptr) {
+  return Choice{bestTags != nullptr ? best : -1, bestTags};
+}
+
+bool ClaimGrant(const char* researcher, const char* player, const char* cost, float* share, bool preview) {
+  if (!preview) {
+    g_claim = Claim{};
+  }
+  const char* world = MainWorld();
+  if (world == nullptr || g_tags.empty() || player == nullptr) {
     return false;
   }
-  g_claim.unit = best;
-  g_claim.time = bestTags->time;
-  *share = bestTags->cost;
+  if (world != g_world) {
+    if (preview) {
+      return false;  // the first tick of this game has not run: the payment would rebuild the tables first
+    }
+    Sync(world);  // a research paid before the first tick of a loaded game
+  }
+  const Choice choice = Choose(world, player, researcher, cost);
+  if (choice.tags == nullptr) {
+    return false;
+  }
+  if (preview) {
+    g_preview = choice;
+  } else {
+    g_claim.unit = choice.unit;
+    g_claim.time = choice.tags->time;
+    g_claim.cost = choice.tags->cost;
+  }
+  *share = choice.tags->cost;
+  return true;
+}
+
+// --- What the local player sees ------------------------------------------------------------------------------
+
+// "Free research", "Grant -50%" or "Research grant", and ", ×2 time" when the Time factor is not 1.
+std::wstring Label(float cost, float time) {
+  wchar_t text[64];
+  if (cost <= 0.0f) {
+    swprintf_s(text, L"Free research");
+  } else if (cost < 1.0f) {
+    swprintf_s(text, L"Grant -%d%%", static_cast<int>(std::lround((1.0f - cost) * 100.0f)));
+  } else {
+    swprintf_s(text, L"Research grant");
+  }
+  std::wstring label = text;
+  if (time != 1.0f) {
+    swprintf_s(text, L", ×%g time", static_cast<double>(time));
+    label += text;
+  }
+  return label;
+}
+
+// The floating text over the building that paid a point, for its owner only (floatingtext.h).
+void ShowGrantText(const char* unit, float cost, float time) {
+  const char* owner = Field<const char*>(unit, 0x44);
+  if (owner == nullptr || Field<std::int32_t>(owner, 0) != uhc::LocalPlayer() || !uhc::CanShowUnitText(unit)) {
+    return;
+  }
+  const std::wstring label = g_customText.empty() ? Label(cost, time) : g_customText;
+  const std::int32_t shown = uhc::ShowUnitText(unit, label.c_str(), g_textStringId, kTextColour, kTextLife);
+  if (LogOk()) {
+    uhc::Log(L"researchGrants: \"%ls\" shown over unit %d%ls", g_textStringId >= 0 ? L"(string)" : label.c_str(),
+             Field<std::int32_t>(unit, 0x10), shown < 0 ? L": refused by the engine" : L"");
+  }
+}
+
+struct Preview {
+  const char* key = nullptr;  // the key whose claim it would be; nullptr: the full price
+  float share = 1.0f;
+  Choice grant;               // when it is this key's: the unit and its tags
+};
+
+// The payment the research of this tech entry ([entry+10h] its cost, as the payment reads it) would get now:
+// the same question as the payment's, asked of every key in the same order (researchpay.h).
+Preview PreviewOf(const char* entry, const char* player, const char* unit) {
+  Preview preview;
+  if (!g_price || entry == nullptr || player == nullptr || g_tags.empty()) {
+    return preview;
+  }
+  g_preview = Choice{};
+  preview.key = uhc::PreviewResearchPay(unit, player, entry + 0x10, &preview.share);
+  if (preview.key != nullptr && std::strcmp(preview.key, "researchGrants") == 0) {
+    preview.grant = g_preview;
+  }
+  return preview;
+}
+
+std::int32_t TechIdOf(const char* entry) {
+  const char* node = Field<const char*>(entry, 0);
+  return node != nullptr ? Field<std::int32_t>(node, 0) : -1;
+}
+
+// A ResList laid out as the game's (researchpay.cpp): +0 the encoded entries, +4 the encoded total.
+struct ResList {
+  std::uint32_t* entries;
+  std::uint32_t total;
+};
+
+// The button's text: the free word, or the price after the share when it is one resource, else the discount.
+void ButtonText(const char* cost, float share, char* out, std::size_t size) {
+  if (share <= 0.0f) {
+    strncpy_s(out, size, g_freeWord.c_str(), _TRUNCATE);
+    return;
+  }
+  const auto* list = reinterpret_cast<const ResList*>(cost);
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(kResListCount);
+  std::int32_t paid = 0;
+  float amount = 0.0f;
+  if (list != nullptr && list->entries != nullptr && count > 0) {
+    std::vector<std::uint32_t> entries(list->entries, list->entries + count);
+    ResList scaled{entries.data(), list->total};
+    kCostScale(&scaled, share);
+    for (std::int32_t r = 0; r < count; ++r) {
+      const float value = kResGet(&scaled, r);
+      if (value > 0.0f) {
+        ++paid;
+        amount = value;
+      }
+    }
+  }
+  if (paid == 1) {
+    _snprintf_s(out, size, _TRUNCATE, "%d", static_cast<int>(std::lround(amount)));
+  } else {
+    _snprintf_s(out, size, _TRUNCATE, "-%d%%", static_cast<int>(std::lround((1.0f - share) * 100.0f)));
+  }
+}
+
+std::map<std::int32_t, std::int32_t> g_shownPrice;  // tech ID -> share in % last logged; display only
+
+void LogShown(std::int32_t tech, float share, const char* overlay) {
+  if (!g_log) {
+    return;
+  }
+  const std::int32_t percent = static_cast<std::int32_t>(std::lround(share * 100.0f));
+  const auto [it, added] = g_shownPrice.try_emplace(tech, percent);
+  if ((!added && it->second == percent) || !LogOk()) {
+    return;
+  }
+  it->second = percent;
+  uhc::Log(L"researchGrants: the button of tech %d shows %hs (cost x%.2f)", tech,
+           percent >= 100 ? "the full price" : overlay, static_cast<double>(share));
+}
+
+// text=: "Grant_used" (at most 127 characters; UTF-8, else ANSI; '_' for a space) or "90001" (a string table ID).
+bool ParseText(const std::string& text) {
+  if (text.empty()) {
+    return false;
+  }
+  if (text.find_first_not_of("0123456789") == std::string::npos) {
+    return text.size() <= 9 && (g_textStringId = std::atoi(text.c_str())) >= 0;
+  }
+  wchar_t wide[128];  // with its terminator
+  int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.c_str(), -1, wide, 128);
+  if (length == 0) {
+    length = MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, wide, 128);
+  }
+  if (length == 0) {
+    return false;
+  }
+  std::replace(wide, wide + length, L'_', L' ');
+  g_customText = wide;
   return true;
 }
 
@@ -2830,6 +3019,9 @@ void GrantStarted(char* action, float share, bool claimed) {
     uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(points < 0 ? 0 : points);
   }
   SetTimed(researcherId, tech, claim.time);
+  if (g_text && unit != nullptr) {
+    ShowGrantText(unit, claim.cost, claim.time);
+  }
   if (LogOk()) {
     uhc::Log(L"researchGrants: unit %d spends a point on tech %d in unit %d: cost x%.2f, time x%.2f, %d left (game "
              L"time %u ms)",
@@ -2863,6 +3055,50 @@ bool __stdcall GrantRow(const char* panel, const char* unit) {
 
 }  // namespace
 
+// From the hook of the copy of a tech's cost into its rollover (0x4C73FD in the builder 0x4C737C): the cost the
+// rollover shows. A copy of the tech entry's own cost gets the share the payment would take now.
+extern "C" void* __stdcall UhcGrantTipCost(void* list, const void* from, const char* entry, const char* player,
+                                           const char* unit) {
+  void* result = kCostCopy(list, from);
+  if (entry == nullptr || from != entry + 0x10) {
+    return result;  // a cost the caller gave
+  }
+  const Preview preview = PreviewOf(entry, player, unit);
+  if (preview.key == nullptr || preview.share >= 1.0f) {
+    return result;
+  }
+  if (preview.share <= 0.0f) {
+    kCostFill(list, 0.0f);
+  } else {
+    kCostScale(list, preview.share);
+  }
+  return result;
+}
+
+// From the hook of the panel's call of that builder for a tech button (0x4622C5), once the rollover is built:
+// the button's overlay text (the panel's buffer, 256 chars, empty for a tech) and a line in the rollover.
+extern "C" void __stdcall UhcGrantTechButton(const char* entry, const char* player, const char* unit, void* rollover,
+                                             char* overlay) {
+  const Preview preview = PreviewOf(entry, player, unit);
+  if (preview.key == nullptr || (preview.share >= 1.0f && preview.grant.tags == nullptr)) {
+    if (g_log && entry != nullptr && g_shownPrice.count(TechIdOf(entry)) != 0) {
+      LogShown(TechIdOf(entry), 1.0f, "");
+    }
+    return;
+  }
+  if (preview.share < 1.0f && overlay != nullptr && overlay[0] == '\0') {
+    ButtonText(entry + 0x10, preview.share, overlay, 256);
+  }
+  const Tags* tags = preview.grant.tags;
+  const std::wstring line = L"\n<color=0.4, 1, 0.4>" +
+                            (tags != nullptr ? Label(tags->cost, tags->time) : Label(preview.share, 1.0f)) +
+                            L"</color>";
+  if (rollover != nullptr && *static_cast<void**>(rollover) != nullptr) {
+    kAppend(rollover, line.c_str(), -1, -1);
+  }
+  LogShown(TechIdOf(entry), preview.share, overlay != nullptr ? overlay : "");
+}
+
 // From the step hooks, while a research with a Time factor is in progress: the step of `action`, which adds to
 // [action+offset]; `entry` is its tech's status entry ([entry+18h] the research points).
 extern "C" float __stdcall UhcGrantResearchStep(const char* action, std::uint32_t offset, const char* entry, float step) {
@@ -2895,15 +3131,43 @@ Outcome ApplyResearchGrants(const Config& config) {
     return Outcome::kNotConfigured;
   }
   for (const std::string& arg : *args) {
-    if (_stricmp(arg.c_str(), "log") != 0) {
-      Log(L"researchGrants: unknown option %hs; feature not applied", arg.c_str());
+    const char* text = arg.c_str();
+    if (_stricmp(text, "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(text, "notext") == 0) {
+      g_text = false;
+    } else if (_stricmp(text, "noprice") == 0) {
+      g_price = false;
+    } else if (_strnicmp(text, "text=", 5) == 0) {
+      if (!ParseText(arg.substr(5))) {
+        Log(L"researchGrants: %hs: expected text=<text> (at most 127 characters, '_' for a space) or "
+            L"text=<string table ID>; feature not applied",
+            text);
+        return Outcome::kFailed;
+      }
+    } else if (_strnicmp(text, "free=", 5) == 0) {
+      if (arg.size() == 5 || arg.size() > 5 + 31) {
+        Log(L"researchGrants: %hs: expected free=<text> (1 to 31 characters, '_' for a space); feature not applied",
+            text);
+        return Outcome::kFailed;
+      }
+      g_freeWord = arg.substr(5);
+      std::replace(g_freeWord.begin(), g_freeWord.end(), '_', ' ');
+    } else {
+      Log(L"researchGrants: unknown option %hs (expected: [notext | text=<text>] [noprice] [free=<text>] [log]); "
+          L"feature not applied",
+          text);
       return Outcome::kFailed;
     }
-    g_log = true;
   }
   if (!VerifyAll("researchGrants",
                  {&sites::kResearchProgressAdd, &sites::kCommandResearchProgressAdd, &sites::kPayAffordCheck,
                   &sites::kPaySharedAffordCheck, &sites::kResListGet, &sites::kIsBuilt, &sites::kUnitAliveSlot}) ||
+      (g_text && !VerifyFloatingText("researchGrants")) ||
+      (g_price && !VerifyAll("researchGrants price",
+                             {&sites::kTechButtonRollover, &sites::kButtonOverlayReset, &sites::kButtonOverlayRead,
+                              &sites::kTechRolloverHead, &sites::kTechTipCostCopy, &sites::kBStringAppend,
+                              &sites::kResListCopy, &sites::kResListScale, &sites::kResListFill})) ||
       !AddResearchPayer("researchGrants", &ClaimGrant, &GrantStarted) ||
       !AddProtoTagHandler("ResearchGrantInterval", &ReadInterval) || !AddProtoTagHandler("ResearchGrantMax", &ReadMax) ||
       !AddProtoTagHandler("ResearchGrantCost", &ReadCost) || !AddProtoTagHandler("ResearchGrantTime", &ReadTime) ||
@@ -2913,15 +3177,19 @@ Outcome ApplyResearchGrants(const Config& config) {
       !AddTechSubtype("ResearchGrantPoints", &GivePoints) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !AddWorldTick(&Tick) ||
       !WriteJmp(sites::kResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantResearchStepHook), 6) ||
-      !WriteJmp(sites::kCommandResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantCommandStepHook), 6)) {
+      !WriteJmp(sites::kCommandResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantCommandStepHook), 6) ||
+      (g_price &&
+       (!WriteCall(sites::kTechButtonRollover.va + 0x10, reinterpret_cast<const void*>(&UhcGrantTechButtonHook)) ||
+        !WriteCall(sites::kTechTipCostCopy.va + 4, reinterpret_cast<const void*>(&UhcGrantTipCostHook))))) {
     return Outcome::kFailed;
   }
   if (!AddUnitPanelRow(&GrantRow)) {
     Log(L"researchGrants: no grant row in the unit panel");
   }
   Log(L"researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax "
-      L"and ResearchGrantPoints are on%ls (multiplayer unverified)",
-      g_log ? L"; logged" : L"");
+      L"and ResearchGrantPoints are on%ls%ls%ls (multiplayer unverified)",
+      g_price ? L"; the tech buttons show the price with a point" : L"",
+      g_text ? L"; a floating text over the building that pays a point" : L"", g_log ? L"; logged" : L"");
   return Outcome::kApplied;
 }
 
@@ -2943,11 +3211,14 @@ option casemap :none
 include common.inc
 
 UhcGrantResearchStep PROTO STDCALL action:DWORD, offs:DWORD, entry:DWORD, stp:DWORD
+UhcGrantTechButton PROTO STDCALL entry:DWORD, player:DWORD, unit:DWORD, rollover:DWORD, overlay:DWORD
+UhcGrantTipCost PROTO STDCALL list:DWORD, from:DWORD, entry:DWORD, player:DWORD, unit:DWORD
 EXTERN g_uhcGrantTimed:DWORD
 
 .data
 kResearchStepBack dd 009E6628h  ; call 9E5F19h, the Research fraction
 kCommandStepBack  dd 009D5905h  ; call 9D539Bh, the CommandResearch fraction
+kTechRollover     dd 004C737Ch  ; the tech rollover builder, cdecl with 8 arguments
 
 .code
 
@@ -2992,6 +3263,50 @@ add_step:
     fstp dword ptr [esi+70h]
     jmp dword ptr [kCommandStepBack]
 UhcGrantCommandStepHook ENDP
+
+; The price shown (display only). Replaces the call of the tech rollover builder 0x4C737C at 0x4622C5 in the
+; command panel refresh FUN_0046188E. Entry: the 8 cdecl arguments at [esp+4]..[esp+20h] (the rollover, the tech
+; entry, the player, the unit, 1, 0, 1, 1); the panel's ESP before it pushed them is ESP+24h here, so the button's
+; overlay text [esp+2C0h] there is [esp+2E4h]. Calls the builder with the same arguments, then
+; UhcGrantTechButton. The panel cleans the arguments (add esp,20h) and reloads EAX, ECX and EDX before use;
+; EBX, ESI, EDI and EBP are kept by both calls.
+UhcGrantTechButtonHook PROC
+    TRACE_ONCE "researchGrants tech button (0x4622C5)"
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    call dword ptr [kTechRollover]
+    add esp, 20h
+    lea eax, [esp+2E4h]
+    push eax                    ; the overlay text
+    push dword ptr [esp+8]      ; the rollover
+    push dword ptr [esp+18h]    ; the unit
+    push dword ptr [esp+18h]    ; the player
+    push dword ptr [esp+18h]    ; the tech entry
+    call UhcGrantTechButton
+    ret
+UhcGrantTechButtonHook ENDP
+
+; Replaces the call of the ResList copy 0x480A73 at 0x4C73FD in the rollover builder 0x4C737C, the copy of the
+; tech's cost into the list whose cost the rollover shows. ECX = that list, [esp+4] = the cost to copy; the
+; builder's ESP before it pushed it is ESP+8 here, so its arguments are the tech entry [esp+58h], the player
+; [esp+5Ch] and the unit [esp+60h]. UhcGrantTipCost copies and returns the list as the copy does (ret 4); the
+; builder keeps nothing in EAX, ECX or EDX across the call.
+UhcGrantTipCostHook PROC
+    TRACE_ONCE "researchGrants tech rollover cost (0x4C73FD)"
+    push dword ptr [esp+60h]    ; the unit
+    push dword ptr [esp+60h]    ; the player
+    push dword ptr [esp+60h]    ; the tech entry
+    push dword ptr [esp+10h]    ; the cost to copy
+    push ecx                    ; the list
+    call UhcGrantTipCost
+    ret 4
+UhcGrantTipCostHook ENDP
 
 END
 ```

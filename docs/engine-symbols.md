@@ -642,6 +642,18 @@ traces (`trace_exec.py`) and memory reads in WoL. [O] observed, [I] inferred.
 | Socket unit | `[unit+58h]` 0, `[unit+88h]` 255, `[proto+E8h]` none | confirmed (memory) | [O] A socket has no action list. |
 | Trading Post placement | needs the map's sub-civs | confirmed, in game | [O] On a test map without `rmAllocateSubCivs`/`rmSetSubCiv` a Trading Post ghost snapped to the socket but stayed invalid ("must be built near a Native settlement"); with them it was built and the Cree alliance applied. [I] PLACE checks the socket's native against the game's sub-civs. |
 
+### The price on a tech button (for `researchGrants`, 2026-11-12)
+
+REA (Ghidra) with evidence `rea/evidence/age3y-b1a1dab7/researchgrants-price-20261112.json`, capstone, and the game (WoL).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Tech rollover builder | FUN_004C737C, `cdecl(BString* text, techEntry*, player*, unit*, a5, ResList* costOverride, char a7, char a8)` | confirmed (REA `ev_8774d6a5…`, in game) | Clears the text (0x443910); the cost: `costOverride` or `[techEntry+10h]` copied by 0x480A73 at 0x4C73FD into a local list (`ev_06317089…`), whose cost line (0x4C8EE5) is left out when the total is at most 1e-6; then lines `\n*  %s` (prerequisite age in red, etc.). Callers (`ev_913c6a4f…`): 0x4622C5 (command panel), 0x703FAF (no player, no unit), 0x9AD7F1 and 0x9B7637 (other research panels, not identified; each builds a `researchByID(%d, %d, %d)` command first). |
+| Tech button call | 0x4622B5..0x4622CF in FUN_0046188E | confirmed (`ev_afcebe91…`, in game) | `push 1/1/0/1, edi (unit), ebx (player), esi (tech entry), lea ecx,[esp+30h]; call 4C737Ch; add esp,20h`. |
+| Button overlay text | `[esp+2C0h]` in FUN_0046188E, 256-char narrow buffer | confirmed (`ev_9abdeb84…`, in game) | Emptied per button at 0x461DBC (with `[esp+1C0h]` click and `[esp+3C0h]` shift-click commands); at 0x4625E2 its length, and when not empty 0x697233 sets it as the text of the button's overlay gadget (the Buy buttons' `125`). Empty for a stock tech. |
+| BString append | 0x443960, `thiscall(BString*, const wchar_t*, int len, int start)`, `ret 0Ch` | confirmed (bytes, in game) | `len` -1: to the end; `start` below 0: 0. The builder appends `</color>` this way. |
+| ResList fill | 0x4E2617, `thiscall(ResList*, float)`, `ret 4` | confirmed (bytes) | Every entry set to the value, encoded. |
+
 ### Player powers and the ceasefire (WoL #14, 2026-10-30)
 
 A power is cast per player, not per unit: the button of any unit only spends the player's charge of

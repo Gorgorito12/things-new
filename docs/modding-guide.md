@@ -30,7 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Thursday 2026-11-12 13:45 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
+| Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
 | Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
 | Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
@@ -6210,7 +6210,8 @@ nextResearchFree [log]
   researches; `relativity` is required by the game and not used.
 - **One count per proto:** two Markets of a player share it, and it does not reach another proto.
 - **No resources needed:** with 0 wood the button starts the research. The button and its tooltip still show the normal
-  price.
+  price, unless [`researchGrants`](#researchgrants) is on: its price display asks the shared payment, so that research
+  shows `Free` there.
 - **Cancel:** the free research gives nothing back, and the free turn is spent. A paid one refunds as usual.
 - **Saved games:** the count is not saved. A load applies the tech again, so an unused turn stays, but **a spent one comes
   back**.
@@ -6238,30 +6239,41 @@ nextResearchFree [log]
 
 *A building gathers grant points over time, and each point makes one of its player's researches cheaper or free.*
 
-**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Thursday 2026-11-12 13:45
+**Added:** Wednesday 2026-11-11 16:01 · **Filmed in WoL:** Thursday 2026-11-12 15:40
 
 ![researchGrants in WoL](media/researchGrants-wol.gif)
 
-*In WoL, with the key (Dutch skirmish against a German AI; test data of `tools/grant_testdata.py`: the Market with
+*In WoL, with the key (British skirmish against a French AI; test data of `tools/grant_testdata.py`: the Market with
 `ResearchGrantInterval` 20, `ResearchGrantMax` 3, `ResearchGrantCost` 0 and `ResearchGrantScope` `self`, and four test
-techs of 300 wood on its buttons; 1200 wood; the Market stays selected):* the `Research grants` row of the Market's
-panel counts the points and the seconds to the next one: 1/3 at 20 s of game time, 2/3 at 40 s (where the GIF starts)
-and `3/3 (full)` at 60 s. Four researches are then started at that
-Market by console, about 4 s apart: the first three take no wood (the wood stays at 1200) and one point each (2/3, 1/3,
-0/3, and the timer starts again), and the fourth, with no point left, takes 300 (1200 to 900). Each research shows in
-the Market's queue and its button leaves the panel. A point comes back 20 s after the first was spent. The GIF shows the
-resources, the Market and its panel; the full video also shows the queue and the buttons.
-[Full video (MP4)](media/researchGrants-wol.mp4).
+techs of 300 wood on its buttons, Optics, Public Lighting, Reservists and Mass Cavalry; 1200 wood; the Market stays
+selected; each research is started by a click on its button, after the pointer has rested on it):* until the first
+point (20 s of game time) the buttons are as stock; from then on every tech of the Market says `Free`, since with
+`ResearchGrantMinCost` 0 any research there would take a point. The `Research grants` row counts 1/3, 2/3 and `3/3
+(full)` at 20, 40 and 60 s. Then, about 5 s apart: the Optics rollover reads `Optics` / `Free research` (no cost line),
+the click starts it, `Free research` floats in green over the Market, the research shows in the queue, the row goes to
+2/3 and the wood stays at 1200; the same for Public Lighting (1/3) and Reservists (0/3). With no point left the buttons
+lose their word, the Mass Cavalry rollover shows its cost, 300 wood, and its click takes it (1200 to 900), with no
+floating text. A point comes back 20 s after the first was spent (84.2 s) and the buttons say `Free` again. The GIF
+stacks three parts of the frame at their own size: the Market, the queue with the buttons and the `Research grants`
+row, and the resources. [Full video (MP4)](media/researchGrants-wol.mp4).
 
 ![researchGrants in WoL, key off](media/researchGrants-wol-control.gif)
 
-*In WoL, key off (the same data, map and console commands):* no `Research grants` row, and each of the four researches
-takes 300 wood: 1200, 900, 600, 300, 0. The game skips the tags it does not know.
-[Full video (MP4)](media/researchGrants-wol-control.mp4).
+*In WoL, key off (the same data, map, civs and clicks):* no `Research grants` row, no word on the buttons and no
+floating text; each of the four researches takes 300 wood: 1200, 900, 600, 300, 0. The game skips the tags it does not
+know. [Full video (MP4)](media/researchGrants-wol-control.mp4).
 
 ```
-researchGrants [log]
+researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
 ```
+
+| Option | What it does |
+|---|---|
+| `notext` | No floating text over the building that pays a point. |
+| `text=<text>` | That text over the building instead of the label below, `_` for a space (at most 127 characters), or `text=<string table ID>`. |
+| `noprice` | The tech buttons and their rollovers show the stock price. |
+| `free=<text>` | The word on the button of a research that would be free (default `Free`, at most 31 characters, `_` for a space). |
+| `log` | Logs the points, each point spent, each floating text and each change of the price a button shows. |
 
 ```xml
 <Unit name="Market">
@@ -6300,6 +6312,19 @@ researchGrants [log]
   takes `ResearchGrantTime` times as long. With a share below 1 the player needs only that share.
 - **Cancel:** the research gives back what was paid (nothing for a free one, half for a half) and never the point, as
   with `nextResearchFree`.
+- **What the player sees** (only the player who owns the building; nothing of it changes the game):
+  - **The price on the button:** while a point would go on a research, its button in the command panel says `Free` (a
+    share of 0), the price after the share when the tech costs one resource (`150`), or the discount (`-50%`). Without
+    a point, or when the rule would keep the point, the button is as stock. The price is the payment's own answer, asked
+    the same way at each refresh of the panel (the same `ResearchGrantMinCost`, scope, building with most points and
+    resources of the player), so what the button shows is what the click takes. A research that `nextResearchFree`
+    would make free shows `Free` too.
+  - **The rollover:** the cost line shows the cost after the share (none for a free research, as for a stock tech that
+    costs nothing), and a green line ends it: `Free research`, `Grant -50%`, or `Research grant, ×2 time` for a point
+    that only changes the time (with `, ×2 time` added to the others when `ResearchGrantTime` is not 1).
+  - **The floating text:** when a point is spent, the same label shows in green over the building that paid it, for
+    three times as long as the stock dodge text (about 5 s of game time in the test; `text=` changes it, `notext`
+    removes it).
 - **Tech effects** (`type='Data'`, on the player's copy of the proto):
   - `subtype='ResearchGrantInterval'` and `subtype='ResearchGrantMax'` change the interval and the cap from the tags'
     values, with the stock relativity (`Absolute` adds, `Percent` and `BasePercent` multiply, `Assign` sets). A card of
@@ -6325,13 +6350,19 @@ researchGrants [log]
   - a transform in place (`TransformUnit`, a revolution) clears them: the building starts again from 0;
   - a building found at the start of a game, or created by a trigger, starts its timer when the key first sees it,
     within a world update;
-  - the research cost shown on the button and in its tooltip is the full price.
+  - the button's price is the price at the last refresh of the panel: resources that change between that refresh and
+    the click (another research paid in the same frame) can change the answer, and the click is what counts;
+  - only the command panel's buttons get the word on the button and the green line; two other research panels of the
+    game that build the same rollover (0x9AD7F1, 0x9B7637) get only the cost after the share.
 - **Multiplayer:** it changes the simulation: every player needs the same setting. It uses only game state and game
   time; not tested in multiplayer.
 - **Simulation:** yes.
 - **Log:** `researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax
-  and ResearchGrantPoints are on`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research
-  step (0x9E6622)`; a bad value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
+  and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that
+  pays a point`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research step (0x9E6622)`,
+  `hook reached: researchGrants tech button (0x4622C5)`, `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
+  with `log` also `the button of tech 10542 shows Free (cost x0.00)` and `"Free research" shown over unit 0`; a bad
+  value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
   "2"; ignored`. With `log`: `unit 0 (Market) has 2/3 point(s) (game time 40000 ms)`, `unit 2 spends a point on tech
   10544 in unit 2: cost x0.50, time x2.00, 1 left`, `tech 10544 in unit 2 is done (game time 103014 ms)`.
 - **Tested in WoL (2026-11-11),** scenario player 1 (Ethiopians) with a `Market` (interval 20, cap 3, cost 0, time 1,
@@ -6357,6 +6388,21 @@ researchGrants [log]
     Dutch skirmish, the Market (interval 20, cap 3) with four test techs of 300 wood (`tools/grant_testdata.py`):
     points at 20.0, 40.0 and 60.0 s, three researches free at 63.1, 67.5 and 72.1 s (1200 wood kept, 2, 1 and 0
     points left), the fourth at 77.2 s paid 300, the next point at 83.1 s; key off, 1200 to 0 in four steps.
+  - **the price and the floating text (2026-11-12),** British skirmish against a French AI (`wolNapoleon`), the same
+    data, every research started by a click on its button: the buttons as stock before the first point and `Free` on
+    all ten Market techs from 20 s; the rollover `Free research` with no cost line; clicks at 64.2, 69.2 and 74.3 s
+    free (1200 wood kept, `Free research` over the Market each time, 2, 1, 0 points); at 0 points the buttons lost
+    their word (`the button of tech 10545 shows the full price`), the rollover showed 300 wood, and the click at 79.5 s
+    took 300; the point back at 84.2 s. Key off, the same clicks: 1200, 900, 600, 300, 0, no word, no text. `noprice
+    notext`: applied without the two display hooks; `free=` with no text: logged, the key not applied.
+  - **beside WoL's own DLL** (`C:\WoL-Test` with our `dinput8.dll`, `researchGrants text=Grant_used free=Gratis log`
+    in `engine-ext.cfg`, 2026-11-12): `3 applied, 0 failed`, both display hooks reached, the buttons said `Gratis`, the
+    rollover `Free research`, a click spent a point (2 left) with `Grant used` over the Market; the French AI trained
+    units. The bed's exe, `uhc.dll`, `wol.cfg` and data hashed the same afterwards.
+  - **Performance of the display** (the same scene, the Market selected for 44 s of each take, `record --perf`): key
+    on 862 fps on average, 3 frames over 50 ms, main thread 82 %; key off 841 fps, 0 frames over 50 ms, 82 %. The
+    on takes had 2 or 3 frames over 50 ms (at most 65 ms) and the control none; where they fell was not measured. Both
+    ran in a background copy beside two other games.
   - Not tested: `CommandResearch` (a research from a `protounitcommands.xml` command, 0x9D54CF / 0x9D58FF), a cancel,
     a transform in place, multiplayer.
 

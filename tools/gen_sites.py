@@ -1032,6 +1032,20 @@ SITES = [
     # world byte [world+6912h] is set
     ("ResearchProgressAdd", 0x9E6622, 11),
     ("CommandResearchProgressAdd", 0x9D58FF, 11),
+    # researchGrants, the price shown: in the command panel refresh FUN_0046188E, the tech button's call of the
+    # rollover builder 0x4C737C (push 1/1/0/1, EDI the unit, EBX the player, ESI the tech entry, lea ecx,[esp+30h]
+    # the rollover; cdecl, add esp,20h after), and the reset and read of the button's overlay text [esp+2C0h]
+    # (0x461DBC, 0x4625E2), which tie the frame to that buffer; the builder's head (its arguments at
+    # [esp+50h].. once it pushed EBX and EBP) and its copy of the tech's cost [ebp+10h] into its local list
+    # (lea edx,[ebp+10h] / push edx / call 480A73h; 0x4C78FA pushes a cost it was given and joins at the call);
+    # the BString append 0x443960 (thiscall(text, wchar*, len, start), ret 0Ch) and the ResList fill 0x4E2617
+    ("TechButtonRollover", 0x4622B5, 0x15),
+    ("ButtonOverlayReset", 0x461DBC, 8),
+    ("ButtonOverlayRead", 0x4625E2, 7),
+    ("TechRolloverHead", 0x4C737C, 0x10),
+    ("TechTipCostCopy", 0x4C73F9, 9),
+    ("BStringAppend", 0x443960, 0x10),
+    ("ResListFill", 0x4E2617, 0x0B),
     ("PayAffordCheck", 0x8D6BAE, 0x1E),
     ("PaySharedAffordCheck", 0x8D6C1B, 0x1A),
     # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:

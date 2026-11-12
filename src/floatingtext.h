@@ -19,7 +19,8 @@ bool CanShowUnitText(const char* unit);
 
 // Shows text (or, with stringId >= 0, that string table entry) over unit, in colour (ARGB), when
 // CanShowUnitText. The text does not rise. Returns the manager's index, or -1 when nothing was
-// shown (the engine also refuses an empty text).
-std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour);
+// shown (the engine also refuses an empty text). lifeScale stretches both of the text's stock times.
+std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour,
+                          float lifeScale = 1.0f);
 
 }  // namespace uhc

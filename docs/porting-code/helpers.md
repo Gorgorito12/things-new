@@ -1341,6 +1341,27 @@ inline constexpr Site kResearchProgressAdd{"ResearchProgressAdd", 0x009E6622, kR
 inline constexpr std::uint8_t kCommandResearchProgressAddBytes[] = {0xD8, 0x46, 0x70, 0xD9, 0x5E, 0x70, 0xE8, 0x91, 0xFA, 0xFF, 0xFF};
 inline constexpr Site kCommandResearchProgressAdd{"CommandResearchProgressAdd", 0x009D58FF, kCommandResearchProgressAddBytes, sizeof(kCommandResearchProgressAddBytes)};
 
+inline constexpr std::uint8_t kTechButtonRolloverBytes[] = {0x6A, 0x01, 0x6A, 0x01, 0x6A, 0x00, 0x6A, 0x01, 0x57, 0x53, 0x8D, 0x4C, 0x24, 0x30, 0x56, 0x51, 0xE8, 0xB2, 0x50, 0x06, 0x00};
+inline constexpr Site kTechButtonRollover{"TechButtonRollover", 0x004622B5, kTechButtonRolloverBytes, sizeof(kTechButtonRolloverBytes)};
+
+inline constexpr std::uint8_t kButtonOverlayResetBytes[] = {0xC6, 0x84, 0x24, 0xC0, 0x02, 0x00, 0x00, 0x00};
+inline constexpr Site kButtonOverlayReset{"ButtonOverlayReset", 0x00461DBC, kButtonOverlayResetBytes, sizeof(kButtonOverlayResetBytes)};
+
+inline constexpr std::uint8_t kButtonOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0xC0, 0x02, 0x00, 0x00};
+inline constexpr Site kButtonOverlayRead{"ButtonOverlayRead", 0x004625E2, kButtonOverlayReadBytes, sizeof(kButtonOverlayReadBytes)};
+
+inline constexpr std::uint8_t kTechRolloverHeadBytes[] = {0x83, 0xEC, 0x40, 0x53, 0x8B, 0x5C, 0x24, 0x48, 0x55, 0x8B, 0xCB, 0xE8, 0x84, 0xC5, 0xF7, 0xFF};
+inline constexpr Site kTechRolloverHead{"TechRolloverHead", 0x004C737C, kTechRolloverHeadBytes, sizeof(kTechRolloverHeadBytes)};
+
+inline constexpr std::uint8_t kTechTipCostCopyBytes[] = {0x8D, 0x55, 0x10, 0x52, 0xE8, 0x71, 0x96, 0xFB, 0xFF};
+inline constexpr Site kTechTipCostCopy{"TechTipCostCopy", 0x004C73F9, kTechTipCostCopyBytes, sizeof(kTechTipCostCopyBytes)};
+
+inline constexpr std::uint8_t kBStringAppendBytes[] = {0x51, 0x53, 0x55, 0x8B, 0xE9, 0x8B, 0x5D, 0x00, 0x85, 0xDB, 0x0F, 0x84, 0x1F, 0x17, 0x00, 0x00};
+inline constexpr Site kBStringAppend{"BStringAppend", 0x00443960, kBStringAppendBytes, sizeof(kBStringAppendBytes)};
+
+inline constexpr std::uint8_t kResListFillBytes[] = {0x83, 0xEC, 0x0C, 0x57, 0x8B, 0xF9, 0x83, 0x3F, 0x00, 0x74, 0x6E};
+inline constexpr Site kResListFill{"ResListFill", 0x004E2617, kResListFillBytes, sizeof(kResListFillBytes)};
+
 inline constexpr std::uint8_t kPayAffordCheckBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x40, 0x01, 0x00, 0x00, 0x53, 0x56, 0x33, 0xF6, 0x39, 0xB2, 0x80, 0x00, 0x00, 0x00, 0x57, 0x7E, 0x45, 0x8B, 0x5C, 0x24, 0x10, 0x8D, 0xB9};
 inline constexpr Site kPayAffordCheck{"PayAffordCheck", 0x008D6BAE, kPayAffordCheckBytes, sizeof(kPayAffordCheckBytes)};
 
@@ -4129,8 +4150,9 @@ bool CanShowUnitText(const char* unit);
 
 // Shows text (or, with stringId >= 0, that string table entry) over unit, in colour (ARGB), when
 // CanShowUnitText. The text does not rise. Returns the manager's index, or -1 when nothing was
-// shown (the engine also refuses an empty text).
-std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour);
+// shown (the engine also refuses an empty text). lifeScale stretches both of the text's stock times.
+std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour,
+                          float lifeScale = 1.0f);
 
 }  // namespace uhc
 ```
@@ -4202,7 +4224,8 @@ bool CanShowUnitText(const char* unit) {
   return unit != nullptr && TextManager() != nullptr && kVisibleTo(unit, LocalPlayer());
 }
 
-std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour) {
+std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t stringId, std::uint32_t colour,
+                          float lifeScale) {
   if (!CanShowUnitText(unit)) {
     return -1;
   }
@@ -4213,6 +4236,10 @@ std::int32_t ShowUnitText(const char* unit, const wchar_t* text, std::int32_t st
   std::int32_t time2 = 2000;
   kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime1), &time1);
   kConfigInt(kConfig, **reinterpret_cast<const std::int32_t* const*>(kTextTime2), &time2);
+  if (lifeScale != 1.0f && lifeScale > 0.0f) {
+    time1 = static_cast<std::int32_t>(static_cast<float>(time1) * lifeScale);
+    time2 = static_cast<std::int32_t>(static_cast<float>(time2) * lifeScale);
+  }
   BString string;
   if (stringId >= 0) {
     kBStringFromId(&string, stringId);
@@ -5253,10 +5280,12 @@ bool AddD3D9Observer(const D3D9Observer& observer, const char* who) {
 namespace uhc {
 
 // Asked before a research is paid, in the order the keys added them (their kFeatures order), until one claims
-// it. `action` is the Research or CommandResearch action being set up ([action+10h] its unit; its tech is not
-// written yet), `player` the paying player, `cost` the tech's cost list (a ResList). Return true to claim the
-// payment with *share of the cost, 0 (free) to 1 (the full cost); the claim spends nothing yet.
-using ResearchPayClaim = bool (*)(const char* action, const char* player, const char* cost, float* share);
+// it. `researcher` is the unit of the Research or CommandResearch action being set up ([action+10h]), `player`
+// the paying player, `cost` the tech's cost list (a ResList). Return true to claim the payment with *share of the
+// cost, 0 (free) to 1 (the full cost); the claim spends nothing yet. With `preview` set the question comes from a
+// display (PreviewResearchPay): answer as for a payment, and change nothing.
+using ResearchPayClaim = bool (*)(const char* researcher, const char* player, const char* cost, float* share,
+                                  bool preview);
 
 // Called for every research that was paid and whose action is set up, claimed or not, for each key in order:
 // [action+68h] is the tech ID, and the refund copy holds what was paid. `claimed` is set for the key whose claim
@@ -5266,6 +5295,11 @@ using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
 
 // Writes the hooks the first time, after checking the stock bytes of the four sites.
 bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
+
+// What the payment would do now with a research of `cost` by `researcher` for `player`: the keys are asked in the
+// same order, with `preview` set. Returns the name of the key that would claim it, with *share, or nullptr with
+// *share 1. For a display of the price: nothing is spent or remembered.
+const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share);
 
 }  // namespace uhc
 ```
@@ -5282,6 +5316,7 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
 // claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
 // the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
 // share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+// PreviewResearchPay asks the same claims in the same order for a display of the price, and changes nothing.
 #include "researchpay.h"
 
 #include <cstdint>
@@ -5314,6 +5349,7 @@ const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
 const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
 
 struct Payer {
+  const char* feature;
   uhc::ResearchPayClaim claim;
   uhc::ResearchPayStarted started;
 };
@@ -5332,6 +5368,8 @@ struct ResList {
   std::uint32_t* entries;
   std::uint32_t total;
 };
+
+float ClampShare(float share) { return share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share); }
 
 bool PayShare(void* player, const void* cost, float share) {
   if (share <= 0.0f) {
@@ -5375,12 +5413,14 @@ void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { 
 // From the two hooks, instead of the payment. The action is the one being set up.
 extern "C" bool __stdcall UhcResearchPay(const char* action, void* player, const void* cost) {
   g_pending = nullptr;
+  const char* researcher = *reinterpret_cast<const char* const*>(action + 0x10);
   for (std::size_t i = 0; i < g_payerCount; ++i) {
     float share = 1.0f;
-    if (!g_payers[i].claim(action, static_cast<const char*>(player), static_cast<const char*>(cost), &share)) {
+    if (!g_payers[i].claim(researcher, static_cast<const char*>(player), static_cast<const char*>(cost), &share,
+                           false)) {
       continue;
     }
-    share = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
+    share = ClampShare(share);
     if (!PayShare(player, cost, share)) {
       return false;  // the research does not start; nothing was spent
     }
@@ -5411,8 +5451,20 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
     }
     g_installed = true;
   }
-  g_payers[g_payerCount++] = {claim, started};
+  g_payers[g_payerCount++] = {feature, claim, started};
   return true;
+}
+
+const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share) {
+  for (std::size_t i = 0; i < g_payerCount; ++i) {
+    float claimed = 1.0f;
+    if (g_payers[i].claim(researcher, player, cost, &claimed, true)) {
+      *share = ClampShare(claimed);
+      return g_payers[i].feature;
+    }
+  }
+  *share = 1.0f;
+  return nullptr;
 }
 
 }  // namespace uhc

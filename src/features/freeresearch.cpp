@@ -50,8 +50,8 @@ const char* ProtoOf(const char* action) {
   return unit != nullptr ? *reinterpret_cast<const char* const*>(unit + 0x5C) : nullptr;
 }
 
-bool Claim(const char* action, const char*, const char*, float* share) {
-  const char* proto = ProtoOf(action);
+bool Claim(const char* researcher, const char*, const char*, float* share, bool) {
+  const char* proto = researcher != nullptr ? *reinterpret_cast<const char* const*>(researcher + 0x5C) : nullptr;
   const auto found = proto != nullptr ? g_free.find(proto) : g_free.end();
   if (found == g_free.end() || found->second <= 0) {
     return false;
