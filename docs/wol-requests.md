@@ -247,6 +247,32 @@ DE parity and extras, in rough order.
 | 46 | `CostEscalation` modifiable by techs (JTMaston, 2026-11-05). | Built: [`costEscalationTechs`](modding-guide.md#costescalationtechs), the new Data subtype `CostEscalation`, on `AddTechSubtype`, which #34 and #45 can use. In game the count is the units alive only, not the queued ones, and a Shift+click batch pays every unit (5 at 85.8 charged 429). | confirmed in WoL (2026-11-05) |
 | 47 | Gold stolen while besieging: a unit with `AbstractCanPillage`, on each instance of its `BuildingAttack`, steals `<PillageAmount>` from the building's owner; only gold, and nothing from a victim with none (JTMaston, 2026-11-05). | Built: [`pillageGold`](modding-guide.md#pillagegold), on `TakeDamage`'s call 0x49B73C, with the type through `unittypes.*` and the tag through `AddActionTagHandler`. A victim with less than the amount pays what it has, and `CoverBuildingAttack` with no tag uses `BuildingAttack`'s amount: both decided by the user on 2026-11-06, so a unit does not stop stealing in cover. Shared resources not played. | confirmed in WoL (2026-11-05) |
 
+## Tier 5: JTMaston's second list (2026-11-12)
+
+Passed on by the user on 2026-11-12. Order agreed with the user: bugs first, then the mechanics in his order. "ME" is
+WoL's Middle East civs.
+
+| # | Request | Kind | Notes | Status |
+|---|---|---|---|---|
+| 48 | `DirectionalAttack`, a parametrizable "monster truck" attack: a cannon's projectile damages every unit it flies over, before and after its target, like AoE2's Scorpion. A new attack type for a tactics action, with the usual attack parameters plus one more: either the projectile's range before it lands (`MaxRange` stays the range at which the unit targets and fires), or the firing range (and `MaxRange` is where the projectile lands). Test with the Falconet. | mechanic | Which of the two variants: to be agreed with JTMaston. Hot path: A/B with `perfprobe.py`. | open |
+| 49 | A bone of a WoL building with `impacttype` Wood in its `.dmg` drops its splinters on the player's screen instead of on the building. Reproduce by editing the `.dmg` of an ME building. | bug | | open |
+| 50 | Custom impact types, e.g. one with a metallic sound for modern ships. | mechanic | Same code as #49. | open |
+| 51 | Custom walls: more protos that build like walls, a row of corners and sections between a point A and a point B. Probably a proto attribute that groups them. Test with GW's barbed wire protos. | mechanic | | open |
+| 52 | Dynamitable units: when killed (not deleted), the unit makes an area attack with no target, like a petard or a cannon shot. | mechanic | Already built as [`detonationDeath`](modding-guide.md#detonationdeath) (#39): a kill fires `<DetonationProtoAction>` around the unit; a delete detonates only with `DetonationCommand`. Left: the blast has no effect of its own on screen. | built (#39); visual effect open |
+| 53 | A floating inventory bar, like the HP bar but for the unit's resources (DE has it), shown only while Alt is held. | mechanic | | open |
+| 54 | Question: is the resource "yield" unlocked as in DE? | question | Meaning to be found in DE with REA. | open |
+| 55 | A tactics action attribute `numberOfShots` (number, default 1): several shots before the reload animation. `numberOfProjectiles`, which does not work, could be fixed to do this. | mechanic | | open |
+| 56 | `UseBigHugeButton` for buildings other than the Consulate: any clickable tech, any civ. | hardcode | | open |
+| 57 | `UseBigHugeButton` as in DE. | hardcode | With #56. | open |
+| 58 | A proto attribute for a custom "random" cost per unit. | mechanic | Meaning to be found in DE with REA. | open |
+| 59 | LAN lobbies: let players pick their profile icon instead of the civ personality's, from a folder of custom `.ddt` images (ESOC online had something similar). | mechanic | Lobby and network: last, reported before building. | open |
+| 60 | The submarine's stealth: the game's AIs can still attack it in stealth (maybe stealth in general). | bug | | open |
+| 61 | Stealth: units in stealth can still be auto-attacked by enemies whose tags normally allow the auto-attack. | bug | With #60. | open |
+| 62 | Up to 5 age-up choices, as in DE; politicians researchable in buildings other than the Town Center. | hardcode | | open |
+| 63 | The King of the Hill timer, set by the number of players or teams. | mechanic | | open |
+| 64 | A `qty` attribute on `<OrPrereqs qty="">`: how many of the prerequisites must be met for the tech to be researched or activated. | mechanic | | open |
+| 65 | Per-player counters of the cards sent in each age, for `Data` techs that send as many units as the cards sent in age X. | mechanic | | open |
+
 ## Minor items left (2026-11-08)
 
 - **#29:** DE's subtypes `SharedBuildLimitUnit` and `AddSharedBuildLimitUnitType` are not built (they need a name a `Data`
