@@ -79,8 +79,6 @@ extern "C" void __stdcall UhcAddCustomImpact(const void* effect, std::int32_t ty
     lists.assign(g_names.size(), EntryList{nullptr, 0, 0});  // a new read of this effect
   }
   kListAdd(&lists[static_cast<std::size_t>(index)], &entry);
-  static int debugAdds = 0;
-  if (g_log && debugAdds++ < 8) uhc::Log(L"DEBUG add effect %p type %d count %d", effect, type, lists[static_cast<std::size_t>(index)].count);
 }
 
 extern "C" void __stdcall UhcFinishImpactEffect(const void* effect) {
@@ -112,8 +110,6 @@ extern "C" std::int32_t __stdcall UhcSpawnCustomImpact(char* effect, const std::
   const auto found = g_lists.find(effect);
   if (effect == nullptr || index < 0 || index >= static_cast<std::int32_t>(g_names.size()) ||
       found == g_lists.end() || found->second[static_cast<std::size_t>(index)].count <= 0) {
-    static int debugMiss = 0;
-    if (g_log && debugMiss++ < 8) uhc::Log(L"DEBUG spawn miss effect %p type %d found %d", effect, (int)args[3], found != g_lists.end() ? 1 : 0);
     return -1;  // as the stock spawn does for a type with no entry
   }
   if (g_log && !g_loggedSpawn[static_cast<std::size_t>(index)]) {

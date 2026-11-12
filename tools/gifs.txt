@@ -236,3 +236,7 @@ overhealDecay-holdnear-wol 2 22 2
 overhealDecay-holdnear-wol-control 2 22 2
 researchGrants-wol 10 24 2 920:704:0:0
 researchGrants-wol-control 10 24 2 920:704:0:0
+impactBoneFix-wol 2 20 2
+impactBoneFix-wol-control 2 20 2
+customImpactTypes-wol 0 22 2
+customImpactTypes-wol-control 0 22 2

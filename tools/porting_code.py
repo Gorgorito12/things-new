@@ -85,6 +85,8 @@ PAGES = {
         "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp", "src/hooks/veterancy_hooks.asm"],
         "detonationDeath": ["src/features/detonation.cpp"],
+        "impactBoneFix": ["src/features/impactbones.cpp", "src/hooks/impactbone_hooks.asm"],
+        "customImpactTypes": ["src/features/impacttypes.cpp", "src/hooks/impacttype_hooks.asm"],
     }),
     "gathering": ("Gathering", {
         "showGatherRate": ["src/features/gatherrate.cpp", "src/hooks/gatherrate_hooks.asm"],

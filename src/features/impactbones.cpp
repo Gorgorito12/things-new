@@ -1,7 +1,7 @@
 // impactBoneFix [all] [log]: an impact effect that is a visual (an impacteffect particleSet naming an .xml, as
 // cannon.impacteffect's <wood> does) is attached to the dummy bone of the impact point it hit (FUN_004CA908 from
 // the impact spawn FUN_0049C1E5), and the visual's attachment update takes the bone's frame from the model
-// (FUN_00407272) with its scale. A model exported with its bones scaled by 100 (centimetres, as WoL's Middle East
+// (FUN_00407272) with its scale. A model exported with its bones scaled by 100 (centimetres, as some mods'
 // buildings are) gives the attached effect axes of length 100, and its splinters cover the screen. Particle set
 // impacts (<stone>) are placed at the hit point and never read the bone, so only the visual ones break.
 //
