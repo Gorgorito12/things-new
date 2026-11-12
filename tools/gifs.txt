@@ -240,3 +240,7 @@ stealthTargeting-wol 11 12 1
 stealthTargeting-wol-control 11 12 1
 stealthTargeting-ai-wol 4 12 1
 stealthTargeting-ai-wol-control 4 12 1
+impactBoneFix-wol 2 20 2
+impactBoneFix-wol-control 2 20 2
+customImpactTypes-wol 0 22 2
+customImpactTypes-wol-control 0 22 2

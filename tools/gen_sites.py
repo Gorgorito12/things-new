@@ -1375,6 +1375,34 @@ SITES = [
     ("TacticReset2", 0x7D8F07, 0x07),
     ("TacticReset3", 0x9D6BE7, 0x07),
     ("TacticReset4", 0x9EBB0B, 0x07),
+    # impactBoneFix: the two calls of the model's bone frame getter FUN_00407272 (thiscall(model, bone,
+    # vec3* pos, vec3* axisC, vec3* axisB, vec3* axisA, ...), ret 1Ch) in the visual's dummy attachment update,
+    # and the test al,al / je they continue at. Path 1 (FUN_004BE0xx): type in EDI, the axes at
+    # [esp+24h], [esp+30h], [esp+40h] after the call; path 2 (FUN_004BE7xx): type in EBX, the axes at
+    # [esp+20h], [esp+30h], [esp+40h].
+    ("ImpactBoneFrame1", 0x4BE21E, 0x0D),
+    ("ImpactBoneFrame2", 0x4BE88D, 0x0D),
+    # the bone frame getter's head (verify only)
+    ("BoneFrameGetter", 0x407272, 0x08),
+    # customImpactTypes: the impact type by name FUN_0059F436 (15 wchar[32] names from 0xBA4D70) ends its
+    # not-found path with pop edi / pop esi / or eax,-1 / pop ebx / ret (EBX = the name's string object)
+    ("ImpactTypeNotFound", 0x59F464, 0x07),
+    # in the .impacteffect loader FUN_005FEABF, the add of a parsed entry to its type's list (EBX = the type,
+    # [esp+20h] = the impact effect, [esp+14h] = the entry): mov edx,[esp+20h] / lea eax,[esp+14h] /
+    # lea ecx,[ebx+ebx*2] / push eax / lea ecx,[edx+ecx*4+4] / call 401F74h, and the add ebp,1 it continues at
+    ("ImpactEffectAdd", 0x5FEC74, 0x18),
+    # the same loader's mov ecx,ebx / call 5FE8CDh (the 15 lists' cumulative weights; also reached from
+    # 0x5FEBE1 with no child), and the lea ecx,[esp+24h] it continues at
+    ("ImpactEffectWeights", 0x5FEC99, 0x0B),
+    # the two calls of the impact effect spawn FUN_0049C1E5 (thiscall(effect, pos, dir, ?, type, ...), 8 args,
+    # ret 20h; it returns -1 for a type above 14): from the projectile hit (0x49D86E) and the terrain impact
+    # (0x4CB30D), and the instruction each continues at
+    ("ImpactSpawnUnit", 0x49D86E, 0x06),
+    ("ImpactSpawnTerrain", 0x4CB30D, 0x06),
+    # the string compare FUN_00443C10 (thiscall(string, const wchar_t*, 0, -1), 0 when equal) and the spawn's
+    # head (verify only)
+    ("StringCompareW", 0x443C10, 0x07),
+    ("ImpactSpawn", 0x49C1E5, 0x0C),
     # annexFacing: in the build command's executor FUN_007D79D6 (EDI = the command, EBX = the player's proto,
     # EBP = the player), lea eax,[edi+0A8h] / push eax before the right vector 0x423792 is computed from the
     # forward at [edi+0A8h]; the continuation is the push

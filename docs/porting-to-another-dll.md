@@ -6,7 +6,7 @@ what each feature does in WoL (the `wol.cfg` line, the data, the log, the videos
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
 
-This page covers every key the modding guide marks **new**, 68 keys in all:
+This page covers every key the modding guide marks **new**, 70 keys in all:
 
 | Theme | Keys | Code |
 |---|---|---|
@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 68 keys in all:
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
@@ -139,6 +139,13 @@ says so:
 | `DetonationKillCall` | `0x493D8F` | 5 B | 5 B at `0x493D8F` (a `call` to the wrapper) | `E8 DC 11 02 00` (`call 4B4F70h`) | the kill queue drain's call of the kill handler; the shared death observer (`deathobservers.cpp`: detonationDeath, annexFacing) |
 | `DestroyRemoveCall` | `0x9828E7` | 5 B | 5 B at `0x9828E7` (a `call` to the wrapper) | `E8 C6 FD AE FF` (`call 4726B2h`) | trUnitDestroy's call of the unit removal; the shared Destroy observer (`deathobservers.cpp`: annexFacing) |
 | `UnitCreate`, `UnitRemoveHead`, `KillQueueAsk` | `0x498ACC`, `0x4726B2`, `0x4B4DC2` | 9, 6, 8 B | — | — | the heads of the unit creation and removal the wrappers call, and the kill queue's ask annexFacing calls |
+| `ImpactBoneFrame1`, `ImpactBoneFrame2` | `0x4BE21E`, `0x4BE88D` | 13 B each | 5 B at each | `E8 4F 90 F4 FF`, `E8 E0 89 F4 FF` (`call 407272h`) | the two calls of the bone frame getter in the visual's dummy attachment update; impactBoneFix (continue at `0x4BE223`, `0x4BE892`) |
+| `BoneFrameGetter` | `0x407272` | 8 B | — | — | the bone frame getter's head, called by the impactBoneFix hooks |
+| `ImpactTypeNotFound` | `0x59F464` | 7 B | 5 B at `0x59F464` | `5F 5E 83 C8 FF` (`pop edi; pop esi; or eax,-1`) | the not-found end of the impact type by name FUN_0059F436; customImpactTypes (the hook ends with the stock pops and `ret`) |
+| `ImpactEffectAdd` | `0x5FEC74` | 24 B | 21 B at `0x5FEC74` | `8B 54 24 20 8D` (`mov edx,[esp+20h]; …`) | the `.impacteffect` loader's add of an entry to its type's list; customImpactTypes (continues at `0x5FEC89`) |
+| `ImpactEffectWeights` | `0x5FEC99` | 11 B | 7 B at `0x5FEC99` | `8B CB E8 2D FC` (`mov ecx,ebx; call 5FE8CDh`) | the loader's call of the weights; customImpactTypes (continues at `0x5FECA0`) |
+| `ImpactSpawnUnit`, `ImpactSpawnTerrain` | `0x49D86E`, `0x4CB30D` | 6 B each | 5 B at each | `E8 72 E9 FF FF`, `E8 D3 0E FD FF` (`call 49C1E5h`) | the two calls of the impact spawn; customImpactTypes (continue at `0x49D873`, `0x4CB312`) |
+| `StringCompareW`, `ImpactSpawn` | `0x443C10`, `0x49C1E5` | 7, 12 B | — | — | the string compare and the spawn's head, called by the customImpactTypes code |
 | `NoCorpseDoppleCreate` | `0x49534D` | `0x24` B | 8 B at `0x49534D` | `8B 44 24 2C 8B 4C 24 54` (`mov eax,[esp+2Ch]; mov ecx,[esp+54h]`) | dopple creation in the unit visibility update FUN_0048679A, through `call 4DB3D0h` and `jmp 486A30h`; noCorpseDopples |
 | `NoCorpseDoppleGaiaCheck`, `NoCorpseDoppleSkip`, `NoCorpseDoppleAliveCall` | `0x4F1088`, `0x486A30`, `0x4868FA` | `0x11`, `0x17`, `0x15` B | — | — | the second way into the site, the "no dopple" exit the hook takes, and the stock virtual isAlive call it imitates |
 | `DanceTrainGate`, `DanceXpGate`, `DanceGatherGate`, `DanceRegenGate` | `0x8D47A6`, `0x4E0DFA`, `0x4ECD4E`, `0x490486` | 13, 13, 13, 17 B | 6 B each at `0x8D47AB`, `0x4E0DFF`, `0x4ECD53`, `0x49048B` | `3B 05 50 FB C6 00` (`cmp eax,[0C6FB50h]`) at each | the first native civ compare of the four dance readers; danceBonusCivs. Each range covers the civ load before it and the `je` after it |
@@ -294,6 +301,8 @@ Each key's page has the code of every file below, the helpers it needs and its s
 | [`src/features/hotkeys.cpp`](../src/features/hotkeys.cpp), [`src/hooks/hotkey_hooks.asm`](../src/hooks/hotkey_hooks.asm) | `customHotkeyContexts`. | sites `Hotkey*`, `WriteCall`, your cfg reader |
 | [`src/features/snare.cpp`](../src/features/snare.cpp), [`src/hooks/snare_hooks.asm`](../src/hooks/snare_hooks.asm), [`src/modifiers.h`](../src/modifiers.h) | `snareOnlyHitUnit`. `modifiers.h` holds the read-only walk over a unit's modifier actions (`WalkModifiers`, `ModifierList`), shared with `buildingWorkRateAuras`. | sites `Snare*`, your cfg reader |
 | [`src/features/techrename.cpp`](../src/features/techrename.cpp), [`src/hooks/techrename_hooks.asm`](../src/hooks/techrename_hooks.asm) | `techRenameEffect`. | sites `TechRename*`, your cfg reader |
+| [`src/features/impactbones.cpp`](../src/features/impactbones.cpp), [`src/hooks/impactbone_hooks.asm`](../src/hooks/impactbone_hooks.asm) | `impactBoneFix`. | sites `ImpactBoneFrame*`, `BoneFrameGetter`, your cfg reader |
+| [`src/features/impacttypes.cpp`](../src/features/impacttypes.cpp), [`src/hooks/impacttype_hooks.asm`](../src/hooks/impacttype_hooks.asm) | `customImpactTypes`. | sites `ImpactTypeNotFound`, `ImpactEffect*`, `ImpactSpawn*`, `StringCompareW`, your cfg reader |
 | [`src/features/dopples.cpp`](../src/features/dopples.cpp), [`src/hooks/dopple_hooks.asm`](../src/hooks/dopple_hooks.asm) | `noCorpseDopples`. | unittypes, sites `NoCorpseDopple*`, your cfg reader |
 | [`src/features/steadybars.cpp`](../src/features/steadybars.cpp), [`src/hooks/steadybar_hooks.asm`](../src/hooks/steadybar_hooks.asm) | `steadyHitpointBars`. | unittypes (only with a UnitType), sites `SteadyBar*`, `BoneLocalPosition`, `IsA`, your cfg reader |
 | [`src/features/vertexfill.cpp`](../src/features/vertexfill.cpp), [`src/hooks/clothfill_hooks.asm`](../src/hooks/clothfill_hooks.asm) | `fastVertexFill`. | sites `ClothFill*`, your cfg reader |
@@ -529,6 +538,35 @@ Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHan
   `deathobservers.cpp`, which runs every key's observer (`AddDeathObserver`, in `kFeatures` order) before the stock
   handler; `annexFacing` adds its observer there too. Check it against your DLL first.
 - **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage.
+
+### impactBoneFix
+
+Code: [combat](porting-code/combat.md#impactbonefix).
+
+- **Sites:** the two `call 407272h` at `0x4BE21E` and `0x4BE88D` become `jmp`s to the hooks. Each hook calls
+  `0x407272` itself with the arguments already pushed (it is `thiscall`, `ret 1Ch`), then, if AL is not 0, calls
+  `UhcFixDummyAxes(type, esp, firstAxis)` with EAX, ECX and EDX saved; the type is EDI at the first site and EBX at
+  the second, the axes at `[esp+24h]`/`[esp+20h]`, `[esp+30h]` and `[esp+40h]` after the call. Then `jmp` to
+  `0x4BE223` / `0x4BE892` (the stock `test al,al`).
+- **The impact dummy type:** `[[0D6F678h]]`, read at each call (it is set at data load).
+- **Test:** a model with impact bones scaled by 100 and an impact element whose `particleset` names an `.xml`: the
+  splinters show at the building's size.
+
+### customImpactTypes
+
+Code: [combat](porting-code/combat.md#customimpacttypes).
+
+- **Names:** the hook at `0x59F464` replaces `pop edi / pop esi / or eax,-1 / pop ebx / ret`; EBX is the name's
+  string object, compared with `0x443C10` (`thiscall(string, const wchar_t*, 0, -1)`, 0 when equal).
+- **Entries:** at `0x5FEC74`, EBX = the type, `[esp+20h]` = the impact effect, `[esp+14h]` = the entry; a stock type
+  runs the stock add, a custom one goes to the DLL's list. Continue at `0x5FEC89`.
+- **Weights:** at `0x5FEC99` (EBX = the effect; `0x5FEBE1` jumps there too), the stock `call 5FE8CDh`, then the DLL's
+  sums. Continue at `0x5FECA0`.
+- **Spawn:** at `0x49D86E` and `0x4CB30D`, ECX = the effect and the 8 arguments pushed, the type 4th. A custom
+  type is spawned by `UhcSpawnCustomImpact(effect, args)`, which lends the list to slot 14 for one stock call; the
+  hook then drops the 8 arguments (`add esp,20h`). Continue at `0x49D873` / `0x4CB312`.
+- **Test:** a custom name in a `.dmg` and an element of that name in the compiled `.impacteffect.xmb`: its particle
+  set plays on the hit.
 
 ### damageOverTime
 

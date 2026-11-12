@@ -1824,6 +1824,36 @@ inline constexpr Site kTacticReset3{"TacticReset3", 0x009D6BE7, kTacticReset3Byt
 inline constexpr std::uint8_t kTacticReset4Bytes[] = {0x6A, 0x00, 0xE8, 0x77, 0xB8, 0xB0, 0xFF};
 inline constexpr Site kTacticReset4{"TacticReset4", 0x009EBB0B, kTacticReset4Bytes, sizeof(kTacticReset4Bytes)};
 
+inline constexpr std::uint8_t kImpactBoneFrame1Bytes[] = {0xE8, 0x4F, 0x90, 0xF4, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0x0F, 0x59, 0x02, 0x00};
+inline constexpr Site kImpactBoneFrame1{"ImpactBoneFrame1", 0x004BE21E, kImpactBoneFrame1Bytes, sizeof(kImpactBoneFrame1Bytes)};
+
+inline constexpr std::uint8_t kImpactBoneFrame2Bytes[] = {0xE8, 0xE0, 0x89, 0xF4, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0x91, 0x01, 0x00, 0x00};
+inline constexpr Site kImpactBoneFrame2{"ImpactBoneFrame2", 0x004BE88D, kImpactBoneFrame2Bytes, sizeof(kImpactBoneFrame2Bytes)};
+
+inline constexpr std::uint8_t kBoneFrameGetterBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x24, 0x85, 0xC0};
+inline constexpr Site kBoneFrameGetter{"BoneFrameGetter", 0x00407272, kBoneFrameGetterBytes, sizeof(kBoneFrameGetterBytes)};
+
+inline constexpr std::uint8_t kImpactTypeNotFoundBytes[] = {0x5F, 0x5E, 0x83, 0xC8, 0xFF, 0x5B, 0xC3};
+inline constexpr Site kImpactTypeNotFound{"ImpactTypeNotFound", 0x0059F464, kImpactTypeNotFoundBytes, sizeof(kImpactTypeNotFoundBytes)};
+
+inline constexpr std::uint8_t kImpactEffectAddBytes[] = {0x8B, 0x54, 0x24, 0x20, 0x8D, 0x44, 0x24, 0x14, 0x8D, 0x0C, 0x5B, 0x50, 0x8D, 0x4C, 0x8A, 0x04, 0xE8, 0xEB, 0x32, 0xE0, 0xFF, 0x83, 0xC5, 0x01};
+inline constexpr Site kImpactEffectAdd{"ImpactEffectAdd", 0x005FEC74, kImpactEffectAddBytes, sizeof(kImpactEffectAddBytes)};
+
+inline constexpr std::uint8_t kImpactEffectWeightsBytes[] = {0x8B, 0xCB, 0xE8, 0x2D, 0xFC, 0xFF, 0xFF, 0x8D, 0x4C, 0x24, 0x24};
+inline constexpr Site kImpactEffectWeights{"ImpactEffectWeights", 0x005FEC99, kImpactEffectWeightsBytes, sizeof(kImpactEffectWeightsBytes)};
+
+inline constexpr std::uint8_t kImpactSpawnUnitBytes[] = {0xE8, 0x72, 0xE9, 0xFF, 0xFF, 0x50};
+inline constexpr Site kImpactSpawnUnit{"ImpactSpawnUnit", 0x0049D86E, kImpactSpawnUnitBytes, sizeof(kImpactSpawnUnitBytes)};
+
+inline constexpr std::uint8_t kImpactSpawnTerrainBytes[] = {0xE8, 0xD3, 0x0E, 0xFD, 0xFF, 0x5F};
+inline constexpr Site kImpactSpawnTerrain{"ImpactSpawnTerrain", 0x004CB30D, kImpactSpawnTerrainBytes, sizeof(kImpactSpawnTerrainBytes)};
+
+inline constexpr std::uint8_t kStringCompareWBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x57};
+inline constexpr Site kStringCompareW{"StringCompareW", 0x00443C10, kStringCompareWBytes, sizeof(kStringCompareWBytes)};
+
+inline constexpr std::uint8_t kImpactSpawnBytes[] = {0x83, 0xEC, 0x6C, 0x53, 0x56, 0x8B, 0xB4, 0x24, 0x84, 0x00, 0x00, 0x00};
+inline constexpr Site kImpactSpawn{"ImpactSpawn", 0x0049C1E5, kImpactSpawnBytes, sizeof(kImpactSpawnBytes)};
+
 inline constexpr std::uint8_t kAnnexForwardSiteBytes[] = {0x8D, 0x87, 0xA8, 0x00, 0x00, 0x00, 0x50};
 inline constexpr Site kAnnexForwardSite{"AnnexForwardSite", 0x007D7CF1, kAnnexForwardSiteBytes, sizeof(kAnnexForwardSiteBytes)};
 
@@ -2462,6 +2492,8 @@ Outcome ApplyRofFix(const Config& config);
 Outcome ApplyStunMovingTargetFix(const Config& config);
 Outcome ApplyNoDamageOnUnbuiltFoundations(const Config& config);
 Outcome ApplyFallenHeroTacticsFix(const Config& config);
+Outcome ApplyImpactBoneFix(const Config& config);
+Outcome ApplyCustomImpactTypes(const Config& config);
 // dance.cpp: the four fire pit dance gates, shared by danceBonusCivs and nativeCivs.
 bool InstallDanceGates(const char* feature);
 bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
@@ -2557,6 +2589,8 @@ inline constexpr Feature kFeatures[] = {
     {"stunMovingTargetFix", ApplyStunMovingTargetFix},
     {"noDamageOnUnbuiltFoundations", ApplyNoDamageOnUnbuiltFoundations},
     {"fallenHeroTacticsFix", ApplyFallenHeroTacticsFix},
+    {"impactBoneFix", ApplyImpactBoneFix},
+    {"customImpactTypes", ApplyCustomImpactTypes},
     {"selectionLimit", ApplySelectionLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
@@ -2615,7 +2649,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
+    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc

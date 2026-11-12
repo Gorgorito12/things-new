@@ -4130,6 +4130,61 @@ installs a `WH_CBT` hook for that thread only:
 A window that cannot be activated gets no keyboard input. The game is driven through `perfExecFile`
 and watched with `PrintWindow`, and both work without focus.
 
+### impactBoneFix
+
+A hit on a unit with a damage template picks one of its impact points (FUN_0049ABA1) and plays the projectile's
+impact effect for that point's type through the spawn FUN_0049C1E5. When the chosen entry's `particleSet` names an
+`.xml` (stock `cannon.impacteffect`'s `<wood>`: `effects\impacts\cannonball_impact_wood.xml`), the spawn loads that
+visual and hangs it on the target's visual as an attachment to the impact point's dummy (FUN_004CA908: dummy type
+`[[0D6F678h]]`, 35 in the tested game, and the point's index); a plain particle set is placed at the hit point instead
+(FUN_004828E6). Every frame the visual's dummy attachment update (two paths, from `0x4BE1EE` and `0x4BE863`) looks the
+dummy up in the current model (FUN_00407402) and reads its frame with FUN_00407272, which copies the rows of Granny's
+world pose matrix (`GrannyGetWorldPose4x4`) as they are: position and three axes, scale included. A model whose impact
+bones are scaled by 100 gives axes of length 100, and the attached particles are drawn a hundred times too big, over
+the whole view. Measured by a hardware breakpoint after the call (`0x4BE89A`): axes (100, 0, 0), (0, 99.995, 1.01),
+(0, −1.01, 99.995) on the scaled model, unit axes on a stock House.
+
+The key replaces the two calls of FUN_00407272 (`0x4BE21E` and `0x4BE88D`, 5 B each): the hook makes the call itself
+with the arguments the stock code pushed, and when it returned true and the dummy type (EDI on the first path, EBX on
+the second) is the impact type, scales the three axes to unit length (left alone within 0.01 of 1); then it continues
+at the stock `test al,al / je` (`0x4BE223`, `0x4BE892`). With `all`, every dummy type. EAX, ECX and EDX are kept for the
+continuation.
+
+**Why it is safe:** drawing only, after the frame is read; the position is not touched, a bone of length 1 is
+unchanged, and the getter's other callers (the damage template's part positions, FUN_0045F0D2) are not hooked.
+Evidence: `ev_a040ef98…` (FUN_00407272, FUN_0049C18C), `ev_79c38552…` (FUN_0049C1E5), `ev_6c015823…`
+(FUN_004CA908), `ev_0bcda0ab…` (FUN_0049ABA1); traces in `rea/evidence/age3y-b1a1dab7/impact49-50.json`'s folder.
+
+### customImpactTypes
+
+The impact types are 15 `wchar[32]` names at `0xBA4D70` (Wood … Metal); FUN_0059F436 compares a name with each
+(FUN_00443C10, not case-sensitive) and returns its index or −1. Its four callers: the damage template parser
+(FUN_004F04FE, `impacttype`), a proto's `<ImpactType>` (FUN_005F7F7C, `[proto+1B8h]`), the terrain types'
+`ImpactType` (FUN_0051E1DF) and the `.impacteffect` loader FUN_005FEABF (each element's name). An impact effect object
+holds one entry list per type at `[effect + 4 + type × 12]` (pointer, count, capacity; 15 of them, FUN_005FE8CD turns the
+entries' weights `[+20h]` into running sums), and the spawn FUN_0049C1E5 and the pick FUN_0049C18C refuse a type
+above 14.
+
+- **Names** (`0x59F464`, 7 B): the not-found end of FUN_0059F436 asks the DLL, which compares the name with the cfg's
+  names the same way and returns 15 + its index, then does the stock `pop edi / pop esi / pop ebx / ret`.
+- **Entries** (`0x5FEC74`, 21 B): for a stock type the hook runs the stock add (FUN_00401F74 on the type's list); for a
+  custom one it adds the entry, with the same function, to a list the DLL keeps for that effect object. The first
+  custom entry of a read starts the effect's lists empty, so an effect read again does not keep old entries.
+- **Weights** (`0x5FEC99`, 7 B; `0x5FEBE1` jumps there when the file has no element): after the stock FUN_005FE8CD,
+  the DLL makes the same running sums in its lists.
+- **Spawn** (`0x49D86E`, the projectile hit, and `0x4CB30D`, the terrain impact; 5 B each): for a type of 15 or more,
+  the DLL puts that type's list in the effect's slot 14 (Metal), calls FUN_0049C1E5 with type 14 and the other seven
+  arguments as pushed, puts slot 14 back, and drops the eight arguments as the callee would. The stock code then picks
+  the entry (FUN_0049C18C), plays its particle set, sound sets and fire, and keeps the effect's own rate limit
+  (`[effect+C8h..]`). A type with no entry returns −1 as in stock.
+
+**Why it is safe:** drawing and sound only. The lists are built at data load (an `std::map` keyed by the effect
+object), and the spawn looks one up per impact. Slot 14 is lent only for the length of one synchronous call. After the
+spawn, the caller reads the chosen entry again by type (`0x49D884`, `cmp eax,0Fh`) for the `ExitBuilding` values; for a
+custom type that read gives nothing, so no units are thrown out, as for a type with no entry. Evidence:
+`ev_89da6b7d…` (FUN_004F04FE, FUN_0059F436), `ev_7d29d565…` (FUN_005FE922, FUN_005FEABF), `ev_107075e1…`
+(FUN_005FE875, FUN_005FE8CD), `ev_a040ef98…` (FUN_0049C18C, FUN_00401F74, FUN_0051E1DF), `ev_79c38552…` (FUN_0049C1E5).
+
 ## 5. Rules that keep multiplayer deterministic
 
 - **Same inputs, same choices** on every machine: sorted file lists, cfg order, then the stock

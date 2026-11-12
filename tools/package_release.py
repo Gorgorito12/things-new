@@ -225,6 +225,8 @@ gatherFix                     gather on a fixed interval (the data's rate)
 rofFix, stunMovingTargetFix   orders keep the attack timer; stuns survive a moving target
 noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
+impactBoneFix [all]           impact effects hung on scaled bones keep their size
+customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits

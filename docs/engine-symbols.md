@@ -1178,6 +1178,23 @@ by capstone (`cs`) and in game.
 | Attack action for a target | FUN_00489ECC, `int thiscall(tactic, attacker, target, ...)`, `ret 1Ch` | confirmed (REA `ev_9fc9c2ff…`) | -1 for none (0x4974C1). Checks the attacker, alliance (0x484E01), the relation when arg 4 is 1, proto bit 0Eh, both units built; no visibility. Callers include the unit query 0x499CE4 and the auto-attack scoring 0x4A893B (12 call sites). Site of `stealthTargeting`. |
 | Auto-attack range test | FUN_004A1A0E | confirmed (REA `ev_c9a4cfb6…`) | `thiscall(tactic, attacker, target, float)`: the target is of `[tactic+174h]` (AutoAttackType, 0x44D7FA), both built, and within range. Callers 0x4A8969, 0x94174E. |
 
+### Impact types and impact effects (for `impactBoneFix` and `customImpactTypes`, 2026-11-12)
+
+REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/impact49-50.json`; `cs` = capstone over
+the file bytes; traces with `tools/re` hardware breakpoints in a WoL copy.<!-- private -->
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Impact type names | 0xBA4D70, 15 × `wchar[32]` | confirmed (bytes) | Wood, Stone, Flesh, Animal, TerrainGrass, Snow, Dirt, TerrainWater, TerrainDirt, TerrainStone, TerrainSnow, TerrainSand, RoofTile, ExitBuilding, Metal (14). |
+| Impact type by name | FUN_0059F436 (cdecl, the name's string object) | confirmed (`ev_89da6b7d…`, `cs`) | FUN_00443C10 compare, not case-sensitive; -1 at 0x59F464. Callers: FUN_004F04FE (`.dmg`), FUN_005F7F7C (`[proto+1B8h]`), FUN_0051E1DF (terrain types), FUN_005FEABF (`.impacteffect`). |
+| Damage template impact point | FUN_004F04FE | confirmed (`ev_89da6b7d…`) | `+10h` the bone's index among the damaged model's impact dummies, `+14h` the type, `+18h` prereq, `+1Ch` `mode="linked"`, `+0Ch` `impactEffectOffset`. |
+| `.impacteffect` loader | FUN_005FEABF; entry parser FUN_005FE922; entry init FUN_005FE875 (0x38 B) | confirmed (`ev_7d29d565…`, `ev_107075e1…`) | Lists at `[effect + 4 + type × 12]`, 15 of them; FUN_005FE8CD makes the weights `[entry+20h]` running sums. `meterCount` `[+C8h]`. Loaded through the manager `[[0C66234h]+0BB8h]` (FUN_0058F017). The archive's `.xmb` is read before a loose `.xml`. |
+| Impact spawn | FUN_0049C1E5 (thiscall(effect, pos, dir, ?, type, …), 8 args) | confirmed (`ev_79c38552…`) | -1 for a type above 14; the entry by FUN_0049C18C (weighted). A `particleSet` that is not a particle set is loaded as a visual and attached to the target's visual at the impact dummy (FUN_004CA908); else placed at the point (FUN_004828E6). Called at 0x49D86E (projectile hit) and 0x4CB30D (terrain). |
+| Impact point pick | FUN_0049ABA1 | confirmed (`ev_0bcda0ab…`) | Picks the template's point near the hit, throws its parts (FUN_004D3393), returns `[point+14h]`. |
+| Dummy attachment | FUN_004CA908(0, 0, dummy type, index, visual) | confirmed (`ev_6c015823…`) | A type 4 attachment record; the update resolves the dummy in the current model (FUN_00407402) and reads its frame with FUN_00407272 at 0x4BE21E and 0x4BE88D. |
+| Bone frame | FUN_00407272(bone, pos*, axis*, axis*, axis*, …), `ret 1Ch` | confirmed (`ev_a040ef98…`) | Copies rows of `GrannyGetWorldPose4x4` (or the sampled pose), scale included. |
+
+
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
 Full write-up and evidence: [performance.md](performance.md). REA bundles:

@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 17:40 | [`customImpactTypes`](#customimpacttypes) | Filmed in WoL, with a control. New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. |
+| Thursday 2026-11-12 16:03 | [`impactBoneFix`](#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
@@ -2892,6 +2894,8 @@ Attacks, armor, and what a hit does.
 | [`snareOnlyHitUnit`](#snareonlyhitunit) | A snared unit no longer slows the group it moves with; only the hit unit slows. | **new** | Nothing. | confirmed (single player) |
 | [`rofFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`stunMovingTargetFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`noDamageOnUnbuiltFoundations`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix), [`fallenHeroTacticsFix`](#roffix-stunmovingtargetfix-nodamageonunbuiltfoundations-and-fallenherotacticsfix) | Four small combat fixes: orders keep the attack timer, stuns survive a moving target, unbuilt foundations take no damage, units keep their tactic when knocked out. | always on | Nothing. | applied, effects not seen yet |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
+| [`impactBoneFix`](#impactbonefix) | An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | **new** | Nothing. | confirmed (single player) |
+| [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
 #### detonationDeath
 
@@ -4392,6 +4396,109 @@ stealthTargeting [log]
   against `wolOtto` (Germans) as above, with no XS error (the log shows one refused try of the AI's Frigate at the submarine); a stealthed `xpSpy` among 3 `Crossbowman`s and 2 `Hussar`s stayed
   hidden with the key off too. Beside WoL's own DLL (`dinput8.dll`), `applied` and the submarine stayed hidden. 792 fps
   against 776 with 80 units fighting (update 0.151 ms against 0.155). Not tested: multiplayer, a saved game.
+
+#### impactBoneFix
+
+*Cannon splinters land on the building they hit, instead of flying over the whole screen, on models whose impact bones are scaled.*
+
+**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Thursday 2026-11-12 16:03
+
+![impactBoneFix in WoL](media/impactBoneFix-wol.gif)
+
+*In WoL, with `impactBoneFix log` (a Persian `Mahalla` whose `mahalla1A/B/C.dmg` had `impacttype="wood"` on every impact
+point, hit by a Falconet; the Mahalla stays selected):* each cannonball plays the wood impact on the wall it hits: a burst
+of splinters, smoke and fire, at the size of the building. The log shows `a dummy bone of type 35 had an axis of length
+100.000; scaled to 1`. [Full video (MP4)](media/impactBoneFix-wol.mp4).
+
+![impactBoneFix in WoL, key off](media/impactBoneFix-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* every hit throws long grey streaks across the whole view, from the top of the
+screen down past the building: the same splinters, a hundred times too big.
+[Full video (MP4)](media/impactBoneFix-wol-control.mp4).
+
+```
+impactBoneFix [all] [log]
+```
+
+- **In WoL today:** JTMaston's #49. The Middle East buildings (Afghans, Persians, Saudis, Uzbeks: `art\WoL\buildings\ME`)
+  use `stone` and `rooftile`, and their `oasis*.dmg` uses `wood`; any of them with `wood` shows the bug.
+- **Why:** an impact effect whose `<particleset>` names an `.xml` (stock `cannon.impacteffect`'s `<wood>` names
+  `effects\impacts\cannonball_impact_wood.xml`) is a visual, and the game hangs it on the bone of the impact point it hit,
+  with the bone's whole frame. The bones of these models are scaled by 100 (the export's centimetres); the stock House's
+  have length 1. A `<particleset>` with a plain particle set name (`stone`, `rooftile`) is placed at the hit point and never
+  reads the bone, so it looks right. WoL's own DLL shows the same streaks: it is the data and the exe, not a DLL.
+- **Effect:** the three axes of the bone are brought to length 1 before the visual is placed; its position stays the
+  bone's. Bones of length 1 (every stock model) are not touched.
+- **`all`:** the same for any visual hung on a bone (flags, smoke, fire points), not only the impact points. Not needed for
+  #49; not tested.
+- **Without the key, in the data:** export the models with unscaled bones, or use a plain particle set in that element of
+  the `.impacteffect`.
+- **Simulation:** no, it is drawing only.
+- **Log:** `impactBoneFix: effects attached to impact bones get unit-length axes`, `hook reached: impactBoneFix dummy frame,
+  path 1 (0x4BE21E)` and `path 2 (0x4BE88D)`; with `log`, the first bone it scales and its length.
+- **Tested in WoL (2026-11-12):** the Mahalla with `wood`: streaks on screen with the key off, splinters on the walls with
+  it on; the stock House (`wood`, bones of length 1) looks the same either way; the Mahalla with its own `stone`: no streaks
+  either way. Beside WoL's own DLL, key off, the streaks show too. Not tested: `all`, ships, multiplayer.
+
+#### customImpactTypes
+
+*Adds new impact types, so a model can have its own hit effects and sounds, for example a metal sound for steel ships.*
+
+**Added:** Thursday 2026-11-12 16:03 · **Filmed in WoL:** Thursday 2026-11-12 17:40
+
+![customImpactTypes in WoL](media/customImpactTypes-wol.gif)
+
+*In WoL, with `customImpactTypes ShipMetal log` (test data: the Persian `Mahalla`'s `.dmg` with `impacttype="ShipMetal"`, and
+a `<shipmetal>` element in `cannon.impacteffect` with the particle set `cannonball_impact_water` and the sound sets
+`MeleeImpactMetal` and `Explosion`, compiled to `.xmb`; hit by a Falconet):* each hit throws a white water splash off the
+wall, the effect of the new type, and the log says `first impact of type ShipMetal (15)`. The sound is not in the video.
+[Full video (MP4)](media/customImpactTypes-wol.mp4).
+
+![customImpactTypes in WoL, key off](media/customImpactTypes-wol-control.gif)
+
+*In WoL, key off (the same data):* the game does not know `ShipMetal`: the hits play no effect of that type, only fire and
+smoke. [Full video (MP4)](media/customImpactTypes-wol-control.mp4).
+
+```
+customImpactTypes <Name> [<Name> ...] [log]
+```
+
+```xml
+<!-- art\effects\impacts\cannon.impacteffect (compiled to cannon.impacteffect.xmb) -->
+<shipmetal>
+    <particleset>cannonball_impact_stone</particleset>
+    <soundset>MeleeImpactMetal</soundset>
+    <soundset>Explosion</soundset>
+</shipmetal>
+
+<!-- the model's .dmg -->
+<impactpoint name="bone_impactpoint01" bone="bone_impactpoint01" impacttype="ShipMetal" ...>
+```
+
+- **In WoL today:** JTMaston's #50, a metallic sound for the modern ships.
+- **The stock types:** Wood, Stone, Flesh, Animal, TerrainGrass, Snow, Dirt, TerrainWater, TerrainDirt, TerrainStone,
+  TerrainSnow, TerrainSand, RoofTile, ExitBuilding and **Metal**. Metal is in the exe and works with data only, no key:
+  `impacttype="Metal"` in a `.dmg` and a `<metal>` element in the `.impacteffect` files (tested in WoL on 2026-11-12, key
+  off: the Mahalla showed the `<metal>` element's splash). No stock file uses it, so one metal type needs no DLL.
+- **Effect:** each name gets the number 15, 16, …, in cfg order; the names are not case-sensitive. A name is read where the
+  game reads an impact type: `impacttype` in a `.dmg`, a proto's `<ImpactType>`, a terrain type's `ImpactType`, and an
+  element name of an `.impacteffect`. An element of a custom type takes the stock attributes and children (`weight`,
+  `fireExistTime`, `particleSet`, `secondaryParticleSet`, `soundSet`, `anim`).
+- **Not for custom types:** the units thrown out of a building that is hit (`exitEffectSpawnChance` and the other values of
+  `ExitBuilding`). An `.impacteffect` with no element of the type plays nothing for it, as in stock.
+- **Edit the `.xmb`:** the game reads `cannon.impacteffect.xmb` from `Art1.bar` before a loose `cannon.impacteffect.xml`,
+  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). Compile it with
+  `python -I tools/xmbedit.py from-xml cannon.impacteffect.xml cannon.impacteffect.xmb --compress` and put both in
+  `art\effects\impacts`.
+- **Bad arguments:** a stock name, a repeated name, a name of 32 characters or more, or no name: logged, and the key is not
+  applied.
+- **Simulation:** no, it is drawing and sound only.
+- **Log:** `customImpactTypes: ShipMetal (15)`, `hook reached: customImpactTypes name lookup (0x59F464)`, `impact effect
+  entry (0x5FEC74)`, `impact effect weights (0x5FEC99)`, `impact spawn, projectile hit (0x49D86E)`; with `log`, the first
+  impact of each custom type.
+- **Tested in WoL (2026-11-12):** the Mahalla with `ShipMetal` and the `.xmb`: the splash on every hit with the key, none
+  without it; the stock `Metal`, key off. Not tested: a ship, a proto's or a terrain's `<ImpactType>`, the sound by ear,
+  multiplayer.
 
 ### Gathering and farms
 

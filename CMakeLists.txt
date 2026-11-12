@@ -113,6 +113,8 @@ set(UHC_SOURCES
   src/features/compat.cpp
   src/features/gatherfix.cpp
   src/features/smallfixes.cpp
+  src/features/impactbones.cpp
+  src/features/impacttypes.cpp
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/veterancy.cpp
@@ -130,6 +132,8 @@ set(UHC_SOURCES
   src/hooks/freeunit_hooks.asm
   src/hooks/gather_hooks.asm
   src/hooks/foundation_hooks.asm
+  src/hooks/impactbone_hooks.asm
+  src/hooks/impacttype_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
   src/hooks/unitlist_hooks.asm
