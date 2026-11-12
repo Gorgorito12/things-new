@@ -551,7 +551,9 @@ fastLastInLine [log] [verify]
   a line with the bits that differ (must be 0) and both times. `log` writes a line per recompute.
 - **WoL needs:** the line `fastLastInLine` in `wol.cfg`: then it is on for everyone. To let players turn it off in
   the options menu, also name it on the [`menuOptions`](#menuoptions) line and add its `OptionFastLastInLine` field;
-  it still starts on, and stays on until a player switches it off.
+  it still starts on, and stays on until a player switches it off. Checked in WoL (2026-11-12): with no choice
+  stored the entry shows On and the key applies; Off chosen in Graphics Options is stored, the next start does not
+  apply the key, and the entry reads back Off.
 - **Multiplayer:** the game computes exactly the same thing, so players may set it differently. Not tested in
   multiplayer.
 - **Measured in WoL** (the 32-minute five-player save, 150 s per run, key off and on in turns):
