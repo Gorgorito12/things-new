@@ -2669,7 +2669,15 @@ reference is coloured the same.
   texture through its vtable +7Ch, `thiscall(drawable, BString* name, -1)`, as the setter 0x5CAF02 does. It
   must not call 0x5CAF02 itself: that creates a new drawable, with no size, and nothing shows. When the
   overheal ends it puts `ui\ingame\ui_health_bar` back, the texture of the three bars in the UI data.
-  Then the stolen free, → 0x4C83E8. The minimized UI (`optionminimizedui`, profile option 49h, read through
+  Then the stolen free, → 0x4C83E8.
+- *The texture:* `bar=<texture>`; else, when `art\ui\uhc\health_overheal.ddt` is in the game folder at
+  startup (a `GetFileAttributesW` relative to the working directory, the exe's folder), `ui\uhc\health_overheal`,
+  the orange bar of `tools/make_bar.py` (16×8 texels, DXT1, the layout of the stock
+  `ingame_ui_health_yellow`, shaded from the segment's default `FF8C00`); else the stock
+  `ui\ingame\ingame_ui_health_yellow`, with a log line. A file packed in an archive is not seen by that check: such
+  a mod names it with `bar=`. A texture the game cannot find (tried with `bar=ui\uhc\nonexistent`, 2026-11-12)
+  draws nothing: the bar's right end stays empty, with no error and no crash. The texture does not follow
+  `segment=RRGGBB`: the DLL writes no file. The minimized UI (`optionminimizedui`, profile option 49h, read through
   0x402CE9 at 0x4C8233 and 0x661E03) has these bars too, and a later pass raises the colour bar, so a
   gadget added in the UI data stays under it.
 - *Observed in game:* a Musketeer at 165/150 had the bar 90 % green, 10 % orange; damaged, the

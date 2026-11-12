@@ -16,9 +16,11 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
 | `make_gifs.py` | Makes every test GIF to one standard (800 px, 8 fps, 12 s, 4 MB) from the masters in `rea/media-masters`, with the cuts in `gifs.txt`. `--check` fails on one out of it. |
 | `make_rings.py` | Draws the coloured aura rings in `tools/rings/`: for each, an `.xml`, its particles and textures by size, for `art/effects/uhc_rings/`. Also `aura_<resource>.xml`, the ring with a floating icon, and `range_<metres>.xml` for `displayedRange`, and `rank_<1-5>.xml`, the chevrons (and stars) of `veterancyBonus`. `--check` compares them. |
+| `make_bar.py` | Draws `tools/bars/health_overheal.ddt`, the orange end of the portrait HP bar for `overhealHitpointBars segment` (16×8 DXT1, the layout of the game's own health bars, shaded from `FF8C00`), for `art/ui/uhc/`. `--colour RRGGBB --out <file>` makes one in another colour, to name with `bar=`; `--check` compares it. |
 | `sharedlimit_testdata.py` | `<bed> [--restore]`: a real `OutpostWagon` at the Town Center and a team's `ypGoat` limit in a WoL bed, for `sharedBuildLimit`. |
 | `monastery_testdata.py` | `<bed> [--model\|--ai\|--restore]`: `UhcMonastery` and `UhcSmallMine` in a WoL bed, for `linkedResource`; buildable with a monastery's model, and an AI rule that builds one. |
 | `torp_testdata.py` | `<bed> [--restore]`: the Torp's auras on `WOLSawmill` in a WoL bed, a panel row and two test techs, for `unitResourceAuras`. |
+| `grant_testdata.py` | `<bed> [--restore]`: grant tags on the `Market` in a WoL bed (interval 20, cap 3, cost 0, scope `self`) and four test techs of 300 wood on its buttons, for `researchGrants`. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |

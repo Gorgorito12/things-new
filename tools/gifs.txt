@@ -67,10 +67,10 @@ noTrainNearEnemyTC-wol 4 44 3
 noTrainNearEnemyTC-wol-control 4 44 3
 nowalkfarm-wol 2 26 3
 nowalkfarm-wol-control 2 26 3
-overhealDecay-wol 2 24 2
-overhealDecay-wol-control 2 24 2
-overhealHitpointBars-wol 1 46 3
-overhealHitpointBars-wol-control 1 46 3
+overhealDecay-wol 6 20 2
+overhealDecay-wol-control 6 20 2
+overhealHitpointBars-wol 6 22 2
+overhealHitpointBars-wol-control 6 22 2
 overhealSources-dance-wol 2 28 2
 overhealSources-dance-wol-control 2 28 2
 overhealSources-wol 2 28 2
@@ -105,7 +105,7 @@ wonderCivUnitType-wol 2 14 2
 wonderCivUnitType-wol-control 2 14 2
 wonderPanelSkipAuras-wol 2 16 2
 wonderPanelSkipAuras-wol-control 2 16 2
-overhealHitpointBars-damage-wol 20 26 2
+overhealHitpointBars-damage-wol 2 20 2
 autoGatherScaleByContained-wol 2 36 3
 autoGatherScaleByContained-wol-control 2 36 3
 resourceDebt-autogather-wol 2 24 2
@@ -123,7 +123,7 @@ veterancyBonus-icons-wol 9 24 2
 veterancyBonus-icons-wol-control 9 24 2
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
-overhealHitpointBars-group-wol 34 26 3
+overhealHitpointBars-group-wol 0 16 2
 costEscalationTechs-wol 2 42 3
 costEscalationTechs-wol-control 2 42 3
 pillageGold-wol 4 24 2
@@ -234,5 +234,5 @@ overhealSources-cap-wol 1 18 1.5
 overhealSources-cap-wol-control 1 18 1.5
 overhealDecay-holdnear-wol 2 22 2
 overhealDecay-holdnear-wol-control 2 22 2
-researchGrants-wol 9 18 1.5
-researchGrants-wol-control 9 18 1.5
+researchGrants-wol 10 24 2 920:704:0:0
+researchGrants-wol-control 10 24 2 920:704:0:0
