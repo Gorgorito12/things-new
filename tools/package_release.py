@@ -14,6 +14,7 @@ The zip holds one folder, UHC-<version>/, with:
   beside-another-dll/dinput8.dll              the same code, for a game that keeps another UHC.dll
   beside-another-dll/engine-ext/engine-ext.cfg  the same template, for that DLL
   art/effects/uhc_rings/  the aura rings of tools/rings, for a game's art folder
+  art/ui/uhc/health_overheal.ddt  the orange end of the portrait HP bar (tools/bars, overhealHitpointBars)
   dxvk/d3d9.dll, dxvk/LICENSE.txt   DXVK 3.1.1 (32-bit) and its zlib license, for rendererOption
   LICENSE.txt
   README.txt         the quick start for modders
@@ -199,6 +200,9 @@ are data: copy that folder to the game's art\\effects and name one in an aura, w
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
 aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
 veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the folder is there.
+art\\ui\\uhc\\health_overheal.ddt is the orange end of the HP bar under the portrait, which
+overhealHitpointBars segment shows for units above their 100 %: copy it to the game's art\\ui\\uhc
+(every player who wants it). Without it that end uses the game's yellow bar texture.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -391,6 +395,8 @@ def main(argv):
                    template_cfg(version, f"# engine-ext\\engine-ext.cfg template for dinput8.dll {version}."))
         for ring in sorted((ROOT / "tools" / "rings").glob("*")):
             z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
+        for bar in sorted((ROOT / "tools" / "bars").glob("*.ddt")):
+            z.write(bar, f"{top}/art/ui/uhc/{bar.name}")
         z.writestr(f"{top}/dxvk/d3d9.dll", dxvk_dll)
         z.writestr(f"{top}/dxvk/LICENSE.txt", dxvk_license)
         z.writestr(f"{top}/LICENSE.txt", license_text)

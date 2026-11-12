@@ -794,9 +794,11 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 // no gadget and shows the overheal on the game's own green one ([panel+310h]): after each refresh
 // (0x4C83DF), while every selected unit is at or above its 100 % and the group's average overheal
 // share is above 0, the green part is filled short (1 - that share) and the bar's background
-// drawable [bar+140h] gets the overheal texture (vtable +7Ch, as the setter 0x5CAF02 calls it;
-// ui\ingame\ingame_ui_health_yellow, or "bar=<texture>"), so the right end shows it. When the
-// overheal ends the UI data's texture, ui\ingame\ui_health_bar, is put back.
+// drawable [bar+140h] gets the overheal texture (vtable +7Ch, as the setter 0x5CAF02 calls it), so the
+// right end shows it. The texture is "bar=<texture>", else ui\uhc\health_overheal (the orange bar of
+// tools/make_bar.py, in the segment's default colour) when art\ui\uhc\health_overheal.ddt is in the game
+// folder, else the game's ui\ingame\ingame_ui_health_yellow. When the overheal ends the UI data's
+// texture, ui\ingame\ui_health_bar, is put back.
 //
 // "stat[=Label]": the stat panel gets an "Overheal" row right after the HP row (0x4D76DB) for a
 // marked unit, 'overheal/capacity' (HP above the 100 % / max above it, truncated like the HP row),
@@ -934,7 +936,12 @@ const char* g_portraitPanel = nullptr;
 std::int32_t g_portraitGreen = 0;
 bool g_portraitBackground = false;  // the green bar has the overheal texture now
 bool g_portraitFillLogged = false;
-std::wstring g_portraitTexture = L"ui\\ingame\\ingame_ui_health_yellow";
+std::wstring g_portraitTexture;
+// The portrait bar's overheal texture when "bar=" names none: the shipped orange bar when its file is in the
+// game folder (the working directory), else the game's yellow one.
+constexpr wchar_t kShippedBarFile[] = L"art\\ui\\uhc\\health_overheal.ddt";
+constexpr wchar_t kShippedBarTexture[] = L"ui\\uhc\\health_overheal";
+constexpr wchar_t kStockBarTexture[] = L"ui\\ingame\\ingame_ui_health_yellow";
 
 // The stat row: its label (a literal, or a string table ID when g_statLabelId >= 0).
 bool g_statRow = false;
@@ -1312,6 +1319,7 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
   std::vector<std::string> typeNames;
   bool log = false;
   bool segment = false;
+  g_portraitTexture.clear();
   for (const std::string& arg : *args) {
     if (_stricmp(arg.c_str(), "log") == 0) {
       log = true;
@@ -1398,6 +1406,14 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
       return Outcome::kFailed;
     }
   }
+  if (segment && g_portraitTexture.empty()) {
+    const bool shipped = GetFileAttributesW(kShippedBarFile) != INVALID_FILE_ATTRIBUTES;
+    g_portraitTexture = shipped ? kShippedBarTexture : kStockBarTexture;
+    if (!shipped) {
+      Log(L"overhealHitpointBars: %ls is not in the game folder: the portrait bar shows the overheal with %ls",
+          kShippedBarFile, kStockBarTexture);
+    }
+  }
   if (segment) {
     // The text colour, as the UI markup <color=r, g, b> takes it (0xBA1E44: '<color=1, 0, 0>').
     const double red = ((g_segmentColour >> 16) & 0xFF) / 255.0;
@@ -1434,9 +1450,11 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
   for (const std::string& name : typeNames) {
     names += names.empty() ? name : ", " + name;
   }
-  wchar_t segmentText[96] = L"";
+  wchar_t segmentText[384] = L"";
   if (segment) {
-    swprintf_s(segmentText, L", HP above it shown as a segment and texts coloured %06X", g_segmentColour & 0xFFFFFFu);
+    _snwprintf_s(segmentText, _TRUNCATE,
+                 L", HP above it shown as a segment and texts coloured %06X, the portrait bar's end with %ls",
+                 g_segmentColour & 0xFFFFFFu, g_portraitTexture.c_str());
   }
   wchar_t statText[96] = L"";
   if (g_statRow && g_statLabelId >= 0) {

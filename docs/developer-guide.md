@@ -669,6 +669,7 @@ Modders download a zip, so they never need a compiler. The version has a single 
        Startup\uhc.cfg     examples/Startup/uhc.cfg with every key commented out
        beside-another-dll\ dinput8.dll and engine-ext\engine-ext.cfg, for a game that keeps another UHC.dll
        art\effects\uhc_rings\  the aura rings of tools/rings
+       art\ui\uhc\health_overheal.ddt  the portrait bar's overheal end, of tools/bars (make_bar.py)
        dxvk\d3d9.dll, dxvk\LICENSE.txt   DXVK 3.1.1 (x32) and its zlib license, for rendererOption
        README.txt          the modder's quick start
        LICENSE.txt
