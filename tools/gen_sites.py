@@ -1471,6 +1471,20 @@ SITES = [
     # rendererOption: the int setter 0x518AE0; its failure return pop edi / xor al,al / pop esi / ret 8 at 0x518B26
     # (out of range from 0x518AEB, wrong type from 0x518B15; nothing lands inside it) is replaced by the hook.
     ("OptionIntSetter", 0x518AE0, 0x4D),
+    # stealthTargeting: the head of 0x489ECC, int thiscall(tactic, attacker, target, ...), ret 1Ch, which picks
+    # the attack action a unit would use on a target (-1: none). push ecx / push ebx / push ebp /
+    # mov ebp,[esp+10h] (7 bytes, nothing branches inside) is replaced; the hook goes on at push esi (0x489ED3).
+    # Its failure return or eax,-1 ... ret 1Ch is at 0x4974C1 (verify only).
+    ("AttackActionForTarget", 0x489ECC, 0x0E),
+    ("AttackActionNone", 0x4974C1, 0x0B),
+    # stealthTargeting: the footprint branch of the per-player visibility 0x486B1A (thiscall(proto, ...14 args),
+    # ret 38h), taken by the jp at 0x486C0D / 0x486C24 when [proto+88h] or [proto+8Ch] (the obstruction radii) is
+    # over 1.0. fld [esp+4Ch] / movzx edx,byte [esi+0Dh] (8 bytes, nothing branches inside) is replaced; the next
+    # instruction, fnstcw [esp+68h], overwrites the stealth argument. The hook goes on at 0x493048. The player
+    # loop's test of the "only allies see it" byte [esp+38h] (0x493201) and its skip 0x4E0B1F (verify only).
+    ("FootprintVisibility", 0x493040, 0x10),
+    ("FootprintHiddenTest", 0x493201, 0x0B),
+    ("FootprintHiddenSkip", 0x4E0B1F, 0x0D),
 ]
 
 
