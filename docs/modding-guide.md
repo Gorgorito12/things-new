@@ -549,7 +549,9 @@ fastLastInLine [log] [verify]
   only those, with the game's own tests. The result is the same bits; the work takes 0.4–1.6 ms.
 - **`verify`** lets the game's own code run as well and compares every bit with the DLL's; each recompute logs
   a line with the bits that differ (must be 0) and both times. `log` writes a line per recompute.
-- **WoL needs:** nothing.
+- **WoL needs:** the line `fastLastInLine` in `wol.cfg`: then it is on for everyone. To let players turn it off in
+  the options menu, also name it on the [`menuOptions`](#menuoptions) line and add its `OptionFastLastInLine` field;
+  it still starts on, and stays on until a player switches it off.
 - **Multiplayer:** the game computes exactly the same thing, so players may set it differently. Not tested in
   multiplayer.
 - **Measured in WoL** (the 32-minute five-player save, 150 s per run, key off and on in turns):
@@ -696,7 +698,7 @@ Options with the three entries switched (Vulkan, buffered reads Off, flag drawin
 switch itself is the same dropdown as the Renderer's, filmed in [`rendererOption`](#rendereroption).
 
 ```
-menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
+menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill, fastLastInLine
 ```
 
 - **In WoL today:** `bufferedFileReads` and `fastVertexFill` are on or off for every player as `wol.cfg` says; a
@@ -732,15 +734,25 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
       <value>On</value>
       <tooltip>Draws the waving flags without reading back from video memory: more frames per second with flags on screen. Takes effect when the game starts again.</tooltip>
   </field>
+  <field>
+      DropDown
+      <name>OptionFastLastInLine</name>
+      <label>No freeze on shipments</label>
+      <value>Off</value>
+      <value>On</value>
+      <tooltip>Removes the short freeze after each home city shipment. Takes effect when the game starts again.</tooltip>
+  </field>
   ```
 
   Add a field only for a key named on the `menuOptions` line: a field whose key is not named shows as an empty list,
   as any `<name>` the game does not know. Without the fields, the menu is the stock one.
-- **Example** (`wol.cfg`): `bufferedFileReads` starts on, `fastVertexFill` starts off, and players can switch both:
+- **Example** (`wol.cfg`): `bufferedFileReads` and `fastLastInLine` start on, `fastVertexFill` starts off, and players
+  can switch all three:
 
   ```
-  menuOptions bufferedFileReads fastVertexFill
+  menuOptions bufferedFileReads fastVertexFill fastLastInLine
   bufferedFileReads
+  fastLastInLine
   ```
 - **During a match** the entries are greyed out, as the other options that need a restart.
 - **Log:**

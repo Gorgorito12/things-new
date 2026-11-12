@@ -3890,7 +3890,7 @@ With the key, two interleaved 150 s A/B pairs on the mod's save went from 12 and
 `menuOptions <key> …` hands on/off keys to the player, through the options menu's registry (see
 [rendererOption](#rendereroption), "The virtual options"). The keys that may be named are a table in `menuoptions.cpp`
 (`kMenuSwitches`: the key and its field's `<name>`), today `bufferedFileReads` (`OptionBufferedReads`) and
-`fastVertexFill` (`OptionFastVertexFill`); another key that changes nothing of the simulation takes one line there.
+`fastVertexFill` (`OptionFastVertexFill`) and `fastLastInLine` (`OptionFastLastInLine`); another key that changes nothing of the simulation takes one line there.
 
 It runs in `ApplyFeatures` after the cfg is read and before the first key of `kFeatures`, and edits the cfg those keys
 then see:

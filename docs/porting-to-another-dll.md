@@ -714,8 +714,8 @@ Code: [game-files](porting-code/game-files.md#fastvertexfill).
 Code: [game-files](porting-code/game-files.md#menuoptions).
 
 - **What it adds:** an Off / On entry of the options menu per key named on its line (`bufferedFileReads`,
-  `fastVertexFill`), through the same registry and hooks as `rendererOption` (below); fields `OptionBufferedReads` and
-  `OptionFastVertexFill` in `data\options.xml`, the snippet in the [modding guide](modding-guide.md#menuoptions).
+  `fastVertexFill`, `fastLastInLine`), through the same registry and hooks as `rendererOption` (below); fields
+  `OptionBufferedReads`, `OptionFastVertexFill` and `OptionFastLastInLine` in `data\options.xml`, the snippet in the [modding guide](modding-guide.md#menuoptions).
 - **When:** after the cfg is read and before any key applies: for each named key, the stored choice (`<key> on|off` in
   `uhc-options.cfg`), else the key's own line (present: on, absent: off), removes the key's lines (off) or adds an empty
   one (on without a line). The keys then apply as usual. In a DLL whose keys read the cfg each on their own, do the same

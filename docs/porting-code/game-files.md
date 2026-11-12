@@ -2127,6 +2127,7 @@ struct MenuSwitch {
 constexpr MenuSwitch kMenuSwitches[] = {
     {"bufferedFileReads", L"OptionBufferedReads"},
     {"fastVertexFill", L"OptionFastVertexFill"},
+    {"fastLastInLine", L"OptionFastLastInLine"},
 };
 
 constexpr std::uint32_t kSettingsKind = 0x24;  // [settings+24h]: 1 for the options settings (FUN_00518CC9)
