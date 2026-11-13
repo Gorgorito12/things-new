@@ -279,7 +279,8 @@ impactBoneFix [all] [log]
   Croatian and French `colony` models (1/39) and `kumara_field_damaged` (11): not the centimetre export, their authors may
   have sized flags and smoke to those bones, and they show no streaks. The zip unzips over WoL's folder and replaces WoL's
   own loose files, so an `originals` zip of the same 107 files goes with it, and its README (English and Spanish) says to
-  back up first.
+  back up first. Both zips and the README are in this repo, in
+  [`wol-fixes/building-bones/`](../wol-fixes/building-bones/LEEME-README.txt).
 
   ![The ME Temple with the set, key off](media/impactBoneFix-wol-set-temple.gif)
 
