@@ -1991,4 +1991,28 @@ inline constexpr Site kDirectionalTakeDamage{"DirectionalTakeDamage", 0x0049C05A
 inline constexpr std::uint8_t kDirectionalMaxRangeCallBytes[] = {0x8B, 0x54, 0x24, 0x68, 0x52, 0x8B, 0xCD, 0xE8, 0xB3, 0x1C, 0x00, 0x00};
 inline constexpr Site kDirectionalMaxRangeCall{"DirectionalMaxRangeCall", 0x005F8A4A, kDirectionalMaxRangeCallBytes, sizeof(kDirectionalMaxRangeCallBytes)};
 
+inline constexpr std::uint8_t kAgeUpPickerTcBytes[] = {0x8B, 0x87, 0x08, 0x5E, 0x00, 0x00, 0x3B, 0x46, 0x04, 0x74, 0x16, 0xE9, 0x19, 0x01, 0x00, 0x00};
+inline constexpr Site kAgeUpPickerTc{"AgeUpPickerTc", 0x007E6905, kAgeUpPickerTcBytes, sizeof(kAgeUpPickerTcBytes)};
+
+inline constexpr std::uint8_t kAgeUpPickerAcceptBytes[] = {0x8B, 0x0D, 0x10, 0x73, 0xC6, 0x00};
+inline constexpr Site kAgeUpPickerAccept{"AgeUpPickerAccept", 0x007E6926, kAgeUpPickerAcceptBytes, sizeof(kAgeUpPickerAcceptBytes)};
+
+inline constexpr std::uint8_t kAgeUpPickerRejectBytes[] = {0x5F, 0x5E, 0x5D, 0x5B};
+inline constexpr Site kAgeUpPickerReject{"AgeUpPickerReject", 0x007E6A2E, kAgeUpPickerRejectBytes, sizeof(kAgeUpPickerRejectBytes)};
+
+inline constexpr std::uint8_t kAgeUpSelectedTcBytes[] = {0x8B, 0x91, 0x08, 0x5E, 0x00, 0x00, 0x3B, 0x57, 0x04, 0x74, 0x0F, 0xEB, 0x46};
+inline constexpr Site kAgeUpSelectedTc{"AgeUpSelectedTc", 0x007E803F, kAgeUpSelectedTcBytes, sizeof(kAgeUpSelectedTcBytes)};
+
+inline constexpr std::uint8_t kAgeUpSelectedAcceptBytes[] = {0x8B, 0x4C, 0x24, 0x14};
+inline constexpr Site kAgeUpSelectedAccept{"AgeUpSelectedAccept", 0x007E8059, kAgeUpSelectedAcceptBytes, sizeof(kAgeUpSelectedAcceptBytes)};
+
+inline constexpr std::uint8_t kAgeUpSelectedRejectBytes[] = {0x5D, 0x5F, 0x5E, 0x5B};
+inline constexpr Site kAgeUpSelectedReject{"AgeUpSelectedReject", 0x007E8092, kAgeUpSelectedRejectBytes, sizeof(kAgeUpSelectedRejectBytes)};
+
+inline constexpr std::uint8_t kAgeUpListABytes[] = {0xE8, 0x16, 0xC5, 0xCA, 0xFF};
+inline constexpr Site kAgeUpListA{"AgeUpListA", 0x0081A44D, kAgeUpListABytes, sizeof(kAgeUpListABytes)};
+
+inline constexpr std::uint8_t kAgeUpListBBytes[] = {0xE8, 0x11, 0xD9, 0xCA, 0xFF};
+inline constexpr Site kAgeUpListB{"AgeUpListB", 0x00819052, kAgeUpListBBytes, sizeof(kAgeUpListBBytes)};
+
 }  // namespace uhc::sites

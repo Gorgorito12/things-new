@@ -612,6 +612,43 @@ the unit's proto with `0x44CAC4` for abstract type 16h (`push 16h / mov ecx,prot
 redirects those two calls to a wrapper that returns the stock answer or whether the proto ID
 (`[proto+4]`) is listed (`ProtoIdList`).
 
+### ageUpBuildings
+
+**The pickers.** The age-up button's command is `uiPoliticianUI(%d, %d, %s)` (string 0xC31A78, built
+for a tech with flag 4 `AgeUpgrade` or 1Ch `RevoltTech` on any unit), the syscall 0x7E686E; the hotkey
+path is `uiPoliticianUIInSelected` 0x7E7EC1, which walks the selection. Both hold the tests
+[wonderCivUnitType](#wondercivunittype) widens: after isAsianCiv(player,
+true) they test the proto against abstract type 16h for an Asian civ, else compare the TownCenter ID
+`[db+5E08h]` with the player's proto `[proto+4]`, and leave on a failure. The key replaces only that compare
+(0x7E6905, 16 bytes: `mov eax,[edi+5E08h] / cmp eax,[esi+4] / je / jmp`; 0x7E803F, 13 bytes:
+`mov edx,[ecx+5E08h] / cmp edx,[edi+4] / je / jmp`): the hook re-executes it and, when it fails, asks
+`UhcAgeUpListed(proto)`, then jumps to the stock accepted continuation (0x7E6926, 0x7E8059) or the
+rejected one (0x7E6A2E, 0x7E8092). The Asian path and its call (0x7E6919, 0x7E8050), which
+wonderCivUnitType redirects, are not touched, so the two keys apply in any order.
+
+**The list.** The dialog (European: FUN_0081A2B8; FUN_00818EE5 is its twin) walks the player's tech
+statuses and keeps each one of the next age (0x94C7E3) that `0x4C6968(status, unit)` accepts, up to five
+(`[dlg+26Ch]`). 0x4C6968 checks the tech's flags, status and prerequisites and some of the unit's proto
+flags (REA `ev_90be3ff9…`), not whether the proto lists the tech: stock, a Market would offer every
+politician. The key redirects the two calls (0x81A44D, 0x819052) to `CanResearchHere`, which keeps the
+stock answer and, when the unit's proto (`[unit+5Ch]`) is listed, also requires that the proto's command
+list (`[proto+E8h]`, 6-byte entries `{word id, byte kind}`, kind 1 a tech, count `[proto+ECh]`) holds the
+tech (`[[status]]`). The Town Center, unlisted, keeps the stock list. The dialog keeps the unit ID
+(`[dlg+140h]`, set by 0x818E8D) and researches the choice there.
+
+**Why it is safe.**
+- Registers: at 0x7E6905 ESI is the player's proto (tested non-null at 0x7E68F0) and EDI the database; at
+  0x7E803F ECX is the database and EDI the proto. EAX, ECX and EDX are dead at both continuations of each
+  site (0x7E6926 loads ECX from 0xC67310 and EDX, EAX after it; 0x7E8059 loads ECX; the rejected paths
+  only pop). `UhcAgeUpListed` is stdcall and keeps EBX, ESI, EDI and EBP; the flags are not live.
+- Branches into the sites: only 0x7E6903 → 0x7E6915 and 0x7E8032 → 0x7E804C, both outside the replaced
+  bytes (capstone scan of `.text`).
+- The list wrapper has the frame of the stock call (thiscall, one argument, `ret 4`) as `__fastcall` with an
+  unused EDX, and only reads.
+- Not for the Asian civs: their dialog is the wonder list, and a building cannot place a wonder.
+- Interface only: the pickers and the list run on the local player's clicks; the research the dialog sends is
+  a normal research command, so every machine runs the same thing. Not on a hot path (a click, a dialog).
+
 ### kbUnitSyscalls
 
 Five syscalls added to the KB group through the syscall registry (`src/syscalls.*`, the hook on

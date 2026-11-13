@@ -257,3 +257,6 @@ numberOfShots-wol 8 12 1
 numberOfShots-wol-control 8 12 1
 numberOfShots-projectiles-wol 9 12 1
 numberOfShots-projectiles-wol-control 9 12 1
+ageUpBuildings-wol 1 12 2
+ageUpBuildings-wol-control 1 12 1
+useBigHugeButton-wol 3 12 1

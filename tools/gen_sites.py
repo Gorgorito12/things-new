@@ -1574,6 +1574,22 @@ SITES = [
     # directionalAttack, <DirectionalFiringRange>: the MaxRange handler of the action parser FUN_005F98A0:
     # mov edx,[esp+68h] (the value) / push edx / mov ecx,ebp (the action) / call 5FA709h (redirected, at +7)
     ("DirectionalMaxRangeCall", 0x5F8A4A, 0x0C),
+    # ageUpBuildings: the TownCenter compare of the two age-up pickers, for a civ isAsianCiv(player, true) rejects
+    # (the Asian civs' type 16h test and its call 0x7E6919, which wonderCivUnitType redirects, are left alone).
+    # uiPoliticianUI 0x7E686E: mov eax,[edi+5E08h] / cmp eax,[esi+4] / je 7E6926h / jmp 7E6A2Eh (replaced); the
+    # accepted continuation mov ecx,[0C67310h]; the rejected one pop edi / pop esi / pop ebp / pop ebx.
+    ("AgeUpPickerTc", 0x7E6905, 0x10),
+    ("AgeUpPickerAccept", 0x7E6926, 6),
+    ("AgeUpPickerReject", 0x7E6A2E, 4),
+    # uiPoliticianUIInSelected 0x7E7EC1: mov edx,[ecx+5E08h] / cmp edx,[edi+4] / je 7E8059h / jmp 7E8092h (replaced,
+    # ECX the database); accepted: mov ecx,[esp+14h]; rejected: pop ebp / pop edi / pop esi / pop ebx.
+    ("AgeUpSelectedTc", 0x7E803F, 0x0D),
+    ("AgeUpSelectedAccept", 0x7E8059, 4),
+    ("AgeUpSelectedReject", 0x7E8092, 4),
+    # ageUpBuildings: the "can be researched" test of each politician list builder, call 4C6968h (thiscall(tech
+    # status, unit), ret 4), in FUN_0081A2B8 (the European dialog) and FUN_00818EE5.
+    ("AgeUpListA", 0x81A44D, 5),
+    ("AgeUpListB", 0x819052, 5),
 ]
 
 

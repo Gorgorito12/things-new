@@ -1422,6 +1422,28 @@ Code: [civs](porting-code/civs.md#civfirsttc).
     colony would use up the request with nothing spawned.
 - **Order:** after startingTC, as in `features.h`; or install the shared proto hook yourself, once.
 
+### ageUpBuildings
+
+Code: [civs](porting-code/civs.md#ageupbuildings).
+
+- **State** (`ageupbuildings.cpp`): the cfg protos (a lazily resolved name list) and the `log` flag.
+- **Picker hooks**, each replacing the TownCenter compare of an age-up picker; the stock Asian test before
+  it (0x7E6919, 0x7E8050) stays as it is, so `wonderCivUnitType`'s call there still verifies:
+  - `0x7E6905`, 16 bytes (`mov eax,[edi+5E08h] / cmp eax,[esi+4] / je 7E6926h / jmp 7E6A2Eh`), in
+    `uiPoliticianUI` 0x7E686E. Entry: ESI = the player's proto, EDI = the database. Re-execute the compare;
+    equal → `jmp 7E6926h`; else `UhcAgeUpListed(ESI)` (stdcall bool): true → `7E6926h`, false → `7E6A2Eh`;
+  - `0x7E803F`, 13 bytes (`mov edx,[ecx+5E08h] / cmp edx,[edi+4] / je 7E8059h / jmp 7E8092h`), in
+    `uiPoliticianUIInSelected` 0x7E7EC1. Entry: ECX = the database, EDI = the proto. The same, with
+    `UhcAgeUpListed(EDI)`, `7E8059h` and `7E8092h`;
+  - EAX, ECX and EDX are free at all four continuations; `UhcAgeUpListed`: the proto ID `[proto+4]` is listed.
+- **List wrapper:** `WriteCall(0x81A44D)` and `WriteCall(0x819052)`, the calls of `0x4C6968(techStatus, unit)`
+  (thiscall, `ret 4`) in the politician list builders, to an `__fastcall(status, unused, unit)` that returns
+  the stock answer, and when it is true and the unit's proto `[unit+5Ch]` is listed, whether the proto's
+  command list `[proto+E8h]` (6-byte entries, `word` ID, `byte` kind 1 = tech; count `[proto+ECh]`) holds the
+  tech ID `[[status]]`.
+- **Check:** list a building that has politicians in its `<Tech>` list; its age-up button opens the dialog
+  with those politicians only, and the choice is queued in that building.
+
 ### transformInventory
 
 Code: [techs](porting-code/techs.md#transforminventory).
