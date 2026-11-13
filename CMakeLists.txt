@@ -109,6 +109,7 @@ set(UHC_SOURCES
   src/features/teams.cpp
   src/features/techrename.cpp
   src/features/pillage.cpp
+  src/features/randomcost.cpp
   src/features/aurastacking.cpp
   src/features/trainbatch.cpp
   src/features/transform.cpp
@@ -219,6 +220,7 @@ set(UHC_SOURCES
   src/hooks/detonation_hooks.asm
   src/hooks/xslog_hooks.asm
   src/hooks/prototag_hooks.asm
+  src/hooks/randomcost_hooks.asm
   src/hooks/sharedlimit_hooks.asm
   src/hooks/pillage_hooks.asm
   src/hooks/aurastacking_hooks.asm

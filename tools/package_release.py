@@ -338,6 +338,7 @@ dataLint [log] [file]         while the data loads, says what it asks for and th
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
+randomCost [log]              <RandomCost> rolls a unit's price in a range, a new one per purchase
 unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
 veterancyBonus [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark;
                               data\\uhc\\veterancy.xml: rows by unit type, rank names and colours

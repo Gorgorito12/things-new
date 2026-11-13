@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `playerIcon` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1569,6 +1569,24 @@ Code: [buildings](porting-code/buildings.md#costescalationtechs). It needs `AddT
   must share them.
 - **Test:** a tech with the effect in the [modding guide](modding-guide.md#costescalationtechs): the button's cost changes
   and the food drops by it.
+
+### randomCost
+
+Code: [buildings](porting-code/buildings.md#randomcost). It needs `AddProtoTagHandler`
+([helpers](porting-code/helpers.md#proto-tags)), `AddWorldTick` ([helpers](porting-code/helpers.md#world-tick)),
+`OnDatabaseLoad` ([helpers](porting-code/helpers.md#extra-abstract-unit-types)) and the saved markers, stat 68h
+([helpers](porting-code/helpers.md#state-kept-for-a-saved-game)).
+
+- **Sites:** 5-byte `call`s, each over a stock `call` whose arguments are already pushed: in the cost getter `0x480B1E`,
+  the copy of the proto's cost at `0x480B5B` (`E8 13 FF FF FF`, EBX the player, EDI the player's proto); in the Train
+  enqueue `0x9EAC35`, the payments at `0x9EAF9A` (`E8 CB E4 EE FF`, EBP the count) and `0x9EB053` (`E8 12 E4 EE FF`),
+  and the getter call that fills an entry's cost record at `0x9EB291` (`E8 88 58 A9 FF`); the refunds of an entry's
+  record at `0x9EB43E` (`E8 C1 BB EE FF`), `0x9EB60D` (`E8 F2 B9 EE FF`) and `0x9EBA5D` (`E8 A2 B5 EE FF`). Check them
+  against your DLL first: none is shared with another key here.
+- **What it keeps:** the game seed and, per player and tagged proto, the count of purchases not refunded; both are
+  saved markers on one living unit, written by the world tick.
+- **Test:** a proto with the tag: the tooltip's price changes after each purchase, the gold drops by it, a cancel
+  refunds it, and a saved game loaded in a new process gives the same next prices.
 
 ### unitTypeTechs
 

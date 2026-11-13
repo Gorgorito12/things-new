@@ -110,6 +110,7 @@ PAGES = {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],
         "buildingWorkRateAuras": ["src/features/bwrauras.cpp", "src/hooks/bwraura_hooks.asm"],
         "costEscalationTechs": ["src/features/costescalation.cpp"],
+        "randomCost": ["src/features/randomcost.cpp", "src/hooks/randomcost_hooks.asm"],
         "unitTypeTechs": ["src/features/unittypetechs.cpp"],
         "trainBatchSize": ["src/features/trainbatch.cpp", "src/hooks/trainbatch_hooks.asm"],
         "sharedBuildLimit": ["src/features/sharedlimit.cpp", "src/hooks/sharedlimit_hooks.asm"],
