@@ -6,7 +6,7 @@
 // modifiers, markers too: a key writes its state again at its next change.
 //
 // Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
-// researchGrants (two kinds, told apart by word 0).
+// researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit).
 #pragma once
 
 #include <cstdint>

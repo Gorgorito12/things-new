@@ -334,6 +334,23 @@ SITES = [
     # and the loop over [list] / byte [list+4] through vtable slot +8
     ("TechPrereqListEval", 0x5094B4, 0x24),
     ("TechPrereqListLoop", 0x50946A, 0x4A),
+    # orPrereqsQty: the evaluator's head, push ebx / mov bl,[esp+0Ch] (replaced, 5 bytes), and the
+    # continuation push ebp / push esi / test bl,bl at 0x5094B9; written after techPrereqRecheck verified it
+    ("OrQtyEvalHead", 0x5094B4, 0x0A),
+    # orPrereqsQty: the OR-true exit of the evaluator's loop (pop edi/esi/ebp, mov al,1, pop ebx, ret 8) and
+    # the vtable thunk jmp eax the loop calls each prerequisite through
+    ("OrQtyEvalTrue", 0x67C412, 0x09),
+    ("OrQtyVtableThunk", 0x4C5F02, 0x02),
+    # orPrereqsQty: the tech <Flag> tag handler FUN_00620BF1, cdecl(node, record): its text [node+14h]
+    # through 0x402733, then the flag setter 0x620C2F(record, text), ret; and its registration in the tech
+    # tag table, mov dword ptr [esp+10h], 620BF1h (the immediate at +4 is redirected)
+    ("OrQtyFlagHandler", 0x620BF1, 0x3E),
+    ("OrQtyFlagRegister", 0x6237E4, 0x08),
+    # orPrereqsQty: the OrPrereqs case of the flag setter, or byte [esi+2],20h on [record+4] (bit 21)
+    ("OrQtyFlagBit", 0x62237E, 0x0A),
+    # orPrereqsQty: the per-tech setup FUN_006201E5: def = [[loader+4]] + id*34h, record = [[loader+4]+0Ch] +
+    # id*24h, mov [edx],eax stores the tech ID in [def+0] and mov [ecx],eax the def in [record+0]
+    ("OrQtyTechSetup", 0x620277, 0x3C),
     # techPrereqRecheck: the TypeCount ctor (push 0 = type 0, vtable 0BA533Ch) and the base
     # prerequisite ctor that stores the type in byte [+5]
     ("TypeCountCtor", 0x8EE860, 0x10),
@@ -969,6 +986,18 @@ SITES = [
     # call of the kill queue 0x4B4DC2 with (1, 0, 0) for one with it; ESI = the unit at both
     ("DeleteSetHpCall", 0x7CD0CF, 5),
     ("DeleteKillCall", 0x7CD0DC, 5),
+    # detonationDeath, verify only: the executor's mov edi,ecx (EDI = the command at both calls); its read of the
+    # command's flag bits (cmp [edi+5Ch],10h / jbe / mov edx,[edi+58h] / mov al,[edx+2]); and the kill handler's
+    # KnockoutDeath test after its HP setter call (proto flag 123, [proto+50h] byte 0Fh bit 3, ja 50AAADh)
+    ("DeleteCommandRegister", 0x7CCF89, 3),
+    ("DeleteCommandFlags", 0x7CD002, 12),
+    ("KnockoutTest", 0x4B51CB, 0x20),
+    # detonationDeath, the blast on screen (verify only): the terrain impact FUN_004CB11C, thiscall(projectile,
+    # point), the visual of a shot landing on the ground (its action [+10h], the action's impact effect [+70h]);
+    # the impact effect by name FUN_0058F017, thiscall(manager [[0C66234h]+0BB8h], &name), as the tactics
+    # <impacteffect> handler 0x5FAFB2 calls it
+    ("TerrainImpact", 0x4CB11C, 0x15),
+    ("ImpactEffectByName", 0x58F017, 0x0C),
     # displayedRange: the ID of a model path, thiscall(table [0xC66240], path, 1, 0, 0), called at 0x5FC94C; the ID
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
@@ -1077,6 +1106,39 @@ SITES = [
     ("DataActionAttribute", 0x6216A3, 5),
     ("DataAllActionsApply", 0x7F86CA, 0x0E),
     ("DataAllActionsUnapply", 0x7F870F, 0x0E),
+    # tech subtypes on a Player target: the player Data apply FUN_008D842B, thiscall(player, a1, a2, subtype,
+    # [effect+10h], [effect+14h], amount, relativity), ret 1Ch: lea eax,[ebp-0Ah] / cmp eax,5Ah / push edi /
+    # mov esi,ecx / ja 8D878Fh (replaced, 6 bytes) / movzx eax,[eax+8D93D8h] / jmp [eax*4+8D9330h]; its caller
+    # 0x7F874A that pushes the effect's fields; the failure exit and a success exit (pop edi/esi/ebp/ebx,
+    # add esp,0Ch, ret 1Ch, AL as left)
+    ("PlayerDataSwitch", 0x8D8435, 0x1D),
+    ("PlayerDataCaller", 0x7F874A, 0x32),
+    ("PlayerDataFail", 0x8D878F, 0x0C),
+    ("PlayerDataDone", 0x8D8D23, 0x0A),
+    # shipmentCounts: the stock FreeHomeCityUnit case (subtype 37h) of the player Data apply: amount [esp+34h],
+    # proto [esp+2Ch], up to its call of the shipment spawn 0x857E77
+    ("FreeHomeCityUnitCase", 0x8D8C62, 0xC1),
+    # shipmentCounts: the shipment of a card, FUN_00858299: the activation of the card's tech,
+    # call 94CF27h (thiscall(entry = EDI, player = [esi+8], unit, 0, &ok, flags), ret 14h; redirected),
+    # with the pushes before it and the use of EDI after it
+    ("ShipActivateCall", 0x8584E7, 0x24),
+    ("ShipQueueCaller", 0x66AEA0, 5),
+    # shipmentCounts, the send age: FUN_00858299's read of its argument, the queue entry being shipped, at
+    # [esp+24h] in the frame of the activation call (mov ecx,[esp+24h] / mov edx,[ecx] / lea eax,[esp+24h]);
+    # the head of the queue's add FUN_00857204 (thiscall(queue = [hc+288h], entry*), ret 4: push esi / push edi /
+    # mov edi,ecx / mov esi,[edi+4], replaced, 7 bytes), whose only caller is the send FUN_0085A724; the head of
+    # its removal FUN_00857257 (thiscall(queue, index, bool shift), ret 8: cmp byte [esp+8],0 (replaced, 5 bytes)
+    # / push esi / push edi / mov edi,ecx / jz), called by the queue update 0x4BF86F and the cancel 0x85ADD9
+    ("ShipEntryArg", 0x85856A, 0x0A),
+    ("ShipQueueAddHead", 0x857204, 7),
+    ("ShipQueueRemoveHead", 0x857257, 0x0B),
+    # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
+    # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
+    # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at
+    # 0x948F95 in the team's timer start FUN_00948F32, minus [team+84h]; and the end it sets, now + 1000 x seconds
+    ("KothTotalTime", 0x9F02DD, 0x48),
+    ("KothStartCall", 0x948F93, 0x12),
+    ("KothSetEnd", 0x948A4C, 0x1C),
     # cratePriority: the only calls of the crate rank FUN_004DBF40 (thiscall(db, resource, civ), ret 8)
     # and of the next crate FUN_00501786 (thiscall(player, proto, int* next, int* resource), ret 0Ch),
     # and that one's read of the civ: mov ecx,[esi+4] / mov ecx,[ecx+44h]
@@ -1568,6 +1630,54 @@ SITES = [
     # directionalAttack, <DirectionalFiringRange>: the MaxRange handler of the action parser FUN_005F98A0:
     # mov edx,[esp+68h] (the value) / push edx / mov ecx,ebp (the action) / call 5FA709h (redirected, at +7)
     ("DirectionalMaxRangeCall", 0x5F8A4A, 0x0C),
+    # ageUpBuildings: the TownCenter compare of the two age-up pickers, for a civ isAsianCiv(player, true) rejects
+    # (the Asian civs' type 16h test and its call 0x7E6919, which wonderCivUnitType redirects, are left alone).
+    # uiPoliticianUI 0x7E686E: mov eax,[edi+5E08h] / cmp eax,[esi+4] / je 7E6926h / jmp 7E6A2Eh (replaced); the
+    # accepted continuation mov ecx,[0C67310h]; the rejected one pop edi / pop esi / pop ebp / pop ebx.
+    ("AgeUpPickerTc", 0x7E6905, 0x10),
+    ("AgeUpPickerAccept", 0x7E6926, 6),
+    ("AgeUpPickerReject", 0x7E6A2E, 4),
+    # uiPoliticianUIInSelected 0x7E7EC1: mov edx,[ecx+5E08h] / cmp edx,[edi+4] / je 7E8059h / jmp 7E8092h (replaced,
+    # ECX the database); accepted: mov ecx,[esp+14h]; rejected: pop ebp / pop edi / pop esi / pop ebx.
+    ("AgeUpSelectedTc", 0x7E803F, 0x0D),
+    ("AgeUpSelectedAccept", 0x7E8059, 4),
+    ("AgeUpSelectedReject", 0x7E8092, 4),
+    # ageUpBuildings: the "can be researched" test of each politician list builder, call 4C6968h (thiscall(tech
+    # status, unit), ret 4), in FUN_0081A2B8 (the European dialog) and FUN_00818EE5.
+    ("AgeUpListA", 0x81A44D, 5),
+    ("AgeUpListB", 0x819052, 5),
+    # politicianPlacesFix: in the European list builder FUN_0081A2B8, an accepted politician about to take the next
+    # place: mov ecx,edi / call 58EA03h (replaced, 7 bytes), then cmp dword [esp+24h],0; and the builder's exit after
+    # the fifth, mov eax,[ebx+26Ch]. Verify only: the place binding's stores of PoliticianDlg-Politician%d
+    # (mov [ebx-14h],eax, [dlg+198h+4n]) and Poli%dName (mov [ebx+3Ch],eax, [dlg+1E8h+4n]); the builder's read of the
+    # name handle (mov edx,[ebx+ecx*4+1E8h] / push edx / lea ecx,[esp+7Ch] / call 4C519Ch), whose gadget 0x81A80C
+    # dereferences unchecked; the tech status's tech ID getter; the UI manager's gadget lookup thiscall(manager,
+    # handle, type), ret 8.
+    ("PoliticianPlaceTake", 0x81A45A, 0x0C),
+    ("PoliticianListEnd", 0x81A848, 6),
+    ("PoliticianPanelBind", 0x818C93, 3),
+    ("PoliticianNameBind", 0x818D51, 3),
+    ("PoliticianNameRead", 0x81A4FF, 0x11),
+    ("TechStatusTechId", 0x58EA03, 0x0D),
+    ("GadgetLookup", 0x40423C, 0x10),
+    # playerIcon: the two calls of the lobby slot's civ portrait FUN_00774D56 (ECX = the slot), after a civ change
+    # (case 4 of the slot's setting handler) and after an AI personality change (case 9); the hook runs it itself
+    ("PlayerIconCallCiv", 0x776FFC, 5),
+    ("PlayerIconCallPersonality", 0x7773DD, 5),
+    # playerIcon: the functions the helper calls. FUN_00774D56's head: sub esp,14h / push ebp / mov ebp,ecx /
+    # cmp dword [ebp+0Ch],0; the slot's setting handler 0x776BED(settings, id, flags), ret 0Ch: sub esp,68h /
+    # test byte [esp+74h],10h; its AvatarID case: cmp byte [esi+1Ch],0 / jne 777168h (an AI's slot keeps the civ
+    # portrait)
+    ("PlayerIconCivPortrait", 0x774D56, 10),
+    ("PlayerIconSlotHandler", 0x776BED, 8),
+    ("PlayerIconAvatarCase", 0x776DEA, 10),
+    # playerIcon: the lobby settings' string getter 0xA263C7(id, string*) (mov eax,[ecx+8] / test eax,eax / je /
+    # mov ecx,[ecx+20h] / jmp 518B57h) and setter 0xA26361(id, string*), ret 8; the game string's constructor from
+    # a wide C string 0x401A12 (ret 4) and its destructor 0x4010CA
+    ("PlayerIconSettingGet", 0xA263C7, 0x0F),
+    ("PlayerIconSettingSet", 0xA26361, 0x0B),
+    ("PlayerIconStringCtor", 0x401A12, 8),
+    ("PlayerIconStringDtor", 0x4010CA, 7),
 ]
 
 

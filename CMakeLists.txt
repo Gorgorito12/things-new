@@ -64,6 +64,8 @@ set(UHC_SOURCES
   src/features/linkedresource.cpp
   src/features/xslog.cpp
   src/features/civs.cpp
+  src/features/ageupbuildings.cpp
+  src/features/politicianplaces.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/decimalpop.cpp
@@ -76,6 +78,7 @@ set(UHC_SOURCES
   src/features/heal.cpp
   src/features/hotkeys.cpp
   src/features/instances.cpp
+  src/features/playericon.cpp
   src/features/lifespan.cpp
   src/features/limits.cpp
   src/features/maintain.cpp
@@ -100,6 +103,9 @@ set(UHC_SOURCES
   src/features/spread.cpp
   src/features/startingtc.cpp
   src/features/techprereq.cpp
+  src/features/orprereqs.cpp
+  src/features/shipmentcounts.cpp
+  src/features/kothtimer.cpp
   src/features/teams.cpp
   src/features/techrename.cpp
   src/features/pillage.cpp
@@ -151,6 +157,8 @@ set(UHC_SOURCES
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
   src/hooks/civ_hooks.asm
+  src/hooks/ageup_hooks.asm
+  src/hooks/politicianplaces_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/farm_hooks.asm
   src/hooks/decimalpop_hooks.asm
@@ -177,6 +185,9 @@ set(UHC_SOURCES
   src/hooks/spread_hooks.asm
   src/hooks/startingtc_hooks.asm
   src/hooks/techprereq_hooks.asm
+  src/hooks/orprereqs_hooks.asm
+  src/hooks/shipmentcount_hooks.asm
+  src/hooks/kothtimer_hooks.asm
   src/hooks/techrename_hooks.asm
   src/hooks/transform_hooks.asm
   src/hooks/transforminv_hooks.asm
@@ -204,6 +215,8 @@ set(UHC_SOURCES
   src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm
   src/hooks/annexfacing_hooks.asm
+  src/hooks/playericon_hooks.asm
+  src/hooks/detonation_hooks.asm
   src/hooks/xslog_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm

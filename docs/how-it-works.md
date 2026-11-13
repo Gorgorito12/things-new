@@ -612,6 +612,76 @@ the unit's proto with `0x44CAC4` for abstract type 16h (`push 16h / mov ecx,prot
 redirects those two calls to a wrapper that returns the stock answer or whether the proto ID
 (`[proto+4]`) is listed (`ProtoIdList`).
 
+### ageUpBuildings
+
+**The pickers.** The age-up button's command is `uiPoliticianUI(%d, %d, %s)` (string 0xC31A78, built
+for a tech with flag 4 `AgeUpgrade` or 1Ch `RevoltTech` on any unit), the syscall 0x7E686E; the hotkey
+path is `uiPoliticianUIInSelected` 0x7E7EC1, which walks the selection. Both hold the tests
+[wonderCivUnitType](#wondercivunittype) widens: after isAsianCiv(player,
+true) they test the proto against abstract type 16h for an Asian civ, else compare the TownCenter ID
+`[db+5E08h]` with the player's proto `[proto+4]`, and leave on a failure. The key replaces only that compare
+(0x7E6905, 16 bytes: `mov eax,[edi+5E08h] / cmp eax,[esi+4] / je / jmp`; 0x7E803F, 13 bytes:
+`mov edx,[ecx+5E08h] / cmp edx,[edi+4] / je / jmp`): the hook re-executes it and, when it fails, asks
+`UhcAgeUpListed(proto)`, then jumps to the stock accepted continuation (0x7E6926, 0x7E8059) or the
+rejected one (0x7E6A2E, 0x7E8092). The Asian path and its call (0x7E6919, 0x7E8050), which
+wonderCivUnitType redirects, are not touched, so the two keys apply in any order.
+
+**The list.** The dialog (European: FUN_0081A2B8; FUN_00818EE5 is its twin) walks the player's tech
+statuses and keeps each one of the next age (0x94C7E3) that `0x4C6968(status, unit)` accepts, up to five
+(`[dlg+26Ch]`). 0x4C6968 checks the tech's flags, status and prerequisites and some of the unit's proto
+flags (REA `ev_90be3ff9…`), not whether the proto lists the tech: stock, a Market would offer every
+politician. The key redirects the two calls (0x81A44D, 0x819052) to `CanResearchHere`, which keeps the
+stock answer and, when the unit's proto (`[unit+5Ch]`) is listed, also requires that the proto's command
+list (`[proto+E8h]`, 6-byte entries `{word id, byte kind}`, kind 1 a tech, count `[proto+ECh]`) holds the
+tech (`[[status]]`). The Town Center, unlisted, keeps the stock list. The dialog keeps the unit ID
+(`[dlg+140h]`, set by 0x818E8D) and researches the choice there.
+
+**Why it is safe.**
+- Registers: at 0x7E6905 ESI is the player's proto (tested non-null at 0x7E68F0) and EDI the database; at
+  0x7E803F ECX is the database and EDI the proto. EAX, ECX and EDX are dead at both continuations of each
+  site (0x7E6926 loads ECX from 0xC67310 and EDX, EAX after it; 0x7E8059 loads ECX; the rejected paths
+  only pop). `UhcAgeUpListed` is stdcall and keeps EBX, ESI, EDI and EBP; the flags are not live.
+- Branches into the sites: only 0x7E6903 → 0x7E6915 and 0x7E8032 → 0x7E804C, both outside the replaced
+  bytes (capstone scan of `.text`).
+- The list wrapper has the frame of the stock call (thiscall, one argument, `ret 4`) as `__fastcall` with an
+  unused EDX, and only reads.
+- Not for the Asian civs: their dialog is the wonder list, and a building cannot place a wonder.
+- Interface only: the pickers and the list run on the local player's clicks; the research the dialog sends is
+  a normal research command, so every machine runs the same thing. Not on a hot path (a click, a dialog).
+
+### politicianPlacesFix
+
+**The dialog in the stock exe.** The European politician dialog binds its places when it is built (FUN_0081892B,
+REA `ev_c919cd4e…`): for n = 0 to 4 (loop end `cmp edi,5` at 0x818DBA) it looks up `PoliticianDlg-Politician%d` into
+`[dlg+198h+4n]`, `PoliticianButton%d` (+1ACh), `Poli%dPortrait` (+1C0h), `PoliticianHilightPositive%d` (+1D4h),
+`Poli%dName` (+1E8h), `Poli%dCost` (+1FCh) and `Poli%dDescription` (+210h). Each is a gadget handle; a name the
+layout lacks gives a handle that resolves to nothing. The list builder FUN_0081A2B8 (REA `ev_3a5f7096…`, the dialog's
+virtual at 0xB8BD3C) walks the player's tech statuses, keeps a politician of the next age (or a revolution) that
+0x4C6968 accepts, and fills place `[dlg+26Ch]` for it: tech ID at `[dlg+270h+4n]`, the portrait, then the name gadget
+(EBP, looked up at 0x81A4FF and null-checked once at 0x81A527), cost and description. Then it calls the name gadget's
+virtual with `mov eax,[ebp]` at 0x81A80C (age-up) or 0x81A63C (revolution) without a check, and counts up to 5
+(0x81A82A). With a four-place `uipoliticianEuropeandlg.xml`, as the stock one, the fifth politician's name gadget is null: access
+violation at 0x81A80C, seen in the Windows log as offset 0x41A80C.
+
+**The hook.** At 0x81A45A (`mov ecx,edi` / `call 58EA03h`, 7 bytes, re-executed), the point where an accepted
+politician is about to take place `[ebx+26Ch]`, `UhcPoliticianNoPlace(dlg, status)` counts the leading places whose
+`PoliticianDlg-Politician%d` and `Poli%dName` both resolve, through the UI manager's lookup 0x40423C
+(`thiscall(manager, handle, type)`, `ret 8`, manager `[[0xC66244]+44h]`, type 0 any or 10h text, the type the name's
+own lookup 0x44900A asks for; REA `ev_7c3b79e8…`). When the count has reached them, the builder leaves through its own
+exit 0x81A848 (`mov eax,[ebx+26Ch]` / pops / `ret`), the path it takes after the fifth. The rest of the dialog reads
+`[dlg+26Ch]` and null-checks its gadgets (the layout 0x81A069.., the hide loop 0x818DF1, the cost refresh 0x81A8C3),
+so it shows that many places. The other list builder, FUN_00818EE5, null-checks every gadget it fills.
+
+**Why it is safe.**
+- Registers: EBX is the dialog and EDI the tech status, both kept by the stdcall wrapper; EAX, ECX and EDX are dead
+  (the re-executed call returns EAX, and ECX at 0x81A466 and EDX at 0x81A487 are written before they are read).
+- The stack at 0x81A45A is the loop's own: the call 0x4C6968 before it popped its argument, and the per-entry local is
+  built only at 0x81A559, so the exit 0x81A848 finds what it finds after the fifth politician.
+- Branches into the replaced bytes: none (capstone scan of `.text` for rel8 / rel32 targets in 0x81A45A..0x81A460).
+- `ageUpBuildings` replaces the call at 0x81A44D, five bytes before: the two sites do not overlap and both verify
+  their own bytes; tested together.
+- Interface only, not on a hot path: the lookups run when the dialog is filled (a click), at most ten per politician.
+
 ### kbUnitSyscalls
 
 Five syscalls added to the KB group through the syscall registry (`src/syscalls.*`, the hook on
@@ -979,6 +1049,64 @@ stock handler, and the site verified once by the shared module instead of by thi
 The blast is the stock area damage 0x4C9D89, `thiscall(world, unitId, action, point, multiplier, 0, 0, -1, int* out, bool, Vector*
 offset)`, `ret 28h`, in the same call a unit makes for an attack around itself at 0x6A4A6B: its own position, multiplier 1, the
 action's bit 6, and the zero vector at 0xCF0618.
+
+**The blast on screen (2026-11-13).** The area damage draws nothing. A shot that lands on the ground (a mortar shell, a
+missed cannon ball) is drawn by the terrain impact FUN_004CB11C, `thiscall(projectile, point)`, `ret 4`, called by the
+projectile's update at 0x4C4818 and 0x4CB459 in every mode. It returns at once when the point is not visible to the
+local player (FUN_004601B8), takes the terrain's impact type at the point (water 7, the type of the terrain there, or 9),
+reads the projectile's action `[proj+10h]` and that action's impact effect ID `[action+70h]` (written by the tactics
+`<impacteffect>` handler 0x5FAFB2 through the effect manager `[[0C66234h]+0BB8h]`, FUN_0058F017), and calls the impact
+spawn FUN_0049C1E5(point, direction, 0, type, 1, `[proj+28h]` == 0, 0, 0). The direction is the point minus
+`[proj+64h]` on the ground plane, or the default vector at 0xC6655C when that is zero. The sixth argument picks the
+entry's `particleSet` (1) or its `secondaryParticleSet` (0, when it has one); the spawn plays the particle set and the
+entry's sound sets at the point.
+
+After the area damage, the key calls FUN_004CB11C with a zeroed record of 70h bytes that has only those fields: the
+action at `+10h`, the point at `+64h` (so the default direction) and `+28h` = 0 (the `particleSet`). The point is the
+unit's position, copied before the area damage. By default the action is the detonating one, so its own
+`<impacteffect>` plays (nothing when it has none: `[action+70h]` < 0). `<DetonationImpactEffect>path</DetonationImpactEffect>`
+names another impact effect: its handler, during the proto load, passes the node's text field `[node+14h]` to
+FUN_0058F017 as the tactics handler does, which finds the file or loads it and returns its ID (< 0 on failure, logged
+and ignored); the blast then uses a stand-in action of 74h zeroed bytes with that ID at `+70h`. `none` stores −1 and
+nothing is drawn.
+
+**Observed in game (2026-11-13):** hardware breakpoints on 0x4CB11C, 0x4CB266 and 0x49C1E5 during two blasts, both
+called from the death observer (return 0x493D94): one in the black map reached 0x4CB11C and returned at the visibility
+test; one on the player's own ship reached 0x4CB266 with EBX = 7 (water) and called the spawn once.
+
+**Knockouts and the trigger `Kill` (2026-11-13).**
+- **A knockout is not a death.** The kill handler 0x4B4F70 sets the unit's HP to 0 (`0x4820A1(0, 0)`), then tests proto
+  flag 123 (`cmp [proto+54h],7Bh / mov ecx,[proto+50h] / mov dl,[ecx+0Fh] / and edx,8 / ja 50AAADh` at 0x4B51CB): set,
+  the unit is knocked out (FUN_0050AB6F) and skips the code that marks it dead (bit 11 of the unit's state). Flag 123
+  is `KnockoutDeath`: the proto parser's `KnockoutDeath` branch is `or byte [[proto+50h]+0Fh],8` at 0x5FCEBE. The death
+  observer runs before the handler, so the key tests the same bit on the unit's proto (`[unit+5Ch]`): set, and the
+  proto has no `<DetonationOnKnockout>1</DetonationOnKnockout>`, there is no blast. Read from memory in game: set on
+  the `Engineer`, clear on a Settler and an archer. A delete with `<DetonationCommand>` is not filtered.
+- **The trigger `Kill` is not a delete.** `trUnitDelete(remove)` (handler 0x982771, registered at 0x98A64E) calls
+  FUN_0082F923(player, ids, count, remove, 1, 1), which builds the delete command (type 7, FUN_005695FC) and, for its
+  fifth and sixth arguments, sets bit 3 (`[[cmd+58h]] |= 8`) and bit 16 of the command's flag bits; `remove` goes to
+  `[cmd+8Ch]`, which the executor sends to the removal 0x4726B2 instead (that is `Destroy`). The Delete button's
+  builder FUN_0082F1E3 sets neither bit, nor do the AI's calls of FUN_0082F923 (0x724FC2 and 0x73E668 pass 0, 0). The
+  executor FUN_007CCF7F keeps the command in EDI (`mov edi,ecx` at 0x7CCF8A) and reads the same flag bits itself
+  (bit 16 at 0x7CD002). The two calls the key rewrites (0x7CD0CF, the HP setter; 0x7CD0DC, the kill queue) now go to
+  asm hooks (`hooks/detonation_hooks.asm`) that hand the unit and EDI to the C helper, then jump to the stock callee
+  with the arguments and the return address untouched. A command with bit 3 is a trigger's `Kill`: the HP-setter
+  path fires the blast at once as a death, and the kill-queue path notes the unit so the death observer treats the
+  kill as a death; the log line ends in `(a trigger's Kill)`. Without bit 3 it stays a delete.
+- **Observed in game:** the knockout without the tag (`knocked out (KnockoutDeath), no blast`), with it (a blast at each
+  of two knockouts), the trigger `Kill` of an archer and a Settler (blasts), the Delete button on both (no blast). All
+  of these deletes went through 0x7CD0DC: every unit seen there has proto flag 13 (`0x44D063(0Dh)`), and the
+  HP-setter call 0x7CD0CF was not reached.
+
+Evidence (`rea/evidence/age3y-b1a1dab7/detonation52b.json`, and capstone over the exe for 0x982771, 0x5FCEBE, 0x4B51CB,
+0x7CCF7F): `ev_17f7f172…` (FUN_004B4F70), `ev_edf31a0a…` (FUN_0082F923), `ev_dfdd9ca3…` (FUN_0082F1E3). Sites
+`DeleteCommandRegister` (0x7CCF89), `DeleteCommandFlags` (0x7CD002) and `KnockoutTest` (0x4B51CB), verify only.
+
+**Why it is safe:** drawing and sound only, as in the stock landing: FUN_004CB11C already depends on what the local
+player sees, so nothing in it can reach the simulation, and the key calls it after the damage is applied. The two
+records live on the stack for the length of the call. Evidence (`rea/evidence/age3y-b1a1dab7/detonation52.json`,
+and capstone over the exe's bytes for the callers and the out-of-line blocks 0x4DD628 and 0x64A32F): `ev_ca755380…` (FUN_004CB11C), `ev_204bff62…`
+(FUN_0049C1E5), `ev_eaca0080…` (FUN_005FE922, the entry's two particle sets), `ev_6061959a…` (FUN_0058F017).
 
 A unit killed by the blast only joins the queue, and the drain reads the count again on each turn, so a chain runs in order
 and does not recurse. A proto's action is found by comparing the names of the database's list `[db+1FD8h]` for the IDs its action set
@@ -1450,6 +1578,150 @@ applies the operators. `[player+80h]` is the KB; it is used with no null check.
   the techs in ID order and stops at the first difference. The time measured for the `log`
   summary is only logged.
 - **Measured:** with 2 TypeCount techs, the checks took about 4 ms per game minute.
+
+### orPrereqsQty
+
+**The stock OR.** `<Flag>OrPrereqs</Flag>` sets bit 21 of the tech's status bits (the flag setter's case `0x62237E`,
+`or byte [esi+2],20h` on `[record+4]`). The per-tech update FUN_005094D8 passes that bit to the prerequisite list
+evaluator FUN_005094B4, `bool thiscall(list = def+1Ch, Player*, bool or)`, `ret 8`: it walks `[list]` (length byte
+`[list+4]`, null slots skipped) and asks each prerequisite through vtable slot +8 (the thunk `jmp eax` at `0x4C5F02`).
+With `or` set, the first prerequisite met returns true (`0x67C412`); with none met, false. Its stock callers are
+`0x509537` only; `techPrereqRecheck` calls it too.
+
+**Reading `qty`.** The tech parser FUN_006201E5 makes, for tech ID *i*, the definition `[[loader+4]] + 34h·i` (its
+`+0` = *i*) and the status record `[[loader+4]+0Ch] + 24h·i` (its `+0` = the definition), then hands each child node to
+the handler of its tag. `<Flag>` is handled by FUN_00620BF1, `cdecl(node, record)`, registered in the tag table by
+`mov dword ptr [esp+10h], 620BF1h` at `0x6237E4`. The key writes the address of `UhcOrQtyFlag` over that immediate:
+it calls the stock handler, then, when the node has a `qty` attribute and its text is `OrPrereqs`, stores
+{definition, N} at the tech's ID. Any other flag, or a value outside 1..255, is logged and left alone.
+
+**The hook.** A `jmp` over the evaluator's first 5 bytes (`push ebx / mov bl,[esp+0Ch]`) leads to
+`UhcOrQtyEvalHook`: `TRACE_ONCE`, then `UhcOrQtyEval(list, player, or)`. For `or` set and a tech whose stored
+definition is `list − 1Ch` with N ≥ 2, it asks each prerequisite through the same vtable slot, stops at the N-th one
+met, and returns 0 or 1; the hook then returns from the evaluator with `ret 8`, as the stock exits do. Otherwise it
+returns −1, and the hook restores ECX, re-executes the two stolen instructions and jumps to `0x5094B9`.
+
+**Why it is safe.**
+- The evaluator's contract is kept: same arguments, same `ret 8`, the result in AL; EBX, ESI, EDI and EBP are kept
+  by the C++ code, and EAX/ECX/EDX are free in a thiscall. Its callers cache the result in bit 3 as before, so
+  activation, `Volatile`, the AI's tech list and the UI follow it.
+- Each prerequisite is asked through the same slot, with the same player, as stock does; the count only replaces
+  "any" by "N".
+- An entry is used only when its stored definition is the one being evaluated, so a table from another data load is
+  never applied.
+- The result depends only on game state (the player's units, techs, age), so every machine computes the same.
+- `techPrereqRecheck` verifies the evaluator's stock bytes before this key writes them (it applies first).
+
+### kothTimer
+
+**The stock time.** When a team takes the hill (`ypKingsHill`, proto ID `[db+5F88h]`; the hill's update, 0x4C9BBD,
+counts the units around it and, in a King of the Hill game, byte `[0xCF07BD]` = game setting 27h, reaches 0x6A7AEE),
+FUN_00948F32 (thiscall on the team) starts the team's timer: `0x9F02DD() − [team+84h]` seconds, the end at now + 1000 ×
+that (0x948A1F), and the "KOTHVictoryTimer" panel. FUN_009F02DD reads the victory settings of `DefaultVP.xml`
+(`[world+0A8h]`, loaded by 0x9F0B90): `+104h` + (`[world+5Ch]` − 1) × `+108h` when `+108h` > 0, − (`[world+18Ch]` −
+`+10Ch`) × `+110h`, with `[world+5Ch]` the player slots (Gaia included) and `[world+18Ch]` the teams (Gaia's too). Its
+only caller is 0x948F95.
+
+**The hook.** A `jmp` over its first instruction, `mov eax,[0C66234h]`, leads to `UhcKothTimeHook`: `TRACE_ONCE`,
+`UhcKothTime(settings)`. It counts the players 1 .. `[world+5Ch]` − 1 of the world's player array `[world+58h]` and the
+distinct teams `[player+10h]` among them, takes the time of the table's entry, logs it with the stock value, and the hook
+returns it with `ret`. With no table it returns 80000000h, and the hook restores ECX, re-executes the load and jumps to
+0x9F02E2.
+
+**Why it is safe.** The function keeps its contract (thiscall, no arguments, EAX); EAX, ECX and EDX are free. The counts
+come from the game's player array, the same on every machine, and the time is an integer as stock's.
+
+### shipmentCounts
+
+**Where a card is sent.** The send FUN_0085A724 (`thiscall(hc, …, cardIndex)`, from the command at 0x7D4C9B) checks the
+card (Blockade `[hc+4DCh]`, the card's age against the player's `[player+50h]`, a ship, the cost), pays, and appends an
+entry to the home city's shipment queue `[hc+288h]` (count `+28Ch`, entries of 18h: `+0` card index, `+4` tech ID, `+8`
+the tech's research points, `+0Ch` progress, `+10h` a cost list) with FUN_00857204, `thiscall(queue, entry*)`, `ret 4`,
+the queue's only add (REA `ev_085f3a08…`; the load 0x85E44E fills the queue directly, `ev_530bdbb8…`). A queued card can
+be cancelled, by the player or by a Blockade: FUN_0085ADD9 refunds it and removes the entry with FUN_00857257(index, 1),
+`thiscall(queue, index, bool shift)`, `ret 8` (`ev_3d75e6c9…`). The queue update FUN_004BF86F advances only entry 0 and
+removes it with FUN_00857257(0, 1) once shipped; those are its two callers (`ev_1ddddf42…`).
+
+**Where a card is shipped.** The update's cold part calls FUN_00858299 at `0x66AEA0`, `thiscall(hc, queue entry*)`,
+when the first card's transit ends. It checks the player (alive, a KB, no blockade), resolves the drop point, then
+activates the card's tech: `call 94CF27h` at `0x8584FF`, `thiscall(entry = EDI, player = [esi+8], unit, 0, &ok,
+flags)`, `ret 14h`, with ESI the home city and its argument, the queue entry, at `[esp+24h]` in that frame (`mov
+ecx,[esp+24h]` at 0x85856A; `ev_86fde4e0…`). The activation applies the tech's effects there and then, so a card's
+`FreeHomeCityUnit` creates its units inside that call. Then the card index is added to the home city's list of used
+cards `[hc+260h]` through 0x444FD3, which adds an index only once: a card sent again is not listed twice, so the list
+is not a count of shipments.
+
+**The age of sending.** A card counts in the age it was sent in, but only once it ships, since a sent card can still be
+cancelled. Three hooks:
+- the head of FUN_00857204 (7 bytes, `push esi / push edi / mov edi,ecx / mov esi,[edi+4]`) jumps to
+  `UhcShipQueueAddHook`: `UhcShipQueued(queue, entry)` notes `{card index, tech ID, [player+50h]}` (the player is
+  `[hc+8]`, hc = queue − 288h); then the replaced instructions run and it jumps to `0x85720B`. doNotQueue's own call of
+  the add (at 0x85AD38) reaches this head too;
+- the head of FUN_00857257 (`cmp byte [esp+8],0`, 5 bytes) jumps to `UhcShipQueueRemoveHook`: `UhcShipUnqueued(queue,
+  index, shift)` forgets the noted card of that entry; then the `cmp` runs again (its flags feed the `jz` at 0x857260)
+  and it jumps to `0x85725C`;
+- the activation call (below) finds the send age of the entry being shipped.
+
+A noted card is found by its card index and tech ID and its rank among the entries with the same pair: the k-th such
+entry in the queue is the k-th noted one, since the queue is FIFO and doNotQueue moves a new card up only past cards of
+the other kind, never past its twin. A card whose send was not seen (a game saved without the key) takes the age at its
+arrival.
+
+**The count.** The key redirects the activation call to `UhcShipActivateHook`: `TRACE_ONCE`, `UhcShipBegin(entry,
+player, hc, queue entry)` notes the player ID and the send age of that queue entry and marks a shipment as in progress,
+then the stock activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to the count of
+that player and send age and clears the mark. The return address is kept in a global while the activation runs, and the
+hook leaves with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last).
+
+**Saved games.** The counts and the noted cards live in the DLL, so they are written into the game as saved markers
+(`savedmarkers.h`, stat 67h): stat modifiers that no code reads, whose save and load copy four dwords. Per player with
+anything to keep, one marker holds the five counts (16 bits each, word 0 `'SC' << 16 | player << 8 | 1`), and one, while
+the player has queued cards, the send ages of its queue in queue order (3 bits per place, 32 places, `| 2`). All of them
+sit on one unit, the carrier: the first living unit of a player (then of anyone) that takes a marker. A world tick
+(`AddWorldTick`) rewrites them after a change and moves them when the carrier is gone, dead, or lost its markers (a
+transform in place ends a unit's modifiers); old markers are freed. So at a save, which happens between world updates,
+the markers are on a living unit.
+
+A game is told apart as `researchGrants` does: the world `[game+13Ch]`, its time `[world+108h]` not going back and its
+step `[world+F8h]` advancing by at most one. A new or loaded game (seen by the tick, or by a hook or a syscall that runs
+first) rebuilds the table in one walk over the units: the counts from the count markers, and the noted cards from the
+loaded queue `[hc+288h]` of each player with the send ages of their places.
+
+**The tech subtype.** `FreeHomeCityUnitByShipmentCount` is a Data subtype on a Player target, which the shared tech
+subtype code did not have: stock applies a Player target through 0x7F874A, which pushes the effect's fields and calls the
+player Data apply FUN_008D842B, `thiscall(player, a1, a2, subtype, [effect+10h], [effect+14h], amount, relativity)`,
+`ret 1Ch`, a switch on `subtype − 0Ah` (`cmp eax,5Ah / ja 8D878Fh`, the jump tables 0x8D93D8 and 0x8D9330).
+`techsubtypes.*` gained `AddTechPlayerSubtype`: the `ja` at `0x8D843E` jumps to `UhcTechPlayerSubtypeHook`, which sends
+a stock ID back to the table (`0x8D8444`), and an ID from 100h to the key's handler with the player and the addresses of
+the field `[esp+2Ch]` and the amount `[esp+34h]`. The handler returns done (AL = 1, the exit `0x8D8D23`), failed
+(`0x8D878F`), or the ID of a stock case to run with the arguments it rewrote.
+
+While the techs are read, the subtype's name lookup (the shared head 0x61FF5D) calls the key's parser with the effect
+and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` one age 1 to 5 or
+a range `N-M` of them, and `includeself` true or 1. They are packed into the effect's field `+10h`: the proto ID in the
+low 24 bits, the first age in bits 24-26, `includeself` in bit 28, the last age in bits 29-31. A bad one drops the effect
+(the lookup answers −1, as for a name nobody knows). When the effect applies, the handler adds the counts of those ages
+(or of every age), adds one when `includeself` is set and the effect runs inside the activation of a shipment of the
+same player whose send age is in the range, writes the proto ID into the field and `amount × count` into the amount,
+and answers 37h: the stock `FreeHomeCityUnit` case (0x8D8C62) then creates the units at the home city gather point
+through 0x857E77, with its checks. A count of zero answers done, and nothing is created.
+
+**The syscalls.** `xsGetShipmentCount(int playerID, int age)` and `xsGetShipmentCountRange(int playerID, int firstAge,
+int lastAge)` in the XS group (every script: the AI, triggers), through `AddSyscall`: the same table, -1 for every age,
+0 for an age or range out of bounds.
+
+**Why it is safe.**
+- The activation gets the same `this`, the same five arguments and the same return address; EAX, its result, is kept,
+  and the code at 0x858504 reloads ECX from EDI, which the C code keeps. Only one card ships at a time, and the
+  activation never ships another, so one global return address is enough.
+- The two head hooks keep EAX, ECX and EDX, run the replaced instructions themselves and jump to the verified next
+  instruction; the add's and the removal's work is untouched. `ShipEntryArg` verifies the frame the hook reads the
+  queue entry from.
+- The player switch hook re-executes the stolen `ja` with the flags of the stock `cmp`, so every stock subtype runs as
+  before; the success and failure exits are the stock ones, with the stack as the cases leave it.
+- The counts read only simulation events (sends, cancels, shipments, ages), the same on every machine; the table is
+  ordered by player ID and age, and the carrier is picked in unit order, so the markers are the same on every machine.
+- A marker is a modifier of a stat no code reads; a game loaded without the key ignores it.
 
 ### maintainWaitForPop
 
@@ -2938,6 +3210,48 @@ the fallback, so a low model does not cover it).
 - Cost: with Alt up, a compare and a jump per unit and frame; with Alt down, one inventory read per unit drawn.
   Measured below in the modding guide.
 
+### playerIcon
+
+**Stock: the lobby icon.** Read with REA and capstone (2026-11-13; bundles `lobby-avatar-59-20261113.json` and
+`player-icon-59-20261113.json` in `rea/evidence/age3y-b1a1dab7/`). Each of the 8 slots of the LAN setup page is an object
+with `[+0Ch]` the lobby settings, `[+14h]` "this is the local player's slot" (written by FUN_0077649C, which enables the
+slot's own controls with it), `[+18h]` the slot's index, `[+1Ch]` "an AI's slot" (the host may edit it) and `[+28h]` the
+icon gadget `mpsetup-PlayerN-Avatar`. A player field's setting ID is 3Ah + (index + 1) × 18h + field; AvatarID is field
+10 (string), Civ field 4. The slot's handler 0x776BED(settings, id, flags) (`ret 0Ch`, flag 10h) dispatches the field:
+- Civ (case 0x776F73) and AI personality (case 0x7772D3) end in FUN_00774D56, through the calls 0x776FFC and 0x7773DD
+  (its only callers): it puts the civ's `<portraittexture>` on the icon;
+- AvatarID (case 0x776DEA), for a slot that is not an AI's: reads the string, looks it up in the avatar table
+  (`[[0xC66234]+140h]` → 0x7EEEE7 → 0x7A77EF; an empty name gives the table's first entry) and puts the record's image on
+  the icon (0x638823). An unknown name leaves the icon alone.
+
+The lobby settings: string get 0xA263C7(id, string*) on `[settings+20h]` (0x518B57), string set 0xA26361(id, string*),
+which stores the value and sends it to the host, which sends it to every peer (FUN_00A2B475). The game string is one
+pointer to the characters (header 10h bytes before; constructor 0x401A12, destructor 0x4010CA).
+
+**The hook.** The two calls of FUN_00774D56 call `UhcPlayerIconHook` (`playericon_hooks.asm`), which runs FUN_00774D56,
+then `UhcPlayerIconAfterPortrait(slot)`:
+- returns at once for an AI's slot, a slot index out of 0..7, or lobby settings with no session;
+- on the local player's slot, if its AvatarID is not the cfg's value, writes it with 0xA26361 (that runs the handler's
+  AvatarID case once by itself);
+- if the slot's AvatarID is not empty, calls the slot handler with that field's ID and flag 10h: the stock AvatarID case
+  puts the avatar back over the civ portrait, or leaves the portrait when the name is not in the table.
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x776FFC (civ change) | `call 774D56h` | `call UhcPlayerIconHook` | the caller's next line, 0x777001 |
+| 0x7773DD (AI personality change) | `call 774D56h` | the same | 0x7773E2 |
+
+**Why it is safe.**
+- Lobby only: the icon is drawn by this machine; the value written goes through the game's own setter into a field the
+  game already sends and that nothing in the simulation reads.
+- FUN_00774D56 takes ECX alone and returns with a plain `ret`; neither caller reads EAX, EDX or the flags after it
+  (0x777001 compares `[esi+10h]` with EBX, 0x7773E2 is `lea ecx,[esp+84h]`). The hook keeps ECX for the helper and
+  every register and the flags around it (`pushfd`/`pushad`).
+- The handler call from the helper is the same call the settings would make for that field; the slot handler checks
+  that the ID belongs to this slot. Re-entering it from the setter is what stock does when any field changes.
+- The verified bytes: both calls, the heads of FUN_00774D56, the handler and its AvatarID case, the getter, the setter
+  and the string functions (sites `PlayerIcon*`).
+
 ### workRateByAbstractType
 
 An action's rates are a list of `{unittype ID, rate, -1}` (`[action+0Ch]`, count `[action+10h]`, 0Ch bytes
@@ -3913,6 +4227,10 @@ New subtypes go through `techsubtypes.*`, shared by the keys that add one:
 The handler calls the stock value function 0x7F892A on `+78h`, with the base proto's `+78h`, which gives it every
 relativity and the removal. A tech reaches a proto through protoUnitApply 0x7F86C0; the player path 0x8D842B is not
 involved, as with Armor.
+
+- A subtype on a Player target (`AddTechPlayerSubtype`, since `shipmentCounts`) goes through that player path: the
+  `ja` of its switch at 0x8D843E sends an ID from 100h to the key's handler (see shipmentCounts). A Player subtype on a
+  ProtoUnit target, or the reverse, fails as stock fails an unknown subtype.
 
 - **Observed in game:** see the tests in the modding guide. After a load the log shows the effects applied again in
   order, from the data's value.

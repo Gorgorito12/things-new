@@ -13,13 +13,13 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
-| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
+| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
-| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars` | [interface](porting-code/interface.md) |
+| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `playerIcon` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
 The code pages are the code itself, C++ and MASM, generated from `src/` with `tools/porting_code.py`, so
@@ -537,7 +537,16 @@ Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHan
 - **Sites:** a `call` at `0x493D8F` (to `0x4B4F70`), the kill queue drain's call of the kill handler. It is written once by
   `deathobservers.cpp`, which runs every key's observer (`AddDeathObserver`, in `kFeatures` order) before the stock
   handler; `annexFacing` adds its observer there too. Check it against your DLL first.
-- **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage.
+- **The blast on screen:** no site is written. After the area damage the key calls the terrain impact `0x4CB11C`
+  (`thiscall(projectile, point)`, `ret 4`) with a zeroed record of 70h bytes holding the action at `+10h` and the point
+  at `+64h`; for `<DetonationImpactEffect>` it reads the effect with `0x58F017` (`thiscall([[0C66234h]+0BB8h], &text)`,
+  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID.
+- **The delete calls:** `0x7CD0CF` (HP setter `0x4820A1`) and `0x7CD0DC` (kill queue `0x4B4DC2`) are `call`s to the
+  asm hooks of `detonation_hooks.asm`: each pushes ECX (the unit), then EDI (the delete command) and ECX for the
+  helper, pops ECX and `jmp`s to the stock callee. Bit 3 of the command's flag bits (`[[cmd+58h]] & 8`, size
+  `[cmd+5Ch]`) marks the trigger `Kill`. A knockout is proto flag 123 (`[[proto+50h]+0Fh] & 8`).
+- **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage, and the action's impact
+  effect (or the tag's) plays there.
 
 ### impactBoneFix
 
@@ -932,6 +941,74 @@ Code: [techs](porting-code/techs.md#techprereqrecheck).
 - **The tech list:** template records `[[db+5D9Ch]+0Ch]`, 24h bytes, count `[[db+5D9Ch]+10h]`;
   keep the IDs whose definition (record `+0`) has a prerequisite with byte `[p+5]` = 0 in
   `[def+1Ch][0..byte def+20h)`.
+
+### kothTimer
+
+Code: [techs](porting-code/techs.md#kothtimer).
+
+- **The hook** at `0x9F02DD` (`A1 34 62 C6 00`, `mov eax,[0C66234h]`), the head of the King of the Hill time,
+  `int thiscall(settings)`, plain `ret`; one caller, 0x948F95. Return the seconds in EAX with `ret`, or re-execute the
+  load and jump to `0x9F02E2`.
+- **The counts:** players 1 .. `[world+5Ch]` − 1 of `[world+58h]`, teams the distinct `[player+10h]` among them.
+- **Data only:** the stock formula's four tags in `DefaultVP.xml` already give a linear time by players and teams.
+- **Test:** a King of the Hill game with 2 and 3 players: the panel shows the table's times.
+
+### shipmentCounts
+
+Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target of the shared tech subtypes
+(`AddTechPlayerSubtype`, in the [helpers](porting-code/helpers.md)) and `AddSyscall`.
+
+- **The send:** a 7-byte `jmp` at the head of the queue add FUN_00857204 (`56 57 8B F9 8B 77 04`: `push esi / push edi /
+  mov edi,ecx / mov esi,[edi+4]`), `thiscall(queue = [hc+288h], entry*)`, `ret 4`; the send FUN_0085A724 is its only
+  caller. Note the entry's card index `[entry+0]`, tech ID `[entry+4]` and the player's age `[[hc+8]+50h]` (hc = queue −
+  288h; cAge1 = 0), then run the five replaced bytes and `jmp 85720Bh`.
+- **The removal:** a 5-byte `jmp` at the head of FUN_00857257 (`80 7C 24 08 00`, `cmp byte [esp+8],0`), `thiscall(queue,
+  index, bool shift)`, `ret 8`, called when a card ships (0x4BF86F) or is cancelled (0x85ADD9). Forget the noted card of
+  entry `index`, then run the `cmp` and `jmp 85725Ch` (the `jz` there reads its flags). Match a noted card by card index,
+  tech ID and its rank among the entries with the same pair.
+- **The count:** a `call` at `0x8584FF` (`E8 23 4A 0F 00`, `call 94CF27h`) in the card shipment FUN_00858299. Entry:
+  ECX = EDI = the card tech's status entry, ESI = the home city, `[esp+4]` the player, five arguments, `ret 14h`;
+  `[esp+3Ch]` is FUN_00858299's argument, the queue entry being shipped. Note the player ID and that entry's send age,
+  run the activation with the stack as it is (keep the return address aside), then add one to that player's count of
+  that age. The card's effects run inside the activation: `includeself` adds the card being shipped.
+- **Saved games:** keep the counts and the send ages of the queued cards on a living unit as saved markers (stat
+  modifiers no code reads, whose save copies four dwords; `savedmarkers.h`), rewritten from a world tick after a change
+  and moved when that unit dies; read them back when a new or loaded world appears.
+- **The subtype:** a 6-byte `jmp` over `ja 8D878Fh` at `0x8D843E` (`0F 87 4B 03 00 00`) in the player Data apply
+  FUN_008D842B. Entry: EBP = subtype, EAX = subtype − 0Ah, the flags of `cmp eax,5Ah`, ESI = the player, the field
+  `[esp+2Ch]` (the effect's `+10h`), the amount `[esp+34h]`. A stock ID continues at `0x8D8444`. For the new ID, write
+  the proto into the field and `amount × count` into the amount, set EBP and `[esp+28h]` to 37h and EAX to 37h − 0Ah,
+  and jump to `0x8D8444`: the stock `FreeHomeCityUnit` delivers the units. A count of 0: `mov al,1 / jmp 8D8D23h`.
+- **The parse:** the subtype's name goes through your subtype lookup; while the effect is read, keep its node (the
+  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` (one age or a range `N-M`) and
+  `includeself`, and pack them into the effect's `+10h`.
+- **The syscalls:** `int xsGetShipmentCount(int playerID, int age)` and `int xsGetShipmentCountRange(int playerID, int
+  firstAge, int lastAge)` in the XS group.
+- **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
+  `age='1'`: two units; a card sent in Age II that arrives in Age III counts in Age II; save, load in a new process: the
+  same counts.
+
+### orPrereqsQty
+
+Code: [techs](porting-code/techs.md#orprereqsqty).
+
+- **State:** a table by tech ID of {definition, N}, filled while the techtree is read; an entry counts only when its
+  definition is the one being evaluated.
+- **The `<Flag>` handler:** write your handler's address over the immediate at `0x6237E8` (the instruction at
+  `0x6237E4` is `C7 44 24 10 F1 0B 62 00`, `mov dword ptr [esp+10h], 620BF1h`). Your handler is `cdecl(node, record)`:
+  call `0x620BF1(node, record)`, then read `qty` with `0x598F37(node, "qty", &value)` (thiscall on the node) and the
+  flag's text with `0x402733(node+14h)`; the tech ID is `[[record]]`. If your DLL already replaces this handler or
+  hooks the flag setter `0x620C2F` (as `hcTargetTechs` does, at its head), the two compose: this one only wraps the
+  handler.
+- **The hook** at `0x5094B4` (`53 8A 5C 24 0C`, `push ebx / mov bl,[esp+0Ch]`), the head of the prerequisite list
+  evaluator, `bool thiscall(list = def+1Ch, Player*, bool or)`, `ret 8`:
+  - entry state: ECX = the list, `[esp+4]` = the player, `[esp+8]` = the OR flag (its low byte);
+  - for OR, and N ≥ 2 for the tech `[list−1Ch]`: count the non-null `[list][i]` (i below byte `[list+4]`) whose vtable
+    slot +8, `thiscall(p, player)`, returns true; return `count ≥ N` in AL with `ret 8`;
+  - otherwise re-execute the two instructions and jump to `0x5094B9`.
+- **Order:** `techPrereqRecheck` checks the stock bytes of `0x5094B4`, so apply it first.
+- **Test:** a tech with three `TypeCount` prerequisites and `qty='2'`: it activates with the second unit, not the
+  first.
 
 ### maintainWaitForPop
 
@@ -1416,6 +1493,45 @@ Code: [civs](porting-code/civs.md#civfirsttc).
     request after the call whether or not anything spawned. Without the test, a building with no
     colony would use up the request with nothing spawned.
 - **Order:** after startingTC, as in `features.h`; or install the shared proto hook yourself, once.
+
+### ageUpBuildings
+
+Code: [civs](porting-code/civs.md#ageupbuildings).
+
+- **State** (`ageupbuildings.cpp`): the cfg protos (a lazily resolved name list) and the `log` flag.
+- **Picker hooks**, each replacing the TownCenter compare of an age-up picker; the stock Asian test before
+  it (0x7E6919, 0x7E8050) stays as it is, so `wonderCivUnitType`'s call there still verifies:
+  - `0x7E6905`, 16 bytes (`mov eax,[edi+5E08h] / cmp eax,[esi+4] / je 7E6926h / jmp 7E6A2Eh`), in
+    `uiPoliticianUI` 0x7E686E. Entry: ESI = the player's proto, EDI = the database. Re-execute the compare;
+    equal → `jmp 7E6926h`; else `UhcAgeUpListed(ESI)` (stdcall bool): true → `7E6926h`, false → `7E6A2Eh`;
+  - `0x7E803F`, 13 bytes (`mov edx,[ecx+5E08h] / cmp edx,[edi+4] / je 7E8059h / jmp 7E8092h`), in
+    `uiPoliticianUIInSelected` 0x7E7EC1. Entry: ECX = the database, EDI = the proto. The same, with
+    `UhcAgeUpListed(EDI)`, `7E8059h` and `7E8092h`;
+  - EAX, ECX and EDX are free at all four continuations; `UhcAgeUpListed`: the proto ID `[proto+4]` is listed.
+- **List wrapper:** `WriteCall(0x81A44D)` and `WriteCall(0x819052)`, the calls of `0x4C6968(techStatus, unit)`
+  (thiscall, `ret 4`) in the politician list builders, to an `__fastcall(status, unused, unit)` that returns
+  the stock answer, and when it is true and the unit's proto `[unit+5Ch]` is listed, whether the proto's
+  command list `[proto+E8h]` (6-byte entries, `word` ID, `byte` kind 1 = tech; count `[proto+ECh]`) holds the
+  tech ID `[[status]]`.
+- **Check:** list a building that has politicians in its `<Tech>` list; its age-up button opens the dialog
+  with those politicians only, and the choice is queued in that building.
+
+### politicianPlacesFix
+
+Code: [civs](porting-code/civs.md#politicianplacesfix).
+
+- **Site:** a 7-byte `jmp` at `0x81A45A` (`8B CF E8 A2 45 D7 FF`, `mov ecx,edi / call 58EA03h`) in the European
+  politician list builder FUN_0081A2B8; continue at `0x81A461`, or leave at its exit `0x81A848`
+  (`8B 83 6C 02 00 00`, `mov eax,[ebx+26Ch]`). Check both against your DLL first: `ageUpBuildings` writes the call
+  at `0x81A44D`, five bytes before, which does not overlap.
+- **Entry:** EBX = the dialog, EDI = the tech status of the politician about to take place `[ebx+26Ch]`; EAX, ECX
+  and EDX are free. `UhcPoliticianNoPlace(EBX, EDI)` (stdcall bool) counts the places n from 0 whose
+  `[dlg+198h+4n]` (`PoliticianDlg-Politician%d`) resolves with type 0 and `[dlg+1E8h+4n]` (`Poli%dName`) with type
+  10h, through `0x40423C` (thiscall(manager `[[0xC66244]+44h]`, handle, type), `ret 8`, null if none). True when
+  `[ebx+26Ch]` has reached that count: `jmp 81A848h`; else re-execute the two instructions and `jmp 81A461h`.
+- **Test:** WoL's four-place `uipoliticianEuropeandlg.xml` and five politicians of the next age obtainable (two more
+  `TechStatus obtainable` lines in a civ's `Age0` tech): without the key the age-up click crashes at `0x81A80C`; with
+  it the dialog shows four.
 
 ### transformInventory
 

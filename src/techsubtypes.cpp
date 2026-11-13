@@ -13,6 +13,7 @@ void UhcTechSubtypeLookupHook();
 void UhcTechSubtypeLookupStock();
 void UhcTechSubtypeApplyHook();
 void UhcTechSubtypeUnapplyHook();
+void UhcTechPlayerSubtypeHook();
 char* g_uhcSubtypeEffect = nullptr;       // the effect whose subtype is being read, and its XML node
 const char* g_uhcSubtypeNode = nullptr;
 }
@@ -26,6 +27,7 @@ constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the 
 constexpr std::uint32_t kOtherCaller = 0x00621C2E;     // the lookup's other caller, which tests for one stock ID
 constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
+constexpr std::uint32_t kPlayerSwitch = 0x008D843E;    // ja 8D878Fh (6 B), in the player Data apply
 constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
 constexpr std::size_t kEffectFlags = 9;                // bit 40h: allactions="1", read before the subtype
 constexpr std::uint8_t kEffectAfterLoad = 0x20;         // in those flags
@@ -55,11 +57,14 @@ struct Subtype {
   uhc::TechSubtypeHandler handler;              // on a proto
   uhc::TechActionSubtypeHandler actionHandler;  // or on its actions
   uhc::TechTypeSubtypeHandler typeHandler;      // or with a unit type
+  uhc::TechPlayerSubtypeParse playerParse;      // or on a player
+  uhc::TechPlayerSubtypeHandler playerHandler;
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+bool g_playerInstalled = false;
 uhc::UnknownTechSubtype g_unknown = nullptr;
 
 // What stock does in setData for TrackRating: only the subtypes it knows read the attribute.
@@ -146,6 +151,18 @@ bool Install() {
   return true;
 }
 
+bool InstallPlayer() {
+  if (!g_playerInstalled) {
+    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kPlayerDataSwitch, &uhc::sites::kPlayerDataCaller,
+                                          &uhc::sites::kPlayerDataFail, &uhc::sites::kPlayerDataDone}) ||
+        !uhc::WriteJmp(kPlayerSwitch, reinterpret_cast<const void*>(&UhcTechPlayerSubtypeHook), 6)) {
+      return false;
+    }
+    g_playerInstalled = true;
+  }
+  return true;
+}
+
 bool Add(const Subtype& subtype) {
   if (g_count == kMaxSubtypes) {
     uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
@@ -178,6 +195,10 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
     if (g_subtypes[i].typeHandler != nullptr && !ReadType(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
+    if (g_subtypes[i].playerParse != nullptr &&
+        !g_subtypes[i].playerParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
+      return -1;
+    }
     return kFirstId + static_cast<std::int32_t>(i);
   }
   if (g_unknown != nullptr) {
@@ -203,20 +224,43 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
     return RunOnActions(subtype, proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0, actionId,
                         allActions != 0);
   }
+  if (subtype.handler == nullptr) {
+    return false;  // a Player subtype on a ProtoUnit target
+  }
   subtype.handler(proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
   return true;
 }
 
+// From the player switch hook, for a subtype at or above kFirstId. `field` and `amount` point at the arguments the
+// stock cases read ([esp+2Ch] and [esp+34h] there).
+extern "C" std::int32_t __stdcall UhcTechPlayerSubtypeRun(std::int32_t id, char* player, std::int32_t* field,
+                                                         float* amount) {
+  const std::size_t index = static_cast<std::size_t>(id - kFirstId);
+  if (index >= g_count || g_subtypes[index].playerHandler == nullptr || player == nullptr) {
+    return uhc::kPlayerSubtypeFail;  // a ProtoUnit subtype on a Player target fails, as stock fails an unknown one
+  }
+  return g_subtypes[index].playerHandler(player, field, amount);
+}
+
 namespace uhc {
 
-bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({name, handler, nullptr, nullptr}); }
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
+  return Add({name, handler, nullptr, nullptr, nullptr, nullptr});
+}
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
-  return Add({name, nullptr, handler, nullptr});
+  return Add({name, nullptr, handler, nullptr, nullptr, nullptr});
 }
 
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler) {
-  return Add({name, nullptr, nullptr, handler});
+  return Add({name, nullptr, nullptr, handler, nullptr, nullptr});
+}
+
+bool AddTechPlayerSubtype(const char* name, TechPlayerSubtypeParse parse, TechPlayerSubtypeHandler run) {
+  if (!InstallPlayer()) {
+    return false;
+  }
+  return Add({name, nullptr, nullptr, nullptr, parse, run});
 }
 
 bool OnUnknownTechSubtype(UnknownTechSubtype callback) {

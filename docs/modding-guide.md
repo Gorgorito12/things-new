@@ -31,6 +31,13 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
+| Friday 2026-11-13 09:04 | [`playerIcon`](#playericon) | Added. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files. |
+| Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
+| Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
+| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
+| Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
+| Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
 | Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
@@ -77,7 +84,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 10:47 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Friday 2026-11-06 09:06 | [`linkedResource`](#linkedresource) | Filmed in WoL, with a control. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
 | Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
-| Thursday 2026-11-05 16:40 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | The tag, and an action with `DamageArea`. |
 | Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
@@ -1248,6 +1254,7 @@ What the exe decides by civ.
 | [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds), [`noBigButtonBlds`](#bigbuttoncivs-and-nobigbuttonblds) | Gives the command panel's big button to the listed civs, and takes it from the listed buildings. | **in `wol.cfg`** | Nothing. | partly confirmed |
 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | **new** | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player) |
 | [`wonderCivUnitType`](#wondercivunittype) | `Rangatira` may start the Maori age-up. Without it, the Maori cannot age up. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`ageUpBuildings`](#ageupbuildings) | The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | **new** | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. | confirmed (single player) |
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | **new** | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`firstTC`](#firsttc) | One line for `civFirstTC` and `startingTC`, with the town units and shipments worked out from the civ's tag. | **new** | `<firstTC>` in `civs.xml`, and the proto in `placementrules\colonies.xml` `<starttypes>`. | confirmed (single player) |
@@ -1504,6 +1511,54 @@ wonderCivUnitType Proto [Proto ...]
 - **Simulation:** changes who may age up: every player needs the same line.
 - **Status:** confirmed (2026-11-03, single player): the Maori Rangatira opened the age-up list; without
   the key the same click opened nothing.
+
+#### ageUpBuildings
+
+*Lets other buildings than the Town Center age up, each with its own politicians.*
+
+**Added:** Friday 2026-11-13 07:37 · **Filmed in WoL:** Friday 2026-11-13 07:37
+
+![ageUpBuildings in WoL](media/ageUpBuildings-wol.gif)
+
+*In WoL (a Dutch skirmish against a German AI, test data):* the Town Center's age-up opens the dialog
+with five politicians (the 5-slot layout of
+[Five politicians in the European age-up](#five-politicians-in-the-european-age-up)). Then the Market's
+age-up button, which stock ignores, opens it with the three politicians the Market lists (Crown Prince of
+Prussia, Aristocrat, Burgher); the Aristocrat is accepted and the age-up is queued in the Market, for 800
+food. [Full video (MP4)](media/ageUpBuildings-wol.mp4).
+
+![ageUpBuildings in WoL, key off](media/ageUpBuildings-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Market's age-up button shows its rollover, and a click opens
+nothing. [Full video (MP4)](media/ageUpBuildings-wol-control.mp4).
+
+```
+ageUpBuildings [log] Proto [Proto ...]
+```
+
+- **In WoL without it:** a politician listed on another building shows an age-up button there, but the
+  click does nothing: the exe opens the dialog only for a Town Center (WoL's Greeks, Serbians and others
+  work around it with `NativeDance` techs such as `GREEKageupMILL01`).
+- **Effect:** the age-up button (and `uiPoliticianUI` / `uiPoliticianUIInSelected`) opens the politician
+  dialog on the listed protos too. On a listed proto the dialog shows only the politicians of the next age
+  that the proto's `<Tech>` list holds; the Town Center keeps every politician the player may research.
+  The chosen politician is researched in that building, at its own speed, and ages the player up as from
+  the Town Center.
+- **Data:** add the politicians to the building's `<Tech>` list in `protoy.xml`
+  (`<Tech column="0" page="1" row="0">WuOLAristocrat</Tech>`); the command panel then shows the age-up
+  button on it.
+- **Not for:** the civs that age up with wonders (the Asian civs and those of
+  [`asianCivs`](#asiancivs)): their age-up needs a builder, which [`wonderCivUnitType`](#wondercivunittype)
+  chooses. Revolutions use the same dialog and the same filter, but were not tested.
+- **Log:** `ageUpBuildings: N proto(s) open the age-up dialog besides the Town Center, with the politicians
+  they list`; `ageUpBuildings: K of N protos found in the data`; with `log`, `ageUpBuildings: the age-up
+  dialog opens on proto <ID>` each time, and the filter's first decision. No proto listed: `FAILED`.
+- **Simulation:** the dialog is interface; the research it sends is a normal research of that building.
+  Every player needs the same line. The AI picks its politicians in its scripts, not in this dialog
+  (inferred; its age-ups in the test were not watched).
+- **Status:** confirmed (2026-11-13, single player, Dutch): the Market opened the dialog with its three
+  politicians and aged up; key off, nothing opened. Not tested: multiplayer, a native civ's council, a
+  revolution.
 
 #### startingTC
 
@@ -2441,7 +2496,7 @@ Attacks, armor, and what a hit does.
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
 | [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
 | [`directionalAttack`](#directionalattack) | A shot that flies on past its target and hits every unit it flies over, before and after the target. | **new** | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. | confirmed (single player) |
-| [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
+| [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
@@ -2460,15 +2515,73 @@ Attacks, armor, and what a hit does.
 
 #### detonationDeath
 
-*A unit can deal area damage around itself when it dies.*
+*A unit can deal area damage around itself when it dies, and the blast shows where it hits.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 16:40
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 09:24
+
+![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
+
+*In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>` in front,
+two `Engineer` behind with their own `BuildingAttack`, whose `<impacteffect>` is the dynamite; both blasts 40 Siege,
+`DamageArea` 5, `GAIAEnemy`; six enemy `WOLScytheman`):* each archer that falls bursts into a mortar explosion, and each
+Engineer knocked down into a dynamite one, where the scythemen around it lose HP. Four of the six scythemen died, the
+other two were left at 16 and 28 HP. [Full video (MP4)](media/detonationDeath-blast-wol.mp4).
+
+![detonationDeath blast in WoL, key off](media/detonationDeath-blast-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the four fall with no explosion, and all six scythemen live (135, 135, 135,
+77, 77 and 38 HP). [Full video (MP4)](media/detonationDeath-blast-wol-control.mp4).
+
+![detonationDeath delete in WoL](media/detonationDeath-delete-wol.gif)
+
+*In WoL, with the key (an `xpAenna` with the mortar effect and `<DetonationCommand>Delete</DetonationCommand>`, deleted with
+its Delete button next to an enemy `CoveredWagon`):* the mortar explosion where it stood, the log line `kill flags 1 0 0
+(a delete)`, and the wagon destroyed. [Full video (MP4)](media/detonationDeath-delete-wol.mp4).
+
+![detonationDeath delete without the command in WoL](media/detonationDeath-delete-nocommand-wol.gif)
+
+*In WoL, with the key (the same archer without `<DetonationCommand>`, deleted with its Delete button beside a Gaia
+`CoveredWagon`):* it falls with no explosion, the wagon keeps 250 of 250 HP, and the log says `deleted without a
+DetonationCommand, no blast`. The wagon then goes into the fog: the archer was the only one who saw it.
+[Full video (MP4)](media/detonationDeath-delete-nocommand-wol.mp4).
+
+![detonationDeath with DetonationImpactEffect none in WoL](media/detonationDeath-none-wol.gif)
+
+*In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>none</DetonationImpactEffect>` against four
+`WOLScytheman`):* the first archer falls and its blast hits (`unit 0, proto 714, at 36.9, 43.1`; a scytheman goes from
+135 to 56 HP in the same moment, with the arrows), and nothing shows on screen.
+[Full video (MP4)](media/detonationDeath-none-wol.mp4).
+
+![detonationDeath over water in WoL](media/detonationDeath-water-wol.gif)
+
+*In WoL, with the key (a `Caravel` with `SHIPmelee` as its blast, 200 Siege, `DamageArea` 8, and the mortar effect;
+three Gaia `FishingBoat` beside it; a trigger deals it 5000 damage):* a mortar explosion on the water as it sinks, and
+the boats go from 200 to 46.0, 54.3 and 54.3 HP. [Full video (MP4)](media/detonationDeath-water-wol.mp4).
+
+![detonationDeath over water in WoL, key off](media/detonationDeath-water-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the stock sinking only, and the boats keep 200 HP.
+[Full video (MP4)](media/detonationDeath-water-wol-control.mp4).
+
+![detonationDeath knockout and trigger Kill in WoL](media/detonationDeath-knockout-off-wol.gif)
+
+*In WoL, with the key (an `Engineer`, which has `KnockoutDeath`, with its dynamite `BuildingAttack` as its blast and no
+`<DetonationOnKnockout>`; beside it an `xpAenna` with the mortar effect and no `<DetonationCommand>`):* a 5000 damage
+trigger knocks the Engineer out and nothing explodes (`knocked out (KnockoutDeath), no blast`); then the trigger `Kill`
+takes the archer, and it explodes (`kill flags 1 0 0 (a trigger's Kill)`).
+[Full video (MP4)](media/detonationDeath-knockout-off-wol.mp4).
+
+![detonationDeath knockout with DetonationOnKnockout in WoL](media/detonationDeath-knockout-on-wol.gif)
+
+*In WoL, with the key (an `Explorer` with `<DetonationOnKnockout>1</DetonationOnKnockout>` and the mortar effect; a
+trigger deals it 5000 damage at 34 s and again at 154 s):* it explodes at the knockout, and again at the knockout after its
+revival. [Full video (MP4)](media/detonationDeath-knockout-on-wol.mp4).
 
 ![detonationDeath in WoL](media/detonationDeath-wol.gif)
 
 *In WoL, with the key (a test action on `Settler`: 1000 Siege, `DamageArea` 6, `GAIAEnemy`):* a trigger kills a settler and the
 4 enemy `Coureur` around it die; another kills one of 3 settlers beside 3 enemy settlers, and all six go in a chain. The blue
-`Coureur` in the middle is out of range. The blast has no effect of its own on screen.
+`Coureur` in the middle is out of range. Filmed before the blast had an effect on screen: `Build` has no `<impacteffect>`.
 [Full video (MP4)](media/detonationDeath-wol.mp4).
 
 ![detonationDeath in WoL, key off](media/detonationDeath-wol-control.gif)
@@ -2500,10 +2613,30 @@ detonationDeath [log]
   must have it: an action its tactics file does not list does nothing, and the log says so.
 - **Use an action the unit does not attack with.** The tag reads any action with a `<Damage>`, so `Build` works on a settler. If
   it is the unit's weapon, raising the damage also raises its normal attacks.
-- **Which deaths:** combat, a kill by a trigger, an expired `Lifespan`, and a unit that dies in a blast. Not `Destroy` (the
-  trigger that removes a unit with no death).
+- **Which deaths:** combat, damage from a trigger (`Damage Unit`), the trigger `Kill`, an expired `Lifespan`, and a unit
+  that dies in a blast. Not `Destroy` (the trigger that removes a unit with no death), and not a knockout (below). The
+  trigger `Kill` (`trUnitDelete(false)`) sends the same delete command as the Delete button, but the key tells them apart
+  (since 2026-11-13; before, a trigger `Kill` counted as a delete): it detonates like a death, without
+  `<DetonationCommand>`, and the log line ends in `(a trigger's Kill)`.
 - **Chains:** a unit that dies from a blast fires too, later in the same pass of the game's kill queue, not inside the blast.
 - **Friendly fire:** `DamageFlags` decides it, as on any attack. {FF}
+- **On screen (2026-11-13):** the blast plays the action's own `<impacteffect>` (the one in its tactics file) where the
+  unit stood, as when a shot lands on the ground there: a mortar's impact effect, or the dynamite of WoL's miners and engineers, gives a mortar explosion
+  with its sound, on grass, dirt, snow or water as the ground is. An action without `<impacteffect>` (`Build`) shows
+  nothing, as before. `<DetonationImpactEffect>path</DetonationImpactEffect>` on the proto names another impact effect,
+  as in a tactics file (`effects\impacts\mortar`, `effects\impacts\dynamite`, `effects\impacts\cannon`, or one of yours),
+  so a unit whose blast action is a bow shot can still explode; `<DetonationImpactEffect>none</DetonationImpactEffect>`
+  shows nothing. The effect is loaded with the data; a name the game cannot load is logged and the action's own
+  effect stays. It is only drawn where the player can see, as a shot's landing is: a blast in the fog or the black
+  map damages as usual and shows nothing. Over water the effect's water entry plays (`terrainwater`; for the mortar a
+  water burst with its sound). Drawing and sound only: nothing in the simulation changes.
+- **A unit with `KnockoutDeath`** (WoL's `Engineer`, explorers, heroes) is knocked out, not killed, so it does not
+  detonate (since 2026-11-13). `<DetonationOnKnockout>1</DetonationOnKnockout>` on the proto makes it detonate at each
+  knockout: once per knockout, as damage while it lies knocked out does nothing, and again at the next knockout after
+  its revival. A delete with `<DetonationCommand>` detonates either way.
+- **Decided (2026-11-13):** the action's own `<impacteffect>` stays the default and `none` opts out. There is no option
+  for an explosion proto or a model: a proto would put a real unit into the simulation (population, stats, sync) only
+  to get a picture, and an impact effect already brings the picture and the sound.
 - **Techs:** the action is the player's copy, so a tech that changes its damage counts.
 - **The other three tags (2026-11-05):**
   - `<DetonationCommand>Name</DetonationCommand>`: the unit detonates when it is **deleted**. Give the proto a command of
@@ -2521,9 +2654,11 @@ detonationDeath [log]
     again from its next loss under the threshold.
 
   Only `<DetonationProtoAction>` is needed for any of them: a threshold or a command without it does nothing.
+  `<DetonationImpactEffect>` (above, "On screen") and `<DetonationOnKnockout>` (above, `KnockoutDeath`) are the fifth
+  and sixth; they too need `<DetonationProtoAction>`.
   at an HP ratio) and `DetonationHitpointDecay`. Without the threshold, one tag is the whole of it: there is no flag to set.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold and DetonationHitpointDecay are on`, with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
+- **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on`, in game `knocked out (KnockoutDeath), no blast` and a blast line ending in `(a trigger's Kill)`, with `log` `detonationDeath: proto 298 detonates when knocked out`, with `log` `detonationDeath: proto 714: its blast plays the impact effect effects\impacts\mortar (11)` / `its blast plays no impact effect`, and without `log` `<DetonationImpactEffect> X is not an impact effect, ignored`; with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
 - **Performance:** every loss of hit points asks the tag table once (a map lookup by proto ID), and the decay walks only
   the decaying units each world update. Measured with `perfprobe.py` (60 s, 30 Pikemen against 30, no tag on them): key on 1467 fps, main thread 79 %, longest frame 2.5 s (the load) and no frame over 50 ms after it; key off 1444 fps, 81 %, 3.7 s. With 30 Musketeers of 4000 HP against 30 that carry a threshold and a decay of 100 HP/s the game ran at 640 fps against 1461 and the render time tripled: that is the decaying units themselves (the HP setter's damage visuals on 30 units every update), not the hook, which runs on untagged units at no measurable cost.
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
@@ -2546,6 +2681,43 @@ detonationDeath [log]
 *In WoL, key off (the same data):* the Delete key removes it with no line.
 [Full video (MP4)](media/detonationDeath-command-wol-control.mp4).
 
+- **Tested in WoL (2026-11-13, the blast on screen):** the scene of the first two videos (Ethiopians against an enemy
+  of six `WOLScytheman`): four blasts, `unit 3, proto 714, at 41.9, 45.1` and `unit 2 … at 43.8, 45.2` (the archers,
+  mortar effect) and `unit 1, proto 1482, at 38.5, 45.9` and `unit 0 … at 36.9, 46.6` (the Engineers, dynamite), each
+  with its explosion at that point; key on, 4 of 6 scythemen dead and 2 at 16.1 and 28.3 HP; key off, all six alive. A
+  delete with `<DetonationCommand>` from the Delete button (third video): `kill flags 1 0 0 (a delete)` and the explosion;
+  the same archer without the command: `deleted without a DetonationCommand, no blast` (log only, not filmed). With
+  `<DetonationImpactEffect>none</DetonationImpactEffect>`: `its blast plays no impact effect` at the load and the archer's
+  blast line when it fell (not filmed). An AI skirmish (Germans, `wolOtto`) with the key on: the AI built a Manor and trained
+  settlers. Performance while filming, key on: 1092 fps on average, no frame over 50 ms; key off 1057 fps, none.
+- **Tested in WoL (2026-11-13, the rest):**
+  - Water: a `Caravel` killed by a 5000 `Damage Unit` trigger on a water map: `unit 0, proto 299, at 39.0, 41.0, kill
+    flags 0 0 0`, a mortar burst on the water, three Gaia fishing boats at 46.0, 54.3 and 54.3 of 200 HP; key off, the
+    stock sinking and 200 HP each.
+  - The fog: a caravel of the other player dies 65 m away in the black map (a trigger), with two Gaia boats beside it:
+    the blast line, the boats at 125.2 and 87.1 HP, no crash. Hardware breakpoints (`tools/re/trace_exec.py`) on the terrain
+    impact 0x4CB11C, its type block 0x4CB266 and the spawn 0x49C1E5: the hidden blast reached 0x4CB11C and stopped at the
+    visibility test; the visible one (the player's own caravel) reached the type block with EBX = 7 (water) and the spawn
+    once, both from the death observer (return 0x493D94).
+  - Delete without `<DetonationCommand>` (the archer's Delete button): `deleted without a DetonationCommand, no blast`,
+    nothing on screen. (The trigger `Kill` gave the same line until the change below.)
+  - `<DetonationImpactEffect>none</DetonationImpactEffect>`: the blast line and the damage, nothing drawn.
+  - `KnockoutDeath`, before the change below (a knockout then detonated): an `Engineer` given 5000 damage at 30, 70, 110
+    and 150 s blasted at 30 s and 150 s only. It lay knocked out from 30 s (LOS 6, its HP back from 1.9 to 62.5 by 112 s),
+    the hits at 70 and 110 s did nothing, it stood again by 148 s (LOS 18, 87.1 HP), and the hit at 150 s knocked it out
+    again with a second blast. No double blast, no crash.
+- **Tested in WoL (2026-11-13, knockouts and the trigger `Kill`):**
+  - The Engineer without `<DetonationOnKnockout>`, 5000 damage at 30 s: `unit 0, proto 1482: knocked out (KnockoutDeath),
+    no blast`, no explosion (its proto flag 123 read from memory: set; a Settler's and an archer's: clear).
+  - An `Explorer` with `<DetonationOnKnockout>1</DetonationOnKnockout>`, 5000 damage at 34 s and 154 s: a blast at each,
+    `unit 1, proto 298, at 44.0, 36.9, kill flags 0 0 0` twice.
+  - The trigger `Kill` of an `xpAenna` and of a `Settler`, neither with `<DetonationCommand>`: `kill flags 1 0 0 (a
+    trigger's Kill)` for both, a mortar explosion, and a Gaia wagon beside the settler from 250 to 237.3 HP.
+  - The Delete button on another Settler and another archer, no `<DetonationCommand>`: `deleted without a
+    DetonationCommand, no blast` for both.
+  - All these went through the executor's kill-queue call (`hook reached: detonationDeath delete command, kill queue
+    (0x7CD0DC)`): every unit seen there has proto flag 13. The HP-setter call (0x7CD0CF, a proto without flag 13) was not
+    reached in these tests.
 - **Tested in WoL (2026-11-05, the three tags):** a Grenadier with `MusketVolleyRangedAttack` and threshold 0.5 under three
   Pikemen: `HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, then the blast with flags 0 0 0, and the unit
   gone; with the key off it fought on and died at 0. A Musketeer of 4000 HP with threshold 0.25 and decay 100, taken to
@@ -6055,6 +6227,9 @@ What happens when a tech activates or a unit changes proto.
 | [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
+| [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
+| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
+| [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
 
 #### hcTargetTechs
 
@@ -6162,6 +6337,254 @@ transformSpan [log]
   - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
 
+#### kothTimer
+
+*The King of the Hill time comes from a table by the number of players, or of teams, in the game.*
+
+**Added:** Friday 2026-11-13 08:06 · **Filmed in WoL:** Friday 2026-11-13 08:06
+
+![kothTimer in WoL](media/kothTimer-wol.gif)
+
+*In WoL, with `kothTimer players 2=900 3=750 4=600` (a scenario with three players in two teams, a `ypKingsHill`
+and player 1's Hussars, which ride to it; the game is made a King of the Hill game by its setting, see the tests):* the
+team takes the hill and the timer starts at 12:30, the time for 3 players (`3 player(s) in 2 team(s): the hill holds for
+750 s`). [Full video (MP4)](media/kothTimer-wol.mp4).
+
+![kothTimer in WoL, key off](media/kothTimer-wol-control.gif)
+
+*In WoL, key off (the same scene):* the timer starts at 10:00, the time `DefaultVP.xml` gives.
+[Full video (MP4)](media/kothTimer-wol-control.mp4).
+
+```
+kothTimer [players | teams] N=seconds ...
+```
+
+```
+kothTimer players 2=900 3=750 4=600 6=480
+kothTimer teams 2=900 3=600 4=480
+```
+
+- **In WoL today:** the time a team must hold the hill comes from `data\DefaultVP.xml`, a formula the game has had since
+  TAD: `KOTHVictoryTime` + (players − 1) × `KOTHVictoryTimePerPlayer` (when above 0) − (teams −
+  `AdjustKOTHTotalTimeByTeams`) × `AdjustKOTHTotalTimeByTeamsFactor`, in seconds. "Players" counts Gaia, and "teams"
+  counts Gaia's team. WoL's file has 600, 0, 3 and 60: 600 s with 2 teams, 540 s with 3, 660 s in a lone-team game. So
+  a time that grows or shrinks **linearly** with the players or teams is already possible with data only, by editing
+  that file (a copy in `data\`; DE's exe has the same four names). JTMaston's #63.
+- **Effect:** the key replaces the formula with a table. `players` (the default) counts the players without Gaia;
+  `teams` the distinct teams of those players. The time is the one of the largest N listed that is not above the
+  game's count; below the smallest N listed, the smallest's time. With `players 2=900 4=600`, 3 players get 900.
+- **What the timer is:** the time a team must keep the hill to win, as stock. The part already held is still taken
+  off when the timer starts again, as stock does.
+- **Arguments:** N from 1 to 16, seconds from 1 to 86400, each N once; at least one entry. Anything else: the key is not
+  applied.
+- **Off:** the formula of `DefaultVP.xml`.
+- **Multiplayer:** it changes the simulation: every player needs the same setting. The counts come from the game's
+  player list.
+- **Log:** `kothTimer: the King of the Hill time by the number of players: 2=900 3=750 4=600 s`, `hook reached: kothTimer
+  (0x9F02DD)`, and at each start `kothTimer: 3 player(s) in 2 team(s): the hill holds for 750 s (the players 3 entry;
+  stock 600 s, its counts 4 slot(s), 3 team(s))`. A bad argument: `kothTimer: unexpected argument 2=abc (expected: ...);
+  feature not applied`.
+- **Tested in WoL (2026-11-13),** scenarios with the hill (`ypKingsHill`, Gaia) and Hussars of player 1 (in Age III) that
+  ride to it. The scenario route cannot pick a King of the Hill game, so the test wrote the game's King of the Hill
+  flag (game setting 27h, cached in the byte 0xCF07BD) in the running copy before the Hussars arrived; without it the
+  hill is captured like a trading post and no timer starts.
+  - `players 2=900 3=750 4=600`: 2 players, 900 s (15:00 on screen; stock 600); 3 players in 2 teams, 750 s (12:30).
+  - `teams 2=500 3=400`, 3 players in 2 teams: 500 s.
+  - Key off, 3 players: 600 s (10:00).
+  - `players 2=abc 0=5`: not applied, logged.
+  - Not tested: a real King of the Hill game started from the setup screen, 4 or more players, multiplayer.
+
+#### shipmentCounts
+
+*Counts the home city cards each player has sent in each age, once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
+
+**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Friday 2026-11-13 07:54
+
+![shipmentCounts in WoL](media/shipmentCounts-wol.gif)
+
+*In WoL, with `shipmentCounts log` (a skirmish, Dutch against a Belgian AI; two cards shipped in Age I, then the test
+moved to Age III; `HCShipWoodCrates2` given `FreeHomeCityUnitByShipmentCount` Hussar, `age='3'`, `includeself='true'`,
+and `HCShipWoodCrates3` the same without `includeself`):* the first card arrives with its crates and one Hussar (`1
+shipment(s) (this one included)`), the second with one more (`1 shipment(s)`: the first one). The AI's chat at the
+left is a test rule that prints `xsGetShipmentCount`. [Full video (MP4)](media/shipmentCounts-wol.mp4).
+
+![shipmentCounts in WoL, a tech](media/shipmentCounts-reward-wol.gif)
+
+*In WoL, with the key (the same game, later):* a test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='1'`
+amount 1, and Cuirassier `age='2'` amount 2, is researched: two Hussars come to the Town Center, for the two Age I cards,
+and no Cuirassier, as no card was shipped in Age II. [Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
+
+![shipmentCounts in WoL, key off](media/shipmentCounts-wol-control.gif)
+
+*In WoL, key off (the same data and cards, in a new game):* the game drops the effect it does not know, and the two Age
+III cards bring only their crates. [Full video (MP4)](media/shipmentCounts-wol-control.mp4).
+
+![shipmentCounts in WoL, a tech, key off](media/shipmentCounts-reward-wol-control.gif)
+
+*In WoL, key off (the same game, two Age I cards shipped before):* the test tech is researched and nothing comes.
+[Full video (MP4)](media/shipmentCounts-reward-wol-control.mp4).
+
+```
+shipmentCounts [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Hussar' age ='2'
+        includeself ='true' relativity ='Absolute'>
+    <Target type ='Player' /></Effect>
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Cuirassier' age ='2-4'
+        relativity ='Absolute'>
+    <Target type ='Player' /></Effect>
+```
+
+```
+int xsGetShipmentCount(int playerID, int age)                         // age cAge1..cAge5, or -1 for every age
+int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..cAge5, firstAge <= lastAge
+```
+
+- **In WoL today:** nothing counts the shipments per age, and no effect sends units by a count. JTMaston's #65.
+- **DE:** has `FreeHomeCityUnitByShipmentCount` (guide p88-89; 9 of its cards use it): `amount` units of `unittype` for
+  every shipment sent so far, `includeself` to count the current one. The key uses that name and those attributes, and
+  adds `age`; DE has no per-age count and no syscall for it.
+- **Effect:**
+  - `unittype`: a proto, delivered as the stock `FreeHomeCityUnit` delivers: at the home city gather point, with its checks
+    (no gather point, no units);
+  - `amount` × the count: the count is the cards of the player sent in `age`, one age from 1 to 5 (Age I to Age V) or a
+    range such as `age='2-4'` (Age II to Age IV), or in every age without `age`. A fraction is cut, as `FreeHomeCityUnit`
+    cuts it; a count of 0 sends nothing;
+  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it was sent in that age (or in
+    the range).
+  - Target: `<Target type='Player'/>`, as `FreeHomeCityUnit`.
+- **What counts, and in which age:** a card counts in the age it was **sent** in (the player's decision), and only once
+  it has **arrived** (its transit ended and its tech activated: the effects of a card run at that moment). So a card sent
+  in Age II that arrives in Age III counts in Age II, and a card on its way counts nowhere yet. A card cancelled from the
+  queue, by the player or by a Blockade, never counts: that is why the count waits for the arrival. Every card counts, a
+  card sent again too. Cards of other players never count.
+- **The syscalls:** in AI scripts and triggers, with XS ages (`cAge1` = 0 … `cAge5` = 4): `xsGetShipmentCount(playerID,
+  age)`, `-1` for every age; `xsGetShipmentCountRange(playerID, firstAge, lastAge)` for a range (0 for a bad range). Note
+  that the effect's `age` is 1 to 5 (Age I to V), and the syscalls' are `cAge1`..`cAge5`.
+- **Bad data:** a `unittype` that is no proto, or an `age` that is not 1..5 or a range of them (`'4-2'`, `'7'`), drops the
+  effect, with a log line; `dataLint` then lists it among the effects the game deletes.
+- **Saved games:** the counts are kept, and so is the age each card on its way was sent in: a loaded game goes on with the
+  counts it had when it was saved, and a card in transit at the save counts in the age it was sent in when it arrives
+  after the load. They are kept on one living unit of the game (a hidden marker that nothing reads); when that unit dies
+  they move to another one. A new game starts at zero. A game saved without the key loads with every count at zero.
+- **Off:** the game deletes an effect with this subtype and the syscalls do not exist: a script that calls them does not
+  compile. Test it with the key on.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Performance:** one count per send and per shipment, one per effect; per frame only a check that the unit holding the
+  counts is alive. A/B in WoL (2026-11-13, `perfprobe.py`, 90 s of a skirmish from 2:20, no other game open, the AI's
+  card already counted): the game's update 0.40 ms per frame with and without the key, 1 frame over 50 ms in each, main
+  thread 94 % and 93 %; the frame rate (375 and 449 fps, uncapped) differed by render time (2.3 and 1.8 ms), which the
+  key does not touch.
+- **Log:** `shipmentCounts: shipments are counted per player and the age they were sent in, and kept in saved games; the
+  Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange read
+  them`, `hook reached: shipmentCounts send (0x857204)`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached:
+  shipmentCounts queue removal (0x857257)`, `hook reached: tech subtype on a player (0x8D843E)`. With `log`:
+  `shipmentCounts: player 1 sends tech 715 (HCShipWoodCrates2) in age 2`, `shipmentCounts: player 1 ships tech 715
+  (HCShipWoodCrates2), sent in age 2, now age 3`, `shipmentCounts: player 1 has shipped 1, 2, 0, 0, 0 in ages I to V`,
+  `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318, age 2: 2 shipment(s) (this one included) x 1.00 =
+  2.00 unit(s)`, `shipmentCounts: the counts are kept on unit 8`, after a load `shipmentCounts: loaded: player 1 has
+  shipped 1, 0, 0, 0, 0 in ages I to V, 2 card(s) queued`. Errors: `a FreeHomeCityUnitByShipmentCount effect names
+  NoSuchProto, which is not a proto; effect dropped`, `age="4-2" is not an age 1 to 5 (Age I to V) or a range such as 2-4;
+  effect dropped`.
+- **Tested in WoL (2026-11-13),** a skirmish, Dutch (player 1) against a Belgian AI; cards sent from the console with
+  `homeCityTrain2(1, <card>)`, ships and the age set by test techs:
+  - two Age I cards counted in Age I, three later cards in Age III, the AI's own cards for player 2;
+  - `includeself` on the first Age III card: 1 Hussar; the next card without it: 1 Hussar (the count of the one before);
+  - a tech with Age I amount 1 and Age II amount 2: 2 Hussars, no Cuirassier;
+  - the syscall from an AI rule: `p1 all 5, Age I 2, Age III 3; p2 all 1`; the AI compiled and played;
+  - `NoSuchProto` and `age='7'`: dropped and logged. Key off: the cards brought only their crates.
+- **Tested again in WoL (2026-11-13), the age of sending and saved games,** Dutch against a German AI, the same way;
+  `HCShipWoodCrates2`, `WoodCrates3` and `CoinCrates3` given Hussar `age='2'` `includeself='true'`, a test tech with Hussar
+  `age='2'` and Cuirassier `age='1-2'`, and an AI rule that prints both syscalls:
+  - one Age I card; two cards sent in Age II, then Age III researched while they were on their way, then the game saved;
+  - in that game: both arrived in Age III and counted in Age II (`sent in age 2, now age 3`); `WoodCrates2` brought 2
+    Hussars (the card before it and itself); the tech brought 2 Hussars and 3 Cuirassiers; the AI read `all 3, I 1, II 2,
+    III 0, I-II 3`, and 0 for the range 2-1;
+  - the save loaded in a new process: `loaded: player 1 has shipped 1, 0, 0, 0, 0 in ages I to V, 2 card(s) queued`; the
+    two cards arrived counted in Age II, with the same 2 Hussars; the tech again 2 Hussars and 3 Cuirassiers; the AI read
+    the same `all 3, I 1, II 2, III 0, I-II 3`;
+  - after the load, two more cards sent in Age III: `1, 2, 2, 0, 0`, the AI `all 5, III 2`; each brought 2 Hussars (its
+    own age is III, so it does not count itself in Age II);
+  - a second save, one more card, then that save loaded in the same process: the counts went back to `1, 2, 2, 0, 0`;
+  - the Town Center holding the counts deleted by an AI rule: `the counts are kept on unit 8` (the Explorer); saved,
+    loaded in a new process: `1, 0, 0, 0, 0`, and the AI's card that was on its way at the save counted in its Age I;
+  - `age='4-2'`: dropped and logged.
+  - Not tested: a cancelled card (the queue removal it goes through was reached by every shipment), multiplayer, a
+    `Data2` effect. The video above is the first test: what it shows has not changed (its cards were sent in the age they
+    arrived in).
+- **Note for tests:** `uiDeleteSelectedUnit()` from the console, in a copy with `multipleInstances background`, crashed
+  the game in the interface code (a null UI context at 0x7E51C8, not in the key's code); an AI rule deleting the unit did
+  not.
+
+#### orPrereqsQty
+
+*A tech with OR prerequisites can ask for two, three or more of them instead of any one.*
+
+**Added:** Friday 2026-11-13 07:24 · **Filmed in WoL:** Friday 2026-11-13 07:24
+
+![orPrereqsQty in WoL](media/orPrereqsQty-wol.gif)
+
+*In WoL, with the key and `techPrereqRecheck` (4 `Hussar`, a test tech with `<Flag qty='2'>OrPrereqs</Flag>`, no
+research time, three prerequisites: one living `Barracks`, `Stable` or `Market`, and a `TransformUnit` from `Hussar` to
+`Cuirassier`):* a trigger creates the Barracks at 25 s and nothing happens (`1 of 2 needed met: not yet`); the Stable
+comes at 45 s, and the Hussars turn into Cuirassiers in that update (`2 of 2 needed met: available`).
+[Full video (MP4)](media/orPrereqsQty-wol.mp4).
+
+![orPrereqsQty in WoL, key off](media/orPrereqsQty-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the attribute, so one prerequisite is enough, and the Hussars turn at
+25 s with the Barracks. [Full video (MP4)](media/orPrereqsQty-wol-control.mp4).
+
+```
+orPrereqsQty [log]
+```
+
+```xml
+<Tech name ='MyTech' type ='Normal'>
+    ...
+    <Flag qty ='2'>OrPrereqs</Flag>
+    <Prereqs>
+        <TypeCount unit ='Barracks' count ='1' state ='noneState aliveState' operator ='gte' />
+        <TypeCount unit ='Stable' count ='1' state ='noneState aliveState' operator ='gte' />
+        <TechStatus status ='active'>Colonialize</TechStatus></Prereqs>
+    ...
+</Tech>
+```
+
+- **In WoL today:** `<Flag>OrPrereqs</Flag>` makes a tech available when **one** of its `<Prereqs>` is met; without it,
+  all of them. JTMaston's #64. DE has nothing in between: its `OrPrereqs` is the same flag, with no count.
+- **Effect:** `qty="N"` on the `OrPrereqs` flag: the tech is available when at least N of its prerequisites are met, of
+  any kind: each one is asked through its own test, as the game does (`TechStatus`, `TypeCount`, `SpecificAge` and the
+  rest; only `TypeCount` was tested). No attribute, or `qty='1'`, is today's behaviour.
+- **Where:** on the flag, the `<Flag>` element whose text is `OrPrereqs`. On another flag it is ignored, with a log line.
+  Tested with WoL's loose `techtreey.xml`; a compiled `.xmb` keeps attributes too (`tools/xmbedit.py`), not tested.
+- **Bad values:** `qty` must be a whole number from 1 to 255. Anything else (0, a word) is logged and the tech keeps the
+  stock OR. A `qty` above the number of prerequisites means the tech is never available; the log says so.
+- **When it is checked:** when the game checks the tech's prerequisites, as for any tech: a status change, an age-up, a
+  house. A `<TypeCount>` among them waits for that unless [`techPrereqRecheck`](bug-fixes.md#techprereqrecheck) is on,
+  which re-checks it as soon as the count changes (the video above uses both).
+- **Saved games:** the count comes from the data each time; nothing is stored.
+- **Off:** the game ignores the attribute and a single prerequisite is enough.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Performance:** the game evaluates prerequisites only when a tech tree is re-checked, not every frame. For a tech
+  without `qty` the key adds a table lookup. Not measured with `perfprobe.py`.
+- **Log:** `orPrereqsQty: <Flag qty="N">OrPrereqs</Flag> needs N of the tech's prerequisites`, `hook reached:
+  orPrereqsQty (0x5094B4)`, then at the first evaluation `orPrereqsQty: 2 tech(s) with qty on OrPrereqs` and one line
+  per tech: `orPrereqsQty:   tech 10542 (UHCOrQtyTest): 3 of 3 prerequisite(s)`. With `log`, each change of a tech's
+  count, per player: `orPrereqsQty: player 1, tech 10542 (UHCOrQtyTest): 2 of 2 needed met: available`. Errors:
+  `qty="0" is not a whole number from 1 to 255; ignored`, `qty on <Flag>Shadow</Flag> ignored; it belongs on OrPrereqs`,
+  `1 tech(s) ask more prerequisites than they have and are never available`.
+- **Tested in WoL (2026-11-13),** a scenario (player 1 the default civ, Prussian-named Hussars), with `techPrereqRecheck
+  log`:
+  - `qty='2'` of three `TypeCount`: available at 45 s (the second building), not at 25 s. Key off: at 25 s.
+  - `qty='3'`: at 65 s, with the third building.
+  - `qty='9'` of three: never, and the log line. `qty='0'` and `qty='abc'`: ignored, logged, and available at 25 s as in
+    stock. `qty` on `<Flag>Shadow</Flag>`: ignored and logged.
+  - `orPrereqsQty bogus` in the cfg: `unexpected argument bogus (expected: [log]); feature not applied`, then `FAILED`.
+  - Not tested: other kinds of prerequisite than `TypeCount`, the AI researching such a tech, multiplayer.
+
 #### unitTypeTechs
 
 *A tech can add or remove a unit category for one player only.*
@@ -6221,6 +6644,7 @@ What the panels and the fog of war show.
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
+| [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files. | confirmed (LAN lobby, one copy) |
 
 #### nativePreview
 
@@ -6532,6 +6956,67 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
   its orange segment, the sheep beside it its food bar (both through the shared hooks). `inventoryBars other=XYZ`:
   logged, not applied.
 
+#### playerIcon
+
+*In a LAN lobby, your slot shows an icon you choose instead of your civ's portrait, and keeps it when you change civ.*
+
+**Added:** Friday 2026-11-13 09:04 · **Filmed in WoL:** Friday 2026-11-13 09:04
+
+![playerIcon in WoL](media/playerIcon-wol.gif)
+
+*In WoL, with `playerIcon uhc_blue` and the three test icons of `tools/make_icons.py` (a LAN game hosted alone, Abraham
+Lincoln as the AI of player 2):* the host's slot shows the blue test icon; the host changes civ from the Dutch to
+Paraguay and back, and the icon stays. The AI keeps its civ's portrait. [Full video (MP4)](media/playerIcon-wol.mp4).
+
+![playerIcon in WoL, key off](media/playerIcon-wol-control.gif)
+
+*In WoL, key off (the same lobby, the test icons still in `data` and `art`):* the host's slot shows the Dutch portrait,
+then Paraguay's when the civ changes. [Full video (MP4)](media/playerIcon-wol-control.mp4).
+
+```
+playerIcon <avatarId>
+```
+
+- **In WoL today (WoL #59):** in a LAN lobby each slot's icon is the civ's portrait (`<portraittexture>` of
+  `civs.xml`), set again on every civ change. The game already has a per-player setting for a picture,
+  `GamePlayer<N>AvatarID`, shared with every player like the civ, and a table of pictures read from
+  `data\avatar_*.xml`; ESO filled it from the online profile, and in a LAN game nothing writes it.
+- **Effect:** when your slot's icon is set (on joining a slot and on each civ change), the key writes `<avatarId>` into
+  your slot's `AvatarID` with the game's own setter, which sends it to every player of the lobby. Then, for every human
+  slot whose `AvatarID` names an avatar of the table, the icon goes back to that avatar after the civ portrait is set. AI
+  slots keep the civ portrait.
+- **The data:** the mod ships the table and the pictures. A file `data\avatar_<anything>.xml` (several are read, also
+  from the player's `My Games\...\Data` folder; read once, at startup):
+
+  ```xml
+  <avatars>
+    <avatar id="wol_eagle"><image>ui\playericons\eagle</image></avatar>
+    <avatar id="wol_lion"><image>ui\playericons\lion</image></avatar>
+  </avatars>
+  ```
+
+  `<image>` (or `<portrait>`) is a texture path under `art\`, without `.ddt`: here `art\ui\playericons\eagle.ddt`. A
+  square picture fits; the slot shows it at 48 × 48. The stock loader also reads `<tier>`, `<minLevel>`,
+  `<type>clan</type>` and `<civ>` (ESO's rules), which LAN ignores; leave them out (an unknown `<civ>` drops the entry).
+- **Choosing an icon:** the cfg value is the only way; there is no picker in the lobby. One avatar per copy of the game.
+- **Which pictures:** the mod's own. Ship the avatar table and the `.ddt` files with the mod, so every player has
+  them and sees everyone's icon.
+- **In game:** the key works in the lobby only. WoL's observer files already show `art\spec\avatars\<playerName>.ddt`
+  in game through the stock text markup, with no DLL.
+- **An unknown ID** (not in any table, or no table at all): the slot keeps the civ portrait, as stock does.
+- **Other players:** a player without this key sees your icon if they have the same table and picture, until your next
+  civ change, which puts the civ portrait back on their screen (their game does not keep it). A player without the
+  table sees the civ portrait.
+- **Multiplayer:** lobby only; nothing reaches the game itself. The value rides in a field the game already sends.
+  The network side (a second player in the lobby) was not tried.
+- **Log:** `playerIcon: the local player's lobby icon is avatar "uhc_blue"`, then `hook reached: playerIcon civ portrait
+  (0x776FFC / 0x7773DD)` and `playerIcon: player 1's AvatarID set to "uhc_blue" (was "")` when you take a slot. A line
+  without an ID: `playerIcon: give one avatar ID ...`, not applied.
+- **Tested in WoL (2026-11-13, one copy):** a LAN game hosted alone: the icon on the host's slot, kept over civ changes
+  (Dutch → Greeks → Paraguay → Dutch); an AI slot (Abraham Lincoln, then Menelik II) kept its civ's portrait; key off:
+  the civ portrait; `playerIcon uhc_blue` with no table installed: the civ portrait, no error; `playerIcon` with no ID:
+  logged, not applied. The profile does not keep the value (its `gameplayer0avatarid` stayed empty).
+
 ## 6. Editing the game data
 
 Work on a copy of the WoL folder.
@@ -6727,6 +7212,145 @@ stay at the ghost's angle.
   With `NotRotateable` on the proto the ghost stayed at −180°. The obstruction turns too (2026-11-08): a `WOLTorp` turned 90°
   did not fit where the unturned one did, and fitted where it overlapped. Not tested: multiplayer, recorded games.
 
+### A big huge button on any building
+
+JTMaston's #56 asks for `UseBigHugeButton` on other buildings than the Consulate. No key is needed: the
+legacy tech flag does it, and a change in WoL's command panel files lets the building's other buttons show
+beside it.
+
+**When to make the edit:** only once a building other than the Consulate gets a tech with the flag. The
+Consulate has no other buttons, so WoL's layout suits it as it is; after the edit its Choose Ally label sits
+beside an empty grid, which changes only the look.
+
+![YPUseBigHugeButton on a Market, the button above the panel](media/useBigHugeButton-moved-wol.gif)
+
+*In WoL, with the edit below (Ethiopians, a scenario, test data):* `HuntingDogs` with
+`<Flag>YPUseBigHugeButton</Flag>` shows as the big button above the command panel, and the Market's own
+Improve, Buy and Sell buttons stay in the grid. A click queues the research (50 wood, 50 gold): the Queue row
+appears between the two. [Full video (MP4)](media/useBigHugeButton-moved-wol.mp4).
+
+![The Consulate's big button with the edit](media/useBigHugeButton-consulate-wol.gif)
+
+*In WoL, with the edit (the same scenario; the Consulate's tech comes from the Japanese `YPAge0JapaneseConsulate`):* the
+Consulate's `ypPickConsulateTech` shows above the panel, beside its Choose Ally row; a click opens the Choose a
+Foreign Ally dialog. [Full video (MP4)](media/useBigHugeButton-consulate-wol.mp4).
+
+![YPUseBigHugeButton on a Market, WoL's layout](media/useBigHugeButton-wol.gif)
+
+*In WoL, with WoL's current layout (a Dutch skirmish, the same flag):* the big button covers the grid, so
+the Market's Improve, Buy and Sell are hidden until the research is done.
+[Full video (MP4)](media/useBigHugeButton-wol.mp4).
+
+- **How:** `<Flag>YPUseBigHugeButton</Flag>` on a tech that a building lists in its `<Tech>` entries. The
+  command panel puts that tech in the gadget `commandpanel2-bighugebutton` instead of the grid, on any
+  building of any civ; the click researches it as a grid button would. Nothing in the exe ties it to the
+  Consulate: the Consulate's `ypPickConsulateTech` is only the one stock tech with the flag.
+- **The edit, so the building's buttons show too:** in WoL's layout the gadget is 212 × 108 (1024 scale) right
+  over the command grid. In `data\uicommandpanelnew.xml`, `uicommandpanelnewmin.xml`,
+  `uicommandpanelnewminobserver.xml` and `uicommandpanelnewminobserverjp.xml`, all four:
+  1. cut the gadget `commandpanel2-bighugebutton` (its line, the `piechartfilling` inside it and its
+     `</gadget>`) out of `commandpanel2-main`;
+  2. paste it right after the `</gadget>` that closes `commandpanel2-main`, before
+     `<gadget name="commandpanel2commands" ...>`, so it is a child of `commandpanel2` itself;
+  3. change its `size1024` from `804 633 1016 741` to `804 486 1016 594`.
+
+  In `uicommandpanelnew.xml` the result reads:
+
+  ```xml
+      </gadget>
+      <gadget name="commandpanel2-bighugebutton" type="button" size1024="804 486 1016 594" z="35" hidden="" activateondown="">
+        <piechartfilling color="255 0 0 100" rotation="cw" fill="false">
+        </piechartfilling>
+      </gadget>
+      <gadget name="commandpanel2commands" type="gadget" ...>
+  ```
+
+  The button keeps its size and sits above the right of the panel, above the Queue row (which takes about 595
+  to 627 when something is queued). Step 2 matters: inside `commandpanel2-main` the button shows above the panel but a
+  click on it goes to the map (tested: the click deselected the Market). Hidden, the gadget does not catch
+  clicks: with no flagged tech, a click there reaches the map. `mainHelpText` (703 483 1024 577 in `uimainnew.xml`)
+  shares part of that space; it was not seen over the button in the tests.
+- **Resolution:** the edit is in the 1024 × 768 space, which every resolution scales, so the button keeps its
+  place over the panel. Seen in game at 1920 × 1080; 1280 × 1024 not seen, since changing the resolution writes the
+  shared profile.
+- **One slot:** one flagged tech at a time per building.
+- **#57, DE's `UseBigHugeButton` on a `protounitcommands` entry:** not built. Legacy's
+  `protounitcommands.xml` has no flags at all, and a command takes the big slot only in the tech path
+  of the command panel; giving one to a command means a new tag in the file's loader and a second path in
+  the panel (size M). No DE data uses it.
+- **Status:** confirmed (2026-11-12 and 2026-11-13, single player): on a Market, with the Ethiopians (a
+  scenario) and the Dutch (a skirmish); the edit on 2026-11-13, a Market and a Consulate (Ethiopians with the
+  Japanese consulate tech, a scenario).
+
+### Five politicians in the European age-up
+
+JTMaston's #62 asks for up to five age-up choices, as in DE. The exe already holds five; WoL's European
+dialog has four places. A fifth place in that file shows five.
+
+**When to ship the five-place file:** with the first civ that gets five politicians in an age. While every civ
+has four, WoL's four-place file looks right (the five-place one leaves an empty place on the right), and
+[`politicianPlacesFix`](bug-fixes.md#politicianplacesfix), always on, keeps a fifth politician from crashing the
+game.
+
+![Five politicians in WoL's European dialog](media/fivePoliticians-wol.gif)
+
+*In WoL, with the five-place file below (a Dutch skirmish, test data: six politicians of the next age
+obtainable):* the Town Center's age-up shows the Aristocrat, the Artisan, the Burgher, the Clergyman and the
+Governor. [Full video (MP4)](media/fivePoliticians-wol.mp4). With WoL's four-place file and
+[`politicianPlacesFix`](bug-fixes.md#politicianplacesfix), the same data shows four (the video there).
+
+- **What happens today:** `data\uipoliticianEuropeandlg.xml` (WoL's, and the stock one too) defines
+  `PoliticianDlg-Politician0` to `3` and `Size1Politicians` to `Size4Politicians`. The Asian and native
+  dialogs define five. The exe lists up to five politicians of the next age (FUN_0081A2B8 stops at 5) and
+  fills a place for each; with a fifth politician and only four places it crashes (access violation at
+  0x81A80C, the missing name gadget of the fifth place). WoL's civs have four per age (their `Age0` techs make
+  four obtainable), so nobody meets it. [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) stops the
+  crash: the dialog then shows as many as it has places.
+- **The edit:** in `data\uipoliticianEuropeandlg.xml`, replace the four `PoliticianDlg-Politician<n>` gadgets by
+  five narrower ones, 184 wide and 193 apart from x 42, so that they fill the dialog (32 to 1008) with 10 on each
+  side. Each place n (n = 0 to 4) is, with x = 42 + 193 × n and r = x + 184:
+
+  ```xml
+  <gadget name="PoliticianDlg-Politician{n}" type="gadget" size1024="{x} 125 {r} 481" backgroundalpha="0.5" background="ui\ingame\politician_panel" texturecoords="0 0 0.890625 1" z="2">
+    <gadget name="PoliticianDlg-PoliticianButton{n}" type="button" foreground="" donthighlight="" size1024="{x} 142 {r} 481" z="3">
+      <gadget name="PoliticianDlg-PoliticianHilightPositive{n}" type="gadget" size1024="{x} 195 {r} 481" background="ui\ingame\politicians\positive" z="4"/>
+      <gadget name="PoliticianDlg-Poli{n}Name" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="{x+1} 146 {r} 173" textcenterhoriz="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutline" textfontsize="12" z="5"/>
+      <gadget name="PoliticianDlg-Poli{n}Cost" type="formatText" textmarkup="" formattextconvertuserlf="" formattextusedatareplace="" size1024="{x+86} 194 {r-4} 266" textfont="ChatOutline" textfontsize="12" textcolor="255 255 255" z="5"/>
+      <gadget name="PoliticianDlg-Poli{n}Description" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="{x+86} 270 {r-4} 480" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5"/>
+      <gadget name="PoliticianDlg-Poli{n}Portrait" type="gadget" size1024="{x+8} 194 {x+80} 403" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.7734375" z="5"/>
+    </gadget>
+  </gadget>
+  ```
+
+  | Place | Panel `size1024` | Name | Cost | Description | Portrait |
+  |---|---|---|---|---|---|
+  | 0 | `42 125 226 481` | `43 146 226 173` | `128 194 222 266` | `128 270 222 480` | `50 194 122 403` |
+  | 1 | `235 125 419 481` | `236 146 419 173` | `321 194 415 266` | `321 270 415 480` | `243 194 315 403` |
+  | 2 | `428 125 612 481` | `429 146 612 173` | `514 194 608 266` | `514 270 608 480` | `436 194 508 403` |
+  | 3 | `621 125 805 481` | `622 146 805 173` | `707 194 801 266` | `707 270 801 480` | `629 194 701 403` |
+  | 4 | `814 125 998 481` | `815 146 998 173` | `900 194 994 266` | `900 270 994 480` | `822 194 894 403` |
+
+  The button and the highlight of a place take its panel's x and r (`142` and `195` to `481` high). The
+  portrait is 72 × 209 instead of 96 × 278 (the same proportions), so that the cost and description keep a
+  column 94 wide (100 in WoL's file). Two more lines:
+  - `PoliticianDlg-OrigPositionPolitician0` (place 0 alone): `size1024="42 125 226 381"`;
+  - after `PoliticianDlg-Size4Politicians`, the same line named `PoliticianDlg-Size5Politicians`
+    (`32 72 1008 532`).
+
+  Keep `Size4Politicians` the full width: the exe sizes the dialog with `Size1` to `Size3` for one to three
+  politicians and with `Size4` for four or five (the compare chain at 0x81A069..0x81A099). So with four politicians in this
+  file the fifth place stays empty at the right.
+- **Then:** a sixth obtainable politician is left out, never a crash.
+- **More than five:** not possible in data. The dialog keeps five entries (`+270h`, `+284h`, `+2ACh`
+  arrays, the count at `+26Ch` compared with 5 at 0x8191FE and 0x81A82A) and binds five places by name
+  (loop to 5 at 0x818DBA); a sixth needs a bigger dialog object.
+- **Resolution:** seen at 1920 × 1080. The places are in the 1024 × 768 space, so they keep their place at
+  1280 × 1024; there the description column is narrower in pixels (about 117 against 176), so a long description
+  wraps on more lines, in a box 210 high. Not seen in game at 1280 × 1024 (the resolution is in the shared profile).
+- **Status:** confirmed (2026-11-13, single player): the Dutch with six obtainable age-I politicians showed five in
+  the Town Center's dialog, with this file; with WoL's four-place file the same data crashed at 0x81A80C, and
+  showed four with `politicianPlacesFix`. Accepting the fifth was not tried (800 food was not at hand).
+
 ## 7. Multiplayer, saved games and replays
 
 Nothing in this guide has been tested in multiplayer or in replays. What follows comes from reading
@@ -6738,7 +7362,7 @@ the code. Saved games were tested only where a section says so.
   which keys work, or only what the log says: `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `multipleInstances`, `compatMode`,
   `selectionLimit`, `customHotkeyContexts`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`,
   `customRevolutionBanners`, `overhealHitpointBars`, `showGatherRate`, `abilitySlots`,
-  `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `xsErrorLog`, `dataLint`,
+  `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `politicianPlacesFix`, `xsErrorLog`, `dataLint`,
   `dodgeSoundSet` and `criticalSoundSet`.
 - **Everything else changes the game state,** or a list every machine must agree on. A difference
   between players can desynchronize the game. Each section has a **Simulation** line.

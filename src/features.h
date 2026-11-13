@@ -64,6 +64,9 @@ Outcome ApplyCustomWalls(const Config& config);
 Outcome ApplyDirectionalAttack(const Config& config);
 Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
+Outcome ApplyOrPrereqsQty(const Config& config);
+Outcome ApplyShipmentCounts(const Config& config);
+Outcome ApplyKothTimer(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
@@ -99,6 +102,7 @@ bool FastVertexFillActive();
 Outcome ApplyFastLastInLine(const Config& config);
 Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
+Outcome ApplyPlayerIcon(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
 Outcome ApplyTwoScoutCivs(const Config& config);
@@ -106,6 +110,8 @@ Outcome ApplyMarketUnits(const Config& config);
 Outcome ApplyExplorerUnits(const Config& config);
 Outcome ApplyNativeCivs(const Config& config);
 Outcome ApplyBigButton(const Config& config);
+Outcome ApplyAgeUpBuildings(const Config& config);
+Outcome ApplyPoliticianPlacesFix(const Config& config);
 Outcome ApplyFarmAnim(const Config& config);
 Outcome ApplyFarmingRadius(const Config& config);
 Outcome ApplyWonderCivUnitType(const Config& config);
@@ -163,6 +169,8 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
+    {"shipmentCounts", ApplyShipmentCounts},
+    {"kothTimer", ApplyKothTimer},
     {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
     {"pillageGold", ApplyPillageGold},
@@ -179,6 +187,8 @@ inline constexpr Feature kFeatures[] = {
     {"teamKillBounty", ApplyTeamKillBounty},
     {"resourceBounty", ApplyResourceBounty},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
+    // After techPrereqRecheck, which verifies the stock bytes of the evaluator head this key writes.
+    {"orPrereqsQty", ApplyOrPrereqsQty},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
     {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
@@ -206,6 +216,8 @@ inline constexpr Feature kFeatures[] = {
     // After danceBonusCivs: it adds its civs to the dance gates that key installs.
     {"nativeCivs", ApplyNativeCivs},
     {"bigButtonCivs/noBigButtonBlds", ApplyBigButton},
+    {"ageUpBuildings", ApplyAgeUpBuildings},
+    {"politicianPlacesFix", ApplyPoliticianPlacesFix},
     {"enableFarmAnim/enableRectFarmAnim", ApplyFarmAnim},
     // After enableFarmAnim: its indices count that key's entries.
     {"farmingRadius", ApplyFarmingRadius},
@@ -268,6 +280,7 @@ inline constexpr Feature kFeatures[] = {
     {"fastLastInLine", ApplyFastLastInLine},
     {"xsErrorLog", ApplyXsErrorLog},
     {"multipleInstances", ApplyMultipleInstances},
+    {"playerIcon", ApplyPlayerIcon},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -280,13 +293,13 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "playericon", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc

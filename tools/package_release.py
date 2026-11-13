@@ -242,6 +242,8 @@ enableFarmAnim, enableRectFarmAnim   gatherers work these buildings like a Mill 
 farmingRadius I X Z ...       per enableFarmAnim entry, the gatherers' area (stock 4.5)
 trainSingleAbstractType [T]   units of type T leave training one at a time
 wonderCivUnitType Proto ...   these units may start a wonder civ's age-up
+ageUpBuildings [log] Proto ...   these buildings open the age-up dialog, with the politicians they list
+politicianPlacesFix [log]     the age-up dialog shows as many politicians as it has places, no crash
 kbUnitSyscalls                five KB syscalls for AI scripts (unit inventory, workers)
 marketUnits Proto ...         these buildings count as a Market for trading
 explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)
@@ -271,6 +273,12 @@ liveBuildingWorkRate [log]    BuildingWorkRate techs also speed up existing buil
                               TrainPoints techs units already queued or training
 techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units are
                               created or die, not only at the next house or age-up
+orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of its
+                              prerequisites instead of one
+shipmentCounts [log]          cards sent per player and age, kept in saved games; Data
+                              subtype FreeHomeCityUnitByShipmentCount, XS
+                              xsGetShipmentCount and xsGetShipmentCountRange
+kothTimer [players|teams] N=s ...   King of the Hill time by the number of players or teams
 maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit
                               (Maintain action) until there is population room
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
@@ -281,6 +289,8 @@ steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over 
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
                               a bar of what a unit, mine or carcass still holds
+playerIcon <avatarId>         LAN lobby: your slot shows that avatar of data\\avatar_*.xml,
+                              kept over civ changes
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
 nativePreview [tagged] [log] [Proto]   an empty native socket shows its Trading Post's
                               units and techs, read-only

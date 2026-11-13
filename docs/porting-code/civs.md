@@ -10,6 +10,8 @@ Contents:
 - [danceBonusCivs](#dancebonuscivs)
 - [startingTC](#startingtc)
 - [civFirstTC](#civfirsttc)
+- [ageUpBuildings](#ageupbuildings)
+- [politicianPlacesFix](#politicianplacesfix)
 
 ## danceBonusCivs
 
@@ -1458,6 +1460,389 @@ UhcCivFirstTcColonyHook PROC
 done:
     jmp colonyFlagResume
 UhcCivFirstTcColonyHook ENDP
+
+END
+```
+
+## ageUpBuildings
+
+Contract: [ageUpBuildings](../porting-to-another-dll.md#ageupbuildings).
+
+Besides the core helpers, it needs: [`namelists.h`](helpers.md#name-lists).
+
+Sites: `ProtoByName` `0x5A2346` (32 B), `AgeUpPickerTc` `0x7E6905` (16 B), `AgeUpPickerAccept` `0x7E6926` (6 B), `AgeUpPickerReject` `0x7E6A2E` (4 B), `AgeUpSelectedTc` `0x7E803F` (13 B), `AgeUpSelectedAccept` `0x7E8059` (4 B), `AgeUpSelectedReject` `0x7E8092` (4 B), `AgeUpListB` `0x819052` (5 B), `AgeUpListA` `0x81A44D` (5 B).
+
+### src/features/ageupbuildings.cpp
+
+```cpp
+// ageUpBuildings [log] Proto ...: the age-up button opens its dialog on the listed protos too, not only on the
+// Town Center, and a listed proto offers only the politicians its own proto lists.
+//
+// The command panel already builds the age-up button (uiPoliticianUI(unit, player, revolt)) for any unit whose proto
+// lists a tech with the AgeUpgrade or RevoltTech flag. The two pickers that open the dialog, uiPoliticianUI 0x7E686E
+// and uiPoliticianUIInSelected 0x7E7EC1, then refuse every unit whose player's proto is not the TownCenter
+// ([db+5E08h]), for a civ that isAsianCiv(player, true) 0x454ED7 rejects (an Asian civ needs a unit of abstract type
+// 16h there, for its wonders; wonderCivUnitType widens that test, this key leaves it alone). The hooks
+// (hooks/ageup_hooks.asm) re-execute the TownCenter compare and, when it fails, accept a listed proto.
+//
+// The dialog's list builders (FUN_0081A2B8 for the European dialog, FUN_00818EE5) keep each tech status of the next
+// age that 0x4C6968(status, unit) accepts: its flags, status and prerequisites, not whether the unit's proto lists
+// the tech. On a listed proto the key also requires that the proto's tech list ([proto+E8h], 6-byte entries
+// {word id, byte kind 1 = tech, ...}, count [proto+ECh]) holds the tech, so a building shows its own politicians.
+// The chosen politician is researched by the unit the dialog was opened on (its ID [dlg+140h]).
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../namelists.h"
+#include "../patch.h"
+
+namespace {
+
+using CanResearch = bool(__thiscall*)(void* techStatus, void* unit);
+const auto kCanResearch = reinterpret_cast<CanResearch>(0x004C6968);
+
+uhc::ProtoIdList g_ageUpProtos;
+bool g_ageUpLog = false;
+int g_ageUpLogged = 0;
+bool g_filterLogged = false;
+
+bool Listed(const char* proto) {
+  return proto != nullptr && g_ageUpProtos.IndexOf(*reinterpret_cast<const std::int32_t*>(proto + 4)) >= 0;
+}
+
+// True if the proto's command list holds the tech (kind 1).
+bool ProtoListsTech(const char* proto, std::int32_t techId) {
+  const auto* entries = *reinterpret_cast<const std::uint8_t* const*>(proto + 0xE8);
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(proto + 0xEC);
+  if (entries == nullptr || count <= 0) {
+    return false;
+  }
+  for (std::int32_t i = 0; i < count; ++i) {
+    const std::uint8_t* entry = entries + 6 * i;
+    if (entry[2] == 1 && *reinterpret_cast<const std::uint16_t*>(entry) == static_cast<std::uint16_t>(techId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Replaces the builders' call 4C6968h (thiscall(status, unit), ret 4); __fastcall with an unused EDX has that frame.
+bool __fastcall CanResearchHere(void* techStatus, void* /*edx*/, char* unit) {
+  static bool reached = false;
+  if (!reached) {
+    reached = true;
+    uhc::Log(L"hook reached: ageUpBuildings politician list (0x81A44D / 0x819052)");
+  }
+  if (!kCanResearch(techStatus, unit)) {
+    return false;
+  }
+  const char* proto = unit == nullptr ? nullptr : *reinterpret_cast<const char* const*>(unit + 0x5C);
+  if (!Listed(proto)) {
+    return true;
+  }
+  const char* tech = *reinterpret_cast<const char* const*>(techStatus);
+  if (tech == nullptr) {
+    return false;
+  }
+  const std::int32_t techId = *reinterpret_cast<const std::int32_t*>(tech);
+  const bool here = ProtoListsTech(proto, techId);
+  if (g_ageUpLog && !g_filterLogged) {
+    g_filterLogged = true;
+    uhc::Log(L"ageUpBuildings: list filter on proto %d, first tech %d %ls",
+             *reinterpret_cast<const std::int32_t*>(proto + 4), techId, here ? L"listed" : L"not listed");
+  }
+  return here;
+}
+
+}  // namespace
+
+extern "C" {
+void UhcAgeUpPickerTcHook();
+void UhcAgeUpSelectedTcHook();
+
+// True if the player's proto (its ID at +4, the field the stock TownCenter compare reads) is listed.
+bool __stdcall UhcAgeUpListed(const char* proto) {
+  if (!Listed(proto)) {
+    return false;
+  }
+  if (g_ageUpLog && g_ageUpLogged < 50) {
+    ++g_ageUpLogged;
+    uhc::Log(L"ageUpBuildings: the age-up dialog opens on proto %d", *reinterpret_cast<const std::int32_t*>(proto + 4));
+  }
+  return true;
+}
+}
+
+namespace uhc {
+
+Outcome ApplyAgeUpBuildings(const Config& config) {
+  const Config::Args* args = config.First("ageUpBuildings");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  std::vector<std::string> names;
+  for (const std::string& arg : *args) {
+    if (names.empty() && !g_ageUpLog && _stricmp(arg.c_str(), "log") == 0) {
+      g_ageUpLog = true;
+      continue;
+    }
+    names.push_back(arg);
+  }
+  if (names.empty()) {
+    Log(L"ageUpBuildings: no proto listed");
+    return Outcome::kFailed;
+  }
+  if (!VerifyAll("ageUpBuildings",
+                 {&sites::kAgeUpPickerTc, &sites::kAgeUpPickerAccept, &sites::kAgeUpPickerReject,
+                  &sites::kAgeUpSelectedTc, &sites::kAgeUpSelectedAccept, &sites::kAgeUpSelectedReject,
+                  &sites::kAgeUpListA, &sites::kAgeUpListB, &sites::kProtoByName})) {
+    return Outcome::kFailed;
+  }
+  g_ageUpProtos.Set("ageUpBuildings", names);
+  if (!WriteJmp(sites::kAgeUpPickerTc.va, reinterpret_cast<const void*>(&UhcAgeUpPickerTcHook),
+                sites::kAgeUpPickerTc.size) ||
+      !WriteJmp(sites::kAgeUpSelectedTc.va, reinterpret_cast<const void*>(&UhcAgeUpSelectedTcHook),
+                sites::kAgeUpSelectedTc.size) ||
+      !WriteCall(sites::kAgeUpListA.va, reinterpret_cast<const void*>(&CanResearchHere)) ||
+      !WriteCall(sites::kAgeUpListB.va, reinterpret_cast<const void*>(&CanResearchHere))) {
+    return Outcome::kFailed;
+  }
+  Log(L"ageUpBuildings: %zu proto(s) open the age-up dialog besides the Town Center, with the politicians they list%ls",
+      names.size(), g_ageUpLog ? L" (log)" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/ageup_hooks.asm
+
+```asm
+; Hooks for ageUpBuildings (src/features/ageupbuildings.cpp). Each one replaces the TownCenter compare of an age-up
+; picker (reached for a civ that isAsianCiv(player, true) rejects), re-executes it, and when it fails asks the DLL
+; whether the cfg lists the player's proto. It leaves through an explicit jmp to the stock accepted or rejected
+; continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcAgeUpListed PROTO STDCALL playerProto:DWORD
+
+.data
+pickerAccept        dd 007E6926h   ; mov ecx,[0C67310h] (find the dialog)
+pickerReject        dd 007E6A2Eh   ; pop edi / pop esi / pop ebp / pop ebx
+selectedAccept      dd 007E8059h   ; mov ecx,[esp+14h] (open it for this unit)
+selectedReject      dd 007E8092h   ; pop ebp / pop edi / pop esi / pop ebx
+
+.code
+
+; 0x7E6905 in uiPoliticianUI 0x7E686E (16 B replaced). ESI = the player's proto (not null), EDI = the database.
+; EAX, ECX and EDX are free: both continuations reload what they use.
+UhcAgeUpPickerTcHook PROC
+    TRACE_ONCE "ageUpBuildings uiPoliticianUI (0x7E6905)"
+    mov eax, dword ptr [edi+5E08h]
+    cmp eax, dword ptr [esi+4]
+    je accept
+    push esi
+    call UhcAgeUpListed
+    test al, al
+    jz reject
+accept:
+    jmp pickerAccept
+reject:
+    jmp pickerReject
+UhcAgeUpPickerTcHook ENDP
+
+; 0x7E803F in uiPoliticianUIInSelected 0x7E7EC1 (13 B replaced). ECX = the database, EDI = the player's proto of the
+; selected unit, EBX = the player, ESI = the unit. EAX, ECX and EDX are free.
+UhcAgeUpSelectedTcHook PROC
+    TRACE_ONCE "ageUpBuildings uiPoliticianUIInSelected (0x7E803F)"
+    mov edx, dword ptr [ecx+5E08h]
+    cmp edx, dword ptr [edi+4]
+    je accept
+    push edi
+    call UhcAgeUpListed
+    test al, al
+    jz reject
+accept:
+    jmp selectedAccept
+reject:
+    jmp selectedReject
+UhcAgeUpSelectedTcHook ENDP
+
+END
+```
+
+## politicianPlacesFix
+
+Contract: [politicianPlacesFix](../porting-to-another-dll.md#politicianplacesfix).
+
+Sites: `GadgetLookup` `0x40423C` (16 B), `TechStatusTechId` `0x58EA03` (13 B), `PoliticianPanelBind` `0x818C93` (3 B), `PoliticianNameBind` `0x818D51` (3 B), `PoliticianPlaceTake` `0x81A45A` (12 B), `PoliticianNameRead` `0x81A4FF` (17 B), `PoliticianListEnd` `0x81A848` (6 B).
+
+### src/features/politicianplaces.cpp
+
+```cpp
+// politicianPlacesFix: the European age-up dialog shows only as many politicians as its layout has places, instead of
+// crashing on the first politician that has no place.
+//
+// The dialog binds five places by name when it is built (0x818C5B..0x818DBD, loop to 5 at 0x818DBA): for place n,
+// PoliticianDlg-Politician%d at [dlg+198h+4n], PoliticianButton%d at +1ACh, Poli%dPortrait at +1C0h,
+// PoliticianHilightPositive%d at +1D4h, Poli%dName at +1E8h, Poli%dCost at +1FCh and Poli%dDescription at +210h, each a
+// gadget handle that resolves to nothing when the layout file lacks that name. The European list builder FUN_0081A2B8
+// keeps up to five politicians of the next age ([dlg+26Ch], cmp with 5 at 0x81A82A) and fills place n for the n-th:
+// it null-checks the portrait, the name and the description, then dereferences the name gadget (EBP) without a check,
+// mov eax,[ebp] at 0x81A80C (and at 0x81A63C on the revolution path). With a layout of four places, as the
+// stock uipoliticianEuropeandlg.xml, a fifth obtainable politician is an access violation there.
+//
+// One hook (hooks/politicianplaces_hooks.asm) at 0x81A45A, where an accepted politician is about to take the next
+// place: when the place has no PoliticianDlg-Politician%d gadget or no Poli%dName text gadget, the builder ends as it
+// does after the fifth (0x81A848), so the dialog lists the politicians it can show. The other builders null-check every
+// gadget (FUN_00818EE5) or place their entries by a fixed index of their own data (the Asian and native dialogs).
+// UI only: the dialog is the local player's, and the politician chosen is sent as the stock command.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" void UhcPoliticianPlacesHook();
+
+namespace {
+
+// The UI manager's gadget by handle and type (0 any, 10h text), null when there is none; no reference is taken.
+using GadgetLookup = void*(__fastcall*)(void* manager, void* edx, std::int32_t handle, std::int32_t type);
+const auto kGadgetLookup = reinterpret_cast<GadgetLookup>(0x0040423C);
+
+constexpr std::int32_t kAnyGadget = 0;
+constexpr std::int32_t kTextGadget = 0x10;
+constexpr int kStockPlaces = 5;
+
+bool g_log = false;
+bool g_logged = false;
+
+bool HasGadget(void* manager, std::int32_t handle, std::int32_t type) {
+  return kGadgetLookup(manager, nullptr, handle, type) != nullptr;
+}
+
+// The leading places that have both the place panel and its name text.
+int PlaceCount(const char* dlg) {
+  const char* ui = *reinterpret_cast<const char* const*>(0x00C66244);
+  void* manager = ui == nullptr ? nullptr : *reinterpret_cast<void* const*>(ui + 0x44);
+  if (manager == nullptr) {
+    return 0;
+  }
+  int places = 0;
+  for (; places < kStockPlaces; ++places) {
+    const std::int32_t panel = *reinterpret_cast<const std::int32_t*>(dlg + 0x198 + 4 * places);
+    const std::int32_t name = *reinterpret_cast<const std::int32_t*>(dlg + 0x1E8 + 4 * places);
+    if (!HasGadget(manager, panel, kAnyGadget) || !HasGadget(manager, name, kTextGadget)) {
+      break;
+    }
+  }
+  return places;
+}
+
+std::int32_t TechId(const char* techStatus) {
+  const char* tech = techStatus == nullptr ? nullptr : *reinterpret_cast<const char* const*>(techStatus);
+  return tech == nullptr ? -1 : *reinterpret_cast<const std::int32_t*>(tech);
+}
+
+}  // namespace
+
+// From the hook, for each politician the builder accepts, before it takes the next place. True: no place is left, so
+// the builder ends with the politicians it has.
+extern "C" bool __stdcall UhcPoliticianNoPlace(const char* dlg, const char* techStatus) {
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(dlg + 0x26C);
+  const int places = PlaceCount(dlg);
+  if (count < places) {
+    return false;
+  }
+  if (!g_logged || g_log) {
+    g_logged = true;
+    uhc::Log(L"politicianPlacesFix: the European age-up dialog has %d place(s); politician tech %d and any after it "
+             L"are left out (%ls)",
+             places, TechId(techStatus),
+             *reinterpret_cast<const std::uint8_t*>(dlg + 0x144) != 0 ? L"revolutions" : L"age-up");
+  }
+  return true;
+}
+
+namespace uhc {
+
+Outcome ApplyPoliticianPlacesFix(const Config& config) {
+  const Config::Args* args = config.First("politicianPlacesFix");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"politicianPlacesFix: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("politicianPlacesFix", {&sites::kPoliticianPlaceTake, &sites::kPoliticianListEnd,
+                                         &sites::kPoliticianPanelBind, &sites::kPoliticianNameBind,
+                                         &sites::kPoliticianNameRead, &sites::kTechStatusTechId,
+                                         &sites::kGadgetLookup}) ||
+      !WriteJmp(sites::kPoliticianPlaceTake.va, reinterpret_cast<const void*>(&UhcPoliticianPlacesHook), 7)) {
+    return Outcome::kFailed;
+  }
+  Log(L"politicianPlacesFix: the European age-up dialog lists only the politicians its layout has places for");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/politicianplaces_hooks.asm
+
+```asm
+; politicianPlacesFix (src/features/politicianplaces.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcPoliticianNoPlace PROTO STDCALL dlg:DWORD, techStatus:DWORD
+
+.data
+techIdGetter dd 0058EA03h   ; int thiscall(techStatus): the tech ID [[status]]
+placeNext    dd 0081A461h   ; cmp dword [esp+24h],0, after the two instructions this hook re-executes
+listEnd      dd 0081A848h   ; mov eax,[ebx+26Ch], the builder's own exit after the fifth politician
+
+.code
+
+; Replaces 0x81A45A..0x81A460 (mov ecx,edi / call 58EA03h) in the European politician list builder FUN_0081A2B8,
+; reached for each politician the builder accepted (next age, or a revolution, and 0x4C6968 said yes), before it
+; fills the next place [ebx+26Ch]. EBX = the dialog, EDI = the tech status. EAX, ECX and EDX are dead here: the
+; re-executed call returns EAX and the code after it writes ECX (0x81A466) and EDX (0x81A487) before reading them.
+; When the place has no gadgets, the builder ends at 0x81A848 with the stack as the loop leaves it there (no local of
+; this iteration exists yet; the per-entry local is built at 0x81A559).
+UhcPoliticianPlacesHook PROC
+    TRACE_ONCE "politicianPlacesFix (0x81A45A)"
+    push edi                        ; tech status
+    push ebx                        ; dialog
+    call UhcPoliticianNoPlace
+    test al, al
+    jne full
+    mov ecx, edi
+    call techIdGetter
+    jmp placeNext
+full:
+    jmp listEnd
+UhcPoliticianPlacesHook ENDP
 
 END
 ```

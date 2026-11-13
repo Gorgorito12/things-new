@@ -9,6 +9,7 @@ include common.inc
 UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, returnAddress:DWORD
 EXTERN g_uhcSubtypeEffect:DWORD
 EXTERN g_uhcSubtypeNode:DWORD
+UhcTechPlayerSubtypeRun PROTO STDCALL subtype:DWORD, player:DWORD, field:DWORD, amount:DWORD
 UhcTechSubtypeRun PROTO STDCALL subtype:DWORD, target:DWORD, base:DWORD, amount:DWORD, relativity:DWORD, unapply:DWORD, actionId:DWORD, allActions:DWORD
 
 .data
@@ -20,6 +21,9 @@ applyFail         dd 008FAEF4h    ; the same with xor al,al
 unapplySwitchNext dd 008FB05Ah    ; movzx eax, the subtype's jump index
 unapplyDone       dd 008FC191h    ; pop edi / esi / ebp, mov al,1, pop ebx, ret 20h
 unapplyFail       dd 008FC19Ah    ; the same with xor al,al
+playerSwitchNext  dd 008D8444h    ; movzx eax,[eax+8D93D8h] / jmp [eax*4+8D9330h]: the stock player cases
+playerDone        dd 008D8D23h    ; pop edi / esi / ebp / ebx, add esp,0Ch, ret 1Ch (AL as left)
+playerFail        dd 008D878Fh    ; pop edi / esi / ebp, xor al,al, pop ebx, add esp,0Ch, ret 1Ch
 
 .code
 
@@ -104,5 +108,40 @@ custom:
 fail:
     jmp unapplyFail
 UhcTechSubtypeUnapplyHook ENDP
+
+; Replaces 0x8D843E..0x8D8443 (ja 8D878Fh) in the player Data apply FUN_008D842B, thiscall(player, a1, a2, subtype,
+; field, a5, amount, relativity), ret 1Ch. EBP = subtype, EAX = subtype - 0Ah, the flags those of cmp eax,5Ah;
+; ESI = the player; EBX, EBP, ESI, EDI pushed below the 0Ch locals, so the field is [esp+2Ch], the amount
+; [esp+34h], the subtype argument [esp+28h]. A stock ID goes on as stock; a key's ID asks UhcTechPlayerSubtypeRun,
+; which ends the effect (done, AL = 1; or failed) or names a stock subtype to run with the rewritten arguments.
+UhcTechPlayerSubtypeHook PROC
+    TRACE_ONCE "tech subtype on a player (0x8D843E)"
+    jbe stockCase                   ; the stolen ja, inverted: 0Ah..64h are the stock cases
+    cmp ebp, 100h
+    jb fail
+    lea ecx, [esp+34h]
+    lea edx, [esp+2Ch]
+    push ecx                        ; &amount
+    push edx                        ; &field
+    push esi                        ; player
+    push ebp                        ; subtype
+    call UhcTechPlayerSubtypeRun
+    cmp eax, -2
+    je done
+    cmp eax, -1
+    je fail
+    mov ebp, eax                    ; run as that stock subtype
+    mov dword ptr [esp+28h], eax
+    sub eax, 0Ah
+    cmp eax, 5Ah
+    ja fail
+stockCase:
+    jmp playerSwitchNext
+done:
+    mov al, 1
+    jmp playerDone
+fail:
+    jmp playerFail
+UhcTechPlayerSubtypeHook ENDP
 
 END

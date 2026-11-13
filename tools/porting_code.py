@@ -64,6 +64,8 @@ PAGES = {
         "danceBonusCivs": ["src/features/dance.cpp", "src/hooks/dance_hooks.asm"],
         "startingTC": ["src/features/startingtc.cpp", "src/hooks/startingtc_hooks.asm"],
         "civFirstTC": ["src/features/civfirsttc.cpp", "src/hooks/civfirsttc_hooks.asm"],
+        "ageUpBuildings": ["src/features/ageupbuildings.cpp", "src/hooks/ageup_hooks.asm"],
+        "politicianPlacesFix": ["src/features/politicianplaces.cpp", "src/hooks/politicianplaces_hooks.asm"],
     }),
     "healing": ("Healing and hit points", {
         "healNonIdle": ["src/features/heal.cpp", "src/hooks/heal_hooks.asm"],
@@ -89,7 +91,7 @@ PAGES = {
         "pillageGold": ["src/features/pillage.cpp", "src/hooks/pillage_hooks.asm"],
         "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp", "src/hooks/veterancy_hooks.asm"],
-        "detonationDeath": ["src/features/detonation.cpp"],
+        "detonationDeath": ["src/features/detonation.cpp", "src/hooks/detonation_hooks.asm"],
         "impactBoneFix": ["src/features/impactbones.cpp", "src/hooks/impactbone_hooks.asm"],
         "customImpactTypes": ["src/features/impacttypes.cpp", "src/hooks/impacttype_hooks.asm"],
     }),
@@ -125,6 +127,9 @@ PAGES = {
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],
         "techPrereqRecheck": ["src/features/techprereq.cpp", "src/hooks/techprereq_hooks.asm"],
+        "orPrereqsQty": ["src/features/orprereqs.cpp", "src/hooks/orprereqs_hooks.asm"],
+        "shipmentCounts": ["src/features/shipmentcounts.cpp", "src/hooks/shipmentcount_hooks.asm"],
+        "kothTimer": ["src/features/kothtimer.cpp", "src/hooks/kothtimer_hooks.asm"],
         "transformUpdatesLOS": ["src/features/transform.cpp", "src/hooks/transform_hooks.asm"],
         "transformSpan": ["src/features/transformspan.cpp"],
         "transformInventory": ["src/features/transforminv.cpp", "src/hooks/transforminv_hooks.asm"],
@@ -136,6 +141,7 @@ PAGES = {
         "noCorpseDopples": ["src/features/dopples.cpp", "src/hooks/dopple_hooks.asm"],
         "steadyHitpointBars": ["src/features/steadybars.cpp", "src/hooks/steadybar_hooks.asm"],
         "inventoryBars": ["src/features/inventorybars.cpp", "src/hooks/inventorybars_hooks.asm"],
+        "playerIcon": ["src/features/playericon.cpp", "src/hooks/playericon_hooks.asm"],
     }),
 }
 
