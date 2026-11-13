@@ -280,3 +280,5 @@ useBigHugeButton-moved-wol 2 12 1
 useBigHugeButton-consulate-wol 2 12 1
 playerIcon-wol 3 12 1
 playerIcon-wol-control 0 12 1
+randomCost-wol 8 33 3 800:72:0:0+800:300:900:0+800:110:0:190
+randomCost-wol-control 8 33 3 800:72:0:0+800:300:900:0+800:110:0:190

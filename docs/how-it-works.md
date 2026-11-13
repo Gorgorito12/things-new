@@ -4235,6 +4235,60 @@ involved, as with Armor.
 - **Observed in game:** see the tests in the modding guide. After a load the log shows the effects applied again in
   order, from the data's value.
 
+### randomCost
+
+`<RandomCost resourcetype="Gold" min="80" max="120"/>` makes a proto's price a whole number rolled in the range, one per
+purchase. The design goal: what the button shows is what is paid, on every machine and after a load.
+
+**Who reads a cost.** Everything that prices a unit goes through the cost getter 0x480B1E (`bool thiscall(player,
+protoId, cost*, count)`, `ret 0Ch`; 35 calls in 26 functions, REA `ev_d783602b…`): the command panel's button
+(0x695B33), the unit rollover (0x4C6FB3), the build and afford checks, the AI's cost queries (0x73D085, 0x841548,
+0x8479A9, 0x891B80), the repair cost, and the Train enqueue FUN_009EAC35 (`ev_315d0a42…`). The getter fills the result
+with 0, takes the player's copy of the proto (0x45311B), copies its cost list `[proto+70h]` with 0x480A73 at
+0x480B5B, then applies `<CostEscalation>` or the count. The hook replaces that copy: after the stock copy, each tagged
+resource gets the rolled price, and the getter's own escalation and count run on top of it.
+
+**The roll.** Price n = `hash(seed, player, proto ID, n, resource) mod (max - min + 1) + min` (splitmix64 rounds), n
+being the player's purchases of that proto that were not refunded. A tech that changed the cost scales it by the
+player's copy's cost over the base proto's (0x45316E on the database) for that resource, or adds the difference when the
+base cost is 0, and the result is rounded. The seed is the state of the synced random streams 0..2 (`[[0xC66588+4] +
+12·s]`, the LCG of 0x407CE7) read at the game's first world update: a read, so the stock draws are unchanged.
+
+**The purchase.** FUN_009EAC35 (`thiscall(action, protoId, count, …)`) has two ways to pay, chosen by the action's flag
+14h (0x485D2C): one getter call for `count` units and one payment 0x8D946A (call at 0x9EAF9A, EBP the count), or a loop
+that calls the getter and the payment once per unit (0x9EB053). Action flag 15h skips the payment (free units). It then
+writes one 14h-byte entry per paid unit and fills its cost record `[entry+8]` by calling the getter again (0x9EB291) and
+copying the result; with flag 15h that record is skipped. The two payment calls go to the key: after a successful
+payment the player's count moves on by the units paid and each unit's index is noted in a queue; the record call takes
+the next noted index of the same player and proto and asks the getter for that index, so each entry holds what it paid.
+The world tick clears the queue, so an enqueue that wrote fewer entries than it paid leaves nothing behind.
+
+**Refunds.** The Train action refunds an entry's record through 0x8D7004 (`thiscall(player, cost)`) in three places: the
+cancel FUN_009EB363 (0x9EB43E, `ev_192bf1ba…`), the loop of a state change that empties the queue (0x9EB60D), and a
+failed spawn (0x9EBA5D). Each refunds the record as stock does, then the player's count goes back by one. So buying
+and cancelling gives the same price again; cancelling an older unit while newer ones wait makes the newest price come
+again. The spawn path FUN_009EA5F8 refunds `[proto+70h]`, the proto's own cost, when a unit of a list fails to spawn: that
+path is not this queue, and a tagged proto there gets its `<Cost>` back.
+
+**Saved games.** The seed and every non-zero count are saved markers (`savedmarkers.h`, stat 68h): word 0 `'RC' << 16 |
+kind`, kind 0 the seed (word 2 a fixed tag), kind 1 a count (words 1–3: player, proto ID, count). The world tick writes
+them on one living unit, a player's first, when they change or their unit is gone. A new world (a game, a load, a
+scenario) reads them in one walk over the units; a world with none takes a new seed at its first update.
+
+**Why it is safe.**
+- 0x480B5B: the getter loads ECX and EAX again before using them (0x480B81, 0x67A1A0), and the hook keeps EBX, ESI, EDI
+  and EBP; the escalation path reads ESI, set at 0x480B30.
+- 0x9EAF9A and 0x9EB053: the stock code tests AL, which the hook returns, and loads EBP and ECX again (0x9EAFA7,
+  0x9EB05C); ECX and EDX are not read after.
+- 0x9EB291: the getter's own contract (`ret 0Ch`, AL); the copy that follows reads EBP and EDI, which the hook keeps.
+- The refunds: AL = 1 as 0x8D7004 returns it; the code after reloads ECX.
+- Determinism: the price depends only on the saved seed, the player, the proto and a count that changes only in the
+  payment and refund paths of the simulation. The UI's calls of the getter read it and change nothing.
+- Performance: one bounds-checked array read by proto ID per getter call; the hash runs only for a tagged proto.
+
+**Pending:** a tagged building is priced by the getter too, but its placement (0x7D6610) does not move the count and its
+foundation refund (0x9D321F) asks the getter again: put the tag on trained units.
+
 ### bufferedFileReads
 
 **Why it exists.** The game's raw file stream reads with one `ReadFile` per request:
