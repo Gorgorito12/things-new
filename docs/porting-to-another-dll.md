@@ -753,7 +753,7 @@ Code: [game-files](porting-code/game-files.md#menuoptions).
 
 - **What it adds:** an Off / On entry of the options menu per key named on its line (`bufferedFileReads`,
   `fastVertexFill`, `fastLastInLine`), through the same registry and hooks as `rendererOption` (below); fields
-  `OptionBufferedReads`, `OptionFastVertexFill` and `OptionFastLastInLine` in `data\options.xml`, the snippet in the [modding guide](modding-guide.md#menuoptions).
+  `OptionBufferedReads`, `OptionFastVertexFill` and `OptionFastLastInLine` in `data\options.xml`, the snippet in the [modding guide](bug-fixes.md#menuoptions).
 - **When:** after the cfg is read and before any key applies: for each named key, the stored choice (`<key> on|off` in
   `uhc-options.cfg`), else the key's own line (present: on, absent: off), removes the key's lines (off) or adds an empty
   one (on without a line). The keys then apply as usual. In a DLL whose keys read the cfg each on their own, do the same
@@ -766,7 +766,7 @@ Code: [game-files](porting-code/game-files.md#rendereroption).
 
 - **The menu's option:** WoL's `data\options.xml` gets a DropDown field whose `<name>` is `OptionRenderer`, with two
   `<value>` lines (DirectX 9 first, Vulkan second); the snippet is in the
-  [modding guide](modding-guide.md#rendereroption). The options menu's registry (`menuoptions.*`, shared with
+  [modding guide](bug-fixes.md#rendereroption). The options menu's registry (`menuoptions.*`, shared with
   `menuOptions`) gives each registered name an ID beyond the 93 options of the exe's table (`0x55480001` + its slot)
   and serves it from the DLL with four hooks; each tests `ID - 0x55480001 < count` as one unsigned compare:
   - `0x9322A1` (5 B, `jmp`): EDI = the name (may be null), ESI = settings+234h; call
@@ -1772,7 +1772,7 @@ Code: [gathering](porting-code/gathering.md#workratebyabstracttype).
 - **In the hook:** the target proto, its base proto, and from the frame the action, key, amount and
   relativity. See the comments in the assembly for the offsets, which differ by 4 in the second site.
 - **Data:** WoL must decide about the techs that name both types: see the [modding
-  guide](modding-guide.md#workratebyabstracttype).
+  guide](bug-fixes.md#workratebyabstracttype).
 
 Check it in the game: with `showGatherRate`, select a villager on an `OlivePlantation` and activate
 `Amalgamation`: the rate goes from 0.28 to 0.34.

@@ -1753,7 +1753,7 @@ python -I rea/evidence/age3y-b1a1dab7/fvf-wol-20261110/table.py tc battle saved 
 
 ### rendererOption: DXVK from the options menu (2026-11-10)
 
-`rendererOption` ([modding guide](modding-guide.md#rendereroption)) puts a Renderer entry in the options menu and, with
+`rendererOption` ([modding guide](bug-fixes.md#rendereroption)) puts a Renderer entry in the options menu and, with
 Vulkan chosen, loads DXVK 3.1.1 from `dxvk\` at the next start. The question here: is DXVK started that way as fast as
 DXVK installed by hand, and which DXVK option is best with `fastVertexFill` on?
 

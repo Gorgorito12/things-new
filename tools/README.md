@@ -12,7 +12,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
 | [`pop_testdata.py`](#pop_testdatapy) | Writes the `decimalPopulation` test data into a test copy of the game. |
 | [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
-| `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` from git; run it before the commit of a new key or test video. | <!-- private -->
+| `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` and `docs/bug-fixes.md` from git; run it before the commit of a new key or test video. | <!-- private -->
 | `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
 | `make_gifs.py` | Makes every test GIF to one standard (800 px, 8 fps, 12 s, 4 MB) from the masters in `rea/media-masters`, with the cuts in `gifs.txt`. `--check` fails on one out of it. |
 | `make_rings.py` | Draws the coloured aura rings in `tools/rings/`: for each, an `.xml`, its particles and textures by size, for `art/effects/uhc_rings/`. Also `aura_<resource>.xml`, the ring with a floating icon, and `range_<metres>.xml` for `displayedRange`, and `rank_<1-5>.xml`, the chevrons (and stars) of `veterancyBonus`. `--check` compares them. |
