@@ -65,6 +65,7 @@ set(UHC_SOURCES
   src/features/xslog.cpp
   src/features/civs.cpp
   src/features/ageupbuildings.cpp
+  src/features/politicianplaces.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/decimalpop.cpp
@@ -156,6 +157,7 @@ set(UHC_SOURCES
   src/hooks/civfirsttc_hooks.asm
   src/hooks/civ_hooks.asm
   src/hooks/ageup_hooks.asm
+  src/hooks/politicianplaces_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/farm_hooks.asm
   src/hooks/decimalpop_hooks.asm

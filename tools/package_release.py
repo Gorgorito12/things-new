@@ -243,6 +243,7 @@ farmingRadius I X Z ...       per enableFarmAnim entry, the gatherers' area (sto
 trainSingleAbstractType [T]   units of type T leave training one at a time
 wonderCivUnitType Proto ...   these units may start a wonder civ's age-up
 ageUpBuildings [log] Proto ...   these buildings open the age-up dialog, with the politicians they list
+politicianPlacesFix [log]     the age-up dialog shows as many politicians as it has places, no crash
 kbUnitSyscalls                five KB syscalls for AI scripts (unit inventory, workers)
 marketUnits Proto ...         these buildings count as a Market for trading
 explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)

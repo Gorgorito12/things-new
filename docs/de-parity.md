@@ -549,6 +549,8 @@ amount / yield. With 1.5 a tree lasts 1.5 times longer for the same income.
     dialogs have five. A fifth politician with four places crashes at 0x81A80C (a null place gadget). With a fifth
     place added to that file, the Dutch with six obtainable politicians saw five: data only
     ([modding guide](modding-guide.md#five-politicians-in-the-european-age-up)).
+    The crash itself is the null name gadget `Poli4Name`, dereferenced at 0x81A80C by FUN_0081A2B8 (`ev_3a5f7096…`);
+    [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) ends the list at the last place the layout has (2026-11-13).
   - More than five: the dialog keeps five entries (`[dlg+270h]`, `+284h`, `+2ACh`, count `+26Ch` compared with 5 at
     0x8191FE / 0x81A82A) and binds five places (0x818DBA): it needs a larger dialog object. Not built.
   - The list builder does **not** filter by the unit's proto: 0x4C6968 checks status, flags and prerequisites only

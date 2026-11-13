@@ -1631,6 +1631,20 @@ SITES = [
     # status, unit), ret 4), in FUN_0081A2B8 (the European dialog) and FUN_00818EE5.
     ("AgeUpListA", 0x81A44D, 5),
     ("AgeUpListB", 0x819052, 5),
+    # politicianPlacesFix: in the European list builder FUN_0081A2B8, an accepted politician about to take the next
+    # place: mov ecx,edi / call 58EA03h (replaced, 7 bytes), then cmp dword [esp+24h],0; and the builder's exit after
+    # the fifth, mov eax,[ebx+26Ch]. Verify only: the place binding's stores of PoliticianDlg-Politician%d
+    # (mov [ebx-14h],eax, [dlg+198h+4n]) and Poli%dName (mov [ebx+3Ch],eax, [dlg+1E8h+4n]); the builder's read of the
+    # name handle (mov edx,[ebx+ecx*4+1E8h] / push edx / lea ecx,[esp+7Ch] / call 4C519Ch), whose gadget 0x81A80C
+    # dereferences unchecked; the tech status's tech ID getter; the UI manager's gadget lookup thiscall(manager,
+    # handle, type), ret 8.
+    ("PoliticianPlaceTake", 0x81A45A, 0x0C),
+    ("PoliticianListEnd", 0x81A848, 6),
+    ("PoliticianPanelBind", 0x818C93, 3),
+    ("PoliticianNameBind", 0x818D51, 3),
+    ("PoliticianNameRead", 0x81A4FF, 0x11),
+    ("TechStatusTechId", 0x58EA03, 0x0D),
+    ("GadgetLookup", 0x40423C, 0x10),
 ]
 
 

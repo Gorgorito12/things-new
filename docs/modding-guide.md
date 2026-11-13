@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:12 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
 | Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player ships in each age, for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card) and the XS call `xsGetShipmentCount`. | The effect in the cards or techs that want it. |
@@ -7088,53 +7089,132 @@ stay at the ghost's angle.
 ### A big huge button on any building
 
 JTMaston's #56 asks for `UseBigHugeButton` on other buildings than the Consulate. No key is needed: the
-legacy tech flag does it.
+legacy tech flag does it, and a change in WoL's command panel files lets the building's other buttons show
+beside it.
 
-![YPUseBigHugeButton on a Market](media/useBigHugeButton-wol.gif)
+![YPUseBigHugeButton on a Market, the button above the panel](media/useBigHugeButton-moved-wol.gif)
 
-*In WoL (a Dutch skirmish, test data):* `HuntingDogs` with `<Flag>YPUseBigHugeButton</Flag>`. The
-Market shows it as the big button where the portrait was; a click researches it (50 wood, 50 gold), and
-when it is done the Market's buttons are back. [Full video (MP4)](media/useBigHugeButton-wol.mp4).
+*In WoL, with the edit below (Ethiopians, a scenario, test data):* `HuntingDogs` with
+`<Flag>YPUseBigHugeButton</Flag>` shows as the big button above the command panel, and the Market's own
+Improve, Buy and Sell buttons stay in the grid. A click queues the research (50 wood, 50 gold): the Queue row
+appears between the two. [Full video (MP4)](media/useBigHugeButton-moved-wol.mp4).
+
+![The Consulate's big button with the edit](media/useBigHugeButton-consulate-wol.gif)
+
+*In WoL, with the edit (the same scenario; the Consulate's tech comes from the Japanese `YPAge0JapaneseConsulate`):* the
+Consulate's `ypPickConsulateTech` shows above the panel, beside its Choose Ally row; a click opens the Choose a
+Foreign Ally dialog. [Full video (MP4)](media/useBigHugeButton-consulate-wol.mp4).
+
+![YPUseBigHugeButton on a Market, WoL's layout](media/useBigHugeButton-wol.gif)
+
+*In WoL, with WoL's current layout (a Dutch skirmish, the same flag):* the big button covers the grid, so
+the Market's Improve, Buy and Sell are hidden until the research is done.
+[Full video (MP4)](media/useBigHugeButton-wol.mp4).
 
 - **How:** `<Flag>YPUseBigHugeButton</Flag>` on a tech that a building lists in its `<Tech>` entries. The
   command panel puts that tech in the gadget `commandpanel2-bighugebutton` instead of the grid, on any
   building of any civ; the click researches it as a grid button would. Nothing in the exe ties it to the
   Consulate: the Consulate's `ypPickConsulateTech` is only the one stock tech with the flag.
-- **What to know:** that gadget is 212 × 108 (1024 scale) over the right of the command panel, so while
-  the tech is available it covers the building's other buttons (in the video, Improve, Buy and Sell are
-  under it). For a building with other buttons, move or shrink `commandpanel2-bighugebutton` in
-  `data\uicommandpanelnew.xml`, `uicommandpanelnewmin.xml`, `uicommandpanelnewminobserver.xml` and
-  `uicommandpanelnewminobserverjp.xml`, all four. There is one such slot: one flagged tech at a time per
-  building.
+- **The edit, so the building's buttons show too:** in WoL's layout the gadget is 212 × 108 (1024 scale) right
+  over the command grid. In `data\uicommandpanelnew.xml`, `uicommandpanelnewmin.xml`,
+  `uicommandpanelnewminobserver.xml` and `uicommandpanelnewminobserverjp.xml`, all four:
+  1. cut the gadget `commandpanel2-bighugebutton` (its line, the `piechartfilling` inside it and its
+     `</gadget>`) out of `commandpanel2-main`;
+  2. paste it right after the `</gadget>` that closes `commandpanel2-main`, before
+     `<gadget name="commandpanel2commands" ...>`, so it is a child of `commandpanel2` itself;
+  3. change its `size1024` from `804 633 1016 741` to `804 486 1016 594`.
+
+  In `uicommandpanelnew.xml` the result reads:
+
+  ```xml
+      </gadget>
+      <gadget name="commandpanel2-bighugebutton" type="button" size1024="804 486 1016 594" z="35" hidden="" activateondown="">
+        <piechartfilling color="255 0 0 100" rotation="cw" fill="false">
+        </piechartfilling>
+      </gadget>
+      <gadget name="commandpanel2commands" type="gadget" ...>
+  ```
+
+  The button keeps its size and sits above the right of the panel, above the Queue row (which takes about 595
+  to 627 when something is queued). Step 2 matters: inside `commandpanel2-main` the button shows above the panel but a
+  click on it goes to the map (tested: the click deselected the Market). Hidden, the gadget does not catch
+  clicks: with no flagged tech, a click there reaches the map. `mainHelpText` (703 483 1024 577 in `uimainnew.xml`)
+  shares part of that space; it was not seen over the button in the tests.
+- **Resolution:** the edit is in the 1024 × 768 space, which every resolution scales, so the button keeps its
+  place over the panel. Seen in game at 1920 × 1080; 1280 × 1024 not seen, since changing the resolution writes the
+  shared profile.
+- **One slot:** one flagged tech at a time per building.
 - **#57, DE's `UseBigHugeButton` on a `protounitcommands` entry:** not built. Legacy's
   `protounitcommands.xml` has no flags at all, and a command takes the big slot only in the tech path
   of the command panel; giving one to a command means a new tag in the file's loader and a second path in
   the panel (size M). No DE data uses it.
 - **Status:** confirmed (2026-11-12 and 2026-11-13, single player): on a Market, with the Ethiopians (a
-  scenario) and the Dutch (a skirmish).
+  scenario) and the Dutch (a skirmish); the edit on 2026-11-13, a Market and a Consulate (Ethiopians with the
+  Japanese consulate tech, a scenario).
 
 ### Five politicians in the European age-up
 
 JTMaston's #62 asks for up to five age-up choices, as in DE. The exe already holds five; WoL's European
-dialog has four places.
+dialog has four places. A fifth place in that file shows five.
+
+![Five politicians in WoL's European dialog](media/fivePoliticians-wol.gif)
+
+*In WoL, with the five-place file below (a Dutch skirmish, test data: six politicians of the next age
+obtainable):* the Town Center's age-up shows the Aristocrat, the Artisan, the Burgher, the Clergyman and the
+Governor. [Full video (MP4)](media/fivePoliticians-wol.mp4). With WoL's four-place file and
+[`politicianPlacesFix`](bug-fixes.md#politicianplacesfix), the same data shows four (the video there).
 
 - **What happens today:** `data\uipoliticianEuropeandlg.xml` (WoL's, and the stock one too) defines
   `PoliticianDlg-Politician0` to `3` and `Size1Politicians` to `Size4Politicians`. The Asian and native
   dialogs define five. The exe lists up to five politicians of the next age (FUN_0081A2B8 stops at 5) and
   fills a place for each; with a fifth politician and only four places it crashes (access violation at
-  0x81A80C, the missing gadget of the fifth place). WoL's civs have four per age (their `Age0` techs make
-  four obtainable), so nobody meets it.
-- **How:** add the fifth place to `uipoliticianEuropeandlg.xml`: `PoliticianDlg-Politician4` with its
-  `PoliticianButton4`, `PoliticianHilightPositive4`, `Poli4Name`, `Poli4Cost`, `Poli4Description` and
-  `Poli4Portrait`, and `PoliticianDlg-Size5Politicians`, as the native dialog has them. The panels must fit
-  five side by side (the test used 186-pixel panels, 190 apart, from x 42; the exe placed them itself).
-  Then a sixth obtainable politician is left out, never a crash.
+  0x81A80C, the missing name gadget of the fifth place). WoL's civs have four per age (their `Age0` techs make
+  four obtainable), so nobody meets it. [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) stops the
+  crash: the dialog then shows as many as it has places.
+- **The edit:** in `data\uipoliticianEuropeandlg.xml`, replace the four `PoliticianDlg-Politician<n>` gadgets by
+  five narrower ones, 184 wide and 193 apart from x 42, so that they fill the dialog (32 to 1008) with 10 on each
+  side. Each place n (n = 0 to 4) is, with x = 42 + 193 × n and r = x + 184:
+
+  ```xml
+  <gadget name="PoliticianDlg-Politician{n}" type="gadget" size1024="{x} 125 {r} 481" backgroundalpha="0.5" background="ui\ingame\politician_panel" texturecoords="0 0 0.890625 1" z="2">
+    <gadget name="PoliticianDlg-PoliticianButton{n}" type="button" foreground="" donthighlight="" size1024="{x} 142 {r} 481" z="3">
+      <gadget name="PoliticianDlg-PoliticianHilightPositive{n}" type="gadget" size1024="{x} 195 {r} 481" background="ui\ingame\politicians\positive" z="4"/>
+      <gadget name="PoliticianDlg-Poli{n}Name" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="{x+1} 146 {r} 173" textcenterhoriz="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutline" textfontsize="12" z="5"/>
+      <gadget name="PoliticianDlg-Poli{n}Cost" type="formatText" textmarkup="" formattextconvertuserlf="" formattextusedatareplace="" size1024="{x+86} 194 {r-4} 266" textfont="ChatOutline" textfontsize="12" textcolor="255 255 255" z="5"/>
+      <gadget name="PoliticianDlg-Poli{n}Description" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="{x+86} 270 {r-4} 480" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5"/>
+      <gadget name="PoliticianDlg-Poli{n}Portrait" type="gadget" size1024="{x+8} 194 {x+80} 403" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.7734375" z="5"/>
+    </gadget>
+  </gadget>
+  ```
+
+  | Place | Panel `size1024` | Name | Cost | Description | Portrait |
+  |---|---|---|---|---|---|
+  | 0 | `42 125 226 481` | `43 146 226 173` | `128 194 222 266` | `128 270 222 480` | `50 194 122 403` |
+  | 1 | `235 125 419 481` | `236 146 419 173` | `321 194 415 266` | `321 270 415 480` | `243 194 315 403` |
+  | 2 | `428 125 612 481` | `429 146 612 173` | `514 194 608 266` | `514 270 608 480` | `436 194 508 403` |
+  | 3 | `621 125 805 481` | `622 146 805 173` | `707 194 801 266` | `707 270 801 480` | `629 194 701 403` |
+  | 4 | `814 125 998 481` | `815 146 998 173` | `900 194 994 266` | `900 270 994 480` | `822 194 894 403` |
+
+  The button and the highlight of a place take its panel's x and r (`142` and `195` to `481` high). The
+  portrait is 72 × 209 instead of 96 × 278 (the same proportions), so that the cost and description keep a
+  column 94 wide (100 in WoL's file). Two more lines:
+  - `PoliticianDlg-OrigPositionPolitician0` (place 0 alone): `size1024="42 125 226 381"`;
+  - after `PoliticianDlg-Size4Politicians`, the same line named `PoliticianDlg-Size5Politicians`
+    (`32 72 1008 532`).
+
+  Keep `Size4Politicians` the full width: the exe sizes the dialog with `Size1` to `Size3` for one to three
+  politicians and with `Size4` for four or five (the compare chain at 0x81A069..0x81A099). So with four politicians in this
+  file the fifth place stays empty at the right.
+- **Then:** a sixth obtainable politician is left out, never a crash.
 - **More than five:** not possible in data. The dialog keeps five entries (`+270h`, `+284h`, `+2ACh`
   arrays, the count at `+26Ch` compared with 5 at 0x8191FE and 0x81A82A) and binds five places by name
   (loop to 5 at 0x818DBA); a sixth needs a bigger dialog object.
-- **Status:** confirmed (2026-11-13, single player): the Dutch with six obtainable age-I politicians
-  showed five in the Town Center's dialog (the first frames of the [`ageUpBuildings`](#ageupbuildings)
-  video); with WoL's 4-place file the same data crashed at 0x81A80C.
+- **Resolution:** seen at 1920 × 1080. The places are in the 1024 × 768 space, so they keep their place at
+  1280 × 1024; there the description column is narrower in pixels (about 117 against 176), so a long description
+  wraps on more lines, in a box 210 high. Not seen in game at 1280 × 1024 (the resolution is in the shared profile).
+- **Status:** confirmed (2026-11-13, single player): the Dutch with six obtainable age-I politicians showed five in
+  the Town Center's dialog, with this file; with WoL's four-place file the same data crashed at 0x81A80C, and
+  showed four with `politicianPlacesFix`. Accepting the fifth was not tried (800 food was not at hand).
 
 ## 7. Multiplayer, saved games and replays
 
@@ -7147,7 +7227,7 @@ the code. Saved games were tested only where a section says so.
   which keys work, or only what the log says: `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `multipleInstances`, `compatMode`,
   `selectionLimit`, `customHotkeyContexts`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`,
   `customRevolutionBanners`, `overhealHitpointBars`, `showGatherRate`, `abilitySlots`,
-  `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `xsErrorLog`, `dataLint`,
+  `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `politicianPlacesFix`, `xsErrorLog`, `dataLint`,
   `dodgeSoundSet` and `criticalSoundSet`.
 - **Everything else changes the game state,** or a list every machine must agree on. A difference
   between players can desynchronize the game. Each section has a **Simulation** line.

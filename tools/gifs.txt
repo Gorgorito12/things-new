@@ -273,3 +273,7 @@ shipmentCounts-reward-wol 4 16 2
 shipmentCounts-reward-wol-control 4 16 2
 kothTimer-wol 4 24 2
 kothTimer-wol-control 4 24 2
+politicianPlacesFix-wol 4 12 1
+fivePoliticians-wol 4 12 1
+useBigHugeButton-moved-wol 2 12 1
+useBigHugeButton-consulate-wol 2 12 1

@@ -65,6 +65,7 @@ PAGES = {
         "startingTC": ["src/features/startingtc.cpp", "src/hooks/startingtc_hooks.asm"],
         "civFirstTC": ["src/features/civfirsttc.cpp", "src/hooks/civfirsttc_hooks.asm"],
         "ageUpBuildings": ["src/features/ageupbuildings.cpp", "src/hooks/ageup_hooks.asm"],
+        "politicianPlacesFix": ["src/features/politicianplaces.cpp", "src/hooks/politicianplaces_hooks.asm"],
     }),
     "healing": ("Healing and hit points", {
         "healNonIdle": ["src/features/heal.cpp", "src/hooks/heal_hooks.asm"],
