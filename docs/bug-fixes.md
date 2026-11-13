@@ -970,7 +970,7 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 
 *The health bars over units stay still instead of jumping up and down while the units fight or move.*
 
-**Added:** Monday 2026-11-09 08:13 · **Filmed in WoL:** Monday 2026-11-09 08:13
+**Added:** Monday 2026-11-09 08:13 · **Filmed in WoL:** Friday 2026-11-13 11:50
 
 ![steadyHitpointBars in WoL](media/steadyHitpointBars-wol.gif)
 
@@ -987,10 +987,13 @@ stands, also under a steady chevron. [Full video (MP4)](media/steadyHitpointBars
 steadyHitpointBars [UnitType ...] [log]
 ```
 
-- **In WoL today:** a unit's floating HP bar sits on the `HITPOINTBAR` tag of its current animation. A Hussar's idle
-  animation has the tag, about 4.1 m up; its gallop has none, nor do some of its other animations, and then the game puts
-  the bar at a height from the data instead, lower. So the bar jumps between the two each time the unit changes
-  animation, every couple of seconds in a fight. The `veterancyBonus` chevrons, which hang at a fixed height, make it plain to see.
+- **In WoL today:** a unit's floating HP bar sits on the `HITPOINTBAR` tag of its current animation. The tags of an
+  animation are in its tag file, `<animation>.gr2.precomp` (see "Fix in the data" below). A Hussar's walk, gallop and
+  attacks have the tag, 4.08 to 4.15 m up, and so do two of its eight idles; the other six (`horse_idle_a` to `_g`, 90
+  of the 140 weight of its `Idle`), its `Bored`, `Cheer` and `Raze_idle` have none, and then the game puts the bar at a
+  height from the data instead, lower. So the bar jumps between the two each time the unit changes animation, every
+  couple of seconds even when it stands. The `veterancyBonus` chevrons, which hang at a fixed height, make it plain to
+  see. These horse idles are the base game's own, so TAD's cavalry has the same jump (from the data; not filmed in TAD).
 - **Effect:** each unit's bar keeps the height of its tag: the highest the tag reached over the last 3 to 6 seconds of
   animations that have it, and the middle of its sideways and forward sway. While the animation has no tag, the bar
   stays there. It moves towards a new height by at most 1.5 m a second, so a change of stance never jumps.
@@ -1014,6 +1017,58 @@ steadyHitpointBars [UnitType ...] [log]
   Hussar charge, Settlers, a Caravel and a Fluyt, a Barracks, a saved game loaded, and a 100 s skirmish against a
   European AI with no XS error. Not tested: an orange segment on screen (no Hussar was above its 100 % in this data),
   types listed in the key, beside WoL's DLL, multiplayer.
+
+**Fix in the data (2026-11-13).** The key stays the runtime fix, for every player and for what the data fix cannot
+reach. The bug itself is in the art: the animations without the tag can get it, and then the bars hold with the key off.
+
+![steadyHitpointBars fixed in the data, key off](media/steadyHitpointBars-datafix-wol.gif)
+
+*In WoL, key off, with the tag files of the three units fixed (scenario player 1, the Ethiopians in this bed: 3 `Hussar`,
+4 `InfantryVoivod` and an `Explorer` against 8 `WOLLandwehr`, the selected units' bars shown):* the Hussars stand, then
+charge and fight; each Hussar's bar keeps one height over its rider through the idles, the charge and the melee.
+[Full video (MP4)](media/steadyHitpointBars-datafix-wol.mp4).
+
+![steadyHitpointBars, the data as WoL ships it, key off](media/steadyHitpointBars-datafix-wol-control.gif)
+
+*In WoL, key off, the data as it ships (the same scene):* while the Hussars stand, their bars drop by 12 to 14 px and come
+back each time the horse picks another idle, about every 2 s. [Full video (MP4)](media/steadyHitpointBars-datafix-wol-control.mp4).
+
+- **Where the tag is:** not in the anim XML (its `<tag type="Attack">` lines are timed events). Each Granny animation
+  `x.gr2` has a tag file `x.gr2.precomp` beside it, the positions of a few named bones (`MASTER`, `HEAD`, `NECK`,
+  `PELVIS`, `ATTACHPOINT`, `HITPOINTBAR`) sampled over the animation. REA: FUN_0059DDCE reads the file's "MS" block into
+  the animation's tag table, the one 0x45F072 searches (names at `+8`, 12-byte position tracks at `+34h`, duration at
+  `+58h`; how-it-works, steadyHitpointBars); `rea/evidence/hitpointbar-precomp-20261113.json`, `ev_b5108f5e…`. The format
+  and the reader are in aoe3-blender-tools: `aoe3game/precomp.py` and `docs/game-formats.md`, "Animation tags".
+- **The tool:** `tools/fix_hitpointbar_tags.py` of aoe3-blender-tools. For each unit's anim file it finds the
+  animations of the unit's own model (not attachments, not `Death*`) whose tag file lacks `HITPOINTBAR`, and adds a
+  constant one at the median height of the unit's `Idle` animations that have it; nothing else of the file changes, and
+  the anim file is not touched. A tag file inside a `.bar` comes out as a loose file at the same art path, which the game
+  reads instead of the archive's (seen in this test).
+
+  ```
+  python -I tools/fix_hitpointbar_tags.py --proto <WoL>\data\protoy.xml --art <WoL>\art --dry-run
+  python -I tools/fix_hitpointbar_tags.py --proto <WoL>\data\protoy.xml --art <WoL>\art --units Hussar,Explorer --out <folder>
+  ```
+
+  Without `--out` it writes into the art folder and keeps a loose file it replaces as `.orig`. The fixed files for these
+  three units are 14 tag files, 2 to 49 KB each.
+- **Scan of WoL (dry run, 2026-11-13, every proto of `protoy.xml`):** 2,443 anim files; 668 have the tag in every
+  animation, 1,242 in none (their bar never moves), and **533 lack it in some**: 243 tag files to fix, 214 that the tool
+  fixes and 29 it refuses (16 animations shared by units that want two heights, as many on each side, such as the
+  `sowarCamel_*` files; 12 tag files with no tracks; 1 sampled on several models). Another 390 uses of animations have
+  no tag file at all (367 of a loose `.gr2` of WoL, 23 of a missing one): their tags must come from the `.gr2` itself,
+  which the tool does not edit (not traced). Examples: `Hussar`, `Dragoon`, `Cuirassier`, `Cossack`, `Uhlan`, `Ruyter`,
+  `Lancer` and the other horse riders (6 horse idles and `Bored`, `Cheer`, `Raze_idle`, height 4.15); `Settler` (107
+  animation files, gathering and others); `Pikeman`, `Halberdier` (the stance animations); `Explorer` (`Idle`, `Walk`,
+  `RangedAttack`, `Reload`, 2.97); `Priest`, `Surgeon`, `Imam` (`Idle`, `Walk`, `Heal`); `CoveredWagon` (`Idle`, `Walk`,
+  5.48). An animation that units of different heights share gets the height of most of them (33 such), so a unit in
+  the minority still sees a step there, as it does today.
+- **Tested in WoL (2026-11-13, `C:\AoE3-UHC-WoLReal4`, key off):** the 14 fixed tag files of `Hussar`, `Explorer` and
+  `InfantryVoivod` as loose files, against the same scene without them, measured on the masters frame by frame
+  (bars found as blue strips, a jump = a bar that moves 4 px or more in one frame while its x holds): with the shipped
+  data, 10 jumps of 12 to 14 px in the first 10 s, while the Hussars stand (their idles changing); with the fixed files,
+  none while they stand, and in the fight only bars of units on the move. The files were removed after the test.
+  Not tested: the whole scan's 214 files at once, TAD's own cavalry, a unit whose animations have no tag file.
 
 #### politicianPlacesFix
 
