@@ -31,10 +31,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added.  |  |
-| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added.  |  |
-| Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
+| Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
+| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player ships in each age, for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card) and the XS call `xsGetShipmentCount`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
+| Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
 | Friday 2026-11-13 07:23 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
@@ -6150,6 +6150,8 @@ What happens when a tech activates or a unit changes proto.
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
+| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player ships in each age, for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card) and the XS call `xsGetShipmentCount`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
+| [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
 
 #### hcTargetTechs
 
