@@ -248,3 +248,9 @@ customImpactTypes-wol 0 22 2
 customImpactTypes-wol-control 0 22 2
 directionalAttack-wol 3 22 2
 directionalAttack-wol-control 3 22 2
+inventoryBars-wol 8 32 3 480:320:280:230
+inventoryBars-wol-control 8 32 3 480:320:280:230
+numberOfShots-wol 8 12 1
+numberOfShots-wol-control 8 12 1
+numberOfShots-projectiles-wol 9 12 1
+numberOfShots-projectiles-wol-control 9 12 1

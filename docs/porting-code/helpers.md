@@ -29,6 +29,8 @@ Contents:
 - [State kept for a saved game](#state-kept-for-a-saved-game)
 - [Direct3D hooks](#direct3d-hooks)
 - [Research payment](#research-payment)
+- [ROF reads](#rof-reads)
+- [Floating bars](#floating-bars)
 
 ## Site table
 
@@ -987,6 +989,18 @@ inline constexpr Site kOverhealInfoMax{"OverhealInfoMax", 0x009AFA34, kOverhealI
 inline constexpr std::uint8_t kOverhealSegmentQueueBytes[] = {0x8A, 0x86, 0x88, 0x00, 0x00, 0x00, 0x8B, 0x4E, 0x44, 0x8B, 0x11, 0x8D, 0x4C, 0x24, 0x18, 0x50, 0x8B, 0x44, 0x24, 0x14, 0x52, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00, 0x50, 0x68, 0x00, 0x00, 0x80, 0x3F, 0x51, 0x8B, 0x8A, 0x3C, 0x01, 0x00, 0x00, 0xE8, 0x05, 0x00, 0x00, 0x00, 0xE9, 0x42, 0x1B, 0xFF, 0xFF};
 inline constexpr Site kOverhealSegmentQueue{"OverhealSegmentQueue", 0x0045FB3F, kOverhealSegmentQueueBytes, sizeof(kOverhealSegmentQueueBytes)};
 
+inline constexpr std::uint8_t kFloatingBarAltBytes[] = {0x8B, 0x15, 0x44, 0x62, 0xC6, 0x00, 0x8B, 0x42, 0x74, 0x8B, 0x48, 0x2C, 0x8B, 0x11, 0x6A, 0x02, 0x8B, 0x42, 0x34, 0xE8, 0x7F, 0x0F, 0x02, 0x00, 0x80, 0x7C, 0x24, 0x15, 0x00, 0x8A, 0xD8, 0x0F, 0x85, 0xAB, 0xEE, 0x0B, 0x00};
+inline constexpr Site kFloatingBarAlt{"FloatingBarAlt", 0x00452EA0, kFloatingBarAltBytes, sizeof(kFloatingBarAltBytes)};
+
+inline constexpr std::uint8_t kFloatingBarAltGateBytes[] = {0x84, 0xDB, 0x0F, 0x84, 0x9B, 0x11, 0xF4, 0xFF, 0xE9, 0x15, 0xDD, 0xF4, 0xFF};
+inline constexpr Site kFloatingBarAltGate{"FloatingBarAltGate", 0x00511D80, kFloatingBarAltGateBytes, sizeof(kFloatingBarAltGateBytes)};
+
+inline constexpr std::uint8_t kInventoryNoHpBarBytes[] = {0x8B, 0x06, 0x8B, 0xCE, 0x8B, 0x80, 0xA4, 0x00, 0x00, 0x00, 0xE8, 0x7F, 0xF9, 0x0A, 0x00, 0x84, 0xC0, 0x74, 0x4B, 0x6A, 0x05, 0x8B, 0xCE, 0x83, 0xEC, 0x04, 0x8B, 0x51, 0x5C, 0x85, 0xD2, 0x74, 0x29, 0x8B, 0x44, 0x24, 0x04, 0x3B, 0x42, 0x54, 0x73, 0x20, 0x56, 0x8B, 0xC8, 0x83, 0xE1, 0x07, 0xBE, 0x01, 0x00, 0x00, 0x00, 0xD3, 0xE6, 0x8B, 0x4A, 0x50, 0xC1, 0xE8, 0x03, 0x0F, 0xB6, 0x14, 0x08, 0x23, 0xF2, 0x89, 0x74, 0x24, 0x08, 0x5E, 0x77, 0x07, 0x32, 0xC0, 0x83, 0xC4, 0x08, 0xEB, 0x05, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x84, 0xC0, 0x0F, 0x85, 0x68, 0xC8, 0x00, 0x00, 0x8B, 0x86, 0xB4, 0x00, 0x00, 0x00};
+inline constexpr Site kInventoryNoHpBar{"InventoryNoHpBar", 0x00452EC5, kInventoryNoHpBarBytes, sizeof(kInventoryNoHpBarBytes)};
+
+inline constexpr std::uint8_t kVisualSizeBytes[] = {0x8B, 0x41, 0x60, 0x83, 0xEC, 0x0C, 0x85, 0xC0, 0x56, 0x0F, 0x84, 0x3B, 0xF2, 0x23, 0x00, 0x8B};
+inline constexpr Site kVisualSize{"VisualSize", 0x004605C1, kVisualSizeBytes, sizeof(kVisualSizeBytes)};
+
 inline constexpr std::uint8_t kSteadyBarBoneBytes[] = {0x83, 0x7E, 0x60, 0x00, 0x0F, 0x84, 0x47, 0x0B, 0x00, 0x00, 0x8B, 0x0D, 0x50, 0x65, 0xC6, 0x00, 0x8B, 0x15, 0x54, 0x65, 0xC6, 0x00, 0xA1, 0x58, 0x65, 0xC6, 0x00, 0x6A, 0x00, 0x89, 0x4C, 0x24, 0x30, 0x6A, 0x00, 0x89, 0x54, 0x24, 0x38, 0x8B, 0x15, 0x88, 0xDF, 0xC6, 0x00, 0x8D, 0x4C, 0x24, 0x34, 0x51, 0x89, 0x44, 0x24, 0x40, 0x8B, 0x02, 0x6A, 0x00, 0x50, 0x8B, 0xCE, 0xE8, 0x09, 0xF7, 0xFF, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0x07, 0x0B, 0x00, 0x00, 0x8D, 0x4C, 0x24, 0x18, 0x51, 0x8D, 0x54, 0x24, 0x30, 0x52, 0x8D, 0x4C, 0x24, 0x7C, 0xE8, 0x9C, 0x70, 0xFA, 0xFF};
 inline constexpr Site kSteadyBarBone{"SteadyBarBone", 0x0045FAE2, kSteadyBarBoneBytes, sizeof(kSteadyBarBoneBytes)};
 
@@ -1700,6 +1714,15 @@ inline constexpr Site kRofAnim{"RofAnim", 0x004A1185, kRofAnimBytes, sizeof(kRof
 
 inline constexpr std::uint8_t kRofDelayBytes[] = {0x51, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x8B, 0xF1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x91, 0x08, 0x01, 0x00, 0x00, 0x8B, 0x4E, 0x04, 0x85, 0xC9, 0x8B, 0x44, 0x24, 0x0C, 0x89, 0x96, 0xB8, 0x00, 0x00, 0x00, 0x89, 0x86, 0xBC, 0x00, 0x00, 0x00};
 inline constexpr Site kRofDelay{"RofDelay", 0x0048FA69, kRofDelayBytes, sizeof(kRofDelayBytes)};
+
+inline constexpr std::uint8_t kShotsLaunchCallBytes[] = {0x8B, 0x55, 0x6C, 0x52, 0x6A, 0x18, 0x8B, 0xCD, 0x83, 0xEC, 0x04, 0x8B, 0x44, 0x24, 0x04, 0x8B, 0xD1, 0x3B, 0x42, 0x34, 0x73, 0x20, 0x56, 0x8B, 0xC8, 0x83, 0xE1, 0x07, 0xBE, 0x01, 0x00, 0x00, 0x00, 0xD3, 0xE6, 0x8B, 0x4A, 0x30, 0xC1, 0xE8, 0x03, 0x0F, 0xB6, 0x14, 0x08, 0x23, 0xF2, 0x89, 0x74, 0x24, 0x08, 0x5E, 0x77, 0x07, 0x32, 0xC0, 0x83, 0xC4, 0x08, 0xEB, 0x05, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x8B, 0x55, 0x10, 0x50, 0x8B, 0x84, 0x24, 0xCC, 0x02, 0x00, 0x00, 0x8B, 0x48, 0x28, 0x51, 0x57, 0x52, 0x8B, 0xCD, 0xE8, 0x90, 0x9B, 0x00, 0x00, 0x8B, 0x45, 0x6C};
+inline constexpr Site kShotsLaunchCall{"ShotsLaunchCall", 0x0048F838, kShotsLaunchCallBytes, sizeof(kShotsLaunchCallBytes)};
+
+inline constexpr std::uint8_t kShotsLaunchBytes[] = {0x81, 0xEC, 0xD4, 0x00, 0x00, 0x00, 0x53, 0x57, 0x8B, 0xBC, 0x24, 0xE0, 0x00, 0x00, 0x00, 0x85, 0xFF, 0x8B, 0xD9, 0x89, 0x5C, 0x24, 0x10, 0x0F, 0x84, 0x1C, 0xB8, 0x20, 0x00};
+inline constexpr Site kShotsLaunch{"ShotsLaunch", 0x00499422, kShotsLaunchBytes, sizeof(kShotsLaunchBytes)};
+
+inline constexpr std::uint8_t kShotsLaunchRetBytes[] = {0x81, 0xC4, 0xD4, 0x00, 0x00, 0x00, 0xC2, 0x14, 0x00};
+inline constexpr Site kShotsLaunchRet{"ShotsLaunchRet", 0x004999DA, kShotsLaunchRetBytes, sizeof(kShotsLaunchRetBytes)};
 
 inline constexpr std::uint8_t kUnitResourceAuraEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x10};
 inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E, kUnitResourceAuraEntryBytes, sizeof(kUnitResourceAuraEntryBytes)};
@@ -2443,6 +2466,7 @@ Outcome ApplyLiveBuildingWorkRate(const Config& config);
 Outcome ApplyWorkRateByAbstractType(const Config& config);
 Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
+Outcome ApplyNumberOfShots(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
@@ -2495,6 +2519,7 @@ Outcome ApplyOverhealHitpointBars(const Config& config);
 Outcome ApplyOverhealSources(const Config& config);
 Outcome ApplyOverhealDecay(const Config& config);
 Outcome ApplySteadyHitpointBars(const Config& config);
+Outcome ApplyInventoryBars(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyRendererOption(const Config& config);
@@ -2566,6 +2591,8 @@ inline constexpr Feature kFeatures[] = {
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"containedUnitsROF", ApplyContainedUnitsROF},
+    // After containedUnitsROF: its filter on the shared ROF reads (rofreads.h) runs on that key's result.
+    {"numberOfShots", ApplyNumberOfShots},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
@@ -2651,6 +2678,9 @@ inline constexpr Feature kFeatures[] = {
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
     {"steadyHitpointBars", ApplySteadyHitpointBars},
+    // After overhealHitpointBars: both add bars through the shared floating bar hooks (floatingbars.h), the segment
+    // first.
+    {"inventoryBars", ApplyInventoryBars},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
@@ -2683,11 +2713,11 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
-    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
@@ -5592,6 +5622,570 @@ UhcCommandResearchPayHook PROC
     invoke UhcResearchPay, esi, ecx, eax
     ret 4
 UhcCommandResearchPayHook ENDP
+
+END
+```
+
+## ROF reads
+
+### src/rofreads.h
+
+```cpp
+// The five reads of an attack's tactics ROF [action+34h] that set its wait or its animation rate, shared by every
+// key that changes an attack's interval (containedUnitsROF, numberOfShots): one jmp per site, whichever of those
+// keys are on (hooks/rofreads_hooks.asm).
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+enum class RofRead : std::int32_t {
+  kNoShotA = 0,     // 0x48A821: the attack update, after an attack that did not fire
+  kNoShotB = 1,     // 0x48A99A: the same, its other branch
+  kNoShotC = 2,     // 0x48EA0C: the attack step, the same case
+  kAfterShot = 3,   // 0x48F8B5: after a shot (ranged and melee); [unitAction+68h] already counts it
+  kAttackStart = 4  // 0x4A1189: an attack cycle begins ([unitAction+78h] = now) and sets its animation rate
+};
+
+// Gets the attack's unit action ([+4] its tactics action, [+10h] its unit), the value so far in ms (above 0) and
+// the read; returns the value to use (at least 1). Filters run in the order the keys added them, each on the
+// previous one's result.
+using RofFilter = std::int32_t(__stdcall*)(const char* unitAction, std::int32_t rof, RofRead read);
+
+// Writes the five hooks the first time (after checking the sites' stock bytes) and adds filter. A filter only
+// runs while some key has set its gate (SetRofGate); with every gate at 0 the hooks only re-do the stock code.
+bool AddRofFilter(RofFilter filter, const char* feature);
+
+// Each key keeps one gate: true when its data has something to change (a table entry, a tag).
+void SetRofGate(RofFilter filter, bool on);
+
+}  // namespace uhc
+```
+
+### src/rofreads.cpp
+
+```cpp
+#include "rofreads.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+void UhcRofWaitAHook();  // hooks/rofreads_hooks.asm
+void UhcRofWaitBHook();
+void UhcRofWaitCHook();
+void UhcRofShotHook();
+void UhcRofAnimHook();
+
+// Above 0 while some filter's gate is on: the hooks skip the call otherwise.
+std::int32_t g_uhcRofGate = 0;
+}
+
+namespace {
+
+constexpr std::size_t kMaxFilters = 4;
+
+struct Slot {
+  uhc::RofFilter filter;
+  bool gate;
+};
+
+Slot g_filters[kMaxFilters] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" std::int32_t __stdcall UhcRofRead(const char* unitAction, std::int32_t rof, std::int32_t read) {
+  if (unitAction == nullptr || rof <= 0) {
+    return rof;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (g_filters[i].gate) {
+      rof = g_filters[i].filter(unitAction, rof, static_cast<uhc::RofRead>(read));
+      if (rof < 1) {
+        rof = 1;
+      }
+    }
+  }
+  return rof;
+}
+
+namespace uhc {
+
+void SetRofGate(RofFilter filter, bool on) {
+  std::int32_t open = 0;
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (g_filters[i].filter == filter) {
+      g_filters[i].gate = on;
+    }
+    open += g_filters[i].gate ? 1 : 0;
+  }
+  g_uhcRofGate = open;
+}
+
+bool AddRofFilter(RofFilter filter, const char* feature) {
+  if (g_count == kMaxFilters) {
+    Log(L"%hs: more than %u ROF filters", feature, static_cast<unsigned>(kMaxFilters));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kRofWaitA, &sites::kRofWaitB, &sites::kRofWaitC, &sites::kRofShot,
+                             &sites::kRofAnim, &sites::kRofDelay})) {
+      return false;
+    }
+    // mov r,[r+34h] / test r,r (5 B) at 0x48A821, 0x48A99A and 0x48EA0C; mov eax,[eax+34h] / cmp eax,ebx (5 B)
+    // at 0x48F8B5; mov ebx,[eax+34h] / mov eax,[esi+6Ch] (6 B) at 0x4A1189.
+    if (!WriteJmp(0x0048A821, reinterpret_cast<const void*>(&UhcRofWaitAHook), 5) ||
+        !WriteJmp(0x0048A99A, reinterpret_cast<const void*>(&UhcRofWaitBHook), 5) ||
+        !WriteJmp(0x0048EA0C, reinterpret_cast<const void*>(&UhcRofWaitCHook), 5) ||
+        !WriteJmp(0x0048F8B5, reinterpret_cast<const void*>(&UhcRofShotHook), 5) ||
+        !WriteJmp(0x004A1189, reinterpret_cast<const void*>(&UhcRofAnimHook), 6)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_filters[g_count++] = Slot{filter, false};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/rofreads_hooks.asm
+
+```asm
+; The five reads of an attack's tactics ROF (rofreads.cpp), shared by containedUnitsROF and numberOfShots. Each is
+; entered through a jmp written over the stock code and leaves through an explicit jmp to a verified continuation
+; (docs/engine-symbols.md, "Rate of fire").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcRofRead PROTO STDCALL :DWORD, :DWORD, :DWORD
+
+EXTERNDEF g_uhcRofGate:DWORD        ; above 0 while a key has something to change; 0: the hooks skip the call
+
+.data
+waitA           dd 0048A826h    ; jbe 4A86C6h
+waitB           dd 0048A99Fh    ; jbe 4B33D5h
+waitC           dd 0048EA11h    ; jbe 4A857Fh
+shotNext        dd 0048F8BAh    ; jbe 48F8BEh
+animNext        dd 004A118Fh    ; test eax,eax (the override ROF [[esi+6Ch]+28h])
+
+.code
+
+; The three waits after an attack that did not fire (the attack update FUN_0048A330 and the attack step at
+; 0x48E9DB), each `mov r,[r+34h] / test r,r` (5 bytes) before `jbe` and the delay call 0x48FA69(action
+; manager, ms). The hook re-executes the read, passes the value through UhcRofRead and re-executes the test, so the
+; jbe sees the stock flags. Nothing else changes: pushad/popad keep every other register.
+
+; 0x48A821: EDI = the tactics action ([esi+4]), ESI = the unit action.
+UhcRofWaitAHook PROC
+    TRACE_ONCE "ROF read: wait (0x48A821)"
+    mov edi, dword ptr [edi+34h]        ; stolen 0x48A821
+    cmp g_uhcRofGate, 0
+    je done
+    pushad
+    push 0                              ; RofRead::kNoShotA
+    push edi
+    push esi
+    call UhcRofRead
+    mov dword ptr [esp], eax            ; popad's EDI
+    popad
+done:
+    test edi, edi                       ; stolen 0x48A824
+    jmp waitA
+UhcRofWaitAHook ENDP
+
+; 0x48A99A: EDI = the tactics action ([esi+4]), ESI = the unit action.
+UhcRofWaitBHook PROC
+    TRACE_ONCE "ROF read: wait (0x48A99A)"
+    mov edi, dword ptr [edi+34h]        ; stolen 0x48A99A
+    cmp g_uhcRofGate, 0
+    je done
+    pushad
+    push 1                              ; RofRead::kNoShotB
+    push edi
+    push esi
+    call UhcRofRead
+    mov dword ptr [esp], eax            ; popad's EDI
+    popad
+done:
+    test edi, edi                       ; stolen 0x48A99D
+    jmp waitB
+UhcRofWaitBHook ENDP
+
+; 0x48EA0C: ESI = the tactics action ([ebp+4]), EBP = the unit action.
+UhcRofWaitCHook PROC
+    TRACE_ONCE "ROF read: wait (0x48EA0C)"
+    mov esi, dword ptr [esi+34h]        ; stolen 0x48EA0C
+    cmp g_uhcRofGate, 0
+    je done
+    pushad
+    push 2                              ; RofRead::kNoShotC
+    push esi
+    push ebp
+    call UhcRofRead
+    mov dword ptr [esp+4], eax          ; popad's ESI
+    popad
+done:
+    test esi, esi                       ; stolen 0x48EA0F
+    jmp waitC
+UhcRofWaitCHook ENDP
+
+; Replaces mov eax,[eax+34h] / cmp eax,ebx (5 bytes) at 0x48F8B5, the wait after a shot (ranged, through the
+; launch 0x499422, and melee, through 0x4DCFE2, join at 0x48F892; [ebp+68h] was just incremented): EAX = the
+; tactics action ([ebp+4]), EBP = the unit action, EBX = 0. The stock code then waits ROF minus the time since the
+; attack began ([ebp+78h]) when that is smaller.
+UhcRofShotHook PROC
+    TRACE_ONCE "ROF read: after a shot (0x48F8B5)"
+    mov eax, dword ptr [eax+34h]        ; stolen 0x48F8B5
+    cmp g_uhcRofGate, 0
+    je done
+    pushad
+    push 3                              ; RofRead::kAfterShot
+    push eax
+    push ebp
+    call UhcRofRead
+    mov dword ptr [esp+1Ch], eax        ; popad's EAX
+    popad
+done:
+    cmp eax, ebx                        ; stolen 0x48F8B8
+    jmp shotNext
+UhcRofShotHook ENDP
+
+; Replaces mov ebx,[eax+34h] / mov eax,[esi+6Ch] (6 bytes) at 0x4A1189, where an attack begins
+; ([esi+78h] = now) and sets its animation rate [unit+0B0h] from the ROF: EAX = the tactics action ([esi+4]),
+; ESI = the unit action. The flags are free: test eax,eax follows.
+UhcRofAnimHook PROC
+    TRACE_ONCE "ROF read: attack start (0x4A1189)"
+    mov ebx, dword ptr [eax+34h]        ; stolen 0x4A1189
+    cmp g_uhcRofGate, 0
+    je done
+    pushad
+    push 4                              ; RofRead::kAttackStart
+    push ebx
+    push esi
+    call UhcRofRead
+    mov dword ptr [esp+10h], eax        ; popad's EBX
+    popad
+done:
+    mov eax, dword ptr [esi+6Ch]        ; stolen 0x4A118C
+    jmp animNext
+UhcRofAnimHook ENDP
+
+END
+```
+
+## Floating bars
+
+### src/floatingbars.h
+
+```cpp
+// The floating bars over the units (the HP bars), shared by every key that adds a bar of its own
+// (overhealHitpointBars segment, inventoryBars): one jmp per site, whichever of those keys are on
+// (hooks/floatingbars_hooks.asm).
+//
+// - 0x45FB6C, the bar chunk of the unit visual update right after it queued a unit's HP bar: the observers get the
+//   unit and the bar's position, and may queue bars of their own there.
+// - 0x45C4B9, the renderer FUN_0045C4AF before its vertex lock: when the queue would not fit in the dynamic vertex
+//   buffer (stock then draws no bar that frame), every added bar is dropped, so they never cost a stock bar.
+// - 0x45CB72, the end of the renderer's per-record loop: an added bar's six vertices, written by the stock loop like
+//   a stock bar's, go to the writer of its kind.
+//
+// An added bar is a record of the stock queue with a negative player ID, which no player has (the renderer then
+// colours it white): its kind is the ID without its low byte, which the key may use as it likes.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+struct FloatingBarRecord {  // a queued bar (1Ch bytes)
+  float position[3];
+  float scale;
+  float fill;
+  std::int32_t player;
+  std::uint8_t colourByte;
+  std::uint8_t padding[3];
+};
+static_assert(sizeof(FloatingBarRecord) == 0x1C);
+
+struct FloatingBarVertex {  // the renderer's vertex (24h bytes)
+  float position[3];
+  float normal[3];
+  std::uint32_t colour;
+  float u;
+  float v;
+};
+static_assert(sizeof(FloatingBarVertex) == 0x24);
+
+// After a unit's HP bar was queued at position (world space). constructing: the bar is the build fraction of a
+// foundation; altHeld: the game's own state of the Alt key (the modifier query 0x473E37(2) the chunk made, which
+// shows every unit's HP bar while Alt is held).
+using FloatingBarQueued = void (*)(const char* unit, const float* position, bool constructing, bool altHeld);
+
+// The six vertices of one added bar (v0, v2, v3 on its left, v1, v4, v5 on its right, as the stock loop wrote them
+// for record.fill), and the camera ([+1Ch] its up vector, [+28h] its right vector).
+using FloatingBarVertices = void (*)(const FloatingBarRecord& record, FloatingBarVertex* vertices, const char* camera);
+
+// Writes the queue hook the first time (after checking the sites' stock bytes) and adds observer.
+bool AddFloatingBarQueued(FloatingBarQueued observer, const char* feature);
+
+// Writes the two renderer hooks the first time and adds a kind: player IDs whose high three bytes are those of kind
+// (negative, as 0x804F5600).
+bool AddFloatingBarKind(std::uint32_t kind, FloatingBarVertices writer, const char* feature);
+
+// Queues one bar of scale 1 at position, as the stock queue 0x45FB71 does for a unit.
+void QueueFloatingBar(const float* position, float fill, std::uint32_t player);
+
+}  // namespace uhc
+```
+
+### src/floatingbars.cpp
+
+```cpp
+#include "floatingbars.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+void UhcFloatingBarQueuedHook();  // hooks/floatingbars_hooks.asm
+void UhcFloatingBarFitHook();
+void UhcFloatingBarVertexHook();
+}
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 4;
+constexpr std::size_t kMaxKinds = 4;
+constexpr std::uint32_t kGameGlobal = 0x00C66234;    // game; +13Ch world
+constexpr std::uint32_t kDeviceGlobal = 0x00C66044;  // render device; +660h its dynamic vertex buffer
+constexpr std::uint32_t kVertexBytesPerBar = 6 * sizeof(uhc::FloatingBarVertex);
+
+// FUN_0045FB71: queues a floating HP bar, thiscall(world, pos*, scale, fill, player, colour byte), ret 14h.
+using QueueBarFn = bool(__fastcall*)(const char* world, void* unused, const float* pos, float scale, float fill,
+                                     std::int32_t player, std::uint32_t colourByte);
+const auto kQueueBar = reinterpret_cast<QueueBarFn>(0x0045FB71);
+
+struct Kind {
+  std::uint32_t prefix;
+  uhc::FloatingBarVertices writer;
+};
+
+uhc::FloatingBarQueued g_observers[kMaxObservers] = {};
+std::size_t g_observerCount = 0;
+Kind g_kinds[kMaxKinds] = {};
+std::size_t g_kindCount = 0;
+bool g_queueInstalled = false;
+bool g_renderInstalled = false;
+bool g_loggedDrop = false;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+bool Added(std::int32_t player) { return player < 0; }
+
+}  // namespace
+
+extern "C" {
+
+// From the queue hook (0x45FB6C).
+void __stdcall UhcFloatingBarQueued(const char* unit, const float* position, std::int32_t constructing,
+                                    std::int32_t altHeld) {
+  for (std::size_t i = 0; i < g_observerCount; ++i) {
+    g_observers[i](unit, position, constructing != 0, altHeld != 0);
+  }
+}
+
+// From the renderer hook (0x45C4B9), before the vertex lock: drops the added bars when the queue's six vertices per
+// bar would not fit in the dynamic vertex buffer ([vb+4] bytes).
+void __stdcall UhcFloatingBarFit(char* world) {
+  const std::int32_t count = Field<std::int32_t>(world, 0x8D4);
+  const char* device = *reinterpret_cast<const char* const*>(kDeviceGlobal);
+  const char* buffer = device == nullptr ? nullptr : Field<const char*>(device, 0x660);
+  if (count <= 0 || buffer == nullptr ||
+      static_cast<std::uint64_t>(count) * kVertexBytesPerBar <= Field<std::uint32_t>(buffer, 4)) {
+    return;
+  }
+  auto* records = Field<uhc::FloatingBarRecord*>(world, 0x8D0);
+  std::int32_t kept = 0;
+  for (std::int32_t i = 0; i < count; ++i) {
+    if (!Added(records[i].player)) {
+      records[kept++] = records[i];
+    }
+  }
+  *reinterpret_cast<std::int32_t*>(world + 0x8D4) = kept;
+  if (!g_loggedDrop && kept != count) {
+    g_loggedDrop = true;
+    uhc::Log(L"floating bars: %d bars do not fit in the vertex buffer (%u bytes): this frame's %d added bars were "
+             L"dropped (logged once)",
+             count, Field<std::uint32_t>(buffer, 4), count - kept);
+  }
+}
+
+// From the renderer loop hook (0x45CB72), for a record with a negative player: its six vertices go to its kind.
+void __stdcall UhcFloatingBarVertices(const char* world, std::int32_t offset, uhc::FloatingBarVertex* vertices,
+                                      const char* camera) {
+  const auto* record = reinterpret_cast<const uhc::FloatingBarRecord*>(Field<const char*>(world, 0x8D0) + offset);
+  const std::uint32_t prefix = static_cast<std::uint32_t>(record->player) & 0xFFFFFF00u;
+  for (std::size_t i = 0; i < g_kindCount; ++i) {
+    if (g_kinds[i].prefix == prefix) {
+      g_kinds[i].writer(*record, vertices, camera);
+      return;
+    }
+  }
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+bool AddFloatingBarQueued(FloatingBarQueued observer, const char* feature) {
+  if (g_observerCount == kMaxObservers) {
+    Log(L"%hs: more than %u floating bar observers", feature, static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_queueInstalled) {
+    // jmp 4516B3h (5 B) at 0x45FB6C, right after the call of the queue.
+    if (!VerifyAll(feature, {&sites::kOverhealSegmentQueue, &sites::kHpBarQueue, &sites::kFloatingBarAlt,
+                             &sites::kFloatingBarAltGate}) ||
+        !WriteJmp(0x0045FB6C, reinterpret_cast<const void*>(&UhcFloatingBarQueuedHook), 5)) {
+      return false;
+    }
+    g_queueInstalled = true;
+  }
+  g_observers[g_observerCount++] = observer;
+  return true;
+}
+
+bool AddFloatingBarKind(std::uint32_t kind, FloatingBarVertices writer, const char* feature) {
+  if (g_kindCount == kMaxKinds || (kind & 0x80000000u) == 0) {
+    Log(L"%hs: floating bar kind %08X refused (more than %u kinds, or not negative)", feature, kind,
+        static_cast<unsigned>(kMaxKinds));
+    return false;
+  }
+  if (!g_renderInstalled) {
+    // mov ebx,[ebp+8D4h] (6 B) at 0x45C4B9, the renderer's record count; add eax,1 / add ecx,1Ch (6 B) at 0x45CB72,
+    // the end of its per-record loop.
+    if (!VerifyAll(feature, {&sites::kHpBarRenderStart, &sites::kHpBarRenderLoop, &sites::kDynamicVbLock,
+                             &sites::kDynamicVbFull}) ||
+        !WriteJmp(0x0045C4B9, reinterpret_cast<const void*>(&UhcFloatingBarFitHook), 6) ||
+        !WriteJmp(0x0045CB72, reinterpret_cast<const void*>(&UhcFloatingBarVertexHook), 6)) {
+      return false;
+    }
+    g_renderInstalled = true;
+  }
+  g_kinds[g_kindCount++] = Kind{kind & 0xFFFFFF00u, writer};
+  return true;
+}
+
+void QueueFloatingBar(const float* position, float fill, std::uint32_t player) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  if (world == nullptr) {
+    return;
+  }
+  kQueueBar(world, nullptr, position, 1.0f, fill, static_cast<std::int32_t>(player), 0xFF);
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/floatingbars_hooks.asm
+
+```asm
+; The shared floating bar hooks (floatingbars.cpp): overhealHitpointBars segment and inventoryBars add their bars
+; through them. Each is entered through a jmp written over the stock code and leaves through an explicit jmp to a
+; verified continuation (docs/how-it-works.md, "overhealHitpointBars", "The segment").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcFloatingBarQueued PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
+UhcFloatingBarFit PROTO STDCALL :DWORD
+UhcFloatingBarVertices PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
+
+.data
+barQueueExit    dd 004516B3h    ; where the bar chunk goes after queueing the bar (jmp at 0x45FB6C)
+renderCountNext dd 0045C4BFh    ; test ebx,ebx / mov [esp+3Ch],ebx / jle: the renderer's record count
+vertexLoopNext  dd 0045CB78h    ; add edi,24h / add ebx,24h / cmp eax,[ebp+8D4h]: the next record
+
+.code
+
+; Replaces jmp 4516B3h (5 bytes) at 0x45FB6C, right after the bar chunk queued unit ESI's HP bar at [esp+18h]
+; (FUN_0045FB71, ret 14h). [esp+15h] is set for a foundation (the bar is its build fraction); BL is the Alt state
+; the chunk read at 0x452EB3 (0x473E37(2), kept in BL through the chunk). Every register is kept for 0x4516B3; the x87
+; stack is empty here.
+UhcFloatingBarQueuedHook PROC
+    TRACE_ONCE "floating bars: bar queued (0x45FB6C)"
+    pushad
+    movzx eax, bl
+    push eax                        ; Alt held
+    movzx eax, byte ptr [esp+39h]   ; constructing: [esp+15h] at entry, +20h pushad, +4
+    push eax
+    lea eax, [esp+40h]              ; the position: [esp+18h] at entry, +20h pushad, +8
+    push eax
+    push esi                        ; unit
+    call UhcFloatingBarQueued
+    popad
+    jmp barQueueExit
+UhcFloatingBarQueuedHook ENDP
+
+; Replaces mov ebx,[ebp+8D4h] at 0x45C4B9 in the bar renderer FUN_0045C4AF (EBP = world): before the vertex lock,
+; UhcFloatingBarFit drops the added bars when the queue would not fit in the dynamic vertex buffer; then the stolen
+; load of the count.
+UhcFloatingBarFitHook PROC
+    TRACE_ONCE "floating bars: fit (0x45C4B9)"
+    pushad
+    push ebp
+    call UhcFloatingBarFit
+    popad
+    mov ebx, dword ptr [ebp+8D4h]   ; stolen 0x45C4B9
+    jmp renderCountNext
+UhcFloatingBarFitHook ENDP
+
+; Replaces add eax,1 / add ecx,1Ch at 0x45CB72, the end of the renderer's per-record loop: ECX = the record's offset
+; in [ebp+8D0h], EDI = its sixth vertex, ESI = the camera. The six vertices of an added bar (a negative player ID)
+; go to UhcFloatingBarVertices; every other record is left as the stock loop wrote it. The FPU stack is empty here
+; (checked over one iteration); the flags are set again by the stolen adds.
+UhcFloatingBarVertexHook PROC
+    TRACE_ONCE "floating bars: vertices (0x45CB72)"
+    push edx
+    mov edx, dword ptr [ebp+8D0h]
+    cmp dword ptr [edx+ecx+14h], 0
+    pop edx
+    jge done
+    pushad
+    push esi                        ; camera
+    lea eax, [edi-0B4h]             ; the first vertex, five 24h-byte vertices back
+    push eax
+    push ecx                        ; the record's offset
+    push ebp                        ; world
+    call UhcFloatingBarVertices
+    popad
+done:
+    add eax, 1                      ; stolen 0x45CB72
+    add ecx, 1Ch                    ; stolen 0x45CB75
+    jmp vertexLoopNext
+UhcFloatingBarVertexHook ENDP
 
 END
 ```

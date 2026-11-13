@@ -279,6 +279,8 @@ abilitySlots N [log]          command panel shows up to N abilities per unit (st
 displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
+inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
+                              a bar of what a unit, mine or carcass still holds
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
 nativePreview [tagged] [log] [Proto]   an empty native socket shows its Trading Post's
                               units and techs, read-only
@@ -317,6 +319,8 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
+numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
+                              reload; projectiles: <NumberProjectiles> per shot
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura

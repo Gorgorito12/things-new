@@ -118,6 +118,8 @@ constexpr KnownTag kKnownTags[] = {
     {L"LinkedResourceRange", "linkedResource"},
     {L"DetonationProtoAction", "detonationDeath"},
     {L"DetonationCommand", "detonationDeath"},
+    {L"NumberOfShots", "numberOfShots"},
+    {L"ShotInterval", "numberOfShots"},
     {L"DetonationHitpointThreshold", "detonationDeath"},
     {L"DetonationHitpointDecay", "detonationDeath"},
     {L"DisplayRange", "displayedRange"},

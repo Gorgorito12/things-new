@@ -13,8 +13,8 @@
 //
 // The interval: every attack action (HandAttack, RangedAttack and the other types of the class, vtable 0xB96278)
 // waits through 0x48FA69(action manager, ms), which also applies ROF modifiers. Five reads of the tactics ROF
-// [action+34h] feed it or the attack's animation rate; the hooks in hooks/containedrof_hooks.asm pass each one
-// through UhcContainedRofScale. An override ROF ([unitAction+6Ch]+28h, set by something other than the tactics)
+// [action+34h] feed it or the attack's animation rate; the shared hooks of rofreads.h pass each one through
+// ContainedRofScale. An override ROF ([unitAction+6Ch]+28h, set by something other than the tactics)
 // is not scaled.
 #include <windows.h>
 
@@ -29,19 +29,12 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../rofreads.h"
 #include "../unittypes.h"
 
 extern "C" {
 void UhcContainedRofTagHook();
-void UhcContainedRofWaitAHook();
-void UhcContainedRofWaitBHook();
-void UhcContainedRofWaitCHook();
-void UhcContainedRofShotHook();
-void UhcContainedRofAnimHook();
 }
-
-// Entries in the table, read by the hooks to skip the call when no action has the attribute.
-extern "C" std::int32_t g_uhcContainedRofCount = 0;
 
 namespace {
 
@@ -122,7 +115,10 @@ unsigned g_tagLines = 0;
 unsigned g_invalidLines = 0;
 unsigned g_intervalLines = 0;
 
-void SyncCount() { g_uhcContainedRofCount = static_cast<std::int32_t>(g_entries.size()); }
+std::int32_t __stdcall ContainedRofScale(const char* unitAction, std::int32_t rof, uhc::RofRead read);
+
+// The shared ROF hooks call this key only while the table has an entry.
+void SyncCount() { uhc::SetRofGate(&ContainedRofScale, !g_entries.empty()); }
 
 // A ROF entry of this action is dropped by a later tag of the same action (a protoy <ProtoAction> after its
 // tactics <action>): the last tag wins, as for the stock bit.
@@ -235,9 +231,13 @@ std::int32_t __stdcall UhcContainedRofTag(const char* node, const char* proto, c
   return 1;
 }
 
-// From the five ROF reads: unitAction is the attack's unit action ([+4] its tactics action, [+10h] its unit),
-// rof the tactics ROF in ms (above 0). Returns the interval to use.
-std::int32_t __stdcall UhcContainedRofScale(const char* unitAction, std::int32_t rof) {
+}  // extern "C"
+
+namespace {
+
+// From the five ROF reads (rofreads.h), all treated alike: unitAction is the attack's unit action ([+4] its
+// tactics action, [+10h] its unit), rof the tactics ROF in ms (above 0). Returns the interval to use.
+std::int32_t __stdcall ContainedRofScale(const char* unitAction, std::int32_t rof, uhc::RofRead) {
   if (unitAction == nullptr || rof <= 0) {
     return rof;
   }
@@ -280,7 +280,8 @@ std::int32_t __stdcall UhcContainedRofScale(const char* unitAction, std::int32_t
   }
   return interval;
 }
-}
+
+}  // namespace
 
 namespace uhc {
 
@@ -299,20 +300,12 @@ Outcome ApplyContainedUnitsROF(const Config& config) {
   }
   if (!VerifyAll("containedUnitsROF",
                  {&sites::kRofScaleTag, &sites::kRofNextChild, &sites::kDotProtoActionCall, &sites::kTacticsActionCall,
-                  &sites::kXmlAttribute, &sites::kXmlText, &sites::kRofWaitA, &sites::kRofWaitB, &sites::kRofWaitC,
-                  &sites::kRofShot, &sites::kRofAnim, &sites::kRofDelay}) ||
-      !OnDatabaseLoad(&ResetForDataLoad)) {
+                  &sites::kXmlAttribute, &sites::kXmlText}) ||
+      !OnDatabaseLoad(&ResetForDataLoad) || !AddRofFilter(&ContainedRofScale, "containedUnitsROF")) {
     return Outcome::kFailed;
   }
   // cmp dword ptr [esp+10h],1 / mov eax,[ebp+64h] at 0x5FEE0C (8 B); the hook re-executes them for the stock tag.
-  // The ROF reads: mov r,[r+34h] / test r,r (5 B) at 0x48A821, 0x48A99A and 0x48EA0C; mov eax,[eax+34h] /
-  // cmp eax,ebx (5 B) at 0x48F8B5; mov ebx,[eax+34h] / mov eax,[esi+6Ch] (6 B) at 0x4A1189.
-  if (!WriteJmp(0x005FEE0C, reinterpret_cast<const void*>(&UhcContainedRofTagHook), 8) ||
-      !WriteJmp(0x0048A821, reinterpret_cast<const void*>(&UhcContainedRofWaitAHook), 5) ||
-      !WriteJmp(0x0048A99A, reinterpret_cast<const void*>(&UhcContainedRofWaitBHook), 5) ||
-      !WriteJmp(0x0048EA0C, reinterpret_cast<const void*>(&UhcContainedRofWaitCHook), 5) ||
-      !WriteJmp(0x0048F8B5, reinterpret_cast<const void*>(&UhcContainedRofShotHook), 5) ||
-      !WriteJmp(0x004A1189, reinterpret_cast<const void*>(&UhcContainedRofAnimHook), 6)) {
+  if (!WriteJmp(0x005FEE0C, reinterpret_cast<const void*>(&UhcContainedRofTagHook), 8)) {
     return Outcome::kFailed;
   }
   Log(L"containedUnitsROF: attacks with <ScaleByContainedUnits target=\"ROF\"> fire faster with the units inside "

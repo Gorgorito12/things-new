@@ -30,7 +30,7 @@
 // half is a white gradient tinted by the vertex colour, the player's [player+0C8h]) in a single
 // draw call; the segment is a second record queued right after the unit's own bar, with a player
 // ID no player has, whose six vertices are then moved to the right end of the bar and given the
-// segment colour. The stat row's HP text uses the UI markup <color=r, g, b> for the colour. A unit
+// segment colour (the shared floating bar hooks, floatingbars.h). The stat row's HP text uses the UI markup <color=r, g, b> for the colour. A unit
 // at or below its 100 %, and every unmarked unit (whose HP never exceeds its max), keeps the stock
 // bar and texts. The selection panel's bar under the portrait is one of three progress bar gadgets
 // (green, yellow, red) of uiunitselection.xml, looked up by name at panel creation; "segment" adds
@@ -61,6 +61,7 @@
 #include <vector>
 
 #include "../features.h"
+#include "../floatingbars.h"
 #include "../generated/sites.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
@@ -71,42 +72,14 @@
 namespace {
 
 constexpr std::size_t kMaxTypes = 8;  // the size of g_uhcOverhealTypes
-constexpr std::uint32_t kGameGlobal = 0x00C66234;    // game; +13Ch world
-constexpr std::uint32_t kDeviceGlobal = 0x00C66044;  // render device; +660h its dynamic vertex buffer
-constexpr std::int32_t kSegmentPlayer = static_cast<std::int32_t>(0x804F5648);  // as in overheal_hooks.asm
-constexpr std::uint32_t kRecordSize = 0x1C;                  // a queued bar
-constexpr std::uint32_t kVertexSize = 0x24;                  // six per bar
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+constexpr std::uint32_t kSegmentPlayer = 0x804F5648;  // a floating bar kind ('OVH', negative: no player has it)
 constexpr std::uint32_t kDefaultSegmentColour = 0xFFFF8C00;  // ARGB orange
-
-// FUN_0045FB71: queues a floating HP bar, thiscall(world, pos*, scale, fill, player, colour byte).
-using QueueBarFn = bool(__fastcall*)(const char* world, void* unused, const float* pos, float scale, float fill,
-                                     std::int32_t player, std::uint32_t colourByte);
-const auto kQueueBar = reinterpret_cast<QueueBarFn>(0x0045FB71);
 
 // Proto names already logged with "log"; only the game thread touches them.
 std::set<std::string, std::less<>> g_loggedProtos;
 std::set<std::string, std::less<>> g_loggedSegments;
-bool g_loggedDrop = false;
 std::uint32_t g_segmentColour = kDefaultSegmentColour;
-
-struct Vertex {  // the renderer's vertex (24h bytes)
-  float position[3];
-  float normal[3];
-  std::uint32_t colour;
-  float u;
-  float v;
-};
-static_assert(sizeof(Vertex) == kVertexSize);
-
-struct BarRecord {  // a queued bar (1Ch bytes)
-  float position[3];
-  float scale;
-  float fill;
-  std::int32_t player;
-  std::uint8_t colourByte;
-  std::uint8_t padding[3];
-};
-static_assert(sizeof(BarRecord) == kRecordSize);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -263,9 +236,6 @@ void UhcOverhealStatMaxHook();
 void UhcOverhealStatBaseHook();
 void UhcOverhealInfoBaseHook();
 void UhcOverhealInfoMaxHook();
-void UhcOverhealSegmentQueueHook();
-void UhcOverhealSegmentRenderHook();
-void UhcOverhealSegmentVertexHook();
 void UhcOverhealTextStatHook();
 void UhcOverhealTextStatSplitHook();
 void UhcOverhealPortraitHook();
@@ -290,22 +260,21 @@ void __stdcall UhcOverhealLogReference(const char* unit, float reference, float 
            static_cast<double>(Field<float>(proto, 0x98)));
 }
 
-// From the bar queue hook (0x45FB6C), after the unit's own bar was queued at pos: queues the
-// overheal segment when HP is above the reference (OverhealReference: the max for an unmarked
-// unit, so never). The record's fill is the segment's share of the bar, at most 1.
-void __stdcall UhcOverhealQueueSegment(const char* unit, const float* pos, float reference) {
+// From the shared floating bar hook (floatingbars.h), after the unit's own bar was queued at pos: queues the
+// overheal segment when HP is above the reference (the max for an unmarked unit, so never). The record's fill is
+// the segment's share of the bar, at most 1. A foundation's bar is its build fraction: no segment.
+void OverhealBarQueued(const char* unit, const float* pos, bool constructing, bool) {
+  if (constructing) {
+    return;
+  }
+  const float reference = UhcOverhealReferenceOf(unit);
   const float hp = Field<float>(unit, 0x64);
   if (!(reference > 1e-6f) || !(hp > reference)) {
     return;
   }
-  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
-  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
-  if (world == nullptr) {
-    return;
-  }
   float share = (hp - reference) / reference;
   share = share < 1.0f ? share : 1.0f;
-  kQueueBar(world, nullptr, pos, 1.0f, share, kSegmentPlayer, 0xFF);
+  uhc::QueueFloatingBar(pos, share, kSegmentPlayer);
   if (g_uhcOverhealLog != 0) {
     const char* proto = Field<const char*>(unit, 0x5C);
     const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
@@ -320,47 +289,18 @@ void __stdcall UhcOverhealQueueSegment(const char* unit, const float* pos, float
   }
 }
 
-// From the renderer hook (0x45C4B9), before the vertex lock: when the queue's six vertices per bar
-// would not fit in the dynamic vertex buffer ([vb+4] bytes; stock then draws no bar that frame),
-// the segment records are removed so that the stock bars are drawn as without the feature.
-void __stdcall UhcOverhealSegmentFit(char* world) {
-  const std::int32_t count = Field<std::int32_t>(world, 0x8D4);
-  const char* device = *reinterpret_cast<const char* const*>(kDeviceGlobal);
-  const char* buffer = device == nullptr ? nullptr : Field<const char*>(device, 0x660);
-  if (count <= 0 || buffer == nullptr ||
-      static_cast<std::uint64_t>(count) * 6 * kVertexSize <= Field<std::uint32_t>(buffer, 4)) {
-    return;
-  }
-  auto* records = Field<BarRecord*>(world, 0x8D0);
-  std::int32_t kept = 0;
-  for (std::int32_t i = 0; i < count; ++i) {
-    if (records[i].player != kSegmentPlayer) {
-      records[kept++] = records[i];
-    }
-  }
-  *reinterpret_cast<std::int32_t*>(world + 0x8D4) = kept;
-  if (!g_loggedDrop && kept != count) {
-    g_loggedDrop = true;
-    uhc::Log(L"overhealHitpointBars: %d bars do not fit in the vertex buffer (%u bytes): this frame's %d overheal "
-             L"segments were dropped (logged once)",
-             count, Field<std::uint32_t>(buffer, 4), count - kept);
-  }
-}
-
-// From the renderer loop hook (0x45CB72), for a segment record: its six vertices, written by the
-// stock loop like a full bar (fill = the segment's share), become the right end of the bar. The
-// left ones (v0, v2, v3, at P - scale/2 x B) move right by scale x (1 - share) x B; every vertex
-// takes the fill part of the texture (u 1.0 on the left, 0.5 on the right, as for a full bar) and
-// the segment colour.
-void __stdcall UhcOverhealSegmentVertices(const char* world, std::int32_t offset, Vertex* vertices,
-                                          const char* camera) {
-  const auto* record = reinterpret_cast<const BarRecord*>(Field<const char*>(world, 0x8D0) + offset);
-  float share = record->fill;
+// From the shared renderer loop hook, for a segment record: its six vertices, written by the stock loop like a full
+// bar (fill = the segment's share), become the right end of the bar. The left ones (v0, v2, v3, at P - scale/2 x B)
+// move right by scale x (1 - share) x B; every vertex takes the fill part of the texture (u 1.0 on the left, 0.5 on
+// the right, as for a full bar) and the segment colour.
+void OverhealSegmentVertices(const uhc::FloatingBarRecord& record, uhc::FloatingBarVertex* vertices,
+                             const char* camera) {
+  float share = record.fill;
   share = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
-  const float shift = record->scale * (1.0f - share);
+  const float shift = record.scale * (1.0f - share);
   const float* right = reinterpret_cast<const float*>(camera + 0x28);  // B, the camera's right vector
   for (int k = 0; k < 6; ++k) {
-    Vertex& vertex = vertices[k];
+    uhc::FloatingBarVertex& vertex = vertices[k];
     const bool left = k == 0 || k == 2 || k == 3;
     if (left) {
       for (int axis = 0; axis < 3; ++axis) {
@@ -610,9 +550,7 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
     return Outcome::kFailed;
   }
   if (segment && !VerifyAll("overhealHitpointBars segment",
-                            {&sites::kOverhealSegmentQueue, &sites::kHpBarQueue, &sites::kHpBarRenderStart,
-                             &sites::kHpBarRenderLoop, &sites::kDynamicVbLock, &sites::kDynamicVbFull,
-                             &sites::kOverhealTextStat, &sites::kOverhealTextStatSplit,
+                            {&sites::kOverhealTextStat, &sites::kOverhealTextStatSplit,
                              &sites::kOverhealPortraitTail, &sites::kOverhealPortraitColours,
                              &sites::kHealthBarGadgets, &sites::kProgressGadget,
                              &sites::kGadgetRelease, &sites::kProgressFill,
@@ -668,9 +606,6 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
     // Each replaces 5 or 6 bytes and re-does them (a push of the format, or the stolen
     // instructions), then jumps to the next instruction.
     const Hook segmentHooks[] = {
-        {0x0045FB6C, 5, &UhcOverhealSegmentQueueHook},   // jmp 4516B3h: after the bar was queued
-        {0x0045C4B9, 6, &UhcOverhealSegmentRenderHook},  // mov ebx,[ebp+8D4h]: the renderer's count
-        {0x0045CB72, 6, &UhcOverhealSegmentVertexHook},  // add eax,1 / add ecx,1Ch: a record's end
         {0x004D7651, 5, &UhcOverhealTextStatHook},       // push '%d/%d': the stat row
         {0x0069A9C0, 5, &UhcOverhealTextStatSplitHook},  // push '%d/%d (%d+%d)': the stat row
         {0x004C83DF, 9, &UhcOverhealPortraitHook},       // lea ecx,[esp+70h] / call 4010CAh: the portrait bar
@@ -679,6 +614,11 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
       if (!WriteJmp(hook.va, reinterpret_cast<const void*>(hook.target), hook.length)) {
         return Outcome::kFailed;
       }
+    }
+    // The segment record: queued after the unit's bar, drawn over its right end (floatingbars.h).
+    if (!AddFloatingBarQueued(&OverhealBarQueued, "overhealHitpointBars segment") ||
+        !AddFloatingBarKind(kSegmentPlayer, &OverhealSegmentVertices, "overhealHitpointBars segment")) {
+      return Outcome::kFailed;
     }
   }
   // mov edi,2 / mov [esp+2Ch],edi: the row counter after the HP row.

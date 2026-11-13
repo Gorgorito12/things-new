@@ -35,6 +35,8 @@ set(UHC_SOURCES
   src/techsubtypes.cpp
   src/d3d9hooks.cpp
   src/menuoptions.cpp
+  src/rofreads.cpp
+  src/floatingbars.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp
@@ -124,6 +126,8 @@ set(UHC_SOURCES
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
   src/features/containedrof.cpp
+  src/features/shots.cpp
+  src/features/inventorybars.cpp
   src/features/unitresource.cpp
   src/features/gatherauras.cpp
   src/features/resourcedebt.cpp
@@ -182,6 +186,10 @@ set(UHC_SOURCES
   src/hooks/workratetype_hooks.asm
   src/hooks/gatherscale_hooks.asm
   src/hooks/containedrof_hooks.asm
+  src/hooks/rofreads_hooks.asm
+  src/hooks/floatingbars_hooks.asm
+  src/hooks/inventorybars_hooks.asm
+  src/hooks/shots_hooks.asm
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
