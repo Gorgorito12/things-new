@@ -280,3 +280,4 @@ useBigHugeButton-moved-wol 2 12 1
 useBigHugeButton-consulate-wol 2 12 1
 playerIcon-wol 3 12 1
 playerIcon-wol-control 0 12 1
+playerIcon-wolart-wol 0 36 3 960:420:0:28

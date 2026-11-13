@@ -31,8 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 10:02 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
 | Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
-| Friday 2026-11-13 09:04 | [`playerIcon`](#playericon) | Added. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
 | Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
@@ -6644,7 +6644,7 @@ What the panels and the fog of war show.
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
-| [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files. | confirmed (LAN lobby, one copy) |
+| [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 
 #### nativePreview
 
@@ -6960,7 +6960,7 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
 
 *In a LAN lobby, your slot shows an icon you choose instead of your civ's portrait, and keeps it when you change civ.*
 
-**Added:** Friday 2026-11-13 09:04 · **Filmed in WoL:** Friday 2026-11-13 09:04
+**Added:** Friday 2026-11-13 09:04 · **Filmed in WoL:** Friday 2026-11-13 10:02
 
 ![playerIcon in WoL](media/playerIcon-wol.gif)
 
@@ -6972,6 +6972,13 @@ Paraguay and back, and the icon stays. The AI keeps its civ's portrait. [Full vi
 
 *In WoL, key off (the same lobby, the test icons still in `data` and `art`):* the host's slot shows the Dutch portrait,
 then Paraguay's when the civ changes. [Full video (MP4)](media/playerIcon-wol-control.mp4).
+
+![playerIcon with WoL's own pictures](media/playerIcon-wolart-wol.gif)
+
+*In WoL, with the table `tools/make_avatar_table.py` wrote from WoL's own art (a LAN game hosted alone):* first
+`playerIcon kaiserklein`, one of WoL's player avatars (a helmet): the host changes civ from the Greeks to Paraguay and to
+the Dutch, and the helmet stays. Then, after a restart, `playerIcon civ_ethiopians`: the Dutch host shows the Ethiopian
+portrait and keeps it as the Greeks and as Paraguay. [Full video (MP4)](media/playerIcon-wolart-wol.mp4).
 
 ```
 playerIcon <avatarId>
@@ -6999,8 +7006,25 @@ playerIcon <avatarId>
   square picture fits; the slot shows it at 48 × 48. The stock loader also reads `<tier>`, `<minLevel>`,
   `<type>clan</type>` and `<civ>` (ESO's rules), which LAN ignores; leave them out (an unknown `<civ>` drops the entry).
 - **Choosing an icon:** the cfg value is the only way; there is no picker in the lobby. One avatar per copy of the game.
-- **Which pictures:** the mod's own. Ship the avatar table and the `.ddt` files with the mod, so every player has
-  them and sees everyone's icon.
+- **Which pictures:** WoL's own art, so nothing new needs drawing. `tools/make_avatar_table.py <WoL folder>` reads a
+  WoL install and writes `data\avatar_wol.xml` (`--out <file>` to write it elsewhere). It names 63 pictures WoL
+  already ships:
+  - the 17 player avatars `art\spec\avatars\*.ddt` that WoL's observer files show, with the file name in lower case
+    as the ID: `_h2o`, `aizamk`, `boneng`, `diarouga`, `garja`, `jerom_`, `kaiserklein`, `marechal_rondon`,
+    `matsujun`, `mitoe`, `mongo10`, `nobumanteikoku`, `piroshiki`, `princeofkabul`, `ramex12`, `veni_vidi_vici_w`,
+    `yurashic` (64 × 64);
+  - the portrait of each of the 46 public civs, the `cpai_avatar_<civ>-sm` that `civs.xml` names in
+    `<matchmakingtextures><portraittexture>` (128 × 128), as `civ_` and the civ's `<name>` in lower case:
+    `civ_dutch`, `civ_ethiopians`, `civ_unitedstates`, `civ_xpiroquois`, `civ_wallmapu`, `civ_maori`, ... Left
+    out: Tawantinsuyu, Tupinamba and XPAztec (not public), SPCAct1 (`<visible>0`) and SPCCompany (not a
+    `cpai_avatar` texture).
+
+  A texture that is missing (neither loose under `art\` nor in `art\*.bar`) is skipped, and the tool prints every ID.
+  It copies no picture: WoL ships the generated `avatar_wol.xml` in its `data\` folder, and each player picks one
+  with `playerIcon <id>` in `wol.cfg`, e.g. `playerIcon kaiserklein` or `playerIcon civ_ethiopians`. A civ portrait
+  stays the player's icon whatever civ they play. New pictures can be added to the table later: a `.ddt` under
+  `art\` and one more `<avatar>` line. The home city files have no portrait of their own, and an explorer's picture
+  differs per civ with no single list, so neither is in the table.
 - **In game:** the key works in the lobby only. WoL's observer files already show `art\spec\avatars\<playerName>.ddt`
   in game through the stock text markup, with no DLL.
 - **An unknown ID** (not in any table, or no table at all): the slot keeps the civ portrait, as stock does.
@@ -7015,7 +7039,9 @@ playerIcon <avatarId>
 - **Tested in WoL (2026-11-13, one copy):** a LAN game hosted alone: the icon on the host's slot, kept over civ changes
   (Dutch → Greeks → Paraguay → Dutch); an AI slot (Abraham Lincoln, then Menelik II) kept its civ's portrait; key off:
   the civ portrait; `playerIcon uhc_blue` with no table installed: the civ portrait, no error; `playerIcon` with no ID:
-  logged, not applied. The profile does not keep the value (its `gameplayer0avatarid` stayed empty).
+  logged, not applied. The profile does not keep the value (its `gameplayer0avatarid` stayed empty). With the table of
+  `tools/make_avatar_table.py` (63 IDs): `kaiserklein` (a player avatar) and `civ_ethiopians` (a civ portrait, the
+  host playing the Dutch) each showed on the host's slot and stayed over civ changes (Greeks, Paraguay, Dutch).
 
 ## 6. Editing the game data
 
