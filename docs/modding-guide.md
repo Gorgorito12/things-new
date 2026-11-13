@@ -2515,7 +2515,7 @@ Attacks, armor, and what a hit does.
 
 *A unit can deal area damage around itself when it dies, and the blast shows where it hits.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 07:23
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 08:12
 
 ![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
 
@@ -2535,6 +2535,37 @@ other two were left at 16 and 28 HP. [Full video (MP4)](media/detonationDeath-bl
 *In WoL, with the key (an `xpAenna` with the mortar effect and `<DetonationCommand>Delete</DetonationCommand>`, deleted with
 its Delete button next to an enemy `CoveredWagon`):* the mortar explosion where it stood, the log line `kill flags 1 0 0
 (a delete)`, and the wagon destroyed. [Full video (MP4)](media/detonationDeath-delete-wol.mp4).
+
+![detonationDeath delete without the command in WoL](media/detonationDeath-delete-nocommand-wol.gif)
+
+*In WoL, with the key (the same archer without `<DetonationCommand>`, deleted with its Delete button beside a Gaia
+`CoveredWagon`):* it falls with no explosion, the wagon keeps 250 of 250 HP, and the log says `deleted without a
+DetonationCommand, no blast`. The wagon then goes into the fog: the archer was the only one who saw it.
+[Full video (MP4)](media/detonationDeath-delete-nocommand-wol.mp4).
+
+![detonationDeath with DetonationImpactEffect none in WoL](media/detonationDeath-none-wol.gif)
+
+*In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>none</DetonationImpactEffect>` against four
+`WOLScytheman`):* the first archer falls and its blast hits (`unit 0, proto 714, at 36.9, 43.1`; a scytheman goes from
+135 to 56 HP in the same moment, with the arrows), and nothing shows on screen.
+[Full video (MP4)](media/detonationDeath-none-wol.mp4).
+
+![detonationDeath over water in WoL](media/detonationDeath-water-wol.gif)
+
+*In WoL, with the key (a `Caravel` with `SHIPmelee` as its blast, 200 Siege, `DamageArea` 8, and the mortar effect;
+three Gaia `FishingBoat` beside it; a trigger deals it 5000 damage):* a mortar explosion on the water as it sinks, and
+the boats go from 200 to 46.0, 54.3 and 54.3 HP. [Full video (MP4)](media/detonationDeath-water-wol.mp4).
+
+![detonationDeath over water in WoL, key off](media/detonationDeath-water-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the stock sinking only, and the boats keep 200 HP.
+[Full video (MP4)](media/detonationDeath-water-wol-control.mp4).
+
+![detonationDeath knockout in WoL](media/detonationDeath-knockout-wol.gif)
+
+*In WoL, with the key (an `Engineer`, which has `KnockoutDeath`; a trigger deals it 5000 damage at 30, 70, 110 and
+150 s):* the second knockout, at 150 s, after its revival: a second dynamite explosion and the second blast line.
+[Full video (MP4)](media/detonationDeath-knockout-wol.mp4) (all of it, 110 s).
 
 ![detonationDeath in WoL](media/detonationDeath-wol.gif)
 
@@ -2572,8 +2603,10 @@ detonationDeath [log]
   must have it: an action its tactics file does not list does nothing, and the log says so.
 - **Use an action the unit does not attack with.** The tag reads any action with a `<Damage>`, so `Build` works on a settler. If
   it is the unit's weapon, raising the damage also raises its normal attacks.
-- **Which deaths:** combat, a kill by a trigger, an expired `Lifespan`, and a unit that dies in a blast. Not `Destroy` (the
-  trigger that removes a unit with no death).
+- **Which deaths:** combat, damage from a trigger (`Damage Unit`), an expired `Lifespan`, and a unit that dies in a blast.
+  Not `Destroy` (the trigger that removes a unit with no death). The trigger `Kill` (`trUnitDelete(false)`) runs the
+  same delete as the Delete button (2026-11-13: `deleted without a DetonationCommand, no blast` for an archer and a
+  caravel), so since the delete tags it detonates only a proto with `<DetonationCommand>`.
 - **Chains:** a unit that dies from a blast fires too, later in the same pass of the game's kill queue, not inside the blast.
 - **Friendly fire:** `DamageFlags` decides it, as on any attack. {FF}
 - **On screen (2026-11-13):** the blast plays the action's own `<impacteffect>` (the one in its tactics file) where the
@@ -2583,10 +2616,12 @@ detonationDeath [log]
   as in a tactics file (`effects\impacts\mortar`, `effects\impacts\dynamite`, `effects\impacts\cannon`, or one of yours),
   so a unit whose blast action is a bow shot can still explode; `<DetonationImpactEffect>none</DetonationImpactEffect>`
   shows nothing. The effect is loaded with the data; a name the game cannot load is logged and the action's own
-  effect stays. It is only drawn where the player can see, as a shot's landing is, and changes nothing in the
-  simulation, so players with different effects stay in sync.
+  effect stays. It is only drawn where the player can see, as a shot's landing is: a blast in the fog or the black
+  map damages as usual and shows nothing. Over water the effect's water entry plays (`terrainwater`; for the mortar a
+  water burst with its sound). Drawing and sound only: nothing in the simulation changes.
 - **A unit with `KnockoutDeath`** (WoL's `Engineer`, heroes) goes through the same queue when it is knocked out, so it
-  detonates then (seen with the Engineers of the first video; a revived one knocked out again was not tested).
+  detonates then, once per knockout: damage while it lies knocked out does nothing, and after its revival the next
+  knockout detonates again (the knockout video).
 - **Techs:** the action is the player's copy, so a tech that changes its damage counts.
 - **The other three tags (2026-11-05):**
   - `<DetonationCommand>Name</DetonationCommand>`: the unit detonates when it is **deleted**. Give the proto a command of
@@ -2638,8 +2673,27 @@ detonationDeath [log]
   the same archer without the command: `deleted without a DetonationCommand, no blast` (log only, not filmed). With
   `<DetonationImpactEffect>none</DetonationImpactEffect>`: `its blast plays no impact effect` at the load and the archer's
   blast line when it fell (not filmed). An AI skirmish (Germans, `wolOtto`) with the key on: the AI built a Manor and trained
-  settlers. Performance while filming, key on: 1092 fps on average, no frame over 50 ms; key off 1057 fps, none. Not
-  tested: a unit that dies over water (the stock picks the water entry), multiplayer.
+  settlers. Performance while filming, key on: 1092 fps on average, no frame over 50 ms; key off 1057 fps, none.
+- **Tested in WoL (2026-11-13, the rest):**
+  - Water: a `Caravel` killed by a 5000 `Damage Unit` trigger on a water map: `unit 0, proto 299, at 39.0, 41.0, kill
+    flags 0 0 0`, a mortar burst on the water, three Gaia fishing boats at 46.0, 54.3 and 54.3 of 200 HP; key off, the
+    stock sinking and 200 HP each.
+  - The fog: a caravel of the other player dies 65 m away in the black map (a trigger), with two Gaia boats beside it:
+    the blast line, the boats at 125.2 and 87.1 HP, no crash. Hardware breakpoints (`tools/re/trace_exec.py`) on the terrain
+    impact 0x4CB11C, its type block 0x4CB266 and the spawn 0x49C1E5: the hidden blast reached 0x4CB11C and stopped at the
+    visibility test; the visible one (the player's own caravel) reached the type block with EBX = 7 (water) and the spawn
+    once, both from the death observer (return 0x493D94).
+  - Delete without `<DetonationCommand>` (the archer's Delete button) and the trigger `Kill` of an archer and of a caravel:
+    `deleted without a DetonationCommand, no blast` each time, nothing on screen.
+  - `<DetonationImpactEffect>none</DetonationImpactEffect>`: the blast line and the damage, nothing drawn.
+  - `KnockoutDeath`: an `Engineer` given 5000 damage at 30, 70, 110 and 150 s: blasts at 30 s and 150 s only. It lay knocked
+    out from 30 s (LOS 6, its HP back from 1.9 to 62.5 by 112 s), the hits at 70 and 110 s did nothing, it stood again by
+    148 s (LOS 18, 87.1 HP), and the hit at 150 s knocked it out again with a second blast. No double blast, no crash.
+  - Multiplayer: not tested. Two copies of the game on one machine (both with `multipleInstances
+    background`): the host's LAN game is reached by Direct IP, but the join first fails because both copies read the
+    same profile (`A user by that name already exists in the game`), and with another name and GUID it ends with `Failed
+    to join Game.` (`127.0.0.1` finds no game). The host holds UDP 2297 and 2299 on the machine's address; the joiner never
+    gets past its ephemeral port, and `OverridePort` in the joiner's `user.cfg` changed nothing. A second machine is needed.
 - **Tested in WoL (2026-11-05, the three tags):** a Grenadier with `MusketVolleyRangedAttack` and threshold 0.5 under three
   Pikemen: `HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, then the blast with flags 0 0 0, and the unit
   gone; with the key off it fought on and died at 0. A Musketeer of 4000 HP with threshold 0.25 and decay 100, taken to
