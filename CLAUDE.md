@@ -126,7 +126,7 @@ Full byte layout: `docs/binaries.md`.
 
 ## Art and models
 
-**Rule:** any work on art (models `.gr2`, textures `.ddt`, anim files, `.dmg`, impact effects, icons, new buildings or units) goes through the sibling repo `C:\Users\Jeison\Documents\GitHub\aoe3-blender-tools` (read its CLAUDE.md): use its Granny, DDT and anim code and its tools, and add a missing tool there rather than here. When a bug lives in a mod's art, fix the file with such a tool as well as, or instead of, a DLL key. That repo is public: neutral text, no mod or team names, no mod files or survey reports in it.
+**Rule:** any work on art (models `.gr2`, textures `.ddt`, anim files, `.dmg`, impact effects, icons, new buildings or units) goes through the sibling repo `C:\Users\Jeison\Documents\GitHub\aoe3-blender-tools` (read its CLAUDE.md): use its Granny, DDT and anim code and its tools, and add a missing tool there rather than here. When a bug lives in a mod's art, fix the file with such a tool as well as, or instead of, a DLL key. That repo is public: naming mods or teams there is fine, but no mod files or survey reports in it.
 
 ## REA
 
