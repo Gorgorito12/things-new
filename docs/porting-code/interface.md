@@ -1833,8 +1833,13 @@ void __stdcall UhcInventoryNoHpBar(const char* unit, const float* position, std:
   if (local < 0 || local >= 32 || (Field<std::uint32_t>(Field<const char*>(unit, 0xB4), 0xAC) & (1u << local)) == 0) {
     return;
   }
+  // Most of these units (projectiles, revealers, corpses of soldiers) have no resources: nothing else is read for them.
   const char* proto = Field<const char*>(unit, 0x5C);
-  if (!g_trees && g_treeType >= 0 && proto != nullptr && kProtoIsType(proto, g_treeType)) {
+  if (proto == nullptr || Field<const char*>(proto, 0xE0) == nullptr ||
+      Field<const char*>(Field<const char*>(unit, 0xB4), 0x94) == nullptr) {
+    return;
+  }
+  if (!g_trees && g_treeType >= 0 && kProtoIsType(proto, g_treeType)) {
     return;
   }
   float size[3] = {0.0f, 0.0f, 0.0f};

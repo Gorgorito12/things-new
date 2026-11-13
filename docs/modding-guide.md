@@ -30,6 +30,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
+| Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
@@ -3748,14 +3750,14 @@ containedUnitsROF [log]
 
 *An attack can fire several quick shots before it reloads, and a shot can fire several projectiles, like a shotgun.*
 
-**Added:** Thursday 2026-11-12 18:00 · **Filmed in WoL:** Thursday 2026-11-12 18:30
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Thursday 2026-11-12 18:35
 
 ![numberOfShots in WoL](media/numberOfShots-wol.gif)
 
 *In WoL, with `numberOfShots log` (3 `Skirmisher`s, selected, whose ranged attacks have
 `<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 5 enemy `Settler`s; the
 log at the bottom):* each Skirmisher fires three shots 0.4 s apart, then waits its 3 s ROF. The settlers' HP is at the top:
-two fall in the first two bursts, all five by 49 s. [Full video (MP4)](media/numberOfShots-wol.mp4).
+after two bursts one has fallen and two are hurt; all five are down by 49 s. [Full video (MP4)](media/numberOfShots-wol.mp4).
 
 ![numberOfShots in WoL, key off](media/numberOfShots-wol-control.gif)
 
@@ -3784,7 +3786,8 @@ numberOfShots [projectiles] [log]
   one projectile.
 - **The burst:** an attack with `<NumberOfShots>N</NumberOfShots>` fires N shots: the first N − 1 play the attack
   animation at the pace of `<ShotInterval>` (seconds, default 0.25) and wait that long; the last one plays it at the
-  ROF's pace and waits the ROF: the reload. So a burst takes (N − 1) × interval + ROF. Each shot is a full stock shot:
+  ROF's pace, so it comes a little later (the aim of the stock animation: 0.67 s after the one before for a 3 s
+  Skirmisher), and waits the ROF: the reload. So a burst takes about (N − 1) × interval + ROF. Each shot is a full stock shot:
   its own accuracy roll, damage and projectile. Melee attacks take it too (N hits). A new target starts a new burst.
 
   ```xml
@@ -3820,8 +3823,12 @@ numberOfShots [projectiles] [log]
 - **Saved games:** nothing to keep: the tags are read again when the data loads, and the count is the attack's own.
 - **Tested in WoL (2026-11-12, single player):** the scenes above: shots at 29.73, 30.13 and 30.80 s, the next burst at
   33.53 s, for each of the 3 Skirmishers; key off one shot per 3 s. With `projectiles` and 4 pellets, 4 launches per shot
-  (log) and 5 settlers dead or nearly in 57 s, against 132 HP of damage in 52 s with one. PERF_SHOTS. Not tested:
-  multiplayer, a saved game.
+  (log) and 5 settlers dead or nearly in 57 s, against 132 HP of damage in 52 s with one. With `containedUnitsROF`, a
+  Blockhouse with 2 settlers inside and `target="ROF"`, 2 shots and 0.3 s on its `RangedAttack`: ROF 3000 -> 1500 ms,
+  bursts every 1.8 s. A saved game loaded before the fight: the bursts as before. Invalid values (`0`, `-1`, `99`)
+  logged and ignored; `numberOfShots bogus`: logged, not applied. A 100 s skirmish against `wolOtto` (Germans) with
+  `projectiles` (so WoL's own `numberprojectiles` read): no XS error, the AI had 10 settlers and a Manor. Performance (`perfprobe.py`, 60 s each, 30 `Skirmisher`s against 30 `Crossbowman`s beside a forest, a mine and deer): with the key and `projectiles` but no tag in the data, 978 fps, update 0.133 ms, render 0.89 ms a frame; key off 988 fps, 0.136 ms, 0.88 ms; no frame over 50 ms in any run (the longest 4 ms). With the Skirmishers' 3-shot bursts and 2 projectiles a shot, the update stays 0.13 ms and the render rises to 1.0–1.3 ms: six times the tracers on screen, the data's cost. Not tested:
+  multiplayer, beside WoL's DLL (`dinput8.dll`).
 
 #### broadsideMuzzleLimit
 
@@ -7574,7 +7581,7 @@ steadyHitpointBars [UnitType ...] [log]
 
 *While Alt is held, units, mines, bushes and carcasses show a second bar: how much of their resources is left.*
 
-**Added:** Thursday 2026-11-12 18:00 · **Filmed in WoL:** Thursday 2026-11-12 18:25
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Thursday 2026-11-12 18:35
 
 ![inventoryBars in WoL](media/inventoryBars-wol.gif)
 
@@ -7609,12 +7616,15 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
   248.7 of 400.0 (resource 2 most): bar 62 % at (43.0, 4.9, 43.1), Alt held`.
 - **With other keys:** [`overhealHitpointBars`](#overhealhitpointbars) `segment` adds its bars through the same hooks
   since 2026-11-12; [`steadyHitpointBars`](#steadyhitpointbars) moves the HP bar, and this bar with it.
-- **Performance:** PERF_BARS
+- **Performance:** measured with `perfprobe.py`, 60 s each, 30 `Skirmisher`s against 30 `Crossbowman`s beside 40 trees, 3 mines and 15 deer, with `trees`. Alt up: 928 and 1001 fps (render 0.95 and 0.87 ms a frame) against 988 and 954 key off (0.88 and 0.92 ms), noise. Alt held: 867 and 907 fps (render 1.03 and 0.98 ms) against 1026, 1013 and 1006 key off (0.85–0.86 ms, the stock HP bars only): about 0.15 ms of render for some 60 more bars. Update 0.13–0.14 ms in every run, no frame over 50 ms (the longest 4 ms).
 - **Tested in WoL (2026-11-12, single player):** the scene above, Alt posted to the window (the game reads Alt from its
   messages); a carcass at 248.7 of 400 food showed a 62 % bar. A gold mine, a berry bush, a deer, a sheep and a cow;
   before Alt was pressed, no bar. Trees showed their bars in an early build, high over their crowns, which is why they
   are left out by default; the `trees` option ran in the performance runs below but was not looked at on screen. Not
-  tested: multiplayer, a WoL unit with its own resources, a real Alt key (the window got a posted key).
+  tested: multiplayer, a WoL unit with its own resources, a real Alt key (the window got a posted key), beside WoL's DLL.
+  With `overhealHitpointBars segment` and `steadyHitpointBars` on too: a Highlander marked for the test at 180/150 had
+  its orange segment, the sheep beside it its food bar (both through the shared hooks). `inventoryBars other=XYZ`:
+  logged, not applied.
 
 ## 6. Editing the game data
 
