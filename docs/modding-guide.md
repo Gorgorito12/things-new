@@ -5235,6 +5235,7 @@ How buildings train, spawn, live and get replaced.
 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | **new** | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). | confirmed (single player) |
 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | **new** | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. | not tested in game |
 | [`repairWallGlobal`](#repairwallglobal) | A UI syscall that repairs every wall of the local player. | **in `wol.cfg`** | A button or hotkey that calls `repairWallGlobal()`. | confirmed |
+| [`customWalls`](#customwalls) | A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | **new** | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. | confirmed (single player) |
 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | **new** | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
 | [`annexFacing`](#annexfacing) | An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) faces the building it belongs to, also when the AI places it, and falls when that building dies or is destroyed. The turn is in steps of 90 degrees from the building's own axes, fixed at placement; a trigger's `Destroy` of the building drops its annexes too. | **new** | The tag on the annexes; a placement distance that leaves room for the turned annex. | confirmed (single player) |
 
@@ -5924,6 +5925,83 @@ repairWallGlobal
 - **Simulation:** sends one game command per wall: safe in multiplayer.
 - **Status:** confirmed (single player, on WoL): three `WallStraight5` at 600 / 1500 went back to 1500 after
   one call; without the key the call did nothing.
+
+#### customWalls
+
+*Any building can be laid like a wall, from a point A to a point B, with its own posts and pieces instead of the civ's stone wall.*
+
+**Added:** Thursday 2026-11-12 18:00 · **Filmed in WoL:** Thursday 2026-11-12 18:00
+
+![customWalls in WoL](media/customWalls-wol.gif)
+
+*In WoL, with `customWalls` (Ethiopians, four `gwMilitaryPioneer`, selected; `gwBarbedWireConnector` has the tags below):* the
+barbed wire button draws a line of barbed wire posts and `gwBarbedWire` pieces between two clicks, and a second line from its
+last post makes a corner; the pioneers build both. [Full video (MP4)](media/customWalls-wol.mp4).
+
+![customWalls in WoL, key off](media/customWalls-wol-control.gif)
+
+*In WoL, key off (the same scene, the same data and clicks):* the same button lays the Ethiopians' own wall, its posts and
+pieces. [Full video (MP4)](media/customWalls-wol-control.mp4).
+
+```
+customWalls [log]
+```
+
+In `protoy.xml`, on the proto the player clicks (the post):
+
+```xml
+<Unit name="gwBarbedWireConnector">
+	...
+	<PlacementFile>wall.xml</PlacementFile>
+	<Flag>wallBuild</Flag>
+	<WallPiece type="Straight5">gwBarbedWire</WallPiece>
+	<WallPiece type="Straight2">gwBarbedWire</WallPiece>
+	<WallPiece type="Gate">gwBarbedWire</WallPiece>
+</Unit>
+```
+
+and on each piece it names, as the stock `WallStraight2` has:
+
+```xml
+<Unit name="gwBarbedWire">
+	...
+	<PlacementFile>wall.xml</PlacementFile>
+	<Flag>wallBuild</Flag>
+</Unit>
+```
+
+- **How the game lays a wall:** any proto with the stock flag `wallBuild` already enters the wall mode ("Left click to place
+  first wall endpoint"). Between the two clicks the game puts posts and straight pieces: a 5-long piece where it fits, a
+  2-long one for the rest, and the gate only to join an existing gate. But it takes those four protos from the player's civ
+  (the stock `civs.xml` tag `<wall type="Connector|Straight2|Straight5|Gate">proto</wall>`, which WoL's civs do not use) or,
+  without it, from the names `WallConnector`, `WallStraight5`, `WallStraight2` and `CWallGate`. So without the key, a barbed
+  wire post with `wallBuild` lays a stone wall.
+- **What the key does:** when the proto being placed has `<WallPiece>` tags, the wall is laid with the posts of that proto and
+  the pieces the tags name. `type` is `Straight5`, `Straight2` or `Gate`; without `type`, the tag names both straights. A
+  missing straight takes the other one, and a missing gate takes the 5-long straight. One proto can be several pieces, as
+  `gwBarbedWire` is here. A post of such a wall can also be placed on a post of the same proto that its owner already has, so
+  a new line can start at the end of another (the corner in the video), as the stock wall does.
+- **The pieces need** `<Flag>wallBuild</Flag>` and `<PlacementFile>wall.xml</PlacementFile>`, as the stock wall pieces have:
+  without them, the game places the posts but answers "You cannot build a Barbed wire there" for every piece (seen in the
+  test). The post needs `wallBuild` too. The pieces are laid along the line, so a piece's `ObstructionRadiusX` is its half
+  length (the stock 5-long piece has 5.0; `gwBarbedWire` has 2.5, and the line came out with a post every 5.9 m). WoL's
+  `gwBarbedWire` also has `DontRotateObstruction`, which did not matter in the test.
+- **Unchanged:** a building without `<WallPiece>` tags (the stock `WallConnector`, every civ's wall) lays the civ's wall as
+  before. The AI's walls (`aiBuildWall`, the colony walls) always use the civ's wall. The cost is each piece's own.
+- **WoL needs:** the tags and flags above. In WoL's data today, `gwBarbedWireConnector` has `<PlacementFile>wall.xml</PlacementFile>`
+  but no `wallBuild`, so it is placed one post at a time, and `gwBarbedWire` has neither. The test also enabled both protos for
+  the player with a trigger (`Unforbid and Enable Unit`), as a scenario player does not get them otherwise.
+- **Log:** `customWalls: applied`; with `log`, one line per tag read (`proto 3321 (gwBarbedWireConnector) WallPiece Straight5 =
+  gwBarbedWire`) and one per wall ordered (`player 1 orders a wall of gwBarbedWireConnector: straights gwBarbedWire / gwBarbedWire,
+  gate gwBarbedWire`, or `... of proto 620 (WallConnector), no WallPiece tags: the civ's pieces`); a name that is no proto:
+  `customWalls: proto N: no proto named "X"; its walls stay the civ's`.
+- **Multiplayer:** the choice is made where the player clicks, and the game sends one build order per post and piece, with its
+  proto, as it does for the stock wall; the other machines only build what they receive. Not tested in a multiplayer game.
+- **With other keys:** none shares its sites.
+- **Tested in WoL (2026-11-12, single player, Ethiopians):** with the key, two lines of barbed wire (5 posts and 4 pieces each,
+  the second one from the last post of the first) were laid and built by the pioneers; the stock `WallConnector` of a `Settler`
+  still laid the Ethiopians' own wall. Key off, the same clicks laid the Ethiopians' wall. Not tested: multiplayer, beside WoL's
+  DLL, a saved game.
 
 #### hcShipmentPointFallback
 

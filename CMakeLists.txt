@@ -53,6 +53,7 @@ set(UHC_SOURCES
   src/features/researchgrants.cpp
   src/features/cantslow.cpp
   src/features/stealthtarget.cpp
+  src/features/customwalls.cpp
   src/features/snarevalues.cpp
   src/features/civfirsttc.cpp
   src/features/datalint.cpp
@@ -184,6 +185,7 @@ set(UHC_SOURCES
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm
   src/hooks/stealthtarget_hooks.asm
+  src/hooks/customwalls_hooks.asm
   src/hooks/datalint_hooks.asm
   src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm

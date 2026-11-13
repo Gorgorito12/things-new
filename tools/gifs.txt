@@ -23,6 +23,8 @@ customHotkeyContexts-wol-control 6 22 2
 customProtoUnitCommands-wol 2 32 3
 customProtoUnitCommands-wol-control 2 16 2
 customSyscalls-wol 2 30 2
+customWalls-wol 6 24 2
+customWalls-wol-control 6 24 2
 damageOverTime-noticktext-wol 4 20 2
 damageOverTime-wol 4 20 2
 damageOverTime-wol-control 4 20 2
