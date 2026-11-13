@@ -6,7 +6,7 @@ what each feature does in WoL (the `wol.cfg` line, the data, the log, the videos
 [modding guide](modding-guide.md#5-feature-reference). For the engine internals, see
 [how-it-works.md](how-it-works.md).
 
-This page covers every key the modding guide marks **new**, 68 keys in all:
+This page covers every key the modding guide marks **new**, 69 keys in all:
 
 | Theme | Keys | Code |
 |---|---|---|
@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 68 keys in all:
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
@@ -1114,6 +1114,16 @@ Code: [combat](porting-code/combat.md#stealthtargeting).
   `0x489ECC` (`51 53 55 8B 6C 24 10`), continue at `0x489ED3`. Check both against your DLL first.
 - **Test:** a ship in stealth with enemy ships in range: it must take no damage, and its visibility mask
   `[[unit+B4h]+ACh]` must keep only its owner's and allies' bits.
+
+### directionalAttack
+
+Code: [combat](porting-code/combat.md#directionalattack). It needs `AddActionTagHandler`, `AddWorldTick` and
+`OnDatabaseLoad`, in the [helpers](porting-code/helpers.md).
+
+- **Sites:** a 7-byte `jmp` at `0x4998A7` (`8B 4C 24 10 89 4E 14`), continue at `0x4998AE`; and the call at `0x5F8A51`
+  (`E8 B3 1C 00 00`, the MaxRange setter `0x5FA709` in the action parser), redirected. Check both against your DLL first.
+- **Test:** a Falconet with `<DirectionalAttack>40` against a row of enemies behind its target: the units behind take
+  damage, and the shot lands 40 m away.
 
 ### veterancyBonus
 

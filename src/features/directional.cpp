@@ -1,8 +1,8 @@
 // directionalAttack: a projectile that flies on past its target and hits every unit it flies over, before
-// and after the target (WoL #48, the "monster truck" attack, like the Scorpion of another game).
+// and after the target (a "monster truck" attack, like a Scorpion bolt).
 //
 // An action (a .tactics <action> or a protoy.xml <ProtoAction>) becomes directional with one of two tags, the
-// two variants JTMaston asked for:
+// two variants:
 // - <DirectionalAttack>D</DirectionalAttack>: the unit targets and fires at its MaxRange as in stock, and the
 //   projectile lands D metres from the shooter (at the target if the target is farther);
 // - <DirectionalFiringRange>F</DirectionalFiringRange>: the unit fires at F metres, and the projectile lands

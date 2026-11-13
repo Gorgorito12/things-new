@@ -81,6 +81,7 @@ PAGES = {
         "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
         "snareValues": ["src/features/snarevalues.cpp", "src/hooks/snarevalues_hooks.asm"],
         "stealthTargeting": ["src/features/stealthtarget.cpp", "src/hooks/stealthtarget_hooks.asm"],
+        "directionalAttack": ["src/features/directional.cpp", "src/hooks/directional_hooks.asm"],
         "killBountyTechs, resourceBounty and teamKillBounty": ["src/features/bounty.cpp", "src/hooks/bounty_hooks.asm"],
         "pillageGold": ["src/features/pillage.cpp", "src/hooks/pillage_hooks.asm"],
         "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],

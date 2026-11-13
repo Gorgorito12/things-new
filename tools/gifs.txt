@@ -240,3 +240,5 @@ stealthTargeting-wol 11 12 1
 stealthTargeting-wol-control 11 12 1
 stealthTargeting-ai-wol 4 12 1
 stealthTargeting-ai-wol-control 4 12 1
+directionalAttack-wol 3 22 2
+directionalAttack-wol-control 3 22 2
