@@ -214,6 +214,27 @@ hot path, `--perf` in every video, vary the civ).
 Pending: the A/B baseline against the control (`perfprobe.py`, 120 s, same scenario), and the
 load-time A/B for `customAbstractTypes`.
 
+### Uncompressed models: a note for JTMaston (2026-11-13)
+
+No DLL key: a one-off tool, `tools/uncompress_models.py` in aoe3-blender-tools. It writes the stock models of
+`art\Art*.bar` uncompressed as loose files under `art\`, so the game stops decompressing a model the first time it
+meets one. In WoL (save `wolvk-a32`, WoL's own cfg): **the save loads 2.1 s faster (11.6 → 9.5 s)** and the 72–80 ms
+frame where a new model was loaded mid-game is gone; FPS is unchanged. It costs **about 1 GB of disk** (10,421
+files, 397 MB in the archives → 1,041 MB). WoL's own loose models (6,199) are never touched and stay as they are.
+Numbers and the hang check: [performance.md](performance.md), §9, "Uncompressed models as loose files".
+
+How to ship or run it:
+- **Once per release, on his build machine** (simplest for players): on a clean copy of WoL with the release's art,
+  run `python -I tools/uncompress_models.py "<WoL copy>" --install --granny <aoe3granny.exe>` (the bridge loads the
+  copy's own `granny2.dll`), then ship the files the manifest `uncompressed-models.jsonl` lists, with the manifest,
+  in the installer or the updater. Run it again after any change to `Art*.bar`; a WoL model added later under the
+  same name as a copy simply replaces it (the tool then treats it as WoL's).
+- **Or by each player**, on their own install: the same command; `--undo` removes exactly what it wrote, `--check`
+  verifies it. It needs Python and the bridge (.NET 8, x86), and it refuses any folder inside a Steam library, so
+  shipping the files is the route for most players.
+- **Smaller:** `--only-used <UHC.log>` keeps only the models a session opened (a game played with the full set and
+  `perfFileLog 0`); the rest are removed. Any model not copied is simply read from the archive as before.
+
 ## Skirmish route for videos (2026-11-04)
 
 The console cannot start a skirmish, but posted clicks do (2026-11-05): `testbed.py skirmish` goes from the

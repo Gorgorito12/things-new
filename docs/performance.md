@@ -884,6 +884,73 @@ is the AI (B) and one tech activation that loads a model (C, 73–80 ms).
   hooks and from XS; its cause is **[?]** and needs a repeat. What the fix changes was checked offline instead: the
   new `sin`/`cos` match the true values within 4 × 10⁻⁷ from −1500° to 1500°, in 11 steps per call.
 
+### Uncompressed models as loose files: `uncompress_models.py` (2026-11-13)
+
+The fallback the user accepted for the `modelCache` key (branch `worktree-agent-a23eaafb315e4ebd1`, commit 2bfd1dc,
+not merged: its runtime cache hung the save load in 11 of 22 sessions). The same uncompressed copies, written
+**offline** as loose files, which the game loads by itself. Per the art rule it lives in aoe3-blender-tools:
+`tools/uncompress_models.py <game folder> [--install --granny <bridge.exe>] [--check] [--undo] [--only-used <list>]`
+(that repo's `docs/game-formats.md`, "Uncompressed copies").
+
+- **What it does.** Every `.gr2` of `art\Art*.bar` with a compressed section, minus the names that already exist
+  loose (the mod's own: never read, changed or removed) and the 105 names stored with different bytes in two
+  archives, goes through `aoe3granny.exe rebake --noop --native-crc` (the bridge expands the sections with the
+  game's `granny2.dll`, reads original and copy back through it and writes only if the trees are identical). The
+  tool puts the root type reference (header dwords 5 and 6) back if the copy lost it (the bridge keeps it: 0 of
+  10,421 needed it), checks the container (same header but size and CRC, every section raw at its expanded size,
+  fixup tables and raw sections byte for byte, CRC), writes under a temporary name and renames, and records each
+  file and created folder in `uncompressed-models.jsonl` at the root of the copy before the rename. `--undo`
+  removes exactly those (a file changed since is left), `--check` re-hashes them and compares the archive entries
+  (a patched archive: run `--install` again, which rewrites only what changed). Refuses a Steam folder.
+- **WoL** (`C:\AoE3-UHC-WoLReal3`): 12,319 names in the archives; 10,421 written, 17 skipped as WoL's own loose
+  files, 1,776 already uncompressed, 105 ambiguous. **397 MB as stored → 1,041 MB on disk, 252 s** (16 logical
+  cores, 8 bridge processes), 0 failed; `--check` 4 s; a second `--install` with nothing changed: 4 s, 0 written.
+  WoL's own 6,199 loose models stay compressed (the tool never touches them).
+
+**A/B in WoL** (bed `C:\AoE3-UHC-WoLReal3`, save `wolvk-a32`, `tools/legacybench.py` 150 s, interleaved, no other
+game running, `bench.lock` held; cfg = WoL's own `wol.cfg` from `C:\WoL-Test` plus `perfStats`, `perfExecFile`,
+`multipleInstances background` and `perfFileLog 0` in every run, so no `fastLastInLine` and no `modelCache`; for the
+runs without copies the tool's files were moved out of the bed and back by the manifest). Everything is in
+`rea/evidence/age3y-b1a1dab7/uncompress-20261113/`: the drivers (`bench.py`, `hang.py`, `summ.py`, `used.py`; their
+paths are this session's), `runs\` (each run's output and `UHC.log`), the csv and stacks.
+
+| | `ab-base1` | `ab-raw1` | `ab-base2` | `ab-raw2` | `ab-base3` | `ab-raw3` |
+|---|---|---|---|---|---|---|
+| Loose uncompressed copies | no | **yes** | no | **yes** | no | **yes** |
+| Load of the save (last frame over 50 ms ends) | 11.62 s | **9.54 s** | 11.60 s | **9.54 s** | 11.64 s | **9.45 s** |
+| The load's two longest frames after the first | 3.82 + 2.47 s | **2.48 + 1.63 s** | 3.83 + 2.40 s | **2.49 + 1.62 s** | 3.91 + 2.41 s | **2.49 + 1.63 s** |
+| Frames over 50 ms in play | 10 | 11 | 10 | 12 | 11 | 8 |
+| … of them a model load (granny2.dll leaves) | 1 (72 ms) | **0** | 1 (79 ms) | **0** | 1 (80 ms) | **0** |
+| … LastInLine recompute / WoL's AI script | 6 / 3 | 6 / 5 | 6 / 3 | 6 / 6 | 7 / 3 | 6 / 2 |
+| Longest frame (a LastInLine recompute) | 382 ms | 369 ms | 380 ms | 373 ms | 390 ms | 427 ms |
+| FPS (mean) | 304.7 | 312.2 | 304.6 | 304.1 | 309.3 | 312.3 |
+| granny2.dll in the slow frames' samples | 2.3 % | 0 % | 3.0 % | 0.2 % | 1.9 % | 0.4 % |
+
+- **The load is 2.1 s shorter (−18 %) in every pair**, all of it in the two long frames that build the world.
+- **The one model frame of each run (72–80 ms, the "C" of "fastLastInLine and the AI fix") is gone.** The count of
+  frames over 50 ms does not drop because WoL's normal cfg leaves the LastInLine recompute (335–427 ms, the longest
+  frame) and the AI script's `towerManager`; with `fastLastInLine` and the fixed AI the model frame was the largest
+  one left (§9 above). The stock-game cheap test (`uhcbench25`, 2026-11-11): frames over 50 ms 2 → 0, longest
+  92–98 → 42 ms, load 1.1–1.9 s shorter.
+- FPS does not change (the copies change nothing once a model is loaded).
+
+**The hang check** (the bar the runtime cache failed, 11 hangs in 22): **14 of 14 sessions clean** (`hang.py`, labels
+`hc01`–`hc14`): each a new process of the bed with the 10,421 copies installed and the same cfg, `loadGame("wolvk-a32")`,
+20 s of play, `leaveGame()`, `WM_CLOSE`. Every one timed the load (9.15–10.18 s), presented frames in every second of
+play (252–298 FPS at its lowest second), and closed by itself with exit code 0; no hang, crash or silent exit. With the
+three `ab-raw` runs (150 s each) and a first, discarded try of `ab-raw1`, **18 of 18 sessions** with the copies reached
+the game. (The `ab-*` runs ended with exit code 1, base and raw alike, and their `UHC.log` stops partway through
+`perfFileLog`'s 13,000 lines: **[I]** `legacybench.py` killed them while they were still writing those lines at exit,
+30 s after `WM_CLOSE`; `hang.py`'s copy of it waits 300 s, and every session there exited by itself with 0.)
+
+**Recommendation.** Use the tool, and leave the `modelCache` branch unmerged (its runtime cache hung; the loose
+copies are the same bytes and the game reads them itself). For WoL: Maston runs it once per release on a clean
+copy and ships the files, or each player runs it (wol-migration.md, "Performance"). Cost: about 1 GB of disk
+(640 MB more than the archives' share), nothing at runtime. `--only-used` with a session's `perfFileLog 0` list
+keeps only what a game opens: one session of this save (load and 20 s of play) opened 1,708 `.gr2` files, 1,263 of
+them the tool's copies, **177 MB** (64 MB in the archives); other maps, civs and ages open others, so a list for
+shipping is the union of several sessions.
+
 ## Benchmark harness
 
 These parts of `src/features/perf.cpp` exist for measurement. The game behaves as stock with them.
@@ -949,7 +1016,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 |---|---|---|
 | Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | DLL feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
 | `readahead` option of `bufferedFileReads`: a worker thread reads the next block of each buffered file | DLL feature, opt-in | **Implemented and measured** (§9, "readahead, and the first measurement in WoL"). `verify` 0 mismatches (stock and WoL). It moves about 30 % of the block reads off the game's thread; no measured change in frames over 50/100 ms, stock or WoL. |
-| The stutters' remaining work: Oodle1 decompression of `.gr2` models and animations met for the first time (`GrannyReadEntireFile` in FUN_0046D7C3, `GrannyReadFileSection` in FUN_0043B6D7) | data or DLL | Found (§9, "The remaining stutters"). Not built: uncompressed `.gr2` files or a preload are the levers; the user decides. |
+| The stutters' remaining work: Oodle1 decompression of `.gr2` models and animations met for the first time (`GrannyReadEntireFile` in FUN_0046D7C3, `GrannyReadFileSection` in FUN_0043B6D7) | data (offline tool) | **Built and measured as data** (§9, "Uncompressed models as loose files"): aoe3-blender-tools' `uncompress_models.py` writes the archived models uncompressed as loose files (manifest, `--undo`). WoL: load −2.1 s, the model frame gone, 1,041 MB on disk. The runtime cache (`modelCache`, unmerged branch) hung and is not recommended. |
 | WoL's stutters (§9, "What WoL's stutters are"): **A** the LastInLine recompute 0x4918A8, quadratic in the tech count, run for a player after each status change of a HomeCity tech (every shipment): 300–400 ms in WoL, 74 % of the slow-frame time; **B** the AI rule `towerManager`, whose `sin` / `cos` are Taylor series in XS (`BAI::update` → `BXSRuntime::interpretRules`): 50–280 ms, 24 % | DLL feature (A); WoL's AI script (B) | A: **`fastLastInLine`, implemented and measured** (§9, "fastLastInLine and the AI fix"): `verify` 0 differing bits in 31 recomputes (WoL save and skirmish, beside WoL's DLL, stock game); 0.4–1.6 ms instead of 335–585 ms; A/B 150 s: frames over 100 ms 6 and 11 → 1 and 2, longest 382–384 → 191–243 ms. B: a fixed `aiWoLMain.xs` for Maston (`wolstutter-20261111/fixed/`): compiles and runs in a new game; its effect on towers and frames is not shown yet (a save keeps the old script; the rule's costly phase was not reached in 13 game minutes). |
 | Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. §11 measures the parts: the particle update (0.54 ms of 4.96) looked like the only self-contained one. Its safety check (§11, "particleWorker: safety check") rejected it: pass 0 reads what it writes, and it races with the world draw on the pose code's global buffers. |
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
@@ -1853,8 +1920,8 @@ whether the tracer caused it.
 1. `bufferedFileReads` follow-up: a multiplayer game with one player using it and the other not, to show
    it may differ between players.
 2. **The remaining stutter work** (found 2026-11-11, §9): Oodle1 decompression of `.gr2` files met for the first
-   time. The user decides between uncompressed `.gr2` files and a preload (memory; the exe is not LAA);
-   neither is built.
+   time. Answered 2026-11-13 with uncompressed copies as loose files, written offline (§9, "Uncompressed models as
+   loose files", models and animations alike); left: whether WoL ships them.
 3. **WoL's stutters** (§9, "What WoL's stutters are"): A is fixed by `fastLastInLine` (implemented, verified, measured). B: the fixed `aiWoLMain.xs` still has to be measured late in a game started with it (towers placed, no `towerManager` frames), then go to Maston. Open: the access violation at 0x40CC7B in the `sk-fixed` skirmish (render, granny), and why the HCRoyalDecreePortuguese activation did not trigger a recompute.
 4. Open questions:
    - which passes call the world draw 0x44FC96 under 0x408399: answered in §11 (pass 0 of the views and the
