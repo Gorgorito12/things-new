@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 70 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1521,6 +1521,22 @@ that key makes free is not asked of this one.
   alive slot of the unit vtable.
 - **Test:** the tags on a building, as in the [modding guide](modding-guide.md#researchgrants): its row counts points, a
   research takes one and costs its share, and a building with a Time factor researches that much slower.
+
+### customWalls
+
+Code: [buildings](porting-code/buildings.md#customwalls). It needs `AddProtoTagHandler`, in the
+[helpers](porting-code/helpers.md#proto-tags).
+
+- **Layout hook:** a 6-byte `jmp` at `0x9F677A` (`8B F8 3B FD 74 55`: `mov edi,eax / cmp edi,ebp / je 9F67D5h`) in the
+  wall layout FUN_009F66D9, after it found the player's civ (EAX; ESI = the player, EBP = 0). The function's return
+  address is at `[esp+100h]`. For the UI callers (returns `0x665A01` and `0x847E11`) and a cursor proto
+  `[[[0xC66234]+91Ch]+4A4h]` with `<WallPiece>` tags, it leaves at `0x9F6815` with EBP = the post, EDI and `[esp+44h]` =
+  the 5-long piece, `[esp+48h]` = the 2-long one, `[esp+4Ch]` and EAX = the gate (the player's copies, 0x45311B);
+  otherwise it runs the three instructions and goes on at `0x9F6780` or `0x9F67D5`.
+- **Post overlap hook:** a 6-byte `jmp` at `0x508DD4` (`8B 0D 34 62 C6 00`) in the placement test: EDI = the proto being
+  placed; a custom wall's post goes to `0x508DF3`, any other re-executes the `mov` and goes on at `0x508DDA`.
+- **Test:** a post proto with `wallBuild` and the tags, pieces with `wallBuild` and `wall.xml`: a wall between two clicks
+  must be of those pieces, and the stock `WallConnector` must still lay the civ's wall.
 
 ### annexFacing
 

@@ -139,6 +139,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"ResearchGrantTime", "researchGrants"},
     {L"ResearchGrantScope", "researchGrants"},
     {L"ResearchGrantMinCost", "researchGrants"},
+    {L"WallPiece", "customWalls"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

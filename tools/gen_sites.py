@@ -1513,6 +1513,24 @@ SITES = [
     ("FootprintVisibility", 0x493040, 0x10),
     ("FootprintHiddenTest", 0x493201, 0x0B),
     ("FootprintHiddenSkip", 0x4E0B1F, 0x0D),
+    # customWalls: the wall layout 0x9F66D9 (thiscall(store, player, points, count, -1)) takes its pieces from the
+    # player's civ ([civ+1E4h..1F8h], civs.xml <wall type=...>) or the stock names. mov edi,eax / cmp edi,ebp /
+    # je 9F67D5h (6 bytes, after the civ lookup; nothing branches inside) is replaced, and the next instruction,
+    # cmp dword [edi+1E4h],-1, is where the hook goes on. The merge xor esi,esi / cmp ebp,esi at 0x9F6815 and the
+    # stock-name branch push "WallConnector" at 0x9F67D5 (verify only). Its UI callers return to 0x665A01 (the
+    # drag preview) and 0x847E11 (the click that orders the wall).
+    ("WallLayoutCivPieces", 0x9F677A, 0x0D),
+    ("WallLayoutPiecesMerge", 0x9F6815, 4),
+    ("WallLayoutStockNames", 0x9F67D5, 5),
+    ("WallLayoutPreviewReturn", 0x6659FC, 0x0B),
+    ("WallLayoutOrderReturn", 0x847E0C, 0x0B),
+    # customWalls: the placement obstruction test lets a WallBuild proto stand on its owner's unit of the same proto
+    # only when that proto is "WallConnector" (a wall that starts on its own post). mov ecx,[0C66234h] (6 bytes, its
+    # first instruction; nothing branches inside) is replaced; the hook goes on at 0x508DDA, or at 0x508DF3 (add
+    # esi,14h), the accepted path, for a connector of a custom wall.
+    ("WallPostOverlap", 0x508DD4, 0x22),
+    # customWalls: BPlayer's proto by name, thiscall(player, const char*) (verify only, called).
+    ("PlayerProtoByName", 0x8D1998, 0x0A),
 ]
 
 
