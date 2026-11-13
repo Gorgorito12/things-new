@@ -242,6 +242,7 @@ enableFarmAnim, enableRectFarmAnim   gatherers work these buildings like a Mill 
 farmingRadius I X Z ...       per enableFarmAnim entry, the gatherers' area (stock 4.5)
 trainSingleAbstractType [T]   units of type T leave training one at a time
 wonderCivUnitType Proto ...   these units may start a wonder civ's age-up
+ageUpBuildings [log] Proto ...   these buildings open the age-up dialog, with the politicians they list
 kbUnitSyscalls                five KB syscalls for AI scripts (unit inventory, workers)
 marketUnits Proto ...         these buildings count as a Market for trading
 explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)

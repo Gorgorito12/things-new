@@ -394,7 +394,9 @@ bundle `rea/evidence/age3y-b1a1dab7/tier5-de-parity-20261112.json`:
   0x6A8B11 and 0x6A8B27) under FUN_0068DD0B, a boundary artifact: only the gather tick jumps there;
 - `ev_db72e459…` 0x462067 is in the command panel refresh FUN_0046188E (#56);
 - `ev_7605c6e9…` pseudocode of the politician list builder FUN_00818EE5, and `ev_727c1786…` 0x8191FE in it (#62);
-- `ev_057d53a7…` Ghidra has no function at 0x7E6905 (the age-up picker is read in capstone only).
+- `ev_057d53a7…` Ghidra has no function at 0x7E6905 (the age-up picker is read in capstone only);
+- 2026-11-13, bundle `tier5-56-62-20261113.json`: `ev_90be3ff9…` assembly of 0x4C6968 (no proto-list test),
+  `ev_c4c40df9…` pseudocode of the command panel refresh FUN_0046188E (the slot drawing, slot 3 = `[ui+2FCh]`).
 
 **[?]** marks what is unknown.
 
@@ -508,6 +510,12 @@ amount / yield. With 1.5 a tree lasts 1.5 times longer for the same income.
 - **What a key needs:** if that test shows the button working elsewhere, #56 is data only. Otherwise a hook at the
   failing check. For #57 (DE's command flag), the command collection (0x4C5A50) sends a tagged command to a big-button
   slot, and its click sends the command. **Size:** S if data only, M for the command flag.
+- **Result (2026-11-13, in game):** data only. `HuntingDogs` with the flag showed as the big button on a
+  Market (Ethiopians in a scenario, Dutch in a skirmish), and a click researched it. "Consulate only" is the
+  layout: the gadget `commandpanel2-bighugebutton` (slot 3, bound at 0x9969C7) lies over the command grid in
+  WoL's `uicommandpanelnew*.xml`, so the building's other buttons are hidden while it shows; moving it in those
+  files is enough ([modding guide](modding-guide.md#a-big-huge-button-on-any-building)). #57 not built: legacy's
+  `protounitcommands.xml` has no flags, so it needs a loader tag and a command path into slot 3 (M).
 
 ### #62 Five age-up choices; politicians outside the Town Center
 
@@ -530,11 +538,22 @@ amount / yield. With 1.5 a tree lasts 1.5 times longer for the same income.
     `AgeUpgrade` (0x461EF5 → 0x6962B5 → 0x6962E5) or flag 1Ch `RevoltTech` (0x461F4A → 0x69642B → 0x69646B), on any
     unit;
   - but the picker that opens the dialog requires the selected unit's proto to be the TownCenter (`[db+5E08h]`) for a
-    non-native civ, or the abstract type 16h `AbstractVillager` for a native civ (0x454ED7(player, 1)). The tests are
+    civ that is not Asian, or the abstract type 16h for an Asian civ (0x454ED7(player, 1) is isAsianCiv, not a native
+    test; corrected 2026-11-13). The tests are
     at 0x7E68F8..0x7E6920 and 0x7E8025..0x7E8057 (engine-symbols.md lists them under "Out of scope").
 - **What a key needs:** a cfg list of protos, or a proto tag, accepted at those two compares; the list builder already
   filters by the selected unit. **Size:** S for outside the Town Center. For more than five, [?] until the limit is
   located.
+- **Result (2026-11-13, in game):**
+  - Fewer than five: WoL's `uipoliticianEuropeandlg.xml` (as the stock one) has four places; the Asian and native
+    dialogs have five. A fifth politician with four places crashes at 0x81A80C (a null place gadget). With a fifth
+    place added to that file, the Dutch with six obtainable politicians saw five: data only
+    ([modding guide](modding-guide.md#five-politicians-in-the-european-age-up)).
+  - More than five: the dialog keeps five entries (`[dlg+270h]`, `+284h`, `+2ACh`, count `+26Ch` compared with 5 at
+    0x8191FE / 0x81A82A) and binds five places (0x818DBA): it needs a larger dialog object. Not built.
+  - The list builder does **not** filter by the unit's proto: 0x4C6968 checks status, flags and prerequisites only
+    (`ev_90be3ff9…`). Built: [`ageUpBuildings`](modding-guide.md#ageupbuildings), which widens the TownCenter
+    compare and, on a listed building, keeps the politicians its proto lists.
 
 ## What legacy does today
 

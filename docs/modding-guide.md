@@ -1248,6 +1248,7 @@ What the exe decides by civ.
 | [`bigButtonCivs`](#bigbuttoncivs-and-nobigbuttonblds), [`noBigButtonBlds`](#bigbuttoncivs-and-nobigbuttonblds) | Gives the command panel's big button to the listed civs, and takes it from the listed buildings. | **in `wol.cfg`** | Nothing. | partly confirmed |
 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | **new** | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player) |
 | [`wonderCivUnitType`](#wondercivunittype) | `Rangatira` may start the Maori age-up. Without it, the Maori cannot age up. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`ageUpBuildings`](#ageupbuildings) | The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | **new** | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. | confirmed (single player) |
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | **new** | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`firstTC`](#firsttc) | One line for `civFirstTC` and `startingTC`, with the town units and shipments worked out from the civ's tag. | **new** | `<firstTC>` in `civs.xml`, and the proto in `placementrules\colonies.xml` `<starttypes>`. | confirmed (single player) |
@@ -1504,6 +1505,52 @@ wonderCivUnitType Proto [Proto ...]
 - **Simulation:** changes who may age up: every player needs the same line.
 - **Status:** confirmed (2026-11-03, single player): the Maori Rangatira opened the age-up list; without
   the key the same click opened nothing.
+
+#### ageUpBuildings
+
+*Lets other buildings than the Town Center age up, each with its own politicians.*
+
+![ageUpBuildings in WoL](media/ageUpBuildings-wol.gif)
+
+*In WoL (a Dutch skirmish against a German AI, test data):* the Town Center's age-up opens the dialog
+with five politicians (the 5-slot layout of
+[Five politicians in the European age-up](#five-politicians-in-the-european-age-up)). Then the Market's
+age-up button, which stock ignores, opens it with the three politicians the Market lists (Crown Prince of
+Prussia, Aristocrat, Burgher); the Aristocrat is accepted and the age-up is queued in the Market, for 800
+food. [Full video (MP4)](media/ageUpBuildings-wol.mp4).
+
+![ageUpBuildings in WoL, key off](media/ageUpBuildings-wol-control.gif)
+
+*In WoL, key off (the same scene):* the Market's age-up button shows its rollover, and a click opens
+nothing. [Full video (MP4)](media/ageUpBuildings-wol-control.mp4).
+
+```
+ageUpBuildings [log] Proto [Proto ...]
+```
+
+- **In WoL without it:** a politician listed on another building shows an age-up button there, but the
+  click does nothing: the exe opens the dialog only for a Town Center (WoL's Greeks, Serbians and others
+  work around it with `NativeDance` techs such as `GREEKageupMILL01`).
+- **Effect:** the age-up button (and `uiPoliticianUI` / `uiPoliticianUIInSelected`) opens the politician
+  dialog on the listed protos too. On a listed proto the dialog shows only the politicians of the next age
+  that the proto's `<Tech>` list holds; the Town Center keeps every politician the player may research.
+  The chosen politician is researched in that building, at its own speed, and ages the player up as from
+  the Town Center.
+- **Data:** add the politicians to the building's `<Tech>` list in `protoy.xml`
+  (`<Tech column="0" page="1" row="0">WuOLAristocrat</Tech>`); the command panel then shows the age-up
+  button on it.
+- **Not for:** the civs that age up with wonders (the Asian civs and those of
+  [`asianCivs`](#asiancivs)): their age-up needs a builder, which [`wonderCivUnitType`](#wondercivunittype)
+  chooses. Revolutions use the same dialog and the same filter, but were not tested.
+- **Log:** `ageUpBuildings: N proto(s) open the age-up dialog besides the Town Center, with the politicians
+  they list`; `ageUpBuildings: K of N protos found in the data`; with `log`, `ageUpBuildings: the age-up
+  dialog opens on proto <ID>` each time, and the filter's first decision. No proto listed: `FAILED`.
+- **Simulation:** the dialog is interface; the research it sends is a normal research of that building.
+  Every player needs the same line. The AI picks its politicians in its scripts, not in this dialog
+  (inferred; its age-ups in the test were not watched).
+- **Status:** confirmed (2026-11-13, single player, Dutch): the Market opened the dialog with its three
+  politicians and aged up; key off, nothing opened. Not tested: multiplayer, a native civ's council, a
+  revolution.
 
 #### startingTC
 
@@ -6726,6 +6773,57 @@ stay at the ghost's angle.
   `gamey.con`, Shift + wheel did not turn it. By console, a saved game loaded with the yaw, and argument 0 did nothing.
   With `NotRotateable` on the proto the ghost stayed at −180°. The obstruction turns too (2026-11-08): a `WOLTorp` turned 90°
   did not fit where the unturned one did, and fitted where it overlapped. Not tested: multiplayer, recorded games.
+
+### A big huge button on any building
+
+JTMaston's #56 asks for `UseBigHugeButton` on other buildings than the Consulate. No key is needed: the
+legacy tech flag does it.
+
+![YPUseBigHugeButton on a Market](media/useBigHugeButton-wol.gif)
+
+*In WoL (a Dutch skirmish, test data):* `HuntingDogs` with `<Flag>YPUseBigHugeButton</Flag>`. The
+Market shows it as the big button where the portrait was; a click researches it (50 wood, 50 gold), and
+when it is done the Market's buttons are back. [Full video (MP4)](media/useBigHugeButton-wol.mp4).
+
+- **How:** `<Flag>YPUseBigHugeButton</Flag>` on a tech that a building lists in its `<Tech>` entries. The
+  command panel puts that tech in the gadget `commandpanel2-bighugebutton` instead of the grid, on any
+  building of any civ; the click researches it as a grid button would. Nothing in the exe ties it to the
+  Consulate: the Consulate's `ypPickConsulateTech` is only the one stock tech with the flag.
+- **What to know:** that gadget is 212 × 108 (1024 scale) over the right of the command panel, so while
+  the tech is available it covers the building's other buttons (in the video, Improve, Buy and Sell are
+  under it). For a building with other buttons, move or shrink `commandpanel2-bighugebutton` in
+  `data\uicommandpanelnew.xml`, `uicommandpanelnewmin.xml`, `uicommandpanelnewminobserver.xml` and
+  `uicommandpanelnewminobserverjp.xml`, all four. There is one such slot: one flagged tech at a time per
+  building.
+- **#57, DE's `UseBigHugeButton` on a `protounitcommands` entry:** not built. Legacy's
+  `protounitcommands.xml` has no flags at all, and a command takes the big slot only in the tech path
+  of the command panel; giving one to a command means a new tag in the file's loader and a second path in
+  the panel (size M). No DE data uses it.
+- **Status:** confirmed (2026-11-12 and 2026-11-13, single player): on a Market, with the Ethiopians (a
+  scenario) and the Dutch (a skirmish).
+
+### Five politicians in the European age-up
+
+JTMaston's #62 asks for up to five age-up choices, as in DE. The exe already holds five; WoL's European
+dialog has four places.
+
+- **What happens today:** `data\uipoliticianEuropeandlg.xml` (WoL's, and the stock one too) defines
+  `PoliticianDlg-Politician0` to `3` and `Size1Politicians` to `Size4Politicians`. The Asian and native
+  dialogs define five. The exe lists up to five politicians of the next age (FUN_0081A2B8 stops at 5) and
+  fills a place for each; with a fifth politician and only four places it crashes (access violation at
+  0x81A80C, the missing gadget of the fifth place). WoL's civs have four per age (their `Age0` techs make
+  four obtainable), so nobody meets it.
+- **How:** add the fifth place to `uipoliticianEuropeandlg.xml`: `PoliticianDlg-Politician4` with its
+  `PoliticianButton4`, `PoliticianHilightPositive4`, `Poli4Name`, `Poli4Cost`, `Poli4Description` and
+  `Poli4Portrait`, and `PoliticianDlg-Size5Politicians`, as the native dialog has them. The panels must fit
+  five side by side (the test used 186-pixel panels, 190 apart, from x 42; the exe placed them itself).
+  Then a sixth obtainable politician is left out, never a crash.
+- **More than five:** not possible in data. The dialog keeps five entries (`+270h`, `+284h`, `+2ACh`
+  arrays, the count at `+26Ch` compared with 5 at 0x8191FE and 0x81A82A) and binds five places by name
+  (loop to 5 at 0x818DBA); a sixth needs a bigger dialog object.
+- **Status:** confirmed (2026-11-13, single player): the Dutch with six obtainable age-I politicians
+  showed five in the Town Center's dialog (the first frames of the [`ageUpBuildings`](#ageupbuildings)
+  video); with WoL's 4-place file the same data crashed at 0x81A80C.
 
 ## 7. Multiplayer, saved games and replays
 

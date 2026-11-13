@@ -64,6 +64,7 @@ PAGES = {
         "danceBonusCivs": ["src/features/dance.cpp", "src/hooks/dance_hooks.asm"],
         "startingTC": ["src/features/startingtc.cpp", "src/hooks/startingtc_hooks.asm"],
         "civFirstTC": ["src/features/civfirsttc.cpp", "src/hooks/civfirsttc_hooks.asm"],
+        "ageUpBuildings": ["src/features/ageupbuildings.cpp", "src/hooks/ageup_hooks.asm"],
     }),
     "healing": ("Healing and hit points", {
         "healNonIdle": ["src/features/heal.cpp", "src/hooks/heal_hooks.asm"],
