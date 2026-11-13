@@ -877,7 +877,7 @@ is the AI (B) and one tech activation that loads a model (C, 73–80 ms).
   neither. The fix can only be measured in a game started with it.
 - **It compiles and runs** **[O]**. In a new 1v1 skirmish with the fixed file (Dutch against a German AI,
   `sk-fixed`), the AI's rules ran (`buyCards`, `popManager`, `econMaster`, …: 117 samples under `interpretRules`).
-- **Not shown: towers and the frames** **[?]**. In two new skirmishes (`sk-orig` with the old file, 10 game
+- **Not shown here: towers and the frames** (shown on 2026-11-13: "The AI fix in a long game" below). In two new skirmishes (`sk-orig` with the old file, 10 game
   minutes; `sk-fixed`, 13 game minutes) `towerManager` never appeared in the samples and the German AI built no
   tower: the rule's costly phase comes later in a game (the 32-minute save). `sk-fixed` then stopped with an access
   violation at 0x40CC7B, in render code that reads a model through granny (`call [0B8482Ch]`), far from the key's
@@ -951,6 +951,104 @@ keeps only what a game opens: one session of this save (load and 20 s of play) o
 them the tool's copies, **177 MB** (64 MB in the archives); other maps, civs and ages open others, so a list for
 shipping is the union of several sessions.
 
+### All performance keys in WoL, final A/B (2026-11-13)
+
+The keys of bug-fixes.md's "Performance" table together, against none of them, on WoL's long save. **Setup:** bed
+`C:\AoE3-UHC-WoLReal3` (WoL with this DLL, the build of commit 4b39bf1), save `wolvk-a32`, `tools/legacybench.py`
+150 s at 200 Hz after the load, the camera the save left (1920×1080, Direct3D 9), runs interleaved off/on, one game at
+a time, no other program over 10 % of a core, 16 GB free, `bench.lock` held. The cfg is WoL's own `wol.cfg` (from
+`C:\WoL-Test`) plus `perfStats`, `multipleInstances background` and `perfExecFile` in every run; **on** adds
+`bufferedFileReads 64`, `fastVertexFill`, `fastLastInLine`, `rendererOption` (no choice stored: DirectX 9) and
+`menuOptions bufferedFileReads fastVertexFill fastLastInLine` (no fields in `options.xml`: each key follows its cfg
+line). No loose uncompressed models in the bed; the save keeps WoL's original `aiWoLMain.xs`. Files:
+`rea/evidence/age3y-b1a1dab7/final-ab-20261113/` (`bench-fab-*.csv`, `.stacks.gz`, `.samples.txt`; the run outputs,
+`UHC.log`s and drivers `ab.py` / `summ.py` in `runs/`).
+
+| | `fab-off1` | `fab-on1` | `fab-off2` | `fab-on2` | `fab-off3` | `fab-on3` |
+|---|---|---|---|---|---|---|
+| Keys | off | **on** | off | **on** | off | **on** |
+| Load of the save (last frame over 50 ms ends) | 13.33 s | **9.38 s** | 10.92 s | **9.32 s** | 11.57 s | **9.57 s** |
+| FPS (mean) | 315.2 | **327.7** | 317.9 | **332.6** | 304.4 | **335.4** |
+| FPS, lowest 5 % of seconds | 246 | **292** | 256 | **296** | 250 | **298** |
+| Frames over 50 ms | 9 | 8 | 11 | 6 | 12 | 5 |
+| Frames over 100 ms | 7 | **3** | 9 | **2** | 9 | **2** |
+| Longest frame | 389 ms | **190 ms** | 402 ms | **177 ms** | 377 ms | **213 ms** |
+| Update / render per frame | 1.81 / 1.38 ms | 1.80 / **1.26** ms | 1.79 / 1.40 ms | 1.75 / **1.26** ms | 1.91 / 1.41 ms | 1.73 / **1.26** ms |
+| Slow frames: LastInLine / AI script / model load | 6 / 2 / 1 | **0** / 6 / 1 (+1 other, 87 ms) | 6 / 4 / 1 | **0** / 5 / 1 | 6 / 5 / 1 | **0** / 4 / 1 |
+| Time in them: LastInLine / AI script | 2.18 / 0.28 s | **0** / 0.69 s | 2.27 / 0.55 s | **0** / 0.47 s | 2.10 / 0.73 s | **0** / 0.51 s |
+
+- **Load −2.5 s** (11.9 s → 9.4 s on average; `fab-off1`, the first run of the series, 13.3 s; without it −1.8 s,
+  −16 %): `bufferedFileReads`, as in "readahead, and the first measurement in WoL" (11.5 → 9.5 s).
+- **FPS +6 %** (312.5 → 331.9 on average, every pair +4 to +10 %), and **the lowest 5 % of seconds +17 %** (251 →
+  295): the render part of the frame 1.40 → 1.26 ms (−10 %), `fastVertexFill` on the flags of the save's view.
+  The update part does not change (1.84 → 1.76 ms, within noise).
+- **Frames over 100 ms 7–9 → 2–3, the longest frame 377–402 → 177–213 ms**: every LastInLine recompute is gone
+  (6 per run, 335–402 ms each; `fastLastInLine` did each in 3.6–4.1 ms for all six). What is left over 50 ms is
+  WoL's AI script (`towerManager`, 4–6 frames, up to 213 ms: the save keeps the old `sin`/`cos`, see "The AI fix in
+  a long game" below) and one model loaded by a tech (67–80 ms, the frame the uncompressed copies remove).
+- The AI-script frames vary from run to run (2–6) with or without the keys: the AI's random choices replay
+  differently after the load.
+
+**Smoke test of the on runs** (all three): `UHCMain: 30 applied, 0 failed` (the off runs 26); no `FAILED` line;
+`menuOptions` logged the three keys as following their cfg lines; `rendererOption: DirectX 9`; hooks reached:
+`fastVertexFill cloth flag fill (0x40D523)`, `fastLastInLine (0x4918A8)`; `fastLastInLine: 6 recomputes (13679
+dependency tests, 3.6–4.1 ms in all), 0 handed to the stock code`. The AI is alive: its rules run under
+`interpretRules` in every run (the AI-script frames above), and `Age3Log.txt` has no `XS: Error` or `could not
+compile`. `rendererOption` and `menuOptions` wrote no `uhc-options.cfg` (no choice was made in the menu).
+A save runs the AI script stored in it, so this shows the AI alive only for a loaded game. **WoL-Test's `wol.cfg` is not
+enough for a new game with this DLL:** without `customAbstractTypes` (wol-migration.md, "The bed") a new skirmish
+stopped every AI at `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` (`trace_xs.py`: `Error 0172:
+'cUnitTypeAbstractWoLHandCavalry' is not a valid operator`, in `setUnitPickerPreference`; seen with the keys on, and the type is the one `customAbstractTypes` registers). The
+new-game check is the long games of "The AI fix in a long game" below: the bed's own cfg (WoL's plus
+`customAbstractTypes` and the bed's other keys) with the five performance keys.
+
+**Verdict.** With all the performance keys on, WoL's 32-minute save loads 2.5 s faster, runs 6 % faster (17 % in its
+slowest seconds), and has a third as many frames over 100 ms, the longest halved. Nothing failed beside WoL's normal
+keys. Left: the AI script's frames (the fixed `aiWoLMain.xs`) and the model loads (the uncompressed copies).
+
+### The AI fix in a long game (2026-11-13)
+
+What "fastLastInLine and the AI fix" left open: does the fixed `aiWoLMain.xs` (`wolstutter-20261111/fixed/`) remove
+the `towerManager` frames late in a game, and do the AIs place towers. **Setup:** bed `C:\AoE3-UHC-WoLReal3`, two new
+skirmishes started the same way, one with WoL's original `AI4\aiWoLMain.xs` (`lg-orig`) and one with the fixed file
+(`lg-fixed`): five players free for all on ESOC High Plains, hard, an idle Dutch player 1 and four AIs left by
+`ai_personality.py` (`wolAlexander`, `wolFerdinand`, `wolVictoria`, `wolNapoleon`: Russians, Bulgarians, British,
+French, all with a tower count above 0: `btOffenseDefense` ≤ 0). cfg: the bed's own (WoL's plus `customAbstractTypes`
+and the bed's keys) with the five performance keys, so no LastInLine frame. `gameSpeedMult(3)` to 31 game minutes,
+then normal speed (the skirmish's 2.2×); from minute 32, 600 s of `perfprobe --sample-hz 200` and `xsprobe.py` at
+100 Hz (the XS call stack of each sample in the AI); tower counts by `testbed.py units`. No other game, `bench.lock`
+held. Files: `rea/evidence/age3y-b1a1dab7/aifix-long-20261113/` (`bench-lg-*.csv`, `.stacks.gz`, `.samples.txt`,
+`lg-*.xs.txt`, the logs, both saves at minute 54; drivers `long.sh`, `waitgt.py`, `tower.py` in `scripts/`).
+
+| Game minutes 32–54 (600 s) | `lg-orig` (original file) | `lg-fixed` (fixed file) |
+|---|---|---|
+| Frames over 50 ms | 8 | 5 |
+| Frames over 100 ms | 7 | **0** |
+| Longest frame | 359 ms | **89 ms** |
+| Slow frames whose XS stack is `towerManager` → `rotateByReferencePoint` → `sin`/`cos` → `pow`/`fact` | **7** (100–359 ms, 1.25 s in all; three different AIs) | **0** |
+| XS samples in `towerManager` (of them in `sin`/`cos`) | 144 (140) | 9 (3) |
+| The other slow frames | 1 model load (89 ms) | 5 model loads (granny, 52–89 ms) |
+| FPS (mean), update / render per frame | 359.3, 1.7 / 1.1 ms | 355.2, 1.7 / 1.1 ms |
+| Towers standing at 10 / 20 / 31 game minutes | 6 / 14 / 17 | 4 / 17 / 17 |
+| … at 54 minutes | 15 | 9 (two AIs nearly beaten) |
+
+- **The AI's stutter is gone** **[O]**: every frame over 100 ms of the original game is the `towerManager` chain
+  (the leaves `pow` and `fact`), none in the fixed game, whose slow frames are all model loads.
+- **Towers** **[O]**: the AIs build them with either file, about as many (17 standing at 31 minutes in both games).
+  So the inference of "What WoL's stutters are" that the NaN positions make the rule fail to place towers is
+  **not** borne out: the rule tries several rotated spots per run and enough of them have a small angle. The fix
+  changes the cost of the rule, not the number of towers seen here (two games, different maps of events).
+- **No crash** **[O]**: both games ran to minute 54 and closed cleanly; the access violation at 0x40CC7B of
+  `sk-fixed` (2026-11-12) did not come back with either file. Both AIs compiled and ran (XS samples from minute 3).
+- **The resign prompt** **[O]**: an AI that is losing calls `aiAttemptResign(cAICommPromptToEnemyMayIResign)`, which
+  asks the human and pauses a single-player game (`lg-orig` at 28.2 game minutes, `lg-fixed` at 21.9). The console
+  `pause(1)` then `pause(0)` resumed both (the driver's watchdog does it after 30 s of a still clock).
+- **The keys in a new game** (the check "All performance keys in WoL" could not make on a save): `UHCMain: 38 applied,
+  0 failed` in both; `fastLastInLine` did 84 and 95 recomputes (47 and 52 ms in all for the whole game) and
+  `fastVertexFill`'s hook was reached.
+
+`FOR-MASTON.txt` (beside the fixed file) has these results for JTMaston.
+
 ## Benchmark harness
 
 These parts of `src/features/perf.cpp` exist for measurement. The game behaves as stock with them.
@@ -1017,7 +1115,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | Buffered file reads (`bufferedFileReads`): a read-ahead buffer per read-only file, behind the exe's `ReadFile` / `SetFilePointer` IAT entries | DLL feature | **Implemented and measured** (§9, A/B). Frames over 100 ms dropped from 11 to 3, and session `ReadFile` time from 14.9 s to 1.0 s. `verify` checked 7.5 M reads: 0 mismatches. Not tested in multiplayer; it does not change the simulation. |
 | `readahead` option of `bufferedFileReads`: a worker thread reads the next block of each buffered file | DLL feature, opt-in | **Implemented and measured** (§9, "readahead, and the first measurement in WoL"). `verify` 0 mismatches (stock and WoL). It moves about 30 % of the block reads off the game's thread; no measured change in frames over 50/100 ms, stock or WoL. |
 | The stutters' remaining work: Oodle1 decompression of `.gr2` models and animations met for the first time (`GrannyReadEntireFile` in FUN_0046D7C3, `GrannyReadFileSection` in FUN_0043B6D7) | data (offline tool) | **Built and measured as data** (§9, "Uncompressed models as loose files"): aoe3-blender-tools' `uncompress_models.py` writes the archived models uncompressed as loose files (manifest, `--undo`). WoL: load −2.1 s, the model frame gone, 1,041 MB on disk. The runtime cache (`modelCache`, unmerged branch) hung and is not recommended. |
-| WoL's stutters (§9, "What WoL's stutters are"): **A** the LastInLine recompute 0x4918A8, quadratic in the tech count, run for a player after each status change of a HomeCity tech (every shipment): 300–400 ms in WoL, 74 % of the slow-frame time; **B** the AI rule `towerManager`, whose `sin` / `cos` are Taylor series in XS (`BAI::update` → `BXSRuntime::interpretRules`): 50–280 ms, 24 % | DLL feature (A); WoL's AI script (B) | A: **`fastLastInLine`, implemented and measured** (§9, "fastLastInLine and the AI fix"): `verify` 0 differing bits in 31 recomputes (WoL save and skirmish, beside WoL's DLL, stock game); 0.4–1.6 ms instead of 335–585 ms; A/B 150 s: frames over 100 ms 6 and 11 → 1 and 2, longest 382–384 → 191–243 ms. B: a fixed `aiWoLMain.xs` for Maston (`wolstutter-20261111/fixed/`): compiles and runs in a new game; its effect on towers and frames is not shown yet (a save keeps the old script; the rule's costly phase was not reached in 13 game minutes). |
+| WoL's stutters (§9, "What WoL's stutters are"): **A** the LastInLine recompute 0x4918A8, quadratic in the tech count, run for a player after each status change of a HomeCity tech (every shipment): 300–400 ms in WoL, 74 % of the slow-frame time; **B** the AI rule `towerManager`, whose `sin` / `cos` are Taylor series in XS (`BAI::update` → `BXSRuntime::interpretRules`): 50–280 ms, 24 % | DLL feature (A); WoL's AI script (B) | A: **`fastLastInLine`, implemented and measured** (§9, "fastLastInLine and the AI fix"): `verify` 0 differing bits in 31 recomputes (WoL save and skirmish, beside WoL's DLL, stock game); 0.4–1.6 ms instead of 335–585 ms; A/B 150 s: frames over 100 ms 6 and 11 → 1 and 2, longest 382–384 → 191–243 ms. B: a fixed `aiWoLMain.xs` for Maston (`wolstutter-20261111/fixed/`): **measured** (§9, "The AI fix in a long game"): in game minutes 32–54 of a new five-player game, frames over 100 ms 7 → 0 (all seven were `towerManager`), longest 359 → 89 ms; the AIs build as many towers with either file. |
 | Moving render-side work to other threads | DLL feature | Rejected for now (§9): at most about +30 % FPS even if perfect, and it needs a restructuring of exe code. §11 measures the parts: the particle update (0.54 ms of 4.96) looked like the only self-contained one. Its safety check (§11, "particleWorker: safety check") rejected it: pass 0 reads what it writes, and it races with the world draw on the pose code's global buffers. |
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
 | Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Measured in a local build (§11): no change beyond noise. Dropping MULTITHREADED is unsafe, because the loading-screen thread calls Direct3D. Back buffers only matter with vsync on. |
@@ -1922,7 +2020,7 @@ whether the tracer caused it.
 2. **The remaining stutter work** (found 2026-11-11, §9): Oodle1 decompression of `.gr2` files met for the first
    time. Answered 2026-11-13 with uncompressed copies as loose files, written offline (§9, "Uncompressed models as
    loose files", models and animations alike); left: whether WoL ships them.
-3. **WoL's stutters** (§9, "What WoL's stutters are"): A is fixed by `fastLastInLine` (implemented, verified, measured). B: the fixed `aiWoLMain.xs` still has to be measured late in a game started with it (towers placed, no `towerManager` frames), then go to Maston. Open: the access violation at 0x40CC7B in the `sk-fixed` skirmish (render, granny), and why the HCRoyalDecreePortuguese activation did not trigger a recompute.
+3. **WoL's stutters** (§9, "What WoL's stutters are"): A is fixed by `fastLastInLine` (implemented, verified, measured). B: the fixed `aiWoLMain.xs`, measured in a long game (2026-11-13): no `towerManager` frame (7 with the original file, up to 359 ms), as many towers; ready for Maston. The access violation at 0x40CC7B of `sk-fixed` did not recur in two 54-minute games. Open: why the HCRoyalDecreePortuguese activation did not trigger a recompute.
 4. Open questions:
    - which passes call the world draw 0x44FC96 under 0x408399: answered in §11 (pass 0 of the views and the
      main view), except what pass 0 renders;
