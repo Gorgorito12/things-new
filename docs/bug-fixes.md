@@ -189,7 +189,7 @@ stealthTargeting [log]
 
 *Cannon splinters land on the building they hit, instead of flying over the whole screen, on models whose impact bones are scaled.*
 
-**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Thursday 2026-11-12 16:03
+**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Friday 2026-11-13 11:39
 
 ![impactBoneFix in WoL](media/impactBoneFix-wol.gif)
 
@@ -209,7 +209,9 @@ impactBoneFix [all] [log]
 ```
 
 - **In WoL today:** JTMaston's #49. The Middle East buildings (Afghans, Persians, Saudis, Uzbeks: `art\WoL\buildings\ME`)
-  use `stone` and `rooftile`, and their `oasis*.dmg` uses `wood`; any of them with `wood` shows the bug.
+  use `stone` and `rooftile`, and any of them with `wood` shows the bug. Shipping data that already does: `oasis1/2/4.dmg`
+  put `wood` on 15 impact points of `ME\temple\Temple2_dmg_Model`, whose impact bones are scaled by 100, and `TOW`'s
+  `tower.dmg` puts it on 7 points of `TowerDamagedTest_Model` (found by the scan below; not filmed).
 - **Why:** an impact effect whose `<particleset>` names an `.xml` (stock `cannon.impacteffect`'s `<wood>` names
   `effects\impacts\cannonball_impact_wood.xml`) is a visual, and the game hangs it on the bone of the impact point it hit,
   with the bone's whole frame. The bones of these models are scaled by 100 (the export's centimetres); the stock House's
@@ -219,14 +221,60 @@ impactBoneFix [all] [log]
   bone's. Bones of length 1 (every stock model) are not touched.
 - **`all`:** the same for any visual hung on a bone (flags, smoke, fire points), not only the impact points. Not needed for
   #49; not tested.
-- **Without the key, in the data:** export the models with unscaled bones, or use a plain particle set in that element of
-  the `.impacteffect`.
+- **Without the key, in the data:** fix the models with `tools/fix_bone_scale.py` of
+  [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) (branch `fix-bone-scale`). It takes every bone
+  no mesh is bound to whose world scale is at least 10 times off (impact points, flags, launch points, dummies), gives it a
+  local scale that brings its axes to length 1, keeps its place and direction, scales its inverse with it, writes over the
+  old values with the file's CRC recomputed, and reads the result back before writing. Mesh-bound bones are never touched,
+  so nothing deforms; a scaled root over debris meshes, or an unevenly scaled bone, is left and listed. WoL's models are
+  Oodle-compressed: the tool reads them through the Granny bridge (`aoe3granny.exe`, built in `Cosas_magicas_wol`, which
+  loads the game's own `granny2.dll`) and writes them uncompressed (the 28 fixed Mahalla models: 1.40 MB to 3.32 MB). On a
+  copy of WoL, from the tool's repository:
+
+  ```
+  python -I tools/fix_bone_scale.py "<WoL copy>\art\WoL\buildings" --dry-run --granny <aoe3granny.exe> --granny-install "<WoL copy>"
+  python -I tools/fix_bone_scale.py "<WoL copy>\art\WoL\buildings" -o <out folder> --granny <aoe3granny.exe> --granny-install "<WoL copy>"
+  ```
+
+  `-o` writes only the changed files, at their paths below `<out folder>`, to copy over `art\WoL\buildings` (without `-o`
+  it rewrites each file in place after a `.bak` copy). `art\TOW\buildings` the same. The other way: a plain particle set in
+  that element of the `.impacteffect`.
+
+  ![The Mahalla's models fixed, key off](media/impactBoneFix-wol-modelfix.gif)
+
+  *In WoL, key off, with the Mahalla's 28 models fixed by the tool (the same `wood` data; two Falconets on it, the Mahalla
+  selected):* every hit plays its splinters, smoke and fire on the wall it hits, as with the key on; the building burns,
+  collapses and leaves its rubble as before. [Full video (MP4)](media/impactBoneFix-wol-modelfix.mp4).
+
+  ![The Mahalla's own models, key off](media/impactBoneFix-wol-modelfix-control.gif)
+
+  *Control, the same run with WoL's own models:* the long grey streaks across the view on every hit.
+  [Full video (MP4)](media/impactBoneFix-wol-modelfix-control.mp4).
+- **Scan of WoL (2026-11-13,** `C:\AoE3-UHC-WoLReal3`, read-only, every `.gr2` loose and inside `Art*.bar`: 18,501 files):
+  341 have bones the tool fixes, 2,558 in all (2,307 at scale 100, 140 at 60, the rest from 0.026 to 41):
+  - `WoL\buildings\ME` 90 and `WoL\buildings\immigrants` 20 (impact points, `GARRISONFLAG`, launch and attach points),
+    `WoL\buildings` 1 more, `TOW\buildings` 4, `buildings\tower\lvl3` and `buildings\modern` 3;
+  - units: `War of the Triple Alliance\units\delta` 72 and `delta\hats` 69 (a `head` bone at 60), the `battlecruiser_*`
+    units 77 (gun and cannon dummies, damage points);
+  - in the stock archives only 4 (a mortar's wheel links at 0.1, the low-poly war dogs at 0.012), no impact or flag bone.
+
+  Only `wood` has an `.xml` visual in this copy's impact effects (`cannon`, `explosivecannon`, `flesh`, `corpse`). 20
+  fixable models have `.dmg` impact points on scaled bones (Mahalla 6, Forge, Foundry, Gunsmith, Madrasah 2 each,
+  Caravanserai, Citadel, Royal Court, Temple 1 each, TOW tower 2); the two with `wood` are named above. 74 files keep a
+  bone the tool must leave: 64 a root or impact bone with debris meshes below it (the death models, and the `fountain*_dmg`
+  and `huka_damaged` impact points, all `stone`), 31 bones scaled unevenly. Run the tool on the buildings: the units'
+  bones are untested in game, and a model hung on another by one of its own bones (`<attach frombone=…>`, the hats) may be
+  placed through that bone's frame.
 - **Simulation:** no, it is drawing only.
 - **Log:** `impactBoneFix: effects attached to impact bones get unit-length axes`, `hook reached: impactBoneFix dummy frame,
   path 1 (0x4BE21E)` and `path 2 (0x4BE88D)`; with `log`, the first bone it scales and its length.
 - **Tested in WoL (2026-11-12):** the Mahalla with `wood`: streaks on screen with the key off, splinters on the walls with
   it on; the stock House (`wood`, bones of length 1) looks the same either way; the Mahalla with its own `stone`: no streaks
   either way. Beside WoL's own DLL, key off, the streaks show too. Not tested: `all`, ships, multiplayer.
+  **2026-11-13:** key off, the Mahalla's models fixed by `fix_bone_scale.py`: splinters on the walls, the building stands,
+  burns and collapses as with WoL's models (the construction and collapse models had nothing to fix). The fixed models were
+  removed from the bed after the test. Not tested: the fixed Mahalla garrisoned (its `GARRISONFLAG` is fixed too) or
+  firing from its launch point, the other buildings, the units.
 
 ### Gathering and farms
 
