@@ -6936,6 +6936,10 @@ playerIcon <avatarId>
   square picture fits; the slot shows it at 48 × 48. The stock loader also reads `<tier>`, `<minLevel>`,
   `<type>clan</type>` and `<civ>` (ESO's rules), which LAN ignores; leave them out (an unknown `<civ>` drops the entry).
 - **Choosing an icon:** the cfg value is the only way; there is no picker in the lobby. One avatar per copy of the game.
+- **Which pictures:** the mod's own. Ship the avatar table and the `.ddt` files with the mod, so every player has
+  them and sees everyone's icon.
+- **In game:** the key works in the lobby only. WoL's observer files already show `art\specvatars\<playerName>.ddt`
+  in game through the stock text markup, with no DLL.
 - **An unknown ID** (not in any table, or no table at all): the slot keeps the civ portrait, as stock does.
 - **Other players:** a player without this key sees your icon if they have the same table and picture, until your next
   civ change, which puts the civ portrait back on their screen (their game does not keep it). A player without the
