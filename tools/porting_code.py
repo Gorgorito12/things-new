@@ -114,6 +114,7 @@ PAGES = {
         "gaiaSocketsOnly": ["src/features/sockets.cpp", "src/hooks/socket_hooks.asm"],
         "hcShipmentPointFallback": ["src/features/shipments.cpp", "src/hooks/shipment_hooks.asm"],
         "annexFacing": ["src/features/annexfacing.cpp", "src/hooks/annexfacing_hooks.asm"],
+        "customWalls": ["src/features/customwalls.cpp", "src/hooks/customwalls_hooks.asm"],
     }),
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],

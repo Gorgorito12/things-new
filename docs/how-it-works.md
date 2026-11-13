@@ -3654,6 +3654,40 @@ before the function's own pushes: ESP, EBX, ESI, EDI and EBP are untouched on bo
 `ret 1Ch` as the stock failure path 0x4974C1. The mask and the state bit are simulation state, computed for every player
 on every machine; the key reads no local player and no clock.
 
+### customWalls
+
+**Walls in the stock exe.** A proto with the flag `wallBuild` (bit 3Ah of `[proto+50h]`, tested with 0x45EE02) enters the
+edit mode `buildWall` when its button is pressed (0x7E4762), whose clicks run `uiBuildWallAtPointer` (0x7DFE31 →
+0x84B5B3 → 0x847DBF on the world UI `[game+91Ch]`; the proto on the cursor is `[ui+4A4h]`). The wall layout 0x9F66D9,
+`thiscall(store, player, points, count, -1)`, splits each stretch between two clicked points into posts and pieces with
+four protos: the post, the 5-long and 2-long straights and the gate (the gate only to join an existing one, through
+0x9F5703). It takes them from the player's civ: `[civ+1E4h]` (Straight2), `[civ+1E8h]`, `[civ+1ECh]` (Straight3, 4, used
+by the AI's walls only), `[civ+1F0h]` (Straight5), `[civ+1F4h]` (Gate), `[civ+1F8h]` (Connector), all -1 in the
+civ's constructor (0x52A2C3); they come from the stock `civs.xml` tag `<wall type="...">proto</wall>` (the parser at
+0x65A354 keeps the names at `[civ+1CCh..1E0h]`). A civ without them gets the names `WallConnector`, `WallStraight5`,
+`WallStraight2` and `CWallGate` through BPlayer's proto by name 0x8D1998. So every `wallBuild` proto lays the civ's
+stone wall. The layout has three callers: the drag preview 0x6659FC, the click that orders the wall 0x847E0C (which then
+sends one build order per post and piece, 0x84786F → 0x82F548, each with its proto) and 0x741299, of another object; the
+AI's walls use another builder, 0x9F71A5, with the same civ fields.
+
+**The hooks.** At 0x9F677A (after the civ lookup; EAX = the civ, ESI = the player, EBP = 0) `UhcCustomWallPieces(player,
+return address, out[4])` decides: only for the two UI callers (return address `[esp+100h]` = 0x665A01 or 0x847E11) and
+a cursor proto with `<WallPiece>` tags (read with `AddProtoTagHandler`). The names are resolved to proto IDs once
+(0x8D1998 on the first player that lays such a wall; IDs are the same for every player) and each call takes the
+player's copies with 0x45311B. The hook then leaves at the merge 0x9F6815 with the registers and stack slots both stock
+branches leave there: EBP the post, EDI and `[esp+44h]` the 5-long piece, `[esp+48h]` the 2-long one, `[esp+4Ch]` and
+EAX the gate; otherwise it re-executes `mov edi,eax / cmp edi,ebp / je 9F67D5h` and goes on at 0x9F6780. The placement
+test lets a `wallBuild` proto stand on its owner's unit of the same proto only when it is the player's `WallConnector`
+(0x508DD4..0x508DED); the second hook, at its first instruction, accepts a custom wall's post too (0x508DF3), so a line
+can start on the post of another.
+
+**Why it is safe.** The layout hook keeps EBX, ESI and EBP on the stock path (the C function is stdcall), and the code at
+0x9F6780 and 0x9F67D5 sets EAX, ECX and EDX before reading them; the custom path fills exactly what 0x9F6815 and later
+read (checked by capstone on both stock branches). The overlap hook clobbers only ECX, which the re-executed `mov`
+writes, and EAX/EDX, which the stock path overwrites with its calls before reading. The decision reads the local UI,
+so it is not simulation: it only chooses the protos of the build orders the click sends, which every machine receives
+as for the stock wall. The AI's walls (0x9F71A5) and the caller 0x741299 keep the civ's pieces.
+
 ### Tech subtypes on the built tags: a value per player's copy
 
 A `Data` subtype's handler gets the player's copy of the proto and the base it was cloned from (`techsubtypes.h`),

@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 18:01 | [`customWalls`](#customwalls) | Added. A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. |
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
@@ -5930,7 +5931,7 @@ repairWallGlobal
 
 *Any building can be laid like a wall, from a point A to a point B, with its own posts and pieces instead of the civ's stone wall.*
 
-**Added:** Thursday 2026-11-12 18:00 · **Filmed in WoL:** Thursday 2026-11-12 18:00
+**Added:** Thursday 2026-11-12 18:01 · **Filmed in WoL:** Thursday 2026-11-12 18:01
 
 ![customWalls in WoL](media/customWalls-wol.gif)
 
@@ -6000,8 +6001,11 @@ and on each piece it names, as the stock `WallStraight2` has:
 - **With other keys:** none shares its sites.
 - **Tested in WoL (2026-11-12, single player, Ethiopians):** with the key, two lines of barbed wire (5 posts and 4 pieces each,
   the second one from the last post of the first) were laid and built by the pioneers; the stock `WallConnector` of a `Settler`
-  still laid the Ethiopians' own wall. Key off, the same clicks laid the Ethiopians' wall. Not tested: multiplayer, beside WoL's
-  DLL, a saved game.
+  still laid the Ethiopians' own wall. Key off, the same clicks laid the Ethiopians' wall. `customWalls log bogus`: logged, not
+  applied. `type="Tower"`: logged and skipped; a gate named `NoSuchProto`: logged once, and the wall was the Ethiopians' (no
+  crash). A skirmish of 100 s against `wolOtto` (Germans) with the key and the test data: no XS error, the AI played. The
+  hook runs only while a wall is being placed, a map lookup per frame of the drag; the videos show 950 fps with and without
+  the key. Not tested: multiplayer, beside WoL's DLL, a saved game.
 
 #### hcShipmentPointFallback
 

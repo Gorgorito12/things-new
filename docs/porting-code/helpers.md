@@ -1956,6 +1956,27 @@ inline constexpr Site kFootprintHiddenTest{"FootprintHiddenTest", 0x00493201, kF
 inline constexpr std::uint8_t kFootprintHiddenSkipBytes[] = {0x84, 0xC0, 0x0F, 0x85, 0xE5, 0x26, 0xFB, 0xFF, 0xE9, 0x28, 0x26, 0xFB, 0xFF};
 inline constexpr Site kFootprintHiddenSkip{"FootprintHiddenSkip", 0x004E0B1F, kFootprintHiddenSkipBytes, sizeof(kFootprintHiddenSkipBytes)};
 
+inline constexpr std::uint8_t kWallLayoutCivPiecesBytes[] = {0x8B, 0xF8, 0x3B, 0xFD, 0x74, 0x55, 0x83, 0xBF, 0xE4, 0x01, 0x00, 0x00, 0xFF};
+inline constexpr Site kWallLayoutCivPieces{"WallLayoutCivPieces", 0x009F677A, kWallLayoutCivPiecesBytes, sizeof(kWallLayoutCivPiecesBytes)};
+
+inline constexpr std::uint8_t kWallLayoutPiecesMergeBytes[] = {0x33, 0xF6, 0x3B, 0xEE};
+inline constexpr Site kWallLayoutPiecesMerge{"WallLayoutPiecesMerge", 0x009F6815, kWallLayoutPiecesMergeBytes, sizeof(kWallLayoutPiecesMergeBytes)};
+
+inline constexpr std::uint8_t kWallLayoutStockNamesBytes[] = {0x68, 0x44, 0x80, 0xC3, 0x00};
+inline constexpr Site kWallLayoutStockNames{"WallLayoutStockNames", 0x009F67D5, kWallLayoutStockNamesBytes, sizeof(kWallLayoutStockNamesBytes)};
+
+inline constexpr std::uint8_t kWallLayoutPreviewReturnBytes[] = {0xE8, 0xD8, 0x0C, 0x39, 0x00, 0x8B, 0x95, 0xB4, 0x04, 0x00, 0x00};
+inline constexpr Site kWallLayoutPreviewReturn{"WallLayoutPreviewReturn", 0x006659FC, kWallLayoutPreviewReturnBytes, sizeof(kWallLayoutPreviewReturnBytes)};
+
+inline constexpr std::uint8_t kWallLayoutOrderReturnBytes[] = {0xE8, 0xC8, 0xE8, 0x1A, 0x00, 0x33, 0xDB, 0xF6, 0x05, 0x08, 0xB7};
+inline constexpr Site kWallLayoutOrderReturn{"WallLayoutOrderReturn", 0x00847E0C, kWallLayoutOrderReturnBytes, sizeof(kWallLayoutOrderReturnBytes)};
+
+inline constexpr std::uint8_t kWallPostOverlapBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x68, 0x44, 0x80, 0xC3, 0x00, 0xE8, 0xA6, 0xF0, 0xEF, 0xFF, 0x8B, 0xC8, 0xE8, 0xAD, 0x8B, 0x3C, 0x00, 0x3B, 0xF8, 0x0F, 0x85, 0x8B, 0xE7, 0xFF, 0xFF, 0x83, 0xC6, 0x14};
+inline constexpr Site kWallPostOverlap{"WallPostOverlap", 0x00508DD4, kWallPostOverlapBytes, sizeof(kWallPostOverlapBytes)};
+
+inline constexpr std::uint8_t kPlayerProtoByNameBytes[] = {0x53, 0x55, 0x8B, 0x6C, 0x24, 0x0C, 0x85, 0xED, 0x8B, 0xD9};
+inline constexpr Site kPlayerProtoByName{"PlayerProtoByName", 0x008D1998, kPlayerProtoByNameBytes, sizeof(kPlayerProtoByNameBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2403,6 +2424,7 @@ Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
+Outcome ApplyCustomWalls(const Config& config);
 Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
@@ -2530,6 +2552,7 @@ inline constexpr Feature kFeatures[] = {
     // After cantBeSlowed: its hook continues at the push this key writes.
     {"snareValues", ApplySnareValues},
     {"stealthTargeting", ApplyStealthTargeting},
+    {"customWalls", ApplyCustomWalls},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
@@ -2609,7 +2632,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

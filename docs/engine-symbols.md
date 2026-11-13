@@ -1017,6 +1017,13 @@ movement".
 | Display mode add | 0x54D605, `thiscall(renderer, Mode*)`, `ret 4` | confirmed (`cs`) | Called per adapter mode from FUN_0054D663 at 0x54D6D1; the mode's D3D format at `+0Ch`. |
 | Format bit depth | 0x545A10 | confirmed (decompiled) | 14h/15h/16h/1Fh/23h → 32; 17h..1Ah, 1Dh, 1Eh → 16; 1Bh → 8. |
 | AbstractWall | abstract type bit 54 (36h) | in game (`inspect_unittypes.py`) | 39 protos. |
+| Proto flag `wallBuild` | bit 3Ah of `[proto+50h]` (0x45EE02) | confirmed (`cs`, in game) | Its button enters the edit mode `buildWall` (0x7E4762). Stock `WallConnector` and the `WallStraight*` have it. |
+| Wall layout | FUN_009F66D9, `thiscall(store, player, points, count, -1)` | confirmed (REA `ev_98aa33f0…`, in game) | Posts and pieces between clicked points. Pieces from `[civ+1E4h]` (Straight2), `[civ+1F0h]` (Straight5), `[civ+1F4h]` (Gate), `[civ+1F8h]` (Connector), or the stock names when `[civ+1E4h]` = -1. Callers: drag preview 0x6659FC, ordering click 0x847E0C, 0x741299 (not identified). `customWalls` hooks 0x9F677A. |
+| Civ wall pieces | `<wall type="Straight2\|Straight3\|Straight4\|Straight5\|Gate\|Connector">` in `civs.xml` | confirmed (`cs`) | Parser 0x65A354 (attribute `type`, values at 0xC0BC54..0xC0BCB0) → names at `[civ+1CCh..1E0h]`, IDs at `[civ+1E4h..1F8h]` (-1 in the constructor, 0x52A2C3). WoL's `civs.xml` does not use it. |
+| World UI cursor proto | `[[game+91Ch]+4A4h]` | in game (`customWalls`) | The proto `uiBuildWallAtPointer` (0x7DFE31 → 0x84B5B3) builds. |
+| BPlayer proto by name | 0x8D1998, `thiscall(player, const char*)`, `ret 4` | confirmed (`cs`) | Linear search; the layout's stock names use it. |
+| AI wall builder | FUN_009F71A5 | confirmed (`cs`) | Reads the same civ fields (also Straight3/4 and `WallStraight1`, `tower`). |
+| Wall post overlap | 0x508D95..0x508E11 in the placement test | confirmed (`cs`, in game) | A `wallBuild` proto may stand on its owner's unit of the same proto only when it is the player's `WallConnector` (0x508DD4); `customWalls` extends it. |
 
 ### Armor (for `multiarmor`, 2026-11-03)
 
