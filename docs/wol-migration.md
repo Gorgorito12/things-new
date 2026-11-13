@@ -298,3 +298,4 @@ WoL's own infantry, a different one each test, from the public civs: ranged `WOL
 | `nativeCivs`, `bigButtonCivs` | WallMapu (Perquenco): Town Center council; control without the key crashes |
 | `selectionLimit` | scenario: 89 Pikemen |
 | `customCheats` | Ethiopians: 50 Cannons |
+| `killSpawn` | scenario: Ethiopians' `Cuirassier` against the Egyptians' `WOLLineInfantry`, `WOLLandwehr` and `Settler` (camels and goats); skirmish: Dutch against `wolOtto` (Germans) |

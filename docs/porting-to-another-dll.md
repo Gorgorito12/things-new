@@ -338,7 +338,7 @@ compiled.
 | `Config::First`, `All`, `Int` | The key's first line, every line, or an integer. | `IUHCConfig`. `broadsideMuzzleLimit`, `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys read every line; `abilitySlots` an integer. |
 | `Apply…` returning `Outcome` | One function per key. | `BaseFeature`: put the body in the feature's install method. |
 | `RequestAbstractUnitType`, `OnDatabaseLoad` | Registers a type, and calls a feature on every data load. | [See below](#extra-abstract-unit-types). |
-| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver`, `AddResearchPayer` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
+| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver`, `AddKillObserver`, `AddResearchPayer` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
 
 A `trackable_memory_patch` restores its bytes when it is destroyed, so keep the patch objects alive for the
 life of the game.
@@ -1243,12 +1243,29 @@ Code: [combat](porting-code/combat.md#directionalattack). It needs `AddActionTag
 ### veterancyBonus
 
 Code: [combat](porting-code/combat.md#veterancybonus). It needs `AddProtoTagHandler`, in the
-[helpers](porting-code/helpers.md#proto-tags), the helpers `modifiers.h` and `floatingtext.*`.
+[helpers](porting-code/helpers.md#proto-tags), the helpers `modifiers.h` and `floatingtext.*`, and `AddKillObserver`
+([kill observers](porting-code/helpers.md#kill-observers)), which owns the kill path's `jmp`.
 
-- **Sites:** a 6-byte `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`), continue at `0x4D4F3D`; and the seven calls of `0x9C754C`:
+- **Sites:** the kill observers' 6-byte `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`), continue at `0x4D4F3D`; and the seven calls of `0x9C754C`:
   `0x7FBC79`, `0x7FBEF2`, `0x8C2D08`, `0x8EB78A`, `0x8F05F5`, `0x9BB6D5`, `0x9C7C16`. Check them against your DLL first:
   another key that wraps the transform must share them.
 - **Test:** the rows on a proto: the hits grow with the kills, and the log shows the ranks.
+
+### killSpawn
+
+Code: [combat](porting-code/combat.md#killspawn). It needs `AddCivTagHandler` ([civ tags](porting-code/helpers.md#civ-tags)),
+`AddTechSubtype` ([tech subtypes](porting-code/helpers.md#tech-subtypes)), `AddWorldTick`
+([world tick](porting-code/helpers.md#world-tick)) and `AddKillObserver`
+([kill observers](porting-code/helpers.md#kill-observers)).
+
+- **Sites:** none of its own. The killing blow is the kill observers' `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`, continue at
+  `0x4D4F3D`; ESI the victim, `[esp+20h]` the attacking player, `[esp+28h]` the attacker unit or null, `[esp+0A4h]` the
+  attacker's proto ID). If your DLL already hooks that site (a kill counter), call the observer from there.
+- **Calls:** the synced RNG `0x407CE7(0xC66588, 2, max)`; at the world tick the placement test, slot `+14h` of the world's
+  vtable (`0x50703D`, thiscall, 11 arguments: proto, player, position, forward, right, 0, flags 6, 0, 0, 0, 0, `ret 2Ch`),
+  then the creation `0x498ACC(world, proto, player, position, forward, 0, -1, 0, -1)`, `ret 20h`.
+- **Test:** the tags on a civ in `civs.xml`, then a fight: with `log`, each kill gives its rolls and each animal where it
+  came.
 
 ### snareOnlyHitUnit
 

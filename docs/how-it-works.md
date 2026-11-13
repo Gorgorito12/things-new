@@ -2157,7 +2157,8 @@ Stock's flag `ExperienceUnit` (bit 7Dh of the proto's flags, set at the cold 0x6
 
 TakeDamage marks the killing blow in `[esp+1Fh]` (0x4D484B, when the unit had hit points and the damage takes them), and a `je`
 at 0x49B746 goes to the cold path 0x4D4F37. The hook sits there: ESI is the unit killed, and `[esp+28h]` the attacker unit, null
-when it is gone. Gaia and the attacker's own units do not count.
+when it is gone. Gaia and the attacker's own units do not count. Since 2026-11-13 the hook is shared ([the killing
+blows](#the-killing-blows-shared)): the key is one observer of it, with `killSpawn`.
 
 The state lives in the game, not in the DLL: everything is a stat modifier made by 0x4DD22D, the call of snares and auras, with
 0 ms, so no time limit. The count is a modifier of stat 62h, which no code reads, with the kills in `[+68h]`; it is read back
@@ -4011,6 +4012,79 @@ member, the whole amount, when the player is below 0 (cold 0x68EA12).
   immediate at 0x51D669, the handler the builder registers. Its handler keeps the stock one for a `<Bounty>` without
   `resourcetype`, reads the attribute with 0x598F37, the name with 0x44709C, and stores by proto ID. The payment is a hook
   on the head of the kill branch, not on FUN_0049BD52, because a proto with no XP bounty reaches that one with 0.
+
+- **Observed in game:** see the tests in the modding guide.
+
+### The killing blows (shared)
+
+`killobservers.*` owns the `jmp` at 0x4D4F37, the head of TakeDamage's cold kill path ([veterancyBonus](#veterancybonus)),
+and calls each observer added with `AddKillObserver`, in `kFeatures` order: `veterancyBonus`, then `killSpawn`. The hook
+reads `[esp+28h]` (the attacker unit, null when it is gone), `[esp+20h]` (the attacking player, also in EBX: loaded at
+0x49B732, kept across the call 0x49BD52), `[esp+0A4h]` (TakeDamage's attacker proto ID argument; at 0x49B72B `[esp+0ACh]` is
+the attacker unit ID, the argument after the action) and ESI (the victim) into registers before it pushes, replays
+`mov ecx,[0C66234h]` and jumps to 0x4D4F3D. The code there reads neither EAX nor EDX before writing them. The only way to
+0x4D4F37 is the `je` at 0x49B746, on `[esp+1Fh]` = 1. A death that does not come through TakeDamage (a lifespan, a delete, a
+trigger's `Kill`, `Damage Unit` without a player) is not a killing blow: [`deathobservers.*`](#annexfacing) sees those.
+
+### killSpawn
+
+A civ's `<killSpawn>` in civs.xml lists protos and weights; a killing blow of one of its players on an enemy unit may give
+an animal where the victim stood.
+
+**[O] The tags.** `<killSpawn>`, `<killSpawnChance>` and `<killSpawnVictims>` go through `AddCivTagHandler` (civs.xml's
+unknown-tag path 0x52BB07). They are kept by civ ID with the civ object they were read for; the protos (0x5A2346), the
+victim types and the exclusions `Building`, `Ship` and `Herdable` (the name table `[db+190h]`, 0x58E685 / 0x40295B) are
+resolved at the first kill after each database load, keyed by the proto array `[db+54h]`, as `civFirstTC` does. A player's
+civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3).
+
+**[O] The kill.** From the shared kill observer: the killer's player (`[esp+20h]`, so a shot whose shooter has died since
+still counts) and its civ's list; the victim's owner `[[victim+44h]]` must not be 0 (Gaia), the killer's player or of its
+team (`[player+10h]`); its proto copy `[victim+5Ch]` must not be of the three exclusions (is-a 0x44D7FA) and, with
+`<killSpawnVictims>`, must be one of those types. The chance is the civ's, run through the `KillSpawnChance` effects of the
+killer's proto copy (`[attacker+5Ch]`, or `0x45311B(player, attackerProto)` for a dead shooter), rounded to a whole percent;
+below 100 it rolls `0x407CE7(0xC66588, 2, 99)` (0..99) against it. With more than one animal a second roll
+`0x407CE7(…, 2, total − 1)` picks by weight. The RNG is the synced one the stock dodge uses (stream 2): every machine runs
+the same kills in the same order, so the rolls agree. `(seed >> 16 & 7FFFh) mod (max + 1)` favours the low values when
+32768 is not a multiple of `max + 1`: by under 0.5 % for a 0..99 roll and under 3 % for a total of 1000, the cap.
+
+**[O] Why the animal is not created at the kill.** TakeDamage runs inside the attack applier FUN_0049BE95, which calls it
+for each unit an area attack hits (FUN_004C9D89), and the victim is still whole: alive, in the world, with its
+obstruction. The stock code that does make a unit on a death, the death replacement FUN_004B4F2F → 0x506F61 (the proto
+`[proto+F8h]`), runs inside the kill handler 0x4B4F70, after the unit's HP are set to 0 (0x4820A1) and 0x483262(0, 1), and
+it tests the spot first with PLACE (world vtable `+14h`, FUN_0050703D, flags 2) and creates with
+`0x498ACC(world, proto, player, pos, forward, 0, -1, 0, -1)`. So the kill queues the animal (proto, killer's player, the
+victim's ID, position `+14h`, forward `+20h`, right `+38h`, the world and its game time), and the world tick
+(`worldtick.h`, after the stock world update, outside every unit loop) places it the same way: it waits while the
+victim still stands (in the world with state bit 11 clear: its kill handler has not run; at most 10 updates), then PLACE
+with flags 6 at the victim's spot and, when it refuses, at 8 points 2 m around it and 8 at 4 m, in a fixed order, then
+0x498ACC at the first spot that passed. PLACE refuses water, cliffs and buildings for a land animal, and the animals of the
+kills before: where many die together the spot is taken. With no spot the animal is dropped with a `no room` line.
+**[O]** In game the victim had always fallen by the next tick (every animal came on update 1).
+
+**[O] PLACE's flags.** Its seventh argument (`[esp+1CCh]`/`[esp+1D4h]` in the body) is a bit set: 8 or 10h skip the terrain
+block at 0x5071F1; 4 clears bit 1 of the obstruction mask (0x16F at 0x5073BB, cleared at 0x508A45) that the query 0x485652
+uses at 0x507505; 8 and 10h clear 140h and 180h. The death replacement passes 2, `annexFacing`'s executor 7. The key passes
+6. **[I]** What each obstruction class is was not traced. **[O]** With flags 2, and with 6 alone, a crowd of 110 dying
+settlers refused about one camel in four at the spot itself; with the rings, 1 in 69.
+
+**The tech.** `KillSpawnChance` (`AddTechSubtype`) keeps, per player's proto copy (keyed by pointer, with the proto ID
+checked), the list of its effects (relativity, amount, removal) in the order they came. The chance replays them through the
+stock value function 0x7F892A from the civ's chance, so `Absolute`, `Percent` and `Assign` act on that player's civ value,
+which the subtype's own base (the cloned proto) cannot hold. A data load clears it; a load re-applies the effects.
+
+**Why it is safe.**
+- The hook keeps the stock frame: it re-executes the replaced `mov` and clobbers only EAX, ECX and EDX, which the
+  continuation writes before reading. No branch lands inside its 6 bytes (the cold path's only entry is 0x49B746).
+- No unit is created inside TakeDamage, so the applier's loop and its list of hit units are untouched; the creation runs
+  where the world update has returned, as the other ticks' creations do.
+- The queue is emptied within 10 updates, and an entry of another world, or of a game time that went back (a loaded game),
+  is dropped. An animal still waiting when a game is saved is not saved (at most 10 updates after its kill).
+- Simulation only, in kill order, on synced rolls: no local player, no real clock, no pointer order.
+- Cost: one civ lookup per killing blow for a player whose civ has no tag; the rest only for tagged civs, and per animal
+  one PLACE (up to 17 when its spot is taken) and one creation. The first animal of a proto in a game loads its model and
+  animations, as any first unit of a proto does.
+- **[I] Determinism:** the kill observers run on every machine in the same order (kFeatures), and the queue is drained in
+  kill order. The world tick's position offsets are constants.
 
 - **Observed in game:** see the tests in the modding guide.
 
