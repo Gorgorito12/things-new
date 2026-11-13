@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
 | Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
@@ -6055,6 +6056,7 @@ What happens when a tech activates or a unit changes proto.
 | [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
+| [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
 
 #### hcTargetTechs
 
@@ -6161,6 +6163,73 @@ transformSpan [log]
   - Every case above, each in its own scene.
   - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
+
+#### orPrereqsQty
+
+*A tech with OR prerequisites can ask for two, three or more of them instead of any one.*
+
+**Added:** Friday 2026-11-13 07:24 · **Filmed in WoL:** Friday 2026-11-13 07:24
+
+![orPrereqsQty in WoL](media/orPrereqsQty-wol.gif)
+
+*In WoL, with the key and `techPrereqRecheck` (4 `Hussar`, a test tech with `<Flag qty='2'>OrPrereqs</Flag>`, no
+research time, three prerequisites: one living `Barracks`, `Stable` or `Market`, and a `TransformUnit` from `Hussar` to
+`Cuirassier`):* a trigger creates the Barracks at 25 s and nothing happens (`1 of 2 needed met: not yet`); the Stable
+comes at 45 s, and the Hussars turn into Cuirassiers in that update (`2 of 2 needed met: available`).
+[Full video (MP4)](media/orPrereqsQty-wol.mp4).
+
+![orPrereqsQty in WoL, key off](media/orPrereqsQty-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the attribute, so one prerequisite is enough, and the Hussars turn at
+25 s with the Barracks. [Full video (MP4)](media/orPrereqsQty-wol-control.mp4).
+
+```
+orPrereqsQty [log]
+```
+
+```xml
+<Tech name ='MyTech' type ='Normal'>
+    ...
+    <Flag qty ='2'>OrPrereqs</Flag>
+    <Prereqs>
+        <TypeCount unit ='Barracks' count ='1' state ='noneState aliveState' operator ='gte' />
+        <TypeCount unit ='Stable' count ='1' state ='noneState aliveState' operator ='gte' />
+        <TechStatus status ='active'>Colonialize</TechStatus></Prereqs>
+    ...
+</Tech>
+```
+
+- **In WoL today:** `<Flag>OrPrereqs</Flag>` makes a tech available when **one** of its `<Prereqs>` is met; without it,
+  all of them. JTMaston's #64. DE has nothing in between: its `OrPrereqs` is the same flag, with no count.
+- **Effect:** `qty="N"` on the `OrPrereqs` flag: the tech is available when at least N of its prerequisites are met, of
+  any kind: each one is asked through its own test, as the game does (`TechStatus`, `TypeCount`, `SpecificAge` and the
+  rest; only `TypeCount` was tested). No attribute, or `qty='1'`, is today's behaviour.
+- **Where:** on the flag, the `<Flag>` element whose text is `OrPrereqs`. On another flag it is ignored, with a log line.
+  Tested with WoL's loose `techtreey.xml`; a compiled `.xmb` keeps attributes too (`tools/xmbedit.py`), not tested.
+- **Bad values:** `qty` must be a whole number from 1 to 255. Anything else (0, a word) is logged and the tech keeps the
+  stock OR. A `qty` above the number of prerequisites means the tech is never available; the log says so.
+- **When it is checked:** when the game checks the tech's prerequisites, as for any tech: a status change, an age-up, a
+  house. A `<TypeCount>` among them waits for that unless [`techPrereqRecheck`](bug-fixes.md#techprereqrecheck) is on,
+  which re-checks it as soon as the count changes (the video above uses both).
+- **Saved games:** the count comes from the data each time; nothing is stored.
+- **Off:** the game ignores the attribute and a single prerequisite is enough.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Performance:** the game evaluates prerequisites only when a tech tree is re-checked, not every frame. For a tech
+  without `qty` the key adds a table lookup. Not measured with `perfprobe.py`.
+- **Log:** `orPrereqsQty: <Flag qty="N">OrPrereqs</Flag> needs N of the tech's prerequisites`, `hook reached:
+  orPrereqsQty (0x5094B4)`, then at the first evaluation `orPrereqsQty: 2 tech(s) with qty on OrPrereqs` and one line
+  per tech: `orPrereqsQty:   tech 10542 (UHCOrQtyTest): 3 of 3 prerequisite(s)`. With `log`, each change of a tech's
+  count, per player: `orPrereqsQty: player 1, tech 10542 (UHCOrQtyTest): 2 of 2 needed met: available`. Errors:
+  `qty="0" is not a whole number from 1 to 255; ignored`, `qty on <Flag>Shadow</Flag> ignored; it belongs on OrPrereqs`,
+  `1 tech(s) ask more prerequisites than they have and are never available`.
+- **Tested in WoL (2026-11-13),** a scenario (player 1 the default civ, Prussian-named Hussars), with `techPrereqRecheck
+  log`:
+  - `qty='2'` of three `TypeCount`: available at 45 s (the second building), not at 25 s. Key off: at 25 s.
+  - `qty='3'`: at 65 s, with the third building.
+  - `qty='9'` of three: never, and the log line. `qty='0'` and `qty='abc'`: ignored, logged, and available at 25 s as in
+    stock. `qty` on `<Flag>Shadow</Flag>`: ignored and logged.
+  - `orPrereqsQty bogus` in the cfg: `unexpected argument bogus (expected: [log]); feature not applied`, then `FAILED`.
+  - Not tested: other kinds of prerequisite than `TypeCount`, the AI researching such a tech, multiplayer.
 
 #### unitTypeTechs
 

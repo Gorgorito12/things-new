@@ -125,6 +125,7 @@ PAGES = {
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],
         "techPrereqRecheck": ["src/features/techprereq.cpp", "src/hooks/techprereq_hooks.asm"],
+        "orPrereqsQty": ["src/features/orprereqs.cpp", "src/hooks/orprereqs_hooks.asm"],
         "transformUpdatesLOS": ["src/features/transform.cpp", "src/hooks/transform_hooks.asm"],
         "transformSpan": ["src/features/transformspan.cpp"],
         "transformInventory": ["src/features/transforminv.cpp", "src/hooks/transforminv_hooks.asm"],

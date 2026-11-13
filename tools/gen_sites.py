@@ -334,6 +334,23 @@ SITES = [
     # and the loop over [list] / byte [list+4] through vtable slot +8
     ("TechPrereqListEval", 0x5094B4, 0x24),
     ("TechPrereqListLoop", 0x50946A, 0x4A),
+    # orPrereqsQty: the evaluator's head, push ebx / mov bl,[esp+0Ch] (replaced, 5 bytes), and the
+    # continuation push ebp / push esi / test bl,bl at 0x5094B9; written after techPrereqRecheck verified it
+    ("OrQtyEvalHead", 0x5094B4, 0x0A),
+    # orPrereqsQty: the OR-true exit of the evaluator's loop (pop edi/esi/ebp, mov al,1, pop ebx, ret 8) and
+    # the vtable thunk jmp eax the loop calls each prerequisite through
+    ("OrQtyEvalTrue", 0x67C412, 0x09),
+    ("OrQtyVtableThunk", 0x4C5F02, 0x02),
+    # orPrereqsQty: the tech <Flag> tag handler FUN_00620BF1, cdecl(node, record): its text [node+14h]
+    # through 0x402733, then the flag setter 0x620C2F(record, text), ret; and its registration in the tech
+    # tag table, mov dword ptr [esp+10h], 620BF1h (the immediate at +4 is redirected)
+    ("OrQtyFlagHandler", 0x620BF1, 0x3E),
+    ("OrQtyFlagRegister", 0x6237E4, 0x08),
+    # orPrereqsQty: the OrPrereqs case of the flag setter, or byte [esi+2],20h on [record+4] (bit 21)
+    ("OrQtyFlagBit", 0x62237E, 0x0A),
+    # orPrereqsQty: the per-tech setup FUN_006201E5: def = [[loader+4]] + id*34h, record = [[loader+4]+0Ch] +
+    # id*24h, mov [edx],eax stores the tech ID in [def+0] and mov [ecx],eax the def in [record+0]
+    ("OrQtyTechSetup", 0x620277, 0x3C),
     # techPrereqRecheck: the TypeCount ctor (push 0 = type 0, vtable 0BA533Ch) and the base
     # prerequisite ctor that stores the type in byte [+5]
     ("TypeCountCtor", 0x8EE860, 0x10),

@@ -559,6 +559,8 @@ The in-game measurements read the actions from memory once a second (`docs/moddi
 | Template records | `[[db+5D9Ch]+0Ch]`, count `[[db+5D9Ch]+10h]` | confirmed, in game | 24h B each, the same layout as an entry; record `+0` is the definition, whose prerequisites are at def+1Ch (byte length def+20h). |
 | setDirty | 0x506A41 | confirmed | `thiscall(root, playerId, bool)`, `ret 8`. 10 direct callers (status changes 0x94C433 / 0x94CE86 / 0x94CFFC, age 0x8D506A, home city level 0x66923E, pop cap 0x8D1480, tree creation 0x8D005A, world start 0x8D53AF / 0x8D7F23 / 0x94AC00), all with 1. An inline copy in the pop cap adder FUN_00506A5F covers units with `PopulationCapAddition`. No other unit event sets the byte. |
 | Tech name getter | 0x5C400B | confirmed | `thiscall(db, id)` over `[db+3824h]` / `[db+3828h]`. |
+| Tech tag table, `<Flag>` | handler FUN_00620BF1 `cdecl(node, record)`, registered at 0x6237E4 (`mov dword ptr [esp+10h], 620BF1h`); flag setter 0x620C2F(record, text); OrPrereqs case 0x62237E | confirmed (`cs`; REA `ev_f5bd19dd…`), in game (`orPrereqsQty`) | The per-tech parser FUN_006201E5 sends each child to the handler of its tag: `<Flag>` and `Status` to the record table (0x620BEF, `jmp eax`), the others (`Prereqs`, `Effects`, …) to the definition one (0x6203A0). Definition = `[[loader+4]] + 34h·id`, `[def+0]` = id; record = `[[loader+4]+0Ch] + 24h·id`, `[record+0]` = def (0x620277..0x6202B1). |
+| Prerequisite list evaluator, OR exit | 0x67C412 | confirmed (`cs`) | `pop edi/esi/ebp / mov al,1 / pop ebx / ret 8`: the first prerequisite met with `or` set. Each prerequisite is asked through 0x509481 → `[[p]+8]` via the thunk `jmp eax` at 0x4C5F02. |
 
 **Measured in game:** with 2 TypeCount techs, the checks took about 4 ms per game minute.
 

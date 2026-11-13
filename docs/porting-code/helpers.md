@@ -521,6 +521,27 @@ inline constexpr Site kTechPrereqListEval{"TechPrereqListEval", 0x005094B4, kTec
 inline constexpr std::uint8_t kTechPrereqListLoopBytes[] = {0x8B, 0x6C, 0x24, 0x14, 0x8D, 0x09, 0x8B, 0x07, 0x8B, 0x0C, 0xB0, 0x85, 0xC9, 0x74, 0x2E, 0x55, 0xE8, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x0A, 0x8B, 0x01, 0x8B, 0x40, 0x08, 0xE9, 0x77, 0xCA, 0xFB, 0xFF, 0x84, 0xDB, 0x75, 0x0B, 0x84, 0xC0, 0x75, 0x14, 0x5F, 0x5E, 0x5D, 0x5B, 0xC2, 0x08, 0x00, 0x80, 0xFB, 0x01, 0x75, 0x08, 0x3A, 0xC3, 0x0F, 0x84, 0x6B, 0x2F, 0x17, 0x00, 0x0F, 0xB6, 0x4F, 0x04, 0x83, 0xC6, 0x01, 0x3B, 0xF1, 0x7D, 0x1B, 0xEB, 0xBC};
 inline constexpr Site kTechPrereqListLoop{"TechPrereqListLoop", 0x0050946A, kTechPrereqListLoopBytes, sizeof(kTechPrereqListLoopBytes)};
 
+inline constexpr std::uint8_t kOrQtyEvalHeadBytes[] = {0x53, 0x8A, 0x5C, 0x24, 0x0C, 0x55, 0x56, 0x84, 0xDB, 0x57};
+inline constexpr Site kOrQtyEvalHead{"OrQtyEvalHead", 0x005094B4, kOrQtyEvalHeadBytes, sizeof(kOrQtyEvalHeadBytes)};
+
+inline constexpr std::uint8_t kOrQtyEvalTrueBytes[] = {0x5F, 0x5E, 0x5D, 0xB0, 0x01, 0x5B, 0xC2, 0x08, 0x00};
+inline constexpr Site kOrQtyEvalTrue{"OrQtyEvalTrue", 0x0067C412, kOrQtyEvalTrueBytes, sizeof(kOrQtyEvalTrueBytes)};
+
+inline constexpr std::uint8_t kOrQtyVtableThunkBytes[] = {0xFF, 0xE0};
+inline constexpr Site kOrQtyVtableThunk{"OrQtyVtableThunk", 0x004C5F02, kOrQtyVtableThunkBytes, sizeof(kOrQtyVtableThunkBytes)};
+
+inline constexpr std::uint8_t kOrQtyFlagHandlerBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08, 0x83, 0xC6, 0x14, 0x8B, 0xCE, 0x8B, 0x01, 0x85, 0xC0, 0x74, 0x0B, 0x66, 0x83, 0x38, 0x00, 0x74, 0x05, 0x8B, 0x40, 0xF0, 0xEB, 0x02, 0x33, 0xC0, 0x85, 0xC0, 0x0F, 0x84, 0xEB, 0x07, 0x09, 0x00, 0x8B, 0xCE, 0xE8, 0x16, 0x1B, 0xDE, 0xFF, 0x50, 0x8B, 0x44, 0x24, 0x10, 0x50, 0xE8, 0x07, 0x00, 0x00, 0x00, 0x83, 0xC4, 0x08, 0xB0, 0x01, 0x5E, 0xC3};
+inline constexpr Site kOrQtyFlagHandler{"OrQtyFlagHandler", 0x00620BF1, kOrQtyFlagHandlerBytes, sizeof(kOrQtyFlagHandlerBytes)};
+
+inline constexpr std::uint8_t kOrQtyFlagRegisterBytes[] = {0xC7, 0x44, 0x24, 0x10, 0xF1, 0x0B, 0x62, 0x00};
+inline constexpr Site kOrQtyFlagRegister{"OrQtyFlagRegister", 0x006237E4, kOrQtyFlagRegisterBytes, sizeof(kOrQtyFlagRegisterBytes)};
+
+inline constexpr std::uint8_t kOrQtyFlagBitBytes[] = {0x8B, 0x76, 0x04, 0x80, 0x4E, 0x02, 0x20, 0x5F, 0x5E, 0xC3};
+inline constexpr Site kOrQtyFlagBit{"OrQtyFlagBit", 0x0062237E, kOrQtyFlagBitBytes, sizeof(kOrQtyFlagBitBytes)};
+
+inline constexpr std::uint8_t kOrQtyTechSetupBytes[] = {0x8B, 0x4F, 0x04, 0x8B, 0x31, 0x8B, 0x49, 0x0C, 0x8D, 0x14, 0xC5, 0x00, 0x00, 0x00, 0x00, 0x2B, 0xD0, 0x03, 0xD2, 0x2B, 0xD0, 0x8D, 0x14, 0x96, 0x8D, 0x34, 0xC0, 0x8D, 0x34, 0xB1, 0x52, 0x8B, 0xCE, 0x89, 0x54, 0x24, 0x28, 0x89, 0x74, 0x24, 0x24, 0x89, 0x02, 0x83, 0xEC, 0x04, 0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x0F, 0x84, 0x43, 0xF6, 0x06, 0x00, 0x89, 0x01};
+inline constexpr Site kOrQtyTechSetup{"OrQtyTechSetup", 0x00620277, kOrQtyTechSetupBytes, sizeof(kOrQtyTechSetupBytes)};
+
 inline constexpr std::uint8_t kTypeCountCtorBytes[] = {0x56, 0x6A, 0x00, 0x8B, 0xF1, 0xE8, 0x40, 0x19, 0xD3, 0xFF, 0xC7, 0x06, 0x3C, 0x53, 0xBA, 0x00};
 inline constexpr Site kTypeCountCtor{"TypeCountCtor", 0x008EE860, kTypeCountCtorBytes, sizeof(kTypeCountCtorBytes)};
 
@@ -2497,6 +2518,7 @@ Outcome ApplyCustomWalls(const Config& config);
 Outcome ApplyDirectionalAttack(const Config& config);
 Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
+Outcome ApplyOrPrereqsQty(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
@@ -2612,6 +2634,8 @@ inline constexpr Feature kFeatures[] = {
     {"teamKillBounty", ApplyTeamKillBounty},
     {"resourceBounty", ApplyResourceBounty},
     {"techPrereqRecheck", ApplyTechPrereqRecheck},
+    // After techPrereqRecheck, which verifies the stock bytes of the evaluator head this key writes.
+    {"orPrereqsQty", ApplyOrPrereqsQty},
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
     {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
@@ -2713,7 +2737,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

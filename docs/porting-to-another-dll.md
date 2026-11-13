@@ -933,6 +933,28 @@ Code: [techs](porting-code/techs.md#techprereqrecheck).
   keep the IDs whose definition (record `+0`) has a prerequisite with byte `[p+5]` = 0 in
   `[def+1Ch][0..byte def+20h)`.
 
+### orPrereqsQty
+
+Code: [techs](porting-code/techs.md#orprereqsqty).
+
+- **State:** a table by tech ID of {definition, N}, filled while the techtree is read; an entry counts only when its
+  definition is the one being evaluated.
+- **The `<Flag>` handler:** write your handler's address over the immediate at `0x6237E8` (the instruction at
+  `0x6237E4` is `C7 44 24 10 F1 0B 62 00`, `mov dword ptr [esp+10h], 620BF1h`). Your handler is `cdecl(node, record)`:
+  call `0x620BF1(node, record)`, then read `qty` with `0x598F37(node, "qty", &value)` (thiscall on the node) and the
+  flag's text with `0x402733(node+14h)`; the tech ID is `[[record]]`. If your DLL already replaces this handler or
+  hooks the flag setter `0x620C2F` (as `hcTargetTechs` does, at its head), the two compose: this one only wraps the
+  handler.
+- **The hook** at `0x5094B4` (`53 8A 5C 24 0C`, `push ebx / mov bl,[esp+0Ch]`), the head of the prerequisite list
+  evaluator, `bool thiscall(list = def+1Ch, Player*, bool or)`, `ret 8`:
+  - entry state: ECX = the list, `[esp+4]` = the player, `[esp+8]` = the OR flag (its low byte);
+  - for OR, and N ≥ 2 for the tech `[list−1Ch]`: count the non-null `[list][i]` (i below byte `[list+4]`) whose vtable
+    slot +8, `thiscall(p, player)`, returns true; return `count ≥ N` in AL with `ret 8`;
+  - otherwise re-execute the two instructions and jump to `0x5094B9`.
+- **Order:** `techPrereqRecheck` checks the stock bytes of `0x5094B4`, so apply it first.
+- **Test:** a tech with three `TypeCount` prerequisites and `qty='2'`: it activates with the second unit, not the
+  first.
+
 ### maintainWaitForPop
 
 Code: [buildings](porting-code/buildings.md#maintainwaitforpop).

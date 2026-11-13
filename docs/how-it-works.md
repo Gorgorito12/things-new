@@ -1451,6 +1451,39 @@ applies the operators. `[player+80h]` is the KB; it is used with no null check.
   summary is only logged.
 - **Measured:** with 2 TypeCount techs, the checks took about 4 ms per game minute.
 
+### orPrereqsQty
+
+**The stock OR.** `<Flag>OrPrereqs</Flag>` sets bit 21 of the tech's status bits (the flag setter's case `0x62237E`,
+`or byte [esi+2],20h` on `[record+4]`). The per-tech update FUN_005094D8 passes that bit to the prerequisite list
+evaluator FUN_005094B4, `bool thiscall(list = def+1Ch, Player*, bool or)`, `ret 8`: it walks `[list]` (length byte
+`[list+4]`, null slots skipped) and asks each prerequisite through vtable slot +8 (the thunk `jmp eax` at `0x4C5F02`).
+With `or` set, the first prerequisite met returns true (`0x67C412`); with none met, false. Its stock callers are
+`0x509537` only; `techPrereqRecheck` calls it too.
+
+**Reading `qty`.** The tech parser FUN_006201E5 makes, for tech ID *i*, the definition `[[loader+4]] + 34h·i` (its
+`+0` = *i*) and the status record `[[loader+4]+0Ch] + 24h·i` (its `+0` = the definition), then hands each child node to
+the handler of its tag. `<Flag>` is handled by FUN_00620BF1, `cdecl(node, record)`, registered in the tag table by
+`mov dword ptr [esp+10h], 620BF1h` at `0x6237E4`. The key writes the address of `UhcOrQtyFlag` over that immediate:
+it calls the stock handler, then, when the node has a `qty` attribute and its text is `OrPrereqs`, stores
+{definition, N} at the tech's ID. Any other flag, or a value outside 1..255, is logged and left alone.
+
+**The hook.** A `jmp` over the evaluator's first 5 bytes (`push ebx / mov bl,[esp+0Ch]`) leads to
+`UhcOrQtyEvalHook`: `TRACE_ONCE`, then `UhcOrQtyEval(list, player, or)`. For `or` set and a tech whose stored
+definition is `list − 1Ch` with N ≥ 2, it asks each prerequisite through the same vtable slot, stops at the N-th one
+met, and returns 0 or 1; the hook then returns from the evaluator with `ret 8`, as the stock exits do. Otherwise it
+returns −1, and the hook restores ECX, re-executes the two stolen instructions and jumps to `0x5094B9`.
+
+**Why it is safe.**
+- The evaluator's contract is kept: same arguments, same `ret 8`, the result in AL; EBX, ESI, EDI and EBP are kept
+  by the C++ code, and EAX/ECX/EDX are free in a thiscall. Its callers cache the result in bit 3 as before, so
+  activation, `Volatile`, the AI's tech list and the UI follow it.
+- Each prerequisite is asked through the same slot, with the same player, as stock does; the count only replaces
+  "any" by "N".
+- An entry is used only when its stored definition is the one being evaluated, so a table from another data load is
+  never applied.
+- The result depends only on game state (the player's units, techs, age), so every machine computes the same.
+- `techPrereqRecheck` verifies the evaluator's stock bytes before this key writes them (it applies first).
+
 ### maintainWaitForPop
 
 **The stock mechanism.** `Maintain` is unit action type 22h (ctor `0x9E2510`, vtable `0xB97B98`).
