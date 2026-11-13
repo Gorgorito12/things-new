@@ -537,7 +537,12 @@ Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHan
 - **Sites:** a `call` at `0x493D8F` (to `0x4B4F70`), the kill queue drain's call of the kill handler. It is written once by
   `deathobservers.cpp`, which runs every key's observer (`AddDeathObserver`, in `kFeatures` order) before the stock
   handler; `annexFacing` adds its observer there too. Check it against your DLL first.
-- **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage.
+- **The blast on screen:** no site is written. After the area damage the key calls the terrain impact `0x4CB11C`
+  (`thiscall(projectile, point)`, `ret 4`) with a zeroed record of 70h bytes holding the action at `+10h` and the point
+  at `+64h`; for `<DetonationImpactEffect>` it reads the effect with `0x58F017` (`thiscall([[0C66234h]+0BB8h], &text)`,
+  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID.
+- **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage, and the action's impact
+  effect (or the tag's) plays there.
 
 ### impactBoneFix
 

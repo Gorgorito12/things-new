@@ -980,6 +980,32 @@ The blast is the stock area damage 0x4C9D89, `thiscall(world, unitId, action, po
 offset)`, `ret 28h`, in the same call a unit makes for an attack around itself at 0x6A4A6B: its own position, multiplier 1, the
 action's bit 6, and the zero vector at 0xCF0618.
 
+**The blast on screen (2026-11-13).** The area damage draws nothing. A shot that lands on the ground (a mortar shell, a
+missed cannon ball) is drawn by the terrain impact FUN_004CB11C, `thiscall(projectile, point)`, `ret 4`, called by the
+projectile's update at 0x4C4818 and 0x4CB459 in every mode. It returns at once when the point is not visible to the
+local player (FUN_004601B8), takes the terrain's impact type at the point (water 7, the type of the terrain there, or 9),
+reads the projectile's action `[proj+10h]` and that action's impact effect ID `[action+70h]` (written by the tactics
+`<impacteffect>` handler 0x5FAFB2 through the effect manager `[[0C66234h]+0BB8h]`, FUN_0058F017), and calls the impact
+spawn FUN_0049C1E5(point, direction, 0, type, 1, `[proj+28h]` == 0, 0, 0). The direction is the point minus
+`[proj+64h]` on the ground plane, or the default vector at 0xC6655C when that is zero. The sixth argument picks the
+entry's `particleSet` (1) or its `secondaryParticleSet` (0, when it has one); the spawn plays the particle set and the
+entry's sound sets at the point.
+
+After the area damage, the key calls FUN_004CB11C with a zeroed record of 70h bytes that has only those fields: the
+action at `+10h`, the point at `+64h` (so the default direction) and `+28h` = 0 (the `particleSet`). The point is the
+unit's position, copied before the area damage. By default the action is the detonating one, so its own
+`<impacteffect>` plays (nothing when it has none: `[action+70h]` < 0). `<DetonationImpactEffect>path</DetonationImpactEffect>`
+names another impact effect: its handler, during the proto load, passes the node's text field `[node+14h]` to
+FUN_0058F017 as the tactics handler does, which finds the file or loads it and returns its ID (< 0 on failure, logged
+and ignored); the blast then uses a stand-in action of 74h zeroed bytes with that ID at `+70h`. `none` stores −1 and
+nothing is drawn.
+
+**Why it is safe:** drawing and sound only, as in the stock landing: FUN_004CB11C already depends on what the local
+player sees, so nothing in it can reach the simulation, and the key calls it after the damage is applied. The two
+records live on the stack for the length of the call. Evidence (`rea/evidence/age3y-b1a1dab7/detonation52.json`,
+and capstone over the exe's bytes for the callers and the out-of-line blocks 0x4DD628 and 0x64A32F): `ev_ca755380…` (FUN_004CB11C), `ev_204bff62…`
+(FUN_0049C1E5), `ev_eaca0080…` (FUN_005FE922, the entry's two particle sets), `ev_6061959a…` (FUN_0058F017).
+
 A unit killed by the blast only joins the queue, and the drain reads the count again on each turn, so a chain runs in order
 and does not recurse. A proto's action is found by comparing the names of the database's list `[db+1FD8h]` for the IDs its action set
 has, and the ID is kept. The action is the one in the player's copy of the proto.

@@ -7379,7 +7379,7 @@ Contract: [detonationDeath](../porting-to-another-dll.md#detonationdeath).
 
 Besides the core helpers, it needs: [`deathobservers.h`](helpers.md#death-observers), [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `TerrainImpact` `0x4CB11C` (21 B), `ImpactEffectByName` `0x58F017` (12 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/detonation.cpp
 
@@ -7414,8 +7414,18 @@ Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `Ov
 //   HP setter, and detonates when it reaches 0 (or when anything else kills it). Healed back over the
 //   threshold, it stops decaying until the next loss. The decaying units are kept by unit ID (the same
 //   order on every machine) and forgotten on a new game and a data load; a saved game does not keep them.
+//
+// The blast on screen: the stock terrain impact FUN_004CB11C, the visual of a shot that lands on the ground
+// (a mortar shell, a missed cannon ball), plays the impact effect of a projectile's action ([proj+10h],
+// whose [+70h] is the <impacteffect> ID) at a point, with the impact type of the terrain there. The key
+// calls it with a record that has only the three fields it reads: the action, [+28h] = 0 (the entry's
+// particleSet, not its secondaryParticleSet) and the origin [+64h] = the point (no direction: the stock
+// default). By default the action's own <impacteffect>; <DetonationImpactEffect>path</DetonationImpactEffect>
+// names another, loaded at the data load as the tactics parser does (FUN_0058F017), and none plays nothing.
+// The stock function draws only what the local player sees, and only drawing and sound follow from it.
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <cwchar>
 #include <map>
 #include <set>
@@ -7465,6 +7475,12 @@ const auto kSetHp = reinterpret_cast<SetHpFn>(0x004820A1);
 using MaxHpFn = float(__thiscall*)(const char* unit);
 const auto kMaxHp = reinterpret_cast<MaxHpFn>(0x00480408);
 using IsAliveFn = bool(__thiscall*)(const char* unit);
+using TerrainImpactFn = void(__thiscall*)(const void* projectile, const float* point);
+const auto kTerrainImpact = reinterpret_cast<TerrainImpactFn>(0x004CB11C);
+using EffectByNameFn = std::int32_t(__thiscall*)(void* manager, const void* name);
+const auto kEffectByName = reinterpret_cast<EffectByNameFn>(0x0058F017);
+constexpr std::size_t kActionImpactEffect = 0x70;  // the <impacteffect> ID, -1 for none
+constexpr std::size_t kGameEffects = 0xBB8;        // the impact effect manager
 constexpr std::uint32_t kDeleteSetHpCall = 0x007CD0CF;
 constexpr std::uint32_t kDeleteKillCall = 0x007CD0DC;
 constexpr std::size_t kUnitContainer = 0x6C;  // -1 when the unit is not inside another
@@ -7475,6 +7491,7 @@ struct Detonation {
   std::wstring command;      // <DetonationCommand>: the proto command that detonates (a delete)
   float threshold = -1.0f;   // <DetonationHitpointThreshold>: the HP ratio that detonates by itself
   float decay = -1.0f;       // <DetonationHitpointDecay>: HP lost per second under the threshold
+  std::int32_t effect = -2;  // <DetonationImpactEffect>: -2 the action's own, -1 none, else the effect's ID
 };
 
 std::unordered_map<std::int32_t, Detonation> g_protos;  // by proto ID; the map's shape is fixed after the load
@@ -7598,6 +7615,34 @@ bool ReadRatio(const char* node, char* proto, const wchar_t* tag, float* out, fl
   return true;
 }
 
+bool __cdecl ReadImpactEffect(void*, const char* node, char* proto) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  if (text == nullptr || text[0] == L'\0') {
+    uhc::Log(L"detonationDeath: proto %d: <DetonationImpactEffect> names no effect, ignored", id);
+    return true;
+  }
+  if (_wcsicmp(text, L"none") == 0) {
+    g_protos[id].effect = -1;
+    if (g_log) {
+      uhc::Log(L"detonationDeath: proto %d: its blast plays no impact effect", id);
+    }
+    return true;
+  }
+  char* game = *reinterpret_cast<char* const*>(0x00C66234);
+  void* manager = game == nullptr ? nullptr : *reinterpret_cast<void* const*>(game + kGameEffects);
+  const std::int32_t effect = manager == nullptr ? -1 : kEffectByName(manager, node + 0x14);
+  if (effect < 0) {
+    uhc::Log(L"detonationDeath: proto %d: <DetonationImpactEffect> %ls is not an impact effect, ignored", id, text);
+    return true;
+  }
+  g_protos[id].effect = effect;
+  if (g_log) {
+    uhc::Log(L"detonationDeath: proto %d: its blast plays the impact effect %ls (%d)", id, text, effect);
+  }
+  return true;
+}
+
 bool __cdecl ReadThreshold(void*, const char* node, char* proto) {
   const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
   float value = -1.0f;
@@ -7623,6 +7668,24 @@ bool __cdecl ReadDecay(void*, const char* node, char* proto) {
     }
   }
   return true;
+}
+
+// The blast on screen, as a shot landing on the ground there (FUN_004CB11C).
+void ShowBlast(const char* action, std::int32_t effect, const float* point) {
+  if (effect == -1) {
+    return;
+  }
+  alignas(4) char custom[kActionImpactEffect + 4] = {};
+  if (effect >= 0) {
+    *reinterpret_cast<std::int32_t*>(custom + kActionImpactEffect) = effect;
+    action = custom;
+  } else if (*reinterpret_cast<const std::int32_t*>(action + kActionImpactEffect) < 0) {
+    return;  // the action has no <impacteffect>
+  }
+  alignas(4) char projectile[0x70] = {};
+  *reinterpret_cast<const char**>(projectile + 0x10) = action;
+  std::memcpy(projectile + 0x64, point, 3 * sizeof(float));
+  kTerrainImpact(projectile, point);
 }
 
 void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, bool deleted) {
@@ -7653,9 +7716,11 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, boo
     return;
   }
   const auto* position = reinterpret_cast<const float*>(unit + kUnitPosition);
+  const float point[3] = {position[0], position[1], position[2]};  // the unit may move or go in the blast
   std::int32_t hit = 0;
-  kArea(world, *reinterpret_cast<const std::int32_t*>(unit + kUnitId), action, position, 1.0f, 0, 0, -1, &hit,
+  kArea(world, *reinterpret_cast<const std::int32_t*>(unit + kUnitId), action, point, 1.0f, 0, 0, -1, &hit,
         Bit(action, kActionFlags, kAreaFlagBit) ? 1 : 0, reinterpret_cast<const void*>(kZeroVector));
+  ShowBlast(action, found->second.effect, point);
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
     uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u%ls", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
@@ -7808,11 +7873,13 @@ Outcome ApplyDetonationDeath(const Config& config) {
   const Site* addEntry = OverhealAddHookInstalled() ? &sites::kHpSetter : &sites::kOverhealAddEntry;
   if (!VerifyAll("detonationDeath", {&sites::kDetonationAreaHead, addEntry, &sites::kHpSetter,
                                      &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot, &sites::kKillQueueAsk,
-                                     &sites::kDeleteSetHpCall, &sites::kDeleteKillCall, &sites::kDetonationTakeDamageHp}) ||
+                                     &sites::kDeleteSetHpCall, &sites::kDeleteKillCall, &sites::kDetonationTakeDamageHp,
+                                     &sites::kTerrainImpact, &sites::kImpactEffectByName}) ||
       !AddProtoTagHandler("DetonationProtoAction", &ReadDetonation) ||
       !AddProtoTagHandler("DetonationCommand", &ReadCommand) ||
       !AddProtoTagHandler("DetonationHitpointThreshold", &ReadThreshold) ||
-      !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) || !OnDatabaseLoad(&Forget) ||
+      !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) ||
+      !AddProtoTagHandler("DetonationImpactEffect", &ReadImpactEffect) || !OnDatabaseLoad(&Forget) ||
       !AddDeathObserver(&Kill) ||
       !WriteCall(kDeleteSetHpCall, reinterpret_cast<const void*>(&DeleteSetHp)) ||
       !WriteCall(kDeleteKillCall, reinterpret_cast<const void*>(&DeleteKill)) || !InstallOverhealAddHook() ||
@@ -7820,8 +7887,8 @@ Outcome ApplyDetonationDeath(const Config& config) {
     return Outcome::kFailed;
   }
   g_hpLoss = &HpLoss;
-  Log(L"detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold and "
-      L"DetonationHitpointDecay are on (multiplayer unverified)");
+  Log(L"detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, "
+      L"DetonationHitpointDecay and DetonationImpactEffect are on (multiplayer unverified)");
   return Outcome::kApplied;
 }
 

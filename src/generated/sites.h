@@ -1157,6 +1157,12 @@ inline constexpr Site kDeleteSetHpCall{"DeleteSetHpCall", 0x007CD0CF, kDeleteSet
 inline constexpr std::uint8_t kDeleteKillCallBytes[] = {0xE8, 0xE1, 0x7C, 0xCE, 0xFF};
 inline constexpr Site kDeleteKillCall{"DeleteKillCall", 0x007CD0DC, kDeleteKillCallBytes, sizeof(kDeleteKillCallBytes)};
 
+inline constexpr std::uint8_t kTerrainImpactBytes[] = {0x83, 0xEC, 0x18, 0x89, 0x4C, 0x24, 0x08, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC9, 0x0F, 0x84, 0xE5, 0x01, 0x00, 0x00};
+inline constexpr Site kTerrainImpact{"TerrainImpact", 0x004CB11C, kTerrainImpactBytes, sizeof(kTerrainImpactBytes)};
+
+inline constexpr std::uint8_t kImpactEffectByNameBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x57, 0x53, 0x8B, 0xF9, 0xE8, 0xB0, 0xFF};
+inline constexpr Site kImpactEffectByName{"ImpactEffectByName", 0x0058F017, kImpactEffectByNameBytes, sizeof(kImpactEffectByNameBytes)};
+
 inline constexpr std::uint8_t kModelPathLookupBytes[] = {0x51, 0x53, 0x55, 0x56, 0x8B, 0xE9, 0x57, 0x8D, 0x4C, 0x24};
 inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPathLookupBytes, sizeof(kModelPathLookupBytes)};
 

@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 07:23 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
 | Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
@@ -77,7 +78,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 10:47 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Friday 2026-11-06 09:06 | [`linkedResource`](#linkedresource) | Filmed in WoL, with a control. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
 | Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
-| Thursday 2026-11-05 16:40 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | The tag, and an action with `DamageArea`. |
 | Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
@@ -2441,7 +2441,7 @@ Attacks, armor, and what a hit does.
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
 | [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
 | [`directionalAttack`](#directionalattack) | A shot that flies on past its target and hits every unit it flies over, before and after the target. | **new** | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. | confirmed (single player) |
-| [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
+| [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
 | [`dodgeChance`](#dodgechance) | A dodge chance per unit type, with the tech it needs (or none) and a filter for ranged or melee hits; the first matching rule decides. | **new** | A unit type or proto name in the cfg, and the rule's tech active for their players unless `notech`. | confirmed (single player) |
@@ -2460,15 +2460,34 @@ Attacks, armor, and what a hit does.
 
 #### detonationDeath
 
-*A unit can deal area damage around itself when it dies.*
+*A unit can deal area damage around itself when it dies, and the blast shows where it hits.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Thursday 2026-11-05 16:40
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 07:23
+
+![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
+
+*In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>` in front,
+two `Engineer` behind with their own `BuildingAttack`, whose `<impacteffect>` is the dynamite; both blasts 40 Siege,
+`DamageArea` 5, `GAIAEnemy`; six enemy `WOLScytheman`):* each archer that falls bursts into a mortar explosion, and each
+Engineer knocked down into a dynamite one, where the scythemen around it lose HP. Four of the six scythemen died, the
+other two were left at 16 and 28 HP. [Full video (MP4)](media/detonationDeath-blast-wol.mp4).
+
+![detonationDeath blast in WoL, key off](media/detonationDeath-blast-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the four fall with no explosion, and all six scythemen live (135, 135, 135,
+77, 77 and 38 HP). [Full video (MP4)](media/detonationDeath-blast-wol-control.mp4).
+
+![detonationDeath delete in WoL](media/detonationDeath-delete-wol.gif)
+
+*In WoL, with the key (an `xpAenna` with the mortar effect and `<DetonationCommand>Delete</DetonationCommand>`, deleted with
+its Delete button next to an enemy `CoveredWagon`):* the mortar explosion where it stood, the log line `kill flags 1 0 0
+(a delete)`, and the wagon destroyed. [Full video (MP4)](media/detonationDeath-delete-wol.mp4).
 
 ![detonationDeath in WoL](media/detonationDeath-wol.gif)
 
 *In WoL, with the key (a test action on `Settler`: 1000 Siege, `DamageArea` 6, `GAIAEnemy`):* a trigger kills a settler and the
 4 enemy `Coureur` around it die; another kills one of 3 settlers beside 3 enemy settlers, and all six go in a chain. The blue
-`Coureur` in the middle is out of range. The blast has no effect of its own on screen.
+`Coureur` in the middle is out of range. Filmed before the blast had an effect on screen: `Build` has no `<impacteffect>`.
 [Full video (MP4)](media/detonationDeath-wol.mp4).
 
 ![detonationDeath in WoL, key off](media/detonationDeath-wol-control.gif)
@@ -2504,6 +2523,17 @@ detonationDeath [log]
   trigger that removes a unit with no death).
 - **Chains:** a unit that dies from a blast fires too, later in the same pass of the game's kill queue, not inside the blast.
 - **Friendly fire:** `DamageFlags` decides it, as on any attack. {FF}
+- **On screen (2026-11-13):** the blast plays the action's own `<impacteffect>` (the one in its tactics file) where the
+  unit stood, as when a shot lands on the ground there: a mortar's impact effect, or the dynamite of WoL's miners and engineers, gives a mortar explosion
+  with its sound, on grass, dirt, snow or water as the ground is. An action without `<impacteffect>` (`Build`) shows
+  nothing, as before. `<DetonationImpactEffect>path</DetonationImpactEffect>` on the proto names another impact effect,
+  as in a tactics file (`effects\impacts\mortar`, `effects\impacts\dynamite`, `effects\impacts\cannon`, or one of yours),
+  so a unit whose blast action is a bow shot can still explode; `<DetonationImpactEffect>none</DetonationImpactEffect>`
+  shows nothing. The effect is loaded with the data; a name the game cannot load is logged and the action's own
+  effect stays. It is only drawn where the player can see, as a shot's landing is, and changes nothing in the
+  simulation, so players with different effects stay in sync.
+- **A unit with `KnockoutDeath`** (WoL's `Engineer`, heroes) goes through the same queue when it is knocked out, so it
+  detonates then (seen with the Engineers of the first video; a revived one knocked out again was not tested).
 - **Techs:** the action is the player's copy, so a tech that changes its damage counts.
 - **The other three tags (2026-11-05):**
   - `<DetonationCommand>Name</DetonationCommand>`: the unit detonates when it is **deleted**. Give the proto a command of
@@ -2521,9 +2551,10 @@ detonationDeath [log]
     again from its next loss under the threshold.
 
   Only `<DetonationProtoAction>` is needed for any of them: a threshold or a command without it does nothing.
+  `<DetonationImpactEffect>` (above, "On screen") is the fifth tag; it too needs `<DetonationProtoAction>`.
   at an HP ratio) and `DetonationHitpointDecay`. Without the threshold, one tag is the whole of it: there is no flag to set.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold and DetonationHitpointDecay are on`, with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
+- **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay and DetonationImpactEffect are on`, with `log` `detonationDeath: proto 714: its blast plays the impact effect effects\impacts\mortar (11)` / `its blast plays no impact effect`, and without `log` `<DetonationImpactEffect> X is not an impact effect, ignored`; with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
 - **Performance:** every loss of hit points asks the tag table once (a map lookup by proto ID), and the decay walks only
   the decaying units each world update. Measured with `perfprobe.py` (60 s, 30 Pikemen against 30, no tag on them): key on 1467 fps, main thread 79 %, longest frame 2.5 s (the load) and no frame over 50 ms after it; key off 1444 fps, 81 %, 3.7 s. With 30 Musketeers of 4000 HP against 30 that carry a threshold and a decay of 100 HP/s the game ran at 640 fps against 1461 and the render time tripled: that is the decaying units themselves (the HP setter's damage visuals on 30 units every update), not the hook, which runs on untagged units at no measurable cost.
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
@@ -2546,6 +2577,16 @@ detonationDeath [log]
 *In WoL, key off (the same data):* the Delete key removes it with no line.
 [Full video (MP4)](media/detonationDeath-command-wol-control.mp4).
 
+- **Tested in WoL (2026-11-13, the blast on screen):** the scene of the first two videos (Ethiopians against an enemy
+  of six `WOLScytheman`): four blasts, `unit 3, proto 714, at 41.9, 45.1` and `unit 2 … at 43.8, 45.2` (the archers,
+  mortar effect) and `unit 1, proto 1482, at 38.5, 45.9` and `unit 0 … at 36.9, 46.6` (the Engineers, dynamite), each
+  with its explosion at that point; key on, 4 of 6 scythemen dead and 2 at 16.1 and 28.3 HP; key off, all six alive. A
+  delete with `<DetonationCommand>` from the Delete button (third video): `kill flags 1 0 0 (a delete)` and the explosion;
+  the same archer without the command: `deleted without a DetonationCommand, no blast` (log only, not filmed). With
+  `<DetonationImpactEffect>none</DetonationImpactEffect>`: `its blast plays no impact effect` at the load and the archer's
+  blast line when it fell (not filmed). An AI skirmish (Germans, `wolOtto`) with the key on: the AI built a Manor and trained
+  settlers. Performance while filming, key on: 1092 fps on average, no frame over 50 ms; key off 1057 fps, none. Not
+  tested: a unit that dies over water (the stock picks the water entry), multiplayer.
 - **Tested in WoL (2026-11-05, the three tags):** a Grenadier with `MusketVolleyRangedAttack` and threshold 0.5 under three
   Pikemen: `HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, then the blast with flags 0 0 0, and the unit
   gone; with the key off it fought on and died at 0. A Musketeer of 4000 HP with threshold 0.25 and decay 100, taken to

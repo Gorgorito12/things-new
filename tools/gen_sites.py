@@ -969,6 +969,12 @@ SITES = [
     # call of the kill queue 0x4B4DC2 with (1, 0, 0) for one with it; ESI = the unit at both
     ("DeleteSetHpCall", 0x7CD0CF, 5),
     ("DeleteKillCall", 0x7CD0DC, 5),
+    # detonationDeath, the blast on screen (verify only): the terrain impact FUN_004CB11C, thiscall(projectile,
+    # point), the visual of a shot landing on the ground (its action [+10h], the action's impact effect [+70h]);
+    # the impact effect by name FUN_0058F017, thiscall(manager [[0C66234h]+0BB8h], &name), as the tactics
+    # <impacteffect> handler 0x5FAFB2 calls it
+    ("TerrainImpact", 0x4CB11C, 0x15),
+    ("ImpactEffectByName", 0x58F017, 0x0C),
     # displayedRange: the ID of a model path, thiscall(table [0xC66240], path, 1, 0, 0), called at 0x5FC94C; the ID
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
