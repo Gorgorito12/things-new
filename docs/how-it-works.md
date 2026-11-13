@@ -649,6 +649,39 @@ tech (`[[status]]`). The Town Center, unlisted, keeps the stock list. The dialog
 - Interface only: the pickers and the list run on the local player's clicks; the research the dialog sends is
   a normal research command, so every machine runs the same thing. Not on a hot path (a click, a dialog).
 
+### politicianPlacesFix
+
+**The dialog in the stock exe.** The European politician dialog binds its places when it is built (FUN_0081892B,
+REA `ev_c919cd4e…`): for n = 0 to 4 (loop end `cmp edi,5` at 0x818DBA) it looks up `PoliticianDlg-Politician%d` into
+`[dlg+198h+4n]`, `PoliticianButton%d` (+1ACh), `Poli%dPortrait` (+1C0h), `PoliticianHilightPositive%d` (+1D4h),
+`Poli%dName` (+1E8h), `Poli%dCost` (+1FCh) and `Poli%dDescription` (+210h). Each is a gadget handle; a name the
+layout lacks gives a handle that resolves to nothing. The list builder FUN_0081A2B8 (REA `ev_3a5f7096…`, the dialog's
+virtual at 0xB8BD3C) walks the player's tech statuses, keeps a politician of the next age (or a revolution) that
+0x4C6968 accepts, and fills place `[dlg+26Ch]` for it: tech ID at `[dlg+270h+4n]`, the portrait, then the name gadget
+(EBP, looked up at 0x81A4FF and null-checked once at 0x81A527), cost and description. Then it calls the name gadget's
+virtual with `mov eax,[ebp]` at 0x81A80C (age-up) or 0x81A63C (revolution) without a check, and counts up to 5
+(0x81A82A). With a four-place `uipoliticianEuropeandlg.xml`, as the stock one, the fifth politician's name gadget is null: access
+violation at 0x81A80C, seen in the Windows log as offset 0x41A80C.
+
+**The hook.** At 0x81A45A (`mov ecx,edi` / `call 58EA03h`, 7 bytes, re-executed), the point where an accepted
+politician is about to take place `[ebx+26Ch]`, `UhcPoliticianNoPlace(dlg, status)` counts the leading places whose
+`PoliticianDlg-Politician%d` and `Poli%dName` both resolve, through the UI manager's lookup 0x40423C
+(`thiscall(manager, handle, type)`, `ret 8`, manager `[[0xC66244]+44h]`, type 0 any or 10h text, the type the name's
+own lookup 0x44900A asks for; REA `ev_7c3b79e8…`). When the count has reached them, the builder leaves through its own
+exit 0x81A848 (`mov eax,[ebx+26Ch]` / pops / `ret`), the path it takes after the fifth. The rest of the dialog reads
+`[dlg+26Ch]` and null-checks its gadgets (the layout 0x81A069.., the hide loop 0x818DF1, the cost refresh 0x81A8C3),
+so it shows that many places. The other list builder, FUN_00818EE5, null-checks every gadget it fills.
+
+**Why it is safe.**
+- Registers: EBX is the dialog and EDI the tech status, both kept by the stdcall wrapper; EAX, ECX and EDX are dead
+  (the re-executed call returns EAX, and ECX at 0x81A466 and EDX at 0x81A487 are written before they are read).
+- The stack at 0x81A45A is the loop's own: the call 0x4C6968 before it popped its argument, and the per-entry local is
+  built only at 0x81A559, so the exit 0x81A848 finds what it finds after the fifth politician.
+- Branches into the replaced bytes: none (capstone scan of `.text` for rel8 / rel32 targets in 0x81A45A..0x81A460).
+- `ageUpBuildings` replaces the call at 0x81A44D, five bytes before: the two sites do not overlap and both verify
+  their own bytes; tested together.
+- Interface only, not on a hot path: the lookups run when the dialog is filled (a click), at most ten per politician.
+
 ### kbUnitSyscalls
 
 Five syscalls added to the KB group through the syscall registry (`src/syscalls.*`, the hook on

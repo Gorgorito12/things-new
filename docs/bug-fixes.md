@@ -841,6 +841,7 @@ transformInventory [all] [scale] [<UnitType>] [log]
 |---|---|---|---|---|
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
 | [`steadyHitpointBars`](#steadyhitpointbars) | The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | **new** | Nothing. | confirmed (single player, UI) |
+| [`politicianPlacesFix`](#politicianplacesfix) | The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | **new** | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. | confirmed (single player, UI) |
 
 #### noCorpseDopples
 
@@ -965,6 +966,54 @@ steadyHitpointBars [UnitType ...] [log]
   Hussar charge, Settlers, a Caravel and a Fluyt, a Barracks, a saved game loaded, and a 100 s skirmish against a
   European AI with no XS error. Not tested: an orange segment on screen (no Hussar was above its 100 % in this data),
   types listed in the key, beside WoL's DLL, multiplayer.
+
+#### politicianPlacesFix
+
+*The age-up dialog shows only as many politicians as it has places, instead of crashing the game.*
+
+![politicianPlacesFix in WoL](media/politicianPlacesFix-wol.gif)
+
+*In WoL, with `politicianPlacesFix log` (a Dutch skirmish against the British AI, test data: six politicians of the
+next age obtainable, WoL's four-place `uipoliticianEuropeandlg.xml`):* the Town Center's age-up opens the dialog with
+four politicians (Aristocrat, Artisan, Burgher, Clergyman), and the log says which one was left out. Key off, the same
+click closed the game (access violation at 0x81A80C). [Full video (MP4)](media/politicianPlacesFix-wol.mp4).
+
+```
+politicianPlacesFix [log]
+```
+
+- **The bug (WoL #62):** the exe lists up to five politicians of the next age and fills one place of the dialog for
+  each. WoL's `data\uipoliticianEuropeandlg.xml`, like the stock one, has four places
+  (`PoliticianDlg-Politician0` to `3`). A fifth obtainable politician then has no place, and the game reads its
+  missing name gadget and closes. WoL's civs have four politicians per age today, so nobody meets it yet; a fifth
+  in the data, a tech that makes one obtainable, or a building of [`ageUpBuildings`](modding-guide.md#ageupbuildings)
+  that lists more is enough.
+- **What the key does:** before a politician takes a place, the dialog checks that the place exists in the layout
+  (its `PoliticianDlg-Politician<n>` panel and its `PoliticianDlg-Poli<n>Name` text). When it does not, the list ends
+  there: the dialog shows the politicians it has places for, and the others are left out of this dialog (they stay
+  obtainable). With a fifth place in the file, five show, as without the key; more than five never show (the exe
+  keeps five).
+- **With a five-place layout:** see
+  [Five politicians in the European age-up](modding-guide.md#five-politicians-in-the-european-age-up) for the
+  edit of `uipoliticianEuropeandlg.xml`. The key is still worth keeping: a layout from another mod, or a file edited
+  by hand, can have fewer places.
+- **Not covered:** the Asian and native dialogs. Their stock and WoL files have five places, so they do not meet the
+  bug. Of their code, only the shared list FUN_00818EE5 was read in full: it checks every gadget it uses. The wonder
+  and native lists put a politician in the place their own data names; they were not traced further.
+- **With other keys:** [`ageUpBuildings`](modding-guide.md#ageupbuildings) hooks the same list, one instruction
+  before; both work together (tested).
+- **Log:** `politicianPlacesFix: the European age-up dialog lists only the politicians its layout has places for`;
+  the first time a politician is left out, `politicianPlacesFix: the European age-up dialog has 4 place(s);
+  politician tech 8974 and any after it are left out (age-up)` (`revolutions` for the revolution list); with `log`,
+  each time. In a game, `hook reached: politicianPlacesFix (0x81A45A)` the first time the dialog fills a place.
+- **Simulation:** none. The dialog is the local player's interface; the politician chosen is sent as the game's own
+  command. Players may differ.
+- **Tested in WoL (2026-11-13, single player, Dutch, test data: `WuOLClergyman` and `WuOLartisan` added to
+  `Age0Dutch`, six politicians):** key off with WoL's four-place file, the age-up click closed the game (Windows: access
+  violation, offset 0x41A80C, the instruction 0x81A80C); key on, four showed and the game went on, also with
+  `ageUpBuildings` on and the dialog opened twice; with the five-place file, five showed. A bad argument logged
+  `unknown option` and `FAILED`. 497 fps and no frame over 50 ms while the dialog was open. Not tested: a revolution,
+  multiplayer.
 
 ## Performance
 

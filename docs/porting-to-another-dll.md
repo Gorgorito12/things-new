@@ -13,7 +13,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
-| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC` | [civs](porting-code/civs.md) |
+| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
@@ -1498,6 +1498,23 @@ Code: [civs](porting-code/civs.md#ageupbuildings).
   tech ID `[[status]]`.
 - **Check:** list a building that has politicians in its `<Tech>` list; its age-up button opens the dialog
   with those politicians only, and the choice is queued in that building.
+
+### politicianPlacesFix
+
+Code: [civs](porting-code/civs.md#politicianplacesfix).
+
+- **Site:** a 7-byte `jmp` at `0x81A45A` (`8B CF E8 A2 45 D7 FF`, `mov ecx,edi / call 58EA03h`) in the European
+  politician list builder FUN_0081A2B8; continue at `0x81A461`, or leave at its exit `0x81A848`
+  (`8B 83 6C 02 00 00`, `mov eax,[ebx+26Ch]`). Check both against your DLL first: `ageUpBuildings` writes the call
+  at `0x81A44D`, five bytes before, which does not overlap.
+- **Entry:** EBX = the dialog, EDI = the tech status of the politician about to take place `[ebx+26Ch]`; EAX, ECX
+  and EDX are free. `UhcPoliticianNoPlace(EBX, EDI)` (stdcall bool) counts the places n from 0 whose
+  `[dlg+198h+4n]` (`PoliticianDlg-Politician%d`) resolves with type 0 and `[dlg+1E8h+4n]` (`Poli%dName`) with type
+  10h, through `0x40423C` (thiscall(manager `[[0xC66244]+44h]`, handle, type), `ret 8`, null if none). True when
+  `[ebx+26Ch]` has reached that count: `jmp 81A848h`; else re-execute the two instructions and `jmp 81A461h`.
+- **Test:** WoL's four-place `uipoliticianEuropeandlg.xml` and five politicians of the next age obtainable (two more
+  `TechStatus obtainable` lines in a civ's `Age0` tech): without the key the age-up click crashes at `0x81A80C`; with
+  it the dialog shows four.
 
 ### transformInventory
 

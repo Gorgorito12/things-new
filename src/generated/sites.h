@@ -2066,4 +2066,25 @@ inline constexpr Site kAgeUpListA{"AgeUpListA", 0x0081A44D, kAgeUpListABytes, si
 inline constexpr std::uint8_t kAgeUpListBBytes[] = {0xE8, 0x11, 0xD9, 0xCA, 0xFF};
 inline constexpr Site kAgeUpListB{"AgeUpListB", 0x00819052, kAgeUpListBBytes, sizeof(kAgeUpListBBytes)};
 
+inline constexpr std::uint8_t kPoliticianPlaceTakeBytes[] = {0x8B, 0xCF, 0xE8, 0xA2, 0x45, 0xD7, 0xFF, 0x83, 0x7C, 0x24, 0x24, 0x00};
+inline constexpr Site kPoliticianPlaceTake{"PoliticianPlaceTake", 0x0081A45A, kPoliticianPlaceTakeBytes, sizeof(kPoliticianPlaceTakeBytes)};
+
+inline constexpr std::uint8_t kPoliticianListEndBytes[] = {0x8B, 0x83, 0x6C, 0x02, 0x00, 0x00};
+inline constexpr Site kPoliticianListEnd{"PoliticianListEnd", 0x0081A848, kPoliticianListEndBytes, sizeof(kPoliticianListEndBytes)};
+
+inline constexpr std::uint8_t kPoliticianPanelBindBytes[] = {0x89, 0x43, 0xEC};
+inline constexpr Site kPoliticianPanelBind{"PoliticianPanelBind", 0x00818C93, kPoliticianPanelBindBytes, sizeof(kPoliticianPanelBindBytes)};
+
+inline constexpr std::uint8_t kPoliticianNameBindBytes[] = {0x89, 0x43, 0x3C};
+inline constexpr Site kPoliticianNameBind{"PoliticianNameBind", 0x00818D51, kPoliticianNameBindBytes, sizeof(kPoliticianNameBindBytes)};
+
+inline constexpr std::uint8_t kPoliticianNameReadBytes[] = {0x8B, 0x94, 0x8B, 0xE8, 0x01, 0x00, 0x00, 0x52, 0x8D, 0x4C, 0x24, 0x7C, 0xE8, 0x8C, 0xAC, 0xCA, 0xFF};
+inline constexpr Site kPoliticianNameRead{"PoliticianNameRead", 0x0081A4FF, kPoliticianNameReadBytes, sizeof(kPoliticianNameReadBytes)};
+
+inline constexpr std::uint8_t kTechStatusTechIdBytes[] = {0x8B, 0x01, 0x85, 0xC0, 0x0F, 0x84, 0xF1, 0x0E, 0x10, 0x00, 0x8B, 0x00, 0xC3};
+inline constexpr Site kTechStatusTechId{"TechStatusTechId", 0x0058EA03, kTechStatusTechIdBytes, sizeof(kTechStatusTechIdBytes)};
+
+inline constexpr std::uint8_t kGadgetLookupBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x3B, 0x15, 0xC0, 0x72, 0xC6, 0x00, 0x74, 0x49, 0x8B, 0xC2, 0x25, 0xFF};
+inline constexpr Site kGadgetLookup{"GadgetLookup", 0x0040423C, kGadgetLookupBytes, sizeof(kGadgetLookupBytes)};
+
 }  // namespace uhc::sites
