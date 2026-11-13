@@ -216,6 +216,7 @@ set(UHC_SOURCES
   src/hooks/linkedresource_hooks.asm
   src/hooks/annexfacing_hooks.asm
   src/hooks/playericon_hooks.asm
+  src/hooks/detonation_hooks.asm
   src/hooks/xslog_hooks.asm
   src/hooks/prototag_hooks.asm
   src/hooks/sharedlimit_hooks.asm

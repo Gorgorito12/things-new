@@ -986,6 +986,12 @@ SITES = [
     # call of the kill queue 0x4B4DC2 with (1, 0, 0) for one with it; ESI = the unit at both
     ("DeleteSetHpCall", 0x7CD0CF, 5),
     ("DeleteKillCall", 0x7CD0DC, 5),
+    # detonationDeath, verify only: the executor's mov edi,ecx (EDI = the command at both calls); its read of the
+    # command's flag bits (cmp [edi+5Ch],10h / jbe / mov edx,[edi+58h] / mov al,[edx+2]); and the kill handler's
+    # KnockoutDeath test after its HP setter call (proto flag 123, [proto+50h] byte 0Fh bit 3, ja 50AAADh)
+    ("DeleteCommandRegister", 0x7CCF89, 3),
+    ("DeleteCommandFlags", 0x7CD002, 12),
+    ("KnockoutTest", 0x4B51CB, 0x20),
     # detonationDeath, the blast on screen (verify only): the terrain impact FUN_004CB11C, thiscall(projectile,
     # point), the visual of a shot landing on the ground (its action [+10h], the action's impact effect [+70h]);
     # the impact effect by name FUN_0058F017, thiscall(manager [[0C66234h]+0BB8h], &name), as the tactics

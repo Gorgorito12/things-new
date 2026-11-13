@@ -7379,7 +7379,7 @@ Contract: [detonationDeath](../porting-to-another-dll.md#detonationdeath).
 
 Besides the core helpers, it needs: [`deathobservers.h`](helpers.md#death-observers), [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `DetonationAreaHead` `0x4C9D89` (10 B), `TerrainImpact` `0x4CB11C` (21 B), `ImpactEffectByName` `0x58F017` (12 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `DetonationTakeDamageHp` `0x49B822` (5 B), `KillQueueAsk` `0x4B4DC2` (8 B), `KnockoutTest` `0x4B51CB` (32 B), `DetonationAreaHead` `0x4C9D89` (10 B), `TerrainImpact` `0x4CB11C` (21 B), `ImpactEffectByName` `0x58F017` (12 B), `DeleteCommandRegister` `0x7CCF89` (3 B), `DeleteCommandFlags` `0x7CD002` (12 B), `DeleteSetHpCall` `0x7CD0CF` (5 B), `DeleteKillCall` `0x7CD0DC` (5 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/detonation.cpp
 
@@ -7414,6 +7414,15 @@ Sites: `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `Ov
 //   HP setter, and detonates when it reaches 0 (or when anything else kills it). Healed back over the
 //   threshold, it stops decaying until the next loss. The decaying units are kept by unit ID (the same
 //   order on every machine) and forgotten on a new game and a data load; a saved game does not keep them.
+//
+// Which deaths. A unit whose proto has KnockoutDeath (proto flag 123, [proto+50h] byte 0Fh bit 3) is knocked out by
+// the kill handler, not killed (the test right after its HP setter call, 0x4B51CB): by default it does not detonate;
+// <DetonationOnKnockout>1</DetonationOnKnockout> on the proto makes it detonate at each knockout. The trigger Kill
+// (trUnitDelete(false)) builds the same delete command (type 7) as the Delete button, through FUN_0082F923, which sets
+// bit 3 of the command's flag bits [cmd+58h] (and bit 16); the button's builder FUN_0082F1E3 and the AI's calls of
+// FUN_0082F923 (0x724FC2, 0x73E668) leave them clear. The two wrapped calls of the executor are asm hooks that pass
+// the command (EDI there): a command with bit 3 is a trigger's kill and detonates like a death, without
+// <DetonationCommand>.
 //
 // The blast on screen: the stock terrain impact FUN_004CB11C, the visual of a shot that lands on the ground
 // (a mortar shell, a missed cannon ball), plays the impact effect of a projectile's action ([proj+10h],
@@ -7484,6 +7493,10 @@ constexpr std::size_t kGameEffects = 0xBB8;        // the impact effect manager
 constexpr std::uint32_t kDeleteSetHpCall = 0x007CD0CF;
 constexpr std::uint32_t kDeleteKillCall = 0x007CD0DC;
 constexpr std::size_t kUnitContainer = 0x6C;  // -1 when the unit is not inside another
+constexpr std::size_t kProtoFlags = 0x50;     // bit array; +54h its size in bits
+constexpr std::uint32_t kKnockoutFlag = 123;  // KnockoutDeath, set by the proto parser at 0x5FCEBE
+constexpr std::size_t kCommandFlags = 0x58;   // in a command: bit array; +5Ch its size in bits
+constexpr std::uint32_t kTriggerCommandBit = 3;  // set only by trUnitDelete's builder FUN_0082F923
 
 struct Detonation {
   std::wstring name;
@@ -7492,7 +7505,10 @@ struct Detonation {
   float threshold = -1.0f;   // <DetonationHitpointThreshold>: the HP ratio that detonates by itself
   float decay = -1.0f;       // <DetonationHitpointDecay>: HP lost per second under the threshold
   std::int32_t effect = -2;  // <DetonationImpactEffect>: -2 the action's own, -1 none, else the effect's ID
+  bool onKnockout = false;   // <DetonationOnKnockout>: a KnockoutDeath unit detonates when knocked out
 };
+
+enum class Cause { kDeath, kDelete, kTriggerKill };
 
 std::unordered_map<std::int32_t, Detonation> g_protos;  // by proto ID; the map's shape is fixed after the load
 bool g_log = false;
@@ -7503,6 +7519,7 @@ struct Decay {
   std::uint32_t lastMs;  // game time of the last step applied
 };
 std::set<std::int32_t> g_deleting;    // unit IDs the delete executor sent to the kill queue
+std::set<std::int32_t> g_triggerKills;  // the same for a trigger's Kill
 std::set<std::int32_t> g_asked;       // unit IDs whose kill the threshold asked, until the handler runs
 std::map<std::int32_t, Decay> g_decay;  // by unit ID
 const char* g_world = nullptr;
@@ -7526,6 +7543,7 @@ char* UnitById(const char* world, std::int32_t id) {
 
 void Forget(char*) {
   g_deleting.clear();
+  g_triggerKills.clear();
   g_asked.clear();
   g_decay.clear();
 }
@@ -7643,6 +7661,21 @@ bool __cdecl ReadImpactEffect(void*, const char* node, char* proto) {
   return true;
 }
 
+bool __cdecl ReadOnKnockout(void*, const char* node, char* proto) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
+  const bool on = text == nullptr || text[0] == L'\0' || _wcsicmp(text, L"1") == 0 || _wcsicmp(text, L"true") == 0;
+  if (!on && !(_wcsicmp(text, L"0") == 0 || _wcsicmp(text, L"false") == 0)) {
+    uhc::Log(L"detonationDeath: proto %d: <DetonationOnKnockout> needs 1 or 0, ignored", id);
+    return true;
+  }
+  g_protos[id].onKnockout = on;
+  if (g_log) {
+    uhc::Log(L"detonationDeath: proto %d %ls when knocked out", id, on ? L"detonates" : L"does not detonate");
+  }
+  return true;
+}
+
 bool __cdecl ReadThreshold(void*, const char* node, char* proto) {
   const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + kProtoId);
   float value = -1.0f;
@@ -7688,7 +7721,8 @@ void ShowBlast(const char* action, std::int32_t effect, const float* point) {
   kTerrainImpact(projectile, point);
 }
 
-void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, bool deleted) {
+void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, Cause cause) {
+  const bool deleted = cause == Cause::kDelete;
   const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
   if (proto == nullptr) {
     return;
@@ -7702,6 +7736,14 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, boo
     if (g_log && g_logLines < kMaxLogLines) {
       ++g_logLines;
       uhc::Log(L"detonationDeath: unit %d, proto %d: deleted without a DetonationCommand, no blast",
+               *reinterpret_cast<std::int32_t*>(unit + kUnitId), protoId);
+    }
+    return;
+  }
+  if (!deleted && !found->second.onKnockout && Bit(proto, kProtoFlags, kKnockoutFlag)) {
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"detonationDeath: unit %d, proto %d: knocked out (KnockoutDeath), no blast",
                *reinterpret_cast<std::int32_t*>(unit + kUnitId), protoId);
     }
     return;
@@ -7725,7 +7767,7 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, boo
     ++g_logLines;
     uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u%ls", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
              protoId, static_cast<double>(position[0]), static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF,
-             deleted ? L" (a delete)" : L"");
+             deleted ? L" (a delete)" : cause == Cause::kTriggerKill ? L" (a trigger's Kill)" : L"");
   }
 }
 
@@ -7733,23 +7775,14 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, boo
 void Kill(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c) {
   const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + kUnitId);
   const bool deleted = g_deleting.erase(id) > 0;
+  const bool trigger = g_triggerKills.erase(id) > 0;
   g_asked.erase(id);
   g_decay.erase(id);
-  Detonate(unit, a, b, c, deleted);
+  Detonate(unit, a, b, c, deleted ? Cause::kDelete : trigger ? Cause::kTriggerKill : Cause::kDeath);
 }
 
-// Replaces the delete executor's call of the HP setter (a proto without flag 0Dh): the blast first,
-// while the unit is whole.
-void __fastcall DeleteSetHp(char* unit, void*, float value, std::int32_t flag) {
-  Detonate(unit, 1, 0, 0, true);
-  kSetHp(unit, value, flag);
-}
-
-// Replaces the delete executor's ask of the kill queue (a proto with flag 0Dh): the handler's wrapper
-// then knows the kill is a delete.
-void __fastcall DeleteKill(char* unit, void*, std::int32_t a, std::int32_t b, std::int32_t c) {
-  g_deleting.insert(*reinterpret_cast<const std::int32_t*>(unit + kUnitId));
-  kKillAsk(unit, a, b, c);
+bool FromTrigger(const char* command) {
+  return command != nullptr && Bit(command, kCommandFlags, kTriggerCommandBit);
 }
 
 // The threshold: from the shared add-HP hook, for every loss, before it is applied.
@@ -7855,6 +7888,21 @@ void Tick(char* world, std::int32_t) {
 
 }  // namespace
 
+// The asm hooks (hooks/detonation_hooks.asm) in place of the delete executor's two calls, with the command.
+// Before the HP setter (a proto without flag 0Dh): the blast first, while the unit is whole.
+extern "C" void __stdcall UhcDetonationDeleteSetHp(char* unit, const char* command) {
+  Detonate(unit, 1, 0, 0, FromTrigger(command) ? Cause::kTriggerKill : Cause::kDelete);
+}
+
+// Before the ask of the kill queue (a proto with flag 0Dh): the kill handler's observer then knows the cause.
+extern "C" void __stdcall UhcDetonationDeleteKill(char* unit, const char* command) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + kUnitId);
+  (FromTrigger(command) ? g_triggerKills : g_deleting).insert(id);
+}
+
+extern "C" void UhcDetonationSetHpHook();
+extern "C" void UhcDetonationKillAskHook();
+
 namespace uhc {
 
 Outcome ApplyDetonationDeath(const Config& config) {
@@ -7874,25 +7922,77 @@ Outcome ApplyDetonationDeath(const Config& config) {
   if (!VerifyAll("detonationDeath", {&sites::kDetonationAreaHead, addEntry, &sites::kHpSetter,
                                      &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot, &sites::kKillQueueAsk,
                                      &sites::kDeleteSetHpCall, &sites::kDeleteKillCall, &sites::kDetonationTakeDamageHp,
-                                     &sites::kTerrainImpact, &sites::kImpactEffectByName}) ||
+                                     &sites::kTerrainImpact, &sites::kImpactEffectByName,
+                                     &sites::kDeleteCommandRegister, &sites::kDeleteCommandFlags,
+                                     &sites::kKnockoutTest}) ||
       !AddProtoTagHandler("DetonationProtoAction", &ReadDetonation) ||
       !AddProtoTagHandler("DetonationCommand", &ReadCommand) ||
       !AddProtoTagHandler("DetonationHitpointThreshold", &ReadThreshold) ||
       !AddProtoTagHandler("DetonationHitpointDecay", &ReadDecay) ||
-      !AddProtoTagHandler("DetonationImpactEffect", &ReadImpactEffect) || !OnDatabaseLoad(&Forget) ||
+      !AddProtoTagHandler("DetonationImpactEffect", &ReadImpactEffect) ||
+      !AddProtoTagHandler("DetonationOnKnockout", &ReadOnKnockout) || !OnDatabaseLoad(&Forget) ||
       !AddDeathObserver(&Kill) ||
-      !WriteCall(kDeleteSetHpCall, reinterpret_cast<const void*>(&DeleteSetHp)) ||
-      !WriteCall(kDeleteKillCall, reinterpret_cast<const void*>(&DeleteKill)) || !InstallOverhealAddHook() ||
+      !WriteCall(kDeleteSetHpCall, reinterpret_cast<const void*>(&UhcDetonationSetHpHook)) ||
+      !WriteCall(kDeleteKillCall, reinterpret_cast<const void*>(&UhcDetonationKillAskHook)) || !InstallOverhealAddHook() ||
       !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
   }
   g_hpLoss = &HpLoss;
   Log(L"detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, "
-      L"DetonationHitpointDecay and DetonationImpactEffect are on (multiplayer unverified)");
+      L"DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on (multiplayer unverified)");
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+```
+
+### src/hooks/detonation_hooks.asm
+
+```asm
+; detonationDeath (src/features/detonation.cpp): the delete command's executor FUN_007CCF7F calls the HP setter (0x7CD0CF)
+; or the kill queue (0x7CD0DC); both calls are rewritten to these hooks, which hand the helper the unit and the command
+; (EDI in the executor, from its mov edi,ecx at 0x7CCF8A), then jump to the stock callee with the caller's arguments and
+; return address untouched, so it returns to the executor as before.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcDetonationDeleteSetHp PROTO STDCALL unit:DWORD, command:DWORD
+UhcDetonationDeleteKill PROTO STDCALL unit:DWORD, command:DWORD
+
+.data
+hpSetter dd 004820A1h    ; thiscall(unit, float, int), ret 8
+killAsk  dd 004B4DC2h    ; thiscall(unit, a, b, c), ret 0Ch
+
+.code
+
+; In place of call 4820A1h at 0x7CD0CF: ECX = the unit, [esp+4] = 0.0, [esp+8] = 1, EDI = the command. The helper may
+; fire the blast while the unit is whole; ECX is restored for the setter (the stdcall helper keeps EDI, ESI, EBX, EBP).
+UhcDetonationSetHpHook PROC
+    TRACE_ONCE "detonationDeath delete command, HP setter (0x7CD0CF)"
+    push ecx
+    push edi
+    push ecx
+    call UhcDetonationDeleteSetHp
+    pop ecx
+    jmp hpSetter
+UhcDetonationSetHpHook ENDP
+
+; In place of call 4B4DC2h at 0x7CD0DC (a proto with flag 0Dh): ECX = the unit, three flag arguments on the stack,
+; EDI = the command. The helper notes whether the kill is a delete or a trigger's Kill for the death observer.
+UhcDetonationKillAskHook PROC
+    TRACE_ONCE "detonationDeath delete command, kill queue (0x7CD0DC)"
+    push ecx
+    push edi
+    push ecx
+    call UhcDetonationDeleteKill
+    pop ecx
+    jmp killAsk
+UhcDetonationKillAskHook ENDP
+
+END
 ```
 
 ## impactBoneFix

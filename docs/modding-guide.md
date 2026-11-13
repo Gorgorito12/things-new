@@ -33,7 +33,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 |---|---|---|---|
 | Friday 2026-11-13 09:04 | [`playerIcon`](#playericon) | Added. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
-| Friday 2026-11-13 08:12 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
 | Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
@@ -2517,7 +2516,7 @@ Attacks, armor, and what a hit does.
 
 *A unit can deal area damage around itself when it dies, and the blast shows where it hits.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 08:12
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 09:24
 
 ![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
 
@@ -2563,11 +2562,19 @@ the boats go from 200 to 46.0, 54.3 and 54.3 HP. [Full video (MP4)](media/detona
 *In WoL, key off (the same data and scene):* the stock sinking only, and the boats keep 200 HP.
 [Full video (MP4)](media/detonationDeath-water-wol-control.mp4).
 
-![detonationDeath knockout in WoL](media/detonationDeath-knockout-wol.gif)
+![detonationDeath knockout and trigger Kill in WoL](media/detonationDeath-knockout-off-wol.gif)
 
-*In WoL, with the key (an `Engineer`, which has `KnockoutDeath`; a trigger deals it 5000 damage at 30, 70, 110 and
-150 s):* the second knockout, at 150 s, after its revival: a second dynamite explosion and the second blast line.
-[Full video (MP4)](media/detonationDeath-knockout-wol.mp4) (all of it, 110 s).
+*In WoL, with the key (an `Engineer`, which has `KnockoutDeath`, with its dynamite `BuildingAttack` as its blast and no
+`<DetonationOnKnockout>`; beside it an `xpAenna` with the mortar effect and no `<DetonationCommand>`):* a 5000 damage
+trigger knocks the Engineer out and nothing explodes (`knocked out (KnockoutDeath), no blast`); then the trigger `Kill`
+takes the archer, and it explodes (`kill flags 1 0 0 (a trigger's Kill)`).
+[Full video (MP4)](media/detonationDeath-knockout-off-wol.mp4).
+
+![detonationDeath knockout with DetonationOnKnockout in WoL](media/detonationDeath-knockout-on-wol.gif)
+
+*In WoL, with the key (an `Explorer` with `<DetonationOnKnockout>1</DetonationOnKnockout>` and the mortar effect; a
+trigger deals it 5000 damage at 34 s and again at 154 s):* it explodes at the knockout, and again at the knockout after its
+revival. [Full video (MP4)](media/detonationDeath-knockout-on-wol.mp4).
 
 ![detonationDeath in WoL](media/detonationDeath-wol.gif)
 
@@ -2605,10 +2612,11 @@ detonationDeath [log]
   must have it: an action its tactics file does not list does nothing, and the log says so.
 - **Use an action the unit does not attack with.** The tag reads any action with a `<Damage>`, so `Build` works on a settler. If
   it is the unit's weapon, raising the damage also raises its normal attacks.
-- **Which deaths:** combat, damage from a trigger (`Damage Unit`), an expired `Lifespan`, and a unit that dies in a blast.
-  Not `Destroy` (the trigger that removes a unit with no death). The trigger `Kill` (`trUnitDelete(false)`) runs the
-  same delete as the Delete button (2026-11-13: `deleted without a DetonationCommand, no blast` for an archer and a
-  caravel), so since the delete tags it detonates only a proto with `<DetonationCommand>`.
+- **Which deaths:** combat, damage from a trigger (`Damage Unit`), the trigger `Kill`, an expired `Lifespan`, and a unit
+  that dies in a blast. Not `Destroy` (the trigger that removes a unit with no death), and not a knockout (below). The
+  trigger `Kill` (`trUnitDelete(false)`) sends the same delete command as the Delete button, but the key tells them apart
+  (since 2026-11-13; before, a trigger `Kill` counted as a delete): it detonates like a death, without
+  `<DetonationCommand>`, and the log line ends in `(a trigger's Kill)`.
 - **Chains:** a unit that dies from a blast fires too, later in the same pass of the game's kill queue, not inside the blast.
 - **Friendly fire:** `DamageFlags` decides it, as on any attack. {FF}
 - **On screen (2026-11-13):** the blast plays the action's own `<impacteffect>` (the one in its tactics file) where the
@@ -2621,9 +2629,13 @@ detonationDeath [log]
   effect stays. It is only drawn where the player can see, as a shot's landing is: a blast in the fog or the black
   map damages as usual and shows nothing. Over water the effect's water entry plays (`terrainwater`; for the mortar a
   water burst with its sound). Drawing and sound only: nothing in the simulation changes.
-- **A unit with `KnockoutDeath`** (WoL's `Engineer`, heroes) goes through the same queue when it is knocked out, so it
-  detonates then, once per knockout: damage while it lies knocked out does nothing, and after its revival the next
-  knockout detonates again (the knockout video).
+- **A unit with `KnockoutDeath`** (WoL's `Engineer`, explorers, heroes) is knocked out, not killed, so it does not
+  detonate (since 2026-11-13). `<DetonationOnKnockout>1</DetonationOnKnockout>` on the proto makes it detonate at each
+  knockout: once per knockout, as damage while it lies knocked out does nothing, and again at the next knockout after
+  its revival. A delete with `<DetonationCommand>` detonates either way.
+- **Decided (2026-11-13):** the action's own `<impacteffect>` stays the default and `none` opts out. There is no option
+  for an explosion proto or a model: a proto would put a real unit into the simulation (population, stats, sync) only
+  to get a picture, and an impact effect already brings the picture and the sound.
 - **Techs:** the action is the player's copy, so a tech that changes its damage counts.
 - **The other three tags (2026-11-05):**
   - `<DetonationCommand>Name</DetonationCommand>`: the unit detonates when it is **deleted**. Give the proto a command of
@@ -2641,10 +2653,11 @@ detonationDeath [log]
     again from its next loss under the threshold.
 
   Only `<DetonationProtoAction>` is needed for any of them: a threshold or a command without it does nothing.
-  `<DetonationImpactEffect>` (above, "On screen") is the fifth tag; it too needs `<DetonationProtoAction>`.
+  `<DetonationImpactEffect>` (above, "On screen") and `<DetonationOnKnockout>` (above, `KnockoutDeath`) are the fifth
+  and sixth; they too need `<DetonationProtoAction>`.
   at an HP ratio) and `DetonationHitpointDecay`. Without the threshold, one tag is the whole of it: there is no flag to set.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay and DetonationImpactEffect are on`, with `log` `detonationDeath: proto 714: its blast plays the impact effect effects\impacts\mortar (11)` / `its blast plays no impact effect`, and without `log` `<DetonationImpactEffect> X is not an impact effect, ignored`; with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
+- **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on`, in game `knocked out (KnockoutDeath), no blast` and a blast line ending in `(a trigger's Kill)`, with `log` `detonationDeath: proto 298 detonates when knocked out`, with `log` `detonationDeath: proto 714: its blast plays the impact effect effects\impacts\mortar (11)` / `its blast plays no impact effect`, and without `log` `<DetonationImpactEffect> X is not an impact effect, ignored`; with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
 - **Performance:** every loss of hit points asks the tag table once (a map lookup by proto ID), and the decay walks only
   the decaying units each world update. Measured with `perfprobe.py` (60 s, 30 Pikemen against 30, no tag on them): key on 1467 fps, main thread 79 %, longest frame 2.5 s (the load) and no frame over 50 ms after it; key off 1444 fps, 81 %, 3.7 s. With 30 Musketeers of 4000 HP against 30 that carry a threshold and a decay of 100 HP/s the game ran at 640 fps against 1461 and the render time tripled: that is the decaying units themselves (the HP setter's damage visuals on 30 units every update), not the hook, which runs on untagged units at no measurable cost.
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
@@ -2685,17 +2698,25 @@ detonationDeath [log]
     impact 0x4CB11C, its type block 0x4CB266 and the spawn 0x49C1E5: the hidden blast reached 0x4CB11C and stopped at the
     visibility test; the visible one (the player's own caravel) reached the type block with EBX = 7 (water) and the spawn
     once, both from the death observer (return 0x493D94).
-  - Delete without `<DetonationCommand>` (the archer's Delete button) and the trigger `Kill` of an archer and of a caravel:
-    `deleted without a DetonationCommand, no blast` each time, nothing on screen.
+  - Delete without `<DetonationCommand>` (the archer's Delete button): `deleted without a DetonationCommand, no blast`,
+    nothing on screen. (The trigger `Kill` gave the same line until the change below.)
   - `<DetonationImpactEffect>none</DetonationImpactEffect>`: the blast line and the damage, nothing drawn.
-  - `KnockoutDeath`: an `Engineer` given 5000 damage at 30, 70, 110 and 150 s: blasts at 30 s and 150 s only. It lay knocked
-    out from 30 s (LOS 6, its HP back from 1.9 to 62.5 by 112 s), the hits at 70 and 110 s did nothing, it stood again by
-    148 s (LOS 18, 87.1 HP), and the hit at 150 s knocked it out again with a second blast. No double blast, no crash.
-  - Multiplayer: not tested. Two copies of the game on one machine (both with `multipleInstances
-    background`): the host's LAN game is reached by Direct IP, but the join first fails because both copies read the
-    same profile (`A user by that name already exists in the game`), and with another name and GUID it ends with `Failed
-    to join Game.` (`127.0.0.1` finds no game). The host holds UDP 2297 and 2299 on the machine's address; the joiner never
-    gets past its ephemeral port, and `OverridePort` in the joiner's `user.cfg` changed nothing. A second machine is needed.
+  - `KnockoutDeath`, before the change below (a knockout then detonated): an `Engineer` given 5000 damage at 30, 70, 110
+    and 150 s blasted at 30 s and 150 s only. It lay knocked out from 30 s (LOS 6, its HP back from 1.9 to 62.5 by 112 s),
+    the hits at 70 and 110 s did nothing, it stood again by 148 s (LOS 18, 87.1 HP), and the hit at 150 s knocked it out
+    again with a second blast. No double blast, no crash.
+- **Tested in WoL (2026-11-13, knockouts and the trigger `Kill`):**
+  - The Engineer without `<DetonationOnKnockout>`, 5000 damage at 30 s: `unit 0, proto 1482: knocked out (KnockoutDeath),
+    no blast`, no explosion (its proto flag 123 read from memory: set; a Settler's and an archer's: clear).
+  - An `Explorer` with `<DetonationOnKnockout>1</DetonationOnKnockout>`, 5000 damage at 34 s and 154 s: a blast at each,
+    `unit 1, proto 298, at 44.0, 36.9, kill flags 0 0 0` twice.
+  - The trigger `Kill` of an `xpAenna` and of a `Settler`, neither with `<DetonationCommand>`: `kill flags 1 0 0 (a
+    trigger's Kill)` for both, a mortar explosion, and a Gaia wagon beside the settler from 250 to 237.3 HP.
+  - The Delete button on another Settler and another archer, no `<DetonationCommand>`: `deleted without a
+    DetonationCommand, no blast` for both.
+  - All these went through the executor's kill-queue call (`hook reached: detonationDeath delete command, kill queue
+    (0x7CD0DC)`): every unit seen there has proto flag 13. The HP-setter call (0x7CD0CF, a proto without flag 13) was not
+    reached in these tests.
 - **Tested in WoL (2026-11-05, the three tags):** a Grenadier with `MusketVolleyRangedAttack` and threshold 0.5 under three
   Pikemen: `HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, then the blast with flags 0 0 0, and the unit
   gone; with the key off it fought on and died at 0. A Musketeer of 4000 HP with threshold 0.25 and decay 100, taken to

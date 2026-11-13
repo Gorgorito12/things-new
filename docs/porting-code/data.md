@@ -147,6 +147,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"DetonationHitpointThreshold", "detonationDeath"},
     {L"DetonationHitpointDecay", "detonationDeath"},
     {L"DetonationImpactEffect", "detonationDeath"},
+    {L"DetonationOnKnockout", "detonationDeath"},
     {L"DisplayRange", "displayedRange"},
     {L"DisplayedRange", "displayedRange"},
     {L"CanDodgeAttacks", "dodgeAnyUnit"},

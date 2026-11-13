@@ -541,6 +541,10 @@ Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHan
   (`thiscall(projectile, point)`, `ret 4`) with a zeroed record of 70h bytes holding the action at `+10h` and the point
   at `+64h`; for `<DetonationImpactEffect>` it reads the effect with `0x58F017` (`thiscall([[0C66234h]+0BB8h], &text)`,
   the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID.
+- **The delete calls:** `0x7CD0CF` (HP setter `0x4820A1`) and `0x7CD0DC` (kill queue `0x4B4DC2`) are `call`s to the
+  asm hooks of `detonation_hooks.asm`: each pushes ECX (the unit), then EDI (the delete command) and ECX for the
+  helper, pops ECX and `jmp`s to the stock callee. Bit 3 of the command's flag bits (`[[cmd+58h]] & 8`, size
+  `[cmd+5Ch]`) marks the trigger `Kill`. A knockout is proto flag 123 (`[[proto+50h]+0Fh] & 8`).
 - **Test:** the tag on a proto: when one dies, what stands around it takes the action's damage, and the action's impact
   effect (or the tag's) plays there.
 
