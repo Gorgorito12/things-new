@@ -555,6 +555,121 @@ amount / yield. With 1.5 a tree lasts 1.5 times longer for the same income.
     (`ev_90be3ff9…`). Built: [`ageUpBuildings`](modding-guide.md#ageupbuildings), which widens the TownCenter
     compare and, on a listed building, keeps the politicians its proto lists.
 
+### #59 Player icons in LAN lobbies; two copies on one PC
+
+A study, not a build (2026-11-13). Legacy was read with REA (Ghidra 12.1.4, snapshot `age3y-b1a1dab7-rea68`), bundle
+`rea/evidence/age3y-b1a1dab7/lobby-avatar-59-20261113.json`, and with capstone where Ghidra has no function (handlers
+and the session's state code), excerpts in `rea/evidence/age3y-b1a1dab7/lobby-avatar-59/` (`lobby-avatar-cs.txt`,
+`lan-ports-cs.txt`). Nothing was run in game. [O] observed, [I] inferred, [?] unknown.
+
+**DE.** [O] Its avatars are numbered rewards: strings `{ "type": "avatar", "id": N, "category": 4|5|6, ... }` and
+`Avatar[%d,%d]` (`pe64.py strings`). Its lobby code was not read. Nothing to copy.
+
+**Where the lobby icon comes from.**
+- [O] The gadget is `mpsetup-PlayerN-Avatar` in `uiMPGameSetupPage.xml` and `uimpesogamesetuppage2.xml` (48 × 48,
+  default background `ui\eso\eso_portrait_08`). The setup page binds it as gadget 2 of each of its 8 slots
+  (`mpsetup-Player%d-Avatar` 0xC1F3D4 at 0x8B881B, slot setter 0x777B20 stores `[slot+20h+i*4]`), so the icon gadget
+  is `[slot+28h]`. Setup page constructor FUN_00775DA0 (`ev_fcd61577…`).
+- [O] It changes when a player setting changes: the slot's handler 0x776BED (capstone; Ghidra has no function there,
+  `ev_286bc369…`) takes setting ID − 3Ah, divides by 18h: the quotient − 1 is the slot, the remainder the field
+  (jump table 0x777558 / 0x777590). The fields are the `GamePlayer%d…` names of the settings schema in `.rsrc`
+  (UTF-16 from 0xD85FB4): 0 Name, 1 TeamID, 2 Clan, 3 Color, 4 Civ, 5 Type, 6 Status, 7 Rating, 8 Handicap,
+  9 AIPersonality, **10 AvatarID**, 11 Rank, 12 PowerRating, 13 TotalXP, 14 WinRatio, 15 Ready, 16 HCLocation,
+  17 HCLevel, 18 HCFilename, 19 HomeCityName, 20 ExplorerName, 21 QuestID, 22 QuestStatus, 23 ID.
+- [O] **Civ (field 4) sets the icon in LAN:** FUN_00774D56 (`ev_9482c8de…`) reads the slot's civ and gives `[slot+28h]`
+  the civ's portrait: `[civ+D0h]` with the coordinates from 0x6EF0A6, or `[db+5D78h]` for the random civ `[db+5D74h]`
+  (`ui\singleplayer\cpai_avatar_random`, 0x52B4D3). It runs when `[slot+1Ch]` ≠ 0 or the mode at
+  `[0x402F67()+0Ch]` is not 2Fh.
+  - [I] `[civ+D0h]` is the `<matchmakingtextures><portraittexture>` of civs.xml (parsed at 0x52D054 in the civ loader,
+    `ev_d014bfb3…`); WoL's are `WoL\ui\singleplayer\cpai_avatar_<civ>-sm`. So what the request calls "the civ
+    personality's" icon is the civ's, not the AI personality's: field 9 (AIPersonality) changes nothing (case 9 →
+    0x777168).
+  - [?] What `[slot+1Ch]` and mode 2Fh are (ESO's mode is the likely 2Fh).
+- [O] **AvatarID (field 10) overrides it**, when `[slot+1Ch]` is 0 (0x776DEA): it reads the string, looks it up by name
+  in the avatar table (`[[0xC66234]+140h]` → 0x7EEEE7 → 0x7A77EF, a hash map; an empty name looks up the table's
+  default) and sets the record's image (`record+10h`, 0x776E7A → 0x638823) on `[slot+28h]`. An unknown name leaves the
+  icon as it was. No other test (civ, level, tier) on that path.
+- [O] **The avatar table is data:** at startup 0x7A7E60 loads every `avatar_*.xml*` (FUN_007A7CFE, `ev_c296ff39…`) from
+  the game's `data\` (`[0xD6F510]`) and from the user's `Data\` folder in My Games (`[0xD96B2C]`, registered at
+  0x55E3D0). Format (FUN_007A7B4F, FUN_007A7875): `<avatars><avatar id="…">` with `<image>` or `<portrait>` (the
+  texture), `<tier>`, `<minLevel>`, `<type>clan</type>` and `<civ>`.
+  - [O] Neither the stock nor WoL's install has such a file: no `avatar_*.xml` in `data\`, the bars or the two My
+    Games `Data` folders. ESO wrote AvatarID from the online persona (FUN_00773080 and FUN_007734A5, `ev_e8dbf51c…`,
+    settings `slot*18h+5Ch`); in LAN nothing writes it.
+- [O] **In game:** stock shows no avatar per player outside the lobby and the ESO pages (`AMPStatus-Avatar`,
+  `AMPQuickSearchPage-…-Avatar%d`). But the text markup can: WoL's observer files show
+  `<icon=(49)(spec/avatars/{playerName(1)})>`, with the stock data-replace key `playerName` (0x5D1B1E) and the gadget
+  flag `formatTextUseDataReplace`, and WoL ships `art\spec\avatars\<name>.ddt` (ESOC players). [O] That is data only:
+  neither WoL DLL has an "avatar" string.
+
+**What the network carries.**
+- [O] The settings setters 0xA26361 (string) and 0xA26321 (int) (`ev_177ffb42…`) go to FUN_00A2B475 (`ev_31cf4aaa…`): a
+  peer that is not the host stores the value and sends it to the host on the session channel (`[obj+84h]`, vtable
+  +10h); the host stores it and broadcasts it (0xA2A6C2). So every `GamePlayer%d…` value, AvatarID included, is shared
+  lobby state, and a string can ride in AvatarID with **no new message**.
+  - [I] Any peer may write any slot's AvatarID: ESO's writer ran on every peer for every slot.
+  - [?] Whether the host checks who writes a slot's field; whether the join snapshot carries AvatarID (it is in the
+    same table as Civ and Name, which do arrive).
+- **A peer without our DLL** runs the stock handler: it shows the icon when it has the same `avatar_*.xml` entry and
+  the texture, until that player's next civ change, which puts the civ portrait back (FUN_00774D56 does not look at
+  AvatarID). **A peer without the entry** keeps the civ portrait. Nothing reaches the simulation. [I] No sync risk:
+  ESO set AvatarID in every ranked game.
+
+**Design options.**
+
+| Option | What | Sites | Network and compatibility | Size |
+|---|---|---|---|---|
+| A (recommended) | WoL ships `data\avatar_wol.xml` (`<avatar id="wol_eagle"><image>ui\playericons\eagle</image></avatar>`, …) and `art\ui\playericons\*.ddt`. A key writes the local player's `GamePlayer%dAvatarID` with the stock setter once the player has a slot; the choice is a cfg value or a picker. | setter 0xA26361 on the setup's settings; the slot's player events (0x776BED, field 0/5); a hook at the head of FUN_00774D56 that keeps the avatar when the slot's AvatarID resolves; a picker: ESO's avatar dialog `uimpesoavatar.xml` (`MPESOAvatar-Entry%ld`, 0x7667F9) or a dropdown | stock field and message; peers without the DLL see it until the player's next civ change; peers without the file see the civ portrait | **M** (S with a cfg value, + M for a picker in the lobby) |
+| B | Local display by player name: `art\ui\playericons\<name>.ddt` replaces the civ portrait if the file exists, as WoL's observer avatars do in game. | the same FUN_00774D56 hook, reading field 0 | nothing sent; each peer sees only the icons it has; no free choice | **S** |
+| C | A file name in another string field (Clan, ExplorerName, HomeCityName). | the same, plus the field's own readers | those fields are shown or used elsewhere; same file problem | S–M, not recommended |
+| D | A new lobby message. | the session's message switch | stock peers drop or mis-read it | **L**, not needed |
+
+**Recommended: A, size M**, with the picture list in data so a stock peer that has WoL's files shows the icons. In
+game, a data-replace key `{playerAvatar(n)}` next to `playerName` would let the score or observer panel use the same
+icon (S, on top). B is the cheap fallback, and the two can share the hook.
+
+**Two copies on one PC** (the failed LAN joins of 2026-11-10 and 2026-11-13, [performance.md](performance.md) and
+[#52](wol-requests.md#tier-5-jtmastons-second-list-2026-11-12)).
+- [O] Every UDP socket of the session layer comes from FUN_00A19A97: `WSASocketA(AF_INET, SOCK_DGRAM, UDP)`,
+  `setsockopt` SO_BROADCAST (0xA19B39) and **SO_REUSEADDR** (0xA19B60), then `bind` to the address given or to
+  0.0.0.0:0; a failed bind retries with `OverrideAddress` (0xA19C05).
+- [O] Fixed ports:
+  - **2297:** the session's socket binds `[session+94h]:2297` (the machine's address, the one the setup screen shows),
+    `push 8F9h` at 0xA2532D, 0xA25AEF, 0xA25DB8, 0xA260FD, 0xA261A4;
+  - **2300:** the default of `[session+34h]` when no `OverridePort` is set (FUN_00A2573D, `ev_d0d5689c…`, 0xA25845 /
+    0xA2589A). It goes into the local address's port `[session+92h]` (0xA25A79, replaced by `[session+34h]` when it is
+    above 0) and, with 2296, to the helper FUN_00B58BB3. When a joiner resolves the host, the host's address gets port
+    **2300 hard-coded** (0xA25486 → `[session+78h]`; also 0xA253E9, 0xA25368), whatever the host's `OverridePort`;
+  - **2299:** the default port of the helper socket at 0xB58B0F / 0xB58C4E, and the port list FUN_00A2573D gives
+    FUN_00B5A3F2 on a non-host (0xA257F5).
+- [O] `OverridePort` (config 0xD997FC, registered at 0x56FA89, pointer `[0xDBE49C]`) is read only in FUN_00A2573D,
+  into `[session+34h]`. It moves neither the 2297 bind nor the 2300 a joiner aims at, which is why it "changed
+  nothing". (FUN_008A7086, the other 2300 default, is ESO's status server.)
+- [I] **Why the join fails:** both copies bind the same UDP ports on the same address, SO_REUSEADDR lets the second
+  bind succeed silently, and Windows then gives each unicast datagram to only one of the sockets sharing the port.
+  The join request reaches the host; the replies and the peer traffic sent to `<PC address>:2297` / `:2300` reach one
+  process only, so the connection dies: "Failed to join Game." (reason 2 of 0x8B5728). The LAN list is empty for the
+  same reason on 2299. `127.0.0.1` finds nothing because the session binds the machine's address, not 0.0.0.0.
+- [O] **No same-machine check was found:** the join's refusals (full, version, denied, name; 0x8BBC2D) test no
+  address, and the exe has no CD-key or "duplicate" string for players (bounded string search). The name refusal is
+  real: both copies read one `NewProfile3.xml`.
+- **What a dev-only key needs** (working name `localMultiplayer <offset> <name>`, documented like the `perf*` keys):
+  1. in the joining copy only, its own ports moved by the offset: the five 2297 immediates, the 2299 ones (0xB58B0F,
+     0xB58C4E, 0xA257F5) and the 2300 default (or `OverridePort`); the host keeps the stock ports, because the
+     joiner aims at host:2300;
+  2. SO_REUSEADDR off under the key (the option at 0xA19B60), so a collision fails loudly;
+  3. a per-copy player name in place of the profile's (both copies share the profile);
+  4. [?] whether the host answers the joiner at the datagram's source port or at a port written into the join
+     message. If the latter is a hard-coded 2297/2300 on the host side, the host needs a hook in its receive path.
+  - **Size:** S–M (immediates in verified sites, one option, one name override, then a test), M if point 4 needs the
+    hook. Without code: a second PC or a virtual machine.
+
+**To ask JTMaston:**
+1. A choice among pictures the mod ships (A, every WoL player sees them), or any picture a player adds (B-like, only
+   peers with the file see it)?
+2. Lobby only, or also in game (score or observer panel)?
+3. AI players: keep the civ portrait? And reuse `art\spec\avatars` (ESOC's players by name) for B?
+
 ## What legacy does today
 
 Read with REA (Ghidra) in the stock exe. The addresses, registers and Evidence IDs are in
