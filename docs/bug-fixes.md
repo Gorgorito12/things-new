@@ -189,7 +189,7 @@ stealthTargeting [log]
 
 *Cannon splinters land on the building they hit, instead of flying over the whole screen, on models whose impact bones are scaled.*
 
-**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Friday 2026-11-13 11:39
+**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Friday 2026-11-13 13:49
 
 ![impactBoneFix in WoL](media/impactBoneFix-wol.gif)
 
@@ -273,14 +273,32 @@ impactBoneFix [all] [log]
 - **Ready set for JTMaston (2026-11-13):** the tool over every building folder of `C:\AoE3-UHC-WoLReal` (`WoL\buildings`,
   `TOW\buildings`, `buildings`, `War of the Triple Alliance\buildings`; all the affected building models are loose files):
   1,308 models, 119 with bones to fix, none refused. The set ships the 107 whose bones are at the export's 100 (75 on the
-  Royal Court's flag, 90 on `british_hq_corps_base`): 671 bones, `WoL\buildings\ME` 90 (the
-  `props\native\grounds` 6 among them), `WoL\buildings\immigrants` 16, `buildings\modern` 1; 7.0 MB of Oodle models become 16.5 MB uncompressed. Left out, as they are: the
-  TOW tower and tower lvl3 (1/26 and 1/15, also the lvl3 copy under `art\buildings`), the Croatian and French `colony`
-  models (1/39) and `kumara_field_damaged` (11): not the centimetre export, their authors may have sized flags and smoke to
-  those bones, and they show no streaks. The zip unzips over WoL's folder and replaces WoL's own loose files, so an
-  `originals` zip of the same 107 files goes with it, and its README (English and Spanish) says to back up first. In game
-  only the Mahalla's fixed models are tested so far (above); the Persian skirmish with the other ME buildings, the Royal
-  Court and the Temple with `wood` were stopped by a Windows Firewall prompt for the copy's exe, which left its window black.
+  Royal Court's flag, 90 on `british_hq_corps_base`): 671 bones, `WoL\buildings\ME` 90 (the `props\native\grounds` 6
+  among them), `WoL\buildings\immigrants` 16, `buildings\modern` 1; 7.0 MB of Oodle models become 16.5 MB uncompressed.
+  Left out, as they are: the TOW tower and tower lvl3 (1/26 and 1/15, also the lvl3 copy under `art\buildings`), the
+  Croatian and French `colony` models (1/39) and `kumara_field_damaged` (11): not the centimetre export, their authors may
+  have sized flags and smoke to those bones, and they show no streaks. The zip unzips over WoL's folder and replaces WoL's
+  own loose files, so an `originals` zip of the same 107 files goes with it, and its README (English and Spanish) says to
+  back up first.
+
+  ![The ME Temple with the set, key off](media/impactBoneFix-wol-set-temple.gif)
+
+  *In WoL, key off, the set in place (a Persian skirmish; the Temple, `church.xml` on `Temple2_dmg_Model`, its
+  `temple.dmg` switched to `wood` for the test; two Falconets on it, the Temple selected):* every hit throws its splinters,
+  smoke and fire on the walls and the dome; the Temple burns and collapses as before.
+  [Full video (MP4)](media/impactBoneFix-wol-set-temple.mp4).
+
+  ![The ME Temple with WoL's models, key off](media/impactBoneFix-wol-set-temple-control.gif)
+
+  *Control, the same data with WoL's own models:* long grey streaks across the view from the hits.
+  [Full video (MP4)](media/impactBoneFix-wol-set-temple-control.mp4).
+
+  ![Royal Court, Madrasah and Forge with the set](media/impactBoneFix-wol-set-collapse.gif)
+
+  *In WoL, key off, the set in place (a Persian skirmish; a Royal Court, a Madrasah and a Forge, damaged and then destroyed
+  by trigger, all three selected):* the Royal Court's flag waves on its pole by the porch and the Forge's smoke and fire
+  rise where they did with WoL's models (the control run, same scene, matched frame by frame); each building collapses into
+  its rubble as before. [Full video (MP4)](media/impactBoneFix-wol-set-collapse.mp4).
 - **Simulation:** no, it is drawing only.
 - **Log:** `impactBoneFix: effects attached to impact bones get unit-length axes`, `hook reached: impactBoneFix dummy frame,
   path 1 (0x4BE21E)` and `path 2 (0x4BE88D)`; with `log`, the first bone it scales and its length.
@@ -289,8 +307,12 @@ impactBoneFix [all] [log]
   either way. Beside WoL's own DLL, key off, the streaks show too. Not tested: `all`, ships, multiplayer.
   **2026-11-13:** key off, the Mahalla's models fixed by `fix_bone_scale.py`: splinters on the walls, the building stands,
   burns and collapses as with WoL's models (the construction and collapse models had nothing to fix). The fixed models were
-  removed from the bed after the test. Not tested: the fixed Mahalla garrisoned (its `GARRISONFLAG` is fixed too) or
-  firing from its launch point, the other buildings, the units.
+  removed from the bed after the test. The ready set of 107 models, key off, the same day: the Mahalla (`wood` test data)
+  throws its splinters on the walls, WoL's models the streaks; the ME Temple (`wood` test data) the same; the Royal Court,
+  Madrasah and Forge stand with their flags and smoke where WoL's models put them and collapse the same way; the TOW
+  tower with WoL's models (left out of the set) shows no streaks. Not tested: a building raised by settlers (the trigger
+  build command started no foundation, so the buildings were placed complete; the construction models are not in the set),
+  a fixed building garrisoned (`GARRISONFLAG`) or firing from its launch points, the units.
 
 ### Gathering and farms
 

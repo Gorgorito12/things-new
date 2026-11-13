@@ -287,3 +287,6 @@ playerIcon-wol-control 0 12 1
 playerIcon-wolart-wol 0 36 3 960:420:0:28
 randomCost-wol 8 33 3 800:72:0:0+800:300:900:0+800:110:0:190
 randomCost-wol-control 8 33 3 800:72:0:0+800:300:900:0+800:110:0:190
+impactBoneFix-wol-set-temple 12 12 1
+impactBoneFix-wol-set-temple-control 0 12 1
+impactBoneFix-wol-set-collapse 18 12 1
