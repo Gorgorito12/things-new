@@ -2946,7 +2946,7 @@ reference is coloured the same.
   Then the stolen free, → 0x4C83E8.
 - *The texture:* `bar=<texture>`; else, when `art\ui\uhc\health_overheal.ddt` is in the game folder at
   startup (a `GetFileAttributesW` relative to the working directory, the exe's folder), `ui\uhc\health_overheal`,
-  the orange bar of `tools/make_bar.py` (16×8 texels, DXT1, the layout of the stock
+  the orange bar of `tools/make_bar.py` of aoe3-blender-tools (16×8 texels, DXT1, the layout of the stock
   `ingame_ui_health_yellow`, shaded from the segment's default `FF8C00`); else the stock
   `ui\ingame\ingame_ui_health_yellow`, with a log line. A file packed in an archive is not seen by that check: such
   a mod names it with `bar=`. A texture the game cannot find (tried with `bar=ui\uhc\nonexistent`, 2026-11-12)
@@ -3406,7 +3406,7 @@ targets that paid, and keeps per owner what it hung and per target how many aura
 once a second, because a dead owner has no more updates. A model that is not in the game is accepted by 0x9C04F3, returns
 true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
 
-The rings of `tools/make_rings.py` need no code. A ring's `.xml` hangs one flat particle, chosen by `<logic type="UnitType">`:
+The rings of `tools/rings` (drawn by `tools/make_rings.py` of aoe3-blender-tools) need no code. A ring's `.xml` hangs one flat particle, chosen by `<logic type="UnitType">`:
 `appearancetype` 2 lies on the ground, 0 faces the camera, and `materialtype` 0 with `material` 0 honours the texture's alpha;
 `scale` is half the width of the square in metres. The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it
 within a frame, and `startfull` has it there at once: 0x9C2885 takes the model off but leaves its particles to die out, so a
@@ -3447,7 +3447,7 @@ aura: the update does not run; in a power's `<unitModify>` the name is accepted 
 A kill that reaches a rank and a transform queue the unit's ID. A world tick every 250 ms of game time hangs `rank_N.xml` through
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
-`HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`tools/make_rings.py`, `RANK_LIFT`): the HP
+`HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`RANK_LIFT` in aoe3-blender-tools' `tools/make_rings.py`): the HP
 bar scales with the camera like the world, so the gap stays at every zoom. Ranks 4 and 5 add stars over rank 3's chevrons: their
 sprite is larger around the same centre, with the glyph scaled down by as much, so the chevrons land where rank 3's do. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
