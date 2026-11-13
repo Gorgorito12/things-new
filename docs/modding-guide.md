@@ -30,6 +30,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
 | Thursday 2026-11-12 18:01 | [`customWalls`](#customwalls) | Added. A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. |
 | Thursday 2026-11-12 17:40 | [`customImpactTypes`](#customimpacttypes) | Filmed in WoL, with a control. New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. |
 | Thursday 2026-11-12 16:03 | [`impactBoneFix`](#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
@@ -2879,6 +2880,7 @@ Attacks, armor, and what a hit does.
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
 | [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
 | [`stealthTargeting`](#stealthtargeting) | A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | **new** | Nothing. | confirmed (single player) |
+| [`directionalAttack`](#directionalattack) | A shot that flies on past its target and hits every unit it flies over, before and after the target. | **new** | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. | confirmed (single player) |
 | [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
@@ -4500,6 +4502,63 @@ customImpactTypes <Name> [<Name> ...] [log]
 - **Tested in WoL (2026-11-12):** the Mahalla with `ShipMetal` and the `.xmb`: the splash on every hit with the key, none
   without it; the stock `Metal`, key off. Not tested: a ship, a proto's or a terrain's `<ImpactType>`, the sound by ear,
   multiplayer.
+
+#### directionalAttack
+
+*A cannon shot flies on past its target to a fixed distance and hits every unit it flies over on the way, like a Scorpion bolt.*
+
+**Added:** Thursday 2026-11-12 18:23 · **Filmed in WoL:** Thursday 2026-11-12 18:26
+
+![directionalAttack in WoL](media/directionalAttack-wol.gif)
+
+*In WoL, with `directionalAttack log` (test data: the `Falconet`'s `CannonAttack` with `<DirectionalAttack>40`,
+`<DirectionalWidth>0.5` and `<DirectionalDamageFactor>0.3`; the Falconet is selected; a row of 6 `Crossbowman`s and, 12 m
+behind, a row of 6 `Pikeman`s):* each shot flies 40 m, past its target, and lands far behind the rows; the log at the bottom
+lists every unit it flies over and the damage, up to 5 per shot, pikemen behind the target included.
+[Full video (MP4)](media/directionalAttack-wol.mp4).
+
+![directionalAttack in WoL, key off](media/directionalAttack-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* each shot lands on its target and splashes it; the row of pikemen behind is not
+touched while it stands there (the unit counts at the top keep 6 Pikemen while the Crossbowmen fall).
+[Full video (MP4)](media/directionalAttack-wol-control.mp4).
+
+```
+directionalAttack [log]
+```
+
+In the attack (a `.tactics` `<action>` or a `protoy.xml` `<ProtoAction>`), one of two tags, the two variants asked for:
+
+```xml
+<!-- Variant 1: the unit fires at its MaxRange as usual; the shot lands 40 m from the unit. -->
+<DirectionalAttack>40</DirectionalAttack>
+<!-- Variant 2: the unit fires at 14 m; the shot lands at the action's MaxRange. -->
+<DirectionalFiringRange>14</DirectionalFiringRange>
+<!-- Optional, both variants. -->
+<DirectionalWidth>0.5</DirectionalWidth>             <!-- metres either side of the line; default 0.25 -->
+<DirectionalDamageFactor>0.3</DirectionalDamageFactor> <!-- share of the attack per unit flown over; default 1 -->
+```
+
+- **What it does:** the shot leaves along the line from the unit through its target and lands at the landing distance (never
+  short of the target). Every unit whose obstruction the line passes within `DirectionalWidth` takes the attack once, as a
+  direct hit: the action's damage, its `DamageBonus`es, the armor and `DamageFlags` (so `GAIAEnemy` never hits the unit's
+  own or allied units), times `DirectionalDamageFactor`. The target is one of them. Where the shot lands, the attack lands
+  as a `TargetGround` shot's does: with `DamageArea`, the area damage there. Trees, mines and hunts are not hit.
+- **Variant 2 and techs:** with `<DirectionalFiringRange>`, the action's `MaxRange` becomes the firing range when the data
+  loads, and the data's `MaxRange` is kept as the landing distance. A tech that adds range adds it to both, so the shot
+  still lands the same distance past where the unit fires. JTMaston has not chosen the variant yet (WoL #48); both work.
+- **Not changed:** `InstantBallistics` attacks (musket shots) are left as they are: their hit is decided at the target. A
+  shot whose landing point is off the map ends at the map's edge.
+- **With other keys:** none shares its sites. A pass-through hit goes through the stock `TakeDamage`, so `damageOverTime`,
+  `multiarmor`, `dodgeAnyUnit` and the rest apply to it as to any hit.
+- **Tested in WoL (2026-11-12, single player):** the scene above, a European Falconet against Crossbowmen and Pikemen
+  of player 2: up to 9 units hit by one shot (its target, a pikeman 4 m away, then 3 crossbowmen and 5 pikemen up to 36 m away). Variant 2 with `<DirectionalFiringRange>14`
+  on the Falconet's `MaxRange` 26: the log reads `MaxRange 26.00 is the landing distance; the unit fires at 14.00`, the
+  shots land at 26 m, and attack-moving at 3 Crossbowmen it fired its first shot 17 m from them against 22 m without the tag.
+  Bad values (`-1`, `abc`) and a bad cfg argument are logged and ignored. A/B, 6 Falconets against 30 units, 60 s each: key
+  on 713 fps, update 0.2 ms, main thread 87 %, no frame over 50 ms; key off 700 fps, 0.2 ms, 87 %, none (two other
+  copies of the game were running). Not tested: multiplayer, a saved game (shots in flight are not saved: a loaded game
+  lands them as plain ground shots), beside WoL's own DLL.
 
 ### Gathering and farms
 

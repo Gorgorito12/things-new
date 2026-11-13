@@ -346,6 +346,7 @@ teamKillBounty [log]          the XP of a marked victim goes to the killer's tea
 cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 stealthTargeting [log]        large units in stealth hidden from enemies; no attack on an unseen stealthed unit
+directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
 bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster

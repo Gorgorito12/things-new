@@ -3688,6 +3688,45 @@ writes, and EAX/EDX, which the stock path overwrites with its calls before readi
 so it is not simulation: it only chooses the protos of the build orders the click sends, which every machine receives
 as for the stock wall. The AI's walls (0x9F71A5) and the caller 0x741299 keep the civ's pieces.
 
+### directionalAttack
+
+**The launch.** FUN_004995C7 picks the projectile's mode (`[projectile+20h]`: 1 a sure hit, 2 a miss, 3 a ground shot) and
+its impact point (`[esp+28h]`) on four paths: the precalculated roll, the `InstantBallistics` branch, the `TargetGround`
+store and the skipped block. All four meet at 0x4998A7 (`mov ecx,[esp+10h]` / `mov [esi+14h],ecx`; no branch lands
+inside its 7 bytes), and every launch call after it reads the point at `[esp+28h]`. The hook there re-executes the two
+instructions and, for an action in the key's table (by the proto ID `[proto+4]` and the action's name index
+`[action+4]`, the same in every player's copy) that is not `InstantBallistics`, has a target and a projectile unit
+`[projectile+0]`: moves the point along the line from the shooter through it to the landing distance (never short of the
+target), sets its height with the terrain query the ground lead uses (the world's `[+88h]` object, vtable slot 18h), and
+sets the mode to 3. The projectile then flies there, and its landing applies the attack as a `TargetGround` shot's does
+(the applier FUN_0049BE95 with no target: area damage at the point with `DamageArea`, nothing without).
+
+**The flight.** The shot is kept by the projectile unit's ID, with the shooter, its player and proto ID, the action, the
+damage multiplier the launch stores at `[projectile+14h]`, and the arguments the applier passes to TakeDamage
+(0x49C05A: MuteDamage, the projectile flag bit 14, `[projectile+0C0h]`). After each world update (the shared wrapper of
+0x481A57), each shot's projectile unit has moved: the 2D segment from its last position to the new one is tested against
+the units the spatial query 0x4A1C55 finds around it. A unit is hit when the point of the segment nearest its centre is
+within `DirectionalWidth` of its obstruction (vtable slot B8h), it is alive, not contained, not a projectile, not a Gaia
+resource, not the shooter, not hit by this shot before, and the action's `DamageFlags` allow it (the diplomacy filter
+0x49AEE0, read from the shooter's player). Hits go in order along the segment, then by ID, each through TakeDamage
+0x49B3D9 with the action and the multiplier times `DirectionalDamageFactor`, as the applier's direct hit (p11 = 0 when the
+shooter is gone: the army code reads the attacking unit without a null check). Past the landing distance (a bounce) the
+line stops at the landing point; when the projectile unit is gone, the rest of the line is flown if it ended within three
+steps (or 3 m) of the landing point, and dropped otherwise (it hit a cliff, or the map's edge).
+
+**`<DirectionalFiringRange>`.** The action parser's `MaxRange` handler calls the setter 0x5FA709 at 0x5F8A51
+(`thiscall(action, value)`: entry 0 `+8` of the range array `[action+18h]`). The call is redirected: for an action with
+the tag, the value read is kept as the landing distance and the setter gets the firing range, so the game targets and
+fires at it. A tag that comes after `MaxRange` does the same at once. At the launch the landing is the data's `MaxRange`
+plus what the player's copy has gained since (range techs).
+
+**Why it is safe.** The launch hook saves every register around its call and re-executes the two instructions it
+replaces; the next one sets the flags before reading them (`test eax,eax` at 0x4998B4). Mode 3 with a target is a stock
+state (a `TargetGround` unit attack). The shots are walked in ID order after the world update, with game positions only;
+TakeDamage kills through the kill queue, so a hit never removes a unit during the walk (the query's IDs are copied
+first, and each unit is looked up again before its hit). A data load and a new game clear the table; a saved game does
+not keep the shots in flight, which then land as plain ground shots. Nothing reads the local player or a clock.
+
 ### Tech subtypes on the built tags: a value per player's copy
 
 A `Data` subtype's handler gets the player's copy of the proto and the base it was cloned from (`techsubtypes.h`),

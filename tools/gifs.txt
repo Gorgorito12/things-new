@@ -246,3 +246,5 @@ impactBoneFix-wol 2 20 2
 impactBoneFix-wol-control 2 20 2
 customImpactTypes-wol 0 22 2
 customImpactTypes-wol-control 0 22 2
+directionalAttack-wol 3 22 2
+directionalAttack-wol-control 3 22 2
