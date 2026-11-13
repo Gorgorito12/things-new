@@ -7151,6 +7151,10 @@ JTMaston's #56 asks for `UseBigHugeButton` on other buildings than the Consulate
 legacy tech flag does it, and a change in WoL's command panel files lets the building's other buttons show
 beside it.
 
+**When to make the edit:** only once a building other than the Consulate gets a tech with the flag. The
+Consulate has no other buttons, so WoL's layout suits it as it is; after the edit its Choose Ally label sits
+beside an empty grid, which changes only the look.
+
 ![YPUseBigHugeButton on a Market, the button above the panel](media/useBigHugeButton-moved-wol.gif)
 
 *In WoL, with the edit below (Ethiopians, a scenario, test data):* `HuntingDogs` with
@@ -7215,6 +7219,11 @@ the Market's Improve, Buy and Sell are hidden until the research is done.
 
 JTMaston's #62 asks for up to five age-up choices, as in DE. The exe already holds five; WoL's European
 dialog has four places. A fifth place in that file shows five.
+
+**When to ship the five-place file:** with the first civ that gets five politicians in an age. While every civ
+has four, WoL's four-place file looks right (the five-place one leaves an empty place on the right), and
+[`politicianPlacesFix`](bug-fixes.md#politicianplacesfix), always on, keeps a fifth politician from crashing the
+game.
 
 ![Five politicians in WoL's European dialog](media/fivePoliticians-wol.gif)
 
