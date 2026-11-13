@@ -407,7 +407,9 @@ The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_ho
    - the engine functions in [engine-symbols.md](engine-symbols.md);
    - in [modding-guide.md](modding-guide.md), section 5: a row in its theme's table, and its own section,
      whose first line is one line in italics saying in plain words what the key does (`guide_dates.py`
-     refuses a section without it);
+     refuses a section without it). A key that fixes a bug of the game or of WoL's data, or only makes the
+     game faster, goes the same way in [bug-fixes.md](bug-fixes.md) instead ("Bug fixes", under the
+     guide's theme, or "Performance");
    - `python -I tools/guide_dates.py`, for the day, date and time of the feature in the guide;
    - its source files in `PAGES` of `tools/porting_code.py`, under a section named as its heading in
      section 4 of [porting-to-another-dll.md](porting-to-another-dll.md), then

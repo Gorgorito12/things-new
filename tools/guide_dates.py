@@ -1,4 +1,6 @@
-"""Write the dates of docs/modding-guide.md from git: run it after every test video or new key.
+"""Write the dates of docs/modding-guide.md and docs/bug-fixes.md from git: run it after every test
+video or new key. The feature sections of docs/bug-fixes.md (from "## Bug fixes" on) follow the same
+rules as the guide's, and the guide's "Latest changes" lists both documents.
 
 Usage: python -I tools/guide_dates.py [--check]
 
@@ -25,6 +27,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 GUIDE = ROOT / "docs" / "modding-guide.md"
+FIXES = ROOT / "docs" / "bug-fixes.md"
+FIXES_FIRST = "## Bug fixes"  # its feature sections run from this heading to the end
 SECTION_5, SECTION_6 = "## 5. Feature reference", "## 6. Editing the game data"
 LATEST = "## Latest changes"
 NEXT_AFTER_LATEST = "## Adding these features to WoL"
@@ -109,13 +113,28 @@ def anchor(heading):
     return "#" + re.sub(r"[^\w\- ]", "", heading.lower()).replace(" ", "-")
 
 
-def update(text):
+def known_keys(*bodies):
+    known = {k.lower() for body in bodies for part in re.split(r"(?m)^(?=#### )", body)[1:]
+             for k in section_keys(part.split("\n", 1)[0][5:].strip())}
+    return known | set(VIDEO_ALIASES.values())
+
+
+def update(text, fixes):
+    """The guide and docs/bug-fixes.md with their dates rewritten; Latest changes lists both."""
     start, end = text.index(SECTION_5), text.index(SECTION_6)
+    fstart = fixes.index(FIXES_FIRST)
+    known = known_keys(text[start:end], fixes[fstart:])
+    added_dates, videos = key_added_dates(), video_dates(known)
+    text, entries = sections(text, start, end, "", added_dates, videos)
+    fixes, more = sections(fixes, fstart, len(fixes), "bug-fixes.md", added_dates, videos)
+    entries += more
+    return latest(text, entries), fixes
+
+
+def sections(text, start, end, prefix, added_dates, videos):
+    """Rewrite the dates of the "#### " sections in text[start:end]; the text and the Latest entries."""
     body = text[start:end]
     parts = re.split(r"(?m)^(?=#### )", body)
-    known = {k.lower() for part in parts[1:] for k in section_keys(part.split("\n", 1)[0][5:].strip())}
-    known |= set(VIDEO_ALIASES.values())
-    added_dates, videos = key_added_dates(), video_dates(known)
     rows = index_rows(body)
     entries = []
     out = [parts[0]]
@@ -142,10 +161,13 @@ def update(text):
             lines = f"**Added:** {stamp(added)}\n"
         out.append(f"#### {heading}\n\n{summary.group(1)}\n\n{lines}\n{rest}")
         what, status = next((rows[k] for k in keys if k in rows), ("", ""))
-        link = ", ".join(f"[`{k}`]({anchor(heading)})" for k in keys)
+        link = ", ".join(f"[`{k}`]({prefix}{anchor(heading)})" for k in keys)
         entries.append((added, filmed, link, first_sentence(what), status))
-    text = text[:start] + "".join(out) + text[end:]
+    return text[:start] + "".join(out) + text[end:], entries
 
+
+def latest(text, entries):
+    """The guide's "## Latest changes" table from the entries of both documents."""
     rows_out = []
     for added, filmed, link, what, status in sorted(entries, key=lambda e: e[1] or e[0], reverse=True):
         if filmed is not None and filmed > added:
@@ -155,7 +177,8 @@ def update(text):
     block = "\n".join([
         LATEST, "",
         "Every feature, newest first, with the day, date and time of its latest change (the commit's",
-        "local time). The details are in the feature's section, under its heading.", "",
+        "local time). The details are in the feature's section, under its heading; the bug fixes and the",
+        "performance keys are in [Bug fixes and performance](bug-fixes.md).", "",
         "A new test video counts as a change: a feature filmed again in WoL moves back to the top.", "",
         "| Date and time | Key | What changed | Status |", "|---|---|---|---|", *rows_out, "", "",
     ])
@@ -163,18 +186,23 @@ def update(text):
     return text[:first] + block + text[last:]
 
 
+def read(path):
+    raw = path.read_bytes()
+    return raw.decode("utf-8").replace("\r\n", "\n"), b"\r\n" in raw
+
+
 def main(argv):
-    raw = GUIDE.read_bytes()
-    crlf = b"\r\n" in raw
-    text = raw.decode("utf-8").replace("\r\n", "\n")
-    new = update(text)
-    if new == text:
+    text, crlf = read(GUIDE)
+    fixes, fixes_crlf = read(FIXES)
+    new, new_fixes = update(text, fixes)
+    if new == text and new_fixes == fixes:
         print("guide_dates: nothing to change")
         return
     if "--check" in argv:
         sys.exit("guide_dates: the dates of the guide are out of date")
     GUIDE.write_bytes((new.replace("\n", "\r\n") if crlf else new).encode("utf-8"))
-    print("guide_dates: docs/modding-guide.md updated")
+    FIXES.write_bytes((new_fixes.replace("\n", "\r\n") if fixes_crlf else new_fixes).encode("utf-8"))
+    print("guide_dates: docs/modding-guide.md and docs/bug-fixes.md updated")
 
 
 if __name__ == "__main__":
