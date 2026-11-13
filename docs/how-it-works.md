@@ -1606,20 +1606,59 @@ come from the game's player array, the same on every machine, and the time is an
 
 ### shipmentCounts
 
-**Where a card is shipped.** The shipment queue's update (FUN_004BF86F, its cold part calls FUN_00858299 at
-`0x66AEA0`) ships the first card when its transit ends. FUN_00858299 checks the player (alive, a KB, no blockade),
-resolves the drop point, then activates the card's tech: `call 94CF27h` at `0x8584FF`, `thiscall(entry = EDI, player =
-[esi+8], unit, 0, &ok, flags)`, `ret 14h`. The activation applies the tech's effects there and then, so a card's
+**Where a card is sent.** The send FUN_0085A724 (`thiscall(hc, …, cardIndex)`, from the command at 0x7D4C9B) checks the
+card (Blockade `[hc+4DCh]`, the card's age against the player's `[player+50h]`, a ship, the cost), pays, and appends an
+entry to the home city's shipment queue `[hc+288h]` (count `+28Ch`, entries of 18h: `+0` card index, `+4` tech ID, `+8`
+the tech's research points, `+0Ch` progress, `+10h` a cost list) with FUN_00857204, `thiscall(queue, entry*)`, `ret 4`,
+the queue's only add (REA `ev_085f3a08…`; the load 0x85E44E fills the queue directly, `ev_530bdbb8…`). A queued card can
+be cancelled, by the player or by a Blockade: FUN_0085ADD9 refunds it and removes the entry with FUN_00857257(index, 1),
+`thiscall(queue, index, bool shift)`, `ret 8` (`ev_3d75e6c9…`). The queue update FUN_004BF86F advances only entry 0 and
+removes it with FUN_00857257(0, 1) once shipped; those are its two callers (`ev_1ddddf42…`).
+
+**Where a card is shipped.** The update's cold part calls FUN_00858299 at `0x66AEA0`, `thiscall(hc, queue entry*)`,
+when the first card's transit ends. It checks the player (alive, a KB, no blockade), resolves the drop point, then
+activates the card's tech: `call 94CF27h` at `0x8584FF`, `thiscall(entry = EDI, player = [esi+8], unit, 0, &ok,
+flags)`, `ret 14h`, with ESI the home city and its argument, the queue entry, at `[esp+24h]` in that frame (`mov
+ecx,[esp+24h]` at 0x85856A; `ev_86fde4e0…`). The activation applies the tech's effects there and then, so a card's
 `FreeHomeCityUnit` creates its units inside that call. Then the card index is added to the home city's list of used
 cards `[hc+260h]` through 0x444FD3, which adds an index only once: a card sent again is not listed twice, so the list
 is not a count of shipments.
 
-**The count.** The key redirects that call to `UhcShipActivateHook`: `TRACE_ONCE`, `UhcShipBegin(entry, player)` notes
-the player ID and its age `[player+50h]` (what `kbGetAge` returns, 0x86A9DB: cAge1 = 0) and marks a shipment as in
-progress, then the stock activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to
-the count of that player and age and clears the mark. The return address is kept in a global while the activation
-runs, and the hook leaves with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last), zeroed
-whenever the world `[game+13Ch]` is a different one: a new game, a loaded game, a scenario.
+**The age of sending.** A card counts in the age it was sent in, but only once it ships, since a sent card can still be
+cancelled. Three hooks:
+- the head of FUN_00857204 (7 bytes, `push esi / push edi / mov edi,ecx / mov esi,[edi+4]`) jumps to
+  `UhcShipQueueAddHook`: `UhcShipQueued(queue, entry)` notes `{card index, tech ID, [player+50h]}` (the player is
+  `[hc+8]`, hc = queue − 288h); then the replaced instructions run and it jumps to `0x85720B`. doNotQueue's own call of
+  the add (at 0x85AD38) reaches this head too;
+- the head of FUN_00857257 (`cmp byte [esp+8],0`, 5 bytes) jumps to `UhcShipQueueRemoveHook`: `UhcShipUnqueued(queue,
+  index, shift)` forgets the noted card of that entry; then the `cmp` runs again (its flags feed the `jz` at 0x857260)
+  and it jumps to `0x85725C`;
+- the activation call (below) finds the send age of the entry being shipped.
+
+A noted card is found by its card index and tech ID and its rank among the entries with the same pair: the k-th such
+entry in the queue is the k-th noted one, since the queue is FIFO and doNotQueue moves a new card up only past cards of
+the other kind, never past its twin. A card whose send was not seen (a game saved without the key) takes the age at its
+arrival.
+
+**The count.** The key redirects the activation call to `UhcShipActivateHook`: `TRACE_ONCE`, `UhcShipBegin(entry,
+player, hc, queue entry)` notes the player ID and the send age of that queue entry and marks a shipment as in progress,
+then the stock activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to the count of
+that player and send age and clears the mark. The return address is kept in a global while the activation runs, and the
+hook leaves with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last).
+
+**Saved games.** The counts and the noted cards live in the DLL, so they are written into the game as saved markers
+(`savedmarkers.h`, stat 67h): stat modifiers that no code reads, whose save and load copy four dwords. Per player with
+anything to keep, one marker holds the five counts (16 bits each, word 0 `'SC' << 16 | player << 8 | 1`), and one, while
+the player has queued cards, the send ages of its queue in queue order (3 bits per place, 32 places, `| 2`). All of them
+sit on one unit, the carrier: the first living unit of a player (then of anyone) that takes a marker. A world tick
+(`AddWorldTick`) rewrites them after a change and moves them when the carrier is gone, dead, or lost its markers (a
+transform in place ends a unit's modifiers); old markers are freed. So at a save, which happens between world updates,
+the markers are on a living unit.
+
+A game is told apart as `researchGrants` does: the world `[game+13Ch]`, its time `[world+108h]` not going back and its
+step `[world+F8h]` advancing by at most one. A new or loaded game (seen by the tick, or by a hook or a syscall that runs
+first) rebuilds the table in one walk over the units: the counts from the count markers, and the noted cards from the
+loaded queue `[hc+288h]` of each player with the send ages of their places.
 
 **The tech subtype.** `FreeHomeCityUnitByShipmentCount` is a Data subtype on a Player target, which the shared tech
 subtype code did not have: stock applies a Player target through 0x7F874A, which pushes the effect's fields and calls the
@@ -1631,26 +1670,31 @@ the field `[esp+2Ch]` and the amount `[esp+34h]`. The handler returns done (AL =
 (`0x8D878F`), or the ID of a stock case to run with the arguments it rewrote.
 
 While the techs are read, the subtype's name lookup (the shared head 0x61FF5D) calls the key's parser with the effect
-and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` 1 to 5, and
-`includeself` true or 1. They are packed into the effect's field `+10h`: the proto ID in the low 24 bits, the age in the
-next 4, `includeself` in bit 28. A bad one drops the effect (the lookup answers −1, as for a name nobody knows). When the
-effect applies, the handler takes the count of that age (or of every age), adds one when `includeself` is set and the
-effect runs inside the activation of a shipment of the same player and age, writes the proto ID into the field and
-`amount × count` into the amount, and answers 37h: the stock `FreeHomeCityUnit` case (0x8D8C62) then creates the units
-at the home city gather point through 0x857E77, with its checks. A count of zero answers done, and nothing is created.
+and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` one age 1 to 5 or
+a range `N-M` of them, and `includeself` true or 1. They are packed into the effect's field `+10h`: the proto ID in the
+low 24 bits, the first age in bits 24-26, `includeself` in bit 28, the last age in bits 29-31. A bad one drops the effect
+(the lookup answers −1, as for a name nobody knows). When the effect applies, the handler adds the counts of those ages
+(or of every age), adds one when `includeself` is set and the effect runs inside the activation of a shipment of the
+same player whose send age is in the range, writes the proto ID into the field and `amount × count` into the amount,
+and answers 37h: the stock `FreeHomeCityUnit` case (0x8D8C62) then creates the units at the home city gather point
+through 0x857E77, with its checks. A count of zero answers done, and nothing is created.
 
-**The syscall.** `xsGetShipmentCount(int playerID, int age)` in the XS group (every script: the AI, triggers), through
-`AddSyscall`: the same table, -1 for every age.
+**The syscalls.** `xsGetShipmentCount(int playerID, int age)` and `xsGetShipmentCountRange(int playerID, int firstAge,
+int lastAge)` in the XS group (every script: the AI, triggers), through `AddSyscall`: the same table, -1 for every age,
+0 for an age or range out of bounds.
 
 **Why it is safe.**
 - The activation gets the same `this`, the same five arguments and the same return address; EAX, its result, is kept,
   and the code at 0x858504 reloads ECX from EDI, which the C code keeps. Only one card ships at a time, and the
   activation never ships another, so one global return address is enough.
+- The two head hooks keep EAX, ECX and EDX, run the replaced instructions themselves and jump to the verified next
+  instruction; the add's and the removal's work is untouched. `ShipEntryArg` verifies the frame the hook reads the
+  queue entry from.
 - The player switch hook re-executes the stolen `ja` with the flags of the stock `cmp`, so every stock subtype runs as
   before; the success and failure exits are the stock ones, with the stack as the cases leave it.
-- The counts read only simulation events (shipments, ages), the same on every machine; the table is ordered by player
-  ID and age.
-- Not kept in a saved game: after a load the counts start again from zero.
+- The counts read only simulation events (sends, cancels, shipments, ages), the same on every machine; the table is
+  ordered by player ID and age, and the carrier is picked in unit order, so the markers are the same on every machine.
+- A marker is a modifier of a stat no code reads; a game loaded without the key ignores it.
 
 ### maintainWaitForPop
 

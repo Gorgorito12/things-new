@@ -275,8 +275,9 @@ techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units ar
                               created or die, not only at the next house or age-up
 orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of its
                               prerequisites instead of one
-shipmentCounts [log]          cards shipped per player and age; Data subtype
-                              FreeHomeCityUnitByShipmentCount, XS xsGetShipmentCount
+shipmentCounts [log]          cards sent per player and age, kept in saved games; Data
+                              subtype FreeHomeCityUnitByShipmentCount, XS
+                              xsGetShipmentCount and xsGetShipmentCountRange
 kothTimer [players|teams] N=s ...   King of the Hill time by the number of players or teams
 maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit
                               (Maintain action) until there is population room

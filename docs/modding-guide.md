@@ -35,7 +35,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:12 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
-| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player ships in each age, for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card) and the XS call `xsGetShipmentCount`. | The effect in the cards or techs that want it. |
+| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
 | Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -6206,7 +6206,7 @@ What happens when a tech activates or a unit changes proto.
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
-| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player ships in each age, for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card) and the XS call `xsGetShipmentCount`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
+| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
 | [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
 
 #### hcTargetTechs
@@ -6374,7 +6374,7 @@ kothTimer teams 2=900 3=600 4=480
 
 #### shipmentCounts
 
-*Counts the home city cards each player has shipped in each age, so a card or tech can send one unit per card shipped.*
+*Counts the home city cards each player has sent in each age, once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
 
 **Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Friday 2026-11-13 07:54
 
@@ -6410,10 +6410,14 @@ shipmentCounts [log]
 <Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Hussar' age ='2'
         includeself ='true' relativity ='Absolute'>
     <Target type ='Player' /></Effect>
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Cuirassier' age ='2-4'
+        relativity ='Absolute'>
+    <Target type ='Player' /></Effect>
 ```
 
 ```
-int xsGetShipmentCount(int playerID, int age)    // age cAge1..cAge5, or -1 for every age
+int xsGetShipmentCount(int playerID, int age)                         // age cAge1..cAge5, or -1 for every age
+int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..cAge5, firstAge <= lastAge
 ```
 
 - **In WoL today:** nothing counts the shipments per age, and no effect sends units by a count. JTMaston's #65.
@@ -6423,29 +6427,45 @@ int xsGetShipmentCount(int playerID, int age)    // age cAge1..cAge5, or -1 for 
 - **Effect:**
   - `unittype`: a proto, delivered as the stock `FreeHomeCityUnit` delivers: at the home city gather point, with its checks
     (no gather point, no units);
-  - `amount` × the count: the count is the shipments of the player in `age` (1 to 5: Age I to Age V), or in every age
-    without `age`. A fraction is cut, as `FreeHomeCityUnit` cuts it; a count of 0 sends nothing;
-  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it is shipped in that age.
+  - `amount` × the count: the count is the cards of the player sent in `age`, one age from 1 to 5 (Age I to Age V) or a
+    range such as `age='2-4'` (Age II to Age IV), or in every age without `age`. A fraction is cut, as `FreeHomeCityUnit`
+    cuts it; a count of 0 sends nothing;
+  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it was sent in that age (or in
+    the range).
   - Target: `<Target type='Player'/>`, as `FreeHomeCityUnit`.
-- **What counts:** a card shipped: when its transit ends and its tech activates (the effects of a card run at that
-  moment). A card queued and cancelled, or blockaded, does not count. The age is the player's age at that moment. Every
-  card counts, a card sent again too. Cards of other players never count.
-- **The syscall:** `xsGetShipmentCount(playerID, age)` in AI scripts and triggers, with XS ages (`cAge1` = 0 … `cAge5` =
-  4), `-1` for every age. Note that the effect's `age` is 1 to 5 (Age I to V), and the syscall's is `cAge1`..`cAge5`.
-- **Bad data:** a `unittype` that is no proto, or an `age` outside 1..5, drops the effect, with a log line; `dataLint`
-  then lists it among the effects the game deletes.
-- **Saved games:** the counts are not saved. After loading a game they start again at zero, and the cards shipped before
-  the save do not count. A new game starts at zero too.
-- **Off:** the game deletes an effect with this subtype and the syscall does not exist: a script that calls it does not
+- **What counts, and in which age:** a card counts in the age it was **sent** in (the player's decision), and only once
+  it has **arrived** (its transit ended and its tech activated: the effects of a card run at that moment). So a card sent
+  in Age II that arrives in Age III counts in Age II, and a card on its way counts nowhere yet. A card cancelled from the
+  queue, by the player or by a Blockade, never counts: that is why the count waits for the arrival. Every card counts, a
+  card sent again too. Cards of other players never count.
+- **The syscalls:** in AI scripts and triggers, with XS ages (`cAge1` = 0 … `cAge5` = 4): `xsGetShipmentCount(playerID,
+  age)`, `-1` for every age; `xsGetShipmentCountRange(playerID, firstAge, lastAge)` for a range (0 for a bad range). Note
+  that the effect's `age` is 1 to 5 (Age I to V), and the syscalls' are `cAge1`..`cAge5`.
+- **Bad data:** a `unittype` that is no proto, or an `age` that is not 1..5 or a range of them (`'4-2'`, `'7'`), drops the
+  effect, with a log line; `dataLint` then lists it among the effects the game deletes.
+- **Saved games:** the counts are kept, and so is the age each card on its way was sent in: a loaded game goes on with the
+  counts it had when it was saved, and a card in transit at the save counts in the age it was sent in when it arrives
+  after the load. They are kept on one living unit of the game (a hidden marker that nothing reads); when that unit dies
+  they move to another one. A new game starts at zero. A game saved without the key loads with every count at zero.
+- **Off:** the game deletes an effect with this subtype and the syscalls do not exist: a script that calls them does not
   compile. Test it with the key on.
 - **Multiplayer:** it changes the simulation: every player needs the same setting.
-- **Performance:** one count per shipment and per effect; nothing per frame.
-- **Log:** `shipmentCounts: shipments are counted per player and age; the Data subtype FreeHomeCityUnitByShipmentCount and
-  the XS syscall xsGetShipmentCount read them`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached: tech subtype on
-  a player (0x8D843E)`. With `log`: `shipmentCounts: player 1 ships tech 715 (HCShipWoodCrates2) in age 3`, `shipmentCounts:
-  player 1 has shipped 2, 0, 1, 0, 0 in ages I to V`, `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318,
-  age 3: 1 shipment(s) (this one included) x 1.00 = 1.00 unit(s)`. Errors: `a FreeHomeCityUnitByShipmentCount effect
-  names NoSuchProto, which is not a proto; effect dropped`, `age="7" is not 1 to 5 (Age I to V); effect dropped`.
+- **Performance:** one count per send and per shipment, one per effect; per frame only a check that the unit holding the
+  counts is alive. A/B in WoL (2026-11-13, `perfprobe.py`, 90 s of a skirmish from 2:20, no other game open, the AI's
+  card already counted): the game's update 0.40 ms per frame with and without the key, 1 frame over 50 ms in each, main
+  thread 94 % and 93 %; the frame rate (375 and 449 fps, uncapped) differed by render time (2.3 and 1.8 ms), which the
+  key does not touch.
+- **Log:** `shipmentCounts: shipments are counted per player and the age they were sent in, and kept in saved games; the
+  Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange read
+  them`, `hook reached: shipmentCounts send (0x857204)`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached:
+  shipmentCounts queue removal (0x857257)`, `hook reached: tech subtype on a player (0x8D843E)`. With `log`:
+  `shipmentCounts: player 1 sends tech 715 (HCShipWoodCrates2) in age 2`, `shipmentCounts: player 1 ships tech 715
+  (HCShipWoodCrates2), sent in age 2, now age 3`, `shipmentCounts: player 1 has shipped 1, 2, 0, 0, 0 in ages I to V`,
+  `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318, age 2: 2 shipment(s) (this one included) x 1.00 =
+  2.00 unit(s)`, `shipmentCounts: the counts are kept on unit 8`, after a load `shipmentCounts: loaded: player 1 has
+  shipped 1, 0, 0, 0, 0 in ages I to V, 2 card(s) queued`. Errors: `a FreeHomeCityUnitByShipmentCount effect names
+  NoSuchProto, which is not a proto; effect dropped`, `age="4-2" is not an age 1 to 5 (Age I to V) or a range such as 2-4;
+  effect dropped`.
 - **Tested in WoL (2026-11-13),** a skirmish, Dutch (player 1) against a Belgian AI; cards sent from the console with
   `homeCityTrain2(1, <card>)`, ships and the age set by test techs:
   - two Age I cards counted in Age I, three later cards in Age III, the AI's own cards for player 2;
@@ -6453,7 +6473,28 @@ int xsGetShipmentCount(int playerID, int age)    // age cAge1..cAge5, or -1 for 
   - a tech with Age I amount 1 and Age II amount 2: 2 Hussars, no Cuirassier;
   - the syscall from an AI rule: `p1 all 5, Age I 2, Age III 3; p2 all 1`; the AI compiled and played;
   - `NoSuchProto` and `age='7'`: dropped and logged. Key off: the cards brought only their crates.
-  - Not tested: a saved game (documented: the counts restart), multiplayer, a `Data2` effect.
+- **Tested again in WoL (2026-11-13), the age of sending and saved games,** Dutch against a German AI, the same way;
+  `HCShipWoodCrates2`, `WoodCrates3` and `CoinCrates3` given Hussar `age='2'` `includeself='true'`, a test tech with Hussar
+  `age='2'` and Cuirassier `age='1-2'`, and an AI rule that prints both syscalls:
+  - one Age I card; two cards sent in Age II, then Age III researched while they were on their way, then the game saved;
+  - in that game: both arrived in Age III and counted in Age II (`sent in age 2, now age 3`); `WoodCrates2` brought 2
+    Hussars (the card before it and itself); the tech brought 2 Hussars and 3 Cuirassiers; the AI read `all 3, I 1, II 2,
+    III 0, I-II 3`, and 0 for the range 2-1;
+  - the save loaded in a new process: `loaded: player 1 has shipped 1, 0, 0, 0, 0 in ages I to V, 2 card(s) queued`; the
+    two cards arrived counted in Age II, with the same 2 Hussars; the tech again 2 Hussars and 3 Cuirassiers; the AI read
+    the same `all 3, I 1, II 2, III 0, I-II 3`;
+  - after the load, two more cards sent in Age III: `1, 2, 2, 0, 0`, the AI `all 5, III 2`; each brought 2 Hussars (its
+    own age is III, so it does not count itself in Age II);
+  - a second save, one more card, then that save loaded in the same process: the counts went back to `1, 2, 2, 0, 0`;
+  - the Town Center holding the counts deleted by an AI rule: `the counts are kept on unit 8` (the Explorer); saved,
+    loaded in a new process: `1, 0, 0, 0, 0`, and the AI's card that was on its way at the save counted in its Age I;
+  - `age='4-2'`: dropped and logged.
+  - Not tested: a cancelled card (the queue removal it goes through was reached by every shipment), multiplayer, a
+    `Data2` effect. The video above is the first test: what it shows has not changed (its cards were sent in the age they
+    arrived in).
+- **Note for tests:** `uiDeleteSelectedUnit()` from the console, in a copy with `multipleInstances background`, crashed
+  the game in the interface code (a null UI context at 0x7E51C8, not in the key's code); an AI rule deleting the unit did
+  not.
 
 #### orPrereqsQty
 
