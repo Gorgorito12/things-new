@@ -189,7 +189,7 @@ stealthTargeting [log]
 
 *Cannon splinters land on the building they hit, instead of flying over the whole screen, on models whose impact bones are scaled.*
 
-**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Friday 2026-11-13 13:49
+**Added:** Thursday 2026-11-12 15:45 · **Filmed in WoL:** Friday 2026-11-13 13:06
 
 ![impactBoneFix in WoL](media/impactBoneFix-wol.gif)
 
