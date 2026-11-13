@@ -1631,6 +1631,24 @@ SITES = [
     # status, unit), ret 4), in FUN_0081A2B8 (the European dialog) and FUN_00818EE5.
     ("AgeUpListA", 0x81A44D, 5),
     ("AgeUpListB", 0x819052, 5),
+    # playerIcon: the two calls of the lobby slot's civ portrait FUN_00774D56 (ECX = the slot), after a civ change
+    # (case 4 of the slot's setting handler) and after an AI personality change (case 9); the hook runs it itself
+    ("PlayerIconCallCiv", 0x776FFC, 5),
+    ("PlayerIconCallPersonality", 0x7773DD, 5),
+    # playerIcon: the functions the helper calls. FUN_00774D56's head: sub esp,14h / push ebp / mov ebp,ecx /
+    # cmp dword [ebp+0Ch],0; the slot's setting handler 0x776BED(settings, id, flags), ret 0Ch: sub esp,68h /
+    # test byte [esp+74h],10h; its AvatarID case: cmp byte [esi+1Ch],0 / jne 777168h (an AI's slot keeps the civ
+    # portrait)
+    ("PlayerIconCivPortrait", 0x774D56, 10),
+    ("PlayerIconSlotHandler", 0x776BED, 8),
+    ("PlayerIconAvatarCase", 0x776DEA, 10),
+    # playerIcon: the lobby settings' string getter 0xA263C7(id, string*) (mov eax,[ecx+8] / test eax,eax / je /
+    # mov ecx,[ecx+20h] / jmp 518B57h) and setter 0xA26361(id, string*), ret 8; the game string's constructor from
+    # a wide C string 0x401A12 (ret 4) and its destructor 0x4010CA
+    ("PlayerIconSettingGet", 0xA263C7, 0x0F),
+    ("PlayerIconSettingSet", 0xA26361, 0x0B),
+    ("PlayerIconStringCtor", 0x401A12, 8),
+    ("PlayerIconStringDtor", 0x4010CA, 7),
 ]
 
 

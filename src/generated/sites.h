@@ -2066,4 +2066,31 @@ inline constexpr Site kAgeUpListA{"AgeUpListA", 0x0081A44D, kAgeUpListABytes, si
 inline constexpr std::uint8_t kAgeUpListBBytes[] = {0xE8, 0x11, 0xD9, 0xCA, 0xFF};
 inline constexpr Site kAgeUpListB{"AgeUpListB", 0x00819052, kAgeUpListBBytes, sizeof(kAgeUpListBBytes)};
 
+inline constexpr std::uint8_t kPlayerIconCallCivBytes[] = {0xE8, 0x55, 0xDD, 0xFF, 0xFF};
+inline constexpr Site kPlayerIconCallCiv{"PlayerIconCallCiv", 0x00776FFC, kPlayerIconCallCivBytes, sizeof(kPlayerIconCallCivBytes)};
+
+inline constexpr std::uint8_t kPlayerIconCallPersonalityBytes[] = {0xE8, 0x74, 0xD9, 0xFF, 0xFF};
+inline constexpr Site kPlayerIconCallPersonality{"PlayerIconCallPersonality", 0x007773DD, kPlayerIconCallPersonalityBytes, sizeof(kPlayerIconCallPersonalityBytes)};
+
+inline constexpr std::uint8_t kPlayerIconCivPortraitBytes[] = {0x83, 0xEC, 0x14, 0x55, 0x8B, 0xE9, 0x83, 0x7D, 0x0C, 0x00};
+inline constexpr Site kPlayerIconCivPortrait{"PlayerIconCivPortrait", 0x00774D56, kPlayerIconCivPortraitBytes, sizeof(kPlayerIconCivPortraitBytes)};
+
+inline constexpr std::uint8_t kPlayerIconSlotHandlerBytes[] = {0x83, 0xEC, 0x68, 0xF6, 0x44, 0x24, 0x74, 0x10};
+inline constexpr Site kPlayerIconSlotHandler{"PlayerIconSlotHandler", 0x00776BED, kPlayerIconSlotHandlerBytes, sizeof(kPlayerIconSlotHandlerBytes)};
+
+inline constexpr std::uint8_t kPlayerIconAvatarCaseBytes[] = {0x80, 0x7E, 0x1C, 0x00, 0x0F, 0x85, 0x74, 0x03, 0x00, 0x00};
+inline constexpr Site kPlayerIconAvatarCase{"PlayerIconAvatarCase", 0x00776DEA, kPlayerIconAvatarCaseBytes, sizeof(kPlayerIconAvatarCaseBytes)};
+
+inline constexpr std::uint8_t kPlayerIconSettingGetBytes[] = {0x8B, 0x41, 0x08, 0x85, 0xC0, 0x74, 0x08, 0x8B, 0x49, 0x20, 0xE9, 0x81, 0x27, 0xAF, 0xFF};
+inline constexpr Site kPlayerIconSettingGet{"PlayerIconSettingGet", 0x00A263C7, kPlayerIconSettingGetBytes, sizeof(kPlayerIconSettingGetBytes)};
+
+inline constexpr std::uint8_t kPlayerIconSettingSetBytes[] = {0x53, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x14, 0x8B, 0xF1, 0x8B, 0xCF};
+inline constexpr Site kPlayerIconSettingSet{"PlayerIconSettingSet", 0x00A26361, kPlayerIconSettingSetBytes, sizeof(kPlayerIconSettingSetBytes)};
+
+inline constexpr std::uint8_t kPlayerIconStringCtorBytes[] = {0x53, 0x56, 0x8B, 0x74, 0x24, 0x0C, 0x85, 0xF6};
+inline constexpr Site kPlayerIconStringCtor{"PlayerIconStringCtor", 0x00401A12, kPlayerIconStringCtorBytes, sizeof(kPlayerIconStringCtorBytes)};
+
+inline constexpr std::uint8_t kPlayerIconStringDtorBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0};
+inline constexpr Site kPlayerIconStringDtor{"PlayerIconStringDtor", 0x004010CA, kPlayerIconStringDtorBytes, sizeof(kPlayerIconStringDtorBytes)};
+
 }  // namespace uhc::sites

@@ -1210,6 +1210,19 @@ by capstone (`cs`) and in game.
 | Attack action for a target | FUN_00489ECC, `int thiscall(tactic, attacker, target, ...)`, `ret 1Ch` | confirmed (REA `ev_9fc9c2ff…`) | -1 for none (0x4974C1). Checks the attacker, alliance (0x484E01), the relation when arg 4 is 1, proto bit 0Eh, both units built; no visibility. Callers include the unit query 0x499CE4 and the auto-attack scoring 0x4A893B (12 call sites). Site of `stealthTargeting`. |
 | Auto-attack range test | FUN_004A1A0E | confirmed (REA `ev_c9a4cfb6…`) | `thiscall(tactic, attacker, target, float)`: the target is of `[tactic+174h]` (AutoAttackType, 0x44D7FA), both built, and within range. Callers 0x4A8969, 0x94174E. |
 
+### LAN lobby slots and avatars (for `playerIcon`, 2026-11-13)
+
+REA (Ghidra 12.1.4) and capstone (`cs`) on the stock exe; bundles `rea/evidence/age3y-b1a1dab7/lobby-avatar-59-20261113.json` and `player-icon-59-20261113.json`. The study is in [de-parity.md](de-parity.md#59-player-icons-in-lan-lobbies-two-copies-on-one-pc).
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| Lobby slot | 8 per setup page (FUN_00775DA0); `[+0Ch]` lobby settings, `[+14h]` local player's slot, `[+15h]` ?, `[+18h]` index, `[+1Ch]` AI slot, `[+28h]` icon gadget | confirmed (`ev_e29055de…`, `ev_de710dab…`; `[+14h]` and `[+1Ch]` in game 2026-11-13) | FUN_0077649C(local) writes `[+14h]` and enables the slot's own controls; FUN_0077539F enables a control when `[+14h]` (not ready) or when the host edits an AI slot (`[+1Ch]`). |
+| Slot setting handler | 0x776BED `thiscall(slot, settings, id, flags)`, `ret 0Ch`; acts when flags & 10h | confirmed (`cs`) | Field = (id − 3Ah) mod 18h, slot = quotient − 1; jump table 0x777558 / 0x777590: Civ 0x776F73 and AIPersonality 0x7772D3 end in the civ portrait, AvatarID 0x776DEA. |
+| Civ portrait | FUN_00774D56 `thiscall(slot)`, plain `ret`; called only at 0x776FFC and 0x7773DD | confirmed (`cs`) | `[civ+D0h]` on `[slot+28h]`, or the random civ's `[db+5D78h]`. |
+| Lobby settings strings | get 0xA263C7(id, string*) → 0x518B57 on `[obj+20h]`; set 0xA26361(id, string*), `ret 8` | confirmed (`cs`, in game) | The setter sends through FUN_00A2B475; int get 0xA2639F, bool get 0xA263B3. |
+| Avatar table | `[[0xC66234]+140h]` → 0x7EEEE7 → lookup 0x7A77EF(string*) | confirmed (`cs`) | An empty name gives the first entry. Loaded from `avatar_*.xml` (FUN_007A7875: `<avatar id>` with `image`, `portrait`, `tier`, `minLevel`, `type`, `civ`). |
+| Game string | one pointer to the characters, header 10h bytes before; ctor 0x401A12(const wchar_t*) `ret 4`, dtor 0x4010CA, empty ctor 0x40133F | confirmed (`cs`) | |
+
 ### Impact types and impact effects (for `impactBoneFix` and `customImpactTypes`, 2026-11-12)
 
 REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/impact49-50.json`; `cs` = capstone over

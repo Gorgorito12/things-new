@@ -287,6 +287,8 @@ steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over 
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
                               a bar of what a unit, mine or carcass still holds
+playerIcon <avatarId>         LAN lobby: your slot shows that avatar of data\\avatar_*.xml,
+                              kept over civ changes
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
 nativePreview [tagged] [log] [Proto]   an empty native socket shows its Trading Post's
                               units and techs, read-only

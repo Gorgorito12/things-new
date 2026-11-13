@@ -273,3 +273,5 @@ shipmentCounts-reward-wol 4 16 2
 shipmentCounts-reward-wol-control 4 16 2
 kothTimer-wol 4 24 2
 kothTimer-wol-control 4 24 2
+playerIcon-wol 3 12 1
+playerIcon-wol-control 0 12 1
