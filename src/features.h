@@ -33,6 +33,7 @@ Outcome ApplyLiveBuildingWorkRate(const Config& config);
 Outcome ApplyWorkRateByAbstractType(const Config& config);
 Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
+Outcome ApplyNumberOfShots(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
@@ -83,6 +84,7 @@ Outcome ApplyOverhealHitpointBars(const Config& config);
 Outcome ApplyOverhealSources(const Config& config);
 Outcome ApplyOverhealDecay(const Config& config);
 Outcome ApplySteadyHitpointBars(const Config& config);
+Outcome ApplyInventoryBars(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyRendererOption(const Config& config);
@@ -152,6 +154,8 @@ inline constexpr Feature kFeatures[] = {
     {"workRateByAbstractType", ApplyWorkRateByAbstractType},
     {"autoGatherScaleByContained", ApplyAutoGatherScaleByContained},
     {"containedUnitsROF", ApplyContainedUnitsROF},
+    // After containedUnitsROF: its filter on the shared ROF reads (rofreads.h) runs on that key's result.
+    {"numberOfShots", ApplyNumberOfShots},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
@@ -233,6 +237,9 @@ inline constexpr Feature kFeatures[] = {
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
     {"steadyHitpointBars", ApplySteadyHitpointBars},
+    // After overhealHitpointBars: both add bars through the shared floating bar hooks (floatingbars.h), the segment
+    // first.
+    {"inventoryBars", ApplyInventoryBars},
     {"showGatherRate", ApplyShowGatherRate},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
@@ -265,11 +272,11 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
-    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "showgatherrate",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix",
 };
