@@ -141,6 +141,7 @@ PAGES = {
         "noCorpseDopples": ["src/features/dopples.cpp", "src/hooks/dopple_hooks.asm"],
         "steadyHitpointBars": ["src/features/steadybars.cpp", "src/hooks/steadybar_hooks.asm"],
         "inventoryBars": ["src/features/inventorybars.cpp", "src/hooks/inventorybars_hooks.asm"],
+        "playerIcon": ["src/features/playericon.cpp", "src/hooks/playericon_hooks.asm"],
     }),
 }
 

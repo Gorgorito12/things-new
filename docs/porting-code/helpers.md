@@ -2147,6 +2147,33 @@ inline constexpr Site kTechStatusTechId{"TechStatusTechId", 0x0058EA03, kTechSta
 inline constexpr std::uint8_t kGadgetLookupBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x3B, 0x15, 0xC0, 0x72, 0xC6, 0x00, 0x74, 0x49, 0x8B, 0xC2, 0x25, 0xFF};
 inline constexpr Site kGadgetLookup{"GadgetLookup", 0x0040423C, kGadgetLookupBytes, sizeof(kGadgetLookupBytes)};
 
+inline constexpr std::uint8_t kPlayerIconCallCivBytes[] = {0xE8, 0x55, 0xDD, 0xFF, 0xFF};
+inline constexpr Site kPlayerIconCallCiv{"PlayerIconCallCiv", 0x00776FFC, kPlayerIconCallCivBytes, sizeof(kPlayerIconCallCivBytes)};
+
+inline constexpr std::uint8_t kPlayerIconCallPersonalityBytes[] = {0xE8, 0x74, 0xD9, 0xFF, 0xFF};
+inline constexpr Site kPlayerIconCallPersonality{"PlayerIconCallPersonality", 0x007773DD, kPlayerIconCallPersonalityBytes, sizeof(kPlayerIconCallPersonalityBytes)};
+
+inline constexpr std::uint8_t kPlayerIconCivPortraitBytes[] = {0x83, 0xEC, 0x14, 0x55, 0x8B, 0xE9, 0x83, 0x7D, 0x0C, 0x00};
+inline constexpr Site kPlayerIconCivPortrait{"PlayerIconCivPortrait", 0x00774D56, kPlayerIconCivPortraitBytes, sizeof(kPlayerIconCivPortraitBytes)};
+
+inline constexpr std::uint8_t kPlayerIconSlotHandlerBytes[] = {0x83, 0xEC, 0x68, 0xF6, 0x44, 0x24, 0x74, 0x10};
+inline constexpr Site kPlayerIconSlotHandler{"PlayerIconSlotHandler", 0x00776BED, kPlayerIconSlotHandlerBytes, sizeof(kPlayerIconSlotHandlerBytes)};
+
+inline constexpr std::uint8_t kPlayerIconAvatarCaseBytes[] = {0x80, 0x7E, 0x1C, 0x00, 0x0F, 0x85, 0x74, 0x03, 0x00, 0x00};
+inline constexpr Site kPlayerIconAvatarCase{"PlayerIconAvatarCase", 0x00776DEA, kPlayerIconAvatarCaseBytes, sizeof(kPlayerIconAvatarCaseBytes)};
+
+inline constexpr std::uint8_t kPlayerIconSettingGetBytes[] = {0x8B, 0x41, 0x08, 0x85, 0xC0, 0x74, 0x08, 0x8B, 0x49, 0x20, 0xE9, 0x81, 0x27, 0xAF, 0xFF};
+inline constexpr Site kPlayerIconSettingGet{"PlayerIconSettingGet", 0x00A263C7, kPlayerIconSettingGetBytes, sizeof(kPlayerIconSettingGetBytes)};
+
+inline constexpr std::uint8_t kPlayerIconSettingSetBytes[] = {0x53, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x14, 0x8B, 0xF1, 0x8B, 0xCF};
+inline constexpr Site kPlayerIconSettingSet{"PlayerIconSettingSet", 0x00A26361, kPlayerIconSettingSetBytes, sizeof(kPlayerIconSettingSetBytes)};
+
+inline constexpr std::uint8_t kPlayerIconStringCtorBytes[] = {0x53, 0x56, 0x8B, 0x74, 0x24, 0x0C, 0x85, 0xF6};
+inline constexpr Site kPlayerIconStringCtor{"PlayerIconStringCtor", 0x00401A12, kPlayerIconStringCtorBytes, sizeof(kPlayerIconStringCtorBytes)};
+
+inline constexpr std::uint8_t kPlayerIconStringDtorBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0};
+inline constexpr Site kPlayerIconStringDtor{"PlayerIconStringDtor", 0x004010CA, kPlayerIconStringDtorBytes, sizeof(kPlayerIconStringDtorBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2637,6 +2664,7 @@ bool FastVertexFillActive();
 Outcome ApplyFastLastInLine(const Config& config);
 Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
+Outcome ApplyPlayerIcon(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
 Outcome ApplyTwoScoutCivs(const Config& config);
@@ -2814,6 +2842,7 @@ inline constexpr Feature kFeatures[] = {
     {"fastLastInLine", ApplyFastLastInLine},
     {"xsErrorLog", ApplyXsErrorLog},
     {"multipleInstances", ApplyMultipleInstances},
+    {"playerIcon", ApplyPlayerIcon},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -2832,7 +2861,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "playericon", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc

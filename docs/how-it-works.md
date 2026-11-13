@@ -3139,6 +3139,48 @@ the fallback, so a low model does not cover it).
 - Cost: with Alt up, a compare and a jump per unit and frame; with Alt down, one inventory read per unit drawn.
   Measured below in the modding guide.
 
+### playerIcon
+
+**Stock: the lobby icon.** Read with REA and capstone (2026-11-13; bundles `lobby-avatar-59-20261113.json` and
+`player-icon-59-20261113.json` in `rea/evidence/age3y-b1a1dab7/`). Each of the 8 slots of the LAN setup page is an object
+with `[+0Ch]` the lobby settings, `[+14h]` "this is the local player's slot" (written by FUN_0077649C, which enables the
+slot's own controls with it), `[+18h]` the slot's index, `[+1Ch]` "an AI's slot" (the host may edit it) and `[+28h]` the
+icon gadget `mpsetup-PlayerN-Avatar`. A player field's setting ID is 3Ah + (index + 1) × 18h + field; AvatarID is field
+10 (string), Civ field 4. The slot's handler 0x776BED(settings, id, flags) (`ret 0Ch`, flag 10h) dispatches the field:
+- Civ (case 0x776F73) and AI personality (case 0x7772D3) end in FUN_00774D56, through the calls 0x776FFC and 0x7773DD
+  (its only callers): it puts the civ's `<portraittexture>` on the icon;
+- AvatarID (case 0x776DEA), for a slot that is not an AI's: reads the string, looks it up in the avatar table
+  (`[[0xC66234]+140h]` → 0x7EEEE7 → 0x7A77EF; an empty name gives the table's first entry) and puts the record's image on
+  the icon (0x638823). An unknown name leaves the icon alone.
+
+The lobby settings: string get 0xA263C7(id, string*) on `[settings+20h]` (0x518B57), string set 0xA26361(id, string*),
+which stores the value and sends it to the host, which sends it to every peer (FUN_00A2B475). The game string is one
+pointer to the characters (header 10h bytes before; constructor 0x401A12, destructor 0x4010CA).
+
+**The hook.** The two calls of FUN_00774D56 call `UhcPlayerIconHook` (`playericon_hooks.asm`), which runs FUN_00774D56,
+then `UhcPlayerIconAfterPortrait(slot)`:
+- returns at once for an AI's slot, a slot index out of 0..7, or lobby settings with no session;
+- on the local player's slot, if its AvatarID is not the cfg's value, writes it with 0xA26361 (that runs the handler's
+  AvatarID case once by itself);
+- if the slot's AvatarID is not empty, calls the slot handler with that field's ID and flag 10h: the stock AvatarID case
+  puts the avatar back over the civ portrait, or leaves the portrait when the name is not in the table.
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x776FFC (civ change) | `call 774D56h` | `call UhcPlayerIconHook` | the caller's next line, 0x777001 |
+| 0x7773DD (AI personality change) | `call 774D56h` | the same | 0x7773E2 |
+
+**Why it is safe.**
+- Lobby only: the icon is drawn by this machine; the value written goes through the game's own setter into a field the
+  game already sends and that nothing in the simulation reads.
+- FUN_00774D56 takes ECX alone and returns with a plain `ret`; neither caller reads EAX, EDX or the flags after it
+  (0x777001 compares `[esi+10h]` with EBX, 0x7773E2 is `lea ecx,[esp+84h]`). The hook keeps ECX for the helper and
+  every register and the flags around it (`pushfd`/`pushad`).
+- The handler call from the helper is the same call the settings would make for that field; the slot handler checks
+  that the ID belongs to this slot. Re-entering it from the setter is what stock does when any field changes.
+- The verified bytes: both calls, the heads of FUN_00774D56, the handler and its AvatarID case, the getter, the setter
+  and the string functions (sites `PlayerIcon*`).
+
 ### workRateByAbstractType
 
 An action's rates are a list of `{unittype ID, rate, -1}` (`[action+0Ch]`, count `[action+10h]`, 0Ch bytes

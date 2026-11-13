@@ -665,6 +665,18 @@ icon (S, on top). B is the cheap fallback, and the two can share the hook.
      message. If the latter is a hard-coded 2297/2300 on the host side, the host needs a hook in its receive path.
   - **Size:** S–M (immediates in verified sites, one option, one name override, then a test), M if point 4 needs the
     hook. Without code: a second PC or a virtual machine.
+- **A first try, then dropped** (2026-11-13, beds 4 and 5; the user dropped multiplayer testing, so no key was kept
+  and the join was never tried):
+  - [O] The session layer is the exe's only user of these WS2_32 imports, all by ordinal: `bind` (IAT 0xB84064,
+    only at 0xA19BE2), `setsockopt` (0xB8401C, 0xA19B2C), `recvfrom` (0xB84020, 0xA19DD6), `sendto` (0xB84030,
+    0xA19EA6). Wrapping the IAT slots is enough to move ports or drop SO_REUSEADDR in one copy.
+  - [O] Hosting alone, the host bound 192.168.68.69:2297 and :2299, plus a socket on 0.0.0.0:0 that sends 21 bytes
+    to 255.255.255.255:2299 (the LAN advertisement). Nothing bound 2300 before a join. [I] A joiner whose ports are
+    moved does not hear that broadcast, so it would join by Direct IP.
+  - [O] **A private profile per copy works:** the push of `"Users3\"` at 0x55E0EE (its only reference) pointed at
+    `Users3\<folder>\`, filled from the shared folder with `optionskirmishnickname` (the LAN nickname, shown in "LAN
+    / Direct IP"), `<OnlineName>` and `<GUID>` replaced. Each copy showed its own nickname, and on exit each wrote
+    only its private `NewProfile3.xml` and `LastProfile3.dat`; the shared ones kept their hashes.
 
 **To ask JTMaston:**
 1. A choice among pictures the mod ships (A, every WoL player sees them), or any picture a player adds (B-like, only

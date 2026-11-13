@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 09:04 | [`playerIcon`](#playericon) | Added. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:12 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
@@ -6580,6 +6581,7 @@ What the panels and the fog of war show.
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
+| [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files. | confirmed (LAN lobby, one copy) |
 
 #### nativePreview
 
@@ -6890,6 +6892,63 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
   With `overhealHitpointBars segment` and `steadyHitpointBars` on too: a Highlander marked for the test at 180/150 had
   its orange segment, the sheep beside it its food bar (both through the shared hooks). `inventoryBars other=XYZ`:
   logged, not applied.
+
+#### playerIcon
+
+*In a LAN lobby, your slot shows an icon you choose instead of your civ's portrait, and keeps it when you change civ.*
+
+**Added:** Friday 2026-11-13 09:04 · **Filmed in WoL:** Friday 2026-11-13 09:04
+
+![playerIcon in WoL](media/playerIcon-wol.gif)
+
+*In WoL, with `playerIcon uhc_blue` and the three test icons of `tools/make_icons.py` (a LAN game hosted alone, Abraham
+Lincoln as the AI of player 2):* the host's slot shows the blue test icon; the host changes civ from the Dutch to
+Paraguay and back, and the icon stays. The AI keeps its civ's portrait. [Full video (MP4)](media/playerIcon-wol.mp4).
+
+![playerIcon in WoL, key off](media/playerIcon-wol-control.gif)
+
+*In WoL, key off (the same lobby, the test icons still in `data` and `art`):* the host's slot shows the Dutch portrait,
+then Paraguay's when the civ changes. [Full video (MP4)](media/playerIcon-wol-control.mp4).
+
+```
+playerIcon <avatarId>
+```
+
+- **In WoL today (WoL #59):** in a LAN lobby each slot's icon is the civ's portrait (`<portraittexture>` of
+  `civs.xml`), set again on every civ change. The game already has a per-player setting for a picture,
+  `GamePlayer<N>AvatarID`, shared with every player like the civ, and a table of pictures read from
+  `data\avatar_*.xml`; ESO filled it from the online profile, and in a LAN game nothing writes it.
+- **Effect:** when your slot's icon is set (on joining a slot and on each civ change), the key writes `<avatarId>` into
+  your slot's `AvatarID` with the game's own setter, which sends it to every player of the lobby. Then, for every human
+  slot whose `AvatarID` names an avatar of the table, the icon goes back to that avatar after the civ portrait is set. AI
+  slots keep the civ portrait.
+- **The data:** the mod ships the table and the pictures. A file `data\avatar_<anything>.xml` (several are read, also
+  from the player's `My Games\...\Data` folder; read once, at startup):
+
+  ```xml
+  <avatars>
+    <avatar id="wol_eagle"><image>ui\playericons\eagle</image></avatar>
+    <avatar id="wol_lion"><image>ui\playericons\lion</image></avatar>
+  </avatars>
+  ```
+
+  `<image>` (or `<portrait>`) is a texture path under `art\`, without `.ddt`: here `art\ui\playericons\eagle.ddt`. A
+  square picture fits; the slot shows it at 48 × 48. The stock loader also reads `<tier>`, `<minLevel>`,
+  `<type>clan</type>` and `<civ>` (ESO's rules), which LAN ignores; leave them out (an unknown `<civ>` drops the entry).
+- **Choosing an icon:** the cfg value is the only way; there is no picker in the lobby. One avatar per copy of the game.
+- **An unknown ID** (not in any table, or no table at all): the slot keeps the civ portrait, as stock does.
+- **Other players:** a player without this key sees your icon if they have the same table and picture, until your next
+  civ change, which puts the civ portrait back on their screen (their game does not keep it). A player without the
+  table sees the civ portrait.
+- **Multiplayer:** lobby only; nothing reaches the game itself. The value rides in a field the game already sends.
+  The network side (a second player in the lobby) was not tried.
+- **Log:** `playerIcon: the local player's lobby icon is avatar "uhc_blue"`, then `hook reached: playerIcon civ portrait
+  (0x776FFC / 0x7773DD)` and `playerIcon: player 1's AvatarID set to "uhc_blue" (was "")` when you take a slot. A line
+  without an ID: `playerIcon: give one avatar ID ...`, not applied.
+- **Tested in WoL (2026-11-13, one copy):** a LAN game hosted alone: the icon on the host's slot, kept over civ changes
+  (Dutch → Greeks → Paraguay → Dutch); an AI slot (Abraham Lincoln, then Menelik II) kept its civ's portrait; key off:
+  the civ portrait; `playerIcon uhc_blue` with no table installed: the civ portrait, no error; `playerIcon` with no ID:
+  logged, not applied. The profile does not keep the value (its `gameplayer0avatarid` stayed empty).
 
 ## 6. Editing the game data
 

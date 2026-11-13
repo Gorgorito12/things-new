@@ -277,3 +277,5 @@ politicianPlacesFix-wol 4 12 1
 fivePoliticians-wol 4 12 1
 useBigHugeButton-moved-wol 2 12 1
 useBigHugeButton-consulate-wol 2 12 1
+playerIcon-wol 3 12 1
+playerIcon-wol-control 0 12 1
