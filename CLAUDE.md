@@ -124,6 +124,10 @@ A loader exe is the stock exe with the Authenticode certificate stripped (hence 
 
 Full byte layout: `docs/binaries.md`.
 
+## Art and models
+
+**Rule:** any work on art (models `.gr2`, textures `.ddt`, anim files, `.dmg`, impact effects, icons, new buildings or units) goes through the sibling repo `C:\Users\Jeison\Documents\GitHub\aoe3-blender-tools` (read its CLAUDE.md): use its Granny, DDT and anim code and its tools, and add a missing tool there rather than here. When a bug lives in a mod's art, fix the file with such a tool as well as, or instead of, a DLL key. That repo is public: neutral text, no mod or team names, no mod files or survey reports in it.
+
 ## REA
 
 Setup (2026-10-27): Ghidra 12.1.4 at `C:\Tools\ghidra_12.1.4_PUBLIC`, JDK 21 at `C:\Tools\jdk-21.0.12.1+1`. Neither is on PATH. REA 6.7.0 accepts only Ghidra 12.1.x. The env lives in `~/.claude.json` under `mcpServers.rea`; if `binary_session` shows Ghidra unavailable, check that block first.
