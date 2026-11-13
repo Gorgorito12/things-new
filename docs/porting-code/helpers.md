@@ -22,6 +22,7 @@ Contents:
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
 - [Death observers](#death-observers)
+- [Kill observers](#kill-observers)
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
 - [Name lists](#name-lists)
@@ -1321,6 +1322,9 @@ inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTail
 
 inline constexpr std::uint8_t kVeterancyKillPathBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
 inline constexpr Site kVeterancyKillPath{"VeterancyKillPath", 0x004D4F37, kVeterancyKillPathBytes, sizeof(kVeterancyKillPathBytes)};
+
+inline constexpr std::uint8_t kKillSpawnPlaceBytes[] = {0x81, 0xEC, 0xA8, 0x01, 0x00, 0x00, 0x53, 0x55, 0x33, 0xDB, 0x8B, 0xE9};
+inline constexpr Site kKillSpawnPlace{"KillSpawnPlace", 0x0050703D, kKillSpawnPlaceBytes, sizeof(kKillSpawnPlaceBytes)};
 
 inline constexpr std::uint8_t kTransformCall1Bytes[] = {0xE8, 0xCE, 0xB8, 0x1C, 0x00};
 inline constexpr Site kTransformCall1{"TransformCall1", 0x007FBC79, kTransformCall1Bytes, sizeof(kTransformCall1Bytes)};
@@ -2643,6 +2647,7 @@ Outcome ApplyRandomCost(const Config& config);
 Outcome ApplyTrainBatchSize(const Config& config);
 Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
+Outcome ApplyKillSpawn(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAnnexFacing(const Config& config);
@@ -2778,6 +2783,8 @@ inline constexpr Feature kFeatures[] = {
     {"trainBatchSize", ApplyTrainBatchSize},
     {"pillageGold", ApplyPillageGold},
     {"veterancyBonus", ApplyVeterancyBonus},
+    // After veterancyBonus: both observe the killing blows (killobservers.h), in this order.
+    {"killSpawn", ApplyKillSpawn},
     {"hcTargetTechs", ApplyHcTargetTechs},
     {"accuracyTechs", ApplyAccuracyTechs},
     {"cratePriority", ApplyCratePriority},
@@ -2896,7 +2903,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
@@ -3111,7 +3118,7 @@ bool AddWorldTick(WorldTick tick);
 
 namespace {
 
-constexpr std::size_t kMaxTicks = 12;
+constexpr std::size_t kMaxTicks = 24;  // 15 keys add one
 
 using WorldUpdateFn = bool(__fastcall*)(char* world, void* unused, std::int32_t a, std::int32_t deltaMs);
 
@@ -4798,6 +4805,127 @@ bool AddDestroyObserver(DeathObserver observer) {
 }
 
 }  // namespace uhc
+```
+
+## Kill observers
+
+### src/killobservers.h
+
+```cpp
+// Every killing blow of TakeDamage, shared by the keys that act on the killer (veterancyBonus, killSpawn). TakeDamage
+// marks the blow that takes a unit from alive to no hit points in [esp+1Fh] (0x4D484B), and the je at 0x49B746 goes to
+// its cold kill path 0x4D4F37 for it alone. One jmp is written there, whichever keys are on, and it calls every
+// observer before the stock code goes on. A death that does not come from TakeDamage (a lifespan, a delete, a
+// trigger's kill) does not come here: deathobservers.h sees those.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// `attacker` is the attacking unit, null when it is gone (a shot of a unit that has died since); `attackerPlayer` the
+// attacking player object, null without one; `attackerProto` the attacker's proto ID as TakeDamage got it (its
+// player's copy through 0x45311B), -1 without one; `victim` the unit killed, still whole: its position, owner and
+// proto are as they were at the blow.
+using KillObserver = void (*)(char* attacker, char* attackerPlayer, std::int32_t attackerProto, char* victim);
+
+// Writes the jmp the first time (after checking the site's stock bytes) and adds the observer, in the order the keys
+// add them (their kFeatures order, the same on every machine).
+bool AddKillObserver(KillObserver observer);
+
+}  // namespace uhc
+```
+
+### src/killobservers.cpp
+
+```cpp
+#include "killobservers.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcKillObserversHook();  // hooks/killobservers_hooks.asm
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+
+uhc::KillObserver g_observers[kMaxObservers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+// From the hook, for every killing blow.
+extern "C" void __stdcall UhcKillDispatch(char* attacker, char* attackerPlayer, std::int32_t attackerProto,
+                                          char* victim) {
+  if (victim == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_observers[i](attacker, attackerPlayer, attackerProto, victim);
+  }
+}
+
+namespace uhc {
+
+bool AddKillObserver(KillObserver observer) {
+  if (g_count == kMaxObservers) {
+    Log(L"killing blows: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("killing blows", {&sites::kVeterancyKillPath}) ||
+        !WriteJmp(sites::kVeterancyKillPath.va, reinterpret_cast<const void*>(&UhcKillObserversHook), 6)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_observers[g_count++] = observer;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/killobservers_hooks.asm
+
+```asm
+; The killing blows of TakeDamage, shared by veterancyBonus and killSpawn (src/killobservers.cpp). Entered through a
+; jmp written over the stock code; it leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcKillDispatch PROTO STDCALL attacker:DWORD, attackerPlayer:DWORD, attackerProto:DWORD, victim:DWORD
+
+.data
+killPathNext    dd 004D4F3Dh    ; call 0x4D520C
+
+.code
+
+; Replaces 0x4D4F37 (mov ecx,[0xC66234]), the head of TakeDamage's cold kill path: the only way here
+; is the je at 0x49B746 on [esp+1Fh] = 1, set at 0x4D484B for the blow that takes the unit from alive
+; to no hit points. ESI = the unit killed, [esp+20h] = the attacking player (also in EBX), [esp+28h] = the
+; attacker unit, null when it is gone, [esp+0A4h] = TakeDamage's attacker proto ID argument. The three are
+; read into registers before invoke pushes anything. The code that follows reads neither EAX nor EDX before
+; writing them, and ECX is written by the replayed mov.
+UhcKillObserversHook PROC
+    TRACE_ONCE "killing blows (0x4D4F37)"
+    mov eax, dword ptr [esp+28h]
+    mov ecx, dword ptr [esp+20h]
+    mov edx, dword ptr [esp+0A4h]
+    invoke UhcKillDispatch, eax, ecx, edx, esi
+    mov ecx, dword ptr ds:[00C66234h]
+    jmp killPathNext
+UhcKillObserversHook ENDP
+
+END
 ```
 
 ## Modifier walk

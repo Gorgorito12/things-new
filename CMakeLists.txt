@@ -25,6 +25,7 @@ set(UHC_SOURCES
   src/worldtick.cpp
   src/researchpay.cpp
   src/deathobservers.cpp
+  src/killobservers.cpp
   src/unitpanel.cpp
   src/unitmodels.cpp
   src/actiontags.cpp
@@ -129,6 +130,7 @@ set(UHC_SOURCES
   src/features/unitlists.cpp
   src/features/wonderpanel.cpp
   src/features/veterancy.cpp
+  src/features/killspawn.cpp
   src/features/workrate.cpp
   src/features/workratetype.cpp
   src/features/gatherscale.cpp
@@ -225,7 +227,7 @@ set(UHC_SOURCES
   src/hooks/pillage_hooks.asm
   src/hooks/aurastacking_hooks.asm
   src/hooks/trainbatch_hooks.asm
-  src/hooks/veterancy_hooks.asm
+  src/hooks/killobservers_hooks.asm
   src/hooks/researchpay_hooks.asm
   src/hooks/researchgrant_hooks.asm
   src/hooks/techsubtype_hooks.asm
