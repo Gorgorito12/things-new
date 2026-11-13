@@ -3886,6 +3886,7 @@ killSpawn [log]
 <killSpawn>LivestockCamel 80, ypGoat 20</killSpawn>
 <killSpawnChance>100</killSpawnChance>
 <killSpawnVictims>Military, Hero</killSpawnVictims>
+<killSpawnKillers>Military, Ship</killSpawnKillers>
 
 <!-- techtreey.xml: a card that halves the chance for this player's Cuirassiers -->
 <Effect type ='Data' amount ='0.5' subtype ='KillSpawnChance' relativity ='Percent'>
@@ -3893,13 +3894,18 @@ killSpawn [log]
 ```
 
 - **In WoL today:** no such mechanic. WoL #66.
-- **`<killSpawn>`:** protos and weights, separated by commas; a weight left out is 1. A unit or building of a player of
+- **`<killSpawn>`:** protos and weights, separated by commas; a weight left out is 1. A unit or ship of a player of
   this civ that lands the killing blow on an enemy unit leaves one animal, picked by weight (80 and 20: four camels for each
   goat), owned by the killer's player, where the victim stood. The weights add up to at most 1000. A shot whose shooter has
   died since (a cannonball in flight) still counts for its player.
 - **`<killSpawnChance>`:** the percent of those kills that leave an animal, 0 to 100, default 100. A whole percent.
 - **`<killSpawnVictims>`:** the victim must be of one of these unit types or protos (commas between them). Without the tag,
   any unit.
+- **`<killSpawnKillers>`:** the killer must be of one of these unit types or protos, the same way. Without the tag, any
+  killer but a `Building`: a Town Center or a tower that shoots all game would farm herds, while a ship that kills on the
+  shore still defeats an enemy. `<killSpawnKillers>Building</killSpawnKillers>` gives the buildings back (and only them).
+- **One list per civ:** every unit of the civ draws from the same list. A list per unit type could become a proto tag
+  later, if a mod asks for it; the tech changes the chance per proto already.
 - **Never an animal:** a Gaia victim (hunted game too), the killer's own units and its allies', buildings, ships, and
   herdables (`Herdable`), so that killing an animal never makes another. A kill not made by an attack (a lifespan, a delete,
   a trigger's `Kill`) is no killing blow.
@@ -3910,7 +3916,8 @@ killSpawn [log]
   copy, from the civ's: `Assign` sets it (0 turns it off, 100 makes every kill count), `Absolute` adds to it, `Percent`
   multiplies it; the removal of the tech undoes it. On a type (`AbstractCavalry`) it reaches every proto of the type. A
   civ without `<killSpawn>` has no animals for a tech to turn on.
-- **Herding:** the animals are livestock like any other: an enemy unit near them, with none of the owner's, takes them over
+- **Herding:** the animals are ordinary livestock, by design: the game's own rule for herdables applies to them, and the
+  mod chooses the proto, so an animal no one can take over is a data choice (a proto without `Herdable`). Like any other: an enemy unit near them, with none of the owner's, takes them over
   (the game's `ConvertsHerds`), and a herd left with no one near can go to Gaia. A herd left on a battlefield the enemy
   holds changes hands.
 - **Random and multiplayer:** the chance and the pick are rolls of the game's synced random numbers, at the kill, so every
@@ -3928,8 +3935,12 @@ killSpawn [log]
   that is not 0 to 100 are logged and ignored.
 - **Tested in WoL (2026-11-13), scenarios, player 1 Ethiopians (`Cuirassier`), player 2 Egyptians:**
   - Weights 80 / 20 (`LivestockCamel`, `ypGoat`): 248 kills in three fights (24 Cuirassiers against 110 `Settler`, and 20
-    against 110 `WOLLandwehr`): 184 camels and 64 goats picked, 74 / 26 %. The pick rolls (0 to 99) were spread over the ten
-    tens, 14 to 33 in each.
+    against 110 `WOLLandwehr`): 184 camels and 64 goats picked, 74 / 26 %. Rerun (2026-11-13, 40 Cuirassiers against 162
+    Settlers, twice): 308 kills, 266 camels and 42 goats, 86 / 14 %. All 556 kills together: 450 camels and 106 goats,
+    80.9 / 19.1 %. Single fights stray further from 80 % than a fair coin would make likely (z −2.3 and +2.8), but the
+    picks show no pattern from one kill to the next (lag-1 correlation 0.01 to 0.10, as many repeats as chance) and the
+    roll is a plain modulo of the game's generator (how-it-works), whose consecutive outputs give 80 % ± 2.5 % per 250
+    draws in a simulation; so the pick was left as it is.
   - `LivestockCamel 100, ypGoat 0, NoSuchAnimal 5`: the goat and the unknown proto logged and ignored; 61 animals, all camels.
   - Chance: a test tech `Percent 0.5` on `Cuirassier`, from the civ's 100: 69 of 125 kills (55 %) gave an animal.
   - Bad data on player 2's civ: `<killSpawnChance>abc</killSpawnChance>` logged, 100 kept; `<killSpawnVictims>NoSuchType`
@@ -3944,9 +3955,15 @@ killSpawn [log]
     same order as before it, with other rolls: the game's random numbers after a load are not the ones of the original.
   - Herding: in the fight player 1 lost (20 Cuirassiers against 110 Landwehr), the Landwehr took over the camels left
     behind.
+  - Killers (2026-11-13, a Town Center and two `Outpost` of the Ethiopians against 14 `WOLLineInfantry` and 8 `Settler`):
+    without `<killSpawnKillers>`, an Outpost killed a Settler and the log said `a Building, without <killSpawnKillers>:
+    nothing`; with `<killSpawnKillers>Building</killSpawnKillers>`, the Outposts' two kills (a Settler and an infantryman) gave a goat
+    and a camel. The Town Center did not
+    shoot in either scene.
   - A skirmish on a test map against a German AI (`wolOtto`), every civ tagged with `<killSpawnVictims>Military`: the
     human's (Dutch) Cuirassiers killed 6 `WOLLineInfantry` and got 6 camels; the AI's Town Center shot a Cuirassier and the
-    AI got a goat, so a kill by a building counts for its player. The AI gathered its crates.
+    AI got a goat (the build of that day counted buildings; since the decision below they need
+    `<killSpawnKillers>`). The AI gathered its crates.
   - A normal skirmish of 100 s against the same AI, the key on and every civ tagged: the AI gathered its crates, built a
     Manor and trained 3 Settlers (6 to 9), so its scripts ran.
   - Cost (`perfprobe.py`, 82 s of a scenario battle each, 60 `Cuirassier` against 80 `WOLLineInfantry`, both civs tagged
@@ -3959,8 +3976,9 @@ killSpawn [log]
 
     No frame over 50 ms either way. The rest of the difference is the animals: 95 more units on the field, and a
     different battle (with the key 15 Cuirassiers and 28 infantrymen were left, without it 36 and 6). The work of the
-    key itself is one civ lookup per killing blow, and per animal a placement test and a creation; a run with the key on
-    and no civ tagged, which would show that part alone, was not made.
+    key itself is one civ lookup per killing blow, and per animal a placement test and a creation. The hook alone
+    (2026-11-13, the same battle, the key on and no civ tagged, against the key off, the same session): 515 fps, update
+    0.19 ms, main thread 91.8 %, against 507 fps, 0.19 ms, 92.3 %; no frame over 50 ms in either. No measurable cost.
   - Videos: key on 517 fps on average, 4 frames over 100 ms (the longest 358 ms) in 33 s; key off 839 fps, none over
     50 ms. The first camel and goat of a game load their model and animations, as any first unit of a proto does; the
     scenes were not identical (another copy of the game was running).

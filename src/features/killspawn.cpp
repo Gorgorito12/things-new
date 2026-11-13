@@ -3,6 +3,8 @@
 //   <killSpawn>LivestockCamel 80, ypGoat 20</killSpawn>    protos and weights (a weight left out is 1)
 //   <killSpawnChance>100</killSpawnChance>                 optional: the % of kills that give an animal (default 100)
 //   <killSpawnVictims>Military, Hero</killSpawnVictims>    optional: the victim must be of one of these types or protos
+//   <killSpawnKillers>Military, Ship</killSpawnKillers>    optional: the killer must be of one of these (default: any
+//                                                          killer but a Building, so no tower or Town Center farms herds)
 //
 // A unit of such a player that lands the killing blow on an enemy unit (TakeDamage's kill path, killobservers.h, shared
 // with veterancyBonus) may get an animal of the list, owned by its player, where the victim stood. Gaia, the killer's
@@ -154,11 +156,14 @@ struct CivSpawn {
   float chance = 100.0f;
   std::vector<std::string> victimNames;
   bool hasVictims = false;
+  std::vector<std::string> killerNames;
+  bool hasKillers = false;
   // Resolved against the database whose proto array is `table`:
   const char* table = nullptr;
   std::vector<Animal> pick;  // the valid ones
   std::int32_t total = 0;
   std::vector<std::int32_t> victimTypes;
+  std::vector<std::int32_t> killerTypes;
 };
 
 std::vector<CivSpawn> g_civs;  // by civ ID
@@ -282,6 +287,16 @@ void ReadKillSpawnVictims(const char* civ, std::int32_t civId, const wchar_t* te
   slot.table = nullptr;
 }
 
+void ReadKillSpawnKillers(const char* civ, std::int32_t civId, const wchar_t* text) {
+  if (civId < 0) {
+    return;
+  }
+  CivSpawn& slot = CivSlot(civId, civ);
+  slot.killerNames = SplitCommas(Narrow(text));
+  slot.hasKillers = true;
+  slot.table = nullptr;
+}
+
 std::int32_t TypeByName(const char* database, const char* name) {
   const char* table = database + 0x190;
   std::int32_t id = -1;
@@ -342,20 +357,36 @@ const CivSpawn* SpawnFor(const char* database, const char* player) {
       }
       slot.victimTypes.push_back(type);
     }
+    slot.killerTypes.clear();
+    for (const std::string& name : slot.killerNames) {
+      const std::int32_t type = TypeByName(database, name.c_str());
+      if (type < 0) {
+        uhc::Log(L"killSpawn: civ %d (%hs): <killSpawnKillers> names no unit type or proto (%hs); ignored", civId,
+                 CivName(slot.civ), name.c_str());
+        continue;
+      }
+      slot.killerTypes.push_back(type);
+    }
     if (slot.pick.empty()) {
       uhc::Log(L"killSpawn: civ %d (%hs): no valid animal in <killSpawn>; its players spawn nothing", civId,
                CivName(slot.civ));
     } else if (slot.hasVictims && slot.victimTypes.empty()) {
       uhc::Log(L"killSpawn: civ %d (%hs): no valid type in <killSpawnVictims>; its players spawn nothing", civId,
                CivName(slot.civ));
+    } else if (slot.hasKillers && slot.killerTypes.empty()) {
+      uhc::Log(L"killSpawn: civ %d (%hs): no valid type in <killSpawnKillers>; its players spawn nothing", civId,
+               CivName(slot.civ));
     } else {
-      uhc::Log(L"killSpawn: civ %d (%hs): %u animal(s), total weight %d, chance %g %%, %u victim type(s)%ls", civId,
-               CivName(slot.civ), static_cast<unsigned>(slot.pick.size()), slot.total,
+      uhc::Log(L"killSpawn: civ %d (%hs): %u animal(s), total weight %d, chance %g %%, %u victim type(s)%ls, "
+               L"%u killer type(s)%ls",
+               civId, CivName(slot.civ), static_cast<unsigned>(slot.pick.size()), slot.total,
                static_cast<double>(slot.chance), static_cast<unsigned>(slot.victimTypes.size()),
-               slot.hasVictims ? L"" : L" (any)");
+               slot.hasVictims ? L"" : L" (any)", static_cast<unsigned>(slot.killerTypes.size()),
+               slot.hasKillers ? L"" : L" (any but a Building)");
     }
   }
-  if (slot.pick.empty() || (slot.hasVictims && slot.victimTypes.empty())) {
+  if (slot.pick.empty() || (slot.hasVictims && slot.victimTypes.empty()) ||
+      (slot.hasKillers && slot.killerTypes.empty())) {
     return nullptr;
   }
   return &slot;
@@ -432,8 +463,30 @@ void OnKill(char* attacker, char* attackerPlayer, std::int32_t attackerProto, ch
       return;
     }
   }
+  // The killer's proto, the player's copy: the attacker's, or for a shot whose shooter has died since, TakeDamage's
+  // attacker proto ID through 0x45311B.
   const char* copy = attacker != nullptr ? Field<const char*>(attacker, 0x5C)
                                          : (attackerProto >= 0 ? kPlayerProto(attackerPlayer, attackerProto) : nullptr);
+  if (spawn->hasKillers) {
+    bool match = false;
+    for (const std::int32_t type : spawn->killerTypes) {
+      if (copy != nullptr && kProtoIsType(copy, type)) {
+        match = true;
+        break;
+      }
+    }
+    if (!match) {
+      LogLine(L"killSpawn: unit %d (%hs) killed unit %d (%hs): not one of <killSpawnKillers>: nothing",
+              attacker != nullptr ? Field<std::int32_t>(attacker, 0x10) : -1, ProtoName(copy),
+              Field<std::int32_t>(victim, 0x10), ProtoName(victimProto));
+      return;
+    }
+  } else if (copy != nullptr && IsType(copy, g_building)) {
+    LogLine(L"killSpawn: unit %d (%hs) killed unit %d (%hs): a Building, without <killSpawnKillers>: nothing",
+            attacker != nullptr ? Field<std::int32_t>(attacker, 0x10) : -1, ProtoName(copy),
+            Field<std::int32_t>(victim, 0x10), ProtoName(victimProto));
+    return;  // a Town Center or a tower would farm herds
+  }
   const std::int32_t percent = static_cast<std::int32_t>(std::lround(ChanceFor(*spawn, copy)));
   const std::int32_t killer = attacker != nullptr ? Field<std::int32_t>(attacker, 0x10) : -1;
   const std::int32_t victimId = Field<std::int32_t>(victim, 0x10);
@@ -560,11 +613,13 @@ Outcome ApplyKillSpawn(const Config& config) {
                                &sites::kUnitCreate, &sites::kKillSpawnPlace}) ||
       !AddCivTagHandler("killSpawn", &ReadKillSpawn) || !AddCivTagHandler("killSpawnChance", &ReadKillSpawnChance) ||
       !AddCivTagHandler("killSpawnVictims", &ReadKillSpawnVictims) ||
+      !AddCivTagHandler("killSpawnKillers", &ReadKillSpawnKillers) ||
       !AddTechSubtype("KillSpawnChance", &ChangeChance) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !AddWorldTick(&Tick) || !AddKillObserver(&OnKill)) {
     return Outcome::kFailed;
   }
-  Log(L"killSpawn: the civ tags killSpawn, killSpawnChance and killSpawnVictims and the Data subtype KillSpawnChance "
+  Log(L"killSpawn: the civ tags killSpawn, killSpawnChance, killSpawnVictims and killSpawnKillers and the Data subtype "
+      L"KillSpawnChance "
       L"are on%ls (multiplayer unverified)",
       g_log ? L", every kill and animal logged" : L"");
   return Outcome::kApplied;

@@ -4035,16 +4035,21 @@ an animal where the victim stood.
 unknown-tag path 0x52BB07). They are kept by civ ID with the civ object they were read for; the protos (0x5A2346), the
 victim types and the exclusions `Building`, `Ship` and `Herdable` (the name table `[db+190h]`, 0x58E685 / 0x40295B) are
 resolved at the first kill after each database load, keyed by the proto array `[db+54h]`, as `civFirstTC` does. A player's
-civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3).
+civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3). `<killSpawnKillers>` is read and resolved the same way.
 
 **[O] The kill.** From the shared kill observer: the killer's player (`[esp+20h]`, so a shot whose shooter has died since
 still counts) and its civ's list; the victim's owner `[[victim+44h]]` must not be 0 (Gaia), the killer's player or of its
 team (`[player+10h]`); its proto copy `[victim+5Ch]` must not be of the three exclusions (is-a 0x44D7FA) and, with
-`<killSpawnVictims>`, must be one of those types. The chance is the civ's, run through the `KillSpawnChance` effects of the
+`<killSpawnVictims>`, must be one of those types. The killer's proto copy (below) must be one of the `<killSpawnKillers>`
+types, or without that tag must not be a `Building` (decided 2026-11-13: a Town Center or a tower would farm herds; a ship
+counts). The chance is the civ's, run through the `KillSpawnChance` effects of the
 killer's proto copy (`[attacker+5Ch]`, or `0x45311B(player, attackerProto)` for a dead shooter), rounded to a whole percent;
 below 100 it rolls `0x407CE7(0xC66588, 2, 99)` (0..99) against it. With more than one animal a second roll
 `0x407CE7(…, 2, total − 1)` picks by weight. The RNG is the synced one the stock dodge uses (stream 2): every machine runs
-the same kills in the same order, so the rolls agree. `(seed >> 16 & 7FFFh) mod (max + 1)` favours the low values when
+the same kills in the same order, so the rolls agree. **[O]** 0x407CE7 (capstone, 2026-11-13): `max` ≤ 0 returns 0
+(0x44BD68); else the stream's 12-byte entry `[[rng+4] + stream × 12]` gets seed × 343FDh + 269EC3h, and the result is
+`(seed >> 16) & 7FFFh` modulo `max + 1` (`idiv` at 0x407D1B): `max` is inclusive and the map is a plain modulo, so
+`(seed >> 16 & 7FFFh) mod (max + 1)` favours the low values when
 32768 is not a multiple of `max + 1`: by under 0.5 % for a 0..99 roll and under 3 % for a total of 1000, the cap.
 
 **[O] Why the animal is not created at the kill.** TakeDamage runs inside the attack applier FUN_0049BE95, which calls it
