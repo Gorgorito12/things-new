@@ -91,7 +91,7 @@ PAGES = {
         "pillageGold": ["src/features/pillage.cpp", "src/hooks/pillage_hooks.asm"],
         "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp", "src/hooks/veterancy_hooks.asm"],
-        "detonationDeath": ["src/features/detonation.cpp"],
+        "detonationDeath": ["src/features/detonation.cpp", "src/hooks/detonation_hooks.asm"],
         "impactBoneFix": ["src/features/impactbones.cpp", "src/hooks/impactbone_hooks.asm"],
         "customImpactTypes": ["src/features/impacttypes.cpp", "src/hooks/impacttype_hooks.asm"],
     }),

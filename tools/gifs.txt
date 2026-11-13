@@ -167,7 +167,8 @@ detonationDeath-delete-nocommand-wol 20 10 1
 detonationDeath-none-wol 5 16 2
 detonationDeath-water-wol 6 8 1
 detonationDeath-water-wol-control 6 8 1
-detonationDeath-knockout-wol 92 12 1
+detonationDeath-knockout-off-wol 2 10 1
+detonationDeath-knockout-on-wol 2 10 1
 hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
 unitResourceAuras-torp-wol 12 12 1

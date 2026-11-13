@@ -1072,8 +1072,35 @@ nothing is drawn.
 
 **Observed in game (2026-11-13):** hardware breakpoints on 0x4CB11C, 0x4CB266 and 0x49C1E5 during two blasts, both
 called from the death observer (return 0x493D94): one in the black map reached 0x4CB11C and returned at the visibility
-test; one on the player's own ship reached 0x4CB266 with EBX = 7 (water) and called the spawn once. The trigger `Kill`
-(`trUnitDelete(false)`) reaches the delete executor's two wrapped calls, so the key counts it as a delete.
+test; one on the player's own ship reached 0x4CB266 with EBX = 7 (water) and called the spawn once.
+
+**Knockouts and the trigger `Kill` (2026-11-13).**
+- **A knockout is not a death.** The kill handler 0x4B4F70 sets the unit's HP to 0 (`0x4820A1(0, 0)`), then tests proto
+  flag 123 (`cmp [proto+54h],7Bh / mov ecx,[proto+50h] / mov dl,[ecx+0Fh] / and edx,8 / ja 50AAADh` at 0x4B51CB): set,
+  the unit is knocked out (FUN_0050AB6F) and skips the code that marks it dead (bit 11 of the unit's state). Flag 123
+  is `KnockoutDeath`: the proto parser's `KnockoutDeath` branch is `or byte [[proto+50h]+0Fh],8` at 0x5FCEBE. The death
+  observer runs before the handler, so the key tests the same bit on the unit's proto (`[unit+5Ch]`): set, and the
+  proto has no `<DetonationOnKnockout>1</DetonationOnKnockout>`, there is no blast. Read from memory in game: set on
+  the `Engineer`, clear on a Settler and an archer. A delete with `<DetonationCommand>` is not filtered.
+- **The trigger `Kill` is not a delete.** `trUnitDelete(remove)` (handler 0x982771, registered at 0x98A64E) calls
+  FUN_0082F923(player, ids, count, remove, 1, 1), which builds the delete command (type 7, FUN_005695FC) and, for its
+  fifth and sixth arguments, sets bit 3 (`[[cmd+58h]] |= 8`) and bit 16 of the command's flag bits; `remove` goes to
+  `[cmd+8Ch]`, which the executor sends to the removal 0x4726B2 instead (that is `Destroy`). The Delete button's
+  builder FUN_0082F1E3 sets neither bit, nor do the AI's calls of FUN_0082F923 (0x724FC2 and 0x73E668 pass 0, 0). The
+  executor FUN_007CCF7F keeps the command in EDI (`mov edi,ecx` at 0x7CCF8A) and reads the same flag bits itself
+  (bit 16 at 0x7CD002). The two calls the key rewrites (0x7CD0CF, the HP setter; 0x7CD0DC, the kill queue) now go to
+  asm hooks (`hooks/detonation_hooks.asm`) that hand the unit and EDI to the C helper, then jump to the stock callee
+  with the arguments and the return address untouched. A command with bit 3 is a trigger's `Kill`: the HP-setter
+  path fires the blast at once as a death, and the kill-queue path notes the unit so the death observer treats the
+  kill as a death; the log line ends in `(a trigger's Kill)`. Without bit 3 it stays a delete.
+- **Observed in game:** the knockout without the tag (`knocked out (KnockoutDeath), no blast`), with it (a blast at each
+  of two knockouts), the trigger `Kill` of an archer and a Settler (blasts), the Delete button on both (no blast). All
+  of these deletes went through 0x7CD0DC: every unit seen there has proto flag 13 (`0x44D063(0Dh)`), and the
+  HP-setter call 0x7CD0CF was not reached.
+
+Evidence (`rea/evidence/age3y-b1a1dab7/detonation52b.json`, and capstone over the exe for 0x982771, 0x5FCEBE, 0x4B51CB,
+0x7CCF7F): `ev_17f7f172…` (FUN_004B4F70), `ev_edf31a0a…` (FUN_0082F923), `ev_dfdd9ca3…` (FUN_0082F1E3). Sites
+`DeleteCommandRegister` (0x7CCF89), `DeleteCommandFlags` (0x7CD002) and `KnockoutTest` (0x4B51CB), verify only.
 
 **Why it is safe:** drawing and sound only, as in the stock landing: FUN_004CB11C already depends on what the local
 player sees, so nothing in it can reach the simulation, and the key calls it after the damage is applied. The two
