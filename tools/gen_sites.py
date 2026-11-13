@@ -1485,6 +1485,19 @@ SITES = [
     ("FootprintVisibility", 0x493040, 0x10),
     ("FootprintHiddenTest", 0x493201, 0x0B),
     ("FootprintHiddenSkip", 0x4E0B1F, 0x0D),
+    # directionalAttack: in the projectile launch FUN_004995C7, where every launch path meets (the jcc at 0x4997B0
+    # and 0x4997B8, the fall-through from 0x4998A0, the jmp at 0x4C4DF3; nothing lands inside): mov ecx,[esp+10h] /
+    # mov [esi+14h],ecx (replaced, 7 bytes), then mov ecx,[ebx+4]. Verify only: the ballistic launch call that
+    # reads the impact point (lea ecx,[esp+38h] after four pushes = [esp+28h], call 4A5725h); the terrain height
+    # query of the ground lead (the world's [+88h] object, vtable slot 18h, (point, &height, 0, 0)); and the
+    # attack applier's TakeDamage call, whose arguments the key copies.
+    ("DirectionalLaunch", 0x4998A7, 0x0A),
+    ("DirectionalLaunchCall", 0x49999E, 0x20),
+    ("DirectionalTerrainHeight", 0x4C4E62, 0x38),
+    ("DirectionalTakeDamage", 0x49C05A, 0x32),
+    # directionalAttack, <DirectionalFiringRange>: the MaxRange handler of the action parser FUN_005F98A0:
+    # mov edx,[esp+68h] (the value) / push edx / mov ecx,ebp (the action) / call 5FA709h (redirected, at +7)
+    ("DirectionalMaxRangeCall", 0x5F8A4A, 0x0C),
 ]
 
 
