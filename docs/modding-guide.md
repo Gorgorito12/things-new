@@ -31,6 +31,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added.  |  |
+| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added.  |  |
+| Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
 | Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
 | Friday 2026-11-13 07:23 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -6146,6 +6149,7 @@ What happens when a tech activates or a unit changes proto.
 | [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
+| [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
 
 #### hcTargetTechs
 
@@ -6252,6 +6256,213 @@ transformSpan [log]
   - Every case above, each in its own scene.
   - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
+
+#### kothTimer
+
+*The King of the Hill time comes from a table by the number of players, or of teams, in the game.*
+
+**Added:** Friday 2026-11-13 08:06 · **Filmed in WoL:** Friday 2026-11-13 08:06
+
+![kothTimer in WoL](media/kothTimer-wol.gif)
+
+*In WoL, with `kothTimer players 2=900 3=750 4=600` (a scenario with three players in two teams, a `ypKingsHill`
+and player 1's Hussars, which ride to it; the game is made a King of the Hill game by its setting, see the tests):* the
+team takes the hill and the timer starts at 12:30, the time for 3 players (`3 player(s) in 2 team(s): the hill holds for
+750 s`). [Full video (MP4)](media/kothTimer-wol.mp4).
+
+![kothTimer in WoL, key off](media/kothTimer-wol-control.gif)
+
+*In WoL, key off (the same scene):* the timer starts at 10:00, the time `DefaultVP.xml` gives.
+[Full video (MP4)](media/kothTimer-wol-control.mp4).
+
+```
+kothTimer [players | teams] N=seconds ...
+```
+
+```
+kothTimer players 2=900 3=750 4=600 6=480
+kothTimer teams 2=900 3=600 4=480
+```
+
+- **In WoL today:** the time a team must hold the hill comes from `data\DefaultVP.xml`, a formula the game has had since
+  TAD: `KOTHVictoryTime` + (players − 1) × `KOTHVictoryTimePerPlayer` (when above 0) − (teams −
+  `AdjustKOTHTotalTimeByTeams`) × `AdjustKOTHTotalTimeByTeamsFactor`, in seconds. "Players" counts Gaia, and "teams"
+  counts Gaia's team. WoL's file has 600, 0, 3 and 60: 600 s with 2 teams, 540 s with 3, 660 s in a lone-team game. So
+  a time that grows or shrinks **linearly** with the players or teams is already possible with data only, by editing
+  that file (a copy in `data\`; DE's exe has the same four names). JTMaston's #63.
+- **Effect:** the key replaces the formula with a table. `players` (the default) counts the players without Gaia;
+  `teams` the distinct teams of those players. The time is the one of the largest N listed that is not above the
+  game's count; below the smallest N listed, the smallest's time. With `players 2=900 4=600`, 3 players get 900.
+- **What the timer is:** the time a team must keep the hill to win, as stock. The part already held is still taken
+  off when the timer starts again, as stock does.
+- **Arguments:** N from 1 to 16, seconds from 1 to 86400, each N once; at least one entry. Anything else: the key is not
+  applied.
+- **Off:** the formula of `DefaultVP.xml`.
+- **Multiplayer:** it changes the simulation: every player needs the same setting. The counts come from the game's
+  player list.
+- **Log:** `kothTimer: the King of the Hill time by the number of players: 2=900 3=750 4=600 s`, `hook reached: kothTimer
+  (0x9F02DD)`, and at each start `kothTimer: 3 player(s) in 2 team(s): the hill holds for 750 s (the players 3 entry;
+  stock 600 s, its counts 4 slot(s), 3 team(s))`. A bad argument: `kothTimer: unexpected argument 2=abc (expected: ...);
+  feature not applied`.
+- **Tested in WoL (2026-11-13),** scenarios with the hill (`ypKingsHill`, Gaia) and Hussars of player 1 (in Age III) that
+  ride to it. The scenario route cannot pick a King of the Hill game, so the test wrote the game's King of the Hill
+  flag (game setting 27h, cached in the byte 0xCF07BD) in the running copy before the Hussars arrived; without it the
+  hill is captured like a trading post and no timer starts.
+  - `players 2=900 3=750 4=600`: 2 players, 900 s (15:00 on screen; stock 600); 3 players in 2 teams, 750 s (12:30).
+  - `teams 2=500 3=400`, 3 players in 2 teams: 500 s.
+  - Key off, 3 players: 600 s (10:00).
+  - `players 2=abc 0=5`: not applied, logged.
+  - Not tested: a real King of the Hill game started from the setup screen, 4 or more players, multiplayer.
+
+#### shipmentCounts
+
+*Counts the home city cards each player has shipped in each age, so a card or tech can send one unit per card shipped.*
+
+**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Friday 2026-11-13 07:54
+
+![shipmentCounts in WoL](media/shipmentCounts-wol.gif)
+
+*In WoL, with `shipmentCounts log` (a skirmish, Dutch against a Belgian AI; two cards shipped in Age I, then the test
+moved to Age III; `HCShipWoodCrates2` given `FreeHomeCityUnitByShipmentCount` Hussar, `age='3'`, `includeself='true'`,
+and `HCShipWoodCrates3` the same without `includeself`):* the first card arrives with its crates and one Hussar (`1
+shipment(s) (this one included)`), the second with one more (`1 shipment(s)`: the first one). The AI's chat at the
+left is a test rule that prints `xsGetShipmentCount`. [Full video (MP4)](media/shipmentCounts-wol.mp4).
+
+![shipmentCounts in WoL, a tech](media/shipmentCounts-reward-wol.gif)
+
+*In WoL, with the key (the same game, later):* a test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='1'`
+amount 1, and Cuirassier `age='2'` amount 2, is researched: two Hussars come to the Town Center, for the two Age I cards,
+and no Cuirassier, as no card was shipped in Age II. [Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
+
+![shipmentCounts in WoL, key off](media/shipmentCounts-wol-control.gif)
+
+*In WoL, key off (the same data and cards, in a new game):* the game drops the effect it does not know, and the two Age
+III cards bring only their crates. [Full video (MP4)](media/shipmentCounts-wol-control.mp4).
+
+![shipmentCounts in WoL, a tech, key off](media/shipmentCounts-reward-wol-control.gif)
+
+*In WoL, key off (the same game, two Age I cards shipped before):* the test tech is researched and nothing comes.
+[Full video (MP4)](media/shipmentCounts-reward-wol-control.mp4).
+
+```
+shipmentCounts [log]
+```
+
+```xml
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Hussar' age ='2'
+        includeself ='true' relativity ='Absolute'>
+    <Target type ='Player' /></Effect>
+```
+
+```
+int xsGetShipmentCount(int playerID, int age)    // age cAge1..cAge5, or -1 for every age
+```
+
+- **In WoL today:** nothing counts the shipments per age, and no effect sends units by a count. JTMaston's #65.
+- **DE:** has `FreeHomeCityUnitByShipmentCount` (guide p88-89; 9 of its cards use it): `amount` units of `unittype` for
+  every shipment sent so far, `includeself` to count the current one. The key uses that name and those attributes, and
+  adds `age`; DE has no per-age count and no syscall for it.
+- **Effect:**
+  - `unittype`: a proto, delivered as the stock `FreeHomeCityUnit` delivers: at the home city gather point, with its checks
+    (no gather point, no units);
+  - `amount` × the count: the count is the shipments of the player in `age` (1 to 5: Age I to Age V), or in every age
+    without `age`. A fraction is cut, as `FreeHomeCityUnit` cuts it; a count of 0 sends nothing;
+  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it is shipped in that age.
+  - Target: `<Target type='Player'/>`, as `FreeHomeCityUnit`.
+- **What counts:** a card shipped: when its transit ends and its tech activates (the effects of a card run at that
+  moment). A card queued and cancelled, or blockaded, does not count. The age is the player's age at that moment. Every
+  card counts, a card sent again too. Cards of other players never count.
+- **The syscall:** `xsGetShipmentCount(playerID, age)` in AI scripts and triggers, with XS ages (`cAge1` = 0 … `cAge5` =
+  4), `-1` for every age. Note that the effect's `age` is 1 to 5 (Age I to V), and the syscall's is `cAge1`..`cAge5`.
+- **Bad data:** a `unittype` that is no proto, or an `age` outside 1..5, drops the effect, with a log line; `dataLint`
+  then lists it among the effects the game deletes.
+- **Saved games:** the counts are not saved. After loading a game they start again at zero, and the cards shipped before
+  the save do not count. A new game starts at zero too.
+- **Off:** the game deletes an effect with this subtype and the syscall does not exist: a script that calls it does not
+  compile. Test it with the key on.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Performance:** one count per shipment and per effect; nothing per frame.
+- **Log:** `shipmentCounts: shipments are counted per player and age; the Data subtype FreeHomeCityUnitByShipmentCount and
+  the XS syscall xsGetShipmentCount read them`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached: tech subtype on
+  a player (0x8D843E)`. With `log`: `shipmentCounts: player 1 ships tech 715 (HCShipWoodCrates2) in age 3`, `shipmentCounts:
+  player 1 has shipped 2, 0, 1, 0, 0 in ages I to V`, `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318,
+  age 3: 1 shipment(s) (this one included) x 1.00 = 1.00 unit(s)`. Errors: `a FreeHomeCityUnitByShipmentCount effect
+  names NoSuchProto, which is not a proto; effect dropped`, `age="7" is not 1 to 5 (Age I to V); effect dropped`.
+- **Tested in WoL (2026-11-13),** a skirmish, Dutch (player 1) against a Belgian AI; cards sent from the console with
+  `homeCityTrain2(1, <card>)`, ships and the age set by test techs:
+  - two Age I cards counted in Age I, three later cards in Age III, the AI's own cards for player 2;
+  - `includeself` on the first Age III card: 1 Hussar; the next card without it: 1 Hussar (the count of the one before);
+  - a tech with Age I amount 1 and Age II amount 2: 2 Hussars, no Cuirassier;
+  - the syscall from an AI rule: `p1 all 5, Age I 2, Age III 3; p2 all 1`; the AI compiled and played;
+  - `NoSuchProto` and `age='7'`: dropped and logged. Key off: the cards brought only their crates.
+  - Not tested: a saved game (documented: the counts restart), multiplayer, a `Data2` effect.
+
+#### orPrereqsQty
+
+*A tech with OR prerequisites can ask for two, three or more of them instead of any one.*
+
+**Added:** Friday 2026-11-13 07:24 · **Filmed in WoL:** Friday 2026-11-13 07:24
+
+![orPrereqsQty in WoL](media/orPrereqsQty-wol.gif)
+
+*In WoL, with the key and `techPrereqRecheck` (4 `Hussar`, a test tech with `<Flag qty='2'>OrPrereqs</Flag>`, no
+research time, three prerequisites: one living `Barracks`, `Stable` or `Market`, and a `TransformUnit` from `Hussar` to
+`Cuirassier`):* a trigger creates the Barracks at 25 s and nothing happens (`1 of 2 needed met: not yet`); the Stable
+comes at 45 s, and the Hussars turn into Cuirassiers in that update (`2 of 2 needed met: available`).
+[Full video (MP4)](media/orPrereqsQty-wol.mp4).
+
+![orPrereqsQty in WoL, key off](media/orPrereqsQty-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the attribute, so one prerequisite is enough, and the Hussars turn at
+25 s with the Barracks. [Full video (MP4)](media/orPrereqsQty-wol-control.mp4).
+
+```
+orPrereqsQty [log]
+```
+
+```xml
+<Tech name ='MyTech' type ='Normal'>
+    ...
+    <Flag qty ='2'>OrPrereqs</Flag>
+    <Prereqs>
+        <TypeCount unit ='Barracks' count ='1' state ='noneState aliveState' operator ='gte' />
+        <TypeCount unit ='Stable' count ='1' state ='noneState aliveState' operator ='gte' />
+        <TechStatus status ='active'>Colonialize</TechStatus></Prereqs>
+    ...
+</Tech>
+```
+
+- **In WoL today:** `<Flag>OrPrereqs</Flag>` makes a tech available when **one** of its `<Prereqs>` is met; without it,
+  all of them. JTMaston's #64. DE has nothing in between: its `OrPrereqs` is the same flag, with no count.
+- **Effect:** `qty="N"` on the `OrPrereqs` flag: the tech is available when at least N of its prerequisites are met, of
+  any kind: each one is asked through its own test, as the game does (`TechStatus`, `TypeCount`, `SpecificAge` and the
+  rest; only `TypeCount` was tested). No attribute, or `qty='1'`, is today's behaviour.
+- **Where:** on the flag, the `<Flag>` element whose text is `OrPrereqs`. On another flag it is ignored, with a log line.
+  Tested with WoL's loose `techtreey.xml`; a compiled `.xmb` keeps attributes too (`tools/xmbedit.py`), not tested.
+- **Bad values:** `qty` must be a whole number from 1 to 255. Anything else (0, a word) is logged and the tech keeps the
+  stock OR. A `qty` above the number of prerequisites means the tech is never available; the log says so.
+- **When it is checked:** when the game checks the tech's prerequisites, as for any tech: a status change, an age-up, a
+  house. A `<TypeCount>` among them waits for that unless [`techPrereqRecheck`](bug-fixes.md#techprereqrecheck) is on,
+  which re-checks it as soon as the count changes (the video above uses both).
+- **Saved games:** the count comes from the data each time; nothing is stored.
+- **Off:** the game ignores the attribute and a single prerequisite is enough.
+- **Multiplayer:** it changes the simulation: every player needs the same setting.
+- **Performance:** the game evaluates prerequisites only when a tech tree is re-checked, not every frame. For a tech
+  without `qty` the key adds a table lookup. Not measured with `perfprobe.py`.
+- **Log:** `orPrereqsQty: <Flag qty="N">OrPrereqs</Flag> needs N of the tech's prerequisites`, `hook reached:
+  orPrereqsQty (0x5094B4)`, then at the first evaluation `orPrereqsQty: 2 tech(s) with qty on OrPrereqs` and one line
+  per tech: `orPrereqsQty:   tech 10542 (UHCOrQtyTest): 3 of 3 prerequisite(s)`. With `log`, each change of a tech's
+  count, per player: `orPrereqsQty: player 1, tech 10542 (UHCOrQtyTest): 2 of 2 needed met: available`. Errors:
+  `qty="0" is not a whole number from 1 to 255; ignored`, `qty on <Flag>Shadow</Flag> ignored; it belongs on OrPrereqs`,
+  `1 tech(s) ask more prerequisites than they have and are never available`.
+- **Tested in WoL (2026-11-13),** a scenario (player 1 the default civ, Prussian-named Hussars), with `techPrereqRecheck
+  log`:
+  - `qty='2'` of three `TypeCount`: available at 45 s (the second building), not at 25 s. Key off: at 25 s.
+  - `qty='3'`: at 65 s, with the third building.
+  - `qty='9'` of three: never, and the log line. `qty='0'` and `qty='abc'`: ignored, logged, and available at 25 s as in
+    stock. `qty` on `<Flag>Shadow</Flag>`: ignored and logged.
+  - `orPrereqsQty bogus` in the cfg: `unexpected argument bogus (expected: [log]); feature not applied`, then `FAILED`.
+  - Not tested: other kinds of prerequisite than `TypeCount`, the AI researching such a tech, multiplayer.
 
 #### unitTypeTechs
 

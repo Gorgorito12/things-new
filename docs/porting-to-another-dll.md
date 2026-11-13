@@ -938,6 +938,61 @@ Code: [techs](porting-code/techs.md#techprereqrecheck).
   keep the IDs whose definition (record `+0`) has a prerequisite with byte `[p+5]` = 0 in
   `[def+1Ch][0..byte def+20h)`.
 
+### kothTimer
+
+Code: [techs](porting-code/techs.md#kothtimer).
+
+- **The hook** at `0x9F02DD` (`A1 34 62 C6 00`, `mov eax,[0C66234h]`), the head of the King of the Hill time,
+  `int thiscall(settings)`, plain `ret`; one caller, 0x948F95. Return the seconds in EAX with `ret`, or re-execute the
+  load and jump to `0x9F02E2`.
+- **The counts:** players 1 .. `[world+5Ch]` − 1 of `[world+58h]`, teams the distinct `[player+10h]` among them.
+- **Data only:** the stock formula's four tags in `DefaultVP.xml` already give a linear time by players and teams.
+- **Test:** a King of the Hill game with 2 and 3 players: the panel shows the table's times.
+
+### shipmentCounts
+
+Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target of the shared tech subtypes
+(`AddTechPlayerSubtype`, in the [helpers](porting-code/helpers.md)) and `AddSyscall`.
+
+- **The count:** a `call` at `0x8584FF` (`E8 23 4A 0F 00`, `call 94CF27h`) in the card shipment FUN_00858299. Entry:
+  ECX = EDI = the card tech's status entry, `[esp+4]` the player, five arguments, `ret 14h`. Note the player ID and
+  `[player+50h]` (its age, cAge1 = 0), run the activation with the stack as it is (keep the return address aside), then
+  add one to that player's count of that age. The card's effects run inside the activation: `includeself` adds the
+  card being shipped. Reset the counts when the world `[[0xC66234]+13Ch]` changes.
+- **The subtype:** a 6-byte `jmp` over `ja 8D878Fh` at `0x8D843E` (`0F 87 4B 03 00 00`) in the player Data apply
+  FUN_008D842B. Entry: EBP = subtype, EAX = subtype − 0Ah, the flags of `cmp eax,5Ah`, ESI = the player, the field
+  `[esp+2Ch]` (the effect's `+10h`), the amount `[esp+34h]`. A stock ID continues at `0x8D8444`. For the new ID, write
+  the proto into the field and `amount × count` into the amount, set EBP and `[esp+28h]` to 37h and EAX to 37h − 0Ah,
+  and jump to `0x8D8444`: the stock `FreeHomeCityUnit` delivers the units. A count of 0: `mov al,1 / jmp 8D8D23h`.
+- **The parse:** the subtype's name goes through your subtype lookup; while the effect is read, keep its node (the
+  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` and `includeself`, and pack them
+  into the effect's `+10h`.
+- **The syscall:** `int xsGetShipmentCount(int playerID, int age)` in the XS group.
+- **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
+  `age='1'`: two units.
+
+### orPrereqsQty
+
+Code: [techs](porting-code/techs.md#orprereqsqty).
+
+- **State:** a table by tech ID of {definition, N}, filled while the techtree is read; an entry counts only when its
+  definition is the one being evaluated.
+- **The `<Flag>` handler:** write your handler's address over the immediate at `0x6237E8` (the instruction at
+  `0x6237E4` is `C7 44 24 10 F1 0B 62 00`, `mov dword ptr [esp+10h], 620BF1h`). Your handler is `cdecl(node, record)`:
+  call `0x620BF1(node, record)`, then read `qty` with `0x598F37(node, "qty", &value)` (thiscall on the node) and the
+  flag's text with `0x402733(node+14h)`; the tech ID is `[[record]]`. If your DLL already replaces this handler or
+  hooks the flag setter `0x620C2F` (as `hcTargetTechs` does, at its head), the two compose: this one only wraps the
+  handler.
+- **The hook** at `0x5094B4` (`53 8A 5C 24 0C`, `push ebx / mov bl,[esp+0Ch]`), the head of the prerequisite list
+  evaluator, `bool thiscall(list = def+1Ch, Player*, bool or)`, `ret 8`:
+  - entry state: ECX = the list, `[esp+4]` = the player, `[esp+8]` = the OR flag (its low byte);
+  - for OR, and N ≥ 2 for the tech `[list−1Ch]`: count the non-null `[list][i]` (i below byte `[list+4]`) whose vtable
+    slot +8, `thiscall(p, player)`, returns true; return `count ≥ N` in AL with `ret 8`;
+  - otherwise re-execute the two instructions and jump to `0x5094B9`.
+- **Order:** `techPrereqRecheck` checks the stock bytes of `0x5094B4`, so apply it first.
+- **Test:** a tech with three `TypeCount` prerequisites and `qty='2'`: it activates with the second unit, not the
+  first.
+
 ### maintainWaitForPop
 
 Code: [buildings](porting-code/buildings.md#maintainwaitforpop).

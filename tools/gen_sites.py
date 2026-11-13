@@ -334,6 +334,23 @@ SITES = [
     # and the loop over [list] / byte [list+4] through vtable slot +8
     ("TechPrereqListEval", 0x5094B4, 0x24),
     ("TechPrereqListLoop", 0x50946A, 0x4A),
+    # orPrereqsQty: the evaluator's head, push ebx / mov bl,[esp+0Ch] (replaced, 5 bytes), and the
+    # continuation push ebp / push esi / test bl,bl at 0x5094B9; written after techPrereqRecheck verified it
+    ("OrQtyEvalHead", 0x5094B4, 0x0A),
+    # orPrereqsQty: the OR-true exit of the evaluator's loop (pop edi/esi/ebp, mov al,1, pop ebx, ret 8) and
+    # the vtable thunk jmp eax the loop calls each prerequisite through
+    ("OrQtyEvalTrue", 0x67C412, 0x09),
+    ("OrQtyVtableThunk", 0x4C5F02, 0x02),
+    # orPrereqsQty: the tech <Flag> tag handler FUN_00620BF1, cdecl(node, record): its text [node+14h]
+    # through 0x402733, then the flag setter 0x620C2F(record, text), ret; and its registration in the tech
+    # tag table, mov dword ptr [esp+10h], 620BF1h (the immediate at +4 is redirected)
+    ("OrQtyFlagHandler", 0x620BF1, 0x3E),
+    ("OrQtyFlagRegister", 0x6237E4, 0x08),
+    # orPrereqsQty: the OrPrereqs case of the flag setter, or byte [esi+2],20h on [record+4] (bit 21)
+    ("OrQtyFlagBit", 0x62237E, 0x0A),
+    # orPrereqsQty: the per-tech setup FUN_006201E5: def = [[loader+4]] + id*34h, record = [[loader+4]+0Ch] +
+    # id*24h, mov [edx],eax stores the tech ID in [def+0] and mov [ecx],eax the def in [record+0]
+    ("OrQtyTechSetup", 0x620277, 0x3C),
     # techPrereqRecheck: the TypeCount ctor (push 0 = type 0, vtable 0BA533Ch) and the base
     # prerequisite ctor that stores the type in byte [+5]
     ("TypeCountCtor", 0x8EE860, 0x10),
@@ -1083,6 +1100,30 @@ SITES = [
     ("DataActionAttribute", 0x6216A3, 5),
     ("DataAllActionsApply", 0x7F86CA, 0x0E),
     ("DataAllActionsUnapply", 0x7F870F, 0x0E),
+    # tech subtypes on a Player target: the player Data apply FUN_008D842B, thiscall(player, a1, a2, subtype,
+    # [effect+10h], [effect+14h], amount, relativity), ret 1Ch: lea eax,[ebp-0Ah] / cmp eax,5Ah / push edi /
+    # mov esi,ecx / ja 8D878Fh (replaced, 6 bytes) / movzx eax,[eax+8D93D8h] / jmp [eax*4+8D9330h]; its caller
+    # 0x7F874A that pushes the effect's fields; the failure exit and a success exit (pop edi/esi/ebp/ebx,
+    # add esp,0Ch, ret 1Ch, AL as left)
+    ("PlayerDataSwitch", 0x8D8435, 0x1D),
+    ("PlayerDataCaller", 0x7F874A, 0x32),
+    ("PlayerDataFail", 0x8D878F, 0x0C),
+    ("PlayerDataDone", 0x8D8D23, 0x0A),
+    # shipmentCounts: the stock FreeHomeCityUnit case (subtype 37h) of the player Data apply: amount [esp+34h],
+    # proto [esp+2Ch], up to its call of the shipment spawn 0x857E77
+    ("FreeHomeCityUnitCase", 0x8D8C62, 0xC1),
+    # shipmentCounts: the shipment of a card, FUN_00858299: the activation of the card's tech,
+    # call 94CF27h (thiscall(entry = EDI, player = [esi+8], unit, 0, &ok, flags), ret 14h; redirected),
+    # with the pushes before it and the use of EDI after it
+    ("ShipActivateCall", 0x8584E7, 0x24),
+    ("ShipQueueCaller", 0x66AEA0, 5),
+    # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
+    # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
+    # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at
+    # 0x948F95 in the team's timer start FUN_00948F32, minus [team+84h]; and the end it sets, now + 1000 x seconds
+    ("KothTotalTime", 0x9F02DD, 0x48),
+    ("KothStartCall", 0x948F93, 0x12),
+    ("KothSetEnd", 0x948A4C, 0x1C),
     # cratePriority: the only calls of the crate rank FUN_004DBF40 (thiscall(db, resource, civ), ret 8)
     # and of the next crate FUN_00501786 (thiscall(player, proto, int* next, int* resource), ret 0Ch),
     # and that one's read of the civ: mov ecx,[esi+4] / mov ecx,[ecx+44h]

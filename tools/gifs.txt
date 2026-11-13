@@ -260,3 +260,11 @@ numberOfShots-projectiles-wol-control 9 12 1
 ageUpBuildings-wol 1 12 2
 ageUpBuildings-wol-control 1 12 1
 useBigHugeButton-wol 3 12 1
+orPrereqsQty-wol 2 24 2
+orPrereqsQty-wol-control 0 24 2
+shipmentCounts-wol 21 24 2
+shipmentCounts-wol-control 21 24 2
+shipmentCounts-reward-wol 4 16 2
+shipmentCounts-reward-wol-control 4 16 2
+kothTimer-wol 4 24 2
+kothTimer-wol-control 4 24 2

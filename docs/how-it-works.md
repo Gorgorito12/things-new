@@ -1514,6 +1514,106 @@ applies the operators. `[player+80h]` is the KB; it is used with no null check.
   summary is only logged.
 - **Measured:** with 2 TypeCount techs, the checks took about 4 ms per game minute.
 
+### orPrereqsQty
+
+**The stock OR.** `<Flag>OrPrereqs</Flag>` sets bit 21 of the tech's status bits (the flag setter's case `0x62237E`,
+`or byte [esi+2],20h` on `[record+4]`). The per-tech update FUN_005094D8 passes that bit to the prerequisite list
+evaluator FUN_005094B4, `bool thiscall(list = def+1Ch, Player*, bool or)`, `ret 8`: it walks `[list]` (length byte
+`[list+4]`, null slots skipped) and asks each prerequisite through vtable slot +8 (the thunk `jmp eax` at `0x4C5F02`).
+With `or` set, the first prerequisite met returns true (`0x67C412`); with none met, false. Its stock callers are
+`0x509537` only; `techPrereqRecheck` calls it too.
+
+**Reading `qty`.** The tech parser FUN_006201E5 makes, for tech ID *i*, the definition `[[loader+4]] + 34h·i` (its
+`+0` = *i*) and the status record `[[loader+4]+0Ch] + 24h·i` (its `+0` = the definition), then hands each child node to
+the handler of its tag. `<Flag>` is handled by FUN_00620BF1, `cdecl(node, record)`, registered in the tag table by
+`mov dword ptr [esp+10h], 620BF1h` at `0x6237E4`. The key writes the address of `UhcOrQtyFlag` over that immediate:
+it calls the stock handler, then, when the node has a `qty` attribute and its text is `OrPrereqs`, stores
+{definition, N} at the tech's ID. Any other flag, or a value outside 1..255, is logged and left alone.
+
+**The hook.** A `jmp` over the evaluator's first 5 bytes (`push ebx / mov bl,[esp+0Ch]`) leads to
+`UhcOrQtyEvalHook`: `TRACE_ONCE`, then `UhcOrQtyEval(list, player, or)`. For `or` set and a tech whose stored
+definition is `list − 1Ch` with N ≥ 2, it asks each prerequisite through the same vtable slot, stops at the N-th one
+met, and returns 0 or 1; the hook then returns from the evaluator with `ret 8`, as the stock exits do. Otherwise it
+returns −1, and the hook restores ECX, re-executes the two stolen instructions and jumps to `0x5094B9`.
+
+**Why it is safe.**
+- The evaluator's contract is kept: same arguments, same `ret 8`, the result in AL; EBX, ESI, EDI and EBP are kept
+  by the C++ code, and EAX/ECX/EDX are free in a thiscall. Its callers cache the result in bit 3 as before, so
+  activation, `Volatile`, the AI's tech list and the UI follow it.
+- Each prerequisite is asked through the same slot, with the same player, as stock does; the count only replaces
+  "any" by "N".
+- An entry is used only when its stored definition is the one being evaluated, so a table from another data load is
+  never applied.
+- The result depends only on game state (the player's units, techs, age), so every machine computes the same.
+- `techPrereqRecheck` verifies the evaluator's stock bytes before this key writes them (it applies first).
+
+### kothTimer
+
+**The stock time.** When a team takes the hill (`ypKingsHill`, proto ID `[db+5F88h]`; the hill's update, 0x4C9BBD,
+counts the units around it and, in a King of the Hill game, byte `[0xCF07BD]` = game setting 27h, reaches 0x6A7AEE),
+FUN_00948F32 (thiscall on the team) starts the team's timer: `0x9F02DD() − [team+84h]` seconds, the end at now + 1000 ×
+that (0x948A1F), and the "KOTHVictoryTimer" panel. FUN_009F02DD reads the victory settings of `DefaultVP.xml`
+(`[world+0A8h]`, loaded by 0x9F0B90): `+104h` + (`[world+5Ch]` − 1) × `+108h` when `+108h` > 0, − (`[world+18Ch]` −
+`+10Ch`) × `+110h`, with `[world+5Ch]` the player slots (Gaia included) and `[world+18Ch]` the teams (Gaia's too). Its
+only caller is 0x948F95.
+
+**The hook.** A `jmp` over its first instruction, `mov eax,[0C66234h]`, leads to `UhcKothTimeHook`: `TRACE_ONCE`,
+`UhcKothTime(settings)`. It counts the players 1 .. `[world+5Ch]` − 1 of the world's player array `[world+58h]` and the
+distinct teams `[player+10h]` among them, takes the time of the table's entry, logs it with the stock value, and the hook
+returns it with `ret`. With no table it returns 80000000h, and the hook restores ECX, re-executes the load and jumps to
+0x9F02E2.
+
+**Why it is safe.** The function keeps its contract (thiscall, no arguments, EAX); EAX, ECX and EDX are free. The counts
+come from the game's player array, the same on every machine, and the time is an integer as stock's.
+
+### shipmentCounts
+
+**Where a card is shipped.** The shipment queue's update (FUN_004BF86F, its cold part calls FUN_00858299 at
+`0x66AEA0`) ships the first card when its transit ends. FUN_00858299 checks the player (alive, a KB, no blockade),
+resolves the drop point, then activates the card's tech: `call 94CF27h` at `0x8584FF`, `thiscall(entry = EDI, player =
+[esi+8], unit, 0, &ok, flags)`, `ret 14h`. The activation applies the tech's effects there and then, so a card's
+`FreeHomeCityUnit` creates its units inside that call. Then the card index is added to the home city's list of used
+cards `[hc+260h]` through 0x444FD3, which adds an index only once: a card sent again is not listed twice, so the list
+is not a count of shipments.
+
+**The count.** The key redirects that call to `UhcShipActivateHook`: `TRACE_ONCE`, `UhcShipBegin(entry, player)` notes
+the player ID and its age `[player+50h]` (what `kbGetAge` returns, 0x86A9DB: cAge1 = 0) and marks a shipment as in
+progress, then the stock activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to
+the count of that player and age and clears the mark. The return address is kept in a global while the activation
+runs, and the hook leaves with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last), zeroed
+whenever the world `[game+13Ch]` is a different one: a new game, a loaded game, a scenario.
+
+**The tech subtype.** `FreeHomeCityUnitByShipmentCount` is a Data subtype on a Player target, which the shared tech
+subtype code did not have: stock applies a Player target through 0x7F874A, which pushes the effect's fields and calls the
+player Data apply FUN_008D842B, `thiscall(player, a1, a2, subtype, [effect+10h], [effect+14h], amount, relativity)`,
+`ret 1Ch`, a switch on `subtype − 0Ah` (`cmp eax,5Ah / ja 8D878Fh`, the jump tables 0x8D93D8 and 0x8D9330).
+`techsubtypes.*` gained `AddTechPlayerSubtype`: the `ja` at `0x8D843E` jumps to `UhcTechPlayerSubtypeHook`, which sends
+a stock ID back to the table (`0x8D8444`), and an ID from 100h to the key's handler with the player and the addresses of
+the field `[esp+2Ch]` and the amount `[esp+34h]`. The handler returns done (AL = 1, the exit `0x8D8D23`), failed
+(`0x8D878F`), or the ID of a stock case to run with the arguments it rewrote.
+
+While the techs are read, the subtype's name lookup (the shared head 0x61FF5D) calls the key's parser with the effect
+and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` 1 to 5, and
+`includeself` true or 1. They are packed into the effect's field `+10h`: the proto ID in the low 24 bits, the age in the
+next 4, `includeself` in bit 28. A bad one drops the effect (the lookup answers −1, as for a name nobody knows). When the
+effect applies, the handler takes the count of that age (or of every age), adds one when `includeself` is set and the
+effect runs inside the activation of a shipment of the same player and age, writes the proto ID into the field and
+`amount × count` into the amount, and answers 37h: the stock `FreeHomeCityUnit` case (0x8D8C62) then creates the units
+at the home city gather point through 0x857E77, with its checks. A count of zero answers done, and nothing is created.
+
+**The syscall.** `xsGetShipmentCount(int playerID, int age)` in the XS group (every script: the AI, triggers), through
+`AddSyscall`: the same table, -1 for every age.
+
+**Why it is safe.**
+- The activation gets the same `this`, the same five arguments and the same return address; EAX, its result, is kept,
+  and the code at 0x858504 reloads ECX from EDI, which the C code keeps. Only one card ships at a time, and the
+  activation never ships another, so one global return address is enough.
+- The player switch hook re-executes the stolen `ja` with the flags of the stock `cmp`, so every stock subtype runs as
+  before; the success and failure exits are the stock ones, with the stack as the cases leave it.
+- The counts read only simulation events (shipments, ages), the same on every machine; the table is ordered by player
+  ID and age.
+- Not kept in a saved game: after a load the counts start again from zero.
+
 ### maintainWaitForPop
 
 **The stock mechanism.** `Maintain` is unit action type 22h (ctor `0x9E2510`, vtable `0xB97B98`).
@@ -3976,6 +4076,10 @@ New subtypes go through `techsubtypes.*`, shared by the keys that add one:
 The handler calls the stock value function 0x7F892A on `+78h`, with the base proto's `+78h`, which gives it every
 relativity and the removal. A tech reaches a proto through protoUnitApply 0x7F86C0; the player path 0x8D842B is not
 involved, as with Armor.
+
+- A subtype on a Player target (`AddTechPlayerSubtype`, since `shipmentCounts`) goes through that player path: the
+  `ja` of its switch at 0x8D843E sends an ID from 100h to the key's handler (see shipmentCounts). A Player subtype on a
+  ProtoUnit target, or the reverse, fails as stock fails an unknown subtype.
 
 - **Observed in game:** see the tests in the modding guide. After a load the log shows the effects applied again in
   order, from the data's value.
