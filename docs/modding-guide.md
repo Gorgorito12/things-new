@@ -31,8 +31,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 10:46 | [`randomCost`](#randomcost) | Added. `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | The tag on the protos that want it. |
+| Friday 2026-11-13 10:03 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
 | Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
-| Friday 2026-11-13 09:04 | [`playerIcon`](#playericon) | Added. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
 | Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
@@ -4897,6 +4898,7 @@ How buildings train, spawn, live and get replaced.
 | [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
+| [`randomCost`](#randomcost) | `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | **new** | The tag on the protos that want it. | confirmed (single player, also a skirmish vs AI) |
 | [`buildingWorkRateAuras`](#buildingworkrateauras) | Lets auras and other stat modifiers use the `ModifyType` `BuildingWorkRate`, which scales train, research and `Maintain` speed. | **new** | An `AutoRangedModify` action (or a power) with that `ModifyType`. | confirmed (single player, `Maintain`) |
 | [`trainSingleAbstractType`](#trainsingleabstracttype) | Marked units leave a training building one at a time, not as a batch. | **in `wol.cfg`** | `AbstractTrainLimitOne` on the protos (36 have it). | confirmed |
 | [`noTrainNearEnemyTC`](#notrainnearenemytc) | Marked units (the Daimyos and the Shogun by default) do not train while they stand near an enemy's first Town Center or an enemy building of a `near` type, with a warning over your own held units; the queue resumes when the blocker dies. | **new** | Nothing for the Daimyos (20 protos carry `AbstractDaimyo`); with a new marker, that type on the trainers or on the blocking buildings in `protoy.xml`. | confirmed (single player) |
@@ -6115,6 +6117,88 @@ costEscalationTechs [log]
   - `BasePercent` 1.10 then `Absolute` 0.05 on 1.015: the cost at 3 alive was 119, which is 75 × 1.1665³.
   - Not tested: multiplayer.
 
+#### randomCost
+
+*Each unit trained costs a price rolled in a range, a new one after each purchase, and the button shows the exact price.*
+
+**Added:** Friday 2026-11-13 10:46 · **Filmed in WoL:** Friday 2026-11-13 10:46
+
+![randomCost in WoL](media/randomCost-wol.gif)
+
+*In WoL, with the key (Dutch skirmish against a British AI; test data: `DutchSettler` with `<Cost resourcetype="Gold">60`
+and `<RandomCost resourcetype="Gold" min="40" max="90"/>`; the Town Center stays selected and each unit is bought by a
+click on its button, so its tooltip shows the next price):* the gold of the tooltip changes after each purchase (90,
+49, 58, 77, 83), the gold falls by exactly that, and the log says each payment and the next price. A click on the third
+queued unit cancels it: 58 comes back, and the next purchase pays the newest price again (77).
+[Full video (MP4)](media/randomCost-wol.mp4).
+
+![randomCost in WoL, key off](media/randomCost-wol-control.gif)
+
+*In WoL, key off (the same scene and clicks):* the tag is ignored and every unit costs the 60 gold of its `<Cost>`.
+[Full video (MP4)](media/randomCost-wol-control.mp4).
+
+```
+randomCost [log]
+```
+
+```xml
+<Unit name='WOLLandwehr'>
+    <Cost resourcetype="Gold">60.0000</Cost>
+    <RandomCost resourcetype="Gold" min="40" max="90"/>
+    ...
+```
+
+- **The tag:** `resourcetype` is a resource of the data (`Gold`, `Food`, `Wood`, ...), `min` and `max` are numbers from 0
+  to 1000000, rounded to whole numbers; the price is a whole number in [min, max], each one as likely. Repeat the tag for
+  each resource; a resource repeated takes its last tag. A resource the tag names replaces that resource's `<Cost>`; the
+  others keep their `<Cost>`.
+- **The price you see is the price you pay:** the next price is rolled in advance. The button, its tooltip, the "can
+  afford" checks, the AI and the payment all read the same cost function, so they agree. After a unit is paid for, the
+  next price is rolled. Each player has his own sequence for each proto.
+- **Techs that change the cost:** they apply on top of the rolled price, as a factor: the player's cost of that resource
+  over the proto's `<Cost>` (a tech that halves the gold halves every rolled price: 46 became 23 in the test). Keep a
+  `<Cost>` for the resource (the middle of the range is a good value): with none, a tech's change is added to the rolled
+  price instead. The result is rounded to a whole number.
+- **`<CostEscalation>`:** applies on top of the rolled price, as stock (cost × escalation^units alive).
+- **Free units:** shipments, `FreeHomeCityUnit` and other units that are not paid do not use a price.
+- **Cancel:** a cancelled unit refunds exactly what it paid, and the count of purchases goes back by one: buy and cancel,
+  and the next unit costs the same price again (no rerolling by cancelling). Cancelling an older unit while newer ones
+  wait makes the newest price come again.
+- **Batches:** a Shift+click pays each unit at its own price. A Train action with the flag that pays a batch at once pays
+  N times the current price; each unit of that batch refunds that price.
+- **Saved games:** the prices come from a seed taken at the start of the game and the count of purchases, both kept in
+  the saved game: after a load the next prices are those the game would have had.
+- **Buildings:** a tagged building shows a rolled price, but placing it does not roll the next one and its foundation
+  refund asks the price again: use the tag on trained units only.
+- **Bad tags:** a resource that does not exist, a missing or non-numeric `min` or `max`, or `min` above `max` is logged
+  and the tag is ignored: `randomCost: proto 295: <RandomCost resourcetype="Gold">: min 90 is above max 40, tag ignored`.
+  `dataLint` knows the tag; with the key off it reports it as read by `randomCost`, which is off.
+- **Off:** the tag is ignored and the unit costs its `<Cost>`.
+- **Multiplayer:** the price is in the simulation: every player needs the same setting and data. Not tested.
+- **Log:** `randomCost: <RandomCost> is read; ...`, `hook reached: randomCost cost getter (0x480B5B)`, `... payment
+  (0x9EB053)`, `... entry cost (0x9EB291)`, `... refund, cancel (0x9EB43E)`. With `log`: each tag read
+  (`randomCost: proto 3356: Gold from 40 to 90`), `randomCost: new game: seed 7DC8504D` or `randomCost: loaded: seed
+  4B1648B4, 1 count(s)`, and each payment and refund: `randomCost: player 1 paid 81 Gold for 1 of proto 3356 (purchase
+  0); next price 77 Gold`, `randomCost: player 1 refunded 82 Gold for proto 3356; purchases back to 19`.
+- **Decided (2026-11-13):** JTMaston's #58 left the design open; we chose a range per proto and resource, the price rolled
+  in advance so that the button shows it, a deterministic roll kept in the saved game, the stock multipliers on top, and
+  an exact refund that gives the price back. DE has no such tag.
+- **Tested in WoL (2026-11-13), Dutch against a British AI (`wolVictoria`):**
+  - `DutchSettler` 40–90 gold: purchases of 81, 77, 77, 46, 82, each equal to the next price the log gave before it; the
+    tooltip showed 77 after the 81, 82 after the 46 and 76 after the 82; gold 5200 → 5119 after the 81.
+  - A cancel refunded 82 and the count went from 20 to 19; the next purchase paid the same 43 as before.
+  - The test tech `UHCRandomCostHalf` (`Cost` `BasePercent` 0.5 on the gold) halved the next price, 46 → 23.
+  - A saved game loaded twice, each time in a new process: the next four prices were 44, 21, 30, 32 both times, the same
+    as the game that saved; a unit queued before the save refunded what it paid.
+  - The British AI trained the tagged `Settler` (70–130 food) at the rolled prices (70, 107, 86, 96, 86, 125, 105, 78):
+    17 settlers at 322 s, 19 at 373 s with the key off.
+  - Key off: the tag is ignored, 60 gold every time; `dataLint` reports `randomcost (read by the key randomCost, which is off)`.
+  - Bad tags on `Pikeman` (min above max, `Gld`, `min="x"`): three log lines, the Pikeman kept its cost.
+  - Performance, A/B in a skirmish with the Town Center selected, 90 s each: 844 / 838 fps, main thread 89.0 / 87.3 %,
+    frames over 50 ms 2 / 3 (key off / on).
+  - Not tested: multiplayer; the batch payment of action flag 14h; the refunds of an emptied queue (0x9EB60D) and of a
+    failed spawn (0x9EBA5D).
+
 #### annexFacing
 
 *An annex turns to face the building it belongs to, and falls with it.*
@@ -6644,7 +6728,7 @@ What the panels and the fog of war show.
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
-| [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files. | confirmed (LAN lobby, one copy) |
+| [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 
 #### nativePreview
 
@@ -6960,7 +7044,7 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
 
 *In a LAN lobby, your slot shows an icon you choose instead of your civ's portrait, and keeps it when you change civ.*
 
-**Added:** Friday 2026-11-13 09:04 · **Filmed in WoL:** Friday 2026-11-13 09:04
+**Added:** Friday 2026-11-13 09:04 · **Filmed in WoL:** Friday 2026-11-13 10:03
 
 ![playerIcon in WoL](media/playerIcon-wol.gif)
 
@@ -6972,6 +7056,13 @@ Paraguay and back, and the icon stays. The AI keeps its civ's portrait. [Full vi
 
 *In WoL, key off (the same lobby, the test icons still in `data` and `art`):* the host's slot shows the Dutch portrait,
 then Paraguay's when the civ changes. [Full video (MP4)](media/playerIcon-wol-control.mp4).
+
+![playerIcon with WoL's own pictures](media/playerIcon-wolart-wol.gif)
+
+*In WoL, with the table `tools/make_avatar_table.py` wrote from WoL's own art (a LAN game hosted alone):* first
+`playerIcon kaiserklein`, one of WoL's player avatars (a helmet): the host changes civ from the Greeks to Paraguay and to
+the Dutch, and the helmet stays. Then, after a restart, `playerIcon civ_ethiopians`: the Dutch host shows the Ethiopian
+portrait and keeps it as the Greeks and as Paraguay. [Full video (MP4)](media/playerIcon-wolart-wol.mp4).
 
 ```
 playerIcon <avatarId>
@@ -6999,8 +7090,25 @@ playerIcon <avatarId>
   square picture fits; the slot shows it at 48 × 48. The stock loader also reads `<tier>`, `<minLevel>`,
   `<type>clan</type>` and `<civ>` (ESO's rules), which LAN ignores; leave them out (an unknown `<civ>` drops the entry).
 - **Choosing an icon:** the cfg value is the only way; there is no picker in the lobby. One avatar per copy of the game.
-- **Which pictures:** the mod's own. Ship the avatar table and the `.ddt` files with the mod, so every player has
-  them and sees everyone's icon.
+- **Which pictures:** WoL's own art, so nothing new needs drawing. `tools/make_avatar_table.py <WoL folder>` reads a
+  WoL install and writes `data\avatar_wol.xml` (`--out <file>` to write it elsewhere). It names 63 pictures WoL
+  already ships:
+  - the 17 player avatars `art\spec\avatars\*.ddt` that WoL's observer files show, with the file name in lower case
+    as the ID: `_h2o`, `aizamk`, `boneng`, `diarouga`, `garja`, `jerom_`, `kaiserklein`, `marechal_rondon`,
+    `matsujun`, `mitoe`, `mongo10`, `nobumanteikoku`, `piroshiki`, `princeofkabul`, `ramex12`, `veni_vidi_vici_w`,
+    `yurashic` (64 × 64);
+  - the portrait of each of the 46 public civs, the `cpai_avatar_<civ>-sm` that `civs.xml` names in
+    `<matchmakingtextures><portraittexture>` (128 × 128), as `civ_` and the civ's `<name>` in lower case:
+    `civ_dutch`, `civ_ethiopians`, `civ_unitedstates`, `civ_xpiroquois`, `civ_wallmapu`, `civ_maori`, ... Left
+    out: Tawantinsuyu, Tupinamba and XPAztec (not public), SPCAct1 (`<visible>0`) and SPCCompany (not a
+    `cpai_avatar` texture).
+
+  A texture that is missing (neither loose under `art\` nor in `art\*.bar`) is skipped, and the tool prints every ID.
+  It copies no picture: WoL ships the generated `avatar_wol.xml` in its `data\` folder, and each player picks one
+  with `playerIcon <id>` in `wol.cfg`, e.g. `playerIcon kaiserklein` or `playerIcon civ_ethiopians`. A civ portrait
+  stays the player's icon whatever civ they play. New pictures can be added to the table later: a `.ddt` under
+  `art\` and one more `<avatar>` line. The home city files have no portrait of their own, and an explorer's picture
+  differs per civ with no single list, so neither is in the table.
 - **In game:** the key works in the lobby only. WoL's observer files already show `art\spec\avatars\<playerName>.ddt`
   in game through the stock text markup, with no DLL.
 - **An unknown ID** (not in any table, or no table at all): the slot keeps the civ portrait, as stock does.
@@ -7015,7 +7123,9 @@ playerIcon <avatarId>
 - **Tested in WoL (2026-11-13, one copy):** a LAN game hosted alone: the icon on the host's slot, kept over civ changes
   (Dutch → Greeks → Paraguay → Dutch); an AI slot (Abraham Lincoln, then Menelik II) kept its civ's portrait; key off:
   the civ portrait; `playerIcon uhc_blue` with no table installed: the civ portrait, no error; `playerIcon` with no ID:
-  logged, not applied. The profile does not keep the value (its `gameplayer0avatarid` stayed empty).
+  logged, not applied. The profile does not keep the value (its `gameplayer0avatarid` stayed empty). With the table of
+  `tools/make_avatar_table.py` (63 IDs): `kaiserklein` (a player avatar) and `civ_ethiopians` (a civ portrait, the
+  host playing the Dutch) each showed on the host's slot and stayed over civ changes (Greeks, Paraguay, Dutch).
 
 ## 6. Editing the game data
 
@@ -7391,6 +7501,7 @@ the code. Saved games were tested only where a section says so.
 | `linkedResource`, rings, marks | Found again at once. |
 | `annexFacing` | The angle is saved with the building; the link is not: an annex's parent is found again by the facing rule. |
 | `nextResearchFree` | A spent turn comes back. |
+| `randomCost` | Goes on: the seed and the purchase counts are kept on a unit; the next prices are those the game would have had (tested: two loads in new processes). |
 
 ## 8. WoL's keys that are not implemented
 

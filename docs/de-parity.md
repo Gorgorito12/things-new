@@ -486,6 +486,12 @@ amount / yield. With 1.5 a tree lasts 1.5 times longer for the same income.
   "Train action"). So the hook goes where the cost is computed for the payment, and the refund uses the copied record.
   The draw must use the synced random (0x422648) so multiplayer stays in step, and the UI shows the base cost or the
   range. **Size:** M. Readings 2 and 3: S–M. There is no DE behaviour to copy.
+- [O] 2026-11-13: a byte search of `AoE3DE_s.exe` (ASCII and UTF-16) for `RandomCost`, `CostRandom`, `RandomPrice`,
+  `CostVariance`, `CostVariation`, `RandomizeCost` and any name with both "random" and "cost" found none (about 42 % of
+  its code is encrypted on disk, so this bounds the strings, not the behaviour).
+- **Decided (2026-11-13), built as [`randomCost`](modding-guide.md#randomcost):** reading 1, with the price rolled in
+  advance and shown on the button (not a range), a deterministic roll kept in the saved game, the stock multipliers on
+  top, and an exact refund that gives the price back. The UI shows the exact price, not the base cost or the range.
 
 ### #56, #57 `UseBigHugeButton`
 

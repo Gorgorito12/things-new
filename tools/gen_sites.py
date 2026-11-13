@@ -1678,6 +1678,26 @@ SITES = [
     ("PlayerIconSettingSet", 0xA26361, 0x0B),
     ("PlayerIconStringCtor", 0x401A12, 8),
     ("PlayerIconStringDtor", 0x4010CA, 7),
+    # randomCost: in the cost getter 0x480B1E (bool thiscall(player, protoId, cost*, count), ret 0Ch), the copy of
+    # the player's proto's cost [edi+70h] into the result (lea ecx,[edi+70h] / push ecx / mov ecx,ebp /
+    # call 480A73h), before CostEscalation and the count scale it; EBX = the player, EDI = the player's proto. The
+    # hook redirects the call at +6
+    ("RandomCostGetterCopy", 0x480B55, 0x0B),
+    # randomCost: the Train enqueue FUN_009EAC35's two payments 0x8D946A (thiscall(player, cost), ret 4): the batch
+    # one (mov eax,[edi+8] / push ebp ... call 480B1Eh ... call 8D946Ah, EBP = the count) and the per-unit one
+    # (push 1 ... call 480B1Eh ... call 8D946Ah), EDI = the player's proto; the hooks redirect the calls at +20h
+    # and +1Dh
+    ("RandomCostPayBatch", 0x9EAF7A, 0x25),
+    ("RandomCostPayOne", 0x9EB036, 0x22),
+    # randomCost: the same function's getter call that fills each new entry's cost record (push 1 / push eax /
+    # push ecx / mov ecx,ebx / call 480B1Eh, then the copy into [entry+8]); the hook redirects the call at +11h
+    ("RandomCostRecord", 0x9EB280, 0x16),
+    # randomCost: the Train action's three refunds of an entry's cost record [entry+8] through 0x8D7004
+    # (thiscall(player, cost), ret 4): the cancel FUN_009EB363, the loop of a state change that empties the queue,
+    # and a failed spawn; the hooks redirect the calls at +9, +0Ah and +0Eh
+    ("RandomCostRefundCancel", 0x9EB435, 0x0E),
+    ("RandomCostRefundAll", 0x9EB603, 0x0F),
+    ("RandomCostRefundSpawn", 0x9EBA4F, 0x13),
 ]
 
 
