@@ -2213,7 +2213,8 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 - **The portrait bar.** It is WoL's `unitselectionpanel-unitHealthBarGreen`: no UI change. While there is
   overheal the DLL changes the texture of that bar's background and shortens its green part, and puts the
   background back when the overheal ends. The texture of the overheal end:
-  - **WoL copies one file:** `art\ui\uhc\health_overheal.ddt` (in the release zip; `tools/make_bar.py`
+  - **WoL copies one file:** `art\ui\uhc\health_overheal.ddt` (in the release zip; `tools/make_bar.py` of
+    [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools)
     draws it) into the game's `art\ui\uhc\` folder. It is an orange bar in the segment's default colour
     `FF8C00`, shaded like the game's green, yellow and red bars (16×8 texels, DXT1). When the file is there
     at startup, the end is orange (the texture `ui\uhc\health_overheal`).
@@ -2223,7 +2224,7 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
     packed in a `.bar` archive, which the DLL's check for the file does not see. A texture the game cannot
     find draws nothing: the bar's right end stays empty, with no error and no crash (tried 2026-11-12).
   - **`segment=RRGGBB` does not change the portrait:** the DLL writes no texture. For another colour, draw
-    one with `python -I tools/make_bar.py --colour 40C0FF --out health_blue.ddt`, copy it to
+    one with `python -I tools/make_bar.py --colour 40C0FF --out health_blue.ddt` (aoe3-blender-tools), copy it to
     `art\ui\uhc\` and name it: `bar=ui\uhc\health_blue`.
 - **`log`:** one line for the first unit of each proto whose reference differs from its max (once
   per proto name in a session).
@@ -4129,9 +4130,21 @@ customImpactTypes <Name> [<Name> ...] [log]
 - **Not for custom types:** the units thrown out of a building that is hit (`exitEffectSpawnChance` and the other values of
   `ExitBuilding`). An `.impacteffect` with no element of the type plays nothing for it, as in stock.
 - **Edit the `.xmb`:** the game reads `cannon.impacteffect.xmb` from `Art1.bar` before a loose `cannon.impacteffect.xml`,
-  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). Compile it with
-  `python -I tools/xmbedit.py from-xml cannon.impacteffect.xml cannon.impacteffect.xmb --compress` and put both in
-  `art\effects\impacts`.
+  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). A loose `.xmb` is read.
+- **Compile it with the tool:** `tools/xmbedit.py` of [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools),
+  one command each way, from that repo's folder (Python 3, nothing to install):
+  ```
+  python -I tools/xmbedit.py to-xml cannon.impacteffect.xmb      # -> cannon.impacteffect, to edit
+  python -I tools/xmbedit.py from-xml cannon.impacteffect        # -> cannon.impacteffect.xmb
+  ```
+  Start from the stock file (`python -I tools/bar.py <game>\art\Art1.bar impacts\cannon --extract <folder>`), add the
+  element, compile, and put the `.xmb` (and the source, for the next edit) in `art\effects\impacts`. A source named
+  `cannon.impacteffect.xml` compiles to `cannon.impacteffect.xmb` too. The output is plain, as the stock files are
+  (`--compress` also loads). `to-xml` keeps each element on its stored line, so an unedited file compiles back to the
+  stock `.xmb` byte for byte (all 14 stock impact effects, 2026-11-13); `xmbedit.py check <file.xmb>` proves it for a file.
+  **Tested (2026-11-13, WoL bed):** the stock `cannon` decompiled, the `<shipmetal>` element of the example above added,
+  compiled with the tool: `hook reached: customImpactTypes impact effect entry`, then `first impact of type ShipMetal
+  (15)`, and the splash off the Mahalla's walls.
 - **Bad arguments:** a stock name, a repeated name, a name of 32 characters or more, or no name: logged, and the key is not
   applied.
 - **Simulation:** no, it is drawing and sound only.
@@ -7048,7 +7061,7 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
 
 ![playerIcon in WoL](media/playerIcon-wol.gif)
 
-*In WoL, with `playerIcon uhc_blue` and the three test icons of `tools/make_icons.py` (a LAN game hosted alone, Abraham
+*In WoL, with `playerIcon uhc_blue` and the three test icons of `tools/playericons` (a LAN game hosted alone, Abraham
 Lincoln as the AI of player 2):* the host's slot shows the blue test icon; the host changes civ from the Dutch to
 Paraguay and back, and the icon stays. The AI keeps its civ's portrait. [Full video (MP4)](media/playerIcon-wol.mp4).
 
@@ -7203,7 +7216,7 @@ is needed for the ring, though [`resourceGatherAuras`](#resourcegatherauras), [`
 ![The seven rings in WoL](media/rings-palette.png)
 
 **1. Install the rings.** Copy every file of `tools/rings/` to `art\effects\uhc_rings\` in the game folder, and restart the game.
-`tools/make_rings.py` draws them: no pixel and no mesh comes from a game.
+`tools/make_rings.py` of [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) draws them (`--folder uhc_rings`): no pixel and no mesh comes from a game.
 
 **2. Put one on an aura.** Two tags on an `AutoRangedModify` action. A complete aura, in a unit's `.tactics` file:
 
@@ -7255,8 +7268,8 @@ It stays on the ground on a slope: the particle has `terraininteractiontype` 1 a
 The first line that fits wins, top to bottom in `SHAPES` in the script. For a building of another size, add a line there, such
 as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the files, the radius, and the side of its texture.
 
-**5. A new colour.** One line in `RINGS` in `tools/make_rings.py`, the main colour and the light one. Then
-`python -I tools/make_rings.py` and copy the files again.
+**5. A new colour.** One line in `RINGS` in `tools/make_rings.py` of aoe3-blender-tools, the main colour and the light one.
+Then, from that repo, `python -I tools/make_rings.py --out <this repo>\tools\rings --folder uhc_rings` and copy the files again.
 
 **What to know:**
 
@@ -7287,7 +7300,7 @@ More about the tools: [tools/README.md](../tools/README.md).
 `aura_wood.xml`, `aura_food.xml` and `aura_gold.xml` in `tools/rings` are a ring plus a floating icon of that resource, the
 same idea as DE's marker on what a Torp works, with our own art: name one in a `UnitResource` aura's
 `<modelattachment>`. The icon is a sprite that faces the camera, at a height by kind of unit in `ICON_HEIGHTS` of
-`tools/make_rings.py`. Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
+`tools/make_rings.py` (aoe3-blender-tools). Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
 so the icon is a second `<attachment>`, not a second `<assetreference>`.
 
 ### Rotating a building while placing it
