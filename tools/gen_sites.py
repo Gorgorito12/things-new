@@ -1117,6 +1117,15 @@ SITES = [
     # with the pushes before it and the use of EDI after it
     ("ShipActivateCall", 0x8584E7, 0x24),
     ("ShipQueueCaller", 0x66AEA0, 5),
+    # shipmentCounts, the send age: FUN_00858299's read of its argument, the queue entry being shipped, at
+    # [esp+24h] in the frame of the activation call (mov ecx,[esp+24h] / mov edx,[ecx] / lea eax,[esp+24h]);
+    # the head of the queue's add FUN_00857204 (thiscall(queue = [hc+288h], entry*), ret 4: push esi / push edi /
+    # mov edi,ecx / mov esi,[edi+4], replaced, 7 bytes), whose only caller is the send FUN_0085A724; the head of
+    # its removal FUN_00857257 (thiscall(queue, index, bool shift), ret 8: cmp byte [esp+8],0 (replaced, 5 bytes)
+    # / push esi / push edi / mov edi,ecx / jz), called by the queue update 0x4BF86F and the cancel 0x85ADD9
+    ("ShipEntryArg", 0x85856A, 0x0A),
+    ("ShipQueueAddHead", 0x857204, 7),
+    ("ShipQueueRemoveHead", 0x857257, 0x0B),
     # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
     # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
     # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at

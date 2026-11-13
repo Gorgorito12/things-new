@@ -954,22 +954,35 @@ Code: [techs](porting-code/techs.md#kothtimer).
 Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target of the shared tech subtypes
 (`AddTechPlayerSubtype`, in the [helpers](porting-code/helpers.md)) and `AddSyscall`.
 
+- **The send:** a 7-byte `jmp` at the head of the queue add FUN_00857204 (`56 57 8B F9 8B 77 04`: `push esi / push edi /
+  mov edi,ecx / mov esi,[edi+4]`), `thiscall(queue = [hc+288h], entry*)`, `ret 4`; the send FUN_0085A724 is its only
+  caller. Note the entry's card index `[entry+0]`, tech ID `[entry+4]` and the player's age `[[hc+8]+50h]` (hc = queue −
+  288h; cAge1 = 0), then run the five replaced bytes and `jmp 85720Bh`.
+- **The removal:** a 5-byte `jmp` at the head of FUN_00857257 (`80 7C 24 08 00`, `cmp byte [esp+8],0`), `thiscall(queue,
+  index, bool shift)`, `ret 8`, called when a card ships (0x4BF86F) or is cancelled (0x85ADD9). Forget the noted card of
+  entry `index`, then run the `cmp` and `jmp 85725Ch` (the `jz` there reads its flags). Match a noted card by card index,
+  tech ID and its rank among the entries with the same pair.
 - **The count:** a `call` at `0x8584FF` (`E8 23 4A 0F 00`, `call 94CF27h`) in the card shipment FUN_00858299. Entry:
-  ECX = EDI = the card tech's status entry, `[esp+4]` the player, five arguments, `ret 14h`. Note the player ID and
-  `[player+50h]` (its age, cAge1 = 0), run the activation with the stack as it is (keep the return address aside), then
-  add one to that player's count of that age. The card's effects run inside the activation: `includeself` adds the
-  card being shipped. Reset the counts when the world `[[0xC66234]+13Ch]` changes.
+  ECX = EDI = the card tech's status entry, ESI = the home city, `[esp+4]` the player, five arguments, `ret 14h`;
+  `[esp+3Ch]` is FUN_00858299's argument, the queue entry being shipped. Note the player ID and that entry's send age,
+  run the activation with the stack as it is (keep the return address aside), then add one to that player's count of
+  that age. The card's effects run inside the activation: `includeself` adds the card being shipped.
+- **Saved games:** keep the counts and the send ages of the queued cards on a living unit as saved markers (stat
+  modifiers no code reads, whose save copies four dwords; `savedmarkers.h`), rewritten from a world tick after a change
+  and moved when that unit dies; read them back when a new or loaded world appears.
 - **The subtype:** a 6-byte `jmp` over `ja 8D878Fh` at `0x8D843E` (`0F 87 4B 03 00 00`) in the player Data apply
   FUN_008D842B. Entry: EBP = subtype, EAX = subtype − 0Ah, the flags of `cmp eax,5Ah`, ESI = the player, the field
   `[esp+2Ch]` (the effect's `+10h`), the amount `[esp+34h]`. A stock ID continues at `0x8D8444`. For the new ID, write
   the proto into the field and `amount × count` into the amount, set EBP and `[esp+28h]` to 37h and EAX to 37h − 0Ah,
   and jump to `0x8D8444`: the stock `FreeHomeCityUnit` delivers the units. A count of 0: `mov al,1 / jmp 8D8D23h`.
 - **The parse:** the subtype's name goes through your subtype lookup; while the effect is read, keep its node (the
-  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` and `includeself`, and pack them
-  into the effect's `+10h`.
-- **The syscall:** `int xsGetShipmentCount(int playerID, int age)` in the XS group.
+  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` (one age or a range `N-M`) and
+  `includeself`, and pack them into the effect's `+10h`.
+- **The syscalls:** `int xsGetShipmentCount(int playerID, int age)` and `int xsGetShipmentCountRange(int playerID, int
+  firstAge, int lastAge)` in the XS group.
 - **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
-  `age='1'`: two units.
+  `age='1'`: two units; a card sent in Age II that arrives in Age III counts in Age II; save, load in a new process: the
+  same counts.
 
 ### orPrereqsQty
 
