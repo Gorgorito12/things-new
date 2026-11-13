@@ -11,6 +11,7 @@ Contents:
 - [damageOverTime](#damageovertime)
 - [spreadAnyAccuracy](#spreadanyaccuracy)
 - [containedUnitsROF](#containedunitsrof)
+- [numberOfShots](#numberofshots)
 - [accuracyTechs](#accuracytechs)
 - [broadsideMuzzleLimit](#broadsidemuzzlelimit)
 - [snareOnlyHitUnit](#snareonlyhitunit)
@@ -2564,9 +2565,9 @@ END
 
 Contract: [containedUnitsROF](../porting-to-another-dll.md#containedunitsrof).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`rofreads.h`](helpers.md#rof-reads), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `XmlText` `0x402733` (9 B), `RofWaitA` `0x48A821` (23 B), `RofWaitB` `0x48A99A` (23 B), `RofWaitC` `0x48EA0C` (23 B), `RofShot` `0x48F8AE` (64 B), `RofDelay` `0x48FA69` (42 B), `RofAnim` `0x4A1185` (26 B), `XmlAttribute` `0x598F37` (16 B), `RofNextChild` `0x5FA126` (4 B), `DotProtoActionCall` `0x5FA20E` (5 B), `TacticsActionCall` `0x5FA60A` (25 B), `RofScaleTag` `0x5FEDFC` (39 B).
+Sites: `XmlText` `0x402733` (9 B), `XmlAttribute` `0x598F37` (16 B), `RofNextChild` `0x5FA126` (4 B), `DotProtoActionCall` `0x5FA20E` (5 B), `TacticsActionCall` `0x5FA60A` (25 B), `RofScaleTag` `0x5FEDFC` (39 B).
 
 ### src/features/containedrof.cpp
 
@@ -2586,8 +2587,8 @@ Sites: `XmlText` `0x402733` (9 B), `RofWaitA` `0x48A821` (23 B), `RofWaitB` `0x4
 //
 // The interval: every attack action (HandAttack, RangedAttack and the other types of the class, vtable 0xB96278)
 // waits through 0x48FA69(action manager, ms), which also applies ROF modifiers. Five reads of the tactics ROF
-// [action+34h] feed it or the attack's animation rate; the hooks in hooks/containedrof_hooks.asm pass each one
-// through UhcContainedRofScale. An override ROF ([unitAction+6Ch]+28h, set by something other than the tactics)
+// [action+34h] feed it or the attack's animation rate; the shared hooks of rofreads.h pass each one through
+// ContainedRofScale. An override ROF ([unitAction+6Ch]+28h, set by something other than the tactics)
 // is not scaled.
 #include <windows.h>
 
@@ -2602,19 +2603,12 @@ Sites: `XmlText` `0x402733` (9 B), `RofWaitA` `0x48A821` (23 B), `RofWaitB` `0x4
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../rofreads.h"
 #include "../unittypes.h"
 
 extern "C" {
 void UhcContainedRofTagHook();
-void UhcContainedRofWaitAHook();
-void UhcContainedRofWaitBHook();
-void UhcContainedRofWaitCHook();
-void UhcContainedRofShotHook();
-void UhcContainedRofAnimHook();
 }
-
-// Entries in the table, read by the hooks to skip the call when no action has the attribute.
-extern "C" std::int32_t g_uhcContainedRofCount = 0;
 
 namespace {
 
@@ -2695,7 +2689,10 @@ unsigned g_tagLines = 0;
 unsigned g_invalidLines = 0;
 unsigned g_intervalLines = 0;
 
-void SyncCount() { g_uhcContainedRofCount = static_cast<std::int32_t>(g_entries.size()); }
+std::int32_t __stdcall ContainedRofScale(const char* unitAction, std::int32_t rof, uhc::RofRead read);
+
+// The shared ROF hooks call this key only while the table has an entry.
+void SyncCount() { uhc::SetRofGate(&ContainedRofScale, !g_entries.empty()); }
 
 // A ROF entry of this action is dropped by a later tag of the same action (a protoy <ProtoAction> after its
 // tactics <action>): the last tag wins, as for the stock bit.
@@ -2808,9 +2805,13 @@ std::int32_t __stdcall UhcContainedRofTag(const char* node, const char* proto, c
   return 1;
 }
 
-// From the five ROF reads: unitAction is the attack's unit action ([+4] its tactics action, [+10h] its unit),
-// rof the tactics ROF in ms (above 0). Returns the interval to use.
-std::int32_t __stdcall UhcContainedRofScale(const char* unitAction, std::int32_t rof) {
+}  // extern "C"
+
+namespace {
+
+// From the five ROF reads (rofreads.h), all treated alike: unitAction is the attack's unit action ([+4] its
+// tactics action, [+10h] its unit), rof the tactics ROF in ms (above 0). Returns the interval to use.
+std::int32_t __stdcall ContainedRofScale(const char* unitAction, std::int32_t rof, uhc::RofRead) {
   if (unitAction == nullptr || rof <= 0) {
     return rof;
   }
@@ -2853,7 +2854,8 @@ std::int32_t __stdcall UhcContainedRofScale(const char* unitAction, std::int32_t
   }
   return interval;
 }
-}
+
+}  // namespace
 
 namespace uhc {
 
@@ -2872,20 +2874,12 @@ Outcome ApplyContainedUnitsROF(const Config& config) {
   }
   if (!VerifyAll("containedUnitsROF",
                  {&sites::kRofScaleTag, &sites::kRofNextChild, &sites::kDotProtoActionCall, &sites::kTacticsActionCall,
-                  &sites::kXmlAttribute, &sites::kXmlText, &sites::kRofWaitA, &sites::kRofWaitB, &sites::kRofWaitC,
-                  &sites::kRofShot, &sites::kRofAnim, &sites::kRofDelay}) ||
-      !OnDatabaseLoad(&ResetForDataLoad)) {
+                  &sites::kXmlAttribute, &sites::kXmlText}) ||
+      !OnDatabaseLoad(&ResetForDataLoad) || !AddRofFilter(&ContainedRofScale, "containedUnitsROF")) {
     return Outcome::kFailed;
   }
   // cmp dword ptr [esp+10h],1 / mov eax,[ebp+64h] at 0x5FEE0C (8 B); the hook re-executes them for the stock tag.
-  // The ROF reads: mov r,[r+34h] / test r,r (5 B) at 0x48A821, 0x48A99A and 0x48EA0C; mov eax,[eax+34h] /
-  // cmp eax,ebx (5 B) at 0x48F8B5; mov ebx,[eax+34h] / mov eax,[esi+6Ch] (6 B) at 0x4A1189.
-  if (!WriteJmp(0x005FEE0C, reinterpret_cast<const void*>(&UhcContainedRofTagHook), 8) ||
-      !WriteJmp(0x0048A821, reinterpret_cast<const void*>(&UhcContainedRofWaitAHook), 5) ||
-      !WriteJmp(0x0048A99A, reinterpret_cast<const void*>(&UhcContainedRofWaitBHook), 5) ||
-      !WriteJmp(0x0048EA0C, reinterpret_cast<const void*>(&UhcContainedRofWaitCHook), 5) ||
-      !WriteJmp(0x0048F8B5, reinterpret_cast<const void*>(&UhcContainedRofShotHook), 5) ||
-      !WriteJmp(0x004A1189, reinterpret_cast<const void*>(&UhcContainedRofAnimHook), 6)) {
+  if (!WriteJmp(0x005FEE0C, reinterpret_cast<const void*>(&UhcContainedRofTagHook), 8)) {
     return Outcome::kFailed;
   }
   Log(L"containedUnitsROF: attacks with <ScaleByContainedUnits target=\"ROF\"> fire faster with the units inside "
@@ -2899,9 +2893,9 @@ Outcome ApplyContainedUnitsROF(const Config& config) {
 ### src/hooks/containedrof_hooks.asm
 
 ```asm
-; Hooks for containedUnitsROF (features/containedrof.cpp). Each is entered through a jmp written over the
-; stock code and leaves through an explicit jmp to a verified continuation (docs/engine-symbols.md,
-; "Garrison scaling").
+; The tag hook of containedUnitsROF (features/containedrof.cpp), entered through a jmp written over the stock code
+; and left through an explicit jmp to a verified continuation (docs/engine-symbols.md, "Garrison scaling"). Its
+; ROF reads are the shared hooks of rofreads_hooks.asm.
 .686
 .model flat, c
 option casemap :none
@@ -2909,18 +2903,10 @@ option casemap :none
 include common.inc
 
 UhcContainedRofTag PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
-UhcContainedRofScale PROTO STDCALL :DWORD, :DWORD
-
-EXTERNDEF g_uhcContainedRofCount:DWORD     ; actions with target="ROF"; 0: the hooks skip the call
 
 .data
 tagStock        dd 005FEE14h    ; jne 5FE713h: the stock handler's test of the value
 tagNext         dd 005FA126h    ; mov eax,[esp+1Ch]: the parser's next child
-waitA           dd 0048A826h    ; jbe 4A86C6h
-waitB           dd 0048A99Fh    ; jbe 4B33D5h
-waitC           dd 0048EA11h    ; jbe 4A857Fh
-shotNext        dd 0048F8BAh    ; jbe 48F8BEh
-animNext        dd 004A118Fh    ; test eax,eax (the override ROF [[esi+6Ch]+28h])
 
 .code
 
@@ -2957,99 +2943,407 @@ handled:
     jmp tagNext
 UhcContainedRofTagHook ENDP
 
-; The three waits after an attack that did not fire (the attack update FUN_0048A330 and the attack step at
-; 0x48E9DB), each `mov r,[r+34h] / test r,r` (5 bytes) before `jbe` and the delay call 0x48FA69(action
-; manager, ms). The hook re-executes the read, passes the value through UhcContainedRofScale and re-executes the
-; test, so the jbe sees the stock flags. Nothing else changes: pushad/popad keep every other register.
+END
+```
 
-; 0x48A821: EDI = the tactics action ([esi+4]), ESI = the unit action.
-UhcContainedRofWaitAHook PROC
-    TRACE_ONCE "containedUnitsROF wait (0x48A821)"
-    mov edi, dword ptr [edi+34h]        ; stolen 0x48A821
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push edi
-    push esi
-    call UhcContainedRofScale
-    mov dword ptr [esp], eax            ; popad's EDI
-    popad
-done:
-    test edi, edi                       ; stolen 0x48A824
-    jmp waitA
-UhcContainedRofWaitAHook ENDP
+## numberOfShots
 
-; 0x48A99A: EDI = the tactics action ([esi+4]), ESI = the unit action.
-UhcContainedRofWaitBHook PROC
-    TRACE_ONCE "containedUnitsROF wait (0x48A99A)"
-    mov edi, dword ptr [edi+34h]        ; stolen 0x48A99A
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push edi
-    push esi
-    call UhcContainedRofScale
-    mov dword ptr [esp], eax            ; popad's EDI
-    popad
-done:
-    test edi, edi                       ; stolen 0x48A99D
-    jmp waitB
-UhcContainedRofWaitBHook ENDP
+Contract: [numberOfShots](../porting-to-another-dll.md#numberofshots).
 
-; 0x48EA0C: ESI = the tactics action ([ebp+4]), EBP = the unit action.
-UhcContainedRofWaitCHook PROC
-    TRACE_ONCE "containedUnitsROF wait (0x48EA0C)"
-    mov esi, dword ptr [esi+34h]        ; stolen 0x48EA0C
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push esi
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`rofreads.h`](helpers.md#rof-reads), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `ShotsLaunchRet` `0x4999DA` (9 B).
+
+### src/features/shots.cpp
+
+```cpp
+// numberOfShots [projectiles] [log]: an attack fires a burst of <NumberOfShots> shots, <ShotInterval> seconds
+// apart, before its reload (its ROF); with "projectiles", each shot launches <NumberProjectiles> projectiles.
+//
+// Stock: an attack (vtable 0xB96278: HandAttack, RangedAttack and the other types of the class) fires one shot per
+// cycle. A cycle begins at 0x4A1185 ([unitAction+78h] = now, the animation's rate [unit+0B0h] from the ROF), the
+// shot is the launch 0x499422 (or 0x4DCFE2 without a projectile), [unitAction+68h] counts the shots, and the wait
+// after it is the ROF minus the time since the cycle began (0x48F8B5..0x48F8E9). <NumberProjectiles>, which
+// some mods' tactics carry from Age of Mythology, is not a tag of this exe: no string, no handler.
+//
+// The burst: the shared ROF reads (rofreads.h) see the shot count. A cycle whose shot is not the burst's last
+// (count mod N < N - 1) begins with the interval in place of the ROF, so its animation plays at that pace; after a
+// shot that does not end the burst (count mod N != 0) the wait is the interval. The last shot plays the stock
+// animation and waits the ROF: N - 1 quick shots, then a normal one and its reload. The count belongs to the unit
+// action, which a new target replaces, so a new target starts a new burst.
+//
+// The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
+// the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
+#include <windows.h>
+
+#include <cmath>
+#include <compare>
+#include <cstdint>
+#include <cwchar>
+#include <map>
+#include <string>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../rofreads.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcShotsLaunchHook();  // hooks/shots_hooks.asm
+// Above 0 while some action has more than one projectile: the launch hook asks UhcShotsProjectiles only then.
+std::int32_t g_uhcShotsProjectiles = 0;
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +140h database
+constexpr std::int32_t kMaxShots = 50;
+constexpr std::int32_t kMaxProjectiles = 32;
+constexpr double kMaxInterval = 60.0;          // seconds
+constexpr std::int32_t kDefaultIntervalMs = 250;
+constexpr unsigned kMaxTagLines = 200;
+constexpr unsigned kMaxInvalidLines = 50;
+constexpr unsigned kMaxShotLines = 60;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* Database() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
+// ProtoAction names: [database+1FD8h] holds one UTF-16 string per name index, [+1FDCh] the count.
+const wchar_t* ActionName(std::int32_t index) {
+  const char* database = Database();
+  if (database == nullptr || index < 0 || index >= Field<std::int32_t>(database, 0x1FDC)) {
+    return L"?";
+  }
+  const wchar_t* name = Field<const wchar_t* const*>(database, 0x1FD8)[index];
+  return name != nullptr ? name : L"?";
+}
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name != nullptr ? name : "?";
+}
+
+// Every player's copy of a proto and of its actions keeps the proto ID [proto+4] and the action's name index
+// [action+4], so the key finds the entry from the copy a unit attacks with.
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+struct Entry {
+  std::int32_t shots = 1;
+  std::int32_t intervalMs = kDefaultIntervalMs;
+  std::int32_t projectiles = 1;
+  unsigned shotLines = 0;  // "log": shots logged for this action
+};
+
+// Filled while the data loads (a later tag of the same action wins) and read on the game thread at each attack.
+std::map<ActionKey, Entry> g_entries;
+bool g_projectiles = false;  // "projectiles": <NumberProjectiles> is read
+bool g_log = false;
+unsigned g_tagLines = 0;
+unsigned g_invalidLines = 0;
+unsigned g_shotLines = 0;
+
+std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
+
+// The gates: the ROF filter while some action has a burst, the launch hook while some action has projectiles.
+void SyncGates() {
+  bool burst = false;
+  bool projectiles = false;
+  for (const auto& [key, entry] : g_entries) {
+    burst = burst || entry.shots > 1;
+    projectiles = projectiles || entry.projectiles > 1;
+  }
+  uhc::SetRofGate(&ShotsRof, burst);
+  g_uhcShotsProjectiles = projectiles ? 1 : 0;
+}
+
+void ResetForDataLoad(char*) {
+  g_entries.clear();
+  SyncGates();
+  g_tagLines = 0;
+  g_invalidLines = 0;
+  g_shotLines = 0;
+}
+
+const Entry* Find(const char* unitAction, const char** unitOut) {
+  const char* action = Field<const char*>(unitAction, 0x04);
+  const char* unit = Field<const char*>(unitAction, 0x10);
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  if (action == nullptr || proto == nullptr) {
+    return nullptr;
+  }
+  const auto found = g_entries.find(ActionKey{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)});
+  if (found == g_entries.end()) {
+    return nullptr;
+  }
+  if (unitOut != nullptr) {
+    *unitOut = unit;
+  }
+  return &found->second;
+}
+
+// From the shared ROF reads: the attack-start and after-shot reads of an action with a burst.
+std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read) {
+  if (read != uhc::RofRead::kAttackStart && read != uhc::RofRead::kAfterShot) {
+    return rof;
+  }
+  const char* unit = nullptr;
+  const Entry* entry = Find(unitAction, &unit);
+  if (entry == nullptr || entry->shots <= 1) {
+    return rof;
+  }
+  const std::int32_t count = Field<std::int32_t>(unitAction, 0x68);
+  const std::int32_t inBurst = count < 0 ? 0 : count % entry->shots;
+  const bool quick = read == uhc::RofRead::kAttackStart ? inBurst < entry->shots - 1 : inBurst != 0;
+  const std::int32_t result = quick ? entry->intervalMs : rof;
+  if (g_log && read == uhc::RofRead::kAfterShot && g_shotLines < kMaxShotLines &&
+      entry->shotLines < 4u * static_cast<unsigned>(entry->shots)) {
+    ++g_shotLines;
+    const_cast<Entry*>(entry)->shotLines += 1;
+    const char* action = Field<const char*>(unitAction, 0x04);
+    const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+    const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+    uhc::Log(L"numberOfShots: %u ms, unit %d (%hs/%ls) shot %d of its burst of %d (shots so far %d): wait %d ms%ls",
+             world == nullptr ? 0u : Field<std::uint32_t>(world, 0x108), Field<std::int32_t>(unit, 0x10),
+             ProtoName(Field<const char*>(unit, 0x5C)), ActionName(Field<std::int32_t>(action, 0x04)),
+             inBurst == 0 ? entry->shots : inBurst, entry->shots, count, result,
+             quick ? L" (the interval)" : L" (the ROF: reload)");
+  }
+  return result;
+}
+
+bool ParseInt(const wchar_t* text, std::int32_t low, std::int32_t high, std::int32_t* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  wchar_t* end = nullptr;
+  const long value = std::wcstol(text, &end, 10);
+  while (end != nullptr && (*end == L' ' || *end == L'\t' || *end == L'\r' || *end == L'\n')) {
+    ++end;
+  }
+  if (end == text || end == nullptr || *end != L'\0' || value < low || value > high) {
+    return false;
+  }
+  *out = static_cast<std::int32_t>(value);
+  return true;
+}
+
+bool ParseSeconds(const wchar_t* text, std::int32_t* outMs) {
+  if (text == nullptr) {
+    return false;
+  }
+  wchar_t* end = nullptr;
+  const double value = std::wcstod(text, &end);
+  while (end != nullptr && (*end == L' ' || *end == L'\t' || *end == L'\r' || *end == L'\n')) {
+    ++end;
+  }
+  if (end == text || end == nullptr || *end != L'\0' || !(value > 0.0) || value > kMaxInterval) {
+    return false;
+  }
+  const auto ms = static_cast<std::int32_t>(std::floor(value * 1000.0 + 0.5));
+  *outMs = ms < 1 ? 1 : ms;
+  return true;
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  enum class Kind { kShots, kInterval, kProjectiles } kind;
+  if (_wcsicmp(tag.name, L"NumberOfShots") == 0) {
+    kind = Kind::kShots;
+  } else if (_wcsicmp(tag.name, L"ShotInterval") == 0) {
+    kind = Kind::kInterval;
+  } else if (g_projectiles &&
+             (_wcsicmp(tag.name, L"NumberProjectiles") == 0 || _wcsicmp(tag.name, L"NumberOfProjectiles") == 0)) {
+    kind = Kind::kProjectiles;
+  } else {
+    return;
+  }
+  const wchar_t* source = tag.source == uhc::ActionSource::kTactics ? L"tactics" : L"protoy";
+  const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
+  const ActionKey key{Field<std::int32_t>(tag.proto, 0x04), Field<std::int32_t>(tag.action, 0x04)};
+  if (key.name < 0) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"numberOfShots: %hs (%ls): <%ls> before the action's <name>; ignored (put <name> first)",
+               ProtoName(tag.proto), source, tag.name);
+    }
+    return;
+  }
+  std::int32_t value = 0;
+  bool valid = false;
+  switch (kind) {
+    case Kind::kShots:
+      valid = ParseInt(text, 1, kMaxShots, &value);
+      break;
+    case Kind::kInterval:
+      valid = ParseSeconds(text, &value);
+      break;
+    case Kind::kProjectiles:
+      valid = ParseInt(text, 1, kMaxProjectiles, &value);
+      break;
+  }
+  if (!valid) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"numberOfShots: %hs/%ls (%ls): <%ls>%ls</%ls> is not %ls; ignored", ProtoName(tag.proto),
+               ActionName(key.name), source, tag.name, text, tag.name,
+               kind == Kind::kInterval      ? L"a number of seconds above 0 and at most 60"
+               : kind == Kind::kShots       ? L"a whole number from 1 to 50"
+                                            : L"a whole number from 1 to 32");
+    }
+    return;
+  }
+  Entry& entry = g_entries[key];
+  switch (kind) {
+    case Kind::kShots:
+      entry.shots = value;
+      break;
+    case Kind::kInterval:
+      entry.intervalMs = value;
+      break;
+    case Kind::kProjectiles:
+      entry.projectiles = value;
+      break;
+  }
+  SyncGates();
+  if (g_log && g_tagLines < kMaxTagLines) {
+    ++g_tagLines;
+    uhc::Log(L"numberOfShots: %hs/%ls (%ls): %ls %ls", ProtoName(tag.proto), ActionName(key.name), source, tag.name,
+             text);
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the launch hook (0x48F88D), while some action has projectiles: how many times to call the launch for this
+// shot (at least 1).
+std::int32_t __stdcall UhcShotsProjectiles(const char* unitAction) {
+  if (unitAction == nullptr) {
+    return 1;
+  }
+  const char* unit = nullptr;
+  const Entry* entry = Find(unitAction, &unit);
+  if (entry == nullptr || entry->projectiles <= 1) {
+    return 1;
+  }
+  if (g_log && g_shotLines < kMaxShotLines && entry->shotLines < 8) {
+    ++g_shotLines;
+    const_cast<Entry*>(entry)->shotLines += 1;
+    const char* action = Field<const char*>(unitAction, 0x04);
+    uhc::Log(L"numberOfShots: unit %d (%hs/%ls) launches %d projectiles for one shot", Field<std::int32_t>(unit, 0x10),
+             ProtoName(Field<const char*>(unit, 0x5C)), ActionName(Field<std::int32_t>(action, 0x04)),
+             entry->projectiles);
+  }
+  return entry->projectiles;
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyNumberOfShots(const Config& config) {
+  const Config::Args* args = config.First("numberOfShots");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "projectiles") == 0) {
+      g_projectiles = true;
+    } else {
+      Log(L"numberOfShots: unexpected argument %hs (expected: [projectiles] [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet}) ||
+      !OnDatabaseLoad(&ResetForDataLoad) || !AddActionTagHandler(&ActionTagRead) ||
+      !AddRofFilter(&ShotsRof, "numberOfShots")) {
+    return Outcome::kFailed;
+  }
+  // call 499422h (5 B) at 0x48F88D, the launch of the attack step's shot.
+  if (g_projectiles && !WriteJmp(0x0048F88D, reinterpret_cast<const void*>(&UhcShotsLaunchHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s)%ls%ls (multiplayer "
+      L"unverified)",
+      kDefaultIntervalMs / 1000.0,
+      g_projectiles ? L", and <NumberProjectiles> projectiles per shot" : L"",
+      g_log ? L"; tags and the first shots logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/shots_hooks.asm
+
+```asm
+; The launch hook of numberOfShots "projectiles" (features/shots.cpp), entered through a jmp written over the
+; stock call and left through an explicit jmp to its verified continuation (docs/engine-symbols.md, "Rate of fire").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcShotsProjectiles PROTO STDCALL :DWORD
+
+EXTERNDEF g_uhcShotsProjectiles:DWORD      ; above 0 while some action has more than one projectile
+
+.data
+stockLaunch     dd 00499422h    ; thiscall(unitAction, unit, target, [[frame+2CCh]+28h], byte, [ua+6Ch]), ret 14h
+launchNext      dd 0048F892h    ; mov eax,[ebp+6Ch]: after the launch, ranged and melee join
+
+.code
+
+; Replaces call 499422h (5 bytes) at 0x48F88D, the attack step's launch of a shot: ECX = EBP = the unit action, the
+; five arguments pushed ([esp] the unit [ebp+10h], [esp+4] the target EDI, [esp+8] [[esp+2CCh]+28h], [esp+0Ch] the
+; byte of tactics flag 18h, [esp+10h] the override object [ebp+6Ch], pushed at 0x48F83B). For an action with N
+; projectiles the launch runs N - 1 extra times with copies of the five arguments, then once with the stock ones.
+; The launch keeps EBX, ESI, EDI and EBP (callee-saved); the code at 0x48F892 reloads EAX from [ebp+6Ch] and
+; compares it with EBX (0), and writes ECX and EDX before it reads them.
+UhcShotsLaunchHook PROC
+    TRACE_ONCE "numberOfShots projectiles (0x48F88D)"
+    cmp g_uhcShotsProjectiles, 0
+    je single
     push ebp
-    call UhcContainedRofScale
-    mov dword ptr [esp+4], eax          ; popad's ESI
-    popad
-done:
-    test esi, esi                       ; stolen 0x48EA0F
-    jmp waitC
-UhcContainedRofWaitCHook ENDP
-
-; Replaces mov eax,[eax+34h] / cmp eax,ebx (5 bytes) at 0x48F8B5, the wait after a shot (ranged, through the
-; launch 0x499422, and melee, through 0x4DCFE2, join at 0x48F892): EAX = the tactics action ([ebp+4]), EBP = the
-; unit action, EBX = 0. The stock code then waits ROF minus the time since the attack began ([ebp+78h]).
-UhcContainedRofShotHook PROC
-    TRACE_ONCE "containedUnitsROF shot (0x48F8B5)"
-    mov eax, dword ptr [eax+34h]        ; stolen 0x48F8B5
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push eax
-    push ebp
-    call UhcContainedRofScale
-    mov dword ptr [esp+1Ch], eax        ; popad's EAX
-    popad
-done:
-    cmp eax, ebx                        ; stolen 0x48F8B8
-    jmp shotNext
-UhcContainedRofShotHook ENDP
-
-; Replaces mov ebx,[eax+34h] / mov eax,[esi+6Ch] (6 bytes) at 0x4A1189, where an attack begins
-; ([esi+78h] = now) and sets its animation rate [unit+0B0h] from the ROF: EAX = the tactics action ([esi+4]),
-; ESI = the unit action. The flags are free: test eax,eax follows.
-UhcContainedRofAnimHook PROC
-    TRACE_ONCE "containedUnitsROF attack start (0x4A1189)"
-    mov ebx, dword ptr [eax+34h]        ; stolen 0x4A1189
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push ebx
+    call UhcShotsProjectiles            ; EAX = projectiles for this shot (at least 1)
+    cmp eax, 1
+    jle single
     push esi
-    call UhcContainedRofScale
-    mov dword ptr [esp+10h], eax        ; popad's EBX
-    popad
-done:
-    mov eax, dword ptr [esi+6Ch]        ; stolen 0x4A118C
-    jmp animNext
-UhcContainedRofAnimHook ENDP
+    mov esi, eax
+extra:
+    push dword ptr [esp+14h]            ; the override object ([esp+10h] before push esi)
+    push dword ptr [esp+14h]            ; the byte
+    push dword ptr [esp+14h]            ; the third
+    push dword ptr [esp+14h]            ; the target
+    push dword ptr [esp+14h]            ; the unit
+    mov ecx, ebp
+    call stockLaunch                    ; ret 14h
+    dec esi
+    cmp esi, 1
+    jg extra
+    pop esi
+single:
+    mov ecx, ebp                        ; the unit action, as at 0x48F88B
+    call stockLaunch                    ; the stock call, on the stock arguments
+    jmp launchNext
+UhcShotsLaunchHook ENDP
 
 END
 ```

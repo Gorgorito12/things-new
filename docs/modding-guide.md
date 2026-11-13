@@ -2884,6 +2884,7 @@ Attacks, armor, and what a hit does.
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units, `InstantBallistics` included, scatter like that whatever their accuracy and hit what it lands on. | **new** | The tags are there; the unit type or proto name of the units that should always scatter, in the cfg. | confirmed (single player) |
 | [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
+| [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
@@ -3739,6 +3740,88 @@ containedUnitsROF [log]
   - 30 Crossbowmen against 30 Hussars and two Blockhouses with units inside, 60 s: 787 fps, update 0.2 ms, no frame over
     50 ms; key off 728 fps, update 0.2 ms, none over 50 ms.
   - Not tested: multiplayer, beside WoL's DLL, a ship or another unit that really holds units in WoL's data.
+- **Since 2026-11-12** its five ROF hooks are shared with [`numberOfShots`](#numberofshots) (the log names them
+  `ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)` and so on); with both keys the burst's last
+  shot waits the divided ROF.
+
+#### numberOfShots
+
+*An attack can fire several quick shots before it reloads, and a shot can fire several projectiles, like a shotgun.*
+
+**Added:** Thursday 2026-11-12 18:00 · **Filmed in WoL:** Thursday 2026-11-12 18:30
+
+![numberOfShots in WoL](media/numberOfShots-wol.gif)
+
+*In WoL, with `numberOfShots log` (3 `Skirmisher`s, selected, whose ranged attacks have
+`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 5 enemy `Settler`s; the
+log at the bottom):* each Skirmisher fires three shots 0.4 s apart, then waits its 3 s ROF. The settlers' HP is at the top:
+two fall in the first two bursts, all five by 49 s. [Full video (MP4)](media/numberOfShots-wol.mp4).
+
+![numberOfShots in WoL, key off](media/numberOfShots-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* one shot every 3 s; at 50 s two settlers have fallen.
+[Full video (MP4)](media/numberOfShots-wol-control.mp4).
+
+![numberOfShots projectiles in WoL](media/numberOfShots-projectiles-wol.gif)
+
+*In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
+`<NumberProjectiles>4</NumberProjectiles><MaxSpread>2</MaxSpread><SpreadFactor>0.2</SpreadFactor>`, test data):* each shot
+is a fan of four tracers, each pellet landing where its own spread takes it. Three settlers fall in 57 s.
+[Full video (MP4)](media/numberOfShots-projectiles-wol.mp4).
+
+![numberOfShots projectiles in WoL, key off](media/numberOfShots-projectiles-wol-control.gif)
+
+*In WoL, `spreadAnyAccuracy Skirmisher` without this key (the same data):* one tracer per shot; after 52 s no settler has
+fallen. [Full video (MP4)](media/numberOfShots-projectiles-wol-control.mp4).
+
+```
+numberOfShots [projectiles] [log]
+```
+
+- **In WoL today (WoL #55):** an attack fires one shot per ROF. No tag gives several shots before the reload, and
+  `<numberprojectiles>`, which 94 of WoL's tactics actions carry (from Age of Mythology; 3 to 6 on the shotguns, 12 on
+  the Schwarzlose), is not read at all: the exe has no such tag (that is what "it does not work" is). So every shot is
+  one projectile.
+- **The burst:** an attack with `<NumberOfShots>N</NumberOfShots>` fires N shots: the first N − 1 play the attack
+  animation at the pace of `<ShotInterval>` (seconds, default 0.25) and wait that long; the last one plays it at the
+  ROF's pace and waits the ROF: the reload. So a burst takes (N − 1) × interval + ROF. Each shot is a full stock shot:
+  its own accuracy roll, damage and projectile. Melee attacks take it too (N hits). A new target starts a new burst.
+
+  ```xml
+  <action>
+      <name stringid="...">RangedAttack</name>
+      ...
+      <rof>3.0</rof>
+      <numberofshots>3</numberofshots>
+      <shotinterval>0.4</shotinterval>
+  </action>
+  ```
+
+  The tags also work in a `<ProtoAction>` of `protoy.xml` (the last one read wins). `NumberOfShots` 1 to 50, `ShotInterval`
+  above 0 and up to 60 s; another value is logged and ignored.
+- **`projectiles`:** each shot of an action with `<NumberProjectiles>N</NumberProjectiles>` (or `<NumberOfProjectiles>`,
+  1 to 32) launches N projectiles at once, each with its own accuracy roll and its own spread
+  ([`spreadAnyAccuracy`](#spreadanyaccuracy)), and each dealing the action's damage: divide the damage by N for the same
+  total. **Careful:** the option reads the `numberprojectiles` WoL's tactics already have, so it multiplies the damage of
+  those 94 actions (most have 1; the shotguns 3 to 6; check `UHC.log`: with `log`, every one is listed while the data
+  loads). The broadside's projectiles are [`broadsideMuzzleLimit`](#broadsidemuzzlelimit)'s.
+- **Which one Maston asked for:** `numberOfShots` for "several shots before the reload". `projectiles` is the fix of
+  `numberOfProjectiles` as AoM meant it (pellets); to use the old tag for the burst instead, rename it in the data.
+- **Not covered:** the panel's ROF and damage, and the AI's estimate of a unit's damage, still read the data (one shot per
+  ROF). An ROF that something other than the tactics sets (an ability's own) gets no burst.
+- **With other keys:** [`containedUnitsROF`](#containedunitsrof) shares the ROF hooks; with both, the reload is the divided
+  ROF and the interval is not divided. `spreadAnyAccuracy` scatters each projectile.
+- **Log:** `numberOfShots: applied`, `hook reached: ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)`
+  and, with `projectiles`, `numberOfShots projectiles (0x48F88D)`. With `log`: each tag read (at most 200), and the first
+  shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
+  far 1): wait 400 ms (the interval)`, `... shot 3 of its burst of 3 ...: wait 3000 ms (the ROF: reload)`, `unit 2
+  (Skirmisher/VolleyRangedAttack) launches 4 projectiles for one shot`.
+- **Simulation:** changes combat: every player needs the same line and data.
+- **Saved games:** nothing to keep: the tags are read again when the data loads, and the count is the attack's own.
+- **Tested in WoL (2026-11-12, single player):** the scenes above: shots at 29.73, 30.13 and 30.80 s, the next burst at
+  33.53 s, for each of the 3 Skirmishers; key off one shot per 3 s. With `projectiles` and 4 pellets, 4 launches per shot
+  (log) and 5 settlers dead or nearly in 57 s, against 132 HP of damage in 52 s with one. PERF_SHOTS. Not tested:
+  multiplayer, a saved game.
 
 #### broadsideMuzzleLimit
 
@@ -7100,6 +7183,7 @@ What the panels and the fog of war show.
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
 | [`steadyHitpointBars`](#steadyhitpointbars) | The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | **new** | Nothing. | confirmed (single player, UI) |
+| [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
 
 #### nativePreview
 
@@ -7485,6 +7569,52 @@ steadyHitpointBars [UnitType ...] [log]
   Hussar charge, Settlers, a Caravel and a Fluyt, a Barracks, a saved game loaded, and a 100 s skirmish against a
   European AI with no XS error. Not tested: an orange segment on screen (no Hussar was above its 100 % in this data),
   types listed in the key, beside WoL's DLL, multiplayer.
+
+#### inventoryBars
+
+*While Alt is held, units, mines, bushes and carcasses show a second bar: how much of their resources is left.*
+
+**Added:** Thursday 2026-11-12 18:00 · **Filmed in WoL:** Thursday 2026-11-12 18:25
+
+![inventoryBars in WoL](media/inventoryBars-wol.gif)
+
+*In WoL, with `inventoryBars log`, Alt held (a gold mine, a berry bush, a `Sheep` and 4 `Settler`s of player 1, who hunt a
+`Deer`):* the mine has a yellow bar, the bush and the sheep a red one (food) under their HP bars; the deer's carcass has a
+red bar that shrinks as the settlers gather it (400 food). [Full video (MP4)](media/inventoryBars-wol.mp4).
+
+![inventoryBars in WoL, key off](media/inventoryBars-wol-control.gif)
+
+*In WoL, key off (the same scene, Alt held):* Alt shows the HP bars of the settlers and the sheep, as in stock, and
+nothing on the mine, the bush or the carcass. [Full video (MP4)](media/inventoryBars-wol-control.mp4).
+
+```
+inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
+```
+
+- **In WoL today (WoL #53):** holding Alt shows the HP bar of every unit that has one (that is the stock game, with the
+  profile option on), but nothing shows what a mine, a bush, a carcass or a WoL unit with resources still holds.
+- **Effect:** while Alt is held, every unit with resources (an `<InitialResource>`) gets a bar right under its HP bar:
+  what it holds now as a share of what it was created with, in the colour of the resource it holds most of: gold yellow,
+  wood brown, food red, any other resource `other=RRGGBB` (default light blue). A fattened sheep or cow above its
+  `InitialResource` shows a full bar.
+- **Units with no HP bar:** mines, bushes and carcasses get the bar where their HP bar would be, a little higher. Only
+  what the player sees now: a mine under the fog shows nothing. `noSites` turns this part off. Trees are left out (a
+  forest would be a wall of bars); `trees` adds them.
+- **Options:** `UnitType`, one unit type or proto name: only units of that type (mines, bushes and carcasses too).
+  `always`: the bars show whenever the HP bars do, Alt or not.
+- **Multiplayer:** display only. Every player can have it or not.
+- **Log:** `inventoryBars: units with resources show what they hold under their HP bar while Alt is held; units with no
+  HP bar but trees (mines, bushes) too (display only)`, `hook reached: floating bars: bar queued (0x45FB6C)`, `inventoryBars
+  no HP bar (0x452F1B)`, `inventoryBars corpse (0x452ED4)`. With `log`, once per proto: `inventoryBars: unit 2 (Deer) holds
+  248.7 of 400.0 (resource 2 most): bar 62 % at (43.0, 4.9, 43.1), Alt held`.
+- **With other keys:** [`overhealHitpointBars`](#overhealhitpointbars) `segment` adds its bars through the same hooks
+  since 2026-11-12; [`steadyHitpointBars`](#steadyhitpointbars) moves the HP bar, and this bar with it.
+- **Performance:** PERF_BARS
+- **Tested in WoL (2026-11-12, single player):** the scene above, Alt posted to the window (the game reads Alt from its
+  messages); a carcass at 248.7 of 400 food showed a 62 % bar. A gold mine, a berry bush, a deer, a sheep and a cow;
+  before Alt was pressed, no bar. Trees showed their bars in an early build, high over their crowns, which is why they
+  are left out by default; the `trees` option ran in the performance runs below but was not looked at on screen. Not
+  tested: multiplayer, a WoL unit with its own resources, a real Alt key (the window got a posted key).
 
 ## 6. Editing the game data
 

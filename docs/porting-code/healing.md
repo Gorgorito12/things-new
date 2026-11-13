@@ -748,9 +748,9 @@ END
 
 Contract: [overhealHitpointBars](../porting-to-another-dll.md#overhealhitpointbars).
 
-Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`floatingbars.h`](helpers.md#floating-bars), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `DynamicVbFull` `0x40A689` (25 B), `DynamicVbLock` `0x40A6A2` (69 B), `ProgressGadget` `0x44B8B8` (35 B), `IsA` `0x44D7FA` (105 B), `IsATrue` `0x44F139` (5 B), `HpBarRenderStart` `0x45C4AF` (63 B), `HpBarRenderLoop` `0x45C60B` (1415 B), `HealthRatio` `0x45F295` (72 B), `OverhealBarRatio` `0x45FAA7` (17 B), `OverhealSegmentQueue` `0x45FB3F` (50 B), `HpBarQueue` `0x45FB71` (111 B), `MaxHitpointsGetter` `0x480408` (38 B), `OverhealGroupRatio` `0x4C5012` (15 B), `GadgetRef` `0x4C519C` (27 B), `OverhealPortraitTail` `0x4C82E6` (258 B), `OverhealStatMax` `0x4D7560` (81 B), `OverhealStatBase` `0x4D75DA` (69 B), `OverhealTextStat` `0x4D7647` (21 B), `OverhealStatRow` `0x4D76DB` (9 B), `BStringFromId` `0x58EA52` (25 B), `ProgressFill` `0x590772` (73 B), `InitialHitpointsTag` `0x5F5CE3` (6 B), `MaxHitpointsTag` `0x5F5D39` (6 B), `OverhealPanelMax` `0x698B18` (38 B), `OverhealPortraitColours` `0x69A614` (22 B), `OverhealTextStatSplit` `0x69A9B0` (27 B), `GroupHealthRow` `0x69A9D3` (316 B), `OverhealInfoProto` `0x9AF33B` (25 B), `OverhealInfoBase` `0x9AFA07` (45 B), `OverhealInfoMax` `0x9AFA34` (35 B), `HealthBarGadgets` `0x9BAEE5` (135 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `ProgressGadget` `0x44B8B8` (35 B), `IsA` `0x44D7FA` (105 B), `IsATrue` `0x44F139` (5 B), `HealthRatio` `0x45F295` (72 B), `OverhealBarRatio` `0x45FAA7` (17 B), `MaxHitpointsGetter` `0x480408` (38 B), `OverhealGroupRatio` `0x4C5012` (15 B), `GadgetRef` `0x4C519C` (27 B), `OverhealPortraitTail` `0x4C82E6` (258 B), `OverhealStatMax` `0x4D7560` (81 B), `OverhealStatBase` `0x4D75DA` (69 B), `OverhealTextStat` `0x4D7647` (21 B), `OverhealStatRow` `0x4D76DB` (9 B), `BStringFromId` `0x58EA52` (25 B), `ProgressFill` `0x590772` (73 B), `InitialHitpointsTag` `0x5F5CE3` (6 B), `MaxHitpointsTag` `0x5F5D39` (6 B), `OverhealPanelMax` `0x698B18` (38 B), `OverhealPortraitColours` `0x69A614` (22 B), `OverhealTextStatSplit` `0x69A9B0` (27 B), `GroupHealthRow` `0x69A9D3` (316 B), `OverhealInfoProto` `0x9AF33B` (25 B), `OverhealInfoBase` `0x9AFA07` (45 B), `OverhealInfoMax` `0x9AFA34` (35 B), `HealthBarGadgets` `0x9BAEE5` (135 B).
 
 ### src/features/overheal.cpp
 
@@ -787,7 +787,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 // half is a white gradient tinted by the vertex colour, the player's [player+0C8h]) in a single
 // draw call; the segment is a second record queued right after the unit's own bar, with a player
 // ID no player has, whose six vertices are then moved to the right end of the bar and given the
-// segment colour. The stat row's HP text uses the UI markup <color=r, g, b> for the colour. A unit
+// segment colour (the shared floating bar hooks, floatingbars.h). The stat row's HP text uses the UI markup <color=r, g, b> for the colour. A unit
 // at or below its 100 %, and every unmarked unit (whose HP never exceeds its max), keeps the stock
 // bar and texts. The selection panel's bar under the portrait is one of three progress bar gadgets
 // (green, yellow, red) of uiunitselection.xml, looked up by name at panel creation; "segment" adds
@@ -818,6 +818,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 #include <vector>
 
 #include "../features.h"
+#include "../floatingbars.h"
 #include "../generated/sites.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
@@ -828,42 +829,14 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 namespace {
 
 constexpr std::size_t kMaxTypes = 8;  // the size of g_uhcOverhealTypes
-constexpr std::uint32_t kGameGlobal = 0x00C66234;    // game; +13Ch world
-constexpr std::uint32_t kDeviceGlobal = 0x00C66044;  // render device; +660h its dynamic vertex buffer
-constexpr std::int32_t kSegmentPlayer = static_cast<std::int32_t>(0x804F5648);  // as in overheal_hooks.asm
-constexpr std::uint32_t kRecordSize = 0x1C;                  // a queued bar
-constexpr std::uint32_t kVertexSize = 0x24;                  // six per bar
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+constexpr std::uint32_t kSegmentPlayer = 0x804F5648;  // a floating bar kind ('OVH', negative: no player has it)
 constexpr std::uint32_t kDefaultSegmentColour = 0xFFFF8C00;  // ARGB orange
-
-// FUN_0045FB71: queues a floating HP bar, thiscall(world, pos*, scale, fill, player, colour byte).
-using QueueBarFn = bool(__fastcall*)(const char* world, void* unused, const float* pos, float scale, float fill,
-                                     std::int32_t player, std::uint32_t colourByte);
-const auto kQueueBar = reinterpret_cast<QueueBarFn>(0x0045FB71);
 
 // Proto names already logged with "log"; only the game thread touches them.
 std::set<std::string, std::less<>> g_loggedProtos;
 std::set<std::string, std::less<>> g_loggedSegments;
-bool g_loggedDrop = false;
 std::uint32_t g_segmentColour = kDefaultSegmentColour;
-
-struct Vertex {  // the renderer's vertex (24h bytes)
-  float position[3];
-  float normal[3];
-  std::uint32_t colour;
-  float u;
-  float v;
-};
-static_assert(sizeof(Vertex) == kVertexSize);
-
-struct BarRecord {  // a queued bar (1Ch bytes)
-  float position[3];
-  float scale;
-  float fill;
-  std::int32_t player;
-  std::uint8_t colourByte;
-  std::uint8_t padding[3];
-};
-static_assert(sizeof(BarRecord) == kRecordSize);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -1020,9 +993,6 @@ void UhcOverhealStatMaxHook();
 void UhcOverhealStatBaseHook();
 void UhcOverhealInfoBaseHook();
 void UhcOverhealInfoMaxHook();
-void UhcOverhealSegmentQueueHook();
-void UhcOverhealSegmentRenderHook();
-void UhcOverhealSegmentVertexHook();
 void UhcOverhealTextStatHook();
 void UhcOverhealTextStatSplitHook();
 void UhcOverhealPortraitHook();
@@ -1047,22 +1017,21 @@ void __stdcall UhcOverhealLogReference(const char* unit, float reference, float 
            static_cast<double>(Field<float>(proto, 0x98)));
 }
 
-// From the bar queue hook (0x45FB6C), after the unit's own bar was queued at pos: queues the
-// overheal segment when HP is above the reference (OverhealReference: the max for an unmarked
-// unit, so never). The record's fill is the segment's share of the bar, at most 1.
-void __stdcall UhcOverhealQueueSegment(const char* unit, const float* pos, float reference) {
+// From the shared floating bar hook (floatingbars.h), after the unit's own bar was queued at pos: queues the
+// overheal segment when HP is above the reference (the max for an unmarked unit, so never). The record's fill is
+// the segment's share of the bar, at most 1. A foundation's bar is its build fraction: no segment.
+void OverhealBarQueued(const char* unit, const float* pos, bool constructing, bool) {
+  if (constructing) {
+    return;
+  }
+  const float reference = UhcOverhealReferenceOf(unit);
   const float hp = Field<float>(unit, 0x64);
   if (!(reference > 1e-6f) || !(hp > reference)) {
     return;
   }
-  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
-  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
-  if (world == nullptr) {
-    return;
-  }
   float share = (hp - reference) / reference;
   share = share < 1.0f ? share : 1.0f;
-  kQueueBar(world, nullptr, pos, 1.0f, share, kSegmentPlayer, 0xFF);
+  uhc::QueueFloatingBar(pos, share, kSegmentPlayer);
   if (g_uhcOverhealLog != 0) {
     const char* proto = Field<const char*>(unit, 0x5C);
     const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
@@ -1077,47 +1046,18 @@ void __stdcall UhcOverhealQueueSegment(const char* unit, const float* pos, float
   }
 }
 
-// From the renderer hook (0x45C4B9), before the vertex lock: when the queue's six vertices per bar
-// would not fit in the dynamic vertex buffer ([vb+4] bytes; stock then draws no bar that frame),
-// the segment records are removed so that the stock bars are drawn as without the feature.
-void __stdcall UhcOverhealSegmentFit(char* world) {
-  const std::int32_t count = Field<std::int32_t>(world, 0x8D4);
-  const char* device = *reinterpret_cast<const char* const*>(kDeviceGlobal);
-  const char* buffer = device == nullptr ? nullptr : Field<const char*>(device, 0x660);
-  if (count <= 0 || buffer == nullptr ||
-      static_cast<std::uint64_t>(count) * 6 * kVertexSize <= Field<std::uint32_t>(buffer, 4)) {
-    return;
-  }
-  auto* records = Field<BarRecord*>(world, 0x8D0);
-  std::int32_t kept = 0;
-  for (std::int32_t i = 0; i < count; ++i) {
-    if (records[i].player != kSegmentPlayer) {
-      records[kept++] = records[i];
-    }
-  }
-  *reinterpret_cast<std::int32_t*>(world + 0x8D4) = kept;
-  if (!g_loggedDrop && kept != count) {
-    g_loggedDrop = true;
-    uhc::Log(L"overhealHitpointBars: %d bars do not fit in the vertex buffer (%u bytes): this frame's %d overheal "
-             L"segments were dropped (logged once)",
-             count, Field<std::uint32_t>(buffer, 4), count - kept);
-  }
-}
-
-// From the renderer loop hook (0x45CB72), for a segment record: its six vertices, written by the
-// stock loop like a full bar (fill = the segment's share), become the right end of the bar. The
-// left ones (v0, v2, v3, at P - scale/2 x B) move right by scale x (1 - share) x B; every vertex
-// takes the fill part of the texture (u 1.0 on the left, 0.5 on the right, as for a full bar) and
-// the segment colour.
-void __stdcall UhcOverhealSegmentVertices(const char* world, std::int32_t offset, Vertex* vertices,
-                                          const char* camera) {
-  const auto* record = reinterpret_cast<const BarRecord*>(Field<const char*>(world, 0x8D0) + offset);
-  float share = record->fill;
+// From the shared renderer loop hook, for a segment record: its six vertices, written by the stock loop like a full
+// bar (fill = the segment's share), become the right end of the bar. The left ones (v0, v2, v3, at P - scale/2 x B)
+// move right by scale x (1 - share) x B; every vertex takes the fill part of the texture (u 1.0 on the left, 0.5 on
+// the right, as for a full bar) and the segment colour.
+void OverhealSegmentVertices(const uhc::FloatingBarRecord& record, uhc::FloatingBarVertex* vertices,
+                             const char* camera) {
+  float share = record.fill;
   share = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
-  const float shift = record->scale * (1.0f - share);
+  const float shift = record.scale * (1.0f - share);
   const float* right = reinterpret_cast<const float*>(camera + 0x28);  // B, the camera's right vector
   for (int k = 0; k < 6; ++k) {
-    Vertex& vertex = vertices[k];
+    uhc::FloatingBarVertex& vertex = vertices[k];
     const bool left = k == 0 || k == 2 || k == 3;
     if (left) {
       for (int axis = 0; axis < 3; ++axis) {
@@ -1367,9 +1307,7 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
     return Outcome::kFailed;
   }
   if (segment && !VerifyAll("overhealHitpointBars segment",
-                            {&sites::kOverhealSegmentQueue, &sites::kHpBarQueue, &sites::kHpBarRenderStart,
-                             &sites::kHpBarRenderLoop, &sites::kDynamicVbLock, &sites::kDynamicVbFull,
-                             &sites::kOverhealTextStat, &sites::kOverhealTextStatSplit,
+                            {&sites::kOverhealTextStat, &sites::kOverhealTextStatSplit,
                              &sites::kOverhealPortraitTail, &sites::kOverhealPortraitColours,
                              &sites::kHealthBarGadgets, &sites::kProgressGadget,
                              &sites::kGadgetRelease, &sites::kProgressFill,
@@ -1425,9 +1363,6 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
     // Each replaces 5 or 6 bytes and re-does them (a push of the format, or the stolen
     // instructions), then jumps to the next instruction.
     const Hook segmentHooks[] = {
-        {0x0045FB6C, 5, &UhcOverhealSegmentQueueHook},   // jmp 4516B3h: after the bar was queued
-        {0x0045C4B9, 6, &UhcOverhealSegmentRenderHook},  // mov ebx,[ebp+8D4h]: the renderer's count
-        {0x0045CB72, 6, &UhcOverhealSegmentVertexHook},  // add eax,1 / add ecx,1Ch: a record's end
         {0x004D7651, 5, &UhcOverhealTextStatHook},       // push '%d/%d': the stat row
         {0x0069A9C0, 5, &UhcOverhealTextStatSplitHook},  // push '%d/%d (%d+%d)': the stat row
         {0x004C83DF, 9, &UhcOverhealPortraitHook},       // lea ecx,[esp+70h] / call 4010CAh: the portrait bar
@@ -1436,6 +1371,11 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
       if (!WriteJmp(hook.va, reinterpret_cast<const void*>(hook.target), hook.length)) {
         return Outcome::kFailed;
       }
+    }
+    // The segment record: queued after the unit's bar, drawn over its right end (floatingbars.h).
+    if (!AddFloatingBarQueued(&OverhealBarQueued, "overhealHitpointBars segment") ||
+        !AddFloatingBarKind(kSegmentPlayer, &OverhealSegmentVertices, "overhealHitpointBars segment")) {
+      return Outcome::kFailed;
     }
   }
   // mov edi,2 / mov [esp+2Ch],edi: the row counter after the HP row.
@@ -1497,13 +1437,9 @@ EXTERNDEF g_uhcOverhealFmtPlain:WORD     ; '<color=r, g, b>%d/%d</color>'
 EXTERNDEF g_uhcOverhealFmtSplit:WORD     ; '<color=r, g, b>%d/%d (%d+%d)</color>'
 
 UhcOverhealLogReference PROTO STDCALL unit:DWORD, reference:DWORD, maxHp:DWORD
-UhcOverhealQueueSegment PROTO STDCALL unit:DWORD, pos:DWORD, reference:DWORD
-UhcOverhealSegmentFit PROTO STDCALL world:DWORD
-UhcOverhealSegmentVertices PROTO STDCALL world:DWORD, recordOffset:DWORD, vertices:DWORD, camera:DWORD
 UhcOverhealPortrait PROTO STDCALL panel:DWORD, selGroup:DWORD
 UhcOverhealStatRow PROTO STDCALL panel:DWORD, unit:DWORD, row:DWORD
 
-SEGMENT_PLAYER EQU 804F5648h            ; the player ID of a segment record ('OVH', negative: no player colour)
 
 .data
 protoIsType     dd 0044D7FAh    ; bool thiscall(proto, int unitTypeId): integer code, ret 4
@@ -1516,9 +1452,6 @@ statBaseNext    dd 004D761Bh    ; fnstcw / ... / fistp [esp+0Ch]: the stat row's
 infoBaseNext    dd 009AFA30h    ; fnstcw / mov ecx,esi / ... / fistp [esp+20h]: ObjectInfo's base
 infoMaxNext     dd 009AFA53h    ; fnstcw / ... / fistp [esp+24h]: ObjectInfo's max
 minHitpoints    real4 1.0E-6    ; the stock threshold of 0x45F295 (0xB9FB64)
-barQueueExit    dd 004516B3h    ; where the bar chunk goes after queueing the bar (jmp at 0x45FB6C)
-renderCountNext dd 0045C4BFh    ; test ebx,ebx / mov [esp+3Ch],ebx / jle: the renderer's record count
-vertexLoopNext  dd 0045CB78h    ; add edi,24h / add ebx,24h / cmp eax,[ebp+8D4h]: the next record
 textStatNext    dd 004D7656h    ; push eax / call 444EFBh: the stat row's '%d/%d'
 textStatSplitNext dd 0069A9C5h  ; push ecx / call 444EFBh: the stat row's '%d/%d (%d+%d)'
 bstringFree     dd 004010CAh    ; void thiscall(BString*): the free 0x4C83E3 calls
@@ -1673,68 +1606,6 @@ UhcOverhealBarHook PROC
     call OverhealRatio
     jmp barNext
 UhcOverhealBarHook ENDP
-
-; Replaces jmp 4516B3h at 0x45FB6C, right after the floating bar of unit ESI was queued (0x45FB67):
-; with "segment", a unit above its 100 % gets a second record, the overheal segment, which the
-; renderer hooks below draw over the right end of the bar. [esp+18h] = the bar's position (the
-; record copies it), [esp+15h] = under construction (that bar is the build progress). The FPU
-; stack is empty here and every register is kept for 0x4516B3.
-UhcOverhealSegmentQueueHook PROC
-    TRACE_ONCE "overhealHitpointBars segment queue (0x45FB6C)"
-    cmp byte ptr [esp+15h], 0
-    jne done
-    pushad
-    mov ecx, esi
-    call OverhealReference          ; ST0 = the unit's 100 % (its max when not marked)
-    sub esp, 4
-    fstp dword ptr [esp]            ; reference
-    lea eax, [esp+3Ch]              ; the position: [esp+18h] at entry, +20h pushad, +4 reference
-    push eax
-    push esi                        ; unit
-    call UhcOverhealQueueSegment    ; queues the segment when HP > reference
-    popad
-done:
-    jmp barQueueExit
-UhcOverhealSegmentQueueHook ENDP
-
-; Replaces mov ebx,[ebp+8D4h] at 0x45C4B9 in the bar renderer FUN_0045C4AF (EBP = world): before
-; the vertex lock, UhcOverhealSegmentFit drops the segment records when the queue would not fit
-; in the dynamic vertex buffer, so they never cost a stock bar; then the stolen load of the count.
-UhcOverhealSegmentRenderHook PROC
-    TRACE_ONCE "overhealHitpointBars segment fit (0x45C4B9)"
-    pushad
-    push ebp
-    call UhcOverhealSegmentFit
-    popad
-    mov ebx, dword ptr [ebp+8D4h]   ; stolen 0x45C4B9
-    jmp renderCountNext
-UhcOverhealSegmentRenderHook ENDP
-
-; Replaces add eax,1 / add ecx,1Ch at 0x45CB72, the end of the renderer's per-record loop: ECX =
-; the record's offset in [ebp+8D0h], EDI = its sixth vertex, ESI = the camera. The six vertices of
-; a segment record are rewritten (UhcOverhealSegmentVertices); every other record is left as the
-; stock loop wrote it. The FPU stack is empty here (checked over one iteration); the flags are
-; set again by the stolen adds.
-UhcOverhealSegmentVertexHook PROC
-    TRACE_ONCE "overhealHitpointBars segment vertices (0x45CB72)"
-    push edx
-    mov edx, dword ptr [ebp+8D0h]
-    cmp dword ptr [edx+ecx+14h], SEGMENT_PLAYER
-    pop edx
-    jne done
-    pushad
-    push esi                        ; camera
-    lea eax, [edi-0B4h]             ; the first vertex, five 24h-byte vertices back
-    push eax
-    push ecx                        ; the record's offset
-    push ebp                        ; world
-    call UhcOverhealSegmentVertices
-    popad
-done:
-    add eax, 1                      ; stolen 0x45CB72
-    add ecx, 1Ch                    ; stolen 0x45CB75
-    jmp vertexLoopNext
-UhcOverhealSegmentVertexHook ENDP
 
 ; Replaces a push of an HP text's format (5 bytes) right after the HP ([esp]) and the 100 % value
 ; ([esp+4]) were pushed: with "segment", an HP above it gets the coloured copy of the format. Only

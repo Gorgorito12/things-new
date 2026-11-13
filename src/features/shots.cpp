@@ -5,7 +5,7 @@
 // cycle. A cycle begins at 0x4A1185 ([unitAction+78h] = now, the animation's rate [unit+0B0h] from the ROF), the
 // shot is the launch 0x499422 (or 0x4DCFE2 without a projectile), [unitAction+68h] counts the shots, and the wait
 // after it is the ROF minus the time since the cycle began (0x48F8B5..0x48F8E9). <NumberProjectiles>, which
-// WoL's tactics carry from Age of Mythology, is not a tag of this exe: no string, no handler.
+// some mods' tactics carry from Age of Mythology, is not a tag of this exe: no string, no handler.
 //
 // The burst: the shared ROF reads (rofreads.h) see the shot count. A cycle whose shot is not the burst's last
 // (count mod N < N - 1) begins with the interval in place of the ROF, so its animation plays at that pace; after a
