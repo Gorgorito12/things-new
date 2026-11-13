@@ -6938,7 +6938,7 @@ playerIcon <avatarId>
 - **Choosing an icon:** the cfg value is the only way; there is no picker in the lobby. One avatar per copy of the game.
 - **Which pictures:** the mod's own. Ship the avatar table and the `.ddt` files with the mod, so every player has
   them and sees everyone's icon.
-- **In game:** the key works in the lobby only. WoL's observer files already show `art\specvatars\<playerName>.ddt`
+- **In game:** the key works in the lobby only. WoL's observer files already show `art\spec\avatars\<playerName>.ddt`
   in game through the stock text markup, with no DLL.
 - **An unknown ID** (not in any table, or no table at all): the slot keeps the civ portrait, as stock does.
 - **Other players:** a player without this key sees your icon if they have the same table and picture, until your next
