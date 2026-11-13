@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 13:06 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
+| Friday 2026-11-13 11:50 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-13 10:46 | [`randomCost`](#randomcost) | Added. `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | The tag on the protos that want it. |
 | Friday 2026-11-13 10:03 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
 | Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
@@ -44,7 +46,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
 | Thursday 2026-11-12 18:01 | [`customWalls`](#customwalls) | Added. A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. |
 | Thursday 2026-11-12 17:40 | [`customImpactTypes`](#customimpacttypes) | Filmed in WoL, with a control. New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. |
-| Thursday 2026-11-12 16:03 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
@@ -57,7 +58,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](bug-fixes.md#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](bug-fixes.md#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
-| Monday 2026-11-09 08:13 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Added. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
 | Sunday 2026-11-08 10:23 | [`annexFacing`](#annexfacing) | Added. An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) faces the building it belongs to, also when the AI places it, and falls when that building dies or is destroyed. | The tag on the annexes; a placement distance that leaves room for the turned annex. |
 | Sunday 2026-11-08 10:10 | [`containedUnitsROF`](#containedunitsrof) | Added. An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | The attribute on the attacks that want it (none has it today). |
@@ -2213,7 +2213,8 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 - **The portrait bar.** It is WoL's `unitselectionpanel-unitHealthBarGreen`: no UI change. While there is
   overheal the DLL changes the texture of that bar's background and shortens its green part, and puts the
   background back when the overheal ends. The texture of the overheal end:
-  - **WoL copies one file:** `art\ui\uhc\health_overheal.ddt` (in the release zip; `tools/make_bar.py`
+  - **WoL copies one file:** `art\ui\uhc\health_overheal.ddt` (in the release zip; `tools/make_bar.py` of
+    [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools)
     draws it) into the game's `art\ui\uhc\` folder. It is an orange bar in the segment's default colour
     `FF8C00`, shaded like the game's green, yellow and red bars (16×8 texels, DXT1). When the file is there
     at startup, the end is orange (the texture `ui\uhc\health_overheal`).
@@ -2223,7 +2224,7 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
     packed in a `.bar` archive, which the DLL's check for the file does not see. A texture the game cannot
     find draws nothing: the bar's right end stays empty, with no error and no crash (tried 2026-11-12).
   - **`segment=RRGGBB` does not change the portrait:** the DLL writes no texture. For another colour, draw
-    one with `python -I tools/make_bar.py --colour 40C0FF --out health_blue.ddt`, copy it to
+    one with `python -I tools/make_bar.py --colour 40C0FF --out health_blue.ddt` (aoe3-blender-tools), copy it to
     `art\ui\uhc\` and name it: `bar=ui\uhc\health_blue`.
 - **`log`:** one line for the first unit of each proto whose reference differs from its max (once
   per proto name in a session).
@@ -4129,9 +4130,21 @@ customImpactTypes <Name> [<Name> ...] [log]
 - **Not for custom types:** the units thrown out of a building that is hit (`exitEffectSpawnChance` and the other values of
   `ExitBuilding`). An `.impacteffect` with no element of the type plays nothing for it, as in stock.
 - **Edit the `.xmb`:** the game reads `cannon.impacteffect.xmb` from `Art1.bar` before a loose `cannon.impacteffect.xml`,
-  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). Compile it with
-  `python -I tools/xmbedit.py from-xml cannon.impacteffect.xml cannon.impacteffect.xmb --compress` and put both in
-  `art\effects\impacts`.
+  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). A loose `.xmb` is read.
+- **Compile it with the tool:** `tools/xmbedit.py` of [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools),
+  one command each way, from that repo's folder (Python 3, nothing to install):
+  ```
+  python -I tools/xmbedit.py to-xml cannon.impacteffect.xmb      # -> cannon.impacteffect, to edit
+  python -I tools/xmbedit.py from-xml cannon.impacteffect        # -> cannon.impacteffect.xmb
+  ```
+  Start from the stock file (`python -I tools/bar.py <game>\art\Art1.bar impacts\cannon --extract <folder>`), add the
+  element, compile, and put the `.xmb` (and the source, for the next edit) in `art\effects\impacts`. A source named
+  `cannon.impacteffect.xml` compiles to `cannon.impacteffect.xmb` too. The output is plain, as the stock files are
+  (`--compress` also loads). `to-xml` keeps each element on its stored line, so an unedited file compiles back to the
+  stock `.xmb` byte for byte (all 14 stock impact effects, 2026-11-13); `xmbedit.py check <file.xmb>` proves it for a file.
+  **Tested (2026-11-13, WoL bed):** the stock `cannon` decompiled, the `<shipmetal>` element of the example above added,
+  compiled with the tool: `hook reached: customImpactTypes impact effect entry`, then `first impact of type ShipMetal
+  (15)`, and the splash off the Mahalla's walls.
 - **Bad arguments:** a stock name, a repeated name, a name of 32 characters or more, or no name: logged, and the key is not
   applied.
 - **Simulation:** no, it is drawing and sound only.
@@ -7048,7 +7061,7 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
 
 ![playerIcon in WoL](media/playerIcon-wol.gif)
 
-*In WoL, with `playerIcon uhc_blue` and the three test icons of `tools/make_icons.py` (a LAN game hosted alone, Abraham
+*In WoL, with `playerIcon uhc_blue` and the three test icons of `tools/playericons` (a LAN game hosted alone, Abraham
 Lincoln as the AI of player 2):* the host's slot shows the blue test icon; the host changes civ from the Dutch to
 Paraguay and back, and the icon stays. The AI keeps its civ's portrait. [Full video (MP4)](media/playerIcon-wol.mp4).
 
@@ -7203,7 +7216,7 @@ is needed for the ring, though [`resourceGatherAuras`](#resourcegatherauras), [`
 ![The seven rings in WoL](media/rings-palette.png)
 
 **1. Install the rings.** Copy every file of `tools/rings/` to `art\effects\uhc_rings\` in the game folder, and restart the game.
-`tools/make_rings.py` draws them: no pixel and no mesh comes from a game.
+`tools/make_rings.py` of [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) draws them (`--folder uhc_rings`): no pixel and no mesh comes from a game.
 
 **2. Put one on an aura.** Two tags on an `AutoRangedModify` action. A complete aura, in a unit's `.tactics` file:
 
@@ -7255,8 +7268,8 @@ It stays on the ground on a slope: the particle has `terraininteractiontype` 1 a
 The first line that fits wins, top to bottom in `SHAPES` in the script. For a building of another size, add a line there, such
 as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the files, the radius, and the side of its texture.
 
-**5. A new colour.** One line in `RINGS` in `tools/make_rings.py`, the main colour and the light one. Then
-`python -I tools/make_rings.py` and copy the files again.
+**5. A new colour.** One line in `RINGS` in `tools/make_rings.py` of aoe3-blender-tools, the main colour and the light one.
+Then, from that repo, `python -I tools/make_rings.py --out <this repo>\tools\rings --folder uhc_rings` and copy the files again.
 
 **What to know:**
 
@@ -7287,7 +7300,7 @@ More about the tools: [tools/README.md](../tools/README.md).
 `aura_wood.xml`, `aura_food.xml` and `aura_gold.xml` in `tools/rings` are a ring plus a floating icon of that resource, the
 same idea as DE's marker on what a Torp works, with our own art: name one in a `UnitResource` aura's
 `<modelattachment>`. The icon is a sprite that faces the camera, at a height by kind of unit in `ICON_HEIGHTS` of
-`tools/make_rings.py`. Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
+`tools/make_rings.py` (aoe3-blender-tools). Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
 so the icon is a second `<attachment>`, not a second `<assetreference>`.
 
 ### Rotating a building while placing it

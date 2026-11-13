@@ -46,7 +46,7 @@ Rules:
 - **Read `UHC.log` next to the exe** (`engine-ext\engine-ext.log` in a bed with an `engine-ext` folder, where `testbed.py` deploys `dinput8.dll` and leaves `UHC.dll` alone): `applied` / `FAILED`, and `hook reached: …`. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
 - **`applied` is not `reached`:** hook the callee or the head rather than a call site another DLL may detour; beside WoL's DLL, `tech subtype lookup` at the old call 0x6206D7 was applied and never ran.
 - **Every test video shows the feature on screen:** the units it acts on selected (`record --select`), a still camera (`--frame`), `--perf`, `normalZoom` set by console before the game loads, `--crop` at native pixels, `--master` into `rea/media-masters/`, and the GIF from `tools/make_gifs.py` (800 px, 8 fps, 12 s, 4 MB; cuts in `tools/gifs.txt`). Vary the civ, public civs only, and film a control with the key off. A/B every hot-path key with `perfprobe.py`.
-- **An aura is filmed with its ring,** the one of `tools/rings` copied to `art/effects/uhc_rings` in the bed and removed after, in a scene with a Town Center, and the ring marks only what gets the effect: if a frame cannot show that, change the scene. Say in the control's caption when the ring is there with the key off.
+- **An aura is filmed with its ring,** the one of `tools/rings` (drawn by aoe3-blender-tools' `make_rings.py --folder uhc_rings`) copied to `art/effects/uhc_rings` in the bed and removed after, in a scene with a Town Center, and the ring marks only what gets the effect: if a frame cannot show that, change the scene. Say in the control's caption when the ring is there with the key off.
 - **Check the AI after data or combat changes.** `XS: Error 0003: could not compile file 'aiLoaderStandard.xs'` means the AI is dead; `python -I tools/re/trace_xs.py <log>` shows the hidden error.
 - **Definition of done:** the checklist in [`docs/developer-guide.md`, section 4](docs/developer-guide.md#4-definition-of-done), before a feature is reported as done.
 - **Two games at once:** only with `multipleInstances background` in both cfgs, and another session's game only if it agreed. Such a copy ignores real input: `click`, `exec` and `record` work; a test that needs `rkey`, `drag` or `wheel` runs alone without `background`. Stop yours when one asks. Stop a tracer with Ctrl+C, never by killing it.
@@ -123,6 +123,10 @@ A loader exe is the stock exe with the Authenticode certificate stripped (hence 
 - **Beside another `UHC.dll`:** the target `EngineExt` builds the same sources as `dinput8.dll`, a proxy of the system DLL the exe imports. Its DllMain only moves the boot stub's last `jmp` (0xB836EC), so `EngineExtMain` runs after the loader's `UHCMain` and before the game's entry point. It reads and writes only `engine-ext\` (`engine-ext.cfg`, `engine-ext.log`, its data files), never 0xC65083, `Startup` or `data\uhc`, and has its own exe guard. A site the other DLL patched fails `VerifyAll`, so that key logs FAILED and writes nothing. `hostfiles.h` holds the paths that differ; `startup.cpp` is what both builds run. Not `version.dll`: it loads from System32 here. Key table: `docs/wol-uhc-map.md`.
 
 Full byte layout: `docs/binaries.md`.
+
+## Art and models
+
+**Rule:** any work on art (models `.gr2`, textures `.ddt`, anim files, `.dmg`, impact effects, icons, new buildings or units) goes through the sibling repo `C:\Users\Jeison\Documents\GitHub\aoe3-blender-tools` (read its CLAUDE.md): use its Granny, DDT and anim code and its tools, and add a missing tool there rather than here. When a bug lives in a mod's art, fix the file with such a tool as well as, or instead of, a DLL key. That repo is public: naming mods or teams there is fine, but no mod files or survey reports in it.
 
 ## REA
 

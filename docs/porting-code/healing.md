@@ -796,7 +796,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 // share is above 0, the green part is filled short (1 - that share) and the bar's background
 // drawable [bar+140h] gets the overheal texture (vtable +7Ch, as the setter 0x5CAF02 calls it), so the
 // right end shows it. The texture is "bar=<texture>", else ui\uhc\health_overheal (the orange bar of
-// tools/make_bar.py, in the segment's default colour) when art\ui\uhc\health_overheal.ddt is in the game
+// aoe3-blender-tools' tools/make_bar.py, in the segment's default colour) when art\ui\uhc\health_overheal.ddt is in the game
 // folder, else the game's ui\ingame\ingame_ui_health_yellow. When the overheal ends the UI data's
 // texture, ui\ingame\ui_health_bar, is put back.
 //

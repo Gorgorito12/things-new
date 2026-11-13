@@ -727,7 +727,7 @@ namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
 constexpr std::uint32_t kTickMs = 250;
-constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 20, 24, 30};  // the sizes make_rings.py writes
+constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 20, 24, 30};  // the sizes aoe3-blender-tools' make_rings.py writes
 
 using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
