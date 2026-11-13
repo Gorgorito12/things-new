@@ -971,6 +971,8 @@ steadyHitpointBars [UnitType ...] [log]
 
 *The age-up dialog shows only as many politicians as it has places, instead of crashing the game.*
 
+**Added:** Friday 2026-11-13 09:01 · **Filmed in WoL:** Friday 2026-11-13 09:01
+
 ![politicianPlacesFix in WoL](media/politicianPlacesFix-wol.gif)
 
 *In WoL, with `politicianPlacesFix log` (a Dutch skirmish against the British AI, test data: six politicians of the
