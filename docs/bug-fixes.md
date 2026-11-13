@@ -209,9 +209,14 @@ impactBoneFix [all] [log]
 ```
 
 - **In WoL today:** JTMaston's #49. The Middle East buildings (Afghans, Persians, Saudis, Uzbeks: `art\WoL\buildings\ME`)
-  use `stone` and `rooftile`, and any of them with `wood` shows the bug. Shipping data that already does: `oasis1/2/4.dmg`
-  put `wood` on 15 impact points of `ME\temple\Temple2_dmg_Model`, whose impact bones are scaled by 100, and `TOW`'s
-  `tower.dmg` puts it on 7 points of `TowerDamagedTest_Model` (found by the scan below; not filmed).
+  use `stone` and `rooftile`, and any of them with `wood` shows the bug. Nothing in shipping WoL shows the streaks today
+  (checked 2026-11-13; this corrects an earlier reading of the scan below):
+  - `oasis1/2/4.dmg` put `wood` on 15 impact points and name `ME\temple\Temple2_dmg_Model`, but the game takes the model
+    from the `<simskeleton>` of the anim file, and `oasis.xml` gives `Oasis1/2/4_dmg_Model`, whose impact bones have
+    length 1;
+  - the ME Temple (`church.xml`, `Temple2_dmg_Model`, whose impact bones are at 100) uses `temple.dmg`, all `stone`;
+  - `TOW`'s `tower.dmg` puts `wood` on 7 points of `TowerDamagedTest_Model`, but its bones are at 1/26, not 100: three
+    Falconets on the `Torre` (WoL's models, key off) threw no streaks; the splinters are drawn too small to be seen.
 - **Why:** an impact effect whose `<particleset>` names an `.xml` (stock `cannon.impacteffect`'s `<wood>` names
   `effects\impacts\cannonball_impact_wood.xml`) is a visual, and the game hangs it on the bone of the impact point it hit,
   with the bone's whole frame. The bones of these models are scaled by 100 (the export's centimetres); the stock House's
@@ -260,11 +265,22 @@ impactBoneFix [all] [log]
 
   Only `wood` has an `.xml` visual in this copy's impact effects (`cannon`, `explosivecannon`, `flesh`, `corpse`). 20
   fixable models have `.dmg` impact points on scaled bones (Mahalla 6, Forge, Foundry, Gunsmith, Madrasah 2 each,
-  Caravanserai, Citadel, Royal Court, Temple 1 each, TOW tower 2); the two with `wood` are named above. 74 files keep a
+  Caravanserai, Citadel, Royal Court, Temple 1 each, TOW tower 2); none of them is drawn with `wood` today (above). 74 files keep a
   bone the tool must leave: 64 a root or impact bone with debris meshes below it (the death models, and the `fountain*_dmg`
   and `huka_damaged` impact points, all `stone`), 31 bones scaled unevenly. Run the tool on the buildings: the units'
   bones are untested in game, and a model hung on another by one of its own bones (`<attach frombone=…>`, the hats) may be
   placed through that bone's frame.
+- **Ready set for JTMaston (2026-11-13):** the tool over every building folder of `C:\AoE3-UHC-WoLReal` (`WoL\buildings`,
+  `TOW\buildings`, `buildings`, `War of the Triple Alliance\buildings`; all the affected building models are loose files):
+  1,308 models, 119 with bones to fix, none refused. The set ships the 107 whose bones are at the export's 100 (75 on the
+  Royal Court's flag, 90 on `british_hq_corps_base`): 671 bones, `WoL\buildings\ME` 90 (the
+  `props\native\grounds` 6 among them), `WoL\buildings\immigrants` 16, `buildings\modern` 1; 7.0 MB of Oodle models become 16.5 MB uncompressed. Left out, as they are: the
+  TOW tower and tower lvl3 (1/26 and 1/15, also the lvl3 copy under `art\buildings`), the Croatian and French `colony`
+  models (1/39) and `kumara_field_damaged` (11): not the centimetre export, their authors may have sized flags and smoke to
+  those bones, and they show no streaks. The zip unzips over WoL's folder and replaces WoL's own loose files, so an
+  `originals` zip of the same 107 files goes with it, and its README (English and Spanish) says to back up first. In game
+  only the Mahalla's fixed models are tested so far (above); the Persian skirmish with the other ME buildings, the Royal
+  Court and the Temple with `wood` were stopped by a Windows Firewall prompt for the copy's exe, which left its window black.
 - **Simulation:** no, it is drawing only.
 - **Log:** `impactBoneFix: effects attached to impact bones get unit-length axes`, `hook reached: impactBoneFix dummy frame,
   path 1 (0x4BE21E)` and `path 2 (0x4BE88D)`; with `log`, the first bone it scales and its length.
