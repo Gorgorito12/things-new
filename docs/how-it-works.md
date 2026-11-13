@@ -1484,6 +1484,25 @@ returns −1, and the hook restores ECX, re-executes the two stolen instructions
 - The result depends only on game state (the player's units, techs, age), so every machine computes the same.
 - `techPrereqRecheck` verifies the evaluator's stock bytes before this key writes them (it applies first).
 
+### kothTimer
+
+**The stock time.** When a team takes the hill (`ypKingsHill`, proto ID `[db+5F88h]`; the hill's update, 0x4C9BBD,
+counts the units around it and, in a King of the Hill game, byte `[0xCF07BD]` = game setting 27h, reaches 0x6A7AEE),
+FUN_00948F32 (thiscall on the team) starts the team's timer: `0x9F02DD() − [team+84h]` seconds, the end at now + 1000 ×
+that (0x948A1F), and the "KOTHVictoryTimer" panel. FUN_009F02DD reads the victory settings of `DefaultVP.xml`
+(`[world+0A8h]`, loaded by 0x9F0B90): `+104h` + (`[world+5Ch]` − 1) × `+108h` when `+108h` > 0, − (`[world+18Ch]` −
+`+10Ch`) × `+110h`, with `[world+5Ch]` the player slots (Gaia included) and `[world+18Ch]` the teams (Gaia's too). Its
+only caller is 0x948F95.
+
+**The hook.** A `jmp` over its first instruction, `mov eax,[0C66234h]`, leads to `UhcKothTimeHook`: `TRACE_ONCE`,
+`UhcKothTime(settings)`. It counts the players 1 .. `[world+5Ch]` − 1 of the world's player array `[world+58h]` and the
+distinct teams `[player+10h]` among them, takes the time of the table's entry, logs it with the stock value, and the hook
+returns it with `ret`. With no table it returns 80000000h, and the hook restores ECX, re-executes the load and jumps to
+0x9F02E2.
+
+**Why it is safe.** The function keeps its contract (thiscall, no arguments, EAX); EAX, ECX and EDX are free. The counts
+come from the game's player array, the same on every machine, and the time is an integer as stock's.
+
 ### shipmentCounts
 
 **Where a card is shipped.** The shipment queue's update (FUN_004BF86F, its cold part calls FUN_00858299 at

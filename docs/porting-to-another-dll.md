@@ -933,6 +933,17 @@ Code: [techs](porting-code/techs.md#techprereqrecheck).
   keep the IDs whose definition (record `+0`) has a prerequisite with byte `[p+5]` = 0 in
   `[def+1Ch][0..byte def+20h)`.
 
+### kothTimer
+
+Code: [techs](porting-code/techs.md#kothtimer).
+
+- **The hook** at `0x9F02DD` (`A1 34 62 C6 00`, `mov eax,[0C66234h]`), the head of the King of the Hill time,
+  `int thiscall(settings)`, plain `ret`; one caller, 0x948F95. Return the seconds in EAX with `ret`, or re-execute the
+  load and jump to `0x9F02E2`.
+- **The counts:** players 1 .. `[world+5Ch]` − 1 of `[world+58h]`, teams the distinct `[player+10h]` among them.
+- **Data only:** the stock formula's four tags in `DefaultVP.xml` already give a linear time by players and teams.
+- **Test:** a King of the Hill game with 2 and 3 players: the panel shows the table's times.
+
 ### shipmentCounts
 
 Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target of the shared tech subtypes

@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added.  |  |
 | Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added.  |  |
 | Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -6164,6 +6165,63 @@ transformSpan [log]
   - Every case above, each in its own scene.
   - A skirmish with a European AI (`wolOtto`) with the key on: it compiled, and had 15 units at 120 s.
   - Not tested: multiplayer, a revolution while pending, a transform of units inside a ship.
+
+#### kothTimer
+
+*The King of the Hill time comes from a table by the number of players, or of teams, in the game.*
+
+**Added:** Friday 2026-11-13 08:06 · **Filmed in WoL:** Friday 2026-11-13 08:06
+
+![kothTimer in WoL](media/kothTimer-wol.gif)
+
+*In WoL, with `kothTimer players 2=900 3=750 4=600` (a scenario with three players in two teams, a `ypKingsHill`
+and player 1's Hussars, which ride to it; the game is made a King of the Hill game by its setting, see the tests):* the
+team takes the hill and the timer starts at 12:30, the time for 3 players (`3 player(s) in 2 team(s): the hill holds for
+750 s`). [Full video (MP4)](media/kothTimer-wol.mp4).
+
+![kothTimer in WoL, key off](media/kothTimer-wol-control.gif)
+
+*In WoL, key off (the same scene):* the timer starts at 10:00, the time `DefaultVP.xml` gives.
+[Full video (MP4)](media/kothTimer-wol-control.mp4).
+
+```
+kothTimer [players | teams] N=seconds ...
+```
+
+```
+kothTimer players 2=900 3=750 4=600 6=480
+kothTimer teams 2=900 3=600 4=480
+```
+
+- **In WoL today:** the time a team must hold the hill comes from `data\DefaultVP.xml`, a formula the game has had since
+  TAD: `KOTHVictoryTime` + (players − 1) × `KOTHVictoryTimePerPlayer` (when above 0) − (teams −
+  `AdjustKOTHTotalTimeByTeams`) × `AdjustKOTHTotalTimeByTeamsFactor`, in seconds. "Players" counts Gaia, and "teams"
+  counts Gaia's team. WoL's file has 600, 0, 3 and 60: 600 s with 2 teams, 540 s with 3, 660 s in a lone-team game. So
+  a time that grows or shrinks **linearly** with the players or teams is already possible with data only, by editing
+  that file (a copy in `data\`; DE's exe has the same four names). JTMaston's #63.
+- **Effect:** the key replaces the formula with a table. `players` (the default) counts the players without Gaia;
+  `teams` the distinct teams of those players. The time is the one of the largest N listed that is not above the
+  game's count; below the smallest N listed, the smallest's time. With `players 2=900 4=600`, 3 players get 900.
+- **What the timer is:** the time a team must keep the hill to win, as stock. The part already held is still taken
+  off when the timer starts again, as stock does.
+- **Arguments:** N from 1 to 16, seconds from 1 to 86400, each N once; at least one entry. Anything else: the key is not
+  applied.
+- **Off:** the formula of `DefaultVP.xml`.
+- **Multiplayer:** it changes the simulation: every player needs the same setting. The counts come from the game's
+  player list.
+- **Log:** `kothTimer: the King of the Hill time by the number of players: 2=900 3=750 4=600 s`, `hook reached: kothTimer
+  (0x9F02DD)`, and at each start `kothTimer: 3 player(s) in 2 team(s): the hill holds for 750 s (the players 3 entry;
+  stock 600 s, its counts 4 slot(s), 3 team(s))`. A bad argument: `kothTimer: unexpected argument 2=abc (expected: ...);
+  feature not applied`.
+- **Tested in WoL (2026-11-13),** scenarios with the hill (`ypKingsHill`, Gaia) and Hussars of player 1 (in Age III) that
+  ride to it. The scenario route cannot pick a King of the Hill game, so the test wrote the game's King of the Hill
+  flag (game setting 27h, cached in the byte 0xCF07BD) in the running copy before the Hussars arrived; without it the
+  hill is captured like a trading post and no timer starts.
+  - `players 2=900 3=750 4=600`: 2 players, 900 s (15:00 on screen; stock 600); 3 players in 2 teams, 750 s (12:30).
+  - `teams 2=500 3=400`, 3 players in 2 teams: 500 s.
+  - Key off, 3 players: 600 s (10:00).
+  - `players 2=abc 0=5`: not applied, logged.
+  - Not tested: a real King of the Hill game started from the setup screen, 4 or more players, multiplayer.
 
 #### shipmentCounts
 

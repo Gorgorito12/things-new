@@ -1111,6 +1111,13 @@ SITES = [
     # with the pushes before it and the use of EDI after it
     ("ShipActivateCall", 0x8584E7, 0x24),
     ("ShipQueueCaller", 0x66AEA0, 5),
+    # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
+    # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
+    # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at
+    # 0x948F95 in the team's timer start FUN_00948F32, minus [team+84h]; and the end it sets, now + 1000 x seconds
+    ("KothTotalTime", 0x9F02DD, 0x48),
+    ("KothStartCall", 0x948F93, 0x12),
+    ("KothSetEnd", 0x948A4C, 0x1C),
     # cratePriority: the only calls of the crate rank FUN_004DBF40 (thiscall(db, resource, civ), ret 8)
     # and of the next crate FUN_00501786 (thiscall(player, proto, int* next, int* resource), ret 0Ch),
     # and that one's read of the civ: mov ecx,[esi+4] / mov ecx,[ecx+44h]

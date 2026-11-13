@@ -1451,6 +1451,15 @@ inline constexpr Site kShipActivateCall{"ShipActivateCall", 0x008584E7, kShipAct
 inline constexpr std::uint8_t kShipQueueCallerBytes[] = {0xE8, 0xF4, 0xD3, 0x1E, 0x00};
 inline constexpr Site kShipQueueCaller{"ShipQueueCaller", 0x0066AEA0, kShipQueueCallerBytes, sizeof(kShipQueueCallerBytes)};
 
+inline constexpr std::uint8_t kKothTotalTimeBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x81, 0x04, 0x01, 0x00, 0x00, 0x56, 0x8B, 0xB1, 0x08, 0x01, 0x00, 0x00, 0x85, 0xF6, 0x7E, 0x11, 0x85, 0xD2, 0x74, 0x26, 0x57, 0x8B, 0x7A, 0x5C, 0x83, 0xEF, 0x01, 0x0F, 0xAF, 0xFE, 0x03, 0xC7, 0x5F, 0x85, 0xD2, 0x74, 0x15, 0x8B, 0x92, 0x8C, 0x01, 0x00, 0x00, 0x2B, 0x91, 0x0C, 0x01, 0x00, 0x00, 0x0F, 0xAF, 0x91, 0x10, 0x01, 0x00, 0x00, 0x2B, 0xC2, 0x5E, 0xC3};
+inline constexpr Site kKothTotalTime{"KothTotalTime", 0x009F02DD, kKothTotalTimeBytes, sizeof(kKothTotalTimeBytes)};
+
+inline constexpr std::uint8_t kKothStartCallBytes[] = {0x55, 0x57, 0xE8, 0x43, 0x73, 0x0A, 0x00, 0x8B, 0xE8, 0x2B, 0xAE, 0x84, 0x00, 0x00, 0x00, 0x8B, 0xCE, 0x55};
+inline constexpr Site kKothStartCall{"KothStartCall", 0x00948F93, kKothStartCallBytes, sizeof(kKothStartCallBytes)};
+
+inline constexpr std::uint8_t kKothSetEndBytes[] = {0x8D, 0x48, 0x04, 0x8B, 0x01, 0xFF, 0x50, 0x38, 0x8B, 0xCE, 0xC1, 0xE1, 0x06, 0x2B, 0xCE, 0x03, 0xC9, 0x2B, 0xCE, 0x8D, 0x14, 0xC8, 0x89, 0x97, 0x80, 0x00, 0x00, 0x00};
+inline constexpr Site kKothSetEnd{"KothSetEnd", 0x00948A4C, kKothSetEndBytes, sizeof(kKothSetEndBytes)};
+
 inline constexpr std::uint8_t kCrateRankCallBytes[] = {0xE8, 0xFF, 0x1E, 0x04, 0x00};
 inline constexpr Site kCrateRankCall{"CrateRankCall", 0x0049A03C, kCrateRankCallBytes, sizeof(kCrateRankCallBytes)};
 
@@ -2541,6 +2550,7 @@ Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyOrPrereqsQty(const Config& config);
 Outcome ApplyShipmentCounts(const Config& config);
+Outcome ApplyKothTimer(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
@@ -2641,6 +2651,7 @@ inline constexpr Feature kFeatures[] = {
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"shipmentCounts", ApplyShipmentCounts},
+    {"kothTimer", ApplyKothTimer},
     {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
     {"pillageGold", ApplyPillageGold},
@@ -2760,7 +2771,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
