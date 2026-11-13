@@ -3134,7 +3134,10 @@ bar before it queues it (0x45FB71):
   (`[0x4605C1(unit, &tmp)+4]` + `[[unit+0B4h]+24h]`) x `[unit+0A8h]` + 1.0 to its y, then rejoins at 0x45FB3F.
 
 The tag is a sampled track per animation file, with no rest pose: an animation without it puts the bar at the other
-height. Observed with a trace: a Hussar's idle file has the tag at 4.07..4.15 (model y), its gallop has none (2000 of
+height. The tag table comes from the animation's tag file, `<animation>.gr2.precomp`: FUN_0059DDCE reads its "MS" block
+(the track count, a rotation and a position track per tag bone, the name-to-track map, the duration) into that table;
+an animation whose tag file has no `HITPOINTBAR` gets the stock fallback above (0x460633). Adding the tag to those files fixes the
+data itself, with the key off. Observed with a trace: a Hussar's idle file has the tag at 4.07..4.15 (model y), its gallop has none (2000 of
 4698 calls without it in one charge); a Settler's stays at 2.97, a Caravel's at 9.86; a Barracks never had it.
 
 **The hook** (`hooks/steadybar_hooks.asm`):
