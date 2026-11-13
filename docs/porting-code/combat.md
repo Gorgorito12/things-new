@@ -11,12 +11,14 @@ Contents:
 - [damageOverTime](#damageovertime)
 - [spreadAnyAccuracy](#spreadanyaccuracy)
 - [containedUnitsROF](#containedunitsrof)
+- [numberOfShots](#numberofshots)
 - [accuracyTechs](#accuracytechs)
 - [broadsideMuzzleLimit](#broadsidemuzzlelimit)
 - [snareOnlyHitUnit](#snareonlyhitunit)
 - [cantBeSlowed](#cantbeslowed)
 - [snareValues](#snarevalues)
 - [stealthTargeting](#stealthtargeting)
+- [directionalAttack](#directionalattack)
 - [killBountyTechs, resourceBounty and teamKillBounty](#killbountytechs-resourcebounty-and-teamkillbounty)
 - [pillageGold](#pillagegold)
 - [auraStacking](#aurastacking)
@@ -2566,9 +2568,9 @@ END
 
 Contract: [containedUnitsROF](../porting-to-another-dll.md#containedunitsrof).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`rofreads.h`](helpers.md#rof-reads), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `XmlText` `0x402733` (9 B), `RofWaitA` `0x48A821` (23 B), `RofWaitB` `0x48A99A` (23 B), `RofWaitC` `0x48EA0C` (23 B), `RofShot` `0x48F8AE` (64 B), `RofDelay` `0x48FA69` (42 B), `RofAnim` `0x4A1185` (26 B), `XmlAttribute` `0x598F37` (16 B), `RofNextChild` `0x5FA126` (4 B), `DotProtoActionCall` `0x5FA20E` (5 B), `TacticsActionCall` `0x5FA60A` (25 B), `RofScaleTag` `0x5FEDFC` (39 B).
+Sites: `XmlText` `0x402733` (9 B), `XmlAttribute` `0x598F37` (16 B), `RofNextChild` `0x5FA126` (4 B), `DotProtoActionCall` `0x5FA20E` (5 B), `TacticsActionCall` `0x5FA60A` (25 B), `RofScaleTag` `0x5FEDFC` (39 B).
 
 ### src/features/containedrof.cpp
 
@@ -2588,8 +2590,8 @@ Sites: `XmlText` `0x402733` (9 B), `RofWaitA` `0x48A821` (23 B), `RofWaitB` `0x4
 //
 // The interval: every attack action (HandAttack, RangedAttack and the other types of the class, vtable 0xB96278)
 // waits through 0x48FA69(action manager, ms), which also applies ROF modifiers. Five reads of the tactics ROF
-// [action+34h] feed it or the attack's animation rate; the hooks in hooks/containedrof_hooks.asm pass each one
-// through UhcContainedRofScale. An override ROF ([unitAction+6Ch]+28h, set by something other than the tactics)
+// [action+34h] feed it or the attack's animation rate; the shared hooks of rofreads.h pass each one through
+// ContainedRofScale. An override ROF ([unitAction+6Ch]+28h, set by something other than the tactics)
 // is not scaled.
 #include <windows.h>
 
@@ -2604,19 +2606,12 @@ Sites: `XmlText` `0x402733` (9 B), `RofWaitA` `0x48A821` (23 B), `RofWaitB` `0x4
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../rofreads.h"
 #include "../unittypes.h"
 
 extern "C" {
 void UhcContainedRofTagHook();
-void UhcContainedRofWaitAHook();
-void UhcContainedRofWaitBHook();
-void UhcContainedRofWaitCHook();
-void UhcContainedRofShotHook();
-void UhcContainedRofAnimHook();
 }
-
-// Entries in the table, read by the hooks to skip the call when no action has the attribute.
-extern "C" std::int32_t g_uhcContainedRofCount = 0;
 
 namespace {
 
@@ -2697,7 +2692,10 @@ unsigned g_tagLines = 0;
 unsigned g_invalidLines = 0;
 unsigned g_intervalLines = 0;
 
-void SyncCount() { g_uhcContainedRofCount = static_cast<std::int32_t>(g_entries.size()); }
+std::int32_t __stdcall ContainedRofScale(const char* unitAction, std::int32_t rof, uhc::RofRead read);
+
+// The shared ROF hooks call this key only while the table has an entry.
+void SyncCount() { uhc::SetRofGate(&ContainedRofScale, !g_entries.empty()); }
 
 // A ROF entry of this action is dropped by a later tag of the same action (a protoy <ProtoAction> after its
 // tactics <action>): the last tag wins, as for the stock bit.
@@ -2810,9 +2808,13 @@ std::int32_t __stdcall UhcContainedRofTag(const char* node, const char* proto, c
   return 1;
 }
 
-// From the five ROF reads: unitAction is the attack's unit action ([+4] its tactics action, [+10h] its unit),
-// rof the tactics ROF in ms (above 0). Returns the interval to use.
-std::int32_t __stdcall UhcContainedRofScale(const char* unitAction, std::int32_t rof) {
+}  // extern "C"
+
+namespace {
+
+// From the five ROF reads (rofreads.h), all treated alike: unitAction is the attack's unit action ([+4] its
+// tactics action, [+10h] its unit), rof the tactics ROF in ms (above 0). Returns the interval to use.
+std::int32_t __stdcall ContainedRofScale(const char* unitAction, std::int32_t rof, uhc::RofRead) {
   if (unitAction == nullptr || rof <= 0) {
     return rof;
   }
@@ -2855,7 +2857,8 @@ std::int32_t __stdcall UhcContainedRofScale(const char* unitAction, std::int32_t
   }
   return interval;
 }
-}
+
+}  // namespace
 
 namespace uhc {
 
@@ -2874,20 +2877,12 @@ Outcome ApplyContainedUnitsROF(const Config& config) {
   }
   if (!VerifyAll("containedUnitsROF",
                  {&sites::kRofScaleTag, &sites::kRofNextChild, &sites::kDotProtoActionCall, &sites::kTacticsActionCall,
-                  &sites::kXmlAttribute, &sites::kXmlText, &sites::kRofWaitA, &sites::kRofWaitB, &sites::kRofWaitC,
-                  &sites::kRofShot, &sites::kRofAnim, &sites::kRofDelay}) ||
-      !OnDatabaseLoad(&ResetForDataLoad)) {
+                  &sites::kXmlAttribute, &sites::kXmlText}) ||
+      !OnDatabaseLoad(&ResetForDataLoad) || !AddRofFilter(&ContainedRofScale, "containedUnitsROF")) {
     return Outcome::kFailed;
   }
   // cmp dword ptr [esp+10h],1 / mov eax,[ebp+64h] at 0x5FEE0C (8 B); the hook re-executes them for the stock tag.
-  // The ROF reads: mov r,[r+34h] / test r,r (5 B) at 0x48A821, 0x48A99A and 0x48EA0C; mov eax,[eax+34h] /
-  // cmp eax,ebx (5 B) at 0x48F8B5; mov ebx,[eax+34h] / mov eax,[esi+6Ch] (6 B) at 0x4A1189.
-  if (!WriteJmp(0x005FEE0C, reinterpret_cast<const void*>(&UhcContainedRofTagHook), 8) ||
-      !WriteJmp(0x0048A821, reinterpret_cast<const void*>(&UhcContainedRofWaitAHook), 5) ||
-      !WriteJmp(0x0048A99A, reinterpret_cast<const void*>(&UhcContainedRofWaitBHook), 5) ||
-      !WriteJmp(0x0048EA0C, reinterpret_cast<const void*>(&UhcContainedRofWaitCHook), 5) ||
-      !WriteJmp(0x0048F8B5, reinterpret_cast<const void*>(&UhcContainedRofShotHook), 5) ||
-      !WriteJmp(0x004A1189, reinterpret_cast<const void*>(&UhcContainedRofAnimHook), 6)) {
+  if (!WriteJmp(0x005FEE0C, reinterpret_cast<const void*>(&UhcContainedRofTagHook), 8)) {
     return Outcome::kFailed;
   }
   Log(L"containedUnitsROF: attacks with <ScaleByContainedUnits target=\"ROF\"> fire faster with the units inside "
@@ -2901,9 +2896,9 @@ Outcome ApplyContainedUnitsROF(const Config& config) {
 ### src/hooks/containedrof_hooks.asm
 
 ```asm
-; Hooks for containedUnitsROF (features/containedrof.cpp). Each is entered through a jmp written over the
-; stock code and leaves through an explicit jmp to a verified continuation (docs/engine-symbols.md,
-; "Garrison scaling").
+; The tag hook of containedUnitsROF (features/containedrof.cpp), entered through a jmp written over the stock code
+; and left through an explicit jmp to a verified continuation (docs/engine-symbols.md, "Garrison scaling"). Its
+; ROF reads are the shared hooks of rofreads_hooks.asm.
 .686
 .model flat, c
 option casemap :none
@@ -2911,18 +2906,10 @@ option casemap :none
 include common.inc
 
 UhcContainedRofTag PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
-UhcContainedRofScale PROTO STDCALL :DWORD, :DWORD
-
-EXTERNDEF g_uhcContainedRofCount:DWORD     ; actions with target="ROF"; 0: the hooks skip the call
 
 .data
 tagStock        dd 005FEE14h    ; jne 5FE713h: the stock handler's test of the value
 tagNext         dd 005FA126h    ; mov eax,[esp+1Ch]: the parser's next child
-waitA           dd 0048A826h    ; jbe 4A86C6h
-waitB           dd 0048A99Fh    ; jbe 4B33D5h
-waitC           dd 0048EA11h    ; jbe 4A857Fh
-shotNext        dd 0048F8BAh    ; jbe 48F8BEh
-animNext        dd 004A118Fh    ; test eax,eax (the override ROF [[esi+6Ch]+28h])
 
 .code
 
@@ -2959,99 +2946,407 @@ handled:
     jmp tagNext
 UhcContainedRofTagHook ENDP
 
-; The three waits after an attack that did not fire (the attack update FUN_0048A330 and the attack step at
-; 0x48E9DB), each `mov r,[r+34h] / test r,r` (5 bytes) before `jbe` and the delay call 0x48FA69(action
-; manager, ms). The hook re-executes the read, passes the value through UhcContainedRofScale and re-executes the
-; test, so the jbe sees the stock flags. Nothing else changes: pushad/popad keep every other register.
+END
+```
 
-; 0x48A821: EDI = the tactics action ([esi+4]), ESI = the unit action.
-UhcContainedRofWaitAHook PROC
-    TRACE_ONCE "containedUnitsROF wait (0x48A821)"
-    mov edi, dword ptr [edi+34h]        ; stolen 0x48A821
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push edi
-    push esi
-    call UhcContainedRofScale
-    mov dword ptr [esp], eax            ; popad's EDI
-    popad
-done:
-    test edi, edi                       ; stolen 0x48A824
-    jmp waitA
-UhcContainedRofWaitAHook ENDP
+## numberOfShots
 
-; 0x48A99A: EDI = the tactics action ([esi+4]), ESI = the unit action.
-UhcContainedRofWaitBHook PROC
-    TRACE_ONCE "containedUnitsROF wait (0x48A99A)"
-    mov edi, dword ptr [edi+34h]        ; stolen 0x48A99A
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push edi
-    push esi
-    call UhcContainedRofScale
-    mov dword ptr [esp], eax            ; popad's EDI
-    popad
-done:
-    test edi, edi                       ; stolen 0x48A99D
-    jmp waitB
-UhcContainedRofWaitBHook ENDP
+Contract: [numberOfShots](../porting-to-another-dll.md#numberofshots).
 
-; 0x48EA0C: ESI = the tactics action ([ebp+4]), EBP = the unit action.
-UhcContainedRofWaitCHook PROC
-    TRACE_ONCE "containedUnitsROF wait (0x48EA0C)"
-    mov esi, dword ptr [esi+34h]        ; stolen 0x48EA0C
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push esi
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`rofreads.h`](helpers.md#rof-reads), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `ShotsLaunchRet` `0x4999DA` (9 B).
+
+### src/features/shots.cpp
+
+```cpp
+// numberOfShots [projectiles] [log]: an attack fires a burst of <NumberOfShots> shots, <ShotInterval> seconds
+// apart, before its reload (its ROF); with "projectiles", each shot launches <NumberProjectiles> projectiles.
+//
+// Stock: an attack (vtable 0xB96278: HandAttack, RangedAttack and the other types of the class) fires one shot per
+// cycle. A cycle begins at 0x4A1185 ([unitAction+78h] = now, the animation's rate [unit+0B0h] from the ROF), the
+// shot is the launch 0x499422 (or 0x4DCFE2 without a projectile), [unitAction+68h] counts the shots, and the wait
+// after it is the ROF minus the time since the cycle began (0x48F8B5..0x48F8E9). <NumberProjectiles>, which
+// some mods' tactics carry from Age of Mythology, is not a tag of this exe: no string, no handler.
+//
+// The burst: the shared ROF reads (rofreads.h) see the shot count. A cycle whose shot is not the burst's last
+// (count mod N < N - 1) begins with the interval in place of the ROF, so its animation plays at that pace; after a
+// shot that does not end the burst (count mod N != 0) the wait is the interval. The last shot plays the stock
+// animation and waits the ROF: N - 1 quick shots, then a normal one and its reload. The count belongs to the unit
+// action, which a new target replaces, so a new target starts a new burst.
+//
+// The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
+// the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
+#include <windows.h>
+
+#include <cmath>
+#include <compare>
+#include <cstdint>
+#include <cwchar>
+#include <map>
+#include <string>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../rofreads.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcShotsLaunchHook();  // hooks/shots_hooks.asm
+// Above 0 while some action has more than one projectile: the launch hook asks UhcShotsProjectiles only then.
+std::int32_t g_uhcShotsProjectiles = 0;
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +140h database
+constexpr std::int32_t kMaxShots = 50;
+constexpr std::int32_t kMaxProjectiles = 32;
+constexpr double kMaxInterval = 60.0;          // seconds
+constexpr std::int32_t kDefaultIntervalMs = 250;
+constexpr unsigned kMaxTagLines = 200;
+constexpr unsigned kMaxInvalidLines = 50;
+constexpr unsigned kMaxShotLines = 60;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* Database() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
+// ProtoAction names: [database+1FD8h] holds one UTF-16 string per name index, [+1FDCh] the count.
+const wchar_t* ActionName(std::int32_t index) {
+  const char* database = Database();
+  if (database == nullptr || index < 0 || index >= Field<std::int32_t>(database, 0x1FDC)) {
+    return L"?";
+  }
+  const wchar_t* name = Field<const wchar_t* const*>(database, 0x1FD8)[index];
+  return name != nullptr ? name : L"?";
+}
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name != nullptr ? name : "?";
+}
+
+// Every player's copy of a proto and of its actions keeps the proto ID [proto+4] and the action's name index
+// [action+4], so the key finds the entry from the copy a unit attacks with.
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+struct Entry {
+  std::int32_t shots = 1;
+  std::int32_t intervalMs = kDefaultIntervalMs;
+  std::int32_t projectiles = 1;
+  unsigned shotLines = 0;  // "log": shots logged for this action
+};
+
+// Filled while the data loads (a later tag of the same action wins) and read on the game thread at each attack.
+std::map<ActionKey, Entry> g_entries;
+bool g_projectiles = false;  // "projectiles": <NumberProjectiles> is read
+bool g_log = false;
+unsigned g_tagLines = 0;
+unsigned g_invalidLines = 0;
+unsigned g_shotLines = 0;
+
+std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
+
+// The gates: the ROF filter while some action has a burst, the launch hook while some action has projectiles.
+void SyncGates() {
+  bool burst = false;
+  bool projectiles = false;
+  for (const auto& [key, entry] : g_entries) {
+    burst = burst || entry.shots > 1;
+    projectiles = projectiles || entry.projectiles > 1;
+  }
+  uhc::SetRofGate(&ShotsRof, burst);
+  g_uhcShotsProjectiles = projectiles ? 1 : 0;
+}
+
+void ResetForDataLoad(char*) {
+  g_entries.clear();
+  SyncGates();
+  g_tagLines = 0;
+  g_invalidLines = 0;
+  g_shotLines = 0;
+}
+
+const Entry* Find(const char* unitAction, const char** unitOut) {
+  const char* action = Field<const char*>(unitAction, 0x04);
+  const char* unit = Field<const char*>(unitAction, 0x10);
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  if (action == nullptr || proto == nullptr) {
+    return nullptr;
+  }
+  const auto found = g_entries.find(ActionKey{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)});
+  if (found == g_entries.end()) {
+    return nullptr;
+  }
+  if (unitOut != nullptr) {
+    *unitOut = unit;
+  }
+  return &found->second;
+}
+
+// From the shared ROF reads: the attack-start and after-shot reads of an action with a burst.
+std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read) {
+  if (read != uhc::RofRead::kAttackStart && read != uhc::RofRead::kAfterShot) {
+    return rof;
+  }
+  const char* unit = nullptr;
+  const Entry* entry = Find(unitAction, &unit);
+  if (entry == nullptr || entry->shots <= 1) {
+    return rof;
+  }
+  const std::int32_t count = Field<std::int32_t>(unitAction, 0x68);
+  const std::int32_t inBurst = count < 0 ? 0 : count % entry->shots;
+  const bool quick = read == uhc::RofRead::kAttackStart ? inBurst < entry->shots - 1 : inBurst != 0;
+  const std::int32_t result = quick ? entry->intervalMs : rof;
+  if (g_log && read == uhc::RofRead::kAfterShot && g_shotLines < kMaxShotLines &&
+      entry->shotLines < 4u * static_cast<unsigned>(entry->shots)) {
+    ++g_shotLines;
+    const_cast<Entry*>(entry)->shotLines += 1;
+    const char* action = Field<const char*>(unitAction, 0x04);
+    const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+    const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+    uhc::Log(L"numberOfShots: %u ms, unit %d (%hs/%ls) shot %d of its burst of %d (shots so far %d): wait %d ms%ls",
+             world == nullptr ? 0u : Field<std::uint32_t>(world, 0x108), Field<std::int32_t>(unit, 0x10),
+             ProtoName(Field<const char*>(unit, 0x5C)), ActionName(Field<std::int32_t>(action, 0x04)),
+             inBurst == 0 ? entry->shots : inBurst, entry->shots, count, result,
+             quick ? L" (the interval)" : L" (the ROF: reload)");
+  }
+  return result;
+}
+
+bool ParseInt(const wchar_t* text, std::int32_t low, std::int32_t high, std::int32_t* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  wchar_t* end = nullptr;
+  const long value = std::wcstol(text, &end, 10);
+  while (end != nullptr && (*end == L' ' || *end == L'\t' || *end == L'\r' || *end == L'\n')) {
+    ++end;
+  }
+  if (end == text || end == nullptr || *end != L'\0' || value < low || value > high) {
+    return false;
+  }
+  *out = static_cast<std::int32_t>(value);
+  return true;
+}
+
+bool ParseSeconds(const wchar_t* text, std::int32_t* outMs) {
+  if (text == nullptr) {
+    return false;
+  }
+  wchar_t* end = nullptr;
+  const double value = std::wcstod(text, &end);
+  while (end != nullptr && (*end == L' ' || *end == L'\t' || *end == L'\r' || *end == L'\n')) {
+    ++end;
+  }
+  if (end == text || end == nullptr || *end != L'\0' || !(value > 0.0) || value > kMaxInterval) {
+    return false;
+  }
+  const auto ms = static_cast<std::int32_t>(std::floor(value * 1000.0 + 0.5));
+  *outMs = ms < 1 ? 1 : ms;
+  return true;
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  enum class Kind { kShots, kInterval, kProjectiles } kind;
+  if (_wcsicmp(tag.name, L"NumberOfShots") == 0) {
+    kind = Kind::kShots;
+  } else if (_wcsicmp(tag.name, L"ShotInterval") == 0) {
+    kind = Kind::kInterval;
+  } else if (g_projectiles &&
+             (_wcsicmp(tag.name, L"NumberProjectiles") == 0 || _wcsicmp(tag.name, L"NumberOfProjectiles") == 0)) {
+    kind = Kind::kProjectiles;
+  } else {
+    return;
+  }
+  const wchar_t* source = tag.source == uhc::ActionSource::kTactics ? L"tactics" : L"protoy";
+  const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
+  const ActionKey key{Field<std::int32_t>(tag.proto, 0x04), Field<std::int32_t>(tag.action, 0x04)};
+  if (key.name < 0) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"numberOfShots: %hs (%ls): <%ls> before the action's <name>; ignored (put <name> first)",
+               ProtoName(tag.proto), source, tag.name);
+    }
+    return;
+  }
+  std::int32_t value = 0;
+  bool valid = false;
+  switch (kind) {
+    case Kind::kShots:
+      valid = ParseInt(text, 1, kMaxShots, &value);
+      break;
+    case Kind::kInterval:
+      valid = ParseSeconds(text, &value);
+      break;
+    case Kind::kProjectiles:
+      valid = ParseInt(text, 1, kMaxProjectiles, &value);
+      break;
+  }
+  if (!valid) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"numberOfShots: %hs/%ls (%ls): <%ls>%ls</%ls> is not %ls; ignored", ProtoName(tag.proto),
+               ActionName(key.name), source, tag.name, text, tag.name,
+               kind == Kind::kInterval      ? L"a number of seconds above 0 and at most 60"
+               : kind == Kind::kShots       ? L"a whole number from 1 to 50"
+                                            : L"a whole number from 1 to 32");
+    }
+    return;
+  }
+  Entry& entry = g_entries[key];
+  switch (kind) {
+    case Kind::kShots:
+      entry.shots = value;
+      break;
+    case Kind::kInterval:
+      entry.intervalMs = value;
+      break;
+    case Kind::kProjectiles:
+      entry.projectiles = value;
+      break;
+  }
+  SyncGates();
+  if (g_log && g_tagLines < kMaxTagLines) {
+    ++g_tagLines;
+    uhc::Log(L"numberOfShots: %hs/%ls (%ls): %ls %ls", ProtoName(tag.proto), ActionName(key.name), source, tag.name,
+             text);
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the launch hook (0x48F88D), while some action has projectiles: how many times to call the launch for this
+// shot (at least 1).
+std::int32_t __stdcall UhcShotsProjectiles(const char* unitAction) {
+  if (unitAction == nullptr) {
+    return 1;
+  }
+  const char* unit = nullptr;
+  const Entry* entry = Find(unitAction, &unit);
+  if (entry == nullptr || entry->projectiles <= 1) {
+    return 1;
+  }
+  if (g_log && g_shotLines < kMaxShotLines && entry->shotLines < 8) {
+    ++g_shotLines;
+    const_cast<Entry*>(entry)->shotLines += 1;
+    const char* action = Field<const char*>(unitAction, 0x04);
+    uhc::Log(L"numberOfShots: unit %d (%hs/%ls) launches %d projectiles for one shot", Field<std::int32_t>(unit, 0x10),
+             ProtoName(Field<const char*>(unit, 0x5C)), ActionName(Field<std::int32_t>(action, 0x04)),
+             entry->projectiles);
+  }
+  return entry->projectiles;
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyNumberOfShots(const Config& config) {
+  const Config::Args* args = config.First("numberOfShots");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "projectiles") == 0) {
+      g_projectiles = true;
+    } else {
+      Log(L"numberOfShots: unexpected argument %hs (expected: [projectiles] [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet}) ||
+      !OnDatabaseLoad(&ResetForDataLoad) || !AddActionTagHandler(&ActionTagRead) ||
+      !AddRofFilter(&ShotsRof, "numberOfShots")) {
+    return Outcome::kFailed;
+  }
+  // call 499422h (5 B) at 0x48F88D, the launch of the attack step's shot.
+  if (g_projectiles && !WriteJmp(0x0048F88D, reinterpret_cast<const void*>(&UhcShotsLaunchHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s)%ls%ls (multiplayer "
+      L"unverified)",
+      kDefaultIntervalMs / 1000.0,
+      g_projectiles ? L", and <NumberProjectiles> projectiles per shot" : L"",
+      g_log ? L"; tags and the first shots logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/shots_hooks.asm
+
+```asm
+; The launch hook of numberOfShots "projectiles" (features/shots.cpp), entered through a jmp written over the
+; stock call and left through an explicit jmp to its verified continuation (docs/engine-symbols.md, "Rate of fire").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcShotsProjectiles PROTO STDCALL :DWORD
+
+EXTERNDEF g_uhcShotsProjectiles:DWORD      ; above 0 while some action has more than one projectile
+
+.data
+stockLaunch     dd 00499422h    ; thiscall(unitAction, unit, target, [[frame+2CCh]+28h], byte, [ua+6Ch]), ret 14h
+launchNext      dd 0048F892h    ; mov eax,[ebp+6Ch]: after the launch, ranged and melee join
+
+.code
+
+; Replaces call 499422h (5 bytes) at 0x48F88D, the attack step's launch of a shot: ECX = EBP = the unit action, the
+; five arguments pushed ([esp] the unit [ebp+10h], [esp+4] the target EDI, [esp+8] [[esp+2CCh]+28h], [esp+0Ch] the
+; byte of tactics flag 18h, [esp+10h] the override object [ebp+6Ch], pushed at 0x48F83B). For an action with N
+; projectiles the launch runs N - 1 extra times with copies of the five arguments, then once with the stock ones.
+; The launch keeps EBX, ESI, EDI and EBP (callee-saved); the code at 0x48F892 reloads EAX from [ebp+6Ch] and
+; compares it with EBX (0), and writes ECX and EDX before it reads them.
+UhcShotsLaunchHook PROC
+    TRACE_ONCE "numberOfShots projectiles (0x48F88D)"
+    cmp g_uhcShotsProjectiles, 0
+    je single
     push ebp
-    call UhcContainedRofScale
-    mov dword ptr [esp+4], eax          ; popad's ESI
-    popad
-done:
-    test esi, esi                       ; stolen 0x48EA0F
-    jmp waitC
-UhcContainedRofWaitCHook ENDP
-
-; Replaces mov eax,[eax+34h] / cmp eax,ebx (5 bytes) at 0x48F8B5, the wait after a shot (ranged, through the
-; launch 0x499422, and melee, through 0x4DCFE2, join at 0x48F892): EAX = the tactics action ([ebp+4]), EBP = the
-; unit action, EBX = 0. The stock code then waits ROF minus the time since the attack began ([ebp+78h]).
-UhcContainedRofShotHook PROC
-    TRACE_ONCE "containedUnitsROF shot (0x48F8B5)"
-    mov eax, dword ptr [eax+34h]        ; stolen 0x48F8B5
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push eax
-    push ebp
-    call UhcContainedRofScale
-    mov dword ptr [esp+1Ch], eax        ; popad's EAX
-    popad
-done:
-    cmp eax, ebx                        ; stolen 0x48F8B8
-    jmp shotNext
-UhcContainedRofShotHook ENDP
-
-; Replaces mov ebx,[eax+34h] / mov eax,[esi+6Ch] (6 bytes) at 0x4A1189, where an attack begins
-; ([esi+78h] = now) and sets its animation rate [unit+0B0h] from the ROF: EAX = the tactics action ([esi+4]),
-; ESI = the unit action. The flags are free: test eax,eax follows.
-UhcContainedRofAnimHook PROC
-    TRACE_ONCE "containedUnitsROF attack start (0x4A1189)"
-    mov ebx, dword ptr [eax+34h]        ; stolen 0x4A1189
-    cmp g_uhcContainedRofCount, 0
-    je done
-    pushad
-    push ebx
+    call UhcShotsProjectiles            ; EAX = projectiles for this shot (at least 1)
+    cmp eax, 1
+    jle single
     push esi
-    call UhcContainedRofScale
-    mov dword ptr [esp+10h], eax        ; popad's EBX
-    popad
-done:
-    mov eax, dword ptr [esi+6Ch]        ; stolen 0x4A118C
-    jmp animNext
-UhcContainedRofAnimHook ENDP
+    mov esi, eax
+extra:
+    push dword ptr [esp+14h]            ; the override object ([esp+10h] before push esi)
+    push dword ptr [esp+14h]            ; the byte
+    push dword ptr [esp+14h]            ; the third
+    push dword ptr [esp+14h]            ; the target
+    push dword ptr [esp+14h]            ; the unit
+    mov ecx, ebp
+    call stockLaunch                    ; ret 14h
+    dec esi
+    cmp esi, 1
+    jg extra
+    pop esi
+single:
+    mov ecx, ebp                        ; the unit action, as at 0x48F88B
+    call stockLaunch                    ; the stock call, on the stock arguments
+    jmp launchNext
+UhcShotsLaunchHook ENDP
 
 END
 ```
@@ -4419,6 +4714,688 @@ refuse:
     or eax, -1
     ret 1Ch
 UhcStealthTargetHook ENDP
+
+END
+```
+
+## directionalAttack
+
+Contract: [directionalAttack](../porting-to-another-dll.md#directionalattack).
+
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `UnitById` `0x44CC6D` (58 B), `ProtoFlag` `0x45EE02` (53 B), `DirectionalLaunch` `0x4998A7` (10 B), `DirectionalLaunchCall` `0x49999E` (32 B), `DirectionalTakeDamage` `0x49C05A` (50 B), `UnitsNearPoint` `0x4A1C55` (248 B), `DirectionalTerrainHeight` `0x4C4E62` (56 B), `DirectionalMaxRangeCall` `0x5F8A4A` (12 B).
+
+### src/features/directional.cpp
+
+```cpp
+// directionalAttack: a projectile that flies on past its target and hits every unit it flies over, before
+// and after the target (a "monster truck" attack, like a Scorpion bolt).
+//
+// An action (a .tactics <action> or a protoy.xml <ProtoAction>) becomes directional with one of two tags, the
+// two variants:
+// - <DirectionalAttack>D</DirectionalAttack>: the unit targets and fires at its MaxRange as in stock, and the
+//   projectile lands D metres from the shooter (at the target if the target is farther);
+// - <DirectionalFiringRange>F</DirectionalFiringRange>: the unit fires at F metres, and the projectile lands
+//   at the MaxRange the data gives the action. The action's MaxRange becomes F when the data loads (the call
+//   0x5F8A51 of the MaxRange setter in the action parser, or the tag itself when MaxRange came first), so
+//   the game targets and fires at F; the landing is the data's MaxRange plus what techs added to the
+//   player's copy since (a range tech moves both by the same amount).
+// Optional: <DirectionalWidth>W</DirectionalWidth>, metres either side of the flight line that still count as
+// flown over (default 0.25), and <DirectionalDamageFactor>X</DirectionalDamageFactor>, the share of the
+// attack each unit flown over takes (default 1).
+//
+// The launch: one hook at 0x4998A7, where every launch path of FUN_004995C7 meets with the impact point and
+// the mode final. For a directional action with a target and a projectile unit, the point moves along the
+// line from the shooter through it, to the landing distance (its height from the terrain), and the mode
+// becomes 3, the ground shot: the projectile flies there and the stock landing applies the attack at the
+// point (area damage with <DamageArea>, as a TargetGround shot does). InstantBallistics shots are left alone
+// (the instant arrival hits only [projectile+8]).
+// The flight: after each world update, each tracked shot's projectile unit (by ID) has moved; the 2D segment
+// it flew since the last update is tested against the units near it, and each unit whose obstruction it
+// passes within W is hit once, through the stock TakeDamage with the shot's action (damage, bonuses, armor and
+// the DamageFlags as for a direct hit). When the projectile unit is gone, the rest of the line to the landing
+// point is flown, unless the shot ended far from it (it hit a cliff). Shots are kept by projectile unit ID
+// and walked in ID order, so every machine hits the same units in the same order.
+#include <windows.h>
+
+#include <algorithm>
+#include <cmath>
+#include <compare>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <cwctype>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
+constexpr float kDefaultWidth = 0.25f;
+constexpr float kMaxDistance = 300.0f;  // a landing farther than this would leave most maps
+constexpr float kMaxWidth = 10.0f;
+constexpr float kMaxFactor = 100.0f;
+constexpr std::size_t kMaxShots = 512;  // shots in flight; the oldest is dropped beyond
+constexpr unsigned kMaxInvalidLines = 50;
+constexpr unsigned kMaxLaunchLines = 60;
+constexpr unsigned kMaxHitLines = 200;
+
+constexpr std::int32_t kGroundShot = 3;          // [projectile+20h]: lands at the point, the attack applied there
+constexpr std::int32_t kInstantBallistics = 22;  // action flag bit (0x5F8D2E)
+constexpr std::int32_t kMuteDamage = 6;          // action flag bit, TakeDamage's 10th argument (0x49BFEF)
+constexpr std::int32_t kFlagProjectile = 0x0A;   // proto flag "Projectile": the area damage skips these too
+
+struct IdList {
+  std::int32_t* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using ProtoFlagFn = bool(__thiscall*)(const char* proto, std::int32_t flag);
+using UnitByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+using UnitsNearFn = std::int32_t(__thiscall*)(const char* world, const float* point, float radius, char precise,
+                                              IdList* out);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+using DistanceFn = float(__thiscall*)(const char* unit, const float* point);
+using HeightFn = bool(__thiscall*)(void* terrain, const float* point, float* out, std::int32_t, std::int32_t);
+// TakeDamage FUN_0049B3D9 (docs/engine-symbols.md, "Damage and poison"), ret 34h.
+using TakeDamageFn = float(__thiscall*)(char* unit, std::int32_t player, std::int32_t proto, char* action,
+                                        std::int32_t attacker, float multiplier, float damage, float cap, char p8,
+                                        char p9, char p10, char p11, std::int32_t p12, char p13);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kProtoFlag = reinterpret_cast<ProtoFlagFn>(0x0045EE02);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
+const auto kTakeDamage = reinterpret_cast<TakeDamageFn>(0x0049B3D9);
+// The MaxRange setter FUN_005FA709 (thiscall(action, float), ret 4): data[0]+8 of the range array
+// [action+18h], and data[0]+0Ch too while that one is unset.
+using SetMaxRangeFn = void(__thiscall*)(char* action, float value);
+const auto kSetMaxRange = reinterpret_cast<SetMaxRangeFn>(0x005FA709);
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+const char* World() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+const char* Database() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
+bool IsAlive(const char* unit) { return (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit); }
+
+float ObstructionDistance(const char* unit, const float* point) {
+  return (*reinterpret_cast<DistanceFn const* const*>(unit))[0xB8 / 4](unit, point);
+}
+
+bool ActionFlag(const char* action, std::int32_t bit) {
+  if (Field<std::uint32_t>(action, 0x68) <= static_cast<std::uint32_t>(bit)) {
+    return false;
+  }
+  return (Field<const std::uint8_t*>(action, 0x64)[bit >> 3] & (1u << (bit & 7))) != 0;
+}
+
+// The action's MaxRange: the first entry of the range array [action+18h] (the setter 0x5FA709 writes its
+// +8). 0 without one.
+float MaxRange(const char* action) {
+  const char* ranges = Field<const char*>(action, 0x18);
+  return ranges == nullptr ? 0.0f : Field<float>(ranges, 0x08);
+}
+
+const wchar_t* ActionName(std::int32_t index) {
+  const char* database = Database();
+  if (database == nullptr || index < 0 || index >= Field<std::int32_t>(database, 0x1FDC)) {
+    return L"?";
+  }
+  const wchar_t* name = Field<const wchar_t* const*>(database, 0x1FD8)[index];
+  return name != nullptr ? name : L"?";
+}
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name != nullptr ? name : "?";
+}
+
+char* PlayerById(const char* world, std::int32_t id) {
+  if (id < 0 || id >= Field<std::int32_t>(world, 0x5C)) {
+    return nullptr;
+  }
+  return Field<char**>(world, 0x58)[id];
+}
+
+// The terrain height under (x, z), as the ground lead FUN_004C4DF8 asks it (0x4C4E62: the world's
+// [+88h] object, vtable slot 18h). False without terrain.
+bool TerrainHeight(const char* world, float* point) {
+  void* terrain = Field<void*>(world, 0x88);
+  if (terrain == nullptr) {
+    return false;
+  }
+  float height = point[1];
+  const auto fn = (*reinterpret_cast<HeightFn const* const*>(terrain))[0x18 / 4];
+  if (!fn(terrain, point, &height, 0, 0)) {
+    return false;
+  }
+  point[1] = height;
+  return true;
+}
+
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+struct Directional {
+  float distance = -1.0f;     // <DirectionalAttack>: the landing distance (variant 1)
+  float firingRange = -1.0f;  // <DirectionalFiringRange> (variant 2): the landing is the data's MaxRange
+  float dataMaxRange = -1.0f; // variant 2: the MaxRange the data gave, before it became firingRange
+  float width = kDefaultWidth;
+  float factor = 1.0f;
+  bool Enabled() const { return distance >= 0.0f || firingRange >= 0.0f; }
+};
+
+// Filled while the data loads, by the action's proto ID and name index (the same in every player's copy).
+std::map<ActionKey, Directional> g_actions;
+bool g_anyEnabled = false;
+// Variant 2: the database actions with <DirectionalFiringRange>, for the MaxRange setter call.
+std::map<char*, ActionKey> g_firingActions;
+bool g_log = false;
+unsigned g_invalidLines = 0;
+unsigned g_launchLines = 0;
+unsigned g_hitLines = 0;
+
+// One shot in flight.
+struct Shot {
+  float last[2];         // where the projectile unit was at the last update (x, z); its position at the launch first
+  float landing[3];      // the point it lands at
+  float dir[2];          // the unit vector from the shooter to the landing point
+  float origin[2];       // the shooter's position at the launch
+  float landingDistance; // from origin along dir
+  float lastStep = 0.0f;
+  float width;
+  float multiplier;
+  std::int32_t shooter;
+  std::int32_t player;
+  std::int32_t protoId;
+  char* action;
+  char muted;
+  char p10;
+  std::int32_t p12;
+  std::int32_t target;
+  std::set<std::int32_t> hit;  // the units already hit by this shot
+};
+
+std::map<std::int32_t, Shot> g_shots;  // by projectile unit ID
+std::int32_t g_resourceType = -1;
+IdList g_found = {nullptr, 0, 0};
+const char* g_tickWorld = nullptr;
+std::uint32_t g_tickStep = 0;
+std::uint32_t g_tickTime = 0;
+
+bool ParseValue(const wchar_t* text, float limit, float* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  while (std::iswspace(*text)) {
+    ++text;
+  }
+  wchar_t* end = nullptr;
+  const float value = std::wcstof(text, &end);
+  if (end == text) {
+    return false;
+  }
+  while (std::iswspace(*end)) {
+    ++end;
+  }
+  if (*end != L'\0' || !std::isfinite(value) || value < 0.0f || value > limit) {
+    return false;
+  }
+  *out = value == 0.0f ? 0.0f : value;
+  return true;
+}
+
+void OnActionTag(const uhc::ActionTag& tag) {
+  enum { kDistance, kFiringRange, kWidth, kFactor } which;
+  if (_wcsicmp(tag.name, L"DirectionalAttack") == 0) {
+    which = kDistance;
+  } else if (_wcsicmp(tag.name, L"DirectionalFiringRange") == 0) {
+    which = kFiringRange;
+  } else if (_wcsicmp(tag.name, L"DirectionalWidth") == 0) {
+    which = kWidth;
+  } else if (_wcsicmp(tag.name, L"DirectionalDamageFactor") == 0) {
+    which = kFactor;
+  } else {
+    return;
+  }
+  const wchar_t* source = tag.source == uhc::ActionSource::kTactics ? L"tactics" : L"protoy";
+  const ActionKey key{Field<std::int32_t>(tag.proto, 0x04), Field<std::int32_t>(tag.action, 0x04)};
+  const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
+  if (key.name < 0) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"directionalAttack: %hs (%ls): <%ls> before the action's <name>; ignored (put <name> first)",
+               ProtoName(tag.proto), source, tag.name);
+    }
+    return;
+  }
+  const float limit = which == kWidth ? kMaxWidth : which == kFactor ? kMaxFactor : kMaxDistance;
+  float value = 0.0f;
+  if (!ParseValue(tag.text, limit, &value)) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"directionalAttack: %hs/%ls (%ls): <%ls>%ls</%ls> is not a number from 0 to %.0f; ignored",
+               ProtoName(tag.proto), ActionName(key.name), source, tag.name, text, tag.name,
+               static_cast<double>(limit));
+    }
+    return;
+  }
+  Directional& entry = g_actions[key];
+  switch (which) {
+    case kDistance:
+      entry.distance = value;
+      break;
+    case kFiringRange: {
+      entry.firingRange = value;
+      char* action = const_cast<char*>(tag.action);
+      g_firingActions[action] = key;
+      // MaxRange read before this tag (it comes later in most data, through the setter call below).
+      const char* ranges = Field<const char*>(action, 0x18);
+      if (ranges != nullptr && Field<float>(ranges, 0x08) > 0.0f) {
+        entry.dataMaxRange = Field<float>(ranges, 0x08);
+        kSetMaxRange(action, value);
+      }
+      break;
+    }
+    case kWidth:
+      entry.width = value;
+      break;
+    case kFactor:
+      entry.factor = value;
+      break;
+  }
+  g_anyEnabled = g_anyEnabled || entry.Enabled();
+  if (g_log) {
+    uhc::Log(L"directionalAttack: %hs/%ls (%ls): %ls %.2f", ProtoName(tag.proto), ActionName(key.name), source,
+             tag.name, static_cast<double>(value));
+  }
+}
+
+void ResetForDataLoad(char*) {
+  g_actions.clear();
+  g_firingActions.clear();
+  g_anyEnabled = false;
+  g_shots.clear();
+  g_invalidLines = 0;
+  g_launchLines = 0;
+  g_hitLines = 0;
+}
+
+const Directional* Find(const char* proto, const char* action) {
+  if (!g_anyEnabled || proto == nullptr || action == nullptr) {
+    return nullptr;
+  }
+  const auto it = g_actions.find({Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)});
+  return it == g_actions.end() || !it->second.Enabled() ? nullptr : &it->second;
+}
+
+// The engine's diplomacy filter FUN_0049AEE0, from the shooter's player: DamageFlags at [[action+24h]+4]
+// (GAIA 1, Self 2, Ally 4, Enemy 8; FFh when the data sets none), relations at [player+1D4h + 4*id],
+// 2 = enemy. It is applied here too so that a unit the attack cannot damage is not hit at all (a hit
+// of 0 damage would still make it react).
+bool DamageAllowed(const char* world, const Shot& shot, const char* unit) {
+  const char* info = Field<const char*>(shot.action, 0x24);
+  const char* owner = Field<const char*>(unit, 0x44);
+  const char* attacker = PlayerById(world, shot.player);
+  if (info == nullptr || owner == nullptr || attacker == nullptr) {
+    return false;
+  }
+  const std::uint8_t flags = Field<std::uint8_t>(info, 0x04);
+  const std::int32_t unitPlayer = Field<std::int32_t>(owner, 0x00);
+  if (unitPlayer == 0) {
+    return (flags & 1) != 0;
+  }
+  if (unitPlayer == shot.player) {
+    return (flags & 2) != 0;
+  }
+  const bool enemy = unitPlayer > 0 && unitPlayer < 32 &&
+                     Field<std::int32_t>(attacker, 0x1D4 + 4 * static_cast<std::uint32_t>(unitPlayer)) == 2;
+  return (flags & (enemy ? 8 : 4)) != 0;
+}
+
+struct Candidate {
+  float along;  // distance along the segment, for the order
+  std::int32_t id;
+  char* unit;
+};
+
+// Hits every unit the segment a -> b passes within the shot's width, once per shot.
+void FlySegment(const char* world, std::int32_t projectileId, Shot& shot, const float* a, const float* b) {
+  const float sx = b[0] - a[0];
+  const float sz = b[1] - a[1];
+  const float length2 = sx * sx + sz * sz;
+  const float length = std::sqrt(length2);
+  float mid[3] = {(a[0] + b[0]) * 0.5f, shot.landing[1], (a[1] + b[1]) * 0.5f};
+  kUnitsNear(world, mid, length * 0.5f + shot.width + 0.5f, 1, &g_found);
+  std::vector<std::int32_t> ids(g_found.data, g_found.data + g_found.count);
+  std::vector<Candidate> hits;
+  for (const std::int32_t id : ids) {
+    if (id == shot.shooter || id == projectileId || shot.hit.count(id) != 0) {
+      continue;
+    }
+    char* unit = kUnitById(world, id);
+    const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+    if (proto == nullptr || !IsAlive(unit) || Field<std::int32_t>(unit, 0x6C) != -1 ||
+        kProtoFlag(proto, kFlagProjectile)) {
+      continue;
+    }
+    const char* owner = Field<const char*>(unit, 0x44);
+    if (owner != nullptr && Field<std::int32_t>(owner, 0) == 0 && g_resourceType >= 0 &&
+        kProtoIsType(proto, g_resourceType)) {
+      continue;  // a tree, a mine, a hunt
+    }
+    // The point of the segment nearest the unit's centre.
+    const float cx = Field<float>(unit, 0x14);
+    const float cz = Field<float>(unit, 0x1C);
+    float t = length2 > 0.0f ? ((cx - a[0]) * sx + (cz - a[1]) * sz) / length2 : 0.0f;
+    t = std::clamp(t, 0.0f, 1.0f);
+    const float q[3] = {a[0] + sx * t, Field<float>(unit, 0x18), a[1] + sz * t};
+    if (ObstructionDistance(unit, q) > shot.width || !DamageAllowed(world, shot, unit)) {
+      continue;
+    }
+    hits.push_back({t * length, id, unit});
+  }
+  std::sort(hits.begin(), hits.end(), [](const Candidate& l, const Candidate& r) {
+    return l.along != r.along ? l.along < r.along : l.id < r.id;
+  });
+  for (const Candidate& c : hits) {
+    char* unit = kUnitById(world, c.id);
+    if (unit == nullptr || !IsAlive(unit)) {
+      continue;  // killed by an earlier hit of this segment
+    }
+    shot.hit.insert(c.id);
+    const bool shooterThere = kUnitById(world, shot.shooter) != nullptr;
+    const float dealt = kTakeDamage(unit, shot.player, shot.protoId, shot.action, shot.shooter, shot.multiplier, 0.0f,
+                                    0.0f, 0, shot.muted, shot.p10, shooterThere ? 1 : 0, shot.p12, 1);
+    if (g_log && g_hitLines < kMaxHitLines) {
+      ++g_hitLines;
+      const char* owner = Field<const char*>(unit, 0x44);
+      uhc::Log(L"directionalAttack: shot %d of unit %d hits unit %d (%hs, player %d%ls) at (%.1f, %.1f): %.1f damage",
+               projectileId, shot.shooter, c.id, ProtoName(Field<const char*>(unit, 0x5C)),
+               owner == nullptr ? -1 : Field<std::int32_t>(owner, 0), c.id == shot.target ? L", its target" : L"",
+               static_cast<double>(Field<float>(unit, 0x14)), static_cast<double>(Field<float>(unit, 0x1C)),
+               static_cast<double>(dealt));
+    }
+  }
+}
+
+// After each world update: every shot in flight flies the segment since the last update.
+void Tick(char* world, std::int32_t) {
+  if (world != World()) {
+    return;
+  }
+  const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (world != g_tickWorld || step - g_tickStep > 1 || now < g_tickTime) {
+    g_shots.clear();  // another game: these IDs are not its units
+  }
+  g_tickWorld = world;
+  g_tickStep = step;
+  g_tickTime = now;
+  for (auto it = g_shots.begin(); it != g_shots.end();) {
+    Shot& shot = it->second;
+    const char* projectile = kUnitById(world, it->first);
+    float next[2];
+    bool done = false;
+    if (projectile == nullptr) {
+      // Landed (or ended) during the update: fly on to the landing point if it ended near it.
+      const float dx = shot.landing[0] - shot.last[0];
+      const float dz = shot.landing[2] - shot.last[1];
+      const float remaining = std::sqrt(dx * dx + dz * dz);
+      done = true;
+      if (remaining > std::max(3.0f * shot.lastStep, 3.0f)) {
+        if (g_log && g_launchLines < kMaxLaunchLines) {
+          ++g_launchLines;
+          uhc::Log(L"directionalAttack: shot %d ended at (%.1f, %.1f), %.1f m short of its landing point (%.1f, %.1f), "
+                   L"last step %.2f m; %u unit(s) hit",
+                   it->first, static_cast<double>(shot.last[0]), static_cast<double>(shot.last[1]),
+                   static_cast<double>(remaining), static_cast<double>(shot.landing[0]),
+                   static_cast<double>(shot.landing[2]), static_cast<double>(shot.lastStep),
+                   static_cast<unsigned>(shot.hit.size()));
+        }
+        it = g_shots.erase(it);
+        continue;
+      }
+      next[0] = shot.landing[0];
+      next[1] = shot.landing[2];
+    } else {
+      next[0] = Field<float>(projectile, 0x14);
+      next[1] = Field<float>(projectile, 0x1C);
+      const float along = (next[0] - shot.origin[0]) * shot.dir[0] + (next[1] - shot.origin[1]) * shot.dir[1];
+      if (along >= shot.landingDistance) {
+        next[0] = shot.landing[0];  // past the landing point (a bounce): the line ends there
+        next[1] = shot.landing[2];
+        done = true;
+      }
+    }
+    const float sx = next[0] - shot.last[0];
+    const float sz = next[1] - shot.last[1];
+    const float stepLength = std::sqrt(sx * sx + sz * sz);
+    if (stepLength > 0.0f || done) {
+      FlySegment(world, it->first, shot, shot.last, next);
+    }
+    if (stepLength > 0.0f) {
+      shot.lastStep = stepLength;
+    }
+    shot.last[0] = next[0];
+    shot.last[1] = next[1];
+    if (done) {
+      if (g_log && g_launchLines < kMaxLaunchLines) {
+        ++g_launchLines;
+        uhc::Log(L"directionalAttack: shot %d reached its landing point (%.1f, %.1f); %u unit(s) hit", it->first,
+                 static_cast<double>(shot.landing[0]), static_cast<double>(shot.landing[2]),
+                 static_cast<unsigned>(shot.hit.size()));
+      }
+      it = g_shots.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
+}  // namespace
+
+extern "C" {
+void UhcDirLaunchHook();
+
+// Replaces the action parser's call 0x5F8A51 of the MaxRange setter (ECX = the action, the value on the
+// stack): an action with <DirectionalFiringRange> keeps the data's value as its landing distance and gets
+// the firing range as its MaxRange.
+void __fastcall UhcDirSetMaxRange(char* action, void*, float value) {
+  const auto it = g_firingActions.find(action);
+  if (it != g_firingActions.end()) {
+    const auto entry = g_actions.find(it->second);
+    if (entry != g_actions.end() && entry->second.firingRange >= 0.0f) {
+      entry->second.dataMaxRange = value;
+      if (g_log) {
+        uhc::Log(L"directionalAttack: %ls: MaxRange %.2f is the landing distance; the unit fires at %.2f",
+                 ActionName(it->second.name), static_cast<double>(value),
+                 static_cast<double>(entry->second.firingRange));
+      }
+      value = entry->second.firingRange;
+    }
+  }
+  kSetMaxRange(action, value);
+}
+
+// The launch hook (hooks/directional_hooks.asm), for every projectile launched.
+void __stdcall UhcDirLaunch(char* projectile, const char* unitAction, const char* shooter, const char* target,
+                            std::int32_t p12, float multiplier, float* point) {
+  if (!g_anyEnabled || unitAction == nullptr || shooter == nullptr || target == nullptr) {
+    return;
+  }
+  char* action = Field<char*>(unitAction, 0x04);
+  const char* proto = Field<const char*>(shooter, 0x5C);
+  const Directional* entry = Find(proto, action);
+  if (entry == nullptr || ActionFlag(action, kInstantBallistics)) {
+    return;
+  }
+  const char* projectileUnit = Field<const char*>(projectile, 0x00);
+  const char* world = World();
+  if (projectileUnit == nullptr || world == nullptr) {
+    return;
+  }
+  const float ox = Field<float>(shooter, 0x14);
+  const float oz = Field<float>(shooter, 0x1C);
+  const float dx = point[0] - ox;
+  const float dz = point[2] - oz;
+  const float targetDistance = std::sqrt(dx * dx + dz * dz);
+  if (targetDistance < 0.1f) {
+    return;
+  }
+  // Variant 2: the data's MaxRange, moved by what techs added to this player's copy since the load.
+  const float wanted = entry->distance >= 0.0f ? entry->distance
+                       : entry->dataMaxRange >= 0.0f ? entry->dataMaxRange + MaxRange(action) - entry->firingRange
+                                                     : MaxRange(action);
+  const float landingDistance = std::max(wanted, targetDistance);
+  Shot shot{};
+  shot.dir[0] = dx / targetDistance;
+  shot.dir[1] = dz / targetDistance;
+  shot.origin[0] = ox;
+  shot.origin[1] = oz;
+  shot.landingDistance = landingDistance;
+  shot.landing[0] = ox + shot.dir[0] * landingDistance;
+  shot.landing[1] = point[1];
+  shot.landing[2] = oz + shot.dir[1] * landingDistance;
+  TerrainHeight(world, shot.landing);
+  shot.last[0] = Field<float>(projectileUnit, 0x14);
+  shot.last[1] = Field<float>(projectileUnit, 0x1C);
+  shot.width = entry->width;
+  shot.multiplier = multiplier * entry->factor;
+  shot.shooter = Field<std::int32_t>(shooter, 0x10);
+  const char* owner = Field<const char*>(shooter, 0x44);
+  shot.player = owner == nullptr ? 0 : Field<std::int32_t>(owner, 0x00);
+  shot.protoId = Field<std::int32_t>(proto, 0x04);
+  shot.action = action;
+  shot.muted = ActionFlag(action, kMuteDamage) ? 1 : 0;
+  shot.p10 = (Field<std::uint32_t>(projectile, 0x30) >> 14 & 1) == 0 ? 1 : 0;
+  shot.p12 = p12;
+  shot.target = Field<std::int32_t>(target, 0x10);
+  point[0] = shot.landing[0];
+  point[1] = shot.landing[1];
+  point[2] = shot.landing[2];
+  *reinterpret_cast<std::int32_t*>(projectile + 0x20) = kGroundShot;
+  const std::int32_t projectileId = Field<std::int32_t>(projectileUnit, 0x10);
+  if (g_log && g_launchLines < kMaxLaunchLines) {
+    ++g_launchLines;
+    uhc::Log(L"directionalAttack: unit %d (%hs/%ls) fires shot %d at unit %d %.1f m away; it lands %.1f m away at "
+             L"(%.1f, %.1f)",
+             shot.shooter, ProtoName(proto), ActionName(Field<std::int32_t>(action, 0x04)), projectileId, shot.target,
+             static_cast<double>(targetDistance), static_cast<double>(landingDistance),
+             static_cast<double>(shot.landing[0]), static_cast<double>(shot.landing[2]));
+  }
+  g_shots[projectileId] = std::move(shot);
+  while (g_shots.size() > kMaxShots) {
+    g_shots.erase(g_shots.begin());
+  }
+}
+}
+
+namespace uhc {
+
+Outcome ApplyDirectionalAttack(const Config& config) {
+  const Config::Args* args = config.First("directionalAttack");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"directionalAttack: unknown option %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("directionalAttack", {&sites::kDirectionalLaunch, &sites::kDirectionalLaunchCall,
+                                       &sites::kDirectionalTerrainHeight, &sites::kDirectionalTakeDamage,
+                                       &sites::kDirectionalMaxRangeCall,
+                                       &sites::kUnitsNearPoint, &sites::kUnitById, &sites::kProtoFlag}) ||
+      !RequestAbstractUnitType("Resource", &g_resourceType) || !OnDatabaseLoad(&ResetForDataLoad) ||
+      !AddActionTagHandler(&OnActionTag) || !AddWorldTick(&Tick) ||
+      !WriteJmp(sites::kDirectionalLaunch.va, reinterpret_cast<const void*>(&UhcDirLaunchHook), 7) ||
+      !WriteCall(sites::kDirectionalMaxRangeCall.va + 7, reinterpret_cast<const void*>(&UhcDirSetMaxRange))) {
+    return Outcome::kFailed;
+  }
+  Log(L"directionalAttack: actions with <DirectionalAttack> or <DirectionalFiringRange> fly past their target and "
+      L"hit what they fly over%ls (multiplayer unverified)",
+      g_log ? L"; shots and hits logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/directional_hooks.asm
+
+```asm
+; directionalAttack (src/features/directional.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcDirLaunch PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
+
+.data
+launchNext dd 004998AEh     ; mov ecx,[ebx+4], after the two instructions this hook re-executes
+
+.code
+
+; Replaces mov ecx,[esp+10h] / mov [esi+14h],ecx (7 bytes) at 0x4998A7 in the projectile launch FUN_004995C7,
+; where every launch path meets once the mode [esi+20h] and the impact point [esp+28h] are final: the
+; precalculated roll (0x49989C), the InstantBallistics branch (0x4998A0), the TargetGround store (0x4C4DF3)
+; and the skipped block (0x4997B0, 0x4997B8). Nothing branches inside the 7 bytes. ESI = the projectile,
+; [esp+18h] the unit action, [esp+0E8h] the shooting unit, [esp+0ECh] the target unit or 0, [esp+10h] the
+; damage multiplier the stolen code copies to [projectile+14h], [esp+44h] the value the launch keeps at
+; [projectile+0C0h]. Every launch call after it (0x4A5725, 0x7A8CDF, the instant 0x4A95A5) reads the point at
+; [esp+28h], so a point and a mode rewritten here are where the shot flies and how it lands. Registers are
+; saved around the call; the continuation sets the flags before it reads them (test eax,eax at 0x4998B4).
+UhcDirLaunchHook PROC
+    TRACE_ONCE "directionalAttack launch (0x4998A7)"
+    pushad
+    lea eax, dword ptr [esp+20h+28h]    ; the impact point
+    push eax
+    push dword ptr [esp+24h+10h]        ; the damage multiplier (float)
+    push dword ptr [esp+28h+44h]        ; [projectile+0C0h] to be
+    push dword ptr [esp+2Ch+0ECh]       ; the target unit (or 0)
+    push dword ptr [esp+30h+0E8h]       ; the shooting unit
+    push dword ptr [esp+34h+18h]        ; the unit action
+    push esi                            ; the projectile
+    call UhcDirLaunch
+    popad
+    mov ecx, dword ptr [esp+10h]        ; stolen
+    mov dword ptr [esi+14h], ecx        ; stolen
+    jmp launchNext
+UhcDirLaunchHook ENDP
 
 END
 ```

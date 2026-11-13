@@ -30,6 +30,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
+| Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
+| Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
+| Thursday 2026-11-12 18:01 | [`customWalls`](#customwalls) | Added. A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. |
 | Thursday 2026-11-12 17:40 | [`customImpactTypes`](#customimpacttypes) | Filmed in WoL, with a control. New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. |
 | Thursday 2026-11-12 16:03 | [`impactBoneFix`](#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
@@ -2878,6 +2882,7 @@ Attacks, armor, and what a hit does.
 | [`multiarmor`](#multiarmor) | A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | **in `wol.cfg`** | Several `<Armor>` lines on the protos. | confirmed |
 | [`snareValues`](#snarevalues) | The factor and length of `<TargetSpeedBoost>`, per action and by tech. | **new** | The tags on the action. | confirmed |
 | [`stealthTargeting`](#stealthtargeting) | A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | **new** | Nothing. | confirmed (single player) |
+| [`directionalAttack`](#directionalattack) | A shot that flies on past its target and hits every unit it flies over, before and after the target. | **new** | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. | confirmed (single player) |
 | [`detonationDeath`](#detonationdeath) | `<DetonationProtoAction>` makes a unit fire an action around itself when it dies. | **new** | The tag, and an action with `DamageArea`. | confirmed |
 | [`dodgeAnyUnit`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Lets units marked with a unit type dodge hits like the Japanese monk (no damage, 15 % of the hits, while their player has `YPDodge`). | **new** | That unit type on the units in `protoy.xml`, or a type or proto name in the cfg, and `YPDodge` active for their players. | confirmed (single player) |
 | [`dodgeSoundSet`, `criticalSoundSet`](#dodgeanyunit-dodgesoundset-and-criticalsoundset) | Chooses the sound set a unit plays when it dodges or lands a critical hit. | **new** | A sound set name in the cfg. | confirmed (single player, from the log) |
@@ -2886,6 +2891,7 @@ Attacks, armor, and what a hit does.
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units, `InstantBallistics` included, scatter like that whatever their accuracy and hit what it lands on. | **new** | The tags are there; the unit type or proto name of the units that should always scatter, in the cfg. | confirmed (single player) |
 | [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
+| [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
@@ -3743,6 +3749,93 @@ containedUnitsROF [log]
   - 30 Crossbowmen against 30 Hussars and two Blockhouses with units inside, 60 s: 787 fps, update 0.2 ms, no frame over
     50 ms; key off 728 fps, update 0.2 ms, none over 50 ms.
   - Not tested: multiplayer, beside WoL's DLL, a ship or another unit that really holds units in WoL's data.
+- **Since 2026-11-12** its five ROF hooks are shared with [`numberOfShots`](#numberofshots) (the log names them
+  `ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)` and so on); with both keys the burst's last
+  shot waits the divided ROF.
+
+#### numberOfShots
+
+*An attack can fire several quick shots before it reloads, and a shot can fire several projectiles, like a shotgun.*
+
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Thursday 2026-11-12 18:35
+
+![numberOfShots in WoL](media/numberOfShots-wol.gif)
+
+*In WoL, with `numberOfShots log` (3 `Skirmisher`s, selected, whose ranged attacks have
+`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 5 enemy `Settler`s; the
+log at the bottom):* each Skirmisher fires three shots 0.4 s apart, then waits its 3 s ROF. The settlers' HP is at the top:
+after two bursts one has fallen and two are hurt; all five are down by 49 s. [Full video (MP4)](media/numberOfShots-wol.mp4).
+
+![numberOfShots in WoL, key off](media/numberOfShots-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* one shot every 3 s; at 50 s two settlers have fallen.
+[Full video (MP4)](media/numberOfShots-wol-control.mp4).
+
+![numberOfShots projectiles in WoL](media/numberOfShots-projectiles-wol.gif)
+
+*In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
+`<NumberProjectiles>4</NumberProjectiles><MaxSpread>2</MaxSpread><SpreadFactor>0.2</SpreadFactor>`, test data):* each shot
+is a fan of four tracers, each pellet landing where its own spread takes it. Three settlers fall in 57 s.
+[Full video (MP4)](media/numberOfShots-projectiles-wol.mp4).
+
+![numberOfShots projectiles in WoL, key off](media/numberOfShots-projectiles-wol-control.gif)
+
+*In WoL, `spreadAnyAccuracy Skirmisher` without this key (the same data):* one tracer per shot; after 52 s no settler has
+fallen. [Full video (MP4)](media/numberOfShots-projectiles-wol-control.mp4).
+
+```
+numberOfShots [projectiles] [log]
+```
+
+- **In WoL today (WoL #55):** an attack fires one shot per ROF. No tag gives several shots before the reload, and
+  `<numberprojectiles>`, which 94 of WoL's tactics actions carry (from Age of Mythology; 3 to 6 on the shotguns, 12 on
+  the Schwarzlose), is not read at all: the exe has no such tag (that is what "it does not work" is). So every shot is
+  one projectile.
+- **The burst:** an attack with `<NumberOfShots>N</NumberOfShots>` fires N shots: the first N − 1 play the attack
+  animation at the pace of `<ShotInterval>` (seconds, default 0.25) and wait that long; the last one plays it at the
+  ROF's pace, so it comes a little later (the aim of the stock animation: 0.67 s after the one before for a 3 s
+  Skirmisher), and waits the ROF: the reload. So a burst takes about (N − 1) × interval + ROF. Each shot is a full stock shot:
+  its own accuracy roll, damage and projectile. Melee attacks take it too (N hits). A new target starts a new burst.
+
+  ```xml
+  <action>
+      <name stringid="...">RangedAttack</name>
+      ...
+      <rof>3.0</rof>
+      <numberofshots>3</numberofshots>
+      <shotinterval>0.4</shotinterval>
+  </action>
+  ```
+
+  The tags also work in a `<ProtoAction>` of `protoy.xml` (the last one read wins). `NumberOfShots` 1 to 50, `ShotInterval`
+  above 0 and up to 60 s; another value is logged and ignored.
+- **`projectiles`:** each shot of an action with `<NumberProjectiles>N</NumberProjectiles>` (or `<NumberOfProjectiles>`,
+  1 to 32) launches N projectiles at once, each with its own accuracy roll and its own spread
+  ([`spreadAnyAccuracy`](#spreadanyaccuracy)), and each dealing the action's damage: divide the damage by N for the same
+  total. **Careful:** the option reads the `numberprojectiles` WoL's tactics already have, so it multiplies the damage of
+  those 94 actions (most have 1; the shotguns 3 to 6; check `UHC.log`: with `log`, every one is listed while the data
+  loads). The broadside's projectiles are [`broadsideMuzzleLimit`](#broadsidemuzzlelimit)'s.
+- **Which one Maston asked for:** `numberOfShots` for "several shots before the reload". `projectiles` is the fix of
+  `numberOfProjectiles` as AoM meant it (pellets); to use the old tag for the burst instead, rename it in the data.
+- **Not covered:** the panel's ROF and damage, and the AI's estimate of a unit's damage, still read the data (one shot per
+  ROF). An ROF that something other than the tactics sets (an ability's own) gets no burst.
+- **With other keys:** [`containedUnitsROF`](#containedunitsrof) shares the ROF hooks; with both, the reload is the divided
+  ROF and the interval is not divided. `spreadAnyAccuracy` scatters each projectile.
+- **Log:** `numberOfShots: applied`, `hook reached: ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)`
+  and, with `projectiles`, `numberOfShots projectiles (0x48F88D)`. With `log`: each tag read (at most 200), and the first
+  shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
+  far 1): wait 400 ms (the interval)`, `... shot 3 of its burst of 3 ...: wait 3000 ms (the ROF: reload)`, `unit 2
+  (Skirmisher/VolleyRangedAttack) launches 4 projectiles for one shot`.
+- **Simulation:** changes combat: every player needs the same line and data.
+- **Saved games:** nothing to keep: the tags are read again when the data loads, and the count is the attack's own.
+- **Tested in WoL (2026-11-12, single player):** the scenes above: shots at 29.73, 30.13 and 30.80 s, the next burst at
+  33.53 s, for each of the 3 Skirmishers; key off one shot per 3 s. With `projectiles` and 4 pellets, 4 launches per shot
+  (log) and 5 settlers dead or nearly in 57 s, against 132 HP of damage in 52 s with one. With `containedUnitsROF`, a
+  Blockhouse with 2 settlers inside and `target="ROF"`, 2 shots and 0.3 s on its `RangedAttack`: ROF 3000 -> 1500 ms,
+  bursts every 1.8 s. A saved game loaded before the fight: the bursts as before. Invalid values (`0`, `-1`, `99`)
+  logged and ignored; `numberOfShots bogus`: logged, not applied. A 100 s skirmish against `wolOtto` (Germans) with
+  `projectiles` (so WoL's own `numberprojectiles` read): no XS error, the AI had 10 settlers and a Manor. Performance (`perfprobe.py`, 60 s each, 30 `Skirmisher`s against 30 `Crossbowman`s beside a forest, a mine and deer): with the key and `projectiles` but no tag in the data, 978 fps, update 0.133 ms, render 0.89 ms a frame; key off 988 fps, 0.136 ms, 0.88 ms; no frame over 50 ms in any run (the longest 4 ms). With the Skirmishers' 3-shot bursts and 2 projectiles a shot, the update stays 0.13 ms and the render rises to 1.0–1.3 ms: six times the tracers on screen, the data's cost. Not tested:
+  multiplayer, beside WoL's DLL (`dinput8.dll`).
 
 #### broadsideMuzzleLimit
 
@@ -4499,6 +4592,63 @@ customImpactTypes <Name> [<Name> ...] [log]
 - **Tested in WoL (2026-11-12):** the Mahalla with `ShipMetal` and the `.xmb`: the splash on every hit with the key, none
   without it; the stock `Metal`, key off. Not tested: a ship, a proto's or a terrain's `<ImpactType>`, the sound by ear,
   multiplayer.
+
+#### directionalAttack
+
+*A cannon shot flies on past its target to a fixed distance and hits every unit it flies over on the way, like a Scorpion bolt.*
+
+**Added:** Thursday 2026-11-12 18:23 · **Filmed in WoL:** Thursday 2026-11-12 18:26
+
+![directionalAttack in WoL](media/directionalAttack-wol.gif)
+
+*In WoL, with `directionalAttack log` (test data: the `Falconet`'s `CannonAttack` with `<DirectionalAttack>40`,
+`<DirectionalWidth>0.5` and `<DirectionalDamageFactor>0.3`; the Falconet is selected; a row of 6 `Crossbowman`s and, 12 m
+behind, a row of 6 `Pikeman`s):* each shot flies 40 m, past its target, and lands far behind the rows; the log at the bottom
+lists every unit it flies over and the damage, up to 5 per shot, pikemen behind the target included.
+[Full video (MP4)](media/directionalAttack-wol.mp4).
+
+![directionalAttack in WoL, key off](media/directionalAttack-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* each shot lands on its target and splashes it; the row of pikemen behind is not
+touched while it stands there (the unit counts at the top keep 6 Pikemen while the Crossbowmen fall).
+[Full video (MP4)](media/directionalAttack-wol-control.mp4).
+
+```
+directionalAttack [log]
+```
+
+In the attack (a `.tactics` `<action>` or a `protoy.xml` `<ProtoAction>`), one of two tags, the two variants asked for:
+
+```xml
+<!-- Variant 1: the unit fires at its MaxRange as usual; the shot lands 40 m from the unit. -->
+<DirectionalAttack>40</DirectionalAttack>
+<!-- Variant 2: the unit fires at 14 m; the shot lands at the action's MaxRange. -->
+<DirectionalFiringRange>14</DirectionalFiringRange>
+<!-- Optional, both variants. -->
+<DirectionalWidth>0.5</DirectionalWidth>             <!-- metres either side of the line; default 0.25 -->
+<DirectionalDamageFactor>0.3</DirectionalDamageFactor> <!-- share of the attack per unit flown over; default 1 -->
+```
+
+- **What it does:** the shot leaves along the line from the unit through its target and lands at the landing distance (never
+  short of the target). Every unit whose obstruction the line passes within `DirectionalWidth` takes the attack once, as a
+  direct hit: the action's damage, its `DamageBonus`es, the armor and `DamageFlags` (so `GAIAEnemy` never hits the unit's
+  own or allied units), times `DirectionalDamageFactor`. The target is one of them. Where the shot lands, the attack lands
+  as a `TargetGround` shot's does: with `DamageArea`, the area damage there. Trees, mines and hunts are not hit.
+- **Variant 2 and techs:** with `<DirectionalFiringRange>`, the action's `MaxRange` becomes the firing range when the data
+  loads, and the data's `MaxRange` is kept as the landing distance. A tech that adds range adds it to both, so the shot
+  still lands the same distance past where the unit fires. JTMaston has not chosen the variant yet (WoL #48); both work.
+- **Not changed:** `InstantBallistics` attacks (musket shots) are left as they are: their hit is decided at the target. A
+  shot whose landing point is off the map ends at the map's edge.
+- **With other keys:** none shares its sites. A pass-through hit goes through the stock `TakeDamage`, so `damageOverTime`,
+  `multiarmor`, `dodgeAnyUnit` and the rest apply to it as to any hit.
+- **Tested in WoL (2026-11-12, single player):** the scene above, a European Falconet against Crossbowmen and Pikemen
+  of player 2: up to 9 units hit by one shot (its target, a pikeman 4 m away, then 3 crossbowmen and 5 pikemen up to 36 m away). Variant 2 with `<DirectionalFiringRange>14`
+  on the Falconet's `MaxRange` 26: the log reads `MaxRange 26.00 is the landing distance; the unit fires at 14.00`, the
+  shots land at 26 m, and attack-moving at 3 Crossbowmen it fired its first shot 17 m from them against 22 m without the tag.
+  Bad values (`-1`, `abc`) and a bad cfg argument are logged and ignored. A/B, 6 Falconets against 30 units, 60 s each: key
+  on 713 fps, update 0.2 ms, main thread 87 %, no frame over 50 ms; key off 700 fps, 0.2 ms, 87 %, none (two other
+  copies of the game were running). Not tested: multiplayer, a saved game (shots in flight are not saved: a loaded game
+  lands them as plain ground shots), beside WoL's own DLL.
 
 ### Gathering and farms
 
@@ -5342,6 +5492,7 @@ How buildings train, spawn, live and get replaced.
 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | **new** | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). | confirmed (single player) |
 | [`gaiaSocketsOnly`](#gaiasocketsonly) | Lets a socketed building (`TradingPost`, or WoL's on saltpeter) be placed only on a socket that Gaia owns, as the placement preview already shows. | **new** | Nothing for the global rule; with a new marker, that type on the sockets in `protoy.xml`. | not tested in game |
 | [`repairWallGlobal`](#repairwallglobal) | A UI syscall that repairs every wall of the local player. | **in `wol.cfg`** | A button or hotkey that calls `repairWallGlobal()`. | confirmed |
+| [`customWalls`](#customwalls) | A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | **new** | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. | confirmed (single player) |
 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | **new** | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. | confirmed (single player; `FirstTC` with `civFirstTC`) |
 | [`annexFacing`](#annexfacing) | An annex (`<AnnexOf>Barracks</AnnexOf>` in its proto) faces the building it belongs to, also when the AI places it, and falls when that building dies or is destroyed. The turn is in steps of 90 degrees from the building's own axes, fixed at placement; a trigger's `Destroy` of the building drops its annexes too. | **new** | The tag on the annexes; a placement distance that leaves room for the turned annex. | confirmed (single player) |
 
@@ -6031,6 +6182,86 @@ repairWallGlobal
 - **Simulation:** sends one game command per wall: safe in multiplayer.
 - **Status:** confirmed (single player, on WoL): three `WallStraight5` at 600 / 1500 went back to 1500 after
   one call; without the key the call did nothing.
+
+#### customWalls
+
+*Any building can be laid like a wall, from a point A to a point B, with its own posts and pieces instead of the civ's stone wall.*
+
+**Added:** Thursday 2026-11-12 18:01 · **Filmed in WoL:** Thursday 2026-11-12 18:01
+
+![customWalls in WoL](media/customWalls-wol.gif)
+
+*In WoL, with `customWalls` (Ethiopians, four `gwMilitaryPioneer`, selected; `gwBarbedWireConnector` has the tags below):* the
+barbed wire button draws a line of barbed wire posts and `gwBarbedWire` pieces between two clicks, and a second line from its
+last post makes a corner; the pioneers build both. [Full video (MP4)](media/customWalls-wol.mp4).
+
+![customWalls in WoL, key off](media/customWalls-wol-control.gif)
+
+*In WoL, key off (the same scene, the same data and clicks):* the same button lays the Ethiopians' own wall, its posts and
+pieces. [Full video (MP4)](media/customWalls-wol-control.mp4).
+
+```
+customWalls [log]
+```
+
+In `protoy.xml`, on the proto the player clicks (the post):
+
+```xml
+<Unit name="gwBarbedWireConnector">
+	...
+	<PlacementFile>wall.xml</PlacementFile>
+	<Flag>wallBuild</Flag>
+	<WallPiece type="Straight5">gwBarbedWire</WallPiece>
+	<WallPiece type="Straight2">gwBarbedWire</WallPiece>
+	<WallPiece type="Gate">gwBarbedWire</WallPiece>
+</Unit>
+```
+
+and on each piece it names, as the stock `WallStraight2` has:
+
+```xml
+<Unit name="gwBarbedWire">
+	...
+	<PlacementFile>wall.xml</PlacementFile>
+	<Flag>wallBuild</Flag>
+</Unit>
+```
+
+- **How the game lays a wall:** any proto with the stock flag `wallBuild` already enters the wall mode ("Left click to place
+  first wall endpoint"). Between the two clicks the game puts posts and straight pieces: a 5-long piece where it fits, a
+  2-long one for the rest, and the gate only to join an existing gate. But it takes those four protos from the player's civ
+  (the stock `civs.xml` tag `<wall type="Connector|Straight2|Straight5|Gate">proto</wall>`, which WoL's civs do not use) or,
+  without it, from the names `WallConnector`, `WallStraight5`, `WallStraight2` and `CWallGate`. So without the key, a barbed
+  wire post with `wallBuild` lays a stone wall.
+- **What the key does:** when the proto being placed has `<WallPiece>` tags, the wall is laid with the posts of that proto and
+  the pieces the tags name. `type` is `Straight5`, `Straight2` or `Gate`; without `type`, the tag names both straights. A
+  missing straight takes the other one, and a missing gate takes the 5-long straight. One proto can be several pieces, as
+  `gwBarbedWire` is here. A post of such a wall can also be placed on a post of the same proto that its owner already has, so
+  a new line can start at the end of another (the corner in the video), as the stock wall does.
+- **The pieces need** `<Flag>wallBuild</Flag>` and `<PlacementFile>wall.xml</PlacementFile>`, as the stock wall pieces have:
+  without them, the game places the posts but answers "You cannot build a Barbed wire there" for every piece (seen in the
+  test). The post needs `wallBuild` too. The pieces are laid along the line, so a piece's `ObstructionRadiusX` is its half
+  length (the stock 5-long piece has 5.0; `gwBarbedWire` has 2.5, and the line came out with a post every 5.9 m). WoL's
+  `gwBarbedWire` also has `DontRotateObstruction`, which did not matter in the test.
+- **Unchanged:** a building without `<WallPiece>` tags (the stock `WallConnector`, every civ's wall) lays the civ's wall as
+  before. The AI's walls (`aiBuildWall`, the colony walls) always use the civ's wall. The cost is each piece's own.
+- **WoL needs:** the tags and flags above. In WoL's data today, `gwBarbedWireConnector` has `<PlacementFile>wall.xml</PlacementFile>`
+  but no `wallBuild`, so it is placed one post at a time, and `gwBarbedWire` has neither. The test also enabled both protos for
+  the player with a trigger (`Unforbid and Enable Unit`), as a scenario player does not get them otherwise.
+- **Log:** `customWalls: applied`; with `log`, one line per tag read (`proto 3321 (gwBarbedWireConnector) WallPiece Straight5 =
+  gwBarbedWire`) and one per wall ordered (`player 1 orders a wall of gwBarbedWireConnector: straights gwBarbedWire / gwBarbedWire,
+  gate gwBarbedWire`, or `... of proto 620 (WallConnector), no WallPiece tags: the civ's pieces`); a name that is no proto:
+  `customWalls: proto N: no proto named "X"; its walls stay the civ's`.
+- **Multiplayer:** the choice is made where the player clicks, and the game sends one build order per post and piece, with its
+  proto, as it does for the stock wall; the other machines only build what they receive. Not tested in a multiplayer game.
+- **With other keys:** none shares its sites.
+- **Tested in WoL (2026-11-12, single player, Ethiopians):** with the key, two lines of barbed wire (5 posts and 4 pieces each,
+  the second one from the last post of the first) were laid and built by the pioneers; the stock `WallConnector` of a `Settler`
+  still laid the Ethiopians' own wall. Key off, the same clicks laid the Ethiopians' wall. `customWalls log bogus`: logged, not
+  applied. `type="Tower"`: logged and skipped; a gate named `NoSuchProto`: logged once, and the wall was the Ethiopians' (no
+  crash). A skirmish of 100 s against `wolOtto` (Germans) with the key and the test data: no XS error, the AI played. The
+  hook runs only while a wall is being placed, a map lookup per frame of the drag; the videos show 950 fps with and without
+  the key. Not tested: multiplayer, beside WoL's DLL, a saved game.
 
 #### hcShipmentPointFallback
 
@@ -7207,6 +7438,7 @@ What the panels and the fog of war show.
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
 | [`steadyHitpointBars`](#steadyhitpointbars) | The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | **new** | Nothing. | confirmed (single player, UI) |
+| [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
 
 #### nativePreview
 
@@ -7592,6 +7824,55 @@ steadyHitpointBars [UnitType ...] [log]
   Hussar charge, Settlers, a Caravel and a Fluyt, a Barracks, a saved game loaded, and a 100 s skirmish against a
   European AI with no XS error. Not tested: an orange segment on screen (no Hussar was above its 100 % in this data),
   types listed in the key, beside WoL's DLL, multiplayer.
+
+#### inventoryBars
+
+*While Alt is held, units, mines, bushes and carcasses show a second bar: how much of their resources is left.*
+
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Thursday 2026-11-12 18:35
+
+![inventoryBars in WoL](media/inventoryBars-wol.gif)
+
+*In WoL, with `inventoryBars log`, Alt held (a gold mine, a berry bush, a `Sheep` and 4 `Settler`s of player 1, who hunt a
+`Deer`):* the mine has a yellow bar, the bush and the sheep a red one (food) under their HP bars; the deer's carcass has a
+red bar that shrinks as the settlers gather it (400 food). [Full video (MP4)](media/inventoryBars-wol.mp4).
+
+![inventoryBars in WoL, key off](media/inventoryBars-wol-control.gif)
+
+*In WoL, key off (the same scene, Alt held):* Alt shows the HP bars of the settlers and the sheep, as in stock, and
+nothing on the mine, the bush or the carcass. [Full video (MP4)](media/inventoryBars-wol-control.mp4).
+
+```
+inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
+```
+
+- **In WoL today (WoL #53):** holding Alt shows the HP bar of every unit that has one (that is the stock game, with the
+  profile option on), but nothing shows what a mine, a bush, a carcass or a WoL unit with resources still holds.
+- **Effect:** while Alt is held, every unit with resources (an `<InitialResource>`) gets a bar right under its HP bar:
+  what it holds now as a share of what it was created with, in the colour of the resource it holds most of: gold yellow,
+  wood brown, food red, any other resource `other=RRGGBB` (default light blue). A fattened sheep or cow above its
+  `InitialResource` shows a full bar.
+- **Units with no HP bar:** mines, bushes and carcasses get the bar where their HP bar would be, a little higher. Only
+  what the player sees now: a mine under the fog shows nothing. `noSites` turns this part off. Trees are left out (a
+  forest would be a wall of bars); `trees` adds them.
+- **Options:** `UnitType`, one unit type or proto name: only units of that type (mines, bushes and carcasses too).
+  `always`: the bars show whenever the HP bars do, Alt or not.
+- **Multiplayer:** display only. Every player can have it or not.
+- **Log:** `inventoryBars: units with resources show what they hold under their HP bar while Alt is held; units with no
+  HP bar but trees (mines, bushes) too (display only)`, `hook reached: floating bars: bar queued (0x45FB6C)`, `inventoryBars
+  no HP bar (0x452F1B)`, `inventoryBars corpse (0x452ED4)`. With `log`, once per proto: `inventoryBars: unit 2 (Deer) holds
+  248.7 of 400.0 (resource 2 most): bar 62 % at (43.0, 4.9, 43.1), Alt held`.
+- **With other keys:** [`overhealHitpointBars`](#overhealhitpointbars) `segment` adds its bars through the same hooks
+  since 2026-11-12; [`steadyHitpointBars`](#steadyhitpointbars) moves the HP bar, and this bar with it.
+- **Performance:** measured with `perfprobe.py`, 60 s each, 30 `Skirmisher`s against 30 `Crossbowman`s beside 40 trees, 3 mines and 15 deer, with `trees`. Alt up: 928 and 1001 fps (render 0.95 and 0.87 ms a frame) against 988 and 954 key off (0.88 and 0.92 ms), noise. Alt held: 867 and 907 fps (render 1.03 and 0.98 ms) against 1026, 1013 and 1006 key off (0.85–0.86 ms, the stock HP bars only): about 0.15 ms of render for some 60 more bars. Update 0.13–0.14 ms in every run, no frame over 50 ms (the longest 4 ms).
+- **Tested in WoL (2026-11-12, single player):** the scene above, Alt posted to the window (the game reads Alt from its
+  messages); a carcass at 248.7 of 400 food showed a 62 % bar. A gold mine, a berry bush, a deer, a sheep and a cow;
+  before Alt was pressed, no bar. Trees showed their bars in an early build, high over their crowns, which is why they
+  are left out by default; the `trees` option ran in the performance runs below but was not looked at on screen. Not
+  tested: multiplayer, a WoL unit with its own resources, a real Alt key (the window got a posted key), beside WoL's DLL.
+  With `overhealHitpointBars segment` and `steadyHitpointBars` on too: a Highlander marked for the test at 180/150 had
+  its orange segment, the sheep beside it its food bar (both through the shared hooks). `inventoryBars other=XYZ`:
+  logged, not applied.
 
 ## 6. Editing the game data
 

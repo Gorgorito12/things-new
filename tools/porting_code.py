@@ -40,6 +40,8 @@ PAGES = {
         "State kept for a saved game": ["src/savedmarkers.h"],
         "Direct3D hooks": ["src/d3d9hooks.h", "src/d3d9hooks.cpp"],
         "Research payment": ["src/researchpay.h", "src/researchpay.cpp", "src/hooks/researchpay_hooks.asm"],
+        "ROF reads": ["src/rofreads.h", "src/rofreads.cpp", "src/hooks/rofreads_hooks.asm"],
+        "Floating bars": ["src/floatingbars.h", "src/floatingbars.cpp", "src/hooks/floatingbars_hooks.asm"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
@@ -75,12 +77,14 @@ PAGES = {
         "damageOverTime": ["src/features/damageovertime.cpp", "src/hooks/dot_hooks.asm"],
         "spreadAnyAccuracy": ["src/features/spread.cpp", "src/hooks/spread_hooks.asm"],
         "containedUnitsROF": ["src/features/containedrof.cpp", "src/hooks/containedrof_hooks.asm"],
+        "numberOfShots": ["src/features/shots.cpp", "src/hooks/shots_hooks.asm"],
         "accuracyTechs": ["src/features/accuracy.cpp"],
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],
         "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
         "snareValues": ["src/features/snarevalues.cpp", "src/hooks/snarevalues_hooks.asm"],
         "stealthTargeting": ["src/features/stealthtarget.cpp", "src/hooks/stealthtarget_hooks.asm"],
+        "directionalAttack": ["src/features/directional.cpp", "src/hooks/directional_hooks.asm"],
         "killBountyTechs, resourceBounty and teamKillBounty": ["src/features/bounty.cpp", "src/hooks/bounty_hooks.asm"],
         "pillageGold": ["src/features/pillage.cpp", "src/hooks/pillage_hooks.asm"],
         "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
@@ -116,6 +120,7 @@ PAGES = {
         "gaiaSocketsOnly": ["src/features/sockets.cpp", "src/hooks/socket_hooks.asm"],
         "hcShipmentPointFallback": ["src/features/shipments.cpp", "src/hooks/shipment_hooks.asm"],
         "annexFacing": ["src/features/annexfacing.cpp", "src/hooks/annexfacing_hooks.asm"],
+        "customWalls": ["src/features/customwalls.cpp", "src/hooks/customwalls_hooks.asm"],
     }),
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],
@@ -130,6 +135,7 @@ PAGES = {
         "nativePreview": ["src/features/nativepreview.cpp", "src/hooks/nativepreview_hooks.asm"],
         "noCorpseDopples": ["src/features/dopples.cpp", "src/hooks/dopple_hooks.asm"],
         "steadyHitpointBars": ["src/features/steadybars.cpp", "src/hooks/steadybar_hooks.asm"],
+        "inventoryBars": ["src/features/inventorybars.cpp", "src/hooks/inventorybars_hooks.asm"],
     }),
 }
 
@@ -142,6 +148,7 @@ HELPER_OF = {
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface",
     "namelists.h": "name-lists", "unitmodels.h": "models-on-a-unit",
     "savedmarkers.h": "state-kept-for-a-saved-game", "researchpay.h": "research-payment",
+    "rofreads.h": "rof-reads", "floatingbars.h": "floating-bars",
 }
 LANG = {".cpp": "cpp", ".h": "cpp", ".asm": "asm", ".inc": "asm"}
 

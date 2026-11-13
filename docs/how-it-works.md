@@ -2605,23 +2605,25 @@ reference is coloured the same.
   left part of the bar, tinted by the vertex colour: the floating bar is the player's colour, not
   green (the green / yellow / red bar is the selection panel's). Every queued bar goes out in one
   draw call (0x45F96D), and the count is reset.
-- *The hooks* (`hooks/overheal_hooks.asm`, only with `segment`):
+- *The hooks*, only with `segment`: the three floating bar sites are the shared hooks of `floatingbars.h`
+  (`hooks/floatingbars_hooks.asm`, shared with [`inventoryBars`](#inventorybars)), the texts are in
+  `hooks/overheal_hooks.asm`:
 
   | Site | Stolen | Hook does | Continues at |
   |---|---|---|---|
-  | 0x45FB6C | `jmp 4516B3h` (5 B; ESI = unit) | unless under construction (`[esp+15h]`): reference, then `UhcOverhealQueueSegment(unit, pos, reference)` | 0x4516B3 |
-  | 0x45C4B9 | `mov ebx,[ebp+8D4h]` (6 B; EBP = world) | `UhcOverhealSegmentFit(world)`, then the stolen load | 0x45C4BF |
-  | 0x45CB72 | `add eax,1 / add ecx,1Ch` (6 B; ECX = the record's offset, EDI = its sixth vertex, ESI = camera) | for a segment record, `UhcOverhealSegmentVertices` | 0x45CB78 |
+  | 0x45FB6C | `jmp 4516B3h` (5 B; ESI = unit) | `UhcFloatingBarQueued(unit, &pos, [esp+15h] (under construction), BL (Alt))`: each key's observer; this key's, unless under construction, queues the segment against the reference | 0x4516B3 |
+  | 0x45C4B9 | `mov ebx,[ebp+8D4h]` (6 B; EBP = world) | `UhcFloatingBarFit(world)`, then the stolen load | 0x45C4BF |
+  | 0x45CB72 | `add eax,1 / add ecx,1Ch` (6 B; ECX = the record's offset, EDI = its sixth vertex, ESI = camera) | for a record with a negative player, `UhcFloatingBarVertices`: the writer of its kind (the player ID without its low byte) | 0x45CB78 |
   | 0x4D7651, 0x69A9C0 | `push` of `%d/%d` / `%d/%d (%d+%d)` (5 B; `[esp]` = HP, `[esp+4]` = 100 %) | pushes the coloured copy when HP > 100 % | 0x4D7656, 0x69A9C5 |
 
-  `UhcOverhealQueueSegment` queues a second record when HP > reference (for an unmarked unit the
+  The observer queues a second record when HP > reference (for an unmarked unit the
   reference is the stock max, so never): same position, scale 1.0, fill = min((HP − reference) /
   reference, 1), player 804F5648h (no player has it; negative, so the renderer colours it white)
-  and byte FFh. The vertex hook, for that player ID only, moves the left vertices right by
+  and byte FFh. Its kind's writer moves the left vertices right by
   scale × (1 − fill) × B, gives all six u = 1.0 (left) / 0.5 (right), the fill part of the texture,
-  and the segment colour; every other record keeps the stock vertices. `UhcOverhealSegmentFit`
-  removes the segment records before the lock when count × 216 bytes would not fit in the buffer,
-  so the segments never cost a stock bar. The coloured formats are the stock ones wrapped in the
+  and the segment colour; every other record keeps the stock vertices. `UhcFloatingBarFit`
+  removes every added record (negative player) before the lock when count × 216 bytes would not fit in the buffer,
+  so the added bars never cost a stock bar. The coloured formats are the stock ones wrapped in the
   UI markup the game uses itself (`<color=1, 0, 0>` at 0xBA1E44, `</color>` at 0xBA1E30):
   `<color=1.00, 0.55, 0.00>%d/%d</color>`; the stat row's gadget draws it.
 - *Choices.* Over the right end, not past it: the bar keeps its width and the segment never leaves
@@ -2891,6 +2893,51 @@ so they never followed the tag.
 - Display only: the chunk only places what is drawn this frame (one caller of the queue, 0x45FB67); the clock is the
   real one, which only this machine's drawing reads. A map lookup per bar per frame; no allocation once a unit is in it.
 
+### inventoryBars
+
+**Stock: Alt shows the HP bars.** FUN_00451F9D, the unit visual update, decides each unit's floating HP bar (REA
+`ev_d87e8471…`, `ev_4e0af08b…`, 2026-11-12). At 0x452EA0 it asks the input object `[[[0C66244h]+74h]+2Ch]` for modifier 2
+through its vtable +34h (`call 473E37h`, a `jmp eax`; the same query with 0 and 1 is Shift and Ctrl at 0x436434) and
+keeps the answer in BL (0x452EBD). Then: the unit's vtable +A4h test (0x452ECF, false for a corpse), proto flag 5 (the
+HP bar flag, the inlined bit test 0x452ED8..0x452F1D), and in 0x45F78B the bar's conditions; the last one is profile
+option 57h (`[esp+28h]`, read from the option list FUN_00450FDA) and BL (0x511D80). [O, in game] A posted `WM_KEYDOWN`
+of `VK_MENU` sets it: with it every unit with the flag shows its bar; a mine and a corpse have none.
+
+**The inventory.** `[[unit+B4h]+94h]+4` is the unit's resource list, `[[unit+5Ch]+E0h]` its proto's resource object,
+whose `+0` is `InitialResource` (the lists of [`transformInventory`](#transforminventory): entry r XORed with
+`[0C6DF14h + 4r]`, the total at `+4` XORed with `[0C6DF10h]`, the count `[0C6DF38h]`).
+
+**The bar.** The fill is the inventory's total / the `InitialResource` total, clamped to [0, 1]; the colour is that of
+the resource the unit holds most of (an empty one: the one it was created with most of): gold `FFD23C`, wood `B4783C`,
+food `E8503C`, any other `other=` (default `50B4FF`). It is a record of the shared floating bar queue (`floatingbars.h`)
+of kind 80494E00h, the low byte the resource: the writer moves its six vertices down the camera's up vector A
+(`[camera+1Ch]`) by 0.17 × scale (the quad is scale / 8 high) and gives them the colour. Two ways in:
+
+| Site | Stolen | Hook does | Continues at |
+|---|---|---|---|
+| 0x45FB6C (shared, `floatingbars_hooks.asm`) | `jmp 4516B3h` | the observer: unless the bar is a foundation's, with BL or `always`, the bar at the HP bar's position | 0x4516B3 |
+| 0x452F1B (`inventorybars_hooks.asm`) | `test al,al / jne 45F78Bh` (8 B) | a unit with the flag: 0x45F78B as in stock; without (a mine, a bush), with BL or `always`, `UhcInventoryNoHpBar(unit, [esp+48h], BL)` | 0x45F78B or 0x452F23 |
+| 0x452ED4 (`inventorybars_hooks.asm`) | `test al,al / je 452F23h / push 5 / mov ecx,esi` (8 B) | a live unit: the stolen push and mov; a corpse (a hunted animal), the same call | 0x452EDC or 0x452F23 |
+
+`UhcInventoryNoHpBar` draws only what the local player (`[game+3C0h]`) sees now: bit `local` of the visibility mask
+`[[unit+B4h]+ACh]` (0x486A60), since the update also runs under the black map and the fog. Trees (the built-in unit
+type `Tree`) are left out unless `trees` is given. Its position is that of the stock fallback (0x460633): the unit's
+position (its `y` from `[unit+18h]` when the fallback's base `[[esp+48h]]` holds 0) raised by the visual's height
+(FUN_004605C1, `thiscall(unit, vec3* out)`) plus `[[unit+B4h]+24h]`, times the scale `[unit+A8h]`, plus 2 (1 more than
+the fallback, so a low model does not cover it).
+
+**Why it is safe.**
+- Display only: it reads the inventory, the mask and the camera, and queues bars, which only this machine draws. Alt is
+  this machine's key.
+- 0x452ED4: no branch lands in 0x452ED5..0x452EDC (`cs` scan; 0x452EC5 is the nearest target). 0x452F1B: the only
+  branch to it is the `jmp` at 0x452F14, to its start. At both, ESP is the one of the bar chunk, whose fallback reads
+  `[esp+48h]` (the pushes of the inlined bit test are popped at 0x452F11 / 0x452F18), and EAX, ECX, EDX and the flags are
+  written before they are read at every continuation. The hooks keep every register (`pushad`).
+- BL is not written between 0x452EBD and 0x45FB6C (the bar chunk, its cold blocks 0x6A1431 and 0x460633, and the callees
+  keep EBX).
+- Cost: with Alt up, a compare and a jump per unit and frame; with Alt down, one inventory read per unit drawn.
+  Measured below in the modding guide.
+
 ### workRateByAbstractType
 
 An action's rates are a list of `{unittype ID, rate, -1}` (`[action+0Ch]`, count `[action+10h]`, 0Ch bytes
@@ -2948,7 +2995,9 @@ every data load (`OnDatabaseLoad`), and the tags are read again, a saved game's 
 **The interval.** Every attack (vtable 0xB96278: `HandAttack`, `RangedAttack` and the other types of the class) waits
 through 0x48FA69(action manager, ms), which applies the ROF modifiers. Five reads of the tactics ROF `[action+34h]` feed it
 or the attack's animation rate, and each is replaced by a jmp to a hook that re-executes it, passes the value through
-`UhcContainedRofScale(unitAction, rof)` and re-executes what follows:
+`UhcRofRead(unitAction, rof, read)` and re-executes what follows. These five hooks are shared (`rofreads.h`,
+`hooks/rofreads_hooks.asm`, with [`numberOfShots`](#numberofshots)): `UhcRofRead` runs the filter of each key whose gate is
+open, in `kFeatures` order, each on the previous result; this key's filter is `ContainedRofScale`:
 
 | Site | Bytes | What it is | Unit action in |
 |---|---|---|---|
@@ -2957,7 +3006,7 @@ or the attack's animation rate, and each is replaced by a jmp to a hook that re-
 | 0x48A821, 0x48A99A | `mov edi,[edi+34h] / test edi,edi` | the update, after an attack that did not fire | ESI |
 | 0x48EA0C | `mov esi,[esi+34h] / test esi,esi` | the attack step, the same case | EBP |
 
-`UhcContainedRofScale` finds the table entry of `{[[unit+5Ch]+4], [[ua+4]+4]}`, the proto ID and action name index that
+`ContainedRofScale` finds the table entry of `{[[unit+5Ch]+4], [[ua+4]+4]}`, the proto ID and action name index that
 every player's copy keeps. Without one it returns the value. Otherwise the factor follows the stock damage rule
 (0x4996C7..0x49970A): the count `[unit+74h]`, or `DamageFactorCap` `[action+48h]` when the count is above it and it is
 above 0; the interval is ROF / factor, rounded down, at least 1 ms. A factor of 0 returns the ROF: that is only reached
@@ -2971,11 +3020,58 @@ An override ROF (`[[ua+6Ch]+28h]`) is not divided: the stock code uses it in pla
   0x4A1189 the next instruction is `test eax,eax`; at 0x5FEE0C the stock test or the next-child code sets EAX and the flags.
 - `pushad` / `popad` keep every register but the one the hook writes. The C function returns an integer; no x87 value is
   live at any of the five sites.
-- With no action carrying the attribute, `g_uhcContainedRofCount` is 0 and the hooks skip the call: a compare and a branch
-  per attack.
+- With no action carrying the attribute, this key's gate is closed (`SetRofGate`); with every gate closed,
+  `g_uhcRofGate` is 0 and the hooks skip the call: a compare and a branch per attack.
 - Deterministic: the count, the cap and the ROF are simulation state, the table is keyed by IDs, the division is the same
   code on every machine, and the log never feeds back.
 - Not covered: the panel's ROF text and the AI's own damage estimate read the data's ROF.
+
+### numberOfShots
+
+**Stock.** An attack (vtable 0xB96278) fires one shot per cycle. A cycle begins at 0x4A1185: `[ua+78h]` = now, and the
+attack animation's rate `[unit+0B0h]` from the ROF (0x4A1189). The shot is the attack step's block 0x48F7F0..0x48F8E9:
+tactics flag bit 9 picks the launch 0x499422 (a projectile) or 0x4DCFE2 (none); both join at 0x48F892, which counts the
+shot (`add dword [ebp+68h],1` at 0x48F8A0) and waits ROF minus the time since `[ebp+78h]` when that is smaller
+(0x48F8B5..0x48F8E9, through 0x48FA69). [O] The launch 0x499422 is `thiscall(unitAction, unit, target,
+[[frame+2CCh]+28h], byte, [ua+6Ch])`, `ret 14h` (0x4999DA, 0x6A4C65): the attack step pushes `[ebp+6Ch]` at 0x48F83B and
+the four others from 0x48F87D; the broadside fire step calls it with five arguments too (0x4CEA3A..0x4CEA43). It
+creates one projectile, with its own accuracy roll and spread. `NumberProjectiles` (and `NumberOfShots`) is no tag of
+this exe: no string, no handler (engine-symbols.md, "Projectile accuracy and spread").
+
+**The burst** (the shared ROF reads, `rofreads.h`): for an action with `<NumberOfShots>` N > 1 the filter
+`ShotsRof` reads the shot count `[ua+68h]`:
+
+| Read | When | Value |
+|---|---|---|
+| 0x4A1189, a cycle begins | count mod N < N − 1 (the next shot is not the burst's last) | the interval, else the ROF |
+| 0x48F8B5, after a shot | count mod N ≠ 0 (the count includes this shot: the burst goes on) | the interval, else the ROF |
+
+So the burst's first N − 1 shots play the attack animation at the interval's pace and wait the interval; the last one
+plays it at the ROF's pace and waits the ROF minus that cycle's time, the reload. [O, in game, Skirmishers with N 3 and
+0.4 s, ROF 3 s] shots at 29.73, 30.13 and 30.80 s, the next burst at 33.53 s. The three other reads (after an attack
+that did not fire) keep the ROF. The count belongs to the unit action, and a new target is a new unit action, so it
+starts a new burst. A filter's result goes through the next one: after `containedUnitsROF` the burst's last shot waits the
+divided ROF, and the interval is not divided.
+
+**The projectiles** (option `projectiles`): `hooks/shots_hooks.asm` replaces the attack step's `call 499422h` (5 B at
+0x48F88D, ECX = EBP = the unit action, the five arguments pushed) with a jmp. While some action has
+`<NumberProjectiles>` above 1 (`g_uhcShotsProjectiles`), `UhcShotsProjectiles(ua)` gives N, and the hook calls the
+launch N − 1 times with copies of the five arguments, then once on the stock ones, and goes on at 0x48F892. The shot
+count goes up once. The launch keeps EBX, ESI, EDI and EBP; 0x48F892 reloads EAX from `[ebp+6Ch]` and writes ECX and EDX
+before reading them. The broadside fire step (0x4CEA43) and melee (0x4DCFE2) are not changed.
+
+**Tags.** Read through the shared action tag hook (`actiontags.h`), per `{proto ID, action name index}` as for
+`spreadAnyAccuracy`, from a tactics `<action>` or a `<ProtoAction>` (the later one wins); cleared on every data load.
+`NumberOfShots` 1..50, `ShotInterval` seconds above 0 and up to 60 (default 0.25 s, rounded to ms), `NumberProjectiles` or
+`NumberOfProjectiles` 1..32 (only with `projectiles`).
+
+**Why it is safe.**
+- The ROF sites are those of `containedUnitsROF` (above). The launch site: no branch lands in 0x48F88E..0x48F891 (`cs`
+  scan); the stack is the stock one at 0x48F892, since each extra launch pops its own copies (`ret 14h`).
+- Deterministic: the count, the tags and the interval are simulation state or data; the extra launches use the stock
+  launch and its synced random draws, the same on every machine. Every player needs the same line and data.
+- Cost: one map lookup per ROF read of an action with a burst while some action has one, one per shot with projectiles;
+  with no tag in the data, the gates are closed and the hooks only compare.
 
 ### unitResourceAuras
 
@@ -3653,6 +3749,79 @@ as the two re-executed instructions leave them, and the code after 0x493048 does
 before the function's own pushes: ESP, EBX, ESI, EDI and EBP are untouched on both paths, and -1 leaves through the same
 `ret 1Ch` as the stock failure path 0x4974C1. The mask and the state bit are simulation state, computed for every player
 on every machine; the key reads no local player and no clock.
+
+### customWalls
+
+**Walls in the stock exe.** A proto with the flag `wallBuild` (bit 3Ah of `[proto+50h]`, tested with 0x45EE02) enters the
+edit mode `buildWall` when its button is pressed (0x7E4762), whose clicks run `uiBuildWallAtPointer` (0x7DFE31 →
+0x84B5B3 → 0x847DBF on the world UI `[game+91Ch]`; the proto on the cursor is `[ui+4A4h]`). The wall layout 0x9F66D9,
+`thiscall(store, player, points, count, -1)`, splits each stretch between two clicked points into posts and pieces with
+four protos: the post, the 5-long and 2-long straights and the gate (the gate only to join an existing one, through
+0x9F5703). It takes them from the player's civ: `[civ+1E4h]` (Straight2), `[civ+1E8h]`, `[civ+1ECh]` (Straight3, 4, used
+by the AI's walls only), `[civ+1F0h]` (Straight5), `[civ+1F4h]` (Gate), `[civ+1F8h]` (Connector), all -1 in the
+civ's constructor (0x52A2C3); they come from the stock `civs.xml` tag `<wall type="...">proto</wall>` (the parser at
+0x65A354 keeps the names at `[civ+1CCh..1E0h]`). A civ without them gets the names `WallConnector`, `WallStraight5`,
+`WallStraight2` and `CWallGate` through BPlayer's proto by name 0x8D1998. So every `wallBuild` proto lays the civ's
+stone wall. The layout has three callers: the drag preview 0x6659FC, the click that orders the wall 0x847E0C (which then
+sends one build order per post and piece, 0x84786F → 0x82F548, each with its proto) and 0x741299, of another object; the
+AI's walls use another builder, 0x9F71A5, with the same civ fields.
+
+**The hooks.** At 0x9F677A (after the civ lookup; EAX = the civ, ESI = the player, EBP = 0) `UhcCustomWallPieces(player,
+return address, out[4])` decides: only for the two UI callers (return address `[esp+100h]` = 0x665A01 or 0x847E11) and
+a cursor proto with `<WallPiece>` tags (read with `AddProtoTagHandler`). The names are resolved to proto IDs once
+(0x8D1998 on the first player that lays such a wall; IDs are the same for every player) and each call takes the
+player's copies with 0x45311B. The hook then leaves at the merge 0x9F6815 with the registers and stack slots both stock
+branches leave there: EBP the post, EDI and `[esp+44h]` the 5-long piece, `[esp+48h]` the 2-long one, `[esp+4Ch]` and
+EAX the gate; otherwise it re-executes `mov edi,eax / cmp edi,ebp / je 9F67D5h` and goes on at 0x9F6780. The placement
+test lets a `wallBuild` proto stand on its owner's unit of the same proto only when it is the player's `WallConnector`
+(0x508DD4..0x508DED); the second hook, at its first instruction, accepts a custom wall's post too (0x508DF3), so a line
+can start on the post of another.
+
+**Why it is safe.** The layout hook keeps EBX, ESI and EBP on the stock path (the C function is stdcall), and the code at
+0x9F6780 and 0x9F67D5 sets EAX, ECX and EDX before reading them; the custom path fills exactly what 0x9F6815 and later
+read (checked by capstone on both stock branches). The overlap hook clobbers only ECX, which the re-executed `mov`
+writes, and EAX/EDX, which the stock path overwrites with its calls before reading. The decision reads the local UI,
+so it is not simulation: it only chooses the protos of the build orders the click sends, which every machine receives
+as for the stock wall. The AI's walls (0x9F71A5) and the caller 0x741299 keep the civ's pieces.
+
+### directionalAttack
+
+**The launch.** FUN_004995C7 picks the projectile's mode (`[projectile+20h]`: 1 a sure hit, 2 a miss, 3 a ground shot) and
+its impact point (`[esp+28h]`) on four paths: the precalculated roll, the `InstantBallistics` branch, the `TargetGround`
+store and the skipped block. All four meet at 0x4998A7 (`mov ecx,[esp+10h]` / `mov [esi+14h],ecx`; no branch lands
+inside its 7 bytes), and every launch call after it reads the point at `[esp+28h]`. The hook there re-executes the two
+instructions and, for an action in the key's table (by the proto ID `[proto+4]` and the action's name index
+`[action+4]`, the same in every player's copy) that is not `InstantBallistics`, has a target and a projectile unit
+`[projectile+0]`: moves the point along the line from the shooter through it to the landing distance (never short of the
+target), sets its height with the terrain query the ground lead uses (the world's `[+88h]` object, vtable slot 18h), and
+sets the mode to 3. The projectile then flies there, and its landing applies the attack as a `TargetGround` shot's does
+(the applier FUN_0049BE95 with no target: area damage at the point with `DamageArea`, nothing without).
+
+**The flight.** The shot is kept by the projectile unit's ID, with the shooter, its player and proto ID, the action, the
+damage multiplier the launch stores at `[projectile+14h]`, and the arguments the applier passes to TakeDamage
+(0x49C05A: MuteDamage, the projectile flag bit 14, `[projectile+0C0h]`). After each world update (the shared wrapper of
+0x481A57), each shot's projectile unit has moved: the 2D segment from its last position to the new one is tested against
+the units the spatial query 0x4A1C55 finds around it. A unit is hit when the point of the segment nearest its centre is
+within `DirectionalWidth` of its obstruction (vtable slot B8h), it is alive, not contained, not a projectile, not a Gaia
+resource, not the shooter, not hit by this shot before, and the action's `DamageFlags` allow it (the diplomacy filter
+0x49AEE0, read from the shooter's player). Hits go in order along the segment, then by ID, each through TakeDamage
+0x49B3D9 with the action and the multiplier times `DirectionalDamageFactor`, as the applier's direct hit (p11 = 0 when the
+shooter is gone: the army code reads the attacking unit without a null check). Past the landing distance (a bounce) the
+line stops at the landing point; when the projectile unit is gone, the rest of the line is flown if it ended within three
+steps (or 3 m) of the landing point, and dropped otherwise (it hit a cliff, or the map's edge).
+
+**`<DirectionalFiringRange>`.** The action parser's `MaxRange` handler calls the setter 0x5FA709 at 0x5F8A51
+(`thiscall(action, value)`: entry 0 `+8` of the range array `[action+18h]`). The call is redirected: for an action with
+the tag, the value read is kept as the landing distance and the setter gets the firing range, so the game targets and
+fires at it. A tag that comes after `MaxRange` does the same at once. At the launch the landing is the data's `MaxRange`
+plus what the player's copy has gained since (range techs).
+
+**Why it is safe.** The launch hook saves every register around its call and re-executes the two instructions it
+replaces; the next one sets the flags before reading them (`test eax,eax` at 0x4998B4). Mode 3 with a target is a stock
+state (a `TargetGround` unit attack). The shots are walked in ID order after the world update, with game positions only;
+TakeDamage kills through the kill queue, so a hit never removes a unit during the walk (the query's IDs are copied
+first, and each unit is looked up again before its hit). A data load and a new game clear the table; a saved game does
+not keep the shots in flight, which then land as plain ground shots. Nothing reads the local player or a clock.
 
 ### Tech subtypes on the built tags: a value per player's copy
 

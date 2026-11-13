@@ -279,6 +279,8 @@ abilitySlots N [log]          command panel shows up to N abilities per unit (st
 displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
+inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
+                              a bar of what a unit, mine or carcass still holds
 wonderPanelSkipAuras [log]    wonder power panel: a power listed after an aura gets a button
 nativePreview [tagged] [log] [Proto]   an empty native socket shows its Trading Post's
                               units and techs, read-only
@@ -317,6 +319,8 @@ workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
+numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
+                              reload; projectiles: <NumberProjectiles> per shot
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura
@@ -336,6 +340,7 @@ accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
 sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
 annexFacing [log]             <AnnexOf> annexes face their parent building and fall with it
+customWalls [log]             <WallPiece> tags: a wallBuild proto lays its own posts and pieces
 doNotQueue [log]              <DoNotQueue/> trains a proto, and a card with that tech flag ships, ahead of the queue
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 researchGrants [log]          <ResearchGrantInterval> buildings gather points that make researches cheaper or free
@@ -345,6 +350,7 @@ teamKillBounty [log]          the XP of a marked victim goes to the killer's tea
 cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 stealthTargeting [log]        large units in stealth hidden from enemies; no attack on an unseen stealthed unit
+directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
 bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster

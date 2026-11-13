@@ -768,6 +768,22 @@ SITES = [
     # (player ID) / push [esp+10h] (fill) / push 1.0 (scale) / push ecx / mov ecx,[[0C66234h]+13Ch]
     # (world) / call 45FB71h, and the replaced jmp 4516B3h after it
     ("OverhealSegmentQueue", 0x45FB3F, 0x32),
+    # floating bars (floatingbars.cpp): the Alt state the queue hook passes on. In FUN_00451F9D, the modifier query
+    # mov edx,[0C66244h] / mov eax,[edx+74h] / mov ecx,[eax+2Ch] / mov edx,[ecx] / push 2 / mov eax,[edx+34h] /
+    # call 473E37h (jmp eax: vtable +34h(2), the Alt key; 0 shift and 1 ctrl at 0x436434) / cmp byte [esp+15h],0 /
+    # mov bl,al (0x452EBD) / jne 511D70h; BL is not written again before 0x45FB6C (the chunk 0x45FAA2.., its cold
+    # 0x6A1431 / 0x460633, and the callees keep EBX). With profile option 57h ([esp+28h]) and BL the unit's HP bar is
+    # queued (0x511D80: test bl,bl / je 452F23h / jmp 45FAA2h).
+    ("FloatingBarAlt", 0x452EA0, 0x25),
+    ("FloatingBarAltGate", 0x511D80, 0xD),
+    # inventoryBars: in FUN_00451F9D, mov eax,[esi] / mov ecx,esi / mov eax,[eax+0A4h] / call 502853h (the unit's
+    # vtable +A4h: false for a corpse) / test al,al / je 452F23h / push 5 / mov ecx,esi (replaced, 8 B at 0x452ED4; no
+    # branch lands in 0x452ED5..0x452EDC) / the inlined test of proto flag 5 ([[unit+5Ch]+50h], count +54h) / test
+    # al,al / jne 45F78Bh (replaced, 8 B at 0x452F1B; the only branch to it is the jmp at 0x452F14, to its start) /
+    # mov eax,[esi+0B4h] (0x452F23, the stock target without an HP bar); and FUN_004605C1, thiscall(unit, vec3* out),
+    # ret 4: the size of the unit's visual (the fallback's height)
+    ("InventoryNoHpBar", 0x452EC5, 0x64),
+    ("VisualSize", 0x4605C1, 0x10),
     # steadyHitpointBars, the floating bar's position in the bar chunk: cmp [esi+60h],0 / jz (no
     # visual) / v = [0C66550h..58h] at [esp+2Ch] / call 45F22Dh(ECX = unit; [[0C6DF88h]] the
     # HITPOINTBAR tag, 0, &v, 0, 0), the hooked test al,al / jz 460633h (0x45FB24, 8 bytes: no tag in
@@ -1287,6 +1303,14 @@ SITES = [
     ("RofShot", 0x48F8AE, 0x40),
     ("RofAnim", 0x4A1185, 0x1A),
     ("RofDelay", 0x48FA69, 0x2A),
+    # numberOfShots projectiles: the attack step's ranged shot, mov edx,[ebp+6Ch] / push edx (the launch's fifth
+    # argument) / the inlined test of tactics flag 18h / mov edx,[ebp+10h] / push eax / mov eax,[esp+2CCh] / mov
+    # ecx,[eax+28h] / push ecx / push edi / push edx / mov ecx,ebp / call 499422h (replaced, 5 B at 0x48F88D) / mov
+    # eax,[ebp+6Ch], the continuation; and the launch's head (sub esp,0D4h / push ebx / push edi / mov edi,[esp+0E0h]
+    # ...) and one of its returns, add esp,0D4h / ret 14h (five arguments)
+    ("ShotsLaunchCall", 0x48F838, 0x5D),
+    ("ShotsLaunch", 0x499422, 0x1D),
+    ("ShotsLaunchRet", 0x4999DA, 9),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
@@ -1513,6 +1537,37 @@ SITES = [
     ("FootprintVisibility", 0x493040, 0x10),
     ("FootprintHiddenTest", 0x493201, 0x0B),
     ("FootprintHiddenSkip", 0x4E0B1F, 0x0D),
+    # customWalls: the wall layout 0x9F66D9 (thiscall(store, player, points, count, -1)) takes its pieces from the
+    # player's civ ([civ+1E4h..1F8h], civs.xml <wall type=...>) or the stock names. mov edi,eax / cmp edi,ebp /
+    # je 9F67D5h (6 bytes, after the civ lookup; nothing branches inside) is replaced, and the next instruction,
+    # cmp dword [edi+1E4h],-1, is where the hook goes on. The merge xor esi,esi / cmp ebp,esi at 0x9F6815 and the
+    # stock-name branch push "WallConnector" at 0x9F67D5 (verify only). Its UI callers return to 0x665A01 (the
+    # drag preview) and 0x847E11 (the click that orders the wall).
+    ("WallLayoutCivPieces", 0x9F677A, 0x0D),
+    ("WallLayoutPiecesMerge", 0x9F6815, 4),
+    ("WallLayoutStockNames", 0x9F67D5, 5),
+    ("WallLayoutPreviewReturn", 0x6659FC, 0x0B),
+    ("WallLayoutOrderReturn", 0x847E0C, 0x0B),
+    # customWalls: the placement obstruction test lets a WallBuild proto stand on its owner's unit of the same proto
+    # only when that proto is "WallConnector" (a wall that starts on its own post). mov ecx,[0C66234h] (6 bytes, its
+    # first instruction; nothing branches inside) is replaced; the hook goes on at 0x508DDA, or at 0x508DF3 (add
+    # esi,14h), the accepted path, for a connector of a custom wall.
+    ("WallPostOverlap", 0x508DD4, 0x22),
+    # customWalls: BPlayer's proto by name, thiscall(player, const char*) (verify only, called).
+    ("PlayerProtoByName", 0x8D1998, 0x0A),
+    # directionalAttack: in the projectile launch FUN_004995C7, where every launch path meets (the jcc at 0x4997B0
+    # and 0x4997B8, the fall-through from 0x4998A0, the jmp at 0x4C4DF3; nothing lands inside): mov ecx,[esp+10h] /
+    # mov [esi+14h],ecx (replaced, 7 bytes), then mov ecx,[ebx+4]. Verify only: the ballistic launch call that
+    # reads the impact point (lea ecx,[esp+38h] after four pushes = [esp+28h], call 4A5725h); the terrain height
+    # query of the ground lead (the world's [+88h] object, vtable slot 18h, (point, &height, 0, 0)); and the
+    # attack applier's TakeDamage call, whose arguments the key copies.
+    ("DirectionalLaunch", 0x4998A7, 0x0A),
+    ("DirectionalLaunchCall", 0x49999E, 0x20),
+    ("DirectionalTerrainHeight", 0x4C4E62, 0x38),
+    ("DirectionalTakeDamage", 0x49C05A, 0x32),
+    # directionalAttack, <DirectionalFiringRange>: the MaxRange handler of the action parser FUN_005F98A0:
+    # mov edx,[esp+68h] (the value) / push edx / mov ecx,ebp (the action) / call 5FA709h (redirected, at +7)
+    ("DirectionalMaxRangeCall", 0x5F8A4A, 0x0C),
 ]
 
 

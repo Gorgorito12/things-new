@@ -97,6 +97,10 @@ constexpr KnownTag kKnownTags[] = {
     {L"AttachSnare", "damageOverTime"},
     {L"AttachTickText", "damageOverTime"},
     {L"MaxSpread", "spreadAnyAccuracy"},
+    {L"DirectionalAttack", "directionalAttack"},
+    {L"DirectionalFiringRange", "directionalAttack"},
+    {L"DirectionalWidth", "directionalAttack"},
+    {L"DirectionalDamageFactor", "directionalAttack"},
     {L"SpreadFactor", "spreadAnyAccuracy"},
     {L"ModifyAmount", "unitResourceAuras"},
     {L"ModifyTargetLimit", "unitResourceAuras"},
@@ -114,6 +118,8 @@ constexpr KnownTag kKnownTags[] = {
     {L"LinkedResourceRange", "linkedResource"},
     {L"DetonationProtoAction", "detonationDeath"},
     {L"DetonationCommand", "detonationDeath"},
+    {L"NumberOfShots", "numberOfShots"},
+    {L"ShotInterval", "numberOfShots"},
     {L"DetonationHitpointThreshold", "detonationDeath"},
     {L"DetonationHitpointDecay", "detonationDeath"},
     {L"DisplayRange", "displayedRange"},
@@ -139,6 +145,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"ResearchGrantTime", "researchGrants"},
     {L"ResearchGrantScope", "researchGrants"},
     {L"ResearchGrantMinCost", "researchGrants"},
+    {L"WallPiece", "customWalls"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

@@ -23,6 +23,8 @@ customHotkeyContexts-wol-control 6 22 2
 customProtoUnitCommands-wol 2 32 3
 customProtoUnitCommands-wol-control 2 16 2
 customSyscalls-wol 2 30 2
+customWalls-wol 6 24 2
+customWalls-wol-control 6 24 2
 damageOverTime-noticktext-wol 4 20 2
 damageOverTime-wol 4 20 2
 damageOverTime-wol-control 4 20 2
@@ -244,3 +246,11 @@ impactBoneFix-wol 2 20 2
 impactBoneFix-wol-control 2 20 2
 customImpactTypes-wol 0 22 2
 customImpactTypes-wol-control 0 22 2
+directionalAttack-wol 3 22 2
+directionalAttack-wol-control 3 22 2
+inventoryBars-wol 8 32 3 480:320:280:230
+inventoryBars-wol-control 8 32 3 480:320:280:230
+numberOfShots-wol 8 12 1
+numberOfShots-wol-control 8 12 1
+numberOfShots-projectiles-wol 9 12 1
+numberOfShots-projectiles-wol-control 9 12 1
