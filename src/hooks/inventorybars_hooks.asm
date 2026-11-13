@@ -15,6 +15,7 @@ EXTERNDEF g_uhcInventoryAlways:DWORD    ; 1 with "always"
 .data
 hpBarChecks     dd 0045F78Bh    ; cmp byte [esp+16h],0: the unit has the HP bar flag; the bar's conditions
 noHpBar         dd 00452F23h    ; mov eax,[esi+0B4h]: no HP bar for this unit
+flagTest        dd 00452EDCh    ; sub esp,4: the inlined test of proto flag 5
 
 .code
 
@@ -47,5 +48,36 @@ done:
 hasFlag:
     jmp hpBarChecks
 UhcInventoryNoHpBarHook ENDP
+
+; Replaces test al,al / je 452F23h / push 5 / mov ecx,esi (8 bytes) at 0x452ED4, right after the unit's vtable +A4h
+; test (0x452ECF; false for a corpse, which stock never gives an HP bar): AL = its result, BL = Alt, ESI = the unit.
+; A unit that passes goes on with the re-executed push 5 / mov ecx,esi at 0x452EDC (the inlined test of proto flag 5,
+; then the hook above). One that fails (a hunted animal's corpse that settlers gather) is given to
+; UhcInventoryNoHpBar like a unit with no HP bar, then goes to the stock target 0x452F23.
+UhcInventoryCorpseHook PROC
+    TRACE_ONCE "inventoryBars corpse (0x452ED4)"
+    test al, al
+    je corpse
+    push 5                          ; stolen 0x452ED8
+    mov ecx, esi                    ; stolen 0x452EDA
+    jmp flagTest
+corpse:
+    cmp g_uhcInventorySites, 0
+    je skip
+    test bl, bl
+    jne queue
+    cmp g_uhcInventoryAlways, 0
+    je skip
+queue:
+    pushad
+    movzx eax, bl
+    push eax                        ; Alt held
+    push dword ptr [esp+24h+48h]    ; the position pointer
+    push esi                        ; unit
+    call UhcInventoryNoHpBar
+    popad
+skip:
+    jmp noHpBar
+UhcInventoryCorpseHook ENDP
 
 END

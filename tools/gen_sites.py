@@ -776,11 +776,13 @@ SITES = [
     # queued (0x511D80: test bl,bl / je 452F23h / jmp 45FAA2h).
     ("FloatingBarAlt", 0x452EA0, 0x25),
     ("FloatingBarAltGate", 0x511D80, 0xD),
-    # inventoryBars: the HP bar flag test of FUN_00451F9D, push 5 / mov ecx,esi / the inlined test of proto flag 5
-    # ([[unit+5Ch]+50h], count +54h) / test al,al / jne 45F78Bh (replaced, 8 B at 0x452F1B; the only branch to it is
-    # the jmp at 0x452F14, to its start) / mov eax,[esi+0B4h] (0x452F23, the stock target without the flag); and
-    # FUN_004605C1, thiscall(unit, vec3* out), ret 4: the size of the unit's visual (the fallback's height)
-    ("InventoryNoHpBar", 0x452ED8, 0x51),
+    # inventoryBars: in FUN_00451F9D, mov eax,[esi] / mov ecx,esi / mov eax,[eax+0A4h] / call 502853h (the unit's
+    # vtable +A4h: false for a corpse) / test al,al / je 452F23h / push 5 / mov ecx,esi (replaced, 8 B at 0x452ED4; no
+    # branch lands in 0x452ED5..0x452EDC) / the inlined test of proto flag 5 ([[unit+5Ch]+50h], count +54h) / test
+    # al,al / jne 45F78Bh (replaced, 8 B at 0x452F1B; the only branch to it is the jmp at 0x452F14, to its start) /
+    # mov eax,[esi+0B4h] (0x452F23, the stock target without an HP bar); and FUN_004605C1, thiscall(unit, vec3* out),
+    # ret 4: the size of the unit's visual (the fallback's height)
+    ("InventoryNoHpBar", 0x452EC5, 0x64),
     ("VisualSize", 0x4605C1, 0x10),
     # steadyHitpointBars, the floating bar's position in the bar chunk: cmp [esi+60h],0 / jz (no
     # visual) / v = [0C66550h..58h] at [esp+2Ch] / call 45F22Dh(ECX = unit; [[0C6DF88h]] the

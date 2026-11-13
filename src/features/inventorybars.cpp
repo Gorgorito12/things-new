@@ -173,6 +173,7 @@ const auto kVisualSize = reinterpret_cast<VisualSizeFn>(0x004605C1);
 extern "C" {
 
 void UhcInventoryNoHpBarHook();  // hooks/inventorybars_hooks.asm
+void UhcInventoryCorpseHook();
 std::int32_t g_uhcInventorySites = 1;   // 0 with "noSites"
 std::int32_t g_uhcInventoryAlways = 0;  // 1 with "always"
 
@@ -202,7 +203,8 @@ void __stdcall UhcInventoryNoHpBar(const char* unit, const float* position, std:
   // about 1.3); its own position [unit+14h] has the ground's height.
   const float* ground = reinterpret_cast<const float*>(unit + 0x14);
   float bar[3] = {position[0], ground[1] > position[1] ? ground[1] : position[1], position[2]};
-  bar[1] += (height + Field<float>(Field<const char*>(unit, 0xB4), 0x24)) * Field<float>(unit, 0xA8) + 1.0f;
+  // 1 m higher than the fallback's + 1: a low model (a mine's rocks, a corpse) would hide a bar on its top.
+  bar[1] += (height + Field<float>(Field<const char*>(unit, 0xB4), 0x24)) * Field<float>(unit, 0xA8) + 2.0f;
   if (g_log && g_logLines < kMaxLogLines && g_sitesLogged.insert(Field<std::int32_t>(proto, 0x04)).second) {
     ++g_logLines;
     uhc::Log(L"inventoryBars: unit %d with no HP bar at (%.1f, %.1f, %.1f): bar at height %.2f (visual %.2f, offset "
@@ -259,9 +261,11 @@ Outcome ApplyInventoryBars(const Config& config) {
       !AddFloatingBarQueued(&BarQueued, "inventoryBars") || !AddFloatingBarKind(kKind, &BarVertices, "inventoryBars")) {
     return Outcome::kFailed;
   }
-  // test al,al / jne 45F78Bh (8 B) at 0x452F1B: the HP bar flag test of the unit visual update.
+  // test al,al / jne 45F78Bh (8 B) at 0x452F1B: the HP bar flag test of the unit visual update; test al,al / je
+  // 452F23h / push 5 / mov ecx,esi (8 B) at 0x452ED4: its test of a live unit, which a corpse fails.
   if (g_uhcInventorySites != 0 &&
-      !WriteJmp(0x00452F1B, reinterpret_cast<const void*>(&UhcInventoryNoHpBarHook), 8)) {
+      (!WriteJmp(0x00452F1B, reinterpret_cast<const void*>(&UhcInventoryNoHpBarHook), 8) ||
+       !WriteJmp(0x00452ED4, reinterpret_cast<const void*>(&UhcInventoryCorpseHook), 8))) {
     return Outcome::kFailed;
   }
   Log(L"inventoryBars: units%hs%hs with resources show what they hold under their HP bar %ls%ls (display only)",
