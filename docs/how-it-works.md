@@ -1000,6 +1000,11 @@ FUN_0058F017 as the tactics handler does, which finds the file or loads it and r
 and ignored); the blast then uses a stand-in action of 74h zeroed bytes with that ID at `+70h`. `none` stores −1 and
 nothing is drawn.
 
+**Observed in game (2026-11-13):** hardware breakpoints on 0x4CB11C, 0x4CB266 and 0x49C1E5 during two blasts, both
+called from the death observer (return 0x493D94): one in the black map reached 0x4CB11C and returned at the visibility
+test; one on the player's own ship reached 0x4CB266 with EBX = 7 (water) and called the spawn once. The trigger `Kill`
+(`trUnitDelete(false)`) reaches the delete executor's two wrapped calls, so the key counts it as a delete.
+
 **Why it is safe:** drawing and sound only, as in the stock landing: FUN_004CB11C already depends on what the local
 player sees, so nothing in it can reach the simulation, and the key calls it after the damage is applied. The two
 records live on the stack for the length of the call. Evidence (`rea/evidence/age3y-b1a1dab7/detonation52.json`,
