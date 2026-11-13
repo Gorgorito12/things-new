@@ -4129,9 +4129,21 @@ customImpactTypes <Name> [<Name> ...] [log]
 - **Not for custom types:** the units thrown out of a building that is hit (`exitEffectSpawnChance` and the other values of
   `ExitBuilding`). An `.impacteffect` with no element of the type plays nothing for it, as in stock.
 - **Edit the `.xmb`:** the game reads `cannon.impacteffect.xmb` from `Art1.bar` before a loose `cannon.impacteffect.xml`,
-  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). Compile it with
-  `python -I tools/xmbedit.py from-xml cannon.impacteffect.xml cannon.impacteffect.xmb --compress` and put both in
-  `art\effects\impacts`.
+  so a loose `.xml` alone is ignored (WoL's loose `cannon.impacteffect.xml` is ignored today too). A loose `.xmb` is read.
+- **Compile it with the tool:** `tools/xmbedit.py` of [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools),
+  one command each way, from that repo's folder (Python 3, nothing to install):
+  ```
+  python -I tools/xmbedit.py to-xml cannon.impacteffect.xmb      # -> cannon.impacteffect, to edit
+  python -I tools/xmbedit.py from-xml cannon.impacteffect        # -> cannon.impacteffect.xmb
+  ```
+  Start from the stock file (`python -I tools/bar.py <game>\art\Art1.bar impacts\cannon --extract <folder>`), add the
+  element, compile, and put the `.xmb` (and the source, for the next edit) in `art\effects\impacts`. A source named
+  `cannon.impacteffect.xml` compiles to `cannon.impacteffect.xmb` too. The output is plain, as the stock files are
+  (`--compress` also loads). `to-xml` keeps each element on its stored line, so an unedited file compiles back to the
+  stock `.xmb` byte for byte (all 14 stock impact effects, 2026-11-13); `xmbedit.py check <file.xmb>` proves it for a file.
+  **Tested (2026-11-13, WoL bed):** the stock `cannon` decompiled, the `<shipmetal>` element of the example above added,
+  compiled with the tool: `hook reached: customImpactTypes impact effect entry`, then `first impact of type ShipMetal
+  (15)`, and the splash off the Mahalla's walls.
 - **Bad arguments:** a stock name, a repeated name, a name of 32 characters or more, or no name: logged, and the key is not
   applied.
 - **Simulation:** no, it is drawing and sound only.
