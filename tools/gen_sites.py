@@ -1094,6 +1094,23 @@ SITES = [
     ("DataActionAttribute", 0x6216A3, 5),
     ("DataAllActionsApply", 0x7F86CA, 0x0E),
     ("DataAllActionsUnapply", 0x7F870F, 0x0E),
+    # tech subtypes on a Player target: the player Data apply FUN_008D842B, thiscall(player, a1, a2, subtype,
+    # [effect+10h], [effect+14h], amount, relativity), ret 1Ch: lea eax,[ebp-0Ah] / cmp eax,5Ah / push edi /
+    # mov esi,ecx / ja 8D878Fh (replaced, 6 bytes) / movzx eax,[eax+8D93D8h] / jmp [eax*4+8D9330h]; its caller
+    # 0x7F874A that pushes the effect's fields; the failure exit and a success exit (pop edi/esi/ebp/ebx,
+    # add esp,0Ch, ret 1Ch, AL as left)
+    ("PlayerDataSwitch", 0x8D8435, 0x1D),
+    ("PlayerDataCaller", 0x7F874A, 0x32),
+    ("PlayerDataFail", 0x8D878F, 0x0C),
+    ("PlayerDataDone", 0x8D8D23, 0x0A),
+    # shipmentCounts: the stock FreeHomeCityUnit case (subtype 37h) of the player Data apply: amount [esp+34h],
+    # proto [esp+2Ch], up to its call of the shipment spawn 0x857E77
+    ("FreeHomeCityUnitCase", 0x8D8C62, 0xC1),
+    # shipmentCounts: the shipment of a card, FUN_00858299: the activation of the card's tech,
+    # call 94CF27h (thiscall(entry = EDI, player = [esi+8], unit, 0, &ok, flags), ret 14h; redirected),
+    # with the pushes before it and the use of EDI after it
+    ("ShipActivateCall", 0x8584E7, 0x24),
+    ("ShipQueueCaller", 0x66AEA0, 5),
     # cratePriority: the only calls of the crate rank FUN_004DBF40 (thiscall(db, resource, civ), ret 8)
     # and of the next crate FUN_00501786 (thiscall(player, proto, int* next, int* resource), ret 0Ch),
     # and that one's read of the civ: mov ecx,[esi+4] / mov ecx,[ecx+44h]

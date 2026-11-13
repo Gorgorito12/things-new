@@ -101,6 +101,7 @@ set(UHC_SOURCES
   src/features/startingtc.cpp
   src/features/techprereq.cpp
   src/features/orprereqs.cpp
+  src/features/shipmentcounts.cpp
   src/features/teams.cpp
   src/features/techrename.cpp
   src/features/pillage.cpp
@@ -179,6 +180,7 @@ set(UHC_SOURCES
   src/hooks/startingtc_hooks.asm
   src/hooks/techprereq_hooks.asm
   src/hooks/orprereqs_hooks.asm
+  src/hooks/shipmentcount_hooks.asm
   src/hooks/techrename_hooks.asm
   src/hooks/transform_hooks.asm
   src/hooks/transforminv_hooks.asm

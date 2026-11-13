@@ -273,6 +273,8 @@ techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units ar
                               created or die, not only at the next house or age-up
 orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of its
                               prerequisites instead of one
+shipmentCounts [log]          cards shipped per player and age; Data subtype
+                              FreeHomeCityUnitByShipmentCount, XS xsGetShipmentCount
 maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit
                               (Maintain action) until there is population room
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS

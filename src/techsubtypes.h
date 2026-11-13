@@ -29,6 +29,17 @@ bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 using TechTypeSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t type, bool unapply);
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler);
 
+// The same for a subtype on a Player target (<Target type="Player"/>), as stock's FreeHomeCityUnit. `parse` runs
+// while the techs are read, with the effect and its XML node: it may store what it reads in the effect's field
+// +10h (the action's ID for other subtypes), and returns false to drop the effect. `run` runs when the effect
+// applies, with the player, that field and the amount: it returns kPlayerSubtypeDone, kPlayerSubtypeFail, or the
+// ID of a stock player subtype (0Ah..64h) to run with the field and the amount as it rewrote them.
+constexpr std::int32_t kPlayerSubtypeDone = -2;
+constexpr std::int32_t kPlayerSubtypeFail = -1;
+using TechPlayerSubtypeParse = bool (*)(void* db, char* effect, const char* node);
+using TechPlayerSubtypeHandler = std::int32_t (*)(char* player, std::int32_t* field, float* amount);
+bool AddTechPlayerSubtype(const char* name, TechPlayerSubtypeParse parse, TechPlayerSubtypeHandler run);
+
 // Called for a Data subtype that neither stock nor a key knows, while the data loads, for dataLint. Writes the hooks too.
 using UnknownTechSubtype = void (*)(const char* name);
 bool OnUnknownTechSubtype(UnknownTechSubtype callback);

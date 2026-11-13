@@ -1430,6 +1430,27 @@ inline constexpr Site kDataAllActionsApply{"DataAllActionsApply", 0x007F86CA, kD
 inline constexpr std::uint8_t kDataAllActionsUnapplyBytes[] = {0x0F, 0xB6, 0x50, 0x09, 0xC0, 0xEA, 0x06, 0x80, 0xE2, 0x01, 0x88, 0x54, 0x24, 0x0C};
 inline constexpr Site kDataAllActionsUnapply{"DataAllActionsUnapply", 0x007F870F, kDataAllActionsUnapplyBytes, sizeof(kDataAllActionsUnapplyBytes)};
 
+inline constexpr std::uint8_t kPlayerDataSwitchBytes[] = {0x8D, 0x45, 0xF6, 0x83, 0xF8, 0x5A, 0x57, 0x8B, 0xF1, 0x0F, 0x87, 0x4B, 0x03, 0x00, 0x00, 0x0F, 0xB6, 0x80, 0xD8, 0x93, 0x8D, 0x00, 0xFF, 0x24, 0x85, 0x30, 0x93, 0x8D, 0x00};
+inline constexpr Site kPlayerDataSwitch{"PlayerDataSwitch", 0x008D8435, kPlayerDataSwitchBytes, sizeof(kPlayerDataSwitchBytes)};
+
+inline constexpr std::uint8_t kPlayerDataCallerBytes[] = {0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x85, 0xC9, 0x75, 0x05, 0x32, 0xC0, 0xC2, 0x0C, 0x00, 0x8A, 0x50, 0x1C, 0x52, 0x8B, 0x50, 0x18, 0x52, 0x8B, 0x50, 0x14, 0x52, 0x8B, 0x50, 0x10, 0x8B, 0x40, 0x0C, 0x52, 0x8B, 0x54, 0x24, 0x1C, 0x50, 0x8B, 0x44, 0x24, 0x1C, 0x52, 0x50, 0xE8, 0xAF, 0xFC, 0x0D, 0x00};
+inline constexpr Site kPlayerDataCaller{"PlayerDataCaller", 0x007F874A, kPlayerDataCallerBytes, sizeof(kPlayerDataCallerBytes)};
+
+inline constexpr std::uint8_t kPlayerDataFailBytes[] = {0x5F, 0x5E, 0x5D, 0x32, 0xC0, 0x5B, 0x83, 0xC4, 0x0C, 0xC2, 0x1C, 0x00};
+inline constexpr Site kPlayerDataFail{"PlayerDataFail", 0x008D878F, kPlayerDataFailBytes, sizeof(kPlayerDataFailBytes)};
+
+inline constexpr std::uint8_t kPlayerDataDoneBytes[] = {0x5F, 0x5E, 0x5D, 0x5B, 0x83, 0xC4, 0x0C, 0xC2, 0x1C, 0x00};
+inline constexpr Site kPlayerDataDone{"PlayerDataDone", 0x008D8D23, kPlayerDataDoneBytes, sizeof(kPlayerDataDoneBytes)};
+
+inline constexpr std::uint8_t kFreeHomeCityUnitCaseBytes[] = {0x83, 0xBE, 0x84, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x84, 0x00, 0x06, 0x00, 0x00, 0xD9, 0x44, 0x24, 0x34, 0x8B, 0x4C, 0x24, 0x34, 0xD8, 0x1D, 0x60, 0xFB, 0xB9, 0x00, 0x89, 0x4C, 0x24, 0x38, 0xDF, 0xE0, 0xF6, 0xC4, 0x05, 0x7A, 0x35, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00, 0xD9, 0x44, 0x24, 0x34, 0x8B, 0x82, 0x3C, 0x01, 0x00, 0x00, 0xD9, 0xE0, 0x8B, 0x80, 0x34, 0x01, 0x00, 0x00, 0x83, 0xF8, 0x0F, 0x89, 0x44, 0x24, 0x34, 0x7E, 0x08, 0xC7, 0x44, 0x24, 0x34, 0x0F, 0x00, 0x00, 0x00, 0xDB, 0x44, 0x24, 0x34, 0xD8, 0xC9, 0xD9, 0x5C, 0x24, 0x38, 0xDD, 0xD8, 0x8B, 0x4C, 0x24, 0x24, 0x51, 0x8B, 0xCE, 0xC6, 0x44, 0x24, 0x38, 0x00, 0xE8, 0x56, 0x8C, 0xC3, 0xFF, 0x85, 0xC0, 0x74, 0x11, 0x6A, 0x28, 0x8B, 0xC8, 0xE8, 0x88, 0x4B, 0xB7, 0xFF, 0x3C, 0x01, 0x75, 0x04, 0x88, 0x44, 0x24, 0x34, 0x8B, 0x54, 0x24, 0x34, 0xD9, 0x44, 0x24, 0x38, 0x8B, 0x4C, 0x24, 0x2C, 0xD9, 0x7C, 0x24, 0x34, 0x0F, 0xB7, 0x44, 0x24, 0x34, 0x80, 0xCC, 0x0C, 0x52, 0x6A, 0x00, 0x6A, 0xFF, 0x6A, 0x00, 0x89, 0x44, 0x24, 0x48, 0xD9, 0x6C, 0x24, 0x48, 0xDB, 0x5C, 0x24, 0x48, 0x8B, 0x44, 0x24, 0x48, 0x50, 0x51, 0x8B, 0x8E, 0x84, 0x00, 0x00, 0x00, 0xD9, 0x6C, 0x24, 0x4C, 0xE8, 0x54, 0xF1, 0xF7, 0xFF};
+inline constexpr Site kFreeHomeCityUnitCase{"FreeHomeCityUnitCase", 0x008D8C62, kFreeHomeCityUnitCaseBytes, sizeof(kFreeHomeCityUnitCaseBytes)};
+
+inline constexpr std::uint8_t kShipActivateCallBytes[] = {0x8B, 0x44, 0x24, 0x14, 0x8B, 0x56, 0x08, 0x50, 0x8D, 0x4C, 0x24, 0x17, 0x51, 0x6A, 0x00, 0x55, 0x52, 0x8B, 0xCF, 0xC6, 0x44, 0x24, 0x27, 0x01, 0xE8, 0x23, 0x4A, 0x0F, 0x00, 0x6A, 0x39, 0x8B, 0xCF, 0xE8, 0x56, 0x53};
+inline constexpr Site kShipActivateCall{"ShipActivateCall", 0x008584E7, kShipActivateCallBytes, sizeof(kShipActivateCallBytes)};
+
+inline constexpr std::uint8_t kShipQueueCallerBytes[] = {0xE8, 0xF4, 0xD3, 0x1E, 0x00};
+inline constexpr Site kShipQueueCaller{"ShipQueueCaller", 0x0066AEA0, kShipQueueCallerBytes, sizeof(kShipQueueCallerBytes)};
+
 inline constexpr std::uint8_t kCrateRankCallBytes[] = {0xE8, 0xFF, 0x1E, 0x04, 0x00};
 inline constexpr Site kCrateRankCall{"CrateRankCall", 0x0049A03C, kCrateRankCallBytes, sizeof(kCrateRankCallBytes)};
 
@@ -2519,6 +2540,7 @@ Outcome ApplyDirectionalAttack(const Config& config);
 Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyOrPrereqsQty(const Config& config);
+Outcome ApplyShipmentCounts(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
@@ -2618,6 +2640,7 @@ inline constexpr Feature kFeatures[] = {
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
+    {"shipmentCounts", ApplyShipmentCounts},
     {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
     {"pillageGold", ApplyPillageGold},
@@ -2737,7 +2760,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "customwalls", "directionalattack", "transformspan", "veterancybonus", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
@@ -3761,6 +3784,17 @@ bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 using TechTypeSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t type, bool unapply);
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler);
 
+// The same for a subtype on a Player target (<Target type="Player"/>), as stock's FreeHomeCityUnit. `parse` runs
+// while the techs are read, with the effect and its XML node: it may store what it reads in the effect's field
+// +10h (the action's ID for other subtypes), and returns false to drop the effect. `run` runs when the effect
+// applies, with the player, that field and the amount: it returns kPlayerSubtypeDone, kPlayerSubtypeFail, or the
+// ID of a stock player subtype (0Ah..64h) to run with the field and the amount as it rewrote them.
+constexpr std::int32_t kPlayerSubtypeDone = -2;
+constexpr std::int32_t kPlayerSubtypeFail = -1;
+using TechPlayerSubtypeParse = bool (*)(void* db, char* effect, const char* node);
+using TechPlayerSubtypeHandler = std::int32_t (*)(char* player, std::int32_t* field, float* amount);
+bool AddTechPlayerSubtype(const char* name, TechPlayerSubtypeParse parse, TechPlayerSubtypeHandler run);
+
 // Called for a Data subtype that neither stock nor a key knows, while the data loads, for dataLint. Writes the hooks too.
 using UnknownTechSubtype = void (*)(const char* name);
 bool OnUnknownTechSubtype(UnknownTechSubtype callback);
@@ -3786,6 +3820,7 @@ void UhcTechSubtypeLookupHook();
 void UhcTechSubtypeLookupStock();
 void UhcTechSubtypeApplyHook();
 void UhcTechSubtypeUnapplyHook();
+void UhcTechPlayerSubtypeHook();
 char* g_uhcSubtypeEffect = nullptr;       // the effect whose subtype is being read, and its XML node
 const char* g_uhcSubtypeNode = nullptr;
 }
@@ -3799,6 +3834,7 @@ constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the 
 constexpr std::uint32_t kOtherCaller = 0x00621C2E;     // the lookup's other caller, which tests for one stock ID
 constexpr std::uint32_t kApplySwitch = 0x008F978D;     // cmp eax,63h / ja (9 B)
 constexpr std::uint32_t kUnapplySwitch = 0x008FB051;   // cmp eax,5Eh / ja (9 B)
+constexpr std::uint32_t kPlayerSwitch = 0x008D843E;    // ja 8D878Fh (6 B), in the player Data apply
 constexpr std::size_t kEffectAction = 0x10;            // BDataEffect: the action's ID, -1 for allactions
 constexpr std::size_t kEffectFlags = 9;                // bit 40h: allactions="1", read before the subtype
 constexpr std::uint8_t kEffectAfterLoad = 0x20;         // in those flags
@@ -3828,11 +3864,14 @@ struct Subtype {
   uhc::TechSubtypeHandler handler;              // on a proto
   uhc::TechActionSubtypeHandler actionHandler;  // or on its actions
   uhc::TechTypeSubtypeHandler typeHandler;      // or with a unit type
+  uhc::TechPlayerSubtypeParse playerParse;      // or on a player
+  uhc::TechPlayerSubtypeHandler playerHandler;
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
 std::size_t g_count = 0;
 bool g_installed = false;
+bool g_playerInstalled = false;
 uhc::UnknownTechSubtype g_unknown = nullptr;
 
 // What stock does in setData for TrackRating: only the subtypes it knows read the attribute.
@@ -3919,6 +3958,18 @@ bool Install() {
   return true;
 }
 
+bool InstallPlayer() {
+  if (!g_playerInstalled) {
+    if (!uhc::VerifyAll("tech subtypes", {&uhc::sites::kPlayerDataSwitch, &uhc::sites::kPlayerDataCaller,
+                                          &uhc::sites::kPlayerDataFail, &uhc::sites::kPlayerDataDone}) ||
+        !uhc::WriteJmp(kPlayerSwitch, reinterpret_cast<const void*>(&UhcTechPlayerSubtypeHook), 6)) {
+      return false;
+    }
+    g_playerInstalled = true;
+  }
+  return true;
+}
+
 bool Add(const Subtype& subtype) {
   if (g_count == kMaxSubtypes) {
     uhc::Log(L"tech subtypes: no room for %hs", subtype.name);
@@ -3951,6 +4002,10 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
     if (g_subtypes[i].typeHandler != nullptr && !ReadType(db, name, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
+    if (g_subtypes[i].playerParse != nullptr &&
+        !g_subtypes[i].playerParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
+      return -1;
+    }
     return kFirstId + static_cast<std::int32_t>(i);
   }
   if (g_unknown != nullptr) {
@@ -3976,20 +4031,43 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
     return RunOnActions(subtype, proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0, actionId,
                         allActions != 0);
   }
+  if (subtype.handler == nullptr) {
+    return false;  // a Player subtype on a ProtoUnit target
+  }
   subtype.handler(proto, base, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
   return true;
 }
 
+// From the player switch hook, for a subtype at or above kFirstId. `field` and `amount` point at the arguments the
+// stock cases read ([esp+2Ch] and [esp+34h] there).
+extern "C" std::int32_t __stdcall UhcTechPlayerSubtypeRun(std::int32_t id, char* player, std::int32_t* field,
+                                                         float* amount) {
+  const std::size_t index = static_cast<std::size_t>(id - kFirstId);
+  if (index >= g_count || g_subtypes[index].playerHandler == nullptr || player == nullptr) {
+    return uhc::kPlayerSubtypeFail;  // a ProtoUnit subtype on a Player target fails, as stock fails an unknown one
+  }
+  return g_subtypes[index].playerHandler(player, field, amount);
+}
+
 namespace uhc {
 
-bool AddTechSubtype(const char* name, TechSubtypeHandler handler) { return Add({name, handler, nullptr, nullptr}); }
+bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
+  return Add({name, handler, nullptr, nullptr, nullptr, nullptr});
+}
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
-  return Add({name, nullptr, handler, nullptr});
+  return Add({name, nullptr, handler, nullptr, nullptr, nullptr});
 }
 
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler) {
-  return Add({name, nullptr, nullptr, handler});
+  return Add({name, nullptr, nullptr, handler, nullptr, nullptr});
+}
+
+bool AddTechPlayerSubtype(const char* name, TechPlayerSubtypeParse parse, TechPlayerSubtypeHandler run) {
+  if (!InstallPlayer()) {
+    return false;
+  }
+  return Add({name, nullptr, nullptr, nullptr, parse, run});
 }
 
 bool OnUnknownTechSubtype(UnknownTechSubtype callback) {
@@ -4017,6 +4095,7 @@ include common.inc
 UhcTechSubtypeLookup PROTO STDCALL db_:DWORD, subtypeName:DWORD, returnAddress:DWORD
 EXTERN g_uhcSubtypeEffect:DWORD
 EXTERN g_uhcSubtypeNode:DWORD
+UhcTechPlayerSubtypeRun PROTO STDCALL subtype:DWORD, player:DWORD, field:DWORD, amount:DWORD
 UhcTechSubtypeRun PROTO STDCALL subtype:DWORD, target:DWORD, base:DWORD, amount:DWORD, relativity:DWORD, unapply:DWORD, actionId:DWORD, allActions:DWORD
 
 .data
@@ -4028,6 +4107,9 @@ applyFail         dd 008FAEF4h    ; the same with xor al,al
 unapplySwitchNext dd 008FB05Ah    ; movzx eax, the subtype's jump index
 unapplyDone       dd 008FC191h    ; pop edi / esi / ebp, mov al,1, pop ebx, ret 20h
 unapplyFail       dd 008FC19Ah    ; the same with xor al,al
+playerSwitchNext  dd 008D8444h    ; movzx eax,[eax+8D93D8h] / jmp [eax*4+8D9330h]: the stock player cases
+playerDone        dd 008D8D23h    ; pop edi / esi / ebp / ebx, add esp,0Ch, ret 1Ch (AL as left)
+playerFail        dd 008D878Fh    ; pop edi / esi / ebp, xor al,al, pop ebx, add esp,0Ch, ret 1Ch
 
 .code
 
@@ -4112,6 +4194,41 @@ custom:
 fail:
     jmp unapplyFail
 UhcTechSubtypeUnapplyHook ENDP
+
+; Replaces 0x8D843E..0x8D8443 (ja 8D878Fh) in the player Data apply FUN_008D842B, thiscall(player, a1, a2, subtype,
+; field, a5, amount, relativity), ret 1Ch. EBP = subtype, EAX = subtype - 0Ah, the flags those of cmp eax,5Ah;
+; ESI = the player; EBX, EBP, ESI, EDI pushed below the 0Ch locals, so the field is [esp+2Ch], the amount
+; [esp+34h], the subtype argument [esp+28h]. A stock ID goes on as stock; a key's ID asks UhcTechPlayerSubtypeRun,
+; which ends the effect (done, AL = 1; or failed) or names a stock subtype to run with the rewritten arguments.
+UhcTechPlayerSubtypeHook PROC
+    TRACE_ONCE "tech subtype on a player (0x8D843E)"
+    jbe stockCase                   ; the stolen ja, inverted: 0Ah..64h are the stock cases
+    cmp ebp, 100h
+    jb fail
+    lea ecx, [esp+34h]
+    lea edx, [esp+2Ch]
+    push ecx                        ; &amount
+    push edx                        ; &field
+    push esi                        ; player
+    push ebp                        ; subtype
+    call UhcTechPlayerSubtypeRun
+    cmp eax, -2
+    je done
+    cmp eax, -1
+    je fail
+    mov ebp, eax                    ; run as that stock subtype
+    mov dword ptr [esp+28h], eax
+    sub eax, 0Ah
+    cmp eax, 5Ah
+    ja fail
+stockCase:
+    jmp playerSwitchNext
+done:
+    mov al, 1
+    jmp playerDone
+fail:
+    jmp playerFail
+UhcTechPlayerSubtypeHook ENDP
 
 END
 ```

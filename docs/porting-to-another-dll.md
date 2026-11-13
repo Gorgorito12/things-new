@@ -933,6 +933,28 @@ Code: [techs](porting-code/techs.md#techprereqrecheck).
   keep the IDs whose definition (record `+0`) has a prerequisite with byte `[p+5]` = 0 in
   `[def+1Ch][0..byte def+20h)`.
 
+### shipmentCounts
+
+Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target of the shared tech subtypes
+(`AddTechPlayerSubtype`, in the [helpers](porting-code/helpers.md)) and `AddSyscall`.
+
+- **The count:** a `call` at `0x8584FF` (`E8 23 4A 0F 00`, `call 94CF27h`) in the card shipment FUN_00858299. Entry:
+  ECX = EDI = the card tech's status entry, `[esp+4]` the player, five arguments, `ret 14h`. Note the player ID and
+  `[player+50h]` (its age, cAge1 = 0), run the activation with the stack as it is (keep the return address aside), then
+  add one to that player's count of that age. The card's effects run inside the activation: `includeself` adds the
+  card being shipped. Reset the counts when the world `[[0xC66234]+13Ch]` changes.
+- **The subtype:** a 6-byte `jmp` over `ja 8D878Fh` at `0x8D843E` (`0F 87 4B 03 00 00`) in the player Data apply
+  FUN_008D842B. Entry: EBP = subtype, EAX = subtype − 0Ah, the flags of `cmp eax,5Ah`, ESI = the player, the field
+  `[esp+2Ch]` (the effect's `+10h`), the amount `[esp+34h]`. A stock ID continues at `0x8D8444`. For the new ID, write
+  the proto into the field and `amount × count` into the amount, set EBP and `[esp+28h]` to 37h and EAX to 37h − 0Ah,
+  and jump to `0x8D8444`: the stock `FreeHomeCityUnit` delivers the units. A count of 0: `mov al,1 / jmp 8D8D23h`.
+- **The parse:** the subtype's name goes through your subtype lookup; while the effect is read, keep its node (the
+  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` and `includeself`, and pack them
+  into the effect's `+10h`.
+- **The syscall:** `int xsGetShipmentCount(int playerID, int age)` in the XS group.
+- **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
+  `age='1'`: two units.
+
 ### orPrereqsQty
 
 Code: [techs](porting-code/techs.md#orprereqsqty).
