@@ -101,6 +101,39 @@ Las civilizaciones nuevas (ocultas)
   primera misión), no la del escenario, igual que con el arreglo. La ciudad natal de 1869
   (homecitySPC_MJ.xml) solo cuenta si se juega la misión suelta.
 
+Uniformes históricos (cuatro unidades)
+  Cuatro unidades llevan uniformes más cercanos a la historia, SOLO en estas misiones: son
+  copias nuevas (protos "Hist...") con texturas y animaciones propias en
+  art\WoL\campaign_historical\. Las unidades originales de WoL no cambian en las partidas
+  normales. Ningún edificio ni carta las entrena fuera de las misiones.
+    Unidad (misión)            Cambio                                       Referencia
+    Lanceiro Negro (Laguna)    Se mantiene la coraza de acero; paño y       Juan Manuel Blanes, "Lancero
+      HistLanceiroNegro        chiripá rojos, calzoncillo blanco, botas     de la época de Rivera" (s. XIX,
+                               de potro, vincha roja y sombrero de gaucho   muestra los años 1830); Debret,
+                               (el sombrero es suposición nuestra).         "Gaúcho" (1834-1839).
+    Corsario (Costa Berber.)   Camisa blanca, chaleco azul con galón,       Grasset de Saint-Sauveur,
+      HistBarbaryCorsair       faja roja y turbante sobre gorro rojo        "Homme des États barbaresques"
+                               (en lugar del torso desnudo). Suposición:    (c. 1797). No hay fuente del
+                               no hay descripción de los corsarios de       vestido de Trípoli en 1801.
+                               Trípoli de 1801.
+    Jenízaro (Costa Berber.)   El oro de parada pasa a latón, la seda       Bonnart, "Janissaire d'Alger"
+      HistJanissary            blanca a algodón, faja roja, el penacho      (antes de 1718); Duflos (1780).
+                               ya no lleva el color del jugador.            Ropa de campaña: suposición.
+    Infantería de marina de    Casaca azul (el color del jugador 1),        Donna Neary, "Marines 1798-1804"
+    EE. UU. (Costa Berber.)    vueltas rojas, sombrero redondo con borde    (reconstrucción, años 1980);
+      HistMarine               amarillo. Edades 1-2: chaleco rojo y         McClellan citado por la USO.
+                               pantalón azul (1798-1803). Edades 3-4:       El pantalón blanco de 1804 no
+                               casaca de 1804 con galón amarillo y          tiene fuente.
+                               pantalón blanco.
+  Los marines se entrenan en las goletas del jugador 1, que ahora son una copia
+  (HistSchooner) que entrena la copia. Las mejoras de los marines (NAtechUSAmarine01-02, que
+  la misión activa al empezar) valen también para la copia: el paquete trae data\techtreey.xml
+  (el del arreglo, con cada efecto que nombra a una de las cuatro unidades o a la goleta
+  repetido para su copia) y data\protoy.xml (el de WoL con las cinco copias al final).
+  Fusileros montados (NAmountedrifle): en esta versión ningún disparador los da ni los
+  despliega; solo saldrían de un vapor hecho en el muelle, que vuelve si se pierden las dos
+  goletas. Cerrarlo pediría un efecto nuevo en el escenario; se deja así.
+
 Probado (14 de noviembre de 2026)
   Desde el menú de la campaña, en Fácil, con nuestra DLL (inglés) y con la DLL de WoL (español):
   las tres misiones cargan sin errores de script, con sus banderas nuevas (barcos de EE. UU.,
@@ -123,6 +156,10 @@ Versiones nuevas de WoL
   3. stringtabley-fragment-english.txt (data\stringtabley.xml, inglés) y
      stringtabley-fragment-spanish.txt (data\stringtabley.xml.es-la, español): cambie las dos
      líneas que dice y pegue las tres líneas nuevas antes de </Language>.
+  4. protoy-fragment.xml: péguelo justo antes de la última línea </Proto> de data\protoy.xml
+     (las cinco unidades "Hist...").
+  5. techtreey-fragment.txt: dice, tecnología por tecnología, qué efecto añadir después de cuál
+     en data\techtreey.xml (los efectos para las copias).
 
 Idiomas
   WoL tiene la tabla de textos en inglés (stringtabley.xml) y en español latinoamericano
@@ -140,7 +177,8 @@ Cómo instalarlo
      reemplace los archivos.
   Para deshacer: descomprima WoL-campaign-historical-originals.zip igual y borre los archivos
   nuevos: Campaign\Wonders\homecitySPC_MJ.xml y los .ddt "hist_imperial_japan" de
-  art\War of the Triple Alliance\Flags y \Buttons. Las misiones vuelven a las del arreglo.
+  art\War of the Triple Alliance\Flags y \Buttons, y la carpeta
+  art\WoL\campaign_historical. Las misiones vuelven a las del arreglo.
 
 ENGLISH
 
@@ -241,6 +279,37 @@ The new (hidden) civs
   mission), not the scenario's, as with the fix. The 1869 home city (homecitySPC_MJ.xml) only
   counts when the mission is played on its own.
 
+Historical uniforms (four units)
+  Four units wear uniforms closer to the history, ONLY in these missions: they are new copies
+  ("Hist..." protos) with their own textures and anim files in art\WoL\campaign_historical\.
+  WoL's own units do not change in normal games. No building or card trains the copies outside
+  the missions.
+    Unit (mission)             Change                                       Reference
+    Lanceiro Negro (Laguna)    The steel cuirass stays; red cloth and       Juan Manuel Blanes, "Lancero
+      HistLanceiroNegro        chiripá, white under-drawers, raw-hide       de la época de Rivera" (19th c.,
+                               boots, red headband, gaucho hat (the hat     shows the 1830s); Debret,
+                               is our inference).                           "Gaúcho" (1834-1839).
+    Corsair (Barbary Coast)    White shirt, blue waistcoat with braid,      Grasset de Saint-Sauveur,
+      HistBarbaryCorsair       red sash and a turban on a red cap (no       "Homme des États barbaresques"
+                               more bare chest). Inference: no source       (c. 1797). No source on
+                               describes Tripoli's corsairs of 1801.        Tripoli's dress in 1801.
+    Janissary (Barbary Coast)  Parade gold to brass, white silk to          Bonnart, "Janissaire d'Alger"
+      HistJanissary            cotton, red sash, the plume no longer in     (before 1718); Duflos (1780).
+                               the player colour.                           Campaign dress: inference.
+    US Marines                 Blue coat (player 1's colour), red           Donna Neary, "Marines 1798-1804"
+    (Barbary Coast)            facings, round hat edged yellow. Ages 1-2:   (1980s reconstruction);
+      HistMarine               red waistcoat, blue trousers (1798-1803).    McClellan quoted by the USO.
+                               Ages 3-4: the 1804 coatee with yellow tape,  The white trousers of 1804
+                               white trousers.                              are not sourced.
+  The marines are trained in player 1's schooners, which are now a copy (HistSchooner) that
+  trains the copy. The marine upgrades (NAtechUSAmarine01-02, which the mission sets active at
+  the start) also reach the copy: the pack ships data\techtreey.xml (the campaign fix's, with
+  every effect that names one of the four units or the schooner repeated for its copy) and
+  data\protoy.xml (WoL's, with the five copies at the end).
+  Mounted riflemen (NAmountedrifle): in this version no trigger gives or deploys them; they could
+  only come from a Steamboat built at the dock, which returns when both schooners are lost.
+  Closing that would need a new effect in the scenario; left as it is.
+
 Tested (14 November 2026)
   From the campaign menu, on Easy, with our DLL (English) and with WoL's DLL (Spanish): the three
   missions load with no script error, with their new flags (the US ships, Garibaldi's Town
@@ -262,6 +331,10 @@ Newer WoL versions
   3. stringtabley-fragment-english.txt (data\stringtabley.xml, English) and
      stringtabley-fragment-spanish.txt (data\stringtabley.xml.es-la, Spanish): change the two
      lines it names and paste the three new lines before </Language>.
+  4. protoy-fragment.xml: paste it just before the last line </Proto> of data\protoy.xml (the
+     five "Hist..." units).
+  5. techtreey-fragment.txt: says, tech by tech, which effect to add after which in
+     data\techtreey.xml (the effects for the copies).
 
 Languages
   WoL has its string table in English (stringtabley.xml) and in Latin American Spanish
@@ -279,4 +352,5 @@ How to install
      files.
   To undo: unzip WoL-campaign-historical-originals.zip the same way and delete the new files:
   Campaign\Wonders\homecitySPC_MJ.xml and the "hist_imperial_japan" .ddt files in
-  art\War of the Triple Alliance\Flags and \Buttons. The missions go back to the fix's.
+  art\War of the Triple Alliance\Flags and \Buttons, and the folder
+  art\WoL\campaign_historical. The missions go back to the fix's.

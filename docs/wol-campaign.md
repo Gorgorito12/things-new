@@ -851,7 +851,7 @@ launch (a log the DLL rewrites at each start).
 
 ## Historical uniforms: references
 
-Research (2026-11-14) for new uniforms on four units of the historical version, used only there:
+Research, review and build (2026-11-14) for new uniforms on four units of the historical version, used only there:
 `MercLanceiroNegro` (Laguna), `MercBarbaryCorsair`, `NAmarine` and `Janissary` (Barbary Coast).
 The plan: a copy of each anim file with `<replacetexture>` and swapped accessories, new textures
 under `art\WoL\campaign_historical\`, and (after review) new protos for the campaign only. WoL's
@@ -901,8 +901,8 @@ sources and the period, not stated by them; **(uncertain)** sources disagree or 
 | Texture only | one layout for the four ages (their UVs are the same): coat in the player colour (blue for the campaign's US player), red lapels, cuffs and turnbacks, a red waistcoat (ages 1–2, the 1798 dress), white waistcoat with yellow tape on the lapels (ages 3–4, 1804), white trousers, black gaiters |
 | Accessory | the round hat: `3d_models\Hats\felt_hat` with its texture's brim bound in yellow (also tried: `hat`, `hat_black`, `tophat`; the bicorne `wol\units\infantry_ranged\line_infantry\bicorne_model` and tricornes are officers' or older) |
 
-`NAmountedrifle` (mounted riflemen) is anachronistic in 1801: not repainted; the integration will
-propose taking it out of the mission's troops.
+`NAmountedrifle` (mounted riflemen) is anachronistic in 1801: not repainted; what the mission
+still allows of it is under "what was built" below.
 
 ### Tripoli's janissaries and kouloughlis, 1801
 
@@ -915,28 +915,139 @@ propose taking it out of the mission's troops.
 | Texture only | the gold dulled to brass, the white silk to cotton, a red sash, the plume painted as white felt and out of the team colour, the boots red-brown |
 | Accessory | none: the *börk* is part of the mesh, its plume cannot be taken off (`war of the triple alliance\wotta_hats\jannisary_hat_new` and `ottoman_hat_1` exist, but the head would keep its own) |
 
-### Previews (for review, not integrated)
+### Previews (reviewed)
 
 Built 2026-11-14 with the tools above; the files are mod content and stay outside both
 repositories, in the session's scratchpad folder `uniforms\` (`art\WoL\campaign_historical\...`
-in the game's layout, `sheets\` before/after renders, `ingame\` captures, `recipes\` the painting
-recipes). Seen in game in `C:\AoE3-UHC-WoLReal4` (the four protos pointed at the copies for the
-test, then restored and hash-checked): the hats sit on the heads, the turban and round hats follow
-the walk and the attacks, the player colour shows on the chiripá, the poncho stripe, the marines'
-coats and the janissaries' coats.
+in the game's layout, `sheets\final\` before/after renders, `ingame\` captures, `recipes\` the
+painting recipes, `refs\` the reference images). First seen in game in `C:\AoE3-UHC-WoLReal4`
+(the four protos pointed at the copies for the test, then restored and hash-checked): the hats
+sit on the heads and follow the walk and the attacks; the player colour shows. The first preview
+painted the Lanceiro's cuirass as a poncho and the marines' trousers white in every age; the
+review below changed both.
 
 | Unit | Anim copy | Textures | Accessory |
 |---|---|---|---|
-| Lanceiro Negro | `lanceiro_negro\lanceiro_negro_hist_horse.xml` (horse, includes) `lanceiro_negro_hist_rider.xml` | `lanceiro_negro_hist.ddt` (512 BGRA, as the original) + `_b` | `3d_models\Hats\hat_black` on the missing hat's attach |
-| Corsair | `barbary_corsair\barbary_corsair_hist.xml` (the stock `.xmb` as text; full and low-poly models) | `barbary_corsair_hist.ddt` (256 DXT3, mips) + `_b` | `3d_models\Hats\turban` on `Bip01 Head` |
+| Lanceiro Negro | `lanceiro_negro\lanceiro_negro_hist_horse.xml` (horse, includes) `lanceiro_negro_hist_rider.xml` | `lanceiro_negro_hist.ddt` (512 BGRA alpha-test, as the original) + `_b` | `3d_models\Hats\hat_black` on the missing hat's attach |
+| Corsair | `barbary_corsair\barbary_corsair_hist.xml` (the stock `.xmb` as text; full and low-poly models) | `barbary_corsair_hist.ddt` (256 DXT3, mips) + `_b` | `3d_models\Hats\turban` on `Bip01 Head` (not `turban_fez`: its file declares 1000 units per metre against the inch-sized numbers of the other hats) |
 | Marines | `marine\marine_hist.xml` (all four ages, WoL's consulate and Hakodate branches) | `marine_hist_1798.ddt` (ages 1–2), `marine_hist_1804.ddt` (ages 3–4), 256 BGRA, + `_b`; `marine_hist_hat.ddt` | `3d_models\Hats\felt_hat` for every age |
 | Janissary | `janissary\janissary_hist.xml` (full and low-poly) | `jannisary_guard_hist.ddt` (256×128 DXT3, mips) + `_b` | none |
 
-Open for the review: the poncho's colour and stripe; whether the corsair's turban should be
-`turban_fez` instead (its file declares 1000 units per metre against the inch-sized numbers of the
-other hats; how the engine sizes it is not known, so it was not used); whether the marines' age 3–4
-should keep the bicorne for an officer look; an optional AI pass (tried on the poncho: more natural
-wool, same stripes; kept as a variant, `work\ai\`).
+### Reference images (reviewed 2026-11-14)
+
+Period images and later reconstructions the user reviewed, all public domain on Wikimedia Commons
+(or on travelogues.gr); the files are not in the repository.
+
+| Unit | Image | Author | Date | Page |
+|---|---|---|---|---|
+| Lanceiros Negros | *Lancero de la época de Rivera*: a Black lancer with a **steel cuirass**, a red headband over a red cap, a red cloth over the hips, white under-drawers; the only period-style image of a Black lancer found | Juan Manuel Blanes | undated, second half of the 19th c. (shows the 1830s) | [Commons](https://commons.wikimedia.org/wiki/File:Lancero_de_la_%C3%A9poca_de_Rivera.png) |
+| | *Gaúcho* (Rio Grande do Sul), *Voyage pittoresque et historique au Brésil* | Jean-Baptiste Debret | 1834–1839 | [Commons](https://commons.wikimedia.org/wiki/File:Debret---ga%C3%BAcho.jpg) |
+| | *Paulistas, or Brazilian gaúchos* (gaucho cavalrymen, Montevideo) | Emeric Essex Vidal | 1818 (publ. 1820) | [Commons](https://commons.wikimedia.org/wiki/File:Paulistas,_or_Brazilian_ga%C3%BAchos.jpg) |
+| | *Carga de Cavalaria* (Farroupilha lancers) | Guilherme Litran | 1893 | [Commons](https://commons.wikimedia.org/wiki/File:Carga_de_Cavalaria_by_Guilherme_Litran.jpg) |
+| Corsairs | *Homme des États barbaresques* (*Costumes de différents pays*) | Grasset de Saint-Sauveur, Labrousse | c. 1797 | [Commons](https://commons.wikimedia.org/wiki/File:Costumes_de_Differents_Pays,_%27Homme_des_Etats_Barbaresques%27_LACMA_M.83.190.274.jpg) |
+| | *British sailors boarding an Algerine pirate ship* | John Fairburn (publisher) | early 19th c. | [Commons](https://commons.wikimedia.org/wiki/File:British_sailors_boarding_an_Algerine_pirate_ship.jpg) |
+| | *Decatur boarding the Tripolitan gunboat*, 3 August 1804 | Dennis Malone Carter | c. 1878 | [Commons](https://commons.wikimedia.org/wiki/File:Decatur_Boarding_the_Tripolitan_Gunboat.jpg) |
+| | *Levendy Roumy, marin grec / Levendy, marin, soldat de marine* | Antoine-Laurent Castellan | 1812 | [travelogues.gr](https://english.travelogues.gr/items/show/54170) |
+| US Marines | *Marines and Marine Band, 1798–1804* (reconstruction): blue coats with red facings, red vests, **blue trousers** (no red edging visible), black round hats | Lt. Col. Donna J. Neary, USMCR | 1980s | [Commons](https://commons.wikimedia.org/wiki/File:Marines_and_Marine_Band_1798-1804_(cropped).jpg) |
+| | *1st Lt. Presley O'Bannon, c. 1805* (officer's coatee) | Col. Donald L. Dickson, USMCR | 1920s–1930s | [Commons](https://commons.wikimedia.org/wiki/File:1LT_Presley_O%27Bannon_USMC_c._1805_who_lead_the_Marine_element_in_the_Tripoli_campaign_of_the_First_Barbary_War.jpg) |
+| | *Attack on Derna*, 27 April 1805 | Col. Charles Waterhouse, USMCR | late 20th c. | [Commons](https://commons.wikimedia.org/wiki/File:Attack_on_Derna_by_Charles_Waterhouse_01.jpg) |
+| Janissaries | *Janissaire d'Alger* | Nicolas Bonnart | before 1718 | [Commons](https://commons.wikimedia.org/wiki/File:Janissaire_d%27Alger.jpg) |
+| | *Turc d'Alger, soldat* ("un vray Corsaire d'Alger") | Henri II Bonnart | 1678–1711 | [Commons](https://commons.wikimedia.org/wiki/File:Bonnart-Turc_d%27Alger,_soldat.jpg) |
+| | *Boluch-Bassi, ou officier des janissaires* | Pierre Duflos | 1780 | [Commons](https://commons.wikimedia.org/wiki/File:Bulukbachi.jpg) |
+| | *Een soldaat van de Janitsaren* (Istanbul) | anonymous, Vanmour series | 1700–1737 | [Commons](https://commons.wikimedia.org/wiki/File:Een_soldaat_van_de_Janitsaren_Rijksmuseum_SK-A-2027.jpeg) |
+| | *Koulougli et Mauresque* (*Voyage dans la régence d'Alger*) | Claude-Antoine Rozet | 1833 | [Commons](https://commons.wikimedia.org/wiki/File:Koulougli_et_mauresque.jpg) |
+| | *Kouloughli* (Algeria), *Galerie royale de costumes* | Adolphe, Janet-Lange, Dollet | 1842–1843 | [Commons](https://commons.wikimedia.org/wiki/File:Koulouglli.jpg) |
+
+**Decisions after the review:**
+- **Lanceiro Negro:** Blanes's painting replaces the poncho plan. WoL's steel cuirass is kept as
+  drawn; its team-coloured band (not in the painting) is steel now; below the belt and over the
+  thighs a red cloth and chiripá (Blanes, and the Republic's red); white *calzoncillo* with a
+  fringe; raw-hide boots (*botas de potro*: the sources' "sandálias de couro cru"; Blanes shows a
+  bare foot with a spur); the red *vincha*; the gaucho hat `hat_black` (not in Blanes, who shows a
+  red cap: **inference**, kept as the user asked). The shirt seen at the armholes and on the sleeves
+  keeps WoL's team colour (Blanes: blue-grey; the campaign's player 1 is blue).
+- **Marines:** ages 1–2 (the 1798–1803 uniform) with **blue trousers**, as Neary's plate. Ages 3–4
+  (the 1804 coatee) keep **white trousers: not sourced** (Neary's plate ends in 1804 and does not
+  show the coatee; white linen in the Mediterranean summer is an inference). The round hat edged
+  in yellow in every age.
+- **Corsair:** the turban only, as previewed. **Janissary:** unchanged.
+
+Renders: the session scratchpad's `uniforms\sheets\final\` (`lanceiro-*.png`, `marine-*.png`, two
+views); captures `uniforms\ingame\v2_1.png` (Lanceiros), `v2_4.png` (marines).
+
+### Historical uniforms: what was built (2026-11-14)
+
+Added to `wol-fixes/campaign-historical/` on top of agent B's pack; the build scripts, logs and
+checks are in `rea/evidence/age3y-b1a1dab7/wol-campaign-uniforms-20261114/` (`agentU_build.py`,
+`agentU_mkzip.py`, `campaigncheck-uniforms-set.txt`, `inventory-uniforms.txt`, the hash lists).
+
+**Five campaign-only protos**, appended after the last `<Unit>` of WoL's `protoy.xml` (IDs
+6055515–6055519, so no index moves), each a copy of its original with the same names and texts:
+
+| Proto | Copy of | Anim file | Notes |
+|---|---|---|---|
+| `HistLanceiroNegro` | `MercLanceiroNegro` | `WoL\campaign_historical\lanceiro_negro\lanceiro_negro_hist_horse.xml` | |
+| `HistBarbaryCorsair` | `MercBarbaryCorsair` | `WoL\campaign_historical\barbary_corsair\barbary_corsair_hist.xml` | |
+| `HistJanissary` | `Janissary` | `WoL\campaign_historical\janissary\janissary_hist.xml` | |
+| `HistMarine` | `NAmarine` | `WoL\campaign_historical\marine\marine_hist.xml` | trained only by `HistSchooner` |
+| `HistSchooner` | `Schooner` | the Schooner's | its train list names `HistMarine` instead of `NAmarine` |
+
+- **Nothing trains or ships them in a normal game:** no building's train list names them (only
+  `HistSchooner`, which exists only in the mission), no home city card, no tech enables a building
+  that does. They have no hidden flag: WoL's SPC units have none either (`SPCXPChayton`), and
+  `NotPlayerPlaceable` was not tried on placed units.
+- **Why a ship too:** the US marines are trained in the mission from the Schooners, which train
+  `NAmarine`; a copy of the Schooner is what makes them train the copy.
+- **`techtreey.xml`:** units start disabled and techs enable them (`WOLNAUnion1`, set active by the
+  mission, enables `NAmarine`), and upgrades name protos (`NAtechUSAmarine01`/`02`, active from the
+  start: +5 % and +20 % hitpoints and damage, and the names "Leatherneck"). So every effect that
+  names an original (a `ProtoUnit` target, `proto=` or `unittype=`) is followed by the same effect
+  naming its copy: 101 effects (NAmarine 43, Janissary 26, Schooner 24, MercBarbaryCorsair 5,
+  MercLanceiroNegro 3). In a normal game no copy exists, so they change nothing there. The base
+  fix ships `techtreey.xml`, so the pack's starts from the base fix's file; the originals zip gives
+  back the base fix's.
+- **Scenarios** (`scnfix.py`, on agent B's files): Barbary Coast renames three dead entries of the
+  saved proto table (`WOLIMWorkerCHBlock` → `HistBarbaryCorsair`, `NAunionarmy01` →
+  `HistJanissary`, `BolivarGuard` → `HistSchooner`, same lengths, placed by no unit), then
+  `units:` (players 2–3: 83 corsairs, 46 janissaries; player 1: the 2 schooners) and `trigger:`
+  (19 army deploys, the `Change Unit Type` of four pirates, the `Player Unit Count` of schooners
+  that brings the dock back). Laguna: `WOLIMFarrapoBlock` → `HistLanceiroNegro`, the placed lancer
+  2676 and the deploy of army 1,11. `campaigncheck.py` on the set: the same 5 deliberate misses as
+  the base fix (Laguna's home cities and `Abolition0`); the structure check (CRC, `BG`/`TR`/`J1`/
+  `OM`, `BP`, `TE`) passes.
+- **Pack:** the zip gets `data\protoy.xml` and `data\techtreey.xml` and the 16 art files under
+  `art\WoL\campaign_historical\`; `fragments\protoy-fragment.xml` (the five units) and
+  `fragments\techtreey-fragment.txt` (each added effect and its tech) are for a newer WoL. The
+  originals zip adds WoL's `protoy.xml` and the base fix's `techtreey.xml`. The base fix's zips
+  and WoL's original textures and anim files keep their hashes (lists in the evidence folder).
+
+**`NAmountedrifle`:** nothing in the historical Barbary Coast enables or deploys it. It was reached
+through the Steamboats (their train list has it), which agent B replaced by a Frigate and two
+Schooners, and no other building of player 1 trains it. One path remains: when both schooners are
+lost the dock comes back, and a US dock can train a Steamboat. Closing it needs a new *Forbid*
+effect, which `scnfix.py` cannot add; retargeting the existing forbid (of `NAtinclad`) would let
+the dock train that ironclad instead. Left as it is, documented.
+
+**Tests (2026-11-14):**
+
+| | `C:\AoE3-UHC-WoLReal3` (our DLL, English) | `C:\WoL-Test` (WoL's DLL `c070d138`, Spanish, the `engine-ext` harness) |
+|---|---|---|
+| Barbary Coast | loads from the campaign menu (Easy, *Play*); the intro cinematic shows the new corsair (shirt, vest, sash, turban) and janissary on the cliff; the first objective appears; 2 `HistSchooner`, 73 `HistBarbaryCorsair`, 42 `HistJanissary` alive; the schooner's train button offers the marine ("Specialist Leatherneck", the name `NAtechUSAmarine02` gives) and answers "too far from shore" at sea, as the stock one; `winScenario` → home city → Laguna | loads, the same units and the same cinematic (`w1-barbary-start.mp4`); `winScenario` → Laguna |
+| Laguna | loads, no XS message; the lancers come by trigger later (army 1,11), not seen in the first minute; `winScenario` → Hakodate | loads; `winScenario` → Hakodate |
+| Hakodate | loads; `winScenario` → the campaign screen with the three missions | loads; `winScenario` |
+| Normal game | a scenario with the originals for player 1 and the copies for player 2 (`sidebyside.png`): the originals look as before (armoured Lanceiro, bare-chested corsair), the copies in the new uniforms, all walking and fighting | — |
+
+**The intro cinematic and the janissary (a bug report, 2026-11-14).** The user saw the janissary
+of Barbary Coast's intro cinematic drawn only in part, then not at all. Cause: the first test
+install of this pack (12:20) put the art under `C:\AoE3-UHC-WoLReal3\WoL\campaign_historical\`
+instead of `art\WoL\...` (a path bug of the build script), so `HistJanissary` and
+`HistBarbaryCorsair` named an anim file that did not exist; the "not at all" run was a deliberate
+reproduction with those two folders taken away, where both units are invisible
+(`barbary_intro_noart.mp4`). The texture headers match the originals' (format, alpha mode, usage,
+alpha content), the low-poly branch and the bump maps are swapped too, and with the art in place
+the janissary is drawn whole in the cinematic, in our DLL's bed and in WoL's
+(`barbary_intro_new.mp4`, `jan_frames.png`: the new janissary on top, the stock one in the same
+scene below, `barbary_intro_stockjan.mp4`). Captures are in the scratchpad's `uniforms\integ\`.
 
 ## Tools
 

@@ -1,0 +1,563 @@
+	<!-- ===== Historical campaign pack: five campaign-only units, appended last. ===== -->
+		<!-- Historical campaign pack: HistLanceiroNegro, a campaign-only copy of MercLanceiroNegro (trained by no building and no card). -->
+<Unit id="6055515" name="HistLanceiroNegro">
+		<DBID>6055515</DBID>
+		<DisplayNameID>72087</DisplayNameID>
+		<EditorNameID>72088</EditorNameID>
+		<PopulationCount>4</PopulationCount>
+		<ObstructionRadiusX>0.7900</ObstructionRadiusX>
+		<ObstructionRadiusZ>0.7900</ObstructionRadiusZ>
+		<FormationCategory>Mobile</FormationCategory>
+		<MaxVelocity>6.2500</MaxVelocity>
+		<MaxRunVelocity>8.2500</MaxRunVelocity>
+		<MovementType>land</MovementType>
+		<TurnRate>18.0000</TurnRate>
+		<AnimFile>WoL\campaign_historical\lanceiro_negro\lanceiro_negro_hist_horse.xml</AnimFile>
+		<ImpactType>Flesh</ImpactType>
+		<PhysicsInfo>cav</PhysicsInfo>
+		<Icon>WoL\units\mercenaries\lanceiro_negro\lanceiro_negro_icon</Icon>
+		<PortraitIcon>WoL\units\mercenaries\lanceiro_negro\lanceiro_negro_portrait</PortraitIcon>
+		<RolloverTextID>72089</RolloverTextID>
+		<ShortRolloverTextID>72090</ShortRolloverTextID>
+		<InitialHitpoints>600.0000</InitialHitpoints>
+		<MaxHitpoints>600.0000</MaxHitpoints>
+		<LOS>15.0000</LOS>
+		<UnitAIType>HandCombative</UnitAIType>
+		<TrainPoints>30.0000</TrainPoints>
+		<Bounty>40.0000</Bounty>
+		<BuildBounty>40.0000</BuildBounty>
+		<Cost resourcetype="Gold">400.0000</Cost>
+		<ScoreValue>28.0000</ScoreValue>
+		<AllowedAge>2</AllowedAge>
+		<Armor type="Hand" value="0.4000" />
+		<UnitType>LogicalTypeHealed</UnitType>
+		<UnitType>LogicalTypeValidSharpshoot</UnitType>
+		<UnitType>LogicalTypeNeededForVictory</UnitType>
+		<UnitType>LogicalTypeHandUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeLandMilitary</UnitType>
+		<UnitType>LogicalTypeScout</UnitType>
+		<UnitType>LogicalTypeValidSPCUnitsDeadCondition</UnitType>
+		<UnitType>LogicalTypeGarrisonInShips</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeVillagersAttack</UnitType>
+		<UnitType>LogicalTypeHandUnitsAttack</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAttack</UnitType>
+		<UnitType>LogicalTypeMinimapFilterMilitary</UnitType>
+		<UnitType>Unit</UnitType>
+		<UnitType>UnitClass</UnitType>
+		<UnitType>Military</UnitType>
+		<UnitType>AbstractCavalry</UnitType>
+		<UnitType>AbstractWoLAssault</UnitType>
+		<UnitType>AbstractWoLCavalry</UnitType>
+		<UnitType>Mercenary</UnitType>
+		<UnitType>ConvertsHerds</UnitType>
+		<UnitType>AbstractWoLHandCavalry</UnitType>
+		<UnitType>AbstractLancer</UnitType>
+		<UnitType>HasBountyValue</UnitType>
+		<UnitType>CountsTowardMilitaryScore</UnitType>
+		<Flag>CollidesWithProjectiles</Flag>
+		<Flag>ApplyHandicapTraining</Flag>
+		<Flag>CorpseDecays</Flag>
+		<Flag>ShowGarrisonButton</Flag>
+		<Flag>DontRotateObstruction</Flag>
+		<Flag>ObscuredByUnits</Flag>
+		<Flag>ConstrainOrientation</Flag>
+		<Flag>OrientUnitWithGround</Flag>
+		<Flag>Tracked</Flag>
+		<Command column="0" page="10">Garrison</Command>
+		<Command column="1" page="10">Stop</Command>
+		<Command column="2" page="10">Delete</Command>
+		<Command column="3" page="10">Patrol</Command>
+		<Tactics>handCavalry.tactics</Tactics>
+		<ProtoAction>
+			<Name>BuildingAttack</Name>
+			<Damage>45.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>DefendHandAttack</Name>
+			<Damage>35.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractInfantry">4.000000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>MeleeHandAttack</Name>
+			<Damage>35.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractInfantry">4.000000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>TrampleHandAttack</Name>
+			<Damage>30.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>2.000000</ROF>
+			<DamageCap>39.000000</DamageCap>
+			<DamageBonus type="AbstractInfantry">4.000000</DamageBonus>
+			<DamageArea>3.000000</DamageArea>
+			<DamageFlags>GAIAEnemy</DamageFlags>
+			<DamageBonus type="BuildingClass">0.000000</DamageBonus>
+			<DamageBonus type="Tree">0.000000</DamageBonus>
+		</ProtoAction>
+	</Unit>
+		<!-- Historical campaign pack: HistBarbaryCorsair, a campaign-only copy of MercBarbaryCorsair (trained by no building and no card). -->
+<Unit id="6055516" name="HistBarbaryCorsair">
+		<DBID>6055516</DBID>
+		<DisplayNameID>27311</DisplayNameID>
+		<EditorNameID>27312</EditorNameID>
+		<PopulationCount>2</PopulationCount>
+		<ObstructionRadiusX>0.4900</ObstructionRadiusX>
+		<ObstructionRadiusZ>0.4900</ObstructionRadiusZ>
+		<FormationCategory>Body</FormationCategory>
+		<MaxVelocity>6.0000</MaxVelocity>
+		<MaxRunVelocity>8.0000</MaxRunVelocity>
+		<MovementType>land</MovementType>
+		<TurnRate>18.0000</TurnRate>
+		<AnimFile>WoL\campaign_historical\barbary_corsair\barbary_corsair_hist.xml</AnimFile>
+		<ImpactType>Flesh</ImpactType>
+		<PhysicsInfo>dude</PhysicsInfo>
+		<Icon>units\mercenaries\barbary_corsair\barbary_corsair_icon_64x64</Icon>
+		<PortraitIcon>units\mercenaries\barbary_corsair\barbary_corsair_portrait</PortraitIcon>
+		<RolloverTextID>27310</RolloverTextID>
+		<ShortRolloverTextID>27309</ShortRolloverTextID>
+		<InitialHitpoints>315.0000</InitialHitpoints>
+		<MaxHitpoints>315.0000</MaxHitpoints>
+		<LOS>12.0000</LOS>
+		<UnitAIType>HandCombative</UnitAIType>
+		<TrainPoints>20.0000</TrainPoints>
+		<Bounty>20.0000</Bounty>
+		<BuildBounty>20.0000</BuildBounty>
+		<Cost resourcetype="Gold">200.0000</Cost>
+		<ScoreValue>20.0000</ScoreValue>
+		<AllowedAge>2</AllowedAge>
+		<Armor type="Hand" value="0.4000" />
+		<UnitType>LogicalTypeHealed</UnitType>
+		<UnitType>LogicalTypeValidSharpshoot</UnitType>
+		<UnitType>LogicalTypeNeededForVictory</UnitType>
+		<UnitType>LogicalTypeHandUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeLandMilitary</UnitType>
+		<UnitType>LogicalTypeScout</UnitType>
+		<UnitType>LogicalTypeValidSPCUnitsDeadCondition</UnitType>
+		<UnitType>LogicalTypeGarrisonInShips</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeVillagersAttack</UnitType>
+		<UnitType>LogicalTypeHandUnitsAttack</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAttack</UnitType>
+		<UnitType>LogicalTypeMinimapFilterMilitary</UnitType>
+		<UnitType>Mercenary</UnitType>
+		<UnitType>AbstractInfantry</UnitType>
+		<UnitType>AbstractWoLInfantry</UnitType>
+		<UnitType>AbstractHeavyInfantry</UnitType>
+		<UnitType>Unit</UnitType>
+		<UnitType>UnitClass</UnitType>
+		<UnitType>Military</UnitType>
+		<UnitType>AbstractHandInfantry</UnitType>
+		<UnitType>ConvertsHerds</UnitType>
+		<UnitType>HasBountyValue</UnitType>
+		<UnitType>CountsTowardMilitaryScore</UnitType>
+		<UnitType>AbstractCavalryInfantry</UnitType>
+		<Flag>CollidesWithProjectiles</Flag>
+		<Flag>ApplyHandicapTraining</Flag>
+		<Flag>CorpseDecays</Flag>
+		<Flag>ShowGarrisonButton</Flag>
+		<Flag>DontRotateObstruction</Flag>
+		<Flag>ObscuredByUnits</Flag>
+		<Flag>Tracked</Flag>
+		<Command column="0" page="10">Garrison</Command>
+		<Command column="1" page="10">Stop</Command>
+		<Command column="2" page="10">Delete</Command>
+		<Command column="3" page="10">Patrol</Command>
+		<Tactics>swordsman.tactics</Tactics>
+		<ProtoAction>
+			<Name>BuildingAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>CoverBuildingAttack</Name>
+			<Damage>10.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>CoverHandAttack</Name>
+			<Damage>14.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractCavalry">3.000000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>DefendHandAttack</Name>
+			<Damage>28.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractCavalry">3.000000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>MeleeHandAttack</Name>
+			<Damage>28.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractCavalry">3.000000</DamageBonus>
+		</ProtoAction>
+	</Unit>
+		<!-- Historical campaign pack: HistJanissary, a campaign-only copy of Janissary (trained by no building and no card). -->
+<Unit id="6055517" name="HistJanissary">
+		<DBID>6055517</DBID>
+		<DisplayNameID>23735</DisplayNameID>
+		<EditorNameID>25017</EditorNameID>
+		<PopulationCount>1</PopulationCount>
+		<ObstructionRadiusX>0.4900</ObstructionRadiusX>
+		<ObstructionRadiusZ>0.4900</ObstructionRadiusZ>
+		<FormationCategory>Ranged</FormationCategory>
+		<MaxVelocity>4.0000</MaxVelocity>
+		<MaxRunVelocity>6.0000</MaxRunVelocity>
+		<MovementType>land</MovementType>
+		<TurnRate>18.0000</TurnRate>
+		<AnimFile>WoL\campaign_historical\janissary\janissary_hist.xml</AnimFile>
+		<ImpactType>Flesh</ImpactType>
+		<PhysicsInfo>dude</PhysicsInfo>
+		<Icon>units\infantry_ranged\janissary\janissary_icon_64x64</Icon>
+		<PortraitIcon>units\infantry_ranged\janissary\janissary_icon_128</PortraitIcon>
+		<RolloverTextID>23734</RolloverTextID>
+		<ShortRolloverTextID>25649</ShortRolloverTextID>
+		<InitialHitpoints>250.0000</InitialHitpoints>
+		<MaxHitpoints>250.0000</MaxHitpoints>
+		<LOS>16.0000</LOS>
+		<ProjectileProtoUnit>InvisibleProjectile</ProjectileProtoUnit>
+		<UnitAIType>RangedCombative</UnitAIType>
+		<TrainPoints>34.0000</TrainPoints>
+		<Bounty>13.0000</Bounty>
+		<BuildBounty>20.0000</BuildBounty>
+		<Cost resourcetype="Food">100.0000</Cost>
+		<Cost resourcetype="Gold">25.0000</Cost>
+		<AllowedAge>1</AllowedAge>
+		<Armor type="Hand" value="0.2000" />
+		<UnitType>LogicalTypeHealed</UnitType>
+		<UnitType>LogicalTypeValidSharpshoot</UnitType>
+		<UnitType>LogicalTypeNeededForVictory</UnitType>
+		<UnitType>LogicalTypeHandUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeLandMilitary</UnitType>
+		<UnitType>LogicalTypeScout</UnitType>
+		<UnitType>LogicalTypeValidSPCUnitsDeadCondition</UnitType>
+		<UnitType>LogicalTypeGarrisonInShips</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeVillagersAttack</UnitType>
+		<UnitType>LogicalTypeHandUnitsAttack</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAttack</UnitType>
+		<UnitType>LogicalTypeMinimapFilterMilitary</UnitType>
+		<UnitType>AbstractHeavyInfantry</UnitType>
+		<UnitType>AbstractInfantry</UnitType>
+		<UnitType>AbstractWoLInfantry</UnitType>
+		<UnitType>UnitClass</UnitType>
+		<UnitType>Military</UnitType>
+		<UnitType>Unit</UnitType>
+		<UnitType>AbstractWoLRangedInfantry</UnitType>
+		<UnitType>ConvertsHerds</UnitType>
+		<UnitType>CountsTowardMilitaryScore</UnitType>
+		<UnitType>AbstractCavalryInfantry</UnitType>
+		<UnitType>AbstractBayonet</UnitType>
+		<UnitType>AbstractGunpowderTrooper</UnitType>
+		<UnitType>Ranged</UnitType>
+		<UnitType>HasBountyValue</UnitType>
+		<Flag>CollidesWithProjectiles</Flag>
+		<Flag>ApplyHandicapTraining</Flag>
+		<Flag>CorpseDecays</Flag>
+		<Flag>ShowGarrisonButton</Flag>
+		<Flag>DontRotateObstruction</Flag>
+		<Flag>ObscuredByUnits</Flag>
+		<Flag>Tracked</Flag>
+		<Command column="0" page="10">Garrison</Command>
+		<Command column="1" page="10">Stop</Command>
+		<Command column="2" page="10">Delete</Command>
+		<Command column="3" page="10">Patrol</Command>
+		<Tactics>musketBayonet.tactics</Tactics>
+		<ProtoAction>
+			<Name>BuildingAttack</Name>
+			<Damage>35.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>DefendHandAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractLightInfantry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractRangedCavalry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractWoLAssault">1.300000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>DefendRangedAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Ranged</DamageType>
+			<MaxRange>12.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>MeleeHandAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractLightInfantry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractRangedCavalry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractWoLAssault">1.300000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>StaggerHandAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractLightInfantry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractRangedCavalry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractWoLAssault">1.300000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>StaggerRangedAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Ranged</DamageType>
+			<MaxRange>12.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>VolleyHandAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+			<DamageBonus type="AbstractLightInfantry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractRangedCavalry">2.000000</DamageBonus>
+			<DamageBonus type="AbstractWoLAssault">1.300000</DamageBonus>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>VolleyRangedAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Ranged</DamageType>
+			<MaxRange>12.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+	</Unit>
+		<!-- Historical campaign pack: HistMarine, a campaign-only copy of NAmarine (trained by no building and no card). -->
+<Unit id="6055518" name="HistMarine">
+		<DBID>6055518</DBID>
+		<DisplayNameID>71357</DisplayNameID>
+		<EditorNameID>71358</EditorNameID>
+		<PopulationCount>1</PopulationCount>
+		<ObstructionRadiusX>0.4900</ObstructionRadiusX>
+		<ObstructionRadiusZ>0.4900</ObstructionRadiusZ>
+		<FormationCategory>Ranged</FormationCategory>
+		<MaxVelocity>4.0000</MaxVelocity>
+		<MaxRunVelocity>6.0000</MaxRunVelocity>
+		<MovementType>land</MovementType>
+		<TurnRate>18.0000</TurnRate>
+		<AnimFile>WoL\campaign_historical\marine\marine_hist.xml</AnimFile>
+		<ImpactType>Flesh</ImpactType>
+		<PhysicsInfo>dude</PhysicsInfo>
+		<Icon>WoL\units\infantry_ranged\marine\marine_icon</Icon>
+		<PortraitIcon>WoL\units\infantry_ranged\marine\marine_portrait</PortraitIcon>
+		<RolloverTextID>71359</RolloverTextID>
+		<ShortRolloverTextID>71360</ShortRolloverTextID>
+		<InitialHitpoints>140.0000</InitialHitpoints>
+		<MaxHitpoints>140.0000</MaxHitpoints>
+		<LOS>20.0000</LOS>
+		<ProjectileProtoUnit>InvisibleProjectile</ProjectileProtoUnit>
+		<UnitAIType>RangedCombative</UnitAIType>
+		<TrainPoints>30.0000</TrainPoints>
+		<Bounty>10.0000</Bounty>
+		<BuildBounty>10.0000</BuildBounty>
+		<Cost resourcetype="Food">70.0000</Cost>
+		<Cost resourcetype="Gold">30.0000</Cost>
+		<AllowedAge>1</AllowedAge>
+		<Armor type="Siege" value="0.2000" />
+		<UnitType>LogicalTypeHealed</UnitType>
+		<UnitType>LogicalTypeValidSharpshoot</UnitType>
+		<UnitType>LogicalTypeNeededForVictory</UnitType>
+		<UnitType>LogicalTypeHandUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeLandMilitary</UnitType>
+		<UnitType>LogicalTypeScout</UnitType>
+		<UnitType>LogicalTypeValidSPCUnitsDeadCondition</UnitType>
+		<UnitType>LogicalTypeGarrisonInShips</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeVillagersAttack</UnitType>
+		<UnitType>LogicalTypeHandUnitsAttack</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAttack</UnitType>
+		<UnitType>LogicalTypeMinimapFilterMilitary</UnitType>
+		<UnitType>Unit</UnitType>
+		<UnitType>Military</UnitType>
+		<UnitType>UnitClass</UnitType>
+		<UnitType>AbstractInfantry</UnitType>
+		<UnitType>AbstractWoLInfantry</UnitType>
+		<UnitType>AbstractRangedInfantry</UnitType>
+		<UnitType>HasBountyValue</UnitType>
+		<UnitType>AbstractGunpowderTrooper</UnitType>
+		<UnitType>Ranged</UnitType>
+		<UnitType>CountsTowardMilitaryScore</UnitType>
+		<UnitType>AbstractCavalryInfantry</UnitType>
+		<UnitType>ConvertsHerds</UnitType>
+		<UnitType>AbstractWoLRangedInfantry</UnitType>
+		<UnitType>AbstractWoLNavalTrooper</UnitType>
+		<UnitType>AbstractConsulateUnit</UnitType>
+		<UnitType>AbstractConsulateUnitColonial</UnitType>
+		<Flag>CollidesWithProjectiles</Flag>
+		<Flag>ApplyHandicapTraining</Flag>
+		<Flag>CorpseDecays</Flag>
+		<Flag>ShowGarrisonButton</Flag>
+		<Flag>DontRotateObstruction</Flag>
+		<Flag>ObscuredByUnits</Flag>
+		<Flag>Tracked</Flag>
+		<Command column="0" page="10">Garrison</Command>
+		<Command column="1" page="10">Stop</Command>
+		<Command column="2" page="10">Delete</Command>
+		<Command column="3" page="10">Patrol</Command>
+		<Tactics>wolInfantryRanged.tactics</Tactics>
+		<ProtoAction>
+			<Name>BuildingAttack</Name>
+			<Damage>18.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>DefendHandAttack</Name>
+			<Damage>6.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>DefendRangedAttack</Name>
+			<Damage>16.000000</Damage>
+			<DamageBonus type="AbstractSiegeTrooper">3.000000</DamageBonus>
+			<DamageBonus type="AbstractArtillery">2.000000</DamageBonus>
+			<DamageBonus type="AbstractCavalry">0.750000</DamageBonus>
+			<DamageType>Ranged</DamageType>
+			<MaxRange>16.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>MeleeHandAttack</Name>
+			<Damage>6.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>StaggerHandAttack</Name>
+			<Damage>6.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>StaggerRangedAttack</Name>
+			<Damage>16.000000</Damage>
+			<DamageBonus type="AbstractSiegeTrooper">3.000000</DamageBonus>
+			<DamageBonus type="AbstractArtillery">2.000000</DamageBonus>
+			<DamageBonus type="AbstractCavalry">0.750000</DamageBonus>
+			<DamageType>Ranged</DamageType>
+			<MaxRange>16.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>VolleyHandAttack</Name>
+			<Damage>6.000000</Damage>
+			<DamageType>Hand</DamageType>
+			<ROF>1.500000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>VolleyRangedAttack</Name>
+			<Damage>16.000000</Damage>
+			<DamageBonus type="AbstractSiegeTrooper">3.000000</DamageBonus>
+			<DamageBonus type="AbstractArtillery">2.000000</DamageBonus>
+			<DamageBonus type="AbstractCavalry">0.750000</DamageBonus>
+			<DamageType>Ranged</DamageType>
+			<MaxRange>16.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+	</Unit>
+		<!-- Historical campaign pack: HistSchooner, a campaign-only copy of Schooner (trained by no building and no card). -->
+<Unit id="6055519" name="HistSchooner">
+		<DBID>6055519</DBID>
+		<DisplayNameID>9001498</DisplayNameID>
+		<EditorNameID>9001499</EditorNameID>
+		<ObstructionRadiusX>2.9900</ObstructionRadiusX>
+		<ObstructionRadiusZ>2.9900</ObstructionRadiusZ>
+		<FormationCategory>Ranged</FormationCategory>
+		<MaxVelocity>8.5000</MaxVelocity>
+		<MaxRunVelocity>10.5000</MaxRunVelocity>
+		<MovementType>water</MovementType>
+		<TurnRate>1.5000</TurnRate>
+		<AnimFile>units\naval\Schooner\Schooner.xml</AnimFile>
+		<ImpactType>Wood</ImpactType>
+		<PhysicsInfo>house</PhysicsInfo>
+		<Icon>units\naval\Schooner\Schooner_icon</Icon>
+		<PortraitIcon>units\naval\Schooner\Schooner_portrait</PortraitIcon>
+		<RolloverTextID>9001500</RolloverTextID>
+		<ShortRolloverTextID>9001498</ShortRolloverTextID>
+		<InitialHitpoints>1200.0000</InitialHitpoints>
+		<MaxHitpoints>1200.0000</MaxHitpoints>
+		<LOS>25.0000</LOS>
+		<ProjectileProtoUnit>Cannonball</ProjectileProtoUnit>
+		<UnitAIType>RangedCombative</UnitAIType>
+		<TrainPoints>35.0000</TrainPoints>
+		<BuildLimit>6</BuildLimit>
+		<Bounty>40.0000</Bounty>
+		<BuildBounty>40.0000</BuildBounty>
+		<Cost resourcetype="Wood">200.0000</Cost>
+		<Cost resourcetype="Gold">200.0000</Cost>
+		<MaxContained>15</MaxContained>
+		<AllowedAge>1</AllowedAge>
+		<Armor type="ranged" value="0.5000" />
+		<Train column="0" page="0" row="0">HistMarine</Train>
+		<UnitType>LogicalTypeNavalMilitary</UnitType>
+		<UnitType>LogicalTypeNeededForVictory</UnitType>
+		<UnitType>LogicalTypeHandUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeValidSPCUnitsDeadCondition</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeVillagersAttack</UnitType>
+		<UnitType>LogicalTypeHandUnitsAttack</UnitType>
+		<UnitType>LogicalTypeShipsAndBuildings</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAttack</UnitType>
+		<UnitType>LogicalTypeMinimapFilterMilitary</UnitType>
+		<UnitType>Unit</UnitType>
+		<UnitType>UnitClass</UnitType>
+		<UnitType>Ship</UnitType>
+		<UnitType>Military</UnitType>
+		<UnitType>Transport</UnitType>
+		<UnitType>HasBountyValue</UnitType>
+		<UnitType>Ranged</UnitType>
+		<UnitType>CountsTowardMilitaryScore</UnitType>
+		<UnitType>AbstractWarShip</UnitType>
+		<UnitType>AbstractWoLLightShip</UnitType>
+		<Flag>NonAutoFormedUnit</Flag>
+		<Flag>TieToWaterSurface</Flag>
+		<Flag>CollidesWithProjectiles</Flag>
+		<Flag>DontRotateObstruction</Flag>
+		<Flag>ApplyHandicapTraining</Flag>
+		<Flag>NavalUnit</Flag>
+		<Flag>DecalStickToWaterSurface</Flag>
+		<Flag>NoFadeOnDeath</Flag>
+		<Flag>FadeOutDecalOnDeath</Flag>
+		<Flag>NoBloodOnDeath</Flag>
+		<Flag>HeroName1</Flag>
+		<Flag>HasGatherPoint</Flag>
+		<Flag>AllowAutoGarrison</Flag>
+		<Flag>ObscuresUnits</Flag>
+		<Flag>ForceBuildingData</Flag>
+		<Flag>Tracked</Flag>
+		<Contain>LogicalTypeGarrisonInShips</Contain>
+		<Command page="10" column="1">Eject</Command>
+		<Command page="10" column="2">Stop</Command>
+		<Command page="10" column="3">Delete</Command>
+		<Command page="11" column="0">Abilities</Command>
+		<Command page="10" column="0">SetGatherPointMilitary</Command>
+		<Train column="0" page="0" row="0">HistMarine</Train>
+		<Tactics>aviso.tactics</Tactics>
+		<ProtoAction>
+			<Name>RangedAttack</Name>
+			<Damage>20.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<MaxRange>20.000000</MaxRange>
+			<ROF>1.000000</ROF>
+			<DamageArea>1.000000</DamageArea>
+			<DamageFlags>GAIAEnemy</DamageFlags>
+		</ProtoAction>
+	</Unit>
