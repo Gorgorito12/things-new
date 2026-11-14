@@ -1,6 +1,6 @@
 # Developer guide
 
-How to build `UHC.dll`, test it safely, add a feature, and reverse engineer `age3y.exe` the way
+How to build the DLL, test it safely, add a feature, and reverse engineer `age3y.exe` the way
 this project did. For using the DLL in a mod, see [modding-guide.md](modding-guide.md); for the
 internals of each feature, [how-it-works.md](how-it-works.md).
 
@@ -11,7 +11,7 @@ internals of each feature, [how-it-works.md](how-it-works.md).
   MASM (`ml.exe`). This project uses Visual Studio 2026; 2022 should work but was not tested.
 - CMake 3.25 or later. The copy bundled with Visual Studio works:
   `<VS>\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe`.
-- Python 3, for the tools. The capstone checks in [section 5](#5-reverse-engineering-workflow)
+- Python 3, for the tools. The capstone checks in [section 6](#6-reverse-engineering-workflow)
   also need `pip install capstone pefile`, preferably in a virtual environment.
 
 **Commands**, from an "x86 Native Tools Command Prompt" or with full paths:
@@ -25,7 +25,8 @@ dumpbin /exports build\Release\UHC.dll
 - The game is 32-bit, so configure with `-A Win32`; `CMakeLists.txt` stops an x64 configure on
   purpose. For Visual Studio 2022 the generator is `"Visual Studio 17 2022"`.
 - The output is `build\Release\UHC.dll`, linked with the static C runtime, so it needs no
-  redistributable.
+  redistributable, and `build\Release\dinput8.dll`, the same code for a game that keeps another `UHC.dll`
+  ([how-it-works.md](how-it-works.md#beside-another-dll)).
 - `dumpbin /exports` must list `_UHCMain@0`, the exact name the loader asks for.
 
 **Layout:**
@@ -51,7 +52,7 @@ Never modify the Steam install. Work on a copy:
 1. **Copy the game folder**, e.g.
    `robocopy "<Steam>\steamapps\common\Age Of Empires 3\bin" C:\AoE3-UHC-Test /E`.
 2. **Replace the copy's `age3y.exe`** with a UHC-patched exe
-   ([modding guide, section 1](modding-guide.md#getting-an-exe-with-the-uhc-loader)).
+   ([modding guide, section 1](modding-guide.md#getting-an-exe-with-the-loader)).
 3. **Copy `build\Release\UHC.dll`** next to it, and `examples\Startup\uhc.cfg` into its
    `Startup\` folder.
 4. **Start it** any way you like: a double-click, or from PowerShell:
@@ -60,7 +61,7 @@ Never modify the Steam install. Work on a copy:
    Start-Process -FilePath C:\AoE3-UHC-Test\age3y.exe
    ```
 
-   `UHC.dll` makes the exe's folder the working directory, and the log's second line,
+   The DLL makes the exe's folder the working directory, and the log's second line,
    `UHCMain: working directory …`, confirms it.
 
 5. **Read `UHC.log`** next to the exe. Delete it before each run: it is appended.
@@ -88,6 +89,71 @@ Compare-Object (Get-Content steam-before.tsv) (Listing)       # later: must prin
 Use the same `Get-ChildItem` options both times: `-Force` adds hidden files and makes the two
 listings differ. `python -I tools/testbed.py safety record` / `safety check` does the same.
 
+### The test copies
+
+Moved here from `CLAUDE.md` (2026-11-04), so that file stays short.
+
+`C:\AoE3-UHC-Test` is a robocopy of the Steam `bin\` folder, with two changes:
+- `age3y.exe` is replaced by the Knights and Barbarians exe (stock + UHC loader, `d21d0173…`);
+- `UHC.dll` is our build, next to `Startup\uhc.cfg`.
+
+To test:
+1. Copy `build\Release\UHC.dll` there.
+2. Launch `age3y.exe` from any folder: the DLL makes the exe's folder the working directory (UHC 1.10 does the same), and `ignoreRegistryPath` makes the game read the copy's data. Loose files in the copy's `data\` override the archives (verified with `homecitylevels.xml`).
+3. Read `UHC.log` next to the exe. It shows:
+   - each feature as `applied` / `FAILED`;
+   - the keys not implemented yet;
+   - `hook reached: …` the first time the game runs each hook. Put `TRACE_ONCE` from `hooks/common.inc` at the top of every new hook.
+
+**Shared profile.** The copy shares the user profile with the normal game: `Documents\My Games\Age of Empires 3\Users3\NewProfile3.xml`. This file is UTF-16.
+- Its first run reset `optiongrfxres` to `800 x 600`. It was restored to `1920 x 1080` on 2026-10-28; the backup is `NewProfile3.xml.bak-uhc-20261028`.
+- Check that setting if the resolution changes again.
+
+**Test data.** `data\` holds both `protoy.xml` and the compiled `protoy.xml.XMB`. The game loads the XMB unless the XML is newer (FUN_00599A7D compares the file times; `docs/engine-symbols.md`, "Damage and poison"), so keep both in step. In the copy both carry `AbstractHealNonIdle` on `Surgeon`, `ypMonkIndian` and `ypMonkIndian2`:
+- the XMB was edited with `python -I tools/xmbedit.py add-unittype <in.XMB> <out.XMB> <unit> AbstractHealNonIdle …` (it skips units that already have the type and warns about unknown unit names);
+- the XML was edited by hand;
+- the originals are `protoy.xml.uhc-orig` and `protoy.xml.XMB.uhc-orig`.
+
+`tools/xmbedit.py from-xml <in.xml> <out.xmb> --compress` compiles an edited XML; compiling the stock `protoy.xml` gives the stock XMB document byte for byte (decompressed).
+
+**More WoL copies.** `C:\AoE3-UHC-WoLReal2`, `3`, `4` and `5` are robocopies (12 GB each; 3 and 4 from `C:\WoL-Test`, 2026-11-05), to run tests beside `C:\AoE3-UHC-WoLReal`, up to four at once. `C:\WoL-Test` is in Spanish and has ReShade, so a copy made from it needs the English `data\stringtabley.xml` of another copy (the Spanish one stays as `.es-la`) and `d3d9.dll` renamed to `d3d9.dll.off`. Pass `--bed C:\AoE3-UHC-WoLReal3`. The last character of the folder picks the window's corner of the monitor: 2 top right, 3 bottom left, 4 bottom right, anything else top left (`place_window` in `tools/testbed.py`). Copy 5 therefore opens at the same corner as `C:\AoE3-UHC-WoLReal`: do not run those two at once. A data edit in one copy does not reach the others. They share `My Games`, so the profile (`Users3`) is one: a test that edits it runs with no other game open.
+
+**Second test copy.** `C:\AoE3-UHC-Poison` is a robocopy of the test bed (2026-10-28) for `damageOverTime`, so tests do not disturb `C:\AoE3-UHC-Test`, which other sessions use:
+- its cfg is `ignoreRegistryPath` and `damageOverTime log`;
+- its `protoy.xml`, `techtreey.xml` and their XMB are regenerated by `python -I tools/dot_testdata.py C:\AoE3-UHC-Poison [--ai]` from the `.xml.dot-orig` files (the XMB is compiled from the result; the `.XMB.dot-orig` files are only backups): one attachment proto per weapon, from unit 1463 on (the Explorer's `UHCPoisonTest`: Lifespan 10, `Attaching` 20 Ranged every 1 s, `GAIAEnemy`; the Grenadier, Crossbowman, Falconet and Longbowman cases and the tech `UHCPoisonArrowUpgrade` are listed in `tools/README.md`; `--ai` adds a long poison to common units for AI-vs-AI games);
+- `data\tactics\uhcpoisontest.tactics` (+ `.xmb`) declares the `Attaching` action. Keep `<tactic>Normal<action …>` on one line: in a tactics XML read without its `.xmb`, an LF line break after a tactic name defines the XS constant `cTacticNormal` twice, and the AI scripts stop compiling (`docs/modding-guide.md`, "Tactics files").
+
+Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\AoE3-UHC-Poison` when no other `age3y.exe` is running.
+
+**WoL Tier 2 copy.** `C:\AoE3-UHC-WoL` is a private copy for the WoL tests (Tier 2, then the Tier 1 and 3 features, 2026-10-29), with edited data; pass `--bed C:\AoE3-UHC-WoL` to `testbed.py`:
+- `protoy`: `House`, `Outpost` and `Barracks` with `Lifespan` 20 and `PlaceAsFoundation`; `AlphaFadeLifespan` on `Barracks`; `AbstractLifespanAfterConstruction` on `House` and `Barracks`; `Deer` and `Bison` `Doppled`; `AbstractStartingTC` on `Market`; `AbstractOverheal` and `MaxHitpoints` 165 on `Musketeer`; `MaxHitpoints` 132 on `Pikeman` (the unmarked control);
+- `techtreey`: `BuildingWorkRate` 4 on `BloodFactory` inside `YPHCBakufu`; the techs `UHCTestTypeCountCreate`, `UHCTestTypeCountDeath`, `UHCRenameTest` and `UHCInvTransformTest` (six `TransformUnit` effects for `transformInventory`) appended at the end (so stock tech indices are unchanged);
+- loose `data\abilities\abilities.xml`, `data\DefaultKeyMapY.xml`, `data\tactics\firepit.tactics`, and `data\tactics\explorer.tactics.xmb` (the Explorer carries `UHCBwrAura`, an `AutoRangedModify` with `ModifyType` `BuildingWorkRate`, ×4, 40 m, on `BloodFactory`; delete the file to restore stock);
+- for `decimalPopulation` (2026-10-29), written by `python -I tools/pop_testdata.py C:\AoE3-UHC-WoL` (`--restore` undoes it; the files before it are kept as `*.pop-before`): `PopulationCount` 1.5 on `Settler`, `Crossbowman` and `Hussar`, 0.5 on `Pikeman`, `PopulationCapAddition` 7.5 on `Manor`, and the techs `UHCPopCountTest`, `UHCPopCapTest`, `UHCPopCapBig` and `UHCPopPercentTest` (indices 2553–2556) appended;
+- the originals are kept as `*.wol-orig` / `*.testdata-orig`.
+
+**Spread copy.** `C:\AoE3-UHC-Spread` is the private `spreadAnyAccuracy` test copy (2026-10-30): its `protoy` carries `AbstractSpreadAnyAccuracy` and spread / area / bad values on Longbowman, Grenadier, xpAenna, ypChuKoNu, Musketeer, Skirmisher (and an `<AttachProtoUnit>` on Crossbowman), written by `tools/protoy_testdata.py`; `data\tactics\archer.tactics.xmb` sets `maxspread` 20 / `spreadfactor` 2. The originals are `*.spread-orig`. For WoL #5 (2026-10-30) the `*.spread-orig` files were restored, and `techtreey.xml` (+ XMB, compiled with `xmbedit.py from-xml --compress`) got three test techs appended: `UHCWr5Train` (TrainPoints x0.25 on Settler and Musketeer), `UHCWr5Research` (ResearchPoints x0.25 on PlacerMines, HuntingDogs, Gangsaw), `UHCWr5Bwr` (BuildingWorkRate x4 on TownCenter and Market); the originals are `techtreey.xml*.wr5-orig`. In such a scenario, `trainByID` trains nothing (its function reads four parameters, `docs/engine-symbols.md`, "Train points"): queue units with `uiLookAtAndSelectUnit(<id>)` + `trainInSelected("<Proto>", <n>)` (player 1 only); `researchByID(<tech>, <unit>, <player>)` works for any player; `trTechSetStatus` from the console does nothing (use an `at<s>=Set Tech Status` trigger). For WoL #14 (2026-10-30) the `*.wr5-orig` files were restored too (the copy now has no test techs), and the ceasefire tests used loose `data\abilities\abilities.xml` / `powers.xml` (+ `.xmb`), deleted afterwards (copies and scripts in `rea/evidence/age3y-b1a1dab7/ceasefire14/`). Cast an ability from the console with `uiLookAtAndSelectUnit(<id>)` + `ability(<record>, <id>, true)` (`record` counts `<ability>` entries over the whole `abilities.xml` from 0); `ability(<record>, <id>)` alone, with nothing selected, did nothing.
+
+**Real WoL copy (2026-11-02).** `C:\AoE3-UHC-WoLReal` is a copy of the Wars of Liberty mod (from `C:\WoL-Test`) running **our** `UHC.dll`, for the WoL migration ([`docs/wol-migration.md`](wol-migration.md): bed, skirmish clicks, progress, key table). Pass `--bed C:\AoE3-UHC-WoLReal`:
+- WoL's exe reads `Startup\wol.cfg` (not `uhc.cfg`), `AI4\`, `RM4\` and `My Games\Wars of Liberty`; `testbed.py profile` prints them and `deploy`/`map`/`scenario` follow them;
+- WoL's DLL is kept as `uhc.dll.wol-orig`; `wolai.upl`/`wolPlugin.upl` are WoL's binaries, loaded by `customSyscalls` in the bed, never shipped;
+- `C:\WoL-Test` is the control with WoL's own DLL (A/B runs, memory probes); never touch Steam's `Wars of Liberty` folder (`testbed.py safety check wol`);
+- the profile is shared with the user's real WoL (backup `NewProfile3.xml.bak-uhc-20261102`); use ESOC maps in skirmishes (the `*NEW*` maps are broken).
+- it runs in WoL's original English (2026-11-04: `data\stringtabley.xml` from `translations\_originals`, the user's Spanish one kept as `.es-la`); the profile has `optionminimizedui` on, so the exe skips the stat panel fill FUN_004D70ED: a feature that adds a row there must also cover the unit panel (see `showGatherRate`'s hook at 0x699456).
+
+
+### GIFs
+
+Every GIF follows one standard: 800 px wide, 8 fps, at most 12 s and 4 MB. `tools/make_gifs.py` makes
+them from the lossless masters of `record --master`, kept in `rea/media-masters/` (gitignored), with the
+cut of each one in `tools/gifs.txt`. A new video: move its `.mkv` there, add a line to that table, run
+`python -I tools/make_gifs.py <name>`. `--check` fails on any GIF out of the standard. A GIF over 4 MB is
+retried with fewer frames and colours, then with a shorter cut, and the script names it: check that its
+caption still holds. When the parts that must stay readable are too far apart for one 800 px area (a building, the
+command buttons and the resource column), give several 800 px wide areas joined by `+` (`800:260:150:20+800:200:690:610`):
+they are stacked top to bottom at native size. `record` repeats the last frame when PrintWindow returns a black
+picture, which a background copy does now and then.
+
 ### Driving the game unattended
 
 `tools/testbed.py` plays a test with no clicks: it starts the copy, builds a small map with the
@@ -110,9 +176,24 @@ python -I tools/testbed.py close                # also deletes the uhc-* scenari
 there:
 - **Commands reach the game only through `perfExecFile`** (`src/features/perf.cpp`): every 30
   frames the DLL runs each line of `<bed>\uhc-exec.txt` as a console command and deletes the
-  file. Posted key presses never reach the console. `deploy` adds the key to the cfg.
+  file. Posted key presses never reach the console. `deploy` adds the key to the cfg. The
+  console has no trigger or AI syscalls: `uiMessageBox("…")` works, but a command that calls
+  `trPlayerGetPopulation`, `kbGetPop` or `trChatSend` does nothing (it does not compile there).
+  Test XS syscalls in an AI skirmish or through a trigger. Two probes that work in a test copy
+  (back the files up first): an effect added to `trigger3\typetest.xml` whose `<Command>` calls
+  the syscalls and prints them with `trChatSend(0, "…" + value)`, run by a map's `at<s>=` spec;
+  and, for `ai*` / `kb*` syscalls, a rule file included after `aiMain.xs` in
+  `AI3\aiLoaderStandard.xs` that prints with `aiChat(1, "…")` every few seconds.
+- **UI tests:** loose UI files in a test copy's `data` folder override the archives (`uimainnew.xml`
+  plus its `.xmb`, compiled with `xmbedit.py from-xml`), so a data ref no stock UI shows can be put
+  in a gadget's text or `mouseovertext`. String tables edited there are not read (neither `.xml`
+  nor `.XMB`).
+- **Post-game statistics:** `Menú` (client 2373, 27), `Claudicar` (2373, 353), `Sí` (1097, 799);
+  then `Menú` again and `Resumen partida` (2373, 83). The `Línea cronológica` tab draws per-player
+  curves, chosen in its `Mostrar` list (client 2395, 171).
 - **The map** is a random map script written to the copy's `RM3` folder. `p<N>=Proto*count@x,z`
-  places units of player N (x, z are fractions of the map side); `tech<N>=Name` adds a trigger
+  places units of player N (x, z are fractions of the map side); `tech<N>=Name` (a trigger tech ID is the tech's
+  index in `techtreey.xml`, not counting techs inside comments) adds a trigger
   that makes a tech active for player N. A trigger's tech parameter is the tech's **index in
   `techtreey.xml`**, which `map` looks up: a name such as `cTechYPDodge` compiles to tech 0 with
   no error. The game writes what the triggers compiled to in
@@ -126,6 +207,15 @@ there:
   builder, `exec 'tis("<Proto>")'`, then `rclick <x> <y>`. The first real click after the window
   takes the focus is often lost: repeat it. Synthetic key presses (`rkey`) do not reach the
   game's hotkeys, not even the stock Delete.
+- **Training and research from the console** (checked 2026-10-30): `exec
+  'uiLookAtAndSelectUnit(<id>)' 'trainInSelected("Settler", 6)'` queues six units in player 1's
+  building (one queue entry each); `researchByID(<tech index>, <unit id>, <player>)` starts a
+  research for any player. `trainByID` trains nothing: its function reads four parameters for the
+  three it registers. `trTechSetStatus` typed in the console does nothing; use a timed `Set Tech
+  Status` trigger. To time a train or a research, read the building's actions from memory: the
+  action list is `[[unit+58h]+1Ch]` (count `[[unit+58h]+14h]`), a Train action (vtable 0xB98388)
+  has its points at `+64h` and its fraction at `+6Ch`, a Research action (0xB98078) its fraction at
+  `+70h` ([engine-symbols.md](engine-symbols.md), "Train points").
 - **The editor route finishes buildings:** a `PlaceAsFoundation` proto placed by the map is a
   complete building once the scenario is reloaded, so place a foundation in game (see above).
   Scenario players lack their civ's start techs: add `tech1=Age0British` (or the civ's own Age0
@@ -155,6 +245,30 @@ there:
   so it works while the window is covered. It encodes H.264 with ffmpeg: `UHC_FFMPEG`, `PATH`, or
   the static build in `C:\Tools\ffmpeg\ffmpeg.exe` (taken from the PyPI package
   `imageio-ffmpeg`). Center the camera first, e.g. `exec 'uiFindType("Explorer")'`.
+  Make the numbers visible: `--watch <IDs or proto names>` draws the game time and the live HP of
+  those units on every frame, `--log <regex>` the latest matching `UHC.log` lines (the feature's
+  own `log` output); select the key unit (`exec 'uiLookAtAndSelectUnit(<id>)'`) so its stat panel
+  shows too. `scenario` sets `flashHitpointBarsOnDamage`, so damaged units show their HP bar.
+- **Black screenshots and videos** mean the game stopped drawing: it does so while another window
+  has the foreground (`record` and real clicks bring it to the front; `focus()` falls back to a
+  click on the title bar, since Windows refuses `SetForegroundWindow` to a background process) and
+  when the monitor turns off from inactivity, after which its graphics device stays lost until
+  the game restarts. For a long unattended session keep the display on first, e.g. a background
+  `python -I -c "import ctypes,time; ctypes.windll.kernel32.SetThreadExecutionState(0x80000003);
+  time.sleep(10800)"`, and restart the game if the frames are already black. That call does not wake a
+  monitor that is already off: a zero-distance mouse event every 20 s does, without moving the
+  cursor (`user32.mouse_event(1, 0, 0, 0, 0)`). Then restart the game. A window covering the
+  game on its monitor (a terminal) has the same effect, and `focus()`'s title-bar click then lands
+  on that window: run `front` after `launch` (it keeps the game above every window and focuses
+  it). Do not move the game to a monitor with another DPI scale: its HUD still draws, but the 3D
+  view stays black.
+- **Camera, selection and bars:** in the scenario route `uiLookAtUnit` and
+  `uiLookAtAndSelectUnit` select but may leave the camera off the map (a black world, the
+  minimap frame at the edge); a real click on the minimap (`rclick` on the island) moves it, and
+  `wheel <x> <y> <steps>` zooms (positive steps zoom in). Floating HP bars show only for selected
+  or damaged units: `drag <x1> <y1> <x2> <y2>` box-selects. To read small bars, record at width
+  2560 and crop in ffmpeg. A Surgeon heals idle damaged units nearby on its own, about 75 HP in
+  10 s, so put damage triggers after the recording starts.
 - **Test data:** `tools/protoy_testdata.py <bed> unittype Proto=Type …` adds marker types to the
   copy's `protoy.xml` and compiles the XMB from it; `reset` restores the files.
 - **One game at a time.** Other sessions may be testing in their own copies (for example
@@ -178,12 +292,60 @@ there:
 - **Data is parsed once, at startup.** The editor route does not reload `protoy.xml` (a skirmish
   start does), so after a data edit run `close` and `launch` again. A skirmish start compiles the
   AI scripts before it reloads the data, so its AI sees the data of the previous load.
-- **A skirmish against the AI** needs real clicks (`rclick`, client coordinates for a 2560×1600
-  client area): main menu "Single player" (341, 1191), "Skirmish" (921, 1191), home city "Play"
+- **A skirmish against the AI:** `testbed.py skirmish` needs no cursor or focus ([the route](wol-migration.md#skirmish-route-for-videos-2026-11-04)). With
+  real clicks instead (`rclick`, client coordinates for a 2560×1600 client area): main menu "Single player" (341, 1191), "Skirmish" (921, 1191), home city "Play"
   (239, 1527), setup "Play" (635, 1451). Wait about 5 s between the menu clicks and 8–12 s
   before each "Play". After a game, the home city screen sometimes ignores the first click on
-  "Play": take a small screenshot (`shot out.png 4`) and click again. `startRandomGame2` does
+  "Play": take a small screenshot (`shot out.png 4`) and click again. With a 2560×1440 client
+  (`shot` prints the size) the same buttons are at (340, 1068), (920, 1068), (240, 1372) and
+  (640, 1304) (2026-10-30). `startRandomGame2` does
   nothing from the main menu; it works only inside the editor.
+- **A skirmish between two AIs** (for AI-only cases, such as `damageOverTime`'s army units): on
+  the setup screen the player count list is at client (2317, 131) and "3 players" at (1911, 267);
+  "No teams" (1935, 1459), speed "Fast" (2253, 1325). A player's portrait button opens the AI
+  personality list (player 2's at (1003, 385), player 3's at (1003, 537)); `wheel 1677 695 30`
+  scrolls it to the European leaders, the first row is at (1797, 575), the second at
+  (1797, 695), and "Accept" at (1577, 931). Two Hard AIs had military from about minute 5.
+- **Kill or Destroy.** The trigger `Kill` leaves a body that still answers to the unit's ID for a
+  while; `Destroy` removes the unit at once. Use `Destroy` when a test needs the unit gone.
+- **Scenario armies are not AI armies.** `Army Deploy` (`trArmyDispatch`) creates the units but
+  does not put them in an engine army (no army flag 37h).
+- **Reading a player's resources:** they are a resource list embedded at `[player+230h]`
+  ([engine-symbols.md](engine-symbols.md), "Player resources"); entry 5 is XP, which also rises
+  by a steady trickle, so compare a kill against that rhythm.
+- **Filming sharp, with no mouse:** set `normalZoom` before the game loads, keep the units close
+  together, and crop without enlarging: `exec 'configSetFloat("minZoom", 15)'
+  'configSetFloat("normalZoom", 27)'`, then `scenario`, then `record … --frame ID --select … --crop
+  960x640 --master x.mkv`. Make the GIF from the master, at native size. Enlarging a crop, or
+  making a GIF from an MP4, is what makes a video look blurred. Keep the camera still: `--frame`
+  for units that stay in place, `--follow` only for a unit that travels (it re-centers after 10 m,
+  not on a timer).
+- **Show the interaction in the picture, not only in the overlay text:** keep the units the
+  feature acts on selected for the whole video (`record … --select Settler,NAnurse`), so their
+  in-game HP bars show what happens. Check a frame from the middle of the video before sending it.
+- **A test that does not disturb the user:** give the copy `multipleInstances background` and use
+  `record --background`: the window stays behind the others, takes no focus, and `PrintWindow` still
+  films it. The camera does not ease to a new `normalZoom` in the background, hence setting it
+  first. Only real clicks and keys (`rclick`, `rkey`) need the window in front.
+- **What works in a background copy, with no mouse (2026-11-05):**
+
+  | Need | How |
+  |---|---|
+  | Focus the camera | `exec "uiLookAtUnit(<id>)"`; `record --frame` |
+  | Select a unit | `exec "uiLookAtAndSelectUnit(<id>)"`; `record --select` |
+  | Zoom | `normalZoom` by console **before the game loads**: `exec 'configSetFloat("normalZoom", 25)'`. It does not change a running game |
+  | Crop the video | `record --crop` |
+  | Click a button, open a tooltip | `click <x> <y>`; `record --hover` |
+  | Unit orders and tech | triggers (`at<s>=...`) and `exec` |
+  | Hotkeys, typing, a box drag, the wheel | **Not in background:** `rkey`, `type`, `drag` and `wheel` are real input, which this copy ignores. Take `background` out of the cfg and run that test alone |
+- **Edge scrolling moves the camera:** the game scrolls while the cursor sits at a screen edge
+  (`ScrollSpeed`, `ScrollRateBase` and `ScrollMaxSpeed` at 0 do not stop it). `record` sets
+  `cameraMovementLock`, which does, and `uiLookAtUnit` still works under it.
+- **Shipments need a skirmish and real clicks.** Scenario players have no home city, so a test of
+  shipments (`hcShipmentPointFallback`) runs in a skirmish. Send a card by clicking the home city
+  flag (client 667, 1217 on a 2560×1600 client), then a card in its panel. The console cannot set
+  a tech in a skirmish either: `trTechSetStatus` is a trigger syscall, and `editorSetTechStatus`
+  needs the editor.
 - **An error dialog outlives the game.** A game dialog, such as an XS error at game start, stays
   on screen through `leaveGame()` and the menus and eats the clicks meant for them. Click its
   button first (client 1282, 809 for the centered dialog).
@@ -202,7 +364,7 @@ there:
 The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_hooks.asm`).
 
 1. **Find the code.**
-   - Start from strings and cross-references, then decompile ([section 5](#5-reverse-engineering-workflow)).
+   - Start from strings and cross-references, then decompile ([section 6](#6-reverse-engineering-workflow)).
    - When static reading is not enough, trace the running game. For `healNonIdle`:
      - the hit points field (`unit+64h`) came from a write breakpoint while a monk healed;
      - its writer's call chain led to the heal tick FUN_009E0B53 and its "target busy" check at
@@ -211,7 +373,7 @@ The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_ho
        then found the automatic target search FUN_009CD865 and its idle test.
 2. **Choose the site and check it.** It must be an instruction boundary, no branch may land
    inside the bytes you overwrite, and you must know what is live at the continuation
-   ([section 5](#byte-level-checks-with-capstone)).
+   ([section 6](#byte-level-checks-with-capstone)).
 3. **Add the site** to `SITES` in `tools/gen_sites.py`, with a comment saying what the bytes
    are. Make the range cover the overwritten bytes and the continuation. Regenerate:
 
@@ -243,13 +405,107 @@ The worked example is `healNonIdle` (`src/features/heal.cpp`, `src/hooks/heal_ho
 9. **Document it:**
    - a row in [uhc-address-map.md](uhc-address-map.md), "Beyond upstream";
    - the engine functions in [engine-symbols.md](engine-symbols.md);
-   - a section in [modding-guide.md](modding-guide.md);
-   - a line in [examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg).
+   - in [modding-guide.md](modding-guide.md), section 5: a row in its theme's table, and its own section,
+     whose first line is one line in italics saying in plain words what the key does (`guide_dates.py`
+     refuses a section without it). A key that fixes a bug of the game or of WoL's data, or only makes the
+     game faster, goes the same way in [bug-fixes.md](bug-fixes.md) instead ("Bug fixes", under the
+     guide's theme, or "Performance");
+   - `python -I tools/guide_dates.py`, for the day, date and time of the feature in the guide;
+   - its source files in `PAGES` of `tools/porting_code.py`, under a section named as its heading in
+     section 4 of [porting-to-another-dll.md](porting-to-another-dll.md), then
+     `python -I tools/porting_code.py`;
+   - the key in the key list of `README.txt`, in `tools/package_release.py`;
+   - a line in [examples/Startup/uhc.cfg](../examples/Startup/uhc.cfg), commented;
+   - `python -I tools/export_public.py --check`.
 
 Test data goes in the test copy only. For example, add a marker unit type with
 `tools/xmbedit.py add-unittype`.
 
-## 4. Conventions
+## 4. Definition of done
+
+Every new or changed feature meets this list before it is reported as done. Each item links to
+where it is explained; the rules written nowhere else are spelled out here.
+
+**Analysis**
+- [ ] **Every reader and writer** of the value the feature changes (HP, speed, a flag…) is listed,
+  from REA cross-references ([static analysis](#static-analysis-rea-and-ghidra)) or a write
+  breakpoint ([tracers](#dynamic-analysis-hardware-breakpoint-tracers)), with a decision for each:
+  does the feature affect it? `healNonIdle`'s first hook did nothing because the automatic target
+  search was a second path ([section 3](#3-adding-a-feature-step-by-step), step 1).
+- [ ] **Every caller of a hooked function** is known (AI, triggers, UI, other players' units),
+  with what each one expects from it.
+- [ ] **What is live after each continuation** (registers, flags, x87 stack) is checked
+  ([hook conventions](how-it-works.md#3-hook-conventions),
+  [byte-level checks](#byte-level-checks-with-capstone)) and written in the feature's "Why it is
+  safe" in [how-it-works.md](how-it-works.md#4-the-features).
+- [ ] **Per-player copies:** protos, actions and techs exist per player; the code reads the right
+  copy (the player's proto, FUN_0045311B, in
+  [engine-symbols.md](engine-symbols.md#damage-and-poison-2026-10-28-for-damageovertime)).
+
+**Tests** ([driving the game unattended](#driving-the-game-unattended))
+- [ ] **Minimum matrix:**
+  - the key absent: stock behaviour;
+  - each argument;
+  - an unmarked control unit;
+  - bad arguments (an unknown type or tech, 0, negative or huge values): logged, the feature not
+    applied, never a crash.
+- [ ] **Combinations** with every key that shares a site, a pointer or a wrapper, for example
+  `g_uhcBwrTrainGetter` ([buildingWorkRateAuras](how-it-works.md#buildingworkrateauras) and
+  `noTrainNearEnemyTC`) or the world update wrapper of
+  [damageOverTime](how-it-works.md#damageovertime).
+- [ ] **Lifecycle:** a new game, a loaded game, a scenario, a data reload. The DLL's state is
+  cleared ([data-load callbacks](how-it-works.md#3-hook-conventions)) and never leaks from one
+  game into the next; what saved games do not keep is documented
+  ([modding guide, section 7](modding-guide.md#7-multiplayer-saved-games-and-replays)).
+- [ ] **Performance:** a hook on a hot path (per unit, per tick, data load, script syscalls,
+  per-frame UI) is O(1) or close: no allocation per tick, no walk over every unit of the world.
+  Measured A/B, with and without the key, in the same scenario for 60–120 s with
+  `tools/perfprobe.py` (the cfg carries `perfStats`): no measurable rise in frames over 50 ms or
+  in main-thread CPU (about 1 % is noise), and data load (launch to menu, `loadScenario` to
+  unpause) at most 5 % slower. The numbers go into the feature's doc, in the table format of
+  [performance.md](performance.md#benchmark-harness) section 8.
+- [ ] **Videos show performance:** every recording made for the user uses `testbed.py record
+  --perf` (fps, longest frame, frames over 50 ms, simulation speed, main-thread CPU, memory on
+  every frame), besides `--watch`, `--log` and `--follow` for the feature itself.
+- [ ] **Vary the civilization:** tests and videos do not always use the same civ. Pick the civ and
+  unit that fit the feature (poison on native archers, healing on a native healer, farm features
+  on a plantation civ, two-hero features on a civ with monks); with no such fit, rotate European,
+  native and Asian civs. The unmarked control unit stays from the same civ or a standard one, so
+  the comparison is clean. The civ and unit of each test are noted in the feature's doc, so the
+  next test picks another.
+- [ ] **Regression:** after a change to a shared hook, the neighbouring features still log
+  `applied` and their `hook reached` lines.
+- [ ] **Unit tests:** there is no test target yet. Once there is one, pure C++ logic (cfg and
+  argument parsing, calculations) gets unit tests that run without the game.
+- [ ] **The AI still plays** after data or combat changes ([CLAUDE.md](../CLAUDE.md#commands),
+  "Check the AI after data or combat changes").
+
+**Multiplayer**, for every key that changes the simulation (details in
+[how-it-works.md, section 5](how-it-works.md#5-rules-that-keep-multiplayer-deterministic)):
+- [ ] no decision depends on the local player;
+- [ ] no real clock: game time `[world+108h]` or the step count `[world+F8h]`;
+- [ ] no randomness but the game's synced RNG;
+- [ ] ordered containers (keyed by unit ID, never by pointer or hash order);
+- [ ] logs never feed back into the game.
+
+**Process**
+- [ ] **Scope:** if a part turns out much more expensive than planned, deliver what works and
+  document the rest as pending instead of stretching the task.
+- [ ] **One commit per key;** each commit builds and exports `_UHCMain@0` ([section 1](#1-build)).
+- [ ] **Test data backed up** before any edit, with an `*.orig`-style suffix as the existing test
+  copies do (`protoy.xml.uhc-orig`, `*.wol-orig`; [test data](#driving-the-game-unattended)).
+- [ ] **Docs updated:** [section 3](#3-adding-a-feature-step-by-step), step 9, and the doc list in
+  [CLAUDE.md](../CLAUDE.md#layout).
+- [ ] **Status words** as already defined: `unverified` / `confirmed` / `mismatch`
+  ([conventions](#5-conventions)), and in the feature tables `confirmed (single player)` and the
+  like (the tables of the [modding guide](modding-guide.md#5-feature-reference)).
+- [ ] **The final report** always has the same shape:
+  1. what works;
+  2. what was tested in game, and how;
+  3. what was not tested;
+  4. what is inferred without being observed.
+
+## 5. Conventions
 
 - **English** for code, comments and documentation.
 - **No code from other projects in `src/`:**
@@ -263,7 +519,7 @@ Test data goes in the test copy only. For example, add a marker unit type with
   apart.
 - **Copies only:** never modify the Steam install.
 
-## 5. Reverse-engineering workflow
+## 6. Reverse-engineering workflow
 
 ### Static analysis: REA and Ghidra
 
@@ -389,7 +645,7 @@ The research notes cite their evidence:
 Each entry gives the address, the function and the method, so anyone can rerun it with the
 stock exe.
 
-## 6. Making a release
+## 7. Making a release
 
 Modders download a zip, so they never need a compiler. The version has a single source,
 `project(UHC VERSION x.y.z)` in `CMakeLists.txt`. CMake writes it into `version.h`, which
@@ -416,9 +672,18 @@ Modders download a zip, so they never need a compiler. The version has a single 
    UHC-x.y.z\
        UHC.dll
        Startup\uhc.cfg     examples/Startup/uhc.cfg with every key commented out
+       beside-another-dll\ dinput8.dll and engine-ext\engine-ext.cfg, for a game that keeps another UHC.dll
+       art\effects\uhc_rings\  the aura rings of tools/rings
+       art\ui\uhc\health_overheal.ddt  the portrait bar's overheal end, of tools/bars (aoe3-blender-tools' make_bar.py)
+       dxvk\d3d9.dll, dxvk\LICENSE.txt   DXVK 3.1.1 (x32) and its zlib license, for rendererOption
        README.txt          the modder's quick start
        LICENSE.txt
    ```
+
+   DXVK is not in git. Put its files in `rea\vendor\dxvk-3.1.1\` (gitignored) first, or pass `--dxvk <folder>`:
+   `d3d9.dll` from the `x32` folder of `dxvk-3.1.1.tar.gz` (github.com/doitsujin/dxvk, release v3.1.1) and `LICENSE`
+   from the same tag. The script stops if either is missing, or if the DLL's SHA-256 is not `265888c3…f01497fa`, the
+   build `rendererOption` was tested with.
 
    It prints the SHA-256 of the zip and of the DLL, and refuses to replace an existing zip
    unless given `--force`. The game exe is never included: it is Microsoft's binary, and each
@@ -435,7 +700,7 @@ Modders download a zip, so they never need a compiler. The version has a single 
 5. **Publish it by hand** on the repository's GitHub Releases page:
    - a tag `vx.y.z`;
    - the zip as the release asset;
-   - notes listing the new and changed keys, with the in-game status column of the README;
+   - notes listing the new and changed keys, with their in-game status from the modding guide;
    - the two SHA-256 values.
 
 When a key is added, update the release material too:

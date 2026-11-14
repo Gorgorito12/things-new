@@ -40,8 +40,22 @@ const char* ProtoName(const char* unit) {
 }
 
 // Ability records already logged with "log": the panel asks again on every refresh, so each
-// record is logged once. Used only by the hook, on the game thread.
+// record is logged once per game (a new world, or a step count [world+F8h] that went back,
+// clears it). Used only by the hook, on the game thread.
 std::vector<std::int32_t> g_loggedRecords;
+const char* g_logWorld = nullptr;
+std::uint32_t g_logStep = 0;
+
+void ForgetOtherGames() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    g_loggedRecords.clear();
+  }
+  g_logWorld = world;
+  g_logStep = step;
+}
 
 }  // namespace
 
@@ -52,6 +66,7 @@ void UhcWonderPanelAbilityHook();
 
 // Called by the hook, with "log", when the panel shows an ability that stock would not (n > 0).
 void __stdcall UhcWonderPanelLogAbility(const char* unit, std::int32_t n, std::int32_t record, std::int32_t power) {
+  ForgetOtherGames();
   if (std::find(g_loggedRecords.begin(), g_loggedRecords.end(), record) != g_loggedRecords.end()) {
     return;
   }

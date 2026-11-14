@@ -1,0 +1,10 @@
+Replace the line of string 76595 with:
+<String _locID="76595">La piratería en el Mediterráneo ha estado activa durante cientos de años, y hasta ahora nadie se ha atrevido a enfrentar a los feroces corsarios de Trípoli que merodean por las aguas. Sin embargo, tras apresar a marineros y mercaderes estadounidenses, el presidente Thomas Jefferson, en lugar de pagar tributo, ha enviado a la marina de los Estados Unidos a atacar la Costa Beréber y bloquear a los piratas.</String>
+
+Replace the line of string 76596 with:
+<String _locID="76596">Laguna (1839)</String>
+
+Add these lines before </Language>:
+    <String _locID="990101">Regencia de Trípoli</String>
+    <String _locID="990102">Japón Imperial</String>
+    <String _locID="990103">Esta es tu Metrópoli. Entre escenarios puedes visitarla para elegir nuevos envíos y mejoras con la experiencia que hayas ganado, lo que te dará más poder y opciones en el siguiente escenario.</String>

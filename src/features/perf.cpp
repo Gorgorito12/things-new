@@ -1,6 +1,6 @@
-// perfStats: passive diagnostics for the performance work (docs/performance.md). It wraps
-// Direct3DCreate9 through its IAT slot, then IDirect3D9::CreateDevice and
-// IDirect3DDevice9::Reset/Present through their vtables. It logs how the device is created and
+// perfStats: passive diagnostics for the performance work (docs/performance.md). It observes
+// IDirect3D9::CreateDevice and IDirect3DDevice9::Reset/Present through the shared Direct3D hooks
+// (src/d3d9hooks.h), whichever Direct3DCreate9 the game gets. It logs how the device is created and
 // the main thread's FPU state after it, and publishes frame-time counters and the time window of
 // every frame over 50 ms in shared memory for tools/perfprobe.py. The game's own calls and
 // arguments pass through unchanged.
@@ -22,19 +22,12 @@
 #include <string>
 #include <vector>
 
+#include "../d3d9hooks.h"
 #include "../features.h"
 #include "../log.h"
-#include "../patch.h"
 
 namespace uhc {
 namespace {
-
-// IAT slot of d3d9!Direct3DCreate9 (docs/engine-symbols.md, "IAT slots"). It holds a runtime
-// address, so it is checked against GetProcAddress instead of generated/sites.h.
-constexpr std::uint32_t kDirect3DCreate9Slot = 0x00B84164;
-constexpr int kCreateDeviceIndex = 16;  // IDirect3D9
-constexpr int kResetIndex = 16;         // IDirect3DDevice9
-constexpr int kPresentIndex = 17;       // IDirect3DDevice9
 
 constexpr std::uint32_t kSlowFrameRing = 64;
 
@@ -69,18 +62,6 @@ static_assert(offsetof(PerfShared, slowFrames) == 60 && offsetof(PerfShared, qpc
               "tools/perfprobe.py unpacks this layout");
 constexpr std::uint32_t kMagic = 0x50434855;  // "UHCP"
 constexpr std::uint32_t kVersion = 2;
-
-using Direct3DCreate9Fn = IDirect3D9*(WINAPI*)(UINT);
-using CreateDeviceFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3D9*, UINT, D3DDEVTYPE, HWND, DWORD,
-                                                   D3DPRESENT_PARAMETERS*, IDirect3DDevice9**);
-using ResetFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DPRESENT_PARAMETERS*);
-using PresentFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const RECT*, const RECT*, HWND,
-                                              const RGNDATA*);
-
-Direct3DCreate9Fn g_direct3DCreate9 = nullptr;
-CreateDeviceFn g_createDevice = nullptr;
-ResetFn g_reset = nullptr;
-PresentFn g_present = nullptr;
 
 PerfShared* g_shared = nullptr;
 LONGLONG g_qpcFrequency = 0;
@@ -158,19 +139,6 @@ void RunAutoExec() {
   }
 }
 
-// Points vtable slot `index` of a COM object at `hook`, keeping the original. d3d9 shares one
-// vtable between all objects of a class, so a second call finds the hook already in place.
-template <typename Fn>
-bool HookVtable(void* object, int index, Fn hook, Fn* original) {
-  void** slot = *reinterpret_cast<void***>(object) + index;
-  if (*slot == reinterpret_cast<void*>(hook)) {
-    return true;
-  }
-  *original = reinterpret_cast<Fn>(*slot);
-  return WriteDword(static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(slot)),
-                    static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(hook)));
-}
-
 void Publish(DWORD flags, const D3DPRESENT_PARAMETERS* pp) {
   if (g_shared == nullptr || pp == nullptr) {
     return;
@@ -194,8 +162,7 @@ void LogPresentParameters(const wchar_t* what, const D3DPRESENT_PARAMETERS* pp, 
       static_cast<unsigned long>(hr));
 }
 
-HRESULT STDMETHODCALLTYPE PresentHook(IDirect3DDevice9* device, const RECT* source,
-                                      const RECT* dest, HWND window, const RGNDATA* dirty) {
+void BeforePresent() {
   LARGE_INTEGER now;
   QueryPerformanceCounter(&now);
   if (g_lastPresent != 0) {
@@ -217,28 +184,25 @@ HRESULT STDMETHODCALLTYPE PresentHook(IDirect3DDevice9* device, const RECT* sour
     }
   }
   g_lastPresent = now.QuadPart;
-  const HRESULT hr = g_present(device, source, dest, window, dirty);
+}
+
+void AfterPresent(HRESULT) {
   ++g_presents;
   if (!g_autoExec.empty() || !g_execFile.empty()) {
     RunAutoExec();
   }
-  return hr;
 }
 
-HRESULT STDMETHODCALLTYPE ResetHook(IDirect3DDevice9* device, D3DPRESENT_PARAMETERS* pp) {
-  const HRESULT hr = g_reset(device, pp);
+void AfterReset(const D3DPRESENT_PARAMETERS* pp, HRESULT hr) {
   LogPresentParameters(L"Reset", pp, hr);
   if (SUCCEEDED(hr) && pp != nullptr) {
     Publish(g_shared->behaviorFlags, pp);
   }
   g_lastPresent = 0;  // the reset itself is not a frame
-  return hr;
 }
 
-HRESULT STDMETHODCALLTYPE CreateDeviceHook(IDirect3D9* d3d, UINT adapter, D3DDEVTYPE type,
-                                           HWND focus, DWORD flags, D3DPRESENT_PARAMETERS* pp,
-                                           IDirect3DDevice9** device) {
-  const HRESULT hr = g_createDevice(d3d, adapter, type, focus, flags, pp, device);
+void AfterCreateDevice(UINT adapter, D3DDEVTYPE type, DWORD flags, const D3DPRESENT_PARAMETERS* pp, HRESULT hr,
+                       IDirect3DDevice9* device) {
   // Without D3DCREATE_FPU_PRESERVE, d3d9 switches this (the main, simulation) thread's x87 unit
   // to single precision. A replacement d3d9 (DXVK) must leave the same control word, or
   // multiplayer games can go out of sync.
@@ -248,23 +212,10 @@ HRESULT STDMETHODCALLTYPE CreateDeviceHook(IDirect3D9* d3d, UINT adapter, D3DDEV
       L"control word 0x%04X, MXCSR 0x%08X",
       adapter, type, static_cast<unsigned long>(flags), x87, _mm_getcsr());
   LogPresentParameters(L"CreateDevice", pp, hr);
-  if (SUCCEEDED(hr) && device != nullptr && *device != nullptr) {
+  if (device != nullptr) {
     Publish(flags, pp);
-    if (!HookVtable(*device, kPresentIndex, &PresentHook, &g_present) ||
-        !HookVtable(*device, kResetIndex, &ResetHook, &g_reset)) {
-      Log(L"perfStats: could not hook the device vtable; no frame statistics");
-    }
   }
   g_lastPresent = 0;
-  return hr;
-}
-
-IDirect3D9* WINAPI Direct3DCreate9Hook(UINT sdkVersion) {
-  IDirect3D9* d3d = g_direct3DCreate9(sdkVersion);
-  if (d3d != nullptr && !HookVtable(d3d, kCreateDeviceIndex, &CreateDeviceHook, &g_createDevice)) {
-    Log(L"perfStats: could not hook IDirect3D9::CreateDevice");
-  }
-  return d3d;
 }
 
 void LogSystem() {
@@ -336,15 +287,6 @@ Outcome ApplyPerfStats(const Config& config) {
   }
   LogSystem();
 
-  HMODULE d3d9 = GetModuleHandleW(L"d3d9.dll");
-  void* real = d3d9 != nullptr ? reinterpret_cast<void*>(GetProcAddress(d3d9, "Direct3DCreate9"))
-                               : nullptr;
-  auto* const slot = reinterpret_cast<void* const*>(kDirect3DCreate9Slot);
-  if (real == nullptr || *slot != real) {
-    Log(L"perfStats: IAT slot 0x%08X does not point at d3d9!Direct3DCreate9", kDirect3DCreate9Slot);
-    return Outcome::kFailed;
-  }
-
   wchar_t name[64];
   swprintf_s(name, L"Local\\UHCPerfStats-%lu", GetCurrentProcessId());
   HANDLE mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0,
@@ -365,9 +307,7 @@ Outcome ApplyPerfStats(const Config& config) {
   g_shared->magic = kMagic;
   g_shared->version = kVersion;
 
-  g_direct3DCreate9 = reinterpret_cast<Direct3DCreate9Fn>(real);
-  if (!WriteDword(kDirect3DCreate9Slot, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(
-                                            &Direct3DCreate9Hook)))) {
+  if (!AddD3D9Observer({&AfterCreateDevice, &AfterReset, &BeforePresent, &AfterPresent}, "perfStats")) {
     return Outcome::kFailed;
   }
   std::atexit(LogAtExit);

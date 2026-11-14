@@ -1,17 +1,27 @@
 """Write the damageOverTime test data into a test copy of the game.
 
-Usage: python -I tools/dot_testdata.py <test folder>
+Usage: python -I tools/dot_testdata.py <test folder> [--ai | --bad | --wol | --restore]
+
+--ai also gives common military units (AI_ATTACKERS) a long, weak poison, so that an AI game
+(two AI players fighting) has poisoned army units whose attacker has died and been removed.
+--bad also gives the Musketeer and the Skirmisher the invalid tags of BAD_ATTACKERS, to check the
+load-time messages and that the poison keeps its defaults.
+--wol writes only WOL_ATTACKERS / WOL_ATTACHMENTS (the Iroquois Aenna's poison arrows) into a
+copy of the Wars of Liberty mod: it reads its data loose, so only protoy.xml and the tactics are
+written (no XMB, no techs).
+--restore puts the *.dot-orig files back and removes the tactics files.
 
 Never point it at the Steam install: it refuses any folder under "steamapps".
-- data\\protoy.xml: the Explorer's HandAttack and VolleyRangedAttack get
-  <AttachProtoUnit>UHCPoisonTest</AttachProtoUnit>, and a new proto UHCPoisonTest is appended
-  (Lifespan 10 s; Attaching: 20 Ranged damage every 1 s, DamageFlags GAIAEnemy).
-- data\\protoy.xml.XMB: compiled from that XML with xmbedit (compressed, like the stock file).
-- data\\tactics\\uhcpoisontest.tactics and .tactics.xmb: the Attaching action the proto needs.
+- data\\protoy.xml: each attacker of ATTACKERS gets <AttachProtoUnit> (and the extra tags of its
+  row) in the listed ProtoActions, and the attachment protos of ATTACHMENTS are appended.
+- data\\techtreey.xml: the techs of TECHS are appended (status UNOBTAINABLE; a test turns them on
+  with a trigger).
+- the .XMB of both, compiled from that XML with xmbedit (compressed, like the stock files).
+- data\\tactics\\uhcpoisontest.tactics and .tactics.xmb: the Attaching action the protos need.
 
-The first run keeps the folder's protoy files as *.dot-orig. Every run starts again from
-protoy.xml.dot-orig and compiles the XMB from the result, so it can be repeated after changing the
-values below; protoy.xml.XMB.dot-orig is only a backup.
+The first run keeps the folder's files as *.dot-orig. Every run starts again from the .dot-orig
+XML and compiles the XMB from the result, so it can be repeated after changing the tables below;
+the .XMB.dot-orig files are only backups.
 """
 import os
 import pathlib
@@ -22,9 +32,84 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import xmbedit  # noqa: E402
 
-ATTACHMENT = "UHCPoisonTest"
-ATTACKER = "Explorer"
-ACTIONS = ("HandAttack", "VolleyRangedAttack")
+TACTICS_FILE = "uhcpoisontest.tactics"
+
+# Attachment protos: name -> (Lifespan s, Damage, DamageType, ROF s, DamageFlags, extra lines of
+# the Attaching action).
+ATTACHMENTS = {
+    # The Explorer's poison of the first tests: 20 every second for 10 s.
+    "UHCPoisonTest": (10, 20, "Ranged", 1, "GAIAEnemy", []),
+    # Grenadier: an area attack with a flying grenade; Enemy only, so a unit converted to the
+    # attacker's side is excluded.
+    "UHCPoisonGrenade": (6, 10, "Siege", 1, "Enemy", []),
+    # Crossbowman: a flying arrow; triple damage against cavalry; UHCPoisonArrowUpgrade doubles it.
+    "UHCPoisonArrow": (8, 6, "Hand", 1, "GAIAEnemy", ["<DamageBonus type ='AbstractCavalry'>3.000000</DamageBonus>"]),
+    # Falconet: a cannon ball.
+    "UHCPoisonCannon": (9, 15, "Siege", 1, "GAIAEnemy", []),
+    # Longbowman: the phase 2 tags (stacks, snare, tick text) are on its attacks.
+    "UHCPoisonStack": (6, 5, "Siege", 1, "GAIAEnemy", []),
+}
+
+RANGED = ("VolleyRangedAttack", "StaggerRangedAttack", "DefendRangedAttack")
+
+# Attacker proto -> (ProtoActions, attachment or None for no <AttachProtoUnit>, extra tags in those
+# ProtoActions: a list for all of them, or a dict by ProtoAction).
+ATTACKERS = {
+    "Explorer": (("HandAttack", "VolleyRangedAttack"), "UHCPoisonTest", []),
+    "Grenadier": (RANGED, "UHCPoisonGrenade", []),
+    "Crossbowman": (RANGED, "UHCPoisonArrow", []),
+    "Falconet": (("CannonAttack",), "UHCPoisonCannon", []),
+    "Longbowman": (RANGED, "UHCPoisonStack", [
+        "<AttachMaxStacks>3</AttachMaxStacks>",
+        "<AttachSnare>0.5</AttachSnare>",
+        "<AttachTickText>40FF40</AttachTickText>",
+    ]),
+}
+
+# With --ai: a 120 s poison of 1 per second on units every European AI trains, long enough to
+# outlive its attacker's body.
+AI_ATTACHMENTS = {"UHCPoisonLong": (120, 1, "Siege", 1, "GAIAEnemy", [])}
+AI_ATTACKERS = {
+    "Musketeer": (RANGED, "UHCPoisonLong", []),
+    "Skirmisher": (RANGED, "UHCPoisonLong", []),
+    "Pikeman": (("MeleeHandAttack",), "UHCPoisonLong", []),
+    "Hussar": (("MeleeHandAttack",), "UHCPoisonLong", []),
+}
+
+# With --bad: values the DLL must reject (each logged and ignored), an empty AttachTickText (the
+# default colour), and optional tags without <AttachProtoUnit>.
+BAD_ATTACKERS = {
+    "Musketeer": (RANGED, "UHCPoisonTest", {
+        "VolleyRangedAttack": ["<AttachMaxStacks>0</AttachMaxStacks>", "<AttachSnare>-1</AttachSnare>",
+                               "<AttachTickText>GG0000</AttachTickText>"],
+        "StaggerRangedAttack": ["<AttachMaxStacks>101</AttachMaxStacks>", "<AttachSnare>20</AttachSnare>",
+                                "<AttachTickText>12345</AttachTickText>"],
+        "DefendRangedAttack": ["<AttachMaxStacks>abc</AttachMaxStacks>", "<AttachSnare>x</AttachSnare>",
+                               "<AttachTickText></AttachTickText>"],
+    }),
+    "Skirmisher": (RANGED, None, ["<AttachMaxStacks>3</AttachMaxStacks>"]),
+}
+
+# With --wol: the Iroquois archer's poison arrows, 4 Ranged a second for 8 s, up to 3 stacks, half
+# speed, with the green tick text.
+WOL_ATTACHMENTS = {"UHCPoisonArrowWoL": (8, 4, "Ranged", 1, "GAIAEnemy", [])}
+WOL_ATTACKERS = {
+    "xpAenna": (RANGED, "UHCPoisonArrowWoL", [
+        "<AttachMaxStacks>3</AttachMaxStacks>",
+        "<AttachSnare>0.5</AttachSnare>",
+        "<AttachTickText>40FF40</AttachTickText>",
+        "<AttachModel>effects\\uhc_rings\\ring_damage.xml</AttachModel>",
+    ]),
+}
+
+# Techs: name -> effects (each a Data effect on the Attaching action of an attachment proto).
+TECHS = {
+    "UHCPoisonArrowUpgrade": [
+        "<Effect type ='Data' action ='Attaching' amount ='2.0000' subtype ='Damage' relativity ='BasePercent'>"
+        "\n\t\t\t\t<Target type ='ProtoUnit'>UHCPoisonArrow</Target></Effect>",
+    ],
+}
+
 # The tactic's first child follows its name on the same line: when the game reads the XML (no
 # .xmb), a line feed after the name stays in it, and the AI scripts then fail to compile
 # (docs/modding-guide.md, "Tactics files").
@@ -40,60 +125,133 @@ TACTICS = """<?xml version="1.0" encoding="utf-8"?>
 """
 
 
+def keep_originals(data, names):
+    for name in names:
+        path = data / name
+        keep = path.with_name(path.name + ".dot-orig")
+        if not keep.exists():
+            shutil.copy2(path, keep)
+
+
+def compile_xmb(text, path):
+    path.write_bytes(xmbedit.wrap(xmbedit.encode(*xmbedit.from_xml(text.encode("utf-8"))), compressed=True))
+
+
+def edit_protos(text):
+    for attacker, (actions, attachment, tags) in ATTACKERS.items():
+        # Either quote style: the stock file writes id ='1', the WoL one also id="1".
+        unit = re.search(r"<Unit id\s*=\s*['\"]\d+['\"] name\s*=\s*['\"]" + attacker + r"['\"]>.*?</Unit>", text, re.S)
+        if unit is None:
+            sys.exit(f"dot_testdata: no <Unit name='{attacker}'> in protoy.xml")
+        block = unit.group(0)
+        per_action = tags if isinstance(tags, dict) else {action: tags for action in actions}
+        for action in actions:
+            pa = re.search(r"(<ProtoAction>\s*<Name>" + action + r"</Name>.*?)(\s*</ProtoAction>)", block, re.S)
+            if pa is None:
+                sys.exit(f"dot_testdata: {attacker} has no ProtoAction {action}")
+            lines = ([f"<AttachProtoUnit>{attachment}</AttachProtoUnit>"] if attachment else []) + per_action[action]
+            added = "".join(f"\n\t\t\t{line}" for line in lines)
+            block = block[:pa.start()] + pa.group(1) + added + pa.group(2) + block[pa.end():]
+            print(f"{attacker}/{action}: {', '.join(lines)}")
+        text = text[:unit.start()] + block + text[unit.end():]
+
+    unit_id = max(int(i) for i in re.findall(r"<Unit id\s*=\s*['\"](\d+)['\"]", text)) + 1
+    dbid = max(int(i) for i in re.findall(r"<DBID>(\d+)</DBID>", text)) + 1
+    units = ""
+    for name, (lifespan, damage, damage_type, rof, flags, extra) in ATTACHMENTS.items():
+        lines = "".join(f"\t\t\t{line}\n" for line in extra)
+        units += f"""\t<Unit id ='{unit_id}' name ='{name}'>
+\t\t<DBID>{dbid}</DBID>
+\t\t<Lifespan>{lifespan:.4f}</Lifespan>
+\t\t<Tactics>{TACTICS_FILE}</Tactics>
+\t\t<ProtoAction>
+\t\t\t<Name>Attaching</Name>
+\t\t\t<Damage>{damage:.6f}</Damage>
+\t\t\t<DamageType>{damage_type}</DamageType>
+\t\t\t<ROF>{rof:.6f}</ROF>
+\t\t\t<DamageFlags>{flags}</DamageFlags>
+{lines}\t\t</ProtoAction>
+\t</Unit>
+"""
+        print(f"{name}: unit id {unit_id}, DBID {dbid}: {damage} {damage_type} every {rof} s for {lifespan} s, {flags}")
+        unit_id += 1
+        dbid += 1
+    end = text.rindex("</Proto>")
+    return text[:end] + units + text[end:]
+
+
+def edit_techs(text):
+    index = len(re.findall(r"<Tech name\s*=", text))
+    dbid = max(int(i) for i in re.findall(r"<DBID>(\d+)</DBID>", text)) + 1
+    techs = ""
+    for name, effects in TECHS.items():
+        body = "".join(f"\n\t\t\t{effect}" for effect in effects)
+        techs += f"""\t<Tech name ='{name}' type ='Normal'>
+\t\t<DBID>{dbid}</DBID>
+\t\t<DisplayNameID>23370</DisplayNameID>
+\t\t<ResearchPoints>1.0000</ResearchPoints>
+\t\t<Status>UNOBTAINABLE</Status>
+\t\t<Effects>{body}
+\t\t</Effects>
+\t</Tech>
+"""
+        print(f"tech {name}: index {index}, DBID {dbid}")
+        index += 1
+        dbid += 1
+    end = text.rindex("</TechTree>")
+    return text[:end] + techs + text[end:]
+
+
 def main(argv):
-    if len(argv) != 1:
+    if len(argv) not in (1, 2) or argv[1:] not in ([], ["--ai"], ["--bad"], ["--wol"], ["--restore"]):
         sys.exit(__doc__)
+    wol = argv[1:] == ["--wol"]
+    if wol:
+        ATTACHMENTS.clear()
+        ATTACHMENTS.update(WOL_ATTACHMENTS)
+        ATTACKERS.clear()
+        ATTACKERS.update(WOL_ATTACKERS)
+    if argv[1:] == ["--ai"]:
+        ATTACHMENTS.update(AI_ATTACHMENTS)
+        ATTACKERS.update(AI_ATTACKERS)
+    if argv[1:] == ["--bad"]:
+        ATTACKERS.update(BAD_ATTACKERS)
     folder = pathlib.Path(argv[0]).resolve()
     data = (folder / "data").resolve()
     # Resolved, so a junction or symlink inside the copy cannot lead the writes into Steam.
     for path in (folder, data, (data / "tactics").resolve()):
         if "steamapps" in (part.lower() for part in path.parts):
             sys.exit(f"dot_testdata: {path} is inside a Steam library; use a test copy")
-    xml_path, xmb_path = data / "protoy.xml", data / "protoy.xml.XMB"
-    for path in (xml_path, xmb_path):
-        keep = path.with_name(path.name + ".dot-orig")
-        if not keep.exists():
-            shutil.copy2(path, keep)
-    text = (data / "protoy.xml.dot-orig").read_text(encoding="utf-8")
+    if argv[1:] == ["--restore"]:
+        for keep in sorted(data.glob("*.dot-orig")):
+            name = keep.name[:-len(".dot-orig")]
+            shutil.copy2(keep, data / name)
+            print(f"restored {name}")
+        for name in (TACTICS_FILE, TACTICS_FILE + ".xmb"):
+            (data / "tactics" / name).unlink(missing_ok=True)
+        return
 
-    unit = re.search(r"<Unit id ='\d+' name ='" + ATTACKER + r"'>.*?</Unit>", text, re.S)
-    if unit is None:
-        sys.exit(f"dot_testdata: no <Unit name='{ATTACKER}'> in {xml_path}")
-    block = unit.group(0)
-    for action in ACTIONS:
-        pa = re.search(r"(<ProtoAction>\s*<Name>" + action + r"</Name>.*?)(\s*</ProtoAction>)", block, re.S)
-        if pa is None:
-            sys.exit(f"dot_testdata: {ATTACKER} has no ProtoAction {action}")
-        tag = f"\n\t\t\t<AttachProtoUnit>{ATTACHMENT}</AttachProtoUnit>"
-        block = block[:pa.start()] + pa.group(1) + tag + pa.group(2) + block[pa.end():]
-    text = text[:unit.start()] + block + text[unit.end():]
+    if wol:  # the mod reads its data loose: no XMB, and no test techs
+        keep_originals(data, ("protoy.xml",))
+        protos = edit_protos((data / "protoy.xml.dot-orig").read_text(encoding="utf-8"))
+        (data / "protoy.xml").write_text(protos, encoding="utf-8", newline="\n")
+    else:
+        keep_originals(data, ("protoy.xml", "protoy.xml.XMB", "techtreey.xml", "techtreey.xml.XMB"))
 
-    unit_id = max(int(i) for i in re.findall(r"<Unit id ='(\d+)'", text)) + 1
-    dbid = max(int(i) for i in re.findall(r"<DBID>(\d+)</DBID>", text)) + 1
-    new_unit = f"""\t<Unit id ='{unit_id}' name ='{ATTACHMENT}'>
-\t\t<DBID>{dbid}</DBID>
-\t\t<Lifespan>10.0000</Lifespan>
-\t\t<Tactics>uhcpoisontest.tactics</Tactics>
-\t\t<ProtoAction>
-\t\t\t<Name>Attaching</Name>
-\t\t\t<Damage>20.000000</Damage>
-\t\t\t<DamageType>Ranged</DamageType>
-\t\t\t<ROF>1.000000</ROF>
-\t\t\t<DamageFlags>GAIAEnemy</DamageFlags>
-\t\t</ProtoAction>
-\t</Unit>
-"""
-    end = text.rindex("</Proto>")
-    text = text[:end] + new_unit + text[end:]
-    xml_path.write_text(text, encoding="utf-8", newline="\n")
-    xmb_path.write_bytes(xmbedit.wrap(xmbedit.encode(*xmbedit.from_xml(text.encode("utf-8"))), compressed=True))
+        protos = edit_protos((data / "protoy.xml.dot-orig").read_text(encoding="utf-8"))
+        (data / "protoy.xml").write_text(protos, encoding="utf-8", newline="\n")
+        compile_xmb(protos, data / "protoy.xml.XMB")
+
+        techs = edit_techs((data / "techtreey.xml.dot-orig").read_text(encoding="utf-8"))
+        (data / "techtreey.xml").write_text(techs, encoding="utf-8", newline="\n")
+        compile_xmb(techs, data / "techtreey.xml.XMB")
 
     tactics = data / "tactics"
     tactics.mkdir(exist_ok=True)
-    (tactics / "uhcpoisontest.tactics").write_text(TACTICS, encoding="utf-8", newline="\n")
-    (tactics / "uhcpoisontest.tactics.xmb").write_bytes(xmbedit.encode(*xmbedit.from_xml(TACTICS.encode("utf-8"))))
-    print(f"{ATTACKER} {'/'.join(ACTIONS)} attach {ATTACHMENT}: unit id {unit_id}, DBID {dbid}")
-    print(f"wrote {xml_path}, {xmb_path} and {tactics / 'uhcpoisontest.tactics'} (+ .xmb)")
+    (tactics / TACTICS_FILE).write_text(TACTICS, encoding="utf-8", newline="\n")
+    (tactics / (TACTICS_FILE + ".xmb")).write_bytes(xmbedit.encode(*xmbedit.from_xml(TACTICS.encode("utf-8"))))
+    written = "protoy.xml" if wol else "protoy.xml, techtreey.xml (+ .XMB)"
+    print(f"wrote {written} and tactics\\{TACTICS_FILE} (+ .xmb) in {data}")
 
 
 if __name__ == "__main__":

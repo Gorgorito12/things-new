@@ -2,7 +2,7 @@
 
 ## What this is
 
-A map of WoL's closed-source UHC build: what it adds beyond upstream AoE3UnHardcoded, and which `age3y.exe` addresses each cfg key touches.
+A map of WoL's closed-source DLL: what it adds beyond upstream AoE3UnHardcoded, and which `age3y.exe` addresses each cfg key touches.
 
 **First pass, 2026-10-28.** Every patch site the DLL encodes upstream-style is listed exactly. For the WoL-only keys, the addresses are **candidates**:
 - they are age3y constants found in each key's handler function;
@@ -149,8 +149,20 @@ There are also lobby/UI overrides: ESOC `BMPESOGameList`, `BMPLANBrowserDialog`,
 | Observer | `trClearObserverOwnedObjects`, `rmIsObserverMode` |
 | Map variants and events | `rmIsSummerVariant`, `rmIsWinterVariant`, `rmIsSpecialEventVariant`, `rmIsUnexpectedEventsVariant`, `rmGetMapVariant`, `rmActivateRandomEvents` |
 | Misc commands | `setSquadModeByIndex`, `reloadAllSounds`, `setFastPlaybackFactor`, `saveUnresponsiveGame` (`saveonoos`), `activate/deactivateAprilFoolsTextures` |
-| kb queries | `kbUnitIsInventoryFull`, `kbUnitGetCurrentInventory`, `kbUnitGetInventoryCapacity`, `kbUnitGetNumberTargeters`, `kbUnitGetNumberWorkersIfSeeable` |
+| kb queries | `kbUnitIsInventoryFull`, `kbUnitGetCurrentInventory`, `kbUnitGetInventoryCapacity`, `kbUnitGetNumberTargeters`, `kbUnitGetNumberWorkersIfSeeable` (registered at 0x1004F21E.. with group 2; rebuilt in our DLL as `kbUnitSyscalls`, 2026-11-03) |
 | AI plans | `trCreateDefendPlan2` |
+
+### Engine symbol table
+
+The DLL resolves its imports from `Bang.dll` (the delay-load notify hook 0x1000F9D0 answers that
+name; the lookup 0x1006CA00 hashes the mangled name with FNV-1a into a table) from **1,218 pairs of
+mangled name and stock exe address** that its code builds at startup (`push name / ... / mov
+[ebp-93BCh],addr / call`). `rea/evidence/wol-uhc-c070d138/wolsyms.py` extracts them to
+`wolsyms.txt` (sorted by name order in the code). Spot checks against the stock exe matched:
+`BWorld::getUnitByID` 0x44CC6D, `BWorld::getPlayer` 0x44CB21, `BProtoUnit::isAbstractType`
+0x44CAC4, `BUnit::isSeeable` 0x48A9EF, `BUnit::getSquad` 0x4E2A03,
+`BResourceInventory::isFull` 0x4DC520, `BUnit::getCarryCapacity` 0x494503. Treat the names as
+hints: check each address with `cs` before relying on it, and record it in `engine-symbols.md`.
 
 ## Runtime patch list (memory diff, 2026-10-28)
 
@@ -170,6 +182,63 @@ Because the exe on disk already contains WoL's static patches, every difference 
 - **Card unlock not identified yet.** None of the patched functions touches the home city card array (`+204h`). Inspected with `batch_decompile` of the 148 sites not already explained (`batch_decompile_patch_sites.json`, `ev_908b7e94…`).
 - **Next probe:** diff again while the deck builder is open, in case the patch is applied lazily.
 - **Files:** `rea/evidence/wol-uhc-c070d138/memdiff.py`, `wol-memdiff.txt`.
+
+## Running beside WoL's DLL (`dinput8.dll`, 2026-11-05)
+
+JTMaston's request: keep WoL's `uhc.dll`, `Startup\wol.cfg` and `data\uhc` as they are, and add ours beside them. Bed: `C:\AoE3-UHC-WoLReal4`.
+
+**Design as built.**
+- The exe, `uhc.dll`, `wol.cfg` and `data\uhc` are untouched: their hashes equal `C:\WoL-Test`'s after every test.
+- `dinput8.dll` next to the exe is the same code as `UHC.dll` (CMake target `EngineExt`, `src/engineext.cpp`, `src/engineext_forward.cpp`, `src/engineext.def`). All 6 exports go to the system's DLL by full path, resolved on the first call.
+- Its `DllMain` checks ImageBase, TimeDateStamp, SizeOfImage, EP RVA 0x7836BE and the stub's bytes, and only moves the `jmp 0x5876AC` at 0xB836EC to `EngineExtEntry`. So the order is: loader, WoL's `UHCMain`, `EngineExtMain`, game entry point.
+- Its files are in `engine-ext\`: `engine-ext.cfg`, `engine-ext.log`, `customabstracttypes.xml`, `customprotounitcommands.xml`. It never reads 0xC65083, `Startup` or `data\uhc`.
+- WoL's hooks are never patched over: running second, a key whose site WoL changed fails `VerifyAll` and writes nothing.
+- **Not `version.dll`, as first planned.** The exe imports it, but the game loaded `C:\WINDOWS\SYSTEM32\VERSION.dll` with ours next to the exe (`EnumProcessModulesEx`). It is not in `\KnownDlls32`, so the likely cause is an earlier import that pulls it from System32; that cause is an inference. `C:\AoE3-UHC-WoLReal4\DINPUT8.dll` is what loads (same list), and `DINPUT8` is not in `\KnownDlls32`.
+
+**WoL's DLL writes no `UHC.log`,** in this bed or in the control `C:\WoL-Test`, so there is no log of its own to compare.
+
+**Result with every key of ours on (`examples/Startup/uhc.cfg`, example values): 55 applied, 31 FAILED.** Checked with the live bytes of all 502 sites at the main menu, once with two runtime keys of ours (86 sites changed by WoL) and once with all keys: no site of an applied key was overwritten by WoL afterwards.
+
+| Key group | Beside WoL's DLL | Why |
+|---|---|---|
+| `hcTargetTechs`, `transformSpan` | **works, shown by effect**, with a control | See below |
+| `accuracyTechs` | **works, value shown** | Log with a `Crossbowman` tech: `action 44, relativity 3, amount 0.05: 1 -> 0.05`, one line per action |
+| `nextResearchFree` | **works, effect path shown** | Log: `proto 304: effect applied, 1 left`. No research was paid for in the test |
+| `workRateByAbstractType`, `resourceGatherAuras`, `resourceDebt`, `liveBuildingWorkRate`, `buildingWorkRateAuras`, `trainBatchSize`, `sharedBuildLimit`, `noTrainNearEnemyTC`, `damageOverTime`, `dodge*`, `teamKillBounty`, `resourceBounty`, `veterancyBonus`, `cantBeSlowed`, `showGatherRate`, `decimalPopulation`, `basePop`/`extraPop`, `deckCardCount`, `startingTC`, `civFirstTC`, `danceBonusCivs`, `transformInventory`, `transformUpdatesLOS`, `techPrereqRecheck`, `lifespanAfterConstruction`, `noCorpseDopples`, `snareOnlyHitUnit`, `overheal*`, `customHotkeyContexts`, `customAbstractTypes` | applied, **hook reached** in the AI skirmish or at load | Effect not checked one by one |
+| `autoGatherScaleByContained`, `unitResourceAuras`, `costEscalationTechs`, `detonationDeath`, `cratePriority`, `doNotQueue`, `killBountyTechs`, `healNonIdle`, `smartHealTargets`, `spreadAnyAccuracy`, `maintainWaitForPop`, `broadsideMuzzleLimit`, `abilitySlots`, `wonderPanelSkipAuras`, `gaiaSocketsOnly`, `hcShipmentPointFallback` | applied | Needs data the test did not have. The shared hooks they use (proto tags, action tag, ModifyType names, tech subtypes) were reached |
+| `perfStats`, `perfAutoExec`, `perfExecFile`, `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `multipleInstances` | applied | Runtime only. `fastVertexFill` (2026-11-10, `C:\WoL-Test`): hook reached, `verify` 0 mismatches in 15.4 M vertices, +14 to +15 % FPS; see the tests below. `rendererOption` (2026-11-10, same copy): the Renderer entry shows and switches, DXVK loads and draws (ReShade, that copy's `d3d9.dll`, is then bypassed) |
+| `containedUnitsROF`, `nativePreview`, `annexFacing`; spreadAnyAccuracy's hooks of 2026-11-08 (0x4A9455, 0x49BE95); the shared death observers (0x493D8F, written by `deathobservers.cpp` since 2026-11-08, and the `Destroy` call 0x9828E7) | **applied beside WoL's DLL, not played** (2026-11-09, see the table below) | Added after these runs. None of their sites is in WoL's 287 patched ranges (`wol-memdiff.txt`, checked 2026-11-08), so they should apply, but WoL may patch more in a game. spreadAnyAccuracy's hooks at 0x4997AE and 0x4C4DEC (2026-11-06) were already in the code of the 2026-11-06 run below |
+| `decimalPopulation` | applied, **one line left out** | `DoubleShipmentsInspectFixFeature` wraps the format at 0x710651, a population cost. That line prints K times too large. The other seven format calls are ours |
+| `removeConversionRestriction`, `ignoreRegistryPath`, `noAILimit`/`noAILimitV2`, `customRevolutionBanners`, `removeFameRestriction`, `asianCivs`, `twoScoutCivs`, `nativeCivs`, `bigButtonCivs`/`noBigButtonBlds`, `marketUnits`, `explorerUnits`, `enableFarmAnim`/`enableRectFarmAnim`, `farmingRadius`, `wonderCivUnitType`, `trainSingleAbstractType`, `multiarmor`, `betterfreedynamicunit`, `nowalkfarm`, `repairWallGlobal`, `compatMode`, `selectionLimit`, `enableAllTeams`, `techRenameEffect`, `customSyscalls`/`customCheats` | FAILED, as intended | WoL's own key, set in `wol.cfg`, holds the site. Use it in `wol.cfg` |
+| `gatherFix`, `rofFix`, `stunMovingTargetFix`, `noDamageOnUnbuiltFoundations`, `fallenHeroTacticsFix` | FAILED, as intended | WoL patches the same sites at start with no key in `wol.cfg` |
+| `kbUnitSyscalls` | FAILED | `AddSyscall` needs `SyscallAi` 0x7294F4 and the other group sites, all WoL's. WoL has these syscalls itself |
+| `customProtoUnitCommands` | FAILED | `CmdTypeRegLast` 0x5269FB and `CmdRecordReserve` 0x52711D are WoL's. New command types go in WoL's `data\uhc` file |
+
+**What had to change so the new keys run beside WoL's DLL.** Each one also ran through the plain `UHC.dll` flow on WoL's data (42 applied, 0 failed, same log lines).
+- `hcTargetTechs`: WoL wraps the flag reader's only call, 0x620C23. The key now hooks the reader's head, 0x620C2F, which WoL's wrapper still calls for flags it does not know.
+- Tech subtypes: WoL replaces 0x6206BF..0x6206CF, so the call 0x6206D7 is applied and never runs. The hook moved to the head of the lookup, 0x61FF5D, plus the read of the attribute at 0x6206B2 for the effect and its node. Without this, `accuracyTechs`, `costEscalationTechs`, `nextResearchFree` and `killBountyTechs` said `applied` and did nothing.
+- `AbstractTypesEnd` now starts at 0x51BA2F: WoL writes the loop's bound at 0x51BA2B.
+- `decimalPopulation` skips 0x710651 when it is not stock, and logs it.
+- `buildingWorkRateAuras` no longer checks the ModifyType hook itself: with `resourceGatherAuras` or `unitResourceAuras` on, it saw that hook and failed. This bug did not depend on WoL.
+
+**The tests** (with WoL's `uhc.dll`, `wol.cfg` and every key on):
+
+| Test | Key on | Key off |
+|---|---|---|
+| `hcTargetTechs`: player 1 gets a tech with `HCTargetEnemy`, `Hussar` HP ×0.5 | player 1: 352, player 2: 176 | player 1: 176, player 2: 352 |
+| `transformSpan`: 6 `Pikeman`, `transformspan='20'` to `Rodelero` | `Pikeman` again 20 s later | still `Rodelero` 46 s later |
+| Skirmish: one European AI, `wolOtto`, 4 min | Runs. The AI's XS calls reach our hooks (`aiSetEconomyPop`, `kbGetPop`), it built a `Manor`, 24 units, score 78 | not run |
+| Rings: `resourceGatherAuras`, `unitResourceAuras log`, `buildingWorkRateAuras log`, an Explorer with gold and work rings, a Sawmill with `ring_wood`, 8 villagers | 5 applied, 0 failed, both ring hooks reached (0x9D0584, 0x9D06DC). Each ring in its colour. The miners lose the ring when sent to a tree at 34 s. Town Center `x3.000`. Hashes of `uhc.dll`, `wol.cfg` and the tactics unchanged | not run |
+| `linkedResource log`, Ethiopians, a `UhcMonastery` by a Mine, villagers on it (2026-11-06; `uhc.dll` `c070d138`, `engine-ext.cfg` with only this key, `multipleInstances background` and `perfStats`) | 3 applied, 0 failed, hooks 0x9BFE5A, 0x4C378A and 0x49A5E6 reached. Mine 1386.66, player 613.24 at 149 s | Mine 2000, the building's own stock falls, player 191.59 at 62 s |
+| Every key of `examples/Startup/uhc.cfg` on (2026-11-06) | 62 applied, 28 failed, the same groups as above; `auraStacking`, `xsErrorLog`, `dataLint`, `unitTypeTechs`, `linkedResource`, `snareValues`, `pillageGold`, `displayedRange` applied | With WoL's own DLL gone: 91 applied, 0 failed, and an AI skirmish of 114 s with 16 units and no XS error |
+| Release zip 0.3.0 (2026-11-09): its `beside-another-dll\` in `C:\WoL-Test` (`uhc.dll` `c070d138`), `engine-ext.cfg` with `steadyHitpointBars`, `veterancyBonus`, `nativePreview`, `annexFacing`, `containedUnitsROF` and `spreadAnyAccuracy AbstractRangedInfantry` | `dinput8.dll 0.3.0`, 6 keys, 6 applied, 0 failed, at the main menu; no game played | not run |
+| `fastVertexFill` (2026-11-10): `C:\WoL-Test` (`uhc.dll` `c070d138`, ReShade's `d3d9.dll` left in place), this session's `dinput8.dll`, `engine-ext.cfg` with `perfStats`, `perfExecFile`, `multipleInstances background` and the key line; a 32-minute five-player save, and a skirmish against `wolOtto` with `xsErrorLog` | `dinput8.dll 0.3.0`, 3 applied, 0 failed; hook 0x40D523 reached; the save made with our `UHC.dll` loads; `verify`: 129,140 fills, 15.4 M vertices, 0 mismatches; skirmish: the AI at 29 units after 4 minutes, no XS message, the flag drawn, `res()` twice and minimize/restore went on drawing. FPS with the line on: 176.0 at 1920×1080, 174.8 at 2560×1440 (performance.md §11, "fastVertexFill in WoL"; ReShade included) | Line off: 152.5 and 153.8 FPS; the read-back 11–14 % of the main thread |
+| Removing `dinput8.dll` and `engine-ext\` | Game reaches WoL's main menu, hashes unchanged, no `engine-ext` created | |
+| Removing them again after the `fastVertexFill` runs (2026-11-10) | WoL's main menu; `uhc.dll`, `wol.cfg`, `age3y.exe`, `d3d9.dll` and `data\uhc` with the hashes of before the first run | |
+
+`Error 0003`: none in `Age3Log.txt`, but that file is shared with other games and was rewritten by a later start, so the proof that the AI compiled is its XS calls and its base.
+
+**Not shown:** multiplayer, saved games, and any key's effect beyond the table's first rows. WoL may patch more in a game than at the menu; only the menu was diffed.
 
 ## Next steps
 

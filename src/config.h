@@ -1,6 +1,6 @@
 // uhc.cfg reader. The format is one key per line followed by whitespace-separated arguments;
-// blank lines and lines starting with '#' are ignored. Keys are case-insensitive. UHC 1.10's
-// syntax is accepted too, since its patcher writes it: key=value, and "//" comments anywhere.
+// blank lines and lines starting with '#' are ignored. Keys are case-insensitive. The UHC
+// patcher's syntax is accepted too, since it writes it: key=value, and "//" comments anywhere.
 #pragma once
 
 #include <map>
@@ -26,6 +26,11 @@ class Config {
   std::optional<int> Int(const std::string& key) const;
 
   const std::map<std::string, std::vector<Args>>& entries() const { return entries_; }
+
+  // For the options menu's switches (menuoptions.h), before any key applies: a line of a key with no arguments,
+  // and the removal of every line of a key.
+  void Add(const std::string& key);
+  void Erase(const std::string& key);
 
  private:
   std::map<std::string, std::vector<Args>> entries_;  // keys are lowercase

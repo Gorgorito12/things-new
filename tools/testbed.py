@@ -3,27 +3,65 @@ take screenshots, read units and UHC.log, and check that the Steam install was n
 
 Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
 
-  deploy [cfg]               copy build\\Release\\UHC.dll into the bed; with cfg, also copy it as
-                             Startup\\uhc.cfg (perfExecFile is appended when missing)
+  deploy [cfg]               copy build\\Release\\UHC.dll into the bed, or dinput8.dll to a bed with an
+                             engine-ext folder, which leaves its UHC.dll alone; with cfg, also copy it as
+                             the cfg the bed's exe reads (Startup\\uhc.cfg, or Startup\\wol.cfg
+                             in the WoL bed; perfExecFile is appended when missing)
   launch                     start age3y.exe +noIntroCinematics and wait for the main menu
   close                      leave the game, close the window, kill it after 30 s
   exec <cmd> [<cmd> ...]     run console commands through perfExecFile and wait until they ran
-  map <name> <spec> ...      write RM3\\<name>.xs/.xml, a test map (spec syntax below)
-  scenario <map> [--seed N]  editor route: generate <map>, save it as scenario uhc-<map>, leave,
-                             load it as a game and unpause. Players have no AI.
-  wait <seconds>             let that much game time pass (polls the world clock)
+  map <name> <spec> ...      write RM3\\<name>.xs/.xml, a test map (spec syntax below); RM4
+                             when the bed's exe reads RM4 (WoL)
+  scenario <map> [--seed N] [--players N]   editor route: generate <map>, save it as scenario
+                             uhc-<map>, leave, load it as a game and unpause. Players have no AI.
+                             With 3 players the map makes two teams, unlike a skirmish on a test map.
+  wait <seconds> [--hang N]  let that much game time pass (polls the world clock); exit code 3 if the
+                             game dies, 4 if its clock stands still N s (UHC_HANG_SECONDS, default
+                             60; 0 = never: a paused or ended game stops the clock too)
   state                      process, window, world and game time
   units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
                              (--los adds the unit's own line of sight and its proto's)
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
-  record <out.mp4> [seconds] [fps] [width]   films the window in real time to an H.264 MP4
-                             (default 30 s, 10 fps, 1280 px wide); needs ffmpeg (UHC_FFMPEG,
-                             PATH or C:\\Tools\\ffmpeg\\ffmpeg.exe)
+  record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
+         [--select ID|Proto,...] [--close Z] [--crop WxH[@cx,cy]] [--hover X,Y] [--master <out.mkv>]
+         [--background] [--log-top] [--perf] [--perf-csv <out.csv>] [--gold P,P]
+                             films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
+                             1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
+                             C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
+                             live HP of those units (IDs or proto names) on every frame, --log the
+                             latest UHC.log lines that match, --frame centres the camera on a unit once and keeps it
+                             still, --follow moves it only when that unit walks 10 m off,
+                             --select keeps those units (yours) selected for the whole video, so
+                             their HP bars show on screen (re-selected when new ones appear),
+                             --close Z brings the camera that close by console (normalZoom; the
+                             game's default is 65, 22 is a close-up), --crop WxH films that many
+                             window pixels around cx,cy (default the middle of the action) one
+                             to one, never enlarged, --hover X,Y rests the cursor on a button
+                             so its tooltip shows (the only option that moves the cursor),
+                             --master also writes a lossless file, the source for GIFs,
+                             --background leaves the focus alone,
+                             --perf the performance numbers once a second (fps, longest frame,
+                             frames over 50 ms, simulation speed, main-thread CPU, memory; the
+                             frame numbers need perfStats in the cfg), --perf-csv also saves them,
+                             --gold 1,2 shows those players' gold, read from the game
+  profile                    the bed's exe build, cfg path, AI and map folders, My Games folder
+  profile backup             copy the bed's player profiles (Users3\\*.xml) to .bak-uhc-<date>
+  profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
+                             or a file name, make it the one a skirmish uses (LastSelectedSPHC;
+                             the game must be closed)
+  skirmish [--map]           from the main menu to a running skirmish with posted clicks only (no
+                             cursor, no focus); --map plays the map `map uhcsheep ...` wrote
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
+  drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
+  wheel <x> <y> <steps> [--hold key]  real mouse wheel at a client point (+ zooms in, - out), a key held
+  front                      keep the game window above every other window and focus it
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
   log [--grep RE] [--tail N] UHC.log lines
-  safety record|check        Steam bin listing and the stock age3y.exe hash
+  monitors                   the monitors and the one tests use (UHC_TEST_MONITOR)
+  safety record|check [wol]  Steam bin listing and the stock age3y.exe hash; with wol, the Steam
+                             Wars of Liberty folder (top level, Startup, data, AI4, RM4), its exe
+                             and its uhc.dll
 
 Map spec, one argument each:
   p<N>=<Proto>*<count>@<x>,<z>   units of player N around (x, z), fractions of the map side
@@ -40,16 +78,26 @@ Map spec, one argument each:
   size=<metres>                  map side, default 80
   sea=<SeaType>                  a water map ("sea=ceylon coast", quoted), for ship tests
 
+The game window is moved to the test monitor when it starts and before every real click or
+key: by default the primary monitor (the user's "monitor 1"); UHC_TEST_MONITOR=secondary picks
+the first other monitor, a number N picks the Nth monitor in Windows' order (\\\\.\\DISPLAYN). `monitors` lists them.
+
+Exit codes: 0 done, 1 an error or a timeout, 3 the game died while a command waited on it (the
+message gives its exit code, e.g. 0xc0000005 for an access violation), 4 it hung (window not
+responding at a timeout, or `wait`'s clock stood still).
+
 Console commands only reach the game through `perfExecFile <bed>\\uhc-exec.txt` in the bed's
 uhc.cfg (posted key presses never reach the console). Without `DontPauseWhenLosingFocus` the game
 pauses when it loses focus; `launch` defines it. A scenario is written to the shared
-Documents\\My Games\\Age of Empires 3\\Scenario folder; `close` removes the ones this copy saved
+Documents\\<My Games folder>\\Scenario folder (string 42265 of the bed's stringtabley.xml:
+My Games\\Age of Empires 3, or My Games\\Wars of Liberty in the WoL bed); `close` removes the ones this copy saved
 (listed in <bed>\\uhc-scenarios.txt), never another session's. The data (protoy.xml, ...) is
 parsed once, at startup: after a data edit, close and launch again.
 """
 import ctypes
 import ctypes.wintypes as wt
 import hashlib
+import math
 import os
 import pathlib
 import re
@@ -61,12 +109,22 @@ import time
 import zlib
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "re"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import debugger as D  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 STEAM_BIN = pathlib.Path(r"C:\Program Files (x86)\Steam\steamapps\common\Age Of Empires 3\bin")
 STOCK_SHA256 = "b1a1dab7264d2db72e8f8ae1df1e419eecc223b40db00c9d1013a3bc77611d9d"
-MY_GAMES = pathlib.Path(os.path.expanduser("~")) / "Documents" / "My Games" / "Age of Empires 3"
+DOCUMENTS = pathlib.Path(os.path.expanduser("~")) / "Documents"
+STEAM_WOL = STEAM_BIN.parent / "Wars of Liberty"
+WOL_SHA256 = "0a277f14e08df516fe1abd3fd9f8175b40664f3371793afff507f652d5067726"
+WOL_DLL_SHA256 = "c070d138c2b4ead70ef07f44dae57a6667ffc53b59a178ddade39db48e01efb2"
+# age3y.exe builds a bed may run (docs/binaries.md); any other hash gets a warning.
+KNOWN_EXES = {
+    "d21d0173": "Knights and Barbarians (stock + UHC loader)",
+    "8970565c": "Knights and Barbarians + large-address-aware (set_laa.py)",
+    "0a277f14": "Wars of Liberty (loader, LAA, AI4/RM4, Startup\\wol.cfg)",
+}
 LISTING = pathlib.Path(os.environ.get("TEMP", ".")) / "uhc-steam-listing.tsv"
 WORKER_JOBS = 0xC692E4  # the skinning worker's done count; it moves while the menu animates
 
@@ -98,6 +156,12 @@ gdi32.SetStretchBltMode.argtypes = [wt.HDC, ctypes.c_int]
 gdi32.SetBrushOrgEx.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
 gdi32.StretchBlt.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
                              wt.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wt.DWORD]
+gdi32.CreateFontW.restype = wt.HFONT
+gdi32.CreateFontW.argtypes = [ctypes.c_int] * 5 + [wt.DWORD] * 8 + [wt.LPCWSTR]
+gdi32.SetBkMode.argtypes = [wt.HDC, ctypes.c_int]
+gdi32.SetBkColor.argtypes = [wt.HDC, wt.DWORD]
+gdi32.SetTextColor.argtypes = [wt.HDC, wt.DWORD]
+gdi32.TextOutW.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int, wt.LPCWSTR, ctypes.c_int]
 
 
 class RECT(ctypes.Structure):
@@ -137,11 +201,115 @@ def bed_folder(arg):
     return bed
 
 
+def _exe_wstring(data, offset, limit):
+    return data[offset:offset + 2 * limit].decode("utf-16-le", "replace").split("\0")[0]
+
+
+_PROFILES = {}
+
+
+def log_path(bed):
+    """The log of our DLL: next to the exe, or in engine-ext\\ when it runs beside the game's own."""
+    return bed / "engine-ext" / "engine-ext.log" if (bed / "engine-ext").is_dir() else bed / "UHC.log"
+
+
+def bed_profile(bed):
+    """What the bed's exe reads, from its own bytes: the UHC loader's cfg path (VA 0xC65083), the
+    AI folder (0xBE3A98) and the random-map folder (0xBE3AD8), which mods patch (WoL: wol.cfg, AI4,
+    RM4); and the My Games folder, string 42265 (cStringLuaFolder) of the bed's stringtabley.xml."""
+    if bed in _PROFILES:
+        return _PROFILES[bed]
+    data = (bed / "age3y.exe").read_bytes()
+    digest = hashlib.sha256(data).hexdigest()
+    cfg = _exe_wstring(data, 0x865083, 21) or "Startup\\uhc.cfg"
+    if (bed / "engine-ext").is_dir():  # our dinput8.dll beside the game's own UHC.dll
+        cfg = "engine-ext\\engine-ext.cfg"
+    ai = _exe_wstring(data, 0x7E3A98, 5).rstrip("\\") or "AI3"
+    rm = _exe_wstring(data, 0x7E3AD8, 5).rstrip("\\") or "RM3"
+    games = "My Games\\Age of Empires 3"
+    table = bed / "data" / "stringtabley.xml"
+    if table.exists():
+        raw = table.read_bytes()
+        text = raw.decode("utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8", "replace")
+        m = re.search(r"""_locID\s*=\s*['"]42265['"][^>]*>([^<]+)<""", text)
+        if m:
+            games = m.group(1).strip().rstrip("\\")
+    profile = {"sha256": digest, "build": KNOWN_EXES.get(digest[:8]), "cfg": cfg, "ai": ai, "rm": rm,
+               "my_games": DOCUMENTS / games}
+    if profile["build"] is None:
+        print(f"testbed: warning: {bed / 'age3y.exe'} is an unknown build ({digest[:8]}); see docs/binaries.md")
+    _PROFILES[bed] = profile
+    return profile
+
+
+def my_games(bed):
+    return bed_profile(bed)["my_games"]
+
+
+def saved_home_cities(bed):
+    """(file name, civ) of every single-player home city saved in the bed's My Games folder."""
+    out = []
+    for path in sorted((my_games(bed) / "Savegame").glob("sp_*_homecity.xml")):
+        raw = path.read_bytes()
+        text = raw.decode("utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8", "replace")
+        m = re.search(r"<civ>([^<]+)</civ>", text, re.I)
+        out.append((path.name, m.group(1) if m else "?"))
+    return out
+
+
+def profile_hc(bed, choice):
+    users = my_games(bed) / "Users3"
+    cities = saved_home_cities(bed)
+    if not choice:
+        for name, civ in cities:
+            print(f"  {civ:20} {name}")
+        return
+    wanted = [n for n, c in cities if choice.lower() in (n.lower(), c.lower())]
+    if not wanted:
+        sys.exit(f"testbed: no saved home city of civ or file {choice!r} (run `profile hc` for the list)")
+    if bed_pid():
+        sys.exit("testbed: close the game first; it writes the profile when it exits")
+    for path in sorted(users.glob("*.xml")):
+        raw = path.read_bytes()
+        text = raw.decode("utf-16")
+        new, n = re.subn(r"<LastSelectedSPHC>[^<]*</LastSelectedSPHC>",
+                         f"<LastSelectedSPHC>{wanted[0]}</LastSelectedSPHC>", text, count=1)
+        if n:
+            path.write_bytes(new.encode("utf-16"))
+            print(f"testbed: {path.name}: skirmish home city -> {wanted[0]}")
+
+
+def show_profile(bed):
+    p = bed_profile(bed)
+    print(f"testbed: {bed}\n  exe   {p['sha256'][:8]} {p['build'] or 'unknown build'}\n  cfg   {bed / p['cfg']}\n"
+          f"  AI    {bed / p['ai']}\n  maps  {bed / p['rm']}\n  games {p['my_games']}")
+
+
+def profile_backup(bed):
+    users = my_games(bed) / "Users3"
+    stamp = time.strftime("%Y%m%d")
+    files = sorted(users.glob("*.xml")) if users.exists() else []
+    if not files:
+        sys.exit(f"testbed: no profile in {users}")
+    for path in files:
+        target = path.with_name(f"{path.name}.bak-uhc-{stamp}")
+        if target.exists():
+            print(f"testbed: {target} exists; kept")
+            continue
+        shutil.copy2(path, target)
+        print(f"testbed: {path} -> {target}")
+
+
 BED = None  # set by main(); every process and window lookup is limited to this copy's exe
 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
 k32.OpenProcess.restype = wt.HANDLE
 k32.QueryFullProcessImageNameW.argtypes = [wt.HANDLE, wt.DWORD, wt.LPWSTR, ctypes.POINTER(wt.DWORD)]
+k32.OpenProcess.argtypes = [wt.DWORD, wt.BOOL, wt.DWORD]
+k32.WaitForSingleObject.argtypes = [wt.HANDLE, wt.DWORD]
+k32.WaitForSingleObject.restype = wt.DWORD
+k32.GetExitCodeProcess.argtypes = [wt.HANDLE, ctypes.POINTER(wt.DWORD)]
+user32.IsHungAppWindow.argtypes = [wt.HWND]
 WNDENUMPROC = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
 user32.EnumWindows.argtypes = [WNDENUMPROC, wt.LPARAM]
 user32.GetWindowTextW.argtypes = [wt.HWND, wt.LPWSTR, ctypes.c_int]
@@ -199,7 +367,7 @@ def window(required=True):
 
 def process():
     pid = bed_pid()
-    return D.Process(pid) if pid else None
+    return watch(D.Process(pid)) if pid else None
 
 
 def game_time(proc):
@@ -207,8 +375,36 @@ def game_time(proc):
     return proc.u32(w + 0x108) if w else None
 
 
+FOLLOW_SLACK = 10.0  # metres a followed unit may walk before the camera moves
+LOG_BOTTOM = 1.0  # record --log-top: where the log lines end, as a fraction of the picture's height
+CROP_CENTRE = (0.49, 0.47)  # where uiLookAtUnit puts a unit, in window fractions
+
+
 def exec_file(bed):
     return bed / "uhc-exec.txt"
+
+
+def select_commands(ids, look=None):
+    """Console commands that select all these units (number group 9 collects them one by one, since
+    uiLookAtAndSelectUnit selects a single unit), then put the camera back on `look`."""
+    commands = ["uiClearSelection()"]
+    for i, uid in enumerate(ids):
+        commands.append(f"uiLookAtAndSelectUnit({uid})")
+        if i:
+            commands.append("uiAddSelectNumberGroup(9)")
+        commands.append("uiCreateNumberGroup(9)")
+    if look is not None:
+        commands.append(f"uiLookAtUnit({look})")
+    return commands
+
+
+def matching_units(proc, ids, protos, player=None):
+    """Live units whose ID is in `ids` or whose proto name contains one of `protos` (lowercase)."""
+    return [u for u in D.units(proc)
+            if (proc.u32(u + 0x10) in ids
+                or any(p in D.proto_name(proc, proc.u32(u + 0x5C)).lower() for p in protos))
+            and proc.f32(u + 0x64) > 0
+            and (player is None or D.unit_player(proc, u) == player)]
 
 
 def run_commands(bed, commands, timeout=60):
@@ -221,25 +417,164 @@ def run_commands(bed, commands, timeout=60):
     while time.time() < deadline:
         if not path.exists():
             return True
+        check_alive("the console commands to run")
         time.sleep(0.25)
     path.unlink(missing_ok=True)
+    check_alive("the console commands to run")
+    if _WATCHED and window_hung():
+        hung("the console commands to run", f"not run after {timeout} s and the window is not responding")
     sys.exit("testbed: the exec file was not consumed; is perfExecFile in the bed's uhc.cfg and the game running?")
+
+
+# Exit codes: a plain failure or timeout keeps sys.exit's 1; a game that died or hung while a command
+# waited on it gets its own code, so scripts (tools/mapsweep.py) tell the three apart.
+EXIT_DIED, EXIT_HUNG = 3, 4
+HANG_SECONDS = float(os.environ.get("UHC_HANG_SECONDS", "60"))  # world clock frozen this long = hang
+_WATCHED = {}  # pid -> process handle (SYNCHRONIZE | QUERY_LIMITED) of the game this command saw
+
+
+def watch(proc):
+    """Remember this game process: the waits below then notice when it exits."""
+    if proc and proc.pid not in _WATCHED:
+        handle = k32.OpenProcess(0x00100000 | 0x1000, False, proc.pid)
+        if handle:
+            _WATCHED[proc.pid] = handle
+    return proc
+
+
+def died(pid, what):
+    code = wt.DWORD()
+    k32.GetExitCodeProcess(_WATCHED[pid], ctypes.byref(code))
+    print(f"testbed: the game died (pid {pid}, exit code {code.value:#010x}) while waiting for {what}",
+          file=sys.stderr)
+    raise SystemExit(EXIT_DIED)
+
+
+def check_alive(what):
+    for pid, handle in _WATCHED.items():
+        if k32.WaitForSingleObject(handle, 0) == 0:  # WAIT_OBJECT_0: the process has exited
+            died(pid, what)
+
+
+def window_hung():
+    """True if this copy's window has not taken a message for 5 s (IsHungAppWindow)."""
+    hwnd = window(required=False)
+    return bool(hwnd and user32.IsHungAppWindow(hwnd))
+
+
+def hung(what, why):
+    print(f"testbed: the game hung while waiting for {what}: {why}", file=sys.stderr)
+    raise SystemExit(EXIT_HUNG)
 
 
 def wait_until(predicate, timeout, step=0.5, what="condition"):
     deadline = time.time() + timeout
     while time.time() < deadline:
+        check_alive(what)
         value = predicate()
         if value:
             return value
         time.sleep(step)
+    check_alive(what)
+    if _WATCHED and window_hung():
+        hung(what, f"no answer after {timeout} s and the window is not responding")
     sys.exit(f"testbed: timed out waiting for {what}")
 
 
+def bed_has_background():
+    """True if this copy's cfg has multipleInstances background: it ignores the real mouse and keyboard."""
+    try:
+        lines = (BED / bed_profile(BED)["cfg"]).read_text(encoding="utf-8", errors="replace").lower().splitlines()
+    except OSError:
+        return False
+    return any(line.split()[:2] == ["multipleinstances", "background"] for line in lines)
+
+
+def bed_allows_second_copy(bed):
+    """True if the bed's cfg has multipleInstances (the DLL then lets it run beside a copy from
+    another folder)."""
+    cfg = bed / bed_profile(bed)["cfg"]
+    try:
+        lines = cfg.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return False
+    return any(line.split()[:1] and line.split()[0].lower() == "multipleinstances" for line in lines)
+
+
+def start_lock():
+    """One copy at a time. Every copy of a mod shares its My Games folder, and two copies that start
+    together collide on the log file there: "Cannot create log file", and the game exits. The test
+    map of a skirmish is a shared file too. Returns the lock's path."""
+    lock = pathlib.Path(os.environ.get("TEMP", ".")) / "uhc-testbed-launch.lock"
+    deadline, told = time.time() + 300, False
+    while True:
+        try:
+            os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+            break
+        except FileExistsError:
+            if time.time() - lock.stat().st_mtime > 240:  # a launch that died: nothing takes this long
+                lock.unlink(missing_ok=True)
+                continue
+            if time.time() > deadline:
+                sys.exit(f"testbed: another copy is still starting; if none is, delete {lock}")
+            if not told:
+                print("testbed: another copy is starting; waiting for it")
+                told = True
+            time.sleep(1)
+    return lock
+
+
 def launch(bed):
+    lock = start_lock()
+    try:
+        start_game(bed)
+    finally:
+        lock.unlink(missing_ok=True)
+
+
+# Client coordinates at 1920 x 1080: main menu Single Player, Skirmish, the home city's Play, the
+# setup's Play, and the test map in the setup's map list.
+SKIRMISH_CLICKS = ((257, 803, 5), (689, 803, 12), (181, 1029, 10))
+SKIRMISH_MAP = (1440, 403, 3)
+SKIRMISH_PLAY = (477, 979)
+
+
+def skirmish(bed, test_map=False):
+    """From the main menu to a running skirmish with posted clicks only: no cursor, no focus, so it
+    runs behind other windows and beside another copy. test_map: the map `map uhcsheep ...` wrote,
+    copied to My Games for the start and removed after it."""
+    folder = my_games(bed) / bed_profile(bed)["rm"]
+    copies = []
+    lock = start_lock()
+    try:
+        if test_map:
+            for ext in (".xs", ".xml"):
+                copies.append(folder / f"uhc-sheep{ext}")
+                shutil.copy2(bed / bed_profile(bed)["rm"] / f"uhcsheep{ext}", copies[-1])
+        for x, y, pause in SKIRMISH_CLICKS + ((SKIRMISH_MAP,) if test_map else ()):
+            posted_click(x, y)
+            time.sleep(pause)
+        before = game_time(process()) or 0
+        posted_click(*SKIRMISH_PLAY)
+        proc = process()
+        wait_until(lambda: (game_time(proc) or 0) > before + 2000, 180, 1, "the skirmish to start")
+    finally:
+        for path in copies:
+            path.unlink(missing_ok=True)
+        lock.unlink(missing_ok=True)
+    print(f"testbed: skirmish running, game time {game_time(process())} ms")
+
+
+def start_game(bed):
     running = game_processes()
-    if running:  # another copy may belong to another session's test: never run two at once
+    if any(path.lower() == str(bed / "age3y.exe").lower() for _, path in running):
+        sys.exit("testbed: this copy is already running")
+    if running and not bed_allows_second_copy(bed):
+        # Another copy may belong to another session's test: never run two at once unless this
+        # copy's cfg has multipleInstances (and the other session agreed).
         sys.exit("testbed: a game is already running: " + ", ".join(f"pid {p} {path}" for p, path in running))
+    if running:
+        print("testbed: another copy is running; this one starts beside it (multipleInstances)")
     subprocess.Popen([str(bed / "age3y.exe"), "+noIntroCinematics"], cwd=str(bed))
 
     def main_window():
@@ -261,7 +596,8 @@ def launch(bed):
             break
         last = now
     run_commands(bed, ['config("DontPauseWhenLosingFocus")'])
-    print(f"testbed: main menu ready (pid {proc.pid})")
+    place_window(window())
+    print(f"testbed: main menu ready (pid {proc.pid}) on {test_monitor()[0]}")
 
 
 def close(bed):
@@ -288,7 +624,7 @@ def remove_own_scenarios(bed):
     record = scenario_record(bed)
     names = record.read_text(encoding="utf-8").split() if record.exists() else []
     for name in names:
-        scn = MY_GAMES / "Scenario" / f"{name}.age3Yscn"
+        scn = my_games(bed) / "Scenario" / f"{name}.age3Yscn"
         if scn.exists():
             scn.unlink()
             print(f"testbed: removed {scn}")
@@ -342,6 +678,8 @@ MAP_INFO = """<?xml version = "1.0" encoding = "UTF-8"?>
 def tech_indices(bed):
     """Tech name (lowercase) -> its index in the bed's techtreey.xml, the ID triggers take."""
     text = (bed / "data" / "techtreey.xml").read_text(encoding="utf-8", errors="replace")
+    # The game skips techs inside comments, so they take no index (WoL's techtree has some).
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
     return {name.lower(): i for i, name in enumerate(re.findall(r"<Tech name\s*=\s*'([^']+)'", text))}
 
 
@@ -406,7 +744,8 @@ def write_map(bed, name, specs):
     for i, (player, proto, count, x, z) in enumerate(groups):
         unit_lines += [
             f'   int uhcGroup{i} = rmCreateObjectDef("uhc group {i}");',
-            f'   rmAddObjectDefItem(uhcGroup{i}, "{proto}", {count}, 3.0);',
+            # What does not fit in the radius is not placed: 120 units in 3 m gave none.
+            f'   rmAddObjectDefItem(uhcGroup{i}, "{proto}", {count}, {3.0 if count <= 12 else round(count ** 0.5 * 2, 1)});',
             f"   rmSetObjectDefMinDistance(uhcGroup{i}, 0.0);",
             f"   rmSetObjectDefMaxDistance(uhcGroup{i}, 2.0);",
             f"   rmPlaceObjectDefAtLoc(uhcGroup{i}, {player}, {x}, {z}, 1);",
@@ -468,17 +807,17 @@ def write_map(bed, name, specs):
     terrain = SEA_TERRAIN.format(sea=sea) if sea else LAND_TERRAIN
     text = MAP_TEMPLATE.format(size=size, terrain=terrain, players=player_lines, units="\n".join(unit_lines),
                                effects="\n".join(effect_lines))
-    folder = bed / "RM3"
+    folder = bed / bed_profile(bed)["rm"]
     (folder / f"{name}.xs").write_text(text, encoding="utf-8")
     (folder / f"{name}.xml").write_text(MAP_INFO, encoding="utf-8")
     print(f"testbed: wrote {folder / (name + '.xs')} ({len(groups)} unit groups, {len(techs)} techs, "
           f"{len(timed)} timed effects)")
 
 
-def scenario(bed, map_name, seed):
+def scenario(bed, map_name, seed, players=2):
     proc = process() or sys.exit("testbed: the game is not running")
     name = f"uhc-{map_name}"
-    target = MY_GAMES / "Scenario" / f"{name}.age3Yscn"
+    target = my_games(bed) / "Scenario" / f"{name}.age3Yscn"
     target.unlink(missing_ok=True)
     record = scenario_record(bed)
     names = set(record.read_text(encoding="utf-8").split()) if record.exists() else set()
@@ -487,10 +826,12 @@ def scenario(bed, map_name, seed):
         run_commands(bed, ["leaveGame()"])
         wait_until(lambda: not D.world(proc), 60, 1, "the main menu")
         time.sleep(3)
-    run_commands(bed, ['config("DontPauseWhenLosingFocus")', "startRandomGame(true)"])
+    # flashHitpointBarsOnDamage: the game shows the HP bar of every damaged unit, for videos.
+    run_commands(bed, ['config("DontPauseWhenLosingFocus")', 'config("flashHitpointBarsOnDamage")',
+                       "startRandomGame(true)"])
     wait_until(lambda: D.world(proc), 120, 1, "the scenario editor")
     time.sleep(5)
-    run_commands(bed, [f'startRandomGame2("{map_name}", 2, {seed}, "", false, 2, 1, 0, false)'])
+    run_commands(bed, [f'startRandomGame2("{map_name}", {players}, {seed}, "", false, 2, 1, 0, false)'])
     time.sleep(10)
     run_commands(bed, [f'saveScenario("{name}")'])
     wait_until(lambda: target.exists() and target.stat().st_size > 0, 60, 1, f"{target}")
@@ -542,15 +883,32 @@ def state():
           f"world {w:#x}, game time {game_time(proc)} ms")
 
 
-def wait_game_time(seconds):
+def wait_game_time(seconds, hang=None):
+    """Lets that much game time pass. The game dying ends it with EXIT_DIED; the world clock standing
+    still for `hang` seconds (UHC_HANG_SECONDS, 60 by default; 0 = never) ends it with EXIT_HUNG, which
+    also covers a game that ended or was paused, as the clock stops then too."""
+    hang = HANG_SECONDS if hang is None else hang
     proc = process() or sys.exit("testbed: the game is not running")
-    start = game_time(proc) or 0
-    wait_until(lambda: (game_time(proc) or 0) - start >= seconds * 1000, seconds * 10 + 60, 0.5, "game time")
+    start = last = game_time(proc) or 0
+    since = time.time()
+    deadline = time.time() + seconds * 10 + 60
+    while (game_time(proc) or 0) - start < seconds * 1000:
+        check_alive("game time")
+        now = game_time(proc) or 0
+        if now != last:
+            last, since = now, time.time()
+        elif hang and time.time() - since >= hang:
+            why = ("no game window" if not window(required=False) else "the window is not responding"
+                   if window_hung() else "the window answers (the game is paused, ended, or its simulation is stuck)")
+            hung("game time", f"the world clock stood at {now} ms for {hang:g} s; {why}")
+        if time.time() > deadline:
+            sys.exit("testbed: timed out waiting for game time")
+        time.sleep(0.5)
     print(f"testbed: game time {start} -> {game_time(proc)} ms")
 
 
 def show_log(bed, pattern, tail):
-    path = bed / "UHC.log"
+    path = log_path(bed)
     lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines() if path.exists() else []
     if pattern:
         lines = [line for line in lines if re.search(pattern, line)]
@@ -607,17 +965,251 @@ def ffmpeg_path():
     sys.exit("testbed: record needs ffmpeg (set UHC_FFMPEG, put it on PATH or in C:\\Tools\\ffmpeg)")
 
 
-def record(path, seconds=30.0, fps=10, width=1280):
+class PerfReader:
+    """The performance numbers of `record --perf`, read once a second from outside the game with
+    tools/perfprobe.py's readers (no thread is suspended): UHC.dll's perfStats mapping (fps, longest
+    frame, frames over 50 ms), the main thread's CPU, the working set, the game's own update and
+    render averages and the simulation speed. Like perfprobe, it clears perfStats' per-interval
+    longest frame, so do not run perfprobe on the same game at the same time."""
+
+    COLUMNS = ["t", "game_s", "fps", "max_frame_ms", "over50", "over100", "update_ms", "render_ms", "sim_speed",
+               "main_cpu", "process_cpu", "ws_mb", "private_mb"]
+
+    def __init__(self, pid, csv_path=None):
+        import perfprobe as P
+        self.P, self.pid = P, pid
+        self.process = P.k32.OpenProcess(P.PROCESS_ACCESS, False, pid)
+        self.proc = D.Process(pid)
+        self.stats = P.open_stats(pid)
+        self.threads = {}
+        self.t0 = self.last_t = time.perf_counter()
+        self.last_frames, self.last_sim, self.over50, self.over100 = None, None, 0, 0
+        self.lines, self.next = [], 0.0
+        self.rows = []
+        self.csv = open(csv_path, "w", encoding="utf-8", newline="") if csv_path else None
+        if self.csv:
+            self.csv.write(",".join(self.COLUMNS) + "\n")
+        if self.stats is None:
+            print("testbed: --perf: no perfStats mapping (add perfStats to the cfg); fps and frame times are missing")
+        else:
+            self.last_frames = P.read_stats(self.stats)  # also clears the longest frame seen before the recording
+        self._cpu(1.0)
+
+    def _cpu(self, dt):
+        P, usage = self.P, {}
+        for tid in P.thread_ids(self.pid):
+            if tid not in self.threads:
+                handle = P.k32.OpenThread(P.THREAD_QUERY_INFORMATION, False, tid)
+                times = P.thread_times(handle) if handle else None
+                if times is not None:
+                    self.threads[tid] = {"handle": handle, "created": times[0], "last": times[1]}
+                continue
+            th = self.threads[tid]
+            times = P.thread_times(th["handle"])
+            if times is not None:
+                usage[tid] = (times[1] - th["last"]) / 1e7 / dt * 100
+                th["last"] = times[1]
+        main = min(self.threads, key=lambda t: self.threads[t]["created"]) if self.threads else None
+        return usage.get(main, 0.0), sum(usage.values())
+
+    def text(self, now):
+        if now < self.next:
+            return self.lines
+        self.next = now + 1.0
+        P = self.P
+        dt = max(now - self.last_t, 1e-3)
+        self.last_t = now
+        main_cpu, process_cpu = self._cpu(dt)
+        memory = P.PROCESS_MEMORY_COUNTERS_EX()
+        memory.cb = ctypes.sizeof(memory)
+        P.psapi.GetProcessMemoryInfo(self.process, ctypes.byref(memory), memory.cb)
+        row = {"t": f"{now - self.t0:.1f}", "main_cpu": f"{main_cpu:.0f}", "process_cpu": f"{process_cpu:.0f}",
+               "ws_mb": f"{memory.WorkingSetSize / 2**20:.0f}", "private_mb": f"{memory.PrivateUsage / 2**20:.0f}"}
+        timers = P.game_timers(self.process)
+        if timers is not None:
+            row["update_ms"], row["render_ms"] = f"{timers[0]:.1f}", f"{timers[1]:.1f}"
+        played = game_time(self.proc)
+        if played is not None:
+            row["game_s"] = f"{played / 1000:.1f}"
+        sim = P.sim_clock(self.process)
+        if sim is not None:
+            if self.last_sim is not None and sim >= self.last_sim:
+                row["sim_speed"] = f"{(sim - self.last_sim) / 1000 / dt:.2f}"
+        self.last_sim = sim
+        if self.stats is None:
+            self.stats = P.open_stats(self.pid)
+        stats = P.read_stats(self.stats) if self.stats else None
+        if stats:
+            if self.last_frames is not None:
+                row["fps"] = f"{(stats['frames'] - self.last_frames['frames']) / dt:.0f}"
+                self.over50 += stats["over50"] - self.last_frames["over50"]
+                self.over100 += stats["over100"] - self.last_frames["over100"]
+                row["over50"], row["over100"] = str(self.over50), str(self.over100)
+            row["max_frame_ms"] = f"{stats['max_us'] / 1000:.0f}"
+            self.last_frames = stats
+        self.rows.append(row)
+        if self.csv:
+            self.csv.write(",".join(str(row.get(c, "")) for c in self.COLUMNS) + "\n")
+            self.csv.flush()
+        g = row.get
+        self.lines = [
+            f"perf  fps {g('fps', '-')}  frame max {g('max_frame_ms', '-')} ms  >50 ms {g('over50', '-')}"
+            f"  sim {g('sim_speed', '-')}x",
+            f"perf  CPU main {row['main_cpu']}%  update {g('update_ms', '-')} ms  render {g('render_ms', '-')} ms"
+            f"  memory {row['ws_mb']} MB",
+        ]
+        return self.lines
+
+    def close(self):
+        if self.csv:
+            self.csv.close()
+        fps = [float(r["fps"]) for r in self.rows if r.get("fps")]
+        worst = max((float(r["max_frame_ms"]) for r in self.rows if r.get("max_frame_ms")), default=0)
+        cpu = [float(r["main_cpu"]) for r in self.rows]
+        if self.rows:
+            print(f"testbed: perf over {len(self.rows)} s: fps avg {sum(fps) / len(fps) if fps else 0:.0f}, "
+                  f"longest frame {worst:.0f} ms, frames over 50 ms {self.over50}, over 100 ms {self.over100}, "
+                  f"main CPU avg {sum(cpu) / len(cpu):.0f}%")
+
+
+class Overlay:
+    """Live text drawn on every recorded frame, so a video shows what the numbers do: the game time,
+    the hit points of the watched units (unit IDs or proto names, matched again every second, so new
+    units appear and dead ones go) and the latest UHC.log lines that match a pattern."""
+
+    def __init__(self, bed, watch, log_pattern, follow=None, perf=None, select=None, look=None, gold=()):
+        self.proc = process()
+        self.gold, self.gold_values = list(gold), {}  # --gold: players whose gold is shown
+        self.perf = perf
+        self.bed, self.follow, self.next_follow = bed, follow, 0.0
+        self.follow_center = None
+        # --select: the units kept selected (their HP bars show); `selected` is the set last applied.
+        self.select = select or []
+        self.select_ids = {int(w) for w in self.select if w.isdigit()}
+        self.select_protos = [w.lower() for w in self.select if not w.isdigit()]
+        self.selected, self.look = set(), look
+        self.ids = {int(w) for w in watch if w.isdigit()}
+        self.protos = [w.lower() for w in watch if not w.isdigit()]
+        self.pattern = re.compile(log_pattern) if log_pattern else None
+        self.log_path = log_path(bed)
+        # Show the lines of the current game: read from the last scenario load on.
+        data = self.log_path.read_bytes() if self.log_path.exists() else b""
+        start = data.rfind(b"loadScenario(")
+        self.log_pos = data.rfind(b"\n", 0, start) + 1 if start >= 0 else len(data)
+        self.log_lines, self.units, self.lines, self.bottom = [], [], [], []
+        self.next_scan = self.next_text = 0.0
+
+    def text(self, now):
+        if self.follow is not None and now >= self.next_follow and self.proc is not None:
+            # Keep that unit in view without moving the camera all the time: re-centre only when
+            # it has walked FOLLOW_SLACK metres from where the camera was last centred, and stop
+            # following once it is gone (no jump to wherever a dead unit's ID leads).
+            # perfExecFile runs the file within 30 frames; written without waiting.
+            self.next_follow = now + 0.5
+            unit = next((u for u in D.units(self.proc) if self.proc.i32(u + 0x10) == self.follow), None)
+            if unit is None or self.proc.f32(unit + 0x64) <= 0:
+                # Gone: go on with another --select unit, or stop (no jump to a dead unit's ID).
+                alive = matching_units(self.proc, self.select_ids, self.select_protos, 1)
+                self.follow = self.proc.i32(alive[0] + 0x10) if alive else None
+            else:
+                pos = (self.proc.f32(unit + 0x14), self.proc.f32(unit + 0x1C))
+                far = self.follow_center is None or math.dist(pos, self.follow_center) > FOLLOW_SLACK
+                path = exec_file(self.bed)
+                if far and not path.exists():
+                    tmp = path.with_suffix(".tmp")
+                    tmp.write_text(f"uiLookAtUnit({self.follow})\r\n", encoding="ascii")
+                    os.replace(tmp, path)
+                    self.follow_center = pos
+        perf_lines = self.perf.text(now) if self.perf is not None else []
+        if self.select and now >= self.next_scan and self.proc is not None:
+            # Re-select only when a unit appears (a dead one leaves the selection by itself), so
+            # the camera is not touched again for nothing.
+            live = {self.proc.i32(u + 0x10)
+                    for u in matching_units(self.proc, self.select_ids, self.select_protos, 1)}
+            path = exec_file(self.bed)
+            if live - self.selected and not path.exists():
+                look = self.follow if self.follow is not None else self.look
+                tmp = path.with_suffix(".tmp")
+                tmp.write_text("\r\n".join(select_commands(sorted(live), look)) + "\r\n", encoding="ascii")
+                os.replace(tmp, path)
+                self.selected = live
+        if now < self.next_text or self.proc is None:
+            return perf_lines + self.lines
+        proc = self.proc
+        if now >= self.next_scan:
+            self.next_scan = now + 1.0
+            self.units = [u for u in D.units(proc)
+                          if proc.u32(u + 0x10) in self.ids
+                          or any(p in D.proto_name(proc, proc.u32(u + 0x5C)).lower() for p in self.protos)]
+            self.read_log()
+            for unit in D.units(proc) if self.gold else []:
+                player = D.unit_player(proc, unit)
+                if player in self.gold:  # [[unit+44h]+230h]: the stockpile, gold first, xored with [C6DF14h]
+                    raw = proc.u32(proc.u32(proc.u32(unit + 0x44) + 0x230)) ^ proc.u32(0xC6DF14)
+                    self.gold_values[player] = struct.unpack("<f", struct.pack("<I", raw))[0]
+        lines = [f"game time {(game_time(proc) or 0) / 1000:.1f} s"]
+        if len(self.units) > 6:  # many units: one count per proto and player instead of one line each
+            counts = {}
+            for unit in self.units:
+                key = (D.proto_name(proc, proc.u32(unit + 0x5C)), D.unit_player(proc, unit))
+                counts[key] = counts.get(key, 0) + 1
+            lines += [f"{n} x {name} (player {player})" for (name, player), n in sorted(counts.items())]
+        for unit in self.units if len(self.units) <= 6 else []:
+            proto = proc.u32(unit + 0x5C)
+            block = proc.u32(unit + 0xB4)  # the unit's own LOS is [[unit+B4h]+90h]
+            los = f", LOS {proc.f32(block + 0x90):.0f}" if block else ""
+            lines.append(f"unit {proc.u32(unit + 0x10)} {D.proto_name(proc, proto)} (player {D.unit_player(proc, unit)}): "
+                         f"HP {proc.f32(unit + 0x64):.1f} / {proc.f32(proto + 0x98):.0f}{los}")
+        if not self.ids and not self.protos:
+            lines = lines[:1]  # --perf or --log alone: no unit lines
+        if self.gold:
+            lines.append("gold: " + ", ".join(f"player {p} {self.gold_values.get(p, 0):.0f}" for p in self.gold))
+        self.lines = lines
+        # Without the feature's name: the frame only has room for what it says.
+        self.bottom = [re.sub(r"^\w+: ", "", line) for line in self.log_lines[-4:]]
+        self.next_text = now + 0.25
+        return perf_lines + self.lines
+
+    def read_log(self):
+        if self.pattern is None or not self.log_path.exists():
+            return
+        try:  # the game may hold the file a moment while it writes; try again next second
+            with open(self.log_path, "rb") as f:
+                f.seek(self.log_pos)
+                data = f.read()
+        except PermissionError:
+            return
+        self.log_pos += len(data)
+        self.log_lines += [line[:140] for line in data.decode("utf-8", "replace").splitlines()
+                           if self.pattern.search(line)]
+
+
+def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None, master=None, background=False):
     """Films the game window to an H.264 MP4 in real time, with PrintWindow like `shot` (it works
     while the window is covered). A frame that takes longer than 1/fps to capture is repeated, so
-    the video keeps the game's real speed."""
+    the video keeps the game's real speed. With an Overlay, its text is drawn on every frame.
+    crop = (width, height, cx, cy): film that many window pixels around (cx, cy) (window fractions),
+    one to one: never enlarged, so the picture stays as sharp as the game draws it.
+    master: also write this lossless file, the source for GIFs (an MP4 smears colour and detail).
+    background: leave the focus alone (a copy with multipleInstances background)."""
     ffmpeg = ffmpeg_path()
-    hwnd = window()
+    # The game stops drawing while another window has the foreground (PrintWindow then returns
+    # black frames), so bring it to the front first and give it a moment to draw again.
+    hwnd = window() if background else focus()
+    time.sleep(1.0)
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
     w, h = rc.right - rc.left, rc.bottom - rc.top
-    ow = min(width, w) // 2 * 2
-    oh = round(h * ow / w / 2) * 2
+    sx, sy, sw, sh = 0, 0, w, h
+    if crop is not None:
+        cw, ch, cx, cy = crop
+        sw, sh = min(cw, w) // 2 * 2, min(ch, h) // 2 * 2
+        sx = min(max(0, int(cx * w - sw / 2)), w - sw)
+        sy = min(max(0, int(cy * h - sh / 2)), h - sh)
+        ow, oh = sw, sh
+    else:
+        ow = min(width, w) // 2 * 2
+        oh = round(h * ow / w / 2) * 2
     screen = user32.GetDC(None)
     full_dc, small_dc = gdi32.CreateCompatibleDC(screen), gdi32.CreateCompatibleDC(screen)
     full, small = gdi32.CreateCompatibleBitmap(screen, w, h), gdi32.CreateCompatibleBitmap(screen, ow, oh)
@@ -627,18 +1219,40 @@ def record(path, seconds=30.0, fps=10, width=1280):
     gdi32.SetBrushOrgEx(small_dc, 0, 0, None)
     bmi = ctypes.create_string_buffer(struct.pack("<IiiHHIIiiII", 40, ow, -oh, 1, 32, 0, 0, 0, 0, 0, 0) + b"\0" * 16)
     buf = ctypes.create_string_buffer(ow * oh * 4)
+    line_height = max(15, oh // 48)
+    text_top = 6 if crop is not None else oh // 18
+    font = gdi32.CreateFontW(-line_height, 0, 0, 0, 700, 0, 0, 0, 0, 0, 0, 5, 0, "Consolas")  # bold, ClearType
+    gdi32.SelectObject(small_dc, font)
+    gdi32.SetBkMode(small_dc, 2)                 # OPAQUE: each line on a black band
+    gdi32.SetBkColor(small_dc, 0x000000)
+    gdi32.SetTextColor(small_dc, 0x0000FFFF)     # yellow (COLORREF is 0x00BBGGRR)
+    last = [None]
+    gdi32.GetPixel.argtypes = [wt.HDC, ctypes.c_int, ctypes.c_int]
+    gdi32.GetPixel.restype = wt.DWORD
 
     def grab():
         user32.PrintWindow(hwnd, full_dc, 2)  # PW_RENDERFULLCONTENT
-        gdi32.StretchBlt(small_dc, 0, 0, ow, oh, full_dc, 0, 0, w, h, 0x00CC0020)  # SRCCOPY
+        gdi32.StretchBlt(small_dc, 0, 0, ow, oh, full_dc, sx, sy, sw, sh, 0x00CC0020)  # SRCCOPY
+        if last[0] is not None and not any(gdi32.GetPixel(small_dc, ow * (i + 1) // 6, oh * (j + 1) // 6) & 0xFFFFFF
+                                           for i in range(5) for j in range(5)):
+            return last[0]  # a black picture from PrintWindow (a missed paint, now and then): keep the last one
+        if overlay is not None:
+            for i, line in enumerate(overlay.text(time.perf_counter())):
+                gdi32.TextOutW(small_dc, 8, text_top + i * (line_height + 2), line, len(line))
+            for i, line in enumerate(reversed(overlay.bottom)):
+                # Above the game's bottom panel when the picture shows it (--log-top).
+                base = int(oh * LOG_BOTTOM)
+                gdi32.TextOutW(small_dc, 8, base - (i + 1) * (line_height + 2) - 4, line, len(line))
         gdi32.GetDIBits(small_dc, small, 0, oh, buf, bmi, 0)
-        return buf.raw
+        last[0] = buf.raw
+        return last[0]
 
-    encoder = subprocess.Popen(
-        [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra",
-         "-s", f"{ow}x{oh}", "-framerate", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "veryfast",
-         "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)],
-        stdin=subprocess.PIPE)
+    command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra",
+               "-s", f"{ow}x{oh}", "-framerate", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "medium",
+               "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)]
+    if master:
+        command += ["-c:v", "libx264rgb", "-preset", "ultrafast", "-qp", "0", str(master)]
+    encoder = subprocess.Popen(command, stdin=subprocess.PIPE)
     total, written, captured = int(seconds * fps), 0, 0
     proc = process()
     game_start = game_time(proc) if proc else None
@@ -656,7 +1270,9 @@ def record(path, seconds=30.0, fps=10, width=1280):
     finally:
         encoder.stdin.close()
         encoder.wait()
-        for obj in (full, small):
+        if overlay is not None and overlay.perf is not None:
+            overlay.perf.close()
+        for obj in (full, small, font):
             gdi32.DeleteObject(obj)
         for dc in (full_dc, small_dc):
             gdi32.DeleteDC(dc)
@@ -700,6 +1316,74 @@ def posted_click(x, y):
     user32.PostMessageW(hwnd, WM_LBUTTONUP, 0, lp)
 
 
+# --- the test monitor ------------------------------------------------------------------------------
+
+class MONITORINFOEXW(ctypes.Structure):
+    _fields_ = [("cbSize", wt.DWORD), ("rcMonitor", RECT), ("rcWork", RECT), ("dwFlags", wt.DWORD),
+                ("szDevice", wt.WCHAR * 32)]
+
+
+MONITORENUMPROC = ctypes.WINFUNCTYPE(wt.BOOL, wt.HMONITOR, wt.HDC, ctypes.POINTER(RECT), wt.LPARAM)
+user32.EnumDisplayMonitors.argtypes = [wt.HDC, ctypes.c_void_p, MONITORENUMPROC, wt.LPARAM]
+user32.GetMonitorInfoW.argtypes = [wt.HMONITOR, ctypes.POINTER(MONITORINFOEXW)]
+user32.SetWindowPos.argtypes = [wt.HWND, wt.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wt.UINT]
+
+
+def monitors():
+    """(device, primary, work rect) of every monitor, in physical pixels (the script is DPI aware)."""
+    out = []
+
+    def visit(handle, _dc, _rect, _data):
+        info = MONITORINFOEXW()
+        info.cbSize = ctypes.sizeof(info)
+        if user32.GetMonitorInfoW(handle, ctypes.byref(info)):
+            w = info.rcWork
+            out.append((info.szDevice, bool(info.dwFlags & 1), (w.left, w.top, w.right, w.bottom)))
+        return True
+
+    user32.EnumDisplayMonitors(None, None, MONITORENUMPROC(visit), 0)
+    return sorted(out, key=lambda m: m[0])
+
+
+def test_monitor():
+    """The work rect tests use: unset or primary for the primary monitor, secondary for the first
+    other one, or a number N for DISPLAYN."""
+    mons = monitors()
+    choice = os.environ.get("UHC_TEST_MONITOR", "").strip().lower()
+    if choice in ("", "primary"):
+        return next(m for m in mons if m[1])
+    if choice == "secondary":
+        return next((m for m in mons if not m[1]), mons[0])
+    if choice.isdigit():
+        for m in mons:
+            if m[0].upper().endswith(f"DISPLAY{choice}"):
+                return m
+        sys.exit(f"testbed: no monitor DISPLAY{choice}; run `monitors`")
+    sys.exit(f"testbed: UHC_TEST_MONITOR={choice!r}: use primary, secondary or a display number")
+
+
+def place_window(hwnd):
+    """Moves the game window to a corner of the test monitor, by the last character of the copy's folder:
+    2 top right, 3 bottom left, 4 bottom right, anything else top left, so that four copies form a grid."""
+    device, _primary, (left, top, right, bottom) = test_monitor()
+    rc = RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(rc))
+    x = right - (rc.right - rc.left) if BED.name[-1] in "24" else left
+    y = bottom - (rc.bottom - rc.top) if BED.name[-1] in "34" else top
+    if (rc.left, rc.top) == (x, y):
+        return
+    # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+    user32.SetWindowPos(hwnd, None, x, y, 0, 0, 0x0001 | 0x0004 | 0x0010)
+    time.sleep(0.3)
+
+
+def show_monitors():
+    chosen = test_monitor()
+    for device, primary, rect in monitors():
+        mark = "  <- tests" if device == chosen[0] else ""
+        print(f"  {device}  {'primary' if primary else '       '}  work area {rect}{mark}")
+
+
 def send(*inputs):
     arr = (INPUT * len(inputs))(*inputs)
     user32.SendInput(len(inputs), arr, ctypes.sizeof(INPUT))
@@ -707,8 +1391,26 @@ def send(*inputs):
 
 def focus():
     hwnd = window()
+    place_window(hwnd)
     user32.SetForegroundWindow(hwnd)
     time.sleep(0.25)
+    if user32.GetForegroundWindow() != hwnd:
+        # Windows refuses SetForegroundWindow to a process that is not in the foreground; a real
+        # click on the title bar activates the window without sending a click into the game.
+        rc = RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(rc))
+        before = POINT()
+        user32.GetCursorPos(ctypes.byref(before))
+        user32.SetCursorPos((rc.left + rc.right) // 2, rc.top + 10)
+        time.sleep(0.1)
+        down, up = INPUT(type=0), INPUT(type=0)
+        down.u.mi = MOUSEINPUT(0, 0, 0, 0x0002, 0, 0)
+        up.u.mi = MOUSEINPUT(0, 0, 0, 0x0004, 0, 0)
+        send(down)
+        time.sleep(0.05)
+        send(up)
+        time.sleep(0.3)
+        user32.SetCursorPos(before.x, before.y)  # it is the user's cursor: give it back
     return hwnd
 
 
@@ -727,6 +1429,78 @@ def real_click(cx, cy, right=False):
     time.sleep(0.08)
     send(i2)
     time.sleep(0.2)
+
+
+def real_drag(x1, y1, x2, y2, steps=12):
+    """A real left-button drag in client coordinates, e.g. a selection box."""
+    hwnd = focus()
+    def move(cx, cy):
+        pt = POINT(int(cx), int(cy))
+        user32.ClientToScreen(hwnd, ctypes.byref(pt))
+        user32.SetCursorPos(pt.x, pt.y)
+    move(x1, y1)
+    time.sleep(0.15)
+    down = INPUT(type=0)
+    down.u.mi = MOUSEINPUT(0, 0, 0, 0x0002, 0, 0)
+    send(down)
+    for i in range(1, steps + 1):
+        time.sleep(0.03)
+        move(x1 + (x2 - x1) * i / steps, y1 + (y2 - y1) * i / steps)
+    time.sleep(0.1)
+    up = INPUT(type=0)
+    up.u.mi = MOUSEINPUT(0, 0, 0, 0x0004, 0, 0)
+    send(up)
+    time.sleep(0.2)
+
+
+def hover(cx, cy):
+    """Rests the cursor on a client point (record --hover: a button whose tooltip the video shows).
+    A copy with multipleInstances background does not see the real cursor: it gets a posted move."""
+    hwnd = window()
+    if bed_has_background():
+        user32.PostMessageW(hwnd, WM_MOUSEMOVE, 0, (cy & 0xFFFF) << 16 | (cx & 0xFFFF))
+        return
+    pt = POINT(cx, cy)
+    user32.ClientToScreen(hwnd, ctypes.byref(pt))
+    user32.SetCursorPos(pt.x, pt.y)
+
+
+def real_wheel(cx, cy, steps, hold=None):
+    """Real mouse-wheel steps at a client point: the camera zooms in (steps > 0) or out. hold names a
+    key kept down over the steps, as Shift for a shift-mousez binding."""
+    hwnd = focus()
+    pt = POINT(cx, cy)
+    user32.ClientToScreen(hwnd, ctypes.byref(pt))
+    user32.SetCursorPos(pt.x, pt.y)
+    time.sleep(0.15)
+    key = None
+    if hold:
+        vk = vk_of(hold)
+        key = [INPUT(type=1), INPUT(type=1)]
+        key[0].u.ki = KEYBDINPUT(vk, user32.MapVirtualKeyW(vk, 0), 0x8, 0, 0)
+        key[1].u.ki = KEYBDINPUT(vk, user32.MapVirtualKeyW(vk, 0), 0x8 | 0x2, 0, 0)
+        send(key[0])
+        time.sleep(0.1)
+    try:
+        for _ in range(abs(steps)):
+            i = INPUT(type=0)
+            i.u.mi = MOUSEINPUT(0, 0, 120 if steps > 0 else -120, 0x0800, 0, 0)
+            send(i)
+            time.sleep(0.25 if hold else 0.12)
+    finally:
+        if key:
+            send(key[1])
+            time.sleep(0.1)
+
+
+def front():
+    """Keeps the game window above every other window (HWND_TOPMOST, until it closes) and focuses it.
+    The game draws nothing while another window covers it or has the focus, and focus() clicks the
+    title bar, which must then be the game's."""
+    hwnd = window()
+    user32.SetWindowPos(hwnd, wt.HWND(-1), 0, 0, 0, 0, 0x0001 | 0x0002)  # SWP_NOSIZE | SWP_NOMOVE
+    time.sleep(0.3)
+    focus()
 
 
 def real_key(combo):
@@ -761,16 +1535,18 @@ def real_type(text):
 # --- deploying and safety ----------------------------------------------------------------------------
 
 def deploy(bed, cfg):
-    dll = REPO / "build" / "Release" / "UHC.dll"
-    shutil.copy2(dll, bed / "UHC.dll")
-    print(f"testbed: copied {dll} -> {bed / 'UHC.dll'}")
+    name = "dinput8.dll" if (bed / "engine-ext").is_dir() else "UHC.dll"
+    dll = REPO / "build" / "Release" / name
+    shutil.copy2(dll, bed / name)
+    print(f"testbed: copied {dll} -> {bed / name}")
     if cfg:
         text = pathlib.Path(cfg).read_text(encoding="utf-8")
         if "perfexecfile" not in text.lower():
             text = text.rstrip("\n") + f"\nperfExecFile {exec_file(bed)}\n"
-        (bed / "Startup" / "uhc.cfg").write_text(text, encoding="utf-8")
-        print(f"testbed: wrote {bed / 'Startup' / 'uhc.cfg'}")
-    (bed / "UHC.log").unlink(missing_ok=True)
+        target = bed / bed_profile(bed)["cfg"]
+        target.write_text(text, encoding="utf-8")
+        print(f"testbed: wrote {target}")
+    log_path(bed).unlink(missing_ok=True)
 
 
 def steam_listing():
@@ -780,6 +1556,43 @@ def steam_listing():
             st = path.stat()
             rows.append(f"{path.relative_to(STEAM_BIN)}\t{st.st_size}\t{st.st_mtime_ns}")
     return rows
+
+
+def wol_listing():
+    rows = []
+    for path in sorted(STEAM_WOL.iterdir()):
+        if path.is_file():
+            st = path.stat()
+            rows.append(f"{path.name}\t{st.st_size}\t{st.st_mtime_ns}")
+    for sub in ("Startup", "data", "AI4", "RM4"):
+        for path in sorted((STEAM_WOL / sub).rglob("*")):
+            if path.is_file():
+                st = path.stat()
+                rows.append(f"{path.relative_to(STEAM_WOL)}\t{st.st_size}\t{st.st_mtime_ns}")
+    return rows
+
+
+def safety_wol(mode):
+    listing = LISTING.with_name("uhc-wol-listing.tsv")
+    for name, want in (("age3y.exe", WOL_SHA256), ("uhc.dll", WOL_DLL_SHA256)):
+        digest = hashlib.sha256((STEAM_WOL / name).read_bytes()).hexdigest()
+        print(f"testbed: Steam WoL {name} {'is' if digest == want else 'is NOT'} the known build ({digest[:8]})")
+        if digest != want:
+            sys.exit(1)
+    rows = wol_listing()
+    if mode == "record":
+        listing.write_text("\n".join(rows), encoding="utf-8")
+        print(f"testbed: recorded {len(rows)} files in {listing}")
+        return
+    before = listing.read_text(encoding="utf-8").splitlines() if listing.exists() else None
+    if before is None:
+        sys.exit("testbed: no recorded WoL listing; run `safety record wol` first")
+    changed = sorted(set(before) ^ set(rows))
+    print(f"testbed: Steam Wars of Liberty {'unchanged' if not changed else 'CHANGED'} ({len(rows)} files)")
+    for row in changed[:20]:
+        print("  ", row)
+    if changed:
+        sys.exit(1)
 
 
 def safety(mode):
@@ -808,13 +1621,24 @@ def main(argv):
     if not argv:
         sys.exit(__doc__)
     cmd, args = argv[0], argv[1:]
+    if cmd == "monitors":
+        show_monitors()
+        return
     if cmd == "safety":
-        safety(args[0] if args else "check")
+        mode = next((a for a in args if a in ("record", "check")), "check")
+        safety_wol(mode) if "wol" in args else safety(mode)
         return
     global BED
     bed = BED = bed_folder(bed_arg)
     if cmd == "deploy":
         deploy(bed, args[0] if args else None)
+    elif cmd == "profile":
+        if args[:1] == ["backup"]:
+            profile_backup(bed)
+        elif args[:1] == ["hc"]:
+            profile_hc(bed, " ".join(args[1:]))
+        else:
+            show_profile(bed)
     elif cmd == "launch":
         launch(bed)
     elif cmd == "close":
@@ -825,9 +1649,9 @@ def main(argv):
         write_map(bed, args[0], args[1:])
     elif cmd == "scenario":
         seed = int(args[args.index("--seed") + 1]) if "--seed" in args else 1234
-        scenario(bed, args[0], seed)
+        scenario(bed, args[0], seed, int(args[args.index("--players") + 1]) if "--players" in args else 2)
     elif cmd == "wait":
-        wait_game_time(float(args[0]))
+        wait_game_time(float(args[0]), float(args[args.index("--hang") + 1]) if "--hang" in args else None)
     elif cmd == "state":
         state()
     elif cmd == "units":
@@ -837,12 +1661,76 @@ def main(argv):
     elif cmd == "shot":
         shot(args[0], int(args[1]) if len(args) > 1 else 2)
     elif cmd == "record":
-        record(args[0], float(args[1]) if len(args) > 1 else 30.0, int(args[2]) if len(args) > 2 else 10,
-               int(args[3]) if len(args) > 3 else 1280)
+        watch = args[args.index("--watch") + 1].split(",") if "--watch" in args else []
+        log_pattern = args[args.index("--log") + 1] if "--log" in args else None
+        follow = int(args[args.index("--follow") + 1]) if "--follow" in args else None
+        frame = int(args[args.index("--frame") + 1]) if "--frame" in args else None
+        select = args[args.index("--select") + 1].split(",") if "--select" in args else []
+        camera = float(args[args.index("--close") + 1]) if "--close" in args else None
+        master = args[args.index("--master") + 1] if "--master" in args else None
+        crop = None
+        if "--crop" in args:  # --crop WxH[@cx,cy]: film those window pixels around (cx, cy), 1:1
+            spec = args[args.index("--crop") + 1]
+            size, _, at = spec.partition("@")
+            cw, ch = (int(v) for v in size.split("x"))
+            cx, cy = (float(v) for v in at.split(",")) if at else CROP_CENTRE
+            crop = (cw, ch, cx, cy)
+        perf_csv = args[args.index("--perf-csv") + 1] if "--perf-csv" in args else None
+        gold = [int(w) for w in args[args.index("--gold") + 1].split(",")] if "--gold" in args else []
+        flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--select", "--close", "--crop", "--hover",
+                             "--master", "--perf-csv", "--gold")
+                 if f in args for i in (args.index(f), args.index(f) + 1)}
+        look = frame if frame is not None else follow
+        # With the camera locked the cursor can do what it likes: an edge no longer scrolls it, and
+        # uiLookAtUnit still moves it. So filming never needs the mouse, whoever is using it.
+        run_commands(bed, ['configSetInt("cameraMovementLock", 1)', 'config("cameraMovementLock")'])
+        if camera is not None:
+            # The camera eases to normalZoom on its own: this zooms in with no mouse wheel.
+            run_commands(bed, ['configSetFloat("zoomSpeed", 20)', f'configSetFloat("minZoom", {min(camera, 27):g})',
+                               f'configSetFloat("normalZoom", {camera:g})']
+                         + ([f"uiLookAtUnit({look})"] if look is not None else []))
+            time.sleep(3.0)
+        ids = []
+        if select:
+            # Select them before filming (the Overlay keeps the selection up to date).
+            proc = process()
+            ids = sorted(proc.i32(u + 0x10) for u in matching_units(
+                proc, {int(w) for w in select if w.isdigit()}, [w.lower() for w in select if not w.isdigit()], 1))
+            run_commands(bed, select_commands(ids, look))
+        elif look is not None:
+            # Centre the camera on that unit once, before filming, and leave it still.
+            run_commands(bed, [f"uiLookAtUnit({look})"])
+        time.sleep(1.0)
+        if "--hover" in args:  # --hover x,y: the only filming option that moves the cursor
+            hover(*(int(v) for v in args[args.index("--hover") + 1].split(",")))
+        flags |= {i for i, a in enumerate(args) if a in ("--perf", "--background", "--log-top")}
+        if "--log-top" in args:  # the feature shows in the game's bottom panel: keep the text off it
+            global LOG_BOTTOM
+            LOG_BOTTOM = 0.62
+        pos = [a for i, a in enumerate(args) if i not in flags]
+        perf = None
+        if "--perf" in args or perf_csv:
+            pid = bed_pid() or sys.exit("testbed: the game is not running")
+            perf = PerfReader(pid, perf_csv)
+        overlay = (Overlay(bed, watch, log_pattern, follow, perf, select, look, gold)
+                   if watch or log_pattern or follow is not None or perf or select else None)
+        if overlay is not None:
+            overlay.selected = set(ids)
+        record(pos[0], float(pos[1]) if len(pos) > 1 else 30.0, int(pos[2]) if len(pos) > 2 else 10,
+               int(pos[3]) if len(pos) > 3 else 1280, overlay, crop, master, "--background" in args)
+    elif cmd == "skirmish":
+        skirmish(bed, "--map" in args)
     elif cmd == "click":
         posted_click(int(args[0]), int(args[1]))
     elif cmd == "rclick":
         real_click(int(args[0]), int(args[1]), len(args) > 2 and args[2] == "right")
+    elif cmd == "drag":
+        real_drag(*(int(a) for a in args[:4]))
+    elif cmd == "wheel":
+        real_wheel(int(args[0]), int(args[1]), int(args[2]),
+                   args[args.index("--hold") + 1] if "--hold" in args else None)
+    elif cmd == "front":
+        front()
     elif cmd == "key":
         for name in args:
             posted_key(name)

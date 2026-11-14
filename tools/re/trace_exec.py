@@ -98,6 +98,8 @@ def main(argv):
             if units[slot] is not None:
                 extra = f" unit {D.unit_info(proc, unit_pointer(proc, ctx, units[slot]))}"
             regs = " ".join(f"{r}={D.reg(ctx, r):#x}" for r in ("eax", "ecx", "edx", "ebx", "esi", "edi", "ebp", "esp"))
+            # At a function's first instruction these are its first three stack arguments.
+            regs += " args=" + ",".join(f"{proc.u32(esp + 4 * k):#x}" for k in (1, 2, 3))
             log(f"{bp.label} #{seen[key]} (thread {tid}){extra}")
             log(f"    chain {[hex(c) for c in chain]}")
             log(f"    {regs}")

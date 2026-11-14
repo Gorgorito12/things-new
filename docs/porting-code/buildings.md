@@ -1,0 +1,7196 @@
+# Code for WoL: Buildings and training
+
+Generated from `src/` by `tools/porting_code.py`. Don't edit this page: change `src/` and run the
+script. The code is under the [MIT license](../../LICENSE): keep the notice when you copy it.
+
+Read the [porting guide](../porting-to-another-dll.md) first: it says what each hook expects and what it must preserve.
+Every feature also needs the core [helpers](helpers.md): the site table, patching and the log.
+
+Contents:
+- [liveBuildingWorkRate](#livebuildingworkrate)
+- [buildingWorkRateAuras](#buildingworkrateauras)
+- [costEscalationTechs](#costescalationtechs)
+- [randomCost](#randomcost)
+- [unitTypeTechs](#unittypetechs)
+- [trainBatchSize](#trainbatchsize)
+- [sharedBuildLimit](#sharedbuildlimit)
+- [doNotQueue](#donotqueue)
+- [nextResearchFree](#nextresearchfree)
+- [researchGrants](#researchgrants)
+- [maintainWaitForPop](#maintainwaitforpop)
+- [noTrainNearEnemyTC](#notrainnearenemytc)
+- [lifespanAfterConstruction](#lifespanafterconstruction)
+- [gaiaSocketsOnly](#gaiasocketsonly)
+- [hcShipmentPointFallback](#hcshipmentpointfallback)
+- [annexFacing](#annexfacing)
+- [customWalls](#customwalls)
+
+## liveBuildingWorkRate
+
+Contract: [liveBuildingWorkRate](../porting-to-another-dll.md#livebuildingworkrate).
+
+Sites: `WorkRateMaintainCall` `0x6AB23C` (20 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `MaintainFrac` `0x9E27E4` (69 B), `MaintainPointsProto` `0x9E28BD` (17 B), `MaintainPointsSet` `0x9E2A05` (61 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `TrainFrac` `0x9EA1FA` (69 B), `WorkRateTrainCall` `0x9EA410` (20 B), `TrainPointsProto` `0x9EAC3D` (41 B), `TrainPointsSet` `0x9EB19F` (67 B).
+
+### src/features/workrate.cpp
+
+```cpp
+// liveBuildingWorkRate: train, research and Maintain speed follow the proto's current
+// BuildingWorkRate, and the units being trained or spawned follow their current TrainPoints.
+//
+// Stock keeps a copy of a building's BuildingWorkRate ([proto+D0h]) in its building data
+// ([[unit+68h]+28h]), taken once: when the building completes, or when a ForceBuildingData unit is
+// created (FUN_006A1F82, and again for completed buildings when a save loads). The getter at
+// 0x9BFE33, which the Train, Research, CommandResearch and Maintain updates call on every tick,
+// returns that copy. A BuildingWorkRate tech (Data effect, subtype 0x5E) only changes the proto,
+// so it reaches the buildings completed after it and never the ones already standing, although
+// the stat panel shows the new rate (it reads the proto). The hook in hooks/workrate_hooks.asm
+// makes the getter return the proto's value, as stock already does for a unit without building
+// data. The copy is still written and saved, so saved games load with or without the key.
+//
+// TrainPoints (second part). Every queued unit (or batch) is its own Train action, and the
+// enqueue (0x9EB19F) stores the trained proto's TrainPoints in the action ([action+64h]) once, when
+// the unit is queued; a Maintain cycle stores count x TrainPoints ([action+6Ch]) when it starts
+// (0x9E2A05). A TrainPoints tech therefore misses every unit already queued or in training, on old
+// and new buildings alike, and the current Maintain cycle. ResearchPoints are read live by stock
+// (0x9E5F27). The two fraction functions (Train 0x9EA1FA, Maintain 0x9E27E4) run on every tick of
+// their update; their hooks first write the points the stock rule gives now, so the progress (kept
+// in points) is measured against the current value, as research progress already is.
+#include <bit>
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <unordered_map>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+namespace {
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// Unit ID -> the (snapshot, proto) rate bits last logged for it, so a unit is logged once per
+// change of either value. Only the game thread (the simulation update) touches it. Unit IDs start
+// again in every game: a new world, or a step count [world+F8h] that went back, clears it.
+std::unordered_map<std::int32_t, std::uint64_t> g_logged;
+// (unit ID, trained proto ID) -> the (cached, current) points last logged for that pair.
+std::unordered_map<std::uint64_t, std::uint64_t> g_loggedPoints;
+const char* g_logWorld = nullptr;
+std::uint32_t g_logStep = 0;
+
+using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t protoId);
+using UnitFlagFn = bool(__thiscall*)(const char* unit, std::int32_t flag);
+using ProtoByIdFn = const char*(__thiscall*)(const char* database, std::int32_t id);
+// The calls the stock rule makes; the sites TrainPointsProto, TrainPointsSet, MaintainPointsProto
+// and MaintainPointsSet hold them and are verified before any write.
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kUnitFlag = reinterpret_cast<UnitFlagFn>(0x0044D063);
+const auto kProtoById = reinterpret_cast<ProtoByIdFn>(0x0045316E);
+constexpr std::int32_t kForceBaseTrainPoints = 0x9E;  // unit flag YPForceTrainAtBaseTrainPoints
+
+void ForgetOtherGames() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    g_logged.clear();
+    g_loggedPoints.clear();
+  }
+  g_logWorld = world;
+  g_logStep = step;
+}
+
+// The points the stock rule gives now for a unit of protoId trained (count 0) or spawned in a
+// Maintain cycle of `count` units by `trainer`: the trainer's player's copy of the proto, times the
+// count for Maintain; with the trainer's flag YPForceTrainAtBaseTrainPoints, the database's base
+// proto, not multiplied (as stock). False when a lookup fails: the caller keeps the stock value.
+bool CurrentPoints(const char* trainer, std::int32_t protoId, std::int32_t count, std::uint32_t* bits,
+                   const char** name) {
+  const char* player = trainer == nullptr ? nullptr : Field<const char*>(trainer, 0x44);
+  const char* proto = player == nullptr ? nullptr : kPlayerProto(player, protoId);
+  if (proto == nullptr) {
+    return false;
+  }
+  *name = Field<const char*>(proto, 0x10);
+  const float points = Field<float>(proto, 0x6C);
+  // fild count / fmul points / fstp: the exact product (count is small) rounded once to a float.
+  *bits = std::bit_cast<std::uint32_t>(
+      count > 0 ? static_cast<float>(static_cast<double>(count) * static_cast<double>(points)) : points);
+  if (kUnitFlag(trainer, kForceBaseTrainPoints)) {
+    const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+    const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+    const char* base = database == nullptr ? nullptr : kProtoById(database, Field<std::int32_t>(proto, 8));
+    if (base != nullptr) {
+      *bits = Field<std::uint32_t>(base, 0x6C);
+    }
+  }
+  return true;
+}
+
+void LogPoints(const char* trainer, std::int32_t protoId, const char* name, std::uint32_t cached,
+               std::uint32_t current, bool maintain) {
+  ForgetOtherGames();
+  const std::int32_t id = Field<std::int32_t>(trainer, 0x10);
+  const std::uint64_t key =
+      (static_cast<std::uint64_t>(static_cast<std::uint32_t>(id)) << 32) | static_cast<std::uint32_t>(protoId);
+  const std::uint64_t pair = (static_cast<std::uint64_t>(cached) << 32) | current;
+  const auto [it, added] = g_loggedPoints.try_emplace(key, pair);
+  if (!added) {
+    if (it->second == pair) {
+      return;
+    }
+    it->second = pair;
+  }
+  const char* trainerProto = Field<const char*>(trainer, 0x5C);
+  const char* trainerName = trainerProto == nullptr ? nullptr : Field<const char*>(trainerProto, 0x10);
+  const char* player = Field<const char*>(trainer, 0x44);
+  uhc::Log(maintain ? L"liveBuildingWorkRate: unit %d (%hs, player %d) spawns %hs at %.3f points per cycle, "
+                      L"not the %.3f its cycle started with"
+                    : L"liveBuildingWorkRate: unit %d (%hs, player %d) trains %hs at TrainPoints %.3f, not "
+                      L"the %.3f it was queued with",
+           id, trainerName == nullptr ? "?" : trainerName, player == nullptr ? -1 : Field<std::int32_t>(player, 0),
+           name == nullptr ? "?" : name, static_cast<double>(std::bit_cast<float>(current)),
+           static_cast<double>(std::bit_cast<float>(cached)));
+}
+
+}  // namespace
+
+extern "C" {
+std::int32_t g_uhcBwrLog = 0;  // 1 with "liveBuildingWorkRate log"
+
+void UhcBwrGetterHook();
+void UhcTrainFracHook();
+void UhcMaintainFracHook();
+
+// Called by the Train fraction hook with the Train action: the first entry's proto ([[a+70h]],
+// entry count [a+74h]), the trainer [a+10h], and the points [a+64h] the enqueue stored.
+void __stdcall UhcTrainPointsRefresh(char* action) {
+  const std::int32_t* entries = Field<const std::int32_t*>(action, 0x70);
+  if (Field<std::int32_t>(action, 0x74) <= 0 || entries == nullptr) {
+    return;
+  }
+  const char* trainer = Field<const char*>(action, 0x10);
+  std::uint32_t current = 0;
+  const char* name = nullptr;
+  if (!CurrentPoints(trainer, entries[0], 0, &current, &name)) {
+    return;
+  }
+  const std::uint32_t cached = Field<std::uint32_t>(action, 0x64);
+  if (cached == current) {
+    return;
+  }
+  *reinterpret_cast<std::uint32_t*>(action + 0x64) = current;
+  if (g_uhcBwrLog != 0) {
+    LogPoints(trainer, entries[0], name, cached, current, false);
+  }
+}
+
+// Called by the Maintain fraction hook with the Maintain action: proto ID [a+64h], unit count
+// [a+68h], trainer [a+10h], and the cycle's points [a+6Ch] its start stored.
+void __stdcall UhcMaintainPointsRefresh(char* action) {
+  const char* trainer = Field<const char*>(action, 0x10);
+  const std::int32_t protoId = Field<std::int32_t>(action, 0x64);
+  const std::int32_t count = Field<std::int32_t>(action, 0x68);
+  std::uint32_t current = 0;
+  const char* name = nullptr;
+  // With a count of 0 stock stores 0 points (the cycle is done at once); leave that alone.
+  if (count <= 0 || !CurrentPoints(trainer, protoId, count, &current, &name)) {
+    return;
+  }
+  const std::uint32_t cached = Field<std::uint32_t>(action, 0x6C);
+  if (cached == current) {
+    return;
+  }
+  *reinterpret_cast<std::uint32_t*>(action + 0x6C) = current;
+  if (g_uhcBwrLog != 0) {
+    LogPoints(trainer, protoId, name, cached, current, true);
+  }
+}
+
+// Called by the getter hook (only with log) with ECX's unit: logs a unit whose snapshot differs
+// from its proto's current rate, i.e. one whose speed this feature changes.
+void __stdcall UhcBwrLogUnit(const char* unit) {
+  const char* data = Field<const char*>(unit, 0x68);
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (data == nullptr || proto == nullptr) {
+    return;
+  }
+  const std::uint32_t snapshot = Field<std::uint32_t>(data, 0x28);
+  const std::uint32_t live = Field<std::uint32_t>(proto, 0xD0);
+  if (snapshot == live) {
+    return;
+  }
+  ForgetOtherGames();
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  const std::uint64_t pair = (static_cast<std::uint64_t>(snapshot) << 32) | live;
+  const auto [it, added] = g_logged.try_emplace(id, pair);
+  if (!added) {
+    if (it->second == pair) {
+      return;
+    }
+    it->second = pair;
+  }
+  const char* name = Field<const char*>(proto, 0x10);
+  const char* player = Field<const char*>(unit, 0x44);
+  uhc::Log(L"liveBuildingWorkRate: unit %d (%hs, player %d) works at BuildingWorkRate %.3f, not its "
+           L"snapshot %.3f",
+           id, name == nullptr ? "?" : name, player == nullptr ? -1 : Field<std::int32_t>(player, 0),
+           static_cast<double>(std::bit_cast<float>(live)), static_cast<double>(std::bit_cast<float>(snapshot)));
+}
+}
+
+namespace uhc {
+
+Outcome ApplyLiveBuildingWorkRate(const Config& config) {
+  const Config::Args* args = config.First("liveBuildingWorkRate");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else {
+      Log(L"liveBuildingWorkRate: unexpected argument %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("liveBuildingWorkRate",
+                 {&sites::kBuildingWorkRateGetter, &sites::kWorkRateTrainCall, &sites::kWorkRateResearchCall,
+                  &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kTrainFrac,
+                  &sites::kTrainPointsProto, &sites::kTrainPointsSet, &sites::kMaintainFrac,
+                  &sites::kMaintainPointsProto, &sites::kMaintainPointsSet})) {
+    return Outcome::kFailed;
+  }
+  g_uhcBwrLog = log ? 1 : 0;
+  if (!WriteJmp(sites::kBuildingWorkRateGetter.va, reinterpret_cast<const void*>(&UhcBwrGetterHook), 5) ||
+      !WriteJmp(sites::kTrainFrac.va, reinterpret_cast<const void*>(&UhcTrainFracHook), 9) ||
+      !WriteJmp(sites::kMaintainFrac.va, reinterpret_cast<const void*>(&UhcMaintainFracHook), 9)) {
+    return Outcome::kFailed;
+  }
+  Log(L"liveBuildingWorkRate: train, research and Maintain speed follow the proto's current "
+      L"BuildingWorkRate, and queued, training and Maintain units their current TrainPoints%ls "
+      L"(multiplayer unverified)",
+      log ? L", every building and unit it changes logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/workrate_hooks.asm
+
+```asm
+; Hooks for liveBuildingWorkRate.
+; - The BuildingWorkRate getter: entered through a jmp written over its first two instructions;
+;   leaves through an explicit jmp to the getter's own tail (docs/engine-symbols.md, "Building
+;   work rate").
+; - TrainPoints: the Train and Maintain fraction functions, entered through a jmp written over
+;   their first two instructions (fld / fcomp); each refreshes the action's cached points, then
+;   re-executes the two instructions and continues in the stock function (docs/engine-symbols.md,
+;   "Train points").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+EXTERNDEF g_uhcBwrLog:SDWORD        ; 1 with "liveBuildingWorkRate log", else 0
+
+UhcBwrLogUnit PROTO STDCALL unit:DWORD
+UhcTrainPointsRefresh PROTO STDCALL action:DWORD
+UhcMaintainPointsRefresh PROTO STDCALL action:DWORD
+
+.data
+bwrTail         dd 009BFE3Eh    ; mov eax,[ecx+5Ch] / fld dword ptr [eax+0D0h] / ret: the proto's rate
+trainFracNext   dd 009EA203h    ; fnstsw ax, after fld [ecx+64h] / fcomp [0C3755Ch]
+maintainFracNext dd 009E27EDh   ; fnstsw ax, after fld [ecx+6Ch] / fcomp [0C37468h]
+
+.code
+
+; Replaces 0x9BFE33..0x9BFE37 (mov eax,[ecx+68h] / test eax,eax) in the getter, float
+; thiscall(unit), whose next instruction (je 9BFE3Eh) chose between the building data's snapshot
+; [[ecx+68h]+28h] and the proto's current rate [[ecx+5Ch]+0D0h]. ECX = the unit and the x87
+; stack is empty (the callers are compiled calls). The hook always takes the proto's rate. It
+; re-executes the two stolen instructions last, so EFLAGS are the ones stock returns with; EAX
+; returns as the tail leaves it (the proto, not the building data), which all four callers
+; overwrite before reading. Every other register, ESP and the x87 stack depth are as in stock.
+UhcBwrGetterHook PROC
+    TRACE_ONCE "liveBuildingWorkRate (0x9BFE33)"
+    cmp g_uhcBwrLog, 0
+    je live
+    pushad
+    push ecx
+    call UhcBwrLogUnit              ; logs the unit if its snapshot differs from the proto's rate
+    popad
+live:
+    mov eax, dword ptr [ecx+68h]    ; stolen 0x9BFE33 (building data), for the flags
+    test eax, eax                   ; stolen 0x9BFE36
+    jmp bwrTail
+UhcBwrGetterHook ENDP
+
+; Replaces 0x9EA1FA..0x9EA202 (fld dword ptr [ecx+64h] / fcomp dword ptr [0C3755Ch]), the head of
+; the Train fraction function, void thiscall(action), frac [ecx+6Ch] = progress [ecx+68h] /
+; points [ecx+64h]. Its only caller is the Train update (0x9EA4B3), with an empty x87 stack.
+; UhcTrainPointsRefresh writes the current TrainPoints into [ecx+64h] (stock took them once, when
+; the unit was queued). pushad / popad keep every register; the two stolen instructions run after
+; it, so the x87 stack and the FPU status are the ones stock has at 0x9EA203, whose fnstsw / test
+; set the flags again. Every register, ESP and the return address are as in stock.
+UhcTrainFracHook PROC
+    TRACE_ONCE "liveBuildingWorkRate TrainPoints (0x9EA1FA)"
+    pushad
+    push ecx
+    call UhcTrainPointsRefresh      ; [ecx+64h] = the current TrainPoints, when they differ
+    popad
+    fld dword ptr [ecx+64h]         ; stolen 0x9EA1FA
+    fcomp dword ptr ds:[00C3755Ch]  ; stolen 0x9EA1FD (1e-6)
+    jmp trainFracNext
+UhcTrainFracHook ENDP
+
+; Replaces 0x9E27E4..0x9E27EC (fld dword ptr [ecx+6Ch] / fcomp dword ptr [0C37468h]), the head of
+; the Maintain fraction function, [ecx+74h] = [ecx+70h] / [ecx+6Ch], called only by the Maintain
+; update (0x6AB264). Same contract as UhcTrainFracHook; UhcMaintainPointsRefresh writes the cycle's
+; current points into [ecx+6Ch] (stock took them when the cycle started).
+UhcMaintainFracHook PROC
+    TRACE_ONCE "liveBuildingWorkRate Maintain TrainPoints (0x9E27E4)"
+    pushad
+    push ecx
+    call UhcMaintainPointsRefresh   ; [ecx+6Ch] = the cycle's current points, when they differ
+    popad
+    fld dword ptr [ecx+6Ch]         ; stolen 0x9E27E4
+    fcomp dword ptr ds:[00C37468h]  ; stolen 0x9E27E7
+    jmp maintainFracNext
+UhcMaintainFracHook ENDP
+
+END
+```
+
+## buildingWorkRateAuras
+
+Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkrateauras).
+
+Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
+
+Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `BwrRepairRate` `0x9D0BF2` (7 B), `BwrRateCallBuild` `0x9D3D7B` (5 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `BwrRateCallHeal` `0x9E0CCF` (5 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
+
+### src/features/bwrauras.cpp
+
+```cpp
+// buildingWorkRateAuras: an aura (or any other stat modifier) whose ModifyType is BuildingWorkRate
+// changes how fast the units it reaches train, research and spawn their Maintain units, and how fast
+// they heal and build.
+//
+// Stock: ModifyType names are read by FUN_005F5645, for the tactics tag <ModifyType> (0x5FC8AE,
+// stored unchecked in the byte [action+B8h]) and for the <unitModify> powers (0x5F3EFA, which
+// rejects a negative stat). It knows Speed, MaxHP, Damage, MovingDamage, Bounty, SiegeDamage,
+// UnitDamage, LOS, Armor, GatherRate, AbilityROF, ROF and AutoGatherRate (stats 0..8, 0Bh..0Eh);
+// any other name gives -1, so an aura with <ModifyType>BuildingWorkRate</ModifyType> does nothing.
+// An AutoRangedModify aura (FUN_009D033E) gives each unit it reaches a modifier through 0x4DD22D:
+// a unit action of type 2Ch with the stat, the multiplier and operation 2 (multiply). The record
+// recompute FUN_0049F1BA sums the modifiers of those 13 stats into [[unit+B4h]+C8h], where the
+// stat readers find them (GatherRate +24h, AutoGatherRate +28h, ...). The BuildingWorkRate getter
+// 0x9BFE33, which the Train, Research, CommandResearch and Maintain updates call on every tick,
+// reads only the building's copy or the proto's value, never a modifier.
+//
+// The change:
+// - the parser's last compare also accepts "BuildingWorkRate" (case ignored, like every name) and
+//   returns the new stat 40h. No stock code produces or computes it: the record recompute ignores
+//   it, saved games store it as an int, the aura tooltip shows no stat line for it;
+// - the four calls of the getter go to a wrapper. For a unit with a modifier record it multiplies
+//   the getter's result by the stock modifier sum 0x4B3C7D over the unit's stat-40h modifiers,
+//   starting from 1.0, with the GatherRate reader's rule: no modifier, or a sum below 1e-6, counts
+//   as 1.0. A unit without a record (it never had a modifier) gets the stock call.
+// The getter itself is not touched, so liveBuildingWorkRate (which hooks it) combines with this
+// key: the factor then multiplies the proto's live rate. The data refs currentUnitBuildingWorkRate and
+// its Float twin, the panel's number, read the proto (0x6F49FC): they now read the rate the unit works at,
+// the building's own copy and the factor. The hooks are in hooks/bwraura_hooks.asm.
+//
+// Heal and build read their rate through 0x487C45, which has 22 callers (gather too), so the callee is
+// left alone: only the calls that add the work go to UhcBwrRateCall, with the worker in [esi+10h]. The
+// calls that only ask whether the rate is above 0 stay stock. Repair is the building's own AutoRepair action
+// (the command repairUnit, type 3Ah): its update adds [action+64h] x time at 0x9D0BF2, hooked there.
+#include <bit>
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../modifiers.h"
+#include "../modifytypes.h"
+#include "../patch.h"
+
+extern "C" {
+void UhcBwrAuraCall();
+void UhcBwrRateCall();
+void UhcBwrGetterHook();  // liveBuildingWorkRate's getter hook (hooks/workrate_hooks.asm)
+void UhcBwrPanelHook();
+void UhcBwrRepairHook();
+}
+
+namespace {
+
+// Engine layout (docs/engine-symbols.md, "Building work rate auras").
+constexpr std::int32_t kStatBuildingWorkRate = 0x40;  // the new ModifyType stat, as in bwraura_hooks.asm
+constexpr float kMinFactor = 1.0e-6f;  // 0xB9FB64: a smaller sum counts as no modifier (0x69FE56)
+constexpr std::uint32_t kTrainCall = 0x009EA413;     // call 9BFE33h in the Train update
+
+using GetterFn = float(__thiscall*)(const char* unit);
+const auto kGetter = reinterpret_cast<GetterFn>(0x009BFE33);
+
+// The four callers of the getter: the address of the call and the return address it pushes.
+struct Caller {
+  std::uint32_t call;
+  std::uint32_t ret;
+  const wchar_t* name;
+};
+constexpr Caller kCallers[] = {
+    {kTrainCall, 0x009EA418, L"Train"},
+    {0x009E65F7, 0x009E65FC, L"Research"},
+    {0x009D58D4, 0x009D58D9, L"CommandResearch"},
+    {0x006AB23F, 0x006AB244, L"Maintain"},
+};
+
+// The calls of the rate lookup that add the work.
+struct RateCaller {
+  std::uint32_t call;
+  std::uint32_t ret;
+  const wchar_t* name;
+};
+constexpr RateCaller kRateCallers[] = {
+    {0x009E0CCF, 0x009E0CD4, L"Heal"},
+    {0x009D3D7B, 0x009D3D80, L"Build"},
+};
+
+// The list the stock sum reads, {data +0, count +4}: the layout of the collector's list 0xCF0718.
+struct ModifierArray {
+  const char* const* data;
+  std::int32_t count;
+};
+
+// bool thiscall(unused, float* value, list, stat), ret 0Ch: applies each modifier of `stat` in
+// order (0 set, 1 add, 2 multiply, rounded by fstp), stops after an exclusive one; true if any
+// matched. ECX is not read.
+using ModifierSumFn = bool(__thiscall*)(void* unused, float* value, const ModifierArray* list, std::int32_t stat);
+const auto kModifierSum = reinterpret_cast<ModifierSumFn>(0x004B3C7D);
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+bool g_log = false;  // "buildingWorkRateAuras log"
+// The unit's stat-40h modifiers in walk order, reused by every call. Only the game thread (the
+// simulation update) touches these.
+std::vector<const char*> g_matched;
+// Unit ID -> the factor bits last logged for it; a unit back at 1.0 is erased.
+std::unordered_map<std::int32_t, std::uint32_t> g_logged;
+
+// The unit's BuildingWorkRate factor: the stock sum over its stat-40h modifiers in the collector's
+// order, from 1.0, used as FUN_004ECD87 uses the GatherRate record (0x69FE53): 1.0 when no
+// modifier matched or the sum is below 1e-6. 1.0 too for an action tree deeper than
+// modifiers::kMaxDepth.
+float Factor(const char* unit) {
+  const char* list = uhc::modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return 1.0f;
+  }
+  g_matched.clear();
+  auto visit = [](const char* action) {
+    if (Field<std::int32_t>(action, 0x64) == kStatBuildingWorkRate) {
+      g_matched.push_back(action);
+    }
+    return true;
+  };
+  if (uhc::modifiers::WalkModifiers(list, visit, 0) != uhc::modifiers::Walk::kDone || g_matched.empty()) {
+    return 1.0f;
+  }
+  // Only stat-40h modifiers are passed: the sum skips the others anyway, and stops only after a
+  // matching one, so the result is the one it gives on the full collected list.
+  const ModifierArray array{g_matched.data(), static_cast<std::int32_t>(g_matched.size())};
+  float factor = 1.0f;
+  if (!kModifierSum(nullptr, &factor, &array, kStatBuildingWorkRate) || factor < kMinFactor) {
+    return 1.0f;
+  }
+  return factor;
+}
+
+const wchar_t* CallerName(std::uint32_t ret) {
+  for (const Caller& caller : kCallers) {
+    if (caller.ret == ret) {
+      return caller.name;
+    }
+  }
+  for (const RateCaller& caller : kRateCallers) {
+    if (caller.ret == ret) {
+      return caller.name;
+    }
+  }
+  return L"through g_uhcBwrTrainGetter";
+}
+
+// "log": one line when a unit's factor changes, and one when it is back to 1.0.
+void LogFactor(const char* unit, float factor, std::uint32_t ret) {
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  const std::uint32_t bits = std::bit_cast<std::uint32_t>(factor);
+  const auto it = g_logged.find(id);
+  if (factor == 1.0f) {
+    if (it == g_logged.end()) {
+      return;
+    }
+    g_logged.erase(it);
+  } else {
+    if (it != g_logged.end() && it->second == bits) {
+      return;
+    }
+    g_logged[id] = bits;
+  }
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  const char* player = Field<const char*>(unit, 0x44);
+  const std::int32_t playerId = player == nullptr ? -1 : Field<std::int32_t>(player, 0);
+  if (factor == 1.0f) {
+    uhc::Log(L"buildingWorkRateAuras: unit %d (%hs, player %d) works at x1.000 again: no BuildingWorkRate "
+             L"modifier left (%ls)",
+             id, name == nullptr ? "?" : name, playerId, CallerName(ret));
+  } else {
+    uhc::Log(L"buildingWorkRateAuras: unit %d (%hs, player %d) works at x%.3f from BuildingWorkRate modifiers "
+             L"(%ls)",
+             id, name == nullptr ? "?" : name, playerId, static_cast<double>(factor), CallerName(ret));
+  }
+}
+
+// The getter's first two instructions are stock, or liveBuildingWorkRate's jmp (that key is applied
+// before this one and keeps the getter's contract).
+bool GetterHeadIsKnown() {
+  const uhc::Site& getter = uhc::sites::kBuildingWorkRateGetter;
+  const auto* live = reinterpret_cast<const std::uint8_t*>(static_cast<std::uintptr_t>(getter.va));
+  if (std::memcmp(live, getter.bytes, 5) == 0) {
+    return true;
+  }
+  std::uint32_t rel = 0;
+  std::memcpy(&rel, live + 1, sizeof(rel));
+  const std::uint32_t target = getter.va + 5 + rel;
+  return live[0] == 0xE9 && target == static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&UhcBwrGetterHook));
+}
+
+}  // namespace
+
+extern "C" {
+// The getter that the Train update's call should reach. noTrainNearEnemyTC replaces that call
+// (0x9EA410) with a hook that re-executes it; the hook calls through this pointer, which this key
+// sets to its wrapper. Same contract as the getter: float thiscall(unit), ECX and EDX kept.
+void* g_uhcBwrTrainGetter = reinterpret_cast<void*>(0x009BFE33);
+
+// Called by the wrapper for a unit with a modifier record, with the getter's result and the
+// caller's return address. Reads only simulation state.
+float __stdcall UhcBwrAuraRate(float base, const char* unit, std::uint32_t ret) {
+  const float factor = Factor(unit);
+  if (g_log) {
+    LogFactor(unit, factor, ret);
+  }
+  return factor == 1.0f ? base : base * factor;
+}
+
+// From the panel's read, with the selected unit: what the unit works at. Display only.
+float __stdcall UhcBwrPanelRate(const char* unit) {
+  const float base = kGetter(unit);
+  if (Field<const char*>(unit, 0xB4) == nullptr || Field<const char*>(Field<const char*>(unit, 0xB4), 0xC8) == nullptr) {
+    return base;
+  }
+  return base * Factor(unit);
+}
+}
+
+namespace uhc {
+
+Outcome ApplyBuildingWorkRateAuras(const Config& config) {
+  const Config::Args* args = config.First("buildingWorkRateAuras");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else {
+      Log(L"buildingWorkRateAuras: unexpected argument %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  // The compare the name hook calls, three call sites (the Train one is checked alone below), the
+  // getter's tail, and the stock code the factor calls or mirrors. AddModifyType checks the name hook:
+  // it may be in place already.
+  if (!VerifyAll("buildingWorkRateAuras",
+                 {&sites::kModifyTypeNameCompare, &sites::kWorkRateResearchCall,
+                  &sites::kWorkRateCommandResearchCall, &sites::kWorkRateMaintainCall, &sites::kBwrTrainCallNext,
+                  &sites::kBwrGetterTail, &sites::kSnareCollector, &sites::kSnareModifierSum,
+                  &sites::kSnareModifierSumEnd, &sites::kSnareModifierSumTactic, &sites::kBwrGatherRateRecord,
+                  &sites::kBwrGatherRateRule, &sites::kCurrentUnitRateRead, &sites::kBwrRateCallHeal,
+                  &sites::kBwrRateCallBuild, &sites::kBwrRepairRate})) {
+    return Outcome::kFailed;
+  }
+  if (!GetterHeadIsKnown()) {
+    Log(L"buildingWorkRateAuras: the BuildingWorkRate getter at 0x%08X holds neither the stock bytes nor "
+        L"liveBuildingWorkRate's hook; feature not applied",
+        sites::kBuildingWorkRateGetter.va);
+    return Outcome::kFailed;
+  }
+  // noTrainNearEnemyTC, applied earlier, may own the Train call; its hook then calls the wrapper
+  // through g_uhcBwrTrainGetter. The other three calls are redirected either way.
+  const bool trainCallStock = Matches(sites::kBwrTrainCall);
+  g_log = log;
+  if (!AddModifyType(L"BuildingWorkRate", kStatBuildingWorkRate)) {
+    return Outcome::kFailed;
+  }
+  for (const Caller& caller : kCallers) {
+    if (caller.call == kTrainCall && !trainCallStock) {
+      continue;
+    }
+    if (!WriteCall(caller.call, reinterpret_cast<const void*>(&UhcBwrAuraCall))) {
+      return Outcome::kFailed;
+    }
+  }
+  for (const RateCaller& caller : kRateCallers) {
+    if (!WriteCall(caller.call, reinterpret_cast<const void*>(&UhcBwrRateCall))) {
+      return Outcome::kFailed;
+    }
+  }
+  g_uhcBwrTrainGetter = reinterpret_cast<void*>(&UhcBwrAuraCall);
+  if (!WriteJmp(sites::kBwrRepairRate.va, reinterpret_cast<const void*>(&UhcBwrRepairHook), 7) ||
+      !WriteJmp(sites::kCurrentUnitRateRead.va, reinterpret_cast<const void*>(&UhcBwrPanelHook), 6)) {
+    return Outcome::kFailed;
+  }
+  if (!trainCallStock) {
+    Log(L"buildingWorkRateAuras: the Train call at 0x%08X is already hooked (noTrainNearEnemyTC); Train speed "
+        L"gets the factor only through that hook's call of g_uhcBwrTrainGetter",
+        sites::kBwrTrainCall.va);
+  }
+  Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research, "
+      L"Maintain, heal and build speed%ls (multiplayer unverified)",
+      kStatBuildingWorkRate, log ? L", every change of a unit's factor logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/bwraura_hooks.asm
+
+```asm
+; Hooks for buildingWorkRateAuras. The rate wrapper is the target of the redirected calls of the BuildingWorkRate getter and returns to its caller
+; (docs/engine-symbols.md, "Building work rate auras").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcBwrAuraRate PROTO STDCALL base:DWORD, unit:DWORD, caller:DWORD
+
+kStatBuildingWorkRate EQU 40h       ; the new ModifyType stat; bwrauras.cpp uses the same value
+
+UhcBwrPanelRate PROTO STDCALL unit:DWORD
+
+.data
+panelNext       dd 006F4A02h    ; jne 6F4A0Dh
+repairNext      dd 009D0BF9h    ; call 480408h, with ECX = the unit
+rateLookup      dd 00487C45h    ; float thiscall(tactics action, target), ret 4
+workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
+
+.code
+
+; Target of the calls of the getter at 0x9EA413 (Train), 0x9E65F7 (Research), 0x9D58D4
+; (CommandResearch) and 0x6AB23F (Maintain), whose rel32 is redirected here, and of
+; g_uhcBwrTrainGetter. Same contract as the getter, float thiscall(unit): ECX = the unit (the
+; callers' mov ecx,[esi+10h]), x87 stack empty, [esp] = the return address into the caller.
+; Returns ST0 = the rate, with ECX, EDX, EBX, ESI, EDI and EBP unchanged; EAX and the flags differ
+; from stock, which the four callers allow (each writes EAX before reading it and calls a function
+; before reading the flags). A unit without a modifier record ([[ecx+0B4h]+0C8h], created with its
+; first modifier) tail-calls the getter, exactly the stock call. Any other unit gets the getter's
+; rate times its BuildingWorkRate factor.
+UhcBwrAuraCall PROC
+    TRACE_ONCE "buildingWorkRateAuras (calls of 0x9BFE33)"
+    mov eax, dword ptr [ecx+0B4h]   ; the unit's extension
+    test eax, eax
+    je stock
+    cmp dword ptr [eax+0C8h], 0     ; its modifier record
+    je stock
+    TRACE_ONCE "buildingWorkRateAuras: a unit with modifiers (calls of 0x9BFE33)"
+    push ecx
+    push edx
+    push dword ptr [esp+8]          ; caller: the return address, for the log
+    push ecx                        ; unit
+    call workRateGetter             ; ST0 = the stock rate; ECX is still the unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base: the getter's float (an fld of a float, so exact)
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+    pop edx
+    pop ecx
+    ret
+stock:
+    jmp workRateGetter              ; no modifier record: the stock call
+UhcBwrAuraCall ENDP
+
+; Replaces 0x6F49FC, fld dword ptr [edx+0D0h], in the data refs' reader. EAX = the selected unit, ECX
+; the result; the jne at the continuation reads the flags of a cmp above, so they are kept. The rate is
+; left on the x87 stack, as the fld did.
+UhcBwrPanelHook PROC
+    TRACE_ONCE "buildingWorkRateAuras panel (0x6F49FC)"
+    pushfd
+    push ecx
+    push eax
+    call UhcBwrPanelRate
+    pop ecx
+    popfd
+    jmp panelNext
+UhcBwrPanelHook ENDP
+; Target of the calls of the rate lookup 0x487C45 in the heal tick (0x9E0CCF) and the build tick (0x9D3D7B).
+; Each has the action in ESI, so [esi+10h] is the unit that works, and each writes EAX, ECX and EDX
+; before reading them. ST0 = the rate, times the unit's BuildingWorkRate factor.
+UhcBwrRateCall PROC
+    TRACE_ONCE "buildingWorkRateAuras (calls of 0x487C45)"
+    push dword ptr [esp+4]          ; the target
+    call rateLookup                 ; ST0 = the stock rate; pops the target
+    mov eax, dword ptr [esi+10h]    ; the unit
+    test eax, eax
+    je done
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je done
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je done
+    push dword ptr [esp]            ; caller: the return address, for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+done:
+    ret 4
+UhcBwrRateCall ENDP
+
+; Replaces 0x9D0BF2, in the AutoRepair update: fmul [esi+64h] / fstp [esp+0Ch]. ST0 = the world's rate times
+; the elapsed time; the repairing unit is [esi+10h], also in ECX, which the continuation needs. Repair runs
+; on the building itself, not on a villager, so the factor is the building's.
+UhcBwrRepairHook PROC
+    TRACE_ONCE "buildingWorkRateAuras repair (0x9D0BF2)"
+    fmul dword ptr [esi+64h]
+    mov eax, dword ptr [esi+10h]
+    test eax, eax
+    je store
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je store
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je store
+    push ecx
+    push 009D0BF2h                  ; for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+    pop ecx
+store:
+    fstp dword ptr [esp+0Ch]
+    jmp repairNext
+UhcBwrRepairHook ENDP
+
+END
+```
+
+## costEscalationTechs
+
+Contract: [costEscalationTechs](../porting-to-another-dll.md#costescalationtechs).
+
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes).
+
+### src/features/costescalation.cpp
+
+```cpp
+// costEscalationTechs: a tech effect type="Data" subtype="CostEscalation" changes a proto's
+// <CostEscalation>.
+//
+// Stock keeps the tag in the proto's [+78h], default 1. The cost getter 0x480B1E reads it from the
+// player's copy on every call: when it is not 1, each cost is multiplied by it (N + count - 1) times,
+// N being the count of that proto the player has. No Data subtype reaches the field, so the effect
+// is a new one (techsubtypes.h), applied through the stock value function 0x7F892A, which gives it
+// every relativity and its removal.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../log.h"
+#include "../techsubtypes.h"
+
+namespace {
+
+constexpr std::size_t kEscalation = 0x78;
+constexpr int kMaxLogLines = 200;
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+bool g_log = false;
+int g_logLines = 0;
+
+void ChangeEscalation(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  auto* value = reinterpret_cast<float*>(proto + kEscalation);
+  const float before = *value;
+  kEffectValue(relativity, value, *reinterpret_cast<const float*>(base + kEscalation), amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"costEscalationTechs: proto %d, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 8), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(*value));
+  }
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyCostEscalationTechs(const Config& config) {
+  const Config::Args* args = config.First("costEscalationTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"costEscalationTechs: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!AddTechSubtype("CostEscalation", &ChangeEscalation)) {
+    return Outcome::kFailed;
+  }
+  Log(L"costEscalationTechs: the Data subtype CostEscalation is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## randomCost
+
+Contract: [randomCost](../porting-to-another-dll.md#randomcost).
+
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `RandomCostGetterCopy` `0x480B55` (11 B), `RandomCostPayBatch` `0x9EAF7A` (37 B), `RandomCostPayOne` `0x9EB036` (34 B), `RandomCostRecord` `0x9EB280` (22 B), `RandomCostRefundCancel` `0x9EB435` (14 B), `RandomCostRefundAll` `0x9EB603` (15 B), `RandomCostRefundSpawn` `0x9EBA4F` (19 B).
+
+### src/features/randomcost.cpp
+
+```cpp
+// randomCost: a unit whose price is rolled in a range, a new price after each purchase.
+//
+//   <RandomCost resourcetype="Gold" min="80" max="120"/>   in a proto; one per resource, repeated as needed
+//
+// Each tag replaces that resource of the proto's <Cost> with a whole number rolled in [min, max]. The price is rolled
+// in advance: the cost getter 0x480B1E, which the train button, its rollover, the "can afford" checks, the AI and the
+// Train action's payment all read, returns the price of the player's next purchase of that proto. So what the button
+// shows is what is paid. After each purchase the next price is rolled.
+//
+// The roll. Price n of a player's proto is hash(game seed, player, proto ID, n, resource) in [min, max], n being the
+// number of that player's purchases of that proto that were not refunded. Nothing else changes it: no randomness at
+// the time of the call, no local state, so every machine and every call gets the same price. The game seed is the
+// state of the synced random streams at the first world update of the game (a read, not a draw).
+//
+// Stock changes on top of the rolled price. A tech that changes the cost (the player's copy of the proto, [+70h])
+// scales it by the copy's cost over the base proto's cost for that resource (or adds the difference when the base
+// cost is 0); the result is rounded to a whole number. The getter then applies <CostEscalation> and the count as
+// stock does. Shipments, free units and the free Train flag do not pay: no roll is used.
+//
+// The purchases. The Train enqueue FUN_009EAC35 pays per unit (getter then payment 0x8D946A, once per unit) or in a
+// batch (action flag 14h: the getter for N units, one payment), then writes one entry per paid unit whose cost record
+// [entry+8] it fills from the getter again. The two payments advance n (by 1, or by N: a batch pays N times the same
+// price) and note each paid index; the record call takes the noted index, so each entry holds the price it paid. The
+// three refunds of an entry's record (the cancel, a queue emptied by a state change, a failed spawn) refund that
+// record, as stock, and take n back by one, so a cancel brings back the price it consumed instead of skipping it.
+//
+// Saved games. The seed and every non-zero n are saved markers (savedmarkers.h, stat 68h) on one living unit: a world
+// tick writes them when they change and moves them when their unit dies. A game that starts or loads reads them back
+// (one walk over the units), so the prices after a load are those the game would have had.
+#include <windows.h>
+
+#include <cmath>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <deque>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+#include "../savedmarkers.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+extern "C" {
+void UhcRandomCostCopyHook();
+void UhcRandomCostPayBatchHook();
+void UhcRandomCostPayOneHook();
+void UhcRandomCostRecordHook();
+void UhcRandomCostRefundCancelHook();
+void UhcRandomCostRefundAllHook();
+void UhcRandomCostRefundSpawnHook();
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
+constexpr std::uint32_t kSyncRng = 0x00C66588;     // the synced random: [+4] streams of 12 bytes, word 0 the state
+constexpr int kSeedStreams = 3;                    // streams 0..2 (stream 2 is the combat one)
+constexpr int kPlayers = 16;
+constexpr std::size_t kProtoCost = 0x70;  // a proto's cost list
+constexpr int kMaxLines = 400;
+
+// Saved markers (savedmarkers.h): word 0 is 'RC' << 16 | kind.
+constexpr std::int32_t kStat = 0x68;
+constexpr std::uint32_t kTag = 0x52430000;
+constexpr std::uint32_t kTagMask = 0xFFFF0000;
+constexpr std::uint32_t kKindSeed = 0;   // word 1 the seed, word 2 kSeedSet
+constexpr std::uint32_t kKindCount = 1;  // word 1 the player, word 2 the proto ID, word 3 n
+constexpr std::uint32_t kSeedSet = 0x53454544;
+
+using ResListCopyFn = char*(__thiscall*)(char* dst, const char* src);
+const auto kResListCopy = reinterpret_cast<ResListCopyFn>(0x00480A73);
+using ResListGetFn = float(__thiscall*)(const char* list, std::int32_t resource);
+const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
+using ResListSetFn = void(__thiscall*)(char* list, std::int32_t resource, float value);
+const auto kResListSet = reinterpret_cast<ResListSetFn>(0x0058EF83);
+using PayFn = bool(__thiscall*)(char* player, char* cost);
+const auto kPay = reinterpret_cast<PayFn>(0x008D946A);
+using RefundFn = bool(__thiscall*)(char* player, char* cost);
+const auto kRefund = reinterpret_cast<RefundFn>(0x008D7004);
+using CostGetterFn = bool(__thiscall*)(char* player, std::int32_t protoId, char* cost, std::int32_t count);
+const auto kCostGetter = reinterpret_cast<CostGetterFn>(0x00480B1E);
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+using ResourceByNameFn = std::int32_t(__thiscall*)(void* context, const char* name);
+const auto kResourceByName = reinterpret_cast<ResourceByNameFn>(0x0044709C);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+struct Range {
+  std::int32_t resource;
+  std::int32_t min;
+  std::int32_t max;
+  char name[16];  // the resource as the tag names it, for the log
+};
+
+struct Tagged {
+  std::int32_t protoId;
+  std::vector<Range> ranges;
+};
+
+struct Paid {  // a unit paid in the enqueue that runs now, waiting for its entry
+  std::int32_t player;
+  std::int32_t protoId;
+  std::int32_t index;
+};
+
+bool g_log = false;
+int g_lines = 0;
+
+// Read with the protos, in data order: the same on every machine.
+std::vector<Tagged> g_tagged;
+std::vector<std::int32_t> g_slotOf;  // by proto ID: the index in g_tagged, or -1
+
+// The game the counts belong to.
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
+std::uint32_t g_seed = 0;
+bool g_haveSeed = false;
+std::vector<std::int32_t> g_counts[kPlayers];  // by slot
+bool g_dirty = false;
+bool g_strayMarkers = false;      // markers on more than one unit: the next write frees the others
+std::int32_t g_carrier = -1;      // the unit that holds the markers
+std::uint32_t g_carrierWord = 0;  // word 0 of one of its markers
+
+std::deque<Paid> g_paid;
+std::int32_t g_forceIndex = -1;  // the record call: the index the entry paid
+
+void Line(const wchar_t* format, ...) {
+  if (g_lines >= kMaxLines) {
+    return;
+  }
+  wchar_t text[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(text, _TRUNCATE, format, args);
+  va_end(args);
+  ++g_lines;
+  uhc::Log(L"%ls%ls", text, g_lines == kMaxLines ? L" (no more lines are logged)" : L"");
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+const char* World() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+const char* BaseProto(std::int32_t id) {
+  const char* game = Game();
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (database == nullptr || id < 0 || id >= Field<std::int32_t>(database, 0x58)) {
+    return nullptr;
+  }
+  return Field<const char* const*>(database, 0x54)[id];
+}
+
+int SlotOf(std::int32_t protoId) {
+  return protoId >= 0 && protoId < static_cast<std::int32_t>(g_slotOf.size()) ? g_slotOf[protoId] : -1;
+}
+
+std::int32_t& Count(int player, int slot) {
+  std::vector<std::int32_t>& counts = g_counts[player];
+  if (counts.size() < g_tagged.size()) {
+    counts.resize(g_tagged.size(), 0);
+  }
+  return counts[slot];
+}
+
+std::uint64_t Mix(std::uint64_t z) {  // splitmix64's finalizer
+  z += 0x9E3779B97F4A7C15ull;
+  z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+  z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+  return z ^ (z >> 31);
+}
+
+std::int32_t Roll(std::int32_t player, std::int32_t protoId, std::int32_t n, const Range& range) {
+  std::uint64_t h = Mix(g_seed);
+  h = Mix(h ^ static_cast<std::uint32_t>(player));
+  h = Mix(h ^ static_cast<std::uint32_t>(protoId));
+  h = Mix(h ^ static_cast<std::uint32_t>(n));
+  h = Mix(h ^ static_cast<std::uint32_t>(range.resource));
+  const std::uint64_t span = static_cast<std::uint64_t>(range.max - range.min) + 1;
+  return range.min + static_cast<std::int32_t>(h % span);
+}
+
+// --- Units and markers ---------------------------------------------------------------------------------------
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  char* unit = Field<char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+bool IsAlive(const char* unit) { return (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit); }
+
+bool IsDead(const char* unit) {  // state bit 11: the kill handler returns at once
+  const auto* bits = Field<const std::uint8_t*>(unit, 4);
+  return bits != nullptr && Field<std::uint32_t>(unit, 8) > 11 && (bits[1] & 0x08) != 0;
+}
+
+std::int32_t OwnerOf(const char* unit) {
+  const char* owner = Field<const char*>(unit, 0x44);
+  return owner == nullptr ? -1 : Field<std::int32_t>(owner, 0);
+}
+
+bool IsOurs(char* marker) { return (uhc::markers::Word(marker, 0) & kTagMask) == kTag; }
+
+void FreeOurs(char* unit) {
+  uhc::markers::ForEach(unit, kStat, [](char* marker) {
+    if (IsOurs(marker)) {
+      uhc::markers::Free(marker);
+    }
+    return true;
+  });
+}
+
+bool CarrierValid(const char* world) {
+  char* unit = UnitById(world, g_carrier);
+  return unit != nullptr && IsAlive(unit) && !IsDead(unit) &&
+         uhc::markers::Find(unit, kStat, g_carrierWord) != nullptr;
+}
+
+// A living unit that takes a marker, a player's first; nullptr if none.
+char* PickCarrier(const char* world) {
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* table = Field<char* const*>(world, 0x0C);
+  for (int pass = 0; pass < 2; ++pass) {
+    for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+      char* unit = table[i];
+      if (unit == nullptr || (pass == 0 && OwnerOf(unit) < 1) || !IsAlive(unit) || IsDead(unit)) {
+        continue;
+      }
+      if (char* marker = uhc::markers::Take(unit, kStat)) {
+        uhc::markers::Free(marker);
+        return unit;
+      }
+    }
+  }
+  return nullptr;
+}
+
+bool WriteMarker(char* unit, std::uint32_t kind, std::uint32_t w1, std::uint32_t w2, std::uint32_t w3) {
+  char* marker = uhc::markers::Take(unit, kStat);
+  if (marker == nullptr) {
+    return false;
+  }
+  uhc::markers::Word(marker, 0) = kTag | kind;
+  uhc::markers::Word(marker, 1) = w1;
+  uhc::markers::Word(marker, 2) = w2;
+  uhc::markers::Word(marker, 3) = w3;
+  return true;
+}
+
+void FreeStrays(const char* world, std::int32_t keep) {
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* table = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+    if (table[i] != nullptr && Field<std::int32_t>(table[i], 0x10) != keep) {
+      FreeOurs(table[i]);
+    }
+  }
+  g_strayMarkers = false;
+}
+
+// Writes the seed and the counts on the carrier, a new one if it is gone. From the world tick only.
+void WriteMarkers(const char* world) {
+  char* unit = UnitById(world, g_carrier);
+  const bool keep = unit != nullptr && IsAlive(unit) && !IsDead(unit);
+  if (unit != nullptr) {
+    FreeOurs(unit);
+  }
+  if (!keep) {
+    unit = PickCarrier(world);
+    if (unit == nullptr) {
+      return;  // no unit to hold them: try again at the next tick
+    }
+  }
+  bool ok = WriteMarker(unit, kKindSeed, g_seed, kSeedSet, 0);
+  for (int p = 0; p < kPlayers && ok; ++p) {
+    for (std::size_t s = 0; s < g_counts[p].size() && s < g_tagged.size() && ok; ++s) {
+      if (g_counts[p][s] != 0) {
+        ok = WriteMarker(unit, kKindCount, static_cast<std::uint32_t>(p),
+                         static_cast<std::uint32_t>(g_tagged[s].protoId), static_cast<std::uint32_t>(g_counts[p][s]));
+      }
+    }
+  }
+  if (!ok) {
+    FreeOurs(unit);
+    return;  // try again at the next tick
+  }
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  if (g_log && id != g_carrier) {
+    Line(L"randomCost: the seed and the counts are kept on unit %d", id);
+  }
+  if (g_strayMarkers) {
+    FreeStrays(world, id);
+  }
+  g_carrier = id;
+  g_carrierWord = kTag | kKindSeed;
+  g_dirty = false;
+}
+
+// A game that just started or loaded: the seed and counts its markers keep. One walk, reads only.
+void Rebuild(const char* world) {
+  for (auto& counts : g_counts) {
+    counts.assign(g_tagged.size(), 0);
+  }
+  g_paid.clear();
+  g_haveSeed = false;
+  g_seed = 0;
+  g_carrier = -1;
+  g_carrierWord = 0;
+  g_dirty = false;
+  g_strayMarkers = false;
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* table = Field<char* const*>(world, 0x0C);
+  int carriers = 0;
+  int restored = 0;
+  for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+    char* unit = table[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    bool found = false;
+    uhc::markers::ForEach(unit, kStat, [&](char* marker) {
+      if (!IsOurs(marker)) {
+        return true;
+      }
+      found = true;
+      const std::uint32_t kind = uhc::markers::Word(marker, 0) & 0xFFFF;
+      if (kind == kKindSeed && uhc::markers::Word(marker, 2) == kSeedSet) {
+        g_seed = uhc::markers::Word(marker, 1);
+        g_haveSeed = true;
+      } else if (kind == kKindCount) {
+        const auto player = static_cast<std::int32_t>(uhc::markers::Word(marker, 1));
+        const int slot = SlotOf(static_cast<std::int32_t>(uhc::markers::Word(marker, 2)));
+        if (player >= 0 && player < kPlayers && slot >= 0) {
+          Count(player, slot) = static_cast<std::int32_t>(uhc::markers::Word(marker, 3));
+          ++restored;
+        }
+      }
+      return true;
+    });
+    if (found) {
+      ++carriers;
+      g_carrier = Field<std::int32_t>(unit, 0x10);
+      g_carrierWord = kTag | kKindSeed;
+    }
+  }
+  if (carriers > 1) {
+    g_dirty = true;  // the next write keeps one set
+    g_strayMarkers = true;
+  }
+  if (carriers > 0) {
+    Line(L"randomCost: loaded: seed %08X, %d count(s)", g_seed, restored);
+  }
+}
+
+// The counts follow the world: a new game, a loaded one, a scenario rebuilds them from its markers.
+void Sync() {
+  const char* world = World();
+  if (world == nullptr) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
+  const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;
+  if (!sameGame) {
+    g_world = world;
+    Rebuild(world);
+  }
+  g_lastTime = now;
+  g_lastStep = step;
+}
+
+// The seed: the synced streams' states at the game's first world update. A read: the draws stay stock.
+std::uint32_t ReadSeed() {
+  const char* rng = reinterpret_cast<const char*>(kSyncRng);
+  const char* streams = Field<const char*>(rng, 4);
+  if (streams == nullptr) {
+    return 0;
+  }
+  std::uint64_t h = 0;
+  for (int s = 0; s < kSeedStreams; ++s) {
+    h = Mix(h ^ Field<std::uint32_t>(streams, 12 * s));
+  }
+  return static_cast<std::uint32_t>(h ^ (h >> 32));
+}
+
+void Tick(char* world, std::int32_t) {
+  if (g_tagged.empty() || world != World()) {
+    return;
+  }
+  Sync();
+  g_paid.clear();  // an enqueue is over: what it did not write is gone
+  if (!g_haveSeed) {
+    g_seed = ReadSeed();
+    g_haveSeed = true;
+    g_dirty = true;
+    Line(L"randomCost: new game: seed %08X", g_seed);
+  }
+  if (g_dirty || (g_carrier >= 0 && !CarrierValid(world))) {
+    WriteMarkers(world);
+  }
+}
+
+void ForgetTags(char*) {
+  g_tagged.clear();
+  g_slotOf.clear();
+  for (auto& counts : g_counts) {
+    counts.clear();
+  }
+  g_paid.clear();
+  g_world = nullptr;  // the next call reads the markers again, with the new slots
+}
+
+std::string Attribute(const char* node, const char* name, bool* present) {
+  const void* value = nullptr;
+  *present = node != nullptr && kXmlAttribute(node, name, &value) && value != nullptr;
+  if (!*present) {
+    return {};
+  }
+  const char* text = kXmlText(value);
+  return text != nullptr ? text : "";
+}
+
+bool ParseWhole(const std::string& text, std::int32_t* out) {
+  if (text.empty()) {
+    return false;
+  }
+  char* end = nullptr;
+  const double value = std::strtod(text.c_str(), &end);
+  while (end != nullptr && (*end == ' ' || *end == '\t')) {
+    ++end;
+  }
+  if (end == nullptr || *end != '\0' || !std::isfinite(value) || value < 0.0 || value > 1000000.0) {
+    return false;
+  }
+  *out = static_cast<std::int32_t>(std::floor(value + 0.5));
+  return true;
+}
+
+bool __cdecl ReadRandomCost(void* context, const char* node, char* proto) {
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  bool hasResource = false;
+  bool hasMin = false;
+  bool hasMax = false;
+  const std::string resourceName = Attribute(node, "resourcetype", &hasResource);
+  const std::string minText = Attribute(node, "min", &hasMin);
+  const std::string maxText = Attribute(node, "max", &hasMax);
+  const std::int32_t resource = hasResource ? kResourceByName(context, resourceName.c_str()) : -1;
+  Range range{resource, 0, 0, {}};
+  strncpy_s(range.name, resourceName.c_str(), _TRUNCATE);
+  if (!hasResource || resource < 0) {
+    uhc::Log(L"randomCost: proto %d: <RandomCost resourcetype=\"%hs\">: no such resource, tag ignored", id,
+             resourceName.c_str());
+    return true;
+  }
+  if (!hasMin || !hasMax || !ParseWhole(minText, &range.min) || !ParseWhole(maxText, &range.max)) {
+    uhc::Log(L"randomCost: proto %d: <RandomCost resourcetype=\"%hs\" min=\"%hs\" max=\"%hs\">: min and max must be "
+             L"numbers from 0 to 1000000, tag ignored",
+             id, resourceName.c_str(), minText.c_str(), maxText.c_str());
+    return true;
+  }
+  if (range.min > range.max) {
+    uhc::Log(L"randomCost: proto %d: <RandomCost resourcetype=\"%hs\">: min %d is above max %d, tag ignored", id,
+             resourceName.c_str(), range.min, range.max);
+    return true;
+  }
+  if (id < 0) {
+    return true;
+  }
+  int slot = SlotOf(id);
+  if (slot < 0) {
+    if (static_cast<std::size_t>(id) >= g_slotOf.size()) {
+      g_slotOf.resize(static_cast<std::size_t>(id) + 1, -1);
+    }
+    slot = static_cast<int>(g_tagged.size());
+    g_slotOf[id] = slot;
+    g_tagged.push_back({id, {}});
+  }
+  std::vector<Range>& ranges = g_tagged[slot].ranges;
+  for (Range& existing : ranges) {
+    if (existing.resource == resource) {
+      existing = range;  // a repeated resource: the last tag wins
+      return true;
+    }
+  }
+  ranges.push_back(range);
+  if (g_log) {
+    uhc::Log(L"randomCost: proto %d: %hs from %d to %d", id, resourceName.c_str(), range.min, range.max);
+  }
+  return true;
+}
+
+// The tagged resources of a cost list, for the log: "97 Gold, 12 Wood".
+void Describe(const char* cost, const Tagged& tagged, wchar_t* out, std::size_t size) {
+  out[0] = L'\0';
+  std::size_t used = 0;
+  for (const Range& range : tagged.ranges) {
+    const int written = _snwprintf_s(out + used, size - used, _TRUNCATE, L"%ls%g %hs", used == 0 ? L"" : L", ",
+                                     static_cast<double>(kResListGet(cost, range.resource)), range.name);
+    if (written < 0) {
+      return;
+    }
+    used += static_cast<std::size_t>(written);
+  }
+}
+
+}  // namespace
+
+// The getter's copy of the player's proto's cost into its result. Then the tagged resources get the price of the
+// player's next purchase (or of the entry being written), scaled by the techs. EBX, EDI from the hook.
+extern "C" void __stdcall UhcRandomCostCopy(char* dst, const char* src, const char* proto, const char* player) {
+  kResListCopy(dst, src);
+  if (proto == nullptr || player == nullptr || *reinterpret_cast<char* const*>(dst) == nullptr) {
+    return;
+  }
+  const std::int32_t protoId = Field<std::int32_t>(proto, 8);
+  const int slot = SlotOf(protoId);
+  const std::int32_t playerId = Field<std::int32_t>(player, 0);
+  if (slot < 0 || playerId < 0 || playerId >= kPlayers) {
+    return;
+  }
+  Sync();
+  const std::int32_t n = g_forceIndex >= 0 ? g_forceIndex : Count(playerId, slot);
+  const char* base = BaseProto(protoId);
+  for (const Range& range : g_tagged[slot].ranges) {
+    const float rolled = static_cast<float>(Roll(playerId, protoId, n, range));
+    const float current = kResListGet(src, range.resource);
+    const float stock = base != nullptr ? kResListGet(base + kProtoCost, range.resource) : current;
+    float price = stock > 0.0f ? rolled * (current / stock) : rolled + current;
+    price = std::floor(price + 0.5f);
+    kResListSet(dst, range.resource, price < 0.0f ? 0.0f : price);
+  }
+}
+
+// The Train enqueue's payment of `count` units of the proto at once. A paid tagged proto moves the player's count on
+// and notes the index each unit paid, for its entry.
+extern "C" bool __stdcall UhcRandomCostPay(char* player, char* cost, std::int32_t protoId, std::int32_t count) {
+  const bool paid = kPay(player, cost);
+  const int slot = SlotOf(protoId);
+  if (!paid || slot < 0 || player == nullptr || count <= 0) {
+    return paid;
+  }
+  const std::int32_t playerId = Field<std::int32_t>(player, 0);
+  if (playerId < 0 || playerId >= kPlayers) {
+    return paid;
+  }
+  Sync();
+  std::int32_t& n = Count(playerId, slot);
+  const std::int32_t first = n;
+  for (std::int32_t i = 0; i < count; ++i) {
+    g_paid.push_back({playerId, protoId, first});
+  }
+  n += count;
+  g_dirty = true;
+  if (g_log && g_lines < kMaxLines) {
+    wchar_t paidText[160];
+    Describe(cost, g_tagged[slot], paidText, sizeof(paidText) / sizeof(paidText[0]));
+    char* next = nullptr;
+    wchar_t nextText[160] = L"?";
+    // The next price, as the getter will give it (a local cost list from the player's proto).
+    std::uint32_t list[2] = {};
+    std::uint32_t values[16] = {};
+    if (*reinterpret_cast<const std::int32_t*>(0x00C6DF38) <= 16) {
+      list[0] = reinterpret_cast<std::uint32_t>(values);
+      next = reinterpret_cast<char*>(list);
+      if (kCostGetter(player, protoId, next, 1)) {
+        Describe(next, g_tagged[slot], nextText, sizeof(nextText) / sizeof(nextText[0]));
+      }
+    }
+    Line(L"randomCost: player %d paid %ls for %d of proto %d (purchase %d%ls); next price %ls", playerId, paidText,
+         count, protoId, first, count > 1 ? L", a batch" : L"", nextText);
+  }
+  return paid;
+}
+
+// The Train enqueue's getter call for an entry's cost record: the price that entry paid, when the payment noted it.
+extern "C" bool __stdcall UhcRandomCostRecord(char* player, std::int32_t protoId, char* cost, std::int32_t count) {
+  if (player != nullptr && SlotOf(protoId) >= 0 && !g_paid.empty()) {
+    const Paid front = g_paid.front();
+    if (front.player == Field<std::int32_t>(player, 0) && front.protoId == protoId) {
+      g_paid.pop_front();
+      g_forceIndex = front.index;
+      const bool ok = kCostGetter(player, protoId, cost, count);
+      g_forceIndex = -1;
+      return ok;
+    }
+  }
+  return kCostGetter(player, protoId, cost, count);
+}
+
+// A refund of a Train entry's cost record [entry+8]: stock, then the player's count of the proto goes back by one.
+extern "C" bool __stdcall UhcRandomCostRefund(char* player, char* cost) {
+  const bool ok = kRefund(player, cost);
+  if (player == nullptr || cost == nullptr) {
+    return ok;
+  }
+  const std::int32_t protoId = *reinterpret_cast<const std::int32_t*>(cost - 8);
+  const int slot = SlotOf(protoId);
+  const std::int32_t playerId = Field<std::int32_t>(player, 0);
+  if (slot < 0 || playerId < 0 || playerId >= kPlayers) {
+    return ok;
+  }
+  Sync();
+  std::int32_t& n = Count(playerId, slot);
+  if (n > 0) {
+    --n;
+    g_dirty = true;
+  }
+  if (g_log && g_lines < kMaxLines) {
+    wchar_t text[160];
+    Describe(cost, g_tagged[slot], text, sizeof(text) / sizeof(text[0]));
+    Line(L"randomCost: player %d refunded %ls for proto %d; purchases back to %d", playerId, text, protoId, n);
+  }
+  return ok;
+}
+
+namespace uhc {
+
+Outcome ApplyRandomCost(const Config& config) {
+  const Config::Args* args = config.First("randomCost");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"randomCost: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("randomCost", {&sites::kRandomCostGetterCopy, &sites::kRandomCostPayBatch, &sites::kRandomCostPayOne,
+                                &sites::kRandomCostRecord, &sites::kRandomCostRefundCancel, &sites::kRandomCostRefundAll,
+                                &sites::kRandomCostRefundSpawn})) {
+    return Outcome::kFailed;
+  }
+  if (!AddProtoTagHandler("RandomCost", &ReadRandomCost) || !OnDatabaseLoad(&ForgetTags) || !AddWorldTick(&Tick)) {
+    return Outcome::kFailed;
+  }
+  if (!WriteCall(sites::kRandomCostGetterCopy.va + 6, reinterpret_cast<const void*>(&UhcRandomCostCopyHook)) ||
+      !WriteCall(sites::kRandomCostPayBatch.va + 0x20, reinterpret_cast<const void*>(&UhcRandomCostPayBatchHook)) ||
+      !WriteCall(sites::kRandomCostPayOne.va + 0x1D, reinterpret_cast<const void*>(&UhcRandomCostPayOneHook)) ||
+      !WriteCall(sites::kRandomCostRecord.va + 0x11, reinterpret_cast<const void*>(&UhcRandomCostRecordHook)) ||
+      !WriteCall(sites::kRandomCostRefundCancel.va + 9, reinterpret_cast<const void*>(&UhcRandomCostRefundCancelHook)) ||
+      !WriteCall(sites::kRandomCostRefundAll.va + 0x0A, reinterpret_cast<const void*>(&UhcRandomCostRefundAllHook)) ||
+      !WriteCall(sites::kRandomCostRefundSpawn.va + 0x0E, reinterpret_cast<const void*>(&UhcRandomCostRefundSpawnHook))) {
+    return Outcome::kFailed;
+  }
+  Log(L"randomCost: <RandomCost> is read; the cost getter, the Train payments, entry costs and refunds are hooked");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/randomcost_hooks.asm
+
+```asm
+; randomCost (src/features/randomcost.cpp). Each hook replaces one call and returns to the stock code as that call
+; did: the same ret and AL where the stock code tests it. The C functions keep EBX, ESI, EDI and EBP.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcRandomCostCopy PROTO STDCALL dst:DWORD, src:DWORD, playerProto:DWORD, player:DWORD
+UhcRandomCostPay PROTO STDCALL player:DWORD, cost:DWORD, protoId:DWORD, count:DWORD
+UhcRandomCostRecord PROTO STDCALL player:DWORD, protoId:DWORD, cost:DWORD, count:DWORD
+UhcRandomCostRefund PROTO STDCALL player:DWORD, cost:DWORD
+
+.code
+
+; The cost getter's copy of the proto's cost at 0x480B5B: call 480A73h, thiscall(dst = ECX, src), ret 4.
+; EBX = the player, EDI = the player's proto. Nothing after it reads EAX, ECX or EDX before setting them.
+UhcRandomCostCopyHook PROC
+    TRACE_ONCE "randomCost cost getter (0x480B5B)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcRandomCostCopy, ecx, eax, edi, ebx
+    ret 4
+UhcRandomCostCopyHook ENDP
+
+; The batch payment at 0x9EAF9A: call 8D946Ah, thiscall(player = ECX, cost), ret 4. EDI = the player's proto,
+; EBP = the number of units paid at once. The stock code tests AL.
+UhcRandomCostPayBatchHook PROC
+    TRACE_ONCE "randomCost batch payment (0x9EAF9A)"
+    mov eax, dword ptr [esp+4]
+    mov edx, dword ptr [edi+8]
+    invoke UhcRandomCostPay, ecx, eax, edx, ebp
+    ret 4
+UhcRandomCostPayBatchHook ENDP
+
+; The per-unit payment at 0x9EB053, the same call for one unit.
+UhcRandomCostPayOneHook PROC
+    TRACE_ONCE "randomCost payment (0x9EB053)"
+    mov eax, dword ptr [esp+4]
+    mov edx, dword ptr [edi+8]
+    invoke UhcRandomCostPay, ecx, eax, edx, 1
+    ret 4
+UhcRandomCostPayOneHook ENDP
+
+; The entry's cost record at 0x9EB291: call 480B1Eh, thiscall(player = ECX, protoId, cost, count), ret 0Ch.
+UhcRandomCostRecordHook PROC
+    TRACE_ONCE "randomCost entry cost (0x9EB291)"
+    push dword ptr [esp+12]  ; count
+    push dword ptr [esp+12]  ; cost
+    push dword ptr [esp+12]  ; protoId
+    push ecx
+    call UhcRandomCostRecord
+    ret 0Ch
+UhcRandomCostRecordHook ENDP
+
+; The three refunds of an entry's cost record: call 8D7004h, thiscall(player = ECX, cost = entry + 8), ret 4.
+UhcRandomCostRefundCancelHook PROC
+    TRACE_ONCE "randomCost refund, cancel (0x9EB43E)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcRandomCostRefund, ecx, eax
+    ret 4
+UhcRandomCostRefundCancelHook ENDP
+
+UhcRandomCostRefundAllHook PROC
+    TRACE_ONCE "randomCost refund, queue emptied (0x9EB60D)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcRandomCostRefund, ecx, eax
+    ret 4
+UhcRandomCostRefundAllHook ENDP
+
+UhcRandomCostRefundSpawnHook PROC
+    TRACE_ONCE "randomCost refund, failed spawn (0x9EBA5D)"
+    mov eax, dword ptr [esp+4]
+    invoke UhcRandomCostRefund, ecx, eax
+    ret 4
+UhcRandomCostRefundSpawnHook ENDP
+
+END
+```
+
+## unitTypeTechs
+
+Contract: [unitTypeTechs](../porting-to-another-dll.md#unittypetechs).
+
+Besides the core helpers, it needs: [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+### src/features/unittypetechs.cpp
+
+```cpp
+// unitTypeTechs: the Data tech effects subtype="AddUnitType" and "RemoveUnitType", with unittype="<AbstractType>".
+//
+// An abstract type is a bit of the proto: the buffer [proto+30h], with [proto+34h] bits, indexed from the first
+// abstract ID [db+19B0h]. The per-player clone 0x67E011 builds its own buffer and copies the bits one by one, so
+// writing a player's copy changes that player alone, and the is-a test 0x44D7FA reads it at once.
+//
+// Stock's table of protos by type, read through 0x453326 (the KB's counts and queries by type, and so an AI's),
+// is built from the data and shared by every player: a type added here is not in it. Nothing here changes that.
+//
+// A type the base proto has is never lost when an AddUnitType ends, and comes back when a RemoveUnitType ends.
+// Several techs count: the bit is (base has it or some AddUnitType runs) and no RemoveUnitType runs.
+#include <compare>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <string>
+
+#include "../features.h"
+#include "../log.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+namespace {
+
+constexpr std::uintptr_t kGameGlobal = 0x00C66234;
+constexpr std::size_t kWorld = 0x13C;
+constexpr std::size_t kDatabase = 0x140;
+constexpr std::size_t kFirstAbstract = 0x19B0;
+constexpr std::size_t kProtoBits = 0x30;
+constexpr std::size_t kProtoBitCount = 0x34;
+constexpr int kMaxLogLines = 200;
+
+struct Key {
+  const char* proto;
+  std::int32_t type;
+  auto operator<=>(const Key&) const = default;
+};
+
+struct Count {
+  std::int32_t added = 0;
+  std::int32_t removed = 0;
+};
+
+std::map<Key, Count> g_counts;  // by the player's copy
+const char* g_world = nullptr;
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::size_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+// The bit's index in the buffer, or -1.
+std::int32_t BitOf(const char* proto, std::int32_t type) {
+  const char* game = Game();
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, kDatabase);
+  if (database == nullptr) {
+    return -1;
+  }
+  const std::int32_t bit = type - Field<std::int32_t>(database, kFirstAbstract);
+  return bit >= 0 && bit < Field<std::int32_t>(proto, kProtoBitCount) ? bit : -1;
+}
+
+bool HasBit(const char* proto, std::int32_t bit) {
+  const auto* bits = Field<const std::uint8_t*>(proto, kProtoBits);
+  return bits != nullptr && (bits[bit >> 3] & (1u << (bit & 7))) != 0;
+}
+
+void Change(char* proto, const char* base, std::int32_t type, bool add, bool unapply) {
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, kWorld);
+  if (world != g_world) {
+    g_counts.clear();  // another game: its copies are not these
+    g_world = world;
+  }
+  const std::int32_t bit = BitOf(proto, type);
+  auto* bits = Field<std::uint8_t*>(proto, kProtoBits);
+  if (bit < 0 || bits == nullptr) {
+    uhc::Log(L"unitTypeTechs: proto %hs has no bit for type %d; effect ignored", Field<const char*>(proto, 0x10), type);
+    return;
+  }
+  Count& count = g_counts[{proto, type}];
+  std::int32_t& which = add ? count.added : count.removed;
+  which += unapply ? -1 : 1;
+  if (which < 0) {
+    which = 0;
+  }
+  const bool wanted = (HasBit(base, bit) || count.added > 0) && count.removed == 0;
+  const std::uint8_t mask = static_cast<std::uint8_t>(1u << (bit & 7));
+  if (wanted) {
+    bits[bit >> 3] |= mask;
+  } else {
+    bits[bit >> 3] = static_cast<std::uint8_t>(bits[bit >> 3] & ~mask);
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"unitTypeTechs: proto %hs (player's copy), %ls%ls type %d: bit %ls", Field<const char*>(proto, 0x10),
+             unapply ? L"end of " : L"", add ? L"AddUnitType" : L"RemoveUnitType", type, wanted ? L"on" : L"off");
+  }
+}
+
+void AddType(char* proto, const char* base, std::int32_t type, bool unapply) { Change(proto, base, type, true, unapply); }
+
+void RemoveType(char* proto, const char* base, std::int32_t type, bool unapply) {
+  Change(proto, base, type, false, unapply);
+}
+
+void NewDatabase(char*) {
+  g_counts.clear();
+  g_world = nullptr;
+  g_logLines = 0;
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyUnitTypeTechs(const Config& config) {
+  const Config::Args* args = config.First("unitTypeTechs");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"unitTypeTechs: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!AddTechTypeSubtype("AddUnitType", &AddType) || !AddTechTypeSubtype("RemoveUnitType", &RemoveType) ||
+      !OnDatabaseLoad(&NewDatabase)) {
+    return Outcome::kFailed;
+  }
+  Log(L"unitTypeTechs: Data effects AddUnitType and RemoveUnitType change one player's copy of a proto");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## trainBatchSize
+
+Contract: [trainBatchSize](../porting-to-another-dll.md#trainbatchsize).
+
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `TrainQueueCall1` `0x7560B5` (5 B), `TrainQueueCall2` `0x7CAF6E` (5 B), `TrainQueueCall3` `0x7D797A` (5 B), `TrainBatchLimitCall` `0x9CE645` (5 B), `TrainBatchProtoArg` `0x9CE6DE` (4 B), `TrainQueueCall4` `0x9EBF03` (5 B).
+
+### src/features/trainbatch.cpp
+
+```cpp
+// trainBatchSize: <TrainBatchSize>N</TrainBatchSize> in a proto limits how many of it share one Train
+// action. <DontTrainInBatches>1</DontTrainInBatches> is a size of 1 (an explicit size wins), and
+// <ForceBatchTrain> is read and does nothing: the trains it changes elsewhere do not exist here.
+// The tech effect type="Data" subtype="TrainBatchSize" changes the size for one player's copy of the
+// proto (base: the tag's size, or the stock 5), through the stock value function 0x7F892A; the hook
+// forwards the player, whose copy 0x45311B finds.
+//
+// Stock takes the limit from one call, 0x8D051B (0x9CE645, in the routine that queues units in a
+// building): the player's [+2ACh] when a tech set it, else the database's default of [+178h]. The routine
+// then fills the last Train action up to the limit and opens a new one for the rest. The hook keeps that
+// call and replaces its result for a proto with the tag.
+//
+// The new action takes all that remains, whatever the limit, so a Shift+click of 5 is one action of 5.
+// So the routine's four calls go through a wrapper that asks for more than the tag allows in pieces of
+// that size, and each piece is queued and paid by the stock routine. Values are read once, kept by proto
+// ID, and are the same for every player. The hook is in hooks/trainbatch_hooks.asm.
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <string>
+#include <unordered_map>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+extern "C" void UhcTrainBatchHook();
+
+namespace {
+
+constexpr std::uint32_t kLimitCall = 0x009CE645;
+constexpr std::uint32_t kQueueCalls[] = {0x007560B5, 0x007CAF6E, 0x007D797A, 0x009EBF03};
+constexpr int kMaxLogLines = 200;
+
+using QueueFn = bool(__thiscall*)(void* building, std::int32_t a, std::int32_t b, std::int32_t proto,
+                                  std::int32_t count, std::int32_t c, std::int32_t d, std::int32_t e);
+const auto kQueue = reinterpret_cast<QueueFn>(0x009CE2BE);
+using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t id);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+constexpr float kStockDefault = 5.0f;
+
+std::unordered_map<std::int32_t, std::int32_t> g_sizes;  // filled while protos load, read-only after
+std::unordered_map<std::int32_t, bool> g_explicit;        // protos whose size came from <TrainBatchSize>
+struct TechSize {
+  std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float value;
+};
+std::unordered_map<const char*, TechSize> g_techSizes;  // by the player's copy of the proto
+bool g_log = false;
+int g_logLines = 0;
+
+// The size for a player's copy: the tech's, else the tag's, else none (-1).
+std::int32_t SizeFor(const char* copy, std::int32_t id) {
+  if (copy != nullptr && !g_techSizes.empty()) {
+    const auto tech = g_techSizes.find(copy);
+    if (tech != g_techSizes.end() && tech->second.id == id) {
+      const long value = std::lround(tech->second.value);
+      return value < 1 ? 1 : static_cast<std::int32_t>(value);
+    }
+  }
+  const auto found = g_sizes.find(id);
+  return found == g_sizes.end() ? -1 : found->second;
+}
+
+void ChangeSize(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  const auto tag = g_sizes.find(*reinterpret_cast<const std::int32_t*>(base + 8));
+  const float baseValue = tag == g_sizes.end() ? kStockDefault : static_cast<float>(tag->second);
+  auto inserted = g_techSizes.emplace(proto, TechSize{id, baseValue});
+  if (inserted.first->second.id != id) {
+    inserted.first->second = TechSize{id, baseValue};  // the pointer was another proto's copy before
+  }
+  float& value = inserted.first->second.value;
+  const float before = value;
+  kEffectValue(relativity, &value, baseValue, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"trainBatchSize: proto %d, tech subtype TrainBatchSize, relativity %u, amount %g%ls: %g -> %g", id,
+             relativity, static_cast<double>(amount), unapply ? L" (removed)" : L"", static_cast<double>(before),
+             static_cast<double>(value));
+  }
+}
+
+void ForgetOnDataLoad(char*) { g_techSizes.clear(); }
+
+// A flag written as an element: absent text or anything but 0 is on.
+bool FlagOn(const char* node) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  return text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+}
+
+bool __cdecl ReadTrainBatchSize(void*, const char* node, char* proto) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(node + 0x14);
+  const int size = text != nullptr ? _wtoi(text) : 0;
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (size < 1) {
+    uhc::Log(L"trainBatchSize: proto %d: <TrainBatchSize> needs a number from 1, ignored", id);
+    return true;
+  }
+  g_sizes[id] = size;
+  g_explicit[id] = true;
+  if (g_log) {
+    uhc::Log(L"trainBatchSize: proto %d has %d", id, size);
+  }
+  return true;
+}
+
+bool __cdecl ReadDontTrainInBatches(void*, const char* node, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  if (!FlagOn(node)) {
+    return true;
+  }
+  if (g_explicit.count(id) == 0) {
+    g_sizes[id] = 1;
+  }
+  if (g_log) {
+    uhc::Log(L"trainBatchSize: proto %d has DontTrainInBatches: one per action%ls", id,
+             g_explicit.count(id) == 0 ? L"" : L" (its TrainBatchSize wins)");
+  }
+  return true;
+}
+
+bool __cdecl ReadForceBatchTrain(void*, const char* node, char* proto) {
+  if (g_log && FlagOn(node)) {
+    uhc::Log(L"trainBatchSize: proto %d has ForceBatchTrain, which changes nothing in this engine",
+             *reinterpret_cast<const std::int32_t*>(proto + 8));
+  }
+  return true;
+}
+
+// Replaces the calls of the queue routine.
+bool __fastcall Queue(void* building, void*, std::int32_t a, std::int32_t b, std::int32_t proto, std::int32_t count,
+                      std::int32_t c, std::int32_t d, std::int32_t e) {
+  // `building` is the unit's action manager: [+4] its unit, and [unit+44h] the player (0x9CE63F..0x9CE642).
+  const char* unit = building == nullptr ? nullptr
+                                         : *reinterpret_cast<const char* const*>(reinterpret_cast<const char*>(building) + 4);
+  const char* player = unit == nullptr ? nullptr : *reinterpret_cast<const char* const*>(unit + 0x44);
+  const std::int32_t size = SizeFor(player == nullptr ? nullptr : kPlayerProto(player, proto), proto);
+  if (size < 1 || count <= size) {
+    return kQueue(building, a, b, proto, count, c, d, e);
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"trainBatchSize: proto %d: %d asked, in pieces of %d", proto, count, size);
+  }
+  bool queued = false;
+  for (std::int32_t left = count; left > 0; left -= size) {
+    if (!kQueue(building, a, b, proto, left < size ? left : size, c, d, e)) {
+      break;
+    }
+    queued = true;
+  }
+  return queued;
+}
+
+}  // namespace
+
+// From the hook, with the stock limit, the proto being queued and the player.
+extern "C" std::int32_t __stdcall UhcTrainBatchLimit(std::int32_t stock, std::int32_t proto, const char* player) {
+  const std::int32_t size = SizeFor(player == nullptr ? nullptr : kPlayerProto(player, proto), proto);
+  if (size < 1) {
+    return stock;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"trainBatchSize: proto %d queues up to %d per action (stock %d)", proto, size, stock);
+  }
+  return size;
+}
+
+namespace uhc {
+
+Outcome ApplyTrainBatchSize(const Config& config) {
+  const Config::Args* args = config.First("trainBatchSize");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"trainBatchSize: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("trainBatchSize", {&sites::kTrainBatchLimitCall, &sites::kTrainBatchProtoArg, &sites::kTrainQueueCall1,
+                                    &sites::kTrainQueueCall2, &sites::kTrainQueueCall3, &sites::kTrainQueueCall4}) ||
+      !AddProtoTagHandler("TrainBatchSize", &ReadTrainBatchSize) ||
+      !AddProtoTagHandler("DontTrainInBatches", &ReadDontTrainInBatches) ||
+      !AddProtoTagHandler("ForceBatchTrain", &ReadForceBatchTrain) ||
+      !AddTechSubtype("TrainBatchSize", &ChangeSize) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
+      !WriteJmp(kLimitCall, reinterpret_cast<const void*>(&UhcTrainBatchHook), 5)) {
+    return Outcome::kFailed;
+  }
+  for (const std::uint32_t call : kQueueCalls) {
+    if (!WriteCall(call, reinterpret_cast<const void*>(&Queue))) {
+      return Outcome::kFailed;
+    }
+  }
+  Log(L"trainBatchSize: the proto tags TrainBatchSize, DontTrainInBatches and ForceBatchTrain are on, and the Data "
+      L"subtype TrainBatchSize");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/trainbatch_hooks.asm
+
+```asm
+; trainBatchSize (src/features/trainbatch.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTrainBatchLimit PROTO STDCALL stockLimit:DWORD, protoId:DWORD, player:DWORD
+
+.data
+stockLimitFn    dd 008D051Bh    ; the limit of units per Train action, thiscall(player)
+limitCallNext   dd 009CE64Ah    ; cmp bl,1 / mov ebp,eax
+
+.code
+
+; Replaces 0x9CE645 (call 0x8D051B) in the routine that queues units in a building. ECX = the player,
+; [esp+30h] = the proto ID, as the routine reads it at 0x9CE6DE. The code that follows reads only EAX
+; of what the call leaves (EDX is free).
+UhcTrainBatchHook PROC
+    TRACE_ONCE "trainBatchSize limit (0x9CE645)"
+    push ecx                        ; the player, for the tech subtype's copy
+    call stockLimitFn
+    pop edx
+    mov ecx, dword ptr [esp+30h]
+    invoke UhcTrainBatchLimit, eax, ecx, edx
+    jmp limitCallNext
+UhcTrainBatchHook ENDP
+
+END
+```
+
+## sharedBuildLimit
+
+Contract: [sharedBuildLimit](../porting-to-another-dll.md#sharedbuildlimit).
+
+Besides the core helpers, it needs: [`civtags.h`](helpers.md#civ-tags), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `XmlText` `0x402733` (9 B), `PlayerProtoEntry` `0x45311B` (8 B), `ProtoById` `0x45316E` (30 B), `BuildLimitEntry` `0x4C7B5F` (5 B), `BuildCountEntry` `0x4C7BC5` (8 B), `BuildCountTooltip1` `0x4C8B81` (5 B), `XmlAttribute` `0x598F37` (16 B), `BuildCountTooltip2` `0x70F5EF` (5 B).
+
+### src/features/sharedlimit.cpp
+
+```cpp
+// sharedBuildLimit: a proto's build limit may be shared with other units.
+//
+//   <SharedBuildLimitUnit>Name</SharedBuildLimitUnit>             whose limit applies (default: its own)
+//   <SharedBuildLimitUnitType weight="N">Type</SharedBuildLimitUnitType>   what counts toward it: an
+//                                                                 abstract type or a proto; repeatable
+//   <TeamBuildLimit>1</TeamBuildLimit>                            the whole team counts
+//   <UseSharedBuildLimit>1</UseSharedBuildLimit>                  accepted; the lists alone are enough
+//   <SharedBuildLimitUnitTypes weight="N">Type</SharedBuildLimitUnitTypes>   the same list, plural
+//   <SettlerBuildLimit>1</SettlerBuildLimit>                      the limit of the civ's settler, shared by
+//                                                                 every unit of LogicalTypeSettlerBuildLimit;
+//                                                                 the civ names it in civs.xml:
+//                                                                 <SettlerProtoName>Settler</SettlerProtoName>
+//
+// Stock compares two numbers everywhere: a count of the proto, by many routes, and the limit, always
+// from 0x4C7B5F (50 callers: the buttons, the train action, Maintain, cards, the AI). So the count stays
+// and the hook changes only the limit: for a tagged proto it returns the room the other units leave,
+// (limit - the others' weight) / its own weight, never below 0, because a negative limit means none.
+// Every check then gives the right answer, and a batch that does not fit is cut as stock cuts it. The
+// others are counted by 0x4C7BC5 with the arguments of the train check, so queued units count.
+// The two tooltips that print "Build Limit: N out of M" are the exception: they get the group's total
+// and the real limit, through their own count calls and the return address of their limit calls.
+// The tags are read once and are the same for every player; the limit comes from the player's copy
+// of the proto, so techs reach it. A tech effect type="Data" subtype="EnableSharedBuildLimit" with
+// amount 0 turns the share off for that player's copy (the proto keeps its own limit), anything else
+// on; base 1. The hook is in hooks/sharedlimit_hooks.asm.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "../civtags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcSharedLimitHook();
+void UhcSharedLimitStock();  // the stock entry: thiscall(player, proto), ret 4
+}
+
+namespace {
+
+constexpr std::uint32_t kLimitEntry = 0x004C7B5F;
+constexpr std::uint32_t kTooltipCounts[] = {0x004C8B81, 0x0070F5EF};
+// After the calls of the limit in the two tooltips.
+constexpr std::uint32_t kTooltipLimits[] = {0x004C8B46, 0x004C8B9E, 0x004C8BC4, 0x0070F5D5, 0x0070F60C, 0x0070F628};
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr int kMaxLogLines = 200;
+constexpr int kMaxPlayers = 16;
+
+using LimitFn = std::int32_t(__thiscall*)(const char* player, const char* proto);
+using CountFn = std::int32_t(__thiscall*)(const char* proto, std::int32_t player, bool first, bool second);
+using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t id);
+using ProtoByIdFn = const char*(__thiscall*)(const char* database, std::int32_t id);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using NameBucketFn = std::int32_t(__thiscall*)(const char* table, const char* name);
+using NameFindFn = bool(__thiscall*)(const char* table, const char* name, std::int32_t bucket, std::int32_t* id);
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+
+const auto kCount = reinterpret_cast<CountFn>(0x004C7BC5);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kProtoById = reinterpret_cast<ProtoByIdFn>(0x0045316E);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
+const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+
+struct Listed {
+  std::string name;
+  std::int32_t weight;
+};
+
+struct Share {
+  std::string limitUnit;       // empty: the proto's own limit
+  std::vector<Listed> listed;  // as the data has them
+  bool team = false;
+  bool use = false;            // <UseSharedBuildLimit>, read and kept for the log
+  bool settler = false;        // <SettlerBuildLimit>
+  bool built = false;
+  std::int32_t limitProto = -1;
+  std::int32_t ownWeight = 1;
+  std::vector<std::pair<std::int32_t, std::int32_t>> members;  // proto ID, weight
+  std::int32_t lastLogged = -2;
+};
+
+std::unordered_map<std::int32_t, Share> g_shares;  // by proto ID; the load fills it
+std::vector<bool> g_tagged;                        // by proto ID, for the calls of every other proto
+bool g_log = false;
+int g_logLines = 0;
+
+// <SettlerProtoName> per civ, from civs.xml; the proto is resolved by name on first use and again
+// when the database's proto table changes (a data reload).
+struct SettlerCiv {
+  std::string name;
+  const char* table = nullptr;
+  std::int32_t proto = -1;
+};
+std::vector<SettlerCiv> g_settlerCivs;  // by civ ID
+std::int32_t g_settlerType = -1;        // LogicalTypeSettlerBuildLimit
+
+bool FlagOn(const char* text) { return text == nullptr || text[0] == 0 || std::atoi(text) != 0; }
+
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+struct Enabled {
+  std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float value;      // 0 turns the share off
+};
+std::unordered_map<const char*, Enabled> g_enabled;  // by the player's copy
+
+void ChangeEnabled(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 4);
+  Enabled& slot = g_enabled.emplace(proto, Enabled{id, 1.0f}).first->second;
+  if (slot.id != id) {
+    slot = Enabled{id, 1.0f};
+  }
+  float& value = slot.value;
+  const float before = value;
+  kEffectValue(relativity, &value, 1.0f, amount, unapply);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"sharedBuildLimit: proto %d, tech subtype EnableSharedBuildLimit, relativity %u, amount %g%ls: %g -> %g",
+             *reinterpret_cast<const std::int32_t*>(proto + 4), relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"",
+             static_cast<double>(before), static_cast<double>(value));
+  }
+}
+
+void ForgetOnDataLoad(char*) { g_enabled.clear(); }
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+Share& ShareOf(const char* proto) {
+  const std::int32_t id = Field<std::int32_t>(proto, 4);
+  if (id >= 0) {
+    if (g_tagged.size() <= static_cast<std::size_t>(id)) {
+      g_tagged.resize(static_cast<std::size_t>(id) + 1, false);
+    }
+    g_tagged[static_cast<std::size_t>(id)] = true;
+  }
+  return g_shares[id];
+}
+
+const char* TagText(const char* node) { return kXmlText(node + 0x14); }
+
+bool __cdecl ReadLimitUnit(void*, const char* node, char* proto) {
+  const char* text = TagText(node);
+  if (text != nullptr) {
+    ShareOf(proto).limitUnit = text;
+  }
+  return true;
+}
+
+bool __cdecl ReadUnitType(void*, const char* node, char* proto) {
+  const char* text = TagText(node);
+  if (text == nullptr) {
+    return true;
+  }
+  std::int32_t weight = 1;
+  const void* value = nullptr;
+  if (kXmlAttribute(node, "weight", &value) && value != nullptr) {
+    const char* digits = kXmlText(value);
+    if (digits != nullptr && std::atoi(digits) > 0) {
+      weight = std::atoi(digits);
+    }
+  }
+  ShareOf(proto).listed.push_back({text, weight});
+  return true;
+}
+
+bool __cdecl ReadTeam(void*, const char* node, char* proto) {
+  const char* text = TagText(node);
+  ShareOf(proto).team = text == nullptr || std::atoi(text) != 0;
+  return true;
+}
+
+bool __cdecl ReadUse(void*, const char* node, char* proto) {
+  ShareOf(proto).use = FlagOn(TagText(node));
+  return true;
+}
+
+bool __cdecl ReadSettler(void*, const char* node, char* proto) {
+  ShareOf(proto).settler = FlagOn(TagText(node));
+  return true;
+}
+
+void ReadSettlerProtoName(const char* civ, std::int32_t civId, const wchar_t* text) {
+  if (civId >= static_cast<std::int32_t>(g_settlerCivs.size())) {
+    g_settlerCivs.resize(civId + 1);
+  }
+  std::string name;
+  for (const wchar_t* c = text; c != nullptr && *c != 0; ++c) {
+    name.push_back(static_cast<char>(*c));
+  }
+  g_settlerCivs[civId] = SettlerCiv{name};
+  const char* civName = civ == nullptr ? nullptr : Field<const char*>(civ, 0x04);
+  uhc::Log(L"sharedBuildLimit: civ %d (%hs): its settler is %hs (SettlerProtoName)", civId,
+           civName == nullptr ? "?" : civName, name.c_str());
+}
+
+const char* Database() {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
+const char* World() {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+// A proto or an abstract type by name, through the table <UnitType> reads; -1 if absent.
+std::int32_t NameId(const char* database, const std::string& name) {
+  const char* table = database + 0x190;
+  std::int32_t id = -1;
+  const std::int32_t bucket = kNameBucket(table, name.c_str());
+  return kNameFind(table, name.c_str(), bucket, &id) ? id : -1;
+}
+
+// A player's civ ID (0x4539D3): [[player+20h]] when [player+24h] > 0, else -1.
+std::int32_t CivIdOf(const char* player) {
+  return Field<std::int32_t>(player, 0x24) > 0 ? *Field<const std::int32_t*>(player, 0x20) : -1;
+}
+
+// The <SettlerProtoName> proto of the player's civ, or -1.
+std::int32_t SettlerProtoOf(const char* player, const char* database) {
+  const std::int32_t civ = CivIdOf(player);
+  if (civ < 0 || civ >= static_cast<std::int32_t>(g_settlerCivs.size()) || g_settlerCivs[civ].name.empty()) {
+    return -1;
+  }
+  SettlerCiv& entry = g_settlerCivs[civ];
+  const char* table = Field<const char*>(database, 0x54);
+  if (entry.table != table) {
+    entry.table = table;
+    entry.proto = NameId(database, entry.name);
+    if (entry.proto < 0 || entry.proto >= Field<std::int32_t>(database, 0x19B0)) {
+      uhc::Log(L"sharedBuildLimit: civ %d: %hs is no proto (SettlerProtoName); its settler limit is each proto's own",
+               civ, entry.name.c_str());
+      entry.proto = -1;
+    }
+  }
+  return entry.proto;
+}
+
+// Built at the first use: the protos are not all read while the tags load.
+void Build(std::int32_t ownId, Share& share, const char* database) {
+  share.built = true;
+  if (!share.limitUnit.empty()) {
+    share.limitProto = NameId(database, share.limitUnit);
+    if (share.limitProto < 0 || share.limitProto >= Field<std::int32_t>(database, 0x19B0)) {
+      uhc::Log(L"sharedBuildLimit: proto %d: %hs is no proto: it keeps its own limit", ownId, share.limitUnit.c_str());
+      share.limitProto = -1;
+    }
+  }
+  const std::int32_t protos = Field<std::int32_t>(database, 0x19B0);
+  if (share.settler && g_settlerType >= 0) {
+    for (std::int32_t id = 0; id < protos; ++id) {
+      const char* proto = kProtoById(database, id);
+      if (proto != nullptr && kProtoIsType(proto, g_settlerType)) {
+        share.members.emplace_back(id, 1);
+      }
+    }
+  }
+  for (const Listed& entry : share.listed) {
+    const std::int32_t type = NameId(database, entry.name);
+    if (type < 0) {
+      uhc::Log(L"sharedBuildLimit: proto %d: unknown unit type %hs", ownId, entry.name.c_str());
+      continue;
+    }
+    for (std::int32_t id = 0; id < protos; ++id) {
+      const char* proto = kProtoById(database, id);
+      if (proto == nullptr || !kProtoIsType(proto, type)) {
+        continue;
+      }
+      bool known = false;
+      for (const auto& member : share.members) {
+        known = known || member.first == id;
+      }
+      if (known) {
+        continue;  // the first entry that reaches a proto sets its weight, for the others and for itself
+      }
+      share.members.emplace_back(id, entry.weight);
+      if (id == ownId) {
+        share.ownWeight = entry.weight;
+      }
+    }
+  }
+  if (g_log) {
+    uhc::Log(L"sharedBuildLimit: proto %d: limit of %d, %u protos count, own weight %d%ls%ls%ls", ownId,
+             share.limitProto, static_cast<unsigned>(share.members.size()), share.ownWeight,
+             share.team ? L", the team's" : L"", share.settler ? L", the civ's settler limit" : L"",
+             share.use ? L", UseSharedBuildLimit" : L"");
+  }
+}
+
+bool IsTagged(std::int32_t id) {
+  return id >= 0 && static_cast<std::size_t>(id) < g_tagged.size() && g_tagged[static_cast<std::size_t>(id)];
+}
+
+bool ReadyShare(std::int32_t id, Share** out) {
+  const char* database = Database();
+  if (!IsTagged(id) || database == nullptr) {
+    return false;
+  }
+  Share& share = g_shares[id];
+  if (!share.built) {
+    Build(id, share, database);
+  }
+  *out = &share;
+  return true;
+}
+
+// What the other units weigh for this player: its own other protos, and with TeamBuildLimit every
+// unit of the team's other players (the test the shared resources use, 0x67995B).
+std::int64_t Others(const char* player, std::int32_t ownId, const Share& share) {
+  const char* world = World();
+  if (world == nullptr) {
+    return 0;
+  }
+  const std::int32_t self = Field<std::int32_t>(player, 0);
+  const auto players = Field<const char* const*>(world, 0x58);
+  const std::int32_t count = Field<std::int32_t>(world, 0x5C);
+  std::int64_t sum = 0;
+  for (std::int32_t i = 0; i < count && i < kMaxPlayers; ++i) {
+    if (i != self) {
+      const std::int32_t relation = Field<std::int32_t>(player, 0x1D4 + 4 * i);
+      if (!share.team || i == 0 || (relation != 0 && relation != 1)) {
+        continue;
+      }
+    }
+    const char* other = players[i];
+    if (other == nullptr) {
+      continue;
+    }
+    for (const auto& member : share.members) {
+      if (i == self && member.first == ownId) {
+        continue;  // the stock compare adds these
+      }
+      const char* proto = kPlayerProto(other, member.first);
+      if (proto != nullptr) {
+        sum += static_cast<std::int64_t>(kCount(proto, i, true, true)) * member.second;
+      }
+    }
+  }
+  return sum;
+}
+
+// Replaces the count calls of the tooltips: the group's total, in the proto's own weight.
+std::int32_t __fastcall TooltipCount(const char* proto, void*, std::int32_t playerId, bool first, bool second) {
+  const std::int32_t own = kCount(proto, playerId, first, second);
+  Share* share = nullptr;
+  const char* world = World();
+  if (proto == nullptr || world == nullptr || !ReadyShare(Field<std::int32_t>(proto, 4), &share)) {
+    return own;
+  }
+  const char* player = Field<const char* const*>(world, 0x58)[playerId];
+  return own + static_cast<std::int32_t>(Others(player, Field<std::int32_t>(proto, 4), *share) / share->ownWeight);
+}
+
+bool FromTooltip(std::uint32_t returnAddress) {
+  for (const std::uint32_t address : kTooltipLimits) {
+    if (address == returnAddress) {
+      return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace
+
+// From the hook at the entry of the limit.
+extern "C" std::int32_t __stdcall UhcSharedLimit(const char* player, const char* proto, std::uint32_t returnAddress) {
+  const auto stockLimit = reinterpret_cast<LimitFn>(&UhcSharedLimitStock);
+  const std::int32_t stock = stockLimit(player, proto);
+  if (proto == nullptr) {
+    return stock;
+  }
+  const std::int32_t id = Field<std::int32_t>(proto, 4);
+  Share* found = nullptr;
+  if (!ReadyShare(id, &found)) {
+    return stock;
+  }
+  if (!g_enabled.empty()) {
+    const auto enabled = g_enabled.find(proto);
+    if (enabled != g_enabled.end() && enabled->second.id == id && enabled->second.value == 0.0f) {
+      return stock;  // a tech turned the share off for this player
+    }
+  }
+  Share& share = *found;
+  std::int32_t limit = stock;
+  std::int32_t limitId = share.limitProto;
+  if (share.settler) {
+    const char* database = Database();
+    const std::int32_t settler = database == nullptr ? -1 : SettlerProtoOf(player, database);
+    if (settler >= 0) {
+      limitId = settler;
+    }
+  }
+  if (limitId >= 0) {
+    const char* limitProto = kPlayerProto(player, limitId);
+    if (limitProto != nullptr) {
+      limit = stockLimit(player, limitProto);
+    }
+  }
+  if (limit < 0) {
+    return stock;  // no limit to share
+  }
+  if (FromTooltip(returnAddress)) {
+    return limit / share.ownWeight;
+  }
+  const std::int64_t room = (static_cast<std::int64_t>(limit) - Others(player, id, share)) / share.ownWeight;
+  const std::int32_t result = room < 0 ? 0 : static_cast<std::int32_t>(room);
+  if (g_log && result != share.lastLogged && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    share.lastLogged = result;
+    uhc::Log(L"sharedBuildLimit: player %d, proto %d: room %d of %d (stock %d)", Field<std::int32_t>(player, 0), id, result,
+             limit, stock);
+  }
+  return result;
+}
+
+namespace uhc {
+
+Outcome ApplySharedBuildLimit(const Config& config) {
+  const Config::Args* args = config.First("sharedBuildLimit");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"sharedBuildLimit: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("sharedBuildLimit", {&sites::kBuildLimitEntry, &sites::kBuildCountEntry, &sites::kPlayerProtoEntry,
+                                      &sites::kBuildCountTooltip1, &sites::kBuildCountTooltip2, &sites::kProtoById, &sites::kXmlAttribute, &sites::kXmlText}) ||
+      !AddProtoTagHandler("SharedBuildLimitUnit", &ReadLimitUnit) ||
+      !AddProtoTagHandler("SharedBuildLimitUnitType", &ReadUnitType) ||
+      !AddProtoTagHandler("TeamBuildLimit", &ReadTeam) ||
+      !AddProtoTagHandler("UseSharedBuildLimit", &ReadUse) ||
+      !AddProtoTagHandler("SharedBuildLimitUnitTypes", &ReadUnitType) ||
+      !AddProtoTagHandler("SettlerBuildLimit", &ReadSettler) ||
+      !AddCivTagHandler("SettlerProtoName", &ReadSettlerProtoName) ||
+      !AddTechSubtype("EnableSharedBuildLimit", &ChangeEnabled) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
+      !RequestAbstractUnitType("LogicalTypeSettlerBuildLimit", &g_settlerType) ||
+      !WriteJmp(kLimitEntry, reinterpret_cast<const void*>(&UhcSharedLimitHook), 5)) {
+    return Outcome::kFailed;
+  }
+  for (const std::uint32_t call : kTooltipCounts) {
+    if (!WriteCall(call, reinterpret_cast<const void*>(&TooltipCount))) {
+      return Outcome::kFailed;
+    }
+  }
+  Log(L"sharedBuildLimit: the proto tags are on, the civ tag SettlerProtoName and the Data subtype "
+      L"EnableSharedBuildLimit");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/sharedlimit_hooks.asm
+
+```asm
+; sharedBuildLimit (src/features/sharedlimit.cpp). Entered through a jmp written over the stock code; it
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcSharedLimit PROTO STDCALL player:DWORD, protoUnit:DWORD, returnAddress:DWORD
+
+.data
+limitEntryNext  dd 004C7B64h    ; mov ecx,[esp+14h], the rest of the stock limit
+
+.code
+
+; Replaces 0x4C7B5F..0x4C7B63 (sub esp,10h / mov edx,ecx), the entry of the limit, thiscall(player,
+; proto), ret 4. No branch lands inside them.
+UhcSharedLimitHook PROC
+    TRACE_ONCE "sharedBuildLimit limit (0x4C7B5F)"
+    mov eax, dword ptr [esp+4]
+    mov edx, dword ptr [esp]
+    invoke UhcSharedLimit, ecx, eax, edx
+    ret 4
+UhcSharedLimitHook ENDP
+
+; The stock limit, for the helper: the two instructions the hook replaced, then the rest.
+UhcSharedLimitStock PROC
+    sub esp, 10h
+    mov edx, ecx
+    jmp limitEntryNext
+UhcSharedLimitStock ENDP
+
+END
+```
+
+## doNotQueue
+
+Contract: [doNotQueue](../porting-to-another-dll.md#donotqueue).
+
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+
+Sites: `ShipQueueAddCall` `0x85AD38` (5 B), `TrainQueueAddCall` `0x9CE81A` (5 B).
+
+### src/features/donotqueue.cpp
+
+```cpp
+// doNotQueue: <DoNotQueue/> in a proto trains it ahead of what waits in the building.
+//
+// The queue routine 0x9CE2BE adds each new Train action at the end of the unit's action list with
+// 0x494894 (the call at 0x9CE81A). The list is at [manager+14h]: +0 the count, +8 the pointers. It
+// also holds the unit's other actions (idle, Maintain...), and the building works on the first Train or
+// Research action of the list. After the stock add, the hook moves the new action before the first
+// of them, behind any action of a tagged proto, so those keep their order. An action already training
+// waits with its progress, and goes on when the tagged one is done. The proto IDs are read once and are
+// the same for every player.
+//
+// Shipments: the home city holds a queue of the cards sent, {data, count, capacity} at [hc+288h]. Only the
+// first entry advances, and the send 0x85A724 adds at the end with 0x857204 (the call at 0x85AD38). A card
+// whose tech has the stock flag DoNotQueue moves in the same way: before the first card without the flag.
+// What was on its way keeps its progress, as the entry holds it.
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <unordered_set>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+
+namespace {
+
+constexpr std::size_t kActionList = 0x14;
+constexpr std::uint8_t kResearchAction = 0x0C;
+constexpr std::uint8_t kTrainAction = 0x0D;
+constexpr int kMaxLogLines = 200;
+constexpr std::size_t kShipQueue = 0x288;
+constexpr std::int32_t kTechDoNotQueue = 0x1A;  // the flag's bit
+constexpr std::uintptr_t kGameGlobal = 0x00C66234;
+
+// Each entry owns its cost list and nothing points into an entry, so entries move as plain bytes.
+struct ShipEntry {
+  std::int32_t card;
+  std::int32_t tech;
+  float points;
+  float progress;
+  char cost[8];
+};
+static_assert(sizeof(ShipEntry) == 0x18);
+
+using AddActionFn = bool(__thiscall*)(char* manager, char* action, std::int32_t a, std::int32_t b, std::int32_t c);
+using ShipAddFn = std::int32_t(__thiscall*)(char* queue, const void* entry);
+using PlayerTechFn = const char*(__thiscall*)(const char* player, std::int32_t tech);
+using TechFlagFn = bool(__thiscall*)(const char* tech, std::int32_t bit);
+const auto kAddAction = reinterpret_cast<AddActionFn>(0x00494894);
+const auto kShipAdd = reinterpret_cast<ShipAddFn>(0x00857204);
+const auto kPlayerTech = reinterpret_cast<PlayerTechFn>(0x00511924);
+const auto kTechFlag = reinterpret_cast<TechFlagFn>(0x0044D863);
+
+std::unordered_set<std::int32_t> g_protos;  // filled while protos load, read-only after
+bool g_log = false;
+int g_logLines = 0;
+
+bool __cdecl ReadDoNotQueue(void*, const char*, char* proto) {
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(proto + 8);
+  g_protos.insert(id);
+  if (g_log) {
+    uhc::Log(L"doNotQueue: proto %d has the tag", id);
+  }
+  return true;
+}
+
+// The proto of a Train action, or -1: the first entry of [action+70h], 14h bytes each, +0 the proto ID.
+std::int32_t TrainProto(const char* action) {
+  if (static_cast<std::uint8_t>(action[0x60]) != kTrainAction ||
+      *reinterpret_cast<const std::int32_t*>(action + 0x74) <= 0) {
+    return -1;
+  }
+  return **reinterpret_cast<const std::int32_t* const*>(action + 0x70);
+}
+
+bool Tagged(const char* action) { return g_protos.count(TrainProto(action)) != 0; }
+
+bool InQueue(const char* action) {
+  const auto type = static_cast<std::uint8_t>(action[0x60]);
+  return type == kResearchAction || type == kTrainAction;
+}
+
+// Replaces the call of the add in the queue routine.
+bool __fastcall AddAction(char* manager, void*, char* action, std::int32_t a, std::int32_t b, std::int32_t c) {
+  if (!kAddAction(manager, action, a, b, c)) {
+    return false;
+  }
+  if (!Tagged(action)) {
+    return true;
+  }
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(manager + kActionList);
+  char** list = *reinterpret_cast<char***>(manager + kActionList + 8);
+  std::int32_t from = count - 1;
+  while (from >= 0 && list[from] != action) {
+    --from;
+  }
+  std::int32_t to = 0;
+  while (to < from && !InQueue(list[to])) {
+    ++to;
+  }
+  while (to < from && Tagged(list[to])) {
+    ++to;
+  }
+  if (from < 0 || to >= from) {
+    return true;
+  }
+  for (std::int32_t i = from; i > to; --i) {
+    list[i] = list[i - 1];
+  }
+  list[to] = action;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"doNotQueue: proto %d goes from place %d to place %d of %d", TrainProto(action), from, to, count);
+  }
+  return true;
+}
+
+template <typename T>
+T Field(const char* base, std::size_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+bool CardFirst(const char* hc, const ShipEntry& entry) {
+  const char* tech = kPlayerTech(Field<const char*>(hc, 0x08), entry.tech);
+  return tech != nullptr && kTechFlag(tech, kTechDoNotQueue);
+}
+
+// The home city screen's shipment models name their card by its place in the queue, on the local player's only.
+void MoveVisuals(const char* hc, std::int32_t to, std::int32_t from) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* player = Field<const char*>(hc, 0x08);
+  if (game == nullptr || player == nullptr || Field<std::int32_t>(game, 0x3C0) != Field<std::int32_t>(player, 0x00)) {
+    return;
+  }
+  const char* scene = Field<const char*>(hc, 0xA4);
+  if (scene == nullptr) {
+    scene = hc;
+  }
+  char* const* models = Field<char* const*>(scene, 0x134);
+  const std::int32_t count = Field<std::int32_t>(scene, 0x138);
+  for (std::int32_t i = 0; i < count; ++i) {
+    if (models[i] != nullptr) {
+      auto* place = reinterpret_cast<std::int32_t*>(models[i] + 0x2C);
+      if (*place >= to && *place < from) {
+        ++*place;
+      }
+    }
+  }
+}
+
+// Replaces the call of the add in the send. Its result is the place of the new entry, which the send gives to
+// the shipment's models.
+std::int32_t __fastcall AddCard(char* queue, void*, const void* entry) {
+  const std::int32_t from = kShipAdd(queue, entry);
+  if (from <= 0) {
+    return from;
+  }
+  const char* hc = queue - kShipQueue;
+  auto* list = *reinterpret_cast<ShipEntry**>(queue);
+  if (!CardFirst(hc, list[from])) {
+    return from;
+  }
+  std::int32_t to = 0;
+  while (to < from && CardFirst(hc, list[to])) {
+    ++to;
+  }
+  if (to >= from) {
+    return from;
+  }
+  const ShipEntry moved = list[from];
+  std::memmove(list + to + 1, list + to, static_cast<std::size_t>(from - to) * sizeof(ShipEntry));
+  list[to] = moved;
+  MoveVisuals(hc, to, from);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"doNotQueue: card with tech %d goes from place %d to place %d of the shipments", moved.tech, from, to);
+  }
+  return to;
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyDoNotQueue(const Config& config) {
+  const Config::Args* args = config.First("doNotQueue");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"doNotQueue: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("doNotQueue", {&sites::kTrainQueueAddCall, &sites::kShipQueueAddCall}) ||
+      !AddProtoTagHandler("DoNotQueue", &ReadDoNotQueue) ||
+      !WriteCall(sites::kTrainQueueAddCall.va, reinterpret_cast<const void*>(&AddAction)) ||
+      !WriteCall(sites::kShipQueueAddCall.va, reinterpret_cast<const void*>(&AddCard))) {
+    return Outcome::kFailed;
+  }
+  Log(L"doNotQueue: the proto tag DoNotQueue and the cards with the tech flag DoNotQueue are on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## nextResearchFree
+
+Contract: [nextResearchFree](../porting-to-another-dll.md#nextresearchfree).
+
+Besides the core helpers, it needs: [`researchpay.h`](helpers.md#research-payment), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+### src/features/freeresearch.cpp
+
+```cpp
+// nextResearchFree: a tech effect type='Data' subtype='NextResearchIsFree' on a ProtoUnit target makes
+// the next research queued in a building of that proto free. SetNextResearchFree is the same subtype.
+//
+// A research is paid when its action starts: 0x8D946A at 0x9E67E1 (Research) and at 0x9D54CF
+// (CommandResearch). Each action then keeps a copy of the cost for the refund of a cancel (0x9E68A0,
+// 0x9D5548). Both go through the shared payment (researchpay.h). The effect adds its amount to a count
+// kept by the player's copy of the proto. With a count above 0 this key claims the payment with a share
+// of 0: the payment is skipped and the copy of the cost is emptied, so a cancel refunds nothing and spends
+// the count. The count is not in saved games: a load applies the tech's effects again, so it is back to
+// what the effects give.
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <unordered_map>
+
+#include "../features.h"
+#include "../log.h"
+#include "../researchpay.h"
+#include "../techsubtypes.h"
+#include "../unittypes.h"
+
+namespace {
+
+constexpr int kMaxLogLines = 200;
+
+std::unordered_map<const char*, std::int32_t> g_free;  // by the player's copy of the proto
+bool g_log = false;
+int g_logLines = 0;
+
+void LogLine(const wchar_t* what, const char* proto, std::int32_t count) {
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"nextResearchFree: proto %d: %ls, %d left", *reinterpret_cast<const std::int32_t*>(proto + 8), what, count);
+  }
+}
+
+void ChangeCount(char* proto, const char*, float amount, std::uint8_t, bool unapply) {
+  const std::int32_t delta = static_cast<std::int32_t>(std::lround(amount));
+  std::int32_t& count = g_free[proto];
+  count = unapply ? (count > delta ? count - delta : 0) : count + delta;
+  LogLine(unapply ? L"effect removed" : L"effect applied", proto, count);
+}
+
+void ForgetOnDataLoad(char*) { g_free.clear(); }
+
+// The proto of the unit that researches, the player's copy.
+const char* ProtoOf(const char* action) {
+  const char* unit = *reinterpret_cast<const char* const*>(action + 0x10);
+  return unit != nullptr ? *reinterpret_cast<const char* const*>(unit + 0x5C) : nullptr;
+}
+
+bool Claim(const char* researcher, const char*, const char*, float* share, bool) {
+  const char* proto = researcher != nullptr ? *reinterpret_cast<const char* const*>(researcher + 0x5C) : nullptr;
+  const auto found = proto != nullptr ? g_free.find(proto) : g_free.end();
+  if (found == g_free.end() || found->second <= 0) {
+    return false;
+  }
+  *share = 0.0f;
+  return true;
+}
+
+void Started(char* action, float, bool claimed) {
+  if (!claimed) {
+    return;
+  }
+  const char* proto = ProtoOf(action);
+  const auto found = proto != nullptr ? g_free.find(proto) : g_free.end();
+  if (found == g_free.end() || found->second <= 0) {
+    return;
+  }
+  --found->second;
+  LogLine(L"a free research", proto, found->second);
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyNextResearchFree(const Config& config) {
+  const Config::Args* args = config.First("nextResearchFree");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"nextResearchFree: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!AddResearchPayer("nextResearchFree", &Claim, &Started) || !AddTechSubtype("NextResearchIsFree", &ChangeCount) ||
+      !AddTechSubtype("SetNextResearchFree", &ChangeCount) || !OnDatabaseLoad(&ForgetOnDataLoad)) {
+    return Outcome::kFailed;
+  }
+  Log(L"nextResearchFree: the Data subtype NextResearchIsFree is on");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## researchGrants
+
+Contract: [researchGrants](../porting-to-another-dll.md#researchgrants).
+
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`prototags.h`](helpers.md#proto-tags), [`researchpay.h`](helpers.md#research-payment), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `BStringAppend` `0x443960` (16 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ButtonOverlayReset` `0x461DBC` (8 B), `TechButtonRollover` `0x4622B5` (21 B), `ButtonOverlayRead` `0x4625E2` (7 B), `ResListCopy` `0x480A73` (73 B), `ResListScale` `0x480B94` (126 B), `TechRolloverHead` `0x4C737C` (16 B), `TechTipCostCopy` `0x4C73F9` (9 B), `ResListFill` `0x4E2617` (11 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B), `CommandResearchProgressAdd` `0x9D58FF` (11 B), `ResearchProgressAdd` `0x9E6622` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
+
+### src/features/researchgrants.cpp
+
+```cpp
+// researchGrants: a building gathers "grant points" over game time, and each point makes one of its player's
+// researches cheaper or free.
+//
+//   <ResearchGrantInterval>240</ResearchGrantInterval>   game seconds per point; the proto has grants with it
+//   <ResearchGrantMax>3</ResearchGrantMax>               the cap of stored points (default 1)
+//   <ResearchGrantCost>0</ResearchGrantCost>             the share of the cost paid with a point (default 0, free)
+//   <ResearchGrantTime>1</ResearchGrantTime>             the research time factor with a point (default 1)
+//   <ResearchGrantScope>all</ResearchGrantScope>         all: a research in any of the player's buildings;
+//                                                        self: only one in this building (default all)
+//   <ResearchGrantMinCost>0</ResearchGrantMinCost>       a point goes on a research the player can pay only
+//                                                        when its total cost is at least this (default 0)
+//
+// The tags are read once, by proto ID, and are the same for every player. Three tech effects type="Data" act on
+// one player's copy of the proto: subtype="ResearchGrantInterval" and "ResearchGrantMax" change the interval and
+// the cap through the stock value function 0x7F892A (base: the tags), and "ResearchGrantPoints" gives that many
+// points at once to the player's built units of the proto, up to the cap.
+//
+// Points: the units of a tagged proto are found by a sweep of the world's unit table (a slice per world update,
+// the whole table when a game starts or loads, or when a ResearchGrantPoints effect needs them all). After each
+// world update (worldtick.h), each living, built one advances its timer by the game time [world+108h] that
+// passed and gains a point per interval, up to its cap; at the cap the timer waits at 0. The points and the timer
+// are a saved marker on the unit (savedmarkers.h, stat 66h), so a save keeps them and the unit's death loses
+// them. A transform in place ends the unit's markers: it starts again from 0.
+//
+// Spending, through the shared research payment (researchpay.h), after nextResearchFree: when a research is
+// paid, the paying player's tagged units with a point, in scope (self: the unit that researches), are the
+// candidates. A point goes on it when the tech's cost is above 0 (or its Time factor is not 1) and either the
+// player cannot pay the full cost (the stock check 0x8D6BAE, or 0x8D6C1B with shared resources) or the total
+// cost is at least ResearchGrantMinCost. The unit with most points pays (the lowest unit ID on a tie). The
+// payment takes the Cost share; a cancel refunds what was paid and never the point. A Time factor other than 1
+// divides each step of that research's progress (two hooks on the add of the step, hooks/researchgrant_hooks.asm),
+// remembered by researching unit and tech ID, and saved as a second kind of marker on that unit.
+//
+// What the player sees (display only): the rule is one function, Choose, which the claim runs for a payment and,
+// through PreviewResearchPay (researchpay.h, every key in the payment's order), for the command panel. A tech button
+// whose research would get a share below 1 shows the free word or the price after it (its overlay text, the buffer the
+// Buy buttons use), and its rollover the cost after the share and a green label; the hook of the panel's call of the
+// rollover builder at 0x4622C5 and of the builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
+// floating text over the paying building, to its owner (floatingtext.h). Options: notext, text=, noprice, free=, log.
+#include <windows.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "../features.h"
+#include "../floatingtext.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+#include "../researchpay.h"
+#include "../savedmarkers.h"
+#include "../techsubtypes.h"
+#include "../unitpanel.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+extern "C" {
+std::int32_t g_uhcGrantTimed = 0;  // researches with a Time factor in progress: the step hooks look only then
+void UhcGrantResearchStepHook();
+void UhcGrantCommandStepHook();
+void UhcGrantTechButtonHook();
+void UhcGrantTipCostHook();
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::int32_t kStat = 0x66;                  // savedmarkers.h: no other key uses it
+constexpr std::uint32_t kGrantWord = 0x52474E54;      // word 0 of a unit's points marker: 'RGNT'
+constexpr std::uint32_t kTimedWord = 0x52475449;      // word 0 of a research's Time factor marker: 'RGTI'
+constexpr std::int32_t kSweepSlots = 256;             // world table slots looked at per world update
+constexpr int kMaxLogLines = 300;
+
+using IsBuiltFn = bool(__thiscall*)(const char* unit);
+using IsAliveFn = bool(__thiscall*)(const char* unit);
+using AffordFn = bool(__thiscall*)(const char* player, const void* cost);
+using ResGetFn = float(__thiscall*)(const void* list, std::int32_t r);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
+const auto kAfford = reinterpret_cast<AffordFn>(0x008D6BAE);
+const auto kSharedAfford = reinterpret_cast<AffordFn>(0x008D6C1B);
+const auto kResGet = reinterpret_cast<ResGetFn>(0x0044EFFF);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+// The display (the tech button and its rollover)
+constexpr std::uint32_t kResListCount = 0x00C6DF38;  // the entries of every ResList
+using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
+using CostFillFn = void(__thiscall*)(void* cost, float value);
+using CostScaleFn = void(__thiscall*)(void* cost, float factor);
+using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
+const auto kCostCopy = reinterpret_cast<CostCopyFn>(0x00480A73);
+const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
+const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
+const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+struct Tags {
+  float interval = 0.0f;  // seconds; 0: no grants
+  float max = 1.0f;
+  float cost = 0.0f;
+  float time = 1.0f;
+  bool self = false;
+  float minCost = 0.0f;
+};
+std::map<std::int32_t, Tags> g_tags;  // by proto ID; the data load fills it
+
+struct TechValues {
+  std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
+  float interval;
+  float max;
+};
+std::unordered_map<const char*, TechValues> g_tech;  // by the player's copy of the proto; lookups only
+
+struct PendingPoints {
+  const char* copy;
+  std::int32_t id;
+  std::int32_t points;
+};
+std::vector<PendingPoints> g_pendingPoints;  // ResearchGrantPoints effects, for the next world tick
+
+std::set<std::int32_t> g_units;  // unit IDs of tagged protos, in ID order: the same walk on every machine
+std::map<std::pair<std::int32_t, std::int32_t>, float> g_timed;  // (researching unit ID, tech ID) -> factor
+std::vector<std::pair<std::int32_t, std::int32_t>> g_timedChanged;  // whose marker the next tick writes
+
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
+std::int32_t g_cursor = 0;
+bool g_checkTags = true;
+
+struct Claim {
+  std::int32_t unit = -1;  // the unit that pays a point
+  float time = 1.0f;
+  float cost = 0.0f;
+};
+Claim g_claim;
+
+bool g_log = false;
+int g_logLines = 0;
+
+// What the local player sees (display only: none of it feeds the simulation).
+constexpr std::uint32_t kTextColour = 0xFF60FF60;  // ARGB
+constexpr float kTextLife = 3.0f;                  // three times the dodge text's life: a research is rarer
+bool g_text = true;                // the floating text over the building that pays a point
+std::wstring g_customText;         // text=<text>: instead of the label
+std::int32_t g_textStringId = -1;  // text=<string table ID>
+bool g_price = true;               // the price on the tech button and in its rollover
+std::string g_freeWord = "Free";   // free=<text>: the button's word for a research that costs nothing
+
+bool LogOk() {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return false;
+  }
+  ++g_logLines;
+  return true;
+}
+
+const char* MainWorld() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  char* unit = Field<char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+bool IsAlive(const char* unit) { return (*reinterpret_cast<IsAliveFn const* const*>(unit))[0xA4 / 4](unit); }
+
+std::int32_t ProtoId(const char* proto) { return Field<std::int32_t>(proto, 8); }
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+const Tags* TagsOf(const char* proto) {
+  if (proto == nullptr) {
+    return nullptr;
+  }
+  const auto found = g_tags.find(ProtoId(proto));
+  return found != g_tags.end() && found->second.interval > 0.0f ? &found->second : nullptr;
+}
+
+const TechValues* TechOf(const char* copy) {
+  if (g_tech.empty()) {
+    return nullptr;
+  }
+  const auto found = g_tech.find(copy);
+  return found != g_tech.end() && found->second.id == ProtoId(copy) ? &found->second : nullptr;
+}
+
+// The player's values: the tags, as the techs left them. At least 1 s, and a cap of at least 0.
+std::uint32_t IntervalMs(const char* copy, const Tags& tags) {
+  const TechValues* tech = TechOf(copy);
+  const float seconds = tech != nullptr ? tech->interval : tags.interval;
+  return seconds < 1.0f ? 1000u : static_cast<std::uint32_t>(std::lround(seconds * 1000.0f));
+}
+
+std::int32_t Cap(const char* copy, const Tags& tags) {
+  const TechValues* tech = TechOf(copy);
+  const long cap = std::lround(tech != nullptr ? tech->max : tags.max);
+  return cap < 0 ? 0 : static_cast<std::int32_t>(cap);
+}
+
+// --- Tags -----------------------------------------------------------------------------------------------------
+
+const wchar_t* NodeText(const char* node) { return *reinterpret_cast<const wchar_t* const*>(node + 0x14); }
+
+bool ReadNumber(const char* node, char* proto, const wchar_t* tag, float low, float high, float* out) {
+  const wchar_t* text = NodeText(node);
+  wchar_t* end = nullptr;
+  const double value = text != nullptr ? std::wcstod(text, &end) : 0.0;
+  if (text == nullptr || end == text || !(value >= low) || !(value <= high)) {
+    uhc::Log(L"researchGrants: proto %d (%hs): <%ls> needs a number from %g to %g, not \"%ls\"; ignored",
+             ProtoId(proto), ProtoName(proto), tag, static_cast<double>(low), static_cast<double>(high),
+             text != nullptr ? text : L"");
+    return false;
+  }
+  *out = static_cast<float>(value);
+  if (g_log) {
+    uhc::Log(L"researchGrants: proto %d (%hs): %ls %g", ProtoId(proto), ProtoName(proto), tag, value);
+  }
+  return true;
+}
+
+bool __cdecl ReadInterval(void*, const char* node, char* proto) {
+  float value = 0.0f;
+  if (ReadNumber(node, proto, L"ResearchGrantInterval", 1.0f, 36000.0f, &value)) {
+    g_tags[ProtoId(proto)].interval = value;
+  }
+  return true;
+}
+
+bool __cdecl ReadMax(void*, const char* node, char* proto) {
+  float value = 0.0f;
+  if (ReadNumber(node, proto, L"ResearchGrantMax", 1.0f, 1000.0f, &value)) {
+    g_tags[ProtoId(proto)].max = std::floor(value);
+  }
+  return true;
+}
+
+bool __cdecl ReadCost(void*, const char* node, char* proto) {
+  float value = 0.0f;
+  if (ReadNumber(node, proto, L"ResearchGrantCost", 0.0f, 1.0f, &value)) {
+    g_tags[ProtoId(proto)].cost = value;
+  }
+  return true;
+}
+
+bool __cdecl ReadTime(void*, const char* node, char* proto) {
+  float value = 0.0f;
+  if (ReadNumber(node, proto, L"ResearchGrantTime", 0.01f, 100.0f, &value)) {
+    g_tags[ProtoId(proto)].time = value;
+  }
+  return true;
+}
+
+bool __cdecl ReadMinCost(void*, const char* node, char* proto) {
+  float value = 0.0f;
+  if (ReadNumber(node, proto, L"ResearchGrantMinCost", 0.0f, 1.0e7f, &value)) {
+    g_tags[ProtoId(proto)].minCost = value;
+  }
+  return true;
+}
+
+bool __cdecl ReadScope(void*, const char* node, char* proto) {
+  const wchar_t* text = NodeText(node);
+  if (text != nullptr && (_wcsicmp(text, L"all") == 0 || _wcsicmp(text, L"self") == 0)) {
+    g_tags[ProtoId(proto)].self = _wcsicmp(text, L"self") == 0;
+    if (g_log) {
+      uhc::Log(L"researchGrants: proto %d (%hs): ResearchGrantScope %ls", ProtoId(proto), ProtoName(proto), text);
+    }
+  } else {
+    uhc::Log(L"researchGrants: proto %d (%hs): <ResearchGrantScope> is all or self, not \"%ls\"; ignored",
+             ProtoId(proto), ProtoName(proto), text != nullptr ? text : L"");
+  }
+  return true;
+}
+
+// --- Tech subtypes --------------------------------------------------------------------------------------------
+
+TechValues* TechSlot(char* copy, const char* base) {
+  const auto tag = g_tags.find(ProtoId(base));
+  if (tag == g_tags.end() || tag->second.interval <= 0.0f) {
+    return nullptr;
+  }
+  auto inserted = g_tech.emplace(copy, TechValues{ProtoId(copy), tag->second.interval, tag->second.max});
+  if (inserted.first->second.id != ProtoId(copy)) {
+    inserted.first->second = TechValues{ProtoId(copy), tag->second.interval, tag->second.max};
+  }
+  return &inserted.first->second;
+}
+
+void ChangeValue(char* copy, const char* base, float amount, std::uint8_t relativity, bool unapply, bool interval) {
+  TechValues* slot = TechSlot(copy, base);
+  const wchar_t* name = interval ? L"ResearchGrantInterval" : L"ResearchGrantMax";
+  if (slot == nullptr) {
+    uhc::Log(L"researchGrants: tech subtype %ls on proto %d (%hs), which has no <ResearchGrantInterval>; ignored",
+             name, ProtoId(copy), ProtoName(copy));
+    return;
+  }
+  const Tags& tags = g_tags[ProtoId(base)];
+  float* field = interval ? &slot->interval : &slot->max;
+  const float before = *field;
+  kEffectValue(relativity, field, interval ? tags.interval : tags.max, amount, unapply);
+  if (LogOk()) {
+    uhc::Log(L"researchGrants: proto %d, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g", ProtoId(copy), name,
+             relativity, static_cast<double>(amount), unapply ? L" (removed)" : L"", static_cast<double>(before),
+             static_cast<double>(*field));
+  }
+}
+
+void ChangeInterval(char* copy, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeValue(copy, base, amount, relativity, unapply, true);
+}
+
+void ChangeMax(char* copy, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeValue(copy, base, amount, relativity, unapply, false);
+}
+
+void GivePoints(char* copy, const char* base, float amount, std::uint8_t, bool unapply) {
+  const long points = std::lround(amount);
+  if (unapply || points == 0) {
+    return;  // points given are kept
+  }
+  const auto tag = g_tags.find(ProtoId(base));
+  if (tag == g_tags.end() || tag->second.interval <= 0.0f) {
+    uhc::Log(L"researchGrants: tech subtype ResearchGrantPoints on proto %d (%hs), which has no "
+             L"<ResearchGrantInterval>; ignored",
+             ProtoId(copy), ProtoName(copy));
+    return;
+  }
+  g_pendingPoints.push_back({copy, ProtoId(copy), static_cast<std::int32_t>(points)});
+}
+
+void ForgetOnDataLoad(char*) {
+  g_tech.clear();
+  g_pendingPoints.clear();
+  g_units.clear();
+  g_timed.clear();
+  g_timedChanged.clear();
+  g_uhcGrantTimed = 0;
+  g_world = nullptr;
+  g_cursor = 0;
+  g_checkTags = true;
+  g_claim = Claim{};
+}
+
+// --- Markers --------------------------------------------------------------------------------------------------
+
+char* GrantMarker(const char* unit) { return uhc::markers::Find(unit, kStat, kGrantWord); }
+
+char* TakeGrantMarker(char* unit) {
+  if (char* marker = GrantMarker(unit)) {
+    return marker;
+  }
+  char* marker = uhc::markers::Take(unit, kStat);
+  if (marker != nullptr) {
+    uhc::markers::Word(marker, 0) = kGrantWord;
+  }
+  return marker;
+}
+
+std::int32_t PointsOf(const char* unit) {
+  char* marker = GrantMarker(unit);
+  return marker != nullptr ? static_cast<std::int32_t>(uhc::markers::Word(marker, 1)) : 0;
+}
+
+char* TimedMarker(const char* unit, std::int32_t tech) {
+  char* found = nullptr;
+  uhc::markers::ForEach(unit, kStat, [&](char* marker) {
+    if (uhc::markers::Word(marker, 0) != kTimedWord || static_cast<std::int32_t>(uhc::markers::Word(marker, 1)) != tech) {
+      return true;
+    }
+    found = marker;
+    return false;
+  });
+  return found;
+}
+
+void SetTimed(std::int32_t unit, std::int32_t tech, float factor) {
+  const auto key = std::make_pair(unit, tech);
+  if (factor == 1.0f) {
+    if (g_timed.erase(key) == 0) {
+      return;
+    }
+  } else {
+    g_timed[key] = factor;
+  }
+  g_uhcGrantTimed = static_cast<std::int32_t>(g_timed.size());
+  g_timedChanged.push_back(key);
+}
+
+// The marker of each research whose factor changed: written, or freed once it is gone.
+void WriteTimedMarkers(const char* world) {
+  for (const auto& key : g_timedChanged) {
+    char* unit = UnitById(world, key.first);
+    if (unit == nullptr) {
+      continue;
+    }
+    const auto timed = g_timed.find(key);
+    char* marker = TimedMarker(unit, key.second);
+    if (timed == g_timed.end()) {
+      if (marker != nullptr) {
+        uhc::markers::Free(marker);
+      }
+      continue;
+    }
+    if (marker == nullptr) {
+      marker = uhc::markers::Take(unit, kStat);
+    }
+    if (marker != nullptr) {
+      uhc::markers::Word(marker, 0) = kTimedWord;
+      uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(key.second);
+      std::memcpy(&uhc::markers::Word(marker, 2), &timed->second, sizeof(float));
+    }
+  }
+  g_timedChanged.clear();
+}
+
+// --- The units ------------------------------------------------------------------------------------------------
+
+void Consider(const char* unit) {
+  if (unit != nullptr && TagsOf(Field<const char*>(unit, 0x5C)) != nullptr && IsAlive(unit)) {
+    g_units.insert(Field<std::int32_t>(unit, 0x10));
+  }
+}
+
+void SweepAll(const char* world) {
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* table = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+    Consider(table[i]);
+  }
+}
+
+void SweepSlice(const char* world) {
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* table = Field<char* const*>(world, 0x0C);
+  if (table == nullptr || count <= 0) {
+    return;
+  }
+  for (std::int32_t n = 0; n < kSweepSlots && n < count; ++n) {
+    if (g_cursor >= count) {
+      g_cursor = 0;
+    }
+    Consider(table[g_cursor++]);
+  }
+}
+
+void CheckTags() {
+  g_checkTags = false;
+  for (const auto& [id, tags] : g_tags) {
+    if (tags.interval <= 0.0f) {
+      uhc::Log(L"researchGrants: proto %d has research grant tags but no valid <ResearchGrantInterval>: no grants", id);
+    }
+  }
+}
+
+// A game that just started or loaded: its units, and the Time factors its markers keep. One walk.
+void Rebuild(const char* world) {
+  g_units.clear();
+  g_timed.clear();
+  g_timedChanged.clear();
+  g_cursor = 0;
+  g_claim = Claim{};
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* table = Field<char* const*>(world, 0x0C);
+  std::int32_t points = 0;
+  for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+    const char* unit = table[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    Consider(unit);
+    if (g_units.count(Field<std::int32_t>(unit, 0x10)) != 0) {
+      points += PointsOf(unit);
+    }
+    const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+    uhc::markers::ForEach(unit, kStat, [&](char* marker) {
+      if (uhc::markers::Word(marker, 0) == kTimedWord) {
+        float factor = 1.0f;
+        std::memcpy(&factor, &uhc::markers::Word(marker, 2), sizeof(float));
+        g_timed[{id, static_cast<std::int32_t>(uhc::markers::Word(marker, 1))}] = factor;
+      }
+      return true;
+    });
+  }
+  g_uhcGrantTimed = static_cast<std::int32_t>(g_timed.size());
+  if (!g_units.empty() || !g_timed.empty()) {
+    uhc::Log(L"researchGrants: %u unit(s) with grants, %d point(s) and %u research(es) with a Time factor in this game",
+             static_cast<unsigned>(g_units.size()), points, static_cast<unsigned>(g_timed.size()));
+  }
+}
+
+// The game time since the last tick; a new game rebuilds the tables and gives 0.
+std::uint32_t Sync(const char* world) {
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
+  const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;
+  const std::uint32_t elapsed = sameGame ? now - g_lastTime : 0;
+  if (!sameGame) {
+    g_world = world;
+    Rebuild(world);
+  }
+  g_lastTime = now;
+  g_lastStep = step;
+  return elapsed;
+}
+
+void ApplyPendingPoints(const char* world) {
+  SweepAll(world);
+  for (const PendingPoints& pending : g_pendingPoints) {
+    for (const std::int32_t id : g_units) {
+      char* unit = UnitById(world, id);
+      if (unit == nullptr || Field<const char*>(unit, 0x5C) != pending.copy || ProtoId(pending.copy) != pending.id ||
+          !kIsBuilt(unit)) {
+        continue;
+      }
+      const Tags* tags = TagsOf(pending.copy);
+      char* marker = tags != nullptr ? TakeGrantMarker(unit) : nullptr;
+      if (marker == nullptr) {
+        continue;
+      }
+      const std::int32_t cap = Cap(pending.copy, *tags);
+      std::int32_t points = static_cast<std::int32_t>(uhc::markers::Word(marker, 1)) + pending.points;
+      points = points < 0 ? 0 : (points > cap ? cap : points);
+      uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(points);
+      if (points >= cap) {
+        uhc::markers::Word(marker, 2) = 0;
+      }
+      if (LogOk()) {
+        uhc::Log(L"researchGrants: unit %d (%hs) gets %d point(s) from a tech: %d/%d", id, ProtoName(pending.copy),
+                 pending.points, points, cap);
+      }
+    }
+  }
+  g_pendingPoints.clear();
+}
+
+void Tick(char* world, std::int32_t) {
+  if (world != MainWorld() || g_tags.empty()) {
+    return;
+  }
+  if (g_checkTags) {
+    CheckTags();
+  }
+  const std::uint32_t elapsed = Sync(world);
+  if (!g_pendingPoints.empty()) {
+    ApplyPendingPoints(world);
+  }
+  if (!g_timedChanged.empty()) {
+    WriteTimedMarkers(world);
+  }
+  SweepSlice(world);
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  for (auto it = g_units.begin(); it != g_units.end();) {
+    char* unit = UnitById(world, *it);
+    const char* copy = unit != nullptr ? Field<const char*>(unit, 0x5C) : nullptr;
+    const Tags* tags = TagsOf(copy);
+    if (unit == nullptr || tags == nullptr || !IsAlive(unit)) {
+      if (LogOk()) {
+        uhc::Log(L"researchGrants: unit %d is gone or no longer has grants (game time %u ms)", *it, now);
+      }
+      it = g_units.erase(it);
+      continue;
+    }
+    if (!kIsBuilt(unit)) {
+      ++it;
+      continue;
+    }
+    char* marker = TakeGrantMarker(unit);
+    if (marker == nullptr) {
+      ++it;
+      continue;
+    }
+    const std::int32_t cap = Cap(copy, *tags);
+    const std::uint32_t interval = IntervalMs(copy, *tags);
+    std::int32_t points = static_cast<std::int32_t>(uhc::markers::Word(marker, 1));
+    std::uint32_t progress = uhc::markers::Word(marker, 2);
+    if (points >= cap) {
+      points = cap;
+      progress = 0;
+    } else {
+      progress += elapsed;
+      while (progress >= interval && points < cap) {
+        progress -= interval;
+        ++points;
+        if (LogOk()) {
+          uhc::Log(L"researchGrants: unit %d (%hs) has %d/%d point(s) (game time %u ms)", *it, ProtoName(copy), points,
+                   cap, now);
+        }
+      }
+      if (points >= cap) {
+        progress = 0;
+      }
+    }
+    uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(points);
+    uhc::markers::Word(marker, 2) = progress;
+    ++it;
+  }
+}
+
+// --- Spending -------------------------------------------------------------------------------------------------
+
+float TotalCost(const char* cost) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* database = game != nullptr ? Field<const char*>(game, 0x140) : nullptr;
+  const std::int32_t count = database != nullptr ? Field<std::int32_t>(database, 0x80) : 0;
+  float total = 0.0f;
+  for (std::int32_t r = 0; r < count; ++r) {
+    total += kResGet(cost, r);
+  }
+  return total;
+}
+
+bool CanPay(const char* world, const char* player, const char* cost) {
+  return Field<std::uint8_t>(world, 0x6912) != 0 ? kSharedAfford(player, cost) : kAfford(player, cost);
+}
+
+struct Choice {
+  std::int32_t unit = -1;  // the unit that would pay a point
+  const Tags* tags = nullptr;
+};
+Choice g_preview;  // the last choice a preview found (display only)
+
+// The rule of a point, for the payment and for the display alike: the paying player's candidates, in scope, and
+// the one with most points (the lowest unit ID on a tie, as g_units is in ID order). Reads only.
+Choice Choose(const char* world, const char* player, const char* researcher, const char* cost) {
+  const std::int32_t playerId = Field<std::int32_t>(player, 0);
+  const float total = TotalCost(cost);
+  int canPay = -1;  // asked once, when a candidate needs it
+  std::int32_t best = -1;
+  std::int32_t bestPoints = 0;
+  const Tags* bestTags = nullptr;
+  for (const std::int32_t id : g_units) {
+    const char* unit = UnitById(world, id);
+    const char* owner = unit != nullptr ? Field<const char*>(unit, 0x44) : nullptr;
+    if (owner == nullptr || Field<std::int32_t>(owner, 0) != playerId) {
+      continue;
+    }
+    const Tags* tags = TagsOf(Field<const char*>(unit, 0x5C));
+    if (tags == nullptr || (tags->self && unit != researcher) || !IsAlive(unit) || !kIsBuilt(unit)) {
+      continue;
+    }
+    const std::int32_t points = PointsOf(unit);
+    if (points < 1 || points <= bestPoints || (!(total > 0.0f) && tags->time == 1.0f)) {
+      continue;
+    }
+    if (!(total >= tags->minCost)) {
+      if (canPay < 0) {
+        canPay = CanPay(world, player, cost) ? 1 : 0;
+      }
+      if (canPay == 1) {
+        continue;
+      }
+    }
+    best = id;
+    bestPoints = points;
+    bestTags = tags;
+  }
+  return Choice{bestTags != nullptr ? best : -1, bestTags};
+}
+
+bool ClaimGrant(const char* researcher, const char* player, const char* cost, float* share, bool preview) {
+  if (!preview) {
+    g_claim = Claim{};
+  }
+  const char* world = MainWorld();
+  if (world == nullptr || g_tags.empty() || player == nullptr) {
+    return false;
+  }
+  if (world != g_world) {
+    if (preview) {
+      return false;  // the first tick of this game has not run: the payment would rebuild the tables first
+    }
+    Sync(world);  // a research paid before the first tick of a loaded game
+  }
+  const Choice choice = Choose(world, player, researcher, cost);
+  if (choice.tags == nullptr) {
+    return false;
+  }
+  if (preview) {
+    g_preview = choice;
+  } else {
+    g_claim.unit = choice.unit;
+    g_claim.time = choice.tags->time;
+    g_claim.cost = choice.tags->cost;
+  }
+  *share = choice.tags->cost;
+  return true;
+}
+
+// --- What the local player sees ------------------------------------------------------------------------------
+
+// "Free research", "Grant -50%" or "Research grant", and ", ×2 time" when the Time factor is not 1.
+std::wstring Label(float cost, float time) {
+  wchar_t text[64];
+  if (cost <= 0.0f) {
+    swprintf_s(text, L"Free research");
+  } else if (cost < 1.0f) {
+    swprintf_s(text, L"Grant -%d%%", static_cast<int>(std::lround((1.0f - cost) * 100.0f)));
+  } else {
+    swprintf_s(text, L"Research grant");
+  }
+  std::wstring label = text;
+  if (time != 1.0f) {
+    swprintf_s(text, L", ×%g time", static_cast<double>(time));
+    label += text;
+  }
+  return label;
+}
+
+// The floating text over the building that paid a point, for its owner only (floatingtext.h).
+void ShowGrantText(const char* unit, float cost, float time) {
+  const char* owner = Field<const char*>(unit, 0x44);
+  if (owner == nullptr || Field<std::int32_t>(owner, 0) != uhc::LocalPlayer() || !uhc::CanShowUnitText(unit)) {
+    return;
+  }
+  const std::wstring label = g_customText.empty() ? Label(cost, time) : g_customText;
+  const std::int32_t shown = uhc::ShowUnitText(unit, label.c_str(), g_textStringId, kTextColour, kTextLife);
+  if (LogOk()) {
+    uhc::Log(L"researchGrants: \"%ls\" shown over unit %d%ls", g_textStringId >= 0 ? L"(string)" : label.c_str(),
+             Field<std::int32_t>(unit, 0x10), shown < 0 ? L": refused by the engine" : L"");
+  }
+}
+
+struct Preview {
+  const char* key = nullptr;  // the key whose claim it would be; nullptr: the full price
+  float share = 1.0f;
+  Choice grant;               // when it is this key's: the unit and its tags
+};
+
+// The payment the research of this tech entry ([entry+10h] its cost, as the payment reads it) would get now:
+// the same question as the payment's, asked of every key in the same order (researchpay.h).
+Preview PreviewOf(const char* entry, const char* player, const char* unit) {
+  Preview preview;
+  if (!g_price || entry == nullptr || player == nullptr || g_tags.empty()) {
+    return preview;
+  }
+  g_preview = Choice{};
+  preview.key = uhc::PreviewResearchPay(unit, player, entry + 0x10, &preview.share);
+  if (preview.key != nullptr && std::strcmp(preview.key, "researchGrants") == 0) {
+    preview.grant = g_preview;
+  }
+  return preview;
+}
+
+std::int32_t TechIdOf(const char* entry) {
+  const char* node = Field<const char*>(entry, 0);
+  return node != nullptr ? Field<std::int32_t>(node, 0) : -1;
+}
+
+// A ResList laid out as the game's (researchpay.cpp): +0 the encoded entries, +4 the encoded total.
+struct ResList {
+  std::uint32_t* entries;
+  std::uint32_t total;
+};
+
+// The button's text: the free word, or the price after the share when it is one resource, else the discount.
+void ButtonText(const char* cost, float share, char* out, std::size_t size) {
+  if (share <= 0.0f) {
+    strncpy_s(out, size, g_freeWord.c_str(), _TRUNCATE);
+    return;
+  }
+  const auto* list = reinterpret_cast<const ResList*>(cost);
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(kResListCount);
+  std::int32_t paid = 0;
+  float amount = 0.0f;
+  if (list != nullptr && list->entries != nullptr && count > 0) {
+    std::vector<std::uint32_t> entries(list->entries, list->entries + count);
+    ResList scaled{entries.data(), list->total};
+    kCostScale(&scaled, share);
+    for (std::int32_t r = 0; r < count; ++r) {
+      const float value = kResGet(&scaled, r);
+      if (value > 0.0f) {
+        ++paid;
+        amount = value;
+      }
+    }
+  }
+  if (paid == 1) {
+    _snprintf_s(out, size, _TRUNCATE, "%d", static_cast<int>(std::lround(amount)));
+  } else {
+    _snprintf_s(out, size, _TRUNCATE, "-%d%%", static_cast<int>(std::lround((1.0f - share) * 100.0f)));
+  }
+}
+
+std::map<std::int32_t, std::int32_t> g_shownPrice;  // tech ID -> share in % last logged; display only
+
+void LogShown(std::int32_t tech, float share, const char* overlay) {
+  if (!g_log) {
+    return;
+  }
+  const std::int32_t percent = static_cast<std::int32_t>(std::lround(share * 100.0f));
+  const auto [it, added] = g_shownPrice.try_emplace(tech, percent);
+  if ((!added && it->second == percent) || !LogOk()) {
+    return;
+  }
+  it->second = percent;
+  uhc::Log(L"researchGrants: the button of tech %d shows %hs (cost x%.2f)", tech,
+           percent >= 100 ? "the full price" : overlay, static_cast<double>(share));
+}
+
+// text=: "Grant_used" (at most 127 characters; UTF-8, else ANSI; '_' for a space) or "90001" (a string table ID).
+bool ParseText(const std::string& text) {
+  if (text.empty()) {
+    return false;
+  }
+  if (text.find_first_not_of("0123456789") == std::string::npos) {
+    return text.size() <= 9 && (g_textStringId = std::atoi(text.c_str())) >= 0;
+  }
+  wchar_t wide[128];  // with its terminator
+  int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.c_str(), -1, wide, 128);
+  if (length == 0) {
+    length = MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, wide, 128);
+  }
+  if (length == 0) {
+    return false;
+  }
+  std::replace(wide, wide + length, L'_', L' ');
+  g_customText = wide;
+  return true;
+}
+
+void GrantStarted(char* action, float share, bool claimed) {
+  const char* world = MainWorld();
+  const char* researcher = Field<const char*>(action, 0x10);
+  if (world == nullptr || researcher == nullptr) {
+    return;
+  }
+  const std::int32_t researcherId = Field<std::int32_t>(researcher, 0x10);
+  const std::int32_t tech = Field<std::int32_t>(action, 0x68);
+  if (!claimed) {
+    SetTimed(researcherId, tech, 1.0f);  // the same tech again in this unit, without a point
+    return;
+  }
+  const Claim claim = g_claim;
+  g_claim = Claim{};
+  char* unit = UnitById(world, claim.unit);
+  char* marker = unit != nullptr ? GrantMarker(unit) : nullptr;
+  std::int32_t points = 0;
+  if (marker != nullptr) {
+    points = static_cast<std::int32_t>(uhc::markers::Word(marker, 1)) - 1;
+    uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(points < 0 ? 0 : points);
+  }
+  SetTimed(researcherId, tech, claim.time);
+  if (g_text && unit != nullptr) {
+    ShowGrantText(unit, claim.cost, claim.time);
+  }
+  if (LogOk()) {
+    uhc::Log(L"researchGrants: unit %d spends a point on tech %d in unit %d: cost x%.2f, time x%.2f, %d left (game "
+             L"time %u ms)",
+             claim.unit, tech, researcherId, static_cast<double>(share), static_cast<double>(claim.time), points,
+             Field<std::uint32_t>(world, 0x108));
+  }
+}
+
+bool __stdcall GrantRow(const char* panel, const char* unit) {
+  const char* copy = Field<const char*>(unit, 0x5C);
+  const Tags* tags = TagsOf(copy);
+  if (tags == nullptr) {
+    return false;
+  }
+  const std::int32_t cap = Cap(copy, *tags);
+  const std::uint32_t interval = IntervalMs(copy, *tags);
+  const char* marker = GrantMarker(unit);
+  const std::int32_t points = marker != nullptr ? static_cast<std::int32_t>(uhc::markers::Word(const_cast<char*>(marker), 1)) : 0;
+  const std::uint32_t progress = marker != nullptr ? uhc::markers::Word(const_cast<char*>(marker), 2) : 0;
+  wchar_t value[64];
+  if (!kIsBuilt(unit)) {
+    swprintf_s(value, L"%d/%d once built", points, cap);
+  } else if (points >= cap) {
+    swprintf_s(value, L"%d/%d (full)", points, cap);
+  } else {
+    const std::uint32_t left = progress < interval ? interval - progress : 0;
+    swprintf_s(value, L"%d/%d, next in %u s", points, cap, (left + 999) / 1000);
+  }
+  return uhc::SetUnitPanelRow(panel, L"Research grants", value);
+}
+
+}  // namespace
+
+// From the hook of the copy of a tech's cost into its rollover (0x4C73FD in the builder 0x4C737C): the cost the
+// rollover shows. A copy of the tech entry's own cost gets the share the payment would take now.
+extern "C" void* __stdcall UhcGrantTipCost(void* list, const void* from, const char* entry, const char* player,
+                                           const char* unit) {
+  void* result = kCostCopy(list, from);
+  if (entry == nullptr || from != entry + 0x10) {
+    return result;  // a cost the caller gave
+  }
+  const Preview preview = PreviewOf(entry, player, unit);
+  if (preview.key == nullptr || preview.share >= 1.0f) {
+    return result;
+  }
+  if (preview.share <= 0.0f) {
+    kCostFill(list, 0.0f);
+  } else {
+    kCostScale(list, preview.share);
+  }
+  return result;
+}
+
+// From the hook of the panel's call of that builder for a tech button (0x4622C5), once the rollover is built:
+// the button's overlay text (the panel's buffer, 256 chars, empty for a tech) and a line in the rollover.
+extern "C" void __stdcall UhcGrantTechButton(const char* entry, const char* player, const char* unit, void* rollover,
+                                             char* overlay) {
+  const Preview preview = PreviewOf(entry, player, unit);
+  if (preview.key == nullptr || (preview.share >= 1.0f && preview.grant.tags == nullptr)) {
+    if (g_log && entry != nullptr && g_shownPrice.count(TechIdOf(entry)) != 0) {
+      LogShown(TechIdOf(entry), 1.0f, "");
+    }
+    return;
+  }
+  if (preview.share < 1.0f && overlay != nullptr && overlay[0] == '\0') {
+    ButtonText(entry + 0x10, preview.share, overlay, 256);
+  }
+  const Tags* tags = preview.grant.tags;
+  const std::wstring line = L"\n<color=0.4, 1, 0.4>" +
+                            (tags != nullptr ? Label(tags->cost, tags->time) : Label(preview.share, 1.0f)) +
+                            L"</color>";
+  if (rollover != nullptr && *static_cast<void**>(rollover) != nullptr) {
+    kAppend(rollover, line.c_str(), -1, -1);
+  }
+  LogShown(TechIdOf(entry), preview.share, overlay != nullptr ? overlay : "");
+}
+
+// From the step hooks, while a research with a Time factor is in progress: the step of `action`, which adds to
+// [action+offset]; `entry` is its tech's status entry ([entry+18h] the research points).
+extern "C" float __stdcall UhcGrantResearchStep(const char* action, std::uint32_t offset, const char* entry, float step) {
+  const char* unit = Field<const char*>(action, 0x10);
+  if (unit == nullptr) {
+    return step;
+  }
+  const auto key = std::make_pair(Field<std::int32_t>(unit, 0x10), Field<std::int32_t>(action, 0x68));
+  const auto found = g_timed.find(key);
+  if (found == g_timed.end()) {
+    return step;
+  }
+  step /= found->second;
+  if (entry != nullptr && Field<float>(action, offset) + step >= Field<float>(entry, 0x18)) {
+    const char* world = MainWorld();
+    if (LogOk()) {
+      uhc::Log(L"researchGrants: tech %d in unit %d is done (game time %u ms)", key.second, key.first,
+               world != nullptr ? Field<std::uint32_t>(world, 0x108) : 0u);
+    }
+    SetTimed(key.first, key.second, 1.0f);
+  }
+  return step;
+}
+
+namespace uhc {
+
+Outcome ApplyResearchGrants(const Config& config) {
+  const Config::Args* args = config.First("researchGrants");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    const char* text = arg.c_str();
+    if (_stricmp(text, "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(text, "notext") == 0) {
+      g_text = false;
+    } else if (_stricmp(text, "noprice") == 0) {
+      g_price = false;
+    } else if (_strnicmp(text, "text=", 5) == 0) {
+      if (!ParseText(arg.substr(5))) {
+        Log(L"researchGrants: %hs: expected text=<text> (at most 127 characters, '_' for a space) or "
+            L"text=<string table ID>; feature not applied",
+            text);
+        return Outcome::kFailed;
+      }
+    } else if (_strnicmp(text, "free=", 5) == 0) {
+      if (arg.size() == 5 || arg.size() > 5 + 31) {
+        Log(L"researchGrants: %hs: expected free=<text> (1 to 31 characters, '_' for a space); feature not applied",
+            text);
+        return Outcome::kFailed;
+      }
+      g_freeWord = arg.substr(5);
+      std::replace(g_freeWord.begin(), g_freeWord.end(), '_', ' ');
+    } else {
+      Log(L"researchGrants: unknown option %hs (expected: [notext | text=<text>] [noprice] [free=<text>] [log]); "
+          L"feature not applied",
+          text);
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("researchGrants",
+                 {&sites::kResearchProgressAdd, &sites::kCommandResearchProgressAdd, &sites::kPayAffordCheck,
+                  &sites::kPaySharedAffordCheck, &sites::kResListGet, &sites::kIsBuilt, &sites::kUnitAliveSlot}) ||
+      (g_text && !VerifyFloatingText("researchGrants")) ||
+      (g_price && !VerifyAll("researchGrants price",
+                             {&sites::kTechButtonRollover, &sites::kButtonOverlayReset, &sites::kButtonOverlayRead,
+                              &sites::kTechRolloverHead, &sites::kTechTipCostCopy, &sites::kBStringAppend,
+                              &sites::kResListCopy, &sites::kResListScale, &sites::kResListFill})) ||
+      !AddResearchPayer("researchGrants", &ClaimGrant, &GrantStarted) ||
+      !AddProtoTagHandler("ResearchGrantInterval", &ReadInterval) || !AddProtoTagHandler("ResearchGrantMax", &ReadMax) ||
+      !AddProtoTagHandler("ResearchGrantCost", &ReadCost) || !AddProtoTagHandler("ResearchGrantTime", &ReadTime) ||
+      !AddProtoTagHandler("ResearchGrantScope", &ReadScope) ||
+      !AddProtoTagHandler("ResearchGrantMinCost", &ReadMinCost) ||
+      !AddTechSubtype("ResearchGrantInterval", &ChangeInterval) || !AddTechSubtype("ResearchGrantMax", &ChangeMax) ||
+      !AddTechSubtype("ResearchGrantPoints", &GivePoints) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
+      !AddWorldTick(&Tick) ||
+      !WriteJmp(sites::kResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantResearchStepHook), 6) ||
+      !WriteJmp(sites::kCommandResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantCommandStepHook), 6) ||
+      (g_price &&
+       (!WriteCall(sites::kTechButtonRollover.va + 0x10, reinterpret_cast<const void*>(&UhcGrantTechButtonHook)) ||
+        !WriteCall(sites::kTechTipCostCopy.va + 4, reinterpret_cast<const void*>(&UhcGrantTipCostHook))))) {
+    return Outcome::kFailed;
+  }
+  if (!AddUnitPanelRow(&GrantRow)) {
+    Log(L"researchGrants: no grant row in the unit panel");
+  }
+  Log(L"researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax "
+      L"and ResearchGrantPoints are on%ls%ls%ls (multiplayer unverified)",
+      g_price ? L"; the tech buttons show the price with a point" : L"",
+      g_text ? L"; a floating text over the building that pays a point" : L"", g_log ? L"; logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/researchgrant_hooks.asm
+
+```asm
+; researchGrants (src/features/researchgrants.cpp): the step of a research with a Time factor. Each hook replaces
+; `fadd dword ptr [esi+X] / fstp dword ptr [esi+X]` (6 bytes), the add of this update's step to the progress,
+; and continues at the call of the fraction that follows it, whose argument is already pushed. On entry ST0 is the
+; step (the only value on the x87 stack), ESI the action, ECX = ESI. With no such research in progress the step
+; is added as in stock; otherwise UhcGrantResearchStep gives the step to add. pushad / popad keep every register.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcGrantResearchStep PROTO STDCALL action:DWORD, offs:DWORD, entry:DWORD, stp:DWORD
+UhcGrantTechButton PROTO STDCALL entry:DWORD, player:DWORD, unit:DWORD, rollover:DWORD, overlay:DWORD
+UhcGrantTipCost PROTO STDCALL list:DWORD, from:DWORD, entry:DWORD, player:DWORD, unit:DWORD
+EXTERN g_uhcGrantTimed:DWORD
+
+.data
+kResearchStepBack dd 009E6628h  ; call 9E5F19h, the Research fraction
+kCommandStepBack  dd 009D5905h  ; call 9D539Bh, the CommandResearch fraction
+kTechRollover     dd 004C737Ch  ; the tech rollover builder, cdecl with 8 arguments
+
+.code
+
+; 0x9E6622 in the Research update FUN_009E648B: the progress is [esi+6Ch], EBX the tech's status entry.
+UhcGrantResearchStepHook PROC
+    TRACE_ONCE "researchGrants research step (0x9E6622)"
+    cmp g_uhcGrantTimed, 0
+    je add_step
+    sub esp, 4
+    fstp dword ptr [esp]
+    pushad
+    push dword ptr [esp+32]
+    push ebx
+    push 6Ch
+    push esi
+    call UhcGrantResearchStep
+    popad
+    add esp, 4
+add_step:
+    fadd dword ptr [esi+6Ch]
+    fstp dword ptr [esi+6Ch]
+    jmp dword ptr [kResearchStepBack]
+UhcGrantResearchStepHook ENDP
+
+; 0x9D58FF in the CommandResearch update FUN_009D5843: the progress is [esi+70h], EDI the tech's status entry.
+UhcGrantCommandStepHook PROC
+    TRACE_ONCE "researchGrants command research step (0x9D58FF)"
+    cmp g_uhcGrantTimed, 0
+    je add_step
+    sub esp, 4
+    fstp dword ptr [esp]
+    pushad
+    push dword ptr [esp+32]
+    push edi
+    push 70h
+    push esi
+    call UhcGrantResearchStep
+    popad
+    add esp, 4
+add_step:
+    fadd dword ptr [esi+70h]
+    fstp dword ptr [esi+70h]
+    jmp dword ptr [kCommandStepBack]
+UhcGrantCommandStepHook ENDP
+
+; The price shown (display only). Replaces the call of the tech rollover builder 0x4C737C at 0x4622C5 in the
+; command panel refresh FUN_0046188E. Entry: the 8 cdecl arguments at [esp+4]..[esp+20h] (the rollover, the tech
+; entry, the player, the unit, 1, 0, 1, 1); the panel's ESP before it pushed them is ESP+24h here, so the button's
+; overlay text [esp+2C0h] there is [esp+2E4h]. Calls the builder with the same arguments, then
+; UhcGrantTechButton. The panel cleans the arguments (add esp,20h) and reloads EAX, ECX and EDX before use;
+; EBX, ESI, EDI and EBP are kept by both calls.
+UhcGrantTechButtonHook PROC
+    TRACE_ONCE "researchGrants tech button (0x4622C5)"
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    call dword ptr [kTechRollover]
+    add esp, 20h
+    lea eax, [esp+2E4h]
+    push eax                    ; the overlay text
+    push dword ptr [esp+8]      ; the rollover
+    push dword ptr [esp+18h]    ; the unit
+    push dword ptr [esp+18h]    ; the player
+    push dword ptr [esp+18h]    ; the tech entry
+    call UhcGrantTechButton
+    ret
+UhcGrantTechButtonHook ENDP
+
+; Replaces the call of the ResList copy 0x480A73 at 0x4C73FD in the rollover builder 0x4C737C, the copy of the
+; tech's cost into the list whose cost the rollover shows. ECX = that list, [esp+4] = the cost to copy; the
+; builder's ESP before it pushed it is ESP+8 here, so its arguments are the tech entry [esp+58h], the player
+; [esp+5Ch] and the unit [esp+60h]. UhcGrantTipCost copies and returns the list as the copy does (ret 4); the
+; builder keeps nothing in EAX, ECX or EDX across the call.
+UhcGrantTipCostHook PROC
+    TRACE_ONCE "researchGrants tech rollover cost (0x4C73FD)"
+    push dword ptr [esp+60h]    ; the unit
+    push dword ptr [esp+60h]    ; the player
+    push dword ptr [esp+60h]    ; the tech entry
+    push dword ptr [esp+10h]    ; the cost to copy
+    push ecx                    ; the list
+    call UhcGrantTipCost
+    ret 4
+UhcGrantTipCostHook ENDP
+
+END
+```
+
+## maintainWaitForPop
+
+Contract: [maintainWaitForPop](../porting-to-another-dll.md#maintainwaitforpop).
+
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `MaintainEpilogue` `0x493039` (7 B), `MaintainNotDone` `0x6AB180` (6 B), `MaintainCycleDone` `0x6AB264` (25 B), `MaintainSpawn` `0x6AB27D` (44 B), `MaintainRestart` `0x6AB2D1` (15 B), `MaintainGroupPopTest` `0x9E2B69` (113 B), `MaintainSpawnSetup` `0x9E2E35` (186 B), `MaintainSpawnPopTest` `0x9E2F79` (109 B), `MaintainSpawnPopTest2` `0x9E3110` (25 B).
+
+### src/features/maintain.cpp
+
+```cpp
+// maintainWaitForPop: a building's automatic production (the Maintain action: factory cannons,
+// the Ottoman Town Center's settlers, dock boats, native warriors, ...) keeps a finished unit while
+// its player has no population room, instead of losing it.
+//
+// Stock: the Maintain update FUN_00492F3E adds train points to [action+70h] every tick; when the
+// fraction [action+74h] reaches 1.0 it calls the spawn FUN_009E2DEF(this, [+64h] proto ID, [+68h]
+// units per cycle), whose population test stops before the first unit when it does not fit. The
+// update never looks at the result: a persistent action restarts its cycle from zero
+// (setState(14h)), a SingleUse one ends (setState(0Ah)), so a cycle that ends while the player is
+// housed produces nothing.
+//
+// The change: a hook just before the spawn call asks UhcMaintainPopBlocked, which repeats the
+// spawn's first-unit test with the engine's own getters. When that unit would not fit and the
+// building's proto has the marker unittype (default AbstractMaintainWaitForPop), the call and the
+// restart are skipped and the cycle stays complete; every later update comes back to the same
+// test, and the unit spawns on the first update with room. The hook is in hooks/maintain_hooks.asm.
+#include <cstdint>
+#include <cstring>
+#include <map>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" void UhcMaintainSpawnHook();
+
+namespace {
+
+// Engine layout (docs/engine-symbols.md, "Maintain (automatic production)").
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +140h database
+
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using PlayerProtoFn = char*(__thiscall*)(char* player, std::int32_t protoId);
+using ProtoBitFn = bool(__thiscall*)(const char* proto, std::int32_t bit);
+using PlayerCountFn = std::int32_t(__thiscall*)(char* player);
+
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kProtoHasAbstractBit = reinterpret_cast<ProtoBitFn>(0x0044CAC4);  // raw bitset [proto+30h]
+const auto kProtoHasFlag = reinterpret_cast<ProtoBitFn>(0x0045EE02);         // flags [proto+50h]
+const auto kPlayerPop = reinterpret_cast<PlayerCountFn>(0x0045805C);
+const auto kPlayerPopCap = reinterpret_cast<PlayerCountFn>(0x004581A1);  // includes basePop/extraPop
+
+constexpr std::int32_t kAbstractMonk = 0x5D;           // may reuse a unit with no population test
+constexpr std::int32_t kAllowOverPopCap = 0x9F;        // needs only cap - used > 0
+constexpr std::int32_t kAlwaysAllowOverPopCap = 0xA3;  // no population test
+
+// Database offsets of the proto IDs the spawn replaces with xpColonialMilitia ([db+609Ch]) once
+// the player has revolted: Settler, Coureur, SettlerWagon, CoureurCree.
+constexpr std::uint32_t kRevoltedIds[] = {0x5E1C, 0x6054, 0x6050, 0x6058};
+constexpr std::uint32_t kMilitiaId = 0x609C;
+
+std::int32_t g_markerType = -1;  // marker unittype ID, set on each database load; -1 before
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+char* Database() {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<char*>(game, 0x140);
+}
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+struct PopCheck {
+  bool blocked = false;
+  bool measured = false;        // pop, used and cap below were read
+  const char* proto = nullptr;  // the player's proto of the unit to spawn
+  std::int32_t pop = 0;
+  std::int32_t used = 0;
+  std::int32_t cap = 0;
+};
+
+// The first-unit test of FUN_009E2DEF (0x9E2E35..0x9E2EE9, 0x9E2F79..0x9E2FE2, 0x9E3110..0x9E311F)
+// and of the group spawn FUN_009E2AC8 (0x9E2B69..0x9E2BD5), in the engine's order and with its
+// 32-bit arithmetic. Every step that lets the stock call create a unit, or that the test does not
+// cover (AbstractMonk reuse, an empty cycle), answers "not blocked", so the stock call runs.
+PopCheck CheckFirstUnit(char* action) {
+  PopCheck check;
+  char* owner = Field<char*>(action, 0x10);
+  char* player = owner == nullptr ? nullptr : Field<char*>(owner, 0x44);
+  if (player == nullptr || Field<std::int32_t>(action, 0x68) < 1) {
+    return check;
+  }
+  const char* ownerProto = Field<const char*>(owner, 0x5C);
+  if (g_markerType < 0 || ownerProto == nullptr || !kProtoIsType(ownerProto, g_markerType)) {
+    return check;
+  }
+  std::int32_t protoId = Field<std::int32_t>(action, 0x64);
+  const char* database = Database();
+  if (Field<std::uint8_t>(player, 0x50A) != 0 && database != nullptr) {
+    for (std::uint32_t offset : kRevoltedIds) {
+      if (protoId == Field<std::int32_t>(database, offset)) {
+        protoId = Field<std::int32_t>(database, kMilitiaId);
+        break;
+      }
+    }
+  }
+  check.proto = kPlayerProto(player, protoId);
+  if (check.proto == nullptr || kProtoHasAbstractBit(check.proto, kAbstractMonk)) {
+    return check;
+  }
+  check.pop = Field<std::int32_t>(check.proto, 0xD8);
+  if (check.pop <= 0 || kProtoHasFlag(check.proto, kAlwaysAllowOverPopCap)) {
+    return check;
+  }
+  const std::uint32_t used = Field<std::uint32_t>(player, 0x78) + static_cast<std::uint32_t>(kPlayerPop(player));
+  const std::uint32_t cap = static_cast<std::uint32_t>(kPlayerPopCap(player));
+  check.used = static_cast<std::int32_t>(used);
+  check.cap = static_cast<std::int32_t>(cap);
+  check.measured = true;
+  if (kProtoHasFlag(check.proto, kAllowOverPopCap)) {
+    check.blocked = static_cast<std::int32_t>(cap - used) <= 0;
+  } else {
+    check.blocked = check.cap < static_cast<std::int32_t>(used + static_cast<std::uint32_t>(check.pop));
+  }
+  return check;
+}
+
+// "maintainWaitForPop ... log": the actions holding a unit, with their building's unit ID (an
+// action freed with its building may be reused at the same address). Logging only; cleared on
+// each database load.
+bool g_log = false;
+std::map<const char*, std::int32_t> g_held;
+
+void ClearHeld(char*) { g_held.clear(); }
+
+void LogTransition(const char* action, const PopCheck& check) {
+  const char* owner = Field<const char*>(action, 0x10);
+  const std::int32_t ownerId = owner == nullptr ? -1 : Field<std::int32_t>(owner, 0x10);
+  const char* ownerName = owner == nullptr ? "?" : ProtoName(Field<const char*>(owner, 0x5C));
+  const auto held = g_held.find(action);
+  const bool wasHeld = held != g_held.end() && held->second == ownerId;
+  if (check.blocked && !wasHeld) {
+    g_held[action] = ownerId;
+    uhc::Log(L"maintainWaitForPop: unit %d (%hs) holds a finished %hs (pop %d, %d of %d used)", ownerId, ownerName,
+             ProtoName(check.proto), check.pop, check.used, check.cap);
+  } else if (!check.blocked && wasHeld) {
+    g_held.erase(held);
+    if (check.measured) {
+      uhc::Log(L"maintainWaitForPop: unit %d (%hs) releases its %hs (pop %d, %d of %d used)", ownerId, ownerName,
+               ProtoName(check.proto), check.pop, check.used, check.cap);
+    } else {
+      uhc::Log(L"maintainWaitForPop: unit %d (%hs) releases its %hs", ownerId, ownerName, ProtoName(check.proto));
+    }
+  }
+}
+
+}  // namespace
+
+extern "C" {
+// Called from the hook with the Maintain action whose cycle is complete. True: the first unit
+// does not fit, so the hook keeps the cycle complete instead of calling the spawn. Reads only
+// simulation state.
+bool __stdcall UhcMaintainPopBlocked(char* action) {
+  const PopCheck check = CheckFirstUnit(action);
+  if (g_log) {
+    LogTransition(action, check);
+  }
+  return check.blocked;
+}
+}
+
+namespace uhc {
+
+Outcome ApplyMaintainWaitForPop(const Config& config) {
+  const Config::Args* args = config.First("maintainWaitForPop");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  std::string typeName = "AbstractMaintainWaitForPop";
+  bool typeGiven = false;
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else if (!typeGiven) {
+      typeName = arg;
+      typeGiven = true;
+    } else {
+      Log(L"maintainWaitForPop: unexpected argument %hs (expected: [UnitType] [log]); feature not applied",
+          arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+
+  if (!VerifyAll("maintainWaitForPop",
+                 {&sites::kMaintainCycleDone, &sites::kMaintainSpawn, &sites::kMaintainRestart,
+                  &sites::kMaintainNotDone, &sites::kMaintainEpilogue, &sites::kMaintainSpawnSetup,
+                  &sites::kMaintainSpawnPopTest, &sites::kMaintainSpawnPopTest2, &sites::kMaintainGroupPopTest})) {
+    return Outcome::kFailed;
+  }
+  if (!RequestAbstractUnitType(typeName.c_str(), &g_markerType)) {
+    return Outcome::kFailed;
+  }
+  g_log = log;
+  if (log && !OnDatabaseLoad(&ClearHeld)) {
+    return Outcome::kFailed;
+  }
+  if (!WriteJmp(sites::kMaintainSpawn.va, reinterpret_cast<const void*>(&UhcMaintainSpawnHook), 6)) {
+    return Outcome::kFailed;
+  }
+  Log(L"maintainWaitForPop: buildings of unittype %hs keep a finished Maintain unit until there is "
+      L"population room%ls (multiplayer unverified)",
+      typeName.c_str(), log ? L", holds and releases logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/maintain_hooks.asm
+
+```asm
+; Hook for maintainWaitForPop. Entered through a jmp written over the stock code; leaves through
+; an explicit jmp to a verified continuation (docs/engine-symbols.md, "Maintain (automatic
+; production)").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcMaintainPopBlocked PROTO STDCALL action:DWORD
+
+.data
+spawnNext       dd 006AB283h    ; push edx / push eax / call 9E2DEFh (spawn), then the restart
+notDone         dd 006AB180h    ; pop ebx / jmp 493039h: the update's "cycle not complete" exit
+
+.code
+
+; Replaces 0x6AB27D..0x6AB282 (mov edx,[esi+68h] / mov eax,[esi+64h]) in the cold chunk of the
+; Maintain update FUN_00492F3E, reached only by the fall-through of the "cycle complete" test
+; ([esi+74h] >= 1.0). ESI = the Maintain action, ECX = ESI (this of the spawn call), EBX pushed
+; by the chunk, FPU stack empty. When the first unit of the cycle does not fit in its player's
+; population and the building has the marker type, the cycle stays complete and the update leaves
+; as for an unfinished cycle: no spawn, no restart. Otherwise the stock spawn and restart run.
+UhcMaintainSpawnHook PROC
+    TRACE_ONCE "maintainWaitForPop (0x6AB27D)"
+    pushad
+    push esi
+    call UhcMaintainPopBlocked      ; AL = 1: hold the finished unit
+    test al, al
+    popad                           ; leaves the flags of the test
+    jne hold
+    mov edx, dword ptr [esi+68h]    ; stolen 0x6AB27D: units per cycle
+    mov eax, dword ptr [esi+64h]    ; stolen 0x6AB280: proto ID to spawn
+    jmp spawnNext
+hold:
+    mov eax, dword ptr [esi+6Ch]    ; train points of a whole cycle
+    mov dword ptr [esi+70h], eax    ; progress stays exactly complete; EAX is not read after
+    jmp notDone
+UhcMaintainSpawnHook ENDP
+
+END
+```
+
+## noTrainNearEnemyTC
+
+Contract: [noTrainNearEnemyTC](../porting-to-another-dll.md#notrainnearenemytc).
+
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `IsATrue` `0x44F139` (5 B), `PlayerByIdNull` `0x4649E1` (5 B), `PlayerIsEnemy` `0x484D2D` (32 B), `NoCorpseDoppleAliveCall` `0x4868FA` (21 B), `UnitsNearPoint` `0x4A1C55` (248 B), `UnitByIdNull` `0x4E2A35` (5 B), `FirstTcRuleLoop` `0x8CE9BE` (104 B), `TypeRuleQuery` `0x8CEA69` (34 B), `FirstTcRuleFilter` `0x8CEB45` (55 B), `TrainUpdateTrainer` `0x9EA2B2` (11 B), `WorkRateTrainCall` `0x9EA410` (20 B), `TrainRateScale` `0x9EA424` (19 B), `TrainEnqueueHead` `0x9EAC35` (6 B).
+
+### src/features/notrainneartc.cpp
+
+```cpp
+// noTrainNearEnemyTC <meters> [UnitType] [near <UnitType>|FirstTC ...] [nowarn | warn=<text>] [refuse] [log]:
+// a unit of the marker type (default AbstractDaimyo, the Daimyos and the Shogun) does not train
+// while it stands near an enemy's first Town Center, or near an enemy's building of a listed type.
+//
+// Stock: each player keeps the unit ID of its first Town Center, "FirstTC", at [player+4F0h].
+// Player::addUnit (FUN_0049874F) sets it when the first unit of the TownCenter proto joins the
+// player, and nothing clears it. placementrules.xml reads it through the keyword FirstTC: the
+// stock rule `distanceatleastfromtype player=enemy distance=65 FirstTC` keeps buildings 65 m
+// away from an enemy's first TC (evaluated by FUN_008CE935). Nothing limits a unit that trains:
+// a Daimyo can walk into the enemy base and train an army there.
+//
+// The Train update FUN_009EA28B adds the trainer's work rate (getter 0x9BFE33) times the game
+// speed and the civ's train rate to the queue's progress on every tick. The hook in
+// hooks/notrainneartc_hooks.asm asks UhcNoTrainBlocked first: when the trainer's proto has the
+// marker and an enemy's FirstTC is alive and less than <meters> away, the rate is 0.0, so the
+// queue keeps its progress and waits; it resumes when the trainer leaves or the TC dies. Nothing
+// is refunded or cancelled. The test is the placement rule's: each player's FirstTC through the
+// unit table, its owner's stance toward the trainer's player (0x484D2D, the rule's player=enemy)
+// and the distance from the TC to the trainer's position (the TC's vtable slot B8h, the rule's
+// distance call); the alive test (vtable slot A4h) is added, so a destroyed TC stops blocking.
+//
+// That distance (slot B8h -> B0h(own position, point)) is not centre to centre. For a proto with
+// flag bit 4 ([proto+50h]; the Town Center has it) 0x45EE55 is false and slot
+// 108h, 0x4A0ED5, measures from the point to the unit's obstruction footprint, the nearest of
+// its four edges, 0 inside it (0x485E35). Otherwise 0x485DBC takes the centre distance in x and z
+// minus the proto's larger obstruction radius times sqrt(2), at least 0. The trainer counts by
+// its centre, [trainer+14h].
+//
+// "near <UnitType>" (up to 4, "near FirstTC" being the default above) blocks near any enemy unit of
+// that type that is alive and built, through the placement rule's generic path: the world's
+// spatial query FUN_004A1C55(point, radius, 1, list), which returns the IDs of the units whose
+// distance to the point (their vtable slot B8h, the same distance as above) is at most the
+// radius, without walking the world's units. The list is the DLL's and is reused, so no tick
+// allocates once it has grown. The query fills the obstruction manager's scratch list
+// ([[world+260h]+4ECh]) and copies it out before it returns, as the placement rule's call does.
+//
+// The warning: while a trainer of the local player ([game+3C0h]) is held, the floating text of the
+// stock dodge (0x6A24FC..0x6A2604: the text manager [world+8A8h], 0x8023AE) appears over it at most
+// once every kWarnIntervalMs of game time, red and without the dodge's rise. Interface only: every
+// machine holds the same trainers, and only the owner's screen shows the text.
+//
+// With "refuse", a marked trainer in that place also takes no new unit: the head of the enqueue FUN_009EAC35
+// answers false before the cost is paid at 0x9EAF86, for the train command's three calls and 0x8D60EA.
+// What was queued before the trainer walked in keeps waiting, as without it.
+#include <windows.h>
+
+#include <algorithm>
+#include <charconv>
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../features.h"
+#include "../floatingtext.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+namespace {
+
+// Engine layout (docs/engine-symbols.md, "Training near an enemy Town Center").
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+constexpr std::uint32_t kWorldPlayerCount = 0x5C;  // players 0 (gaia) .. count - 1
+constexpr std::uint32_t kPlayerFirstTc = 0x4F0;    // unit ID of the player's first Town Center; -1 none
+constexpr std::uint32_t kAliveSlot = 0xA4;         // unit vtable: bool thiscall(unit)
+constexpr std::uint32_t kDistanceSlot = 0xB8;      // unit vtable: float thiscall(unit, const float* point)
+
+// The list FUN_004A1C55 fills (the engine's dynamic array: data, count, capacity).
+struct IdList {
+  std::int32_t* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using PlayerByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
+using UnitByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
+using IsEnemyFn = bool(__thiscall*)(const char* player, std::int32_t otherId);
+using UnitIsAliveFn = bool(__thiscall*)(const char* unit);
+using UnitDistanceFn = float(__thiscall*)(const char* unit, const float* point);
+using IsBuiltFn = bool(__thiscall*)(const char* unit);
+using UnitsNearFn = std::int32_t(__thiscall*)(char* world, const float* point, float radius, char precise, IdList* out);
+
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kIsEnemy = reinterpret_cast<IsEnemyFn>(0x00484D2D);
+const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
+const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
+
+constexpr float kMaxMeters = 1000.0f;
+constexpr unsigned kMaxLogLines = 1000;
+constexpr std::size_t kMaxNear = 4;
+constexpr std::int32_t kFirstTc = -2;                   // a "near" entry: the enemy's FirstTC
+constexpr std::uint32_t kWarnIntervalMs = 8000;         // game time between two warnings over a unit
+constexpr std::uint32_t kWarnColour = 0xFFFF4040;       // ARGB
+constexpr wchar_t kDefaultWarning[] = L"Too close to the enemy: training paused";
+
+float g_meters = 65.0f;
+bool g_log = false;  // "noTrainNearEnemyTC ... log": every pause and resume
+bool g_refuse = false;
+
+// What the trainers may not stand near: kFirstTc, or a unit type ID set on each data load.
+std::int32_t g_nearTypes[kMaxNear] = {kFirstTc, -1, -1, -1};
+std::string g_nearNames[kMaxNear] = {"FirstTC"};
+std::size_t g_nearCount = 1;
+
+bool g_warn = true;
+std::wstring g_warnText = kDefaultWarning;
+std::int32_t g_warnStringId = -1;
+
+IdList g_found = {nullptr, 0, 0};  // FUN_004A1C55's output, reused
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+template <typename Fn>
+Fn Virtual(const char* object, std::uint32_t slot) {
+  return reinterpret_cast<Fn>(Field<void* const*>(object, 0)[slot / 4]);
+}
+
+char* World() {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<char*>(game, 0x13C);
+}
+
+const char* ProtoName(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+std::int32_t PlayerIdOf(const char* unit) {
+  const char* player = Field<const char*>(unit, 0x44);
+  return player == nullptr ? -1 : Field<std::int32_t>(player, 0x00);
+}
+
+struct Nearest {
+  const char* tc = nullptr;  // the blocker (a FirstTC or a unit of a near type); null: none
+  std::int32_t player = -1;  // its owner's player ID
+  float distance = 0.0f;
+};
+
+// The nearest alive FirstTC whose owner is the enemy of the trainer's player. Reads only
+// simulation state, in player order, so every machine gets the same answer.
+Nearest NearestEnemyFirstTc(const char* trainer);
+
+// The nearest enemy unit of the type that is alive and built, at most g_meters from the trainer
+// (the spatial query's own test, to the unit's edge). Whether one exists does not depend on the
+// order of the query's list; only the logged one would.
+Nearest NearestEnemyOfType(const char* trainer, std::int32_t typeId) {
+  Nearest nearest;
+  const char* owner = Field<const char*>(trainer, 0x44);
+  char* world = World();
+  if (owner == nullptr || world == nullptr || typeId < 0) {
+    return nearest;
+  }
+  const std::int32_t ownerId = Field<std::int32_t>(owner, 0x00);
+  const auto* position = reinterpret_cast<const float*>(trainer + 0x14);
+  kUnitsNear(world, position, g_meters, 1, &g_found);
+  for (std::int32_t i = 0; i < g_found.count && g_found.data != nullptr; ++i) {
+    const char* unit = kUnitById(world, g_found.data[i]);
+    const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+    const char* unitOwner = unit == nullptr ? nullptr : Field<const char*>(unit, 0x44);
+    // Player 0 (Gaia: natives, treasures) is skipped, as the FirstTC loop starts at player 1.
+    if (proto == nullptr || unitOwner == nullptr || unitOwner == owner || Field<std::int32_t>(unitOwner, 0x00) == 0 ||
+        !kProtoIsType(proto, typeId) || !kIsEnemy(unitOwner, ownerId) ||
+        !Virtual<UnitIsAliveFn>(unit, kAliveSlot)(unit) || !kIsBuilt(unit)) {
+      continue;
+    }
+    const float distance = Virtual<UnitDistanceFn>(unit, kDistanceSlot)(unit, position);
+    if (distance < g_meters && (nearest.tc == nullptr || distance < nearest.distance)) {
+      nearest = {unit, Field<std::int32_t>(unitOwner, 0x00), distance};
+    }
+  }
+  return nearest;
+}
+
+// The nearest thing that holds the trainer, over the "near" entries; tc null if none.
+Nearest NearestBlocker(const char* trainer) {
+  Nearest best;
+  for (std::size_t i = 0; i < g_nearCount; ++i) {
+    const Nearest found = g_nearTypes[i] == kFirstTc ? NearestEnemyFirstTc(trainer)
+                                                     : NearestEnemyOfType(trainer, g_nearTypes[i]);
+    if (found.tc != nullptr && (best.tc == nullptr || found.distance < best.distance)) {
+      best = found;
+    }
+  }
+  return best;
+}
+
+Nearest NearestEnemyFirstTc(const char* trainer) {
+  Nearest nearest;
+  const char* owner = Field<const char*>(trainer, 0x44);
+  char* world = World();
+  if (owner == nullptr || world == nullptr) {
+    return nearest;
+  }
+  const std::int32_t ownerId = Field<std::int32_t>(owner, 0x00);
+  const auto* position = reinterpret_cast<const float*>(trainer + 0x14);
+  const std::int32_t players = Field<std::int32_t>(world, kWorldPlayerCount);
+  for (std::int32_t id = 1; id < players; ++id) {  // from 1, as the placement rule
+    const char* player = kPlayerById(world, id);
+    const std::int32_t tcId = player == nullptr ? -1 : Field<std::int32_t>(player, kPlayerFirstTc);
+    const char* tc = tcId < 0 ? nullptr : kUnitById(world, tcId);
+    if (tc == nullptr) {
+      continue;
+    }
+    const char* tcOwner = Field<const char*>(tc, 0x44);
+    if (tcOwner == nullptr || tcOwner == owner || !kIsEnemy(tcOwner, ownerId) ||
+        !Virtual<UnitIsAliveFn>(tc, kAliveSlot)(tc)) {
+      continue;
+    }
+    const float distance = Virtual<UnitDistanceFn>(tc, kDistanceSlot)(tc, position);
+    if (nearest.tc == nullptr || distance < nearest.distance) {
+      nearest = {tc, id, distance};
+    }
+  }
+  return nearest;
+}
+
+// With "log": each marked trainer's last state by unit ID (true = paused), so the first tick of
+// a trainer and every change are one line each. Logging only; cleared on each database load.
+std::unordered_map<std::int32_t, bool> g_paused;
+unsigned g_logLines = 0;
+
+// The warning's last game time per trainer ID, for the world and game time it was set in.
+// Interface state: it changes only what the local player sees.
+std::unordered_map<std::int32_t, std::uint32_t> g_warned;
+const char* g_warnWorld = nullptr;
+std::uint32_t g_warnTime = 0;
+
+void ClearLogged(char*) {
+  g_paused.clear();
+  g_warned.clear();
+}
+
+// The stock dodge's floating text (floatingtext.h), over a held trainer of the local player, at
+// most once every kWarnIntervalMs of game time.
+void Warn(const char* trainer) {
+  char* world = World();
+  if (world == nullptr || PlayerIdOf(trainer) != uhc::LocalPlayer() || !uhc::CanShowUnitText(trainer)) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (world != g_warnWorld || static_cast<std::int32_t>(now - g_warnTime) < 0) {
+    g_warned.clear();  // another game
+    g_warnWorld = world;
+  }
+  g_warnTime = now;
+  const std::int32_t id = Field<std::int32_t>(trainer, 0x10);
+  const auto it = g_warned.find(id);
+  if (it != g_warned.end() && now - it->second < kWarnIntervalMs) {
+    return;
+  }
+  g_warned[id] = now;
+  const std::int32_t shown = uhc::ShowUnitText(trainer, g_warnText.c_str(), g_warnStringId, kWarnColour);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"noTrainNearEnemyTC: warning shown over unit %d (%hs)%ls", id, ProtoName(trainer),
+             shown < 0 ? L": refused by the engine" : L"");
+  }
+}
+
+// "Too_close" (at most 127 characters; UTF-8, else ANSI; '_' for a space) or "90001" (a string table ID).
+bool ParseWarning(const std::string& text) {
+  if (text.empty()) {
+    return false;
+  }
+  if (text.find_first_not_of("0123456789") == std::string::npos) {
+    std::int32_t id = -1;
+    const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), id);
+    g_warnStringId = id;
+    return ec == std::errc() && end == text.data() + text.size();
+  }
+  wchar_t wide[128];  // with its terminator
+  int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.c_str(), -1, wide, 128);
+  if (length == 0) {
+    length = MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, wide, 128);
+  }
+  if (length == 0) {
+    return false;
+  }
+  std::replace(wide, wide + length, L'_', L' ');
+  g_warnText = wide;
+  return true;
+}
+
+void LogState(const char* trainer, bool paused, const Nearest& nearest) {
+  const std::int32_t id = Field<std::int32_t>(trainer, 0x10);
+  const auto [it, added] = g_paused.try_emplace(id, paused);
+  if (!added) {
+    if (it->second == paused) {
+      return;
+    }
+    it->second = paused;
+  }
+  if (g_logLines >= kMaxLogLines) {
+    return;
+  }
+  ++g_logLines;
+  const wchar_t* what = paused ? L"paused training" : (added ? L"trains" : L"resumed training");
+  if (nearest.tc == nullptr) {
+    uhc::Log(L"noTrainNearEnemyTC: unit %d (%hs, player %d) %ls: nothing to keep away from", id, ProtoName(trainer),
+             PlayerIdOf(trainer), what);
+  } else {
+    uhc::Log(L"noTrainNearEnemyTC: unit %d (%hs, player %d) %ls: player %d's unit %d (%hs) is %.1f m away "
+             L"(limit %.1f m)",
+             id, ProtoName(trainer), PlayerIdOf(trainer), what, nearest.player, Field<std::int32_t>(nearest.tc, 0x10),
+             ProtoName(nearest.tc), static_cast<double>(nearest.distance), static_cast<double>(g_meters));
+  }
+  if (g_logLines == kMaxLogLines) {
+    uhc::Log(L"noTrainNearEnemyTC: %u lines logged; the next changes are not", kMaxLogLines);
+  }
+}
+
+bool ParseMeters(const std::string& text, float* meters) {
+  float value = 0.0f;
+  const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
+  if (ec != std::errc() || end != text.data() + text.size() || !(value > 0.0f) || value > kMaxMeters) {
+    return false;
+  }
+  *meters = value;
+  return true;
+}
+
+}  // namespace
+
+extern "C" {
+std::int32_t g_uhcNoTrainType = -1;  // marker unittype ID, set on each database load; -1 before
+
+void UhcNoTrainHook();
+void UhcNoTrainEnqueueHook();
+
+// Called by the hook on every tick of an active Train action, with its trainer. True: the
+// trainer is of the marker type and a blocker (an enemy's FirstTC, or an enemy unit of a "near"
+// type) is alive within the configured distance, so this tick adds no progress.
+bool __stdcall UhcNoTrainBlocked(const char* trainer) {
+  const char* proto = trainer == nullptr ? nullptr : Field<const char*>(trainer, 0x5C);
+  if (proto == nullptr || g_uhcNoTrainType < 0 || !kProtoIsType(proto, g_uhcNoTrainType)) {
+    return false;
+  }
+  const Nearest nearest = NearestBlocker(trainer);
+  const bool blocked = nearest.tc != nullptr && nearest.distance < g_meters;
+  if (g_log) {
+    LogState(trainer, blocked, nearest);
+  }
+  if (blocked && g_warn) {
+    Warn(trainer);
+  }
+  return blocked;
+}
+
+// From the head of the enqueue, for each unit asked of any trainer.
+bool __stdcall UhcNoTrainRefused(const char* trainer) {
+  if (!UhcNoTrainBlocked(trainer)) {
+    return false;
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"noTrainNearEnemyTC: unit %d (%hs, player %d) refused a unit", Field<std::int32_t>(trainer, 0x10),
+             ProtoName(trainer), PlayerIdOf(trainer));
+  }
+  return true;
+}
+}
+
+namespace uhc {
+
+Outcome ApplyNoTrainNearEnemyTc(const Config& config) {
+  const auto* lines = config.All("noTrainNearEnemyTC");
+  if (lines == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (lines->size() != 1) {
+    Log(L"noTrainNearEnemyTC: %u lines, expected one; feature not applied", static_cast<unsigned>(lines->size()));
+    return Outcome::kFailed;
+  }
+  const Config::Args& args = lines->front();
+  float meters = 0.0f;
+  if (args.empty() || !ParseMeters(args.front(), &meters)) {
+    Log(L"noTrainNearEnemyTC: expected \"noTrainNearEnemyTC <meters> [UnitType] [near <UnitType> ...] [nowarn | "
+        L"warn=<text>] [refuse] [log]\" with meters above 0 and at most %.0f, got \"%hs\"; feature not applied",
+        static_cast<double>(kMaxMeters), args.empty() ? "" : args.front().c_str());
+    return Outcome::kFailed;
+  }
+  std::string typeName = "AbstractDaimyo";
+  bool typeGiven = false;
+  bool log = false;
+  std::vector<std::string> nearNames;
+  for (std::size_t i = 1; i < args.size(); ++i) {
+    const char* arg = args[i].c_str();
+    if (_stricmp(arg, "log") == 0) {
+      log = true;
+    } else if (_stricmp(arg, "nowarn") == 0) {
+      g_warn = false;
+    } else if (_stricmp(arg, "refuse") == 0) {
+      g_refuse = true;
+    } else if (_strnicmp(arg, "warn=", 5) == 0) {
+      if (!ParseWarning(args[i].substr(5))) {
+        Log(L"noTrainNearEnemyTC: %hs: expected warn=<text> (at most 127 characters, '_' for a space) or "
+            L"warn=<string table ID>; feature not applied",
+            arg);
+        return Outcome::kFailed;
+      }
+    } else if (_stricmp(arg, "near") == 0) {
+      if (i + 1 >= args.size() || nearNames.size() == kMaxNear) {
+        Log(L"noTrainNearEnemyTC: near needs a unit type (or FirstTC), at most %u; feature not applied",
+            static_cast<unsigned>(kMaxNear));
+        return Outcome::kFailed;
+      }
+      nearNames.push_back(args[++i]);
+    } else if (!typeGiven) {
+      typeName = args[i];
+      typeGiven = true;
+    } else {
+      Log(L"noTrainNearEnemyTC: unexpected argument %hs (expected: <meters> [UnitType] [near <UnitType> ...] [nowarn | "
+          L"warn=<text>] [refuse] [log]); feature not applied",
+          arg);
+      return Outcome::kFailed;
+    }
+  }
+
+  // WorkRateTrainCall is also verified by liveBuildingWorkRate, which runs earlier (features.h).
+  if (!VerifyAll("noTrainNearEnemyTC",
+                 {&sites::kWorkRateTrainCall, &sites::kTrainUpdateTrainer, &sites::kTrainRateScale,
+                  &sites::kFirstTcRuleLoop, &sites::kFirstTcRuleFilter, &sites::kPlayerById, &sites::kPlayerByIdNull,
+                  &sites::kUnitById, &sites::kUnitByIdNull, &sites::kPlayerIsEnemy, &sites::kIsA, &sites::kIsATrue,
+                  &sites::kNoCorpseDoppleAliveCall})) {
+    return Outcome::kFailed;
+  }
+  const bool nearType = std::any_of(nearNames.begin(), nearNames.end(),
+                                    [](const std::string& name) { return _stricmp(name.c_str(), "FirstTC") != 0; });
+  if (nearType &&
+      !VerifyAll("noTrainNearEnemyTC near", {&sites::kUnitsNearPoint, &sites::kTypeRuleQuery, &sites::kIsBuilt})) {
+    return Outcome::kFailed;
+  }
+  if (g_warn && !uhc::VerifyFloatingText("noTrainNearEnemyTC warning")) {
+    return Outcome::kFailed;
+  }
+  if (g_refuse && !VerifyAll("noTrainNearEnemyTC refuse", {&sites::kTrainEnqueueHead})) {
+    return Outcome::kFailed;
+  }
+  if (!RequestAbstractUnitType(typeName.c_str(), &g_uhcNoTrainType)) {
+    return Outcome::kFailed;
+  }
+  if (!nearNames.empty()) {
+    g_nearCount = nearNames.size();
+    for (std::size_t i = 0; i < nearNames.size(); ++i) {
+      g_nearNames[i] = nearNames[i];
+      g_nearTypes[i] = kFirstTc;
+      if (_stricmp(nearNames[i].c_str(), "FirstTC") != 0 &&
+          !RequestAbstractUnitType(nearNames[i].c_str(), &g_nearTypes[i])) {
+        return Outcome::kFailed;
+      }
+    }
+  }
+  g_meters = meters;
+  g_log = log;
+  if ((log || g_warn) && !OnDatabaseLoad(&ClearLogged)) {
+    return Outcome::kFailed;
+  }
+  // Replaces mov ecx,[esi+10h] / call 9BFE33h at 0x9EA410; the hook re-executes them.
+  if (!WriteJmp(sites::kWorkRateTrainCall.va, reinterpret_cast<const void*>(&UhcNoTrainHook), 8) ||
+      (g_refuse && !WriteJmp(sites::kTrainEnqueueHead.va, reinterpret_cast<const void*>(&UhcNoTrainEnqueueHook), 6))) {
+    return Outcome::kFailed;
+  }
+  std::string blockers;  // not "near": windows.h defines it as a macro
+  for (std::size_t i = 0; i < g_nearCount; ++i) {
+    blockers += i == 0 ? "" : ", ";
+    blockers += g_nearTypes[i] == kFirstTc ? std::string("an enemy's first Town Center (FirstTC)")
+                                           : "an enemy's " + g_nearNames[i];
+  }
+  Log(L"noTrainNearEnemyTC: units of unittype %hs do not train within %.1f m (from the trainer's centre to the "
+      L"edge of the building) of %hs%ls%ls (multiplayer unverified)",
+      typeName.c_str(), static_cast<double>(meters), blockers.c_str(),
+      g_warn ? L", with a warning over the local player's held units" : L"",
+      log ? L", every pause and resume logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/notrainneartc_hooks.asm
+
+```asm
+; Hook for noTrainNearEnemyTC. Entered through a jmp written over the stock code; leaves through an
+; explicit jmp to a verified continuation (docs/engine-symbols.md, "Training near an enemy Town
+; Center").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+EXTERNDEF g_uhcNoTrainType:SDWORD      ; marker unittype ID, set on each database load; -1 before
+; float thiscall(unit): the trainer's BuildingWorkRate in st0. 0x9BFE33 (the stock getter), or
+; buildingWorkRateAuras' wrapper, which multiplies in the unit's auras (features/bwrauras.cpp).
+EXTERNDEF g_uhcBwrTrainGetter:DWORD
+
+UhcNoTrainBlocked PROTO STDCALL trainer:DWORD
+UhcNoTrainRefused PROTO STDCALL trainer:DWORD
+
+.data
+trainRateNext   dd 009EA418h    ; mov ebx,[0C66234h] / mov eax,[ebx+13Ch] / fmul [eax+310h]
+enqueueNext     dd 009EAC3Bh    ; mov esi,ecx
+
+.code
+
+; Replaces 0x9EA410..0x9EA417 (mov ecx,[esi+10h] / call 9BFE33h) in FUN_009EA28B, the Train
+; update, where an active queue reads its trainer's work rate; the code after it multiplies the
+; rate by the game speed and the civ's train rate and adds it to the progress [esi+68h].
+; ESI = the Train action (trainer at [esi+10h]), EDI = the trainer's player, and the x87 stack is
+; empty (no x87 code runs in the function before this point). A trainer that UhcNoTrainBlocked
+; holds gets the rate 0.0, so the queue keeps its progress and waits; any other trainer runs the
+; two stolen instructions. Both paths leave st0 = the rate, one x87 slot, as the getter does.
+; EAX, EBX and ECX are written after 0x9EA418 before they are read, EDX is not read (0x485D2C,
+; called at 0x9EA432, overwrites it), nor are the flags; the helper keeps ESI, EDI, EBP and EBX.
+UhcNoTrainHook PROC
+    TRACE_ONCE "noTrainNearEnemyTC (0x9EA410)"
+    cmp g_uhcNoTrainType, 0
+    jl stock
+    push dword ptr [esi+10h]        ; the trainer
+    call UhcNoTrainBlocked          ; bool: marked, and a blocker is alive within range
+    test al, al
+    je stock
+    fldz                            ; rate 0.0: no progress this tick
+    jmp trainRateNext
+stock:
+    mov ecx, dword ptr [esi+10h]    ; stolen 0x9EA410
+    call g_uhcBwrTrainGetter        ; stolen 0x9EA413 (call 9BFE33h), or the aura wrapper
+    jmp trainRateNext
+UhcNoTrainHook ENDP
+
+; Replaces 0x9EAC35..0x9EAC3A (sub esp,1Ch / push ebx / push ebp / push esi), the head of the enqueue
+; FUN_009EAC35, bool thiscall(action, proto, count, a), ret 0Ch, called by the train command and by
+; 0x8D60EA. The cost is paid further in (0x9EAF86), so a refusal here charges nothing, and all its
+; callers take a false. ECX = the Train action; its trainer [ecx+10h] was set before this call.
+UhcNoTrainEnqueueHook PROC
+    TRACE_ONCE "noTrainNearEnemyTC refuse (0x9EAC35)"
+    push ecx
+    push dword ptr [ecx+10h]        ; the trainer
+    call UhcNoTrainRefused          ; bool: marked, and a blocker is alive within range
+    pop ecx
+    test al, al
+    jne refused
+    sub esp, 1Ch                    ; stolen
+    push ebx                        ; stolen
+    push ebp                        ; stolen
+    push esi                        ; stolen
+    jmp enqueueNext
+refused:
+    xor eax, eax
+    ret 0Ch
+UhcNoTrainEnqueueHook ENDP
+
+END
+```
+
+## lifespanAfterConstruction
+
+Contract: [lifespanAfterConstruction](../porting-to-another-dll.md#lifespanafterconstruction).
+
+Besides the core helpers, it needs: [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `IsATrue` `0x44F139` (5 B), `FadeUpdateHead` `0x4829FA` (32 B), `FadeTimerCommit` `0x482A1A` (12 B), `FadeDispatch` `0x482A26` (99 B), `LifespanTickHead` `0x482BF6` (42 B), `LifespanTickReturn` `0x482C20` (5 B), `LifespanTick` `0x483EEC` (12 B), `FadeOutTimerTest` `0x4A174A` (21 B), `IsBuiltFalse` `0x69F904` (3 B).
+
+### src/features/lifespan.cpp
+
+```cpp
+// lifespanAfterConstruction: a building's <Lifespan> counts from the end of its construction,
+// not from the moment its foundation is placed.
+//
+// Stock arms a unit's lifespan once, when the unit is created: unit init FUN_00498274 calls
+// setLifespan 0x48DCB9 with [proto+ACh]. A foundation is created when it is placed, so its
+// countdown [[unit+B4h]+1Ch] runs during construction, and with AlphaFadeLifespan so does its
+// fade-out timer [[unit+B4h]+88h], whose end kills the unit by itself. Completion
+// (FUN_006A1F82) touches neither. For a unit whose proto has a marker unittype (default
+// AbstractLifespanAfterConstruction), that is alive (state bit 11 clear) and not fully built,
+// two hooks skip the store that advances each timer: both keep their full value until the
+// percent reaches 100 %, then run as in stock. A destroyed or deleted foundation is never held,
+// so its corpse fades and leaves as in stock. The hooks are in hooks/lifespan_hooks.asm.
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <set>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unitpanel.h"
+#include "../unittypes.h"
+
+extern "C" {
+std::int32_t g_uhcLifespanType = -1;      // marker unittype ID, set on each database load
+std::int32_t g_uhcLifespanLog = 0;        // "lifespanAfterConstruction ... log"
+std::int32_t g_uhcLifespanHeldCount = 0;  // logged held units whose countdown has not run again yet
+
+void UhcLifespanTickHook();
+void UhcLifespanFadeHook();
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+
+using IsBuiltFn = bool(__thiscall*)(const char* unit);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// The unit panel's row: the seconds left of a marked unit's lifespan, and a held foundation's whole lifespan.
+bool __stdcall UhcLifespanRow(const char* panel, const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* record = Field<const char*>(unit, 0xB4);
+  if (proto == nullptr || record == nullptr || g_uhcLifespanType < 0 || !kProtoIsType(proto, g_uhcLifespanType)) {
+    return false;
+  }
+  const float left = Field<float>(record, 0x1C);
+  if (!(left > 0.0f)) {
+    return false;
+  }
+  wchar_t value[32];
+  swprintf_s(value, kIsBuilt(unit) ? L"%.0f s" : L"%.0f s once built", static_cast<double>(left));
+  return uhc::SetUnitPanelRow(panel, L"Lifespan", value);
+}
+
+const char* MainWorld() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+// Game time in ms, [world+108h].
+std::uint32_t GameTime() {
+  const char* world = MainWorld();
+  return world == nullptr ? 0 : Field<std::uint32_t>(world, 0x108);
+}
+
+const char* ProtoName(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+// The unit's sub-object [unit+B4h] holds the countdown (+1Ch), the fade duration (+84h) and the
+// time left before the fade starts (+88h); the stock tick reads it without a null check.
+float SubFloat(const char* unit, std::uint32_t offset) { return Field<float>(Field<const char*>(unit, 0xB4), offset); }
+
+// Build percent [[unit+68h]+8], 0..1; a unit without BuildInfo counts as built.
+float BuiltPercent(const char* unit) {
+  const char* build = Field<const char*>(unit, 0x68);
+  return build == nullptr ? 100.0f : Field<float>(build, 0x08) * 100.0f;
+}
+
+// State bit 11 of the bitset [unit+4] (bit count [unit+8]): set by the kill handler, so the
+// lifespan expiry only removes the corpse.
+bool Dying(const char* unit) {
+  return Field<std::uint32_t>(unit, 0x08) > 11 && (Field<const std::uint8_t*>(unit, 0x04)[1] & 0x08) != 0;
+}
+
+// Unit IDs whose held countdown / fade-out was logged. A countdown leaves g_held when it runs
+// again, so each hold and each start is one line.
+std::set<std::int32_t> g_held;
+std::set<std::int32_t> g_fadeHeld;
+const char* g_logWorld = nullptr;
+std::uint32_t g_logStep = 0;
+
+void Forget() {
+  g_held.clear();
+  g_fadeHeld.clear();
+  g_uhcLifespanHeldCount = 0;
+}
+
+// Unit IDs start again in every game: forget the logged units when another main world runs, or
+// when its step count [world+F8h] (raised by 1 per step at 0x481A87) goes back.
+void SyncGame() {
+  const char* world = MainWorld();
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    Forget();
+  }
+  g_logWorld = world;
+  g_logStep = step;
+}
+
+// From the database load hook (unittypes.h): the data of another game is being loaded.
+void ForgetOnDataLoad(char*) {
+  Forget();
+  g_logWorld = nullptr;
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the tick hook, only with "log": the countdown of a held unit did not advance this step.
+void __stdcall UhcLifespanHeld(const char* unit) {
+  SyncGame();
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  if (g_held.insert(id).second) {
+    g_uhcLifespanHeldCount = static_cast<std::int32_t>(g_held.size());
+    uhc::Log(L"lifespanAfterConstruction: unit %d (%hs) is %.0f %% built; its lifespan (%.2f s left) waits for "
+             L"the construction (game time %u ms)",
+             id, ProtoName(unit), BuiltPercent(unit), SubFloat(unit, 0x1C), GameTime());
+  }
+}
+
+// From the tick hook, only with "log" and while g_held is not empty: a countdown runs this step.
+// For a unit that was held, logs why it runs again.
+void __stdcall UhcLifespanTicking(const char* unit) {
+  SyncGame();
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  if (g_held.erase(id) == 0) {
+    return;
+  }
+  g_uhcLifespanHeldCount = static_cast<std::int32_t>(g_held.size());
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const wchar_t* why = L"is no longer held; its lifespan runs";
+  if (Dying(unit)) {
+    why = L"is dying; its lifespan runs as in stock";
+  } else if (kIsBuilt(unit)) {
+    why = L"is built; its lifespan starts";
+  } else if (proto != nullptr && !kProtoIsType(proto, g_uhcLifespanType)) {
+    why = L"lost the marker unittype; its lifespan runs";
+  }
+  uhc::Log(L"lifespanAfterConstruction: unit %d (%hs) %ls with %.2f s left (game time %u ms)", id, ProtoName(unit),
+           why, SubFloat(unit, 0x1C), GameTime());
+}
+
+// From the fade hook, only with "log": the lifespan fade-out of a held unit did not advance.
+void __stdcall UhcLifespanFadeHeld(const char* unit) {
+  SyncGame();
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  if (g_fadeHeld.insert(id).second) {
+    uhc::Log(L"lifespanAfterConstruction: unit %d (%hs) is %.0f %% built; its fade-out (due in %.2f s, %.2f s "
+             L"long) waits for the construction (game time %u ms)",
+             id, ProtoName(unit), BuiltPercent(unit), SubFloat(unit, 0x88), SubFloat(unit, 0x84), GameTime());
+  }
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyLifespanAfterConstruction(const Config& config) {
+  const Config::Args* args = config.First("lifespanAfterConstruction");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  std::string typeName = "AbstractLifespanAfterConstruction";
+  bool typeGiven = false;
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else if (!typeGiven) {
+      typeName = arg;
+      typeGiven = true;
+    } else {
+      Log(L"lifespanAfterConstruction: unexpected argument %hs (expected: [UnitType] [log]); feature not applied",
+          arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+
+  if (!VerifyAll("lifespanAfterConstruction",
+                 {&sites::kLifespanTickHead, &sites::kLifespanTick, &sites::kLifespanTickReturn,
+                  &sites::kFadeUpdateHead, &sites::kFadeTimerCommit, &sites::kFadeDispatch,
+                  &sites::kFadeOutTimerTest, &sites::kIsBuilt, &sites::kIsBuiltFalse, &sites::kIsA,
+                  &sites::kIsATrue})) {
+    return Outcome::kFailed;
+  }
+  if (!RequestAbstractUnitType(typeName.c_str(), &g_uhcLifespanType) ||
+      (log && !OnDatabaseLoad(&ForgetOnDataLoad))) {
+    return Outcome::kFailed;
+  }
+  g_uhcLifespanLog = log ? 1 : 0;
+  if (!WriteJmp(sites::kLifespanTick.va, reinterpret_cast<const void*>(&UhcLifespanTickHook), 10)) {
+    return Outcome::kFailed;
+  }
+  // The tick hook alone would let an AlphaFadeLifespan foundation fade out and then hold it at
+  // 2e-6 s until completion: put the stock bytes back rather than run half the feature.
+  if (!WriteJmp(sites::kFadeTimerCommit.va, reinterpret_cast<const void*>(&UhcLifespanFadeHook), 6)) {
+    WriteBytes(sites::kLifespanTick.va, sites::kLifespanTick.bytes, 10);
+    return Outcome::kFailed;
+  }
+  if (!AddUnitPanelRow(&UhcLifespanRow)) {
+    Log(L"lifespanAfterConstruction: no countdown in the unit panel");
+  }
+  Log(L"lifespanAfterConstruction: units of unittype %hs keep their Lifespan and its fade-out until their "
+      L"construction is finished%ls (multiplayer unverified)",
+      typeName.c_str(), log ? L", every hold and start logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/lifespan_hooks.asm
+
+```asm
+; Hooks for lifespanAfterConstruction. Entered through a jmp written over the stock code; each
+; leaves through an explicit jmp to a verified continuation (docs/engine-symbols.md, "Lifespan
+; and construction").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+EXTERNDEF g_uhcLifespanType:SDWORD       ; marker unittype ID, set on each database load; -1 before
+EXTERNDEF g_uhcLifespanLog:SDWORD        ; 1 with "lifespanAfterConstruction ... log"
+EXTERNDEF g_uhcLifespanHeldCount:SDWORD  ; logged held units not yet running again (log only)
+
+UhcLifespanHeld PROTO STDCALL unit:DWORD
+UhcLifespanTicking PROTO STDCALL unit:DWORD
+UhcLifespanFadeHeld PROTO STDCALL unit:DWORD
+
+.data
+isBuilt         dd 0044DDB4h    ; bool thiscall(unit): no BuildInfo [unit+68h], or percent [+8] >= 1.0
+protoIsType     dd 0044D7FAh    ; bool thiscall(proto, int unitTypeId): proto IDs and abstract types
+tickNext        dd 00483EF6h    ; fnstsw ax / test ah,41h / jne 482C20h (dt <= 0: no countdown)
+tickReturn      dd 00482C20h    ; pop esi / pop ecx / ret 4: the lifespan tick's exit
+fadeCommit      dd 00482A20h    ; mov [eax+88h],ecx: store the fade timer t
+fadeSkip        dd 00482A26h    ; cmp dword ptr [esi+8],3Dh: the fade branches, timer not stored
+
+.code
+
+; Replaces 0x483EEC..0x483EF5 (fld dword ptr [esp+0Ch] / fcomp dword ptr [0B84BE4h], dt against
+; 0), the start of the cold part of the lifespan tick FUN_00482BF6, which only runs for a unit
+; whose lifespan is armed (state bit 3). ESI = unit; [esp] = saved ESI, [esp+4] = local,
+; [esp+8] = return address, [esp+0Ch] = dt. EAX, ECX and EDX are free (the stock code writes
+; them before it reads them); EBX, EDI and EBP are the caller's. A unit that is alive (state
+; bit 11 clear, the test the stock expiry makes), not fully built and of the marker type leaves
+; through the stock exit 0x482C20, the one taken for dt <= 0: no countdown, no expiry. Any other
+; unit re-executes the two instructions and continues at 0x483EF6.
+UhcLifespanTickHook PROC
+    TRACE_ONCE "lifespanAfterConstruction (0x483EEC)"
+    cmp g_uhcLifespanType, 0
+    jl stock
+    cmp dword ptr [esi+8], 0Bh      ; bit count of the unit state [esi+4]
+    jbe alive
+    mov ecx, dword ptr [esi+4]
+    test byte ptr [ecx+1], 08h      ; bit 11: dead or dying, the expiry only removes the corpse
+    jne ticking
+alive:
+    mov ecx, esi
+    call isBuilt                    ; changes EAX only
+    test al, al
+    jne ticking
+    mov ecx, dword ptr [esi+5Ch]    ; proto
+    test ecx, ecx
+    je ticking
+    push g_uhcLifespanType
+    call protoIsType
+    test al, al
+    je ticking
+    cmp g_uhcLifespanLog, 0
+    je hold
+    pushad
+    push esi
+    call UhcLifespanHeld
+    popad
+hold:
+    jmp tickReturn
+ticking:
+    cmp g_uhcLifespanHeldCount, 0
+    je stock
+    pushad
+    push esi
+    call UhcLifespanTicking         ; logs a held unit whose countdown runs again
+    popad
+stock:
+    fld dword ptr [esp+0Ch]         ; stolen 0x483EEC: dt
+    fcomp dword ptr ds:[0B84BE4h]   ; stolen 0x483EF0: against 0.0
+    jmp tickNext
+UhcLifespanTickHook ENDP
+
+; Replaces 0x482A1A..0x482A1F (jne 482A26h / mov ecx,[esp+10h]) in the fade update FUN_004829FA,
+; which runs for every unit on every step. t = [sub+88h] - dt is in [esp+10h], and 0x482A20
+; stores it when the commit flag is set (the flags of cmp bl,1 at 0x482A00). EAX = the unit's
+; sub-object [esi+0B4h], ESI = unit, EBX = commit flag; [esp] = saved ESI, [esp+4] = saved EBX,
+; [esp+8] = local, [esp+0Ch] = return address, [esp+10h] = t, [esp+14h] = commit. ECX and EDX
+; are reloaded at 0x482A2A and 0x482A30. A unit whose pending fade is the lifespan fade-out
+; (state bits 5 and 3 set; bits 4 and 61, whose fades take priority with the same timer, clear),
+; alive (bit 11 clear: a corpse's fade is the same bit 5), not fully built and of the marker type
+; keeps its stored timer, and this step sees that value as t: the fade-out neither advances nor
+; starts. Every other unit runs the stock code.
+UhcLifespanFadeHook PROC
+    TRACE_ONCE "lifespanAfterConstruction fade (0x482A1A)"
+    jne skip                        ; stolen 0x482A1A: no commit asked
+    cmp g_uhcLifespanType, 0
+    jl commit
+    mov edx, dword ptr [esi+8]      ; bit count of the unit state
+    cmp edx, 5
+    jbe commit
+    mov ecx, dword ptr [esi+4]      ; unit state bits
+    test byte ptr [ecx], 20h        ; bit 5: fade-out pending
+    je commit
+    test byte ptr [ecx], 10h        ; bit 4: a fade-in, which takes priority
+    jne commit
+    test byte ptr [ecx], 08h        ; bit 3: the lifespan is armed
+    je commit
+    cmp edx, 0Bh
+    jbe alive
+    test byte ptr [ecx+1], 08h      ; bit 11: dead or dying
+    jne commit
+    cmp edx, 3Dh
+    jbe alive
+    test byte ptr [ecx+7], 20h      ; bit 61: another fade, which takes priority
+    jne commit
+alive:
+    push eax                        ; the sub-object, needed by the stock store
+    mov ecx, esi
+    call isBuilt
+    test al, al
+    jne notHeld
+    mov ecx, dword ptr [esi+5Ch]    ; proto
+    test ecx, ecx
+    je notHeld
+    push g_uhcLifespanType
+    call protoIsType
+    test al, al
+    je notHeld
+    cmp g_uhcLifespanLog, 0
+    je hold
+    pushad
+    push esi
+    call UhcLifespanFadeHeld
+    popad
+hold:
+    pop eax
+    mov ecx, dword ptr [eax+88h]    ; the stored timer: no time passes for this fade-out
+    mov dword ptr [esp+10h], ecx
+    jmp fadeSkip
+notHeld:
+    pop eax
+commit:
+    mov ecx, dword ptr [esp+10h]    ; stolen 0x482A1C
+    jmp fadeCommit
+skip:
+    jmp fadeSkip
+UhcLifespanFadeHook ENDP
+
+END
+```
+
+## gaiaSocketsOnly
+
+Contract: [gaiaSocketsOnly](../porting-to-another-dll.md#gaiasocketsonly).
+
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `GaiaSocketLoopNext` `0x50757E` (17 B), `GaiaSocketMatch` `0x508BE6` (219 B), `GaiaSocketFound` `0x508CC1` (10 B), `GaiaSocketMissing` `0x509215` (21 B).
+
+### src/features/sockets.cpp
+
+```cpp
+// gaiaSocketsOnly: a socketed building (one whose proto has <SocketUnitType>, e.g. TradingPost)
+// may only be placed on a socket that Gaia owns.
+//
+// Stock tests the owner in one place only: the UI's snap to a socket (FUN_00A036BB, 0xA0383B)
+// takes only Gaia sockets as candidates, so the placement preview shows a socket a player owns in
+// red. The check that decides, FUN_0050703D ("PLACE", World vtable +14h: run by the build
+// command on every machine, by uiBuildAtPointer's pre-check and by the AI's checkPlacement),
+// accepts any socket of the right type at exactly the building's position and never reads its
+// owner. Stock data never shows it, because every stock socket has ForceToGaia; a mod socket that
+// a player owns (e.g. a mine socket) is red in the preview, but an order that carries its exact
+// position (AI, triggers) builds on it anyway.
+//
+// The hook (hooks/socket_hooks.asm) sits where PLACE records "socket found" (0x508CC1). When the
+// check uses a player's knowledge (its a5 != 0: the build commands, the UI and the AI) and the
+// socket's owner is not Gaia, the socket does not count, and PLACE fails through its stock "no
+// socket here" path. Without a unittype the rule covers every socket; with one, only sockets of
+// that type (or proto name; an extra abstract type, unittypes.h), and every other socket keeps
+// the stock rule. Placement with a5 = 0 (the editor, the engine, the in-place conversion
+// command 13h) is left alone. The rule reads only the socket's owner, the placing player and the
+// data, so every machine decides alike.
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <set>
+#include <string>
+#include <tuple>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+namespace {
+
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+// An AI build plan that picked a refused socket retries its checkPlacement, maybe on every update
+// (0x73E273 takes the first socket of the right type), so each refusal is logged once per socket,
+// owner, player and building, and at most this many in all.
+constexpr std::size_t kMaxLogged = 1000;
+
+bool g_markerOnly = false;       // "gaiaSocketsOnly <UnitType>": only sockets of that unittype
+std::int32_t g_markerType = -1;  // its ID, set on each database load; -1 before
+bool g_log = false;              // "gaiaSocketsOnly ... log": log the refusals
+std::set<std::tuple<std::int32_t, std::int32_t, std::int32_t, std::int32_t>> g_logged;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* Name(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+const char* g_logWorld = nullptr;  // the game g_logged belongs to
+std::uint32_t g_logStep = 0;
+
+void LogRefusal(const char* socket, std::int32_t owner, const char* building, std::int32_t player) {
+  // Unit IDs start again in every game: a new world, or a step count [world+F8h] that went back,
+  // forgets the refusals logged so far.
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    g_logged.clear();
+  }
+  g_logWorld = world;
+  g_logStep = step;
+  const std::int32_t socketId = Field<std::int32_t>(socket, 0x10);
+  const std::int32_t buildingId = Field<std::int32_t>(building, 0x04);
+  if (g_logged.size() >= kMaxLogged || !g_logged.insert({socketId, owner, player, buildingId}).second) {
+    return;
+  }
+  uhc::Log(L"gaiaSocketsOnly: refused %hs for player %d on socket %d (%hs), owned by player %d", Name(building), player,
+           socketId, Name(Field<const char*>(socket, 0x5C)), owner);
+  if (g_logged.size() == kMaxLogged) {
+    uhc::Log(L"gaiaSocketsOnly: %u refusals logged; further ones are not", static_cast<unsigned>(kMaxLogged));
+  }
+}
+
+}  // namespace
+
+extern "C" {
+void UhcGaiaSocketFoundHook();
+
+// From the hook, for a socket of the building's type at exactly its position, in a check that uses
+// the player's knowledge. False: the socket does not count. `socket` is the socket unit, `building`
+// the proto being placed, `player` the placing player (PLACE's a1).
+bool __stdcall UhcGaiaSocketAllowed(const char* socket, const char* building, std::int32_t player) {
+  if (g_markerOnly) {
+    const char* proto = Field<const char*>(socket, 0x5C);
+    if (g_markerType < 0 || proto == nullptr || !kProtoIsType(proto, g_markerType)) {
+      return true;  // not a marked socket: stock rule
+    }
+  }
+  const char* owner = Field<const char*>(socket, 0x44);
+  if (owner == nullptr) {
+    return true;  // never seen; the stock snap would read through it
+  }
+  const std::int32_t ownerId = Field<std::int32_t>(owner, 0x00);
+  if (ownerId == 0) {
+    return true;
+  }
+  if (g_log) {
+    LogRefusal(socket, ownerId, building, player);
+  }
+  return false;
+}
+}
+
+namespace uhc {
+
+Outcome ApplyGaiaSocketsOnly(const Config& config) {
+  const Config::Args* args = config.First("gaiaSocketsOnly");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+
+  std::string typeName;
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else if (typeName.empty()) {
+      typeName = arg;
+    } else {
+      Log(L"gaiaSocketsOnly: unexpected argument %hs (expected: [UnitType] [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+
+  if (!VerifyAll("gaiaSocketsOnly", {&sites::kGaiaSocketMatch, &sites::kGaiaSocketFound, &sites::kGaiaSocketLoopNext,
+                                     &sites::kGaiaSocketMissing})) {
+    return Outcome::kFailed;
+  }
+  g_log = log;
+  g_markerOnly = !typeName.empty();
+  if (g_markerOnly && !RequestAbstractUnitType(typeName.c_str(), &g_markerType)) {
+    return Outcome::kFailed;
+  }
+  if (!WriteJmp(sites::kGaiaSocketFound.va, reinterpret_cast<const void*>(&UhcGaiaSocketFoundHook), 5)) {
+    return Outcome::kFailed;
+  }
+  if (g_markerOnly) {
+    Log(L"gaiaSocketsOnly: sockets of unittype %hs take a socketed building only while Gaia owns them%ls "
+        L"(multiplayer unverified)",
+        typeName.c_str(), log ? L", refusals logged" : L"");
+  } else {
+    Log(L"gaiaSocketsOnly: socketed buildings take only sockets owned by Gaia%ls (multiplayer unverified)",
+        log ? L", refusals logged" : L"");
+  }
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/socket_hooks.asm
+
+```asm
+; Hook for gaiaSocketsOnly. Entered through a jmp written over the stock code; leaves through an
+; explicit jmp to a verified continuation (docs/engine-symbols.md, "Sockets and placement").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcGaiaSocketAllowed PROTO STDCALL socket:DWORD, building:DWORD, player:DWORD
+
+.data
+socketFoundNext dd 00508CC6h    ; jmp 50757Eh: PLACE's next obstruction entry
+
+.code
+
+; Replaces 0x508CC1 (mov byte ptr [esp+37h],1) in FUN_0050703D, PLACE, where a socketed building
+; records that a socket of its type stands exactly at its position. Reached only by falling
+; through from 0x508CBB: ESI = the socket unit + 14h (its position), EDI = the building's proto,
+; EBP = the world; PLACE's frame: a1 (the player) at [esp+1C0h], a5 (knowledge) at [esp+1D0h],
+; the found flag at [esp+37h]. EAX, ECX, EDX and the flags are dead at the continuation; the
+; helper keeps EBX, ESI, EDI and EBP. With a5 = 0 (editor, engine, in-place conversion), or a
+; socket the rule accepts, the flag is set as in stock; otherwise the socket does not count.
+UhcGaiaSocketFoundHook PROC
+    TRACE_ONCE "gaiaSocketsOnly (0x508CC1)"
+    cmp dword ptr [esp+1D0h], 0     ; a5 = 0: placement without a player's knowledge
+    je found
+    lea eax, [esi-14h]              ; the socket unit
+    push dword ptr [esp+1C0h]       ; a1, the placing player
+    push edi                        ; the building's proto
+    push eax
+    call UhcGaiaSocketAllowed       ; -> al = 0 when the rule refuses the socket's owner
+    test al, al
+    je refused
+found:
+    mov byte ptr [esp+37h], 1       ; stolen 0x508CC1: socket found
+refused:
+    jmp socketFoundNext
+UhcGaiaSocketFoundHook ENDP
+
+END
+```
+
+## hcShipmentPointFallback
+
+Contract: [hcShipmentPointFallback](../porting-to-another-dll.md#hcshipmentpointfallback).
+
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherSearchStart` `0x4C6BCF` (7 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
+
+### src/features/shipments.cpp
+
+```cpp
+// hcShipmentPointFallback <Proto|FirstTC> [...]: when the home city gather unit is gone and none of
+// the 10 stock fallback types is left (TownCenter, then Outpost, FortFrontier, WarHut, Blockhouse,
+// NoblesHut, AbstractAgraFort, AbstractDaimyo, ypCastle, ypVillage), try the entries listed in
+// uhc.cfg, in order. An entry is a proto unit name, or the keyword FirstTC: the player's first town
+// center, the unit ID at [player+4F0h] that the placement rules call FirstTC. Stock makes only a
+// TownCenter FirstTC, which the stock list already tries first, so FirstTC is useful with
+// startingTC (a marked building can be FirstTC). The keyword LastResort, best listed last, takes any
+// building of the player, else a hero (the Explorer), so that a shipment always has somewhere to go.
+// The keyword replace makes the list run instead of the ten stock types, not after them; warn tells the
+// local player, through the chat, when a card is queued and there is no point at all; warn=<text> sets its text.
+// The hook is in hooks/shipment_hooks.asm.
+#include <windows.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+namespace {
+
+constexpr int kMaxFallbackTypes = 64;
+// The entry of the keyword FirstTC; -1 is an unknown proto, >= 0 a proto ID.
+constexpr std::int32_t kFirstTcEntry = -2;
+constexpr char kFirstTcKeyword[] = "FirstTC";
+constexpr std::int32_t kLastResortEntry = -3;
+constexpr char kLastResortKeyword[] = "LastResort";
+constexpr char kReplaceKeyword[] = "replace";
+constexpr char kWarnKeyword[] = "warn";
+constexpr char kWarnPrefix[] = "warn=";
+constexpr std::uint32_t kLocalPlayer = 0x3C0;       // game: the local player's ID
+constexpr std::uint32_t kHcQueueCount = 0x28C;      // home city: cards in the shipment queue
+constexpr std::uint32_t kChatSlot = 0x5C;           // game's vtable: cdecl(game, from, to, format, text), as trChatSend
+constexpr std::uint32_t kChatFormat = 0x00BE2DD0;   // the stock L"%s"
+constexpr DWORD kWarnEveryMs = 30000;
+
+// Engine layout (docs/engine-symbols.md, "Home city gather point").
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
+constexpr std::uint32_t kHcPlayer = 0x08;          // home city: its player; [player+0] the player ID
+constexpr std::uint32_t kPlayerFirstTc = 0x4F0;    // unit ID of the player's first town center; -1 none
+constexpr std::uint32_t kPlayerUnits = 0xF8;       // the IDs of the player's units; +4 their count
+constexpr std::uint32_t kUnitId = 0x10;
+constexpr std::uint32_t kUnitOwner = 0x44;  // the owning Player*
+constexpr std::uint32_t kUnitProto = 0x5C;  // proto; [proto+10h] its name
+constexpr int kMaxLoggedPlayers = 32;
+
+using PlayerByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
+using UnitByIdFn = const char*(__thiscall*)(char* world, std::int32_t id);
+using GatherPointValidFn = bool(__thiscall*)(const char* hc, const char* unit);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+// The check stock applies to the stored point and to every candidate: not null, alive (unit vtable
+// slot A4h), 0x44DDB4 true, 0x4802C6 not 1.
+const auto kGatherPointValid = reinterpret_cast<GatherPointValidFn>(0x0085302C);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+bool g_installed = false;
+bool g_warn = false;
+std::wstring g_warnText = L"No shipment point: cards on their way are refunded.";
+DWORD g_lastWarn = 0;
+
+// Proto names from uhc.cfg; resolved to IDs only once the game database exists.
+std::vector<std::string> g_typeNames;
+
+// Log only: the FirstTC unit last logged per player ID, and the world it was logged in. The game
+// never reads them, so they cannot make two machines disagree.
+const char* g_loggedWorld = nullptr;
+std::int32_t g_loggedFirstTc[kMaxLoggedPlayers];
+std::int32_t g_loggedLastResort[kMaxLoggedPlayers];
+
+std::int32_t g_buildingType = -1;
+std::int32_t g_heroType = -1;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+char* World() {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<char*>(game, 0x13C);
+}
+
+const char* ProtoName(const char* unit) {
+  const char* proto = Field<const char*>(unit, kUnitProto);
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+bool IsFirstTcKeyword(const std::string& name) { return _stricmp(name.c_str(), kFirstTcKeyword) == 0; }
+bool IsLastResortKeyword(const std::string& name) { return _stricmp(name.c_str(), kLastResortKeyword) == 0; }
+
+void LogFirstTcPick(const char* world, std::int32_t playerId, const char* unit) {
+  if (playerId < 0 || playerId >= kMaxLoggedPlayers) {
+    return;
+  }
+  if (world != g_loggedWorld) {
+    g_loggedWorld = world;
+    for (std::int32_t& id : g_loggedFirstTc) {
+      id = -1;
+    }
+    for (std::int32_t& id : g_loggedLastResort) {
+      id = -2;
+    }
+  }
+  const std::int32_t id = Field<std::int32_t>(unit, kUnitId);
+  if (g_loggedFirstTc[playerId] == id) {
+    return;
+  }
+  g_loggedFirstTc[playerId] = id;
+  uhc::Log(L"hcShipmentPointFallback: player %d's shipment point -> unit %d (%hs), its first town center (FirstTC)",
+           playerId, id, ProtoName(unit));
+}
+
+// The same for LastResort, with -1 for nothing left. Log only.
+void LogLastResort(const char* world, std::int32_t playerId, const char* unit) {
+  if (playerId < 0 || playerId >= kMaxLoggedPlayers) {
+    return;
+  }
+  if (world != g_loggedWorld) {
+    g_loggedWorld = world;
+    for (std::int32_t& id : g_loggedFirstTc) {
+      id = -1;
+    }
+    for (std::int32_t& id : g_loggedLastResort) {
+      id = -2;
+    }
+  }
+  const std::int32_t id = unit == nullptr ? -1 : Field<std::int32_t>(unit, kUnitId);
+  if (g_loggedLastResort[playerId] == id) {
+    return;
+  }
+  g_loggedLastResort[playerId] = id;
+  if (unit == nullptr) {
+    uhc::Log(L"hcShipmentPointFallback: player %d has no building and no hero: shipments have no point", playerId);
+  } else {
+    uhc::Log(L"hcShipmentPointFallback: player %d's shipment point -> unit %d (%hs), the last resort", playerId, id,
+             ProtoName(unit));
+  }
+}
+
+}  // namespace
+
+extern "C" {
+void UhcHcGatherReplaceHook();
+
+// From the hook, at "nothing found". Interface only: the local player's message, on the real clock, so it
+// reaches no game state.
+void __stdcall UhcGatherNoPoint(const char* hc, std::uint32_t store) {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  // The search that stores a point (store 1) never comes with no point: the game cancels the queue first, after a
+  // search with store 0. So the test is that a card is queued, [hc+28Ch].
+  (void)store;
+  if (!g_warn || game == nullptr || hc == nullptr || *reinterpret_cast<const std::int32_t*>(hc + kHcQueueCount) <= 0) {
+    return;
+  }
+  const char* player = *reinterpret_cast<char* const*>(hc + kHcPlayer);
+  if (player == nullptr ||
+      *reinterpret_cast<const std::int32_t*>(player) != *reinterpret_cast<const std::int32_t*>(game + kLocalPlayer)) {
+    return;
+  }
+  const DWORD now = GetTickCount();
+  if (g_lastWarn != 0 && now - g_lastWarn < kWarnEveryMs) {
+    return;
+  }
+  g_lastWarn = now;
+  uhc::Log(L"hcShipmentPointFallback: player %d has no shipment point; warned",
+           *reinterpret_cast<const std::int32_t*>(player));
+  using ChatFn = void(__cdecl*)(const char* game, std::int32_t from, std::int32_t to, const void* format, const wchar_t* text);
+  const auto vtable = *reinterpret_cast<const char* const*>(game);
+  const auto chat = *reinterpret_cast<ChatFn const*>(vtable + kChatSlot);
+  chat(game, 0, *reinterpret_cast<const std::int32_t*>(game + kLocalPlayer), reinterpret_cast<const void*>(kChatFormat),
+       g_warnText.c_str());
+}
+
+std::int32_t g_uhcGatherFallbackTypes[kMaxFallbackTypes];
+std::int32_t g_uhcGatherFallbackCount = 0;
+
+void UhcHcGatherFallbackHook();
+
+// Called once from the hook, inside the simulation, when the database is loaded.
+void __stdcall UhcResolveGatherFallbackTypes() {
+  using ProtoIdByName = int(__thiscall*)(void* database, const char* name);
+  const auto protoIdByName = reinterpret_cast<ProtoIdByName>(0x005A2346);
+  void* game = *reinterpret_cast<void**>(kGameGlobal);
+  void* database = game == nullptr ? nullptr : *reinterpret_cast<void**>(static_cast<char*>(game) + 0x140);
+  for (int i = 0; i < g_uhcGatherFallbackCount; ++i) {
+    // The keyword comes first: the hook must never run a unit query for it.
+    if (IsFirstTcKeyword(g_typeNames[i])) {
+      g_uhcGatherFallbackTypes[i] = kFirstTcEntry;
+      uhc::Log(L"hcShipmentPointFallback: FirstTC -> each player's first town center (FirstTC)");
+      continue;
+    }
+    if (IsLastResortKeyword(g_typeNames[i])) {
+      g_uhcGatherFallbackTypes[i] = kLastResortEntry;
+      uhc::Log(L"hcShipmentPointFallback: LastResort -> any building of the player, then a hero");
+      continue;
+    }
+    const int id = database == nullptr ? -1 : protoIdByName(database, g_typeNames[i].c_str());
+    g_uhcGatherFallbackTypes[i] = id;
+    uhc::Log(L"hcShipmentPointFallback: %hs -> proto %d%ls", g_typeNames[i].c_str(), id,
+             id < 0 ? L" (unknown proto; skipped)" : L"");
+  }
+}
+
+// Called from the hook for a LastResort entry. The first of the player's units, in the order of the player's
+// list, that is a building and passes the stock check 0x85302C, else the first such hero, else null. The list is
+// the simulation's, so every machine picks the same unit. It writes no game state, as a FirstTC entry; the walk
+// runs only for a player with no point at all.
+const char* __stdcall UhcGatherLastResortUnit(const char* hc) {
+  char* world = World();
+  if (world == nullptr || hc == nullptr) {
+    return nullptr;
+  }
+  const char* hcPlayer = Field<const char*>(hc, kHcPlayer);
+  if (hcPlayer == nullptr) {
+    return nullptr;
+  }
+  const std::int32_t playerId = Field<std::int32_t>(hcPlayer, 0x00);
+  const char* player = kPlayerById(world, playerId);
+  if (player == nullptr) {
+    return nullptr;
+  }
+  const auto* ids = Field<const std::int32_t*>(player, kPlayerUnits);
+  const std::int32_t count = Field<std::int32_t>(player, kPlayerUnits + 4);
+  const char* hero = nullptr;
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = kUnitById(world, ids[i]);
+    const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, kUnitProto);
+    if (proto == nullptr || !kGatherPointValid(hc, unit)) {
+      continue;
+    }
+    if (kProtoIsType(proto, g_buildingType)) {
+      LogLastResort(world, playerId, unit);
+      return unit;
+    }
+    if (hero == nullptr && kProtoIsType(proto, g_heroType)) {
+      hero = unit;
+    }
+  }
+  LogLastResort(world, playerId, hero);
+  return hero;
+}
+
+// Called from the hook for a FirstTC entry, [esp+10h] of FUN_004C6B9E = the home city. Returns the
+// player's first town center if it still belongs to that player and passes the stock gather point
+// check 0x85302C, else null. It writes no game state: the store=0 callers (the UI among them) may
+// run it every frame, and the store=1 path stores the result in stock code (0x4C6CB2).
+const char* __stdcall UhcGatherFirstTcUnit(const char* hc) {
+  char* world = World();
+  if (world == nullptr || hc == nullptr) {
+    return nullptr;
+  }
+  const char* hcPlayer = Field<const char*>(hc, kHcPlayer);
+  if (hcPlayer == nullptr) {
+    return nullptr;
+  }
+  const std::int32_t playerId = Field<std::int32_t>(hcPlayer, 0x00);
+  const char* player = kPlayerById(world, playerId);
+  if (player == nullptr) {
+    return nullptr;
+  }
+  const std::int32_t id = Field<std::int32_t>(player, kPlayerFirstTc);
+  if (id < 0) {
+    return nullptr;
+  }
+  const char* unit = kUnitById(world, id);
+  if (unit == nullptr) {
+    return nullptr;
+  }
+  // FirstTC is never cleared: a converted or captured one belongs to someone else now.
+  const char* owner = Field<const char*>(unit, kUnitOwner);
+  if (owner == nullptr || Field<std::int32_t>(owner, 0x00) != playerId) {
+    return nullptr;
+  }
+  if (!kGatherPointValid(hc, unit)) {
+    return nullptr;
+  }
+  LogFirstTcPick(world, playerId, unit);
+  return unit;
+}
+}
+
+namespace uhc {
+
+// FUN_004C6B9E returns the unit shipments arrive at. When the stored one is gone it searches a
+// fixed list of 10 unit types; this extends that list. Choice order is the cfg order, then the
+// stock unit-query order, so every machine with the same cfg picks the same building.
+bool AddFirstTcShipmentPoint() {
+  for (const std::string& name : g_typeNames) {
+    if (IsFirstTcKeyword(name)) {
+      return true;
+    }
+  }
+  if (g_uhcGatherFallbackCount >= kMaxFallbackTypes) {
+    Log(L"hcShipmentPointFallback: no room for FirstTC");
+    return false;
+  }
+  if (!VerifyAll("firstTC shipment point",
+                 {&sites::kFirstTcSet, &sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
+                  &sites::kUnitByIdNull, &sites::kGatherPointValid})) {
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("firstTC shipment point", {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore,
+                                              &sites::kGatherFallbackBlock}) ||
+        !WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_typeNames.insert(g_typeNames.begin(), kFirstTcKeyword);
+  g_uhcGatherFallbackCount = static_cast<std::int32_t>(g_typeNames.size());
+  return true;
+}
+
+Outcome ApplyHcShipmentPointFallback(const Config& config) {
+  const Config::Args* names = config.First("hcShipmentPointFallback");
+  if (names == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (names->empty() || names->size() > kMaxFallbackTypes) {
+    Log(L"hcShipmentPointFallback: expected 1 to %d proto unit names or FirstTC", kMaxFallbackTypes);
+    return Outcome::kFailed;
+  }
+  bool firstTc = false;
+  bool lastResort = false;
+  bool replace = false;
+  std::vector<std::string> entries;
+  for (const std::string& name : *names) {
+    if (_stricmp(name.c_str(), kReplaceKeyword) == 0) {
+      replace = true;
+    } else if (_stricmp(name.c_str(), kWarnKeyword) == 0) {
+      g_warn = true;
+    } else if (_strnicmp(name.c_str(), kWarnPrefix, sizeof(kWarnPrefix) - 1) == 0) {
+      std::string text = name.substr(sizeof(kWarnPrefix) - 1);
+      if (text.empty() || text.size() > 127) {
+        Log(L"hcShipmentPointFallback: %hs: expected warn=<text>, at most 127 characters, '_' for a space; feature not "
+            L"applied",
+            name.c_str());
+        return Outcome::kFailed;
+      }
+      for (char& ch : text) {
+        ch = ch == '_' ? ' ' : ch;
+      }
+      g_warn = true;
+      g_warnText.assign(text.begin(), text.end());
+    } else {
+      entries.push_back(name);
+    }
+    firstTc = firstTc || IsFirstTcKeyword(name);
+    lastResort = lastResort || IsLastResortKeyword(name);
+  }
+  if (entries.empty() && (replace || !g_warn)) {
+    Log(L"hcShipmentPointFallback: expected a proto unit name, FirstTC or LastResort; feature not applied");
+    return Outcome::kFailed;
+  }
+  if (replace && !VerifyAll("hcShipmentPointFallback replace", {&sites::kGatherSearchStart})) {
+    return Outcome::kFailed;
+  }
+  // FirstTC also reads [player+4F0h] (set at 0x67ABD4), player and unit by ID and the stored point
+  // check; no feature writes those sites.
+  const bool verified =
+      firstTc ? VerifyAll("hcShipmentPointFallback",
+                          {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock,
+                           &sites::kFirstTcSet, &sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
+                           &sites::kUnitByIdNull, &sites::kGatherPointValid})
+              : VerifyAll("hcShipmentPointFallback",
+                          {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock});
+  if (!verified || (lastResort && !VerifyAll("hcShipmentPointFallback LastResort",
+                                             {&sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
+                                              &sites::kUnitByIdNull, &sites::kGatherPointValid, &sites::kIsA}))) {
+    return Outcome::kFailed;
+  }
+  if (lastResort && (!RequestAbstractUnitType("Building", &g_buildingType) ||
+                     !RequestAbstractUnitType("Hero", &g_heroType))) {
+    return Outcome::kFailed;
+  }
+  if (firstTc && config.First("firstTC") == nullptr && config.First("startingTC") == nullptr && config.First("civFirstTC") == nullptr) {
+    Log(L"hcShipmentPointFallback: FirstTC without startingTC: a first town center can only be a TownCenter, which "
+        L"the stock list already tries first");
+  }
+  g_typeNames = entries;
+  for (int& id : g_uhcGatherFallbackTypes) {
+    id = -1;
+  }
+  g_uhcGatherFallbackCount = static_cast<std::int32_t>(g_typeNames.size());
+  if (!WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5) ||
+      (replace && !WriteJmp(sites::kGatherSearchStart.va, reinterpret_cast<const void*>(&UhcHcGatherReplaceHook), 7))) {
+    return Outcome::kFailed;
+  }
+  g_installed = true;
+  Log(L"hcShipmentPointFallback: %d extra types %ls%ls%ls%ls (multiplayer unverified)", g_uhcGatherFallbackCount,
+      replace ? L"instead of the stock list" : L"after the stock list",
+      firstTc ? L", including each player's first town center (FirstTC)" : L"", lastResort ? L", and a last resort" : L"",
+      g_warn ? L", with a warning" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/shipment_hooks.asm
+
+```asm
+; Hook for hcShipmentPointFallback. Entered through a jmp written over the stock code; leaves
+; through an explicit jmp to a verified continuation (docs/engine-symbols.md, "Home city
+; gather point").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+EXTERNDEF g_uhcGatherFallbackTypes:DWORD    ; proto IDs, resolved on first use
+EXTERNDEF g_uhcGatherFallbackCount:SDWORD
+UhcResolveGatherFallbackTypes PROTO STDCALL
+UhcGatherLastResortUnit PROTO STDCALL hc:DWORD ; any building, then a hero, of the player, or 0
+UhcGatherFirstTcUnit PROTO STDCALL hc:DWORD   ; the player's FirstTC if it is a valid point, else 0
+UhcGatherNoPoint PROTO STDCALL hc:DWORD, store:DWORD ; the warning, interface only
+
+LAST_RESORT_ENTRY EQU -3                    ; the same for the keyword LastResort
+FIRST_TC_ENTRY EQU -2                       ; g_uhcGatherFallbackTypes entry of the keyword FirstTC
+
+.data
+querySetPlayer   dd 00453618h   ; thiscall(query, 0, playerId, 1)
+queryAddType     dd 0045356Dh   ; thiscall(query, 0, protoId)
+querySetState    dd 004532B4h   ; thiscall(query, 0, 2 = alive)
+queryRun         dd 00453484h   ; thiscall(query, 0) -> count
+queryUnitId      dd 00453A36h   ; thiscall(query, 0, index) -> unit ID
+unitCheckA       dd 0044DDB4h   ; thiscall(unit) -> bool, required
+unitCheckB       dd 004802C6h   ; thiscall(unit) -> 1 rejects the unit
+storeAndReturn   dd 004C6CB2h   ; stores [hc+18Ch] = [EDI+10h] if [esp+18h] == 1; returns EDI
+notFoundReturn   dd 00669E33h   ; pop ebx / pop ecx / ret 4
+typeIndex        dd 0
+resolved         db 0
+
+.code
+
+; Replaces 0x669E2E..0x669E32, the "no valid gather unit" exit of FUN_004C6B9E, reached after
+; the stock search of its ten fixed unit types (TownCenter at 0x4C6BF1, then nine in the cold
+; chunk 0x669804..0x669E2C). State on entry, as in the stock blocks: ESI = unit query object,
+; [esp+10h] = home city, [esp+18h] = store flag. EBX, EBP and EDI are free (the epilogue pops
+; them). Each configured proto is searched exactly like a stock block (0x6698B4..0x669963), and
+; the first unit that passes the same checks becomes the point. A FirstTC entry runs no query:
+; UhcGatherFirstTcUnit returns the player's first town center when it passes the stock check
+; 0x85302C, and it becomes the point the same way.
+UhcHcGatherFallbackHook PROC
+    TRACE_ONCE "hcShipmentPointFallback (0x669E2E)"
+    cmp resolved, 0
+    jne gatherSearch
+    mov resolved, 1
+    pushad
+    call UhcResolveGatherFallbackTypes
+    popad
+gatherSearch::
+    mov typeIndex, 0
+nextType:
+    mov eax, typeIndex
+    cmp eax, g_uhcGatherFallbackCount
+    jge notFound
+    mov edx, g_uhcGatherFallbackTypes[eax*4]
+    cmp edx, FIRST_TC_ENTRY
+    je firstTc
+    cmp edx, LAST_RESORT_ENTRY
+    je lastResort
+    cmp edx, -1
+    je typeDone
+    mov eax, dword ptr [esp+10h]    ; home city
+    mov ecx, dword ptr [eax+8]
+    mov eax, dword ptr [ecx]        ; owning player ID
+    push 1
+    push eax
+    push 0
+    mov ecx, esi
+    call querySetPlayer
+    mov eax, typeIndex
+    mov edx, g_uhcGatherFallbackTypes[eax*4]
+    push edx
+    push 0
+    mov ecx, esi
+    call queryAddType
+    push 2
+    push 0
+    mov ecx, esi
+    call querySetState
+    push 0
+    mov ecx, esi
+    call queryRun
+    mov ebx, eax
+    xor ebp, ebp
+    test ebx, ebx
+    jle typeDone
+unitLoop:
+    mov eax, dword ptr ds:[0C66234h]
+    mov edi, dword ptr [eax+13Ch]   ; world
+    push ebp
+    push 0
+    mov ecx, esi
+    call queryUnitId
+    test eax, eax
+    jl unitNext
+    mov ecx, eax
+    and ecx, 3FFFFh
+    cmp ecx, dword ptr [edi+10h]
+    jge unitNext
+    mov edx, dword ptr [edi+0Ch]
+    mov edi, dword ptr [edx+ecx*4]
+    test edi, edi
+    je unitNext
+    cmp dword ptr [edi+10h], eax
+    jne unitNext
+    mov eax, dword ptr [edi]
+    mov ecx, edi
+    call dword ptr [eax+0A4h]
+    test al, al
+    je unitNext
+    mov ecx, edi
+    call unitCheckA
+    test al, al
+    je unitNext
+    mov ecx, edi
+    call unitCheckB
+    cmp al, 1
+    jne found
+unitNext:
+    add ebp, 1
+    cmp ebp, ebx
+    jl unitLoop
+typeDone:
+    inc typeIndex
+    jmp nextType
+found:
+    jmp storeAndReturn              ; EDI = the chosen unit
+firstTc:
+    TRACE_ONCE "hcShipmentPointFallback FirstTC (0x669E2E)"
+    push dword ptr [esp+10h]        ; home city (address taken before the push)
+    call UhcGatherFirstTcUnit       ; Unit* or 0; clobbers EAX/ECX/EDX only
+    test eax, eax
+    je typeDone
+    mov edi, eax
+    jmp storeAndReturn              ; 0x4C6CB2: stores [hc+18Ch] when [esp+18h]==1, returns EDI
+lastResort:
+    TRACE_ONCE "hcShipmentPointFallback LastResort (0x669E2E)"
+    push dword ptr [esp+10h]        ; home city (address taken before the push)
+    call UhcGatherLastResortUnit    ; Unit* or 0; clobbers EAX/ECX/EDX only
+    test eax, eax
+    je typeDone
+    mov edi, eax
+    jmp storeAndReturn
+notFound:
+    movzx eax, byte ptr [esp+18h]   ; store
+    push eax
+    push dword ptr [esp+14h]        ; home city (address taken after the push above)
+    call UhcGatherNoPoint           ; clobbers EAX/ECX/EDX only
+    pop ebp                         ; stolen 0x669E2E..0x669E32
+    pop edi
+    pop esi
+    xor eax, eax
+    jmp notFoundReturn
+UhcHcGatherFallbackHook ENDP
+
+; Replaces 0x4C6BCF..0x4C6BD5 with the keyword replace: the list runs instead of the ten stock types.
+; The stored point was refused just before. With the push of EBP, the stack is as at 0x669E2E.
+UhcHcGatherReplaceHook PROC
+    TRACE_ONCE "hcShipmentPointFallback replace (0x4C6BCF)"
+    push ebp
+    cmp resolved, 0
+    jne gatherSearch
+    mov resolved, 1
+    pushad
+    call UhcResolveGatherFallbackTypes
+    popad
+    jmp gatherSearch
+UhcHcGatherReplaceHook ENDP
+
+END
+```
+
+## annexFacing
+
+Contract: [annexFacing](../porting-to-another-dll.md#annexfacing).
+
+Besides the core helpers, it needs: [`deathobservers.h`](helpers.md#death-observers), [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `UnitCreate` `0x498ACC` (9 B), `UnitsNearPoint` `0x4A1C55` (248 B), `KillQueueAsk` `0x4B4DC2` (8 B), `AnnexAiPlaceSite` `0x73D7D2` (8 B), `AnnexForwardSite` `0x7D7CF1` (7 B), `AnnexCreateCall` `0x7D80CF` (5 B), `AnnexAiScanSite` `0x87DB9F` (9 B), `AnnexGhostSite` `0x96E4E7` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
+
+### src/features/annexfacing.cpp
+
+```cpp
+// annexFacing: an annex faces the building it belongs to, in steps of 90 degrees, and falls with it.
+//
+//   <AnnexOf>Barracks</AnnexOf>     a unit type or a proto, in the annex's proto; repeatable, and a unit of any of
+//                                   them can be the parent
+//   <AnnexRange>12</AnnexRange>     metres from the parent's footprint to the annex's centre, default 12
+//
+// The build command (type 3) carries the forward direction of the placed building to every machine; its executor
+// computes the right vector from it at 0x7D7CF1, tests the placement with both (PLACE, 0x7D7EC7) and creates the
+// foundation with it (0x7D80CF). For a tagged proto the hook at 0x7D7CF1 replaces that forward, before all three: the
+// parent is the nearest unit of the command (its builders) of the type, of the same player, in range, or else the
+// nearest such unit of the player in range; the forward becomes the axis of the parent (its forward, its right, or
+// their opposites) that points most toward the parent. So the annex faces the parent and lines up with it, whatever
+// the parent's own angle. Every machine runs the same command on the same state, so all get the same forward.
+//
+// The placement ghost turns the same way before the click (the hook at 0x96E4E7, before the ghost's placement test
+// in 0x96E062): only the local player's view and its green or red test change, never the game.
+//
+// The AI chooses a spot with the world's axes, in two tests: the scan of candidate spots (the hook at 0x87DB9F,
+// before its PLACE at 0x87DBA5) and a build plan's own test FUN_0073D62B (the hook at 0x73D7D2, before PLACE at
+// 0x73D7E3), whose forward the plan's build command carries. Both face the annex by the same rule, writing only the
+// caller's forward and right, so the scan keeps only spots where the turned annex fits. They run where the AI runs;
+// the executor still turns the annex on every machine.
+//
+// The link: the creation call is wrapped, and the new unit's ID is kept with its parent's (by unit ID, the same on
+// every machine). When a unit dies (the shared death observer, AddDeathObserver) or a trigger's Destroy removes it
+// (AddDestroyObserver: trUnitDestroy's call 0x9828E7 of the unit removal 0x4726B2, which never reaches the kill
+// queue), every annex linked to it, or found by the same rule when no link was kept (a saved game: links are not
+// saved), is killed at once through the kill queue, as a trigger's kill. The rule for an annex without a link: the
+// units of its parent type, of its player, in range, that it faces (its forward is one of their axes and points to
+// their side); the nearest of them.
+#include <cmath>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../deathobservers.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+extern "C" {
+void UhcAnnexForwardHook();  // hooks/annexfacing_hooks.asm
+void UhcAnnexGhostHook();
+void UhcAnnexAiPlaceHook();
+void UhcAnnexAiScanHook();
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::uint32_t kUiGlobal = 0x00C67300;  // the UI object of the placement ghost
+constexpr std::uint32_t kCreateCall = 0x007D80CF;
+constexpr float kDefaultRange = 12.0f;
+constexpr float kAligned = 0.999f;  // |cos| between an annex's forward and a parent's axis
+constexpr int kMaxLogLines = 200;
+
+struct IdList {  // the engine's dynamic array {data, count, capacity}
+  std::int32_t* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using UnitsNearFn = std::int32_t(__thiscall*)(char* world, const float* point, float radius, char precise, IdList* out);
+using UnitByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using DistanceFn = float(__thiscall*)(const char* unit, const float* point);
+using KillAskFn = void(__thiscall*)(char* unit, std::int32_t a, std::int32_t b, std::int32_t c);
+using CreateFn = char*(__thiscall*)(char* world, std::int32_t proto, std::int32_t player, const float* position,
+                                    const float* forward, std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d);
+using NameBucketFn = std::int32_t(__thiscall*)(const char* table, const char* name);
+using NameFindFn = bool(__thiscall*)(const char* table, const char* name, std::int32_t bucket, std::int32_t* id);
+
+const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kKillAsk = reinterpret_cast<KillAskFn>(0x004B4DC2);
+const auto kCreate = reinterpret_cast<CreateFn>(0x00498ACC);
+const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
+const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
+
+struct Annex {
+  std::vector<std::string> names;    // the <AnnexOf> lines: any of them is a parent
+  std::vector<std::int32_t> types;   // their IDs, once looked up
+  bool resolved = false;
+  float range = kDefaultRange;
+};
+
+struct Pending {  // the command whose forward the hook set, until its unit is created
+  const char* command = nullptr;
+  std::int32_t parent = -1;
+};
+
+std::unordered_map<std::int32_t, Annex> g_protos;  // by proto ID; the load fills it
+std::map<std::int32_t, std::int32_t> g_links;      // annex unit ID -> parent unit ID
+Pending g_pending;
+IdList g_found = {};
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* Game() { return *reinterpret_cast<char* const*>(kGameGlobal); }
+
+char* World() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<char*>(game, 0x13C);
+}
+
+bool IsAlive(const char* unit) { return (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit); }
+
+bool IsDead(const char* unit) {  // state bit 11: the kill handler returns at once
+  const auto* bits = Field<const std::uint8_t*>(unit, 4);
+  return bits != nullptr && Field<std::uint32_t>(unit, 8) > 11 && (bits[1] & 0x08) != 0;
+}
+
+float DistanceTo(const char* unit, const float* point) {  // to the footprint of a building
+  return (*reinterpret_cast<DistanceFn const* const*>(unit))[0xB8 / 4](unit, point);
+}
+
+std::int32_t PlayerOf(const char* unit) {
+  const char* owner = Field<const char*>(unit, 0x44);
+  return owner == nullptr ? -1 : Field<std::int32_t>(owner, 0);
+}
+
+std::int32_t ProtoIdOf(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  return proto == nullptr ? -1 : Field<std::int32_t>(proto, 0x04);
+}
+
+void LogLine(const wchar_t* format, ...) {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return;
+  }
+  ++g_logLines;
+  wchar_t text[400];
+  va_list args;
+  va_start(args, format);
+  std::vswprintf(text, sizeof(text) / sizeof(text[0]), format, args);
+  va_end(args);
+  uhc::Log(L"%ls", text);
+}
+
+const wchar_t* NodeText(const char* node) { return *reinterpret_cast<const wchar_t* const*>(node + 0x14); }
+
+bool __cdecl ReadAnnexOf(void*, const char* node, char* proto) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = Field<std::int32_t>(proto, 0x04);
+  if (text == nullptr || text[0] == L'\0') {
+    uhc::Log(L"annexFacing: proto %d: <AnnexOf> names no unit type, ignored", id);
+    return true;
+  }
+  Annex& annex = g_protos[id];
+  std::string name;
+  for (const wchar_t* c = text; *c != 0; ++c) {
+    name.push_back(static_cast<char>(*c));
+  }
+  annex.names.push_back(name);
+  annex.resolved = false;
+  if (g_log) {
+    uhc::Log(L"annexFacing: proto %d is an annex of %ls", id, text);
+  }
+  return true;
+}
+
+bool __cdecl ReadRange(void*, const char* node, char* proto) {
+  const wchar_t* text = NodeText(node);
+  const std::int32_t id = Field<std::int32_t>(proto, 0x04);
+  wchar_t* end = nullptr;
+  const double value = text == nullptr ? 0.0 : std::wcstod(text, &end);
+  if (text == nullptr || end == text || !(value > 0.0) || value > 1000.0) {
+    uhc::Log(L"annexFacing: proto %d: <AnnexRange> needs a number above 0, ignored", id);
+    return true;
+  }
+  g_protos[id].range = static_cast<float>(value);
+  return true;
+}
+
+void NewDatabase(char*) {
+  g_protos.clear();
+  g_links.clear();
+  g_pending = {};
+  g_logLines = 0;
+}
+
+// Looks the parent types up once; 0 when the annex has one at least, -1 when none of its names is known.
+std::int32_t TypeOf(Annex& annex) {
+  if (!annex.resolved) {
+    const char* game = Game();
+    const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+    if (database == nullptr) {
+      return -1;
+    }
+    annex.resolved = true;
+    annex.types.clear();
+    const char* table = database + 0x190;
+    for (const std::string& name : annex.names) {
+      std::int32_t id = -1;
+      const std::int32_t bucket = kNameBucket(table, name.c_str());
+      if (kNameFind(table, name.c_str(), bucket, &id)) {
+        annex.types.push_back(id);
+      } else {
+        uhc::Log(L"annexFacing: <AnnexOf>%hs names no unit type or proto; ignored", name.c_str());
+      }
+    }
+  }
+  return annex.types.empty() ? -1 : 0;
+}
+
+bool IsParentProto(const char* proto, const Annex& annex) {
+  for (const std::int32_t type : annex.types) {
+    if (kProtoIsType(proto, type)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string NamesOf(const Annex& annex) {
+  std::string text;
+  for (const std::string& name : annex.names) {
+    text += (text.empty() ? "" : "/") + name;
+  }
+  return text;
+}
+
+const Annex* AnnexOf(std::int32_t protoId) {
+  const auto found = g_protos.find(protoId);
+  return found == g_protos.end() ? nullptr : &found->second;
+}
+
+// A unit that can be the parent of `annex`, owned by `player`.
+bool CanBeParent(const char* unit, const Annex& annex, std::int32_t player) {
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  return proto != nullptr && PlayerOf(unit) == player && IsParentProto(proto, annex) && IsAlive(unit) && !IsDead(unit);
+}
+
+// The nearest parent around `point`, by distance to its footprint, then by the lower unit ID.
+std::int32_t NearestParent(char* world, const float* point, const Annex& annex, std::int32_t player, float range,
+                           std::int32_t skip) {
+  g_found.count = 0;
+  kUnitsNear(world, point, range, 1, &g_found);
+  std::int32_t best = -1;
+  float bestDistance = 0.0f;
+  for (std::int32_t i = 0; i < g_found.count; ++i) {
+    const std::int32_t id = g_found.data[i];
+    const char* unit = kUnitById(world, id);
+    if (id == skip || !CanBeParent(unit, annex, player)) {
+      continue;
+    }
+    const float distance = DistanceTo(unit, point);
+    if (distance <= range && (best < 0 || distance < bestDistance || (distance == bestDistance && id < best))) {
+      best = id;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+// The parent's axis (forward, right or their opposites, in x and z) that points most from `point` to it.
+bool FacingAxis(const char* parent, const float* point, float* x, float* z) {
+  const float dx = Field<float>(parent, 0x14) - point[0];
+  const float dz = Field<float>(parent, 0x1C) - point[2];
+  const float axes[2][2] = {{Field<float>(parent, 0x20), Field<float>(parent, 0x28)},
+                            {Field<float>(parent, 0x38), Field<float>(parent, 0x40)}};
+  float best = -1.0e30f;
+  for (const auto& axis : axes) {
+    const float length = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1]);
+    if (!(length > 1.0e-4f)) {
+      continue;
+    }
+    for (const float sign : {1.0f, -1.0f}) {
+      const float ax = sign * axis[0] / length;
+      const float az = sign * axis[1] / length;
+      const float dot = ax * dx + az * dz;
+      if (dot > best) {
+        best = dot;
+        *x = ax;
+        *z = az;
+      }
+    }
+  }
+  return best > -1.0e30f && (dx != 0.0f || dz != 0.0f);
+}
+
+// The rule for an annex with no kept link: the parents in range it faces, the nearest.
+std::int32_t ParentByRule(char* world, const char* annexUnit, const Annex& annex) {
+  const auto* point = reinterpret_cast<const float*>(annexUnit + 0x14);
+  const float fx = Field<float>(annexUnit, 0x20);
+  const float fz = Field<float>(annexUnit, 0x28);
+  const std::int32_t player = PlayerOf(annexUnit);
+  const std::int32_t self = Field<std::int32_t>(annexUnit, 0x10);
+  g_found.count = 0;
+  kUnitsNear(world, point, annex.range, 1, &g_found);
+  std::vector<std::int32_t> ids(g_found.data, g_found.data + g_found.count);
+  std::int32_t best = -1;
+  float bestDistance = 0.0f;
+  for (const std::int32_t id : ids) {
+    const char* unit = kUnitById(world, id);
+    if (id == self || !CanBeParent(unit, annex, player)) {
+      continue;
+    }
+    const float distance = DistanceTo(unit, point);
+    const float px = Field<float>(unit, 0x20);
+    const float pz = Field<float>(unit, 0x28);
+    const float rx = Field<float>(unit, 0x38);
+    const float rz = Field<float>(unit, 0x40);
+    const float pl = std::sqrt(px * px + pz * pz);
+    const float rl = std::sqrt(rx * rx + rz * rz);
+    const float fl = std::sqrt(fx * fx + fz * fz);
+    if (!(pl > 1.0e-4f) || !(rl > 1.0e-4f) || !(fl > 1.0e-4f)) {
+      continue;
+    }
+    const float alignF = std::fabs(fx * px + fz * pz) / (fl * pl);
+    const float alignR = std::fabs(fx * rx + fz * rz) / (fl * rl);
+    const float front = fx * (Field<float>(unit, 0x14) - point[0]) + fz * (Field<float>(unit, 0x1C) - point[2]);
+    if (distance > annex.range || (alignF < kAligned && alignR < kAligned) || !(front > 0.0f)) {
+      continue;
+    }
+    if (best < 0 || distance < bestDistance || (distance == bestDistance && id < best)) {
+      best = id;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+// Forget the links of another game: a new world, time back, or steps missing.
+void CheckGame(const char* world) {
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
+  if (world != g_world || now < g_lastTime || step - g_lastStep > 1) {
+    g_links.clear();
+    g_pending = {};
+    g_world = world;
+  }
+  g_lastTime = now;
+  g_lastStep = step;
+}
+
+void Tick(char* world, std::int32_t) {
+  if (world == World()) {
+    CheckGame(world);
+  }
+}
+
+// The creation call of the build executor: thiscall(world, proto, player, position, forward, 0, -1, 0, -1), ret 20h.
+char* __fastcall Create(char* world, void*, std::int32_t proto, std::int32_t player, const float* position,
+                        const float* forward, std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d) {
+  char* unit = kCreate(world, proto, player, position, forward, a, b, c, d);
+  if (g_pending.command != nullptr && forward == reinterpret_cast<const float*>(g_pending.command + 0xA8)) {
+    if (unit != nullptr) {
+      g_links[Field<std::int32_t>(unit, 0x10)] = g_pending.parent;
+      LogLine(L"annexFacing: unit %d (proto %d) is the annex of unit %d", Field<std::int32_t>(unit, 0x10), proto,
+              g_pending.parent);
+    }
+    g_pending = {};
+  }
+  return unit;
+}
+
+void OnDeath(char* unit, std::uint32_t, std::uint32_t, std::uint32_t) {
+  if (g_protos.empty() || IsDead(unit)) {
+    return;
+  }
+  char* world = World();
+  if (world == nullptr) {
+    return;
+  }
+  CheckGame(world);
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  g_links.erase(id);  // an annex that dies
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (proto == nullptr) {
+    return;
+  }
+  const std::int32_t player = PlayerOf(unit);
+  // The annexes this unit can be the parent of: every tagged proto whose type it is.
+  float reach = 0.0f;
+  for (auto& [protoId, annex] : g_protos) {
+    if (TypeOf(annex) >= 0 && IsParentProto(proto, annex) && annex.range > reach) {
+      reach = annex.range;
+    }
+  }
+  if (!(reach > 0.0f)) {
+    return;
+  }
+  // Annexes stand within their range of the parent's footprint: search that far beyond its obstruction.
+  const float radius = reach + 2.0f * std::fmax(Field<float>(proto, 0x88), Field<float>(proto, 0x8C)) + 8.0f;
+  const auto* point = reinterpret_cast<const float*>(unit + 0x14);
+  g_found.count = 0;
+  kUnitsNear(world, point, radius, 0, &g_found);
+  std::vector<std::int32_t> near(g_found.data, g_found.data + g_found.count);
+  std::vector<char*> doomed;
+  for (const std::int32_t annexId : near) {
+    char* annexUnit = kUnitById(world, annexId);
+    if (annexUnit == nullptr || annexId == id || PlayerOf(annexUnit) != player || !IsAlive(annexUnit) ||
+        IsDead(annexUnit)) {
+      continue;
+    }
+    const auto tagged = g_protos.find(ProtoIdOf(annexUnit));
+    if (tagged == g_protos.end()) {
+      continue;
+    }
+    if (TypeOf(tagged->second) < 0 || !IsParentProto(proto, tagged->second)) {
+      continue;
+    }
+    const auto link = g_links.find(annexId);
+    const std::int32_t parent = link != g_links.end() ? link->second : ParentByRule(world, annexUnit, tagged->second);
+    if (parent == id) {
+      doomed.push_back(annexUnit);
+      LogLine(L"annexFacing: unit %d died: its annex %d falls with it (%ls)", id, annexId,
+              link != g_links.end() ? L"linked at placement" : L"found by the rule");
+    }
+  }
+  for (char* annexUnit : doomed) {
+    g_links.erase(Field<std::int32_t>(annexUnit, 0x10));
+    kKillAsk(annexUnit, 0, 0, 0);
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the hook at 0x7D7CF1: the build command's executor, before it computes the right vector from the forward.
+void __stdcall UhcAnnexForward(char* command, const char* proto, const char* player) {
+  if (g_protos.empty() || command == nullptr || proto == nullptr || player == nullptr) {
+    return;
+  }
+  const std::int32_t protoId = Field<std::int32_t>(proto, 0x04);
+  const auto tagged = g_protos.find(protoId);
+  if (tagged == g_protos.end()) {
+    return;
+  }
+  char* world = World();
+  const std::int32_t type = TypeOf(tagged->second);
+  if (world == nullptr || type < 0) {
+    return;
+  }
+  CheckGame(world);
+  const std::int32_t playerId = Field<std::int32_t>(player, 0);
+  const auto* point = reinterpret_cast<const float*>(command + 0x90);
+  auto* forward = reinterpret_cast<float*>(command + 0xA8);
+  const auto* ids = Field<const std::int32_t*>(command, 0x40);
+  const std::int32_t count = Field<std::int32_t>(command, 0x44);
+  std::int32_t parent = -1;
+  float bestDistance = 0.0f;
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    const char* unit = kUnitById(world, ids[i]);
+    if (!CanBeParent(unit, tagged->second, playerId)) {
+      continue;
+    }
+    const float distance = DistanceTo(unit, point);
+    if (distance <= tagged->second.range &&
+        (parent < 0 || distance < bestDistance || (distance == bestDistance && ids[i] < parent))) {
+      parent = ids[i];
+      bestDistance = distance;
+    }
+  }
+  const bool builder = parent >= 0;
+  if (!builder) {
+    parent = NearestParent(world, point, tagged->second, playerId, tagged->second.range, -1);
+  }
+  const char* parentUnit = parent < 0 ? nullptr : kUnitById(world, parent);
+  float x = 0.0f;
+  float z = 0.0f;
+  if (parentUnit == nullptr || !FacingAxis(parentUnit, point, &x, &z)) {
+    LogLine(L"annexFacing: proto %d at %.1f, %.1f: no %hs of player %d in %.1f m, stock forward", protoId,
+            static_cast<double>(point[0]), static_cast<double>(point[2]), NamesOf(tagged->second).c_str(), playerId,
+            static_cast<double>(tagged->second.range));
+    return;
+  }
+  LogLine(L"annexFacing: proto %d at %.1f, %.1f, player %d: faces unit %d (%ls), forward %.3f, %.3f -> %.3f, %.3f",
+          protoId, static_cast<double>(point[0]), static_cast<double>(point[2]), playerId, parent,
+          builder ? L"its builder" : L"the nearest", static_cast<double>(forward[0]), static_cast<double>(forward[2]),
+          static_cast<double>(x), static_cast<double>(z));
+  forward[0] = x;
+  forward[1] = 0.0f;
+  forward[2] = z;
+  g_pending = {command, parent};
+}
+
+// From the hook at 0x96E4E7: the placement ghost's update, before its placement test. ESI = the ghost's visual, whose
+// axes start at +4: position, forward +10h, up +1Ch, right +28h; +7Dh marks them changed. The local view only.
+void __stdcall UhcAnnexGhost(char* visual) {
+  const char* ui = *reinterpret_cast<char* const*>(kUiGlobal);
+  if (g_protos.empty() || ui == nullptr || visual == nullptr || Field<char*>(ui, 0x200) != visual) {
+    return;
+  }
+  const auto tagged = g_protos.find(Field<std::int32_t>(ui, 0x1FC));
+  const char* game = Game();
+  char* world = World();
+  if (tagged == g_protos.end() || game == nullptr || world == nullptr) {
+    return;
+  }
+  const std::int32_t type = TypeOf(tagged->second);
+  if (type < 0) {
+    return;
+  }
+  const auto* point = reinterpret_cast<const float*>(visual + 4);
+  const std::int32_t parent =
+      NearestParent(world, point, tagged->second, Field<std::int32_t>(game, 0x3C0), tagged->second.range, -1);
+  const char* parentUnit = parent < 0 ? nullptr : kUnitById(world, parent);
+  float x = 0.0f;
+  float z = 0.0f;
+  if (parentUnit == nullptr || !FacingAxis(parentUnit, point, &x, &z)) {
+    return;
+  }
+  auto* forward = reinterpret_cast<float*>(visual + 0x10);
+  const auto* up = reinterpret_cast<const float*>(visual + 0x1C);
+  auto* right = reinterpret_cast<float*>(visual + 0x28);
+  forward[0] = x;
+  forward[1] = 0.0f;
+  forward[2] = z;
+  right[0] = up[1] * z - up[2] * 0.0f;  // up x forward, as the executor's 0x423792 does with the world's up
+  right[1] = up[2] * x - up[0] * z;
+  right[2] = up[0] * 0.0f - up[1] * x;
+  visual[0x7D] = 1;
+}
+
+// From the hook at 0x73D7D2: an AI build plan's placement test (FUN_0073D62B), before PLACE at 0x73D7E3 with the
+// plan's position `[plan+50h]`, the proto `[plan+ACh]` and the player. The test and the build command the plan sends
+// after it (0x73DA17, from the same locals) then use the faced axes, so the plan keeps only spots where the turned
+// annex fits, which the executor's own turn then accepts. The plan runs on the machine that hosts the AI; the
+// executor turns the annex the same way on every machine whatever forward the command carries.
+// Faces `forward` and `right` (the caller's buffers) for a tagged proto at `point`; false when it changed nothing.
+bool FaceForPlacement(float* forward, float* right, const float* point, std::int32_t protoId, std::int32_t player,
+                      std::int32_t* parentOut) {
+  if (g_protos.empty() || forward == nullptr || right == nullptr || point == nullptr) {
+    return false;
+  }
+  const auto inImage = [](const void* p) {
+    const auto a = reinterpret_cast<std::uintptr_t>(p);
+    return a >= 0x00400000 && a < 0x00F22000;
+  };
+  const auto tagged = g_protos.find(protoId);
+  char* world = World();
+  if (tagged == g_protos.end() || world == nullptr || TypeOf(tagged->second) < 0 || inImage(forward) || inImage(right)) {
+    return false;
+  }
+  const std::int32_t parent = NearestParent(world, point, tagged->second, player, tagged->second.range, -1);
+  const char* parentUnit = parent < 0 ? nullptr : kUnitById(world, parent);
+  float x = 0.0f;
+  float z = 0.0f;
+  if (parentUnit == nullptr || !FacingAxis(parentUnit, point, &x, &z)) {
+    return false;
+  }
+  forward[0] = x;
+  forward[1] = 0.0f;
+  forward[2] = z;
+  right[0] = z;  // the world's up x forward, as the executor's 0x423792
+  right[1] = 0.0f;
+  right[2] = -x;
+  *parentOut = parent;
+  return true;
+}
+
+void __stdcall UhcAnnexAiPlace(float* forward, float* right, const float* point, std::int32_t protoId,
+                               std::int32_t player) {
+  std::int32_t parent = -1;
+  static float lastX = -1.0f;
+  static float lastZ = -1.0f;
+  if (FaceForPlacement(forward, right, point, protoId, player, &parent) && (point[0] != lastX || point[2] != lastZ)) {
+    lastX = point[0];
+    lastZ = point[2];
+    LogLine(L"annexFacing: AI plan, player %d, proto %d at %.1f, %.1f: tested facing unit %d, forward %.3f, %.3f", player,
+            protoId, static_cast<double>(point[0]), static_cast<double>(point[2]), parent,
+            static_cast<double>(forward[0]), static_cast<double>(forward[2]));
+  }
+}
+
+// From the hook at 0x87DB9F: the AI's scan of candidate spots for a build plan (PLACE at 0x87DBA5 with the world's
+// axes); the spots it keeps are those where the faced annex fits. No log: it runs for every candidate.
+void __stdcall UhcAnnexAiScan(float* forward, float* right, const float* point, std::int32_t protoId,
+                              std::int32_t player) {
+  std::int32_t parent = -1;
+  FaceForPlacement(forward, right, point, protoId, player, &parent);
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyAnnexFacing(const Config& config) {
+  const Config::Args* args = config.First("annexFacing");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"annexFacing: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("annexFacing", {&sites::kAnnexForwardSite, &sites::kAnnexCreateCall, &sites::kAnnexGhostSite,
+                                 &sites::kUnitCreate, &sites::kUnitsNearPoint, &sites::kUnitById, &sites::kIsA,
+                                 &sites::kKillQueueAsk, &sites::kUnitAliveSlot, &sites::kAnnexAiPlaceSite,
+                                 &sites::kAnnexAiScanSite}) ||
+      !AddProtoTagHandler("AnnexOf", &ReadAnnexOf) || !AddProtoTagHandler("AnnexRange", &ReadRange) ||
+      !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick) || !AddDeathObserver(&OnDeath) ||
+      !AddDestroyObserver(&OnDeath) ||
+      !WriteJmp(sites::kAnnexAiPlaceSite.va, reinterpret_cast<const void*>(&UhcAnnexAiPlaceHook), 5) ||
+      !WriteJmp(sites::kAnnexAiScanSite.va, reinterpret_cast<const void*>(&UhcAnnexAiScanHook), 6) ||
+      !WriteJmp(sites::kAnnexForwardSite.va, reinterpret_cast<const void*>(&UhcAnnexForwardHook), 6) ||
+      !WriteCall(kCreateCall, reinterpret_cast<const void*>(&Create)) ||
+      !WriteJmp(sites::kAnnexGhostSite.va, reinterpret_cast<const void*>(&UhcAnnexGhostHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/annexfacing_hooks.asm
+
+```asm
+; annexFacing (src/features/annexfacing.cpp). Each hook is entered through a jmp written over the stock code, re-executes
+; the instruction it replaced, and leaves through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcAnnexForward PROTO STDCALL command:DWORD, unitProto:DWORD, player:DWORD
+UhcAnnexGhost PROTO STDCALL visual:DWORD
+UhcAnnexAiPlace PROTO STDCALL fwd:DWORD, rightVec:DWORD, point:DWORD, protoId:DWORD, playerId:DWORD
+UhcAnnexAiScan PROTO STDCALL fwd:DWORD, rightVec:DWORD, point:DWORD, protoId:DWORD, playerId:DWORD
+
+.data
+forwardNext dd 007D7CF7h    ; push eax: the forward's address, for the right vector 0x423792
+ghostNext   dd 0096E4ECh    ; mov ecx,[eax+13Ch]
+aiPlaceNext dd 0073D7D7h    ; lea edi,[ebp+50h]
+aiScanNext  dd 0087DBA5h    ; call [esi+14h], the PLACE of the scan
+
+.code
+
+; Replaces 0x7D7CF1 (lea eax,[edi+0A8h]) in the build command's executor: EDI = the command, EBX = the player's copy of
+; the proto, EBP = the player. The helper may write the forward at [edi+0A8h]; every register and the flags are kept,
+; then the replaced lea writes EAX as stock does.
+UhcAnnexForwardHook PROC
+    TRACE_ONCE "annexFacing build command (0x7D7CF1)"
+    pushfd
+    pushad
+    push ebp
+    push ebx
+    push edi
+    call UhcAnnexForward
+    popad
+    popfd
+    lea eax, [edi+0A8h]
+    jmp forwardNext
+UhcAnnexForwardHook ENDP
+
+; Replaces 0x96E4E7 (mov eax,[0C66234h]) in the placement ghost's update, before its placement test: ESI = the ghost's
+; visual. The helper may turn the visual's axes; every register and the flags are kept, then the replaced line.
+UhcAnnexGhostHook PROC
+    TRACE_ONCE "annexFacing ghost (0x96E4E7)"
+    pushfd
+    pushad
+    push esi
+    call UhcAnnexGhost
+    popad
+    popfd
+    mov eax, dword ptr ds:[0C66234h]
+    jmp ghostNext
+UhcAnnexGhostHook ENDP
+
+; Replaces 0x73D7D2 (lea ebx,[esp+38h] / push ebx) in an AI build plan's placement test, before PLACE at 0x73D7E3:
+; EBX becomes the forward's address, [esp] holds the right vector's (pushed first), EBP = the plan's data (position
+; +50h, proto +ACh), EAX = the player. The helper may write both vectors; every register and the flags are kept.
+UhcAnnexAiPlaceHook PROC
+    lea ebx, [esp+38h]
+    TRACE_ONCE "annexFacing AI placement (0x73D7D2)"
+    pushfd
+    pushad
+    push eax                        ; player
+    push dword ptr [ebp+0ACh]       ; proto
+    lea ecx, [ebp+50h]
+    push ecx                        ; position
+    push dword ptr [esp+30h]        ; right: [esp] at entry, +4 pushfd, +20h pushad, +0Ch the three pushes
+    push ebx                        ; forward
+    call UhcAnnexAiPlace
+    popad
+    popfd
+    push ebx
+    jmp aiPlaceNext
+UhcAnnexAiPlaceHook ENDP
+
+; Replaces 0x87DB9F (fchs / fstp [esp+60h], the last store of the world's axes) in the AI's scan of candidate spots,
+; with PLACE's arguments pushed: [esp] proto, +4 player, +8 position, +0Ch forward, +10h right. The FPU stack is
+; empty after the replayed store; the helper may write both vectors; every register and the flags are kept.
+UhcAnnexAiScanHook PROC
+    fchs
+    fstp dword ptr [esp+60h]
+    TRACE_ONCE "annexFacing AI spot scan (0x87DB9F)"
+    pushfd
+    pushad
+    push dword ptr [esp+24h+4]      ; player: [esp+4] at entry, +24h for pushfd and pushad
+    push dword ptr [esp+24h+4]      ; proto: [esp] at entry, +4 for the push above
+    push dword ptr [esp+24h+10h]    ; position: [esp+8] at entry, +8
+    push dword ptr [esp+24h+1Ch]    ; right: [esp+10h] at entry, +0Ch for the three pushes above
+    push dword ptr [esp+24h+1Ch]    ; forward: [esp+0Ch] at entry, +10h for the four pushes above
+    call UhcAnnexAiScan
+    popad
+    popfd
+    jmp aiScanNext
+UhcAnnexAiScanHook ENDP
+
+END
+```
+
+## customWalls
+
+Contract: [customWalls](../porting-to-another-dll.md#customwalls).
+
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags).
+
+Sites: `XmlText` `0x402733` (9 B), `PlayerProtoEntry` `0x45311B` (8 B), `WallPostOverlap` `0x508DD4` (34 B), `XmlAttribute` `0x598F37` (16 B), `WallLayoutPreviewReturn` `0x6659FC` (11 B), `WallLayoutOrderReturn` `0x847E0C` (11 B), `PlayerProtoByName` `0x8D1998` (10 B), `WallLayoutCivPieces` `0x9F677A` (13 B), `WallLayoutStockNames` `0x9F67D5` (5 B), `WallLayoutPiecesMerge` `0x9F6815` (4 B).
+
+### src/features/customwalls.cpp
+
+```cpp
+// customWalls: a proto that builds like a wall (stock flag WallBuild) lays its own pieces between the clicked
+// points, named by tags in its <Unit>, instead of the civ's stone wall.
+//
+// The wall layout 0x9F66D9 (thiscall(store, player, points, count, -1)) splits each stretch between two clicked
+// points into posts and straight pieces. It takes four protos: the connector (the post), the 5-long and 2-long
+// straights and the gate (the last only to join an existing gate). They come from the player's civ, the
+// civs.xml tags <wall type="Connector|Straight2|Straight5|Gate">proto</wall> (the parser at 0x65A354 keeps
+// the names at [civ+1CCh..1E0h], resolved to IDs at [civ+1E4h..1F8h]), or, for a civ without them, from the
+// names "WallConnector", "WallStraight5", "WallStraight2" and "CWallGate". So any WallBuild proto enters the
+// wall mode (0x7E4762, flag 3Ah), but every one of them lays the civ's stone wall.
+//
+// The hook (hooks/customwalls_hooks.asm, at 0x9F677A, after the civ lookup) asks UhcCustomWallPieces. When
+// the layout was called by the UI, the drag preview (returns to 0x665A01) or the click that orders the wall
+// (0x847E11), and the proto on the cursor ([[game+91Ch]+4A4h], the one uiBuildWallAtPointer builds) has
+// <WallPiece> tags, the pieces are those. The order the click sends is one build order per piece with its proto,
+// so the other machines in a game receive the pieces and need nothing. The AI's walls (0x9F71A5) and the
+// layout's third caller (0x741299) keep the civ's pieces.
+//
+// A second hook (0x508DD4) lets the post of a custom wall stand on a post of the same proto that its owner
+// already has, as the stock test does only for "WallConnector": a new wall can start at the end of another.
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../prototags.h"
+
+extern "C" void UhcCustomWallLayoutHook();
+extern "C" void UhcCustomWallPostHook();
+
+namespace {
+
+constexpr std::uintptr_t kGameGlobal = 0x00C66234;
+constexpr std::size_t kGameWorldUi = 0x91C;
+constexpr std::size_t kUiCursorProto = 0x4A4;
+constexpr std::uint32_t kPreviewReturn = 0x00665A01;
+constexpr std::uint32_t kOrderReturn = 0x00847E11;
+constexpr int kMaxLogLines = 200;
+
+using PlayerProtoFn = char*(__thiscall*)(const char* player, std::int32_t id);
+using PlayerProtoByNameFn = char*(__thiscall*)(const char* player, const char* name);
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kPlayerProtoByName = reinterpret_cast<PlayerProtoByNameFn>(0x008D1998);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+
+enum Piece { kStraight5, kStraight2, kGate, kPieces };
+
+// The names a connector's tags give; an ID of -2 is not looked up yet, -1 not found.
+struct WallSet {
+  std::string names[kPieces];
+  std::int32_t ids[kPieces] = {-2, -2, -2};
+  bool warned = false;
+};
+
+std::unordered_map<std::int32_t, WallSet> g_sets;  // by the connector's proto ID; filled while protos load
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::size_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+bool LogLine() { return g_log && g_logLines++ < kMaxLogLines; }
+
+// <WallPiece type="Straight5|Straight2|Gate">proto</WallPiece>; without type, both straights.
+bool __cdecl ReadWallPiece(void*, const char* node, char* proto) {
+  const char* text = kXmlText(node + 0x14);
+  if (text == nullptr || *text == '\0') {
+    return true;
+  }
+  const char* type = nullptr;
+  const void* value = nullptr;
+  if (kXmlAttribute(node, "type", &value) && value != nullptr) {
+    type = kXmlText(value);
+  }
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  WallSet& set = g_sets[id];
+  if (type == nullptr || *type == '\0') {
+    set.names[kStraight5] = text;
+    set.names[kStraight2] = text;
+  } else if (_stricmp(type, "Straight5") == 0) {
+    set.names[kStraight5] = text;
+  } else if (_stricmp(type, "Straight2") == 0) {
+    set.names[kStraight2] = text;
+  } else if (_stricmp(type, "Gate") == 0) {
+    set.names[kGate] = text;
+  } else {
+    uhc::Log(L"customWalls: proto %hs: unknown WallPiece type %hs (Straight5, Straight2 or Gate)", ProtoName(proto), type);
+  }
+  if (g_log) {
+    uhc::Log(L"customWalls: proto %d (%hs) WallPiece %hs = %hs", id, ProtoName(proto), type == nullptr ? "(both straights)" : type,
+             text);
+  }
+  return true;
+}
+
+// A missing straight takes the other; a missing gate takes the 5-long straight (the gate only lets a wall join
+// an existing gate).
+void FillGaps(WallSet& set) {
+  if (set.names[kStraight5].empty()) {
+    set.names[kStraight5] = set.names[kStraight2];
+  }
+  if (set.names[kStraight2].empty()) {
+    set.names[kStraight2] = set.names[kStraight5];
+  }
+  if (set.names[kGate].empty()) {
+    set.names[kGate] = set.names[kStraight5];
+  }
+}
+
+// The IDs are the same for every player: the player's copies come from them.
+bool Resolve(const char* player, std::int32_t connector, WallSet& set) {
+  if (set.ids[0] == -2) {
+    FillGaps(set);
+    for (int i = 0; i < kPieces; ++i) {
+      const char* proto = set.names[i].empty() ? nullptr : kPlayerProtoByName(player, set.names[i].c_str());
+      set.ids[i] = proto == nullptr ? -1 : Field<std::int32_t>(proto, 8);
+    }
+  }
+  for (int i = 0; i < kPieces; ++i) {
+    if (set.ids[i] < 0) {
+      if (!set.warned) {
+        set.warned = true;
+        uhc::Log(L"customWalls: proto %d: no proto named \"%hs\"; its walls stay the civ's", connector, set.names[i].c_str());
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+}  // namespace
+
+// From the layout hook. Fills pieces[0..3] (connector, 5-long straight, 2-long straight, gate, the player's
+// copies) and returns true when the UI lays a wall of a proto with <WallPiece> tags.
+extern "C" bool __stdcall UhcCustomWallPieces(const char* player, std::uint32_t caller, char** pieces) {
+  if (player == nullptr || (caller != kPreviewReturn && caller != kOrderReturn)) {
+    return false;
+  }
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* ui = game == nullptr ? nullptr : Field<const char*>(game, kGameWorldUi);
+  if (ui == nullptr) {
+    return false;
+  }
+  const std::int32_t cursor = Field<std::int32_t>(ui, kUiCursorProto);
+  const auto found = g_sets.find(cursor);
+  if (found == g_sets.end()) {
+    if (caller == kOrderReturn && LogLine()) {
+      const char* proto = cursor < 0 ? nullptr : kPlayerProto(player, cursor);
+      uhc::Log(L"customWalls: player %d orders a wall of proto %d (%hs), no WallPiece tags: the civ's pieces",
+               Field<std::int32_t>(player, 0), cursor, ProtoName(proto));
+    }
+    return false;
+  }
+  if (!Resolve(player, cursor, found->second)) {
+    return false;
+  }
+  const WallSet& set = found->second;
+  pieces[0] = kPlayerProto(player, cursor);
+  pieces[1] = kPlayerProto(player, set.ids[kStraight5]);
+  pieces[2] = kPlayerProto(player, set.ids[kStraight2]);
+  pieces[3] = kPlayerProto(player, set.ids[kGate]);
+  for (int i = 0; i < 4; ++i) {
+    if (pieces[i] == nullptr) {
+      return false;
+    }
+  }
+  if (caller == kOrderReturn && LogLine()) {
+    uhc::Log(L"customWalls: player %d orders a wall of %hs: straights %hs / %hs, gate %hs", Field<std::int32_t>(player, 0),
+             ProtoName(pieces[0]), ProtoName(pieces[1]), ProtoName(pieces[2]), ProtoName(pieces[3]));
+  }
+  return true;
+}
+
+// From the overlap hook: true for the connector of a custom wall.
+extern "C" bool __stdcall UhcCustomWallPost(const char* proto) {
+  return proto != nullptr && g_sets.count(Field<std::int32_t>(proto, 8)) != 0;
+}
+
+namespace uhc {
+
+Outcome ApplyCustomWalls(const Config& config) {
+  const Config::Args* args = config.First("customWalls");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"customWalls: unknown option %hs; feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("customWalls", {&sites::kWallLayoutCivPieces, &sites::kWallLayoutPiecesMerge, &sites::kWallLayoutStockNames,
+                                 &sites::kWallLayoutPreviewReturn, &sites::kWallLayoutOrderReturn, &sites::kWallPostOverlap,
+                                 &sites::kPlayerProtoByName, &sites::kPlayerProtoEntry, &sites::kXmlAttribute,
+                                 &sites::kXmlText}) ||
+      !AddProtoTagHandler("WallPiece", &ReadWallPiece) ||
+      !WriteJmp(sites::kWallLayoutCivPieces.va, reinterpret_cast<const void*>(&UhcCustomWallLayoutHook), 6) ||
+      !WriteJmp(sites::kWallPostOverlap.va, reinterpret_cast<const void*>(&UhcCustomWallPostHook), 6)) {
+    return Outcome::kFailed;
+  }
+  Log(L"customWalls: a WallBuild proto with <WallPiece> tags lays its own wall pieces");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/customwalls_hooks.asm
+
+```asm
+; customWalls (src/features/customwalls.cpp). Entered through a jmp written over the stock code; each hook
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcCustomWallPieces PROTO STDCALL player:DWORD, caller:DWORD, pieces:DWORD
+UhcCustomWallPost PROTO STDCALL placed:DWORD
+
+.data
+civPiecesNext  dd 009F6780h   ; cmp dword [edi+1E4h],-1, the civ's own pieces
+stockNames     dd 009F67D5h   ; push "WallConnector", the stock names
+piecesMerge    dd 009F6815h   ; xor esi,esi, where both branches meet with the four pieces
+postOverlapNext dd 00508DDAh  ; push "WallConnector", after the instruction this hook re-executes
+postOverlapOk  dd 00508DF3h   ; add esi,14h, the accepted overlap
+
+.code
+
+; Replaces 0x9F677A..0x9F677F (mov edi,eax / cmp edi,ebp / je 9F67D5h) in the wall layout 0x9F66D9, right after
+; it found the player's civ (EAX; EBP is 0, ESI the player). Four DWORDs on the stack get the pieces of a custom
+; wall: the connector, the 5-long straight, the 2-long straight and the gate, the player's copies. The
+; function's return address is at [esp+100h] on entry (sub esp,0F0h and four pushes). When UhcCustomWallPieces
+; fills them, the hook leaves them where both stock branches do at 0x9F6815: EBP the connector, EDI and
+; [esp+44h] the 5-long straight, [esp+48h] the 2-long one, [esp+4Ch] and EAX the gate. Otherwise it runs the
+; three stock instructions.
+UhcCustomWallLayoutHook PROC
+    TRACE_ONCE "customWalls layout (0x9F677A)"
+    mov edi, eax
+    sub esp, 10h
+    mov eax, esp
+    push eax                        ; pieces
+    push dword ptr [esp+114h]       ; the return address ([esp+100h] on entry)
+    push esi                        ; player
+    call UhcCustomWallPieces
+    test al, al
+    je stock
+    mov ebp, [esp]
+    mov edi, [esp+4]
+    mov eax, [esp+8]
+    mov ecx, [esp+0Ch]
+    add esp, 10h
+    mov [esp+44h], edi
+    mov [esp+48h], eax
+    mov [esp+4Ch], ecx
+    mov eax, ecx
+    jmp piecesMerge
+stock:
+    add esp, 10h
+    cmp edi, ebp
+    je names
+    jmp civPiecesNext
+names:
+    jmp stockNames
+UhcCustomWallLayoutHook ENDP
+
+; Replaces 0x508DD4..0x508DD9 (mov ecx,[0C66234h]) in the placement obstruction test: EDI is the proto being
+; placed, ESI the unit in the way, both WallBuild, the same proto and the same owner. The stock code accepts
+; the overlap only when EDI is the player's "WallConnector"; a custom wall's connector is accepted too.
+UhcCustomWallPostHook PROC
+    TRACE_ONCE "customWalls post overlap (0x508DD4)"
+    push edi
+    call UhcCustomWallPost
+    test al, al
+    jne accept
+    mov ecx, dword ptr ds:[00C66234h]
+    jmp postOverlapNext
+accept:
+    jmp postOverlapOk
+UhcCustomWallPostHook ENDP
+
+END
+```

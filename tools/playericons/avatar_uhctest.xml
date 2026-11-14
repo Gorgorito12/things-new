@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test avatars, drawn by tools/make_icons.py. -->
+<avatars>
+  <avatar id="uhc_blue"><image>ui\playericons\uhc_blue</image></avatar>
+  <avatar id="uhc_red"><image>ui\playericons\uhc_red</image></avatar>
+  <avatar id="uhc_green"><image>ui\playericons\uhc_green</image></avatar>
+</avatars>
