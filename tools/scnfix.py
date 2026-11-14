@@ -24,6 +24,9 @@ text:OLD=NEW replaces the text OLD, wherever it is a part of an objective's name
 of the scenario's own name or description (the objectives chunk "OM"), or of a trigger text
 parameter (chat, overlay, counters, unit and army names). Texts may change length: the chunks
 that hold them get the difference (OM or BP or TE, then J1 and BG; or TR and BG).
+copyeffect:EFFECT.PARAM=OLD:NEW adds to a trigger a copy of its effect EFFECT whose parameter PARAM
+is OLD, with PARAM set to NEW, right after it ("copyeffect:Forbid and Disable Unit.ProtoUnit=
+NAtinclad:NAmountedrifle"); the trigger's effect count and the TR and BG sizes follow.
 @FILE reads more edits from FILE, one per line (UTF-8; a line starting with # is skipped), for
 texts with spaces or many edits.
 
@@ -351,6 +354,102 @@ def set_player_units(raw, player, old, new):
     print(f"player {player}: {n} placed {old} -> {new}")
 
 
+# ---------------------------------------------------------------- adding an effect (copyeffect:)
+#
+# Layout (observed on Barbary Coast; docs/wol-campaign.md): a trigger's conditions and effects are
+# records "02 00 00 00" (a version), the type name twice (length-prefixed ASCII), the parameter
+# count and the parameters (campaigncheck.parse_param), the length-prefixed text "true", a count of
+# command lines and each line (length-prefixed ASCII, the XS template), then five zero bytes. A
+# trigger's effect records follow one another directly, after a u32 that counts them.
+
+def effect_end(raw, off):
+    """The end of the effect record whose type name starts at `off` (its version is at off - 4)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    q = off
+    for _ in range(2):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    count = struct.unpack_from("<I", raw, q)[0]
+    q += 4
+    for _ in range(count):
+        q = campaigncheck.parse_param(raw, q)[1]
+    q += 4 + struct.unpack_from("<I", raw, q)[0]          # "true"
+    lines = struct.unpack_from("<I", raw, q)[0]
+    q += 4
+    for _ in range(lines):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    if raw[q:q + 5] != bytes(5):
+        sys.exit(f"scnfix: the effect at 0x{off:x} does not end as expected")
+    return q + 5
+
+
+def copy_effect(raw, ename, pname, old, new):
+    """Adds to a trigger a copy of its effect `ename` whose parameter `pname` is `old`, with that
+    parameter set to `new`, right after it (e.g. a second Forbid and Disable Unit). The trigger's
+    effect count, the TR and BG sizes follow. Returns the new bytearray."""
+    tr_at, _j1, trig = sections(raw)
+    hits = [k for k, (off, n, params) in enumerate(trig)
+            if n == ename and any(pp[0].lower() == pname.lower() and pp[3] == old for pp in params)]
+    if len(hits) != 1:
+        sys.exit(f"scnfix: {len(hits)} effects {ename} with {pname} = {old}")
+    k = hits[0]
+    off, _n, params = trig[k]
+    if struct.unpack_from("<I", raw, off - 4)[0] != 2:
+        sys.exit(f"scnfix: no record version before the effect at 0x{off:x}")
+    end = effect_end(raw, off)
+    record = bytearray(raw[off - 4:end])
+    len_at = next(pp[4] for pp in params if pp[0].lower() == pname.lower()) - (off - 4)
+    n = struct.unpack_from("<I", record, len_at)[0]
+    assert record[len_at + 4:len_at + 4 + 2 * n].decode("utf-16le") == old
+    record[len_at:len_at + 4 + 2 * n] = struct.pack("<I", len(new)) + new.encode("utf-16le")
+    # the first effect of this trigger: walk back over effect records that end where the next begins
+    j = k
+    while j > 0 and trig[j - 1][0] - 4 > tr_at and effect_end_or_none(raw, trig[j - 1][0]) == trig[j][0] - 4:
+        j -= 1
+    count_at = trig[j][0] - 8
+    count = struct.unpack_from("<I", raw, count_at)[0]
+    if not k - j + 1 <= count <= 200:
+        sys.exit(f"scnfix: the effect count before 0x{trig[j][0]:x} reads {count}")
+    raw[end:end] = record
+    struct.pack_into("<I", raw, count_at, count + 1)
+    for at in (tr_at, 0):
+        struct.pack_into("<I", raw, at + 2, struct.unpack_from("<I", raw, at + 2)[0] + len(record))
+    print(f"0x{end:x} added {ename} ({pname} = {new}) after the one with {old}; the trigger has "
+          f"{count + 1} effects")
+    return raw
+
+
+def effect_end_or_none(raw, off):
+    try:
+        return effect_end_quiet(raw, off)
+    except (struct.error, TypeError, IndexError):
+        return None
+
+
+def effect_end_quiet(raw, off):
+    """effect_end without exiting: None when the record is not an effect as laid out above."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    q = off
+    for _ in range(2):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    count = struct.unpack_from("<I", raw, q)[0]
+    q += 4
+    for _ in range(count):
+        r = campaigncheck.parse_param(raw, q)
+        if r is None:
+            return None
+        q = r[1]
+    q += 4 + struct.unpack_from("<I", raw, q)[0]
+    lines = struct.unpack_from("<I", raw, q)[0]
+    if lines > 50:
+        return None
+    q += 4
+    for _ in range(lines):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    return q + 5 if raw[q:q + 5] == bytes(5) else None
+
+
 def main(argv):
     if len(argv) < 3:
         sys.exit(__doc__)
@@ -366,6 +465,7 @@ def main(argv):
     root = None
     param_edits = []
     text_edits = []
+    copy_edits = []
     args = []
     for a in argv[2:]:
         if a.startswith("@"):  # a file of edits, one per line (UTF-8; # starts a comment)
@@ -392,6 +492,11 @@ def main(argv):
         if m:  # trigger[PARAM]:OLD=NEW limits the rename to the parameters named PARAM
             param_edits.append(("proto" if m[1] == "trigger" else "tech", m[3], new, (m[2] or "").lower()))
             continue
+        if old.startswith("copyeffect:"):  # copyeffect:EFFECT.PARAM=OLD:NEW
+            ename, _, pname = old[11:].rpartition(".")
+            vold, _, vnew = new.partition(":")
+            copy_edits.append((ename, pname, vold, vnew))
+            continue
         if old.startswith("homecity:"):
             text_edits.append(("homecity", old[9:], new))
             continue
@@ -417,6 +522,8 @@ def main(argv):
         print(f"{old} -> {new} at 0x{hits[0]:x}")
     if param_edits:  # last: they may move the rest of the file
         raw = edit_trigger_params(raw, param_edits)
+    for ename, pname, vold, vnew in copy_edits:  # each one parses the file again
+        raw = copy_effect(raw, ename, pname, vold, vnew)
     for kind, old, new in text_edits:  # each one parses the file again
         if kind == "name":
             rename_player(raw, old, new)

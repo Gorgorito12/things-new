@@ -130,9 +130,19 @@ Uniformes históricos (cuatro unidades)
   la misión activa al empezar) valen también para la copia: el paquete trae data\techtreey.xml
   (el del arreglo, con cada efecto que nombra a una de las cuatro unidades o a la goleta
   repetido para su copia) y data\protoy.xml (el de WoL con las cinco copias al final).
-  Fusileros montados (NAmountedrifle): en esta versión ningún disparador los da ni los
-  despliega; solo saldrían de un vapor hecho en el muelle, que vuelve si se pierden las dos
-  goletas. Cerrarlo pediría un efecto nuevo en el escenario; se deja así.
+  Fusileros montados (NAmountedrifle): son de 1840 y no deben salir en 1801. Ningún disparador
+  los da; solo podían salir de un vapor hecho en el muelle, que vuelve si se pierden las dos
+  goletas. El disparador del comienzo, que ya prohibía el acorazado NAtinclad, ahora también
+  los prohíbe para el jugador 1.
+  El Lanceiro Negro usa un modelo propio (art\WoL\campaign_historical\lanceiro_negro\
+  lanceiro_hst.gr2): una copia del de WoL que nombra su propia textura, porque en Laguna el
+  juego mostraba la textura original con el cambio de textura del archivo de animación. Si
+  una versión nueva de WoL cambia lanceiro_negro.gr2, hay que rehacer esa copia
+  (aoe3-blender-tools, tools\retexture.py --own-texture; docs del repositorio).
+  Referencias: la carpeta "referencias" junto a este LEEME (no va dentro del zip) tiene una
+  lámina por unidad: arriba las imágenes de época o reconstrucciones (todas de dominio
+  público, con su autor, fecha y licencia), abajo el antes y después y una captura del juego,
+  y un pie que dice qué tiene fuente y qué es suposición.
 
 Probado (14 de noviembre de 2026)
   Desde el menú de la campaña, en Fácil, con nuestra DLL (inglés) y con la DLL de WoL (español):
@@ -306,9 +316,19 @@ Historical uniforms (four units)
   the start) also reach the copy: the pack ships data\techtreey.xml (the campaign fix's, with
   every effect that names one of the four units or the schooner repeated for its copy) and
   data\protoy.xml (WoL's, with the five copies at the end).
-  Mounted riflemen (NAmountedrifle): in this version no trigger gives or deploys them; they could
-  only come from a Steamboat built at the dock, which returns when both schooners are lost.
-  Closing that would need a new effect in the scenario; left as it is.
+  Mounted riflemen (NAmountedrifle): they belong to the 1840s, not to 1801. No trigger gives
+  them; they could only come from a Steamboat built at the dock, which returns when both
+  schooners are lost. The start trigger, which already forbade the NAtinclad ironclad, now
+  forbids them too for player 1.
+  The Lanceiro Negro uses a model of its own (art\WoL\campaign_historical\lanceiro_negro\
+  lanceiro_hst.gr2): a copy of WoL's that names its own texture, because in Laguna the game
+  showed the original texture with the anim file's texture swap. If a new WoL version changes
+  lanceiro_negro.gr2, that copy must be redone (aoe3-blender-tools, tools\retexture.py
+  --own-texture).
+  References: the "referencias" folder beside this README (not inside the zip) has one sheet per
+  unit: the period images or reconstructions on top (all public domain, with author, date and
+  licence), the before/after and an in-game shot below, and a caption saying what is sourced
+  and what is inference.
 
 Tested (14 November 2026)
   From the campaign menu, on Easy, with our DLL (English) and with WoL's DLL (Spanish): the three

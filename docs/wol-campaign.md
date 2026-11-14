@@ -928,7 +928,7 @@ review below changed both.
 
 | Unit | Anim copy | Textures | Accessory |
 |---|---|---|---|
-| Lanceiro Negro | `lanceiro_negro\lanceiro_negro_hist_horse.xml` (horse, includes) `lanceiro_negro_hist_rider.xml` | `lanceiro_negro_hist.ddt` (512 BGRA alpha-test, as the original) + `_b` | `3d_models\Hats\hat_black` on the missing hat's attach |
+| Lanceiro Negro | `lanceiro_negro\lanceiro_negro_hist_horse.xml` (horse, includes) `lanceiro_negro_hist_rider.xml`, on its own model `lanceiro_hst.gr2` (below) | `lanceiro_hst.ddt` (512 BGRA alpha-test, as the original) + `lanceiro_hst_b.DDT` | `3d_models\Hats\hat_black` on the missing hat's attach |
 | Corsair | `barbary_corsair\barbary_corsair_hist.xml` (the stock `.xmb` as text; full and low-poly models) | `barbary_corsair_hist.ddt` (256 DXT3, mips) + `_b` | `3d_models\Hats\turban` on `Bip01 Head` (not `turban_fez`: its file declares 1000 units per metre against the inch-sized numbers of the other hats) |
 | Marines | `marine\marine_hist.xml` (all four ages, WoL's consulate and Hakodate branches) | `marine_hist_1798.ddt` (ages 1–2), `marine_hist_1804.ddt` (ages 3–4), 256 BGRA, + `_b`; `marine_hist_hat.ddt` | `3d_models\Hats\felt_hat` for every age |
 | Janissary | `janissary\janissary_hist.xml` (full and low-poly) | `jannisary_guard_hist.ddt` (256×128 DXT3, mips) + `_b` | none |
@@ -972,8 +972,52 @@ Period images and later reconstructions the user reviewed, all public domain on 
   in yellow in every age.
 - **Corsair:** the turban only, as previewed. **Janissary:** unchanged.
 
+**Comparison sheets** (the reference images on top, the renders and an in-game shot below, the
+caption saying what is sourced and what is inference; also in the pack's `referencias\` folder):
+
+![Lanceiro Negro: references, before/after, in game](media/wol-uniforms-lanceiro-negro.jpg)
+
+![Barbary corsair: references, before/after, in game](media/wol-uniforms-corsario-berberisco.jpg)
+
+![US Marine: references, before/after, in game](media/wol-uniforms-marine-eeuu.jpg)
+
+![Janissary: references, before/after, in game](media/wol-uniforms-jenizaro.jpg)
+
 Renders: the session scratchpad's `uniforms\sheets\final\` (`lanceiro-*.png`, `marine-*.png`, two
 views); captures `uniforms\ingame\v2_1.png` (Lanceiros), `v2_4.png` (marines).
+
+**The Lanceiro's own model (2026-11-14).** In Laguna the `HistLanceiroNegro` riders showed WoL's
+original texture (blue band, grey thighs) while their anim file, hat and spear were ours; the same
+proto showed its new texture on a test map and in Barbary Coast. The `<replacetexture>` was not
+applied in that scenario; the cause is **not proven** (a guess: the original `lanceiro_negro.ddt`
+already bound there, in a Brazilians-based civ that can train `MercLanceiroNegro`). The fix
+(found and tested in `C:\AoE3-UHC-WoLReal4` by a helper agent, then checked here in Real3: the 7
+riders of army 1,11 in red, `integ\lanceiros_laguna_fixed.png`): the copy gets its own model,
+`lanceiro_hst.gr2`, an uncompressed copy of WoL's `lanceiro_negro.gr2` whose two stored texture
+paths are renamed at the same length (`...\units\mercenaries\lanceiro_negro\lanceiro_negro` →
+`...\campaign_historical\lanceiro_negro\lanceiro_hst`, and `_b`) with the CRC recomputed; the
+textures are the same pictures under those names, and the rider anim names the model with no
+`<replacetexture>`. aoe3-blender-tools does it: `venv\Scripts\python -I tools\retexture.py
+--own-texture <uncompressed lanceiro_negro.gr2> lanceiro_hst.gr2
+"WoL\units\mercenaries\lanceiro_negro\lanceiro_negro=WoL\campaign_historical\lanceiro_negro\lanceiro_hst"
+"WoL\units\mercenaries\lanceiro_negro\lanceiro_negro_b=WoL\campaign_historical\lanceiro_negro\lanceiro_hst_b"`
+(the uncompressed copy through the Granny bridge, as `model_sheets.py`). If a WoL update changes
+`lanceiro_negro.gr2`, redo that step on the new file (the new name must keep the old path's length).
+
+**The dock that comes back (2026-11-14, Real3).** The US dock offers Fishing Boat, Schooner,
+Paddle Steamer and Ironclad (age 4), no Steamboat, so the mounted riflemen had no way in through
+it even before the forbid (`integ\dock_tooltips.png`); the forbid stays as a safeguard. Its
+Schooner is WoL's stock one, which trains the stock `NAmarine` in WoL's look: open (a forbid of
+`NAmarine` for player 1 would end marine training once the two `HistSchooner` are lost).
+
+**Why test captures showed the 1804 white trousers in the early ages (checked 2026-11-14).**
+WoL's `marine.xml` (and so the copy) picks the model by tech: none → age 1, `NAtechUSAmarine02` →
+age 2, `03` → 3, `04` → 4, and **`ConsularUpgrader` → age 4**. `Age0Ethiopian`, `Age0zulu`,
+`Age0Egyptian`, `Age0Maori`, `KoreanStartingTechs` and `YPAAAsianStartingTechs` set
+`ConsularUpgrader` active, and the testbed's scenario player is Ethiopian, so its marines wear the
+age-4 model and the 1804 texture. Not a mapping error. In the mission (`HistUSA`, with
+`NAtechUSAmarine01` and `02` active from the start) a placed `HistMarine` (175 HP: the two
+upgrades) wears the 1798 dress with the blue trousers.
 
 ### Historical uniforms: what was built (2026-11-14)
 
@@ -1021,12 +1065,17 @@ checks are in `rea/evidence/age3y-b1a1dab7/wol-campaign-uniforms-20261114/` (`ag
   originals zip adds WoL's `protoy.xml` and the base fix's `techtreey.xml`. The base fix's zips
   and WoL's original textures and anim files keep their hashes (lists in the evidence folder).
 
-**`NAmountedrifle`:** nothing in the historical Barbary Coast enables or deploys it. It was reached
-through the Steamboats (their train list has it), which agent B replaced by a Frigate and two
-Schooners, and no other building of player 1 trains it. One path remains: when both schooners are
-lost the dock comes back, and a US dock can train a Steamboat. Closing it needs a new *Forbid*
-effect, which `scnfix.py` cannot add; retargeting the existing forbid (of `NAtinclad`) would let
-the dock train that ironclad instead. Left as it is, documented.
+**`NAmountedrifle`:** nothing in the historical Barbary Coast enables or deploys it, but it was
+reachable through one path: when both schooners are lost the dock comes back, and a US dock can
+train a Steamboat, whose train list has it (checked later: the US dock does not offer the
+Steamboat; see "The dock that comes back"). `scnfix.py` learned `copyeffect:EFFECT.PARAM=OLD:NEW`
+(a copy of an existing effect, one parameter changed, right after it; the trigger's effect count
+and the `TR`/`BG` sizes follow), and the start trigger that forbids `NAtinclad` now also has
+*Forbid and Disable Unit* `NAmountedrifle` for player 1 (`copyeffect:Forbid and Disable
+Unit.ProtoUnit=NAtinclad:NAmountedrifle`). Layout learned on the way (observed on Barbary Coast):
+an effect record is `02 00 00 00`, its type name twice, its parameters, the text `true`, a count
+of command lines and the lines, then five zero bytes; a trigger's effects follow a u32 that counts
+them.
 
 **Tests (2026-11-14):**
 
