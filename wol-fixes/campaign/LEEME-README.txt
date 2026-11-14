@@ -32,6 +32,9 @@ Qué arregla
     al cambiarle la civilización. Afecta a cualquier escenario en que el jugador 2 tenga un
     Centro Urbano. Se cambia solo ese efecto a "BasePercent" (sigue en 0 mientras la técnica
     está activa, y vuelve a su valor al quitarla). Ahora el Centro Urbano tiene 6500 de vida.
+    Los Egipcios no cambian: se comprobó en escaramuzas (jugador y IA egipcios, con el archivo
+    original y con el cambiado) que su TownCenter sigue con 0 de vida y 0 de población, que
+    empiezan con lo mismo (caravana, aldeanos, Ali Pasha) y que no hay errores de script.
   - Tres mejoras borradas pasan a VeteranMusketeers, GuardMusketeers y VeteranPikemen.
   - Los jugadores de Laguna son Brasileños (sus unidades y edificios lo son).
 
@@ -47,8 +50,7 @@ Notas históricas (para el equipo de WoL)
 Lo que falta (para el equipo de WoL)
   Los objetivos no se jugaron hasta el final (cada misión se ganó con la consola para probar la
   victoria y el paso a la siguiente). Conviene abrir cada misión en el editor, revisar las
-  civilizaciones y las unidades cambiadas, y guardarla. No se probó un jugador egipcio que
-  empiece con Centro Urbano después del cambio de Age0Egyptian.
+  civilizaciones y las unidades cambiadas, y guardarla.
 
 Cómo aplicarlo
   1. HAGA COPIA PRIMERO. WoL-campaign-originals.zip trae los originales de estos 5 archivos.
@@ -87,6 +89,10 @@ What this fixes
     0 with "Assign", which is not undone when the civ changes. It affects any scenario where
     player 2 has a Town Center. Only that effect becomes "BasePercent" (still 0 while the tech
     is active, back to normal when it is removed). The Town Center now has 6,500 hit points.
+    The Egyptians do not change: checked in skirmishes (Egyptian human and Egyptian AI, with the
+    original file and with the changed one) that their TownCenter still has 0 hit points, that
+    they start with the same units (caravan, villagers, Ali Pasha) and that there is no script
+    error.
   - Three removed upgrades become VeteranMusketeers, GuardMusketeers and VeteranPikemen.
   - Laguna's players are Brazilians (their units and buildings are).
 
@@ -103,8 +109,7 @@ Historical notes (for the WoL team)
 What is left (for the WoL team)
   The objectives were not played to their end (each mission was won from the console, to test
   the victory and the move to the next mission). Best: open each mission in the editor, check
-  the civs and the replaced units, and save it. An Egyptian player starting with a Town Center
-  was not tested after the Age0Egyptian change.
+  the civs and the replaced units, and save it.
 
 Tested
   The campaign from the menu, on Easy: Barbary Coast, Laguna and Hakodate start, run with no

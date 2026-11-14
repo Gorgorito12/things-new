@@ -82,9 +82,33 @@ player 2's `TownCenter` keeps 0 HP**, whatever civ the scenario gives player 2.
 `relativity ='BasePercent'` (amount 0.00). While the tech is active the value is the base × 0, as
 before; when it is removed the game recomputes from the base. Tested: unit 647 is a plain
 `TownCenter` at **6 500 HP**, the objective's two `CinematicBlock`s (3196, 3197) are still there
-after 3 minutes and `_Obj6_Done` does not fire (`m2-laguna-tc6500-3min.png`). Not tested: an
-Egyptian player who starts with a `TownCenter` (the reason the effect exists), which should still
-lose it while `Age0Egyptian` is active. The `IGCTownCenter` swap of the previous commit is dropped.
+after 3 minutes and `_Obj6_Done` does not fire (`m2-laguna-tc6500-3min.png`). The `IGCTownCenter`
+swap of an earlier commit is dropped.
+
+This is an **engine trap for every scenario**: player N always passes through civ N, so any
+scenario where player 2 is not Egyptian loses player 2's `TownCenter` HP (and its
+`PopulationCapAddition`, also an `Assign` 0 in `Age0Egyptian`, which this fix leaves as it is).
+
+**The Egyptians keep working as before** (checked 2026-11-13, because the change reaches every
+Egyptian game; Egyptians are meant to have no working Town Center and use `EGYtowncenterCARAVAN`):
+- *Engine:* the effect value function 0x7F892A (REA `ev_3ce668d2…`): `Assign` writes the amount;
+  `BasePercent` adds `base × amount − base`, i.e. `−base` for amount 0, and takes it back on
+  removal. Applied to a `TownCenter` still at its base 6 500 it gives 0, the same as `Assign`; it
+  differs only if something had raised the Town Center's HP before `Age0Egyptian`, the civ's
+  first tech. Later Town Center HP techs add on top in both cases.
+- *Skirmish, human Egyptians vs a German AI, original techtree then the patched one:* the
+  Egyptian player's `TownCenter` proto has 0 maximum and 0 initial HP in both
+  (`egypt-A-*-tcproto.txt`); the whole proto dumps differ in one word only, +70h, which varies
+  between runs anyway (`egypt-A-*-p1tc-proto.txt`); the starting units are the same (Ali Pasha,
+  5 villagers, `EGYtowncenterCARAVAN` at 6 500, the bazaar tent); the map's starting
+  `TownCenter` dies at once in both (its `TownCenterObstruction` stays); `spawnUnits` gives an
+  `Outpost` but no surviving `TownCenter` in both.
+- *Skirmish, human Dutch vs the Egyptian AI (`wolAliPasha`), both techtrees, 4 minutes:* the AI's
+  `TownCenter` proto 0/0 in both, its units the same in both (only its explorer's HP after a fight
+  differs), no XS error in either. (In both runs the Egyptian AI had not grown past its 5
+  villagers in 4 minutes: that is how WoL's AI plays them today, not an effect of the change.)
+
+So the techtree change stays.
 
 ### Laguna: removed trigger techs
 
@@ -201,7 +225,6 @@ match today's data.
 ## Open
 
 - The objectives were not played to their end (above): that needs a person at the mouse.
-- An Egyptian player starting with a `TownCenter`, after the `Age0Egyptian` change (not tested).
 - `jumpToNextCampaignNode` and `campaignAdvance` do nothing from the console; `winScenario`
   works. On the campaign screen *Play* runs the current node (the farthest unlocked), not the
   one selected.
