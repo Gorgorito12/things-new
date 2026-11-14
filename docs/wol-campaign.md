@@ -1049,6 +1049,20 @@ the janissary is drawn whole in the cinematic, in our DLL's bed and in WoL's
 (`barbary_intro_new.mp4`, `jan_frames.png`: the new janissary on top, the stock one in the same
 scene below, `barbary_intro_stockjan.mp4`). Captures are in the scratchpad's `uniforms\integ\`.
 
+**The "red block" beside the cinematic's janissary (checked 2026-11-14).** It is one unit: the
+cinematic's janissary is unit 2752 (player 3, editor 3367), and no other unit stands within 16 m
+of it (the nearest are the corsair 2748 and a méhariste 2749, 16.7 and 17.9 m away). The block is
+the model's own coat skirt, which flares out wide; seen from above in the cinematic's crouching pose
+it sticks out beside the body. The stock janissary shows the same block in the same scene (red with
+a gold edge). The first repaint toned the gold to a dark olive, so the skirt's edge no longer tied
+it to the coat; the texture now keeps it as brass (saturation 0.6, value 0.85 instead of 0.35 and
+0.55). Renders from above (`--elevation 65`): `uniforms\sheets\jan-top-v1.png` and
+`jan-top-v2.png`; in game, stock beside the copy (scenario route in Real3 with the pack installed):
+`uniforms\integ\jan_side2.png`, `jan_v2_2.png`; the cinematic, stock, first repaint and the new
+one side by side: `uniforms\integ\jan_cinematic_stock_v1_v2.png` (from `barbary_intro_v2.mp4`).
+The pack was rebuilt with the new texture and the Barbary Coast load test re-run (the same placed
+units, the janissary drawn in the cinematic).
+
 ## Tools
 
 - `tools/campaigncheck.py <game folder>`: the static check of all of the above (civ table, player
