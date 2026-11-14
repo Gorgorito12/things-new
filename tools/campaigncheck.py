@@ -2,12 +2,16 @@
 
 Usage:
     python -I tools/campaigncheck.py <game folder> [--campaign <xml> ...] [--scn <file> ...] [--all]
+    python -I tools/campaigncheck.py <game folder> --inventory --scn <file> [--scn <file> ...]
 
 <game folder> is a test copy (e.g. C:\\AoE3-UHC-WoLReal3). Without --campaign it reads the campaign
 definitions the exe and the main menu name: Campaign\\Wonders\\ChinaIndiaJapan.xml (the path the
 menu passes to startCampaign) and, when present, the second copy Campaign\\chinaindiajapan.xml.
 --scn checks the scenarios named (alone, without the definitions, unless --campaign is given);
 --all prints every reference, not only the misses.
+--inventory (with --scn) prints instead, per player, its civ, flag and home city, the units placed
+for it by proto, what its triggers deploy, create, rename or set, then the objectives (name, text,
+hint) and the trigger texts (overlays, chat).
 
 What it checks (what the game does with each is in docs/wol-campaign.md, "How a scenario loads"):
 - the campaign XML: every string ID (DisplayNameStringID, RolloverStringID, HCNote*, LoadTextID)
@@ -279,6 +283,11 @@ def parse_param(raw, q):
         q += 12
         value = raw[q:q + 2 * ln].decode("utf-16le", errors="replace")
         q += 2 * ln
+        if vtype == 22 and ln == 0:  # a text: empty value, then its own length and UTF-16 text
+            n = struct.unpack_from("<I", raw, q)[0]
+            if n > 20000:
+                return None
+            q += 4 + 2 * n
         return (name[:-1].decode("latin-1"), disp[:-1].decode("latin-1"), vtype, value, len_at), q
     except struct.error:
         return None
@@ -442,14 +451,138 @@ def check_scenario(gd, path, rep):
             print(f"  type {vt}: {len(c)} distinct values")
 
 
+# ---------------------------------------------------------------- inventory (--inventory)
+
+def placed_units(raw):
+    """(unit ID, player, proto index, editor name) of each placed unit. A unit is an H1 chunk: EN
+    (size 0x50: the unit ID the game uses, 0, the player, ...) then UN (its editor name, then the
+    proto's table index twice). Triggers name a unit by its editor name (a number), not its ID."""
+    out = []
+    for m in re.finditer(rb"H1(....)ENP\x00\x00\x00", raw, flags=re.S):
+        uid, _, player = struct.unpack_from("<iii", raw, m.end())
+        u = raw.find(b"UN", m.end() + 0x50, m.end() + 0x60)
+        if u < 0:
+            continue
+        n, ln = struct.unpack_from("<II", raw, u + 2)
+        name = raw[u + 10:u + 10 + ln].rstrip(b"\0").decode("latin-1")
+        out.append((uid, player, struct.unpack_from("<I", raw, u + 10 + ln)[0], name))
+    return out
+
+
+def objectives(raw):
+    """(ID, name, [texts]) of each objective: the OM chunk (tag, size, version, next ID, count),
+    then per objective its ID and UTF-16 name, then its text and hint (UTF-16), or string IDs.
+    The strings after the last objective's two texts are the scenario's own (name, description)."""
+    for m in re.finditer(rb"OM(....)(....)(....)(....)", raw, flags=re.S):
+        size, ver, next_id, count = struct.unpack("<IIII", m.group(1) + m.group(2) + m.group(3) + m.group(4))
+        if not (ver < 32 and 0 < count < 200 and count <= next_id < 1000 and m.start() + 6 + size <= len(raw)):
+            continue
+        body = raw[m.end():m.start() + 6 + size]
+        recs = []
+        for r in re.finditer(rb"(....)(....)((?:[\x20-\x7e]\x00)+)", body, flags=re.S):
+            oid, n = struct.unpack("<II", r.group(1) + r.group(2))
+            name = r.group(3).decode("utf-16le")
+            if 0 < oid < next_id and n == len(name) and re.fullmatch(r"\w+", name) and \
+                    (not recs or oid > recs[-1][0]):
+                recs.append((oid, name, r.start(), r.end()))
+        if len(recs) != count:
+            continue
+        out = []
+        for i, (oid, name, _, at) in enumerate(recs):
+            end = recs[i + 1][2] if i + 1 < len(recs) else len(body)
+            out.append((oid, name, [s for _, s in utf16_strings(body[at:end]) if len(s) > 1]))
+        return out
+    return []
+
+
+def param_text(raw, vtype, value, len_at):
+    """A text parameter (type 22) keeps an empty value and its text right after it."""
+    if vtype == 22 and value == "":
+        q = len_at + 4
+        n = struct.unpack_from("<I", raw, q)[0]
+        if n < 4000:
+            return raw[q + 4:q + 4 + 2 * n].decode("utf-16le", errors="replace")
+    return value
+
+
+def inventory(gd, path):
+    """Prints, per player, its civ, flag and home city, the units placed for it by proto, what the
+    triggers deploy, create or set for it, and the scenario's texts (objectives, chat, overlays)."""
+    print(f"\n== inventory {path}")
+    raw = decompress(path)
+    strs = utf16_strings(raw)
+    protos = name_tables(raw)[0][2]
+    techs = name_tables(raw)[2][2]
+    st = read_text(gd.root / "data" / "stringtabley.xml")
+    text_of = {int(i): s for i, s in re.findall(r"_locID\s*=\s*['\"](\d+)['\"][^>]*>(.*?)</String>", st, flags=re.S)}
+    civs = strip_comments(read_text(gd.root / "data" / "civs.xml"))
+    flag_of = {}
+    for block in re.findall(r"<civ>(.*?)</civ>", civs, flags=re.S | re.I):
+        n = re.search(r"<name>([^<]+)</name>", block, flags=re.I)
+        f = re.search(r"<homecityflagtexture>([^<]+)</homecityflagtexture>", block, flags=re.I)
+        if n:
+            flag_of[n.group(1).strip()] = f.group(1).strip() if f else "-"
+    units = placed_units(raw)
+    owner = {name: (player, protos[idx] if idx < len(protos) else f"#{idx}") for _, player, idx, name in units}
+    by_player = defaultdict(Counter)
+    for _, player, idx, _ in units:
+        by_player[player][protos[idx] if idx < len(protos) else f"#{idx}"] += 1
+    acts = defaultdict(list)
+    texts = []
+    resolve = lambda s: re.sub(r"\{(\d+)\}", lambda m: text_of.get(int(m.group(1)), m.group(0)), s)  # noqa: E731
+    for off, name, params in triggers(raw):
+        p = {pn: param_text(raw, vt, v, la) for pn, _, vt, v, la in params}
+        for key in ("Text", "Message"):
+            if p.get(key):
+                texts.append(f"{name}: {resolve(p[key])}")
+        if "SrcArmy" in p and ("ProtoName" in p or name.startswith("Army")):
+            pl = p["SrcArmy"].split(",")[0]
+            what = f"{p.get('Count', '?')} {p['ProtoName']}" if "ProtoName" in p else ", ".join(f"{k}={v}" for k, v in p.items())
+            acts[pl].append(f"{name} army {p['SrcArmy']}: {what}")
+        elif "SrcObject" in p and ("ProtoUnit" in p or "NewName" in p):
+            pl, old = owner.get(p["SrcObject"], ("?", "?"))
+            acts[str(pl)].append(f"{name} unit {p['SrcObject']} ({old}) -> {p.get('ProtoUnit', repr(p.get('NewName')))}")
+        elif "TechID" in p and name == "Set Tech Status" and re.fullmatch(r"\d+", p["TechID"]):
+            i = int(p["TechID"])
+            acts[p.get("PlayerID", "?")].append(f"{name} {techs[i] if i < len(techs) else i} = {p.get('Status')}")
+        elif name in ("Player : SetAge", "Diplomacy", "Army Convert"):
+            acts[p.get("Player") or p.get("Player1") or p.get("PlayerID") or "?"].append(
+                f"{name}: " + ", ".join(f"{k}={v}" for k, v in p.items()))
+    for name, civ_id, hc in player_records(raw, strs):
+        civ = gd.civ_name(civ_id)
+        num = next((i for i, (n, _, _) in enumerate(player_records(raw, strs)) if n == name), None)
+        print(f"\n-- player {num}: {name} | civ {civ_id} {civ} | flag {flag_of.get(civ, '-')} | home city {hc}")
+        placed = by_player.get(num, Counter())
+        print(f"   placed: {sum(placed.values())} units")
+        for proto, c in sorted(placed.items(), key=lambda kv: (-kv[1], kv[0])):
+            print(f"     {c:4d} {proto}")
+        for a in acts.get(str(num), []):
+            print(f"   trigger: {a}")
+    for pl in sorted(set(acts) - {str(i) for i in range(len(player_records(raw, strs)))}):
+        for a in acts[pl]:
+            print(f"   trigger (player {pl}): {a}")
+    print("\n-- objectives")
+    for oid, name, ts in objectives(raw):
+        print(f"   {oid:2d} {name}: " + " | ".join(ts))
+    print("\n-- trigger texts")
+    for t in texts:
+        print(f"   {t}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("root", type=Path)
     ap.add_argument("--campaign", action="append", default=[])
     ap.add_argument("--scn", action="append", default=[])
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--inventory", action="store_true",
+                    help="with --scn: per player, its civ, flag, placed units, trigger units and the texts")
     a = ap.parse_args()
     gd = GameData(a.root)
+    if a.inventory:
+        for s in a.scn:
+            inventory(gd, Path(s) if Path(s).is_absolute() else a.root / s)
+        return 0
     rep = Report(a.all)
     print(f"{a.root}: {len(gd.protos)} protos, {len(gd.unittypes)} unit types, {len(gd.tech_names)} techs, "
           f"{len(gd.civs)} civs, {len(gd.strings)} strings, {len(gd.trigger_types)} trigger types")

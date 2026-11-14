@@ -140,6 +140,199 @@ civ decides what the AI can train in those Indian buildings, so **Indians**, the
 `milazzo.age3Yscn` and `MISSION_3.age3Yscn` (no node uses them) have the same civ-table and
 player problems; Milazzo also places 43 `BolivarGuard`, a removed proto.
 
+## Historical version: Laguna
+
+Proposal (2026-11-13, research only, nothing built or played) for an optional pack
+`wol-fixes/campaign-historical/` that sits on top of the base fix and does not replace it. The
+inventory comes from `python -I tools/campaigncheck.py C:\AoE3-UHC-WoLReal3 --inventory --scn
+<laguna.age3Yscn>` on the fixed copy in `WoL-campaign-fix.zip`; the data from WoL's `data\` of that
+bed. The flag images were decoded from WoL's `.ddt` files with aoe3-blender-tools' `ddt.py`.
+
+### Inventory (the fixed file)
+
+| # | Player | Civ (base fix) | Flag shown now | Placed (main protos) | Its triggers |
+|---|---|---|---|---|---|
+| 1 | Giuseppe Garibaldi (human) | Brazilians, Italian home city | Empire of Brazil | Town Center, 5 houses, mill, pen; 5 Musketeer, 4 Pikeman ("Partisan"), 4 Corvette; a group near (107,130) of one each: Dragoon, Hussar, MountedCassador, Volunteer, Jinete, Lancero, WolJagunco, IMFarrapo, IMredshirt; 2 SPCXPChayton (Chayton Black: unit 4484 renamed "Giuseppe Garibaldi", and a cinematic actor); 1 WOLConsulateHatamoto (a Tokugawa samurai, no trigger names it); 28 cinematic blocks | Age 1; `IMMIGRANTgerman` and `IMMIGRANTcsa` off, `Abolition1–3` on; unit 3060 (the Redshirt) destroyed at start; armies 1,10 = 8 WolJagunco, 1,11 = 7 Lancero, 1,12 = 6 Pedrero, 1,13 = 20 Jinete; 1,14 = 1 ShipWagon (redeployed when lost); the Riograndense caravel converted to player 1 |
+| 2 | Laguna (AI, `AIStart`) | Brazilians, Italian home city | Empire of Brazil | Town Center 647 (objective 6), 33 houses, 24 `SPCPort` props, barracks (one turned into a stable), stable, church, market, artillery depot, 3 docks, 5 outposts, 2 Hussar | Age 3; `Abolition0–5`, outpost upgrades, `VeteranVolunteers`, `VeteranHussarsLA`, `VeteranPikemen`; neutral with 4 |
+| 3 | São José do Norte | Brazilians, Italian home city | Empire of Brazil | `FortFrontier` (renamed "Sao Jose do Norte"), walls and 2 gates, 21 outposts, 2 docks; 131 Musketeer, 15 Pasavolante, 14 Jinete, 12 Hussar, 5 Dragoon, 4 MountedCassador, 1 Escolta | Age 3; fort, wall and outpost upgrades, Veteran/Guard Musketeers and Hussars; 9 armies of 6 Musketeer (3,13–3,21) and patrol 3,22 (up to 4 Hussar + 7 Jinete) |
+| 4 | Brazilian Navy | Brazilians | Empire of Brazil | 3 Caravel, 2 Galleon | neutral with 2 and 3 (sic) |
+| 5 | Riograndese Republic | Brazilians | Empire of Brazil | 1 cinematic block | army 5,10 = 1 Caravel, sailed up then converted to player 1 |
+| 6 | Wild Animals | Italians (left alone) | Italy | 5 PetJaguar | – |
+
+Texts. Overlay *"Battle of Laguna, 1840"*; campaign node string 76596 *"Laguna (1840)"*, intro
+76597. Objectives (ID, name: text): 1 AgeUp (Capital Age), 2 PostOfficeAndAlly (post office, ally
+with the Italians), 3 BoatTrain (Ship Wagon from the immigrant colony), 4 BoatTransport (two
+Corvettes overland to the flag near the ocean), 5 BeatNavy (*"Defeat the Brazilian navy by the
+port of Laguna"*), 6 TCRush (*"Destroy Laguna's Town Center"*), 7 TatterCav (12 `IMFarrapo`),
+9 ImmigrantTown, 11 ShipsMustLive, 12 ShipsAreImportant (two Corvettes survive), 13
+HaveAllShipsLive. The objectives chunk ends with the scenario's own description, *"Fuck up Laguna
+real serious"* (a placeholder). Six of the eight chat lines are placeholders too (*"good now build
+mail house i wanna write to mom k?"*, *"we fucked up, almost all aquatic-based vehicles died"*);
+only 76600 and 76601 (string table) are written text.
+
+### Facts, with sources
+
+- **Overland haul (July 1839).** Garibaldi and John Griggs moved two *lanchões*, the *Seival*
+  and the *Farroupilha* (Garibaldi's memoir calls his *Rio Pardo*: the name differs between
+  sources), from the Lagoa dos Patos at the Capivari to the mouth of the Tramandaí on wheeled
+  carriages; the memoir gives about two hundred oxen and about fifty-four miles. They put to sea
+  because the Empire held the lagoon's only outlet, at Rio Grande and **São José do Norte**. A
+  storm wrecked Garibaldi's boat near the Araranguá (16 lost); the *Seival* arrived.
+  [pt.wikipedia República Juliana](https://pt.wikipedia.org/wiki/Rep%C3%BAblica_Juliana),
+  [en.wikipedia Capture of Laguna](https://en.wikipedia.org/wiki/Capture_of_Laguna), Garibaldi's
+  memoir as quoted in [The Life of General Garibaldi](https://litres.com/book/garibaldi-giuseppe/the-life-of-general-garibaldi-24858979/read/page-3).
+- **Capture of Laguna, 22 July 1839.** David Canabarro (land) with Garibaldi and Griggs (the two
+  launches), about 1 000 men, against Vicente Vilas-Boas with 2 schooners and 3 launches; attacked
+  at night from the south; one imperial ship burned, one captured; only the *Cometa* escaped.
+  The **Juliana (Catarinense) Republic** was proclaimed on 29 July 1839.
+  [Capture of Laguna](https://en.wikipedia.org/wiki/Capture_of_Laguna),
+  [Juliana Republic](https://en.wikipedia.org/wiki/Juliana_Republic).
+- **Recapture, 15 November 1839.** About 3 000 imperials with 14 warships and 31 guns (5
+  gunboats, 4 launches, the pataches *São José* and *Desterro*, the brigs *Eolo* and *Cometa*, the
+  schooner *Bela Americana*; Frederico Mariath at sea, Col. José Fernandes dos Santos Pereira on
+  land) against about 1 200 republicans with the schooners *Rio Pardo*, *Caçapava* and
+  *Itaparica*, the gunboat *Lagunense* and the launch *Santana*. Imperial victory; the
+  republican flotilla was sunk, burned or taken. [Recapture of Laguna](https://en.wikipedia.org/wiki/Recapture_of_Laguna).
+- **São José do Norte, 16 July 1840.** Bento Gonçalves, with Garibaldi, about 1 200 men,
+  assaulted the town held by 599 National Guardsmen under Col. Antônio Soares de Paiva and was
+  repulsed after the Rio Grande garrison and the launch *Torres* reinforced it.
+  [Battle of São José do Norte](https://en.wikipedia.org/wiki/Battle_of_S%C3%A3o_Jos%C3%A9_do_Norte)
+  (casualty figures disagree inside the article).
+- **Troops.** The Riograndense army was cavalry above all: gaucho militia and the **Lanceiros
+  Negros**, about 400 freed or enslaved Black men, formed 12 September 1836, lances longer than
+  usual, chiripá, poncho, red headband; Joaquim Teixeira Nunes's lancers went on the Laguna
+  expedition; destroyed at Porongos, 14 November 1844.
+  [pt.wikipedia Lanceiros Negros](https://pt.wikipedia.org/wiki/Lanceiros_Negros),
+  [Ragamuffin War](https://en.wikipedia.org/wiki/Ragamuffin_War). The Empire fought with line and
+  National Guard troops and the Imperial Navy's small craft (above). *Inference, not checked:*
+  imperial infantry of the period was organised in *caçadores* battalions.
+- **Not of 1839–40.** Garibaldi's **red shirts** and the **black flag with a volcano** are those of
+  the Italian Legion of Montevideo, formed in 1843 ([Redshirts (Italy)](https://en.wikipedia.org/wiki/Redshirts_(Italy))).
+  The *jagunço* is a late-19th-century hired gunman of the Northeast.
+- **Flags.** Riograndense Republic: the green-red-yellow tricolour, divided diagonally; it
+  began about 1835 without arms, which were added later (pt.wikipedia [Bandeira do Rio Grande do Sul](https://pt.wikipedia.org/wiki/Bandeira_do_Rio_Grande_do_Sul);
+  an automated summary of that page called the stripes horizontal, which contradicts the flag as
+  drawn everywhere, WoL's texture included: the diagonal is taken as right, the summary as wrong).
+  Juliana Republic: green-white-yellow horizontal tricolour, adopted 10 August or 10 September
+  1839 ([FOTW](https://crwflags.com/FOTW/FLAGS/br_jul.html), the date is disputed). Empire of
+  Brazil: green field, yellow rhombus, imperial arms.
+
+**Date and title.** The mission plays July 1839: the overland boats, the imperial navy beaten at
+Laguna's port, the town taken (*"We've liberated Laguna!"*), with São José do Norte as the fort that
+blocks the river, which is why the boats went overland. Nothing of the July 1840 assault (a
+republican defeat) is in it. Proposed: overlay *"Capture of Laguna, July 1839"*, node *"Laguna
+(1839)"*, and a note in the intro or the victory text: *"On 29 July 1839 the Juliana Republic
+was proclaimed in Laguna. The Empire retook the town on 15 November 1839."*
+
+### Replacements
+
+| Current | Proposed | Reason |
+|---|---|---|
+| Players 1 and 5: civ Brazilians | hidden civ `WOLCampFarrapos` (below) | Today Garibaldi and the Riograndense Republic fly the Empire's flag |
+| Players 2, 3, 4: civ Brazilians | keep Brazilians | Its flag (`War of the Triple Alliance\Flags\brazil`) **is** the Empire of Brazil's |
+| Army 1,11 (7) and unit 2676: `Lancero` | `MercLanceiroNegro` | WoL has the Lanceiros Negros (600 HP, pop 4, mercenary); Teixeira Nunes's lancers were on this expedition |
+| Army 1,10 (8) and unit 2530: `WolJagunco` | `MercBacamarteer` | Keeps the blunderbuss (*bacamarte*) of the removed `Bacamartero` without the 1890s outlaw; regular-looking, pop 3. Check the model first (render list) |
+| Army 1,13 (20): `Jinete` | keep | Gaucho carbine cavalry fits |
+| Unit 2764 `WOLConsulateHatamoto` (player 1) | remove, or `MercLanceiroNegro` | A Tokugawa samurai, named by no trigger: a leftover |
+| Unit 3060 `IMredshirt` | `IMFarrapo` (or leave: it is destroyed at start) | Red shirts are 1843 |
+| Unit 4484 `SPCXPChayton` (Garibaldi) | keep for now | WoL has no Garibaldi model; Chayton Black is the stand-in. A Garibaldi model is art work (aoe3-blender-tools) |
+| Player 4: 2 `Galleon` | `Schooner` or `Privateer` (brig) | Galleons are 17th century; the imperial ships were brigs, a schooner, pataches and gunboats |
+| Player 4: 3 `Caravel` | `WOLGunboat` | The imperial gunboats and launches |
+| Army 5,10: `Caravel` (converted to player 1) | `WOLGunboat` or `Schooner` | A republican launch/schooner; not a Corvette, so it does not change objectives 12 and 13 |
+| Player 1: 4 `Corvette` | keep (phase 1); `Schooner` later | The launches were far smaller, but objectives 4, 12, 13 and two conditions count `Corvette`, and their texts say Corvette |
+| Player 3: `Musketeer` (131 + armies) | keep; optionally some `Cacadore` | Imperial line and National Guard |
+| Player 3: `Pasavolante`, `Escolta`, `Hussar`, `Dragoon`, `MountedCassador`, `Jinete` | keep | Fit the imperial army |
+| `IMFarrapo` (objective 7) | keep | WoL's "Tatterdemallion" (*farrapo*), an Italian lancer for South American independence: the mission's mechanic |
+| Placeholder chat lines and the scenario description | rewritten (proposal: *"The boats are on the water. Now for the fort's guns."*, etc.) | Profanity and joke text in a released campaign |
+
+No building is swapped, so no footprint changes: the buildings (`Housebrazil`, Town Center,
+`FortFrontier`, walls, outposts, docks) are Brazilian and fit both sides.
+
+### Hidden civs and flags
+
+- **`WOLCampFarrapos`**: a copy of the `Brazilians` `<civ>` (same age techs `Age0Brazilian`,
+  `WOLColonializeBrazilians` …, same post-age techs, units and blocks), appended at the end of
+  `civs.xml`, with `<visible>0</visible>`, `<visibleineditor>1</visibleineditor>` (so the editor
+  can set it), no `<statsid>`, `displaynameid` 444433 (*"Farrapos"*, already in the string
+  table), `homecityflagtexture` `War of the Triple Alliance\Flags\piratini`,
+  `homecityflagbuttonset` `PiratiniFlagBtn`, `postgameflagtexture`
+  `War of the Triple Alliance\Flags\ingame_ui_postgame_flag_piratini`. **All exist** in WoL's art
+  (the Riograndense tricolour, diagonal, without arms; also `WoL\objects\flags\rev_piratini`, the
+  player-coloured one of WoL's `WOLPiratini` revolution). Garibaldi keeps the Italian home city.
+  It would be civ 169 in the bed's `civs.xml` (168 entries today); `scnfix.py player:` sets it.
+- **The Empire**: no new civ needed: `Brazilians` already shows the imperial flag. A copy
+  `WOLCampImperio` (flag `War of the Triple Alliance\Flags\brazil`, exists) only if the score
+  screen must say *Empire of Brazil*; that needs a new string. Keeping `Brazilians` also keeps
+  WoL's AI, which tests `cCivBrazilians` 50 times in `AI4\aiWoLMain.xs`, for Laguna's AI player.
+- **Juliana Republic** (green-white-yellow horizontal): **no texture; needs drawing** (128×128
+  BGRA like `piratini.ddt`, a 128×32 post-game strip, a button set). Only needed if the victory
+  shows the new republic (for example a flag raised on Laguna's Town Center site).
+- Existing but **not** for 1839: `rev_garibaldine` / `rev_flag_garibaldi` (the Italian Legion's
+  black flag with Vesuvius, 1843).
+
+### Risks
+
+- **Civ IDs are stored as numbers.** A civ appended at the end keeps every existing ID; inserting
+  one anywhere else moves every later civ in every scenario. The scenario's civ table (44 names)
+  does not list `WOLCampFarrapos`: untested whether a player whose civ is not in that table loads
+  (the base fix only used civs the table has). Test first with player 5.
+- A hidden `main 1` civ with `visible 0` is untested in WoL; WoL's other hidden civs are
+  revolutions (`main 0`). The pack also ships `civs.xml`, so it must be redone on each WoL update.
+- `WOLCampFarrapos` has no AI branch: fine for the human and the scripted player 5, not for an AI.
+- **Tool limits:** `scnfix.py` changes protos, civs and trigger protos/techs; it cannot yet change
+  trigger texts (the type-22 text parameters) or the objectives chunk (`OM`). The title, chat and
+  description need that (sizes of `TR`/`OM` and the root `BG` change). The node title is string
+  76596 of `stringtabley.xml`: a new string, or the campaign XML pointing to another, is the
+  cleaner way than editing WoL's table.
+- Swapping `Corvette` would need trigger, objective and text edits together; left for later.
+- `MercBacamarteer` (280 HP) and `MercLanceiroNegro` (600 HP) are mercenaries, stronger than the
+  units they replace (150 and 335 HP): balance on Easy and Hard to be checked in play.
+- Side finding in WoL's data: `techtreey.xml` still names `MercJagunco` (4 lines) and
+  `Carabinero` (25, among them the Venezuela revolution's army), protos `protoy.xml` no longer has.
+
+### Models to render
+
+The list (also in the scratchpad as `sheets\m2-list.txt`), `caption | proto`:
+
+```
+Lanceiro Negro, proposed for army 1,11 and unit 2676 | MercLanceiroNegro
+Lancer, the base fix's Lanceiro Negro stand-in | Lancero
+Bacamarteer, proposed blunderbuss man | MercBacamarteer
+Jagunço, the base fix's blunderbuss man | WolJagunco
+Jinete, gaucho carbine cavalry (base fix for Carabinero) | Jinete
+Tatterdemallion, objective 7 (12 needed) | IMFarrapo
+Partisan, Farrapo irregular infantry | Pikeman
+Musketeer, Farrapo line infantry | Musketeer
+Pedrero, the rebel siege guns (army 1,12) | Pedrero
+Chayton Black, Garibaldi's stand-in | SPCXPChayton
+Hatamoto Samurai, stray unit 2764 to remove | WOLConsulateHatamoto
+Redshirt, unit 3060 (destroyed at start; 1843) | IMredshirt
+Corvette, Garibaldi's boats (objectives 4, 12, 13) | Corvette
+Ship Wagon, the overland haul | ShipWagon
+Schooner, candidate for the Seival and the rebel schooners | Schooner
+Gunboat, candidate for the Riograndense launch (army 5,10) | WOLGunboat
+Escolta, imperial lancer (unit 2787) | Escolta
+Musketeer, São José do Norte's 131 and armies 3,13-3,21 | Musketeer
+Caçador, candidate imperial light infantry | Cacadore
+Hussar | Hussar
+Dragoon | Dragoon
+Caçador Montado | MountedCassador
+Jinete, imperial carbine cavalry (base fix for Carabinero) | Jinete
+Volante, São José do Norte's artillery | Pasavolante
+Caravel, the Brazilian Navy now (3) | Caravel
+Galleon, the Brazilian Navy now (2) | Galleon
+Privateer, candidate for the imperial brigs | Privateer
+Fort, São José do Norte | FortFrontier
+Town Center, Laguna (objective 6) | TownCenter
+```
+
+### Open
+
+- Whether a civ outside the scenario's civ table loads (above).
+- The Riograndense flag's centre arms: WoL's texture has none, which fits 1836–1840 (*inference*).
+- Rio Pardo or Farroupilha: the wrecked launch's name differs between the memoir and Brazilian
+  sources.
+
 ## What the menu shows, and where the list comes from
 
 - **WoL already shows only its campaign.** Its loose `data\uipregamenew.xml` (main menu) has one
@@ -217,6 +410,10 @@ match today's data.
 - `tools/campaigncheck.py <game folder>`: the static check of all of the above (civ table, player
   civs, placed protos, saved names, trigger parameters). On the bed as shipped: 46 misses, every
   one of them explained here. `--scn` alone checks a fixed set outside the game folder.
+  `--inventory --scn <file>` lists per player its civ, flag, home city and placed units by proto,
+  what the triggers deploy or change for it, the objectives and the trigger texts (a text
+  parameter, type 22, keeps its text after an empty value: the parser now skips it, so effects
+  after such a parameter, like *Overlay Text*'s, are no longer lost).
 - `tools/scnfix.py`: writes a copy of a scenario with civ-table names, saved proto names, player
   civs, single units' protos (`unit:ID=PROTO`) or trigger parameters (`trigger:`, `tech:`, any
   length: the `TR` and `BG` chunk sizes follow) changed, and its CRC.
