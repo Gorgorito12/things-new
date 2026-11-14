@@ -8,6 +8,9 @@ definitions the exe and the main menu name: Campaign\\Wonders\\ChinaIndiaJapan.x
 menu passes to startCampaign) and, when present, the second copy Campaign\\chinaindiajapan.xml.
 --scn checks the scenarios named (alone, without the definitions, unless --campaign is given);
 --all prints every reference, not only the misses.
+--units also prints each scenario's inventory: per player its civ, flag and home city, the placed
+units by proto (owner from the unit's EN record), what the triggers give it (Army Deploy, Unit
+Create, Change Unit Type, Convert, techs, resources) and the objectives' texts.
 
 What it checks (what the game does with each is in docs/wol-campaign.md, "How a scenario loads"):
 - the campaign XML: every string ID (DisplayNameStringID, RolloverStringID, HCNote*, LoadTextID)
@@ -70,11 +73,15 @@ class GameData:
         # a player stored as civ 30 shows the flag of the 30th entry).
         self.civ_list = []
         self.civ_homecity = {}
+        self.civ_flag = {}
         for block in re.findall(r"<civ>(.*?)</civ>", civs, flags=re.S | re.I):
             n = re.search(r"<name>([^<]+)</name>", block, flags=re.I)
             hc = re.search(r"<homecityfilename>([^<]+)</homecityfilename>", block, flags=re.I)
+            flag = re.search(r"<homecityflagtexture>([^<]+)</homecityflagtexture>", block, flags=re.I)
             name = n.group(1).strip() if n else "?"
             self.civ_list.append(name)
+            if flag:
+                self.civ_flag[name] = flag.group(1).strip()
             if hc:
                 self.civ_homecity[name] = hc.group(1).strip()
         self.civs = {n.lower() for n in self.civ_list}
@@ -442,12 +449,116 @@ def check_scenario(gd, path, rep):
             print(f"  type {vt}: {len(c)} distinct values")
 
 
+# ---------------------------------------------------------------- inventory (--units)
+
+def placed_units(raw):
+    """(unit ID, editor ID, player, proto index) of each placed unit. A unit is an H1 chunk: EN
+    (size 0x50: the unit ID at +0, its player at +8) then UN (its editor ID as a string, then the
+    proto's table index twice). The saved triggers name a unit by its editor ID; the game loads
+    the unit with the EN ID and compiles the trigger with that one (Hakodate: a trigger's 2874 is
+    trUnitSelectByID(1615) in trigtemp.xs), and the console shows that ID too."""
+    out = []
+    for m in re.finditer(rb"H1(....)ENP\x00\x00\x00", raw, flags=re.S):
+        unit_id, _, player = struct.unpack_from("<iii", raw, m.end())
+        end = m.start() + 6 + struct.unpack_from("<I", m.group(1))[0]
+        u = raw.find(b"UN", m.end(), end)
+        if u < 0:
+            continue
+        n, l = struct.unpack_from("<II", raw, u + 2)
+        editor_id = raw[u + 10:u + 9 + l].decode("latin-1")
+        out.append((unit_id, editor_id, player, struct.unpack_from("<I", raw, u + 10 + l)[0]))
+    return out
+
+
+def objective_texts(raw):
+    """The texts of the objectives chunk ("OM"): per objective its name, its text and its hint, as
+    length-prefixed UTF-16 strings (a length of -1 is an empty field)."""
+    m = re.search(rb"OM(....)\x07\x00\x00\x00", raw, flags=re.S)
+    if not m:
+        return []
+    end = m.start() + 6 + struct.unpack_from("<I", m.group(1))[0]
+    out = []
+    for s in re.finditer(rb"(?:[\x20-\xff]\x00)+", raw[m.end():end]):
+        p = m.end() + s.start()
+        if struct.unpack_from("<I", raw, p - 4)[0] == len(s.group()) // 2:
+            out.append(s.group().decode("utf-16le"))
+    return out
+
+
+# The effects that give a player units, techs or resources; the player is the parameter named
+# here, or the army's first number ("P,N"), or the owner of the placed unit (SrcObject).
+INVENTORY_EFFECTS = ("Army Deploy", "Unit Create", "Change Unit Type", "Convert", "Army Convert",
+                     "Grant Resources", "Set Tech Status", "Forbid and Disable Unit", "Modify Protounit",
+                     "Player : SetAge", "Player Unit Count")
+
+
+def inventory(gd, path):
+    """Per player: civ, flag, home city, placed units by proto, and what the triggers give it."""
+    raw = decompress(path)
+    strs = utf16_strings(raw)
+    tables = name_tables(raw)
+    proto_t = tables[0][2] if tables else []
+    tech_t = tables[2][2] if len(tables) > 2 else []
+    print(f"\n== inventory {path.name}")
+    units = placed_units(raw)
+    # Keyed by the editor ID, the one the saved trigger parameters hold.
+    owner = {eid: (pl, proto_t[i] if i < len(proto_t) else f"#{i}") for _, eid, pl, i in units}
+    names = {}
+    for pid, (name, civ_id, hc) in enumerate(player_records(raw, strs)):
+        names[pid] = name
+        civ = gd.civ_name(civ_id)
+        print(f"\nplayer {pid} '{name}': civ {civ_id} {civ}, flag {gd.civ_flag.get(civ, '-')}, home city {hc}")
+        c = Counter(proto for uid, (pl, proto) in owner.items() if pl == pid)
+        if pid == 0:
+            print(f"  placed: {sum(c.values())} (Mother Nature: trees, mines, animals, decoration; not listed)")
+            continue
+        print(f"  placed: {sum(c.values())} units of {len(c)} protos")
+        for proto, n in sorted(c.items(), key=lambda x: (-x[1], x[0].lower())):
+            print(f"    {n:4d} {proto}")
+    given = defaultdict(list)
+    for off, name, params in triggers(raw):
+        if name not in INVENTORY_EFFECTS:
+            continue
+        p = {k: v for k, _, _, v, _ in params}
+        pid = p.get("PlayerID") or p.get("Player")
+        if "SrcArmy" in p:
+            pid = p["SrcArmy"].split(",")[0]
+        elif not pid and "SrcObject" in p:
+            src = p["SrcObject"].split(",")[0].strip()
+            pid = str(owner.get(src, ("?",))[0])
+        if "TechID" in p and p["TechID"].isdigit():
+            i = int(p["TechID"])
+            p["TechID"] = tech_t[i] if i < len(tech_t) else p["TechID"]
+        if name == "Change Unit Type":
+            src = p.get("SrcObject", "").split(",")[0].strip()
+            p["SrcObject"] = f"{src} ({owner.get(src, ('?', '?'))[1]})"
+        if name in ("Convert", "Army Convert"):
+            if "SrcObject" in p:
+                src = p["SrcObject"].split(",")[0].strip()
+                pid = str(owner.get(src, ("?",))[0])
+                p["SrcObject"] = f"{src} ({owner.get(src, ('?', '?'))[1]})"
+            p["to"] = p.pop("PlayerID", "?")
+        shown = ", ".join(f"{k}={v}" for k, v in p.items() if k not in ("PlayerID", "Player", "Location",
+                                                                          "Heading", "Clear", "ScenName"))
+        given[pid].append(f"{name}: {shown}")
+    print("\ntriggers, by the player they act on (Convert: the units' owner before)")
+    for pid in sorted(given, key=lambda x: (not x.isdigit(), int(x) if x.isdigit() else 0)):
+        label = names.get(int(pid), "?") if pid.isdigit() else "?"
+        print(f"  player {pid} '{label}':")
+        for line, n in Counter(given[pid]).items():
+            print(f"    {'%dx ' % n if n > 1 else ''}{line}")
+    print("\nobjectives (name, text, hint)")
+    for s in objective_texts(raw):
+        print(f"  {s}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("root", type=Path)
     ap.add_argument("--campaign", action="append", default=[])
     ap.add_argument("--scn", action="append", default=[])
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--units", action="store_true", help="also print each scenario's per-player inventory")
     a = ap.parse_args()
     gd = GameData(a.root)
     rep = Report(a.all)
@@ -466,6 +577,8 @@ def main():
     scns += [Path(s) if Path(s).is_absolute() else a.root / s for s in a.scn]
     for s in scns:
         check_scenario(gd, s, rep)
+        if a.units:
+            inventory(gd, s)
     print(f"\n{rep.misses} miss(es)")
     return 1 if rep.misses else 0
 
