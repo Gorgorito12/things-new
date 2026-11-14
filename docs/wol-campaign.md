@@ -710,6 +710,43 @@ Musketeer | Musketeer
 - New flag textures (US 15/15, Tripoli) through aoe3-blender-tools, or the existing stand-ins?
 - Plain Ottomans for the Tripolitans (no `civs.xml` change for them) or a hidden copy?
 
+## Historical version: build status (WIP, 2026-11-13)
+
+The three proposals (Barbary Coast, Laguna, Hakodate) are merged on one branch, with one
+`campaigncheck.py --inventory` (`--units` is the same option). On the base fix's three files it
+still gives the same 5 misses (Laguna's three Brazilian players on the Italian home city, Wild
+Animals, `Abolition0`). Nothing of the pack is built yet: no scenario, `civs.xml`, string
+fragment or zip, and no game run. The user's decisions for the pack are in the task brief
+(hidden civs "Regency of Tripoli" = Indians copy with the Ottoman flag, US with
+`objects\flags\USA`, Sweden with `objects\flags\swedish`, `Farrapos` = Brazilians copy with string
+444433 and the `piratini` flag set, "Imperial Japan" = `SPCJapanese` copy with the Nishiki no
+mihata, Hinomaru until that flag set arrives; the unit swaps of the three proposals).
+
+Chunk layout found for the text edits (Laguna's fixed file, decompressed; observed by size
+arithmetic, not yet by a load test):
+- The root `BG` (at 0, size 0x2595EF; the decompressed file has one byte after it) holds, among
+  raw fields, `TR` (the triggers, 0x3F455–0x5A9E4) and right after it `J1` (0x5A9E4–0x259229).
+  `TR` and `J1` are siblings, which is why `scnfix.py`'s trigger edits fix only `TR` and `BG`.
+- The objectives chunk `OM` (0x252F6B, size 0x1687) lies inside `J1`: an `OM` text edit must fix
+  `OM`, `J1` and `BG`.
+- The player records `BP` (9 of them from 0x17349C, each followed by one `01` byte; the list is
+  preceded by `09 00 00 00 09 00 00 00 01`) lie inside `J1`. The chunk between `J1` and the `BP`
+  list is **not found yet**: a player-name edit must not be shipped before it is, and before a
+  file with a renamed player loads in game.
+- A chunk's payload is not a clean list of sub-chunks (raw fields sit between them), so the
+  enclosing chunks of an edit must be named per edit kind, as `TR`/`BG` are, not found by a
+  generic walk.
+
+Next steps, in order: (1) find the `BP` list's container (REA on the scenario reader around
+FUN_00831F90's caller 0x834BEF, or a test file with a one-character longer player name loaded in
+game); (2) `scnfix.py`: `name:OLD=NEW` (player), `objective:`/`om:` texts, `text:` trigger text
+parameters (type 22, the text after the empty value) and `units:PLAYER:OLD=NEW`, each fixing its
+named chunks and the CRC; (3) the engine's civ limit with REA, then `civs.xml` with the five hidden
+civs appended in one order (Tripoli, US 1801, Sweden 1802, Farrapos, Imperial Japan) and a string
+fragment (76595, 76596 `Laguna (1839)`, the civ names); (4) the three scenarios with the swaps;
+(5) the pack, its originals zip and LEEME; (6) the tests in `C:\AoE3-UHC-WoLReal3` and
+`C:\WoL-Test`.
+
 ## Tools
 
 - `tools/campaigncheck.py <game folder>`: the static check of all of the above (civ table, player
