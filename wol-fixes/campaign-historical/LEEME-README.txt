@@ -126,7 +126,8 @@ Uniformes históricos (cuatro unidades)
                                casaca de 1804 con galón amarillo y          tiene fuente.
                                pantalón blanco.
   Los marines se entrenan en las goletas del jugador 1, que ahora son una copia
-  (HistSchooner) que entrena la copia. Las mejoras de los marines (NAtechUSAmarine01-02, que
+  (HistSchooner) que entrena la copia. Si se pierden las dos goletas, el muelle que vuelve es también
+  una copia (HistDock) que construye esa goleta, no la de WoL. Las mejoras de los marines (NAtechUSAmarine01-02, que
   la misión activa al empezar) valen también para la copia: el paquete trae data\techtreey.xml
   (el del arreglo, con cada efecto que nombra a una de las cuatro unidades o a la goleta
   repetido para su copia) y data\protoy.xml (el de WoL con las cinco copias al final).
@@ -186,7 +187,7 @@ Cómo instalarlo
   3. Descomprima WoL-campaign-historical.zip en la carpeta de WoL (la de age3y.exe) y deje que
      reemplace los archivos.
   Para deshacer: descomprima WoL-campaign-historical-originals.zip igual y borre los archivos
-  nuevos: Campaign\Wonders\homecitySPC_MJ.xml y los .ddt "hist_imperial_japan" de
+  nuevos: data\homecitySPC_MJ.xml y los .ddt "hist_imperial_japan" de
   art\War of the Triple Alliance\Flags y \Buttons, y la carpeta
   art\WoL\campaign_historical. Las misiones vuelven a las del arreglo.
 
@@ -312,7 +313,8 @@ Historical uniforms (four units)
                                Ages 3-4: the 1804 coatee with yellow tape,  The white trousers of 1804
                                white trousers.                              are not sourced.
   The marines are trained in player 1's schooners, which are now a copy (HistSchooner) that
-  trains the copy. The marine upgrades (NAtechUSAmarine01-02, which the mission sets active at
+  trains the copy. If both schooners are lost, the dock that comes back is a copy too
+  (HistDock) that builds that schooner, not WoL's. The marine upgrades (NAtechUSAmarine01-02, which the mission sets active at
   the start) also reach the copy: the pack ships data\techtreey.xml (the campaign fix's, with
   every effect that names one of the four units or the schooner repeated for its copy) and
   data\protoy.xml (WoL's, with the five copies at the end).
@@ -371,6 +373,6 @@ How to install
   3. Unzip WoL-campaign-historical.zip into the WoL folder (the one with age3y.exe), replacing
      files.
   To undo: unzip WoL-campaign-historical-originals.zip the same way and delete the new files:
-  Campaign\Wonders\homecitySPC_MJ.xml and the "hist_imperial_japan" .ddt files in
+  data\homecitySPC_MJ.xml and the "hist_imperial_japan" .ddt files in
   art\War of the Triple Alliance\Flags and \Buttons, and the folder
   art\WoL\campaign_historical. The missions go back to the fix's.

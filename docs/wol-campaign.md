@@ -826,7 +826,7 @@ Observed limits:
   Barbary Coast it is St. Louis, and Hakodate's in-game deck is that "Static Deck" (25 cards, US
   cards among them, `h3-deck-crop.png`), as in the base fix. `homecitySPC_MJ.xml` (like
   `homecitySPC_JC.xml` before it) is used only when the scenario is played outside the campaign
-  (not tested). Giving the Imperial player Meiji shipments inside the campaign would need the
+  (tested later: see "Hakodate's 1869 home city, played on its own"). Giving the Imperial player Meiji shipments inside the campaign would need the
   campaign's home city handling, which WoL's campaign XML does not set.
 - **The first Home City note (string 990103) did not show:** the profile had already seen its
   first home city visit, so the note is never shown again; the change is in the campaign XML and
@@ -985,6 +985,32 @@ caption saying what is sourced and what is inference; also in the pack's `refere
 
 Renders: the session scratchpad's `uniforms\sheets\final\` (`lanceiro-*.png`, `marine-*.png`, two
 views); captures `uniforms\ingame\v2_1.png` (Lanceiros), `v2_4.png` (marines).
+
+**Hakodate's 1869 home city, played on its own (fixed 2026-11-14).** A helper agent found, in
+`C:\AoE3-UHC-WoLReal5`, that player 1 (HistImperialJapan) got no home city at all when Hakodate is
+loaded as a scenario: a scenario player's home-city file is read from `data\` (loose or archived),
+and the pack shipped `homecitySPC_MJ.xml` only in `Campaign\Wonders\` (the base fix's
+`homecitySPC_JC.xml` only worked because TAD's stock copy is in `data\Data3.bar`). The pack now
+ships it as `data\homecitySPC_MJ.xml`. Two of its deck's cards did not show (13 of 15): the two
+agent B swapped into the deck (`HCShipWoodCrates1` for the Ninja, `YPHCShipKanouhou1` for the
+Yabusame) were in their building's `<ObtainableTechs>` but not in its `<ActiveTechs>`; a deck card
+must be active there too. Both are now active. Real3: Tokyo, the Nishiki button and all 15 cards
+(`integ\hak_deck.png`); the campaign chain is unchanged (inside the campaign the player keeps the
+campaign's home city).
+
+**The returning dock builds HistSchooner (approved 2026-11-14).** When both `HistSchooner` are
+lost, Barbary's trigger turns unit 2635 into a dock; it is now `HistDock`, a copy of `Dock` whose
+train list has `HistSchooner` in the place of `Schooner` (everything else, Fishing Boat, Paddle
+Steamer, Ironclad included, as the stock dock). `scnfix.py trigger[ProtoUnit]:Dock=HistDock`
+retargets that Change Unit Type. The stock `Dock` is unchanged and nothing builds `HistDock`, so a
+normal game's docks offer the stock Schooner as before (checked statically: no stock unit differs
+from WoL's `protoy.xml`, and no Build or Train list names `HistDock`). The techs that enable or
+upgrade `Dock` and `Schooner` name their copies too (`techtreey.xml`, the effect copies, now 196).
+In game (Real3, a bed-only copy where the dock comes back at once): the dock offers Fishing Boat,
+Schooner (the copy), Paddle Steamer, Ironclad (`integ\histdock_tooltips.png`); a schooner built
+there is a `HistSchooner` and offers the "Specialist Leatherneck" (`HistMarine`) to train
+(`integ\dockmarine_full.png`). The stock `Schooner` needs no forbid: nothing in the mission builds
+it any more.
 
 **The Lanceiro's own model (2026-11-14).** In Laguna the `HistLanceiroNegro` riders showed WoL's
 original texture (blue band, grey thighs) while their anim file, hat and spear were ours; the same

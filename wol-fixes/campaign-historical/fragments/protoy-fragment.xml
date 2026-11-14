@@ -561,3 +561,238 @@
 			<DamageFlags>GAIAEnemy</DamageFlags>
 		</ProtoAction>
 	</Unit>
+		<!-- Historical campaign pack: HistDock, a campaign-only copy of Dock (trained by no building and no card). -->
+<Unit id="6055520" name="HistDock">
+		<DBID>6055520</DBID>
+		<DisplayNameID>22914</DisplayNameID>
+		<EditorNameID>27947</EditorNameID>
+		<ObstructionRadiusX>4.0000</ObstructionRadiusX>
+		<ObstructionRadiusZ>4.0000</ObstructionRadiusZ>
+		<MaxVelocity>0.0000</MaxVelocity>
+		<AnimFile>War of the Triple Alliance\DLC\Zupay\Buildings\Dock\dock.xml</AnimFile>
+		<DeadReplacement>BuildingRubble4x4</DeadReplacement>
+		<DeadReplacementLifespan>15</DeadReplacementLifespan>
+		<ImpactType>Wood</ImpactType>
+		<PhysicsInfo>dock</PhysicsInfo>
+		<PlacementFile>dock.xml</PlacementFile>
+		<Icon>buildings\dock\dock_icon</Icon>
+		<PortraitIcon>buildings\dock\dock_portrait</PortraitIcon>
+		<RolloverTextID>42013</RolloverTextID>
+		<ShortRolloverTextID>25627</ShortRolloverTextID>
+		<InitialHitpoints>2500.0000</InitialHitpoints>
+		<MaxHitpoints>2500.0000</MaxHitpoints>
+		<LOS>34.0000</LOS>
+		<BuildPoints>20.0000</BuildPoints>
+		<Bounty>80.0000</Bounty>
+		<BuildBounty>40.0000</BuildBounty>
+		<Cost resourcetype="Wood">200.0000</Cost>
+		<BuildingWorkRate>1.0000</BuildingWorkRate>
+		<MaxContained>20</MaxContained>
+		<AllowedAge>0</AllowedAge>
+		<partisantype>SerbianInferno</partisantype>
+		<partisancount>2</partisancount>
+		<Armor type="Siege" value="0.0000" />
+		<UnitType>LogicalTypeValidSabotage</UnitType>
+		<UnitType>LogicalTypeMinimapFilterEconomic</UnitType>
+		<UnitType>LogicalTypeHandUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeBuildingsNotWalls</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAutoAttack</UnitType>
+		<UnitType>LogicalTypeVillagersAttack</UnitType>
+		<UnitType>LogicalTypeHandUnitsAttack</UnitType>
+		<UnitType>LogicalTypeShipsAndBuildings</UnitType>
+		<UnitType>LogicalTypeRangedUnitsAttack</UnitType>
+		<UnitType>LogicalTypeBuildingsNotWallsOrGroves</UnitType>
+		<UnitType>BuildingClass</UnitType>
+		<UnitType>Economic</UnitType>
+		<UnitType>Building</UnitType>
+		<UnitType>HasBountyValue</UnitType>
+		<UnitType>CountsTowardEconomicScore</UnitType>
+		<UnitType>AbstractDock</UnitType>
+		<UnitType>ConvertsHerds</UnitType>
+		<Train column="1" page="0" row="0">Sambuk</Train>
+		<Train column="2" page="0" row="0">Baghlah</Train>
+		<Train column="3" page="0" row="0">Boum</Train>
+		<Train column="1" page="0" row="0">Corvette</Train>
+		<Train column="2" page="0" row="0">Frigate</Train>
+		<Train column="3" page="0" row="0">LABombarda</Train>
+		<Train column="1" page="0" row="0">Aviso</Train>
+		<Train column="1" page="0" row="0">Lorcha</Train>
+		<Train column="2" page="0" row="0">Battleship</Train>
+		<Train column="3" page="0" row="0">FloatingBattery</Train>
+		<Train column="3" page="0" row="0">Popovka</Train>
+		<Train column="1" page="0" row="0">HistSchooner</Train>
+		<Train column="2" page="0" row="0">PaddleSteamer</Train>
+		<Train column="3" page="0" row="0">xpIronclad</Train>
+		<Train column="1" page="0" row="0">TorpedoBoat</Train>
+		<Train column="2" page="0" row="0">Destroyer</Train>
+		<Train column="3" page="0" row="0">RiverMonitor</Train>
+		<Tech column="2" page="0" row="2">WINTERdock</Tech>
+		<Train column="0" page="0" row="0">FishingBoat</Train>
+		<Train column="0" page="0" row="0">ypFishingBoatAsian</Train>
+		<Train column="0" page="0" row="0">Pirogue</Train>
+		<Train column="0" page="0" row="0">WOLPirogueEgyptian</Train>
+		<Train column="1" page="0" row="0">Chayka</Train>
+		<Train column="1" page="0" row="0">Caravel</Train>
+		<Train column="1" page="0" row="0">Fireboat</Train>
+		<Train column="1" page="0" row="0">WOLGunboat</Train>
+		<Train column="1" page="0" row="0">Galley</Train>
+		<Train column="2" page="0" row="0">Galleon</Train>
+		<Train column="2" page="0" row="0">Steamboat</Train>
+		<Train column="4" page="0" row="0">Monitor</Train>
+		<Train column="5" page="0" row="0">SPCFireship</Train>
+		<Train column="3" page="0" row="0">NAtinclad</Train>
+		<Train column="6" page="0" row="0">PirateShip</Train>
+		<Train column="2" page="0" row="0">Fluyt</Train>
+		<Train column="6" page="2" row="0">Canoe</Train>
+		<Train column="6" page="0" row="0">NATNao</Train>
+		<Train column="7" page="0" row="0">xpWarCanoe</Train>
+		<Train column="8" page="0" row="0">xpTlalocCanoe</Train>
+		<Train column="6" page="0" row="0">ypWokouJunk</Train>
+		<Train column="6" page="0" row="0">ypMarathanCatamaran</Train>
+		<Train column="6" page="0" row="1">DugoutCanoe</Train>
+		<Tech column="0" page="1" row="0">GillNets</Tech>
+		<Tech column="0" page="1" row="0">LongLines</Tech>
+		<Tech column="0" page="2" row="0">BigDockFlamingArrows</Tech>
+		<Tech column="0" page="2" row="0">BigDockRawhideCovers</Tech>
+		<Tech column="0" page="2" row="0">BigDockCipactli</Tech>
+		<Tech column="0" page="2" row="0">BigDockSeafaringVessels</Tech>
+		<Tech column="1" page="1" row="0">ArmorPlating</Tech>
+		<Tech column="2" page="1" row="0">Carronade</Tech>
+		<Tech column="2" page="1" row="0">PercussionLocks</Tech>
+		<Tech column="5" page="1" row="0">ShipHowitzers</Tech>
+		<Train column="6" page="0" row="0">PetOrca</Train>
+		<!-- "The Infante de Marina Upgrades' Column" -->
+		<Tech column="6" page="1" row="0">VeteranInfantes</Tech>
+		<Tech column="6" page="1" row="0">GuardInfantes</Tech>
+		<Tech column="6" page="1" row="0">ImperialInfantes</Tech>
+		<Tech column="6" page="1" row="0">VeteranMarines</Tech>
+		<Tech column="6" page="1" row="0">GuardMarines</Tech>
+		<Tech column="6" page="1" row="0">ImperialMarines</Tech>
+		<Tech column="6" page="1" row="0">RGDutchMarines</Tech>
+		<Tech column="6" page="1" row="0">ImperialDutchMarines</Tech>
+		<Tech column="6" page="1" row="0">RGFrenchMarines</Tech>
+		<Tech column="6" page="1" row="0">ImperialFrenchMarines</Tech>
+		<Tech column="6" page="1" row="0">WOLBraveSailor</Tech>
+		<Tech column="6" page="1" row="0">WOLSkilledSailor</Tech>
+		<Tech column="6" page="1" row="0">WOLPresidentialSailor</Tech>
+		<Tech column="6" page="1" row="0">VeteranSailorsBk</Tech>
+		<Tech column="6" page="1" row="0">VeteranSailorsBu</Tech>
+		<Tech column="6" page="1" row="0">VeteranSailorsRo</Tech>
+		<Tech column="6" page="1" row="0">GuardSailorsBk</Tech>
+		<Tech column="6" page="1" row="0">GuardSailorsBu</Tech>
+		<Tech column="6" page="1" row="0">GuardSailorsRo</Tech>
+		<Tech column="6" page="1" row="0">ImperialSailorsBu</Tech>
+		<Tech column="6" page="1" row="0">ImperialSailorsGr</Tech>
+		<Tech column="6" page="1" row="0">ImperialSailorsRo</Tech>
+		<Tech column="6" page="1" row="0">VeteranSajkasi</Tech>
+		<Tech column="6" page="1" row="0">GuardSajkasi</Tech>
+		<Tech column="6" page="1" row="0">ImperialSajkasi</Tech>
+		<Tech column="6" page="1" row="0">VeteranKhalasi</Tech>
+		<Tech column="6" page="1" row="0">GuardKhalasi</Tech>
+		<Tech column="6" page="1" row="0">ImperialKhalasi</Tech>
+		<Tech column="7" page="1" row="0">WOLImperialPekhotas</Tech>
+		<Tech column="7" page="1" row="0">ShadowGuardGuardaMarina</Tech>
+		<Tech column="7" page="1" row="0">ImperialGuardamarina</Tech>
+		<!-- Techs -->
+		<Tech column="0" page="1" row="0">WOTTAdock01LA</Tech>
+		<Tech column="0" page="1" row="0">WOTTAdock02LA</Tech>
+		<Tech column="0" page="1" row="0">WOTTAdock01NA</Tech>
+		<Tech column="0" page="1" row="0">WOTTAdock02NA</Tech>
+		<Tech column="0" page="1" row="0">WOTTAdock03NA</Tech>
+		<Tech column="1" page="1" row="0">WOTTAdockdefense01LA</Tech>
+		<Tech column="1" page="1" row="0">WOTTAdockdefense01NA</Tech>
+		<Tech column="1" page="1" row="0">WOTTAdockdefense02NA</Tech>
+		<Tech column="2" page="1" row="0">WOTTAdockattack01LA</Tech>
+		<Tech column="2" page="1" row="0">WOTTAdockattack02LA</Tech>
+		<Tech column="2" page="1" row="0">WOTTAdockattack01NA</Tech>
+		<Tech column="2" page="1" row="0">WOTTAdockattack02NA</Tech>
+		<Tech column="2" page="1" row="0">WOTTAdockattack03NA</Tech>
+		<Tech column="5" page="1" row="0">WOTTAmortar01LA</Tech>
+		<Tech column="5" page="1" row="0">WOTTAmortar01NA</Tech>
+		<Tech column="5" page="1" row="0">WOTTAmortar02NA</Tech>
+		<Tech column="0" page="2" row="0">GREEKageupDOCK01</Tech>
+		<Tech column="0" page="2" row="0">GREEKageupDOCK02</Tech>
+		<Tech column="0" page="2" row="0">GREEKageupDOCK03</Tech>
+		<Tech column="0" page="2" row="0">GREEKageupDOCK04</Tech>
+		<Train column="1" page="0" row="0">africandhow</Train>
+		<Train column="2" page="0" row="0">africanxebec</Train>
+		<Train column="3" page="0" row="0">africanwindjammer</Train>
+		<Train column="4" page="0" row="0">africanbombketch</Train>
+		<Tech column="0" page="1" row="0">AFRICANTECHfishing1</Tech>
+		<Tech column="0" page="1" row="0">AFRICANTECHfishing2</Tech>
+		<Tech column="0" page="1" row="0">AFRICANTECHfishing3</Tech>
+		<Tech column="1" page="1" row="0">AFRICANTECHshipattack1</Tech>
+		<Tech column="1" page="1" row="0">AFRICANTECHshipattack2</Tech>
+		<Tech column="2" page="1" row="0">AFRICANTECHshiphitpoints1</Tech>
+		<Tech column="2" page="1" row="0">AFRICANTECHshiphitpoints2</Tech>
+		<Tech column="3" page="1" row="0">AFRICANTECHshipspeed1</Tech>
+		<Tech column="3" page="1" row="0">AFRICANTECHshipspeed2</Tech>
+		<Tech column="0" page="1" row="0">WOLPaternoster</Tech>
+		<Tech column="0" page="1" row="0">WOLFireFishing</Tech>
+		<Tech column="0" page="1" row="0">WOLAquafarming</Tech>
+		<Tech column="0" page="1" row="0">WOLPaternosterRo</Tech>
+		<Tech column="0" page="1" row="0">WOLFireFishingRo</Tech>
+		<Tech column="0" page="1" row="0">WOLAquafarmingRo</Tech>
+		<Tech column="0" page="1" row="0">WOLGillNetsTupi</Tech>
+		<Tech column="0" page="1" row="0">WOLLongLinesTupi</Tech>
+		<!-- Peruvian List -->
+		<Tech column="4" page="1" row="0">PermanentFleetPeru</Tech>
+		<Tech column="3" page="1" row="0">LairdRamsPeru</Tech>
+		<Tech column="2" page="1" row="0">ArmadaRespectablePeru</Tech>
+		<Tech column="2" page="1" row="0">ArmstrongGunPeru</Tech>
+		<!-- MIMI -->
+		<Tech column="0" page="1" row="0">MEGargour</Tech>
+		<Tech column="0" page="1" row="0">MEHadrah</Tech>
+		<Tech column="1" page="1" row="0">MEDamarLuting</Tech>
+		<Tech column="1" page="2" row="0">MENakhuda</Tech>
+		<Tech column="2" page="1" row="0">MESewnPlank</Tech>
+		<Tech column="2" page="2" row="0">MEPrangi</Tech>
+		<Tech column="3" page="1" row="0">MENafta</Tech>
+		<!-- End Peruvian List -->
+		<Flag>CollidesWithProjectiles</Flag>
+		<Flag>StartsAtFullEfficiency</Flag>
+		<Flag>Immoveable</Flag>
+		<Flag>NoBloodOnDeath</Flag>
+		<Flag>ObscuresUnits</Flag>
+		<Flag>NonAutoFormedUnit</Flag>
+		<Flag>Doppled</Flag>
+		<Flag>SelectWithObstruction</Flag>
+		<Flag>DontFlattenGround</Flag>
+		<Flag>TieToWaterSurface</Flag>
+		<Flag>SnapPlacement</Flag>
+		<Flag>HasGatherPoint</Flag>
+		<Flag>AllowAutoGarrison</Flag>
+		<Flag>PaintTextureWhenPlacing</Flag>
+		<Flag>Tracked</Flag>
+		<Contain>ypFishingBoatAsian</Contain>
+		<Contain>FishingBoat</Contain>
+		<Contain>xpWarCanoe</Contain>
+		<Contain>xpTlalocCanoe</Contain>
+		<Contain>Canoe</Contain>
+		<Contain>WOLCholo</Contain>
+		<Contain>Pirogue</Contain>
+		<Contain>WOLPirogueEgyptian</Contain>
+		<Command column="3" page="10">Delete</Command>
+		<Command column="2" page="10">Eject</Command>
+		<Command column="0" page="10">SetGatherPointEconomy</Command>
+		<Command column="1" page="10">SetGatherPointMilitary</Command>
+		<Tactics>dock.tactics</Tactics>
+		<ProtoAction>
+			<Name>AntiShipAttack</Name>
+			<Damage>15.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<MaxRange>32.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>UnitlessAntiShipAttack</Name>
+			<Damage>15.000000</Damage>
+			<DamageType>Siege</DamageType>
+			<MaxRange>32.000000</MaxRange>
+			<ROF>3.000000</ROF>
+		</ProtoAction>
+		<ProtoAction>
+			<Name>Heal</Name>
+			<Rate type="Ship">10.000000</Rate>
+		</ProtoAction>
+	</Unit>
