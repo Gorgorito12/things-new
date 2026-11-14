@@ -849,6 +849,95 @@ hash-checked after the tests (`agentB_bed.py restore`); the WoL-Test harness (`d
 `d3d9.dll` match `woltest-hashes-before.txt`. The bed's `UHC.log` was cleared before the first
 launch (a log the DLL rewrites at each start).
 
+## Historical uniforms: references
+
+Research (2026-11-14) for new uniforms on four units of the historical version, used only there:
+`MercLanceiroNegro` (Laguna), `MercBarbaryCorsair`, `NAmarine` and `Janissary` (Barbary Coast).
+The plan: a copy of each anim file with `<replacetexture>` and swapped accessories, new textures
+under `art\WoL\campaign_historical\`, and (after review) new protos for the campaign only. WoL's
+own anim files and textures are not changed; `barbary_corsair64.ddt` and `jannisary_guard.ddt`
+are shared with many protos.
+
+**What the models allow** (aoe3-blender-tools, branch `retexture-tools`): the body mesh of an
+animated unit cannot be rewritten, so a garment the mesh does not have (a loose poncho, a sleeve
+on a bare arm) is painted on the body; a hat, a turban or a rigid poncho is a model of its own hung
+on a bone, which can be swapped for one WoL already ships. `tools/uv_atlas.py` maps each model's
+texture by body part, `tools/retexture.py` paints by those parts, and `model_sheets.py
+--attachments --team` renders the result with its hats and a player colour.
+
+Sources are marked: **(source)** checked on the page cited; **(inference)** reasoned from the
+sources and the period, not stated by them; **(uncertain)** sources disagree or say nothing.
+
+### Lanceiros Negros, 1839
+
+| | |
+|---|---|
+| Garments | Pampas dress: raw-hide sandals or boots, a waistcoat (*colete*), a cloth chiripá, a coarse wool poncho (*bichará*) used as blanket and, wrapped round the left arm, as a shield; a red or orange headband (*vincha*) or red cloth on the head or arm, the Republic's colour; a few wore a top hat and trousers (a painting in Bologna). Lances longer than usual, knives, some firearms (**source**: [pt.wikipedia Lanceiros Negros](https://pt.wikipedia.org/wiki/Lanceiros_Negros), section *Vestuário*, no footnote there; [National Geographic Brasil, 2022](https://www.nationalgeographicbrasil.com/historia/2022/06/lanceiros-negros-projeto-resgata-historia-de-escravizados-traidos-na-revolucao-farroupilha): "sandálias de couro cru, colete, chiripá de pano", a red cloth "na cabeça, ou no braço") |
+| Palette | Undyed and dark wools (brown, black), white cotton under-drawers (*calzoncillo*), raw-hide brown, the red of the headband (**inference** for the wool colours) |
+| Hat | Not named for this unit by the sources; the gaucho's wide-brimmed low-crowned felt hat (*chambergo*) is the common head-wear of the pampas (**inference**); the headband alone is equally right |
+| WoL now | `lanceiro_negro.gr2` with a painted cuirass and helmet edge (a re-used cuirassier rider); its hat `lanceiro_negro_hat` is missing, so the unit shows bare-headed |
+| Texture only | cuirass to a dark wool poncho with woven stripes, the hip cloth and thighs to a chiripá, the lower legs to white *calzoncillo* and raw-hide boots, the sleeves to a shirt, the painted head band to the red *vincha* |
+| Accessory | the missing hat: WoL candidates `3d_models\Hats\hat_black` (the gaucho settler's), `felt_hat`, `sombrero`, the Farrapo immigrant's `WoL\units\immigrants\tatterdemalion\hat`, the jinete, lancero and llanero hats. Rigid ponchos exist (`3d_models\Hats\poncho1`–`4`, `NOW\...\Gaucho\Poncho_I`), hung on `SPINE1`, but none sits well on this rider: painted instead |
+
+### Tripolitan corsairs, 1801
+
+| | |
+|---|---|
+| Sources | No source found that describes the dress of Tripoli's corsair crews in 1801–05 (searches on corsair costume, Ottoman sailors and period engravings). What exists: Castellan's plate *Levendy, marin, soldat de marine* (1812, [travelogues.gr](https://english.travelogues.gr/items/show/54170), image only), the Ottoman men's garments ([Ottoman clothing](https://en.wikipedia.org/wiki/Ottoman_clothing): *şalvar* trousers, *yelek* waistcoat worn by the poor, *kuşak* sash, *mintan* short jacket, turban; the fez replaced the turban in the state sector only under Mahmud II, 19th century; the year 1829 is not on that page), and the Algerian janissary-corsairs who brought "their rifles, pistols, swords, and a blanket" aboard (Venture de Paradis, quoted in [Odjak of Algiers](https://en.wikipedia.org/wiki/Odjak_of_Algiers)) |
+| Garments | a loose shirt, a short sleeveless waistcoat, a wide sash, wide knee-length trousers, bare feet or slippers at sea, a turban wound on a red cap (**inference** from the above; that the North African red cap, *chechia*, was worn under the turban in 1801 is also inference) |
+| Palette | white or unbleached linen, a dark (blue or brown) waistcoat with braid, a red sash (**inference**) |
+| WoL now | `barbary_corsair` (stock, shared texture `barbary_corsair64.ddt`, 64 px): bare chest, team-coloured trousers |
+| Texture only | shirt and sleeves over the bare torso and arms, the waistcoat with yellow braid, the sash; at 256 px |
+| Accessory | a turban: `3d_models\Hats\turban` (white wrap on a red crown), `turban_fez`, `wol\units\natives\shari\turban`, `wol\units\villagers\kitabdar\kitabdar_turban`, `units\great war\helmets\turban` and `fez` |
+
+### US Marines, 1801–1805
+
+| | |
+|---|---|
+| 1798–1803 | The Corps' first uniform came from the Legion's stocks: "plain short coats of blue" turned up in red, "red vests", "blue pantaloons edged with red", small naval buttons (McClellan, quoted by the [USO](https://www.uso.org/stories/1796-the-real-story-of-the-marine-corps-blues)); "blue with red facings" with "a round hat edged in yellow", a white shirt and a black leather stock ([Uniforms of the USMC](https://en.wikipedia.org/wiki/Uniforms_of_the_United_States_Marine_Corps)) (**source**) |
+| 1804 | A coatee cut away at the front, enlisted men with "yellow wool tape" across the chest; gold eagle-and-anchor buttons from 1804 ([Wikipedia](https://en.wikipedia.org/wiki/Uniforms_of_the_United_States_Marine_Corps); [USO](https://www.uso.org/stories/1796-the-real-story-of-the-marine-corps-blues)) (**source**). The round hat stayed until the shako of 1810 (**source**, same) |
+| Uncertain | one secondary source calls the 1798–1806 hat a "common hat" with a low crown, others a round hat edged yellow: the same hat described two ways (**inference**). The trousers: blue edged red by the 1798 issue; white linen in the Mediterranean summer is **not sourced** here. The orders of 25 March 1804 and 14 October 1805 exist but were not read (the Marine Corps History Division's PDF refused the fetch) |
+| WoL now | `marine_1age`–`4age`: a brown civilian coat (age 1), then a team-coloured coat with red (ages 2–3) or yellow (age 4) facings, yellow trousers (age 3), a tricorne (`imperial_soldier_hat`, ages 1–2) and a bicorne (`general_great_hat`, ages 3–4) |
+| Texture only | one layout for the four ages (their UVs are the same): coat in the player colour (blue for the campaign's US player), red lapels, cuffs and turnbacks, a red waistcoat (ages 1–2, the 1798 dress), white waistcoat with yellow tape on the lapels (ages 3–4, 1804), white trousers, black gaiters |
+| Accessory | the round hat: `3d_models\Hats\felt_hat` with its texture's brim bound in yellow (also tried: `hat`, `hat_black`, `tophat`; the bicorne `wol\units\infantry_ranged\line_infantry\bicorne_model` and tricornes are officers' or older) |
+
+`NAmountedrifle` (mounted riflemen) is anachronistic in 1801: not repainted; the integration will
+propose taking it out of the mission's troops.
+
+### Tripoli's janissaries and kouloughlis, 1801
+
+| | |
+|---|---|
+| Sources | Tripoli's army had a janissary corps and the kouloughlis ([Ottoman Tripolitania](https://en.wikipedia.org/wiki/Ottoman_Tripolitania), in the Barbary Coast section above); no description of their dress was found (searches on the regencies' militia, the *yoldash*, costume plates). The Algiers corps was armed with the *nimcha* sword and the Kabyle musket and locally made weapons; its *yabachi* officers wore white plumes ([Odjak of Algiers](https://en.wikipedia.org/wiki/Odjak_of_Algiers)) |
+| Garments | the white felt *börk* is the janissary's own cap; the tall plume and the gold and white robes are parade dress (**inference**: plumes marked officers in Algiers, above). Campaign dress: the long coat (*dolama*) tucked up, under-robe and trousers of plain cotton, a sash, red or yellow leather boots (**inference**) |
+| Palette | coat in a plain dye (in game: the player colour), unbleached cotton, red sash, brass instead of gilding, red-brown leather (**inference**) |
+| WoL now | the stock `jannisary_guard` (white and gold, plumed *börk*, texture shared with the stock Janissary) |
+| Texture only | the gold dulled to brass, the white silk to cotton, a red sash, the plume painted as white felt and out of the team colour, the boots red-brown |
+| Accessory | none: the *börk* is part of the mesh, its plume cannot be taken off (`war of the triple alliance\wotta_hats\jannisary_hat_new` and `ottoman_hat_1` exist, but the head would keep its own) |
+
+### Previews (for review, not integrated)
+
+Built 2026-11-14 with the tools above; the files are mod content and stay outside both
+repositories, in the session's scratchpad folder `uniforms\` (`art\WoL\campaign_historical\...`
+in the game's layout, `sheets\` before/after renders, `ingame\` captures, `recipes\` the painting
+recipes). Seen in game in `C:\AoE3-UHC-WoLReal4` (the four protos pointed at the copies for the
+test, then restored and hash-checked): the hats sit on the heads, the turban and round hats follow
+the walk and the attacks, the player colour shows on the chiripá, the poncho stripe, the marines'
+coats and the janissaries' coats.
+
+| Unit | Anim copy | Textures | Accessory |
+|---|---|---|---|
+| Lanceiro Negro | `lanceiro_negro\lanceiro_negro_hist_horse.xml` (horse, includes) `lanceiro_negro_hist_rider.xml` | `lanceiro_negro_hist.ddt` (512 BGRA, as the original) + `_b` | `3d_models\Hats\hat_black` on the missing hat's attach |
+| Corsair | `barbary_corsair\barbary_corsair_hist.xml` (the stock `.xmb` as text; full and low-poly models) | `barbary_corsair_hist.ddt` (256 DXT3, mips) + `_b` | `3d_models\Hats\turban` on `Bip01 Head` |
+| Marines | `marine\marine_hist.xml` (all four ages, WoL's consulate and Hakodate branches) | `marine_hist_1798.ddt` (ages 1–2), `marine_hist_1804.ddt` (ages 3–4), 256 BGRA, + `_b`; `marine_hist_hat.ddt` | `3d_models\Hats\felt_hat` for every age |
+| Janissary | `janissary\janissary_hist.xml` (full and low-poly) | `jannisary_guard_hist.ddt` (256×128 DXT3, mips) + `_b` | none |
+
+Open for the review: the poncho's colour and stripe; whether the corsair's turban should be
+`turban_fez` instead (its file declares 1000 units per metre against the inch-sized numbers of the
+other hats; how the engine sizes it is not known, so it was not used); whether the marines' age 3–4
+should keep the bicorne for an officer look; an optional AI pass (tried on the poncho: more natural
+wool, same stripes; kept as a variant, `work\ai\`).
+
 ## Tools
 
 - `tools/campaigncheck.py <game folder>`: the static check of all of the above (civ table, player
