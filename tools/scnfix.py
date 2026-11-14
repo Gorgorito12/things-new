@@ -7,8 +7,10 @@ proto:OLD=NEW renames an entry of the saved proto table instead, so the units pl
 the data no longer has load as NEW (same length rule).
 --data=<game folder> player:NAME=CIV sets the civ of the player(s) named NAME to CIV of that
 folder's civs.xml (a player's civ is stored as a number and is not re-mapped at load).
-unit:ID=PROTO gives the placed unit with that ID (the ID its triggers use) another proto of the
-scenario's saved proto table.
+unit:ID=PROTO gives the placed unit with that ID another proto of the scenario's saved proto
+table. ID is the in-game ID (the EN record's, the one Trigger3\\trigtemp.xs uses); the triggers
+stored in the scenario name the unit by its editor ID (its UN record's name), which
+campaigncheck.py --inventory prints beside it (Laguna's Town Center: editor 1168, in game 647).
 trigger:OLD=NEW replaces a proto name in trigger parameters (ProtoName, UnitType); tech:OLD=NEW
 points tech parameters at another tech of the saved tech table. These two may change a value's
 length: the trigger section ("TR") and root ("BG") chunk sizes are corrected.

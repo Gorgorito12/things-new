@@ -212,11 +212,318 @@ Laguna's players 1–3 are Brazilians on the Italian home city, Wild Animals' ci
 check the players' civs and the replaced units, and save: the editor then writes tables that
 match today's data.
 
+## Historical version: Barbary Coast
+
+Status 2026-11-13: **proposal only**, nothing built or tested. It is for an optional pack,
+`wol-fixes/campaign-historical/`, installed on top of the base fix (`wol-fixes/campaign/`), which
+it does not replace. Source: the fixed `first_barbary_war.age3Yscn` of `WoL-campaign-fix.zip`,
+read with `python -I tools/campaigncheck.py C:\AoE3-UHC-WoLReal3 --inventory --scn <file>`; data
+of `C:\AoE3-UHC-WoLReal3\data` (read only). "Observed" below is read from the files; "inference" and
+"uncertain" are marked.
+
+### Inventory per player
+
+**Unit IDs.** A placed unit has two numbers: its in-game ID (the EN record) and its editor ID
+(the UN record's name). The scenario's triggers store the editor ID and the game compiles it into
+the in-game one (observed: storage hut 2624 is `trUnitSelectByID(2112)` in
+`trigtemp-mission1.xs`; Laguna's Town Center is editor 1168, in game 647). The tables use the
+editor ID; `scnfix.py unit:` takes the in-game ID.
+
+| # | Player | Civ (fixed file) | Flag shown | Home city / AI | Placed units and buildings | What its triggers add |
+|---|---|---|---|---|---|---|
+| 1 | United States Navy | 4 UnitedStates | `War of the Triple Alliance\Flags\american` (34 stars, Civil War era) | americans / human | Steamboat ×3 (1679, 1684, 1685), Dock (2635, hidden as a CinematicBlock at start), CinematicBlock ×11, SPCPopBlock | Age 1, then 2; HC access off; `NAtinclad` forbidden; techs `WOLNAUnion1/2` (enable `NAmarine`, `NAmountedrifle`), marine, light cavalry, militia and spontooner upgrades, dock attack/defence; Steamboat count < 1 turns 2635 back into a Dock; at the end 3734 → `FieldHospital`, 3539 → `NAnapoleon`; the captain converts to player 1 |
+| 2 | Barbary Pirates | 8 Indians | `objects\flags\india` | indians / AI `first_barbary_war_p2` (max age 1, no building, no navy, rush) | 349: WallConnector 67, ypHouseIndian 66, SPCTentLarge 61, WallStraight5 36, WallStraight2 18, Outpost 17, HouseMed 12, WOLRuca 7 (the storage huts 2624–2631), SPCWeaponsCache 6 (the caches 1687, 1708, 1721, 1876, 2275, 2488), CWallGate 6, YPBarracksIndian 4, Barracks 3, Lookout 3, ypCaravanserai 2, Dock 2 (1705, 2332), Arsenal 2, ArtilleryDepot 2, Stable, FortFrontier 2497 renamed "Fort Tripoli", SPCStockades 2254 (the prison), and 18 single units (AFRICANcamelrider 5, WOTTANatPirate 4, one each of AFRICANmehariste, AbusGun, Akinci, Falconet, ypDacoit, MercMameluke, WOTTANatMercPirate, ypMahout, AfricanNaffatun, ypNatMercTigerClaw, ypThuggee, Seimen, AFRICANfellah, Cannon, MercBarbaryCorsair, ypMercArsonist, Rodelero) | Age 1; **Override Culture for Art = Mediterranean**; `FrontierOutpost`; 33 `Army Deploy`: Seimen (renamed "Barbary Musketeer") 21, Rodelero ("Barbary Swordsman") 13, WOTTANatMercPirate 10, AFRICANfellah 33, ypNatMercTigerClaw 15, MercBarbaryCorsair 12, Akinci 4, AFRICANcamelrider 3, AFRICANmehariste 1, Cannon 3, Falconet 1, AbusGun 2, AfricanNaffatun 3; fleet (army 2,29): Privateer ×5 (one with count 0), Galley ×2 |
+| 3 | Barbary Pirates | 8 Indians | `objects\flags\india` | indians / inactive | 216: Seimen 45, WOTTANatMercPirate 26, Rodelero 21, ypThuggee 19, MercBarbaryCorsair 19, AFRICANmehariste 11, Akinci 10, ypMercArsonist 9, ypNatMercTigerClaw 8, ypDacoit 8, FishingBoat 8, AbusGun 8, AfricanNaffatun 7, AFRICANcamelrider 6, MercMameluke 4, Galley 2, Privateer, NAkingsmousquetaire 2841 renamed "Barbary Pirate Captain" | 20 `Army Deploy`: Seimen 33, AFRICANfellah 39, AFRICANcamelrider 17, AFRICANmehariste 6, Rodelero 10, ypMercArsonist 8, MercBarbaryCorsair 4, WOTTANatMercPirate 4, Akinci 3, ypDacoit 2, Cannon 1; the merchant ships: Caravel ×2 (armies 3,38 and 3,39, renamed "Barbary Merchant Ship") |
+| 4 | Swedish Mining Operation | 23 Swedish | `War of the Triple Alliance\Flags\swedish` (Sweden–Norway union ensign, 1844–1905) | swedish / inactive | CinematicBlock ×2, CinematicBlockCube 3466 (becomes an invulnerable Caravel) | Settler ×5 (they mine gold mine 2816 and tribute 1 000 gold to player 1), WOLBevaring ×12, OutpostWagon that builds Outposts; `WOLVeteranBevaringar`, `FrontierOutpost`, `GreatCoat`; neutral to player 1 |
+| 5 | Van Lesen | 15 Dutch | `objects\flags\dutch` (tricolour) | dutch / human slot, no AI | WOLMercBlueGuard 3447 renamed "Captain Van Lesen", CinematicBlock (→ MapObjective), CinematicBlockCube 2637 (→ `SPCFlagKevin`, the flag on the neutral island) | Neutral to all; converted to player 1 when freed, back to 5 at the flag; +2 000/+1 000/+500 HP for the captain |
+| 6 | Storage | 13 British | `…\Flags\unitedkingdom` | british | none | Only the source of 15 tributes to player 1 (food, wood, gold) when a storage hut dies |
+| 7 | Sunken Merchant Ship | 13 British | `…\Flags\unitedkingdom` | british | none | Only the source of 18 tributes to player 1 when a merchant Caravel sinks |
+| 0 | Mother Nature | — | — | — | 2 223 props and trees; MineGold 2816, ypFishTuna (2666…2710) used by triggers | — |
+
+Texts (all literal in the scenario except the load text):
+- **Load text** (string 76595): "Piracy in the Mediterranean has been in effect for hundreds of
+  years, and as of yet nobody has dared face the fierce Algerians and Tripolitan pirates roaming
+  the waters. However, upon seizing American sailors and merchants, president Thomas Jefferson,
+  rather than paying tribute, has sent the United States navy to attack the Barbary Coast and
+  blockade the pirates." Node name 76594 "Barbary Coast (1801)".
+- **Scenario text:** "Put a stop to the piracy in the Mediterranean by invading the Barbary coast."
+- **Objectives** (name: text / hint):
+  - Blockade: "Blockade the Barbary coast by destroying enough pirate Merchant Ships (Caravels) or
+    by destroying the docks." / ships travel between the open sea and the docks; each ship sunk
+    gives its supplies.
+  - Caches: "Destroy all Weapon Caches." / six caches on the mainland and islands; they supply the
+    pirates' gunpowder.
+  - Prisoner: "Rescue the Dutch Captain." / a Dutch naval captain is held by the pirates; free him
+    and escort him.
+  - Prisoner 2: "Bring the Dutch Captain to the flag on the neutral island." / guard him, prepare
+    a ship.
+  - Storages: "Raid Barbary storage buildings to claim additional resources." / spoils of earlier
+    raids in "ramshackle huts and sheds".
+  - Swedes: "Protect the Swedish Miners." / the Swedes tribute the coin they dig while alive;
+    their force is weak.
+- Counters: "Weapons Caches Destroyed: n/6", "Trade Routes Blocked: n/2"; victory "You are
+  Victorious!".
+
+What each civ lets the player 2 AI train in the buildings it has (static reading of the civ's
+Age0 and Colonial techs and the techs they set active, against each building's `<Train>` list;
+to confirm in game):
+
+| Civ | Barracks | YPBarracksIndian | Stable | ypCaravanserai | ArtilleryDepot | FortFrontier |
+|---|---|---|---|---|---|---|
+| Indians (now) | — | ypRajput, ypSepoy, ypNatMercGurkha | — | ypMahout, ypHowdah, ypSowar, ypZamburak | — | the same Indian units |
+| Ottomans | Janissary, Nizam | — | WOLDeli, CavalryArcher | — | AbusGun, Humbaraci, Falconet, Mortar, xpPetard | Nizam, Janissary, Humbaraci, AbusGun, NAmarine, WOLDeli, CavalryArcher |
+| Egyptians | — | — | — | — | — | — (they use caravans) |
+| Saudis | WOLLineInfantry | — | — | — | MEZamburak, Midfa, MEMortar | WOLLineInfantry |
+| Pirate (hidden, British copy) | Redcoat, GreenJacket, ArtistsRifle | — | CuloCereza, HouseholdBlue, WOLScotsGrey | — | Falconet, Mortar, xpPetard | British units |
+
+So today the Tripolitan AI, when it has resources, can field Sepoys, Rajputs, Gurkhas and war
+elephants. The look of player 2's buildings does not depend on its civ: the trigger *Override
+Culture for Art = Mediterranean* picks the Mediterranean branch of every building set (barracks,
+stables, foundry, arsenal, outpost, fort, dock, walls and `HouseMed` all have one; walls have no
+Ottoman branch).
+
+### The history (with sources)
+
+- **War and dates.** Tripoli (Ottoman Tripolitania, autonomous under Yusuf Karamanli, pasha
+  since 1795) declared war on the United States on 10 May 1801 by cutting down the flagstaff of
+  the US consulate; the treaty ended it in June 1805 (4 or 10 June, sources differ).
+  **Algiers and Tunis did not join**; Morocco was briefly hostile in 1802.
+  ([First Barbary War](https://en.wikipedia.org/wiki/First_Barbary_War),
+  [Yusuf Karamanli](https://en.wikipedia.org/wiki/Yusuf_Karamanli))
+  The load text's "fierce Algerians and Tripolitan pirates" is therefore half right: the enemy
+  of 1801 is Tripoli alone.
+- **US Navy.** Squadrons of frigates (*Constitution*, *Philadelphia*, *President*, *Chesapeake*,
+  *Constellation*, *Congress*, *Essex*, *John Adams*), schooners (*Enterprise*, *Vixen*,
+  *Nautilus*), brigs (*Argus*, *Syren*, *Scourge*), the ketch *Intrepid*, the sloop *Hornet*, and
+  gunboats and mortar boats lent by the Kingdom of Naples and Sicily. First squadron (Dale, 1801):
+  3–4 frigates and 1 schooner. No steam: the first commercial steamboat sailed in 1807.
+  First action, 1 August 1801: schooner *Enterprise* (12 guns) against the polacca *Tripoli*
+  (14 guns, two masts, lateen sails).
+  ([First Barbary War](https://en.wikipedia.org/wiki/First_Barbary_War),
+  [Action of 1 August 1801](https://en.wikipedia.org/wiki/Action_of_1_August_1801))
+- **Land fighting.** Derna, April–May 1805: 7–8 US Marines under Lt. Presley O'Bannon, a few
+  navy men, about 70 Greek mercenaries and several hundred Arab and Berber horse and foot of
+  Hamet Karamanli, two field guns landed from the ships; the brig *Argus*, sloop *Hornet* and
+  schooner *Nautilus* shelled the batteries. Derna's garrison about 800, a relief force of 1 200
+  under Hassan Bey. ([Battle of Derna](https://en.wikipedia.org/wiki/Battle_of_Derna_(1805)))
+- **Tripoli's forces.** A walled city with about 150 heavy guns; "25,000 soldiers" in the body of
+  the article against 4 000 in its infobox (uncertain); 10 brigs of ten guns, 2 schooners, 2 large
+  galleys, 19 gunboats; Rais Mahomet Rous commanded at sea in 1801
+  ([First Barbary War](https://en.wikipedia.org/wiki/First_Barbary_War)). The regency's army had
+  a janissary corps and the *kouloughlis* (men of part-Turkish descent)
+  ([Ottoman Tripolitania](https://en.wikipedia.org/wiki/Ottoman_Tripolitania)); tribal Arab and
+  Berber horse fought on both sides at Derna. The admiral Murad Rais was a Scottish renegade,
+  Peter Lyle, in Tripoli from 1794 (one footnote of a consular edition, [Cambridge](https://www.cambridge.org/core/journals/royal-historical-society-camden-fifth-series/article/consular-and-diplomatic-correspondence-from-tripoli/BFC2C7A10DBA7043B62DC30C0044AF6B); his rank in 1801–05 is uncertain).
+- **Flags.** US: 15 stars and 15 stripes (1795–1818). Tripoli: no official flag; sources show
+  red flags with one to three crescents, a green flag with three crescents (dated 1711–1835) and
+  horizontal red/green/white stripes; which one flew in 1801 is **uncertain**
+  ([List of Libyan flags](https://en.wikipedia.org/wiki/List_of_Libyan_flags),
+  [FOTW, Tripoli](https://www.crwflags.com/fotw/flags/ly_trip.html)).
+- **Sweden.** Sweden fought Tripoli in 1796–1802 over tribute (20 ships and 160 sailors taken in
+  1798; a peace of 1798 broke down and Tripoli declared war again in 1800). In 1802 a Swedish
+  squadron under Rudolf Cederström (frigates *Thetis*, *Fröja*, *Camilla*, *Sprengporten*, brig
+  *Husaren*) blockaded Tripoli with the Americans and escorted convoys; the two fought Tripolitan
+  corsairs on 16 May 1802; Sweden made its own peace in October 1802 and paid tribute.
+  ([Swedish–Tripolitanian war](https://en.wikipedia.org/wiki/Swedish%E2%80%93Tripolitanian_war_(1796%E2%80%931802)))
+  **No source mentions Swedish miners or a gold mine in Tripolitania: the mining camp is fiction.**
+  A Swedish *naval* ally is history, in 1802.
+- **The Dutch.** No source found for Dutch (Batavian Republic) involvement in 1801–05; "Captain
+  Van Lesen" is fiction. The historical prisoners were the 307 men of the frigate *Philadelphia*,
+  run aground and taken in October 1803 and held until 1805 (Capt. William Bainbridge).
+  ([First Barbary War](https://en.wikipedia.org/wiki/First_Barbary_War))
+
+### Replacements
+
+The mission keeps its map, triggers and objectives; only protos, civs and trigger proto names
+change. Every replacement keeps or shrinks the footprint (obstruction radii from `protoy.xml`), so
+nothing new overlaps. HP and pop are shown where the balance moves.
+
+| Current → proposed | Where | Reason |
+|---|---|---|
+| Civ Indians → **Ottomans** (players 2 and 3) | `player:` | Tripoli was an Ottoman regency; the AI then trains Janissary, Nizam, Deli, Abus guns, Humbaraci instead of Sepoys and elephants |
+| ypHouseIndian (2×2) → **HouseMed** (2×2) | 66 placed, player 2 | the Ottoman/Mediterranean house; same footprint and pop |
+| YPBarracksIndian (4×4) → **Barracks** (4×4) | 4 placed (1877, 1878, 1940, 2265) | same footprint; the Ottomans can train in it; with the culture override it looks like the other three barracks |
+| ypCaravanserai (3×5) → **Stable** (3×5) | 2 placed (1699, 1879) | same footprint and axes |
+| WOLRuca (4×4, Mapuche *ruka*) → **africanGranary** (3×3) or **SPCXPAmmoStorehouse** (2×2) | 7 storage huts 2624–2631 | a Chilean hut in Tripoli; the granary is a North-African-style store (render to choose; the storehouse looks like the weapon caches, which may confuse the two objectives) |
+| Seimen ("Recruit", HP 130) → **Janissary** (HP 250) or **WOLMercBashiBazouk** (HP 100) | 46 placed, 54 deployed, renamed "Barbary Musketeer" | Tripoli's musketeers were janissaries and irregulars; Janissary doubles the HP (harder), Bashi-bazouk keeps it |
+| Rodelero (16th-c. Spanish sword and buckler, HP 135) → **MercBarbaryCorsair** (HP 315, pop 2) or **Azap** (HP 160) | 22 placed, 23 deployed, "Barbary Swordsman" | a Barbary swordsman should look like one; Azap keeps the stats but is a 15th–16th-c. Ottoman type |
+| WOTTANatMercPirate / WOTTANatPirate (Caribbean pirate) → **MercBarbaryCorsair** | 31 placed, 14 deployed | corsair crews |
+| ypThuggee, ypDacoit (Indian outlaws) → **WOLMercBashiBazouk** | 29 placed, 2 deployed | irregular musketeers of the Ottoman world |
+| ypNatMercTigerClaw (Indian) → **MercBarbaryCorsair** (placed) / **NatDervish** (deploys) | 9 placed, 15 deployed | hand infantry; NatDervish is not in the saved proto table, so only trigger deploys can use it (or rename an unused 10-letter table entry, e.g. `Carabinero`) |
+| ypMercArsonist (fire bombs) → **WOLAURKouloughli** ("Maghrebi warrior of Turkish descent that throws fire bombs") | 10 placed, 8 deployed | same role; the kouloughlis were part of Tripoli's army |
+| ypMahout (war elephant) → **MercMameluke** or **WOLMercSpahi** ("Berber mercenary cavalry") | 1 placed | no elephants in Libya |
+| Akinci (14th–16th-c. raider) → **WOLMercSpahi** or **WOLDeli** | 11 placed, 7 deployed | tribal or Ottoman horse; Sipahi's text says "Berber" |
+| AFRICANfellah, AFRICANcamelrider, AFRICANmehariste, AfricanNaffatun, MercMameluke, AbusGun, Falconet | — | **keep**: levies, camel riders and light guns fit; *méhariste* is a later French name, the look is a camel gunman (uncertain fit) |
+| Cannon ("Steel Gun", 1870s Schneider) → **Falconet** or **Mortar** | 1 placed, 4 deployed | period field gun; the city's batteries were heavy guns |
+| NAkingsmousquetaire 2841 "Barbary Pirate Captain" → **AFRICANalipasha** or **MercBarbaryCorsair** | 1 | a Tripolitan *rais*, not a French royal musketeer (Ali Pasha's model is a Turkish officer; render to choose) |
+| Privateer (army 2,29) → keep, or **AFRICANxebec** | 5 deploy effects (4 ships, one has count 0) | Tripoli's cruisers were polaccas, brigs, xebecs; WoL has no polacca. Not `CorsairGalley`/`GRD*`: they are treasure guardians (`Guardian` type) |
+| Galley | 4 | keep: Tripoli had galleys |
+| Caravel "Barbary Merchant Ship" → **AFRICANxebec** | 2 deployed (3,38, 3,39) | a 15th-c. ship; the xebec was the Mediterranean's coaster. Check that the route triggers work with it (they track the army, not the proto) |
+| Steamboat (player 1) → **Schooner** (trains `NAmarine`, carries 15) or **Frigate** (carries 50, trains nothing) | 3 placed + trigger `Player Unit Count Steamboat` (→ `trigger:Steamboat=…`) | no steam in 1801. Schooner keeps the mechanic of landing troops from the ships, but then player 1 trains only marines there (the historical force); Frigate needs the Dock to supply troops. Possible mix: 1679 → Frigate, 1684 and 1685 → Schooner |
+| NAnapoleon (1857 gun), end reward 3539 → **Falconet** | Change Unit Type | period gun |
+| `NAtinclad` forbid → retarget to `PaddleSteamer` or `xpIronclad` | trigger | the US Dock offers Schooner, PaddleSteamer, xpIronclad: one steam ship can be forbidden this way (scnfix changes values, it cannot add effects) |
+| WOLBevaring (Swedish conscript, from 1812) → keep, or **Grenadier** / **Musketeer** | 12 deployed | closest Swedish line infantry in WoL; the *beväring* is about ten years late |
+| Caravel 3466 (Swedish) → **Frigate** | Change Unit Type | Cederström's squadron were frigates |
+| WOLMercBlueGuard "Captain Van Lesen" → keep, or **Explorer** | 1 | a 17th-c. Dutch guard; Explorer is an officer figure. Making him American (Bainbridge) needs new texts, see below |
+
+Player names and texts ("Swedish Mining Operation", "Dutch Captain", the Algerians of the load
+text) stay: `scnfix.py` cannot yet rewrite a player name or an objective text (length-prefixed
+UTF-16 inside chunks whose sizes would change). Suggested if the tool learns it: player 3 "Tripolitan
+Corsairs", player 4 "Swedish Squadron", load text "…the Tripolitan corsairs…".
+
+### Hidden civs and flags
+
+Flags come from the civ (`<homecityflagtexture>`). Found in the art (loose files win over the
+archives; inference from the load order, to see in game):
+
+| Side | Now | Best existing texture | Note |
+|---|---|---|---|
+| United States | `War of the Triple Alliance\Flags\american` (34 stars) | `objects\flags\USA` (loose: 13 stars in a circle, 1777–1795) | the 1801 flag (15/15) does not exist; make it with aoe3-blender-tools if wanted |
+| Tripoli | `objects\flags\india` | `objects\flags\ottomans` (archive: red, white crescent and star) | the crescent-and-star design is of 1844; a period Tripoli flag (red/green/white stripes or green with three crescents) would be a new texture |
+| Sweden | union ensign 1844–1905 (both WoL files) | `objects\flags\swedish` (archive: plain blue with yellow cross) | right for 1801 |
+| Dutch | `objects\flags\dutch` (tricolour) | keep | the Batavian Republic flew the tricolour (its naval ensign details uncertain) |
+
+`objects\flags\pirate` is WoL's loose East India Company flag, not a Jolly Roger
+(`pirate_slant` in the archive is one), so the hidden `Pirate` civ is no help.
+
+Hidden civs needed, each `visible 0`, appended **after the last `<civ>`** of `civs.xml` so no
+existing civ ID moves (players are stored as numbers):
+- **Tripolitans:** a copy of Ottomans with `objects\flags\ottomans` (or a new Tripoli texture);
+  only needed if the flag must differ from the Ottomans'. With plain Ottomans the flag is already
+  the red crescent.
+- **United States 1801:** a copy of UnitedStates with `objects\flags\USA`.
+- **Sweden 1802:** a copy of Swedish with `objects\flags\swedish`.
+- The display names can reuse the originals' string IDs (no "Tripoli" civ string exists; 76594 is
+  the node name).
+
+A player whose civ is not in the scenario's own civ table still loads (observed: Hakodate's
+`SPCJapanese`), so the hidden civs need no change of that table. The player's home city file stays
+as saved (Laguna's Brazilians on the Italian home city work); player 2 is an AI without shipments.
+
+### Risks
+
+- **The saved proto table.** `unit:ID=PROTO` only takes protos the scenario's table has. Of the
+  candidates, `NatDervish`, `CorsairDhow`, `Ghazi`, `Jundi`, `Faris`, `Jamal`, `FrenchZouave`,
+  `Agayl` are missing: trigger deploys can name them (any length), placed units only after renaming
+  an unused table entry of the same length (`proto:`; 171 dead entries, e.g. `Carabinero` (10),
+  `Bacamartero` (11)).
+- **Balance.** Janissary (250 HP) for Recruit (130) and Corsair (315 HP, pop 2) for Rodelero (135)
+  make the mission harder; Schooners for Steamboats change how player 1 gets an army. Play it.
+- **The AI with Ottomans** (or a hidden civ the AI scripts do not know): the AI must still compile
+  and play; check `XS: Error` in the log and a few minutes of play. A hidden civ has no
+  `cCiv…` constant in the AI, so civ-specific code takes its default path (inference).
+- **Player N passes through civ N** while loading (see Laguna): players 2–7 get and lose
+  `Age0Egyptian`, `Age0zulu`, `Age0American`, `Age0australian`, `Age0Canadian` and the 7th civ's
+  age tech. Their `Assign` effects hit only TownCenter, CoveredWagon, Zulu units, WOLPioneer and
+  FurTrader, none of which this mission uses (checked); `civs.xml` additions at the end do not
+  change it.
+- **Data files in the pack.** Hidden civs mean shipping `civs.xml`; a WoL update overwrites it
+  (same as the base fix's `techtreey.xml`). Ship the additions as a snippet to paste too.
+- **Look.** Every replacement must be rendered and seen in game with the Mediterranean override
+  (the list below), and the flags on the buildings checked.
+- **`GRD*` and `CorsairGalley`** are treasure guardians (`Guardian`, `WaterGuardian`): not for
+  armies.
+
+### Models to render
+
+Saved as `m1-list.txt` (scratchpad `sheets\`) in the `caption | proto` format of
+`model_sheets.py --models`. Current first, then candidates:
+
+```
+# Barbary Coast 1801 - current
+US steamboat | Steamboat
+US dock | Dock
+US Napoleon gun (end reward) | NAnapoleon
+US marine | NAmarine
+US spontooner | NAspontooner
+US rifleman | NArifleman
+US light cavalry | NAlightcavalry
+US mounted rifle | NAmountedrifle
+Indian house | ypHouseIndian
+Indian barracks | YPBarracksIndian
+Caravanserai | ypCaravanserai
+Storage hut (Ruca) | WOLRuca
+Large tent | SPCTentLarge
+Mediterranean house | HouseMed
+Barracks | Barracks
+Stable | Stable
+Artillery foundry | ArtilleryDepot
+Arsenal | Arsenal
+Redoubt | Outpost
+Lookout | Lookout
+Fort Tripoli | FortFrontier
+Weapon cache | SPCWeaponsCache
+Prison stockade | SPCStockades
+Barbary Musketeer (Recruit) | Seimen
+Barbary Swordsman (Rodelero) | Rodelero
+Pirate | WOTTANatMercPirate
+Barbary corsair | MercBarbaryCorsair
+Thuggee | ypThuggee
+Dacoit | ypDacoit
+Tiger claw | ypNatMercTigerClaw
+Arsonist | ypMercArsonist
+Mahout | ypMahout
+Camel rider | AFRICANcamelrider
+Mehariste | AFRICANmehariste
+Fellah | AFRICANfellah
+Naffatun | AfricanNaffatun
+Akinci | Akinci
+Abus gun | AbusGun
+Falconet | Falconet
+Steel gun | Cannon
+Cairo Mamluk | MercMameluke
+Pirate captain (Mousquetaire du Roi) | NAkingsmousquetaire
+Privateer | Privateer
+Galley | Galley
+Merchant ship (Caravel) | Caravel
+Fishing boat | FishingBoat
+Swedish settler | Settler
+Bevaring | WOLBevaring
+Frontier wagon | OutpostWagon
+Captain Van Lesen (Blue Guard) | WOLMercBlueGuard
+# candidates
+Janissary | Janissary
+Nizam-i Cedid | Nizam
+Bashi-bazouk | WOLMercBashiBazouk
+Kouloughli | WOLAURKouloughli
+Azap | Azap
+Dervish | NatDervish
+Sipahi (Berber) | WOLMercSpahi
+Spahi | Spahi
+Deli | WOLDeli
+Humbaraci | Humbaraci
+Mortar | Mortar
+Tuareg | GRDTuareg
+Ali Pasha | AFRICANalipasha
+Explorer | Explorer
+Xebec | AFRICANxebec
+Corsair galley | CorsairGalley
+Corsair dhow | CorsairDhow
+Frigate | Frigate
+Schooner | Schooner
+Gunboat | WOLGunboat
+Granary | africanGranary
+Ammunition storehouse | SPCXPAmmoStorehouse
+Swedish grenadier | Grenadier
+Musketeer | Musketeer
+```
+
+### Open questions
+
+- Schooners only, or one Frigate and two Schooners, for player 1 (how the player gets troops)?
+- Janissary (harder) or Bashi-bazouk (same strength) for the 100 "Barbary Musketeers"?
+- Keep the Swedish miners and the Dutch captain as the story's fiction, or extend `scnfix.py` to
+  rewrite player names and objective texts (Swedish squadron; an American prisoner)?
+- New flag textures (US 15/15, Tripoli) through aoe3-blender-tools, or the existing stand-ins?
+- Plain Ottomans for the Tripolitans (no `civs.xml` change for them) or a hidden copy?
+
 ## Tools
 
 - `tools/campaigncheck.py <game folder>`: the static check of all of the above (civ table, player
   civs, placed protos, saved names, trigger parameters). On the bed as shipped: 46 misses, every
   one of them explained here. `--scn` alone checks a fixed set outside the game folder.
+  `--inventory --scn <file>` prints, per player, civ, flag, home city, AI, placed units, the units
+  triggers name (editor and in-game IDs), what the triggers deploy or change, and the objectives.
 - `tools/scnfix.py`: writes a copy of a scenario with civ-table names, saved proto names, player
   civs, single units' protos (`unit:ID=PROTO`) or trigger parameters (`trigger:`, `tech:`, any
   length: the `TR` and `BG` chunk sizes follow) changed, and its CRC.
