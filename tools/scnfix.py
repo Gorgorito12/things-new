@@ -126,14 +126,14 @@ def edit_trigger_params(raw, edits):
     import campaigncheck
     techs = name_table(raw, 2)
     table = []
-    for kind, old, new in edits:
+    for kind, old, new, only in edits:
         if kind == "tech":
             for n in (old, new):
                 if n not in techs:
                     sys.exit(f"scnfix: tech {n} is not in the scenario's saved tech table")
-            table.append(("tech", str(techs.index(old)), str(techs.index(new)), old, new))
+            table.append(("tech", str(techs.index(old)), str(techs.index(new)), old, new, only))
         else:
-            table.append(("proto", old, new, old, new))
+            table.append(("proto", old, new, old, new, only))
     trig = campaigncheck.triggers(bytes(raw))
     if not trig:
         sys.exit("scnfix: no triggers found")
@@ -150,8 +150,8 @@ def edit_trigger_params(raw, edits):
     hits = []
     for off, ename, params in trig:
         for pname, disp, vtype, value, len_at in params:
-            for kind, old, new, label_old, label_new in table:
-                if value != old:
+            for kind, old, new, label_old, label_new, only in table:
+                if value != old or (only and pname.lower() != only):
                     continue
                 if kind == "tech" and not pname.lower().startswith("tech"):
                     continue
@@ -173,6 +173,172 @@ def edit_trigger_params(raw, edits):
     return raw
 
 
+# ---------------------------------------------------------------- texts (name:, text:)
+#
+# Layout (observed in the three WoL missions; docs/wol-campaign.md, "Historical version: what was
+# built"): the root "BG" chunk holds, among raw fields, "TR" (the triggers) and right after it
+# "J1". J1 holds, directly, the player records ("BP", one per player, each followed by one byte),
+# the team records ("TE": size, version, team number, the UTF-16 name) and the objectives chunk
+# ("OM"). A text is a length (UTF-16 units) and the characters, so a text of another length moves
+# the rest of the file: the chunks that hold it get the difference, and nothing else does.
+
+def sections(raw):
+    """(TR offset, J1 offset): TR is found from the triggers, J1 starts where TR ends."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    trig = campaigncheck.triggers(bytes(raw))
+    if not trig:
+        sys.exit("scnfix: no triggers found")
+    first, last = trig[0][0], trig[-1][0]
+    for p in range(first - 1, 6, -1):
+        if raw[p:p + 2] == b"TR":
+            size = struct.unpack_from("<I", raw, p + 2)[0]
+            if p + 6 + size > last:
+                j1 = p + 6 + size
+                if raw[j1:j1 + 2] != b"J1":
+                    sys.exit("scnfix: no J1 chunk after the triggers")
+                return p, j1, trig
+    sys.exit("scnfix: trigger section not found")
+
+
+def chunk_end(raw, at):
+    return at + 6 + struct.unpack_from("<I", raw, at + 2)[0]
+
+
+def replace_text(raw, len_at, new, chunks, label):
+    """Replaces the length-prefixed UTF-16 text at len_at and adds the length difference to the
+    size of each chunk (header offsets, all before len_at)."""
+    n = struct.unpack_from("<I", raw, len_at)[0]
+    old = raw[len_at + 4:len_at + 4 + 2 * n].decode("utf-16le")
+    raw[len_at:len_at + 4 + 2 * n] = struct.pack("<I", len(new)) + new.encode("utf-16le")
+    delta = 2 * (len(new) - n)
+    for at in chunks:
+        assert at < len_at, (label, at, len_at)
+        struct.pack_into("<I", raw, at + 2, struct.unpack_from("<I", raw, at + 2)[0] + delta)
+    print(f"0x{len_at:x} {label}: {old!r} -> {new!r}")
+
+
+def om_chunk(raw, j1):
+    """The objectives chunk inside J1: tag, size, version, next ID, count."""
+    end = chunk_end(raw, j1)
+    for m in re.finditer(rb"OM(....)(....)(....)(....)", raw[j1:end], flags=re.S):
+        size, ver, next_id, count = struct.unpack("<IIII", m.group(1) + m.group(2) + m.group(3) + m.group(4))
+        at = j1 + m.start()
+        if ver < 32 and 0 < count < 200 and count <= next_id < 1000 and at + 6 + size <= end:
+            return at
+    sys.exit("scnfix: no objectives chunk")
+
+
+def om_texts(raw, om):
+    """(length offset, text) of every length-prefixed UTF-16 text in the objectives chunk."""
+    out = []
+    body_end = chunk_end(raw, om)
+    p = om + 6
+    for m in re.finditer(rb"(?:[\x20-\xff]\x00)+", raw[p:body_end]):
+        at = p + m.start()
+        n = struct.unpack_from("<I", raw, at - 4)[0]
+        if n and 2 * n <= len(m.group()):
+            out.append((at - 4, raw[at:at + 2 * n].decode("utf-16le")))
+    return out
+
+
+def rename_player(raw, old, new):
+    """Renames the player record(s) named OLD, and the team named "Team OLD"."""
+    tr, j1, _ = sections(raw)
+    want = old.encode("utf-16le")
+    hits = []
+    for m in re.finditer(rb"BP(....)(....)(....)(....)", raw, flags=re.S):
+        n = struct.unpack_from("<I", m.group(4))[0]
+        end = m.end() + 2 * n
+        if n == len(old) and raw[m.end():end] == want and raw[end + 4:end + 8] == b"\xff\xff\xff\xff" \
+                and j1 < m.start() < chunk_end(raw, j1):
+            hits.append((m.start(), "BP"))
+    team = ("Team " + old).encode("utf-16le")
+    for m in re.finditer(rb"TE(....)(....)(....)(....)", raw, flags=re.S):
+        n = struct.unpack_from("<I", m.group(4))[0]
+        if n == len(old) + 5 and raw[m.end():m.end() + 2 * n] == team and j1 < m.start() < chunk_end(raw, j1):
+            hits.append((m.start(), "TE"))
+    if not any(k == "BP" for _, k in hits):
+        sys.exit(f"scnfix: no player named {old}")
+    for at, kind in sorted(hits, reverse=True):
+        text = new if kind == "BP" else "Team " + new
+        replace_text(raw, at + 14, text, [at, j1, 0], f"{kind} name")
+
+
+def set_player_homecity(raw, player, new):
+    """Sets the home city file of the player record(s) named PLAYER (the first homecity*.xml text
+    of the record)."""
+    _, j1, _ = sections(raw)
+    want = player.encode("utf-16le")
+    hits = 0
+    for m in re.finditer(rb"BP(....)(....)(....)(....)", raw, flags=re.S):
+        n = struct.unpack_from("<I", m.group(4))[0]
+        end = m.end() + 2 * n
+        if n != len(player) or raw[m.end():end] != want or not j1 < m.start() < chunk_end(raw, j1):
+            continue
+        bp_end = chunk_end(raw, m.start())
+        h = re.search(rb"(?i)h\x00o\x00m\x00e\x00c\x00i\x00t\x00y\x00", raw[end:bp_end])
+        if not h:
+            sys.exit(f"scnfix: player {player} has no home city text")
+        replace_text(raw, end + h.start() - 4, new, [m.start(), j1, 0], f"player {player} home city")
+        hits += 1
+    if not hits:
+        sys.exit(f"scnfix: no player named {player}")
+
+
+def edit_texts(raw, old, new):
+    """Replaces the substring OLD by NEW in every objective text (names, texts, hints, the
+    scenario's own name and description) and every trigger text parameter (type 22: chat,
+    overlays, counters, unit names)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    tr, j1, trig = sections(raw)
+    om = om_chunk(raw, j1)
+    hits = []
+    for len_at, text in om_texts(raw, om):
+        if old in text:
+            hits.append((len_at, text.replace(old, new), [om, j1, 0], "objectives"))
+    for off, ename, params in trig:
+        for pname, disp, vtype, value, len_at in params:
+            if vtype != 22 or value != "":
+                continue
+            q = len_at + 4
+            n = struct.unpack_from("<I", raw, q)[0]
+            text = raw[q + 4:q + 4 + 2 * n].decode("utf-16le", errors="replace")
+            if old in text:
+                hits.append((q, text.replace(old, new), [tr, 0], f"{ename}.{pname}"))
+    if not hits:
+        sys.exit(f"scnfix: no text contains {old!r}")
+    for len_at, text, chunks, label in sorted(hits, key=lambda h: h[0], reverse=True):
+        replace_text(raw, len_at, text, chunks, label)
+
+
+def set_player_units(raw, player, old, new):
+    """Gives every placed unit of PLAYER (a number) whose proto is OLD the proto NEW, both of the
+    scenario's saved proto table."""
+    protos = name_table(raw, 0)
+    for p in (old, new):
+        if p not in protos:
+            sys.exit(f"scnfix: {p} is not in the scenario's saved proto table")
+    a, b = protos.index(old), protos.index(new)
+    n = 0
+    for m in re.finditer(rb"H1(....)ENP\x00\x00\x00", raw, flags=re.S):
+        uid, _, owner = struct.unpack_from("<iii", raw, m.end())
+        if owner != player:
+            continue
+        end = m.start() + 6 + struct.unpack_from("<I", m.group(1))[0]
+        u = raw.find(b"UN", m.end(), end)
+        if u < 0:
+            continue
+        ln = struct.unpack_from("<I", raw, u + 6)[0]
+        q = u + 10 + ln
+        if struct.unpack_from("<II", raw, q) == (a, a):
+            struct.pack_into("<II", raw, q, b, b)
+            n += 1
+    if not n:
+        sys.exit(f"scnfix: player {player} has no placed {old}")
+    print(f"player {player}: {n} placed {old} -> {new}")
+
+
 def main(argv):
     if len(argv) < 3:
         sys.exit(__doc__)
@@ -187,17 +353,35 @@ def main(argv):
     names = [n for _, n in records]
     root = None
     param_edits = []
-    for pair in argv[2:]:
+    text_edits = []
+    args = []
+    for a in argv[2:]:
+        if a.startswith("@"):  # a file of edits, one per line (UTF-8; # starts a comment)
+            args += [ln.rstrip("\r\n") for ln in Path(a[1:]).read_text(encoding="utf-8").splitlines()
+                     if ln.strip() and not ln.lstrip().startswith("#")]
+        else:
+            args.append(a)
+    for pair in args:
         if pair.startswith("--data="):
             root = pair[7:]
             continue
         old, _, new = pair.partition("=")
+        if old.startswith("name:") or old.startswith("text:"):
+            text_edits.append((old[:4], old[5:], new))
+            continue
+        if old.startswith("units:"):
+            _, pl, proto = old.split(":", 2)
+            set_player_units(raw, int(pl), proto, new)
+            continue
         if old.startswith("unit:"):
             set_unit_proto(raw, int(old[5:]), new)
             continue
-        if old.startswith("trigger:") or old.startswith("tech:"):
-            kind, _, name = old.partition(":")
-            param_edits.append(("proto" if kind == "trigger" else "tech", name, new))
+        m = re.fullmatch(r"(trigger|tech)(?:\[(\w+)\])?:(.+)", old)
+        if m:  # trigger[PARAM]:OLD=NEW limits the rename to the parameters named PARAM
+            param_edits.append(("proto" if m[1] == "trigger" else "tech", m[3], new, (m[2] or "").lower()))
+            continue
+        if old.startswith("homecity:"):
+            text_edits.append(("homecity", old[9:], new))
             continue
         if old.startswith("player:"):
             if not root:
@@ -221,6 +405,13 @@ def main(argv):
         print(f"{old} -> {new} at 0x{hits[0]:x}")
     if param_edits:  # last: they may move the rest of the file
         raw = edit_trigger_params(raw, param_edits)
+    for kind, old, new in text_edits:  # each one parses the file again
+        if kind == "name":
+            rename_player(raw, old, new)
+        elif kind == "homecity":
+            set_player_homecity(raw, old, new)
+        else:
+            edit_texts(raw, old, new)
     # The file ends with a CRC-32 (zlib's) of the whole file with those last 4 bytes zeroed; the
     # game refuses the scenario when it does not match (FUN_0082EAFD).
     body = b"l33t" + struct.pack("<I", len(raw)) + zlib.compress(bytes(raw), 9)

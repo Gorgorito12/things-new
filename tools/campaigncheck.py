@@ -528,8 +528,8 @@ def objectives(raw):
         for r in re.finditer(rb"(....)(....)((?:[\x20-\x7e]\x00)+)", body, flags=re.S):
             oid, n = struct.unpack("<II", r.group(1) + r.group(2))
             name = r.group(3).decode("utf-16le")
-            if 0 < oid < next_id and n == len(name) and re.fullmatch(r"\w+", name) and \
-                    (not recs or oid > recs[-1][0]):
+            if 0 < oid < next_id and n == len(name) and re.fullmatch(r"\w[\w ]*", name) and \
+                    all(oid != r[0] for r in recs):
                 recs.append((oid, name, r.start(), r.end()))
         if len(recs) != count:
             continue
@@ -640,7 +640,7 @@ def inventory(gd, path):
     print("\n-- trigger texts")
     for off, name, params in trig:
         for p in params:
-            if p[0] in ("Text", "Message") and p[2] == 22:
+            if p[2] == 22:  # Text, Message, NewName...
                 t = text_after(raw, p)
                 if t:
                     print(f"   {name}: {resolve(t)}")
