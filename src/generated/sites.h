@@ -1262,6 +1262,9 @@ inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTail
 inline constexpr std::uint8_t kVeterancyKillPathBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
 inline constexpr Site kVeterancyKillPath{"VeterancyKillPath", 0x004D4F37, kVeterancyKillPathBytes, sizeof(kVeterancyKillPathBytes)};
 
+inline constexpr std::uint8_t kKillSpawnPlaceBytes[] = {0x81, 0xEC, 0xA8, 0x01, 0x00, 0x00, 0x53, 0x55, 0x33, 0xDB, 0x8B, 0xE9};
+inline constexpr Site kKillSpawnPlace{"KillSpawnPlace", 0x0050703D, kKillSpawnPlaceBytes, sizeof(kKillSpawnPlaceBytes)};
+
 inline constexpr std::uint8_t kTransformCall1Bytes[] = {0xE8, 0xCE, 0xB8, 0x1C, 0x00};
 inline constexpr Site kTransformCall1{"TransformCall1", 0x007FBC79, kTransformCall1Bytes, sizeof(kTransformCall1Bytes)};
 

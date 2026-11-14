@@ -342,6 +342,7 @@ randomCost [log]              <RandomCost> rolls a unit's price in a range, a ne
 unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
 veterancyBonus [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark;
                               data\\uhc\\veterancy.xml: rows by unit type, rank names and colours
+killSpawn [log]               civs.xml <killSpawn>: enemies a civ kills become animals, by weight
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back

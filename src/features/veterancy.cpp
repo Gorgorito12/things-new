@@ -16,8 +16,8 @@
 // whose type the player's proto has); a proto's own rows replace the defaults entirely. A rank's name (a text,
 // or a string ID) and colour (RRGGBB) are shown by the floating text and the unit panel's row; "Rank N" otherwise.
 //
-// Stock's flag ExperienceUnit has no reader in the exe, so nothing counts a unit's kills. The hook sits
-// on TakeDamage's kill path, where the attacker unit is known. The count and the bonuses are all stat
+// Stock's flag ExperienceUnit has no reader in the exe, so nothing counts a unit's kills. The key observes
+// TakeDamage's kill path (killobservers.h, shared with killSpawn), where the attacker unit is known. The count and the bonuses are all stat
 // modifiers of the game (0x4DD22D, the call of snares and auras, with no time limit), so that the game
 // saves them, the stat code reads them and a transformed unit keeps them:
 // - the count is a modifier of a stat no code reads, kStatKills, whose value is the kills;
@@ -28,7 +28,7 @@
 // A transform in place (0x9C754C: TransformUnit, revolutions) ends the unit's modifiers, so its seven
 // calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
 // new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
-// hooks/veterancy_hooks.asm.
+// hooks/killobservers_hooks.asm.
 //
 // Two tech effects of type="Data" act on one player's copy of the proto: subtype="VeterancyEnable" (0 turns the
 // rows off for that player, anything else on; base 1) and subtype="VeterancyBonus" (a factor on what every row
@@ -52,6 +52,7 @@
 #include "../features.h"
 #include "../floatingtext.h"
 #include "../generated/sites.h"
+#include "../killobservers.h"
 #include "../log.h"
 #include "../modifiers.h"
 #include "../patch.h"
@@ -64,11 +65,8 @@
 #include "../worldtick.h"
 #include "../xmllist.h"
 
-extern "C" void UhcVeterancyHook();
-
 namespace {
 
-constexpr std::uint32_t kKillPath = 0x004D4F37;
 constexpr std::int32_t kStatKills = 0x62;       // no stock stat or key uses it; transformSpan has 60h and 61h
 constexpr std::int32_t kOperationSet = 0;
 constexpr std::int32_t kOperationAdd = 1;
@@ -862,8 +860,8 @@ bool LoadDataFile(const std::string& arg) {
 
 }  // namespace
 
-// From the hook, for every killing blow.
-extern "C" void __stdcall UhcVeterancyKill(char* attacker, const char* victim) {
+// The shared kill observer (killobservers.h), for every killing blow.
+static void VeterancyKill(char* attacker, char*, std::int32_t, char* victim) {
   if (attacker == nullptr || victim == nullptr) {
     return;
   }
@@ -975,13 +973,12 @@ Outcome ApplyVeterancyBonus(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  if (!VerifyAll("veterancyBonus", {&sites::kVeterancyKillPath, &sites::kSnareApply, &sites::kIsA}) ||
+  if (!VerifyAll("veterancyBonus", {&sites::kSnareApply, &sites::kIsA}) ||
       !LoadDataFile(file) ||
       !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
       !AddTechSubtype("VeterancyEnable", &ChangeEnable) || !AddTechSubtype("VeterancyBonus", &ChangeFactor) ||
-      !OnDatabaseLoad(&ForgetOnDataLoad) ||
-      !WriteJmp(kKillPath, reinterpret_cast<const void*>(&UhcVeterancyHook), 6)) {
+      !OnDatabaseLoad(&ForgetOnDataLoad) || !AddKillObserver(&VeterancyKill)) {
     return Outcome::kFailed;
   }
   std::fill(std::begin(g_rankModels), std::end(g_rankModels), -2);

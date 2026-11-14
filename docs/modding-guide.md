@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
 | Friday 2026-11-13 13:06 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Friday 2026-11-13 11:50 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-13 10:46 | [`randomCost`](#randomcost) | Added. `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | The tag on the protos that want it. |
@@ -2512,6 +2513,7 @@ Attacks, armor, and what a hit does.
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
 | [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
+| [`killSpawn`](#killspawn) | A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | **new** | The tags on the civ in `civs.xml`. | confirmed (single player) |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
 | [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
@@ -3830,7 +3832,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
 - **Interface:** the rank marks above, the floating text when a rank is reached and the unit panel's row; DE's rank icons in
   the selection panel are not there. Damage and hit points in the panel are the game's, with the modifiers.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
-- **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: veterancyBonus kill (0x4D4F37)`, and with `log`:
+- **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: killing blows (0x4D4F37)` (the hook it shares with `killSpawn`), and with `log`:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
   `veterancyBonus: unit 0 keeps 4 kills as proto 324`; an add row logs `+0.5` where a multiply row logs `x1.5`, and the first
   kill of a game logs `veterancyBonus: 5 default rows for unit type AbstractCavalry (3654)`. A row without `kills`,
@@ -3855,6 +3857,133 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   - A European AI (`wolVictoria`) in a skirmish, rows on `Hussar`: all four of its hussars reached a rank, up to 3, no `Error 0003`.
   - Not tested: killing a unit of its own, a treasure guardian, multiplayer. The hook runs only on a killing blow, so there
     was no `perfprobe.py` A/B, and four games were open.
+
+#### killSpawn
+
+*A civ turns the enemies it kills into livestock: each kill may leave an animal, picked by weight, where the victim fell.*
+
+**Added:** Friday 2026-11-13 17:14 · **Filmed in WoL:** Friday 2026-11-13 17:27
+
+![killSpawn in WoL](media/killSpawn-wol.gif)
+
+*In WoL, with the key (Ethiopians with `<killSpawn>LivestockCamel 80, ypGoat 20</killSpawn>` in `civs.xml`, 8
+`Cuirassier` against 12 `WOLLineInfantry` of the Egyptians):* each infantryman the cuirassiers cut down leaves a camel or,
+less often, a goat of the Ethiopians where he fell, or beside it when the spot is taken: 9 kills, 8 camels and 1 goat. The
+Cuirassiers and the animals stay selected, so their bars show.
+[Full video (MP4)](media/killSpawn-wol.mp4).
+
+![killSpawn in WoL, key off](media/killSpawn-wol-control.gif)
+
+*In WoL, key off (the same scene, the tags still in `civs.xml`):* the infantrymen fall and leave nothing.
+[Full video (MP4)](media/killSpawn-wol-control.mp4).
+
+```
+killSpawn [log]
+```
+
+```xml
+<!-- civs.xml, inside the <civ> -->
+<killSpawn>LivestockCamel 80, ypGoat 20</killSpawn>
+<killSpawnChance>100</killSpawnChance>
+<killSpawnVictims>Military, Hero</killSpawnVictims>
+<killSpawnKillers>Military, Ship</killSpawnKillers>
+
+<!-- techtreey.xml: a card that halves the chance for this player's Cuirassiers -->
+<Effect type ='Data' amount ='0.5' subtype ='KillSpawnChance' relativity ='Percent'>
+    <Target type ='ProtoUnit'>Cuirassier</Target></Effect>
+```
+
+- **In WoL today:** no such mechanic. WoL #66.
+- **`<killSpawn>`:** protos and weights, separated by commas; a weight left out is 1. A unit or ship of a player of
+  this civ that lands the killing blow on an enemy unit leaves one animal, picked by weight (80 and 20: four camels for each
+  goat), owned by the killer's player, where the victim stood. The weights add up to at most 1000. A shot whose shooter has
+  died since (a cannonball in flight) still counts for its player.
+- **`<killSpawnChance>`:** the percent of those kills that leave an animal, 0 to 100, default 100. A whole percent.
+- **`<killSpawnVictims>`:** the victim must be of one of these unit types or protos (commas between them). Without the tag,
+  any unit.
+- **`<killSpawnKillers>`:** the killer must be of one of these unit types or protos, the same way. Without the tag, any
+  killer but a `Building`: a Town Center or a tower that shoots all game would farm herds, while a ship that kills on the
+  shore still defeats an enemy. `<killSpawnKillers>Building</killSpawnKillers>` gives the buildings back (and only them).
+- **One list per civ:** every unit of the civ draws from the same list. A list per unit type could become a proto tag
+  later, if a mod asks for it; the tech changes the chance per proto already.
+- **Never an animal:** a Gaia victim (hunted game too), the killer's own units and its allies', buildings, ships, and
+  herdables (`Herdable`), so that killing an animal never makes another. A kill not made by an attack (a lifespan, a delete,
+  a trigger's `Kill`) is no killing blow.
+- **Where:** the animal appears on the next game update, where the victim stood, or up to 4 m from it when that spot is
+  taken (the animals of the kills before it, where many fall together); it is dropped, with a log line, when there is no
+  room within 4 m or the ground does not take it (water, a cliff, a building).
+- **The tech:** a `Data` effect with `subtype='KillSpawnChance'` on the killer's proto changes the chance of that player's
+  copy, from the civ's: `Assign` sets it (0 turns it off, 100 makes every kill count), `Absolute` adds to it, `Percent`
+  multiplies it; the removal of the tech undoes it. On a type (`AbstractCavalry`) it reaches every proto of the type. A
+  civ without `<killSpawn>` has no animals for a tech to turn on.
+- **Herding:** the animals are ordinary livestock, by design: the game's own rule for herdables applies to them, and the
+  mod chooses the proto, so an animal no one can take over is a data choice (a proto without `Herdable`). Like any other: an enemy unit near them, with none of the owner's, takes them over
+  (the game's `ConvertsHerds`), and a herd left with no one near can go to Gaia. A herd left on a battlefield the enemy
+  holds changes hands.
+- **Random and multiplayer:** the chance and the pick are rolls of the game's synced random numbers, at the kill, so every
+  machine gets the same animals and nothing is kept outside the game. It changes the simulation: every player needs the
+  same setting and data.
+- **Saved games:** nothing to keep: the tags are read again with the data, a load applies the techs again, and the animals
+  are ordinary units. An animal still waiting for its spot when the game is saved (within the update after its kill) is
+  not saved.
+- **Log:** `killSpawn: the civ tags killSpawn, killSpawnChance and killSpawnVictims and the Data subtype KillSpawnChance are
+  on`, `hook reached: killing blows (0x4D4F37)`, and at the first kill of a game `killSpawn: civ 1 (Ethiopians): 2
+  animal(s), total weight 100, chance 100 %, 0 victim type(s) (any)`. With `log`, each kill and animal:
+  `killSpawn: unit 11 (Cuirassier) of player 1 killed unit 49 (Settler): chance 100 %, roll -1, pick 61 of 100:
+  LivestockCamel` and `killSpawn: unit 4194376 (LivestockCamel) for player 1 at (38.9, 27.3), 0.0 m from where unit 49
+  died, update 1 (25 so far)`. A proto or type that does not exist, a weight of 0 or less, weights over 1000 and a chance
+  that is not 0 to 100 are logged and ignored.
+- **Tested in WoL (2026-11-13), scenarios, player 1 Ethiopians (`Cuirassier`), player 2 Egyptians:**
+  - Weights 80 / 20 (`LivestockCamel`, `ypGoat`): 248 kills in three fights (24 Cuirassiers against 110 `Settler`, and 20
+    against 110 `WOLLandwehr`): 184 camels and 64 goats picked, 74 / 26 %. Rerun (2026-11-13, 40 Cuirassiers against 162
+    Settlers, twice): 308 kills, 266 camels and 42 goats, 86 / 14 %. All 556 kills together: 450 camels and 106 goats,
+    80.9 / 19.1 %. Single fights stray further from 80 % than a fair coin would make likely (z −2.3 and +2.8), but the
+    picks show no pattern from one kill to the next (lag-1 correlation 0.01 to 0.10, as many repeats as chance) and the
+    roll is a plain modulo of the game's generator (how-it-works), whose consecutive outputs give 80 % ± 2.5 % per 250
+    draws in a simulation; so the pick was left as it is.
+  - `LivestockCamel 100, ypGoat 0, NoSuchAnimal 5`: the goat and the unknown proto logged and ignored; 61 animals, all camels.
+  - Chance: a test tech `Percent 0.5` on `Cuirassier`, from the civ's 100: 69 of 125 kills (55 %) gave an animal.
+  - Bad data on player 2's civ: `<killSpawnChance>abc</killSpawnChance>` logged, 100 kept; `<killSpawnVictims>NoSuchType`
+    logged, and that civ spawns nothing. A civ without the tags (player 2 in the first fights, 19 kills) gave nothing.
+  - Where: in the first build the spot test refused one camel in four in a crowd of 110 dying settlers; with the rings up to
+    4 m, 1 refusal for 69 camels: 42 on the victim's spot, 24 at 2 m, 2 at 4 m. Every animal came on the first update after
+    its kill.
+  - With `veterancyBonus` (defaults on `AbstractCavalry`), `resourceBounty` (5 wood on `Settler`) and `detonationDeath`:
+    each of 125 kills logged its veterancy count, its bounty and its roll; 19 ranks reached. `38 applied, 0 failed`.
+  - Saved at 54 s, loaded in the same process (the game reloaded the data): the tech was applied again (still 50 %), the 51
+    animals were there and 7 more came from the 15 kills after the load. The fight after the load had the same kills in the
+    same order as before it, with other rolls: the game's random numbers after a load are not the ones of the original.
+  - Herding: in the fight player 1 lost (20 Cuirassiers against 110 Landwehr), the Landwehr took over the camels left
+    behind.
+  - Killers (2026-11-13, a Town Center and two `Outpost` of the Ethiopians against 14 `WOLLineInfantry` and 8 `Settler`):
+    without `<killSpawnKillers>`, an Outpost killed a Settler and the log said `a Building, without <killSpawnKillers>:
+    nothing`; with `<killSpawnKillers>Building</killSpawnKillers>`, the Outposts' two kills (a Settler and an infantryman) gave a goat
+    and a camel. The Town Center did not
+    shoot in either scene.
+  - A skirmish on a test map against a German AI (`wolOtto`), every civ tagged with `<killSpawnVictims>Military`: the
+    human's (Dutch) Cuirassiers killed 6 `WOLLineInfantry` and got 6 camels; the AI's Town Center shot a Cuirassier and the
+    AI got a goat (the build of that day counted buildings; since the decision below they need
+    `<killSpawnKillers>`). The AI gathered its crates.
+  - A normal skirmish of 100 s against the same AI, the key on and every civ tagged: the AI gathered its crates, built a
+    Manor and trained 3 Settlers (6 to 9), so its scripts ran.
+  - Cost (`perfprobe.py`, 82 s of a scenario battle each, 60 `Cuirassier` against 80 `WOLLineInfantry`, both civs tagged
+    80 / 20, another copy of the game running at the same time):
+
+    | | fps | update | render | main thread | frames over 50 ms |
+    |---|---|---|---|---|---|
+    | key on (95 animals by the end) | 348 | 0.36 ms | 2.76 ms | 93.9 % | 0 |
+    | key off | 488 | 0.19 ms | 2.05 ms | 91.5 % | 0 |
+
+    No frame over 50 ms either way. The rest of the difference is the animals: 95 more units on the field, and a
+    different battle (with the key 15 Cuirassiers and 28 infantrymen were left, without it 36 and 6). The work of the
+    key itself is one civ lookup per killing blow, and per animal a placement test and a creation. The hook alone
+    (2026-11-13, the same battle, the key on and no civ tagged, against the key off, the same session): 515 fps, update
+    0.19 ms, main thread 91.8 %, against 507 fps, 0.19 ms, 92.3 %; no frame over 50 ms in either. No measurable cost.
+  - Videos: key on 517 fps on average, 4 frames over 100 ms (the longest 358 ms) in 33 s; key off 839 fps, none over
+    50 ms. The first camel and goat of a game load their model and animations, as any first unit of a proto does; the
+    scenes were not identical (another copy of the game was running).
+  - Not tested: multiplayer, a ship or a unit on water as the killer of a land unit by the shore, a kill by a unit that
+    has died since (a shot in flight; the code takes its player and proto from TakeDamage's arguments).
 
 #### killBountyTechs, resourceBounty and teamKillBounty
 

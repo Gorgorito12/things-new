@@ -1036,9 +1036,12 @@ SITES = [
     # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
     # / ret; the hook needs the ret at 0x51DB14
     ("ProtoTagsTail", 0x51DB0F, 6),
-    # veterancyBonus: mov ecx,[0xC66234], the head of TakeDamage's cold kill path; its only entry is the je
-    # at 0x49B746
+    # the killing blows (killobservers.*: veterancyBonus, killSpawn): mov ecx,[0xC66234], the head of TakeDamage's
+    # cold kill path; its only entry is the je at 0x49B746
     ("VeterancyKillPath", 0x4D4F37, 6),
+    # killSpawn: the head of the placement test PLACE FUN_0050703D (world vtable +14h, thiscall, 11 arguments,
+    # ret 2Ch), sub esp,1A8h / push ebx / push ebp / xor ebx,ebx / mov ebp,ecx; verify only
+    ("KillSpawnPlace", 0x50703D, 0x0C),
     # veterancyBonus: the seven calls of the transform in place FUN_009C754C, thiscall(unit, proto), ret 4
     ("TransformCall1", 0x7FBC79, 5),
     ("TransformCall2", 0x7FBEF2, 5),
