@@ -7,11 +7,28 @@ proto:OLD=NEW renames an entry of the saved proto table instead, so the units pl
 the data no longer has load as NEW (same length rule).
 --data=<game folder> player:NAME=CIV sets the civ of the player(s) named NAME to CIV of that
 folder's civs.xml (a player's civ is stored as a number and is not re-mapped at load).
-unit:ID=PROTO gives the placed unit with that ID (the ID its triggers use) another proto of the
-scenario's saved proto table.
+unit:ID=PROTO gives the placed unit with that ID another proto of the scenario's saved proto
+table. ID is the in-game ID (the EN record's, the one Trigger3\\trigtemp.xs uses); the triggers
+stored in the scenario name the unit by its editor ID (its UN record's name), which
+campaigncheck.py --inventory prints beside it (Laguna's Town Center: editor 1168, in game 647).
 trigger:OLD=NEW replaces a proto name in trigger parameters (ProtoName, UnitType); tech:OLD=NEW
 points tech parameters at another tech of the saved tech table. These two may change a value's
 length: the trigger section ("TR") and root ("BG") chunk sizes are corrected.
+trigger[PARAM]:OLD=NEW limits the rename to the parameters named PARAM (e.g. ProtoUnit, the
+Change Unit Type target, against ProtoName, an Army Deploy's unit).
+units:PLAYER:OLD=NEW gives every placed unit of player number PLAYER whose proto is OLD the proto
+NEW (both in the saved proto table).
+name:OLD=NEW renames the player(s) named OLD, and the team named "Team OLD".
+homecity:PLAYER=FILE sets the home city file of the player(s) named PLAYER.
+text:OLD=NEW replaces the text OLD, wherever it is a part of an objective's name, text or hint,
+of the scenario's own name or description (the objectives chunk "OM"), or of a trigger text
+parameter (chat, overlay, counters, unit and army names). Texts may change length: the chunks
+that hold them get the difference (OM or BP or TE, then J1 and BG; or TR and BG).
+copyeffect:EFFECT.PARAM=OLD:NEW adds to a trigger a copy of its effect EFFECT whose parameter PARAM
+is OLD, with PARAM set to NEW, right after it ("copyeffect:Forbid and Disable Unit.ProtoUnit=
+NAtinclad:NAmountedrifle"); the trigger's effect count and the TR and BG sizes follow.
+@FILE reads more edits from FILE, one per line (UTF-8; a line starting with # is skipped), for
+texts with spaces or many edits.
 
 A scenario keeps a civ table: one "SH" chunk per civ the game had when it was saved (name, home
 city file, default deck). When it loads, the game looks each name up in civs.xml and fails the
@@ -124,14 +141,14 @@ def edit_trigger_params(raw, edits):
     import campaigncheck
     techs = name_table(raw, 2)
     table = []
-    for kind, old, new in edits:
+    for kind, old, new, only in edits:
         if kind == "tech":
             for n in (old, new):
                 if n not in techs:
                     sys.exit(f"scnfix: tech {n} is not in the scenario's saved tech table")
-            table.append(("tech", str(techs.index(old)), str(techs.index(new)), old, new))
+            table.append(("tech", str(techs.index(old)), str(techs.index(new)), old, new, only))
         else:
-            table.append(("proto", old, new, old, new))
+            table.append(("proto", old, new, old, new, only))
     trig = campaigncheck.triggers(bytes(raw))
     if not trig:
         sys.exit("scnfix: no triggers found")
@@ -148,8 +165,8 @@ def edit_trigger_params(raw, edits):
     hits = []
     for off, ename, params in trig:
         for pname, disp, vtype, value, len_at in params:
-            for kind, old, new, label_old, label_new in table:
-                if value != old:
+            for kind, old, new, label_old, label_new, only in table:
+                if value != old or (only and pname.lower() != only):
                     continue
                 if kind == "tech" and not pname.lower().startswith("tech"):
                     continue
@@ -171,6 +188,268 @@ def edit_trigger_params(raw, edits):
     return raw
 
 
+# ---------------------------------------------------------------- texts (name:, text:)
+#
+# Layout (observed in the three WoL missions; docs/wol-campaign.md, "Historical version: what was
+# built"): the root "BG" chunk holds, among raw fields, "TR" (the triggers) and right after it
+# "J1". J1 holds, directly, the player records ("BP", one per player, each followed by one byte),
+# the team records ("TE": size, version, team number, the UTF-16 name) and the objectives chunk
+# ("OM"). A text is a length (UTF-16 units) and the characters, so a text of another length moves
+# the rest of the file: the chunks that hold it get the difference, and nothing else does.
+
+def sections(raw):
+    """(TR offset, J1 offset): TR is found from the triggers, J1 starts where TR ends."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    trig = campaigncheck.triggers(bytes(raw))
+    if not trig:
+        sys.exit("scnfix: no triggers found")
+    first, last = trig[0][0], trig[-1][0]
+    for p in range(first - 1, 6, -1):
+        if raw[p:p + 2] == b"TR":
+            size = struct.unpack_from("<I", raw, p + 2)[0]
+            if p + 6 + size > last:
+                j1 = p + 6 + size
+                if raw[j1:j1 + 2] != b"J1":
+                    sys.exit("scnfix: no J1 chunk after the triggers")
+                return p, j1, trig
+    sys.exit("scnfix: trigger section not found")
+
+
+def chunk_end(raw, at):
+    return at + 6 + struct.unpack_from("<I", raw, at + 2)[0]
+
+
+def replace_text(raw, len_at, new, chunks, label):
+    """Replaces the length-prefixed UTF-16 text at len_at and adds the length difference to the
+    size of each chunk (header offsets, all before len_at)."""
+    n = struct.unpack_from("<I", raw, len_at)[0]
+    old = raw[len_at + 4:len_at + 4 + 2 * n].decode("utf-16le")
+    raw[len_at:len_at + 4 + 2 * n] = struct.pack("<I", len(new)) + new.encode("utf-16le")
+    delta = 2 * (len(new) - n)
+    for at in chunks:
+        assert at < len_at, (label, at, len_at)
+        struct.pack_into("<I", raw, at + 2, struct.unpack_from("<I", raw, at + 2)[0] + delta)
+    print(f"0x{len_at:x} {label}: {old!r} -> {new!r}")
+
+
+def om_chunk(raw, j1):
+    """The objectives chunk inside J1: tag, size, version, next ID, count."""
+    end = chunk_end(raw, j1)
+    for m in re.finditer(rb"OM(....)(....)(....)(....)", raw[j1:end], flags=re.S):
+        size, ver, next_id, count = struct.unpack("<IIII", m.group(1) + m.group(2) + m.group(3) + m.group(4))
+        at = j1 + m.start()
+        if ver < 32 and 0 < count < 200 and count <= next_id < 1000 and at + 6 + size <= end:
+            return at
+    sys.exit("scnfix: no objectives chunk")
+
+
+def om_texts(raw, om):
+    """(length offset, text) of every length-prefixed UTF-16 text in the objectives chunk."""
+    out = []
+    body_end = chunk_end(raw, om)
+    p = om + 6
+    for m in re.finditer(rb"(?:[\x20-\xff]\x00)+", raw[p:body_end]):
+        at = p + m.start()
+        n = struct.unpack_from("<I", raw, at - 4)[0]
+        if n and 2 * n <= len(m.group()):
+            out.append((at - 4, raw[at:at + 2 * n].decode("utf-16le")))
+    return out
+
+
+def rename_player(raw, old, new):
+    """Renames the player record(s) named OLD, and the team named "Team OLD"."""
+    tr, j1, _ = sections(raw)
+    want = old.encode("utf-16le")
+    hits = []
+    for m in re.finditer(rb"BP(....)(....)(....)(....)", raw, flags=re.S):
+        n = struct.unpack_from("<I", m.group(4))[0]
+        end = m.end() + 2 * n
+        if n == len(old) and raw[m.end():end] == want and raw[end + 4:end + 8] == b"\xff\xff\xff\xff" \
+                and j1 < m.start() < chunk_end(raw, j1):
+            hits.append((m.start(), "BP"))
+    team = ("Team " + old).encode("utf-16le")
+    for m in re.finditer(rb"TE(....)(....)(....)(....)", raw, flags=re.S):
+        n = struct.unpack_from("<I", m.group(4))[0]
+        if n == len(old) + 5 and raw[m.end():m.end() + 2 * n] == team and j1 < m.start() < chunk_end(raw, j1):
+            hits.append((m.start(), "TE"))
+    if not any(k == "BP" for _, k in hits):
+        sys.exit(f"scnfix: no player named {old}")
+    for at, kind in sorted(hits, reverse=True):
+        text = new if kind == "BP" else "Team " + new
+        replace_text(raw, at + 14, text, [at, j1, 0], f"{kind} name")
+
+
+def set_player_homecity(raw, player, new):
+    """Sets the home city file of the player record(s) named PLAYER (the first homecity*.xml text
+    of the record)."""
+    _, j1, _ = sections(raw)
+    want = player.encode("utf-16le")
+    hits = 0
+    for m in re.finditer(rb"BP(....)(....)(....)(....)", raw, flags=re.S):
+        n = struct.unpack_from("<I", m.group(4))[0]
+        end = m.end() + 2 * n
+        if n != len(player) or raw[m.end():end] != want or not j1 < m.start() < chunk_end(raw, j1):
+            continue
+        bp_end = chunk_end(raw, m.start())
+        h = re.search(rb"(?i)h\x00o\x00m\x00e\x00c\x00i\x00t\x00y\x00", raw[end:bp_end])
+        if not h:
+            sys.exit(f"scnfix: player {player} has no home city text")
+        replace_text(raw, end + h.start() - 4, new, [m.start(), j1, 0], f"player {player} home city")
+        hits += 1
+    if not hits:
+        sys.exit(f"scnfix: no player named {player}")
+
+
+def edit_texts(raw, old, new):
+    """Replaces the substring OLD by NEW in every objective text (names, texts, hints, the
+    scenario's own name and description) and every trigger text parameter (type 22: chat,
+    overlays, counters, unit names)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    tr, j1, trig = sections(raw)
+    om = om_chunk(raw, j1)
+    hits = []
+    for len_at, text in om_texts(raw, om):
+        if old in text:
+            hits.append((len_at, text.replace(old, new), [om, j1, 0], "objectives"))
+    for off, ename, params in trig:
+        for pname, disp, vtype, value, len_at in params:
+            if vtype != 22 or value != "":
+                continue
+            q = len_at + 4
+            n = struct.unpack_from("<I", raw, q)[0]
+            text = raw[q + 4:q + 4 + 2 * n].decode("utf-16le", errors="replace")
+            if old in text:
+                hits.append((q, text.replace(old, new), [tr, 0], f"{ename}.{pname}"))
+    if not hits:
+        sys.exit(f"scnfix: no text contains {old!r}")
+    for len_at, text, chunks, label in sorted(hits, key=lambda h: h[0], reverse=True):
+        replace_text(raw, len_at, text, chunks, label)
+
+
+def set_player_units(raw, player, old, new):
+    """Gives every placed unit of PLAYER (a number) whose proto is OLD the proto NEW, both of the
+    scenario's saved proto table."""
+    protos = name_table(raw, 0)
+    for p in (old, new):
+        if p not in protos:
+            sys.exit(f"scnfix: {p} is not in the scenario's saved proto table")
+    a, b = protos.index(old), protos.index(new)
+    n = 0
+    for m in re.finditer(rb"H1(....)ENP\x00\x00\x00", raw, flags=re.S):
+        uid, _, owner = struct.unpack_from("<iii", raw, m.end())
+        if owner != player:
+            continue
+        end = m.start() + 6 + struct.unpack_from("<I", m.group(1))[0]
+        u = raw.find(b"UN", m.end(), end)
+        if u < 0:
+            continue
+        ln = struct.unpack_from("<I", raw, u + 6)[0]
+        q = u + 10 + ln
+        if struct.unpack_from("<II", raw, q) == (a, a):
+            struct.pack_into("<II", raw, q, b, b)
+            n += 1
+    if not n:
+        sys.exit(f"scnfix: player {player} has no placed {old}")
+    print(f"player {player}: {n} placed {old} -> {new}")
+
+
+# ---------------------------------------------------------------- adding an effect (copyeffect:)
+#
+# Layout (observed on Barbary Coast; docs/wol-campaign.md): a trigger's conditions and effects are
+# records "02 00 00 00" (a version), the type name twice (length-prefixed ASCII), the parameter
+# count and the parameters (campaigncheck.parse_param), the length-prefixed text "true", a count of
+# command lines and each line (length-prefixed ASCII, the XS template), then five zero bytes. A
+# trigger's effect records follow one another directly, after a u32 that counts them.
+
+def effect_end(raw, off):
+    """The end of the effect record whose type name starts at `off` (its version is at off - 4)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    q = off
+    for _ in range(2):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    count = struct.unpack_from("<I", raw, q)[0]
+    q += 4
+    for _ in range(count):
+        q = campaigncheck.parse_param(raw, q)[1]
+    q += 4 + struct.unpack_from("<I", raw, q)[0]          # "true"
+    lines = struct.unpack_from("<I", raw, q)[0]
+    q += 4
+    for _ in range(lines):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    if raw[q:q + 5] != bytes(5):
+        sys.exit(f"scnfix: the effect at 0x{off:x} does not end as expected")
+    return q + 5
+
+
+def copy_effect(raw, ename, pname, old, new):
+    """Adds to a trigger a copy of its effect `ename` whose parameter `pname` is `old`, with that
+    parameter set to `new`, right after it (e.g. a second Forbid and Disable Unit). The trigger's
+    effect count, the TR and BG sizes follow. Returns the new bytearray."""
+    tr_at, _j1, trig = sections(raw)
+    hits = [k for k, (off, n, params) in enumerate(trig)
+            if n == ename and any(pp[0].lower() == pname.lower() and pp[3] == old for pp in params)]
+    if len(hits) != 1:
+        sys.exit(f"scnfix: {len(hits)} effects {ename} with {pname} = {old}")
+    k = hits[0]
+    off, _n, params = trig[k]
+    if struct.unpack_from("<I", raw, off - 4)[0] != 2:
+        sys.exit(f"scnfix: no record version before the effect at 0x{off:x}")
+    end = effect_end(raw, off)
+    record = bytearray(raw[off - 4:end])
+    len_at = next(pp[4] for pp in params if pp[0].lower() == pname.lower()) - (off - 4)
+    n = struct.unpack_from("<I", record, len_at)[0]
+    assert record[len_at + 4:len_at + 4 + 2 * n].decode("utf-16le") == old
+    record[len_at:len_at + 4 + 2 * n] = struct.pack("<I", len(new)) + new.encode("utf-16le")
+    # the first effect of this trigger: walk back over effect records that end where the next begins
+    j = k
+    while j > 0 and trig[j - 1][0] - 4 > tr_at and effect_end_or_none(raw, trig[j - 1][0]) == trig[j][0] - 4:
+        j -= 1
+    count_at = trig[j][0] - 8
+    count = struct.unpack_from("<I", raw, count_at)[0]
+    if not k - j + 1 <= count <= 200:
+        sys.exit(f"scnfix: the effect count before 0x{trig[j][0]:x} reads {count}")
+    raw[end:end] = record
+    struct.pack_into("<I", raw, count_at, count + 1)
+    for at in (tr_at, 0):
+        struct.pack_into("<I", raw, at + 2, struct.unpack_from("<I", raw, at + 2)[0] + len(record))
+    print(f"0x{end:x} added {ename} ({pname} = {new}) after the one with {old}; the trigger has "
+          f"{count + 1} effects")
+    return raw
+
+
+def effect_end_or_none(raw, off):
+    try:
+        return effect_end_quiet(raw, off)
+    except (struct.error, TypeError, IndexError):
+        return None
+
+
+def effect_end_quiet(raw, off):
+    """effect_end without exiting: None when the record is not an effect as laid out above."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    q = off
+    for _ in range(2):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    count = struct.unpack_from("<I", raw, q)[0]
+    q += 4
+    for _ in range(count):
+        r = campaigncheck.parse_param(raw, q)
+        if r is None:
+            return None
+        q = r[1]
+    q += 4 + struct.unpack_from("<I", raw, q)[0]
+    lines = struct.unpack_from("<I", raw, q)[0]
+    if lines > 50:
+        return None
+    q += 4
+    for _ in range(lines):
+        q += 4 + struct.unpack_from("<I", raw, q)[0]
+    return q + 5 if raw[q:q + 5] == bytes(5) else None
+
+
 def main(argv):
     if len(argv) < 3:
         sys.exit(__doc__)
@@ -185,17 +464,41 @@ def main(argv):
     names = [n for _, n in records]
     root = None
     param_edits = []
-    for pair in argv[2:]:
+    text_edits = []
+    copy_edits = []
+    args = []
+    for a in argv[2:]:
+        if a.startswith("@"):  # a file of edits, one per line (UTF-8; # starts a comment)
+            args += [ln.rstrip("\r\n") for ln in Path(a[1:]).read_text(encoding="utf-8").splitlines()
+                     if ln.strip() and not ln.lstrip().startswith("#")]
+        else:
+            args.append(a)
+    for pair in args:
         if pair.startswith("--data="):
             root = pair[7:]
             continue
         old, _, new = pair.partition("=")
+        if old.startswith("name:") or old.startswith("text:"):
+            text_edits.append((old[:4], old[5:], new))
+            continue
+        if old.startswith("units:"):
+            _, pl, proto = old.split(":", 2)
+            set_player_units(raw, int(pl), proto, new)
+            continue
         if old.startswith("unit:"):
             set_unit_proto(raw, int(old[5:]), new)
             continue
-        if old.startswith("trigger:") or old.startswith("tech:"):
-            kind, _, name = old.partition(":")
-            param_edits.append(("proto" if kind == "trigger" else "tech", name, new))
+        m = re.fullmatch(r"(trigger|tech)(?:\[(\w+)\])?:(.+)", old)
+        if m:  # trigger[PARAM]:OLD=NEW limits the rename to the parameters named PARAM
+            param_edits.append(("proto" if m[1] == "trigger" else "tech", m[3], new, (m[2] or "").lower()))
+            continue
+        if old.startswith("copyeffect:"):  # copyeffect:EFFECT.PARAM=OLD:NEW
+            ename, _, pname = old[11:].rpartition(".")
+            vold, _, vnew = new.partition(":")
+            copy_edits.append((ename, pname, vold, vnew))
+            continue
+        if old.startswith("homecity:"):
+            text_edits.append(("homecity", old[9:], new))
             continue
         if old.startswith("player:"):
             if not root:
@@ -219,6 +522,15 @@ def main(argv):
         print(f"{old} -> {new} at 0x{hits[0]:x}")
     if param_edits:  # last: they may move the rest of the file
         raw = edit_trigger_params(raw, param_edits)
+    for ename, pname, vold, vnew in copy_edits:  # each one parses the file again
+        raw = copy_effect(raw, ename, pname, vold, vnew)
+    for kind, old, new in text_edits:  # each one parses the file again
+        if kind == "name":
+            rename_player(raw, old, new)
+        elif kind == "homecity":
+            set_player_homecity(raw, old, new)
+        else:
+            edit_texts(raw, old, new)
     # The file ends with a CRC-32 (zlib's) of the whole file with those last 4 bytes zeroed; the
     # game refuses the scenario when it does not match (FUN_0082EAFD).
     body = b"l33t" + struct.pack("<I", len(raw)) + zlib.compress(bytes(raw), 9)

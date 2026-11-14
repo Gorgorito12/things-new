@@ -1,0 +1,10 @@
+Replace the line of string 76595 with:
+<String _locID='76595'>Piracy in the Mediterranean has been in effect for hundreds of years, and as of yet nobody has dared face the fierce corsairs of Tripoli roaming the waters. However, upon seizing American sailors and merchants, president Thomas Jefferson, rather than paying tribute, has sent the United States navy to attack the Barbary Coast and blockade the pirates.</String>
+
+Replace the line of string 76596 with:
+<String _locID='76596'>Laguna (1839)</String>
+
+Add these lines before </Language>:
+		<String _locID='990101'>Regency of Tripoli</String>
+		<String _locID='990102'>Imperial Japan</String>
+		<String _locID='990103'>This is your Home City. Between scenarios you can visit it to choose new shipments and improvements with the experience you have earned, which will give you more power and options in the next scenario.</String>

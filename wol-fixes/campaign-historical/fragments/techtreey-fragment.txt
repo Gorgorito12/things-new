@@ -1,0 +1,766 @@
+In <Tech name='Age0French'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Russian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0British'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Dutch'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0German'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Portuguese'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Portuguese'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='SpawnPortugueseShips' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Ottoman'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='Age0Ottoman'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Spanish'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Spanish'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='SpawnTechtreeReloader' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0SPCAct2'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0SPCAct3'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0XPIroquois'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0XPSioux'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='AANativeStartingTechs'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.00' subtype ='CopyUnitPortraitAndIcon' unittype ='HistDock' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>IconPortraitNativeDock</Target></Effect>
+
+In <Tech name='Age0XPSPC'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='XPSPCAct1Age0'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='XPSPCAct2Age0'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='XPSPCUnlock1'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='XPSPCUnlock2'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='VeteranJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.20' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='VeteranJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.20' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='VeteranJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='SetName' proto ='HistJanissary' culture ='none' newName ='36182' />
+
+In <Tech name='VeteranJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='0.00' subtype ='UpdateVisual' unittype ='HistJanissary' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='GuardJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.30' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='GuardJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.30' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='GuardJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='SetName' proto ='HistJanissary' culture ='none' newName ='24005' />
+
+In <Tech name='GuardJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='0.00' subtype ='UpdateVisual' unittype ='HistJanissary' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='ChurchTufanciCorps'>, after the effect that names Janissary, add:
+<Effect type ='TransformUnit' toprotoid ='Nizam' fromprotoid ='HistJanissary' />
+
+In <Tech name='HCAdmirality'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='BuildLimit' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='WOLImperialJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='SetName' proto ='HistJanissary' culture ='none' newName ='31032' />
+
+In <Tech name='WOLImperialJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.80' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='WOLImperialJanissaries'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.80' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCMercsMediterranean'>, after the effect that names MercBarbaryCorsair, add:
+<Effect type ='Data' amount ='10.00' subtype ='FreeHomeCityUnit' unittype ='HistBarbaryCorsair' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='PoliticianPirate'>, after the effect that names MercBarbaryCorsair, add:
+<Effect type ='Data' amount ='2.00' subtype ='FreeHomeCityUnit' unittype ='HistBarbaryCorsair' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCStonemasons'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Build' amount ='1.50' subtype ='WorkRate' unittype ='HistDock' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>YPDockWagon</Target></Effect>
+
+In <Tech name='HCAdvancedDock'>, after the effect that names Dock, add:
+<Effect type ='SetName' proto ='HistDock' culture ='none' newName ='35377' />
+
+In <Tech name='HCAdvancedDock'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='2.00' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCAdvancedDock'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Heal' amount ='2.00' subtype ='WorkRate' unittype ='Ship' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCMusketeerGrenadierHitpointsBritishTeam'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.15' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCShipJanissaries1'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='5.00' subtype ='FreeHomeCityUnit' unittype ='HistJanissary' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipJanissaries2'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='6.00' subtype ='FreeHomeCityUnit' unittype ='HistJanissary' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipJanissaries3'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='11.00' subtype ='FreeHomeCityUnit' unittype ='HistJanissary' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipJanissaries4'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='8.00' subtype ='FreeHomeCityUnit' unittype ='HistJanissary' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCJanissaryCombatOttoman'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.20' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCJanissaryCombatOttoman'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.20' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCInfantryDamageDutch'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.15' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='HCInfantryCombatDutch'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.15' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='HCInfantryCombatDutch'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.15' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='HCCheapDocksTeam'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.75' subtype ='Cost' resource ='Wood' relativity ='Percent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCMercsCorsairs'>, after the effect that names MercBarbaryCorsair, add:
+<Effect type ='Data' amount ='9.00' subtype ='FreeHomeCityUnit' unittype ='HistBarbaryCorsair' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCJanissaryCost'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='0.85' subtype ='Cost' resource ='Food' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCJanissaryCost'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='0.85' subtype ='Cost' resource ='Gold' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCSpawnFishingBoats'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='SpawnBoat' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCBattlefieldConstruction'>, after the effect that names Janissary, add:
+<Effect type ='Data' action ='Build' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCBattlefieldConstruction'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='Barracks' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCBattlefieldConstruction'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='ArtilleryDepot' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='HCBattlefieldConstruction'>, after the effect that names Janissary, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='Stable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistJanissary</Target></Effect>
+
+In <Tech name='SaloonCorsair'>, after the effect that names MercBarbaryCorsair, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistBarbaryCorsair</Target></Effect>
+
+In <Tech name='HCXPMercsCorsairsRepeat'>, after the effect that names MercBarbaryCorsair, add:
+<Effect type ='Data' amount ='15.00' subtype ='FreeHomeCityUnit' unittype ='HistBarbaryCorsair' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='YPHCAdvancedDockIndians'>, after the effect that names Dock, add:
+<Effect type ='SetName' proto ='HistDock' culture ='none' newName ='63285' />
+
+In <Tech name='USApoliticianAGE201'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='USApoliticianAGE202'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='USApoliticianAGE303'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='WOTTAimmigrantUKBB'>, after the effect that names Schooner, add:
+<Effect type ='TransformUnit' toprotoid ='IMscarletsails' fromprotoid ='HistSchooner' />
+
+In <Tech name='Age0Brazilian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Paraguayan'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Canadian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0American'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0American'>, after the effect that names NAmarine, add:
+<Effect type ='SetName' proto ='HistMarine' culture ='none' newName ='800131' />
+
+In <Tech name='Age0Mexican'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Argentinean'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Tupinamba'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Colombian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Inca'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.00' subtype ='Cost' resource ='Wood' relativity ='Assign'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Inca'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='200.00' subtype ='Cost' resource ='Gold' relativity ='Assign'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Inca'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='NorthAmericanStandardStartingTechs'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='WOTTAdockattack01LA'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='3.0' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='WOTTAdockdefense01LA'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='ImpaleFear' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='AASANativeStartingTechs'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.00' subtype ='CopyUnitPortraitAndIcon' unittype ='HistDock' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>IconPortraitNativeDock</Target></Effect>
+
+In <Tech name='NAtechUSAmarine01'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.05' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine01'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.05' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine01'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='0.00' subtype ='UpdateVisual' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='NAtechUSAmarine01'>, after the effect that names NAmarine, add:
+<Effect type ='SetName' proto ='HistMarine' culture ='none' newName ='444704' />
+
+In <Tech name='NAtechUSAmarine02'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.20' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine02'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.20' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine02'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='0.00' subtype ='UpdateVisual' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='NAtechUSAmarine02'>, after the effect that names NAmarine, add:
+<Effect type ='SetName' proto ='HistMarine' culture ='none' newName ='444706' />
+
+In <Tech name='NAtechUSAmarine03'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.30' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine03'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.30' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine03'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='0.00' subtype ='UpdateVisual' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='NAtechUSAmarine03'>, after the effect that names NAmarine, add:
+<Effect type ='SetName' proto ='HistMarine' culture ='none' newName ='444708' />
+
+In <Tech name='NAtechUSAmarine04'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.50' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine04'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.50' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine04'>, after the effect that names NAmarine, add:
+<Effect type ='SetName' proto ='HistMarine' culture ='none' newName ='444710' />
+
+In <Tech name='NAtechUSAmarine05'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.15' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine05'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.15' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='NAtechUSAmarine05'>, after the effect that names NAmarine, add:
+<Effect type ='SetName' proto ='HistMarine' culture ='none' newName ='444712' />
+
+In <Tech name='NAtechUSAuniquetechunion02'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>dock</Target></Effect>
+
+In <Tech name='NAtechUSAuniquetechunion02'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>towncenter</Target></Effect>
+
+In <Tech name='HCcontinentalzouaves1'>, after the effect that names NAmarine, add:
+<Effect tech ='colonializeUSA' type ='Data' amount ='6.00' subtype ='FreeHomeCityUnitIfTechObtainable' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCcontinentalzouaves2'>, after the effect that names NAmarine, add:
+<Effect tech ='colonializeUSA' type ='Data' amount ='8.00' subtype ='FreeHomeCityUnitIfTechObtainable' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='Age0Belgian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Italians'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0australian'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='Age0australian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='AUSpoliticianAGE202'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='Age0Mapuche'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Chilean'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='MapucheAdmirality'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='BuildLimit' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='AFRICANageupBLUE1zulu'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='AFRICANageupethiopia'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='AFRICANageupzulu'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Austrohungarian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Greeks'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Greeks'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='MaintainFishingBoatsGreek' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Greeks'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='HistDock' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>BalkanWagon</Target></Effect>
+
+In <Tech name='Age0Serbians'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Bulgarians'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Romanians'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCPierConstruction'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.50' subtype ='Cost' resource ='Wood' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCPierConstruction'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.50' subtype ='BuildPoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCPierConstruction'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.50' subtype ='Hitpoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='WOL_AI_NoItalianWagons'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='HistDock' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>Architect</Target></Effect>
+
+In <Tech name='XPRevolutionWOLPiratini'>, after the effect that names MercLanceiroNegro, add:
+<Effect type ='Data' amount ='12.00' subtype ='FreeHomeCityUnit' unittype ='HistLanceiroNegro' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='WOLHCRevolutionaryArmy'>, after the effect that names MercLanceiroNegro, add:
+<Effect tech ='WOLRevolutionaryArmyPiratini' type ='Data' amount ='8.00' subtype ='FreeHomeCityUnitIfTechObtainable' unittype ='HistLanceiroNegro' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='Age0Swedish'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='WOLSaloonLanceiroNegro'>, after the effect that names MercLanceiroNegro, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistLanceiroNegro</Target></Effect>
+
+In <Tech name='WOLEnableInfanteDeMarina'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='SpawnTechtreeReloader' amount ='0.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='WOLConsulateDutchBrigade'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='16.00' subtype ='FreeHomeCityUnit' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCVarnaPort'>, after the effect that names Dock, add:
+<Effect action ='UnitlessAntiShipAttack' amount ='1.00' relativity ='Absolute' subtype ='ActionEnable' type ='Data'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='BrunyIslandLighthouse'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='2.50' subtype ='LOS' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='BrunyIslandLighthouse'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='AntiShipAttack' amount ='1.70' subtype ='Damage' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Peruvian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='PeruvianBuildingsCanGarrison'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='-10.00' subtype ='MaximumContained' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCPeruPortOfIquitos'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.75' subtype ='TrainPoints' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='WOLNAUnion1'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='Age0Haitian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='WOLHCCowIsland'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='SpawnCows' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='WOLHCAdmiralityDanish'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='BuildLimit' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='WOLHCStonemasonsDanish'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Build' amount ='1.50' subtype ='WorkRate' unittype ='HistDock' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>YPDockWagon</Target></Effect>
+
+In <Tech name='WOLHakodateScenario'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='0.00' subtype ='UpdateVisual' unittype ='HistMarine' relativity ='Absolute'>
+                <Target type ='Player' /></Effect>
+
+In <Tech name='HCShipCostumbrismo'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Build' amount ='1.65' subtype ='WorkRate' unittype ='HistDock' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>YPDockWagon</Target></Effect>
+
+In <Tech name='Age0Bolivians'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCShipCostumbrismoChile'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Build' amount ='1.65' subtype ='WorkRate' unittype ='HistDock' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>YPDockWagon</Target></Effect>
+
+In <Tech name='HCAdvancedDockChile'>, after the effect that names Dock, add:
+<Effect type ='SetName' proto ='HistDock' culture ='none' newName ='35377' />
+
+In <Tech name='HCAdvancedDockChile'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='2.00' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCAdvancedDockChile'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Heal' amount ='2.00' subtype ='WorkRate' unittype ='Ship' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCAdmiralityChile'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='BuildLimit' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='Age0CentralAmericans'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCshipSchooners1'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCshipSchooners1'>, after the effect that names Schooner, add:
+<Effect tech ='LantmannaParty' type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitIfTechObtainable' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCshipSchooners2'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='3.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCshipSchooners2'>, after the effect that names Schooner, add:
+<Effect tech ='LantmannaParty' type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitIfTechObtainable' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='Age0Uruguayans'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCWoLAdmiralityLA'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='BuildLimit' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='HCshipSchooners3'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='4.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipSchoonersARepeat'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipSchoonersARepeat'>, after the effect that names Schooner, add:
+<Effect tech ='LantmannaParty' type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitIfTechObtainable' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipSchoonersB'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipSchoonersCRepeat'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipSchoonersD'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='3.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipSchoonersETeam'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipSchoonersFTeam'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='3.00' subtype ='FreeHomeCityUnit' unittype ='HistSchooner' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='ImmigrantMetaStuff'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='EconomicAuraCroatianImmigrants' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCEUAdvancedDockAH'>, after the effect that names Dock, add:
+<Effect type ='SetName' proto ='HistDock' culture ='none' newName ='36486' />
+
+In <Tech name='HCEUAdvancedDockAH'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.50' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCEUAdvancedDockAH'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Heal' amount ='1.50' subtype ='WorkRate' unittype ='Ship' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCEUAdmiralityAH'>, after the effect that names Schooner, add:
+<Effect type ='Data' amount ='2.00' subtype ='BuildLimit' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistSchooner</Target></Effect>
+
+In <Tech name='EUpoliticianGreekUK'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Spawn2Ships' amount ='1.00' subtype ='ActionAdd' unittype ='HistDock' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCBremerhaven'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='2.00' subtype ='Damage' allactions ='1' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCBremerhaven'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Heal' amount ='2.00' subtype ='WorkRate' unittype ='Ship' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='ConsularUpgrader'>, after the effect that names NAmarine, add:
+<Effect type ='SetName' proto ='HistMarine' culture ='none' newName ='74096' />
+
+In <Tech name='ConsularUpgrader'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='100.00' subtype ='Cost' resource ='Trade' relativity ='Assign'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='ConsularUpgrader'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='0.00' subtype ='Cost' resource ='Food' relativity ='Assign'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='ConsularUpgrader'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='0.00' subtype ='Cost' resource ='Gold' relativity ='Assign'>
+				<Target type ='ProtoUnit'>HistMarine</Target></Effect>
+
+In <Tech name='HCShipMarines1'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='6.00' subtype ='FreeHomeCityUnit' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipMarines2'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='8.00' subtype ='FreeHomeCityUnit' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipMarines3'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='9.00' subtype ='FreeHomeCityUnit' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipMarines4'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='14.00' subtype ='FreeHomeCityUnit' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShipMarines5'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='16.00' subtype ='FreeHomeCityUnit' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player' /></Effect>
+
+In <Tech name='HCShoreLeaveDutch'>, after the effect that names NAmarine, add:
+<Effect type ='Data' amount ='1.00' subtype ='AddTrain' unittype ='HistMarine' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>Barracks</Target></Effect>
+
+In <Tech name='GWhydrophone'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.00' subtype ='RevealLOS' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='GWqships'>, after the effect that names Schooner, add:
+<Effect type ='TransformUnit' toprotoid ='Destroyer' fromprotoid ='HistSchooner' />
+
+In <Tech name='AAMiddleEasternStartingTechs'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='0.00' subtype ='CopyUnitPortraitAndIcon' unittype ='HistDock' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>YPDockAsian</Target></Effect>
+
+In <Tech name='Age0Afghan'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Persian'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Saudi'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='Age0Uzbek'>, after the effect that names Dock, add:
+<Effect type ='Data' amount ='1.00' subtype ='Enable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCCalligraphy'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Build' amount ='1.50' subtype ='WorkRate' unittype ='HistDock' relativity ='BasePercent'>
+				<Target type ='ProtoUnit'>YPDockWagon</Target></Effect>
+
+In <Tech name='HCIranisazi'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Spawn25Gold' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCPersepolisPurchase'>, after the effect that names NAmarine, add:
+<Effect type ='Data2' amount ='1.00' amount2 ='8.00' subtype ='FreeHomeCityUnitShipped' unittype ='Battleship' unittype2 ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player'></Target></Effect>
+
+In <Tech name='HCAlexandriaProphthasia'>, after the effect that names Dock, add:
+<Effect type ='Data' action ='Spawn50Gold' amount ='1.00' subtype ='ActionEnable' relativity ='Absolute'>
+				<Target type ='ProtoUnit'>HistDock</Target></Effect>
+
+In <Tech name='HCVaryag'>, after the effect that names NAmarine, add:
+<Effect type ='Data2' amount ='1.00' amount2 ='9.00' subtype ='FreeHomeCityUnitShipped' unittype ='Battleship' unittype2 ='HistMarine' relativity ='Absolute'>
+				<Target type ='Player'></Target></Effect>
