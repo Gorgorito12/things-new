@@ -710,42 +710,144 @@ Musketeer | Musketeer
 - New flag textures (US 15/15, Tripoli) through aoe3-blender-tools, or the existing stand-ins?
 - Plain Ottomans for the Tripolitans (no `civs.xml` change for them) or a hidden copy?
 
-## Historical version: build status (WIP, 2026-11-13)
+## Historical version: what was built
 
-The three proposals (Barbary Coast, Laguna, Hakodate) are merged on one branch, with one
-`campaigncheck.py --inventory` (`--units` is the same option). On the base fix's three files it
-still gives the same 5 misses (Laguna's three Brazilian players on the Italian home city, Wild
-Animals, `Abolition0`). Nothing of the pack is built yet: no scenario, `civs.xml`, string
-fragment or zip, and no game run. The user's decisions for the pack are in the task brief
-(hidden civs "Regency of Tripoli" = Indians copy with the Ottoman flag, US with
-`objects\flags\USA`, Sweden with `objects\flags\swedish`, `Farrapos` = Brazilians copy with string
-444433 and the `piratini` flag set, "Imperial Japan" = `SPCJapanese` copy with the Nishiki no
-mihata, Hinomaru until that flag set arrives; the unit swaps of the three proposals).
+Built 2026-11-14 from the three proposals above and the user's decisions:
+`wol-fixes/campaign-historical/` holds `WoL-campaign-historical.zip` (installed on top of the base
+fix), `WoL-campaign-historical-originals.zip` (what it replaces: the base fix's three missions and
+WoL's files), `fragments/` (the pieces to paste into a newer WoL's files) and
+`LEEME-README.txt` (Spanish and English: install, the per-mission tables with reasons, WoL's
+fiction that stays, undo). The base fix's zips are unchanged. The build script (`agentB_build.py`,
+its edit lists per mission) and the logs are in the evidence folder
+`rea/evidence/age3y-b1a1dab7/wol-campaign-historical-20261114/`.
 
-Chunk layout found for the text edits (Laguna's fixed file, decompressed; observed by size
-arithmetic, not yet by a load test):
-- The root `BG` (at 0, size 0x2595EF; the decompressed file has one byte after it) holds, among
-  raw fields, `TR` (the triggers, 0x3F455–0x5A9E4) and right after it `J1` (0x5A9E4–0x259229).
-  `TR` and `J1` are siblings, which is why `scnfix.py`'s trigger edits fix only `TR` and `BG`.
-- The objectives chunk `OM` (0x252F6B, size 0x1687) lies inside `J1`: an `OM` text edit must fix
-  `OM`, `J1` and `BG`.
-- The player records `BP` (9 of them from 0x17349C, each followed by one `01` byte; the list is
-  preceded by `09 00 00 00 09 00 00 00 01`) lie inside `J1`. The chunk between `J1` and the `BP`
-  list is **not found yet**: a player-name edit must not be shipped before it is, and before a
-  file with a renamed player loads in game.
-- A chunk's payload is not a clean list of sub-chunks (raw fields sit between them), so the
-  enclosing chunks of an edit must be named per edit kind, as `TR`/`BG` are, not found by a
-  generic walk.
+### The hidden civs
 
-Next steps, in order: (1) find the `BP` list's container (REA on the scenario reader around
-FUN_00831F90's caller 0x834BEF, or a test file with a one-character longer player name loaded in
-game); (2) `scnfix.py`: `name:OLD=NEW` (player), `objective:`/`om:` texts, `text:` trigger text
-parameters (type 22, the text after the empty value) and `units:PLAYER:OLD=NEW`, each fixing its
-named chunks and the CRC; (3) the engine's civ limit with REA, then `civs.xml` with the five hidden
-civs appended in one order (Tripoli, US 1801, Sweden 1802, Farrapos, Imperial Japan) and a string
-fragment (76595, 76596 `Laguna (1839)`, the civ names); (4) the three scenarios with the swaps;
-(5) the pack, its originals zip and LEEME; (6) the tests in `C:\AoE3-UHC-WoLReal3` and
-`C:\WoL-Test`.
+Appended after the last `<civ>` of WoL's `civs.xml` (168 civs), in this fixed order, each a copy
+of its source `<civ>` with `<statsid>` dropped, `<visible>0</visible>` and
+`<visibleineditor>1</visibleineditor>` (the pattern of WoL's `SPCJapanese` and `Pirate`):
+
+| ID | Name | Copy of | Display name | Flag (portrait, flag texture, buttons, post-game) |
+|---|---|---|---|---|
+| 169 | `HistTripoli` | Indians (the base's Indian buildings keep working) | 990101 "Regency of Tripoli" (new) | Ottomans': `objects\flags\ottomans`, `ottomanFlagBtn`, `ingame_ui_postgame_flag_ottoman` |
+| 170 | `HistUSA` | UnitedStates | 602009 "United States" | `objects\flags\USA` (13 stars); buttons and post-game flag stay UnitedStates' (34 stars: no 13-star set exists) |
+| 171 | `HistSweden` | Swedish | 76994 "Swedes" | `objects\flags\swedish`; buttons and post-game flag stay Swedish's |
+| 172 | `HistFarrapos` | Brazilians | 444433 "Farrapos" | `War of the Triple Alliance\Flags\piratini`, `PiratiniFlagBtn` for both button sets (no large set exists), `ingame_ui_postgame_flag_piratini` |
+| 173 | `HistImperialJapan` | SPCJapanese | 990102 "Imperial Japan" (new) | agent F's Nishiki no mihata: `War of the Triple Alliance\Flags\hist_imperial_japan`, `HistImperialJapanFlagBtn`/`…Large` (two new sets in `buttonsets.xml`), `ingame_ui_postgame_flag_hist_imperial_japan`; home city `homecitySPC_MJ.xml` |
+
+**The civ limit (REA, `rea-civ-limit.json`):** the `civs.xml` reader FUN_0052A590 adds each civ
+through FUN_0052A4DB, which grows the database's civ array (`[db+24h]`, count `[db+28h]`) by one
+with the generic array resize FUN_00401113 (capacity doubling, no fixed maximum, an exception only
+past 2^31 bytes). Observed: no cap on the civ count; 173 civs loaded and played. Not checked: other
+per-civ tables elsewhere in the engine (none was hit in the tests).
+
+**A player's civ outside the scenario's civ table loads:** all five new civs are absent from the
+three scenarios' saved civ tables, and all three missions load and play with them (below), as
+Hakodate's `SPCJapanese` did in the base fix.
+
+### Strings
+
+WoL's string table is `data\stringtabley.xml` (English); the exe loads only that name. WoL also
+has `data\stringtabley.xml.es-la` (Latin American Spanish), which becomes `stringtabley.xml` when
+Spanish is chosen (`C:\WoL-Test` runs with it). The pack ships both, with the same changes: 76595
+"the fierce Algerians and Tripolitan pirates" → "the fierce corsairs of Tripoli" (es: "los feroces
+corsarios de Trípoli"), 76596 `Laguna (1839)`, and three new strings 990101–990103 (the two civ
+names and the first Home City note, which the campaign XML now points at instead of TAD's 43314
+"This is Malta, Morgan's Home City"). The pack also ships `Campaign\Wonders\ChinaIndiaJapan.xml`
+for that one `HCNoteText` change. The scenario texts are English, like WoL's.
+
+### Scenario edits (`tools/scnfix.py`)
+
+The text edits use a chunk layout found here (observed by size arithmetic on all three missions,
+then by the edited files loading and playing): the root `BG` holds `TR` (the triggers) and right
+after it `J1`; `J1` holds the player records `BP` (each followed by one byte), the team records
+`TE` (`Team <player name>`) and the objectives chunk `OM`. No other chunk header spans them (a
+search for every two-letter header whose size covers the `BP` list found only `J1`). A text of
+another length therefore changes `OM`/`BP`/`TE`, `J1` and `BG`, or `TR` and `BG`.
+
+`campaigncheck.py`'s trigger parser read a parameter as one value; it is a value count, then the
+values (a unit list has one per unit, `"2853","2854",…`), and a text (type 22) has its text after
+the values. Effects with unit lists were skipped before (Barbary Coast: a `Change Unit Type` of
+four units to `WOTTANatMercPirate`, the cause of four pirates left in the first test). Now every
+effect the old parser read is still read, plus 13 to 25 more per mission.
+
+| Mission | Placed units | Trigger protos | Texts | Players |
+|---|---|---|---|---|
+| Barbary Coast | players 2 and 3: Seimen → Janissary (46), Rodelero/WOTTANatMercPirate/WOTTANatPirate/ypNatMercTigerClaw → MercBarbaryCorsair (61), ypThuggee/ypDacoit → WOLMercBashiBazouk (29), ypMercArsonist → WOLAURKouloughli (10), Akinci → WOLMercSpahi (11), ypMahout → MercMameluke, Cannon → Falconet, the captain 2841 → MercBarbaryCorsair; player 1: Steamboats 1679 → Frigate, 1684 and 1685 → Schooner | the same protos in every deploy; `ProtoName` Caravel → AFRICANxebec (the merchant armies), `ProtoUnit` Caravel → Frigate (the Swedish ship), NAnapoleon → Falconet, `Player Unit Count` Steamboat → Schooner | players "Tripolitan Corsairs" and "Swedish Squadron" (and their teams); "(Caravels)" → "(Xebecs)" in the blockade objective | 1 → HistUSA, 2 and 3 → HistTripoli, 4 → HistSweden |
+| Laguna | 2676 Lancero → MercLanceiroNegro, 2530 WolJagunco → MercBacamarteer (the dead table entry `CarabineroBlock`, same length, renamed to it), Hatamoto 2764 → CinematicBlock (removed from view), Galleons 571, 2694 → Schooner, Caravels 2112, 2180, 2695 → WOLGunboat | Lancero → MercLanceiroNegro, WolJagunco → MercBacamarteer, Caravel → WOLGunboat (army 5,10) | overlay "Battle of Laguna, 1839"; the six placeholder chat lines rewritten; description and scenario name ("Skipping Waters" → "Battle of Laguna"); "Riograndese" → "Riograndense" | 1 and 5 → HistFarrapos; player 5 renamed "Riograndense Republic" |
+| Hakodate | players 2–4: ypYumi/ypYamabushi/ypShinobiHorse → Kihei, ypAshigaru/ypConsulateYoungGarde → WOLLineInfantry, ypNatSohei/ypNatMercSohei → IMShotai, ypNaginataRider/ypYabusame/ypConsulateGendarmes → GuntoRider, ypFlamingArrow → Kanouhou; Steamboats 838, 3785 → Joukisen | the same, plus WOLConsulateOnnaBushi → WOLLineInfantry and MercNinja → Kihei | — | 1 → HistImperialJapan, home city `homecitySPC_MJ.xml` |
+
+Choices made while building (not in the proposals):
+- **Sohei → IMShotai, the rest of the infantry → WOLLineInfantry.** Two `Player Unit Count`
+  conditions respawn the Sohei when player 2 has 1 or 3 left; with Ashigaru, Young Garde and
+  Onna-Bushi also turned into Line Infantry, that count would include all of them and the loop
+  would almost never fire. IMShotai is "Shishi" (the Imperial loyalist activists, an immigrant
+  unit): its name reads Imperial, so only the Sohei use it.
+- **Barbary's US ships:** one Frigate and two Schooners. The Schooners keep training Marines; the
+  dock now comes back when both Schooners are lost (the Frigate trains nothing).
+- **Laguna's Galleons → Schooner** (the imperial brigs and schooners), not Privateer.
+- **Not changed:** Barbary's storage huts (`WOLRuca`), the Privateers and Galleys, the
+  `NAtinclad` forbid, WOLBevaring; Laguna's Corvettes (objectives 4, 12, 13 count them), the
+  Redshirt 3060 (destroyed at start) and the CinematicBlock renamed "Rudken"; Hakodate's
+  MonsterTruck (destroyed at start), Kensei, Hatamoto, Shinsengumi, Ronin, Wokou pirates.
+- **The Philadelphia's crew:** Barbary's only prisoner is Van Lesen (the stockade holds no one
+  else), whom the user kept as fiction; so there is no separate prisoner group to rename.
+- **`homecitySPC_MJ.xml`:** TAD's `homecitySPC_JC.xml` with the 1600 unit cards renamed to WoL's
+  Meiji ones, each card's fields taken from WoL's `homecityjapanese.xml` (Yumi → Kihei, Ashigaru →
+  Shaguma, Naginata rider 1–3 → Gunto Rider 1–3, Flaming Arrow → Kanouhou, their upgrade cards,
+  Daimyo Tadaoki → `WOLHCShipGensuiOyama`), the Naginata rider 4, Yabusame, Kiyomasa, Masamune
+  and Ninja cards dropped, `<Civ>HistImperialJapan</Civ>`. Deck: food, coin, wagons, settlers,
+  Kihei 1, Shaguma 1–2, Gunto Rider 1–2, wood, Samurai 1–2, Kanouhou 1, rice paddy, Oyama. Same
+  name length as `homecitySPC_JC.xml`; `scnfix.py homecity:` sets it in player 1's record.
+
+### Tests (2026-11-14)
+
+`campaigncheck.py` on the historical set (the bed's data with the base fix and the pack on top):
+the same 5 deliberate misses as the base fix (Laguna's players 1–3 on the Italian home city, Wild
+Animals, `Abolition0`), and the new string 990103 found. A structural check of each file (CRC,
+size, `BG`/`TR`/`J1`/`OM` ends, the `BP` chain, the `TE` gaps) passes.
+
+In game, from the campaign menu (`startCampaign`, Easy, *Play*), each victory by `winScenario`
+(evidence: `wol-campaign-historical-20261114/`, screenshots, `trigtemp-h*.xs`, the unit lists):
+
+| | `C:\AoE3-UHC-WoLReal3` (our DLL, English, `xsErrorLog`) | `C:\WoL-Test` (WoL's DLL `c070d138`, Spanish table, the `engine-ext` harness) |
+|---|---|---|
+| Barbary Coast | loads, no XS message; player 1 has a Frigate and two Schooners flying the 13-star circle flag (`b-flags.png`); players 2–3's 216 + 349 placed units are Janissary, MercBarbaryCorsair, WOLMercBashiBazouk, WOLAURKouloughli, WOLMercSpahi, MercMameluke, Falconet; the merchant armies sail as AFRICANxebec; every `trArmyDispatch` in `trigtemp.xs` names the new protos and the Steamboat count reads `Schooner`; ran 8 min, no objective fired, no instant win or loss; `winScenario` → home city (St. Louis) → node 2 | loads, no XS message, the same units (`w1-units.txt`); 2.5 min; `winScenario` → home city → node 2 |
+| Laguna | loads (the intro plays), no XS message; the campaign screen and the node read "Laguna (1839)"; Garibaldi's Town Center and home city button fly the Riograndense flag; Laguna's Town Center 647 at 6 500 HP after 5 min; the imperial navy is 3 WOLGunboat and 2 Schooner; armies 1,10 and 1,11 dispatch MercBacamarteer and MercLanceiroNegro, army 5,10 a WOLGunboat; 5.5 min; `winScenario` → node 3 | loads, no XS message, Town Centers at 6 500; "Costa Beréber (1801)", "Laguna (1839)" in Spanish; 2.2 min; `winScenario` → node 3 |
+| Hakodate | loads, no XS message; the home city button shows the Nishiki no mihata (red, gold disc); player 2's respawn armies come as IMShotai, WOLLineInfantry, GuntoRider, Kanouhou; players 3–4 placed units Kihei, WOLLineInfantry, IMShotai, GuntoRider, Kanouhou, 2 Joukisen; 5.3 min; `winScenario` → back to the campaign screen with the three missions | loads, no XS message, the same flag; 2.2 min; `winScenario` → the campaign screen |
+
+Observed limits:
+- **The civ names were not seen in game.** In campaign play the score panel shows only the
+  human's team, a victory goes straight to the home city (no post-game summary), and no other
+  screen of the three missions names a player's civ. The flags (ships, buildings, home city
+  button) and the strings (node names) are seen; the civ names are in `civs.xml` and the tables
+  only. The editor's player list would show them (not done).
+- **In campaign play the human's home city is the campaign's, not the scenario's.** After
+  Barbary Coast it is St. Louis, and Hakodate's in-game deck is that "Static Deck" (25 cards, US
+  cards among them, `h3-deck-crop.png`), as in the base fix. `homecitySPC_MJ.xml` (like
+  `homecitySPC_JC.xml` before it) is used only when the scenario is played outside the campaign
+  (not tested). Giving the Imperial player Meiji shipments inside the campaign would need the
+  campaign's home city handling, which WoL's campaign XML does not set.
+- **The first Home City note (string 990103) did not show:** the profile had already seen its
+  first home city visit, so the note is never shown again; the change is in the campaign XML and
+  the tables only.
+- **The load texts were not captured** (the load screen is too short to screenshot); 76595 is
+  changed in both tables.
+- **Objectives were not played to their end** (as in the base fix): each mission ran 2–8 minutes
+  with no input. The 13 to 25 more trigger effects the parser now reads were renamed with the
+  rest, and the compiled triggers show them.
+- The deploys of Barbary Coast's armies fire when the player comes near; in 8 minutes without
+  input only the starting ones were seen live. Their protos were checked in `trigtemp.xs`.
+- **Not on monitor 1:** the user's monitor 1 (`DISPLAY1`) turned off at about 09:07 and left the
+  monitor list (the game then drew black: lost device). The rest of the WoLReal3 run (Hakodate)
+  and the whole WoL-Test run were on the only monitor left, `DISPLAY2`, with the display kept awake
+  (`SetThreadExecutionState`, zero-distance `mouse_event`).
+
+Both beds and the profile (`My Games\Wars of Liberty\Users3`, `campaign`) were restored and
+hash-checked after the tests (`agentB_bed.py restore`); the WoL-Test harness (`dinput8.dll`,
+`engine-ext\`, `uhc-exec.txt`) was removed and `uhc.dll`, `age3y.exe`, `Startup\wol.cfg`,
+`d3d9.dll` match `woltest-hashes-before.txt`. The bed's `UHC.log` was cleared before the first
+launch (a log the DLL rewrites at each start).
 
 ## Tools
 
@@ -759,7 +861,12 @@ fragment (76595, 76596 `Laguna (1839)`, the civ names); (4) the three scenarios 
   effects after such a parameter, like *Overlay Text*'s, are no longer lost).
 - `tools/scnfix.py`: writes a copy of a scenario with civ-table names, saved proto names, player
   civs, single units' protos (`unit:ID=PROTO`) or trigger parameters (`trigger:`, `tech:`, any
-  length: the `TR` and `BG` chunk sizes follow) changed, and its CRC.
+  length: the `TR` and `BG` chunk sizes follow) changed, and its CRC. Since the historical
+  version also: `units:PLAYER:OLD=NEW` (every placed OLD of one player), `trigger[PARAM]:OLD=NEW`
+  (one parameter name only), `name:OLD=NEW` (a player and its team), `homecity:PLAYER=FILE`,
+  `text:OLD=NEW` (a substring of the objectives, the scenario's name and description, and the
+  trigger texts: chat, overlays, unit and army names; any length, the enclosing chunks follow)
+  and `@FILE` (edits one per line).
 - `tools/re/trace_exec.py` also logs a breakpoint's first three stack arguments.
 
 ## Open

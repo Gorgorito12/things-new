@@ -1,0 +1,12 @@
+	<set name="HistImperialJapanFlagBtn" texturecoords="0 0 0.5859375 0.75">
+		<normal>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_normal</normal>
+		<depressed>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_click</depressed>
+		<highlight>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_high</highlight>
+		<disabled>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_disable</disabled>
+	</set>
+	<set name="HistImperialJapanFlagBtnLarge" texturecoords="0 0 1 0.75">
+		<normal>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_large_normal</normal>
+		<depressed>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_large_click</depressed>
+		<highlight>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_large_high</highlight>
+		<disabled>War of the Triple Alliance\Buttons\flag_hist_imperial_japan_large_disable</disabled>
+	</set>

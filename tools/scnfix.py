@@ -14,6 +14,18 @@ campaigncheck.py --inventory prints beside it (Laguna's Town Center: editor 1168
 trigger:OLD=NEW replaces a proto name in trigger parameters (ProtoName, UnitType); tech:OLD=NEW
 points tech parameters at another tech of the saved tech table. These two may change a value's
 length: the trigger section ("TR") and root ("BG") chunk sizes are corrected.
+trigger[PARAM]:OLD=NEW limits the rename to the parameters named PARAM (e.g. ProtoUnit, the
+Change Unit Type target, against ProtoName, an Army Deploy's unit).
+units:PLAYER:OLD=NEW gives every placed unit of player number PLAYER whose proto is OLD the proto
+NEW (both in the saved proto table).
+name:OLD=NEW renames the player(s) named OLD, and the team named "Team OLD".
+homecity:PLAYER=FILE sets the home city file of the player(s) named PLAYER.
+text:OLD=NEW replaces the text OLD, wherever it is a part of an objective's name, text or hint,
+of the scenario's own name or description (the objectives chunk "OM"), or of a trigger text
+parameter (chat, overlay, counters, unit and army names). Texts may change length: the chunks
+that hold them get the difference (OM or BP or TE, then J1 and BG; or TR and BG).
+@FILE reads more edits from FILE, one per line (UTF-8; a line starting with # is skipped), for
+texts with spaces or many edits.
 
 A scenario keeps a civ table: one "SH" chunk per civ the game had when it was saved (name, home
 city file, default deck). When it loads, the game looks each name up in civs.xml and fails the

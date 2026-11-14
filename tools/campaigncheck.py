@@ -292,18 +292,25 @@ def parse_param(raw, q):
         if disp[-1:] != b"\0":
             return None
         q += 4 + m
-        vtype, one, ln = struct.unpack_from("<III", raw, q)
-        if vtype > 64 or one > 16 or ln > 20000:
+        # The type, the number of values, then each value: a length (UTF-16 units) and the text. Most
+        # parameters have one value; a unit list has one per unit ("2853", "2854", ...). A text
+        # (type 22) has one more string after its values: the text itself (the value is empty).
+        vtype, count = struct.unpack_from("<II", raw, q)
+        if vtype > 64 or count > 5000:
             return None
-        len_at = q + 8  # the value's length (UTF-16 units), then the value
-        q += 12
-        value = raw[q:q + 2 * ln].decode("utf-16le", errors="replace")
-        q += 2 * ln
-        if vtype == 22 and ln == 0:  # a text: empty value, then its own length and UTF-16 text
-            n = struct.unpack_from("<I", raw, q)[0]
-            if n > 20000:
+        len_at = q + 8  # the first value's length, then the value
+        q += 8
+        values = []
+        for _ in range(count + (vtype == 22)):
+            ln = struct.unpack_from("<I", raw, q)[0]
+            if ln > 20000:
                 return None
-            q += 4 + 2 * n
+            values.append(raw[q + 4:q + 4 + 2 * ln].decode("utf-16le", errors="replace"))
+            q += 4 + 2 * ln
+        if vtype == 22 or count < 2:
+            value = values[0] if values else ""
+        else:
+            value = ",".join(values)
         return (name[:-1].decode("latin-1"), disp[:-1].decode("latin-1"), vtype, value, len_at), q
     except struct.error:
         return None
