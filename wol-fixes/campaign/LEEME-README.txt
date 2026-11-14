@@ -16,10 +16,17 @@ Qué arregla
   El menú: se oculta "Aprender a jugar" (el tutorial de TAD). La campaña de WoL sigue en
   Un jugador -> Escenarios históricos.
 
+  Laguna, además: sus unidades Carabinero, Bacamartero y RegimentalLancer ya no existen en
+  protoy.xml; pasan a Jinete, Jagunço (WolJagunco) y Lancero, las más cercanas del ejército
+  brasileño. El Centro Urbano de Laguna (el objetivo final) aparecía con 0 de vida y moría al
+  empezar, con lo que la misión se ganaba sola: ahora es un IGCTownCenter (mismo modelo,
+  12 000 de vida). Tres mejoras borradas pasan a VeteranMusketeers, GuardMusketeers y
+  VeteranPikemen. Los jugadores de Laguna son Brasileños (sus unidades y edificios lo son).
+
 Lo que falta (para el equipo de WoL)
-  Laguna carga pero termina enseguida: sus unidades iniciales son Carabinero, Bacamartero y
-  RegimentalLancer, que ya no existen en protoy.xml. Hay que decidir qué unidades van y volver
-  a guardar la misión en el editor.
+  Los objetivos no se jugaron hasta el final (cada misión se ganó con la consola para probar la
+  victoria y el paso a la siguiente). Conviene abrir cada misión en el editor, revisar las
+  civilizaciones y las unidades cambiadas, y guardarla.
 
 Cómo aplicarlo
   1. HAGA COPIA PRIMERO. WoL-campaign-originals.zip trae los originales de estos 4 archivos.
@@ -41,14 +48,22 @@ What this fixes
   The menu: "Learn to Play" (TAD's tutorial) is hidden. WoL's campaign stays under
   Single Player -> Historical Scenarios.
 
+  Laguna, also: its Carabinero, Bacamartero and RegimentalLancer units no longer exist in
+  protoy.xml; they become Jinete, Jagunço (WolJagunco) and Lancero, the closest units of the
+  Brazilian roster. Laguna's Town Center (the last objective) loaded with 0 hit points and died
+  at once, so the mission won itself: it is now an IGCTownCenter (same model, 12,000 hit
+  points). Three removed upgrades become VeteranMusketeers, GuardMusketeers and VeteranPikemen.
+  Laguna's players are Brazilians (their units and buildings are).
+
 What is left (for the WoL team)
-  Laguna loads but ends at once: its starting units are Carabinero, Bacamartero and
-  RegimentalLancer, which protoy.xml no longer has. Someone has to choose the units and save the
-  mission again in the editor.
+  The objectives were not played to their end (each mission was won from the console, to test
+  the victory and the move to the next mission). Best: open each mission in the editor, check
+  the civs and the replaced units, and save it.
 
 Tested
-  Barbary Coast and Hakodate start and play (several minutes, no script error), with the
-  engine-extension DLL and with WoL's own DLL.
+  The campaign from the menu, on Easy: Barbary Coast, Laguna and Hakodate start, run with no
+  script error, and each victory leads to the next mission; after Hakodate the campaign screen
+  lists all three. Hakodate was also run with WoL's own DLL.
 
 What is in it
   Campaign\Wonders\first_barbary_war.age3Yscn, laguna.age3Yscn, battle_of_hakodate.age3Yscn

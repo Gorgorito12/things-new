@@ -27,7 +27,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
 | `campaigncheck.py` | `<game folder> [--campaign <xml>] [--scn <file>] [--all]`, read-only: checks a campaign definition and its scenarios against the folder's data (civ table, players' civs, placed protos, saved names, trigger parameters); see its docstring and [docs/wol-campaign.md](../docs/wol-campaign.md). |
-| `scnfix.py` | `<in.age3Yscn> <out.age3Yscn> OLD=NEW … [proto:OLD=NEW …] [--data=<game folder> player:NAME=CIV …]`: writes a copy of a scenario with civ-table names, saved proto names or player civs changed, and its CRC; never writes the input. |
+| `scnfix.py` | `<in.age3Yscn> <out.age3Yscn> OLD=NEW … [proto:OLD=NEW …] [--data=<game folder> player:NAME=CIV …] [unit:ID=PROTO …] [trigger:OLD=NEW …] [tech:OLD=NEW …]`: writes a copy of a scenario with civ-table names, saved proto names, player civs, single units' protos or trigger parameters changed, and its CRC; never writes the input. |
 | `ai_personality.py` | Leaves one AI personality in a test copy, so a skirmish's AI has that civ. |
 | [`re/inspect_unittypes.py`](#reinspect_unittypespy) | Shows a unit type's ID and the protos that carry it. |
 | `re/debugger.py` | The shared debugger and game-memory helpers the `re/` scripts use. `crash` mode: see [re/debugger.py crash](#redebuggerpy-crash). |

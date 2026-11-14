@@ -9,30 +9,85 @@ The WarChiefs or the tutorial). Evidence: `rea/evidence/age3y-b1a1dab7/wol-campa
 **In one line:** every campaign mission fails to load with *"Scenario: wonders\first barbary war
 failed to load."* (the font draws `_` as a space), with WoL's own DLL as with ours, because the
 missions were saved with civs that WoL's `civs.xml` no longer has. It is a data bug, not a DLL
-one. Fixed copies of the three missions are in `wol-fixes/campaign/`.
+one. Fixed copies of the three missions are in `wol-fixes/campaign/`; with them the campaign
+runs from the menu through all three missions to its end (each won by console, below), and
+Laguna's removed units, its dead-at-start objective and its removed techs are repaired too.
 
 ## Results per mission
 
 Beds: `C:\AoE3-UHC-WoLReal3` (our DLL) and `C:\WoL-Test` (WoL's DLL `c070d138`, with only the
 `engine-ext` harness for `multipleInstances background`, `perfExecFile` and `xsErrorLog`).
 
-| # | Node (file) | As shipped | Cause | With the fix | Whose fix |
-|---|---|---|---|---|---|
-| 1 | Barbary Coast 1801 (`wonders\first_barbary_war`) | "failed to load", both DLLs | civ table: `Habsburgs`, `XPAztec` | Runs (our DLL, 3+ min, score rises, no XS error); players' civs right | Data (WoL) |
-| 2 | Laguna 1840 (`wonders\laguna`) | "failed to load", both DLLs | civ table, as above | Loads, but ends at once (below) | Data (WoL) |
-| 3 | Hakodate 1869 (`wonders\battle_of_hakodate`) | "failed to load", both DLLs | civ table, as above | Runs with both DLLs (2+ min, no XS error); with only the civ-table fix player 1 is Chilean, with the player fix Japanese (SPC) | Data (WoL) |
+| # | Mission | As shipped | Changed in `wol-fixes/campaign/` | Result with the fix (2026-11-13, our DLL, Easy) |
+|---|---|---|---|---|
+| 1 | Barbary Coast 1801 (`wonders\first_barbary_war`) | "failed to load", both DLLs | civ table; player civs (US Navy → UnitedStates, Barbary Pirates → Indians, Swedish Mining Operation → Swedish, Van Lesen → Dutch, Storage and Sunken Merchant Ship → British) | Starts from the campaign menu, runs (no XS error), first objectives discovered; won by `winScenario`, home city visit, node 2 unlocked |
+| 2 | Laguna 1840 (`wonders\laguna`) | "failed to load", both DLLs | civ table; players 1–5 → Brazilians; 18 removed units and 6 `Army Deploy` parameters replaced; objective unit 647 kept alive; 3 removed techs mapped | Starts after node 1, intro text "Battle of Laguna, 1840", "Advance to the Capital Age" discovered, Laguna's Town Center at 12 000 HP, runs 5+ min (no XS error); won by `winScenario`, node 3 unlocked |
+| 3 | Hakodate 1869 (`wonders\battle_of_hakodate`) | "failed to load", both DLLs | civ table; player civs (Imperial Army → SPCJapanese, Ezo Republic and Matsumae → Japanese, Supply Ships → UnitedStates) | Starts after node 2, runs (no XS error, also with WoL's DLL); won by `winScenario`: back to the campaign screen with the three missions, no crash |
 
-Mission 2, Laguna, has two more problems, both in the data:
-- **Its player starts with nothing.** 18 placed units of player 1 are protos WoL removed
-  (`Carabinero` ×15, `Bacamartero`, `RegimentalLancer`), and six `Army Deploy` triggers deploy
-  them too. The game drops such units, so the active rule `_PlayerLosesEverything`
-  (`trPlayerUnitAndBuildingCount(1)==0`) fires at once: a defeat, back to the campaign screen.
-- **With stand-in protos it wins at once instead.** With those three names renamed in the saved
-  proto table (`scnfix.py proto:`, test only: `Skirmisher`, `NatRifleman`, `Guerillainfantry`),
-  the mission opens its home city, then counts as won and goes on to node 3. The rule
-  `_Obj6_Done` is active from the start and wins when unit 647 is dead; in the file, unit 647 is an
-  `UnderbrushAmazon`. Not found: whether that ID was always wrong or the units were renumbered.
-  WoL has to say what the removed units should be, then re-save the mission in the editor.
+**Not done: the objectives were not played to their end.** Each mission was won with the console
+command `winScenario` (it runs `trYouWin`, the same call the missions' own victory rules make), so
+the victory, the home city visit between missions and the advance to the next node were tested,
+but not each objective's trigger in order. The console cannot kill or convert an enemy unit, and
+driving units there by console did not get far: `spawnUnits` and `uiWorkAtPointer` do move units
+(30 spawned frigates sailed toward Barbary Coast's first storage, 25 mortars marched on Laguna's
+Town Center), but they stopped out of reach of targets that the missions put inland or behind
+water and fortifications. Playing the objectives needs a person at the mouse (about an hour per mission).
+What fired on its own: the intros, the objectives' discovery, the AI's start, the trigger tech
+and army parameters (in `Trigger3\trigtemp.xs`), and `_Obj6_Done` stays armed with its unit alive.
+After the last mission the campaign ends on its screen with the three missions listed; the
+definition has no closing cinematic or credits node, so there is none to play.
+
+Videos (in the evidence folder; lossless masters in `rea/media-masters/wolcampaign-m*`):
+`m1-barbary-start.mp4`, `m1-barbary-victory.mp4`, `m2-laguna-start.mp4`,
+`m2-laguna-victory.mp4`, `m3-hakodate-start.mp4`, `m3-hakodate-victory.mp4` (a victory shows its
+message, then the home city screen of the visit between missions).
+
+### Laguna: the removed units
+
+Laguna's players 1–3 were stored as civ 11 with the Italian home city, but every unit and
+building they have belongs to WoL's Brazilian roster (`Age0Brazilian` enables `Volunteer`,
+`Pasavolante`, `MountedCassador`, `Corvette`, `Housebrazil`), and the objectives speak of "the
+Latin Americans" (age up with politicians, a post office, an immigrant colony). So players 1–5 are
+set to **Brazilians**; Garibaldi keeps the Italian home city (his shipments, the Rome screen).
+
+| Removed proto | Units | Replaced by | Why |
+|---|---|---|---|
+| `Carabinero` (mounted carbineer) | 15 placed (1 of player 1, 14 of São José do Norte) and 4 `Army Deploy` | `Jinete` | Brazilian roster's firearm maneuver cavalry (`AbstractGunpowderCavalry`, `AbstractRangedCavalry`): a carbine-armed horseman of the same era |
+| `Bacamartero` (blunderbuss infantry) | 1 placed, 1 `Army Deploy` | `WolJagunco` | Brazilian roster's "infantry armed with a blunderbuss" (*bacamarte* is the blunderbuss) |
+| `RegimentalLancer` | 2 placed, 1 `Army Deploy` | `Lancero` | Brazilian roster's lancer |
+
+### Laguna: the objective unit 647
+
+`_Obj6_Done` (*"Destroy Laguna's Town Center"*, objective 6) is active from the start and wins
+the mission when unit 647 is dead. Unit 647 **is** Laguna's Town Center (live: `647 player 2
+TownCenter`, at the objective's flag); an earlier offline reading paired each unit's ID with the
+wrong record (the `EN` record with the ID comes before the `UN` record with the proto, inside one
+`H1` chunk). The Town Center loads with **0 HP**: player 2's copy of the `TownCenter` proto has 0
+maximum and initial hit points at game time 0 (memory, against 6 500 in player 1's copy), so it
+dies at once and the mission is won. Same with WoL's DLL, and whatever civ player 2 has. Two techs
+assign 0 hit points to `TownCenter`, `Age0Egyptian` (Egyptians have no Town Center) and
+`AFRICANdestroytc`; the game applies and removes `Age0Egyptian` for every player at a scenario's
+start (`docs/engine-symbols.md`, "Effect removal"), and an `Assign` is not undone. Why player 2
+keeps the 0 and player 1 does not was not found. **Fix:** unit 647 becomes an `IGCTownCenter`
+(the Town Center's model and `AbstractTownCenter`, 12 000 HP, not targeted by those techs); it
+then stands at 12 000 HP and the objective means what it says.
+
+### Laguna: removed trigger techs
+
+A trigger tech whose name is gone compiles to `trTechSetStatus(p, -1, 2)`, which does nothing
+(no XS error). Mapped to WoL's current techs, by name in the saved tech table:
+`VeteranMusketeersLA` → `VeteranMusketeers`, `GuardMusketeersLA` → `GuardMusketeers`,
+`VeteranPikemenLA` → `VeteranPikemen` (São José do Norte's and Laguna's upgrades; they now compile
+to 265, 267, 266). `Abolition0` has no equivalent (WoL's chain starts at `Abolition1`, which the
+same trigger sets next) and stays a no-op.
+
+### Barbary Coast: the pirates' civ
+
+Barbary Pirates was saved with the Indians' home city, and its base is Indian: 66 `ypHouseIndian`,
+4 `YPBarracksIndian`, Indian mercenaries (`ypThuggee`, `ypDacoit`, `ypMercArsonist`). The story
+(the Barbary states, Ottoman vassals) would suggest Ottomans, and WoL has a `Pirate` civ, but that
+one is a British copy (`Age0British`, Western European culture), and WoL has no Maghreb civ. The
+civ decides what the AI can train in those Indian buildings, so **Indians**, the author's choice.
 
 `milazzo.age3Yscn` and `MISSION_3.age3Yscn` (no node uses them) have the same civ-table and
 player problems; Milazzo also places 43 `BolivarGuard`, a removed proto.
@@ -91,37 +146,35 @@ Observed in game:
 ## The fix in `wol-fixes/campaign/`
 
 `WoL-campaign-fix.zip` (with `WoL-campaign-originals.zip` to undo; see its LEEME-README.txt):
-- the three missions, rewritten by `tools/scnfix.py`: civ table `Habsburgs` → `TheCircle` and
-  `XPAztec` → `Afghans` (same length, both in `civs.xml` with a home city, not otherwise in the
-  table), and each player whose home city file belongs to one civ set back to it (US Navy →
-  UnitedStates, Barbary Pirates → Indians (their file's home city; WoL to confirm), Swedish Mining
-  Operation → Swedish, Van Lesen → Dutch; Garibaldi, Laguna, São José do Norte → Italians;
-  Brazilian Navy, Riograndese Republic → Brazilians; Imperial Army → SPCJapanese; Ezo Republic,
-  Matsumae → Japanese; Supply Ships → UnitedStates). Players on `homecitybritish.xml` (Storage,
-  Sunken Merchant Ship, Wild Animals) are left alone: five civs share that file;
+- the three missions, rewritten by `tools/scnfix.py` (the exact commands: `mkfix2.py` in the
+  evidence folder):
+  - civ table: `Habsburgs` → `TheCircle`, `XPAztec` → `Afghans` (same length, both in
+    `civs.xml` with a home city, not otherwise in the table);
+  - player civs as in the table above; Wild Animals (Laguna) is left alone;
+  - Laguna: the units, the objective Town Center and the techs as above;
 - `data\uipregamenew.xml` without *Learn to Play*.
 
-Tested: missions 1 and 3 run from these files (our DLL; mission 3 also with WoL's DLL with the
-civ-table fix). Mission 2 still ends at once (above). **For the WoL team**, the real fix is to open
-each mission in the editor once these load, check every player's civ, replace the removed units,
-and save: the editor then writes tables that match today's data.
+`campaigncheck.py` on the fixed set (`campaigncheck-fixed-set.txt`): 5 misses, all deliberate:
+Laguna's players 1–3 are Brazilians on the Italian home city, Wild Animals' civ, and `Abolition0`.
+
+**For the WoL team**, the clean fix is still to open each mission in the editor (they load now),
+check the players' civs and the replaced units, and save: the editor then writes tables that
+match today's data.
 
 ## Tools
 
 - `tools/campaigncheck.py <game folder>`: the static check of all of the above (civ table, player
-  civs, placed protos, saved names, trigger parameters). On the bed: 46 misses, every one of them
-  explained here.
-- `tools/scnfix.py`: rewrites a scenario's civ table names, saved proto names and player civs,
-  and writes the CRC.
-- `tools/re/trace_exec.py` now also logs a breakpoint's first three stack arguments.
+  civs, placed protos, saved names, trigger parameters). On the bed as shipped: 46 misses, every
+  one of them explained here. `--scn` alone checks a fixed set outside the game folder.
+- `tools/scnfix.py`: writes a copy of a scenario with civ-table names, saved proto names, player
+  civs, single units' protos (`unit:ID=PROTO`) or trigger parameters (`trigger:`, `tech:`, any
+  length: the `TR` and `BG` chunk sizes follow) changed, and its CRC.
+- `tools/re/trace_exec.py` also logs a breakpoint's first three stack arguments.
 
 ## Open
 
-- Laguna's instant win (`_Obj6_Done`, unit 647): needs WoL's scenario, or a session in the editor.
-- `jumpToNextCampaignNode` and `campaignAdvance` did nothing from the console in a campaign
-  game; advancing was tested with the `unlockAllSPCScenarios` config instead. On the campaign
-  screen *Play* runs the current node (the farthest unlocked), not the one selected.
-- The rest of each mission (objectives to the end) was not played.
-- The removed trigger techs (Laguna: `Abolition0`, `VeteranMusketeersLA`, `GuardMusketeersLA`,
-  `VeteranPikemenLA`; Milazzo: `WOLVeteranBersaglieri`): what the game writes for a tech name it
-  cannot map was not observed.
+- The objectives were not played to their end (above): that needs a person at the mouse.
+- Why Laguna's player 2 keeps 0 hit points on `TownCenter` and player 1 does not.
+- `jumpToNextCampaignNode` and `campaignAdvance` do nothing from the console; `winScenario`
+  works. On the campaign screen *Play* runs the current node (the farthest unlocked), not the
+  one selected.

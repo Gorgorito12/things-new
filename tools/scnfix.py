@@ -7,6 +7,11 @@ proto:OLD=NEW renames an entry of the saved proto table instead, so the units pl
 the data no longer has load as NEW (same length rule).
 --data=<game folder> player:NAME=CIV sets the civ of the player(s) named NAME to CIV of that
 folder's civs.xml (a player's civ is stored as a number and is not re-mapped at load).
+unit:ID=PROTO gives the placed unit with that ID (the ID its triggers use) another proto of the
+scenario's saved proto table.
+trigger:OLD=NEW replaces a proto name in trigger parameters (ProtoName, UnitType); tech:OLD=NEW
+points tech parameters at another tech of the saved tech table. These two may change a value's
+length: the trigger section ("TR") and root ("BG") chunk sizes are corrected.
 
 A scenario keeps a civ table: one "SH" chunk per civ the game had when it was saved (name, home
 city file, default deck). When it loads, the game looks each name up in civs.xml and fails the
@@ -80,6 +85,92 @@ def set_player_civ(raw, player, civ, root):
         sys.exit(f"scnfix: no player named {player}")
 
 
+def name_table(raw, which):
+    """(start, names) of a saved name table: which = 0 protos ("PT"), 2 techs (the second "TM")."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    tables = campaigncheck.name_tables(bytes(raw))
+    return tables[which][2]
+
+
+def set_unit_proto(raw, unit_id, proto):
+    """Gives the placed unit with this ID (the ID triggers name) another proto of the saved proto
+    table. A unit record is an H1 chunk: EN (size 0x50: the unit ID, ...) then UN (its name, then
+    the proto's table index twice)."""
+    protos = name_table(raw, 0)
+    if proto not in protos:
+        sys.exit(f"scnfix: {proto} is not in the scenario's saved proto table")
+    idx = protos.index(proto)
+    for m in re.finditer(rb"H1(....)ENP\x00\x00\x00", raw, flags=re.S):
+        if struct.unpack_from("<i", raw, m.end())[0] != unit_id:
+            continue
+        end = m.start() + 6 + struct.unpack_from("<I", m.group(1))[0]
+        u = raw.find(b"UN", m.end(), end)
+        n, l = struct.unpack_from("<II", raw, u + 2)
+        q = u + 10 + l
+        old = struct.unpack_from("<I", raw, q)[0]
+        struct.pack_into("<II", raw, q, idx, idx)
+        print(f"unit {unit_id}: {protos[old]} -> {proto} at 0x{q:x}")
+        return
+    sys.exit(f"scnfix: no placed unit with ID {unit_id}")
+
+
+def edit_trigger_params(raw, edits):
+    """edits: [(kind, old, new)], kind 'proto' (ProtoName / unit type values) or 'tech' (tech
+    names, stored as the saved table's index). Rewrites the matching parameter values; a value of
+    another length moves the rest of the file, so the trigger section ("TR") and the root ("BG")
+    sizes are corrected. Returns the new bytearray."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import campaigncheck
+    techs = name_table(raw, 2)
+    table = []
+    for kind, old, new in edits:
+        if kind == "tech":
+            for n in (old, new):
+                if n not in techs:
+                    sys.exit(f"scnfix: tech {n} is not in the scenario's saved tech table")
+            table.append(("tech", str(techs.index(old)), str(techs.index(new)), old, new))
+        else:
+            table.append(("proto", old, new, old, new))
+    trig = campaigncheck.triggers(bytes(raw))
+    if not trig:
+        sys.exit("scnfix: no triggers found")
+    first, last = trig[0][0], trig[-1][0]
+    tr = None
+    for p in range(first - 1, 6, -1):
+        if raw[p:p + 2] == b"TR":
+            size = struct.unpack_from("<I", raw, p + 2)[0]
+            if p + 6 + size > last:
+                tr = p
+                break
+    if tr is None:
+        sys.exit("scnfix: trigger section not found")
+    hits = []
+    for off, ename, params in trig:
+        for pname, disp, vtype, value, len_at in params:
+            for kind, old, new, label_old, label_new in table:
+                if value != old:
+                    continue
+                if kind == "tech" and not pname.lower().startswith("tech"):
+                    continue
+                if kind == "proto" and pname.lower() not in ("protoname", "unittype", "proto", "protounit"):
+                    continue
+                hits.append((len_at, old, new, f"{ename}.{pname}: {label_old} -> {label_new}"))
+    if not hits:
+        sys.exit("scnfix: no trigger parameter matched")
+    delta = 0
+    for len_at, old, new, label in sorted(hits, reverse=True):
+        n = struct.unpack_from("<I", raw, len_at)[0]
+        assert n == len(old), (label, n)
+        raw[len_at:len_at + 4 + 2 * n] = struct.pack("<I", len(new)) + new.encode("utf-16le")
+        delta += 2 * (len(new) - len(old))
+        print(f"0x{len_at:x} {label}")
+    for at in (tr, 0):
+        size = struct.unpack_from("<I", raw, at + 2)[0]
+        struct.pack_into("<I", raw, at + 2, size + delta)
+    return raw
+
+
 def main(argv):
     if len(argv) < 3:
         sys.exit(__doc__)
@@ -93,11 +184,19 @@ def main(argv):
     records = civ_records(raw)
     names = [n for _, n in records]
     root = None
+    param_edits = []
     for pair in argv[2:]:
         if pair.startswith("--data="):
             root = pair[7:]
             continue
         old, _, new = pair.partition("=")
+        if old.startswith("unit:"):
+            set_unit_proto(raw, int(old[5:]), new)
+            continue
+        if old.startswith("trigger:") or old.startswith("tech:"):
+            kind, _, name = old.partition(":")
+            param_edits.append(("proto" if kind == "trigger" else "tech", name, new))
+            continue
         if old.startswith("player:"):
             if not root:
                 sys.exit("scnfix: player:NAME=CIV needs --data=<game folder> before it")
@@ -118,6 +217,8 @@ def main(argv):
         raw[hits[0]:hits[0] + 2 * len(new)] = new.encode("utf-16le")
         names[names.index(old)] = new
         print(f"{old} -> {new} at 0x{hits[0]:x}")
+    if param_edits:  # last: they may move the rest of the file
+        raw = edit_trigger_params(raw, param_edits)
     # The file ends with a CRC-32 (zlib's) of the whole file with those last 4 bytes zeroed; the
     # game refuses the scenario when it does not match (FUN_0082EAFD).
     body = b"l33t" + struct.pack("<I", len(raw)) + zlib.compress(bytes(raw), 9)

@@ -6,7 +6,8 @@ Usage:
 <game folder> is a test copy (e.g. C:\\AoE3-UHC-WoLReal3). Without --campaign it reads the campaign
 definitions the exe and the main menu name: Campaign\\Wonders\\ChinaIndiaJapan.xml (the path the
 menu passes to startCampaign) and, when present, the second copy Campaign\\chinaindiajapan.xml.
---scn adds loose scenarios; --all prints every reference, not only the misses.
+--scn checks the scenarios named (alone, without the definitions, unless --campaign is given);
+--all prints every reference, not only the misses.
 
 What it checks (what the game does with each is in docs/wol-campaign.md, "How a scenario loads"):
 - the campaign XML: every string ID (DisplayNameStringID, RolloverStringID, HCNote*, LoadTextID)
@@ -274,10 +275,11 @@ def parse_param(raw, q):
         vtype, one, ln = struct.unpack_from("<III", raw, q)
         if vtype > 64 or one > 16 or ln > 20000:
             return None
+        len_at = q + 8  # the value's length (UTF-16 units), then the value
         q += 12
         value = raw[q:q + 2 * ln].decode("utf-16le", errors="replace")
         q += 2 * ln
-        return (name[:-1].decode("latin-1"), disp[:-1].decode("latin-1"), vtype, value), q
+        return (name[:-1].decode("latin-1"), disp[:-1].decode("latin-1"), vtype, value, len_at), q
     except struct.error:
         return None
 
@@ -401,7 +403,7 @@ def check_scenario(gd, path, rep):
         if tdef is None:
             unknown[name] += 1
         kinds[name] += 1
-        for pname, disp, vtype, value in params:
+        for pname, disp, vtype, value, _ in params:
             vt = (tdef or {}).get(pname.lower(), f"#{vtype}")
             by_type[vt][value] += 1
             v = value.strip()
@@ -451,7 +453,8 @@ def main():
     rep = Report(a.all)
     print(f"{a.root}: {len(gd.protos)} protos, {len(gd.unittypes)} unit types, {len(gd.tech_names)} techs, "
           f"{len(gd.civs)} civs, {len(gd.strings)} strings, {len(gd.trigger_types)} trigger types")
-    campaigns = [a.root / c for c in (a.campaign or DEFAULT_CAMPAIGNS)]
+    # --scn alone checks only those files (e.g. a fixed set outside the game folder).
+    campaigns = [a.root / c for c in (a.campaign or ([] if a.scn else DEFAULT_CAMPAIGNS))]
     scns = []
     for c in campaigns:
         if c.exists():
