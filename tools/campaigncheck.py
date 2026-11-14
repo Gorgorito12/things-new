@@ -2,12 +2,18 @@
 
 Usage:
     python -I tools/campaigncheck.py <game folder> [--campaign <xml> ...] [--scn <file> ...] [--all]
+    python -I tools/campaigncheck.py <game folder> --inventory --scn <file> [--scn <file> ...]
 
 <game folder> is a test copy (e.g. C:\\AoE3-UHC-WoLReal3). Without --campaign it reads the campaign
 definitions the exe and the main menu name: Campaign\\Wonders\\ChinaIndiaJapan.xml (the path the
 menu passes to startCampaign) and, when present, the second copy Campaign\\chinaindiajapan.xml.
 --scn checks the scenarios named (alone, without the definitions, unless --campaign is given);
 --all prints every reference, not only the misses.
+--inventory (with --scn; --units is the same option) prints instead, per player, its civ, flag,
+culture and home city, the units placed for it by proto, the units its triggers name (editor and
+in-game IDs), what its triggers deploy, create, rename or set, then the objectives (ID, name,
+text, hint) and the trigger texts (overlays, chat). A text parameter (type 22) keeps its text after
+an empty value: parse_param skips it, so effects after such a parameter are not lost.
 
 What it checks (what the game does with each is in docs/wol-campaign.md, "How a scenario loads"):
 - the campaign XML: every string ID (DisplayNameStringID, RolloverStringID, HCNote*, LoadTextID)
@@ -293,6 +299,11 @@ def parse_param(raw, q):
         q += 12
         value = raw[q:q + 2 * ln].decode("utf-16le", errors="replace")
         q += 2 * ln
+        if vtype == 22 and ln == 0:  # a text: empty value, then its own length and UTF-16 text
+            n = struct.unpack_from("<I", raw, q)[0]
+            if n > 20000:
+                return None
+            q += 4 + 2 * n
         return (name[:-1].decode("latin-1"), disp[:-1].decode("latin-1"), vtype, value, len_at), q
     except struct.error:
         return None
@@ -500,7 +511,34 @@ INVENTORY_EFFECTS = {
     "set tech status", "player : setage", "player : override culture for art",
     "forbid and disable unit", "player set hc access", "player unit count", "player is building",
     "change name", "army change name", "diplomacy", "tribute", "units in area",
+    "unit create", "army convert", "grant resources",
 }
+
+
+def objectives(raw):
+    """(ID, name, [texts]) of each objective: the OM chunk (tag, size, version, next ID, count),
+    then per objective its ID and UTF-16 name, then its text and hint (UTF-16), or string IDs.
+    The strings after the last objective's two texts are the scenario's own (name, description)."""
+    for m in re.finditer(rb"OM(....)(....)(....)(....)", raw, flags=re.S):
+        size, ver, next_id, count = struct.unpack("<IIII", m.group(1) + m.group(2) + m.group(3) + m.group(4))
+        if not (ver < 32 and 0 < count < 200 and count <= next_id < 1000 and m.start() + 6 + size <= len(raw)):
+            continue
+        body = raw[m.end():m.start() + 6 + size]
+        recs = []
+        for r in re.finditer(rb"(....)(....)((?:[\x20-\x7e]\x00)+)", body, flags=re.S):
+            oid, n = struct.unpack("<II", r.group(1) + r.group(2))
+            name = r.group(3).decode("utf-16le")
+            if 0 < oid < next_id and n == len(name) and re.fullmatch(r"\w+", name) and \
+                    (not recs or oid > recs[-1][0]):
+                recs.append((oid, name, r.start(), r.end()))
+        if len(recs) != count:
+            continue
+        out = []
+        for i, (oid, name, _, at) in enumerate(recs):
+            end = recs[i + 1][2] if i + 1 < len(recs) else len(body)
+            out.append((oid, name, [s for _, s in utf16_strings(body[at:end]) if len(s) > 1]))
+        return out
+    return []
 
 
 def inventory(gd, path):
@@ -589,18 +627,23 @@ def inventory(gd, path):
         for line in rest:
             print(f"   {line}")
 
-    # Objectives: the OM chunk holds, per objective, its name, text and hint (UTF-16), then the
-    # scenario's own description.
-    om = raw.find(b"OM", lists[-1][1] if lists else 0)
-    while om >= 0:
-        size = struct.unpack_from("<I", raw, om + 2)[0]
-        texts = [s for _, s in utf16_strings(raw[om + 6:om + 6 + size]) if len(s) >= 3]
-        if texts and size < 0x100000 and any(" " in t for t in texts):
-            print("\n-- objectives (name, text, hint, in the editor's order; then the scenario text):")
-            for t in texts:
-                print(f"   {t}")
-            break
-        om = raw.find(b"OM", om + 2)
+    # Objectives: the OM chunk holds, per objective, its ID, name, text and hint (UTF-16); the
+    # last one's texts are followed by the scenario's own (name, description).
+    print("\n-- objectives (ID name: text | hint; the last line ends with the scenario's own texts)")
+    for oid, oname, ts in objectives(raw):
+        print(f"   {oid:2d} {oname}: " + " | ".join(ts))
+
+    # Trigger texts (overlays, chat, counters), with {ID} string references resolved.
+    st = read_text(gd.root / "data" / "stringtabley.xml")
+    text_of = {int(i): s for i, s in re.findall(r"_locID\s*=\s*['\"](\d+)['\"][^>]*>(.*?)</String>", st, flags=re.S)}
+    resolve = lambda s: re.sub(r"\{(\d+)\}", lambda m: text_of.get(int(m.group(1)), m.group(0)), s)  # noqa: E731
+    print("\n-- trigger texts")
+    for off, name, params in trig:
+        for p in params:
+            if p[0] in ("Text", "Message") and p[2] == 22:
+                t = text_after(raw, p)
+                if t:
+                    print(f"   {name}: {resolve(t)}")
 
 
 def main():
@@ -609,7 +652,9 @@ def main():
     ap.add_argument("--campaign", action="append", default=[])
     ap.add_argument("--scn", action="append", default=[])
     ap.add_argument("--all", action="store_true")
-    ap.add_argument("--inventory", action="store_true")
+    ap.add_argument("--inventory", "--units", dest="inventory", action="store_true",
+                    help="with --scn: per player, its civ, flag, placed units, trigger units and the texts "
+                         "(--units is the same option)")
     a = ap.parse_args()
     gd = GameData(a.root)
     if a.inventory:
