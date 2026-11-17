@@ -5,8 +5,9 @@ UI. It should show the same or more, starting from the **original** minimized UI
 unchanged for now. The user widened it: a **data-driven** system, so that WoL can add or remove
 information without a new DLL, and a catalog of everything that could be shown.
 
-This page is phase 1: how the game fills both panels (REA), the catalog, and the design. Nothing is
-built yet. It is written in English so that it can go to the WoL team as it is.
+This page holds the research (how the game fills both panels, with REA), the catalog and the design. The first batch
+is built (2026-11-17): [`minUIStats`](modding-guide.md#minuistats), with the four decisions in section 3. It is
+written in English so that it can go to the WoL team as it is.
 
 - Engine details, addresses and Evidence IDs: [engine-symbols.md, "Unit panels"](engine-symbols.md#unit-panels-the-big-stat-panel-and-the-minimized-selection-panel-wol-67-research-2026-11-17).
 - REA bundle: `rea/evidence/age3y-b1a1dab7/minui-20261117.json`; snapshot `rea/snapshots/age3y-b1a1dab7.json`.
@@ -173,7 +174,14 @@ leads from the exe's strings only, read on 2026-11-17, and nothing here says wha
 - Only `uiunitselection.xml` and `uiunitstatpanel3.xml` are named in the exe: no minimized files.
 - Strings `AttackROF`, `AbilityROF` and the format `%d/s<icon="(%d)(%s)">`.
 
-## 3. Design (proposal for review)
+## 3. Design
+
+**Built (2026-11-17), the first batch,** with these decisions of the user: the proposed layout (data-driven, so
+Dr.Maxy can move the rows); building armor in the stock `Resists` spot, for any proto with an armor above 0; the
+**live** speed, also as `{uhcSpeed}`; extra rows for the 4th attack on. `uhcArmor` was dropped for the stock spot.
+The `{uhc...}` refs built: `uhcHitpoints`, `uhcSpeed`, `uhcBaseSpeed`, `uhcLOS`, `uhcArmor`, `uhcArmorValue`,
+`uhcGarrison`, `uhcTrainPoints`, `uhcBuildPoints`. The rest of the catalog (ROF, ranges, cost, our keys' data) is
+for a next batch. The design as written before the build follows.
 
 ### Mechanism
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The rows minUIStats writes in the minimized selection panel (data\uhc\minuirows.xml).
+
+     <row>: one gadget, one item.
+       gadget   a top-level formatText of uiunitselectionmin.xml
+       item     hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (with the damage
+                type icon), armorValue, garrison, trainPoints, buildPoints
+       label    text written before the value (markup allowed), or labelId: a string table ID
+       types    optional: the row shows only for units of these unit types (comma-separated)
+     A row whose item does not apply to the selected unit (no garrison, speed 0, ...) is hidden.
+
+     <bigPanelRows>: the rows the normal interface's stat panel shows for the selection, in its order,
+     into gadget%d from `first` on (consecutive gadgets; at least two).
+       skip     kinds left out: auto (what the minimized panel already shows: owner, hit points,
+                resists, resource held, AutoGather rate, its attack rows), name, hitpoints,
+                groupHealth, resource, gatherers, rate, speed, resists, attacks, shownAttacks,
+                special, other
+
+     Each item is also a text for any formatText gadget: {uhcHitpoints}, {uhcSpeed}, {uhcBaseSpeed},
+     {uhcLOS}, {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}. -->
+<minUIRows>
+  <row gadget="unitselectionpanel-uhcTrainPoints" item="trainPoints" label="Train Points: " types="Unit"/>
+  <row gadget="unitselectionpanel-uhcRow0" item="los" label="LOS: "/>
+  <row gadget="unitselectionpanel-uhcRow1" item="garrison" label="Garrison: "/>
+  <row gadget="unitselectionpanel-uhcRow2" item="speed" label="Speed: "/>
+  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
+</minUIRows>
