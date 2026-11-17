@@ -325,7 +325,8 @@ overhealDecay R[%] [D] [UnitType ...] [holdNear Type M] [log]   overheal above
                               within M metres
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 minUIStats [file]             the minimized interface shows what the normal one shows, and
-                              more (rows in minuirows.xml; building armor; {uhc...} texts)
+                              more (rows in minuirows.xml: ROF, range, cost, pop, ...; building
+                              armor; {uhc...} texts)
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions

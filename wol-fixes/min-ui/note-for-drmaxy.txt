@@ -6,7 +6,7 @@ minUIStats. This note is for your information only: nothing in it needs an answe
 What was decided
 ----------------
 1. Row places: the rows start from the original minimized UI (uiunitselectionmin.xml from Data3.bar),
-   with six new gadgets at the top level, never inside a gadget the game shows or hides. So Speed no
+   with seven new gadgets at the top level, never inside a gadget the game shows or hides. So Speed no
    longer depends on the Armor value.
 2. Building armor: shown in the original "Resists" spot, with the same look as for units. The game
    showed it only for protos of type Unit; with the key, any proto with an armor above 0 shows it.
@@ -34,6 +34,17 @@ Two fixes since the first version
 - WoL.dll's forceMinUI with the profile option off: the game loaded the minimized layout but skipped
   its own rows, so hit points and attacks were missing. The DLL now fills the minimized panel whenever
   the minimized layout is loaded, with the option on or off. The big UI is left alone.
+
+More information (second batch)
+-------------------------------
+- Above the unit's name: Cost and Pop, then ROF and Range per attack (each value with its damage type
+  icon), e.g. a Musketeer "ROF: 3 (ranged) 1.50 (hand)   Range: 12 (ranged) 6 (siege)".
+- With our other keys on: the overheal ("Overheal +50", overhealHitpointBars) and a running poison
+  (damageOverTime), left of the name.
+- Ready to switch on in minuirows.xml (commented rows; each needs a gadget): minimum range, area, build
+  points and limit, bounty, lifespan left, what a mine or animal holds, the gather rate, the random
+  price range, the cards sent per age, base speed, armor, veterancy rank.
+- Every item is also a text for any formatText gadget: {uhcROF}, {uhcRange}, {uhcCost}, ...
 
 Everything is in the data file
 ------------------------------

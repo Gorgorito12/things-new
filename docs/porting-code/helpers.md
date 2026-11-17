@@ -26,6 +26,7 @@ Contents:
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
 - [Data refs](#data-refs)
+- [Unit info for the panels](#unit-info-for-the-panels)
 - [Name lists](#name-lists)
 - [Models on a unit](#models-on-a-unit)
 - [State kept for a saved game](#state-kept-for-a-saved-game)
@@ -2256,6 +2257,15 @@ inline constexpr Site kLosGetterHead{"LosGetterHead", 0x0048206D, kLosGetterHead
 
 inline constexpr std::uint8_t kMaxContainedBytes[] = {0x8B, 0x81, 0x0C, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x84, 0xFE, 0x04, 0x00, 0x8B, 0x00, 0xC3};
 inline constexpr Site kMaxContained{"MaxContained", 0x0049EB5A, kMaxContainedBytes, sizeof(kMaxContainedBytes)};
+
+inline constexpr std::uint8_t kAttackListFillBytes[] = {0x83, 0xEC, 0x14, 0x55, 0x57, 0x8B, 0xF9, 0x33, 0xED, 0x39, 0x2F, 0x0F, 0x84, 0x1E, 0x5A, 0x20, 0x00, 0x39, 0x6C, 0x24, 0x20, 0x0F, 0x84, 0x14};
+inline constexpr Site kAttackListFill{"AttackListFill", 0x00487EEE, kAttackListFillBytes, sizeof(kAttackListFillBytes)};
+
+inline constexpr std::uint8_t kHoldsResourceBytes[] = {0x8B, 0x81, 0xB4, 0x00, 0x00, 0x00, 0x8B, 0x80, 0x94, 0x00, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x30, 0x8D, 0x48, 0x04, 0x83};
+inline constexpr Site kHoldsResource{"HoldsResource", 0x0045EE8B, kHoldsResourceBytes, sizeof(kHoldsResourceBytes)};
+
+inline constexpr std::uint8_t kHeldAmountBytes[] = {0x8B, 0x81, 0xB4, 0x00, 0x00, 0x00, 0x8B, 0x80, 0x94, 0x00, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x14, 0x8B, 0x4C, 0x24, 0x04};
+inline constexpr Site kHeldAmount{"HeldAmount", 0x004E5979, kHeldAmountBytes, sizeof(kHeldAmountBytes)};
 
 }  // namespace uhc::sites
 ```
@@ -5482,6 +5492,29 @@ UhcDataRefRegisterHook PROC
 UhcDataRefRegisterHook ENDP
 
 END
+```
+
+## Unit info for the panels
+
+### src/unitinfo.h
+
+```cpp
+// What other keys know about a unit, as text for the unit panels (minUIStats). Each function reads its key's own
+// state and writes nothing; it returns false when its key is not applied or has nothing for the unit.
+#pragma once
+
+#include <string>
+
+namespace uhc::unitinfo {
+
+bool Veterancy(const char* unit, std::wstring* out);       // veterancy.cpp: "Rank 2 (5 kills)"
+bool Poison(const char* unit, std::wstring* out);          // damageovertime.cpp: "2 stacks, 6 s"
+bool RandomCost(const char* unit, std::wstring* out);      // randomcost.cpp: the price ranges of its proto
+bool ShipmentCounts(const char* unit, std::wstring* out);  // shipmentcounts.cpp: its owner's cards per age
+bool GatherRate(const char* unit, std::wstring* out);      // gatherrate.cpp: "Food 0.67/s"
+bool OverhealOn(const char* proto);                         // overheal.cpp: the key is on and marks this proto
+
+}  // namespace uhc::unitinfo
 ```
 
 ## Name lists

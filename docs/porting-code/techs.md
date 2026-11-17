@@ -942,7 +942,7 @@ END
 
 Contract: [shipmentCounts](../porting-to-another-dll.md#shipmentcounts).
 
-Besides the core helpers, it needs: [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `ShipQueueCaller` `0x66AEA0` (5 B), `ShipQueueAddHead` `0x857204` (7 B), `ShipQueueRemoveHead` `0x857257` (11 B), `ShipActivateCall` `0x8584E7` (36 B), `ShipEntryArg` `0x85856A` (10 B), `FreeHomeCityUnitCase` `0x8D8C62` (193 B).
 
@@ -989,6 +989,7 @@ Sites: `ShipQueueCaller` `0x66AEA0` (5 B), `ShipQueueAddHead` `0x857204` (7 B), 
 #include <vector>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -1663,6 +1664,10 @@ void __stdcall UhcShipEnd() {
 }
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyShipmentCounts(const Config& config) {
@@ -1728,10 +1733,31 @@ Outcome ApplyShipmentCounts(const Config& config) {
       L"the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and "
       L"xsGetShipmentCountRange read them%ls (multiplayer unverified)",
       log ? L"; each send, shipment and effect is logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool ShipmentCounts(const char* unit, std::wstring* out) {
+  const char* player = !g_unitInfoOn || unit == nullptr ? nullptr : Field<const char*>(unit, 0x44);
+  const std::int32_t id = player == nullptr ? -1 : Field<std::int32_t>(player, 0x00);
+  if (id < 0 || id >= kPlayers || World() != g_world) {
+    return false;
+  }
+  static const wchar_t* const kAgeNames[] = {L"I", L"II", L"III", L"IV", L"V", L"VI", L"VII", L"VIII"};
+  out->clear();
+  for (int age = 0; age < kAges && age < 8; ++age) {
+    wchar_t text[24];
+    swprintf_s(text, L"%ls%ls %d", out->empty() ? L"" : L"  ", kAgeNames[age], g_state[id].counts[age]);
+    *out += text;
+  }
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/shipmentcount_hooks.asm

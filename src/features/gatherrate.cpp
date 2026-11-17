@@ -34,6 +34,7 @@
 #include <unordered_set>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../generated/sites.h"
 #include "../unitpanel.h"
 #include "../log.h"
@@ -441,6 +442,10 @@ bool __stdcall UhcGatherRateRef(DataRefValue* value) {
 
 }  // extern "C"
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyShowGatherRate(const Config& config) {
@@ -496,7 +501,31 @@ Outcome ApplyShowGatherRate(const Config& config) {
         L"{currentUnitGatherRateString} returns it%ls (UI only)",
         log ? L", each unit's first rate per resource logged" : L"");
   }
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool GatherRate(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn) {
+    return false;
+  }
+  Rate rate{};
+  if (!CurrentRate(World(), Database(), unit, &rate)) {
+    return false;
+  }
+  wchar_t text[128];
+  const float whole = std::floor(rate.perSecond);
+  if (rate.perSecond - whole <= kWholeEpsilon) {
+    swprintf_s(text, L"%ls %d/s", ResourceName(Database(), rate.resource).c_str(), static_cast<int>(whole));
+  } else {
+    swprintf_s(text, L"%ls %.2f/s", ResourceName(Database(), rate.resource).c_str(), static_cast<double>(rate.perSecond));
+  }
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo

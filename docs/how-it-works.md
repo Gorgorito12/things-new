@@ -3745,6 +3745,24 @@ in `/s` (a rate) and a `(32)` icon in the label (a resource held); the first row
 last attack are special attacks. `auto` skips what the minimized block wrote itself: the owner, hit points, resists,
 the resource, the rate, the special attacks and its first attack rows (three, two with a resource row).
 
+**More items (batch 2).** All are reads:
+- the attacks are listed as the stat panel lists them (0x4D7892..0x4D79A1): the unit's current tactic,
+  `[[[proto+44h]+10h] + [[unit+58h]+0A8h]*4]`, fills the fill's own list 0xCF05B0 through 0x487EEE (`thiscall(tactic,
+  unit, 0, -1, 1, list)`, `ret 14h`; the list is constructed on first use, guard bit 0 of 0xCF05BC, as the fill does),
+  and each entry's `+4` indexes the proto's actions `[[proto+44h]+1Ch]`; actions without damage (`[action+24h]`) are
+  left out. ROF is `[action+34h]` (ms), the ranges are `[[action+18h]+4]` (min) and `+8` (max), the area the byte
+  `[[action+24h]+6]`, the damage type `+5`;
+- cost: the player's proto cost list `[proto+70h]` through 0x44EFFF, which unmasks it; population `[proto+0D8h]`
+  (the `PopulationCount` Data subtype 1Fh writes it, case 0x8FA814), build limit `[proto+108h]` (subtype 25h, case
+  0x8FA9D0), bounty `[proto+168h]` (the `<Bounty>` handler 0x5F5D79);
+- what a unit holds: 0x45EE8B, the resource 0x4DBEC1, the amount 0x4E5979 and the capacity 0x494503, as the stock
+  row; the lifespan's countdown `[[unit+0B4h]+1Ch]` while state bit 3 is set;
+- the other keys answer through `unitinfo.h` from their own state, and only when they applied: the overheal is the
+  HP above `[proto+9Ch]` of a marked proto, the rank and kills come from the veterancy counter, the poison from the
+  key's map of running stacks, the price range from the `<RandomCost>` tags, the cards per age from
+  `shipmentCounts`' counts, the gather rate from `showGatherRate`'s records.
+A `text=` row is a template: each `|`-separated part is shown only when every `{item}` in it has a value.
+
 **Coexistence.** The key's sites do not touch the AutoGather row block (0x6991BF..0x699456), where another DLL may
 redirect the rate's call and NOP its gate, nor the unit panel row hook at 0x699456. The minimized interface can be
 forced by patching the screen's copy of the option (0x761BF0) and the file choices, without the two profile reads at

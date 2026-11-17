@@ -50,6 +50,7 @@
 #include <vector>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../floatingtext.h"
 #include "../generated/sites.h"
 #include "../killobservers.h"
@@ -955,6 +956,10 @@ bool __stdcall UhcVeterancyRow(const char* panel, const char* unit) {
   return uhc::SetUnitPanelRow(panel, label.c_str(), value);
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyVeterancyBonus(const Config& config) {
@@ -995,7 +1000,27 @@ Outcome ApplyVeterancyBonus(const Config& config) {
     Log(L"veterancyBonus: %u unit types with default rows and %u rank names from %ls",
         static_cast<unsigned>(g_defaults.size()), static_cast<unsigned>(g_styles.size()), g_file.c_str());
   }
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool Veterancy(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn || unit == nullptr || Field<const char*>(unit, 0x5C) == nullptr) {
+    return false;
+  }
+  const float kills = KillsOf(unit);
+  const std::int32_t rank = RankOfUnit(unit);
+  if (rank <= 0 && kills <= 0.0f) {
+    return false;
+  }
+  wchar_t text[32];
+  swprintf_s(text, L" (%d)", static_cast<int>(kills));
+  *out = (rank > 0 ? RankName(rank) : std::wstring(L"-")) + text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo

@@ -1737,6 +1737,12 @@ SITES = [
     # [[unit+0B4h]+90h]), and the garrison capacity FUN_0049EB5A, thiscall(proto) -> EAX, [[proto+10Ch]] or 0
     ("LosGetterHead", 0x48206D, 0x34),
     ("MaxContained", 0x49EB5A, 0x11),
+    # minUIStats batch 2, verify only: the attack list FUN_00487EEE, thiscall(tactic, unit, 0, -1, 1, list*), ret 14h,
+    # which the stat panel fill calls at 0x4D792F into its list 0xCF05B0 (guard 0xCF05BC bit 0); a unit's resource
+    # holding: has one 0x45EE8B(unit) and the amount 0x4E5979(unit, resource), both through [[unit+0B4h]+94h]
+    ("AttackListFill", 0x487EEE, 0x18),
+    ("HoldsResource", 0x45EE8B, 0x14),
+    ("HeldAmount", 0x4E5979, 0x14),
 ]
 
 

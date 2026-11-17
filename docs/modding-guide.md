@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Tuesday 2026-11-17 08:08 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
+| Tuesday 2026-11-17 09:22 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
 | Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
 | Friday 2026-11-13 13:06 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Friday 2026-11-13 11:50 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -7188,7 +7188,7 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
 
 *The minimized interface shows what the big one shows, and more: buildings' armor, speed, LOS, garrison and every attack, in rows a data file lists.*
 
-**Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 08:08
+**Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 09:22
 
 ![minUIStats in WoL](media/minUIStats-wol.gif)
 
@@ -7227,24 +7227,36 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
     ones the minimized panel already shows: the 4th attack on, `Gatherers`, `Group Health`. Each row is one line,
     label and value, with the label's colour and the big panel's tooltip;
   - building armor: the stock `Resists` gadgets show any proto with an armor above 0, not only type `Unit`;
-  - nine data refs for any `formatText`: `{uhcHitpoints}`, `{uhcSpeed}` (live), `{uhcBaseSpeed}`, `{uhcLOS}`,
-    `{uhcArmor}` (with its icon), `{uhcArmorValue}`, `{uhcGarrison}`, `{uhcTrainPoints}`, `{uhcBuildPoints}`, for the
-    data refs' current unit, as `{currentUnitLOS}`.
+  - 25 data refs for any `formatText`, one per item (below), for the data refs' current unit, as
+    `{currentUnitLOS}`: `{uhcHitpoints}`, `{uhcSpeed}` (live), `{uhcBaseSpeed}`, `{uhcLOS}`, `{uhcArmor}` (with its
+    icon), `{uhcArmorValue}`, `{uhcGarrison}`, `{uhcTrainPoints}`, `{uhcBuildPoints}`, `{uhcROF}`, `{uhcRange}`,
+    `{uhcMinRange}`, `{uhcArea}`, `{uhcCost}`, `{uhcPopulation}`, `{uhcBounty}`, `{uhcBuildLimit}`, `{uhcInventory}`,
+    `{uhcLifespan}`, `{uhcOverheal}`, `{uhcVeterancy}`, `{uhcPoison}`, `{uhcRandomCost}`, `{uhcShipments}`,
+    `{uhcGatherRate}`.
+  - **Batch 2 (2026-11-17):** the items `rof`, `range`, `minRange`, `area` (per attack: the distinct values, each with
+    the damage type's icon; `range` leaves out hand attacks), `cost` (the player's proto, with techs), `population`,
+    `bounty` (the XP a kill gives), `buildLimit`, `inventory` (what a mine, bush or animal holds), `lifespan` (seconds
+    left), and, only when their key is on, `overheal`, `veterancy`, `poison`, `randomCost` (the price range),
+    `shipments` (the owner's cards per age) and `gatherRate`. Rows can join several items: `text="ROF: {rof}|Range:
+    {range}"`, each part shown only when its items have a value.
 - **The data file** `minuirows.xml` (a commented copy in `wol-fixes/min-ui`):
 
   ```xml
   <minUIRows>
     <row gadget="unitselectionpanel-uhcTrainPoints" item="trainPoints" label="Train Points: " types="Unit"/>
-    <row gadget="unitselectionpanel-uhcRow0" item="los" label="LOS: "/>
-    <row gadget="unitselectionpanel-uhcRow1" item="garrison" label="Garrison: "/>
-    <row gadget="unitselectionpanel-uhcRow2" item="speed" label="Speed: "/>
+    <row gadget="unitselectionpanel-uhcRow0" text="LOS: {los}|Speed: {speed}|Garrison: {garrison}"/>
+    <row gadget="unitselectionpanel-uhcRow1" text="ROF: {rof}|Range: {range}"/>
+    <row gadget="unitselectionpanel-uhcCostPop" text="Cost: {cost}|Pop: {population}"/>
+    <row gadget="unitselectionpanel-uhcRow2" text="Overheal {overheal}|Poison {poison}"/>
     <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
   </minUIRows>
   ```
 
-  - `<row>`: `gadget`, `item` (`hitpoints`, `speed`, `baseSpeed`, `los`, `armor`, `armorValue`, `garrison`,
-    `trainPoints`, `buildPoints`), `label` (text, markup allowed) or `labelId` (a string ID), and `types` (unit types or
-    protos, comma-separated; none: every unit).
+  The shipped file also has the other items as rows to enable (comments).
+
+  - `<row>`: `gadget`, then `item` (one item) with `label` (text, markup allowed) or `labelId` (a string ID), or
+    `text` (a template of `{item}`s in `|`-separated parts); and `types` (unit types or protos, comma-separated; none:
+    every unit).
   - `<bigPanelRows>`: `gadget` with `%d`, `first`, the number of consecutive gadgets found (at least two; `count` caps
     it, default 16), and `skip`: `auto` (what the minimized panel shows itself), `name`, `hitpoints`, `groupHealth`,
     `resource`, `gatherers`, `rate`, `speed`, `resists`, `attacks`, `shownAttacks`, `special`, `other`.
@@ -7288,6 +7300,37 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   Key off: the stock rows only, the gadgets empty. The profile was restored after each switch.
 
   ![forceMinUI with the option off](media/minUIStats-test-forcemin.png)
+- **Batch 2, tested in WoL (2026-11-17, single player; `overhealHitpointBars AbstractInfantry`, `veterancyBonus`,
+  `showGatherRate` on; a test `Musketeer` with `InitialHitpoints` 100 and a `<VeterancyBonus>` row, bed data, removed
+  after):**
+
+  | Selection | New rows |
+  |---|---|
+  | `Musketeer` with 2 kills | Cost 25 gold 75 food, Pop 1, ROF 3 (ranged) 1.50 (hand), Range 12 (ranged) 6 (siege); the big rows add `Rank 1 · 2 kills` |
+  | `Musketeer` healed to 150/100 by a Surgeon | the same, and `Overheal +50` |
+  | `Bunker` | Cost 400 wood, ROF 3, Range 40 |
+  | `Explorer` (Menelik II) | ROF 1.50 / 3 / 4.50 / 2, Range 16 / 6; no cost and no pop (none in its data) |
+  | `Settler` gathering | Cost 100 food, Pop 1, ROF, Range; `Food 0.67/s` in the stock rate row (`showGatherRate`) |
+  | `Caravel` | Cost 100 gold 300 wood, ROF 2 / 0.05 (broadside), Range 20 |
+  | `BerryBush` | nothing new (no attack, no cost) |
+
+  ![Batch 2: a veteran Musketeer](media/minUIStats-batch2-wol.gif)
+
+  *Key on (the Musketeer with 2 kills):* Cost and Pop, ROF and Range above the name.
+  [Full video (MP4)](media/minUIStats-batch2-wol.mp4).
+
+  ![Batch 2, key off](media/minUIStats-batch2-wol-control.gif)
+
+  *Key off (the same scene):* no Cost, ROF or Range row; the stock rows only (the rank row is `veterancyBonus`'s own). [Full video (MP4)](media/minUIStats-batch2-wol-control.mp4).
+
+  Performance, batch 2 (`perfprobe.py`, 60 s each, the veteran Musketeer selected; three other test games were running
+  on the PC): key on 933 fps, main thread 78 %, update 0.2 ms, render 0.9 ms; key off 999 fps, 83 %, 0.2 ms, 0.8 ms.
+  About 0.07 ms a frame at 1000 fps, within what the other games make the numbers move; no frame over 50 ms.
+
+  Not built: regeneration (it lives in per-tactic Regeneration action records, not in a proto field), the auras acting on
+  a unit (the modifiers do not say which come from an aura), the build rate (the stock `{currentUnitBuildRate}` is a
+  stub) and a separate bonus list (the attack rows show the bonuses already). `poison`, `randomCost` and `shipments`
+  were not seen on screen (no such data in the test).
 - **Limits:** a row longer than its gadget is cut at the gadget's edge (`uhcRow3`/`uhcRow4` are as wide as the stock
   attack rows since 2026-11-17, which fits Sharpshooter's range); with a group the rows describe the first unit, as the stock panel does; `shownAttacks` assumes the minimized panel
   shows three attack rows, two with a resource row.

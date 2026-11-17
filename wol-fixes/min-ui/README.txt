@@ -10,8 +10,13 @@ and more:
 - the rows of the big UI the minimized one had no room for: the 4th attack and the next ones, Gatherers,
   Group Health;
 - the armor of buildings, in the original "Resists" spot, with the same look as for units;
-- nine texts for any formatText gadget: {uhcHitpoints}, {uhcSpeed}, {uhcBaseSpeed}, {uhcLOS},
-  {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}.
+- ROF and range per attack, cost and population, above the unit's name;
+- with our other keys on: the overheal (overhealHitpointBars) and a running poison (damageOverTime);
+- more you can switch on in minuirows.xml (commented rows): minimum range, area, build points and
+  limit, bounty, lifespan left, what a mine or animal holds, the gather rate, the random price range,
+  the cards sent per age, base speed, armor, veterancy rank;
+- 25 texts for any formatText gadget, one per item: {uhcSpeed}, {uhcLOS}, {uhcROF}, {uhcRange},
+  {uhcCost}, {uhcPopulation}, ... (the list is at the top of minuirows.xml).
 
 The big UI does not change. Without the key nothing changes.
 
@@ -19,17 +24,19 @@ Files
 -----
 proposed-uiunitselectionmin.xml
     The original minimized selection panel (uiunitselectionmin.xml from Data3.bar), unchanged, plus
-    six new gadgets at the top level of unitselectionpanel-unit:
+    seven new gadgets at the top level of unitselectionpanel-unit:
       unitselectionpanel-uhcTrainPoints   above the portrait
-      unitselectionpanel-uhcRow0          LOS
-      unitselectionpanel-uhcRow1          Garrison
-      unitselectionpanel-uhcRow2          Speed
+      unitselectionpanel-uhcCostPop       Cost and Pop, above the unit's name (right of its icon)
+      unitselectionpanel-uhcRow1          ROF and Range, under it
+      unitselectionpanel-uhcRow0          LOS, Speed and Garrison, under the player's name
+      unitselectionpanel-uhcRow2          Overheal and Poison, left of the name
       unitselectionpanel-uhcRow3, -uhcRow4   the big UI's extra rows (more attacks, Gatherers)
     None of them is inside a gadget the game shows or hides, so no row depends on another.
     The places follow WoL's current panel; move them as you like.
 
 minuirows.xml
-    The data file: which gadget shows which item, with which label, for which unit types. It goes in
+    The data file: which gadget shows which items, with which labels, for which unit types. A row can
+    join several items: text="ROF: {rof}|Range: {range}" (each part shows only when it has a value). It goes in
     data\uhc\minuirows.xml. The comments at its top list every item and option. To add a row, add a
     formatText gadget to the layout and a <row> line here; no new DLL is needed.
 

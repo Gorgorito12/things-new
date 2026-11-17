@@ -21,7 +21,7 @@ Contents:
 
 Contract: [showGatherRate](../porting-to-another-dll.md#showgatherrate).
 
-Besides the core helpers, it needs: [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `BStringFree` `0x4010CA` (31 B), `BStringAssign` `0x443BB8` (15 B), `BStringFormat` `0x444EFB` (20 B), `DataRefStringEval` `0x44A635` (100 B), `IsAbstractIndex` `0x44CAC4` (70 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `ProtoFlag` `0x45EE02` (53 B), `StatPanelAutoGatherGate` `0x4D76FF` (309 B), `StatPanelAfterAutoGather` `0x4D7834` (11 B), `GatherTickHead` `0x4ECD87` (20 B), `GatherTickPushEbp` `0x4ECDCC` (7 B), `GatherTickPushEbx` `0x4ECE16` (10 B), `GatherTickGatherer` `0x4ECE6D` (21 B), `GatherTickRate` `0x4ED02A` (38 B), `GatherTickPlayerRate` `0x4ED130` (42 B), `GatherTickPlayerBlock` `0x4ED1A4` (20 B), `GatherTickAddResource` `0x4ED1E1` (18 B), `BStringFromId` `0x58EA52` (25 B), `GatherRateStringRef` `0x5D2D38` (8 B), `DataRefStub` `0x5FDE49` (5 B), `ResourceNameId` `0x60782A` (34 B), `StatPanelRowWriter` `0x69AF7C` (100 B), `StatPanelAgLoop` `0x69AFE0` (74 B), `StatPanelRowFormat` `0x69B02A` (349 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B).
 
@@ -64,6 +64,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringAssign` `0x443BB8` (15 B), `BStr
 #include <unordered_set>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../generated/sites.h"
 #include "../unitpanel.h"
 #include "../log.h"
@@ -471,6 +472,10 @@ bool __stdcall UhcGatherRateRef(DataRefValue* value) {
 
 }  // extern "C"
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyShowGatherRate(const Config& config) {
@@ -526,10 +531,34 @@ Outcome ApplyShowGatherRate(const Config& config) {
         L"{currentUnitGatherRateString} returns it%ls (UI only)",
         log ? L", each unit's first rate per resource logged" : L"");
   }
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool GatherRate(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn) {
+    return false;
+  }
+  Rate rate{};
+  if (!CurrentRate(World(), Database(), unit, &rate)) {
+    return false;
+  }
+  wchar_t text[128];
+  const float whole = std::floor(rate.perSecond);
+  if (rate.perSecond - whole <= kWholeEpsilon) {
+    swprintf_s(text, L"%ls %d/s", ResourceName(Database(), rate.resource).c_str(), static_cast<int>(whole));
+  } else {
+    swprintf_s(text, L"%ls %.2f/s", ResourceName(Database(), rate.resource).c_str(), static_cast<double>(rate.perSecond));
+  }
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/gatherrate_hooks.asm

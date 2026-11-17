@@ -128,13 +128,13 @@ that the stock panels do not, it says so. "WoL text" = shown today only through 
 | Train points | provider 0x6F48B2 | no / WoL text | U | yes | |
 | Build points | provider 0x6F4930 | no / no | B | yes | `{currentUnitBuildPoints}` works. |
 | Building work rate | provider 0x6F49B1 | no / no | B | yes | |
-| Population count | proto PopulationCount (field not located yet) | no / no | U | yes | |
+| Population count | `[proto+0D8h]` (Data subtype 1Fh, case 0x8FA814) | no / no | U | yes | Built: `population`. |
 | Cost | 0x480B1E (with CostEscalation `[proto+78h]`) | no / no | U, B | yes | Our `randomCost` and `costEscalationTechs` change it. |
-| Bounty and XP | proto Bounty (field not located yet) | no / no | U | yes | Our `killBountyTechs`, `resourceBounty`. |
+| Bounty and XP | `[proto+168h]`, float (`<Bounty>` handler 0x5F5D79) | no / no | U | yes | Built: `bounty`. Our `killBountyTechs`, `resourceBounty`. |
 | Carried resources (a villager's load) | inventory, `{currentUnitInv}` 0x6F2B67, `{currentUnitInvList}` 0x6F6216 | no / no (to check in game) | U | yes | |
 | Gather rate per resource (villager) | gather tick 0x4ECD87 | no / no | U | yes | Our `showGatherRate` (rate row). |
 | Garrison, `2 / 10` | contained `[unit+74h]`, MaxContained; `{currentUnitCapacity()}` 0x6F5931 | no / WoL text | U, B, S | yes | |
-| Build limit (used / max) | player data | no / no | U, B | yes | Our `sharedBuildLimit`. |
+| Build limit (used / max) | `[proto+108h]`, int (Data subtype 25h, case 0x8FA9D0); the count in use is not read | no / no | U, B | yes | Built: `buildLimit` (the limit only). Our `sharedBuildLimit`. |
 | Regeneration | unit regen 0x490881; Regeneration action 0x679EC6 | no / no | U, B | yes | |
 | Lifespan left | `[proto+ACh]`, countdown in the lifespan tick 0x482BF6 | no / no | U, B | yes | Our `lifespanAfterConstruction`. |
 | Ability recharge | `{currentUnitRecharge}` 0x6F462F | no / no | U | yes | |
@@ -180,8 +180,11 @@ leads from the exe's strings only, read on 2026-11-17, and nothing here says wha
 Dr.Maxy can move the rows); building armor in the stock `Resists` spot, for any proto with an armor above 0; the
 **live** speed, also as `{uhcSpeed}`; extra rows for the 4th attack on. `uhcArmor` was dropped for the stock spot.
 The `{uhc...}` refs built: `uhcHitpoints`, `uhcSpeed`, `uhcBaseSpeed`, `uhcLOS`, `uhcArmor`, `uhcArmorValue`,
-`uhcGarrison`, `uhcTrainPoints`, `uhcBuildPoints`. The rest of the catalog (ROF, ranges, cost, our keys' data) is
-for a next batch. The design as written before the build follows.
+`uhcGarrison`, `uhcTrainPoints`, `uhcBuildPoints`. **Batch 2 (2026-11-17)** added `rof`, `range`, `minRange`,
+`area`, `cost`, `population`, `bounty`, `buildLimit`, `inventory`, `lifespan`, `overheal`, `veterancy`, `poison`,
+`randomCost`, `shipments` and `gatherRate` (25 items and refs in all). Located on the way: PopulationCount
+`[proto+0D8h]`, BuildLimit `[proto+108h]`, Bounty `[proto+168h]`. Not built: regeneration (per-tactic Regeneration
+action records), the auras acting on a unit, the build rate, a separate bonus list (in the attack rows already). The design as written before the build follows.
 
 ### Mechanism
 

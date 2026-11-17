@@ -2020,9 +2020,9 @@ END
 
 Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
 
-Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `MinBlockChoice` `0x4C8276` (11 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `BStringFromId` `0x58EA52` (25 B), `MinResistsUnitGate` `0x698BE2` (26 B), `CurrentUnitRef` `0x6F49B1` (65 B), `GadgetByName` `0xAB7C2F` (38 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `AttackListFill` `0x487EEE` (24 B), `UnitCarryCapacity` `0x494503` (16 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `MinBlockChoice` `0x4C8276` (11 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `MinResistsUnitGate` `0x698BE2` (26 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `GadgetByName` `0xAB7C2F` (38 B).
 
 ### src/features/minuistats.cpp
 
@@ -2057,6 +2057,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 #include "../log.h"
 #include "../patch.h"
 #include "../unitpanel.h"
+#include "../unitinfo.h"
 #include "../unittypes.h"
 #include "../xmllist.h"
 
@@ -2250,6 +2251,233 @@ bool ProtoPoints(const char* unit, std::uint32_t field, std::wstring* out) {
 bool ItemTrainPoints(const char* unit, std::wstring* out) { return ProtoPoints(unit, 0x6C, out); }
 bool ItemBuildPoints(const char* unit, std::wstring* out) { return ProtoPoints(unit, 0xCC, out); }
 
+// ---- Batch 2: attacks, costs and what other keys know ----
+
+constexpr std::uint32_t kAttackList = 0x00CF05B0;   // the stat panel fill's attack list {data, count, capacity}
+constexpr std::uint32_t kAttackListGuard = 0x00CF05BC;  // bit 0: the list was constructed (0x4D7905)
+
+using AttackListFn = void(__thiscall*)(const char* tactic, const char* unit, std::int32_t, std::int32_t, std::int32_t,
+                                       void* list);
+using ResListGetFn = float(__thiscall*)(const char* list, std::int32_t resource);
+using ResourceIconFn = const char*(__thiscall*)(const char* database, std::int32_t resource);
+using UnitResourceFn = std::int32_t(__thiscall*)(const char* unit);
+using UnitAmountFn = float(__thiscall*)(const char* unit, std::int32_t resource);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+const auto kAttackListFill = reinterpret_cast<AttackListFn>(0x00487EEE);
+const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
+const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
+const auto kHoldsResource = reinterpret_cast<UnitTestFn>(0x0045EE8B);
+const auto kHeldResource = reinterpret_cast<UnitResourceFn>(0x004DBEC1);
+const auto kHeldAmount = reinterpret_cast<UnitAmountFn>(0x004E5979);
+const auto kHeldInitial = reinterpret_cast<UnitAmountFn>(0x00494503);
+
+const char* Database() { return Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x140); }
+
+// The unit's attacks, as the stat panel lists them (0x4D7892..0x4D79A1): its current tactic
+// [[[proto+44h]+10h] + [[unit+58h]+0A8h]*4] fills the list through 0x487EEE, each entry's +4 an index into the
+// proto's actions [[proto+44h]+1Ch]; only actions with damage ([action+24h]) are kept.
+std::vector<const char*> Attacks(const char* unit) {
+  std::vector<const char*> out;
+  const char* manager = Field<const char*>(unit, 0x58);
+  const char* data = Field<const char*>(Field<const char*>(unit, 0x5C), 0x44);
+  if (manager == nullptr || data == nullptr) {
+    return out;
+  }
+  const std::int32_t tacticIndex = Field<std::int32_t>(manager, 0xA8);
+  if (tacticIndex < 0 || tacticIndex >= Field<std::int32_t>(data, 0x14)) {
+    return out;
+  }
+  const char* tactic = Field<const char* const*>(data, 0x10)[tacticIndex];
+  if (tactic == nullptr) {
+    return out;
+  }
+  auto* guard = reinterpret_cast<std::uint32_t*>(kAttackListGuard);
+  auto* list = reinterpret_cast<std::int32_t*>(kAttackList);
+  if ((*guard & 1) == 0) {  // as the fill's own first use does, less the exit handler
+    *guard |= 1;
+    list[0] = list[1] = list[2] = 0;
+  }
+  if (list[2] >= 0) {
+    list[1] = 0;
+  }
+  kAttackListFill(tactic, unit, 0, -1, 1, list);
+  const char* entries = reinterpret_cast<const char*>(static_cast<std::intptr_t>(list[0]));
+  const std::int32_t actions = Field<std::int32_t>(data, 0x20);
+  for (std::int32_t k = 0; entries != nullptr && k < list[1]; ++k) {
+    const std::int32_t id = Field<std::int32_t>(entries, 12u * k + 4);
+    const char* action = id >= 0 && id < actions ? Field<const char* const*>(data, 0x1C)[id] : nullptr;
+    if (action != nullptr && Field<const char*>(action, 0x24) != nullptr) {
+      out.push_back(action);
+    }
+  }
+  return out;
+}
+
+// The icon of a damage type (0 hand, 1 ranged, 2 siege), as the panels show it.
+std::wstring TypeIcon(std::uint8_t type) {
+  const char* view = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x920);
+  if (view == nullptr || type > 2) {
+    return L"";
+  }
+  wchar_t tag[64];
+  swprintf_s(tag, L" <icon=\"(16)(TextureID(%d))\">", Field<std::int32_t>(view, 0x1CC + 4u * type));
+  return tag;
+}
+
+// The distinct values of the unit's attacks, each with the damage type icon of the first attack that has it (the
+// panel has little room: a Musketeer's ROF reads "3 (ranged) 1.5 (hand)"), skipping the values `value` rejects.
+template <typename Fn>
+bool PerAttack(const char* unit, std::wstring* out, Fn value) {
+  std::vector<float> seen;
+  out->clear();
+  for (const char* action : Attacks(unit)) {
+    float v = 0.0f;
+    if (!value(action, &v)) {
+      continue;
+    }
+    bool repeated = false;
+    for (const float s : seen) {
+      repeated |= std::fabs(s - v) < 0.01f;
+    }
+    if (!repeated) {
+      seen.push_back(v);
+      *out += (out->empty() ? L"" : L"  ") + Number(v) +
+              TypeIcon(Field<std::uint8_t>(Field<const char*>(action, 0x24), 5));
+    }
+  }
+  return !out->empty();
+}
+
+// Hand attacks (damage type 0) have a melee reach, not a range worth a row.
+bool Ranged(const char* action) { return Field<std::uint8_t>(Field<const char*>(action, 0x24), 5) != 0; }
+
+// ROF [action+34h], ms (<ROF> x 1000); ranges at [[action+18h]+4] (min) and +8 (max); area byte [[action+24h]+6].
+bool ItemRof(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    *v = static_cast<float>(Field<std::int32_t>(a, 0x34)) / 1000.0f;
+    return *v > 0.0f;
+  });
+}
+
+bool ItemRange(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    const char* ranges = Field<const char*>(a, 0x18);
+    *v = ranges == nullptr ? 0.0f : Field<float>(ranges, 8);
+    return Ranged(a) && *v > 0.0f;
+  });
+}
+
+bool ItemMinRange(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    const char* ranges = Field<const char*>(a, 0x18);
+    *v = ranges == nullptr ? 0.0f : Field<float>(ranges, 4);
+    return *v > 0.0f;
+  });
+}
+
+bool ItemArea(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    *v = static_cast<float>(Field<std::uint8_t>(Field<const char*>(a, 0x24), 6));
+    return *v > 0.0f;
+  });
+}
+
+// The player's proto cost list [proto+70h] (with its techs; read through 0x44EFFF, which unmasks it).
+bool ItemCost(const char* unit, std::wstring* out) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* database = Database();
+  if (database == nullptr) {
+    return false;
+  }
+  out->clear();
+  const std::int32_t resources = Field<std::int32_t>(database, 0x80);
+  for (std::int32_t r = 0; r < resources && r < 16; ++r) {
+    const float cost = kResListGet(proto + 0x70, r);
+    if (cost > 0.0f) {
+      wchar_t text[96];
+      swprintf_s(text, L"%ls%d <icon=\"(16)(%hs)\">", out->empty() ? L"" : L"  ", static_cast<int>(cost + 0.5f),
+                 kResourceIcon(database, r));
+      *out += text;
+    }
+  }
+  return !out->empty();
+}
+
+bool ProtoInt(const char* unit, std::uint32_t field, std::wstring* out) {
+  const std::int32_t value = Field<std::int32_t>(Field<const char*>(unit, 0x5C), field);
+  if (value <= 0) {
+    return false;
+  }
+  *out = std::to_wstring(value);
+  return true;
+}
+
+bool ItemPopulation(const char* unit, std::wstring* out) { return ProtoInt(unit, 0xD8, out); }  // PopulationCount
+bool ItemBuildLimit(const char* unit, std::wstring* out) { return ProtoInt(unit, 0x108, out); }  // BuildLimit
+
+bool ItemBounty(const char* unit, std::wstring* out) {  // <Bounty>, float [proto+168h] (handler 0x5F5D79)
+  const float bounty = Field<float>(Field<const char*>(unit, 0x5C), 0x168);
+  if (!(bounty > 0.0f)) {
+    return false;
+  }
+  *out = Number(bounty);
+  return true;
+}
+
+// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it.
+bool ItemInventory(const char* unit, std::wstring* out) {
+  const char* database = Database();
+  if (database == nullptr || !kHoldsResource(unit)) {
+    return false;
+  }
+  const std::int32_t resource = kHeldResource(unit);
+  if (resource < 0) {
+    return false;
+  }
+  wchar_t text[96];
+  swprintf_s(text, L"%d/%d <icon=\"(16)(%hs)\">", static_cast<int>(kHeldAmount(unit, resource)),
+             static_cast<int>(kHeldInitial(unit, resource)), kResourceIcon(database, resource));
+  *out = text;
+  return true;
+}
+
+// The countdown of a unit with a lifespan, [[unit+0B4h]+1Ch], while state bit 3 is set (setLifespan 0x48DCB9).
+bool ItemLifespan(const char* unit, std::wstring* out) {
+  const auto* bits = Field<const std::uint8_t*>(unit, 4);
+  const char* sub = Field<const char*>(unit, 0xB4);
+  if (bits == nullptr || sub == nullptr || (bits[0] & 0x08) == 0) {
+    return false;
+  }
+  const float left = Field<float>(sub, 0x1C);
+  if (!(left > 0.0f)) {
+    return false;
+  }
+  wchar_t text[32];
+  swprintf_s(text, L"%d s", static_cast<int>(left + 0.5f));
+  *out = text;
+  return true;
+}
+
+// overhealHitpointBars: the hit points above InitialHitpoints of a marked unit.
+bool ItemOverheal(const char* unit, std::wstring* out) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (!uhc::unitinfo::OverhealOn(proto)) {
+    return false;
+  }
+  const float above = Field<float>(unit, 0x64) - Field<float>(proto, 0x9C);
+  if (!(above >= 1.0f)) {
+    return false;
+  }
+  *out = L"+" + std::to_wstring(static_cast<int>(above));
+  return true;
+}
+
+bool ItemVeterancy(const char* unit, std::wstring* out) { return uhc::unitinfo::Veterancy(unit, out); }
+bool ItemPoison(const char* unit, std::wstring* out) { return uhc::unitinfo::Poison(unit, out); }
+bool ItemRandomCost(const char* unit, std::wstring* out) { return uhc::unitinfo::RandomCost(unit, out); }
+bool ItemShipments(const char* unit, std::wstring* out) { return uhc::unitinfo::ShipmentCounts(unit, out); }
+bool ItemGatherRate(const char* unit, std::wstring* out) { return uhc::unitinfo::GatherRate(unit, out); }
+
 using ItemFn = bool (*)(const char* unit, std::wstring* out);
 
 template <ItemFn Item>
@@ -2284,6 +2512,22 @@ const ItemInfo kItems[] = {
     {"garrison", L"uhcGarrison", &ItemGarrison, &ItemRef<&ItemGarrison>},
     {"trainPoints", L"uhcTrainPoints", &ItemTrainPoints, &ItemRef<&ItemTrainPoints>},
     {"buildPoints", L"uhcBuildPoints", &ItemBuildPoints, &ItemRef<&ItemBuildPoints>},
+    {"rof", L"uhcROF", &ItemRof, &ItemRef<&ItemRof>},
+    {"range", L"uhcRange", &ItemRange, &ItemRef<&ItemRange>},
+    {"minRange", L"uhcMinRange", &ItemMinRange, &ItemRef<&ItemMinRange>},
+    {"area", L"uhcArea", &ItemArea, &ItemRef<&ItemArea>},
+    {"cost", L"uhcCost", &ItemCost, &ItemRef<&ItemCost>},
+    {"population", L"uhcPopulation", &ItemPopulation, &ItemRef<&ItemPopulation>},
+    {"bounty", L"uhcBounty", &ItemBounty, &ItemRef<&ItemBounty>},
+    {"buildLimit", L"uhcBuildLimit", &ItemBuildLimit, &ItemRef<&ItemBuildLimit>},
+    {"inventory", L"uhcInventory", &ItemInventory, &ItemRef<&ItemInventory>},
+    {"lifespan", L"uhcLifespan", &ItemLifespan, &ItemRef<&ItemLifespan>},
+    {"overheal", L"uhcOverheal", &ItemOverheal, &ItemRef<&ItemOverheal>},
+    {"veterancy", L"uhcVeterancy", &ItemVeterancy, &ItemRef<&ItemVeterancy>},
+    {"poison", L"uhcPoison", &ItemPoison, &ItemRef<&ItemPoison>},
+    {"randomCost", L"uhcRandomCost", &ItemRandomCost, &ItemRef<&ItemRandomCost>},
+    {"shipments", L"uhcShipments", &ItemShipments, &ItemRef<&ItemShipments>},
+    {"gatherRate", L"uhcGatherRate", &ItemGatherRate, &ItemRef<&ItemGatherRate>},
 };
 
 const ItemInfo* FindItem(const std::string& name) {
@@ -2304,10 +2548,49 @@ struct TypeFilter {
 
 struct Row {
   std::wstring gadget;
-  const ItemInfo* item = nullptr;
+  const ItemInfo* item = nullptr;  // item= ...
   std::wstring label;
+  std::wstring text;               // ... or text=: segments split by '|', each with its {item}s
   std::vector<TypeFilter*> types;  // empty: every unit
 };
+
+// A text= row: each '|'-separated segment with its {item}s replaced; a segment with an item that has nothing for
+// the unit is left out, the rest are joined by three spaces. False when no segment is left.
+bool RenderTemplate(const std::wstring& text, const char* unit, std::wstring* out) {
+  out->clear();
+  size_t start = 0;
+  while (start <= text.size()) {
+    size_t bar = text.find(L'|', start);
+    if (bar == std::wstring::npos) {
+      bar = text.size();
+    }
+    const std::wstring segment = text.substr(start, bar - start);
+    std::wstring rendered;
+    bool ok = true;
+    size_t pos = 0;
+    while (ok && pos < segment.size()) {
+      const size_t open = segment.find(L'{', pos);
+      const size_t close = open == std::wstring::npos ? std::wstring::npos : segment.find(L'}', open);
+      if (open == std::wstring::npos || close == std::wstring::npos) {
+        rendered += segment.substr(pos);
+        break;
+      }
+      rendered += segment.substr(pos, open - pos);
+      const std::wstring name = segment.substr(open + 1, close - open - 1);
+      std::string narrow(name.begin(), name.end());
+      const ItemInfo* item = FindItem(narrow);
+      std::wstring value;
+      ok = item != nullptr && item->fn(unit, &value);
+      rendered += value;
+      pos = close + 1;
+    }
+    if (ok && !rendered.empty()) {
+      *out += (out->empty() ? L"" : L"   ") + rendered;
+    }
+    start = bar + 1;
+  }
+  return !out->empty();
+}
 
 // Kinds of mirrored stat rows.
 enum Kind : std::uint32_t {
@@ -2332,9 +2615,10 @@ std::wstring g_file;
 const char kDefaultRows[] =
     "<minUIRows>"
     "<row gadget='unitselectionpanel-uhcTrainPoints' item='trainPoints' label='Train Points: ' types='Unit'/>"
-    "<row gadget='unitselectionpanel-uhcRow0' item='los' label='LOS: '/>"
-    "<row gadget='unitselectionpanel-uhcRow1' item='garrison' label='Garrison: '/>"
-    "<row gadget='unitselectionpanel-uhcRow2' item='speed' label='Speed: '/>"
+    "<row gadget='unitselectionpanel-uhcRow0' text='LOS: {los}|Speed: {speed}|Garrison: {garrison}'/>"
+    "<row gadget='unitselectionpanel-uhcRow1' text='ROF: {rof}|Range: {range}'/>"
+    "<row gadget='unitselectionpanel-uhcCostPop' text='Cost: {cost}|Pop: {population}'/>"
+    "<row gadget='unitselectionpanel-uhcRow2' text='Overheal {overheal}|Poison {poison}'/>"
     "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed'/>"
     "</minUIRows>";
 
@@ -2545,13 +2829,27 @@ bool LoadRows(const std::string& arg) {
     if (element.tag == "row") {
       const std::string* gadget = Attr(element, "gadget");
       const std::string* item = Attr(element, "item");
+      const std::string* text = Attr(element, "text");
       const ItemInfo* info = item == nullptr ? nullptr : FindItem(Trim(*item));
-      if (gadget == nullptr || info == nullptr) {
-        uhc::Log(L"minUIStats: %ls: a row needs gadget and a known item (%hs); ignored", g_file.c_str(),
+      if (gadget == nullptr || (info == nullptr && text == nullptr)) {
+        uhc::Log(L"minUIStats: %ls: a row needs gadget and a known item= (%hs) or text=; ignored", g_file.c_str(),
                  item == nullptr ? "none" : item->c_str());
         continue;
       }
-      g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), typeList(element)});
+      if (text != nullptr) {
+        const std::wstring wide = Wide(*text);
+        for (size_t open = wide.find(L'{'); open != std::wstring::npos; open = wide.find(L'{', open + 1)) {
+          const size_t close = wide.find(L'}', open);
+          const std::wstring name = close == std::wstring::npos ? L"" : wide.substr(open + 1, close - open - 1);
+          if (FindItem(std::string(name.begin(), name.end())) == nullptr) {
+            uhc::Log(L"minUIStats: %ls: unknown item {%ls} in a text= row; its segment never shows", g_file.c_str(),
+                     name.c_str());
+          }
+        }
+        g_rows.push_back({Wide(Trim(*gadget)), nullptr, L"", wide, typeList(element)});
+      } else {
+        g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element)});
+      }
       continue;
     }
     if (element.tag == "bigpanelrows") {
@@ -2993,7 +3291,10 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
       continue;
     }
     std::wstring value;
-    if (proto == nullptr || !Applies(g_rows[i], proto) || !g_rows[i].item->fn(unit, &value)) {
+    const bool has = proto != nullptr && Applies(g_rows[i], proto) &&
+                     (g_rows[i].item != nullptr ? g_rows[i].item->fn(unit, &value)
+                                                : RenderTemplate(g_rows[i].text, unit, &value));
+    if (!has) {
       Hide(&gadget);
       continue;
     }
@@ -3034,7 +3335,9 @@ Outcome ApplyMinUiStats(const Config& config) {
                   &sites::kGadgetByName, &sites::kGadgetRef, &sites::kGadgetRelease, &sites::kGadgetShow,
                   &sites::kGadgetHide, &sites::kBStringFromWide, &sites::kBStringFromId, &sites::kBStringSet,
                   &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
-                  &sites::kLosGetterHead, &sites::kMaxContained, &sites::kIsA})) {
+                  &sites::kLosGetterHead, &sites::kMaxContained, &sites::kIsA, &sites::kAttackListFill,
+                  &sites::kResListGet, &sites::kResourceIconText, &sites::kHoldsResource, &sites::kMainResource,
+                  &sites::kHeldAmount, &sites::kUnitCarryCapacity})) {
     return Outcome::kFailed;
   }
   for (TypeFilter* filter : g_filters) {

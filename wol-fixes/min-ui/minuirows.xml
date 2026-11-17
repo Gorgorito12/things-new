@@ -1,27 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The rows minUIStats writes in the minimized selection panel (data\uhc\minuirows.xml).
 
-     <row>: one gadget, one item.
-       gadget   a top-level formatText of uiunitselectionmin.xml
-       item     hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (with the damage
-                type icon), armorValue, garrison, trainPoints, buildPoints
-       label    text written before the value (markup allowed), or labelId: a string table ID
+     <row>: one top-level formatText gadget of uiunitselectionmin.xml, filled for the selected unit.
+       gadget   the gadget's name
+       item     one item (list below), with label: text written before it (markup allowed), or labelId:
+                a string table ID;
+       text     or several items: "LOS: {los}|Speed: {speed}". Each part between '|' shows only when
+                its items have a value for the unit; the parts left are joined by three spaces
        types    optional: the row shows only for units of these unit types (comma-separated)
-     A row whose item does not apply to the selected unit (no garrison, speed 0, ...) is hidden.
+     A row with nothing to show is hidden.
 
-     <bigPanelRows>: the rows the normal interface's stat panel shows for the selection, in its order,
-     into gadget%d from `first` on (consecutive gadgets; at least two).
+     Items:
+       hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (with the damage type icon),
+       armorValue, garrison, trainPoints, buildPoints,
+       rof, range, minRange, area (per attack, each with its damage type icon), cost, population,
+       bounty (the XP a kill gives), buildLimit, inventory (what a mine, bush or animal holds),
+       lifespan (seconds left), and what other keys know, shown only when that key is on:
+       overheal (overhealHitpointBars), veterancy (veterancyBonus), poison (damageOverTime),
+       randomCost (randomCost: the price range), shipments (shipmentCounts: the owner's cards per
+       age), gatherRate (showGatherRate)
+
+     <bigPanelRows>: the rows the big UI's stat panel shows for the selection, in its order, into
+       gadget%d from `first` on (consecutive gadgets; at least two).
        skip     kinds left out: auto (what the minimized panel already shows: owner, hit points,
                 resists, resource held, AutoGather rate, its attack rows), name, hitpoints,
                 groupHealth, resource, gatherers, rate, speed, resists, attacks, shownAttacks,
                 special, other
 
      Each item is also a text for any formatText gadget: {uhcHitpoints}, {uhcSpeed}, {uhcBaseSpeed},
-     {uhcLOS}, {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}. -->
+     {uhcLOS}, {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}, {uhcROF},
+     {uhcRange}, {uhcMinRange}, {uhcArea}, {uhcCost}, {uhcPopulation}, {uhcBounty}, {uhcBuildLimit},
+     {uhcInventory}, {uhcLifespan}, {uhcOverheal}, {uhcVeterancy}, {uhcPoison}, {uhcRandomCost},
+     {uhcShipments}, {uhcGatherRate}. -->
 <minUIRows>
   <row gadget="unitselectionpanel-uhcTrainPoints" item="trainPoints" label="Train Points: " types="Unit"/>
-  <row gadget="unitselectionpanel-uhcRow0" item="los" label="LOS: "/>
-  <row gadget="unitselectionpanel-uhcRow1" item="garrison" label="Garrison: "/>
-  <row gadget="unitselectionpanel-uhcRow2" item="speed" label="Speed: "/>
+  <row gadget="unitselectionpanel-uhcRow0" text="LOS: {los}|Speed: {speed}|Garrison: {garrison}"/>
+  <row gadget="unitselectionpanel-uhcRow1" text="ROF: {rof}|Range: {range}"/>
+  <row gadget="unitselectionpanel-uhcCostPop" text="Cost: {cost}|Pop: {population}"/>
+  <row gadget="unitselectionpanel-uhcRow2" text="Overheal {overheal}|Poison {poison}"/>
   <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
+
+  <!-- More rows to enable: add a gadget for each to uiunitselectionmin.xml, then remove the comment marks.
+  <row gadget="unitselectionpanel-uhcExtra0" text="Min range: {minRange}|Area: {area}"/>
+  <row gadget="unitselectionpanel-uhcExtra1" text="Build points: {buildPoints}|Limit: {buildLimit}" types="Building"/>
+  <row gadget="unitselectionpanel-uhcExtra2" text="Bounty: {bounty}|Lifespan: {lifespan}"/>
+  <row gadget="unitselectionpanel-uhcExtra3" text="Holds: {inventory}|Gathers: {gatherRate}"/>
+  <row gadget="unitselectionpanel-uhcExtra4" text="Price: {randomCost}"/>
+  <row gadget="unitselectionpanel-uhcExtra5" text="Cards sent: {shipments}"/>
+  <row gadget="unitselectionpanel-uhcExtra6" text="Base speed: {baseSpeed}|Armor: {armor}"/>
+  <row gadget="unitselectionpanel-uhcExtra7" text="Rank: {veterancy}"/>  (veterancyBonus also adds its own rank row to the big UI rows above)
+  -->
 </minUIRows>
