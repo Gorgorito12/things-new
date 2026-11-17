@@ -62,6 +62,44 @@ These are the game's own numbers: the times were checked against a stopwatch (wi
 New texts for any formatText: {uhcBuildTime}, {uhcBuildProgress} (percent built), {uhcBuildRate},
 {uhcRegen}, {uhcAuras}.
 
+Mixed groups and 6 attacks
+--------------------------
+JTMaston asked where the unit portraits of a mixed group go (say 10 different units). What the game
+does (read in the game's code and seen in game):
+- With several unit types selected, the game shows one portrait per type in the top band of the
+  panel (unitStackButton0..8, and unitStackButtonBig0 for the type the panel describes). It does not
+  use the positions in the file: each time the selection changes it centres the portraits in
+  unitselectionpanel-buttonArea, 2 pixels apart. One type puts the big portrait in the middle of the
+  band; two types already reach the start of the Cost/ROF rows; nine types fill the whole band.
+- At most nine types get a portrait. A 10th type gets none: no second page and no "+" button.
+- The game hides nothing else of the panel for a mixed group: the name, the player and the rows stay,
+  and they describe the current type. A click on a portrait makes that type the current one.
+
+What the DLL does now: a row that a portrait covers is hidden while it does, and comes back when the
+selection leaves room. With the proposed layout: one type looks as before; from two types on Cost/Pop
+and ROF/Range give way; with nine types Train Points too. If you would rather keep a row in that band
+visible, move it out of the band, or write overlap="show" on its line in minuirows.xml.
+Pictures: media\minUIStats-mixed-*.jpg (README.txt, "Media").
+
+The explorer with 6 attacks: the minimized UI has 3 attack rows, and the extra rows were uhcRow3 and
+uhcRow4 (right of the 2nd and 3rd attack rows), so the 6th attack was dropped. Two findings:
+- The big UI drops attacks too: its stat panel stops at 9 rows. Menelik II has 8 attacks (Ranged,
+  Siege, Hand, Sharpshooter, Crack Shot, Anti-artillery Crackshot, Swashbuckler, Counter-Intelligence);
+  with its name, hit points, speed and resists rows, the big UI shows 5 of them.
+- The DLL now writes the attacks the big UI has no room for itself, in the same format (name, damage
+  with its icon, range with its icon; without the bonus multipliers such as "3x" against cavalry).
+
+The layout keeps uhcRow3 and uhcRow4 where they were and adds uhcRow5 right of the 1st attack row. They
+are filled in that order: the 4th attack next to the 2nd, the 5th next to the 3rd, the next ones next
+to the 1st. When there are more attacks than rows, uhcRow5 shows the rest in short form, name and
+damage, as many as fit, then "+2"; its tooltip lists them all. Menelik II now shows 6 of its 8 attacks
+and "+2" (Swashbuckler and Counter-Intelligence in the tooltip). The tooltip itself was not checked in
+game (the test copy cannot hover); its text was checked in the DLL's log.
+The resource held and the AutoGather rate (a factory, a bank, our rank or lifespan rows) also use the
+right part of the 1st attack line: while either shows, uhcRow5 stays empty (minuirows.xml, the two
+<avoid> lines). Add uhcRow6, uhcRow7 ... in the layout for more full rows.
+Pictures: media\minUIStats-attacks-*.jpg.
+
 Everything is in the data file
 ------------------------------
 Which gadget shows which item, with which label and for which unit types, is in minuirows.xml

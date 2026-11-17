@@ -2,7 +2,10 @@
 <!-- Proposal (2026-11-17): the stock minimized selection panel from Data3.bar, unchanged, plus
      top-level rows (children of unitselectionpanel-unit, never of a gadget the game shows or hides).
      The DLL fills unitselectionpanel-uhcRow%d in the order a data file gives, and hides the rows
-     it does not use. Positions follow WoL's current panel; Dr.Maxy decides the final ones. -->
+     it does not use. Positions follow WoL's current panel; Dr.Maxy decides the final ones.
+     The unit portraits of a mixed group (unitStackButton*) are placed by the game, centred in
+     unitselectionpanel-buttonArea; a row they cover is hidden while they do (minuirows.xml). -->
+
 <layout>
   <gadget name="unitselectionpanel" type="unitselectionpanel" size1024="342 629 700 768" z="105">
     <gadget name="unitselectionpanel-showCommands" type="button" size1024="674 641 701 696" z="125" foreground="" mouseovertext="$$42185$$Available Commands">
@@ -36,6 +39,7 @@
       <gadget name="unitselectionpanel-uhcRow2" type="formatText" size1024="344 668 410 698" textwrapon="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcRow3" type="formatText" size1024="583 731 703 747" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcRow4" type="formatText" size1024="583 747 703 763" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <gadget name="unitselectionpanel-uhcRow5" type="formatText" size1024="583 715 703 731" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
     </gadget>
     <gadget name="unitselectionpanel-stackQueue" type="gadget" size1024="361 631 615 665" z="107">
       <gadget name="unitselectionpanel-buttonArea" type="gadget" size1024="369 632 607 666" z="107"/>

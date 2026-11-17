@@ -250,6 +250,10 @@ a draft) is the stock one unchanged plus seven gadgets: `uhcTrainPoints` (above 
 portrait), `uhcRow0..2` (LOS, garrison, speed, where WoL has them now), `uhcArmor` (on the stock
 resists spot, used only when the stock one is hidden, i.e. buildings), `uhcRow3..4` (right of the
 2nd and 3rd attack rows, for the big UI's extra rows). Dr.Maxy chooses the final places.
+Since 2026-11-17 (mixed groups, many attacks): `uhcRow5` right of the 1st attack row, filled after `uhcRow3` and
+`uhcRow4`; `uhcCostPop`, `uhcRow1` and `uhcTrainPoints` give way to the stack portraits (preview redrawn with every
+`uhc` row marked; the small stack buttons, all declared at 371,641, are left out: the game centres the portraits in
+`buttonArea`, see how-it-works, "minUIStats").
 
 ### Living with the other code
 

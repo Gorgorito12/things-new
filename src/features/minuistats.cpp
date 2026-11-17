@@ -7,12 +7,16 @@
 // - <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>: the rows the normal
 //   interface's stat panel shows (FUN_004D70ED), mirrored: the fill runs for these gadgets and its rows are kept
 //   in order, less the ones the minimized panel already shows ("auto") and the kinds `skip` names.
+// A row whose gadget the selection's stack portraits cover (one per unit type, placed by the panel each fill), or
+// that a shown <avoid gadget="..."/> covers, is hidden for that fill (a bigPanelRows gadget is skipped and the rows
+// go on in the next one); overlap="show" on a row or bigPanelRows keeps it.
 // It also shows a building's armor in the stock resists gadgets (the minimized block's test of abstract type Unit
 // goes), and adds a {uhc...} data ref per item for a layout's own texts (datarefs.h).
 // The normal interface is unchanged: it has none of these gadgets, and every write is to a gadget found by name.
 // docs/how-it-works.md, "minUIStats"; docs/unit-panel-catalog.md.
 #include <windows.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -247,7 +251,8 @@ const char* Database() { return Game() == nullptr ? nullptr : Field<const char*>
 // The unit's attacks, as the stat panel lists them (0x4D7892..0x4D79A1): its current tactic
 // [[[proto+44h]+10h] + [[unit+58h]+0A8h]*4] fills the list through 0x487EEE, each entry's +4 an index into the
 // proto's actions [[proto+44h]+1Ch]; only actions with damage ([action+24h]) are kept.
-std::vector<const char*> Attacks(const char* unit) {
+// withoutDamage: also the listed actions with no damage record, as the stat panel fill writes a row for each.
+std::vector<const char*> Attacks(const char* unit, bool withoutDamage = false) {
   std::vector<const char*> out;
   const char* manager = Field<const char*>(unit, 0x58);
   const char* data = Field<const char*>(Field<const char*>(unit, 0x5C), 0x44);
@@ -277,7 +282,7 @@ std::vector<const char*> Attacks(const char* unit) {
   for (std::int32_t k = 0; entries != nullptr && k < list[1]; ++k) {
     const std::int32_t id = Field<std::int32_t>(entries, 12u * k + 4);
     const char* action = id >= 0 && id < actions ? Field<const char* const*>(data, 0x1C)[id] : nullptr;
-    if (action != nullptr && Field<const char*>(action, 0x24) != nullptr) {
+    if (action != nullptr && (withoutDamage || Field<const char*>(action, 0x24) != nullptr)) {
       out.push_back(action);
     }
   }
@@ -351,6 +356,84 @@ bool ItemArea(const char* unit, std::wstring* out) {
     *v = static_cast<float>(Field<std::uint8_t>(Field<const char*>(a, 0x24), 6));
     return *v > 0.0f;
   });
+}
+
+// ---- An attack row the stat panel fill had no room for ----
+
+using ActionNameFn = const wchar_t* const*(__thiscall*)(const char* action);
+const auto kActionName = reinterpret_cast<ActionNameFn>(0x005F8FC3);  // the action's raw name (0x69B617)
+
+bool ActionFlag(const char* action, std::uint32_t bit) {  // the bit set [action+64h], size [action+68h] in bits
+  if (bit >= Field<std::uint32_t>(action, 0x68)) {
+    return false;
+  }
+  return (Field<const std::uint8_t*>(action, 0x64)[bit >> 3] & (1u << (bit & 7))) != 0;
+}
+
+// A modifier factor of the unit's modifier record, as the fill reads it: 1.0 below 1e-6 (0xB9FB64) or without one.
+float DamageFactor(const char* unit, std::uint32_t field) {
+  const char* sub = Field<const char*>(unit, 0xB4);
+  const char* record = sub == nullptr ? nullptr : Field<const char*>(sub, 0xC8);
+  if (record == nullptr) {
+    return 1.0f;
+  }
+  const float value = Field<float>(record, field);
+  return value < *reinterpret_cast<const float*>(0x00B9FB64) ? 1.0f : value;
+}
+
+// The label and value of one attack row as the stat panel fill writes them (0x4D7A2E..0x4D7E0F): "%s:" with the
+// action's name (string ID [[db+1FE4h] + [action+4]*4], or its raw name), then "%d <icon>": the damage
+// [[action+24h]] x the count scale (flag 12h: the contained units [unit+74h], capped by [action+48h] when above 0)
+// x the modifier record's +8 x its +14h (hand, ranged) or +10h (siege), truncated, with the damage type's icon;
+// then, with flag 0Ah, " %d <icon>": the range of the action's range entry -1 (0x4946D6) and the range icon
+// [[game+920h]+218h]. The bonus multipliers that follow in the stock row are left out.
+bool AttackRow(const char* unit, const char* action, std::wstring* label, std::wstring* value) {
+  const char* database = Database();
+  const char* view = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x920);
+  if (database == nullptr || view == nullptr) {
+    return false;
+  }
+  const std::int32_t nameIndex = Field<std::int32_t>(action, 4);
+  std::int32_t stringId = -1;
+  if (nameIndex >= 0 && nameIndex < Field<std::int32_t>(database, 0x1FDC)) {
+    stringId = Field<const std::int32_t*>(database, 0x1FE4)[nameIndex];
+  }
+  std::wstring name = stringId >= 0 ? StringById(stringId) : L"";
+  if (name.empty()) {
+    const wchar_t* const* raw = kActionName(action);
+    name = raw != nullptr && *raw != nullptr ? *raw : L"";
+  }
+  *label = name + L":";
+  const char* damage = Field<const char*>(action, 0x24);
+  const float base = damage == nullptr ? 0.0f : Field<float>(damage, 0);
+  const std::uint8_t type = damage == nullptr ? 0 : Field<std::uint8_t>(damage, 5);
+  float scale = 1.0f;
+  if (ActionFlag(action, 0x12)) {
+    scale = static_cast<float>(Field<std::int32_t>(unit, 0x74));
+    const float cap = Field<float>(action, 0x48);
+    if (scale > cap && cap > 0.0f) {
+      scale = cap;
+    }
+  }
+  scale *= DamageFactor(unit, 0x08);
+  const float typed = DamageFactor(unit, type == 2 ? 0x10 : 0x14);
+  wchar_t text[160];
+  swprintf_s(text, L"%d <icon=\"(16)(TextureID(%d))\">", static_cast<int>(typed * scale * base),
+             type <= 2 ? Field<std::int32_t>(view, 0x1CC + 4u * type) : 0);
+  *value = text;
+  if (ActionFlag(action, 0x0A)) {
+    const char* ranges = Field<const char*>(action, 0x18);
+    const std::int32_t count = Field<std::int32_t>(action, 0x1C);
+    for (std::int32_t i = 0; ranges != nullptr && i < count; ++i) {
+      if (Field<std::int32_t>(ranges, 16u * i) == -1) {
+        swprintf_s(text, L" %d <icon=\"(16)(TextureID(%d))\">", static_cast<int>(Field<float>(ranges, 16u * i + 8)),
+                   Field<std::int32_t>(view, 0x218));
+        *value += text;
+        break;
+      }
+    }
+  }
+  return true;
 }
 
 // The player's proto cost list [proto+70h] (with its techs; read through 0x44EFFF, which unmasks it).
@@ -723,6 +806,7 @@ struct Row {
   std::wstring label;
   std::wstring text;               // ... or text=: segments split by '|', each with its {item}s
   std::vector<TypeFilter*> types;  // empty: every unit
+  bool keep = false;               // overlap="show": shown even over the stack portraits or an <avoid> gadget
 };
 
 // A text= row: each '|'-separated segment with its {item}s replaced; a segment with an item that has nothing for
@@ -776,12 +860,16 @@ struct BigPanel {
   int first = 0;
   int count = 16;
   std::uint32_t skip = kAuto;
+  bool keep = false;  // overlap="show"
 };
 
 std::vector<Row> g_rows;
 BigPanel g_big;
 std::vector<TypeFilter*> g_filters;
+std::vector<std::wstring> g_avoid;  // <avoid gadget="..."/>: stock gadgets whose text a row must not cover
 std::wstring g_file;
+bool g_stackReads = false;  // the stack portrait code matches what CollectBlockers reads
+bool g_attackReads = false;  // the stat fill's attack rows match what AttackRow mirrors
 
 const char kDefaultRows[] =
     "<minUIRows>"
@@ -792,6 +880,8 @@ const char kDefaultRows[] =
     "<row gadget='unitselectionpanel-uhcRow2' text='Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|"
     "Overheal {overheal}|Poison {poison}|Aura {auras}'/>"
     "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed'/>"
+    "<avoid gadget='unitselectionpanel-unitResourceValue'/>"
+    "<avoid gadget='unitselectionpanel-unitResourceRateLabel'/>"
     "</minUIRows>";
 
 std::string Lower(std::string text) {
@@ -994,8 +1084,29 @@ bool LoadRows(const std::string& arg) {
     }
     return list;
   };
+  // overlap="show" keeps a row over the stack portraits and <avoid> gadgets; "hide" (the default) hides it there.
+  auto keepOnOverlap = [&](const Element& element) {
+    const std::string* overlap = Attr(element, "overlap");
+    if (overlap == nullptr || _stricmp(Trim(*overlap).c_str(), "hide") == 0) {
+      return false;
+    }
+    if (_stricmp(Trim(*overlap).c_str(), "show") != 0) {
+      uhc::Log(L"minUIStats: %ls: overlap=\"%hs\" is not hide or show; hide used", g_file.c_str(), overlap->c_str());
+      return false;
+    }
+    return true;
+  };
   for (const Element& element : elements) {
     if (element.tag == "minuirows") {
+      continue;
+    }
+    if (element.tag == "avoid") {
+      const std::string* gadget = Attr(element, "gadget");
+      if (gadget == nullptr || Trim(*gadget).empty()) {
+        uhc::Log(L"minUIStats: %ls: avoid needs gadget; ignored", g_file.c_str());
+        continue;
+      }
+      g_avoid.push_back(Wide(Trim(*gadget)));
       continue;
     }
     if (element.tag == "row") {
@@ -1018,9 +1129,9 @@ bool LoadRows(const std::string& arg) {
                      name.c_str());
           }
         }
-        g_rows.push_back({Wide(Trim(*gadget)), nullptr, L"", wide, typeList(element)});
+        g_rows.push_back({Wide(Trim(*gadget)), nullptr, L"", wide, typeList(element), keepOnOverlap(element)});
       } else {
-        g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element)});
+        g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element), keepOnOverlap(element)});
       }
       continue;
     }
@@ -1032,6 +1143,7 @@ bool LoadRows(const std::string& arg) {
       }
       g_big.on = true;
       g_big.pattern = Wide(Trim(*gadget));
+      g_big.keep = keepOnOverlap(element);
       if (const std::string* first = Attr(element, "first")) {
         g_big.first = std::atoi(first->c_str());
       }
@@ -1083,7 +1195,9 @@ struct PanelGadgets {
   std::int32_t typeNameHandle = 0;
   std::vector<Gadget> rows;  // g_rows order
   std::vector<Gadget> big;   // the bigPanelRows block, consecutive gadgets
+  std::vector<std::int32_t> avoid;  // the <avoid> gadgets this layout has
   bool any = false;
+  bool logged = false;  // the first fill with stack portraits in our rows' band was logged
 };
 PanelGadgets g_panel;
 
@@ -1147,6 +1261,12 @@ void ResolvePanel(char* panel) {
     }
     g_panel.any |= !g_panel.big.empty();
   }
+  for (const std::wstring& name : g_avoid) {
+    const std::int32_t handle = Lookup(panel, name);
+    if (ValidHandle(handle)) {
+      g_panel.avoid.push_back(handle);
+    }
+  }
   int rows = 0;
   for (const Gadget& g : g_panel.rows) {
     rows += g.valid ? 1 : 0;
@@ -1196,6 +1316,143 @@ void SetText(Gadget* gadget, const std::wstring& text, std::uint32_t style, cons
 void Hide(Gadget* gadget) {
   gadget->text.clear();
   SetVisible(gadget, false);
+}
+
+// ---- The stack portraits and the <avoid> gadgets: where a row must not be drawn ----
+
+// A gadget's rectangle in screen pixels: its top left point at +28h ({x, y} as fractions of the screen, then
+// {x, y} in pixels at +30h / +34h) and its bottom right one at +38h (+40h / +44h), as 0x44B9D8 and the stack
+// layout 0x4C8F49 read them. Every gadget of the screen uses the same space, whatever its parent.
+struct Box {
+  std::int32_t left = 0, top = 0, right = 0, bottom = 0;
+};
+
+// Any gadget behind a handle, buttons included (0x404296: the lookup 0x40423C with type mask 0; GadgetObject's
+// 0x44900A asks for mask 10h, which a button does not have), released at once as the stack layout does (0x40431B).
+using GadgetAnyFn = void*(__cdecl*)(std::int32_t handle);
+const auto kGadgetAny = reinterpret_cast<GadgetAnyFn>(0x00404296);
+
+bool g_anyLookup = false;  // 0x404296 holds the stock bytes
+
+const char* AnyGadget(std::int32_t handle) {
+  if (!g_anyLookup) {
+    return nullptr;
+  }
+  void* object = kGadgetAny(handle);
+  if (object != nullptr) {
+    kGadgetRelease(handle);
+  }
+  return static_cast<const char*>(object);
+}
+
+bool GadgetBox(std::int32_t handle, Box* out) {
+  if (!ValidHandle(handle)) {
+    return false;
+  }
+  const char* object = AnyGadget(handle);
+  if (object == nullptr) {
+    return false;
+  }
+  *out = {Field<std::int32_t>(object, 0x30), Field<std::int32_t>(object, 0x34), Field<std::int32_t>(object, 0x40),
+          Field<std::int32_t>(object, 0x44)};
+  return out->right > out->left && out->bottom > out->top;
+}
+
+// Shown, as the base show (0x447BBC) tests it before doing nothing: flag bits 0 and 1 of [gadget+0A4h] set, bit 7
+// clear.
+bool GadgetShown(std::int32_t handle) {
+  if (!ValidHandle(handle)) {
+    return false;
+  }
+  const char* object = AnyGadget(handle);
+  const std::uint8_t flags = object == nullptr ? 0 : Field<std::uint8_t>(object, 0xA4);
+  return (flags & 0x03) == 0x03 && (flags & 0x80) == 0;
+}
+
+constexpr std::uint32_t kStackPlaced = 0x2CC;     // the buttons the stack fill placed this fill {data, count}
+constexpr std::uint32_t kStackBigIndex = 0x36C;   // the index of the current stack's Big0 in that list, or -1
+constexpr std::uint32_t kStackBigBack = 0x324;    // unitStackButtonBigBackground
+constexpr int kMaxStackButtons = 16;              // 9 small + Big0 in the stock fill
+
+struct Blockers {
+  std::vector<Box> stack;  // the portraits the panel shows now
+  std::vector<Box> avoid;  // the <avoid> gadgets shown now
+};
+
+// The stack portraits as the selection panel's fill placed them earlier in this same fill (0x4C940E: the list
+// [panel+2CCh] emptied, then one button per stack, at most 9; 0x4C8F49 centred them in buttonArea and showed
+// them, with the big background around the current one), and the <avoid> gadgets that are shown.
+void CollectBlockers(const char* panel, Blockers* out) {
+  out->stack.clear();
+  out->avoid.clear();
+  if (g_stackReads) {
+    const std::int32_t* placed = Field<const std::int32_t*>(panel, kStackPlaced);
+    const std::int32_t count = Field<std::int32_t>(panel, kStackPlaced + 4);
+    for (std::int32_t i = 0; placed != nullptr && i < count && i < kMaxStackButtons; ++i) {
+      Box box;
+      if (GadgetBox(placed[i], &box)) {
+        out->stack.push_back(box);
+      }
+    }
+    const std::int32_t big = Field<std::int32_t>(panel, kStackBigIndex);
+    Box box;
+    if (big >= 0 && big < count && GadgetBox(Field<std::int32_t>(panel, kStackBigBack), &box)) {
+      out->stack.push_back(box);
+    }
+  }
+  for (const std::int32_t handle : g_panel.avoid) {
+    Box box;
+    if (GadgetShown(handle) && GadgetBox(handle, &box)) {
+      out->avoid.push_back(box);
+    }
+  }
+}
+
+// A portrait is an image that fills its rectangle: any common pixel blocks the row. A text gadget's rectangle is
+// padded (the stock ones overlap each other by a few pixels): it blocks only a row it covers over more than half
+// the row's height.
+bool Blocked(const Gadget& gadget, const Blockers& blockers) {
+  if (blockers.stack.empty() && blockers.avoid.empty()) {
+    return false;
+  }
+  Box own;
+  if (!GadgetBox(gadget.handle, &own)) {
+    return false;
+  }
+  auto across = [&](const Box& other) {
+    return (std::min)(own.right, other.right) - (std::max)(own.left, other.left);
+  };
+  auto down = [&](const Box& other) {
+    return (std::min)(own.bottom, other.bottom) - (std::max)(own.top, other.top);
+  };
+  for (const Box& box : blockers.stack) {
+    if (across(box) > 0 && down(box) > 0) {
+      return true;
+    }
+  }
+  for (const Box& box : blockers.avoid) {
+    if (across(box) > 0 && 2 * down(box) > own.bottom - own.top) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Once per panel, the first time the portraits cover one of our rows: where they are, for the log.
+void LogBlocked(const Blockers& blockers, const std::wstring& names) {
+  if (g_panel.logged) {
+    return;
+  }
+  g_panel.logged = true;
+  std::wstring boxes;
+  for (const Box& box : blockers.stack) {
+    wchar_t text[64];
+    swprintf_s(text, L" %d,%d-%d,%d", box.left, box.top, box.right, box.bottom);
+    boxes += text;
+  }
+  uhc::Log(L"minUIStats: %u stack portraits (px%ls) and %u avoid gadgets shown; hidden for them:%ls",
+           static_cast<unsigned>(blockers.stack.size()), boxes.c_str(), static_cast<unsigned>(blockers.avoid.size()),
+           names.c_str());
 }
 
 // ---- The mirrored stat panel rows ----
@@ -1361,7 +1618,84 @@ std::uint32_t Classify(const StatRow& row, size_t index) {
   return kOther;
 }
 
-void FillBigRows(const char* selection, bool minimizedBlock) {
+// The stat panel fill stops at its 9th row (0x4D7957: cmp ebx,9 / jge): a unit with more attacks than rows left
+// loses the last ones. They are added after the fill's last attack row, from the same list (0x487EEE, every action
+// it gives, as the fill writes a row for each) and in the fill's own format (AttackRow).
+void AddOverflowAttacks(const char* unit, std::vector<std::uint32_t>* kinds, size_t* lastAttack) {
+  if (!g_attackReads || unit == nullptr || g_stat.size() < static_cast<size_t>(kStatRows)) {
+    return;
+  }
+  size_t written = 0;
+  for (const std::uint32_t kind : *kinds) {
+    written += kind == kAttack ? 1 : 0;
+  }
+  const std::vector<const char*> actions = Attacks(unit, true);
+  size_t at = *lastAttack;
+  for (size_t i = written; i < actions.size() && i < 32; ++i) {
+    StatRow row;
+    if (!AttackRow(unit, actions[i], &row.label, &row.value)) {
+      break;
+    }
+    row.labelStyle = kAttackStyle;
+    row.labelSet = row.valueSet = true;
+    g_stat.insert(g_stat.begin() + static_cast<std::ptrdiff_t>(at), row);
+    kinds->insert(kinds->begin() + static_cast<std::ptrdiff_t>(at), kAttack);
+    *lastAttack = ++at;
+  }
+}
+
+// The text without its markup (<icon=...> and the like).
+std::wstring StripMarkup(const std::wstring& text) {
+  std::wstring out;
+  bool tag = false;
+  for (const wchar_t c : text) {
+    if (c == L'<') {
+      tag = true;
+    } else if (c == L'>') {
+      tag = false;
+    } else if (!tag) {
+      out += c;
+    }
+  }
+  return out;
+}
+
+// Characters on screen, an icon counting as two.
+size_t VisibleLength(const std::wstring& text) {
+  size_t icons = 0;
+  for (size_t at = text.find(L"<icon"); at != std::wstring::npos; at = text.find(L"<icon", at + 1)) {
+    ++icons;
+  }
+  return StripMarkup(text).size() + 2 * icons;
+}
+
+// About how many characters of the stat font fit one line of the gadget: a character is about 0.24 times the
+// gadget's height wide (measured in game at 1920 x 1080: a 16-unit high uhcRow5, 23 px, holds 38 characters and
+// two icons in 210 of its 225 px).
+size_t LineBudget(const Gadget& gadget) {
+  Box box;
+  if (!GadgetBox(gadget.handle, &box) || box.bottom <= box.top) {
+    return 30;
+  }
+  return static_cast<size_t>(static_cast<float>(box.right - box.left) / (0.24f * static_cast<float>(box.bottom - box.top)));
+}
+
+// A row in short form, for the last gadget when the rows outnumber the gadgets: an attack's name and damage (its
+// value up to the first icon), any other row's label and value.
+std::wstring Compact(const StatRow& row) {
+  if (row.labelStyle != kAttackStyle) {
+    return row.value.empty() ? row.label : row.label + L" " + row.value;
+  }
+  const size_t icon = row.value.find(L'>');
+  std::wstring name = row.label;
+  if (!name.empty() && name.back() == L':') {
+    name.pop_back();
+  }
+  return name + L" " + (icon == std::wstring::npos ? row.value : row.value.substr(0, icon + 1));
+}
+
+void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, const Blockers& blockers,
+                 std::wstring* blockedNames) {
   if (!MirrorStatRows(selection)) {
     for (Gadget& gadget : g_panel.big) {
       Hide(&gadget);
@@ -1380,14 +1714,16 @@ void FillBigRows(const char* selection, bool minimizedBlock) {
       lastAttack = i + 1;
     }
   }
+  AddOverflowAttacks(unit, &kinds, &lastAttack);
   if (skip & kAuto) {
     // What the minimized block shows itself (0x6987D7..0x69A60F): the owner, hit points, resists, the resource held,
     // the AutoGather rate, the special attacks inline, and the first three rows of attacks less the resource row.
     skip |= minimizedBlock ? (kName | kHitpoints | kResists | kResource | kRate | kShownAttack | kSpecial) : kName;
   }
   int shownAttacks = (skip & kShownAttack) ? (resourceShown ? 2 : 3) : 0;
-  size_t out = 0;
-  for (size_t i = 0; i < g_stat.size() && out < g_panel.big.size(); ++i) {
+  // The rows to show, in order.
+  std::vector<const StatRow*> rows;
+  for (size_t i = 0; i < g_stat.size(); ++i) {
     std::uint32_t kind = kinds[i];
     if (kind == kOther && lastAttack != 0 && i >= lastAttack) {
       kind = kSpecial;
@@ -1396,19 +1732,60 @@ void FillBigRows(const char* selection, bool minimizedBlock) {
       --shownAttacks;
       continue;
     }
-    if (skip & kind) {
+    if (!(skip & kind)) {
+      rows.push_back(&g_stat[i]);
+    }
+  }
+  // A gadget under a stack portrait or a shown <avoid> gadget is left empty, and the rows go on in the next one.
+  std::vector<size_t> free;
+  for (size_t k = 0; k < g_panel.big.size(); ++k) {
+    if (!g_big.keep && Blocked(g_panel.big[k], blockers)) {
+      Hide(&g_panel.big[k]);
+      wchar_t name[160];
+      swprintf_s(name, g_big.pattern.c_str(), g_big.first + static_cast<int>(k));
+      *blockedNames += L" " + std::wstring(name);
+    } else {
+      free.push_back(k);
+    }
+  }
+  for (size_t n = 0; n < free.size(); ++n) {
+    Gadget* gadget = &g_panel.big[free[n]];
+    if (n >= rows.size()) {
+      Hide(gadget);
       continue;
     }
-    const StatRow& row = g_stat[i];
+    const StatRow& row = *rows[n];
+    const std::uint32_t style = row.labelStyle == kAttackStyle ? kAttackStyle : kLabelStyle;
+    if (n + 1 == free.size() && rows.size() > free.size()) {
+      // One line: as many short rows as fit the gadget (a formatText wraps a longer text and centres it, which
+      // would show a middle line), then "+N"; the help text lists them all.
+      const size_t budget = LineBudget(*gadget);
+      std::wstring text;
+      std::wstring tip;
+      size_t shown = 0;
+      for (size_t r = n; r < rows.size(); ++r) {
+        const std::wstring part = Compact(*rows[r]);
+        const size_t left = rows.size() - r - 1;
+        const std::wstring more = left == 0 ? L"" : L" +" + std::to_wstring(left);
+        if (shown == 0 || VisibleLength(text + L"   " + part + more) <= budget) {
+          text += (text.empty() ? L"" : L"   ") + part;
+          ++shown;
+        } else {
+          text += L" +" + std::to_wstring(rows.size() - r);
+          break;
+        }
+      }
+      for (size_t r = n; r < rows.size(); ++r) {
+        tip += (tip.empty() ? L"" : L"\n") + StripMarkup(rows[r]->label + L" " + rows[r]->value);
+      }
+      SetText(gadget, text, style, tip);
+      continue;
+    }
     std::wstring text = row.label;
     if (!row.value.empty()) {
       text += L"  " + row.value;
     }
-    const std::uint32_t style = row.labelStyle == kAttackStyle ? kAttackStyle : kLabelStyle;
-    SetText(&g_panel.big[out++], text, style, row.tip);
-  }
-  for (; out < g_panel.big.size(); ++out) {
-    Hide(&g_panel.big[out]);
+    SetText(gadget, text, style, row.tip);
   }
 }
 
@@ -1434,6 +1811,8 @@ std::wstring ResolveLabel(const std::wstring& label) {
 // The last selection the rows were written for, and when.
 std::int32_t g_lastUnitId = -1;
 std::int32_t g_lastCount = -1;
+std::int32_t g_lastStacks = -1;
+std::int32_t g_lastBigIndex = -2;
 ULONGLONG g_lastTick = 0;
 constexpr ULONGLONG kRefreshMs = 250;
 bool g_busy = false;
@@ -1449,17 +1828,31 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
   const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
   const std::int32_t unitId = unit == nullptr ? -1 : Field<std::int32_t>(unit, 0x10);
   const std::int32_t count = selection == nullptr ? 0 : Field<std::int32_t>(selection, 0x14);
+  // The portraits move with the number of stacks and the current one.
+  const std::int32_t stacks = g_stackReads ? Field<std::int32_t>(panel, kStackPlaced + 4) : 0;
+  const std::int32_t bigIndex = g_stackReads ? Field<std::int32_t>(panel, kStackBigIndex) : 0;
   const ULONGLONG now = GetTickCount64();
-  if (unitId == g_lastUnitId && count == g_lastCount && now - g_lastTick < kRefreshMs) {
+  if (unitId == g_lastUnitId && count == g_lastCount && stacks == g_lastStacks && bigIndex == g_lastBigIndex &&
+      now - g_lastTick < kRefreshMs) {
     return;
   }
   g_lastUnitId = unitId;
   g_lastCount = count;
+  g_lastStacks = stacks;
+  g_lastBigIndex = bigIndex;
   g_lastTick = now;
   g_busy = true;
+  Blockers blockers;
+  CollectBlockers(panel, &blockers);
+  std::wstring blockedNames;
   for (size_t i = 0; i < g_rows.size(); ++i) {
     Gadget& gadget = g_panel.rows[i];
     if (!gadget.valid) {
+      continue;
+    }
+    if (!g_rows[i].keep && Blocked(gadget, blockers)) {
+      Hide(&gadget);
+      blockedNames += L" " + g_rows[i].gadget;
       continue;
     }
     std::wstring value;
@@ -1478,8 +1871,11 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
         Hide(&gadget);
       }
     } else {
-      FillBigRows(selection, minimizedBlock);
+      FillBigRows(selection, unit, minimizedBlock, blockers, &blockedNames);
     }
+  }
+  if (!blockedNames.empty() && !blockers.stack.empty()) {
+    LogBlocked(blockers, blockedNames);
   }
   g_busy = false;
 }
@@ -1522,6 +1918,21 @@ Outcome ApplyMinUiStats(const Config& config) {
     Log(L"minUIStats: the stock %ls code is not what these items mirror; %ls left empty",
         !g_buildReads ? L"build tick" : L"regeneration", !g_buildReads ? L"buildTime, buildProgress, buildRate" : L"regen");
   }
+  g_anyLookup = AllMatch({&sites::kGadgetLookupAny});
+  // Where the stack portraits are is read from the panel after the fill placed them; checked apart too, so a
+  // changed stack code only stops the rows from making room for the portraits.
+  g_stackReads = AllMatch({&sites::kStackFillReset, &sites::kStackFillCurrent, &sites::kStackFillAppend,
+                           &sites::kStackLayoutCall, &sites::kStackLayout, &sites::kGadgetLookupAny});
+  if (!g_stackReads) {
+    Log(L"minUIStats: the stock stack portrait code is not what the rows read; rows are not hidden under portraits");
+  }
+  g_attackReads = AllMatch({&sites::kStatFillRowCap, &sites::kAttackRowName, &sites::kAttackRowDamage,
+                            &sites::kAttackRowTypeIcon, &sites::kAttackRowRange, &sites::kAttackRowSiege,
+                            &sites::kAttackRowCold, &sites::kAttackRowModifier, &sites::kAttackRowTyped,
+                            &sites::kActionRawName, &sites::kActionRangeEntry});
+  if (!g_attackReads) {
+    Log(L"minUIStats: the stock attack row code is not what the rows mirror; attacks past the 9th stat row left out");
+  }
   for (TypeFilter* filter : g_filters) {
     if (!RequestAbstractUnitType(filter->name.c_str(), &filter->id)) {
       return Outcome::kFailed;
@@ -1540,9 +1951,9 @@ Outcome ApplyMinUiStats(const Config& config) {
     refs += AddDataRef(item.ref, kDataRefString, item.provider) ? 1 : 0;
   }
   Log(L"minUIStats: %u rows and %ls from %ls; building armor shown in the minimized panel's resists; %d data refs "
-      L"{uhc...} (UI only)",
+      L"{uhc...} (UI only); rows give way to the stack portraits and %u avoid gadgets",
       static_cast<unsigned>(g_rows.size()), g_big.on ? L"the normal interface's stat rows" : L"no stat rows",
-      g_file.c_str(), refs);
+      g_file.c_str(), refs, static_cast<unsigned>(g_avoid.size()));
   (void)&OnDatabase;
   return Outcome::kApplied;
 }

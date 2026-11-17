@@ -30,6 +30,14 @@
                 groupHealth, resource, gatherers, rate, speed, resists, attacks, shownAttacks,
                 special, other
 
+     Rows make room for the selection's unit portraits (one per unit type, at the top of the panel;
+     the game places them each time the selection changes): a row whose gadget a portrait covers is
+     hidden until the portraits leave room again. A bigPanelRows gadget that is covered is skipped, and
+     its row goes to the next gadget.
+     <avoid gadget="...">: the same for a gadget of the original panel, while it is shown (a text
+       gadget counts when it covers more than half of the row's height).
+     overlap="show" on a <row> or <bigPanelRows>: never hidden for portraits or <avoid> gadgets.
+
      Each item is also a text for any formatText gadget: {uhcHitpoints}, {uhcSpeed}, {uhcBaseSpeed},
      {uhcLOS}, {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}, {uhcROF},
      {uhcRange}, {uhcMinRange}, {uhcArea}, {uhcCost}, {uhcPopulation}, {uhcBounty}, {uhcBuildLimit},
@@ -43,6 +51,10 @@
   <row gadget="unitselectionpanel-uhcCostPop" text="Cost: {cost}|Pop: {population}"/>
   <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
   <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
+  <!-- uhcRow5 is on the line of the resource held and the AutoGather rate (a villager carrying food,
+       a factory, a bank, a trickle): while either shows, uhcRow5 stays empty. -->
+  <avoid gadget="unitselectionpanel-unitResourceValue"/>
+  <avoid gadget="unitselectionpanel-unitResourceRateLabel"/>
 
   <!-- More rows to enable: add a gadget for each to uiunitselectionmin.xml, then remove the comment marks.
   <row gadget="unitselectionpanel-uhcExtra0" text="Min range: {minRange}|Area: {area}"/>

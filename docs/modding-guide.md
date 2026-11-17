@@ -7257,6 +7257,8 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
     <row gadget="unitselectionpanel-uhcCostPop" text="Cost: {cost}|Pop: {population}"/>
     <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
     <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
+    <avoid gadget="unitselectionpanel-unitResourceValue"/>
+    <avoid gadget="unitselectionpanel-unitResourceRateLabel"/>
   </minUIRows>
   ```
 
@@ -7268,8 +7270,19 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   - `<bigPanelRows>`: `gadget` with `%d`, `first`, the number of consecutive gadgets found (at least two; `count` caps
     it, default 16), and `skip`: `auto` (what the minimized panel shows itself), `name`, `hitpoints`, `groupHealth`,
     `resource`, `gatherers`, `rate`, `speed`, `resists`, `attacks`, `shownAttacks`, `special`, `other`.
+  - **Mixed groups (2026-11-17):** a row whose gadget a unit portrait of the selection covers (one per unit type, which
+    the game centres in the panel's top band each time) is hidden while it does; a `bigPanelRows` gadget is skipped and
+    its row goes to the next one. `<avoid gadget="..."/>` does the same for a stock gadget while it is shown (a text
+    gadget counts when it covers more than half the row's height); `overlap="show"` on a `<row>` or `<bigPanelRows>`
+    opts out. The shipped file avoids `unitResourceValue` and `unitResourceRateLabel` (the resource held and the
+    AutoGather rate, on `uhcRow5`'s line).
+  - **More attacks than rows (2026-11-17):** the big stat panel stops at its 9th row, so a unit with many attacks lost
+    the last ones in both interfaces. The rows it had no room for are added to `bigPanelRows` in its own format (name,
+    damage and its icon, range and its icon; the bonus multipliers are left out), and when the rows outnumber the
+    gadgets the last gadget shows the rest in short form, name and damage, as many as fit, then `+N`, with all of them
+    in its help text.
 - **WoL needs:** a `uiunitselectionmin.xml` with the gadgets. `wol-fixes/min-ui` has one made from the **stock**
-  minimized panel (`Data3.bar`) plus seven top-level gadgets, and its README; Dr.Maxy chooses the places. A layout
+  minimized panel (`Data3.bar`) plus eight top-level gadgets, and its README; Dr.Maxy chooses the places. A layout
   without them shows nothing new but the building armor and the data refs. The normal interface is unchanged.
 - **With WoL.dll:** tested beside it (`WoL.upl`), with `forceMinUI` and `trickleDisplay`: no shared byte.
   `forceMinUI` loads the minimized layout without changing the profile option the panel reads; the exe then skipped
@@ -7277,9 +7290,13 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   `unitHitPointsLabel` gadget exists), option on or off; the normal layout has no such gadget and is left alone.
 - **Multiplayer:** display only; every player can have it or not.
 - **Log:** `minUIStats: 5 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
-  minimized panel's resists; 30 data refs {uhc...} (UI only)`, `data refs: 30 added after the game's 116`, then
-  `hook reached: data refs registration (0x5D3229)`, `unit panel tail (0x4C8281)`, `minUIStats stat fill gate
-  (0x4D725C)`, and once per panel `minUIStats: panel ...: 4 of 4 row gadgets, 2 big panel row gadgets`.
+  minimized panel's resists; 30 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid
+  gadgets`, `data refs: 30 added after the game's 116`, then `hook reached: data refs registration (0x5D3229)`,
+  `unit panel tail (0x4C8281)`, `minUIStats stat fill gate (0x4D725C)`, once per panel `minUIStats: panel ...: 5 of 5
+  row gadgets, 3 big panel row gadgets`, and the first time portraits cover a row, `minUIStats: 6 stack portraits (px
+  791,901-836,935 ...) and 0 avoid gadgets shown; hidden for them: unitselectionpanel-uhcRow1
+  unitselectionpanel-uhcCostPop`. If another DLL changed the stock code read, `the stock stack portrait code is not what
+  the rows read` or `the stock attack row code is not what the rows mirror`: only that part is off.
 - **Performance:** `perfprobe.py`, 60 s each, Menelik II selected, another game running beside it: 716 fps, main thread
   87.1 %, update 0.1 ms, render 1.2 ms, against 687 fps, 87.8 %, 0.2 ms, 1.3 ms key off: noise. With 100 samples a
   second, `UHC.dll` was 0.0 % of the main thread, and the panel functions under 0.5 %. The rows are written at most
@@ -7382,9 +7399,54 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   text; `UHC.dll` was 0.2 % of the main thread's samples; no frame over 50 ms. The videos' own numbers (16 s each):
   927 fps on, 954 off.
 
-- **Limits:** a row longer than its gadget is cut at the gadget's edge (`uhcRow3`/`uhcRow4` are as wide as the stock
-  attack rows since 2026-11-17, which fits Sharpshooter's range); with a group the rows describe the first unit, as the stock panel does; `shownAttacks` assumes the minimized panel
-  shows three attack rows, two with a resource row.
+- **Mixed groups and many attacks, tested in WoL (2026-11-17, single player, a scenario with 14 unit types of player 1,
+  Ethiopians, the layout and data file of `wol-fixes/min-ui`, 1920 x 1080; three other test games were running on the
+  PC):**
+
+  | Selection | Key on | Key off |
+  |---|---|---|
+  | One `Musketeer` | as before: the big portrait in the middle of the band, Cost/Pop and ROF/Range right of it, Train Points left | no new rows |
+  | 2 types | the two portraits reach the Cost/ROF rows: both rows hidden; Train Points, LOS, Speed stay | — |
+  | 5 types | the same; the portraits span 791..1039 px | the stock rows only |
+  | 9 types | Train Points hidden too: nothing of ours under a portrait | the stock rows only |
+  | 10 and 12 types | 9 portraits, no 10th, no paging; the rows as with 9 | — |
+  | 12 types, a click on the first portrait | that type (Menelik II) becomes the current one: the big portrait, its name, Regen, attack rows | — |
+  | `Explorer` (Menelik II, 8 attacks) | 3 stock attack rows, Sharpshooter and Crack Shot (the big panel's), then `Anti-artillery Crackshot Attack 0 +2` (Swashbuckler 100 and Counter-Intelligence 6000 in its help text, read in a debug log, not hovered); the big panel had room for 5 | 3 attacks |
+  | `WoLPresidial` (Manuel Mondragon) | the same 8 attacks, Crack Shot 5000 | — |
+  | `Grenadier` (Grognard) | its 5 attacks as before; `uhcRow5` stays empty | — |
+  | `Barracks` | Cost 200, LOS 12, as before | — |
+  | Test data file avoiding `unitHitPointsLabel` | `uhcRow0` (LOS, Speed), under the HP label, hidden; `uhcRow5` still shown for the Explorer (no resource held) | — |
+
+  Our attack rows were compared in the log, row by row, with what the big panel fill wrote for the same five attacks:
+  the same text, less the bonus multipliers. With `WoL.upl` (its five keys, `forceMinUI` patches set): 35 applied, 0
+  failed, the same pictures. With every key of the cfg template on (all but `rendererOption` and `menuOptions`, as in
+  batch 3): 113 applied, 0 failed, the same pictures.
+
+  ![One unit type](media/minUIStats-mixed-1type.png)
+  ![Two types: Cost/Pop and ROF/Range give way](media/minUIStats-mixed-2types.png)
+  ![Five types](media/minUIStats-mixed-5types.png)
+  ![Five types, key off](media/minUIStats-mixed-5types-control.png)
+  ![Nine types: Train Points gives way too](media/minUIStats-mixed-9types.png)
+  ![Twelve types, the first portrait clicked](media/minUIStats-mixed-12types-clicked.png)
+  ![Menelik II: 8 attacks](media/minUIStats-attacks-explorer.png)
+  ![Menelik II, key off](media/minUIStats-attacks-explorer-control.png)
+  ![The avoid test](media/minUIStats-avoid-test.png)
+
+  Screenshots only, no video: nothing moves; the rows change only when the selection does. All the pictures, as JPG,
+  are also in `wol-fixes/min-ui/media`.
+
+  Performance (`perfprobe.py`, 45 s each, five types selected, Explorer included; three other games running): key on
+  666 fps, main thread 85.1 %, update 0.16 ms, render 1.34 ms, longest frame 12.8 ms; key off 569 fps, 84.5 %, 0.18 ms,
+  1.58 ms, 9.0 ms; no frame over 50 ms in either. The other games move these numbers more than the key does;
+  `UHC.dll` was 0.1 % of the main thread's samples (100 a second).
+
+- **Limits:** a row longer than its gadget is cut at the gadget's edge (`uhcRow3`/`uhcRow4` end where the stock attack rows
+  end, which fits Sharpshooter's range); with a group the rows describe the current type's first unit, as the stock panel
+  does; `shownAttacks` assumes the minimized panel shows three attack rows, two with a resource row; the attack rows the
+  DLL adds past the big panel's 9th row leave out the bonus multipliers; the short form of the last row shows what fits
+  one line (the rest in its help text); not seen in game: Tab to a type past the ninth portrait (synthetic keys do not
+  reach the game's hotkeys), 6 to 8 types, a unit with the AutoGather rate row and 6 attacks (`uhcRow5` should stay
+  empty, as the avoid test above suggests).
 
 #### playerIcon
 
