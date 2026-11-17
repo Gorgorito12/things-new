@@ -1,0 +1,42 @@
+Hi Dr.Maxy,
+
+The minimized UI (UiUnitselectionMIN) now shows what the big UI shows, and more, with the new DLL key
+minUIStats. This note is for your information only: nothing in it needs an answer.
+
+What was decided
+----------------
+1. Row places: the rows start from the original minimized UI (uiunitselectionmin.xml from Data3.bar),
+   with six new gadgets at the top level, never inside a gadget the game shows or hides. So Speed no
+   longer depends on the Armor value.
+2. Building armor: shown in the original "Resists" spot, with the same look as for units. The game
+   showed it only for protos of type Unit; with the key, any proto with an armor above 0 shows it.
+3. Speed: the live speed (with techs, snares and auras), as the big UI shows it, not the base speed of
+   {currentUnitMaxVelocityFloat}. It is also a text you can put in any gadget: {uhcSpeed}.
+4. More than 3 attacks: the minimized UI only had room for 3 attack rows. Extra rows now show the
+   rest, and the other big UI rows the minimized one never had (Gatherers, Group Health).
+
+Two things we noticed in WoL's current files
+--------------------------------------------
+- In your uiunitselectionmin.xml, the gadget unitselectionpanel-unitTypeName (line 40) has no "/>" and
+  no closing tag of its own. So nearly the whole panel (hit points, resists, resources, the attack rows,
+  the health bars) ends up as its child, and the extra "</gadget>" at line 88 closes the panel. The
+  game copes with it, but it looks like a mistake. Our file starts from the original, so it does not
+  have it.
+- Your uiunitstatpanel3.xml (the big UI's stat panel) holds the original minimized stat panel: 5 rows
+  instead of 9, so the big UI shows only one attack row. We left it alone: you force the minimized UI,
+  and the UI is not meant to change for now. If you ever want the 9 rows back, the original file is in
+  optional\uiunitstatpanel3.xml.
+
+Two fixes since the first version
+---------------------------------
+- Long attack rows: the extra rows (uhcRow3, uhcRow4) are now as wide as the original attack rows, so
+  a hero's "Sharpshooter ATK: 750 ... 16 (range)" fits.
+- WoL.dll's forceMinUI with the profile option off: the game loaded the minimized layout but skipped
+  its own rows, so hit points and attacks were missing. The DLL now fills the minimized panel whenever
+  the minimized layout is loaded, with the option on or off. The big UI is left alone.
+
+Everything is in the data file
+------------------------------
+Which gadget shows which item, with which label and for which unit types, is in minuirows.xml
+(data\uhc\minuirows.xml); the gadgets themselves are in uiunitselectionmin.xml. You can move, remove,
+rename or add rows, change labels or widths, without a new DLL. README.txt lists the items and options.

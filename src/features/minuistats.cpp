@@ -35,6 +35,7 @@ extern "C" {
 // 1 while minUIStats runs the stat panel fill for the minimized panel's rows (hooks/minuistats_hooks.asm).
 std::uint32_t g_uhcMinUiForceFill = 0;
 void UhcStatFillMinGate();
+void UhcMinBlockChoice();
 }
 
 namespace {
@@ -1000,7 +1001,7 @@ Outcome ApplyMinUiStats(const Config& config) {
     return Outcome::kFailed;
   }
   if (!VerifyAll("minUIStats",
-                 {&sites::kStatFillHead, &sites::kStatFillMinGate, &sites::kMinResistsUnitGate,
+                 {&sites::kStatFillHead, &sites::kStatFillMinGate, &sites::kMinResistsUnitGate, &sites::kMinBlockChoice,
                   &sites::kGadgetByName, &sites::kGadgetRef, &sites::kGadgetRelease, &sites::kGadgetShow,
                   &sites::kGadgetHide, &sites::kBStringFromWide, &sites::kBStringFromId, &sites::kBStringSet,
                   &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
@@ -1014,7 +1015,10 @@ Outcome ApplyMinUiStats(const Config& config) {
   }
   static const std::uint8_t kNops[6] = {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
   if (!WriteJmp(sites::kStatFillMinGate.va + 0x41, reinterpret_cast<const void*>(&UhcStatFillMinGate), 11) ||
-      !WriteBytes(sites::kMinResistsUnitGate.va + 0x14, kNops, sizeof(kNops)) || !AddUnitPanelTail(&MinUiTail)) {
+      !WriteBytes(sites::kMinResistsUnitGate.va + 0x14, kNops, sizeof(kNops)) || !AddUnitPanelTail(&MinUiTail) ||
+      // After the tail hook, which verifies these bytes too: the minimized block also runs for a minimized layout
+      // loaded without the profile option.
+      !WriteJmp(sites::kMinBlockChoice.va, reinterpret_cast<const void*>(&UhcMinBlockChoice), 11)) {
     return Outcome::kFailed;
   }
   int refs = 0;

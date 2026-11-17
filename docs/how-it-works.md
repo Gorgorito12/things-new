@@ -3710,11 +3710,16 @@ a stock one. Seven `currentUnit…` names point to a stub that always fails (`At
 and `currentUnitMaxVelocity` reads the proto's base speed `[proto+80h]`, not the live one the stat
 panel shows.
 
-**The key.** Four writes, each checked against the stock bytes first:
+**The key.** Five writes, each checked against the stock bytes first:
 - **The tail of the selection panel fill** (0x4C8281, 10 bytes, `AddUnitPanelTail` in `unitpanel.*`): both
   interfaces pass there, the minimized one after its own block, which jumps back to it. The hook passes the panel
   `[esp+50h]`, the selection `[esp+78h]`, its first unit `[esp+54h]` and the byte `[esp+5Eh]`, the profile option
   the block was chosen by, then re-executes `mov esi,[esp+50h] / mov edi,[esi+308h]` and goes on at 0x4C828B.
+- **The choice of the minimized block** (0x4C8276, 11 bytes, written after the tail hook, which verifies those bytes
+  too): `cmp byte [esp+5Eh],1 / je 6987D7h` runs the block with the option on; the hook also runs it when the
+  panel's `unitHitPointsLabel` handle `[panel+2F0h]` is a real gadget, which only the minimized layouts have, and
+  sets the byte to 1. A minimized layout loaded with the option off (the layout's choice can be patched apart from
+  the option) is then filled in full; the normal layout goes on to 0x4C8281 as before.
 - **The stat panel fill's gate** (0x4D725C, 11 bytes): `cmp byte [esp+63h],1 / je 4D81A1h` returns with the option
   on; the hook returns too, unless the DLL set `g_uhcMinUiForceFill`, and then goes on to the rows at 0x4D7267.
 - **The resists gate** of the minimized block: the `jne 698E7Ah` after the `Unit` type test (0x698BF6, 6 bytes) is
@@ -3743,7 +3748,7 @@ the resource, the rate, the special attacks and its first attack rows (three, tw
 **Coexistence.** The key's sites do not touch the AutoGather row block (0x6991BF..0x699456), where another DLL may
 redirect the rate's call and NOP its gate, nor the unit panel row hook at 0x699456. The minimized interface can be
 forced by patching the screen's copy of the option (0x761BF0) and the file choices, without the two profile reads at
-0x4C8235 and 0x4D721B: the tail then sees the byte off, and the rows of the stat panel fill go to the block in full.
+0x4C8235 and 0x4D721B: the block choice above makes the selection panel behave as with the option on.
 
 ### buildingWorkRateAuras
 

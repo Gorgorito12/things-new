@@ -266,7 +266,13 @@ resists spot, used only when the stock one is hidden, i.e. buildings), `uhcRow3.
    attack onward, special attacks).
 2. What the user and Dr.Maxy pick from the catalog (2.2, 2.3).
 
-### Questions for Dr.Maxy
+### Questions for Dr.Maxy (all decided, 2026-11-17)
+
+Decided by the user and the coordinator: 1 the proposed places; 2 the stock Resists spot; 3 the live speed; 4 extra
+rows. 5 is a bug in WoL's file (ours starts from the stock one); 6 is left alone, with the stock 9-row file offered
+in `wol-fixes/min-ui/optional/`. Dr.Maxy gets `note-for-drmaxy.txt`, with no questions. Also fixed since: the extra
+rows are as wide as the stock attack rows, and a minimized layout loaded with the option off (WoL.dll's
+`forceMinUI`) is filled in full. The questions as first written:
 
 1. Are the row places in the proposed preview fine, or do you want to place them yourself?
 2. Building armor: on the stock "Resists" spot with the same look, or a row of its own?

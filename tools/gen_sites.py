@@ -1712,6 +1712,9 @@ SITES = [
     # minimized block's way back, jmp 4C8281h
     ("UnitPanelTail", 0x4C8276, 0x15),
     ("UnitPanelMinBlockBack", 0x69A60F, 5),
+    # minUIStats: the choice of that block, cmp byte [esp+5Eh],1 / je 6987D7h (11 bytes, replaced after the tail hook
+    # is in place; inside the UnitPanelTail range, which the tail verifies first)
+    ("MinBlockChoice", 0x4C8276, 0x0B),
     # minUIStats: the stat panel fill FUN_004D70ED, thiscall(panel, selection), ret 4, EBP frame; it reads of its
     # panel only the row handles [+174h+i*4] / [+198h+i*4]. Its head, and its profile option 49h read (push 49h /
     # ... inlined option lookup ... / cmp byte [esp+63h],1 / je 4D81A1h, the 11 bytes the gate replaces at

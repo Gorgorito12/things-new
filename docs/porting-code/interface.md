@@ -2022,7 +2022,7 @@ Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
 
 Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `BStringFromId` `0x58EA52` (25 B), `MinResistsUnitGate` `0x698BE2` (26 B), `CurrentUnitRef` `0x6F49B1` (65 B), `GadgetByName` `0xAB7C2F` (38 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `MinBlockChoice` `0x4C8276` (11 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `BStringFromId` `0x58EA52` (25 B), `MinResistsUnitGate` `0x698BE2` (26 B), `CurrentUnitRef` `0x6F49B1` (65 B), `GadgetByName` `0xAB7C2F` (38 B).
 
 ### src/features/minuistats.cpp
 
@@ -2064,6 +2064,7 @@ extern "C" {
 // 1 while minUIStats runs the stat panel fill for the minimized panel's rows (hooks/minuistats_hooks.asm).
 std::uint32_t g_uhcMinUiForceFill = 0;
 void UhcStatFillMinGate();
+void UhcMinBlockChoice();
 }
 
 namespace {
@@ -3029,7 +3030,7 @@ Outcome ApplyMinUiStats(const Config& config) {
     return Outcome::kFailed;
   }
   if (!VerifyAll("minUIStats",
-                 {&sites::kStatFillHead, &sites::kStatFillMinGate, &sites::kMinResistsUnitGate,
+                 {&sites::kStatFillHead, &sites::kStatFillMinGate, &sites::kMinResistsUnitGate, &sites::kMinBlockChoice,
                   &sites::kGadgetByName, &sites::kGadgetRef, &sites::kGadgetRelease, &sites::kGadgetShow,
                   &sites::kGadgetHide, &sites::kBStringFromWide, &sites::kBStringFromId, &sites::kBStringSet,
                   &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
@@ -3043,7 +3044,10 @@ Outcome ApplyMinUiStats(const Config& config) {
   }
   static const std::uint8_t kNops[6] = {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
   if (!WriteJmp(sites::kStatFillMinGate.va + 0x41, reinterpret_cast<const void*>(&UhcStatFillMinGate), 11) ||
-      !WriteBytes(sites::kMinResistsUnitGate.va + 0x14, kNops, sizeof(kNops)) || !AddUnitPanelTail(&MinUiTail)) {
+      !WriteBytes(sites::kMinResistsUnitGate.va + 0x14, kNops, sizeof(kNops)) || !AddUnitPanelTail(&MinUiTail) ||
+      // After the tail hook, which verifies these bytes too: the minimized block also runs for a minimized layout
+      // loaded without the profile option.
+      !WriteJmp(sites::kMinBlockChoice.va, reinterpret_cast<const void*>(&UhcMinBlockChoice), 11)) {
     return Outcome::kFailed;
   }
   int refs = 0;
@@ -3077,8 +3081,36 @@ EXTERNDEF g_uhcMinUiForceFill:DWORD     ; 1 while minUIStats runs the fill for t
 .data
 statFillReturn  dd 004D81A1h    ; pop edi / ... / ret 4: the fill's end, stock with option 49h
 statFillGo      dd 004D7267h    ; lea ecx,[esp+14h]: the first row
+minBlockGo      dd 006987D7h    ; the selection panel's minimized block
+panelTailGo     dd 004C8281h    ; the fill's tail (the shared tail hook, unitpanel.cpp)
 
 .code
+
+; Replaces 0x4C8276..0x4C8280 (cmp byte ptr [esp+5Eh],1 / je 6987D7h) in the selection panel fill FUN_004C7E52:
+; byte [esp+5Eh] is profile option 49h, optionminimizedui. Stock runs the minimized block with the option on.
+; This also runs it when the panel was built from a minimized layout with the option off (another DLL can force
+; that layout without the option): the panel's unitHitPointsLabel handle [panel+2F0h] (bound at 0x9BAD77) is a real
+; gadget only in the minimized layouts. The byte is then set to 1, as the block's way back and the tail read it.
+; EAX is kept (the block and the tail reload what they use: EBX, the unit, is untouched); the flags are dead.
+UhcMinBlockChoice PROC
+    TRACE_ONCE "minUIStats minimized block choice (0x4C8276)"
+    cmp byte ptr [esp+5Eh], 1
+    je minimized
+    push eax
+    mov eax, dword ptr [esp+4+50h]      ; the panel
+    mov eax, dword ptr [eax+2F0h]       ; its unitHitPointsLabel handle
+    test eax, eax
+    jz normal
+    cmp eax, dword ptr ds:[00C672C0h]   ; the "no gadget" handle
+    je normal
+    pop eax
+    mov byte ptr [esp+5Eh], 1
+minimized:
+    jmp minBlockGo
+normal:
+    pop eax
+    jmp panelTailGo
+UhcMinBlockChoice ENDP
 
 ; Replaces 0x4D725C..0x4D7266 (cmp byte ptr [esp+63h],1 / je 4D81A1h) in FUN_004D70ED: byte [esp+63h] is profile
 ; option 49h, optionminimizedui, read just above. Stock returns there; this goes on to the rows when the DLL asked

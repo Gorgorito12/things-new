@@ -7251,10 +7251,10 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
 - **WoL needs:** a `uiunitselectionmin.xml` with the gadgets. `wol-fixes/min-ui` has one made from the **stock**
   minimized panel (`Data3.bar`) plus seven top-level gadgets, and its README; Dr.Maxy chooses the places. A layout
   without them shows nothing new but the building armor and the data refs. The normal interface is unchanged.
-- **With WoL.dll:** tested beside it (`WoL.upl`), with `forceMinUI` and `trickleDisplay`: no shared byte. With
-  `forceMinUI` and the profile option off, the exe loads the minimized layout but skips its own block, so its rows (HP,
-  attacks) stay empty and the big panel's rows go to the two `uhcRow` gadgets only: give `bigPanelRows` more gadgets,
-  or keep the option on, as WoL's profile does.
+- **With WoL.dll:** tested beside it (`WoL.upl`), with `forceMinUI` and `trickleDisplay`: no shared byte.
+  `forceMinUI` loads the minimized layout without changing the profile option the panel reads; the exe then skipped
+  its own minimized rows (HP, attacks). The key runs them whenever the panel was built from a minimized layout (its
+  `unitHitPointsLabel` gadget exists), option on or off; the normal layout has no such gadget and is left alone.
 - **Multiplayer:** display only; every player can have it or not.
 - **Log:** `minUIStats: 4 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
   minimized panel's resists; 9 data refs {uhc...} (UI only)`, `data refs: 9 added after the game's 116`, then
@@ -7283,11 +7283,13 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   ![The big interface](media/minUIStats-test-hero-big.png)
   ![A ship](media/minUIStats-test-ship-min.png)
 
-  Also: with `WoL.upl` (`forceMinUI`, `trickleDisplay`) and the option on, the same rows; with the option off,
-  ![forceMinUI with the option off](media/minUIStats-test-forcemin.png) (HP and resists in the two rows, the rest
-  in the stat panel). Key off: the stock rows only, the gadgets empty. The profile was restored after each switch.
-- **Limits:** a long attack row in the narrow `uhcRow3`/`uhcRow4` is cut at the gadget's edge (Sharpshooter's range);
-  with a group the rows describe the first unit, as the stock panel does; `shownAttacks` assumes the minimized panel
+  Also: with `WoL.upl` (`forceMinUI`, `trickleDisplay`) the same rows with the option on and off (below: off, Menelik
+  II, with the widened rows); the big interface with the option off and the key on is unchanged (no gadget found).
+  Key off: the stock rows only, the gadgets empty. The profile was restored after each switch.
+
+  ![forceMinUI with the option off](media/minUIStats-test-forcemin.png)
+- **Limits:** a row longer than its gadget is cut at the gadget's edge (`uhcRow3`/`uhcRow4` are as wide as the stock
+  attack rows since 2026-11-17, which fits Sharpshooter's range); with a group the rows describe the first unit, as the stock panel does; `shownAttacks` assumes the minimized panel
   shows three attack rows, two with a resource row.
 
 #### playerIcon

@@ -2227,6 +2227,9 @@ inline constexpr Site kUnitPanelTail{"UnitPanelTail", 0x004C8276, kUnitPanelTail
 inline constexpr std::uint8_t kUnitPanelMinBlockBackBytes[] = {0xE9, 0x6D, 0xDC, 0xE2, 0xFF};
 inline constexpr Site kUnitPanelMinBlockBack{"UnitPanelMinBlockBack", 0x0069A60F, kUnitPanelMinBlockBackBytes, sizeof(kUnitPanelMinBlockBackBytes)};
 
+inline constexpr std::uint8_t kMinBlockChoiceBytes[] = {0x80, 0x7C, 0x24, 0x5E, 0x01, 0x0F, 0x84, 0x56, 0x05, 0x1D, 0x00};
+inline constexpr Site kMinBlockChoice{"MinBlockChoice", 0x004C8276, kMinBlockChoiceBytes, sizeof(kMinBlockChoiceBytes)};
+
 inline constexpr std::uint8_t kStatFillHeadBytes[] = {0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x81, 0xEC, 0xA4, 0x00, 0x00, 0x00, 0x53, 0x56, 0x57, 0x8B, 0x7D, 0x08, 0x85, 0xFF, 0x89, 0x4C, 0x24, 0x50};
 inline constexpr Site kStatFillHead{"StatFillHead", 0x004D70ED, kStatFillHeadBytes, sizeof(kStatFillHeadBytes)};
 
