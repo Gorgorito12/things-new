@@ -95,6 +95,7 @@ class Bench:
         self.proc = T.watch(D.Process(self.pid))
         self.handle = k32.OpenProcess(0x0400 | 0x0008 | 0x0010 | 0x0020, False, self.pid)
         self.settings = None
+        self.editor = False
         self.rm = bed / T.bed_profile(bed)["rm"]
         self.dumps = T.my_games(bed) / T.bed_profile(bed)["rm"]
         self.log = T.log_path(bed)
@@ -148,12 +149,18 @@ class Bench:
 
     # --- the editor ---
     def in_editor(self):
-        """Opens the scenario editor (startRandomGame(true)) unless a world is already up."""
-        if D.world(self.proc):
+        """Opens the scenario editor (startRandomGame(true)) unless this run already did; a game left
+        running (a scenario) is left first."""
+        if self.editor and D.world(self.proc):
             return
+        if D.world(self.proc):
+            T.run_commands(self.bed, ["leaveGame()"])
+            T.wait_until(lambda: not D.world(self.proc), 60, 1, "the main menu")
+            time.sleep(3)
         T.run_commands(self.bed, ['config("DontPauseWhenLosingFocus")', "startRandomGame(true)"])
         T.wait_until(lambda: D.world(self.proc), 120, 1, "the scenario editor")
         time.sleep(4)
+        self.editor = True
 
     def unit_ids(self):
         return {self.proc.u32(u + 0x10) for u in D.units(self.proc)}
@@ -248,6 +255,8 @@ def unmatched(a, b, tolerance=6.0):
             else:
                 out.append(u)
         return out
+    a = [u for u in a if "travois" not in u[1].lower()]  # Gaia carts that drive around
+    b = [u for u in b if "travois" not in u[1].lower()]
     return [("orig", u) for u in rest(a, b)] + [("new", u) for u in rest(b, a)]
 
 
@@ -432,6 +441,7 @@ def play_scenario(bench, copy, players, seed, teams, mapsize):
     time.sleep(2)
     T.run_commands(bed, ["leaveGame()"])
     T.wait_until(lambda: not D.world(proc), 60, 1, "the main menu")
+    bench.editor = False
     time.sleep(3)
     T.run_commands(bed, [f'loadScenario("{name}")'])
     T.wait_until(lambda: D.world(proc) and T.game_time(proc) is not None, 180, 1, "the scenario to load")
@@ -543,6 +553,10 @@ def main(argv):
         finally:
             bench.koth(False)
         return
+    done = set()  # runs already in the CSV are skipped, so a stopped run can go on
+    if out.exists():
+        with open(out, newline="", encoding="utf-8") as f:
+            done = {(r["map"], r["mode"], r["players"], r["teams"], r["seed"]) for r in csv.DictReader(f)}
     copies = []
     try:
         if reach_s:
@@ -551,6 +565,8 @@ def main(argv):
             copy = install_copy(bench, name, src)
             copies.append(copy)
             runs = [(p, 2, s) for p in players for s in seeds] + [(p, p, 1) for p in ffa]
+            runs = [r for r in runs if (name, "koth", str(r[0]), "ffa" if r[1] == r[0] and r[0] > 2 else str(r[1]),
+                                        str(r[2])) not in done]
             if not bench.koth(True):
                 sys.exit("kothcheck: could not set GameKOTH")
             for p, teams, s in runs:
@@ -574,7 +590,7 @@ def main(argv):
                 append(out, row)
                 say(f"{name} p{p} t{row['teams']} s{s}: {row['result']} hill {row.get('hill_fx', '-')},{row.get('hill_fz', '-')} "
                     f"team ratio {row.get('team_ratio', '-')} ({row.get('dists', '')}) {detail[:120]}")
-            if "--normal" in argv:
+            if "--normal" in argv and (name, "normal", "8", "2", "2") not in done:
                 bench.koth(False)
                 for p, s in ((4, 1), (8, 2)):
                     ok1, d1 = bench.generate(name, p, s, 2, mapsize)
@@ -592,7 +608,7 @@ def main(argv):
                     append(out, row)
                     say(f"{name} normal p{p} s{s}: {row['result']} ({row['detail'][:120]})")
                 bench.koth(True)
-            if reach_s:
+            if reach_s and (name, "reach", "4", "2", "1") not in done:
                 rcopy = install_copy(bench, name, src, instrument=True, tag="uhckr_")
                 copies.append(rcopy)
                 row = {"map": name, "mode": "reach", "players": 4, "teams": 2, "seed": 1}
