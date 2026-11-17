@@ -1,0 +1,500 @@
+art\3d_models\cathedral\Cathedral.GR2 -> art\WoL\homecity\Swedish\3d_models\cathedral\Cathedral.GR2
+art\3d_models\cathedral\cathedral_a.ddt -> art\WoL\homecity\Swedish\3d_models\cathedral\cathedral_a.(0,0,4,10).ddt
+art\3d_models\cathedral\cathedral_b.ddt -> art\WoL\homecity\Swedish\3d_models\cathedral\cathedral_b.(0,0,4,10).ddt
+art\effects\dutchPower\gold_Model.gr2 -> art\WoL\homecity\_shared\effects\dutchPower\gold_Model.gr2
+art\Homecity\afghan\afghan_academy.xml -> art\WoL\homecity\Afghans\afghan_academy.xml
+art\Homecity\afghan\afghan_backdrop_Model.gr2 -> art\WoL\homecity\Afghans\afghan_backdrop_Model.gr2
+art\Homecity\afghan\afghan_background.xml -> art\WoL\homecity\Afghans\afghan_background.xml
+art\Homecity\afghan\afghan_cathedral.xml -> art\WoL\homecity\Afghans\afghan_cathedral.xml
+art\Homecity\afghan\afghan_dock.xml -> art\WoL\homecity\Afghans\afghan_dock.xml
+art\Homecity\afghan\afghan_homecity_visuals.xml -> art\WoL\homecity\Afghans\afghan_homecity_visuals.xml
+art\Homecity\afghan\afghan_manufacturingplant.xml -> art\WoL\homecity\Afghans\afghan_manufacturingplant.xml
+art\Homecity\afghan\afghan_tradecenter.xml -> art\WoL\homecity\Afghans\afghan_tradecenter.xml
+art\Homecity\afghan\AfghanBazaar_Model.gr2 -> art\WoL\homecity\Afghans\AfghanBazaar_Model.gr2
+art\Homecity\afghan\AfghanBridge_Model.gr2 -> art\WoL\homecity\Afghans\AfghanBridge_Model.gr2
+art\Homecity\afghan\AfghanGround_Model.gr2 -> art\WoL\homecity\Afghans\AfghanGround_Model.gr2
+art\Homecity\afghan\AfghanHouseProps_Model.gr2 -> art\WoL\homecity\Afghans\AfghanHouseProps_Model.gr2
+art\Homecity\afghan\AfghanJamiMosque_Model.gr2 -> art\WoL\homecity\Afghans\AfghanJamiMosque_Model.gr2
+art\Homecity\afghan\AfghanMadrasah_Model.gr2 -> art\WoL\homecity\Afghans\AfghanMadrasah_Model.gr2
+art\Homecity\afghan\AfghanWall_Model.gr2 -> art\WoL\homecity\Afghans\AfghanWall_Model.gr2
+art\Homecity\afghan\AfghanWallCrenels2_Model.gr2 -> art\WoL\homecity\Afghans\AfghanWallCrenels2_Model.gr2
+art\Homecity\afghan\AfghanWallCrenels_Model.gr2 -> art\WoL\homecity\Afghans\AfghanWallCrenels_Model.gr2
+art\Homecity\afghan\AfghanWallIwan_Model.gr2 -> art\WoL\homecity\Afghans\AfghanWallIwan_Model.gr2
+art\Homecity\afghan\AfghanWallTower_Model.gr2 -> art\WoL\homecity\Afghans\AfghanWallTower_Model.gr2
+art\Homecity\afghan\BaburGate_Model.gr2 -> art\WoL\homecity\Afghans\BaburGate_Model.gr2
+art\Homecity\afghan\BaburGround_Model.gr2 -> art\WoL\homecity\Afghans\BaburGround_Model.gr2
+art\Homecity\afghan\BaburTrees_Model.gr2 -> art\WoL\homecity\Afghans\BaburTrees_Model.gr2
+art\Homecity\afghan\BalaHissarCrenels_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarCrenels_Model.gr2
+art\Homecity\afghan\BalaHissarEntranceTowers_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarEntranceTowers_Model.gr2
+art\Homecity\afghan\BalaHissarFountain_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarFountain_Model.gr2
+art\Homecity\afghan\BalaHissarGround_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarGround_Model.gr2
+art\Homecity\afghan\BalaHissarMahallas_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarMahallas_Model.gr2
+art\Homecity\afghan\BalaHissarOuterTowers_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarOuterTowers_Model.gr2
+art\Homecity\afghan\BalaHissarTrees_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarTrees_Model.gr2
+art\Homecity\afghan\BalaHissarUnique_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarUnique_Model.gr2
+art\Homecity\afghan\BalaHissarWall_Model.gr2 -> art\WoL\homecity\Afghans\BalaHissarWall_Model.gr2
+art\Homecity\afghan\textures\afghan_pavement2.ddt -> art\WoL\homecity\Afghans\textures\afghan_pavement2.ddt
+art\Homecity\afghan\textures\afghan_sky_A.ddt -> art\WoL\homecity\Afghans\textures\afghan_sky_A.ddt
+art\Homecity\afghan\textures\afghan_sky_B.ddt -> art\WoL\homecity\Afghans\textures\afghan_sky_B.ddt
+art\Homecity\afghan\textures\afghan_sky_C.ddt -> art\WoL\homecity\Afghans\textures\afghan_sky_C.ddt
+art\Homecity\afghan\textures\afghan_sky_D.ddt -> art\WoL\homecity\Afghans\textures\afghan_sky_D.ddt
+art\Homecity\afghan\textures\BaburGarden.ddt -> art\WoL\homecity\Afghans\textures\BaburGarden.(1,1,8,6).ddt
+art\Homecity\afghan\textures\BaburGarden_b.ddt -> art\WoL\homecity\Afghans\textures\BaburGarden_b.(6,0,9,1).ddt
+art\Homecity\afghan\textures\BalaHissar.ddt -> art\WoL\homecity\Afghans\textures\BalaHissar.(1,1,8,6).ddt
+art\Homecity\afghan\textures\BalaHissar_b.ddt -> art\WoL\homecity\Afghans\textures\BalaHissar_b.(6,0,9,1).ddt
+art\Homecity\afghan\textures\BalaHissarBuildings.ddt -> art\WoL\homecity\Afghans\textures\BalaHissarBuildings.(1,1,8,6).ddt
+art\Homecity\afghan\textures\BalaHissarBuildings_b.ddt -> art\WoL\homecity\Afghans\textures\BalaHissarBuildings_b.(6,0,9,1).ddt
+art\Homecity\afghan\textures\city_borders.ddt -> art\WoL\homecity\Afghans\textures\city_borders.ddt
+art\Homecity\afghan\textures\city_borders_b.ddt -> art\WoL\homecity\Afghans\textures\city_borders_b.ddt
+art\Homecity\afghan\textures\CityWall.ddt -> art\WoL\homecity\Afghans\textures\CityWall.(1,1,8,6).ddt
+art\Homecity\afghan\textures\CityWall_b.ddt -> art\WoL\homecity\Afghans\textures\CityWall_b.(6,0,9,1).ddt
+art\Homecity\afghan\textures\Iwan.ddt -> art\WoL\homecity\Afghans\textures\Iwan.(1,1,8,6).ddt
+art\Homecity\afghan\textures\Iwan_b.ddt -> art\WoL\homecity\Afghans\textures\Iwan_b.(6,0,9,1).ddt
+art\Homecity\EqBas\RepChile\FuerteEsmeralda1.ddt -> art\WoL\homecity\Chileans\EqBas\RepChile\FuerteEsmeralda1.(0,8,1,9).ddt
+art\Homecity\EqBas\RepChile\FuerteEsmeralda1.GR2 -> art\WoL\homecity\Chileans\EqBas\RepChile\FuerteEsmeralda1.GR2
+art\Homecity\EqBas\RepChile\IglesiaDeLaMatriz.ddt -> art\WoL\homecity\Chileans\EqBas\RepChile\IglesiaDeLaMatriz.(0,8,1,9).ddt
+art\Homecity\EqBas\RepChile\IglesiaDeLaMatriz1.GR2 -> art\WoL\homecity\Chileans\EqBas\RepChile\IglesiaDeLaMatriz1.GR2
+art\Homecity\NOW\Argentina\Aduana\Aduana.xml -> art\WoL\homecity\Argentineans\Aduana\Aduana.xml
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_1_A.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_1_A.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_1_A.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_1_A.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_1_B.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_1_B.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_1_B.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_1_B.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_2_A.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_2_A.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_2_A.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_2_A.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_2_B.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_2_B.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_2_B.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_2_B.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_3_A.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_3_A.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_3_A.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_3_A.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_3_B.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_3_B.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_3_B.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_3_B.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_4_A.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_4_A.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_4_A.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_4_A.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_4_B.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_4_B.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_4_B.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_4_B.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_5_A.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_5_A.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_5_A.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_5_A.GR2
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_5_B.ddt -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_5_B.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Aduana\ARG_Aduana_5_B.GR2 -> art\WoL\homecity\Argentineans\Aduana\ARG_Aduana_5_B.GR2
+art\Homecity\NOW\Argentina\argentine_homecity.xml -> art\WoL\homecity\Argentineans\argentine_homecity.xml
+art\Homecity\NOW\Argentina\Casa_Rosada\ARG_Casa_Rosada.GR2 -> art\WoL\homecity\Argentineans\Casa_Rosada\ARG_Casa_Rosada.GR2
+art\Homecity\NOW\Argentina\Casa_Rosada\ARG_CasaRosada_Part_1.ddt -> art\WoL\homecity\Argentineans\Casa_Rosada\ARG_CasaRosada_Part_1.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Casa_Rosada\ARG_CasaRosada_Part_1_b.ddt -> art\WoL\homecity\Argentineans\Casa_Rosada\ARG_CasaRosada_Part_1_b.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Casa_Rosada\Casa_Rosada.xml -> art\WoL\homecity\Argentineans\Casa_Rosada\Casa_Rosada.xml
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral Bs As_1.ddt -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral Bs As_1.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral Bs As_2.ddt -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral Bs As_2.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral Bs As_3.ddt -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral Bs As_3.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral Bs As_4.ddt -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral Bs As_4.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral_Bs_As_1.GR2 -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral_Bs_As_1.GR2
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral_Bs_As_2.GR2 -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral_Bs_As_2.GR2
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral_Bs_As_3.GR2 -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral_Bs_As_3.GR2
+art\Homecity\NOW\Argentina\Catedral\ARG_Catedral_Bs_As_4.GR2 -> art\WoL\homecity\Argentineans\Catedral\ARG_Catedral_Bs_As_4.GR2
+art\Homecity\NOW\Argentina\Catedral\Catedral_Metropolitana.xml -> art\WoL\homecity\Argentineans\Catedral\Catedral_Metropolitana.xml
+art\Homecity\NOW\Argentina\Ground\Argentina_Ground_1.ddt -> art\WoL\homecity\Argentineans\Ground\Argentina_Ground_1.ddt
+art\Homecity\NOW\Argentina\Ground\Argentina_Ground_2.ddt -> art\WoL\homecity\Argentineans\Ground\Argentina_Ground_2.(0,1,8,8).ddt
+art\Homecity\NOW\Argentina\Homecity_Buildings\ARG_Homecity_Buildings_Casa_A_B.ddt -> art\WoL\homecity\Argentineans\Homecity_Buildings\ARG_Homecity_Buildings_Casa_A_B.(0,1,8,8).ddt
+art\Homecity\NOW\Argentina\Homecity_Buildings\ARG_Homecity_Buildings_Casa_C_D.ddt -> art\WoL\homecity\Argentineans\Homecity_Buildings\ARG_Homecity_Buildings_Casa_C_D.(0,1,8,8).ddt
+art\Homecity\NOW\Argentina\Homecity_Buildings\ARG_Homecity_Buildings_Casa_E_F.ddt -> art\WoL\homecity\Argentineans\Homecity_Buildings\ARG_Homecity_Buildings_Casa_E_F.(0,1,8,8).ddt
+art\Homecity\NOW\Argentina\Homecity_Buildings\ARG_Homecity_Buildings_Casa_G_H.ddt -> art\WoL\homecity\Argentineans\Homecity_Buildings\ARG_Homecity_Buildings_Casa_G_H.(0,1,8,8).ddt
+art\Homecity\NOW\Argentina\Homecity_Buildings\ARG_Homecity_Buildings_Casa_I_J.ddt -> art\WoL\homecity\Argentineans\Homecity_Buildings\ARG_Homecity_Buildings_Casa_I_J.(0,1,8,8).ddt
+art\Homecity\NOW\Argentina\Homecity_Buildings\ARG_Homecity_Buildings_Vereda.ddt -> art\WoL\homecity\Argentineans\Homecity_Buildings\ARG_Homecity_Buildings_Vereda.(0,1,8,8).ddt
+art\Homecity\NOW\Argentina\Homecity_Buildings\Homecity_Buildings_ARG.GR2 -> art\WoL\homecity\Argentineans\Homecity_Buildings\Homecity_Buildings_ARG.GR2
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_1.ddt -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_1.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_1_A.GR2 -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_1_A.GR2
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_1_B.GR2 -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_1_B.GR2
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_2.ddt -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_2.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_3.ddt -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_3.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_3_A.GR2 -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_3_A.GR2
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_3_B.GR2 -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_3_B.GR2
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_4_A.GR2 -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_4_A.GR2
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\ARG_Mercado_de_Abastos_4_B.GR2 -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\ARG_Mercado_de_Abastos_4_B.GR2
+art\Homecity\NOW\Argentina\Mercado_de_Abastos\Mercado_de_Abastos.xml -> art\WoL\homecity\Argentineans\Mercado_de_Abastos\Mercado_de_Abastos.xml
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\ARG_Plaza_de_Mayo_2.ddt -> art\WoL\homecity\Argentineans\Plaza_De_Mayo\ARG_Plaza_de_Mayo_2.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\ARG_Plaza_de_Mayo_2.GR2 -> art\WoL\homecity\Argentineans\Plaza_De_Mayo\ARG_Plaza_de_Mayo_2.GR2
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Banco.ddt -> art\WoL\homecity\_shared\Plaza_De_Mayo\Banco.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Banco_1.GR2 -> art\WoL\homecity\_shared\Plaza_De_Mayo\Banco_1.GR2
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Banco_2.GR2 -> art\WoL\homecity\_shared\Plaza_De_Mayo\Banco_2.GR2
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Caballo.ddt -> art\WoL\homecity\_shared\Plaza_De_Mayo\Caballo.ddt
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Cantero.ddt -> art\WoL\homecity\_shared\Plaza_De_Mayo\Cantero.(0,4,8,1).ddt
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Cantero.gr2 -> art\WoL\homecity\_shared\Plaza_De_Mayo\Cantero.gr2
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Flor.ddt -> art\WoL\homecity\_shared\Plaza_De_Mayo\Flor.(0,4,8,1).ddt
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Flor.GR2 -> art\WoL\homecity\_shared\Plaza_De_Mayo\Flor.GR2
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Hierba.ddt -> art\WoL\homecity\Argentineans\Plaza_De_Mayo\Hierba.(1,1,8,7).ddt
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Jinete.ddt -> art\WoL\homecity\_shared\Plaza_De_Mayo\Jinete.ddt
+art\Homecity\NOW\Argentina\Plaza_De_Mayo\Plaza_de_Mayo.xml -> art\WoL\homecity\Argentineans\Plaza_De_Mayo\Plaza_de_Mayo.xml
+art\Homecity\NOW\Argentina\Sky\Argentina_background.xml -> art\WoL\homecity\Argentineans\Sky\Argentina_background.xml
+art\Homecity\NOW\Argentina\Sky\Argentina_background_1.ddt -> art\WoL\homecity\Argentineans\Sky\Argentina_background_1.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Sky\Argentina_background_1.GR2 -> art\WoL\homecity\Argentineans\Sky\Argentina_background_1.GR2
+art\Homecity\NOW\Argentina\Sky\Argentina_background_2.ddt -> art\WoL\homecity\Argentineans\Sky\Argentina_background_2.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Sky\Argentina_background_2.GR2 -> art\WoL\homecity\Argentineans\Sky\Argentina_background_2.GR2
+art\Homecity\NOW\Argentina\Sky\Argentina_Props.ddt -> art\WoL\homecity\Argentineans\Sky\Argentina_Props.(0,5,8,8).ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Arbusto.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Arbusto.ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\ARG_Cabildo.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\ARG_Cabildo.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\ARG_Cabildo.GR2 -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\ARG_Cabildo.GR2
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Argentina_Props.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Argentina_Props.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Argentina_Props.GR2 -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Argentina_Props.GR2
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Cabildo.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Cabildo.(0,4,8,8).ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Casa1.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Casa1.(0,1,8,7).ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Casa2.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Casa2.(0,1,8,7).ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Estacion.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Estacion.(0,1,8,7).ddt
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Grua.GR2 -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Grua.GR2
+art\Homecity\NOW\Argentina\Sky\House_Homecity_ARG\Puerto.ddt -> art\WoL\homecity\Argentineans\Sky\House_Homecity_ARG\Puerto.(0,1,8,7).ddt
+art\Homecity\NOW\Bolivia\Bolivia_homecity.xml -> art\WoL\homecity\Bolivians\Bolivia_homecity.xml
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri.xml -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri.xml
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv1.ddt -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv1.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv1.GR2 -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv1.GR2
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv1_b.ddt -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv1_b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv2.ddt -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv2.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv2.GR2 -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv2.GR2
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv2_b.ddt -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv2_b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv3.ddt -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv3.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv3.GR2 -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv3.GR2
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv3_b.ddt -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv3_b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv4.ddt -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv4.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv4.GR2 -> art\WoL\homecity\Bolivians\Convento_San_Felipe\BOL_Convento_San_Felipe_Neri_Lv4.GR2
+art\Homecity\NOW\Bolivia\Correos_De_Bolivia\BOL_Correos_De_Bolivia.GR2 -> art\WoL\homecity\Bolivians\Correos_De_Bolivia\BOL_Correos_De_Bolivia.GR2
+art\Homecity\NOW\Bolivia\Correos_De_Bolivia\BOL_Correos_De_Bolivia_LV2.GR2 -> art\WoL\homecity\Bolivians\Correos_De_Bolivia\BOL_Correos_De_Bolivia_LV2.GR2
+art\Homecity\NOW\Bolivia\Correos_De_Bolivia\BOL_Correos_De_Bolivia_props_Lv1.GR2 -> art\WoL\homecity\Bolivians\Correos_De_Bolivia\BOL_Correos_De_Bolivia_props_Lv1.GR2
+art\Homecity\NOW\Bolivia\Correos_De_Bolivia\Correos_De_Bolivia.ddt -> art\WoL\homecity\Bolivians\Correos_De_Bolivia\Correos_De_Bolivia.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Correos_De_Bolivia\Correos_De_Bolivia.xml -> art\WoL\homecity\Bolivians\Correos_De_Bolivia\Correos_De_Bolivia.xml
+art\Homecity\NOW\Bolivia\Correos_De_Bolivia\props_colony_BOL_Correos.ddt -> art\WoL\homecity\Bolivians\Correos_De_Bolivia\props_colony_BOL_Correos.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Feria_Artesanal\BOL_Feria_artesanal_Lv1test01.GR2 -> art\WoL\homecity\Bolivians\Feria_Artesanal\BOL_Feria_artesanal_Lv1test01.GR2
+art\Homecity\NOW\Bolivia\Feria_Artesanal\BOL_Feria_artesanal_Lv1test01.xml -> art\WoL\homecity\Bolivians\Feria_Artesanal\BOL_Feria_artesanal_Lv1test01.xml
+art\Homecity\NOW\Bolivia\Feria_Artesanal\Feria_Artesanal_base.ddt -> art\WoL\homecity\Bolivians\Feria_Artesanal\Feria_Artesanal_base.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\Feria_Artesanal\Feria_Artesanal_base_2.ddt -> art\WoL\homecity\Bolivians\Feria_Artesanal\Feria_Artesanal_base_2.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\Feria_Artesanal\Feria_Artesanal_Caseta.ddt -> art\WoL\homecity\Bolivians\Feria_Artesanal\Feria_Artesanal_Caseta.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\Feria_Artesanal\Feria_Artesanal_commodity.ddt -> art\WoL\homecity\Bolivians\Feria_Artesanal\Feria_Artesanal_commodity.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\home_city_props\Bolivian_church01.GR2 -> art\WoL\homecity\Bolivians\home_city_props\Bolivian_church01.GR2
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional.xml -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional.xml
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_1.ddt -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_1.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_1_A.GR2 -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_1_A.GR2
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_1_B.GR2 -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_1_B.GR2
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_2.ddt -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_2.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_2_A.GR2 -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_2_A.GR2
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_3.ddt -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_3.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_3_A.GR2 -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_3_A.GR2
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_3_B.GR2 -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_3_B.GR2
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_4.ddt -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_4.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_4_A.GR2 -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_4_A.GR2
+art\Homecity\NOW\Bolivia\Palacio_Nacional\Palacio_Nacional_4_B.GR2 -> art\WoL\homecity\Bolivians\Palacio_Nacional\Palacio_Nacional_4_B.GR2
+art\Homecity\NOW\Bolivia\Plaza_De_Sucre\BOL_Plaza_de_Sucre_1.ddt -> art\WoL\homecity\Bolivians\Plaza_De_Sucre\BOL_Plaza_de_Sucre_1.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Plaza_De_Sucre\BOL_Plaza_de_Sucre_1_b.ddt -> art\WoL\homecity\Bolivians\Plaza_De_Sucre\BOL_Plaza_de_Sucre_1_b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Plaza_De_Sucre\BOL_Plaza_de_Sucre_1_Lv1.GR2 -> art\WoL\homecity\Bolivians\Plaza_De_Sucre\BOL_Plaza_de_Sucre_1_Lv1.GR2
+art\Homecity\NOW\Bolivia\Plaza_De_Sucre\BOL_Plaza_De_Sucre_Lv1.xml -> art\WoL\homecity\Bolivians\Plaza_De_Sucre\BOL_Plaza_De_Sucre_Lv1.xml
+art\Homecity\NOW\Bolivia\Sky\Bolivia_background_1.ddt -> art\WoL\homecity\Bolivians\Sky\Bolivia_background_1.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\Bolivia_background_1.GR2 -> art\WoL\homecity\Bolivians\Sky\Bolivia_background_1.GR2
+art\Homecity\NOW\Bolivia\Sky\Bolivia_Background_Calle.ddt -> art\WoL\homecity\Bolivians\Sky\Bolivia_Background_Calle.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\Bolivia_Background_Calle_b.ddt -> art\WoL\homecity\Bolivians\Sky\Bolivia_Background_Calle_b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\Bolivia_background_people.GR2 -> art\WoL\homecity\Bolivians\Sky\Bolivia_background_people.GR2
+art\Homecity\NOW\Bolivia\Sky\Bolivia_background_people.xml -> art\WoL\homecity\Bolivians\Sky\Bolivia_background_people.xml
+art\Homecity\NOW\Bolivia\Sky\Bolivia_Background_Vereda.ddt -> art\WoL\homecity\Bolivians\Sky\Bolivia_Background_Vereda.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\House_Homecity_BOL\Casa1.GR2 -> art\WoL\homecity\Bolivians\Sky\House_Homecity_BOL\Casa1.GR2
+art\Homecity\NOW\Bolivia\Sky\House_Homecity_BOL\casa2.ddt -> art\WoL\homecity\Bolivians\Sky\House_Homecity_BOL\casa2.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\House_Homecity_BOL\casa3.ddt -> art\WoL\homecity\Bolivians\Sky\House_Homecity_BOL\casa3.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\House_Homecity_BOL\casa4.ddt -> art\WoL\homecity\Bolivians\Sky\House_Homecity_BOL\casa4.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\House_Homecity_BOL\casa5.ddt -> art\WoL\homecity\Bolivians\Sky\House_Homecity_BOL\casa5.(0,1,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky1.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky1.(0,0,1,1).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky1b.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky1b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky2.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky2.(0,0,1,1).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky2b.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky2b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky3.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky3.(0,0,1,1).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky3b.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky3b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky4.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky4.(0,0,1,1).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky4b.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky4b.(0,4,8,8).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky5.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky5.(0,0,1,1).ddt
+art\Homecity\NOW\Bolivia\Sky\SucreSky5b.ddt -> art\WoL\homecity\Bolivians\Sky\SucreSky5b.(0,4,8,8).ddt
+art\Homecity\Omega\Centralamerica\CEN_academy.ddt -> art\WoL\homecity\Centralamericans\CEN_academy.ddt
+art\Homecity\Omega\Centralamerica\CEN_academy.xml -> art\WoL\homecity\Centralamericans\CEN_academy.xml
+art\Homecity\Omega\Centralamerica\CEN_academy_PII.ddt -> art\WoL\homecity\Centralamericans\CEN_academy_PII.ddt
+art\Homecity\Omega\Centralamerica\CEN_harbor.ddt -> art\WoL\homecity\Centralamericans\CEN_harbor.ddt
+art\Homecity\Omega\Centralamerica\CEN_harbor.xml -> art\WoL\homecity\Centralamericans\CEN_harbor.xml
+art\Homecity\Omega\Centralamerica\CEN_manufacturing.ddt -> art\WoL\homecity\Centralamericans\CEN_manufacturing.ddt
+art\Homecity\Omega\Centralamerica\CEN_manufacturingplant.xml -> art\WoL\homecity\Centralamericans\CEN_manufacturingplant.xml
+art\Homecity\Omega\Centralamerica\Centralamericans_background.xml -> art\WoL\homecity\Centralamericans\Centralamericans_background.xml
+art\Homecity\Omega\Centralamerica\Centralamericans_homecity.xml -> art\WoL\homecity\Centralamericans\Centralamericans_homecity.xml
+art\Homecity\Omega\Centralamerica\CENwalk.ddt -> art\WoL\homecity\Centralamericans\CENwalk.ddt
+art\Homecity\Omega\Centralamerica\house.ddt -> art\WoL\homecity\Centralamericans\house.ddt
+art\Homecity\Omega\Centralamerica\ottoman_cobbles.ddt -> art\WoL\homecity\Centralamericans\ottoman_cobbles.ddt
+art\Homecity\Omega\Centralamerica\russian_hc_ground.ddt -> art\WoL\homecity\Centralamericans\russian_hc_ground.ddt
+art\Homecity\Omega\Centralamerica\sky1.ddt -> art\WoL\homecity\Centralamericans\sky1.ddt
+art\Homecity\Omega\Centralamerica\sky2.ddt -> art\WoL\homecity\Centralamericans\sky2.ddt
+art\Homecity\Omega\Centralamerica\sky3.ddt -> art\WoL\homecity\Centralamericans\sky3.ddt
+art\Homecity\Omega\Centralamerica\sky4.ddt -> art\WoL\homecity\Centralamericans\sky4.ddt
+art\Homecity\Omega\Centralamerica\sky5.ddt -> art\WoL\homecity\Centralamericans\sky5.ddt
+art\Homecity\Omega\Centralamerica\Toldo.ddt -> art\WoL\homecity\Centralamericans\Toldo.ddt
+art\Homecity\Omega\Centralamerica\tradecenter.ddt -> art\WoL\homecity\Centralamericans\tradecenter.ddt
+art\Homecity\Omega\Centralamerica\tradecenter.xml -> art\WoL\homecity\Centralamericans\tradecenter.xml
+art\Homecity\persian\persianBG.ddt -> art\WoL\homecity\Persians\persian\persianBG.(1,0,4,8).ddt
+art\Homecity\persian\persianBG_Model.gr2 -> art\WoL\homecity\Persians\persian\persianBG_Model.gr2
+art\Homecity\polynesians\maori\HCwharenui_base.xml -> art\WoL\homecity\Maori\HCwharenui_base.xml
+art\Homecity\polynesians\maori\maori_woman.ddt -> art\WoL\homecity\Maori\maori_woman.ddt
+art\Homecity\polynesians\maori\maori_woman.xml -> art\WoL\homecity\Maori\maori_woman.xml
+art\Homecity\polynesians\maori\mau_rakau.xml -> art\WoL\homecity\Maori\mau_rakau.xml
+art\Homecity\polynesians\maori\mau_rakau_gear.ddt -> art\WoL\homecity\Maori\mau_rakau_gear.ddt
+art\Homecity\polynesians\maori\mau_rakau_head.ddt -> art\WoL\homecity\Maori\mau_rakau_head.ddt
+art\Homecity\polynesians\maori\missionary.ddt -> art\WoL\homecity\Maori\missionary.ddt
+art\Homecity\polynesians\maori\missionary.xml -> art\WoL\homecity\Maori\missionary.xml
+art\Homecity\polynesians\maori\native_embassy.ddt -> art\WoL\homecity\Maori\native_embassy.ddt
+art\Homecity\polynesians\maori\native_embassy.xml -> art\WoL\homecity\Maori\native_embassy.xml
+art\Homecity\polynesians\maori\parihaka.xml -> art\WoL\homecity\Maori\parihaka.xml
+art\Homecity\polynesians\maori\parihaka_house.ddt -> art\WoL\homecity\Maori\parihaka_house.ddt
+art\Homecity\polynesians\maori\parihaka_sky.xml -> art\WoL\homecity\Maori\parihaka_sky.xml
+art\Homecity\polynesians\maori\parihaka_sky_A.ddt -> art\WoL\homecity\Maori\parihaka_sky_A.ddt
+art\Homecity\polynesians\maori\parihaka_sky_B.ddt -> art\WoL\homecity\Maori\parihaka_sky_B.ddt
+art\Homecity\polynesians\maori\parihaka_sky_C.ddt -> art\WoL\homecity\Maori\parihaka_sky_C.ddt
+art\Homecity\polynesians\maori\parihaka_sky_D.ddt -> art\WoL\homecity\Maori\parihaka_sky_D.ddt
+art\Homecity\polynesians\maori\rangatira.ddt -> art\WoL\homecity\Maori\rangatira.ddt
+art\Homecity\polynesians\maori\rangatira.xml -> art\WoL\homecity\Maori\rangatira.xml
+art\Homecity\polynesians\maori\tohunga.ddt -> art\WoL\homecity\Maori\tohunga.ddt
+art\Homecity\polynesians\maori\tohunga.xml -> art\WoL\homecity\Maori\tohunga.xml
+art\Homecity\polynesians\maori\tohunga_gear.ddt -> art\WoL\homecity\Maori\tohunga_gear.ddt
+art\Homecity\saudi\saudiBG.ddt -> art\WoL\homecity\Saudis\saudi\saudiBG.(1,0,4,8).ddt
+art\Homecity\saudi\saudiBG_Model.gr2 -> art\WoL\homecity\Saudis\saudi\saudiBG_Model.gr2
+art\Homecity\uzbek\uzbekBG.ddt -> art\WoL\homecity\Uzbeks\uzbek\uzbekBG.(1,0,4,8).ddt
+art\Homecity\uzbek\uzbekBG_Model.gr2 -> art\WoL\homecity\Uzbeks\uzbek\uzbekBG_Model.gr2
+art\Homecity\WoL\Chileans\Chileans_background.gr2 -> art\WoL\homecity\Chileans\Chileans_background.gr2
+art\Homecity\WoL\Chileans\Chileans_generic_02.gr2 -> art\WoL\homecity\Chileans\Chileans_generic_02.gr2
+art\Homecity\WoL\Chileans\Chileans_generic_02_colormap_01.ddt -> art\WoL\homecity\Chileans\Chileans_generic_02_colormap_01.ddt
+art\Homecity\WoL\Chileans\Chileans_generic_02_colormap_02.ddt -> art\WoL\homecity\Chileans\Chileans_generic_02_colormap_02.ddt
+art\Homecity\WoL\Chileans\Chileans_ground_colormap_A_1.ddt -> art\WoL\homecity\Chileans\Chileans_ground_colormap_A_1.ddt
+art\Homecity\WoL\Chileans\Chileans_ground_colormap_B_1.ddt -> art\WoL\homecity\Chileans\Chileans_ground_colormap_B_1.ddt
+art\Homecity\WoL\Chileans\Chileans_ground_colormap_C_1.ddt -> art\WoL\homecity\Chileans\Chileans_ground_colormap_C_1.ddt
+art\Homecity\WoL\Chileans\Chileans_ground_colormap_D_1.ddt -> art\WoL\homecity\Chileans\Chileans_ground_colormap_D_1.ddt
+art\Homecity\WoL\Chileans\Chileans_hc_dock_bumpspec.ddt -> art\WoL\homecity\Chileans\Chileans_hc_dock_bumpspec.ddt
+art\Homecity\WoL\Chileans\Chileans_hc_dock_colormap.ddt -> art\WoL\homecity\Chileans\Chileans_hc_dock_colormap.ddt
+art\Homecity\WoL\Chileans\Chileans_homecity.gr2 -> art\WoL\homecity\Chileans\Chileans_homecity.gr2
+art\Homecity\WoL\Chileans\Chileans_homecity.xml -> art\WoL\homecity\Chileans\Chileans_homecity.xml
+art\Homecity\WoL\Chileans\Chileans_house_background.ddt -> art\WoL\homecity\Chileans\Chileans_house_background.ddt
+art\Homecity\WoL\Chileans\Chileans_house_background.gr2 -> art\WoL\homecity\Chileans\Chileans_house_background.gr2
+art\Homecity\WoL\Chileans\Chileans_house_background_02.gr2 -> art\WoL\homecity\Chileans\Chileans_house_background_02.gr2
+art\Homecity\WoL\Chileans\Chileans_house_background_03.gr2 -> art\WoL\homecity\Chileans\Chileans_house_background_03.gr2
+art\Homecity\WoL\Chileans\Chileans_house_background_04.gr2 -> art\WoL\homecity\Chileans\Chileans_house_background_04.gr2
+art\Homecity\WoL\Chileans\Chileans_house_background_05.gr2 -> art\WoL\homecity\Chileans\Chileans_house_background_05.gr2
+art\Homecity\WoL\Chileans\Chileans_house_background_06.gr2 -> art\WoL\homecity\Chileans\Chileans_house_background_06.gr2
+art\Homecity\WoL\Chileans\Chileans_house_background_B.ddt -> art\WoL\homecity\Chileans\Chileans_house_background_B.ddt
+art\Homecity\WoL\Chileans\Chileans_morning_A.ddt -> art\WoL\homecity\Chileans\Chileans_morning_A.ddt
+art\Homecity\WoL\Chileans\Chileans_morning_B.ddt -> art\WoL\homecity\Chileans\Chileans_morning_B.ddt
+art\Homecity\WoL\Chileans\Chileans_morning_C.ddt -> art\WoL\homecity\Chileans\Chileans_morning_C.ddt
+art\Homecity\WoL\Chileans\Chileans_morning_D.ddt -> art\WoL\homecity\Chileans\Chileans_morning_D.ddt
+art\Homecity\WoL\Chileans\Chileans_Sky.xml -> art\WoL\homecity\Chileans\Chileans_Sky.xml
+art\Homecity\WoL\Chileans\generic01_Chileans.ddt -> art\WoL\homecity\Chileans\generic01_Chileans.ddt
+art\Homecity\WoL\Chileans\generic01_Chileans.gr2 -> art\WoL\homecity\Chileans\generic01_Chileans.gr2
+art\Homecity\WoL\haitian\haitian_background.gr2 -> art\WoL\homecity\Haitians\haitian_background.gr2
+art\Homecity\WoL\haitian\haitian_background.xml -> art\WoL\homecity\Haitians\haitian_background.xml
+art\Homecity\WoL\haitian\haitian_hc_background_1.ddt -> art\WoL\homecity\Haitians\haitian_hc_background_1.ddt
+art\Homecity\WoL\haitian\haitian_hc_background_2.ddt -> art\WoL\homecity\Haitians\haitian_hc_background_2.ddt
+art\Homecity\WoL\haitian\haitian_hc_background_3.ddt -> art\WoL\homecity\Haitians\haitian_hc_background_3.ddt
+art\Homecity\WoL\haitian\haitian_hc_background_4.ddt -> art\WoL\homecity\Haitians\haitian_hc_background_4.ddt
+art\Homecity\WoL\haitian\haitian_hc_background_5.ddt -> art\WoL\homecity\Haitians\haitian_hc_background_5.ddt
+art\Homecity\WoL\haitian\haitian_hc_dock.ddt -> art\WoL\homecity\Haitians\haitian_hc_dock.ddt
+art\Homecity\WoL\haitian\haitian_hc_dock.gr2 -> art\WoL\homecity\Haitians\haitian_hc_dock.gr2
+art\Homecity\WoL\haitian\haitian_hc_ground_a.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_a.ddt
+art\Homecity\WoL\haitian\haitian_hc_ground_a_normal.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_a_normal.ddt
+art\Homecity\WoL\haitian\haitian_hc_ground_b.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_b.ddt
+art\Homecity\WoL\haitian\haitian_hc_ground_b_normal.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_b_normal.ddt
+art\Homecity\WoL\haitian\haitian_hc_ground_c.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_c.ddt
+art\Homecity\WoL\haitian\haitian_hc_ground_c_normal.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_c_normal.ddt
+art\Homecity\WoL\haitian\haitian_hc_ground_d.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_d.ddt
+art\Homecity\WoL\haitian\haitian_hc_ground_d_normal.ddt -> art\WoL\homecity\Haitians\haitian_hc_ground_d_normal.ddt
+art\Homecity\WoL\haitian\haitian_hc_iron_market.ddt -> art\WoL\homecity\Haitians\haitian_hc_iron_market.ddt
+art\Homecity\WoL\haitian\haitian_hc_iron_market.gr2 -> art\WoL\homecity\Haitians\haitian_hc_iron_market.gr2
+art\Homecity\WoL\haitian\haitian_hc_iron_market.xml -> art\WoL\homecity\Haitians\haitian_hc_iron_market.xml
+art\Homecity\WoL\haitian\haitian_homecity.gr2 -> art\WoL\homecity\Haitians\haitian_homecity.gr2
+art\Homecity\WoL\haitian\haitian_homecity.xml -> art\WoL\homecity\Haitians\haitian_homecity.xml
+art\Homecity\WOTTA\abyssinian_homecity.xml -> art\WoL\homecity\Ethiopians\abyssinian_homecity.xml
+art\Homecity\WOTTA\academy.xml -> art\WoL\homecity\Paraguayans\academy.xml
+art\Homecity\WOTTA\Ambassadors\abyssinian.xml -> art\WoL\homecity\Ethiopians\Ambassadors\abyssinian.xml
+art\Homecity\WOTTA\Ambassadors\belgian.xml -> art\WoL\homecity\Zulu\Ambassadors\belgian.xml
+art\Homecity\WOTTA\Ambassadors\belgiandress.ddt -> art\WoL\homecity\Zulu\Ambassadors\belgiandress.(0,0,4,10).ddt
+art\Homecity\WOTTA\Ambassadors\belgiandress.GR2 -> art\WoL\homecity\Zulu\Ambassadors\belgiandress.GR2
+art\Homecity\WOTTA\Ambassadors\belgianribbon.ddt -> art\WoL\homecity\Zulu\Ambassadors\belgianribbon.(0,4,8,9).ddt
+art\Homecity\WOTTA\Ambassadors\british.xml -> art\WoL\homecity\Zulu\Ambassadors\british.xml
+art\Homecity\WOTTA\Ambassadors\dutch.xml -> art\WoL\homecity\Zulu\Ambassadors\dutch.xml
+art\Homecity\WOTTA\Ambassadors\dutchbutton.ddt -> art\WoL\homecity\Zulu\Ambassadors\dutchbutton.(0,4,8,9).ddt
+art\Homecity\WOTTA\Ambassadors\dutchcollar.ddt -> art\WoL\homecity\Zulu\Ambassadors\dutchcollar.(0,4,8,9).ddt
+art\Homecity\WOTTA\Ambassadors\dutchcollar.GR2 -> art\WoL\homecity\Zulu\Ambassadors\dutchcollar.GR2
+art\Homecity\WOTTA\Ambassadors\dutchhat.ddt -> art\WoL\homecity\Zulu\Ambassadors\dutchhat.(0,0,4,10).ddt
+art\Homecity\WOTTA\Ambassadors\dutchhat.GR2 -> art\WoL\homecity\Zulu\Ambassadors\dutchhat.GR2
+art\Homecity\WOTTA\Ambassadors\egyptianhat.ddt -> art\WoL\homecity\_shared\Ambassadors\egyptianhat.(0,0,8,9).ddt
+art\Homecity\WOTTA\Ambassadors\egyptianhat.GR2 -> art\WoL\homecity\_shared\Ambassadors\egyptianhat.GR2
+art\Homecity\WOTTA\Ambassadors\ethiopian.ddt -> art\WoL\homecity\Ethiopians\Ambassadors\ethiopian.ddt
+art\Homecity\WOTTA\Ambassadors\ethiopian_b.ddt -> art\WoL\homecity\Ethiopians\Ambassadors\ethiopian_b.ddt
+art\Homecity\WOTTA\Ambassadors\french.xml -> art\WoL\homecity\_shared\Ambassadors\french.xml
+art\Homecity\WOTTA\Ambassadors\frenchhat.ddt -> art\WoL\homecity\_shared\Ambassadors\frenchhat.(0,0,4,10).ddt
+art\Homecity\WOTTA\Ambassadors\frenchhat.GR2 -> art\WoL\homecity\_shared\Ambassadors\frenchhat.GR2
+art\Homecity\WOTTA\Ambassadors\german.xml -> art\WoL\homecity\Zulu\Ambassadors\german.xml
+art\Homecity\WOTTA\Ambassadors\greek.xml -> art\WoL\homecity\_shared\Ambassadors\greek.xml
+art\Homecity\WOTTA\Ambassadors\greekhat.GR2 -> art\WoL\homecity\_shared\Ambassadors\greekhat.GR2
+art\Homecity\WOTTA\Ambassadors\indian.xml -> art\WoL\homecity\Ethiopians\Ambassadors\indian.xml
+art\Homecity\WOTTA\Ambassadors\Italian.xml -> art\WoL\homecity\_shared\Ambassadors\Italian.xml
+art\Homecity\WOTTA\Ambassadors\jewels.ddt -> art\WoL\homecity\Zulu\Ambassadors\jewels.(1,1,1,1).ddt
+art\Homecity\WOTTA\Ambassadors\jewels.GR2 -> art\WoL\homecity\Zulu\Ambassadors\jewels.GR2
+art\Homecity\WOTTA\Ambassadors\mamluk.xml -> art\WoL\homecity\_shared\Ambassadors\mamluk.xml
+art\Homecity\WOTTA\Ambassadors\ottoman.xml -> art\WoL\homecity\_shared\Ambassadors\ottoman.xml
+art\Homecity\WOTTA\Ambassadors\portuguese.xml -> art\WoL\homecity\_shared\Ambassadors\portuguese.xml
+art\Homecity\WOTTA\Ambassadors\portuguese_hat.ddt -> art\WoL\homecity\_shared\Ambassadors\portuguese_hat.(0,4,8,10).ddt
+art\Homecity\WOTTA\Ambassadors\portuguese_hat.GR2 -> art\WoL\homecity\_shared\Ambassadors\portuguese_hat.GR2
+art\Homecity\WOTTA\Ambassadors\Russian.xml -> art\WoL\homecity\_shared\Ambassadors\Russian.xml
+art\Homecity\WOTTA\Ambassadors\spanish.xml -> art\WoL\homecity\_shared\Ambassadors\spanish.xml
+art\Homecity\WOTTA\Ambassadors\zulu.xml -> art\WoL\homecity\Zulu\Ambassadors\zulu.xml
+art\Homecity\WOTTA\Ambassadors\zulufeathers.ddt -> art\WoL\homecity\Zulu\Ambassadors\zulufeathers.(1,1,1,1).ddt
+art\Homecity\WOTTA\Ambassadors\zuluhat.ddt -> art\WoL\homecity\Zulu\Ambassadors\zuluhat.(0,4,8,9).ddt
+art\Homecity\WOTTA\Ambassadors\zuluhat.GR2 -> art\WoL\homecity\Zulu\Ambassadors\zuluhat.GR2
+art\Homecity\WOTTA\Ambassadors\zulushield.GR2 -> art\WoL\homecity\Zulu\Ambassadors\zulushield.GR2
+art\Homecity\WOTTA\balkanpoliticians\greek\academy hat.GR2 -> art\WoL\homecity\_shared\balkanpoliticians\greek\academy hat.GR2
+art\Homecity\WOTTA\balkanpoliticians\greek\academy.ddt -> art\WoL\homecity\_shared\balkanpoliticians\greek\academy.ddt
+art\Homecity\WOTTA\balkanpoliticians\greek\academy.xml -> art\WoL\homecity\_shared\balkanpoliticians\greek\academy.xml
+art\Homecity\WOTTA\balkanpoliticians\greek\academy_b.ddt -> art\WoL\homecity\_shared\balkanpoliticians\greek\academy_b.ddt
+art\Homecity\WOTTA\balkanpoliticians\greek\cathedral.xml -> art\WoL\homecity\Greeks\balkanpoliticians\greek\cathedral.xml
+art\Homecity\WOTTA\balkanpoliticians\greek\de_Gaullle_NONSHADER.ddt -> art\WoL\homecity\_shared\balkanpoliticians\greek\de_Gaullle_NONSHADER.(0,4,8,9).ddt
+art\Homecity\WOTTA\balkanpoliticians\greek\factory.xml -> art\WoL\homecity\_shared\balkanpoliticians\greek\factory.xml
+art\Homecity\WOTTA\balkanpoliticians\greek\market hat.ddt -> art\WoL\homecity\_shared\balkanpoliticians\greek\market hat.(0,8,8,10).ddt
+art\Homecity\WOTTA\balkanpoliticians\greek\market.xml -> art\WoL\homecity\_shared\balkanpoliticians\greek\market.xml
+art\Homecity\WOTTA\balkanpoliticians\greek\market_hat.GR2 -> art\WoL\homecity\_shared\balkanpoliticians\greek\market_hat.GR2
+art\Homecity\WOTTA\balkanpoliticians\romanian\cathedral.xml -> art\WoL\homecity\_shared\balkanpoliticians\romanian\cathedral.xml
+art\Homecity\WOTTA\balkanpoliticians\romanian\Charlemagne_DIFF.ddt -> art\WoL\homecity\_shared\balkanpoliticians\romanian\Charlemagne_DIFF.(0,0,4,10).ddt
+art\Homecity\WOTTA\balkanpoliticians\romanian\fur.ddt -> art\WoL\homecity\_shared\balkanpoliticians\romanian\fur.(1,1,1,1).ddt
+art\Homecity\WOTTA\balkanpoliticians\romanian\fur_hatt.GR2 -> art\WoL\homecity\_shared\balkanpoliticians\romanian\fur_hatt.GR2
+art\Homecity\WOTTA\bark_shingle.ddt -> art\WoL\homecity\Tupinamba\bark_shingle.ddt
+art\Homecity\WOTTA\bulgarian_homecity.xml -> art\WoL\homecity\Bulgarians\bulgarian_homecity.xml
+art\Homecity\WOTTA\cairo.xml -> art\WoL\homecity\Egyptians\cairo.xml
+art\Homecity\WOTTA\ChieftainMa.ddt -> art\WoL\homecity\WallMapu\ChieftainMa.ddt
+art\Homecity\WOTTA\chieftainma.gr2 -> art\WoL\homecity\WallMapu\chieftainma.gr2
+art\Homecity\WOTTA\egyptiantent.ddt -> art\WoL\homecity\Egyptians\egyptiantent.(0,0,8,9).ddt
+art\Homecity\WOTTA\egyptiantentsmall.GR2 -> art\WoL\homecity\Egyptians\egyptiantentsmall.GR2
+art\Homecity\WOTTA\flag.xml -> art\WoL\homecity\WallMapu\flag.xml
+art\Homecity\WOTTA\greek_homecity.xml -> art\WoL\homecity\Greeks\greek_homecity.xml
+art\Homecity\WOTTA\iro_grass_edging.ddt -> art\WoL\homecity\Zulu\iro_grass_edging.ddt
+art\Homecity\WOTTA\LA buildings\PY church.GR2 -> art\WoL\homecity\_shared\WOTTA\LA buildings\PY church.GR2
+art\Homecity\WOTTA\LA buildings\secret_academy.xml.xmb -> art\WoL\homecity\Swedish\LA buildings\secret_academy.xml.xmb
+art\Homecity\WOTTA\LA buildings\secret_cathedral.xml -> art\WoL\homecity\Swedish\LA buildings\secret_cathedral.xml
+art\Homecity\WOTTA\LA buildings\secret_dock.xml.xmb -> art\WoL\homecity\Swedish\LA buildings\secret_dock.xml.xmb
+art\Homecity\WOTTA\LA buildings\secret_manufacturingplant.xml.xmb -> art\WoL\homecity\Swedish\LA buildings\secret_manufacturingplant.xml.xmb
+art\Homecity\WOTTA\mapuche_homecity.xml -> art\WoL\homecity\WallMapu\mapuche_homecity.xml
+art\Homecity\WOTTA\mapuche_sky_A.ddt -> art\WoL\homecity\WallMapu\mapuche_sky_A.ddt
+art\Homecity\WOTTA\mapuche_sky_B.ddt -> art\WoL\homecity\WallMapu\mapuche_sky_B.ddt
+art\Homecity\WOTTA\mapuche_sky_C.ddt -> art\WoL\homecity\WallMapu\mapuche_sky_C.ddt
+art\Homecity\WOTTA\mapuche_sky_D.ddt -> art\WoL\homecity\WallMapu\mapuche_sky_D.ddt
+art\Homecity\WOTTA\MapucheChieftain.xml -> art\WoL\homecity\WallMapu\MapucheChieftain.xml
+art\Homecity\WOTTA\MapucheScout.xml -> art\WoL\homecity\WallMapu\MapucheScout.xml
+art\Homecity\WOTTA\MapucheShaman.xml -> art\WoL\homecity\WallMapu\MapucheShaman.xml
+art\Homecity\WOTTA\mapuchesky.xml -> art\WoL\homecity\WallMapu\mapuchesky.xml
+art\Homecity\WOTTA\MapucheWarrior.ddt -> art\WoL\homecity\WallMapu\MapucheWarrior.ddt
+art\Homecity\WOTTA\mapuchewarrior.gr2 -> art\WoL\homecity\WallMapu\mapuchewarrior.gr2
+art\Homecity\WOTTA\MapucheWarrior.xml -> art\WoL\homecity\WallMapu\MapucheWarrior.xml
+art\Homecity\WOTTA\MapucheWiseWoman.xml -> art\WoL\homecity\WallMapu\MapucheWiseWoman.xml
+art\Homecity\WOTTA\paraguay_background.xml -> art\WoL\homecity\Paraguayans\paraguay_background.xml
+art\Homecity\WOTTA\paraguay_homecity4.xml -> art\WoL\homecity\Paraguayans\paraguay_homecity4.xml
+art\Homecity\WOTTA\PY church.xml -> art\WoL\homecity\_shared\PY church.xml
+art\Homecity\WOTTA\romanian_homecity.xml -> art\WoL\homecity\Romanians\romanian_homecity.xml
+art\Homecity\WOTTA\roof_shingle.ddt -> art\WoL\homecity\Tupinamba\roof_shingle.ddt
+art\Homecity\WOTTA\secret\german_ground_colormap_A.ddt -> art\WoL\homecity\Swedish\secret\german_ground_colormap_A.ddt
+art\Homecity\WOTTA\secret\german_ground_colormap_B.ddt -> art\WoL\homecity\Swedish\secret\german_ground_colormap_B.ddt
+art\Homecity\WOTTA\secret\german_ground_colormap_C.ddt -> art\WoL\homecity\Swedish\secret\german_ground_colormap_C.ddt
+art\Homecity\WOTTA\secret\german_ground_colormap_D.ddt -> art\WoL\homecity\Swedish\secret\german_ground_colormap_D.ddt
+art\Homecity\WOTTA\secret_homecity.xml -> art\WoL\homecity\Swedish\secret_homecity.xml
+art\Homecity\WOTTA\serbian_homecity.xml -> art\WoL\homecity\Serbians\serbian_homecity.xml
+art\Homecity\WOTTA\Shaman_Mapuche.ddt -> art\WoL\homecity\WallMapu\Shaman_Mapuche.ddt
+art\Homecity\WOTTA\shaman_mapuche.gr2 -> art\WoL\homecity\WallMapu\shaman_mapuche.gr2
+art\Homecity\WOTTA\sky\abyss_background2.xml -> art\WoL\homecity\Ethiopians\sky\abyss_background2.xml
+art\Homecity\WOTTA\sky\abyss_sky_A.ddt -> art\WoL\homecity\Ethiopians\sky\abyss_sky_A.ddt
+art\Homecity\WOTTA\sky\abyss_sky_b.ddt -> art\WoL\homecity\Ethiopians\sky\abyss_sky_b.ddt
+art\Homecity\WOTTA\sky\abyss_sky_c.ddt -> art\WoL\homecity\Ethiopians\sky\abyss_sky_c.ddt
+art\Homecity\WOTTA\sky\abyss_sky_d.ddt -> art\WoL\homecity\Ethiopians\sky\abyss_sky_d.ddt
+art\Homecity\WOTTA\sky\egypt_sky_A.ddt -> art\WoL\homecity\Egyptians\sky\egypt_sky_A.ddt
+art\Homecity\WOTTA\sky\egypt_sky_B.ddt -> art\WoL\homecity\Egyptians\sky\egypt_sky_B.ddt
+art\Homecity\WOTTA\sky\egypt_sky_C.ddt -> art\WoL\homecity\Egyptians\sky\egypt_sky_C.ddt
+art\Homecity\WOTTA\sky\egypt_sky_d.ddt -> art\WoL\homecity\Egyptians\sky\egypt_sky_d.ddt
+art\Homecity\WOTTA\sky\egyptian_background.xml -> art\WoL\homecity\Egyptians\sky\egyptian_background.xml
+art\Homecity\WOTTA\sky\italian3.xml -> art\WoL\homecity\Italians\italian3.xml
+art\Homecity\WOTTA\sky\rome_background2.xml -> art\WoL\homecity\Italians\rome_background2.xml
+art\Homecity\WOTTA\sky\rome_sky_A.ddt -> art\WoL\homecity\Italians\rome_sky_A.ddt
+art\Homecity\WOTTA\sky\rome_sky_B.ddt -> art\WoL\homecity\Italians\rome_sky_B.ddt
+art\Homecity\WOTTA\sky\rome_sky_C.ddt -> art\WoL\homecity\Italians\rome_sky_C.ddt
+art\Homecity\WOTTA\sky\rome_sky_D.ddt -> art\WoL\homecity\Italians\rome_sky_D.ddt
+art\Homecity\WOTTA\skyA.ddt -> art\WoL\homecity\Paraguayans\skyA.ddt
+art\Homecity\WOTTA\skyB.ddt -> art\WoL\homecity\Paraguayans\skyB.ddt
+art\Homecity\WOTTA\skyC.ddt -> art\WoL\homecity\Paraguayans\skyC.ddt
+art\Homecity\WOTTA\skyD.ddt -> art\WoL\homecity\Paraguayans\skyD.ddt
+art\Homecity\WOTTA\skyE.ddt -> art\WoL\homecity\Paraguayans\skyE.ddt
+art\Homecity\WOTTA\skyF.ddt -> art\WoL\homecity\Paraguayans\skyF.ddt
+art\Homecity\WOTTA\skyG.ddt -> art\WoL\homecity\Paraguayans\skyG.ddt
+art\Homecity\WOTTA\skyH.ddt -> art\WoL\homecity\Paraguayans\skyH.ddt
+art\Homecity\WOTTA\spn_sidewalk_dirt.ddt -> art\WoL\homecity\Paraguayans\spn_sidewalk_dirt.ddt
+art\Homecity\WOTTA\spn_sidewalk_normal.ddt -> art\WoL\homecity\Paraguayans\spn_sidewalk_normal.ddt
+art\Homecity\WOTTA\THEROOMchandelier.xml -> art\WoL\homecity\_shared\THEROOMchandelier.xml
+art\Homecity\WOTTA\Tupi\chief_gear.ddt -> art\WoL\homecity\Tupinamba\Tupi\chief_gear.ddt
+art\Homecity\WOTTA\Tupi\chief_head.ddt -> art\WoL\homecity\Tupinamba\Tupi\chief_head.ddt
+art\Homecity\WOTTA\Tupi\hair-feathers.ddt -> art\WoL\homecity\Tupinamba\Tupi\hair-feathers.ddt
+art\Homecity\WOTTA\Tupi\politicianchief.xml -> art\WoL\homecity\Tupinamba\Tupi\politicianchief.xml
+art\Homecity\WOTTA\Tupi\politicianmessenger.xml -> art\WoL\homecity\Tupinamba\Tupi\politicianmessenger.xml
+art\Homecity\WOTTA\Tupi\politicianshaman.xml -> art\WoL\homecity\Tupinamba\Tupi\politicianshaman.xml
+art\Homecity\WOTTA\Tupi\politicianwarrior.xml -> art\WoL\homecity\Tupinamba\Tupi\politicianwarrior.xml
+art\Homecity\WOTTA\Tupi\politicianwoman.xml -> art\WoL\homecity\Tupinamba\Tupi\politicianwoman.xml
+art\Homecity\WOTTA\Tupi\shaman_gear.ddt -> art\WoL\homecity\Tupinamba\Tupi\shaman_gear.ddt
+art\Homecity\WOTTA\Tupi\shaman_head.ddt -> art\WoL\homecity\Tupinamba\Tupi\shaman_head.ddt
+art\Homecity\WOTTA\Tupi\stump.ddt -> art\WoL\homecity\Tupinamba\Tupi\stump.(1,1,1,1).ddt
+art\Homecity\WOTTA\Tupi\tupi structure.GR2 -> art\WoL\homecity\Tupinamba\Tupi\tupi structure.GR2
+art\Homecity\WOTTA\Tupi\wall.ddt -> art\WoL\homecity\Tupinamba\Tupi\wall.(1,1,1,1).ddt
+art\Homecity\WOTTA\Tupi\war_leader_head.ddt -> art\WoL\homecity\Tupinamba\Tupi\war_leader_head.ddt
+art\Homecity\WOTTA\Tupi\wise_woman_gear.ddt -> art\WoL\homecity\Tupinamba\Tupi\wise_woman_gear.ddt
+art\Homecity\WOTTA\Tupi\wise_woman_head.ddt -> art\WoL\homecity\Tupinamba\Tupi\wise_woman_head.ddt
+art\Homecity\WOTTA\Tupi\wood.ddt -> art\WoL\homecity\Tupinamba\Tupi\wood.(0,0,4,9).ddt
+art\Homecity\WOTTA\tupi_backdrop.ddt -> art\WoL\homecity\Tupinamba\tupi_backdrop.ddt
+art\Homecity\WOTTA\tupi_background.xml -> art\WoL\homecity\Tupinamba\tupi_background.xml
+art\Homecity\WOTTA\tupi_homecity2.xml -> art\WoL\homecity\Tupinamba\tupi_homecity2.xml
+art\Homecity\WOTTA\tupi_trees.xml -> art\WoL\homecity\Tupinamba\tupi_trees.xml
+art\Homecity\WOTTA\wise_woman_gearMA.ddt -> art\WoL\homecity\WallMapu\wise_woman_gearMA.ddt
+art\Homecity\WOTTA\wise_womanMA.ddt -> art\WoL\homecity\WallMapu\wise_womanMA.ddt
+art\Homecity\WOTTA\wise_womanMA.gr2 -> art\WoL\homecity\WallMapu\wise_womanMA.gr2
+art\Homecity\WOTTA\zulu.ddt -> art\WoL\homecity\Zulu\zulu.(0,0,8,9).ddt
+art\Homecity\WOTTA\zulu_backdrop.ddt -> art\WoL\homecity\Zulu\zulu_backdrop.ddt
+art\Homecity\WOTTA\zulu_background.xml -> art\WoL\homecity\Zulu\zulu_background.xml
+art\Homecity\WOTTA\zulu_homecity.xml -> art\WoL\homecity\Zulu\zulu_homecity.xml
+art\Homecity\WOTTA\zuluhouse.GR2 -> art\WoL\homecity\Zulu\zuluhouse.GR2
+art\Homecity\WOTTA\zuluhouse2.GR2 -> art\WoL\homecity\Zulu\zuluhouse2.GR2
+art\Homecity\WOTTA\zuluhouse3.GR2 -> art\WoL\homecity\Zulu\zuluhouse3.GR2
+art\Homecity\WOTTA\zuluhouse4.GR2 -> art\WoL\homecity\Zulu\zuluhouse4.GR2
+art\Homecity\WOTTA\zulushield.ddt -> art\WoL\homecity\Zulu\zulushield.(0,0,8,9).ddt
+art\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\mat_0242.ddt -> art\WoL\homecity\Egyptians\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\mat_0242.(1,1,1,1).ddt
+art\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\mat_0243.ddt -> art\WoL\homecity\Egyptians\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\mat_0243.(1,1,1,1).ddt
+art\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\mat_0244.ddt -> art\WoL\homecity\Egyptians\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\mat_0244.(1,1,1,1).ddt
+art\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\sphinx.GR2 -> art\WoL\homecity\Egyptians\War of the Triple Alliance\Buildingsets\Delta\Egyptian\sphinx\sphinx.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_acces.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_acces.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_cilinder.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_cilinder.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_cross.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_cross.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor1.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor1.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor2.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor2.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor3.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor3.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor4.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_floor4.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_pilar1.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_pilar1.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_pilar2.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_pilar2.GR2
+art\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_pilar3.GR2 -> art\WoL\homecity\Italians\War of the Triple Alliance\Delta\modern\obelisk_roman\obelisk_roman_base_pilar3.GR2
+art\War of the Triple Alliance\Delta\theroom\bulgarian_room.GR2 -> art\WoL\homecity\Bulgarians\War of the Triple Alliance\Delta\theroom\bulgarian_room.GR2
+art\War of the Triple Alliance\Delta\theroom\chandelier.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\chandelier.GR2
+art\War of the Triple Alliance\Delta\theroom\chandelier2.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\chandelier2.GR2
+art\War of the Triple Alliance\Delta\theroom\chandelier3.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\chandelier3.GR2
+art\War of the Triple Alliance\Delta\theroom\chandelier4.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\chandelier4.GR2
+art\War of the Triple Alliance\Delta\theroom\clock.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\clock.GR2
+art\War of the Triple Alliance\Delta\theroom\curtains.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\curtains.GR2
+art\War of the Triple Alliance\Delta\theroom\desk.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\desk.GR2
+art\War of the Triple Alliance\Delta\theroom\desk2.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\desk2.GR2
+art\War of the Triple Alliance\Delta\theroom\desk3.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\desk3.GR2
+art\War of the Triple Alliance\Delta\theroom\deskthings.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\deskthings.GR2
+art\War of the Triple Alliance\Delta\theroom\door.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\door.GR2
+art\War of the Triple Alliance\Delta\theroom\fireplace.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\fireplace.GR2
+art\War of the Triple Alliance\Delta\theroom\fireplace2.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\fireplace2.GR2
+art\War of the Triple Alliance\Delta\theroom\fireplace3.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\fireplace3.GR2
+art\War of the Triple Alliance\Delta\theroom\flag.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\flag.GR2
+art\War of the Triple Alliance\Delta\theroom\flag2.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\flag2.GR2
+art\War of the Triple Alliance\Delta\theroom\greek_room.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\greek_room.GR2
+art\War of the Triple Alliance\Delta\theroom\lampwall.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\lampwall.GR2
+art\War of the Triple Alliance\Delta\theroom\room.GR2 -> art\WoL\homecity\Serbians\War of the Triple Alliance\Delta\theroom\room.GR2
+art\War of the Triple Alliance\Delta\theroom\sofa.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\sofa.GR2
+art\War of the Triple Alliance\Delta\theroom\statue.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\statue.GR2
+art\War of the Triple Alliance\Delta\theroom\vase.GR2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Delta\theroom\vase.GR2
+art\War of the Triple Alliance\Units\African Slave\female1_Model.gr2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Units\African Slave\female1_Model.gr2
+art\War of the Triple Alliance\Units\African Slave\female2_Model.gr2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Units\African Slave\female2_Model.gr2
+art\War of the Triple Alliance\Units\African Slave\female3_Model.gr2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Units\African Slave\female3_Model.gr2
+art\War of the Triple Alliance\Units\African Slave\male1_Model.gr2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Units\African Slave\male1_Model.gr2
+art\War of the Triple Alliance\Units\African Slave\male2_Model.gr2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Units\African Slave\male2_Model.gr2
+art\War of the Triple Alliance\Units\African Slave\male3_Model.gr2 -> art\WoL\homecity\_shared\War of the Triple Alliance\Units\African Slave\male3_Model.gr2
