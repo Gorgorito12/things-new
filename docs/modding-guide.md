@@ -212,6 +212,8 @@ stay exactly as they are. Our code is a `dinput8.dll` with its own folder:
 4. Start the game as usual. `engine-ext\engine-ext.log` lists each key: `applied` or `FAILED`.
 5. To remove it, delete `dinput8.dll` and `engine-ext`. The game is as it was.
 
+- **WoL's `WoL.dll`:** WoL loads it with its own `dinput8.dll`, which this one replaces. Add `preloadDll WoL.dll` to
+  `engine-ext.cfg` ([preloadDll](#preloaddll)) and keep your copy of WoL's `dinput8.dll` aside to go back.
 - **A key that fails changes nothing:** it means WoL's DLL holds that place, and the key does not write. Almost all of
   those are keys WoL has: keep them in `wol.cfg`. The table is in
   [wol-uhc-map.md](wol-uhc-map.md#running-beside-wols-dll-dinput8dll-2026-11-05).
@@ -359,6 +361,7 @@ Where the game reads its data, how it reads it, and how it starts.
 | [`xsErrorLog`](#xserrorlog) | Writes the XS compiler's messages to the log, with file and line. | **new** | Nothing. | confirmed |
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | for tests | Nothing. | confirmed (two copies, single player) |
+| [`preloadDll`](#preloaddll) | Our `dinput8.dll` also loads another DLL of the game folder, such as WoL's `WoL.dll`, at the moment WoL's own `dinput8.dll` loader would. | `dinput8.dll` build only | Nothing. | confirmed (`WoL.dll` v1.33, single player) |
 
 #### ignoreRegistryPath
 
@@ -462,6 +465,33 @@ A tool for testing, not for WoL's players: nothing needs porting.
   - Sampled every second, its window stayed second from the bottom of 50 windows and was never the
     focused window. The copy without the key did take the focus when it started.
   - Every video in this guide marked `--background` was filmed with this key, on the WoL copy.
+
+#### preloadDll
+
+*One `dinput8.dll` loads both this project's code and WoL's `WoL.dll`.*
+
+```
+preloadDll <file> [<file> ...]      in engine-ext\engine-ext.cfg only
+```
+
+- **In WoL today:** WoL's second DLL, `WoL.dll`, is loaded by WoL's own `dinput8.dll`, a small proxy whose `DllMain`
+  loads `<game folder>\WoL.dll` before the exe's entry point, so before `uhc.dll`. This DLL's
+  [third way](#adding-these-features-to-wol) is also a `dinput8.dll`, and a folder holds only one file of that name.
+- **Effect:** our `dinput8.dll` reads this line in its own `DllMain`, at the moment WoL's proxy would, and loads each
+  named file from the exe's folder, by full path, in cfg order. So `WoL.dll` patches first, then `uhc.dll` (WoL's or this
+  one), then the keys of `engine-ext.cfg`, the same order as with WoL's proxy. WoL's proxy is then not needed.
+- **Only a file name:** a path, `dinput8.dll` and `UHC.dll` are refused (the last two are loaded already). The line is
+  read only from `engine-ext\engine-ext.cfg`; `UHC.dll` logs `preloadDll: only dinput8.dll reads it` and ignores it.
+- **Loader lock:** the load happens while Windows holds the loader lock, as with WoL's proxy. That is safe for a DLL whose
+  own `DllMain` only reads files, writes patches and starts threads without waiting for them, as `WoL.dll` does.
+- **Log:** `preloadDll: WoL.dll: loaded at 6ACD0000, before the game's entry point`, or `cannot load (error N)`, right
+  after `dinput8.dll x.y.z`.
+- **Simulation:** no, but the DLL it loads may change it.
+- **Tested in WoL (2026-11-17, single player):** WoL's `uhc.dll` with our `dinput8.dll` and `preloadDll WoL.dll`
+  (`WoL.dll` v1.33, MD5 `4B1A2B2C…`): `WoL.dll` reported every hook active, its 13 patches were in place at the menu and in
+  a game, and our keys failed only where WoL's `uhc.dll` holds the site: the same 33 as without `WoL.dll`. A revolution,
+  `banTech` and an AI skirmish ran. Details:
+  [wol-uhc-map.md](wol-uhc-map.md#woldll-v133-with-its-real-load-order-2026-11-17).
   - Not tested: three or more copies, multiplayer.
 
 ### Population, decks and limits
