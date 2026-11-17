@@ -1,5 +1,5 @@
 <mapinfo cannotReplace="" displayNameID="28828" imagepath="RMs\SMALL\North America\rockies" loadBackground="RMs\BIG\North America\rockies"
-details="6170368" 
+details="6170368"
 loadDetails="6170369">
    <loadss>ui\random_map\rockies\rockies_ss_01</loadss>
    <loadss>ui\random_map\rockies\rockies_ss_02</loadss>

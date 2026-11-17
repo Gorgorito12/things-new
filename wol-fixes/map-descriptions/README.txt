@@ -92,7 +92,11 @@ Other things found on the way
   runs on to the next "-->", 20 entries later: AURCocoa, AURManioc, AURSalt, AURCoffee, AURVanilla,
   AURTimber, AURRubber, AURIvory, AURTextiles, AURPalmOil, AURGold, AURDiamonds, AURTreasures,
   AUROil, AURFigurines, AURLiterature, AURSlaves, AURIncense, AURSilk and AURGems are all inside it.
-  For an XML reader these civs do not exist (see the in-game check below for what the game does).
+  For an XML reader these civs do not exist. In game, the African trade sites (the AUR<resource>
+  "Socket" buildings) still appear on the maps that place them through groupings (Atlas, Niger
+  River, Azores, Bioko, ...), so we could not tell whether the game reads these entries; please
+  check that such a site can be used in game, and fix the comment either way. Blue Nile (file
+  "Desert Flood") placed no trade site in 2 games; we did not look into why.
 - 49 maps create groupings whose file does not exist (column missing_groupings), and 29 maps define
   resources they never place (column defined_not_placed). Neither crashes the game; the objects are
   just missing.
@@ -151,6 +155,36 @@ One row per map, read from the map's .xs (without comments) and the game data. M
 The descriptions use the "seen" facts where they differ from the script.
 
 
+Checked in game
+---------------
+Every one of the 208 maps was generated twice (2 players, seeds 1 and 2, the editor route), and the
+units on the map at the start were listed and compared with the script facts.
+
+  maps where script and game agree on everything      162
+  maps with at least one difference (column "check")   46
+
+The differences, by kind (a map can have several):
+  21  natives in the script, no village in either game: Blue Nile (Desert Flood), Dunas,
+      ESOC Kamchatka, Pohnpei (everglades), "NEW" Dinarides, "NEW" Ferghana, "NEW" Iranian Plateau,
+      Alps, Aegean (WOLbalkans), British Isles, Cave, Ecruteak, Fjord, Hawai'i, Iberian Peninsula,
+      Iceland, The Moon, Scandinavia, Socotra, Tuscany, Verdon Gorge. Several use grouping files
+      that do not exist (missing_groupings); the European camps of the WoL European maps never
+      appeared. These are the most useful leads for the WoL team.
+  17  a fish, whale, hunt, herd or berry the script places that neither game showed: mostly placed
+      only with more players or in water a 2-player map does not have.
+  16  a gaia animal or plant seen that the script does not place (Badger, ypIGCBird, Hen, Cow,
+      Treerubber, ...): spawned by something else than the map script (triggers, nuggets, civs).
+   5  one native nation of several missing in both games (ESOC Arkansas, Deccan Large, Owikeno), or
+      African trade sites seen that the tool could not read from the script (Congo, Sahara: their
+      names are built in a way the tool does not follow).
+   1  Hawai'i's water trade route placed no trading post site.
+Each difference is in the "check" column of that map, so a description can follow the game.
+
+Two runs crashed (WOLethiopianhighlands seed 1, WOLFjord seed 2), both while generating the map,
+after about 80 maps in the same game process. Run again in a fresh game, both were fine: we think
+the long session, not the maps, caused them.
+
+
 Media
 -----
 Screenshots from the game (Spanish copy, 1920x1080), before and after the change, for each pilot map:
@@ -170,6 +204,15 @@ the lobby (skirmish setup, mouse on the minimap) and the loading screen.
 
 Also: media\format-test-lobby.jpg (colour tag, line breaks, long text in the rollover) and
 media\format-test-loading.jpg (the loading box cuts the text after 15 lines).
+
+
+Next: the other 203 maps
+------------------------
+The pilot shows the format; tell us what to change before we write the rest. For each map we then
+write the first line and the 2-3 sentences (from the script and the current text) in English and
+Spanish, take the facts from mapfacts.csv, follow the game where the "check" column says it differs,
+and test a sample in game again. King of the Hill is being added to more maps at the same time; the
+"koth" column is refreshed from the scripts before the texts are made.
 
 
 Applying it

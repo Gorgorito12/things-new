@@ -160,8 +160,21 @@ whatever its current text says; the file `everglades` is the map Pohnpei.
 ### In-game validation
 
 `mapsweep.py` (editor route, 2 players, seeds 1 and 2, 3 s of game time) now keeps each run's full
-unit list (`units/`), and `mapfacts.py --check` compares it with the script facts. See the README of
-the fix for the result; the cells it could not confirm are marked in `mapfacts.csv` (`check`).
+unit list (`units/`), and `mapfacts.py --check` compares it with the script facts. Runs: 416 (two
+shards, `C:\WoL-Test` and a hard-link copy `C:\WoL-Sweep1` made for the sweep and deleted after),
+`sweep/units.csv`; 414 ok, 2 crashes (below). **162 maps agree on everything, 46 have at least one
+difference**, each in the `check` column of `wol-fixes/map-descriptions/mapfacts.csv`: 21 maps whose
+natives never appeared (most WoL European maps among them), 17 resources placed only in some setups,
+16 gaia units the script does not place (Badger, ypIGCBird…), 5 native mismatches, Hawai'i's water
+route without a post site. The tool was fixed on the way for: natives read from the grouping files'
+sockets (ESOC Bengal sets Sufi/Udasi but places Bhakti), definitions never placed, missing grouping
+files, conditional placements, African trade sites, comments in `civs.xml`/`protoy.xml`.
+
+**Two crashes, not reproduced:** WOLethiopianhighlands seed 1 (EIP 0x5907B6) and WOLFjord seed 2
+(0x44824E), both `0xC0000005` while generating the map, within 20 s of each other, after about 80
+maps in each game process (16:03). Re-run in fresh games (crash watch attached): both ok
+(`sweep/rerun.csv`). Most likely the long session; worth keeping in mind for the players' crash
+reports (a long session of rematches?).
 
 ### Outlaws: which mapspecifictechs block a map gets
 
@@ -216,7 +229,49 @@ loading screen through a DWM thumbnail (the copy's window is kept under the othe
   lines still fit at 1080p. The loading box is about 610 px wide (about 80 characters per line) and
   **shows 15 lines, then cuts the text**; the player list stays below it.
 
-Shots: `template2/` (lobby), `template4/` (loading), `before/` and `after/` (the pilot).
+Shots: `template2/` (lobby), `template4/` (loading), `before/` and `after2/` (the pilot; `after/`
+is a first take with two errors fixed since). A space right after `</color>` is dropped, so the
+labels carry their space inside the tag.
+
+**Capturing the loading screen.** `PrintWindow` gives black frames while the game loads, and the
+copy's window cannot be raised (`multipleInstances background` adds `SWP_NOZORDER` to every
+`WM_WINDOWPOSCHANGING`, `src/features/instances.cpp`). What works: a topmost, non-activating window
+of the test script that shows the game window through a DWM thumbnail (`DwmRegisterThumbnail`),
+read from the screen with `BitBlt` every 0.2 s for the few seconds of the load. It covers the other
+copies' windows for those seconds only; their `record` uses `PrintWindow`, which it does not
+affect. The script is `desc_test.py` in the session scratchpad; it is not a tool yet.
+
+### The pilot (5 maps)
+
+Irrawaddy River (river), Hawai'i (island), Atacama (desert), Rockies (mountain), Alps (no trade route),
+English and Spanish, in `wol-fixes/map-descriptions/` (`texts.csv` → `make_descriptions.py` →
+`descriptions.csv` → `apply_fix.py`). String IDs 6170000–6170415, two per map for all 208 maps
+(`string-ids.csv`), free in every string table of the copy. The game corrected the scripts' facts in
+four of the five: Hawai'i's Jesuit and Sufi villages use groupings "1"–"5" that do not exist (its
+natives are the Heiau temples) and its water trade route places no post site; Alps' three European
+camps use groupings that do not exist (`EURNShunters med`…) and its grapes are never placed;
+Irrawaddy's berries are never placed. `mapfacts.py` now reports such cases (`defined_not_placed`,
+`missing_groupings`).
+
+**Found on the way, for WoL:** in `data\civs.xml` the `AURCattle` entry opens with `<!-- civ>` and
+closes with `</civ>`, so the comment runs on to the next `-->` and swallows 20 AUR civs (AURCocoa …
+AURGems). Not settled in game: the AUR trade-site buildings (units `AUR<resource>`, "Socket
+<resource>") still appear on Atlas, Niger River, Azores, Bioko…, which place them through groupings;
+Blue Nile placed none in 2 games (cause not looked into). `mapfacts.py` counts these
+sites as natives ("Cocoa (trade site)").
+
+### Left for the full run (203 maps)
+
+1. Wait for the WoL team's word on the pilot's format (lobby and loading screen, colours, "Outlaws"
+   with "+N random", "trade site" for the African sites).
+2. Refresh `mapfacts.py` after the King of the Hill work lands (the `koth` column), then write
+   `texts.csv` for every map: first line and 2–3 sentences, English and Spanish, and a correction
+   column wherever `check` says the game differs (21 maps whose natives never appear, Hawai'i's
+   route…). `make_descriptions.py` and `apply_fix.py` already take all maps.
+3. Re-run `desc_test.py` (scratchpad) on a sample of 10–15 maps at 1920 × 1080 and at a lower
+   resolution, since the loading box keeps 15 lines at 1080p only as far as tested.
+4. The leads for WoL found on the way: dead `mapspecifictechs.xml` blocks, the `civs.xml` comment,
+   missing grouping files (49 maps), resources defined and never placed (29 maps).
 
 ## What is left
 

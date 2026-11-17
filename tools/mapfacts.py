@@ -14,8 +14,11 @@ How a map script is read (the .xs without comments; the include libraries are no
 - a string is evaluated through concatenation and rmRandInt (ranges of up to 40 values);
 - rmAddObjectDefItem's second argument is classified by its proto's UnitTypes in protoy.xml:
   Huntable, Herdable, AbstractMine, AbstractFruit, AbstractFish, AbstractWhale;
-- natives: the values of rmSetSubCiv, by civs.xml display name; "varies" when a slot takes a
-  random civ;
+- natives: the sockets in the grouping files the map uses (RM4\\groupings), named by civs.xml, and
+  WoL's African trade sites (AUR<resource>); without them the values of rmSetSubCiv; "varies" when
+  a slot takes a random civ or a village is placed inside an if/else;
+- an object definition that no live statement places counts as nothing (defined_not_placed);
+  rmCreateGrouping files that do not exist are listed (missing_groupings);
 - trade route: rmCreateTradeRoute and rmBuildTradeRoute, with the conditions around the build
   (e.g. "not in FFA");
 - outlaws: the data\\mapspecifictechs.xml block that the game uses for the map (outlaw_block: the
@@ -640,11 +643,13 @@ def facts(bed, data, xs_path, sets):
                 unplaced.update(v for v in sc.string_values(args[1]) if data.category(v))
                 continue
             vals = sc.string_values(args[1])
+            # inside an if/else (or a switch) the item is placed in some games only
+            conditional = any(re.match(r"(?:else\b|if\b|switch\b|while\b)", c) for c in s.conds)
             for v in vals:
                 cat = data.category(v)
                 if cat:
                     entry = cats[cat].setdefault(data.protos[v.lower()][0], set())
-                    entry.add("one of" if len(vals) > 1 else "fixed")
+                    entry.add("one of" if len(vals) > 1 or conditional else "fixed")
                 elif v.lower() not in data.protos and v != UNKNOWN and v.lower() not in data.unit_types:
                     unknown_protos.add(v)
             if UNKNOWN in sc.values(args[1]):
@@ -684,14 +689,55 @@ def facts(bed, data, xs_path, sets):
                 if v not in natives:
                     natives.append(v)
     real = [n for n in natives if n.lower() in data.civs]
-    row["natives"] = ", ".join(data.civs[n.lower()][0] for n in real)
     row["natives_unknown"] = ", ".join(n for n in natives if n.lower() not in data.civs)
     # one slot given several civs (in an if/else or by a random pick): the civs vary per game
     varies = varies or any(len(v) > 1 for v in slots.values())
-    row["natives_varies"] = "yes" if varies or len(real) > max(1, len(slots)) else ""
+    varies = varies or len(real) > max(1, len(slots))
+    # The villages themselves come from groupings: the sockets in the grouping files a map really
+    # uses say which natives appear (ESOC Bengal sets Sufi and Udasi but places Bhakti villages).
+    by_key = {civ_key(c[0]): c[0] for c in data.civs.values()}
+    from_groupings, gvaries = [], False
+    for s in sc.stmts:
+        if not sc.live(s):
+            continue
+        for args in calls(s.text, "rmCreateGrouping"):
+            if len(args) < 2:
+                continue
+            vals = sc.string_values(args[1])
+            found = set()
+            for v in vals:
+                if v.lower().strip() in have:
+                    found |= grouping_sockets(gfolder / f"{v.strip()}.xml")
+            if len(vals) > 1 and len(found) > 1:
+                gvaries = True
+            if found and any(re.match(r"(?:else\b|if\b|switch\b|while\b)", c) for c in s.conds):
+                gvaries = True  # a village placed in some games only
+            for k in sorted(found):
+                civ = k[1:] if k.startswith("@") and k[1:].lower() in data.protos else by_key.get(k)
+                if civ and civ not in from_groupings:
+                    from_groupings.append(civ)
+    if from_groupings:
+        real = [n.lower() for n in from_groupings]
+        varies = gvaries or (varies and len(from_groupings) > 1)
+        row["natives_source"] = "groupings"
+    else:
+        # civs set but no grouping with their sockets: when the map's village groupings are missing,
+        # no village appears (Alps, Hawai'i)
+        row["natives_source"] = ("rmSetSubCiv, village groupings missing" if missing else "rmSetSubCiv") if real else ""
+
+    def native_name(n, table="en"):
+        if n.lower() in data.civs:
+            return data.civs[n.lower()][0] if table is None else data.civ_label(n, table)
+        if table is None:
+            return data.protos[n.lower()][0]
+        # an African trade site: "Socket Cocoa" -> "Cocoa (trade site)"
+        res = re.sub(r"^(Socket|Ranura de)\s+", "", data.proto_label(n, table))
+        return f"{res} ({'trade site' if table == 'en' else 'puesto comercial'})"
+    row["natives"] = ", ".join(native_name(n, None) for n in real)
+    row["natives_varies"] = "yes" if varies and len(real) > 1 else ""
     row["natives_slots"] = "; ".join(f"{k}: {'/'.join(v)}" for k, v in slots.items())[:300]
-    row["natives_en"] = ", ".join(dict.fromkeys(data.civ_label(n) for n in real))
-    row["natives_es"] = ", ".join(dict.fromkeys(data.civ_label(n, "es") for n in real))
+    row["natives_en"] = ", ".join(dict.fromkeys(native_name(n) for n in real))
+    row["natives_es"] = ", ".join(dict.fromkeys(native_name(n, "es") for n in real))
     # trade route
     created = [s for s in sc.stmts if sc.live(s) and re.search(r"\brmCreateTradeRoute\s*\(", s.text)]
     built = [s for s in sc.stmts if sc.live(s) and re.search(r"\brmBuildTradeRoute\s*\(", s.text)]
@@ -781,12 +827,16 @@ def seen_in_game(units_dir, data, name):
             cat = data.category(proto)
             if cat:  # any owner: the starting herd belongs to its player
                 got[cat].add(proto)
+                if player == 0:
+                    got.setdefault(f"gaia_{cat}", set()).add(proto)
             low = proto.lower()
             if low in ("sockettraderoute", "yptradingpostcapture", "sockettraderoutewater") or low.startswith("tradingpost"):
                 got["trade"].add(proto)
             m = re.match(r"(?:yp|wottanat)?socket(\w+)$", low)
             if m and not m.group(1).startswith("traderoute"):
                 got["natives"].add(m.group(1))
+            if re.fullmatch(r"AUR[A-Za-z]+", proto) and data.proto_label(proto).startswith("Socket "):
+                got["natives"].add(proto)  # an African trade site
             if low == "ypkingshill":
                 got["kingshill"].add(proto)
         out[seed] = got
@@ -803,7 +853,10 @@ def compare(row, seen, data):
         said_fixed = {p.lower() for p in row[cat].split("; ") if p and "(varies)" not in p}
         union = set().union(*(s[cat] for s in seen.values()))
         row[f"seen_{cat}"] = " ".join(sorted(union))
-        extra = {p for p in union if p.lower() not in said}
+        # a unit the civ starts with (a hen, a cow) is no map resource: "seen, not in the script"
+        # counts gaia units only
+        gaia = set().union(*(s.get(f"gaia_{cat}", set()) for s in seen.values()))
+        extra = {p for p in gaia if p.lower() not in said}
         missing = {p for p in said_fixed if all(p not in {x.lower() for x in s[cat]} for s in seen.values())}
         if extra:
             notes.append(f"{cat}: seen not in script {sorted(extra)}")
@@ -820,11 +873,34 @@ def compare(row, seen, data):
     if extra:
         notes.append(f"natives: seen not in script {extra}")
     missing = sorted(n for n in row["natives"].split(", ") if n and civ_key(n) not in {civ_key(x) for x in nat})
-    if missing and row.get("natives_varies") != "yes":
+    if missing and row.get("natives_varies") != "yes" and len(missing) < len(row["natives"].split(", ")):
         notes.append(f"natives: script not seen {missing}")
     if said and not nat:
         notes.append("natives: script has natives, none seen")
     return "; ".join(dict.fromkeys(notes))
+
+
+_GROUPING_SOCKETS = {}
+
+
+def grouping_sockets(path):
+    """The native civs (civ_key) whose sockets a grouping file places."""
+    if path not in _GROUPING_SOCKETS:
+        found = set()
+        try:
+            text = read_text(path)
+        except OSError:
+            text = ""
+        for proto in re.findall(r">\s*((?:yp|WOTTANat)?Socket\w+)\s*</unit>", text, re.I):
+            k = re.sub(r"^(?:yp|wottanat)?socket", "", proto.lower())
+            if not k.startswith("traderoute"):
+                found.add(civ_key(k))
+        # WoL's African trade sites: a unit AUR<Resource> (shown as "Socket <Resource>")
+        for proto in re.findall(r">\s*(AUR[A-Za-z]+)\s*</unit>", text):
+            if not re.search(r"props$|^AUR(?:buildings|civilian\w*|flag|timbuktu)$", proto, re.I):
+                found.add("@" + proto)
+        _GROUPING_SOCKETS[path] = found
+    return _GROUPING_SOCKETS[path]
 
 
 def civ_key(name):
@@ -837,7 +913,7 @@ def civ_key(name):
 # --- main ------------------------------------------------------------------------------------------
 
 FIELDS = ["map", "name_en", "name_es", "region", "region_source", "region_note", "region_sets", "image_folder", "trade_route",
-          "trade_route_conditions", "trade_route_types", "koth", "natives", "natives_varies", "natives_slots", "natives_en",
+          "trade_route_conditions", "trade_route_types", "koth", "natives", "natives_source", "natives_varies", "natives_slots", "natives_en",
           "natives_es", "natives_unknown", "hunt", "hunt_en", "hunt_es", "herd", "herd_en", "herd_es", "mine",
           "mine_en", "mine_es", "berry", "berry_en", "berry_es", "fish", "fish_en", "fish_es", "whale", "whale_en",
           "whale_es", "map_types", "outlaw_block", "dead_block_for_file", "outlaws", "outlaws_en", "outlaws_es",

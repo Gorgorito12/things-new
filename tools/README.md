@@ -362,8 +362,13 @@ copy. How it reads a script:
 - **Resources.** `rmAddObjectDefItem`'s proto, by its `UnitType`s in `protoy.xml`: `Huntable`,
   `Herdable`, `AbstractMine`, `AbstractFruit` (berries), `AbstractFish`, `AbstractWhale`; English and
   Spanish names from the string tables.
-- **Natives.** `rmSetSubCiv`, by `civs.xml`; `natives_varies` when a slot takes more than one civ
-  (`natives_slots` lists them).
+- **Natives.** The sockets in the grouping files the map uses (`RM4\groupings`; `natives_source`
+  `groupings`), named by `civs.xml`; WoL's African trade sites (units `AUR<resource>`) count too.
+  Without such a grouping, the civs of `rmSetSubCiv` (`natives_source` says when the map's grouping
+  files are missing, so no village appears). `natives_varies` when the villages depend on a random
+  pick or an if/else (`natives_slots` lists the `rmSetSubCiv` slots). Resources and villages placed
+  inside an if/else count as "(varies)"; a definition never placed counts as nothing
+  (`defined_not_placed`), and grouping files that do not exist are listed (`missing_groupings`).
 - **Trade route.** `rmCreateTradeRoute` and `rmBuildTradeRoute`, with the conditions around the build;
   "(water)" when the route type is a water one.
 - **Outlaws.** The `data\mapspecifictechs.xml` block the game uses: the first block, in file order, whose

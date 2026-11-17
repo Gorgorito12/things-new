@@ -89,7 +89,8 @@ def set_map_xml(text, lobby_id, loading_id):
     # drop every details attribute, whatever its case, with the space before it
     attrs = re.sub(r"\s*\b(\w+)\s*=\s*\"[^\"]*\"",
                    lambda a: "" if a.group(1).lower() in ATTRS else a.group(0), attrs)
-    attrs = attrs.rstrip() + f'\ndetails="{lobby_id}" \nloadDetails="{loading_id}"'
+    nl = "\r\n" if "\r\n" in text else "\n"
+    attrs = attrs.rstrip() + f'{nl}details="{lobby_id}"{nl}loadDetails="{loading_id}"'
     return text[:m.start(1)] + attrs + text[m.end(1):]
 
 

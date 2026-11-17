@@ -5,7 +5,7 @@ imagepath = "RMs\small\Asia and Oceania\WOLhawaii"
 displayNameID = "1000307" 
 cannotReplace = "" 
 loadBackground="RMs\BIG\North America\hawaii"
-details="6170216" 
+details="6170216"
 loadDetails="6170217">
 
 <loadss>ui\random_map\hawaii\hawaii_ss_01</loadss>

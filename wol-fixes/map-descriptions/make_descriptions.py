@@ -63,6 +63,15 @@ def short(names, lang):
     return ", ".join(dict.fromkeys(out))
 
 
+def natives(f, lang):
+    """The natives; when the script picks them per game, 'A, B or C (varies)'."""
+    names = [n for n in f[f"natives_{lang}"].split(", ") if n]
+    if f.get("natives_varies") != "yes" or len(names) < 2:
+        return ", ".join(names)
+    word, varies = (" or ", "varies") if lang == "en" else (" o ", "varía")
+    return f"{', '.join(names[:-1])}{word}{names[-1]} ({varies})"
+
+
 def facts_lines(f, t, lang):
     w = WORDS[lang]
     col = {"en": 0, "es": 1}[lang]
@@ -79,7 +88,7 @@ def facts_lines(f, t, lang):
         " | ".join([f"{LABEL.format(w['region'])}{pick('region', region)}",
                     f"{LABEL.format(w['trade'])}{pick('trade', trade)}",
                     f"{LABEL.format(w['koth'])}{pick('koth', w['yes'] if f['koth'] == 'Yes' else w['no'])}"]),
-        f"{LABEL.format(w['natives'])}{pick('natives', f[f'natives_{lang}'] or w['none'])}",
+        f"{LABEL.format(w['natives'])}{pick('natives', natives(f, lang) or w['none'])}",
         f"{LABEL.format(w['outlaws'])}{pick('outlaws', outlaws)}",
         f"{LABEL.format(w['hunt'])}{pick('hunt', short(f[f'hunt_{lang}'], lang) or w['none_f'])} | "
         f"{LABEL.format(w['herd'])}{pick('herd', short(f[f'herd_{lang}'], lang) or w['none'])}",
