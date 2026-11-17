@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75089" imagepath="RMs\SMALL\South America\atacama" loadBackground="RMs\BIG\South America\atacama"
+details="6170282" 
+loadDetails="6170283">
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_01</loadss>
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_02</loadss>
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_03</loadss>
+</mapinfo>

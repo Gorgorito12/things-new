@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "RMs\SMALL\Africa and Middle East\Irrawafy"
+displayName = "Irrawaddy River"
+cannotReplace = ""
+ 
+ loadBackground="ui\random_map\yellow_river\yellow_river_map"
+details="6170026" 
+loadDetails="6170027">
+  <loadss>ui\random_map\yellow_river\yellow_river_ss_1</loadss>
+  <loadss>ui\random_map\yellow_river\yellow_river_ss_2</loadss>
+  <loadss>ui\random_map\yellow_river\yellow_river_ss_3</loadss>
+
+ 
+</mapinfo>

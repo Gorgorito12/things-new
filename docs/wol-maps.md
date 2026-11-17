@@ -143,6 +143,81 @@ the map at most (a missing object, the default water), not a crash. `vividlyKolk
 `If (PlayerNum > 2)` with a capital I: it compiled with no XS error, so the lead that it cannot compile
 is dropped.
 
+## Map descriptions (2026-11-17)
+
+JTMaston asked for map descriptions in one standard format, in the lobby (the minimap rollover) and on
+the loading screen: a short description, trade route, natives, huntables, mines, berries, outlaws,
+region. Deliverable for WoL: `wol-fixes/map-descriptions/` (README in English). Evidence:
+`rea/evidence/map-descriptions-20261117/` (gitignored).
+
+**The facts come from the scripts.** `tools/mapfacts.py` reads every `RM4\*.xs` and writes a row per
+map ([tools/README.md](../tools/README.md#mapfactspy)); the table for all 208 maps is
+`wol-fixes/map-descriptions/mapfacts.csv`. Notable reads: Atacama's natives are inside a comment (it
+has none); Rockies has Cheyenne **or** Comanche, never both; Irrawaddy River's "dry season" branch can
+never run (`seasonSwitch` is 1–6 and the dry case is 0), so it always has 3 fords (4 with 6+ players),
+whatever its current text says; the file `everglades` is the map Pohnpei.
+
+### In-game validation
+
+`mapsweep.py` (editor route, 2 players, seeds 1 and 2, 3 s of game time) now keeps each run's full
+unit list (`units/`), and `mapfacts.py --check` compares it with the script facts. See the README of
+the fix for the result; the cells it could not confirm are marked in `mapfacts.csv` (`check`).
+
+### Outlaws: which mapspecifictechs block a map gets
+
+**Rule (REA on the stock exe, confirmed in game).** Each `<map name>` block of
+`data\mapspecifictechs.xml` is turned into a **map type ID** when the file loads; the game takes the
+**first block in file order** whose type the map has. So:
+
+- `rmSetMapType` decides, not the map's file name. A block named after a file (`DansilChupat`,
+  `ESOC_Arizona`, `WOLhawaii`…) is dead unless that name is also a type in `maptypes.xml`: **108 of
+  the 157 blocks are never used**. Only `WOLcave` works, because `WolCave` is a map type.
+- Names compare without case (the hash upper-cases, 0x5F5412), so the early `Arabia` block (4th)
+  shadows the late `arabia` one (154th): Arabia gets Pistolero and Renegado, never the Muharib, Sariq
+  and Khali of `arabia`.
+- The order of the map's `rmSetMapType` calls does not matter; `default` (the last block) is always
+  set, so a map with no matching type gets `default` (Pistolero, Renegado, 3 random).
+- An unknown type in `rmSetMapType` is ignored ("'%s' is not a valid map type. Ignoring.").
+
+| Step | Where | Evidence |
+|---|---|---|
+| Load: per `<map name>`, `entry[0] = FUN_00527A08(name)` (map type ID or -1), then `tech`, `forceTech`, `randomTech` and `randomNumToUse` | FUN_00528587 (`mapspecifictechs.xml`, 0x2C-byte entries at `[db+61CCh]`, count `[db+61D0h]`) | `ev_9def0c58…` |
+| Name → map type ID: hash lookup in the table at `[db+60ECh]` | FUN_00527A08 → 0x5F5412 (upper-cases), 0x40295B | `ev_c537c944…`, `ev_e8906a78…`, `ev_354703f2…`, `ev_4d234cd7…` |
+| That table is `maptypes.xml` | FUN_005278DA | `ev_c6b7d251…` |
+| `rmSetMapType`: lookup in the same table; unknown → "Ignoring."; known → set bit (0xA026AD) in the world's map-type bitset `[world+88Ch]` | handler 0x90F1EC (registered at 0x6142B8) | `ev_4060177c…`, `ev_faab8de0…`, `ev_59df166b…`, `ev_516dfe85…` |
+| Pick: the first entry whose ID's bit is set | FUN_00A02DAF (one caller, 0x6AEC02) | `ev_56e9552b…` |
+| Random techs of the picked block | FUN_00A02C76 | `ev_445aada2…` |
+| `default` set when a game is loaded (`FUN_00527A08("default")` → 0xA026AD) | FUN_00A09B47 | `ev_ac044784…` |
+
+Bundle: `rea/evidence/map-descriptions-20261117/outlaws-rea.json`. Inference, not observed: that a new
+game sets `default` the same way as a loaded one (the in-game tests below are consistent with it).
+
+**In game (WoL-Test, editor route, a Saloon added to the script for the test and removed after):**
+DansilChupat (types `land grass araucania`; it has a block `DansilChupat` with Pistolero and
+Comanchero) trains Hired Proscrito, Hampon and Hired Cuatrero, which is the `araucania` block, plus 3
+random (Kolo, Bashi-Bazouk, Maharul); Arabia (type `arabia`) trains Pistolero and Renegado, the
+`Arabia` block, plus random ones. Shots: `outlaws/DansilChupat-s1-*.png`, `outlaws/Arabia-s1-*.png`.
+
+### What the lobby and the loading screen show
+
+Tested in WoL-Test (Spanish, 1920 × 1080), skirmish setup with a posted hover on the minimap, and the
+loading screen through a DWM thumbnail (the copy's window is kept under the other copies' windows by
+`multipleInstances background`, and `PrintWindow` returns black while the game loads):
+
+- **Lobby rollover** = `details` (or `detailsText`); **loading screen** = `loadDetails` (or
+  `loadDetailsText`).
+- **An ID wins over literal text** when a map has both (`details="ID" detailsText="…"`), in both places.
+- Attribute names are **case-insensitive**: `detailstext` and `loadDetailsTEXT` work. The misspellings
+  are harmless; the fix writes the standard names anyway.
+- **`\n` (backslash, n) breaks the line** in both; a real line break in the XML does not.
+- **Markup:** `<color=r,g,b>…</color>` works (r, g, b from 0 to 1); `<icon=(20)(path)>` and `<u>…</u>`
+  work (ESOC maps use them); `<b>` is swallowed with no effect.
+- **Room:** the rollover is about 450 px wide (about 55 characters per line) and grows downwards; 22
+  lines still fit at 1080p. The loading box is about 610 px wide (about 80 characters per line) and
+  **shows 15 lines, then cuts the text**; the player list stays below it.
+
+Shots: `template2/` (lobby), `template4/` (loading), `before/` and `after/` (the pilot).
+
 ## What is left
 
 1. **No crash reproduced.** The players' crash reports remain unexplained. Next: the suspects at more
