@@ -239,7 +239,7 @@ copy's window cannot be raised (`multipleInstances background` adds `SWP_NOZORDE
 of the test script that shows the game window through a DWM thumbnail (`DwmRegisterThumbnail`),
 read from the screen with `BitBlt` every 0.2 s for the few seconds of the load. It covers the other
 copies' windows for those seconds only; their `record` uses `PrintWindow`, which it does not
-affect. The script is `desc_test.py` in the session scratchpad; it is not a tool yet.
+affect. The script is `rea/evidence/map-descriptions-20261117/scripts/desc_test.py` (with `outlaw_test.py`, the saloon test); not a tool yet.
 
 ### The pilot (5 maps)
 
@@ -268,7 +268,7 @@ sites as natives ("Cocoa (trade site)").
    `texts.csv` for every map: first line and 2–3 sentences, English and Spanish, and a correction
    column wherever `check` says the game differs (21 maps whose natives never appear, Hawai'i's
    route…). `make_descriptions.py` and `apply_fix.py` already take all maps.
-3. Re-run `desc_test.py` (scratchpad) on a sample of 10–15 maps at 1920 × 1080 and at a lower
+3. Re-run `desc_test.py` (evidence `scripts/`) on a sample of 10–15 maps at 1920 × 1080 and at a lower
    resolution, since the loading box keeps 15 lines at 1080p only as far as tested.
 4. The leads for WoL found on the way: dead `mapspecifictechs.xml` blocks, the `civs.xml` comment,
    missing grouping files (49 maps), resources defined and never placed (29 maps).
