@@ -240,6 +240,87 @@ JTMaston's request: keep WoL's `uhc.dll`, `Startup\wol.cfg` and `data\uhc` as th
 
 **Not shown:** multiplayer, saved games, and any key's effect beyond the table's first rows. WoL may patch more in a game than at the menu; only the menu was diffed.
 
+## `WoL.dll` (v1.22x, the WoL team's second DLL, 2026-11-17)
+
+A separate DLL of the WoL team, with its own keys in `Startup\wol.cfg` (case-sensitive) and its log in
+`Startup\wol_hc.log`. Source only (one C file, read as data, kept in the gitignored
+`reference/WoL.dll/WoL.en.c`, SHA-256 `102729081fc0da14…`); no binary from them yet. Never copy its code.
+
+**Loading.** Every patch is written from `DllMain`. `UHCPluginMain` (cdecl, returns 1) and `WoLInit` are
+empty exports, so the DLL loads as a `.upl` plugin: renamed `WoL.upl` and named in
+`customSyscalls wolPlugin.upl wolai.upl WoL.upl`, by WoL's `uhc.dll` or by ours. Its header also names a
+`dinput8.dll` proxy, but the file exports no DirectInput entry, so that would be a third DLL (and would take
+the name our `EngineExt` uses). There is no check of the exe build: the guards are the original bytes of each
+site and zero bytes in the caves. Note: `C:\WoL-Test` already holds an unrelated 4 KB `wol.dll` (2019), whose
+name a `WoL.dll` would replace on Windows.
+
+**Sites, caves and cells** (from the source, checked against the stock exe with capstone and against the live
+process, 2026-11-17):
+
+| Key | Site (bytes written) | Cave / cell | When |
+|---|---|---|---|
+| `trickleDisplay` | rel32 of `call 485CACh` at 0x69920E (4 B); `je 699456h` at 0x699227 NOPed (6 B) | cave 0xC65800 (0x71 B) | `DllMain`. Guard only 0x699208 (`8B 4F 58 6A`) and the `E8` at 0x69920D; the NOP site is written unchecked |
+| `ageIcons <5\|6> <path>` | none in code | cells 0xF221C0 / 0xF22B80 (UTF-16 paths) | `DllMain`; only in an exe with a `.cave` section (not the stock one: skipped there) |
+| `hcRevolutionLog` | `push 0C133FCh` at 0x85E735 → `call` (5 B) | cave 0xC65400 (41 B), function pointer 0xC65600 | `DllMain` |
+| `hcRevolutionDeck` | `mov eax,[0C66234h]` at 0x7FBE06 → `call` (5 B); 0x7F8114 → `jmp` + 3 NOP (8 B); head of 0x62E027 → `jmp` + 3 NOP (8 B) | caves 0xC65900 (19 B), 0xC65A00 (19 B), 0xC65B00 (71 B); pointers 0xC65980, 0xC65A80, 0xC65B80; 0xC65B84 | `DllMain`; plus a scanner thread after the first revolution (below) |
+| `forceMinUI` | 0x761BF0 (4 B, `mov al,1`), 0x661E15 (5 B, `push 1`), 0x9AC7E8 and 0x9B6655 (2 B each, `jne` NOPed) | none | `DllMain` |
+| `hcGatherPointByCommand` | the proto ID loads `mov edx,[ecx+slot]` (6 B each) of the stock shipment point blocks 2–6, 9 and 10: 0x669824, 0x6698D4, 0x669984, 0x669A34, 0x669AE4, 0x669CEE, 0x669D9E | cells 0xC65230 + 4·i (7 dwords) | a thread, once the database is ready (already at the main menu) |
+
+All caves and cells are in the `.rdata` slack page 0xC65000 (0xC65200..0xC65B87); ours only reads
+0xC65083..0xC650AB (the cfg path). The page is made writable for the write and set back to read-only, so the
+caves run from a non-executable page; that works only because the exe is not NX-compatible (DEP OptIn).
+
+**The deck scanner** (`hcRevolutionDeck`, after the first revolution): a thread that, for 999 passes 3 s apart,
+walks all committed memory below 0x7F000000 and writes dwords with `WriteProcessMemory` (which also writes
+read-only pages) wherever a byte pattern of a 40-byte deck entry matches. It can hit any heap object, ours
+included, that happens to match.
+
+**Shared and adjacent sites with our DLL** (`tools/gen_sites.py`, every verify range checked):
+
+| WoL.dll site | Our site | Status |
+|---|---|---|
+| 0x6698D4..0x6698D9 (`hcGatherPointByCommand`, block 3) | `GatherFallbackBlock` 0x6698B4 (0xB0 B, verify only; `hcShipmentPointFallback`, `civFirstTC`'s `FirstTC`) | **Overlap, fixed 2026-11-17.** Our hook at 0x669E2E repeats that block with its own proto IDs, so the 6 bytes of the ID load do not matter to it. The site is split: `GatherFallbackBlock` 0x6698B4 (0x20 B) and `GatherFallbackBlockTail` 0x6698DA (0x8A B). Before, a WoL.dll that patched first would have made both keys log FAILED; in practice its thread patches after our check, so the old check passed and WoL then wrote |
+| 0x699227..0x69922C (`trickleDisplay` NOP) | `UnitPanelRateRow` 0x69922D (verify only) | Adjacent, no shared byte |
+| 0x7F8114..0x7F811B (`hcRevolutionDeck`) | `TechRenameApplyCall` 0x7F80FD..0x7F8113 | Adjacent, no shared byte |
+| caves 0xC65230..0xC65B87 | 0xC65083..0xC650AB (read) | Disjoint |
+
+**What our hooks do with WoL's bytes** (REA, `rea/evidence/age3y-b1a1dab7/wol-dll-coexist-20261117.json`):
+- *Shipment point.* The "nothing found" exit 0x669E2E, our `hcShipmentPointFallback` jmp, has one incoming
+  reference, 0x669DC8, the end of the last stock block (`ev_e116b286…`). The blocks are the cold chunk
+  0x669804..0x669E49 of FUN_004C6CAE (`ev_9e886e68…`). So our list still runs only after the ten stock
+  blocks, whatever proto IDs WoL put in seven of them. With `replace`, our jmp at 0x4C6BCF skips all ten, so
+  WoL's seven are skipped too.
+- *WoL's bytes are wrong.* It writes `8B 0D <cell>` (`mov ecx,[cell]`) where `8B 15 <cell>` (`mov edx,[cell]`)
+  was meant. The next instructions are `push edx / push 0 / mov ecx,esi / call 45356Dh` (stock, all seven
+  blocks), so ECX is overwritten at once and the query's type is the stale EDX. EDX there is what
+  `querySetPlayer` 0x453618 left: on its success path `mov edx,[esp+0Ch]`, the player ID. So the seven blocks
+  search for **proto ID = the player's number** (1..8), not WoL's candidates. The live bytes on 2026-11-17:
+  `8B 0D 30 52 C6 00` at 0x669824 … `8B 0D 48 52 C6 00` at 0x669D9E; cells `130h 156h 191h 1B7h 206h 263h 2D2h`.
+- *Unit panel.* 0x699456, the join after the stock AutoGather row and our `AddUnitPanelRow` hook, has twelve
+  incoming branches (`ev_8ccdb149…`); WoL's NOP removes one of them (0x699227: "the action is not active"),
+  so the stock row is written for an inactive AutoGather action too. Our hook runs after that row, every
+  time, so where one of our rows claims the panel (`showGatherRate`, `veterancyBonus`, `lifespan`, overheal,
+  `researchGrants`, `unitResourceAuras`), **ours wins**; where none does, WoL's trickle row stays. Neither
+  order of loading changes this: the two sites share no byte.
+
+**Joint test** (2026-11-17, `WoL.dll` built from the source with MSVC, since zig is not installed here: a
+forced-include header maps `__attribute__((thiscall/dllexport/noinline))`, compiled as C++ with `/Od`; an
+`/O2` build recursed in its own `memcpy` and died with a stack overflow at start, a harness issue, not WoL's):
+
+| Order | Bed | Result |
+|---|---|---|
+| WoL first: WoL's `uhc.dll` loads `WoL.upl` in its `UHCMain`, then our `dinput8.dll` (`EngineExt`) | `C:\WoL-Test`, `engine-ext.cfg`: `hcShipmentPointFallback FirstTC LastResort`, `civFirstTC`, `showGatherRate log`, `multipleInstances background` | `UHCMain: 5 applied, 0 failed`; WoL.dll: all hooks of `hcRevolutionLog`, `hcRevolutionDeck`, `forceMinUI` active, `GATHERPOINT: 7 chain loads switched`. Live: our jmps at 0x669E2E and 0x699456 beside WoL's bytes. Skirmish (Dutch against an AI): hooks 0x52BB07, 0x51BA31, 0x506B3B, 0x925F4C, 0x679AC8, 0x4ED044, 0x4D7834 reached |
+| Ours first: our `UHC.dll` loads `WoL.upl` through `customSyscalls` (plugins load last, after every key) | `C:\AoE3-UHC-WoLReal2`, its `wol.cfg` plus the same three keys and WoL.dll's five | `UHCMain: 37 applied, 0 failed`; `customSyscalls: WoL.upl: 0 syscalls, 0 cheats (UHCPluginMain returned 1)`; WoL.dll: every hook active, `GATHERPOINT: 7 chain loads switched`. Skirmish (Persians against an AI, minimized interface): `hook reached: unit panel row (0x699456)` with the trickle NOP live at 0x699227 (`90 ×6`), the panel drawn for a villager, a mining camp and a TC |
+
+Both beds were restored afterwards: `wol.cfg` and `UHC.dll` of `C:\AoE3-UHC-WoLReal2` hash as before the test,
+and `C:\WoL-Test` as before except its `ReShade.log`; the Steam exe is still `b1a1dab7…`.
+
+**Not tested:** a revolution with a deck (a skirmish cannot set a tech from the console, and a scenario has no
+home city); a shipment landing after the stored point is gone (the TC could not be deleted from the console,
+so the stock blocks and our list never ran); the text of a rate row (the villagers of player 1 were idle, and
+in a background copy they cannot be ordered to gather; in `C:\WoL-Test` the minimized unit panel did not run at
+all, so 0x699456 was not reached there); `ageIcons`; multiplayer.
+
 ## Next steps
 
 1. For each `candidates` row, read the bytes the feature writes (the `remod` patch objects' `+0Ch` vectors, or the call/imm rewrite). Then confirm the site against the stock exe in the same way as the address map.

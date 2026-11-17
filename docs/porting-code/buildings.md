@@ -5550,7 +5550,7 @@ Contract: [hcShipmentPointFallback](../porting-to-another-dll.md#hcshipmentpoint
 
 Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherSearchStart` `0x4C6BCF` (7 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherSearchStart` `0x4C6BCF` (7 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (32 B), `GatherFallbackBlockTail` `0x6698DA` (138 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
 
 ### src/features/shipments.cpp
 
@@ -5866,7 +5866,7 @@ bool AddFirstTcShipmentPoint() {
   }
   if (!g_installed) {
     if (!VerifyAll("firstTC shipment point", {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore,
-                                              &sites::kGatherFallbackBlock}) ||
+                                              &sites::kGatherFallbackBlock, &sites::kGatherFallbackBlockTail}) ||
         !WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
       return false;
     }
@@ -5922,14 +5922,16 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
     return Outcome::kFailed;
   }
   // FirstTC also reads [player+4F0h] (set at 0x67ABD4), player and unit by ID and the stored point
-  // check; no feature writes those sites.
+  // check; no feature writes those sites. The block the hook mirrors is checked without its proto ID
+  // load (0x6698D4): the hook loads its own IDs, and another DLL may rewrite that load, before or
+  // after this check.
   const bool verified =
       firstTc ? VerifyAll("hcShipmentPointFallback",
                           {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock,
-                           &sites::kFirstTcSet, &sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
-                           &sites::kUnitByIdNull, &sites::kGatherPointValid})
-              : VerifyAll("hcShipmentPointFallback",
-                          {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock});
+                           &sites::kGatherFallbackBlockTail, &sites::kFirstTcSet, &sites::kPlayerById,
+                           &sites::kPlayerByIdNull, &sites::kUnitById, &sites::kUnitByIdNull, &sites::kGatherPointValid})
+              : VerifyAll("hcShipmentPointFallback", {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore,
+                                                      &sites::kGatherFallbackBlock, &sites::kGatherFallbackBlockTail});
   if (!verified || (lastResort && !VerifyAll("hcShipmentPointFallback LastResort",
                                              {&sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
                                               &sites::kUnitByIdNull, &sites::kGatherPointValid, &sites::kIsA}))) {
