@@ -18,7 +18,10 @@
        lifespan (seconds left), and what other keys know, shown only when that key is on:
        overheal (overhealHitpointBars), veterancy (veterancyBonus), poison (damageOverTime),
        randomCost (randomCost: the price range), shipments (shipmentCounts: the owner's cards per
-       age), gatherRate (showGatherRate)
+       age), gatherRate (showGatherRate), auras (our aura keys acting on the unit: buildingWorkRateAuras,
+       resourceGatherAuras, unitResourceAuras; the game's own auras show only in the values they change);
+       buildTime (a building under construction: time to finish at its builders' rates), buildProgress,
+       buildRate (a builder at work: points per second), regen (hit points per second while idle)
 
      <bigPanelRows>: the rows the big UI's stat panel shows for the selection, in its order, into
        gadget%d from `first` on (consecutive gadgets; at least two).
@@ -31,13 +34,14 @@
      {uhcLOS}, {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}, {uhcROF},
      {uhcRange}, {uhcMinRange}, {uhcArea}, {uhcCost}, {uhcPopulation}, {uhcBounty}, {uhcBuildLimit},
      {uhcInventory}, {uhcLifespan}, {uhcOverheal}, {uhcVeterancy}, {uhcPoison}, {uhcRandomCost},
-     {uhcShipments}, {uhcGatherRate}. -->
+     {uhcShipments}, {uhcGatherRate}, {uhcBuildTime}, {uhcBuildProgress}, {uhcBuildRate}, {uhcRegen},
+     {uhcAuras}. -->
 <minUIRows>
   <row gadget="unitselectionpanel-uhcTrainPoints" item="trainPoints" label="Train Points: " types="Unit"/>
   <row gadget="unitselectionpanel-uhcRow0" text="LOS: {los}|Speed: {speed}|Garrison: {garrison}"/>
   <row gadget="unitselectionpanel-uhcRow1" text="ROF: {rof}|Range: {range}"/>
   <row gadget="unitselectionpanel-uhcCostPop" text="Cost: {cost}|Pop: {population}"/>
-  <row gadget="unitselectionpanel-uhcRow2" text="Overheal {overheal}|Poison {poison}"/>
+  <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
   <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
 
   <!-- More rows to enable: add a gadget for each to uiunitselectionmin.xml, then remove the comment marks.

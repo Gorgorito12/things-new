@@ -46,6 +46,22 @@ More information (second batch)
   price range, the cards sent per age, base speed, armor, veterancy rank.
 - Every item is also a text for any formatText gadget: {uhcROF}, {uhcRange}, {uhcCost}, ...
 
+More information (third batch)
+------------------------------
+Left of the unit's name, in the row that already shows Overheal and Poison:
+- a building under construction: the time left at the speed its builders work now, "Done in 1:21";
+- a villager building: the points per second it adds, "Builds 1.50/s" (the second and later builders of
+  one building work slower, as the game makes them; each shows its own speed);
+- a unit that regenerates: "Regen 1/s", the hit points per second it gets back (while idle, when its
+  regeneration asks for that);
+- what our aura keys do to the unit: "Aura +50% work" (BuildingWorkRate), "+25% gold" (gold, wood, food,
+  mine, tree, farm and wild food gather rates), "pays 0.10 (wood)/s" on a building with a UnitResource
+  aura and "-0.05 (wood)/s" on what it gathers from. The game's own auras (GatherRate, Damage, ...) are
+  not listed: what they change already shows in the panel's numbers.
+These are the game's own numbers: the times were checked against a stopwatch (within a second).
+New texts for any formatText: {uhcBuildTime}, {uhcBuildProgress} (percent built), {uhcBuildRate},
+{uhcRegen}, {uhcAuras}.
+
 Everything is in the data file
 ------------------------------
 Which gadget shows which item, with which label and for which unit types, is in minuirows.xml

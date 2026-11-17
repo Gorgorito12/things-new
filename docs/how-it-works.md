@@ -3763,10 +3763,73 @@ the resource, the rate, the special attacks and its first attack rows (three, tw
   `shipmentCounts`' counts, the gather rate from `showGatherRate`'s records.
 A `text=` row is a template: each `|`-separated part is shown only when every `{item}` in it has a value.
 
-**Coexistence.** The key's sites do not touch the AutoGather row block (0x6991BF..0x699456), where another DLL may
+**More items (batch 3).** All are reads, from the same panel tail and data refs:
+- *Building.* A unit builds through its Build action (vtable 0xB97330, type byte `[action+60h]` 0, working state
+  `[action+61h]` 8, target ID `[action+14h]`). Each tick (0x9D3D6B..0x9D3DF0) it adds to the target's building data
+  `[unit+68h]` (through 0x9C4BE3 and 0x7ADE95, `[data+4]` += amount, capped at the proto's build points
+  `[proto+0CCh]`; `[data+8]` is the fraction): the rate of its tactics action for the target (0x487C45) × the builder
+  factor 0x9C4C0C(target, builder ID, action ID) × `[world+318h]` × the builder's player's `[player+37Ch]` × the frame
+  time `[world+104h]`. The builder factor reads the site's worker list `[unit+94h]` (count `+98h`, 18h-byte entries:
+  `+0` the worker's ID, `+8` the action ID, `+0Ch` the order it came in): 1.0 for the first worker, the civ's figure
+  (`+3Ch` of its record) for the others, 0 for a unit not in the list; for a proto of abstract type 59h, the civ's
+  per-count table `[civ+154h]` instead. The item `buildRate` is that product without the frame time, for the selected
+  unit and its target; `buildTime` sums it over the site's worker list and divides the points left by it;
+  `buildProgress` is `[data+8]`. The engine's own functions are called, so a WorkRate change, a civ's figure or a
+  modifier counts as it does in the tick. Measured on a 300-point site: one builder 1.50 pts/s shown and 1.500
+  measured, three builders 1.50 + 0.45 + 0.45 shown and 2.40 measured; the time to finish within a second.
+- *Regeneration* is per player (FUN_004905E1, from the player update 0x490A52), not a tactic action: for each civ ID
+  of the list `[player+20h]` (count `+24h`) that the database's civ table knows, the records `[player+44h] + ID*0Ch`
+  (`{data, count}`, 14h-byte entries: `+0` the unit type healed, `+8` the rate in % of max HP per second, `+0Ch` the
+  idle time it needs) heal each unit of that type by rate × max HP × 0.01 per second, while idle that long when the
+  record asks for it. `regen` sums the records whose type the unit is. The fire pit's Regeneration dance (0x679E66) is
+  a separate source and is not added.
+- *Auras.* Only the keys' own stats are named, from their state, through `unitinfo.h`: the work factor that
+  `buildingWorkRateAuras` multiplies a rate by (its `Factor`, the stock modifier sum over the unit's stat-40h
+  modifiers, used only when its hook would use it: the key applied and the unit has a modifier record), the gather
+  factors of `resourceGatherAuras` (one per stat 42h..48h, as its tick computes them), and what `unitResourceAuras`'
+  last update paid the unit's owner per second, or took from the unit, while fresh (the rule of that key's own panel
+  row). That update now keeps its takes (target, resource, amount per second) beside the per-second sums it already
+  kept for its row. The game's own auras (`GatherRate`, `Damage`...) are not told apart: their effect is already in
+  the values the panel shows.
+
+#### Coexistence
+
+The key writes five places (above) and adds no hook site in batch 3: the build, regeneration and aura items are
+reads made from the panel tail (`AddUnitPanelTail`, 0x4C8281) and the data ref providers (`AddDataRef`), on the
+game's thread, while the panel is filled. No pointer is kept from one fill to the next: a unit is found again from
+its ID (the world's table, as the engine does), its action from `[[unit+58h]+24h]`, its site from the action's target
+ID. No simulation state is written.
+
+**What batch 3 reads and who else is there.** Each stock range the items mirror is a verify-only site
+(`tools/gen_sites.py`), checked apart from the key's own sites: a mismatch turns off those items, logged, not the key.
+
+| Read (verify-only site) | Other keys at or next to it | Another DLL | How they coexist |
+|---|---|---|---|
+| Build tick, 0x9D3D6B..0x9D3D7A and 0x9D3D80..0x9D3DC6 (`BuildTickRateHead`, `BuildTickScale`), its add 0x9D3DE9 (`BuildTickAdd`) | `buildingWorkRateAuras` redirects the call 0x9D3D7B..0x9D3D7F (`BwrRateCallBuild`) | none (runtime patch list, 287 ranges) | The two ranges leave those 5 bytes out, so either order of applying works. The mirror calls the stock callee 0x487C45, not the call site, and multiplies by `unitinfo::BuildWorkFactor`, which is that key's `Factor` under the same two conditions as its hook; 1.0 when the key is off |
+| Rate lookup 0x487C45 (`RateLookupHead`) | none hooks it (22 callers; heal and build calls redirected by `buildingWorkRateAuras`) | none | Pure: it reads the action's rate records and calls the type test 0x44D7FA. `workRateByAbstractType` changes those records through effects, so its changes are read as the tick reads them |
+| Builder factor 0x9C4C0C (`BuilderFactor`), BuildInfo add 0x9C4BE3 / 0x7ADE95 (`BuildPointsAddCall`, `BuildPointsAdd`) | none | none | 0x9C4C0C reads the worker list and the civ records; for type-59h protos it calls 0x4EC7B4, which rebuilds its own static list 0xD6F6F8 (count reset to 0 on each call, read only inside it): scratch of that function, not state another step reads. Same thread as the tick, never nested in it |
+| BuildingWorkRate getter 0x9BFE33 | `liveBuildingWorkRate` (head), `buildingWorkRateAuras` (four calls), `noTrainNearEnemyTC` (the Train call) | — | Not read: it is the train and research rate, not the build rate |
+| Regeneration FUN_004905E1: head 0x4905E1 and the rate read 0x4907FF..0x49081D (`RegenPlayerHead`, `RegenRateRead`) | `overhealDecay` replaces the add's call 0x49087C (`RegenAddHp`), after the read; `danceBonusCivs` hooks the dance getter 0x49048B, another function | none | No shared byte. `overhealDecay` changes what the add does above max HP, not the rate. The dance's regeneration is a separate source, not shown |
+| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking` (`AuraClaim`) decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
+| `unitResourceAuras`' aura states | `AuraClaim` (asked before each take) | — | The update writes its takes after the claim; the panel only reads the map. The aura update and `AuraClaim` are never called from the panel |
+| Data refs `uhcBuildTime`, `uhcBuildProgress`, `uhcBuildRate`, `uhcRegen`, `uhcAuras` | `AddDataRef` has no other user | — | Appended after the 116 stock names, none of which starts with `uhc`; the five are new in the key's own list |
+
+**Found with every key on** (the cfg template's 124 keys, one scene): `decimalPopulation` stores population
+quantities times K, `[proto+0D8h]` included, so the `population` item showed `Pop: 10` for a settler; it now divides by
+that key's K (`unitinfo::PopulationScale`, 1 without it), as that key's own panels do. And the shared proto tag table
+(`prototags.cpp`) had room for 32 tags while the keys ask for 33, so `linkedResource` logged FAILED; it holds 64 now.
+After both: 113 applied, 0 failed, 126 hooks reached.
+
+Batch 1 and 2: the key's sites do not touch the AutoGather row block (0x6991BF..0x699456), where another DLL may
 redirect the rate's call and NOP its gate, nor the unit panel row hook at 0x699456. The minimized interface can be
 forced by patching the screen's copy of the option (0x761BF0) and the file choices, without the two profile reads at
 0x4C8235 and 0x4D721B: the block choice above makes the selection panel behave as with the option on.
+
+**Shown equals applied.** Tested in one scene with the related keys on and off (`buildingWorkRateAuras`,
+`resourceGatherAuras`, `unitResourceAuras`, `liveBuildingWorkRate`, `noTrainNearEnemyTC`): with them, a builder under
+a x1.5 `BuildingWorkRate` aura shows 1.50 pts/s and builds 1.500; without them, 1.00 and 1.000, and a second builder
+0.30 (the civ's figure), 1.60 for three, measured 1.60. A gold miner under a x1.25 `GoldGatherRate` aura shows
+`+25% gold` with the stock rate row at 0.75/s, against 0.60/s with the keys off.
 
 ### buildingWorkRateAuras
 

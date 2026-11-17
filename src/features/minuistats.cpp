@@ -383,7 +383,15 @@ bool ProtoInt(const char* unit, std::uint32_t field, std::wstring* out) {
   return true;
 }
 
-bool ItemPopulation(const char* unit, std::wstring* out) { return ProtoInt(unit, 0xD8, out); }  // PopulationCount
+// PopulationCount [proto+0D8h], stored times K by decimalPopulation (its own panels divide it back the same way).
+bool ItemPopulation(const char* unit, std::wstring* out) {
+  const std::int32_t value = Field<std::int32_t>(Field<const char*>(unit, 0x5C), 0xD8);
+  if (value <= 0) {
+    return false;
+  }
+  *out = Number(static_cast<float>(value) / static_cast<float>(uhc::unitinfo::PopulationScale()));
+  return true;
+}
 bool ItemBuildLimit(const char* unit, std::wstring* out) { return ProtoInt(unit, 0x108, out); }  // BuildLimit
 
 bool ItemBounty(const char* unit, std::wstring* out) {  // <Bounty>, float [proto+168h] (handler 0x5F5D79)
@@ -449,6 +457,193 @@ bool ItemRandomCost(const char* unit, std::wstring* out) { return uhc::unitinfo:
 bool ItemShipments(const char* unit, std::wstring* out) { return uhc::unitinfo::ShipmentCounts(unit, out); }
 bool ItemGatherRate(const char* unit, std::wstring* out) { return uhc::unitinfo::GatherRate(unit, out); }
 
+// ---- Batch 3: building, regeneration, our auras ----
+
+constexpr std::uint8_t kBuildActionType = 0;  // [action+60h] of a unit's Build action (the type list, 0x5227B4)
+constexpr std::uint8_t kBuildingState = 8;    // [action+61h] while it works (its animation loop, 0x9D34B1)
+constexpr int kMaxWorkers = 64;
+bool g_buildReads = false;  // the build tick's code matches what BuildRateOn mirrors
+bool g_regenReads = false;  // the regeneration's code matches what ItemRegen mirrors
+
+bool AllMatch(std::initializer_list<const uhc::Site*> list) {
+  bool all = true;
+  for (const uhc::Site* site : list) {
+    if (!uhc::Matches(*site)) {
+      uhc::Log(L"minUIStats: site %hs at 0x%08X does not hold the stock bytes", site->name, site->va);
+      all = false;
+    }
+  }
+  return all;
+}
+
+using RateForFn = float(__thiscall*)(const char* tacticsAction, const char* target);
+using BuilderFactorFn = float(__thiscall*)(const char* target, std::int32_t builderId, std::int32_t protoActionId);
+const auto kRateFor = reinterpret_cast<RateForFn>(0x00487C45);
+const auto kBuilderFactor = reinterpret_cast<BuilderFactorFn>(0x009C4C0C);
+
+// What one builder adds to its target per second, as the build tick 0x9D3D6B..0x9D3DC3 computes it before it
+// multiplies by the frame time [world+104h]: the rate of its tactics action for the target (0x487C45; with
+// buildingWorkRateAuras, the factor that key's hook of that call applies), the builder factor 0x9C4C0C (1.0 for
+// the first builder of the site, the civ's figure for the others), the world's rate [world+318h] and the
+// builder's player's [player+37Ch]. 0 when the unit is not building `target` right now.
+float BuildRateOn(const char* builder, const char* target) {
+  if (!g_buildReads) {
+    return 0.0f;
+  }
+  const char* manager = Field<const char*>(builder, 0x58);
+  const char* action = manager == nullptr ? nullptr : Field<const char*>(manager, 0x24);
+  const char* player = Field<const char*>(builder, 0x44);
+  const char* world = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x13C);
+  if (action == nullptr || player == nullptr || world == nullptr || Field<std::uint8_t>(action, 0x60) != kBuildActionType ||
+      Field<std::uint8_t>(action, 0x61) != kBuildingState || Field<std::int32_t>(action, 0x14) != Field<std::int32_t>(target, 0x10)) {
+    return 0.0f;
+  }
+  const char* tactics = Field<const char*>(action, 0x04);
+  if (tactics == nullptr) {
+    return 0.0f;
+  }
+  const float rate = kRateFor(tactics, target) * uhc::unitinfo::BuildWorkFactor(builder);
+  const float factor = kBuilderFactor(target, Field<std::int32_t>(builder, 0x10), Field<std::int32_t>(tactics, 0x08));
+  return rate * factor * Field<float>(world, 0x318) * Field<float>(player, 0x37C);
+}
+
+// A building under construction: its building data [unit+68h] (+4 the build points so far, +8 the fraction),
+// below 1.0.
+bool UnderConstruction(const char* unit, const char** data) {
+  *data = Field<const char*>(unit, 0x68);
+  return *data != nullptr && Field<float>(*data, 8) < 1.0f;
+}
+
+// The builders of a site: its worker list [unit+94h], count [unit+98h], 18h-byte entries whose +0 is the worker's
+// ID (the list 0x9C4C0C walks).
+float SiteBuildRate(const char* unit, int* builders) {
+  const std::int32_t count = Field<std::int32_t>(unit, 0x98);
+  const char* entries = Field<const char*>(unit, 0x94);
+  float total = 0.0f;
+  *builders = 0;
+  std::int32_t seen[kMaxWorkers];
+  for (std::int32_t i = 0; entries != nullptr && i < count && i < kMaxWorkers; ++i) {
+    const std::int32_t id = Field<std::int32_t>(entries, 0x18u * i);
+    seen[i] = id;
+    bool repeated = false;
+    for (std::int32_t j = 0; j < i && !repeated; ++j) {
+      repeated = seen[j] == id;  // a unit is counted once, by its one current action
+    }
+    const char* worker = repeated ? nullptr : UnitById(id);
+    const float rate = worker == nullptr ? 0.0f : BuildRateOn(worker, unit);
+    if (rate > 0.0f) {
+      total += rate;
+      ++*builders;
+    }
+  }
+  return total;
+}
+
+// "0:45" to finish: the build points left ([proto+0CCh], the cap the tick passes to the add 0x7ADE95, less
+// [data+4]) over the sum of the builders' rates. Nothing while nobody builds it.
+bool ItemBuildTime(const char* unit, std::wstring* out) {
+  const char* data = nullptr;
+  if (!UnderConstruction(unit, &data)) {
+    return false;
+  }
+  int builders = 0;
+  const float rate = SiteBuildRate(unit, &builders);
+  const float left = Field<float>(Field<const char*>(unit, 0x5C), 0xCC) - Field<float>(data, 4);
+  if (!(rate > 0.0f) || left < 0.0f) {
+    return false;
+  }
+  const int seconds = static_cast<int>(left / rate + 0.5f);
+  wchar_t text[32];
+  swprintf_s(text, L"%d:%02d", seconds / 60, seconds % 60);
+  *out = text;
+  return true;
+}
+
+bool ItemBuildProgress(const char* unit, std::wstring* out) {
+  const char* data = nullptr;
+  if (!g_buildReads || !UnderConstruction(unit, &data)) {
+    return false;
+  }
+  *out = std::to_wstring(static_cast<int>(Field<float>(data, 8) * 100.0f)) + L"%";
+  return true;
+}
+
+// A builder at work: the points per second it adds to the site it builds.
+bool ItemBuildRate(const char* unit, std::wstring* out) {
+  const char* manager = Field<const char*>(unit, 0x58);
+  const char* action = manager == nullptr ? nullptr : Field<const char*>(manager, 0x24);
+  const char* target = action == nullptr ? nullptr : UnitById(Field<std::int32_t>(action, 0x14));
+  const float rate = target == nullptr ? 0.0f : BuildRateOn(unit, target);
+  if (!(rate > 0.0f)) {
+    return false;
+  }
+  wchar_t text[32];
+  swprintf_s(text, L"%.2f", static_cast<double>(rate));
+  *out = text;
+  return true;
+}
+
+// Regeneration, per player (FUN_004905E1, from the player update 0x490A52; `this` the player). For each civ ID of
+// the list [player+20h] (count +24h) that the database's civ table knows ([db+24h], count [db+28h]), the records
+// [player+44h] + ID*0Ch ({data, count}) of 14h bytes: +0 the unit type healed (the player's query 0x45356D),
+// +8 the rate in % of max HP per second (skipped when |rate| is below 0xB9FD78), +0Ch the idle time it needs
+// (0: none). A unit of that type gains rate x max HP x 0.01 per second (0x490811..0x49085D), while idle that long
+// when the record asks for it. The fire pit's Regeneration dance (0x679E66, native civs and danceBonusCivs) is a
+// separate source, not added here.
+bool ItemRegen(const char* unit, std::wstring* out) {
+  const char* player = Field<const char*>(unit, 0x44);
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* database = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x140);
+  if (!g_regenReads || player == nullptr || proto == nullptr || database == nullptr) {
+    return false;
+  }
+  const std::int32_t* civs = Field<const std::int32_t*>(player, 0x20);
+  const std::int32_t civCount = Field<std::int32_t>(player, 0x24);
+  const char* table = Field<const char*>(player, 0x44);
+  const char* const* civTable = Field<const char* const*>(database, 0x24);
+  const std::int32_t civTableCount = Field<std::int32_t>(database, 0x28);
+  if (civs == nullptr || table == nullptr || civTable == nullptr) {
+    return false;
+  }
+  const float minRate = *reinterpret_cast<const float*>(0x00B9FD78);
+  float percent = 0.0f;
+  for (std::int32_t k = 0; k < civCount && k < 64; ++k) {
+    const std::int32_t civ = civs[k];
+    if (civ < 0 || civ >= civTableCount || civTable[civ] == nullptr) {
+      continue;
+    }
+    const char* records = Field<const char*>(table, 0x0Cu * civ);
+    const std::int32_t count = Field<std::int32_t>(table, 0x0Cu * civ + 4);
+    for (std::int32_t r = 0; records != nullptr && r < count && r < 256; ++r) {
+      const float rate = Field<float>(records, 0x14u * r + 8);
+      if (!(std::fabs(rate) < minRate) && kProtoIsType(proto, Field<std::int32_t>(records, 0x14u * r))) {
+        percent += rate;
+      }
+    }
+  }
+  if (!(percent > 0.0f)) {
+    return false;
+  }
+  *out = Number(percent * kMaxHp(unit) * 0.01f);
+  return true;
+}
+
+// Our aura keys only.
+bool ItemAuras(const char* unit, std::wstring* out) {
+  out->clear();
+  std::wstring part;
+  if (uhc::unitinfo::WorkAura(unit, &part)) {
+    *out += part;
+  }
+  if (uhc::unitinfo::GatherAura(unit, &part)) {
+    *out += (out->empty() ? L"" : L" ") + part;
+  }
+  if (uhc::unitinfo::ResourceAura(unit, &part)) {
+    *out += (out->empty() ? L"" : L" ") + part;
+  }
+  return !out->empty();
+}
+
 using ItemFn = bool (*)(const char* unit, std::wstring* out);
 
 template <ItemFn Item>
@@ -499,6 +694,11 @@ const ItemInfo kItems[] = {
     {"randomCost", L"uhcRandomCost", &ItemRandomCost, &ItemRef<&ItemRandomCost>},
     {"shipments", L"uhcShipments", &ItemShipments, &ItemRef<&ItemShipments>},
     {"gatherRate", L"uhcGatherRate", &ItemGatherRate, &ItemRef<&ItemGatherRate>},
+    {"buildTime", L"uhcBuildTime", &ItemBuildTime, &ItemRef<&ItemBuildTime>},
+    {"buildProgress", L"uhcBuildProgress", &ItemBuildProgress, &ItemRef<&ItemBuildProgress>},
+    {"buildRate", L"uhcBuildRate", &ItemBuildRate, &ItemRef<&ItemBuildRate>},
+    {"regen", L"uhcRegen", &ItemRegen, &ItemRef<&ItemRegen>},
+    {"auras", L"uhcAuras", &ItemAuras, &ItemRef<&ItemAuras>},
 };
 
 const ItemInfo* FindItem(const std::string& name) {
@@ -589,7 +789,8 @@ const char kDefaultRows[] =
     "<row gadget='unitselectionpanel-uhcRow0' text='LOS: {los}|Speed: {speed}|Garrison: {garrison}'/>"
     "<row gadget='unitselectionpanel-uhcRow1' text='ROF: {rof}|Range: {range}'/>"
     "<row gadget='unitselectionpanel-uhcCostPop' text='Cost: {cost}|Pop: {population}'/>"
-    "<row gadget='unitselectionpanel-uhcRow2' text='Overheal {overheal}|Poison {poison}'/>"
+    "<row gadget='unitselectionpanel-uhcRow2' text='Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|"
+    "Overheal {overheal}|Poison {poison}|Aura {auras}'/>"
     "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed'/>"
     "</minUIRows>";
 
@@ -1310,6 +1511,16 @@ Outcome ApplyMinUiStats(const Config& config) {
                   &sites::kResListGet, &sites::kResourceIconText, &sites::kHoldsResource, &sites::kMainResource,
                   &sites::kHeldAmount, &sites::kUnitCarryCapacity})) {
     return Outcome::kFailed;
+  }
+  // The build and regeneration items mirror stock code they never write to; they are checked apart, so another DLL
+  // that changed that code turns off only these items (each checks its flag), not the key.
+  g_buildReads = AllMatch({&sites::kBuildTickRateHead, &sites::kBuildTickScale, &sites::kBuildTickAdd,
+                           &sites::kBuildPointsAddCall, &sites::kBuildPointsAdd, &sites::kBuilderFactor,
+                           &sites::kRateLookupHead});
+  g_regenReads = AllMatch({&sites::kRegenPlayerHead, &sites::kRegenRateRead});
+  if (!g_buildReads || !g_regenReads) {
+    Log(L"minUIStats: the stock %ls code is not what these items mirror; %ls left empty",
+        !g_buildReads ? L"build tick" : L"regeneration", !g_buildReads ? L"buildTime, buildProgress, buildRate" : L"regen");
   }
   for (TypeFilter* filter : g_filters) {
     if (!RequestAbstractUnitType(filter->name.c_str(), &filter->id)) {

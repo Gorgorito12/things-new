@@ -1743,6 +1743,23 @@ SITES = [
     ("AttackListFill", 0x487EEE, 0x18),
     ("HoldsResource", 0x45EE8B, 0x14),
     ("HeldAmount", 0x4E5979, 0x14),
+    # minUIStats batch 3, verify only (no byte is written). The build tick of the Build action (vtable 0xB97330):
+    # mov eax,[esi+14h] / ... / mov ecx,[esi+4] / push edi, before the rate lookup's call at 0x9D3D7B (which
+    # buildingWorkRateAuras redirects; it is not in these two ranges); then fstp [esp+20h] (the rate) / the builder
+    # factor call 0x9C4C0C(target, [[esi+10h]+10h], [[esi+4]+8]) / fmul by the rate, [world+318h],
+    # [[[esi+10h]+44h]+37Ch] and [world+104h] / fstp [esp+1Ch]; and its add, mov ebp,[esp+1Ch] / push ebp /
+    # mov ecx,edi / call 9C4BE3h, which passes [proto+0CCh] as the cap of the BuildInfo add 0x7ADE95 ([data+4] +=)
+    ("BuildTickRateHead", 0x9D3D6B, 0x10),
+    ("BuildTickScale", 0x9D3D80, 0x47),
+    ("BuildTickAdd", 0x9D3DE9, 0x0C),
+    ("BuildPointsAddCall", 0x9C4BE3, 0x1E),
+    ("BuildPointsAdd", 0x7ADE95, 0x10),
+    ("BuilderFactor", 0x9C4C0C, 0x1A),
+    ("RateLookupHead", 0x487C45, 0x10),
+    # minUIStats batch 3, verify only: the player's regeneration FUN_004905E1 (from 0x490A52), its head, and the
+    # read of a record's rate, mov eax,[ebx] / ... / fld [eax+edi+8] / fmul [world+104h] / fstp [esp+14h]
+    ("RegenPlayerHead", 0x4905E1, 0x10),
+    ("RegenRateRead", 0x4907FF, 0x1F),
 ]
 
 

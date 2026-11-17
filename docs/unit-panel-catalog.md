@@ -128,6 +128,7 @@ that the stock panels do not, it says so. "WoL text" = shown today only through 
 | Train points | provider 0x6F48B2 | no / WoL text | U | yes | |
 | Build points | provider 0x6F4930 | no / no | B | yes | `{currentUnitBuildPoints}` works. |
 | Building work rate | provider 0x6F49B1 | no / no | B | yes | |
+| Build rate and time to finish | the Build action's tick 0x9D3D6B..0x9D3DF0; the site's building data `[unit+68h]` and worker list `[unit+94h]`; the builder factor 0x9C4C0C | no / no | U (builder), B (site) | yes | Built: `buildRate`, `buildTime`, `buildProgress`. |
 | Population count | `[proto+0D8h]` (Data subtype 1Fh, case 0x8FA814) | no / no | U | yes | Built: `population`. |
 | Cost | 0x480B1E (with CostEscalation `[proto+78h]`) | no / no | U, B | yes | Our `randomCost` and `costEscalationTechs` change it. |
 | Bounty and XP | `[proto+168h]`, float (`<Bounty>` handler 0x5F5D79) | no / no | U | yes | Built: `bounty`. Our `killBountyTechs`, `resourceBounty`. |
@@ -135,7 +136,7 @@ that the stock panels do not, it says so. "WoL text" = shown today only through 
 | Gather rate per resource (villager) | gather tick 0x4ECD87 | no / no | U | yes | Our `showGatherRate` (rate row). |
 | Garrison, `2 / 10` | contained `[unit+74h]`, MaxContained; `{currentUnitCapacity()}` 0x6F5931 | no / WoL text | U, B, S | yes | |
 | Build limit (used / max) | `[proto+108h]`, int (Data subtype 25h, case 0x8FA9D0); the count in use is not read | no / no | U, B | yes | Built: `buildLimit` (the limit only). Our `sharedBuildLimit`. |
-| Regeneration | unit regen 0x490881; Regeneration action 0x679EC6 | no / no | U, B | yes | |
+| Regeneration | per player: FUN_004905E1, the civ's records `[player+44h]` (% of max HP per second, by unit type); the fire pit's Regeneration dance 0x679E66 | no / no | U, B | yes | Built: `regen` (the records; the dance is not added). |
 | Lifespan left | `[proto+ACh]`, countdown in the lifespan tick 0x482BF6 | no / no | U, B | yes | Our `lifespanAfterConstruction`. |
 | Ability recharge | `{currentUnitRecharge}` 0x6F462F | no / no | U | yes | |
 | Limber (artillery) | `{currentUnitLimberPercent}` 0x6F5B80 | no / no | U | yes | |
@@ -150,7 +151,7 @@ All of them keep their state in the DLL, so a row reads it without touching the 
 | Overheal (HP above max), its decay | `overhealHitpointBars`, `overhealSources`, `overhealDecay` | HP text and bar / HP text | U, B | yes | |
 | Lifespan left | `lifespanAfterConstruction` | no / no | U, B | yes | |
 | Poison and damage over time on the unit | `damageOverTime` | no / no | U | yes | Damage per second and time left. |
-| Auras acting on the unit | `auraStacking`, `unitResourceAuras`, `resourceGatherAuras`, `buildingWorkRateAuras` | ring only / ring only | U, B | yes | |
+| Auras acting on the unit | `auraStacking`, `unitResourceAuras`, `resourceGatherAuras`, `buildingWorkRateAuras` | ring only / ring only | U, B | yes | Built: `auras`, our keys' stats only; the game's own auras are already in the values. |
 | Random cost range | `randomCost` | no / no | U | yes | |
 | Inventory | `inventoryBars`, `transformInventory` | bar / bar | U, B | yes | |
 | Shipment counts | `shipmentCounts` | no / no | player | yes | |
@@ -183,8 +184,11 @@ The `{uhc...}` refs built: `uhcHitpoints`, `uhcSpeed`, `uhcBaseSpeed`, `uhcLOS`,
 `uhcGarrison`, `uhcTrainPoints`, `uhcBuildPoints`. **Batch 2 (2026-11-17)** added `rof`, `range`, `minRange`,
 `area`, `cost`, `population`, `bounty`, `buildLimit`, `inventory`, `lifespan`, `overheal`, `veterancy`, `poison`,
 `randomCost`, `shipments` and `gatherRate` (25 items and refs in all). Located on the way: PopulationCount
-`[proto+0D8h]`, BuildLimit `[proto+108h]`, Bounty `[proto+168h]`. Not built: regeneration (per-tactic Regeneration
-action records), the auras acting on a unit, the build rate, a separate bonus list (in the attack rows already). The design as written before the build follows.
+`[proto+0D8h]`, BuildLimit `[proto+108h]`, Bounty `[proto+168h]`. **Batch 3 (2026-11-17)** added `buildTime`,
+`buildProgress`, `buildRate`, `regen` and `auras` (30 in all), from the engine's own build tick, the per-player
+regeneration records and our aura keys' state; the analysis of what else touches those places is in
+how-it-works.md, minUIStats, "Coexistence". Not built: a separate bonus list (in the attack rows already) and the
+Regeneration dance. The design as written before the build follows.
 
 ### Mechanism
 

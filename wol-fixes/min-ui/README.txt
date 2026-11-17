@@ -12,10 +12,13 @@ and more:
 - the armor of buildings, in the original "Resists" spot, with the same look as for units;
 - ROF and range per attack, cost and population, above the unit's name;
 - with our other keys on: the overheal (overhealHitpointBars) and a running poison (damageOverTime);
+- a building under construction: the time left ("Done in 1:21"); a villager building: its points per
+  second ("Builds 1.50/s"); a unit that regenerates: "Regen 1/s"; what our aura keys do to the unit
+  ("Aura +50% work", "+25% gold", "pays 0.10 (wood)/s"; the game's own auras show in the numbers);
 - more you can switch on in minuirows.xml (commented rows): minimum range, area, build points and
   limit, bounty, lifespan left, what a mine or animal holds, the gather rate, the random price range,
   the cards sent per age, base speed, armor, veterancy rank;
-- 25 texts for any formatText gadget, one per item: {uhcSpeed}, {uhcLOS}, {uhcROF}, {uhcRange},
+- 30 texts for any formatText gadget, one per item: {uhcSpeed}, {uhcLOS}, {uhcROF}, {uhcRange},
   {uhcCost}, {uhcPopulation}, ... (the list is at the top of minuirows.xml).
 
 The big UI does not change. Without the key nothing changes.
@@ -29,7 +32,8 @@ proposed-uiunitselectionmin.xml
       unitselectionpanel-uhcCostPop       Cost and Pop, above the unit's name (right of its icon)
       unitselectionpanel-uhcRow1          ROF and Range, under it
       unitselectionpanel-uhcRow0          LOS, Speed and Garrison, under the player's name
-      unitselectionpanel-uhcRow2          Overheal and Poison, left of the name
+      unitselectionpanel-uhcRow2          Done in, Builds, Regen, Overheal, Poison and Aura, left of
+                                          the name (two lines)
       unitselectionpanel-uhcRow3, -uhcRow4   the big UI's extra rows (more attacks, Gatherers)
     None of them is inside a gadget the game shows or hides, so no row depends on another.
     The places follow WoL's current panel; move them as you like.

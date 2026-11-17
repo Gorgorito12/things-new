@@ -373,7 +373,7 @@ END
 
 Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkrateauras).
 
-Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
+Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types), [`unitinfo.h`](helpers.md#unit-info-for-the-panels).
 
 Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `BwrRepairRate` `0x9D0BF2` (7 B), `BwrRateCallBuild` `0x9D3D7B` (5 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `BwrRateCallHeal` `0x9E0CCF` (5 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
 
@@ -426,6 +426,7 @@ Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (1
 #include "../modifiers.h"
 #include "../modifytypes.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 
 extern "C" {
 void UhcBwrAuraCall();
@@ -609,6 +610,10 @@ float __stdcall UhcBwrPanelRate(const char* unit) {
 }
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyBuildingWorkRateAuras(const Config& config) {
@@ -676,10 +681,38 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
   Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research, "
       L"Maintain, heal and build speed%ls (multiplayer unverified)",
       kStatBuildingWorkRate, log ? L", every change of a unit's factor logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+// What UhcBwrRateCall multiplies a builder's rate by: 1.0 with the key off or without a modifier record.
+float BuildWorkFactor(const char* worker) {
+  if (!g_unitInfoOn || worker == nullptr) {
+    return 1.0f;
+  }
+  const char* sub = Field<const char*>(worker, 0xB4);
+  if (sub == nullptr || Field<const char*>(sub, 0xC8) == nullptr) {
+    return 1.0f;
+  }
+  return Factor(worker);
+}
+
+bool WorkAura(const char* unit, std::wstring* out) {
+  const float factor = BuildWorkFactor(unit);
+  if (factor == 1.0f) {
+    return false;
+  }
+  wchar_t text[48];
+  swprintf_s(text, L"%+d%% work", static_cast<int>((factor - 1.0f) * 100.0f + (factor >= 1.0f ? 0.5f : -0.5f)));
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/bwraura_hooks.asm

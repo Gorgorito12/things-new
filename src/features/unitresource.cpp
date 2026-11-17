@@ -48,6 +48,7 @@
 #include "../log.h"
 #include "../modifytypes.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 #include "../prototags.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
@@ -150,10 +151,18 @@ struct AuraKey {
   auto operator<=>(const AuraKey&) const = default;
 };
 
+// One take of an update, for the panels: who gave what, per second.
+struct Take {
+  std::int32_t target;
+  std::int32_t resource;
+  float perSecond;
+};
+
 struct AuraState {
   std::uint32_t time = 0;                   // game time of the last update
   float perSecond[kMaxResources] = {};      // what that update paid, for the panel
   std::int32_t singleTarget = -1;           // <SingleUnit>: the unit it is working
+  std::vector<Take> takes;                  // that update's takes, for the panel (minUIStats' auras item)
 };
 
 struct TechAmount {
@@ -512,6 +521,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
   g_list.count = 0;
   kScan(action, &g_list);
   g_ringTargets.clear();
+  state.takes.clear();
   if (params.single && state.singleTarget >= 0) {
     // The unit it was working goes first, so it finishes one before the next.
     for (std::int32_t i = 1; i < g_list.count; ++i) {
@@ -573,6 +583,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
       paid[resource] += take * multiplier;
     }
     g_ringTargets.push_back(Field<std::int32_t>(target, 0x10));  // the state check below may remove it
+    state.takes.push_back({Field<std::int32_t>(target, 0x10), resource, take / seconds});
     if (!kProtoFlag(targetProto, kFlagEndless)) {
       kInventoryAdd(inventory, resource, -take);
       kCheckState(target);
@@ -593,6 +604,10 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     UpdateRings(world, auraKey, tactics, model, Field<std::int32_t>(tactics, 0xA8));
   }
 }
+
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
 
 namespace uhc {
 
@@ -631,7 +646,57 @@ Outcome ApplyUnitResourceAuras(const Config& config) {
   Log(L"unitResourceAuras: AutoRangedModify actions with ModifyType UnitResource gather from units in range%ls "
       L"(multiplayer unverified)",
       log ? L", the first takes logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+// What this unit's UnitResource auras paid per second in their last update ("pays 0.10 <wood>/s"), and what the
+// auras around it took from it ("-0.05 <wood>/s"): the state each update publishes, kept only while fresh
+// (kRateFreshMs, the rule of the unit panel's row).
+bool ResourceAura(const char* unit, std::wstring* out) {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (!g_unitInfoOn || unit == nullptr || world == nullptr || database == nullptr) {
+    return false;
+  }
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::int32_t resources = Field<std::int32_t>(database, 0x80);
+  float paid[kMaxResources] = {};
+  float taken[kMaxResources] = {};
+  for (const auto& [key, state] : g_auras) {
+    if (now - state.time > kRateFreshMs) {
+      continue;
+    }
+    for (std::size_t r = 0; key.owner == id && r < kMaxResources; ++r) {
+      paid[r] += state.perSecond[r];
+    }
+    for (const Take& take : state.takes) {
+      if (take.target == id && take.resource >= 0 && static_cast<std::size_t>(take.resource) < kMaxResources) {
+        taken[take.resource] += take.perSecond;
+      }
+    }
+  }
+  out->clear();
+  for (std::int32_t r = 0; r < resources && r < static_cast<std::int32_t>(kMaxResources); ++r) {
+    const auto* icon = reinterpret_cast<const char*>(kResourceIcon(database, r));
+    for (const bool pays : {true, false}) {
+      const float rate = pays ? paid[r] : taken[r];
+      if (rate <= kMinAmount) {
+        continue;
+      }
+      wchar_t text[160];
+      swprintf_s(text, L"%ls%ls%.2f <icon=\"(16)(%hs)\">/s", out->empty() ? L"" : L" ", pays ? L"pays " : L"-",
+                 static_cast<double>(rate), icon == nullptr ? "" : icon);
+      *out += text;
+    }
+  }
+  return !out->empty();
+}
+
+}  // namespace uhc::unitinfo
