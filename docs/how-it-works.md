@@ -3723,7 +3723,7 @@ panel shows.
 - **The stat panel fill's gate** (0x4D725C, 11 bytes): `cmp byte [esp+63h],1 / je 4D81A1h` returns with the option
   on; the hook returns too, unless the DLL set `g_uhcMinUiForceFill`, and then goes on to the rows at 0x4D7267.
 - **The resists gate** of the minimized block: the `jne 698E7Ah` after the `Unit` type test (0x698BF6, 6 bytes) is
-  NOPed, so the armor test alone decides.
+  NOPed, so the armor test alone decides; only while that armor test (0x698BFC..) holds the stock bytes ("Coexistence").
 - **The data refs** (`AddDataRef` in `datarefs.*`): the parser constructor's call of the registration (0x5D3229) goes
   to a hook that calls it, then appends one entry per `{uhc...}` name through the table's own grow (0x5ACE63), with
   the next id, type 3 and the DLL's provider.
@@ -3802,17 +3802,18 @@ one (`[panel+36Ch]`, its index in the list). A tenth type gets no portrait (no p
 with the proposed minimized layout: one type puts the big portrait at 885..945 px, five types span
 791..1039, nine types 697..1133.
 
-The key's rows `uhcCostPop` (512..703 × 638..652 in layout units, 645.. px), `uhcRow1` (512..703 × 652..666) and
-`uhcTrainPoints` (344..410 × 652..668) share that band. At the panel tail, which runs after the layout, the key reads
+The first proposed layout put rows in that band (`uhcCostPop`, `uhcRow1`, `uhcTrainPoints`, 638..668 in layout units);
+the current one keeps the band for the portraits (below, "The layout"), and the rule stays for layouts that do put a row
+there. At the panel tail, which runs after the layout, the key reads
 the placed buttons from the list, their rectangles from the gadgets (`[+30h]`, `[+34h]`, `[+40h]`, `[+44h]`, client
 pixels), the big background's when `[panel+36Ch]` is in the list, and its own gadgets' rectangles the same way. The
 buttons are found with the any-type lookup 0x404296 (and released by 0x40431B), as the layout does: the text-gadget
 lookup 0x44900A the key uses for its own rows asks for type mask 10h and finds no button. A row (or a `bigPanelRows`
 gadget) with any pixel under a portrait is hidden for that fill; a `bigPanelRows` gadget is skipped and its row goes to
 the next one. The fill is redone when the stack count or the current stack changes, as when the unit does, so the rows
-come back as soon as the portraits leave room. In game: one type changes nothing; from two types on Cost/Pop and
-ROF/Range give way; at 9, 10 and 12 types Train Points too (from the spacing seen, 47 px a small portrait, it gives way
-from six types on; 6 to 8 types were not filmed); a click on a portrait makes it the current type, and the rows (Regen, the attack rows) follow it.
+come back as soon as the portraits leave room. In game, with the first layout: one type changed nothing; from two
+types on Cost/Pop and ROF/Range gave way; at 9, 10 and 12 types Train Points too; a click on a portrait makes it the
+current type, and the rows (Regen, the attack rows) follow it.
 
 The same rule, data-driven: `<avoid gadget="..."/>` names a stock gadget; while it is shown (flags `[gadget+0A4h]`
 bits 0 and 1 set, bit 7 clear, the base show's own test) and covers more than half of a row's height (stock text
@@ -3840,21 +3841,56 @@ which the added rows leave out (the ability attacks that land there in the test,
 Counter-Intelligence, have none). These rows join `bigPanelRows` after the fill's last attack. When there are more rows
 than gadgets, the last free gadget gets the rest in short form: each attack's name and damage, as many as fit one line
 (about 0.24 × the gadget's height per character; a formatText wraps a longer text and centres it vertically, which shows
-its middle line), then `+N`; its help text lists them all. With the proposed layout (3 stock attack rows,
-`uhcRow3`, `uhcRow4` and `uhcRow5`): Menelik II shows Ranged, Siege, Hand (stock), Sharpshooter and Crack Shot (the
-fill's) and `Anti-artillery Crackshot Attack 0 +2` (Swashbuckler 100 and Counter-Intelligence 6000 in its help text).
+its middle line), then `+N more`; its help text lists them all. With the first layout, before the ability filter
+below, Menelik II showed Ranged, Siege, Hand, Sharpshooter, Crack Shot and `Anti-artillery Crackshot Attack 0 +2`;
+with the filter it shows the four attacks it can use, and no short form.
 
-**The layout's rectangles.** The proposed layout keeps `uhcRow3` and `uhcRow4` where
-batch 1 put them (583..703 × 731..763) and adds `uhcRow5` at 583..703 × 715..731, the right part of the first attack
-line, filled last. No rectangle of the panel is free of every shown stock rectangle: the stock ones overlap each other
-(the HP label 410..578 × 680..734 runs into the first attack row, the resource and rate rows lie on it, the type and
-player names cover 650..714 from 348 to 700), and every row of the key overlaps one: `uhcRow0` the HP and player name
-rectangles, `uhcRow1`/`uhcCostPop` the player name, `uhcRow3`/`uhcRow4` the stock attack rows `StackLabel1`/`2`. They
-coexist because the stock attack rows are left-aligned and short: the longest seen, a Grognard's `Grenade ATK: 22 2
-12, 1.3x, 0.8x`, ends at about 570 (layout units), before 583. `uhcRow5` overlaps `StackLabel0` the same way, and the
-resource value and rate rows, which can show at x 583 on that line: those two are `<avoid>`ed, so `uhcRow5` stays empty
-while either shows. Every overlap was listed with a script over the file's rectangles (the stack buttons left out: the
-game moves them).
+**The layout (2026-11-17, third proposal, after Dr.Maxy's and JTMaston's feedback).** The game centres the stack
+portraits in `buttonArea` (0x4C8F49): the first proposal took the original `369 632 607 666` (centre x 488) where the mod's
+file has `369 697 669 666` (centre 519, the panel's centre is 521), so its portraits sat left of the centre. The file now
+keeps the mod's value for every original gadget except where the icons need room, and keeps the top band (y 631..667) for
+the portraits only. Mirrored around x 521: the column over the portrait (342..412: cost, then population) and the one
+right of the player's name (630..700: train time, then garrison), the unit's name (412..516) and the player's name
+(526..630), each with a row centred under it (`uhcRow2`, `uhcRow0`). The stats keep the panel's two columns (x 410: hit
+points, the three original attack rows; x 583: resists, `uhcRow5`, `uhcRow3`, `uhcRow4`, on the same lines and with the
+same attributes as `StackLabel0..2`). They stay apart because the original attack rows are left-aligned and the longest
+seen, a Settler's ranged row with four multipliers and its ROF, ends at about x 568, before 583. `uhcRow5` shares its line
+with the resource value and rate rows, which can show at x 583: those two are `<avoid>`ed. The previews
+(`tools/ui_preview.py --vline` in aoe3-blender-tools) draw both centre lines.
+
+**The health bars.** The minimized block never shows `unitHealthBarGreen`/`Yellow`/`Red` itself: in game, bars declared
+in the panel (as the big layout declares them) or inside the portrait stay hidden, while the mod's file, where they are
+children of `unitTypeName` through its missing `/>`, shows them, the right colour and length. A child gadget is shown
+with its parent; the bars' own state then picks which one draws. The proposed file nests the three bars in
+`unitTypeName` on purpose, and nothing else.
+
+**The attack rows, ROF and usable attacks.** With `stockRows="take"` on `<bigPanelRows>`, the key writes the three
+original attack rows (`StackLabel0..2`, from `StackLabel1` when the block showed a resource row) from the same mirrored
+fill as the extra rows: the minimized block writes them each fill, then the panel tail writes them again (also on the
+fills the 250 ms refresh skips, from the last plan), with the attack style and help text of the fill's rows. Each
+attack row of the fill is matched, in order, with the action list it comes from (0x487EEE, every listed action) and its
+name checked against the action's (`[db+1FE4h]`); then:
+- the icons get the minimized panel's size (`(10)`, 0xC36508) instead of the stat panel's (`(16)`, 0xBA2100);
+- with `rofIcon`, the action's ROF (`[action+34h]` ms) and that icon go right after the damage icon;
+- an **ability attack the unit cannot use** is dropped. Such an action is listed active by its tactic on every unit of
+  the tactics file (the mod's Presidial and Menelik II list Crack Shot, Anti-artillery Crackshot, Swashbuckler,
+  Counter-Intelligence), and the stock big panel lists them all. A power of `powers.xml` names its action in
+  `<unitAction>`: the handler 0x5F2231 (the `+24h` slot of the UnitAction power class, vtable 0xB855D0) stores the
+  action name's index (0x5E0C64, the index space of `[action+4]`) in a 4-byte block at `[power+12Ch]`, which the
+  class's constructor (0x5F2CB7) zeroes and its destructor frees; other power classes keep other data at `+12Ch`, so
+  the vtable is checked first. An action some ability record's power names is an ability attack; it is shown when one of
+  the unit's records is available as the command panel's GetNth tests it (0x6EE68C..0x6EE701): the player's proto
+  (0x45311B) is the record's `+4`, its tech `+0Ch` is active (0x94AF27) and its age `+10h` is `[player+50h]`. In game: a
+  Presidial shows Sharpshooter (its own record) and no Crack Shot; Menelik II only Sharpshooter (Crack Shot needs
+  `Industrialize`); the Chief (`WOLcartographer`) shows Anti-artillery Crackshot only after `HCSteelCrown`.
+A row with nothing to read (a nameless action) is left out rather than written as a blank line.
+
+**Labels as icons.** `<stockLabel>` rewrites an original label's text while the block shows it (the hit points label
+`[panel+2F0h]` as a heart, the resists label `[panel+2F8h]` as a shield), with a help text when given; visibility stays
+the block's. The two labels get `textmarkup` in the layout (an icon needs it) and their value gadgets start right after
+the icon. `[icon:path]` in the data file is the icon markup at the panel's size. With `multiarmor`, a proto can keep an
+armor per damage type while the block writes only the stock one (`%.2f %s`, 0x698C41..): the key writes the resists
+value with every armor above 0, by damage type (`unitinfo::Armors`, multiarmor's own records).
 
 #### Coexistence
 
@@ -3881,6 +3917,9 @@ from the same tail, after the fill placed the portraits.
 | Stack portraits (2026-11-17): the fill's head 0x4C9458..0x4C9481, its Big0 choice 0x4C9587..0x4C95C7, the list append 0x4C979A..0x4C97B4, the layout call 0x4C7DB3..0x4C7DC0 and the layout 0x4C8F49..0x4C91EB (`StackFillReset`, `StackFillCurrent`, `StackFillAppend`, `StackLayoutCall`, `StackLayout`); the any-type gadget lookup 0x404296 (`GadgetLookupAny`, called, not hooked) | none of our sites is in these ranges; the shared tail hook 0x4C8281 (`AddUnitPanelTail`) and `overhealHitpointBars`' 0x4C83DF come after the layout in the same fill and only read | none: the other DLL's runtime patch list (287 ranges) and a second DLL's patches (0x761BF0, 0x661E15, 0x9AC7E8, 0x9B6655, 0x69920E..0x69922C) have no byte there | Read only, at the tail of the same fill that placed the buttons: the list `[panel+2CCh]`, `[panel+36Ch]`, `[panel+324h]` and the gadgets' rectangles and flags. Nothing is moved, shown or hidden but the key's own gadgets. A mismatch turns off only the portrait rule (logged); `<avoid>` keeps working |
 | `<avoid>` of `unitResourceValue` and `unitResourceRateLabel` (the default data file) | `AddUnitPanelRow` (0x699456): `showGatherRate`, `lifespan`, the overheal stat row, `researchGrants`, `veterancyBonus`, `unitResourceAuras` write the rate gadget pair | a trickle display patch can show the stock rate for an inactive AutoGather action too | The shown flag is read at the panel tail, after the minimized block and its 0x699456 hook ran, so whichever key (or other DLL) showed the row, `uhcRow5` stays empty and the rows end at `uhcRow4`, as before `uhcRow5` existed |
 | Attacks past the fill's 9th row: the row cap 0x4D7944..0x4D795F, the attack row's name, damage, type icon and range code 0x4D7A2E..0x4D7AA1, 0x4D7AC8..0x4D7C56, 0x4D7D2A..0x4D7DA1, 0x4D8265..0x4D82B3, cold 0x69B617..0x69B696, 0x69FDDC..0x69FDF7, 0x69FE1F..0x69FE37, the raw name 0x5F8FC3 and the range entry 0x4946D6 (`StatFillRowCap`, `AttackRow*`, `ActionRawName`, `ActionRangeEntry`, verify only) | keys that add a row to the big panel before the attacks (`showGatherRate` at 0x4D7834; with them on, the fill has fewer of its 9 rows for attacks, and the added attack rows make up for it); no key writes in these ranges (`tools/gen_sites.py`, every range checked) | none in these ranges (same lists as above) | Read only: the attack list is filled by the stock 0x487EEE into the fill's own static list 0xCF05B0 right after the fill used it, on the same thread; the factors are read from the unit's modifier record as the fill reads them. A mismatch turns off only the added rows (logged) |
+| Ability attacks (third layout): GetNth's test 0x6EE68C..0x6EE701, the `<unitAction>` handler 0x5F22CA..0x5F22FF and its vtable slot 0xB855F4 (`AbilityAvailableTest`, `PowerUnitActionStore`, `PowerUnitActionVtable`, verify only); calls 0x45311B, 0x94AF27, 0x6076E9 | `abilitySlots` writes the `5` of 0x695BD3 and hooks 0x696C70 in the command panel, not GetNth; `wonderPanelSkipAuras` calls GetNth itself | none in these ranges | Read only, from the panel tail: the ability manager `[world+56Ch]`, the records and the powers, as GetNth reads them; the set of ability actions is rebuilt when the manager or its record count changes. A mismatch turns off only the filter (logged: every attack shown, as the stock panels) |
+| The original attack rows and labels (`stockRows="take"`, `<stockLabel>`) | `overhealHitpointBars` writes the HP value (0x698B35), not the label; `AddUnitPanelRow` (0x699456) writes the rate pair, not `StackLabel0..2` | a second DLL's trickle display patches 0x69920E (the rate row) | The key writes after the minimized block, at the tail of the same fill, through the gadgets' own vtable (+80h text, +84h style, +54h refresh) and help text; it shows or hides only `StackLabel0..2` (as the block does with them) and never the labels. Nothing is kept across fills but the texts |
+| Building armor gate 0x698BF6 (written) and the armor test after it 0x698BFC..0x698C15 (`MinResistsArmorTest`, verify only) | `multiarmor` (ours) does not touch the minimized block; with it on, the key rewrites the resists value from `unitinfo::Armors` | the mod's own `uhc.dll` replaces the armor read at 0x698BFF (its multiarmor): its text for a building was `0 (null)` | When 0x698BFC.. is not stock the gate is not written (logged): buildings keep the stock rule (no resists row), units show that DLL's text. Tested with that `uhc.dll` and our `dinput8.dll`: a Factory with no resists row, a Wachtmeester with that DLL's `0.30, 0.20, 0.10` |
 
 **Found with every key on** (the cfg template's 124 keys, one scene): `decimalPopulation` stores population
 quantities times K, `[proto+0D8h]` included, so the `population` item showed `Pop: 10` for a settler; it now divides by

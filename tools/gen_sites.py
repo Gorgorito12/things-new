@@ -1724,6 +1724,20 @@ SITES = [
     # minUIStats: the minimized block's resists gate, mov ecx,[ebx+5Ch] / test / je, push 0 / call 44CAC4h (abstract
     # type 0, Unit) / cmp al,1 / jne 698E7Ah (the 6 bytes NOPed at 0x698BF6), then the armor > 0 test
     ("MinResistsUnitGate", 0x698BE2, 0x1A),
+    # minUIStats (verify only): the armor test after that gate, mov edx,[ebx+5Ch] / fld [edx+0C4h] / fcomp
+    # [0B84BE4h] / fnstsw / test ah,41h / jne 698E7Ah. Another DLL's armor (a multiarmor patching 0x698BFF)
+    # changes it; then the Unit gate stays, as that DLL's armor text is not made for buildings
+    ("MinResistsArmorTest", 0x698BFC, 0x1A),
+    # minUIStats (verify only): what the command panel's ability GetNth (FUN_006EE5CC) tests for one ability record,
+    # mirrored to tell an enabled ability attack: the player's proto (0x45311B) against the record's +4, the
+    # NeverShowInGrid flag, the record's tech (0x94AF27) and age ([player+50h] == +10h), the power (0x6076E9)
+    ("AbilityAvailableTest", 0x6EE68C, 0x76),
+    # minUIStats (verify only): the powers.xml <unitAction> handler: a 4-byte block, the action name's index in the
+    # database's action names (0x5E0C64, [db+1FD8h]), kept at [power+12Ch]
+    ("PowerUnitActionStore", 0x5F22CA, 0x36),
+    # minUIStats (verify only): that handler is the +24h (parse) slot of one power class only, the UnitAction powers,
+    # vtable 0xB855D0; [power+12Ch] means the action only for a power with that vtable
+    ("PowerUnitActionVtable", 0xB855F4, 0x04),
     # Data refs (datarefs.h): the parser's constructor, mov ecx,esi / vtable, delimiters { ( } ) / call 5CFA7Ch (the
     # registration, redirected at 0x5D3229) / mov eax,esi / pop esi / ret; the registration's head (mov esi,ecx:
     # the table is {data, count, capacity} at [this+0Ch]); its grow FUN_005ACE63, thiscall(array, count, bool),

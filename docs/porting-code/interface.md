@@ -2022,7 +2022,7 @@ Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
 
 Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `PowerUnitActionStore` `0x5F22CA` (54 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `MinResistsArmorTest` `0x698BFC` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `AbilityAvailableTest` `0x6EE68C` (118 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B), `PowerUnitActionVtable` `0xB855F4` (4 B).
 
 ### src/features/minuistats.cpp
 
@@ -2036,6 +2036,10 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 // - <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>: the rows the normal
 //   interface's stat panel shows (FUN_004D70ED), mirrored: the fill runs for these gadgets and its rows are kept
 //   in order, less the ones the minimized panel already shows ("auto") and the kinds `skip` names.
+//   With stockRows="take" the original attack rows (StackLabel0..2) are written from the same list, so that every
+//   attack row gets rofIcon="..." (the action's ROF and that icon after its damage) and the ability attacks the unit
+//   cannot use are left out (ActionEnabled; abilities="all" keeps them).
+// - <stockLabel gadget="..." text="[icon:...]"/>: the text of an original label (hit points, resists) while shown.
 // A row whose gadget the selection's stack portraits cover (one per unit type, placed by the panel each fill), or
 // that a shown <avoid gadget="..."/> covers, is hidden for that fill (a bigPanelRows gadget is skipped and the rows
 // go on in the next one); overlap="show" on a row or bigPanelRows keeps it.
@@ -2087,6 +2091,9 @@ constexpr std::uint32_t kStatRowValues = 0x198;
 constexpr int kStatRows = 9;
 constexpr std::uint32_t kGadgetTip = 0x68;         // a gadget's help text, a BString
 constexpr float kWholeEpsilon = 1e-6f;             // the panels' "%d" test (0xBA20B4)
+// The icon size of the minimized panel's own rows: its attack and resists rows use "(10)" (0xC36508, 0xC364C0), the
+// big stat panel "(16)" (0xBA2100). Every icon the key writes there uses the minimized panel's size.
+constexpr int kIconSize = 10;
 
 struct BString {
   wchar_t* text;
@@ -2223,7 +2230,7 @@ bool ArmorText(const char* unit, bool icon, std::wstring* out) {
   const char* view = Field<const char*>(Game(), 0x920);
   if (icon && view != nullptr && type <= 2) {
     wchar_t tag[64];
-    swprintf_s(tag, L" <icon=\"(16)(TextureID(%d))\">", Field<std::int32_t>(view, 0x1CC + 4u * type));
+    swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", kIconSize, Field<std::int32_t>(view, 0x1CC + 4u * type));
     *out += tag;
   }
   return true;
@@ -2277,11 +2284,123 @@ const auto kHeldInitial = reinterpret_cast<UnitAmountFn>(0x00494503);
 
 const char* Database() { return Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x140); }
 
+// ---- Ability attacks: shown only when the unit can use them ----
+//
+// An action of a tactics file that a power names in its <unitAction> (powers.xml) is used only through that power,
+// that is through an ability record of abilities.xml (Crack Shot, Sharpshooter...). The tactic lists it as active
+// all the same, so the stat panels show it on every unit of the tactics file, though most cannot use it. Such an
+// action counts as enabled when one of the unit's ability records is available, as the command panel's GetNth
+// (0x6EE68C..0x6EE701) tests it: the player's proto (0x45311B) is the record's +4, the record's tech +0Ch is active
+// (0x94AF27), its age +10h is the player's [player+50h], and its power (0x6076E9) names that action
+// ([power+12Ch]: a 4-byte block with the action name's index, set by the <unitAction> handler 0x5F22CA, the index
+// space of [action+4]). Any other action is enabled.
+
+using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t protoId);
+using TechActiveFn = bool(__thiscall*)(const char* techs, std::int32_t player, std::int32_t tech);
+using PowerByIdFn = const char*(__thiscall*)(const char* database, std::int32_t power);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kTechActive = reinterpret_cast<TechActiveFn>(0x0094AF27);
+const auto kPowerById = reinterpret_cast<PowerByIdFn>(0x006076E9);
+constexpr std::uint32_t kWorldAbilities = 0x56C;  // [world+56Ch]: the ability manager, records {data, count}
+constexpr std::uint32_t kPowerAction = 0x12C;     // [power+12Ch]: the <unitAction> block, or null
+// The UnitAction powers' vtable: its +24h slot (0xB855F4) is that <unitAction> handler's function 0x5F2231, the only
+// vtable slot that points there; other power classes keep other data at +12Ch.
+constexpr std::uint32_t kUnitActionPowerVtable = 0x00B855D0;
+
+bool g_abilityReads = false;  // the GetNth test and the <unitAction> handler hold the stock bytes
+bool g_filterAbilities = true;  // <bigPanelRows abilities="all"> turns the filter off
+
+struct AbilityCache {
+  const char* manager = nullptr;
+  std::int32_t count = -1;
+  std::vector<std::int32_t> actions;  // the action name indices a power of a record names, sorted
+} g_abilityCache;
+
+std::int32_t PowerActionName(const char* database, std::int32_t powerId) {
+  const char* power = kPowerById(database, powerId);
+  if (power == nullptr || Field<std::uint32_t>(power, 0) != kUnitActionPowerVtable) {
+    return -1;  // another kind of power: +12Ch is something else
+  }
+  const std::int32_t* block = Field<const std::int32_t*>(power, kPowerAction);
+  return block == nullptr ? -1 : *block;
+}
+
+const char* AbilityManager() {
+  const char* world = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x13C);
+  return world == nullptr ? nullptr : Field<const char*>(world, kWorldAbilities);
+}
+
+// The actions some ability record's power names, rebuilt when the manager or its record count changes (a game load).
+const std::vector<std::int32_t>& AbilityActions() {
+  const char* manager = AbilityManager();
+  const char* database = Database();
+  const std::int32_t count = manager == nullptr ? 0 : Field<std::int32_t>(manager, 4);
+  if (manager != g_abilityCache.manager || count != g_abilityCache.count) {
+    g_abilityCache = AbilityCache{manager, count, {}};
+    for (std::int32_t i = 0; database != nullptr && i < count; ++i) {
+      const char* record = Field<const char* const*>(manager, 0)[i];
+      const std::int32_t name = record == nullptr ? -1 : PowerActionName(database, Field<std::int32_t>(record, 8));
+      if (name >= 0) {
+        g_abilityCache.actions.push_back(name);
+      }
+    }
+    std::sort(g_abilityCache.actions.begin(), g_abilityCache.actions.end());
+    g_abilityCache.actions.erase(std::unique(g_abilityCache.actions.begin(), g_abilityCache.actions.end()),
+                                 g_abilityCache.actions.end());
+  }
+  return g_abilityCache.actions;
+}
+
+bool ActionEnabled(const char* unit, const char* action) {
+  if (!g_filterAbilities || !g_abilityReads || unit == nullptr || action == nullptr) {
+    return true;
+  }
+  const std::int32_t name = Field<std::int32_t>(action, 4);
+  const std::vector<std::int32_t>& powered = AbilityActions();
+  if (name < 0 || !std::binary_search(powered.begin(), powered.end(), name)) {
+    return true;  // not an ability's action: the tactic uses it itself
+  }
+  const char* manager = AbilityManager();
+  const char* database = Database();
+  const char* player = Field<const char*>(unit, 0x44);
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* world = Field<const char*>(Game(), 0x13C);
+  const char* techs = world == nullptr ? nullptr : Field<const char*>(world, 0x7C);
+  if (manager == nullptr || database == nullptr || player == nullptr || proto == nullptr || techs == nullptr) {
+    return true;
+  }
+  const char* own = kPlayerProto(player, Field<std::int32_t>(proto, 8));
+  if (own == nullptr) {
+    return true;
+  }
+  const std::int32_t ownId = Field<std::int32_t>(own, 4);
+  const std::int32_t count = Field<std::int32_t>(manager, 4);
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* record = Field<const char* const*>(manager, 0)[i];
+    if (record == nullptr || Field<std::int32_t>(record, 4) != ownId) {
+      continue;
+    }
+    const std::int32_t tech = Field<std::int32_t>(record, 0x0C);
+    if (tech >= 0 && !kTechActive(techs, Field<std::int32_t>(player, 0), tech)) {
+      continue;
+    }
+    const std::int32_t age = Field<std::int32_t>(record, 0x10);
+    if (age >= 0 && Field<std::int32_t>(player, 0x50) != age) {
+      continue;
+    }
+    if (PowerActionName(database, Field<std::int32_t>(record, 8)) == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // The unit's attacks, as the stat panel lists them (0x4D7892..0x4D79A1): its current tactic
 // [[[proto+44h]+10h] + [[unit+58h]+0A8h]*4] fills the list through 0x487EEE, each entry's +4 an index into the
 // proto's actions [[proto+44h]+1Ch]; only actions with damage ([action+24h]) are kept.
 // withoutDamage: also the listed actions with no damage record, as the stat panel fill writes a row for each.
-std::vector<const char*> Attacks(const char* unit, bool withoutDamage = false) {
+// enabledOnly: without the ability actions the unit cannot use (ActionEnabled).
+std::vector<const char*> Attacks(const char* unit, bool withoutDamage = false, bool enabledOnly = true) {
   std::vector<const char*> out;
   const char* manager = Field<const char*>(unit, 0x58);
   const char* data = Field<const char*>(Field<const char*>(unit, 0x5C), 0x44);
@@ -2311,7 +2430,8 @@ std::vector<const char*> Attacks(const char* unit, bool withoutDamage = false) {
   for (std::int32_t k = 0; entries != nullptr && k < list[1]; ++k) {
     const std::int32_t id = Field<std::int32_t>(entries, 12u * k + 4);
     const char* action = id >= 0 && id < actions ? Field<const char* const*>(data, 0x1C)[id] : nullptr;
-    if (action != nullptr && (withoutDamage || Field<const char*>(action, 0x24) != nullptr)) {
+    if (action != nullptr && (withoutDamage || Field<const char*>(action, 0x24) != nullptr) &&
+        (!enabledOnly || ActionEnabled(unit, action))) {
       out.push_back(action);
     }
   }
@@ -2325,7 +2445,7 @@ std::wstring TypeIcon(std::uint8_t type) {
     return L"";
   }
   wchar_t tag[64];
-  swprintf_s(tag, L" <icon=\"(16)(TextureID(%d))\">", Field<std::int32_t>(view, 0x1CC + 4u * type));
+  swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", kIconSize, Field<std::int32_t>(view, 0x1CC + 4u * type));
   return tag;
 }
 
@@ -2416,11 +2536,11 @@ float DamageFactor(const char* unit, std::uint32_t field) {
 // x the modifier record's +8 x its +14h (hand, ranged) or +10h (siege), truncated, with the damage type's icon;
 // then, with flag 0Ah, " %d <icon>": the range of the action's range entry -1 (0x4946D6) and the range icon
 // [[game+920h]+218h]. The bonus multipliers that follow in the stock row are left out.
-bool AttackRow(const char* unit, const char* action, std::wstring* label, std::wstring* value) {
+// The name the stat panel fill gives an action's row (0x4D7A2E): its string, or its raw name.
+std::wstring ActionDisplayName(const char* action) {
   const char* database = Database();
-  const char* view = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x920);
-  if (database == nullptr || view == nullptr) {
-    return false;
+  if (database == nullptr) {
+    return L"";
   }
   const std::int32_t nameIndex = Field<std::int32_t>(action, 4);
   std::int32_t stringId = -1;
@@ -2432,7 +2552,16 @@ bool AttackRow(const char* unit, const char* action, std::wstring* label, std::w
     const wchar_t* const* raw = kActionName(action);
     name = raw != nullptr && *raw != nullptr ? *raw : L"";
   }
-  *label = name + L":";
+  return name;
+}
+
+bool AttackRow(const char* unit, const char* action, std::wstring* label, std::wstring* value) {
+  const char* database = Database();
+  const char* view = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x920);
+  if (database == nullptr || view == nullptr) {
+    return false;
+  }
+  *label = ActionDisplayName(action) + L":";
   const char* damage = Field<const char*>(action, 0x24);
   const float base = damage == nullptr ? 0.0f : Field<float>(damage, 0);
   const std::uint8_t type = damage == nullptr ? 0 : Field<std::uint8_t>(damage, 5);
@@ -2447,7 +2576,7 @@ bool AttackRow(const char* unit, const char* action, std::wstring* label, std::w
   scale *= DamageFactor(unit, 0x08);
   const float typed = DamageFactor(unit, type == 2 ? 0x10 : 0x14);
   wchar_t text[160];
-  swprintf_s(text, L"%d <icon=\"(16)(TextureID(%d))\">", static_cast<int>(typed * scale * base),
+  swprintf_s(text, L"%d <icon=\"(%d)(TextureID(%d))\">", static_cast<int>(typed * scale * base), kIconSize,
              type <= 2 ? Field<std::int32_t>(view, 0x1CC + 4u * type) : 0);
   *value = text;
   if (ActionFlag(action, 0x0A)) {
@@ -2455,8 +2584,8 @@ bool AttackRow(const char* unit, const char* action, std::wstring* label, std::w
     const std::int32_t count = Field<std::int32_t>(action, 0x1C);
     for (std::int32_t i = 0; ranges != nullptr && i < count; ++i) {
       if (Field<std::int32_t>(ranges, 16u * i) == -1) {
-        swprintf_s(text, L" %d <icon=\"(16)(TextureID(%d))\">", static_cast<int>(Field<float>(ranges, 16u * i + 8)),
-                   Field<std::int32_t>(view, 0x218));
+        swprintf_s(text, L" %d <icon=\"(%d)(TextureID(%d))\">", static_cast<int>(Field<float>(ranges, 16u * i + 8)),
+                   kIconSize, Field<std::int32_t>(view, 0x218));
         *value += text;
         break;
       }
@@ -2465,7 +2594,8 @@ bool AttackRow(const char* unit, const char* action, std::wstring* label, std::w
   return true;
 }
 
-// The player's proto cost list [proto+70h] (with its techs; read through 0x44EFFF, which unmasks it).
+// The player's proto cost list [proto+70h] (with its techs; read through 0x44EFFF, which unmasks it): each resource's
+// icon, then its amount, as the game's resource bar shows them ("<food> 100  <gold> 25").
 bool ItemCost(const char* unit, std::wstring* out) {
   const char* proto = Field<const char*>(unit, 0x5C);
   const char* database = Database();
@@ -2478,8 +2608,8 @@ bool ItemCost(const char* unit, std::wstring* out) {
     const float cost = kResListGet(proto + 0x70, r);
     if (cost > 0.0f) {
       wchar_t text[96];
-      swprintf_s(text, L"%ls%d <icon=\"(16)(%hs)\">", out->empty() ? L"" : L"  ", static_cast<int>(cost + 0.5f),
-                 kResourceIcon(database, r));
+      swprintf_s(text, L"%ls<icon=\"(%d)(%hs)\"> %d", out->empty() ? L"" : L"  ", kIconSize, kResourceIcon(database, r),
+                 static_cast<int>(cost + 0.5f));
       *out += text;
     }
   }
@@ -2836,7 +2966,36 @@ struct Row {
   std::wstring text;               // ... or text=: segments split by '|', each with its {item}s
   std::vector<TypeFilter*> types;  // empty: every unit
   bool keep = false;               // overlap="show": shown even over the stack portraits or an <avoid> gadget
+  std::wstring tip;                // tip= / tipId=: the help text (what the icons mean)
 };
+
+// <stockLabel gadget="..." text="..." tip="..."/>: a label of the original panel whose text the key replaces while
+// the original panel shows it (the hit points and resists labels by an icon). The panel's own fill writes it each
+// time; the key writes it again after.
+struct StockLabel {
+  std::wstring gadget;
+  std::wstring text;
+  std::wstring tip;
+};
+std::vector<StockLabel> g_labels;
+
+// "[icon:ui\ingame\stat_icon_building]" in a data file's text: the icon markup at the minimized panel's icon size.
+std::wstring ExpandIcons(const std::wstring& text) {
+  std::wstring out;
+  size_t pos = 0;
+  for (size_t open = text.find(L"[icon:"); open != std::wstring::npos; open = text.find(L"[icon:", pos)) {
+    const size_t close = text.find(L']', open);
+    if (close == std::wstring::npos) {
+      break;
+    }
+    out += text.substr(pos, open - pos);
+    wchar_t size[16];
+    swprintf_s(size, L"(%d)", kIconSize);
+    out += L"<icon=\"" + std::wstring(size) + L"(" + text.substr(open + 6, close - open - 6) + L")\">";
+    pos = close + 1;
+  }
+  return out + text.substr(pos);
+}
 
 // A text= row: each '|'-separated segment with its {item}s replaced; a segment with an item that has nothing for
 // the unit is left out, the rest are joined by three spaces. False when no segment is left.
@@ -2880,7 +3039,7 @@ bool RenderTemplate(const std::wstring& text, const char* unit, std::wstring* ou
 enum Kind : std::uint32_t {
   kName = 1u << 0, kHitpoints = 1u << 1, kGroupHealth = 1u << 2, kResource = 1u << 3, kGatherers = 1u << 4,
   kRate = 1u << 5, kSpeed = 1u << 6, kResists = 1u << 7, kAttack = 1u << 8, kShownAttack = 1u << 9,
-  kSpecial = 1u << 10, kOther = 1u << 11, kAuto = 1u << 31,
+  kSpecial = 1u << 10, kOther = 1u << 11, kDropped = 1u << 12, kAuto = 1u << 31,
 };
 
 struct BigPanel {
@@ -2890,6 +3049,8 @@ struct BigPanel {
   int count = 16;
   std::uint32_t skip = kAuto;
   bool keep = false;  // overlap="show"
+  bool takeStock = false;  // stockRows="take": the original attack rows (StackLabel0..2) are written by the key too
+  std::wstring rofIcon;    // rofIcon="...": each attack row gets its ROF and this icon after its damage
 };
 
 std::vector<Row> g_rows;
@@ -2902,13 +3063,21 @@ bool g_attackReads = false;  // the stat fill's attack rows match what AttackRow
 
 const char kDefaultRows[] =
     "<minUIRows>"
-    "<row gadget='unitselectionpanel-uhcTrainPoints' item='trainPoints' label='Train Points: ' types='Unit'/>"
-    "<row gadget='unitselectionpanel-uhcRow0' text='LOS: {los}|Speed: {speed}|Garrison: {garrison}'/>"
-    "<row gadget='unitselectionpanel-uhcRow1' text='ROF: {rof}|Range: {range}'/>"
-    "<row gadget='unitselectionpanel-uhcCostPop' text='Cost: {cost}|Pop: {population}'/>"
+    "<row gadget='unitselectionpanel-uhcCost' text='{cost}' tip='Cost'/>"
+    "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_building] {population}' "
+    "tip='Population'/>"
+    "<row gadget='unitselectionpanel-uhcTrainPoints' text='[icon:ui\\ingame\\stat_icon_traintime] {trainPoints}' "
+    "types='Unit' tip='Train time (seconds)'/>"
+    "<row gadget='unitselectionpanel-uhcGarrison' text='Garrison: {garrison}'/>"
     "<row gadget='unitselectionpanel-uhcRow2' text='Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|"
     "Overheal {overheal}|Poison {poison}|Aura {auras}'/>"
-    "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed'/>"
+    "<row gadget='unitselectionpanel-uhcRow0' text='[icon:ui\\ingame\\stat_icon_los] {los}|"
+    "[icon:ui\\ingame\\stat_light_infantry] {speed}' tip='Line of sight, speed'/>"
+    "<stockLabel gadget='unitselectionpanel-unitHitPointsLabel' text='[icon:ui\\ingame\\stat_icon_hitpoints]' "
+    "tipId='24320'/>"
+    "<stockLabel gadget='unitselectionpanel-unitResistsLabel' text='[icon:ui\\ingame\\stat_icon_armor]'/>"
+    "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed' stockRows='take' "
+    "rofIcon='ui\\ingame\\stat_icon_rof'/>"
     "<avoid gadget='unitselectionpanel-unitResourceValue'/>"
     "<avoid gadget='unitselectionpanel-unitResourceRateLabel'/>"
     "</minUIRows>";
@@ -3068,7 +3237,16 @@ std::wstring Label(const Element& element) {
     return L"\x01" + Wide(*id);  // resolved when shown: the string table is read after the DLL starts
   }
   const std::string* label = Attr(element, "label");
-  return label == nullptr ? std::wstring() : Wide(*label);
+  return label == nullptr ? std::wstring() : ExpandIcons(Wide(*label));
+}
+
+// tip="..." or tipId="..." (a string ID, resolved when shown, as labelId).
+std::wstring Tip(const Element& element) {
+  if (const std::string* id = Attr(element, "tipid")) {
+    return L"\x01" + Wide(*id);
+  }
+  const std::string* tip = Attr(element, "tip");
+  return tip == nullptr ? std::wstring() : Wide(*tip);
 }
 
 bool LoadRows(const std::string& arg) {
@@ -3158,10 +3336,22 @@ bool LoadRows(const std::string& arg) {
                      name.c_str());
           }
         }
-        g_rows.push_back({Wide(Trim(*gadget)), nullptr, L"", wide, typeList(element), keepOnOverlap(element)});
+        g_rows.push_back({Wide(Trim(*gadget)), nullptr, L"", ExpandIcons(wide), typeList(element),
+                          keepOnOverlap(element), Tip(element)});
       } else {
-        g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element), keepOnOverlap(element)});
+        g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element), keepOnOverlap(element),
+                          Tip(element)});
       }
+      continue;
+    }
+    if (element.tag == "stocklabel") {
+      const std::string* gadget = Attr(element, "gadget");
+      const std::string* labelText = Attr(element, "text");
+      if (gadget == nullptr || labelText == nullptr) {
+        uhc::Log(L"minUIStats: %ls: stockLabel needs gadget and text; ignored", g_file.c_str());
+        continue;
+      }
+      g_labels.push_back({Wide(Trim(*gadget)), ExpandIcons(Wide(*labelText)), Tip(element)});
       continue;
     }
     if (element.tag == "bigpanelrows") {
@@ -3200,6 +3390,18 @@ bool LoadRows(const std::string& arg) {
         }
       }
       g_big.count = g_big.count < 2 ? 2 : (g_big.count > 32 ? 32 : g_big.count);
+      if (const std::string* stock = Attr(element, "stockrows")) {
+        g_big.takeStock = _stricmp(Trim(*stock).c_str(), "take") == 0;
+        if (!g_big.takeStock && _stricmp(Trim(*stock).c_str(), "keep") != 0) {
+          uhc::Log(L"minUIStats: %ls: stockRows=\"%hs\" is not take or keep; keep used", g_file.c_str(), stock->c_str());
+        }
+      }
+      if (const std::string* rof = Attr(element, "roficon")) {
+        g_big.rofIcon = Wide(Trim(*rof));
+      }
+      if (const std::string* abilities = Attr(element, "abilities")) {
+        g_filterAbilities = _stricmp(Trim(*abilities).c_str(), "all") != 0;
+      }
       continue;
     }
     uhc::Log(L"minUIStats: %ls: unknown element <%hs>; ignored", g_file.c_str(), element.tag.c_str());
@@ -3219,12 +3421,17 @@ struct Gadget {
   std::wstring tip;
 };
 
+constexpr std::uint32_t kStockRows = 0x344;      // the selection panel's StackLabel0..2 handles (bind 0x9BB18F)
+constexpr std::uint32_t kResourceLabel = 0x300;  // unitResourceLabel: shown, the attack rows start at StackLabel1
+
 struct PanelGadgets {
   char* panel = nullptr;
   std::int32_t typeNameHandle = 0;
   std::vector<Gadget> rows;  // g_rows order
   std::vector<Gadget> big;   // the bigPanelRows block, consecutive gadgets
   std::vector<std::int32_t> avoid;  // the <avoid> gadgets this layout has
+  std::vector<Gadget> stock;        // StackLabel0..2 ([panel+344h+i*4]), written by the key with stockRows="take"
+  std::vector<std::int32_t> labels; // the <stockLabel> gadgets, in g_labels order (0 when the layout lacks one)
   bool any = false;
   bool logged = false;  // the first fill with stack portraits in our rows' band was logged
 };
@@ -3296,6 +3503,18 @@ void ResolvePanel(char* panel) {
       g_panel.avoid.push_back(handle);
     }
   }
+  if (g_big.takeStock) {
+    for (int i = 0; i < 3; ++i) {
+      Gadget gadget;
+      gadget.handle = Field<std::int32_t>(panel, kStockRows + 4u * i);
+      gadget.valid = ValidHandle(gadget.handle);
+      g_panel.stock.push_back(gadget);
+    }
+  }
+  for (const StockLabel& label : g_labels) {
+    const std::int32_t handle = Lookup(panel, label.gadget);
+    g_panel.labels.push_back(ValidHandle(handle) ? handle : 0);
+  }
   int rows = 0;
   for (const Gadget& g : g_panel.rows) {
     rows += g.valid ? 1 : 0;
@@ -3345,6 +3564,38 @@ void SetText(Gadget* gadget, const std::wstring& text, std::uint32_t style, cons
 void Hide(Gadget* gadget) {
   gadget->text.clear();
   SetVisible(gadget, false);
+}
+
+// A gadget the panel's own fill writes and shows each time (the original attack rows and labels): what the DLL
+// knows of it is stale after every fill, so it is written again as if new.
+void ForceText(Gadget* gadget, const std::wstring& text, std::uint32_t style, const std::wstring& tip) {
+  gadget->text.clear();
+  gadget->known = false;
+  SetText(gadget, text, style, tip);
+}
+
+void ForceHide(Gadget* gadget) {
+  gadget->known = false;
+  Hide(gadget);
+}
+
+// A label of the original panel: only its text (and help text when one is given), not whether it shows.
+void WriteLabel(std::int32_t handle, const std::wstring& text, const std::wstring& tip) {
+  void* object = GadgetObject(handle);
+  if (object == nullptr) {
+    return;
+  }
+  BString value{nullptr};
+  kBStringFromWide(&value, text.c_str());
+  VirtualAt<void(__thiscall*)(void*, const BString*)>(object, 0x80)(object, &value);
+  VirtualAt<void(__thiscall*)(void*)>(object, 0x54)(object);
+  kBStringFree(&value);
+  if (!tip.empty()) {
+    BString help{nullptr};
+    kBStringFromWide(&help, tip.c_str());
+    kBStringSet(reinterpret_cast<BString*>(static_cast<char*>(object) + kGadgetTip), &help);
+    kBStringFree(&help);
+  }
 }
 
 // ---- The stack portraits and the <avoid> gadgets: where a row must not be drawn ----
@@ -3658,7 +3909,7 @@ void AddOverflowAttacks(const char* unit, std::vector<std::uint32_t>* kinds, siz
   for (const std::uint32_t kind : *kinds) {
     written += kind == kAttack ? 1 : 0;
   }
-  const std::vector<const char*> actions = Attacks(unit, true);
+  const std::vector<const char*> actions = Attacks(unit, true, false);  // as the fill lists them; MarkAttacks filters
   size_t at = *lastAttack;
   for (size_t i = written; i < actions.size() && i < 32; ++i) {
     StatRow row;
@@ -3723,13 +3974,139 @@ std::wstring Compact(const StatRow& row) {
   return name + L" " + (icon == std::wstring::npos ? row.value : row.value.substr(0, icon + 1));
 }
 
+// Every icon of a row at the minimized panel's icon size: the stat panel fill writes "(16)" icons (0xBA2100), the
+// minimized block "(10)" ones (0xC36508), and both kinds of rows share the panel.
+std::wstring NormaliseIcons(const std::wstring& text) {
+  static const std::wstring kOpen = L"<icon=\"(";
+  std::wstring out = text;
+  for (size_t at = out.find(kOpen); at != std::wstring::npos; at = out.find(kOpen, at + 1)) {
+    const size_t start = at + kOpen.size();
+    const size_t close = out.find(L')', start);
+    if (close == std::wstring::npos) {
+      break;
+    }
+    out.replace(start, close - start, std::to_wstring(kIconSize));
+  }
+  return out;
+}
+
+// The attack rows of the fill (and the ones AddOverflowAttacks added), matched in order with the attack list they
+// come from (0x487EEE, every listed action, as the fill writes one row per action): a row of an ability action the
+// unit cannot use is dropped (ActionEnabled), the others get the minimized panel's icon size and, with rofIcon,
+// the action's ROF after the damage: "Ranged ATK:  23 <ranged> 3 <rof> 12 <range>, 3x <cavalry>". The row's
+// label must be the action's name; at the first that is not, the matching stops (rows left as written).
+void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
+  const std::vector<const char*> actions = Attacks(unit, true, false);
+  size_t next = 0;
+  for (size_t i = 0; i < g_stat.size(); ++i) {
+    if ((*kinds)[i] != kAttack) {
+      continue;
+    }
+    StatRow& row = g_stat[i];
+    row.value = NormaliseIcons(row.value);
+    const std::wstring shown = StripMarkup(row.label);
+    if (shown.find_first_not_of(L" :") == std::wstring::npos) {
+      (*kinds)[i] = kDropped;  // nothing to read: a blank line in the panel
+    }
+    if (next >= actions.size()) {
+      break;
+    }
+    const char* action = actions[next++];
+    const std::wstring name = ActionDisplayName(action);
+    if (row.label != name + L":") {
+      break;
+    }
+    if (name.empty() || !ActionEnabled(unit, action)) {  // a nameless action's row is a blank line
+      (*kinds)[i] = kDropped;
+      continue;
+    }
+    const float rof = static_cast<float>(Field<std::int32_t>(action, 0x34)) / 1000.0f;
+    const size_t icon = row.value.find(L"\">");
+    if (!g_big.rofIcon.empty() && rof > 0.0f && icon != std::wstring::npos) {
+      wchar_t size[16];
+      swprintf_s(size, L"(%d)", kIconSize);
+      row.value.insert(icon + 2, L" " + Number(rof) + L" <icon=\"" + size + L"(" + g_big.rofIcon + L")\">");
+    }
+  }
+}
+
+// What the key writes into the original attack rows this fill (stockRows="take"), written again after each fill of
+// the panel, which rewrites them, until the next selection change or refresh.
+struct StockWrite {
+  bool show = false;
+  std::wstring text;
+  std::uint32_t style = 0;
+  std::wstring tip;
+};
+std::vector<StockWrite> g_stockPlan;
+
+void ApplyStockPlan() {
+  for (size_t i = 0; i < g_stockPlan.size() && i < g_panel.stock.size(); ++i) {
+    Gadget& gadget = g_panel.stock[i];
+    if (!gadget.valid) {
+      continue;
+    }
+    if (g_stockPlan[i].show) {
+      ForceText(&gadget, g_stockPlan[i].text, g_stockPlan[i].style, g_stockPlan[i].tip);
+    } else {
+      ForceHide(&gadget);
+    }
+  }
+}
+
+constexpr std::uint32_t kResistsValue = 0x2FC;  // the selection panel's unitResistsValue handle
+
+// With multiarmor, a proto can have an armor per damage type, and the minimized block writes only the stock one
+// ("%.2f %s", 0x698C41..): its resists value then lists them all, "0.30 <hand>  0.20 <ranged>".
+void ApplyResists(const char* unit) {
+  unsigned char types[8];
+  float values[8];
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  const int n = proto == nullptr ? 0 : uhc::unitinfo::Armors(proto, types, values, 8);
+  const std::int32_t handle = Field<std::int32_t>(g_panel.panel, kResistsValue);
+  if (n < 2 || !ValidHandle(handle) || !GadgetShown(handle)) {
+    return;
+  }
+  std::vector<std::pair<unsigned char, float>> armors;
+  for (int i = 0; i < n; ++i) {
+    armors.emplace_back(types[i], values[i]);
+  }
+  std::sort(armors.begin(), armors.end());  // by damage type: hand, ranged, siege, then the mod's own
+  std::wstring text;
+  for (const auto& [type, armor] : armors) {
+    wchar_t value[32];
+    swprintf_s(value, L"%.2f", static_cast<double>(armor));
+    text += (text.empty() ? L"" : L"  ") + std::wstring(value) + TypeIcon(type);
+  }
+  WriteLabel(handle, text, L"");
+}
+
+// The <stockLabel> texts, while the original panel shows those labels.
+void ApplyStockLabels(const char* unit) {
+  ApplyResists(unit);
+  for (size_t i = 0; i < g_labels.size() && i < g_panel.labels.size(); ++i) {
+    if (g_panel.labels[i] != 0 && GadgetShown(g_panel.labels[i])) {
+      std::wstring tip = g_labels[i].tip;
+      if (!tip.empty() && tip[0] == L'\x01') {
+        tip = StringById(_wtoi(tip.c_str() + 1));
+        while (!tip.empty() && (tip.back() == L':' || tip.back() == L' ')) {
+          tip.pop_back();
+        }
+      }
+      WriteLabel(g_panel.labels[i], g_labels[i].text, tip);
+    }
+  }
+}
+
 void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, const Blockers& blockers,
                  std::wstring* blockedNames) {
+  const bool take = g_big.takeStock && minimizedBlock && g_panel.stock.size() == 3;
+  g_stockPlan.clear();
   if (!MirrorStatRows(selection)) {
     for (Gadget& gadget : g_panel.big) {
       Hide(&gadget);
     }
-    return;
+    return;  // the original attack rows stay as the panel wrote them
   }
   LoadKindStrings();
   std::uint32_t skip = g_big.skip;
@@ -3744,11 +4121,17 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
     }
   }
   AddOverflowAttacks(unit, &kinds, &lastAttack);
+  MarkAttacks(unit, &kinds);
   if (skip & kAuto) {
     // What the minimized block shows itself (0x6987D7..0x69A60F): the owner, hit points, resists, the resource held,
     // the AutoGather rate, the special attacks inline, and the first three rows of attacks less the resource row.
+    // With stockRows="take" the key writes those attack and special rows itself, from the first original row on.
     skip |= minimizedBlock ? (kName | kHitpoints | kResists | kResource | kRate | kShownAttack | kSpecial) : kName;
   }
+  if (take) {
+    skip &= ~(kShownAttack | kSpecial);
+  }
+  skip |= kDropped;
   int shownAttacks = (skip & kShownAttack) ? (resourceShown ? 2 : 3) : 0;
   // The rows to show, in order.
   std::vector<const StatRow*> rows;
@@ -3761,12 +4144,30 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
       --shownAttacks;
       continue;
     }
-    if (!(skip & kind)) {
-      rows.push_back(&g_stat[i]);
+    const std::wstring visible = StripMarkup(g_stat[i].label + g_stat[i].value);
+    if (!(skip & kind) && visible.find_first_not_of(L" :") != std::wstring::npos) {
+      rows.push_back(&g_stat[i]);  // a row with nothing to read would be a blank line
     }
   }
-  // A gadget under a stack portrait or a shown <avoid> gadget is left empty, and the rows go on in the next one.
-  std::vector<size_t> free;
+  // The gadgets the rows go into, in order: with stockRows="take", the original attack rows the minimized block
+  // used (StackLabel0..2, from StackLabel1 when it showed a resource row), then the bigPanelRows block. A block
+  // gadget under a stack portrait or a shown <avoid> gadget is left empty, and the rows go on in the next one; the
+  // original rows are never covered (they are the panel's own lines).
+  struct Slot {
+    Gadget* gadget;
+    int stock;  // its StackLabel index, or -1
+  };
+  std::vector<Slot> free;
+  if (take) {
+    g_stockPlan.assign(3, StockWrite{});
+    // The block's resource row (its own gadgets, on the first line) moved its attacks down one line; a shown but
+    // empty resource label (seen on cavalry) does not count, so both tests.
+    const bool resourceRow = resourceShown && GadgetShown(Field<std::int32_t>(g_panel.panel, kResourceLabel));    for (int i = resourceRow ? 1 : 0; i < 3; ++i) {
+      if (g_panel.stock[i].valid) {
+        free.push_back({&g_panel.stock[i], i});
+      }
+    }
+  }
   for (size_t k = 0; k < g_panel.big.size(); ++k) {
     if (!g_big.keep && Blocked(g_panel.big[k], blockers)) {
       Hide(&g_panel.big[k]);
@@ -3774,48 +4175,57 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
       swprintf_s(name, g_big.pattern.c_str(), g_big.first + static_cast<int>(k));
       *blockedNames += L" " + std::wstring(name);
     } else {
-      free.push_back(k);
+      free.push_back({&g_panel.big[k], -1});
     }
   }
+  auto write = [](const Slot& slot, const std::wstring& text, std::uint32_t style, const std::wstring& tip) {
+    if (slot.stock >= 0) {
+      g_stockPlan[slot.stock] = {true, text, style, tip};
+    } else {
+      SetText(slot.gadget, text, style, tip);
+    }
+  };
   for (size_t n = 0; n < free.size(); ++n) {
-    Gadget* gadget = &g_panel.big[free[n]];
     if (n >= rows.size()) {
-      Hide(gadget);
-      continue;
+      if (free[n].stock < 0) {
+        Hide(free[n].gadget);
+      }
+      continue;  // an original row left empty stays hidden (its plan entry)
     }
     const StatRow& row = *rows[n];
     const std::uint32_t style = row.labelStyle == kAttackStyle ? kAttackStyle : kLabelStyle;
     if (n + 1 == free.size() && rows.size() > free.size()) {
       // One line: as many short rows as fit the gadget (a formatText wraps a longer text and centres it, which
-      // would show a middle line), then "+N"; the help text lists them all.
-      const size_t budget = LineBudget(*gadget);
+      // would show a middle line), then "+N more"; the help text lists them all.
+      const size_t budget = LineBudget(*free[n].gadget);
       std::wstring text;
       std::wstring tip;
       size_t shown = 0;
       for (size_t r = n; r < rows.size(); ++r) {
         const std::wstring part = Compact(*rows[r]);
         const size_t left = rows.size() - r - 1;
-        const std::wstring more = left == 0 ? L"" : L" +" + std::to_wstring(left);
+        const std::wstring more = left == 0 ? L"" : L" +" + std::to_wstring(left) + L" more";
         if (shown == 0 || VisibleLength(text + L"   " + part + more) <= budget) {
           text += (text.empty() ? L"" : L"   ") + part;
           ++shown;
         } else {
-          text += L" +" + std::to_wstring(rows.size() - r);
+          text += L" +" + std::to_wstring(rows.size() - r) + L" more";
           break;
         }
       }
       for (size_t r = n; r < rows.size(); ++r) {
         tip += (tip.empty() ? L"" : L"\n") + StripMarkup(rows[r]->label + L" " + rows[r]->value);
       }
-      SetText(gadget, text, style, tip);
+      write(free[n], text, style, tip);
       continue;
     }
     std::wstring text = row.label;
     if (!row.value.empty()) {
       text += L"  " + row.value;
     }
-    SetText(gadget, text, style, row.tip);
+    write(free[n], text, style, row.tip);
   }
+  ApplyStockPlan();
 }
 
 bool Applies(const Row& row, const char* proto) {
@@ -3863,6 +4273,13 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
   const ULONGLONG now = GetTickCount64();
   if (unitId == g_lastUnitId && count == g_lastCount && stacks == g_lastStacks && bigIndex == g_lastBigIndex &&
       now - g_lastTick < kRefreshMs) {
+    // The panel's own fill wrote its original rows and labels again: the key's texts go back over them.
+    if (minimizedBlock) {
+      g_busy = true;
+      ApplyStockPlan();
+      ApplyStockLabels(unit);
+      g_busy = false;
+    }
     return;
   }
   g_lastUnitId = unitId;
@@ -3892,16 +4309,20 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
       Hide(&gadget);
       continue;
     }
-    SetText(&gadget, ResolveLabel(g_rows[i].label) + value, 0, L"");
+    SetText(&gadget, ResolveLabel(g_rows[i].label) + value, 0, ResolveLabel(g_rows[i].tip));
   }
   if (!g_panel.big.empty()) {
     if (proto == nullptr || selection == nullptr || count <= 0) {
       for (Gadget& gadget : g_panel.big) {
         Hide(&gadget);
       }
+      g_stockPlan.clear();
     } else {
       FillBigRows(selection, unit, minimizedBlock, blockers, &blockedNames);
     }
+  }
+  if (minimizedBlock && proto != nullptr) {
+    ApplyStockLabels(unit);
   }
   if (!blockedNames.empty() && !blockers.stack.empty()) {
     LogBlocked(blockers, blockedNames);
@@ -3962,6 +4383,19 @@ Outcome ApplyMinUiStats(const Config& config) {
   if (!g_attackReads) {
     Log(L"minUIStats: the stock attack row code is not what the rows mirror; attacks past the 9th stat row left out");
   }
+  g_abilityReads =
+      AllMatch({&sites::kAbilityAvailableTest, &sites::kPowerUnitActionStore, &sites::kPowerUnitActionVtable});
+  if (!g_abilityReads && g_filterAbilities) {
+    Log(L"minUIStats: the stock ability code is not what the rows mirror; ability attacks shown on every unit");
+  }
+  // Building armor: the minimized block's resists show only for type Unit (0x698BF6). The gate goes only while the
+  // armor test after it is stock: another DLL's armor there (a multiarmor of its own) writes a text made for units only
+  // ("0 (null)" on a building), so then buildings keep the stock rule and show no resists row.
+  const bool buildingArmor = AllMatch({&sites::kMinResistsArmorTest});
+  if (!buildingArmor) {
+    Log(L"minUIStats: another DLL changed the resists armor test (0x698BFC); building armor not shown, unit armor as "
+        L"that DLL writes it");
+  }
   for (TypeFilter* filter : g_filters) {
     if (!RequestAbstractUnitType(filter->name.c_str(), &filter->id)) {
       return Outcome::kFailed;
@@ -3969,7 +4403,8 @@ Outcome ApplyMinUiStats(const Config& config) {
   }
   static const std::uint8_t kNops[6] = {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
   if (!WriteJmp(sites::kStatFillMinGate.va + 0x41, reinterpret_cast<const void*>(&UhcStatFillMinGate), 11) ||
-      !WriteBytes(sites::kMinResistsUnitGate.va + 0x14, kNops, sizeof(kNops)) || !AddUnitPanelTail(&MinUiTail) ||
+      (buildingArmor && !WriteBytes(sites::kMinResistsUnitGate.va + 0x14, kNops, sizeof(kNops))) ||
+      !AddUnitPanelTail(&MinUiTail) ||
       // After the tail hook, which verifies these bytes too: the minimized block also runs for a minimized layout
       // loaded without the profile option.
       !WriteJmp(sites::kMinBlockChoice.va, reinterpret_cast<const void*>(&UhcMinBlockChoice), 11)) {
@@ -3979,10 +4414,14 @@ Outcome ApplyMinUiStats(const Config& config) {
   for (const ItemInfo& item : kItems) {
     refs += AddDataRef(item.ref, kDataRefString, item.provider) ? 1 : 0;
   }
-  Log(L"minUIStats: %u rows and %ls from %ls; building armor shown in the minimized panel's resists; %d data refs "
-      L"{uhc...} (UI only); rows give way to the stack portraits and %u avoid gadgets",
+  Log(L"minUIStats: %u rows and %ls from %ls; %ls; %d data refs {uhc...} (UI only); rows give way to the stack "
+      L"portraits and %u avoid gadgets; %u stock labels; attack rows: %ls, %ls, ability attacks %ls",
       static_cast<unsigned>(g_rows.size()), g_big.on ? L"the normal interface's stat rows" : L"no stat rows",
-      g_file.c_str(), refs, static_cast<unsigned>(g_avoid.size()));
+      g_file.c_str(), buildingArmor ? L"building armor shown in the minimized panel's resists" : L"no building armor",
+      refs, static_cast<unsigned>(g_avoid.size()), static_cast<unsigned>(g_labels.size()),
+      g_big.takeStock ? L"the original ones written by the key" : L"the original ones kept",
+      g_big.rofIcon.empty() ? L"no ROF" : L"ROF after the damage",
+      g_filterAbilities && g_abilityReads ? L"only when enabled" : L"all");
   (void)&OnDatabase;
   return Outcome::kApplied;
 }

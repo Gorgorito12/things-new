@@ -4,53 +4,98 @@ Minimized UI with all the information (WoL request #67)
 What it does
 ------------
 With the DLL key minUIStats, the minimized in-game UI (optionminimizedui) shows what the big UI shows,
-and more:
+and more, in a symmetric layout that keeps the top band for the unit portraits of the selection:
 
-- Train Points, LOS, Garrison and the live Speed (with techs, snares and auras) in rows of their own;
-- the rows of the big UI the minimized one had no room for: the 4th attack and the next ones, Gatherers,
-  Group Health; and the attacks the big UI itself has no room for (it stops at 9 rows: Menelik II has 8
-  attacks, the big UI shows 5);
-- the armor of buildings, in the original "Resists" spot, with the same look as for units;
-- ROF and range per attack, cost and population, above the unit's name;
-- with our other keys on: the overheal (overhealHitpointBars) and a running poison (damageOverTime);
-- a building under construction: the time left ("Done in 1:21"); a villager building: its points per
-  second ("Builds 1.50/s"); a unit that regenerates: "Regen 1/s"; what our aura keys do to the unit
-  ("Aura +50% work", "+25% gold", "pays 0.10 (wood)/s"; the game's own auras show in the numbers);
+- over the unit's portrait: its cost (each resource's icon and amount) and its population (a house);
+- right of the player's name, the mirror column: the train time (an hourglass) and the garrison;
+- under the unit's name: what the unit is doing or what acts on it ("Done in 1:21", "Builds 1.50/s",
+  "Regen 1/s", "Overheal +50", a running poison, "Aura +50% work");
+- under the player's name: line of sight (an eye) and the live speed (a boot; with techs, snares, auras);
+- the hit points and resists labels as icons (a heart, a shield); their values stay the game's;
+- every attack row gets its rate of fire right after its damage, with a stopwatch:
+  "Ranged ATK:  23 (ranged) 3 (stopwatch) 12 (range), 3x (cavalry)";
+- the attack rows the minimized UI had no room for (the 4th attack on, Gatherers, Group Health), and the
+  attacks the big UI itself has no room for (it stops at 9 rows);
+- only the attacks the unit can use: an ability's attack (Crack Shot, Sharpshooter, Swashbuckler, ...)
+  shows only while one of the unit's abilities gives it (abilities.xml: its tech is active and its age is
+  the player's). The big UI lists every attack of the tactics file, usable or not; the minimized one with
+  the key does not;
+- the armor of buildings, in the original resists spot; with the DLL's multiarmor, every armor of the
+  unit ("0.30 (hand)  0.20 (ranged)  0.10 (siege)");
 - more you can switch on in minuirows.xml (commented rows): minimum range, area, build points and
   limit, bounty, lifespan left, what a mine or animal holds, the gather rate, the random price range,
   the cards sent per age, base speed, armor, veterancy rank;
-- 30 texts for any formatText gadget, one per item: {uhcSpeed}, {uhcLOS}, {uhcROF}, {uhcRange},
-  {uhcCost}, {uhcPopulation}, ... (the list is at the top of minuirows.xml).
+- 30 texts for any formatText gadget, one per item: {uhcSpeed}, {uhcLOS}, {uhcROF}, {uhcCost}, ...
+  (the list is at the top of minuirows.xml).
 
 The big UI does not change. Without the key nothing changes.
+
+The layout (1024 x 768 layout units; the panel is x 342..700, its centre x 521)
+----------------------------------------------------------------------------------
+    y 631..667   the top band: ONLY the unit portraits of the selection (the game centres them in
+                 buttonArea, 369..669, as in WoL's current file). Nothing of the key is in the band.
+    y 669..697   left column, over the portrait (342..412):  cost (line 1), population (line 2)
+                 right column, the mirror (630..700):        train time (line 1), garrison (line 2)
+                 between them: the unit's name (412..516) and the player's name (526..630), the
+                 same width either side of the centre
+    y 688..702   under the unit's name: uhcRow2 (Done in, Builds, Regen, Overheal, Poison, Aura)
+                 under the player's name: uhcRow0 (line of sight, speed), both centred under their name
+    y 700..714   (heart) hit points at x 410 | (shield) resists at x 583
+    y 714..767   the attack rows, in the panel's own two columns: x 410 (the first three) and x 583
+                 (the 4th on: uhcRow5, uhcRow3, uhcRow4, on the same lines as the first three)
+    under the portrait: the health bar (green, yellow, red), as in WoL's file.
+
+    Mirrored around x 521: the two columns (342..412 | 630..700), the two names (412..516 | 526..630) and
+    the two rows under them. Text in each of these is centred, so both sides balance whatever the length.
+    Not mirrored, on purpose: the stats table below keeps the panel's own two columns (x 410 and x 583),
+    because the original attack rows start at the portrait's edge and the long ones (a Settler's or a
+    Grognard's) reach x ~570; mirroring would put them into the second column. The portraits centre on
+    x 519 (WoL's buttonArea), 2 units (4 px at 1920) left of the panel's centre: WoL's own value, kept.
+
+    Pictures: media\minui-preview-proposed.png (every rectangle, the two centre lines drawn),
+    media\minui-preview-wol.png (WoL's current file), media\minui-preview-proposed-old.png (the first
+    proposal, whose buttonArea put the portraits left of the centre).
+
+Icons (all at the size of the panel's own damage type icons, "(10)"; each row with an icon has a tooltip
+with its word)
+------------------------------------------------------------------------------------------------------
+    rate of fire      a stopwatch      drawn: art\ui\ingame\stat_icon_rof.ddt (in this pack)
+    train time        an hourglass     drawn: art\ui\ingame\stat_icon_traintime.ddt (in this pack)
+    hit points        a heart          drawn: art\ui\ingame\stat_icon_hitpoints.ddt (in this pack)
+    resists           a shield         drawn: art\ui\ingame\stat_icon_armor.ddt (in this pack)
+    line of sight     an eye           drawn: art\ui\ingame\stat_icon_los.ddt (in this pack). The game's
+                                       spy eye is ui\ingame\stat_icon_informers, but WoL's own copy of
+                                       that file is a dove, so the eye is drawn
+    population        a house          the game's: ui\ingame\stat_icon_building (WoL's own copy)
+    speed             a boot           the game's: ui\ingame\stat_light_infantry (the light infantry boot)
+    costs             resource icons   the game's, as the resource bar shows them
+    The drawn icons are 16x16 DXT3 stat icons made with aoe3-blender-tools (tools/make_stat_icon.py);
+    no pixel comes from another game. Sheet: media\minui-icons.png.
 
 Files
 -----
 proposed-uiunitselectionmin.xml
-    The original minimized selection panel (uiunitselectionmin.xml from Data3.bar), unchanged, plus
-    eight new gadgets at the top level of unitselectionpanel-unit:
-      unitselectionpanel-uhcTrainPoints   above the portrait
-      unitselectionpanel-uhcCostPop       Cost and Pop, above the unit's name (right of its icon)
-      unitselectionpanel-uhcRow1          ROF and Range, under it
-      unitselectionpanel-uhcRow0          LOS, Speed and Garrison, under the player's name
-      unitselectionpanel-uhcRow2          Done in, Builds, Regen, Overheal, Poison and Aura, left of
-                                          the name (two lines)
-      unitselectionpanel-uhcRow3, -uhcRow4
-                                          the big UI's extra rows (the 4th and 5th attack,
-                                          Gatherers), right of the 2nd and 3rd original attack rows
-      unitselectionpanel-uhcRow5          the next ones (6th attack and on), right of the 1st
-                                          attack row
-    None of them is inside a gadget the game shows or hides, so no row depends on another.
-    The places follow WoL's current panel; move them as you like.
+    The original minimized selection panel (uiunitselectionmin.xml from Data3.bar) with WoL's values
+    for the original gadgets it changed, the changes below, and the key's gadgets at the top level of
+    unitselectionpanel-unit (never inside a gadget the game shows or hides):
+      unitselectionpanel-uhcCost, -uhcPop                over the portrait
+      unitselectionpanel-uhcTrainPoints, -uhcGarrison    right of the player's name
+      unitselectionpanel-uhcRow2, -uhcRow0               under the unit's name, under the player's name
+      unitselectionpanel-uhcRow3, -uhcRow4, -uhcRow5     the attack rows past the third (x 583)
+    It needs the key: the hit points and resists labels are only as wide as their icon. With the key
+    off, use your current file.
 
 minuirows.xml
-    The data file: which gadget shows which items, with which labels, for which unit types. A row can
-    join several items: text="ROF: {rof}|Range: {range}" (each part shows only when it has a value). It goes in
-    data\uhc\minuirows.xml. The comments at its top list every item and option. To add a row, add a
-    formatText gadget to the layout and a <row> line here; no new DLL is needed.
+    The data file: which gadget shows which items, with which icons, labels and tooltips, for which
+    unit types; the original labels that become icons (<stockLabel>); the attack rows (<bigPanelRows>:
+    stockRows="take" writes the original three too, rofIcon adds the ROF). It goes in data\uhc\. The
+    comments at its top list every item and option. No new DLL is needed to change any of it.
+
+art\ui\ingame\*.ddt
+    The five drawn icons. They go in art\ui\ingame\ of the mod.
 
 note-for-drmaxy.txt
-    What was decided, and two things noticed in WoL's current files (for information).
+    What was decided and why (for information).
 
 optional\uiunitstatpanel3.xml
     Optional, not needed by the key: the original big-UI stat panel (9 rows), from Data3.bar. WoL's own
@@ -60,84 +105,115 @@ Install
 -------
 1. Copy proposed-uiunitselectionmin.xml to data\uiunitselectionmin.xml (keep a copy of yours).
 2. Copy minuirows.xml to data\uhc\minuirows.xml.
-3. Add the line   minUIStats   to Startup\wol.cfg.
-4. Keep optionminimizedui on (WoL's profile has it on).
+3. Copy art\ui\ingame\*.ddt to art\ui\ingame\.
+4. Add the line   minUIStats   to Startup\wol.cfg.
+5. Keep optionminimizedui on (WoL's profile has it on).
+
+The original gadgets: WoL's current file against this one
+-----------------------------------------------------------
+Compared gadget by gadget (name, parent, every attribute) with C:\WoL-Test\data\uiunitselectionmin.xml:
+    showCommands, showStats       WoL's tab texture (foreground, texturecoords): kept.
+    buttonArea                    WoL's 369 697 669 666 (the portraits centre on x 519): kept. The first
+                                  proposal had the original 369 632 607 666, which put the portraits
+                                  left of the centre (Dr.Maxy's "the selection is no longer centred").
+    unitHealthBarGreen/Yellow/Red WoL's (342 759 412 766, under the portrait): kept, and inside the unit's
+                                  name as in WoL's file. Measured: elsewhere (in the panel, in the
+                                  portrait) the minimized panel never shows them; inside the name they
+                                  show with it. Their "Garrison" texts are left out (the garrison row).
+    unitResistsValue              WoL's left edge 620 and textcentervert: changed to 597 (right after
+                                  the shield); the right edge 1000 kept.
+    unitResistsLabel              583 700 597 714 (only the shield) and textmarkup (an icon needs it).
+    unitHitPointsLabel            410 680 424 734 (only the heart), textmarkup, no textwrapon.
+    unitHitPointsValue            starts at 424 (right after the heart) instead of 507.
+    unitTypeName                  412 650 516 714 (was 348..516): the column over the portrait holds the
+                                  cost; the name keeps the width of the player's name.
+    unitPlayerName                526 650 630 714 (was 520..700): the mirror of the unit's name; the
+                                  right column holds the train time and garrison.
+    Nesting                       WoL's file nests most of the panel in unitTypeName (its line 40 has no
+                                  "/>"); here every original gadget has the original parent.
+    WoL's own gadgets             TrainTimeinfo (an empty text with a "TrainTime:" tooltip),
+                                  unitanything (empty), SettlerCountDialog-pop-icon (LOS), TrainTime
+                                  (Train Points), unitSpeedValue (Speed, inside the resists value, so
+                                  hidden with it), unitResourceValue2 (empty) and the three "Garrison"
+                                  texts: left out, the key's rows show each of these.
+    Every other original gadget (the portrait, the resource and rate rows, StackLabel0..2, the portrait
+    count, the stack buttons) is the same in both files.
 
 Notes
 -----
 - A row is hidden when its item does not apply to the selected unit (no garrison, speed 0, a unit type
   filter in the data file).
 - With several units selected the rows describe the first one, as the game's own panel does.
-- Mixed groups: with several unit types selected, the game shows one portrait per type in the top band
-  of the panel, centred, at most nine (a 10th type gets no portrait, there is no second page). A row
-  that a portrait covers is hidden until the portraits leave room again: with this layout, Cost/Pop
-  and ROF/Range from two types on, Train Points at nine types (and, by the spacing, from six). One type
-  changes nothing. A click on a portrait makes that type the one the panel and the rows describe.
-  In minuirows.xml, overlap="show" on a row keeps it shown anyway, and <avoid gadget="..."/> makes the
-  rows give way to an original gadget while it is shown. The default file avoids the resource held and
-  the AutoGather rate, which share their line with uhcRow5: while either shows, uhcRow5 stays empty.
-- Many attacks: uhcRow3, uhcRow4 and uhcRow5 take the attacks after the original three, then Gatherers
-  and the like. When there are more rows than gadgets, uhcRow5 shows the rest in short form (name and
-  damage, as many as fit, then "+2"), and its tooltip lists them all. The attacks past the big UI's
-  9th row are written by the DLL in the same format, without the bonus multipliers ("3x" vs cavalry).
-  Add uhcRow6 ... (consecutive numbers) for more full rows.
-- uhcRow3, uhcRow4 and uhcRow5 end where the original attack rows end, so a hero's "Sharpshooter ATK:
-  750 ... 16 (range)" fits. The original attack rows are left-aligned: the longest seen (a Grognard's
-  grenade row) ends before uhcRow3..5 start.
-- With WoL.dll's forceMinUI the profile option does not matter: whenever the minimized layout is loaded,
-  the panel is filled as with the option on. The big UI (uiunitselection.xml) is left alone.
-- Tested on 2026-11-17 in single player: a Musketeer, a Bunker (armor 0.3), Menelik II (5 attacks), a
-  Grognard, a Dragoon, a Settler gathering, four Musketeers, a berry bush, a Caravel and a Galleon,
-  compared row by row with the big UI; also beside WoL.dll (forceMinUI, trickleDisplay), with the
-  profile option on and off, and the big UI with the option off.
-- Tested again on 2026-11-17 (mixed groups and many attacks): 1, 2, 5, 9, 10 and 12 unit types, a click
-  on a portrait, Menelik II and Manuel Mondragon (8 attacks each), a Grognard, a Barracks, with the key
-  off, with WoL.upl (forceMinUI, trickleDisplay, ...) and with every key of the DLL on: pictures below.
+- Mixed groups: the game shows one portrait per unit type in the top band, centred, at most nine (a 10th
+  type gets no portrait). Nothing of the key is in that band, so no row moves or hides for the
+  portraits. A click on a portrait makes that type the one the panel and the rows describe. (The rule
+  "a row a portrait covers is hidden" is still in the DLL for layouts that put rows in the band.)
+- Many attacks: the original three rows, then uhcRow3, uhcRow4 and uhcRow5 (next to them, x 583). When
+  there are more rows than gadgets, the last one shows the rest in short form, name and damage, then
+  "+2 more"; its tooltip lists them all. With the ability filter this did not happen in the tests: the
+  8-attack explorers of the first proposal show 3 or 4 rows, the attacks they can really use.
+- uhcRow5 shares its line with the resource held and the AutoGather rate (a villager carrying food, a
+  factory, a bank): while either shows, uhcRow5 stays empty (minuirows.xml, the two <avoid> lines).
+- With WoL's own uhc.dll (its multiarmor writes the resists text) the key leaves the building armor to
+  it: a building shows no resists row, as without the key (the first version showed "Resists: 0 (null)"
+  on a Factory there). Units show WoL's text ("0.30, 0.20, 0.10").
+
+Tested on 2026-11-17 (single player, WoL in English, 1920 x 1080, the panel at native pixels)
+-----------------------------------------------------------------------------------------------
+Each scene: (a) the rectangles in media\minui-preview-proposed.png, (b) the screenshot. "Fine" = no text
+over another text, nothing cut, nothing in the portrait band, the health bar shown.
+
+    Scene                                           Picture (media\)                          Result
+    One Musketeer (cost, house, hourglass, ROF)     minUIStats-v3-1type.jpg                   fine
+    A Barracks (building)                           minUIStats-v3-building.jpg                fine
+    A Factory (the trickle row "Coin 4.50/s")       minUIStats-v3-factory.jpg                 fine
+    A Bank                                          minUIStats-v3-bank.jpg                    fine
+    2, 5 and 9 unit types                           minUIStats-v3-2types/5types/9types.jpg    fine
+    Menelik II, damaged ("Regen 1/s"); of its 5     minUIStats-v3-explorer.jpg                fine
+      ability attacks only Sharpshooter is usable
+    A Presidial explorer (Sharpshooter only; no     minUIStats-v3-presidial.jpg               fine
+      Crack Shot, as JTMaston said)
+    The Chief (WOLcartographer) before / after      minUIStats-v3-cartographer-before.jpg,    fine
+      HCSteelCrown: Anti-artillery Crackshot only     -after.jpg
+      after the card
+    Wachtmeester with 3 armors (test data: two      minUIStats-v3-wachtmeester.jpg            fine
+      <Armor> lines added; the DLL's multiarmor)
+    A Grognard, 5 attacks (long grenade row)        minUIStats-v3-grenadier.jpg               fine (ends
+                                                                                              x ~557)
+    A Settler, 4 attacks, 4 multipliers on one row  minUIStats-v3-settler.jpg                 fine (ends
+                                                                                              x ~568)
+    A long name ("Husar de la Muerte")              minUIStats-v3-longname.jpg                fine
+    Overheal ("Overheal +50", HP 150/100; test data minUIStats-v3-overheal.jpg                fine
+      InitialHitpoints 100, overhealHitpointBars)
+    Every key of the cfg template on (114 applied,  minUIStats-v3-allkeys-presidial.jpg,      fine
+      0 failed)                                       -allkeys-settler.jpg
+    WoL's uhc.dll (multiarmor) + our dinput8.dll    minUIStats-v3-woluhcdll-factory.jpg,      fine (no
+      (the key from engine-ext.cfg): a Factory, a     -woluhcdll-wachtmeester.jpg              "(null)")
+      Wachtmeester
+    WoL's current file, key off (the reference)     minUIStats-wolcurrent-*.jpg               reference
+    Side by side, WoL's current | proposed          minUIStats-v3-vs-wol-units.jpg,           -
+                                                    -vs-wol-groups.jpg, -vs-wol-more.jpg
+    Not filmed this time: a villager gathering, a building going up ("Done in", "Builds"), a running
+    poison, an aura, a ship (the test scenario cannot give orders or make water; these texts are in
+    uhcRow2 and uhcRow0, the rows "Regen" and "Overheal" use, filmed above), WoL.dll's trickleDisplay
+    row (the stock rate row, filmed on the Factory), Spanish strings (WoL ships them as .es-la; the
+    names and labels come from the game's string table, the rows' own words are English).
+    Performance (perfprobe.py, 45 s, a Presidial selected, other games running on the PC): key on 387
+    fps, update 0.20 ms, render 2.38 ms; WoL's file with the key off 349 fps, 0.19 ms, 2.66 ms: noise.
 
 Media
 -----
-In media\ (JPG and PNG pictures, GIF and MP4 videos). "Key on" = minUIStats with this pack's files.
-
-Mixed groups and many attacks (2026-11-17, screenshots of the panel at 1920 x 1080, native pixels):
-  minUIStats-mixed-1type.jpg              one Musketeer: as before (key on)
-  minUIStats-mixed-1type-control.jpg      the same, key off
-  minUIStats-mixed-2types.jpg             two types: Cost/Pop and ROF/Range give way (key on)
-  minUIStats-mixed-5types.jpg             five types (key on)
-  minUIStats-mixed-5types-control.jpg     five types, key off
-  minUIStats-mixed-5types-woldll.jpg      five types, key on, with WoL.upl loaded
-  minUIStats-mixed-5types-allkeys.jpg     five types, key on, with every key of the DLL on
-  minUIStats-mixed-9types.jpg             nine types: Train Points gives way too (key on)
-  minUIStats-mixed-9types-control.jpg     nine types, key off
-  minUIStats-mixed-10types.jpg            ten types: nine portraits, no 10th (key on)
-  minUIStats-mixed-12types.jpg            twelve types: nine portraits (key on)
-  minUIStats-mixed-12types-clicked.jpg    twelve types, the first portrait clicked: Menelik II described
-  minUIStats-mixed-building.jpg           a Barracks (key on)
-  minUIStats-attacks-explorer.jpg         Menelik II, 8 attacks: 3 original rows, 2 extra, the last 3 in
-                                          short form "... +2" (key on)
-  minUIStats-attacks-explorer-control.jpg Menelik II, key off: 3 attacks
-  minUIStats-attacks-explorer-woldll.jpg  Menelik II, key on, with WoL.upl loaded
-  minUIStats-attacks-explorer-allkeys.jpg Menelik II, key on, with every key of the DLL on
-  minUIStats-attacks-presidial.jpg        Manuel Mondragon (WoLPresidial), 8 attacks (key on)
-  minUIStats-attacks-grenadier.jpg        a Grognard, 5 attacks: uhcRow5 stays empty (key on)
-  minUIStats-avoid-test.jpg               a test data file that avoids the hit points label: the LOS /
-                                          Speed row under it gives way (key on, test only)
-  minui-preview-proposed.png              the proposed layout: every gadget's rectangle, new rows in yellow
-
-Earlier batches (same day):
-  minUIStats-wol.gif / .mp4               Menelik II: Train Points, LOS, Speed, 4th and 5th attacks (key on)
-  minUIStats-wol-control.gif / .mp4       the same scene, key off
-  minUIStats-building-wol.gif / .mp4      a Bunker: armor and garrison (key on)
-  minUIStats-building-wol-control.gif / .mp4   the same, key off
-  minUIStats-batch2-wol.gif / .mp4        a veteran Musketeer: Cost, Pop, ROF, Range (key on)
-  minUIStats-batch2-wol-control.gif / .mp4     the same, key off
-  minUIStats-batch3-wol.gif / .mp4        a Town Center going up: "Done in 1:25" (key on)
-  minUIStats-batch3-wol-control.gif / .mp4     the same, key off
-  minUIStats-test-hero-min.png            Menelik II in the minimized UI (key on)
-  minUIStats-test-hero-big.png            Menelik II in the big UI, for comparison
-  minUIStats-test-ship-min.png            a ship in the minimized UI (key on)
-  minUIStats-test-forcemin.png            WoL.dll's forceMinUI with the profile option off (key on)
-  minui-shot-min-unit.png, minui-shot-big-unit.png             a unit, minimized and big UI (key off)
-  minui-shot-min-building.png, minui-shot-big-building.png     a building, the same
-  minui-shot-min-villager.png, minui-shot-big-villager.png     a villager, the same
-  minui-preview-stock.png                 the original minimized layout's rectangles
-  minui-preview-wol.png                   WoL's current minimized layout's rectangles
+In media\ (JPG pictures of the panel at native pixels, with the health bar; PNG previews).
+    minUIStats-v3-*.jpg               the proposed layout, key on (the table above)
+    minUIStats-wolcurrent-*.jpg       WoL's current file, key off, the same scenes
+    minUIStats-v3-vs-wol-*.jpg        both side by side
+    minui-icons.png                   the icons and where each comes from
+    minui-preview-proposed.png        the proposed layout's rectangles, new ones in yellow, the centre lines
+    minui-preview-wol.png             WoL's current file's rectangles
+    minui-preview-proposed-old.png    the first proposal's rectangles (portraits left of the centre)
+    minui-preview-stock.png           the original minimized layout's rectangles
+    minui-shot-min-*.png, minui-shot-big-*.png   WoL's UI before the key: a unit, a building, a villager
+    minUIStats-test-hero-big.png      Menelik II in the big UI (it lists every attack, usable or not)
+Videos of the first proposal (2026-11-17 morning, its layout, before this one): minUIStats-wol,
+minUIStats-building-wol, minUIStats-batch2-wol, minUIStats-batch3-wol (.gif / .mp4), each with a
+-control twin (key off).
