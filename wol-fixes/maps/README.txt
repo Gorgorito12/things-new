@@ -87,3 +87,10 @@ They are the current WoL files with only the changes above.
 
 triggers\greatwar.xs, line 18, has the same pattern (rmGetPlayerName(i)+" has started a Great War!").
 It is not included by triggerLoader.xs today; if it comes back, give it the same change.
+
+
+Media
+-----
+None. The bug has nothing to see on screen (no crash, no message: the map's triggers just do not
+run), and the fix was checked in the generated trigger script, not in a picture. The sweep's
+screenshots only show each map loaded, so they are not included either.

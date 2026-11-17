@@ -117,6 +117,50 @@ No cambiados, y por qué
   lleva mallas de escombros; la herramienta nunca cambia un hueso así.
 
 
+MEDIA (in the "media" folder beside this README, not inside the zips)
+
+  All of it is WoL in game, with the engine-extension DLL's impactBoneFix key OFF, so what shows is
+  the models alone. For the cannon tests the building's .dmg was switched to impacttype="wood" on
+  its impact points (shipping WoL has no "wood" there today, see above): that is what makes the
+  bug show. Each fixed run has a control: the same data and scene with WoL's own models.
+
+  The Mahalla (the 28 Mahalla models fixed; two Falconets fire on it; the Mahalla selected)
+    impactBoneFix-wol-modelfix.gif / .mp4 (60 s)        AFTER: every hit throws its splinters,
+        smoke and fire on the wall it hits; the building burns, collapses and leaves its rubble
+        as before.
+    impactBoneFix-wol-modelfix-control.gif / .mp4       BEFORE (WoL's models): every hit throws
+        long grey streaks across the whole view.
+    mahalla-hit-fixed.jpg                               AFTER, one frame (1600 of 2400 hit
+        points): fire and smoke on the walls, no streaks.
+    mahalla-hit-control.jpg                             BEFORE, one frame (2200 of 2400): the
+        grey streaks over the view from a hit.
+    mahalla-damage-states-fixed.jpg                     AFTER, 12 frames of the same run, 20 s
+        to 53 s of game time: whole, damaged and burning, collapsing, rubble. The damage models
+        and the death model work as before.
+
+  The full set of 107 models (the uncompressed zip installed; a Persian skirmish)
+    impactBoneFix-wol-set-temple.gif / .mp4 (30 s)      AFTER: the Middle East Temple
+        (Temple2_dmg_Model, its temple.dmg switched to "wood"), two Falconets on it, the Temple
+        selected: every hit throws splinters, smoke and fire on the walls and the dome; it burns
+        and collapses as before.
+    impactBoneFix-wol-set-temple-control.gif / .mp4     BEFORE (WoL's models, same data): long
+        grey streaks across the view from the hits.
+    impactBoneFix-wol-set-collapse.gif / .mp4 (40 s)    AFTER, the bones that are not impact
+        points: a Royal Court, a Madrasah and a Forge, damaged and then destroyed by trigger, all
+        three selected. The Royal Court's flag waves on its pole by the porch and the Forge's
+        smoke and fire rise where they do with WoL's models (checked frame by frame against a
+        control run of the same scene); each building collapses into its rubble as before.
+
+  The compressed set (WoL-building-bones-fix-compressed.zip installed: the Mahalla, Temple, Royal
+  Court, Madrasah and Forge models; a Persian skirmish; the buildings damaged by trigger to 60 %
+  of their hit points; no cannon fired in this run)
+    compressed-set-five-buildings-damaged.jpg           The five buildings stand, loaded from the
+        compressed models, at 60 % (the Temple selected, 1800 of 3000): the Mahalla, the
+        Madrasah, the Forge with its flag and its smoke, the Royal Court with its flag.
+    compressed-set-forge-damaged.jpg                    The Forge selected (1500 of 2500): its
+        flag and its chimney smoke in place, as with the uncompressed models.
+
+
 FILES / ARCHIVOS (bones changed / huesos cambiados)
 
   art\buildings\modern\british\british_HQ_corps\british_hq_corps_base.GR2
