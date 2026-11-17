@@ -135,7 +135,11 @@ SITES = [
     ("StartColonyFlagRead", 0x6A2130, 6),
     ("GatherSearchStart", 0x4C6BCF, 7),    # hc in ECX and EDX, before the stock ten types; `replace` starts there
     ("GatherFallbackStore", 0x4C6CB2, 12), # cmp byte [esp+18h],1 / je 669E38h: store-and-return
-    ("GatherFallbackBlock", 0x6698B4, 0xB0),  # the stock FortFrontier search block the hook mirrors
+    # the stock FortFrontier search block 0x6698B4..0x669963 the hook mirrors, less its proto ID load
+    # mov edx,[ecx+6034h] at 0x6698D4 (6 B): the hook loads its own IDs, and another DLL may
+    # rewrite that load, before or after the check
+    ("GatherFallbackBlock", 0x6698B4, 0x20),
+    ("GatherFallbackBlockTail", 0x6698DA, 0x8A),
     # hcShipmentPointFallback FirstTC: the stored-point check 0x85302C, bool thiscall(hc, unit),
     # null-safe, alive vtbl+A4h, then call 44DDB4h, then call 4802C6h != 1 (setne al), ret 4; the
     # FirstTC helper calls it on the player's first town center

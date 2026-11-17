@@ -62,7 +62,8 @@ says so:
 |---|---|---|---|---|---|
 | `GatherFallbackExit` | `0x669E2E` | 10 B | 5 B at `0x669E2E` | `5D 5F 5E 33 C0` (`pop ebp; pop edi; pop esi; xor eax,eax`) | "nothing found" exit of FUN_004C6B9E; hcShipmentPointFallback hook |
 | `GatherFallbackStore` | `0x4C6CB2` | 12 B | — | — | store-and-return path the hook jumps to |
-| `GatherFallbackBlock` | `0x6698B4` | `0xB0` B | — | — | stock FortFrontier search block; the hook repeats its logic, so it must be unchanged |
+| `GatherFallbackBlock` | `0x6698B4` | `0x20` B | — | — | stock FortFrontier search block, up to its proto ID load; the hook repeats its logic, so it must be unchanged |
+| `GatherFallbackBlockTail` | `0x6698DA` | `0x8A` B | — | — | the rest of that block, after the 6-byte proto ID load at `0x6698D4`, which is not checked: the hook loads its own IDs, and another DLL may rewrite that load |
 | `GatherPointValid` | `0x85302C` | `0x38` B | — | — | stock stored-point check, `bool thiscall(hc, unit)`, `ret 4`; the FirstTC helper calls it |
 | `HealIdleCheck` | `0x9E0C79` | `0x2C` B | 5 B at `0x9E0C79` | `8B 4F 58 85 C9` (`mov ecx,[edi+58h]; test ecx,ecx`) | busy test of each heal tick (FUN_009E0B53) |
 | `HealAutoSearchIdle` | `0x9CD9C0` | `0x15` B | 5 B at `0x9CD9C7` | `E8 DB 17 A8 FF` (`call 44F1A7h`) | idle test of the automatic heal search (FUN_009CD865) |
