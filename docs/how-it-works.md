@@ -3671,6 +3671,45 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   its HP row, with the rate the log reported (0.670/s; the stock `Settler` gathers `BerryBush` at
   0.67).
 
+### The unit panels in the minimized interface (research, no key yet)
+
+How the game fills the two places that describe the selected unit, read before a key that shows
+in the minimized interface what the normal one shows. The catalog of what could be shown and the
+plan are in [unit-panel-catalog.md](unit-panel-catalog.md). <!-- private -->
+
+**Two panel objects, two layout files each.** The selection panel (`uiunitselection.xml`, or
+`uiunitselectionmin.xml` with profile option 49h `optionminimizedui`) and the stat panel
+(`uiunitstatpanel3.xml`, or `uiunitstatpanel3min.xml`). Each binds its gadgets by name when it is
+built (0x9BAD00.., 0x9BBAFC..): the stat panel nine rows `unitstatpanel3-StackLabel%d` /
+`StackValue%d` at `[panel+174h+i*4]` / `[panel+198h+i*4]`; the selection panel its named gadgets
+at `+2E4h..+340h` and three rows `unitselectionpanel-StackLabel%d` / `StackValue%d` at
+`+344h` / `+350h`. A name missing from the file gets the "none" handle, and every writer skips it.
+
+**The normal interface** fills the stat panel (FUN_004D70ED): the name and owner, the hit points,
+then from row 2 a group's health (behind a config flag), the resource a unit holds, the gatherers
+of a workplace, the AutoGather rate, the speed, the armor, one row per attack (damage and its type,
+range, bonus multipliers, area in the help text) and the special attacks (behind profile option
+45h), and hides the rows left over.
+
+**The minimized interface** makes that function return at once (0x4D7261). The selection panel's
+fill (FUN_004C7E52) instead runs its own block (0x6987D7..0x69A60F): owner, hit points, armor, the
+resource held, the AutoGather rate, and up to three attack rows, each a single label. There is no
+speed, gatherer or group row, and the attacks beyond the third are lost.
+
+**Why buildings show no armor.** Both panels show the armor row only for a proto of abstract type
+0, `Unit`, whose armor `[proto+0C4h]` is above 0 (0x698BED, 0x69B34C). Buildings are not `Unit`,
+so their armor is never shown, and a gadget a layout nests inside the armor value (to place a
+speed text, say) is hidden with it.
+
+**The `{…}` texts.** A `formatText` gadget's `{name}` is looked up, by name, in one table of
+16-byte entries `{id, type, name, provider}` (`[parser+0Ch]`, count `+10h`) that FUN_005CFA7C
+fills once; its check (0x5D3263) wants each id to equal its index and a type of 1 to 4, and the
+evaluators index the table by id. An entry added at the end with the next id therefore works like
+a stock one. Seven `currentUnit…` names point to a stub that always fails (`AttackRange`,
+`MinAttackRange`, `BuildRate`, `GatherRate`, `AttackList`, `AttackString`, `GatherRateString`),
+and `currentUnitMaxVelocity` reads the proto's base speed `[proto+80h]`, not the live one the stat
+panel shows.
+
 ### buildingWorkRateAuras
 
 **The stock mechanism.**
