@@ -1705,6 +1705,35 @@ SITES = [
     ("RandomCostRefundCancel", 0x9EB435, 0x0E),
     ("RandomCostRefundAll", 0x9EB603, 0x0F),
     ("RandomCostRefundSpawn", 0x9EBA4F, 0x13),
+    # The unit panels (docs/engine-symbols.md, "Unit panels"). The shared tail of the selection panel fill
+    # FUN_004C7E52 (unitpanel.h, AddUnitPanelTail): cmp byte [esp+5Eh],1 / je 6987D7h (profile option 49h: the
+    # minimized block, which comes back here), then mov esi,[esp+50h] (the panel) / mov edi,[esi+308h], the 10
+    # bytes the hook replaces at 0x4C8281 ([esp+54h] the first selected unit, [esp+78h] the selection); and the
+    # minimized block's way back, jmp 4C8281h
+    ("UnitPanelTail", 0x4C8276, 0x15),
+    ("UnitPanelMinBlockBack", 0x69A60F, 5),
+    # minUIStats: the stat panel fill FUN_004D70ED, thiscall(panel, selection), ret 4, EBP frame; it reads of its
+    # panel only the row handles [+174h+i*4] / [+198h+i*4]. Its head, and its profile option 49h read (push 49h /
+    # ... inlined option lookup ... / cmp byte [esp+63h],1 / je 4D81A1h, the 11 bytes the gate replaces at
+    # 0x4D725C)
+    ("StatFillHead", 0x4D70ED, 0x18),
+    ("StatFillMinGate", 0x4D721B, 0x4C),
+    # minUIStats: the minimized block's resists gate, mov ecx,[ebx+5Ch] / test / je, push 0 / call 44CAC4h (abstract
+    # type 0, Unit) / cmp al,1 / jne 698E7Ah (the 6 bytes NOPed at 0x698BF6), then the armor > 0 test
+    ("MinResistsUnitGate", 0x698BE2, 0x1A),
+    # Data refs (datarefs.h): the parser's constructor, mov ecx,esi / vtable, delimiters { ( } ) / call 5CFA7Ch (the
+    # registration, redirected at 0x5D3229) / mov eax,esi / pop esi / ret; the registration's head (mov esi,ecx:
+    # the table is {data, count, capacity} at [this+0Ch]); its grow FUN_005ACE63, thiscall(array, count, bool),
+    # ret 8, which constructs new 16-byte entries {id, type, BString name, provider}; the float evaluator, which
+    # takes entries[id] and calls [entry+0Ch] when the type is 1
+    ("DataRefParserCtor", 0x5D3209, 0x29),
+    ("DataRefRegister", 0x5CFA7C, 0x09),
+    ("DataRefArrayGrow", 0x5ACE63, 0x29),
+    ("DataRefFloatEval", 0xAB9400, 0x60),
+    # minUIStats items: the line of sight getter FUN_0048206D, thiscall(unit) -> ST0 ([world+5ACh] x the modifier x
+    # [[unit+0B4h]+90h]), and the garrison capacity FUN_0049EB5A, thiscall(proto) -> EAX, [[proto+10Ch]] or 0
+    ("LosGetterHead", 0x48206D, 0x34),
+    ("MaxContained", 0x49EB5A, 0x11),
 ]
 
 

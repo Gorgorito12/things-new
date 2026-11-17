@@ -3671,10 +3671,10 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   its HP row, with the rate the log reported (0.670/s; the stock `Settler` gathers `BerryBush` at
   0.67).
 
-### The unit panels in the minimized interface (research, no key yet)
+### minUIStats
 
-How the game fills the two places that describe the selected unit, read before a key that shows
-in the minimized interface what the normal one shows. The catalog of what could be shown and the
+How the game fills the two places that describe the selected unit, and how the key makes the
+minimized interface show what the normal one shows. The catalog of what could be shown and the
 plan are in [unit-panel-catalog.md](unit-panel-catalog.md). <!-- private -->
 
 **Two panel objects, two layout files each.** The selection panel (`uiunitselection.xml`, or
@@ -3709,6 +3709,41 @@ a stock one. Seven `currentUnit…` names point to a stub that always fails (`At
 `MinAttackRange`, `BuildRate`, `GatherRate`, `AttackList`, `AttackString`, `GatherRateString`),
 and `currentUnitMaxVelocity` reads the proto's base speed `[proto+80h]`, not the live one the stat
 panel shows.
+
+**The key.** Four writes, each checked against the stock bytes first:
+- **The tail of the selection panel fill** (0x4C8281, 10 bytes, `AddUnitPanelTail` in `unitpanel.*`): both
+  interfaces pass there, the minimized one after its own block, which jumps back to it. The hook passes the panel
+  `[esp+50h]`, the selection `[esp+78h]`, its first unit `[esp+54h]` and the byte `[esp+5Eh]`, the profile option
+  the block was chosen by, then re-executes `mov esi,[esp+50h] / mov edi,[esi+308h]` and goes on at 0x4C828B.
+- **The stat panel fill's gate** (0x4D725C, 11 bytes): `cmp byte [esp+63h],1 / je 4D81A1h` returns with the option
+  on; the hook returns too, unless the DLL set `g_uhcMinUiForceFill`, and then goes on to the rows at 0x4D7267.
+- **The resists gate** of the minimized block: the `jne 698E7Ah` after the `Unit` type test (0x698BF6, 6 bytes) is
+  NOPed, so the armor test alone decides.
+- **The data refs** (`AddDataRef` in `datarefs.*`): the parser constructor's call of the registration (0x5D3229) goes
+  to a hook that calls it, then appends one entry per `{uhc...}` name through the table's own grow (0x5ACE63), with
+  the next id, type 3 and the DLL's provider.
+
+**The rows.** At the tail the DLL finds its gadgets by name in the panel (0xAB7C2F), once per panel; a layout
+without them gets nothing. Each `<row>` of the data file is one gadget: its item's text, or the gadget hidden
+through the manager's hide (0x448F13) when the item does not apply. The texts are set through the gadget's vtable
+(+80h text, +54h refresh) only when they change, at most every 250 ms unless the selection changed.
+
+**The normal interface's rows.** The fill (FUN_004D70ED, `thiscall(panel, selection)`) reads nothing of its panel
+but the 18 row handles. The DLL calls it with a panel of its own whose rows all name the first two gadgets of the
+`bigPanelRows` block, after giving those two gadget objects a copy of their vtable whose +84h (style), +80h (text),
++54h and +58h record instead of drawing. So the fill writes its rows as the normal interface would, one after the
+other, into a list: label style, label, value, and the help text the fill leaves in the label's `+68h`. The real
+vtables and help texts are put back, and the rows are written into the block's gadgets, in order, less the kinds
+the data file skips. A row's kind comes from its label: the localized `Hitpoints:` (24320), `Speed:` (24323),
+`Resists:` (35758) and `Gatherers:` (34986), the literal `Group Health`, the attack style 0xCF05A4, a value ending
+in `/s` (a rate) and a `(32)` icon in the label (a resource held); the first row is the name, and the rows after the
+last attack are special attacks. `auto` skips what the minimized block wrote itself: the owner, hit points, resists,
+the resource, the rate, the special attacks and its first attack rows (three, two with a resource row).
+
+**Coexistence.** The key's sites do not touch the AutoGather row block (0x6991BF..0x699456), where another DLL may
+redirect the rate's call and NOP its gate, nor the unit panel row hook at 0x699456. The minimized interface can be
+forced by patching the screen's copy of the option (0x761BF0) and the file choices, without the two profile reads at
+0x4C8235 and 0x4D721B: the tail then sees the byte off, and the rows of the stat panel fill go to the block in full.
 
 ### buildingWorkRateAuras
 

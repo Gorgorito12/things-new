@@ -20,4 +20,11 @@ bool AddUnitPanelRow(UnitPanelRow row);
 using UnitPanelGroupRow = bool(__stdcall*)(const char* panel, const char* selection);
 void SetUnitPanelGroupRow(UnitPanelGroupRow row);
 
+// A second shared hook, at the tail of the selection panel fill FUN_004C7E52 (0x4C8281), reached in both
+// interfaces, after the minimized block when it ran. `panel` = the selection panel, `selection` = the selection
+// group (count [+14h]), `unit` = its first unit (may be null), `minimizedBlock` = the minimized block ran
+// (profile option 49h). The observers run in the order added.
+using UnitPanelTail = void(__stdcall*)(char* panel, const char* selection, const char* unit, bool minimizedBlock);
+bool AddUnitPanelTail(UnitPanelTail tail);
+
 }  // namespace uhc

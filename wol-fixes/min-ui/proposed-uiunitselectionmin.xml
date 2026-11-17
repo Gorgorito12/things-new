@@ -33,7 +33,6 @@
       <gadget name="unitselectionpanel-uhcRow0" type="formatText" size1024="507 688 580 702" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcRow1" type="formatText" size1024="583 688 640 702" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcRow2" type="formatText" size1024="640 688 700 702" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
-      <gadget name="unitselectionpanel-uhcArmor" type="formatText" size1024="583 700 672 714" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcRow3" type="formatText" size1024="583 731 672 747" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcRow4" type="formatText" size1024="583 747 672 763" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
     </gadget>

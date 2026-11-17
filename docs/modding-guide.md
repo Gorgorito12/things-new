@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Tuesday 2026-11-17 08:08 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
 | Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
 | Friday 2026-11-13 13:06 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Friday 2026-11-13 11:50 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -6870,6 +6871,7 @@ What the panels and the fog of war show.
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
+| [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 
 #### nativePreview
@@ -7181,6 +7183,112 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
   With `overhealHitpointBars segment` and `steadyHitpointBars` on too: a Highlander marked for the test at 180/150 had
   its orange segment, the sheep beside it its food bar (both through the shared hooks). `inventoryBars other=XYZ`:
   logged, not applied.
+
+#### minUIStats
+
+*The minimized interface shows what the big one shows, and more: buildings' armor, speed, LOS, garrison and every attack, in rows a data file lists.*
+
+**Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 08:08
+
+![minUIStats in WoL](media/minUIStats-wol.gif)
+
+*In WoL, with `minUIStats` and the layout of `wol-fixes/min-ui` (Ethiopians, Menelik II selected, minimized interface):* Train
+Points, LOS and live Speed in their own rows, and the hero's 4th and 5th attacks, `Sharpshooter ATK` and `Crack Shot ATK`,
+which the minimized interface had no room for. [Full video (MP4)](media/minUIStats-wol.mp4).
+
+![minUIStats in WoL, key off](media/minUIStats-wol-control.gif)
+
+*In WoL, key off (the same scene and layout):* the stock rows only: three attacks, no LOS, no speed.
+[Full video (MP4)](media/minUIStats-wol-control.mp4).
+
+![minUIStats on a building in WoL](media/minUIStats-building-wol.gif)
+
+*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` in the stock spot, `Garrison: 0 / 20` and LOS.
+[Full video (MP4)](media/minUIStats-building-wol.mp4).
+
+![minUIStats on a building in WoL, key off](media/minUIStats-building-wol-control.gif)
+
+*In WoL, key off (the same scene):* no armor, no garrison. [Full video (MP4)](media/minUIStats-building-wol-control.mp4).
+
+```
+minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of wol-fixes/min-ui
+```
+
+- **In WoL today (WoL #67):** with `optionminimizedui` the exe never fills the stat panel. The selection panel writes a
+  shorter list itself: owner, hit points, armor, the resource held, the AutoGather rate and at most three attack rows. It
+  has no speed, gatherers or group health row, drops the 4th attack on, and shows armor only for protos of type `Unit`,
+  so never for a building. WoL's own texts (`{currentUnitLOS}`, `Speed: {currentUnitMaxVelocityFloat}`, ...) are nested
+  in gadgets the exe shows or hides: the speed sits in the armor value and disappears with it. The details and the
+  catalog of what more could be shown are in [unit-panel-catalog.md](unit-panel-catalog.md).
+- **Effect:** in the minimized interface, with a layout that has the gadgets:
+  - the rows of the data file (below), each a top-level `formatText` gadget the DLL fills for the selected unit, and
+    hides when its item does not apply (no garrison, speed 0, a type filter);
+  - `bigPanelRows`: the rows the big interface's stat panel shows for the selection, as the exe writes them, less the
+    ones the minimized panel already shows: the 4th attack on, `Gatherers`, `Group Health`. Each row is one line,
+    label and value, with the label's colour and the big panel's tooltip;
+  - building armor: the stock `Resists` gadgets show any proto with an armor above 0, not only type `Unit`;
+  - nine data refs for any `formatText`: `{uhcHitpoints}`, `{uhcSpeed}` (live), `{uhcBaseSpeed}`, `{uhcLOS}`,
+    `{uhcArmor}` (with its icon), `{uhcArmorValue}`, `{uhcGarrison}`, `{uhcTrainPoints}`, `{uhcBuildPoints}`, for the
+    data refs' current unit, as `{currentUnitLOS}`.
+- **The data file** `minuirows.xml` (a commented copy in `wol-fixes/min-ui`):
+
+  ```xml
+  <minUIRows>
+    <row gadget="unitselectionpanel-uhcTrainPoints" item="trainPoints" label="Train Points: " types="Unit"/>
+    <row gadget="unitselectionpanel-uhcRow0" item="los" label="LOS: "/>
+    <row gadget="unitselectionpanel-uhcRow1" item="garrison" label="Garrison: "/>
+    <row gadget="unitselectionpanel-uhcRow2" item="speed" label="Speed: "/>
+    <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
+  </minUIRows>
+  ```
+
+  - `<row>`: `gadget`, `item` (`hitpoints`, `speed`, `baseSpeed`, `los`, `armor`, `armorValue`, `garrison`,
+    `trainPoints`, `buildPoints`), `label` (text, markup allowed) or `labelId` (a string ID), and `types` (unit types or
+    protos, comma-separated; none: every unit).
+  - `<bigPanelRows>`: `gadget` with `%d`, `first`, the number of consecutive gadgets found (at least two; `count` caps
+    it, default 16), and `skip`: `auto` (what the minimized panel shows itself), `name`, `hitpoints`, `groupHealth`,
+    `resource`, `gatherers`, `rate`, `speed`, `resists`, `attacks`, `shownAttacks`, `special`, `other`.
+- **WoL needs:** a `uiunitselectionmin.xml` with the gadgets. `wol-fixes/min-ui` has one made from the **stock**
+  minimized panel (`Data3.bar`) plus seven top-level gadgets, and its README; Dr.Maxy chooses the places. A layout
+  without them shows nothing new but the building armor and the data refs. The normal interface is unchanged.
+- **With WoL.dll:** tested beside it (`WoL.upl`), with `forceMinUI` and `trickleDisplay`: no shared byte. With
+  `forceMinUI` and the profile option off, the exe loads the minimized layout but skips its own block, so its rows (HP,
+  attacks) stay empty and the big panel's rows go to the two `uhcRow` gadgets only: give `bigPanelRows` more gadgets,
+  or keep the option on, as WoL's profile does.
+- **Multiplayer:** display only; every player can have it or not.
+- **Log:** `minUIStats: 4 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
+  minimized panel's resists; 9 data refs {uhc...} (UI only)`, `data refs: 9 added after the game's 116`, then
+  `hook reached: data refs registration (0x5D3229)`, `unit panel tail (0x4C8281)`, `minUIStats stat fill gate
+  (0x4D725C)`, and once per panel `minUIStats: panel ...: 4 of 4 row gadgets, 2 big panel row gadgets`.
+- **Performance:** `perfprobe.py`, 60 s each, Menelik II selected, another game running beside it: 716 fps, main thread
+  87.1 %, update 0.1 ms, render 1.2 ms, against 687 fps, 87.8 %, 0.2 ms, 1.3 ms key off: noise. With 100 samples a
+  second, `UHC.dll` was 0.0 % of the main thread, and the panel functions under 0.5 %. The rows are written at most
+  every 250 ms, or when the selection changes, and only when their text changed.
+- **Tested in WoL (2026-11-17, single player, minimized interface):** the table compares the rows with the big
+  interface's stat panel (the stock 9-row `uiunitstatpanel3.xml` for the comparison, as WoL's has 5 rows).
+
+  | Selection | Minimized, key on | Big interface |
+  |---|---|---|
+  | `Musketeer` | 3 attacks (stock), LOS 16, Speed 4, Train Points 30 | the same 3 attacks, Speed 4 |
+  | `Bunker` (Siege armor 0.3) | `Resists: 0.30`, Garrison 0 / 20, LOS 32, its attack | no armor row (unchanged) |
+  | `Explorer` (Menelik II) | 3 attacks + `Sharpshooter ATK`, `Crack Shot ATK`; Speed 4.50 | the same 5 attacks |
+  | `Grenadier` | 3 attacks + `Hand ATK`, `Hand ATK` | the same 5 attacks |
+  | `Dragoon` | 3 attacks + `Hand ATK`; Speed 7.25 | the same 4 attacks |
+  | `Settler` gathering berries | 3 attacks + `Chop ATK: 8` | the same 4 attacks |
+  | 4 `Musketeer`s | the first unit's rows, count 4 | the same |
+  | `BerryBush` | its stock `Food: 868` row once, no train points | — |
+  | `Caravel`, `Galleon` | Garrison 0 / 50, Speed 8.50, Resists, their attacks | — |
+
+  ![The minimized interface, key on](media/minUIStats-test-hero-min.png)
+  ![The big interface](media/minUIStats-test-hero-big.png)
+  ![A ship](media/minUIStats-test-ship-min.png)
+
+  Also: with `WoL.upl` (`forceMinUI`, `trickleDisplay`) and the option on, the same rows; with the option off,
+  ![forceMinUI with the option off](media/minUIStats-test-forcemin.png) (HP and resists in the two rows, the rest
+  in the stat panel). Key off: the stock rows only, the gadgets empty. The profile was restored after each switch.
+- **Limits:** a long attack row in the narrow `uhcRow3`/`uhcRow4` is cut at the gadget's edge (Sharpshooter's range);
+  with a group the rows describe the first unit, as the stock panel does; `shownAttacks` assumes the minimized panel
+  shows three attack rows, two with a resource row.
 
 #### playerIcon
 

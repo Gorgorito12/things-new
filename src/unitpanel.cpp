@@ -71,10 +71,25 @@ std::size_t g_rowCount = 0;
 uhc::UnitPanelGroupRow g_groupRow = nullptr;
 bool g_installed = false;
 
+uhc::UnitPanelTail g_tails[kMaxRows] = {};
+std::size_t g_tailCount = 0;
+bool g_tailInstalled = false;
+
 }  // namespace
 
 extern "C" {
-void UhcUnitPanelHook();  // hooks/unitpanelrow_hooks.asm
+void UhcUnitPanelHook();      // hooks/unitpanelrow_hooks.asm
+void UhcUnitPanelTailHook();  // hooks/unitpanelrow_hooks.asm
+
+// From the hook at 0x4C8281, the tail of the selection panel fill.
+void __stdcall UhcUnitPanelTail(char* panel, const char* selection, const char* unit, std::uint32_t minimized) {
+  if (panel == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_tailCount; ++i) {
+    g_tails[i](panel, selection, unit, (minimized & 0xFF) == 1);
+  }
+}
 
 // From the hook at 0x699456. One unit selected, as the stat panel's rows ask: with a group the panel
 // shows the first unit, and its numbers would read as the group's.
@@ -114,6 +129,22 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
 }
 
 void SetUnitPanelGroupRow(UnitPanelGroupRow row) { g_groupRow = row; }
+
+bool AddUnitPanelTail(UnitPanelTail tail) {
+  if (g_tailCount == kMaxRows) {
+    Log(L"unit panel: more than %u tail observers", static_cast<unsigned>(kMaxRows));
+    return false;
+  }
+  if (!g_tailInstalled) {
+    if (!VerifyAll("unit panel tail", {&sites::kUnitPanelTail, &sites::kUnitPanelMinBlockBack}) ||
+        !WriteJmp(sites::kUnitPanelTail.va + 0x0B, reinterpret_cast<const void*>(&UhcUnitPanelTailHook), 10)) {
+      return false;
+    }
+    g_tailInstalled = true;
+  }
+  g_tails[g_tailCount++] = tail;
+  return true;
+}
 
 bool AddUnitPanelRow(UnitPanelRow row) {
   if (g_rowCount == kMaxRows) {
