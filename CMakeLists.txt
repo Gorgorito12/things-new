@@ -27,6 +27,7 @@ set(UHC_SOURCES
   src/deathobservers.cpp
   src/killobservers.cpp
   src/unitpanel.cpp
+  src/datarefs.cpp
   src/unitmodels.cpp
   src/actiontags.cpp
   src/modifytypes.cpp
@@ -63,6 +64,7 @@ set(UHC_SOURCES
   src/features/datalint.cpp
   src/features/displayrange.cpp
   src/features/linkedresource.cpp
+  src/features/minuistats.cpp
   src/features/xslog.cpp
   src/features/civs.cpp
   src/features/ageupbuildings.cpp
@@ -233,6 +235,8 @@ set(UHC_SOURCES
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
+  src/hooks/datarefs_hooks.asm
+  src/hooks/minuistats_hooks.asm
   src/version.rc
 )
 # UHC.dll is the DLL the loader runs. dinput8.dll is the same code for a game whose loader runs another
