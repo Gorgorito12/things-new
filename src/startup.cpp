@@ -73,6 +73,12 @@ void ApplyFeatures(const std::wstring& path) {
       Log(L"%hs: not implemented yet; ignored", key.c_str());
     }
   }
+#ifndef UHC_ENGINE_EXT
+  // Read by dinput8.dll in its DllMain (engineext.cpp); the loader's UHC.dll runs too late for it.
+  if (config.Has("preloaddll")) {
+    Log(L"preloadDll: only dinput8.dll reads it, from engine-ext.cfg; ignored");
+  }
+#endif
   Log(L"UHCMain: %d applied, %d failed", applied, failed);
 }
 

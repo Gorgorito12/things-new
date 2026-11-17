@@ -65,6 +65,17 @@ feature loop as `UHC.dll`, and then to the game's entry point. All its files are
 Coming second is what keeps the two apart: `VerifyAll` sees the other DLL's patches, so a key that needs one of those sites
 logs `FAILED` and writes nothing.
 
+**`preloadDll`.** A mod may load a DLL of its own through its own `dinput8.dll` proxy, which cannot sit beside this one.
+After moving the `jmp`, `DllMain` reads `engine-ext\engine-ext.cfg` with the cfg parser and, for each file name of
+`preloadDll`, calls `LoadLibraryW` on `<exe folder>\<name>`: the moment such a proxy loads it, before the boot stub. That
+call runs under the loader lock, like the proxy's: the loaded DLL's `DllMain` must not wait for another thread. Paths,
+`dinput8.dll` and `UHC.dll` are refused. The results are kept in memory and written to the log by `EngineExtMain`, once
+the lock is released. So the order is: the preloaded DLL, the stub's `UHCMain`, `EngineExtMain`, the game; our keys,
+coming last, verify the preloaded DLL's patches like the other DLL's.
+<!-- private:begin -->
+Tested with WoL's `WoL.dll` v1.33 (`wol-uhc-map.md`, "WoL.dll v1.33 with its real load order").
+<!-- private:end -->
+
 ## 2. Verify, then patch
 
 Every byte the DLL writes is checked first:

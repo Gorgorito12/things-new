@@ -137,3 +137,81 @@ and the WoL.dll binary you ship? We built your source ourselves for the test
 exact file players get.
 
 Thank you again for the source. Happy to help with any of the above.
+
+
+8. Update 2026-11-17: WoL.dll v1.33 with your real loader
+---------------------------------------------------------
+
+Thank you for WOL_DLL.md and the binary. Sections 1 to 6 above are about the v1.22x
+source. This section is about the binary you ship now:
+
+    WoL.dll, 167,424 bytes, MD5 4B1A2B2C7E1EAEB7D13D3737394690E4
+    (the MD5 of row 1.33 of your history; its banner says "v1.31 UIHUD-Diagnose")
+
+It has no forceMinUI and no hcGatherPointByCommand, so sections 1 and 2 do not apply to
+it. We did not receive your dinput8.dll; for the tests we used a stand-in that does what
+WOL_DLL.md describes (DllMain loads <exe folder>\WoL.dll, DirectInput8Create goes to the
+system DLL). It is not shipped anywhere.
+
+Load order. Your proxy loads WoL.dll while Windows resolves the exe's imports, so
+WoL.dll patches first, then the exe's boot stub loads uhc.dll, then the game starts. Our
+earlier test loaded your DLL later (as WoL.upl), so we repeated it in this order.
+
+The name clash and the fix. Our DLL can also run beside your uhc.dll as a dinput8.dll
+(with its files in an engine-ext folder). A folder holds only one dinput8.dll, so ours
+and your proxy cannot both be there. Our dinput8.dll now has a line for its own
+engine-ext\engine-ext.cfg:
+
+    preloadDll WoL.dll
+
+It loads WoL.dll from the game folder in its DllMain, the same moment as your proxy,
+so the order stays: WoL.dll, uhc.dll, then our keys. With it, your proxy is not
+needed in that setup. Like your proxy, it calls LoadLibrary while Windows holds the
+loader lock; that is fine for WoL.dll, whose DllMain only reads files, patches and
+starts threads without waiting for them. Please keep it that way.
+
+What WoL.dll v1.33 writes (read from the binary and confirmed in the running game):
+
+    0x85E735  5 B  hcRevolutionLog        0x7A30DE  7 B  banTechUI (skirmish screen)
+    0x7FBE06  5 B  hcRevolutionDeck       0x7A3393 11 B  civDup (AI civ picker)
+    0x7F8114  8 B  hcRevolutionDeck       0x7758B8  2 B  civDup MP (je -> nop nop)
+    0x62E027  8 B  hcRevolutionDeck       0x4804D1  6 B  banTech
+    0x69920E  4 B  trickleDisplay         0x480476  9 B  banTech
+    0x699227  6 B  trickleDisplay         0x4C5D86  8 B  banTech
+    0x59B607  5 B  uihudDiag              caves and cells 0xC65200..0xC65FFF
+
+None of these bytes is a byte our DLL writes or checks, and none is a byte your
+uhc.dll writes. Two are next to ours with no shared byte: 0x699227..0x69922C (we
+check from 0x69922D) and 0x7F8114 (we check up to 0x7F8113).
+
+Results (single player, a WoL copy, all your keys on: trickleDisplay, ageIcons,
+hcRevolutionLog, hcRevolutionHomecity, hcRevolutionDeck, uihudDiag, civDup, civDupMP,
+AICivs 1, banTech GreatWarButton, banTechUI):
+
+  a) our UHC.dll + your proxy + WoL.dll, with every key of ours too: 118 applied,
+     0 failed. All your hooks reported active. A revolution (XPRevolutionWashington,
+     Uzbeks) went through your handler, your home city load (Stage2 ->
+     homecityRevolutionWashington.xml) and POSTREV; the settlers became militia.
+     banTech returned NULL for GreatWarButton (TB-LOOKUP BAN lines) while our tech
+     hooks ran. A Factory in the minimized panel showed your trickle row (Coin 9/s)
+     beside our rows (media/coexist-uhcdll-wolproxy-minui-trickle.jpg).
+  b) your uhc.dll + our dinput8.dll with "preloadDll WoL.dll": WoL.dll loaded first
+     and all your hooks reported active. Our keys failed only where your uhc.dll
+     patches the same place, the same list as without WoL.dll
+     (media/coexist-woluhc-dinput8-preload-minui-trickle.jpg).
+  In both, the AI played a 3-minute skirmish normally, and wol_hc.log had no error.
+
+Things we noticed in v1.33 (nothing needs an answer):
+  - The "uihud: Lade ..." lines print each file name scrambled, letters doubled
+    (for example "wllrrjjcciieett..."), so the log does not say which file loaded.
+  - ageIcons logs AUS: the cells 0xF221C0 / 0xF22B80 are not mapped in this exe (no
+    .cave section is mapped at run time, as your row 1.31 found).
+  - banTechMP waits 2 minutes for a "Bang.dll", which never loads, then logs AUS.
+  - The deck scanner ran after the revolution, 60 passes; it logged candidates and
+    wrote nothing in our runs.
+  - WOL_DLL.md row 1.33 names the keys AICivs / AICivsV2, but the string AICivs is
+    not in this file. We did not find which line turns the 0x7758B8 patch on.
+
+Not tested: the AI civ picker (our scripted skirmish never let an AI pick a civ), the
+RemoveTechs checkbox (our copy's skirmish screen has no such gadget), multiplayer,
+saved games and ageIcons.
