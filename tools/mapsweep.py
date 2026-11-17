@@ -246,8 +246,13 @@ def size(path):
     return path.stat().st_size if path.exists() else 0
 
 
-def unit_counts(bed):
+def unit_counts(bed, keep=None):
+    """The units per player; `keep`, a path: the full `testbed.py units` list is saved there too
+    (tools/mapfacts.py --check compares it with what the map script places)."""
     rc, out = testbed(bed, "units", timeout=60)
+    if keep:
+        keep.parent.mkdir(parents=True, exist_ok=True)
+        keep.write_text(out + "\n", encoding="utf-8")
     counts = {}
     for line in out.splitlines():
         m = re.match(r"\s*\d+\s+player (-?\d+)", line)
@@ -295,7 +300,7 @@ def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
         if trig.exists():
             (evidence / "runs").mkdir(parents=True, exist_ok=True)
             shutil.copy2(trig, evidence / "runs" / f"{tag}.trigtemp.xs")
-        row["units"] = unit_counts(bed)
+        row["units"] = unit_counts(bed, evidence / "units" / f"{tag}.txt")
         rc, out = testbed(bed, "wait", str(seconds), "--hang", "60", timeout=int(seconds * 10 + 200))
         step = "wait"
     alive = T.bed_pid() == pid

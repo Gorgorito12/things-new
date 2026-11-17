@@ -26,6 +26,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
+| [`mapfacts.py`](#mapfactspy) | Reads every random map script of a copy (read only) and writes a table of its facts for the map descriptions: trade route, natives, hunt, herd, mines, berries, fish, whales, outlaws, region, King of the Hill; `--check` compares them with the units `mapsweep.py` saw. |
 | `campaigncheck.py` | `<game folder> [--campaign <xml>] [--scn <file>] [--all]`, read-only: checks a campaign definition and its scenarios against the folder's data (civ table, players' civs, placed protos, saved names, trigger parameters); `--inventory --scn <file>` (or `--units`) lists instead each player's civ, flag, culture, home city, placed units and trigger units (editor and in-game IDs), what the triggers give it, the objectives and the trigger texts; see its docstring and [docs/wol-campaign.md](../docs/wol-campaign.md). |
 | `scnfix.py` | `<in.age3Yscn> <out.age3Yscn> OLD=NEW … [proto:OLD=NEW …] [--data=<game folder> player:NAME=CIV …] [unit:ID=PROTO …] [units:PLAYER:OLD=NEW …] [trigger[PARAM]:OLD=NEW …] [tech:OLD=NEW …] [name:OLD=NEW …] [homecity:PLAYER=FILE …] [text:OLD=NEW …] [@FILE]`: writes a copy of a scenario with civ-table names, saved proto names, player civs, placed units' protos (one, or all of a proto for one player), trigger parameters, player names, home city files or texts (objectives, scenario description, chat, overlays, unit names; any length, the enclosing chunks follow) changed, and its CRC; `@FILE` reads edits one per line; never writes the input. |
 | `ai_personality.py` | Leaves one AI personality in a test copy, so a skirmish's AI has that civ. |
@@ -327,7 +328,8 @@ EIP, module, call chain), `hang` (window not responding, or the world clock stil
 `xs-error` (new `xsErrorLog` lines in the log), `timeout` or `launch-failed`, plus the units per
 player, the last log lines of the run and of `Age3Log.txt`. A row already in the CSV is skipped,
 so a stopped sweep starts again where it was. Per run it keeps the testbed output and both logs in
-`<evidence>/runs/`, a quarter-size shot in `<evidence>/shots/`, and the crash reports of
+`<evidence>/runs/`, the full unit list as the map starts (`testbed.py units`) in `<evidence>/units/`
+(the input of `mapfacts.py --check`), a quarter-size shot in `<evidence>/shots/`, and the crash reports of
 `re/debugger.py crash` (attached to every game it starts) in `<evidence>/crash-*.jsonl`. Without
 the crash watch (`--no-debugger`), a crash's code and offset come from the Windows Application log
 (event 1000, "Application Error"; EIP = offset + 0x400000 for age3y.exe).
@@ -341,6 +343,48 @@ scenario names (`uhc-<map>`) differ because each map belongs to one shard. The s
 edits the shared profile, so it runs alone: it backs up the profile, the home cities and the AI
 memory files and restores them byte for byte at the end, and leaves `--ai` personalities in the
 copy (`ai_personality.py`, restored at the end).
+
+## mapfacts.py
+
+```
+python -I tools/mapfacts.py <copy> [--out DIR] [--maps A,B] [--check UNITS_DIR]
+```
+
+Reads each map script of the copy's map folder (`RM4` in WoL) without its comments and writes
+`DIR/mapfacts.csv` and `DIR/mapfacts.json`: one row per map with an `.xml`. It never writes into the
+copy. How it reads a script:
+
+- **Values.** Every assignment, every argument of a call to one of the script's functions and every
+  `xsArraySetString` gives a variable its possible values, whatever the branch; strings are evaluated
+  through `+` and `rmRandInt` (ranges up to 40). A value picked at random or in an if/else shows as
+  "(varies)"; one it cannot resolve goes to `unresolved`. Calls in functions that `main` never reaches
+  are left out. Include libraries are not read.
+- **Resources.** `rmAddObjectDefItem`'s proto, by its `UnitType`s in `protoy.xml`: `Huntable`,
+  `Herdable`, `AbstractMine`, `AbstractFruit` (berries), `AbstractFish`, `AbstractWhale`; English and
+  Spanish names from the string tables.
+- **Natives.** The sockets in the grouping files the map uses (`RM4\groupings`; `natives_source`
+  `groupings`), named by `civs.xml`; WoL's African trade sites (units `AUR<resource>`) count too.
+  Without such a grouping, the civs of `rmSetSubCiv` (`natives_source` says when the map's grouping
+  files are missing, so no village appears). `natives_varies` when the villages depend on a random
+  pick or an if/else (`natives_slots` lists the `rmSetSubCiv` slots). Resources and villages placed
+  inside an if/else count as "(varies)"; a definition never placed counts as nothing
+  (`defined_not_placed`), and grouping files that do not exist are listed (`missing_groupings`).
+- **Trade route.** `rmCreateTradeRoute` and `rmBuildTradeRoute`, with the conditions around the build;
+  "(water)" when the route type is a water one.
+- **Outlaws.** The `data\mapspecifictechs.xml` block the game uses: the first block, in file order, whose
+  name is one of the map's types (`rmSetMapType`, valid in `maptypes.xml`) or `default`; names compare
+  without case. A block named after a map file is never used (`dead_block_for_file`). Verified with
+  REA and in game: [wol-maps.md, "Outlaws"](../docs/wol-maps.md#outlaws-which-mapspecifictechs-block-a-map-gets).
+- **Region.** The six continent sets (`*random.set`), then the hand-checked `REGION_OVERRIDES` (115
+  maps; `region_note` says why), then the `imagepath` folder.
+- **King of the Hill.** `rmGetIsKOTH` with `ypKingsHillPlacer` or a `ypKingsHill` object.
+- **Current texts.** The map's display name and lobby and loading texts (English), where they come from
+  (ID or literal), and misspelt attribute names.
+
+`--check UNITS_DIR` reads the unit lists that `mapsweep.py` keeps (`<map>-p<N>-s<S>-*.txt`) and adds the
+`seen_*` columns and `check`, the mismatches per map: a resource seen that the script does not place, a
+fixed one never seen, a trade route or natives seen against the script. A run per seed is a sample:
+a mismatch is a lead to read the script, not a verdict.
 
 ## re/debugger.py crash
 
