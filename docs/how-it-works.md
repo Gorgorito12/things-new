@@ -3792,13 +3792,78 @@ A `text=` row is a template: each `|`-separated part is shown only when every `{
   kept for its row. The game's own auras (`GatherRate`, `Damage`...) are not told apart: their effect is already in
   the values the panel shows.
 
+**Mixed groups: the stack portraits (2026-11-17).** A selection of several unit types shows one portrait per type
+in the panel's top band. The selection fill places them itself, each time, before the minimized block and the panel
+tail:
+it hides every button, then gives the current type the big portrait `unitStackButtonBig0` and each other type, up to
+nine types in all, the small button of its index, lists their handles at `[panel+2CCh]` (count `+2D0h`), and the layout
+0x4C8F49 centres that list in `buttonArea`, 2 px apart, shows each one and puts the big background around the current
+one (`[panel+36Ch]`, its index in the list). A tenth type gets no portrait (no paging, no "+"). Seen at 1920 x 1080
+with the proposed minimized layout: one type puts the big portrait at 885..945 px, five types span
+791..1039, nine types 697..1133.
+
+The key's rows `uhcCostPop` (512..703 × 638..652 in layout units, 645.. px), `uhcRow1` (512..703 × 652..666) and
+`uhcTrainPoints` (344..410 × 652..668) share that band. At the panel tail, which runs after the layout, the key reads
+the placed buttons from the list, their rectangles from the gadgets (`[+30h]`, `[+34h]`, `[+40h]`, `[+44h]`, client
+pixels), the big background's when `[panel+36Ch]` is in the list, and its own gadgets' rectangles the same way. The
+buttons are found with the any-type lookup 0x404296 (and released by 0x40431B), as the layout does: the text-gadget
+lookup 0x44900A the key uses for its own rows asks for type mask 10h and finds no button. A row (or a `bigPanelRows`
+gadget) with any pixel under a portrait is hidden for that fill; a `bigPanelRows` gadget is skipped and its row goes to
+the next one. The fill is redone when the stack count or the current stack changes, as when the unit does, so the rows
+come back as soon as the portraits leave room. In game: one type changes nothing; from two types on Cost/Pop and
+ROF/Range give way; at 9, 10 and 12 types Train Points too (from the spacing seen, 47 px a small portrait, it gives way
+from six types on; 6 to 8 types were not filmed); a click on a portrait makes it the current type, and the rows (Regen, the attack rows) follow it.
+
+The same rule, data-driven: `<avoid gadget="..."/>` names a stock gadget; while it is shown (flags `[gadget+0A4h]`
+bits 0 and 1 set, bit 7 clear, the base show's own test) and covers more than half of a row's height (stock text
+gadgets are padded and overlap by a few pixels), that row gives way too. The default data file avoids
+`unitResourceValue` and `unitResourceRateLabel`, the resource held and the AutoGather rate, which share their line with
+`uhcRow5`. `overlap="show"` on a `<row>` or `<bigPanelRows>` opts out. Checked in game with a test file that avoids
+`unitHitPointsLabel` (always shown): `uhcRow0` (LOS, Speed), under it, was hidden, and `uhcRow5` stayed shown for a unit
+that holds no resource.
+
+Why hide rather than move the row's text elsewhere: the default layout has no free row in a mixed group (the
+rectangles of the stock panel already overlap each other; nothing in the band is free once the portraits spread),
+the portraits are what a mixed group needs (one click selects a type), and what the hidden rows say is either in the
+attack rows (each range) or comes back on a one-type selection. A layout that wants a row kept can move it out of the
+band or mark it `overlap="show"`.
+
+**More attacks than rows (2026-11-17).** The stat panel fill writes at most 9 rows (0x4D7957, `cmp ebx,9`): the name,
+hit points, the optional rows (speed, resists, ...), then one per listed action until the 9th. Menelik II (an
+explorer of the mod tested) lists 8 actions; the fill wrote 5 (rows 4..8), and the big interface shows those 5. When the
+fill reached its 9th row and the attack list (0x487EEE, the same call and list as the fill) has more actions than it
+wrote, the key writes the rest in the fill's own format: the name from the action's string ID, the damage with the
+same factors (contained-unit scale with flag 12h, the modifier record's +8 and +14h or +10h), the damage type's icon,
+and the range with its icon when flag 0Ah is set (engine-symbols.md, "Stat panel fill: attack row"). Compared in game
+row by row with what the fill wrote for the same 5 attacks: the same text, less the bonus multipliers (`, 3x <icon>`),
+which the added rows leave out (the ability attacks that land there in the test, Sharpshooter, Crack Shot, Swashbuckler,
+Counter-Intelligence, have none). These rows join `bigPanelRows` after the fill's last attack. When there are more rows
+than gadgets, the last free gadget gets the rest in short form: each attack's name and damage, as many as fit one line
+(about 0.24 × the gadget's height per character; a formatText wraps a longer text and centres it vertically, which shows
+its middle line), then `+N`; its help text lists them all. With the proposed layout (3 stock attack rows,
+`uhcRow3`, `uhcRow4` and `uhcRow5`): Menelik II shows Ranged, Siege, Hand (stock), Sharpshooter and Crack Shot (the
+fill's) and `Anti-artillery Crackshot Attack 0 +2` (Swashbuckler 100 and Counter-Intelligence 6000 in its help text).
+
+**The layout's rectangles.** The proposed layout keeps `uhcRow3` and `uhcRow4` where
+batch 1 put them (583..703 × 731..763) and adds `uhcRow5` at 583..703 × 715..731, the right part of the first attack
+line, filled last. No rectangle of the panel is free of every shown stock rectangle: the stock ones overlap each other
+(the HP label 410..578 × 680..734 runs into the first attack row, the resource and rate rows lie on it, the type and
+player names cover 650..714 from 348 to 700), and every row of the key overlaps one: `uhcRow0` the HP and player name
+rectangles, `uhcRow1`/`uhcCostPop` the player name, `uhcRow3`/`uhcRow4` the stock attack rows `StackLabel1`/`2`. They
+coexist because the stock attack rows are left-aligned and short: the longest seen, a Grognard's `Grenade ATK: 22 2
+12, 1.3x, 0.8x`, ends at about 570 (layout units), before 583. `uhcRow5` overlaps `StackLabel0` the same way, and the
+resource value and rate rows, which can show at x 583 on that line: those two are `<avoid>`ed, so `uhcRow5` stays empty
+while either shows. Every overlap was listed with a script over the file's rectangles (the stack buttons left out: the
+game moves them).
+
 #### Coexistence
 
 The key writes five places (above) and adds no hook site in batch 3: the build, regeneration and aura items are
 reads made from the panel tail (`AddUnitPanelTail`, 0x4C8281) and the data ref providers (`AddDataRef`), on the
 game's thread, while the panel is filled. No pointer is kept from one fill to the next: a unit is found again from
 its ID (the world's table, as the engine does), its action from `[[unit+58h]+24h]`, its site from the action's target
-ID. No simulation state is written.
+ID. No simulation state is written. The stack portrait rule (2026-11-17) adds no write either: it reads the panel
+from the same tail, after the fill placed the portraits.
 
 **What batch 3 reads and who else is there.** Each stock range the items mirror is a verify-only site
 (`tools/gen_sites.py`), checked apart from the key's own sites: a mismatch turns off those items, logged, not the key.
@@ -3813,6 +3878,9 @@ ID. No simulation state is written.
 | `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking` (`AuraClaim`) decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
 | `unitResourceAuras`' aura states | `AuraClaim` (asked before each take) | — | The update writes its takes after the claim; the panel only reads the map. The aura update and `AuraClaim` are never called from the panel |
 | Data refs `uhcBuildTime`, `uhcBuildProgress`, `uhcBuildRate`, `uhcRegen`, `uhcAuras` | `AddDataRef` has no other user | — | Appended after the 116 stock names, none of which starts with `uhc`; the five are new in the key's own list |
+| Stack portraits (2026-11-17): the fill's head 0x4C9458..0x4C9481, its Big0 choice 0x4C9587..0x4C95C7, the list append 0x4C979A..0x4C97B4, the layout call 0x4C7DB3..0x4C7DC0 and the layout 0x4C8F49..0x4C91EB (`StackFillReset`, `StackFillCurrent`, `StackFillAppend`, `StackLayoutCall`, `StackLayout`); the any-type gadget lookup 0x404296 (`GadgetLookupAny`, called, not hooked) | none of our sites is in these ranges; the shared tail hook 0x4C8281 (`AddUnitPanelTail`) and `overhealHitpointBars`' 0x4C83DF come after the layout in the same fill and only read | none: the other DLL's runtime patch list (287 ranges) and a second DLL's patches (0x761BF0, 0x661E15, 0x9AC7E8, 0x9B6655, 0x69920E..0x69922C) have no byte there | Read only, at the tail of the same fill that placed the buttons: the list `[panel+2CCh]`, `[panel+36Ch]`, `[panel+324h]` and the gadgets' rectangles and flags. Nothing is moved, shown or hidden but the key's own gadgets. A mismatch turns off only the portrait rule (logged); `<avoid>` keeps working |
+| `<avoid>` of `unitResourceValue` and `unitResourceRateLabel` (the default data file) | `AddUnitPanelRow` (0x699456): `showGatherRate`, `lifespan`, the overheal stat row, `researchGrants`, `veterancyBonus`, `unitResourceAuras` write the rate gadget pair | a trickle display patch can show the stock rate for an inactive AutoGather action too | The shown flag is read at the panel tail, after the minimized block and its 0x699456 hook ran, so whichever key (or other DLL) showed the row, `uhcRow5` stays empty and the rows end at `uhcRow4`, as before `uhcRow5` existed |
+| Attacks past the fill's 9th row: the row cap 0x4D7944..0x4D795F, the attack row's name, damage, type icon and range code 0x4D7A2E..0x4D7AA1, 0x4D7AC8..0x4D7C56, 0x4D7D2A..0x4D7DA1, 0x4D8265..0x4D82B3, cold 0x69B617..0x69B696, 0x69FDDC..0x69FDF7, 0x69FE1F..0x69FE37, the raw name 0x5F8FC3 and the range entry 0x4946D6 (`StatFillRowCap`, `AttackRow*`, `ActionRawName`, `ActionRangeEntry`, verify only) | keys that add a row to the big panel before the attacks (`showGatherRate` at 0x4D7834; with them on, the fill has fewer of its 9 rows for attacks, and the added attack rows make up for it); no key writes in these ranges (`tools/gen_sites.py`, every range checked) | none in these ranges (same lists as above) | Read only: the attack list is filled by the stock 0x487EEE into the fill's own static list 0xCF05B0 right after the fill used it, on the same thread; the factors are read from the unit's modifier record as the fill reads them. A mismatch turns off only the added rows (logged) |
 
 **Found with every key on** (the cfg template's 124 keys, one scene): `decimalPopulation` stores population
 quantities times K, `[proto+0D8h]` included, so the `population` item showed `Pop: 10` for a settler; it now divides by
