@@ -15,13 +15,20 @@ icons below need a change (README.txt, "The original gadgets", lists each one an
 The new layout, following your point and JTMaston's:
 - The top band holds only the portraits of the selection, centred as in your file. Nothing of ours is in
   it (JTMaston: "the upper section should be kept as originally intended for the group icons").
-- Mirrored around the panel's centre: over the portrait, the cost (resource icons and amounts, no "Cost"
-  word) and the population (a house); right of the player's name, the train time (an hourglass) and the
-  garrison. The unit's name and the player's name get the same width either side of the centre, each
-  with one row centred under it: what the unit is doing (Done in, Builds, Regen, Overheal, Poison, Aura)
-  and its line of sight (an eye) and speed (a boot).
+- Mirrored around the panel's centre, two blocks of two lines on the same baselines: over the portrait,
+  the cost (resource icons and amounts, no "Cost" word) and the population (a house); right of the
+  player's name, line of sight (an eye) and speed (a winged boot), then the train time (an hourglass) and
+  the garrison (the game's garrison door). The unit's name and the player's name get the same width
+  either side of the centre. Under the unit's name, one centred row: what the unit is doing (Done in,
+  Builds, Regen, Overheal, Poison, Aura). Under the player's name nothing, on purpose: AI and player names
+  such as "Otto Von Bismarck (Germans)" take two lines there (seen in game).
 - The stats keep your panel's two columns (x 410 and x 583): hit points as a heart and the value,
-  resists as a shield and the value, then the attack rows, the 4th on next to the first three.
+  resists as a shield and the value, then the attack rows, the 4th on next to the first three. A row too
+  long for its column never runs under another: the right-column row on its line stays empty, or a long
+  right-column row shows its name and damage with the whole row in its tooltip (Spanish names, "Anti-
+  artillery Crackshot Attack").
+- Without the key the file shows your panel as it is (only the two names are narrower): our hit points and
+  resists rows are gadgets of their own over yours, and the key hides yours while ours show.
 - The health bar under the portrait, as in your file: it shows only inside the unit's name, so it stays
   there, as you have it.
 - Pictures side by side, your current panel and this one: media\minUIStats-v3-vs-wol-units.jpg,
@@ -45,11 +52,14 @@ Also from JTMaston:
   Crackshot only after HCSteelCrown. The "+2" of the first version came from those attacks; it is gone in
   the tests, and when rows still do not fit it now reads "+2 more" (the tooltip lists them).
 - Icons instead of words: hit points (a heart), resists (a shield), line of sight (an eye), speed (a
-  boot), train time (an hourglass). Each row keeps a tooltip with the word. The boot is the game's light
-  infantry icon (ui\ingame\stat_light_infantry). The spy eye is ui\ingame\stat_icon_informers in the
-  game, but your copy of that file is a dove, so the eye is ours; so are the heart, the shield, the
-  hourglass and the stopwatch (16x16, the size and format of the game's stat icons, in art\ui\ingame).
-  All icons are drawn at the size of the panel's own damage type icons.
+  winged boot), train time (an hourglass), garrison (the game's garrison cursor, ui\cursors\
+  cursor_garrison). Each row keeps a tooltip with the word. The spy eye is ui\ingame\stat_icon_informers
+  in the game, but your copy of that file is a dove, so the eye is ours; so are the heart, the shield,
+  the hourglass, the stopwatch and the winged boot (16x16, the size and format of the game's stat icons,
+  in art\ui\ingame). The boot follows the game's light infantry boot, with a small white wing ("a boot
+  with wings"); two other drawings (blue motion strokes, white speed lines) are in media\minui-icons.png:
+  the wing reads as speed at the panel's size, the strokes read as stripes. All icons are drawn at the
+  size of the panel's own damage type icons.
 - With 3 resistances (multiarmor), the resists value lists them all: "0.30 (hand)  0.20 (ranged)
   0.10 (siege)".
 
@@ -57,9 +67,10 @@ Earlier decisions (unchanged)
 -----------------------------
 1. The rows are top-level gadgets, never inside a gadget the game shows or hides, so a row never
    disappears with another one (your Speed text was inside the resists value).
-2. Building armor: shown in the original resists spot, like for units. With your own uhc.dll (its
-   multiarmor writes the resists text) the key leaves building armor to it: the first version showed
-   "Resists: 0 (null)" on a Factory there; now buildings show no resists row in that case, as before.
+2. Building armor: shown in the resists spot, like for units. With your own uhc.dll (its multiarmor
+   writes the resists text) the key leaves the resists row to it: the first version showed "Resists: 0
+   (null)" on a Factory there; now your original "Resists:" row shows your DLL's text, and buildings
+   none, as without the key.
 3. Speed is the live speed (with techs, snares and auras), as the big UI shows it.
 4. The attacks past the third, and the ones the big UI itself has no room for (it stops at 9 rows),
    are shown, in the same format.

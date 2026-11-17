@@ -7285,13 +7285,14 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   ```xml
   <minUIRows>
     <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost"/>
-    <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building] {population}" tip="Population"/>
-    <row gadget="unitselectionpanel-uhcTrainPoints" text="[icon:ui\ingame\stat_icon_traintime] {trainPoints}" types="Unit" tip="Train time (seconds)"/>
-    <row gadget="unitselectionpanel-uhcGarrison" text="Garrison: {garrison}"/>
+    <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building]{population}" tip="Population"/>
+    <row gadget="unitselectionpanel-uhcSight" text="[icon:ui\ingame\stat_icon_los]{los}|[icon:ui\ingame\stat_icon_speed]{speed}" tip="Line of sight, speed"/>
+    <row gadget="unitselectionpanel-uhcTrainGarrison" text="[icon:ui\ingame\stat_icon_traintime]{trainPoints}|[icon:ui\cursors\cursor_garrison]{garrison}" tip="Train time (seconds), garrison"/>
     <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
-    <row gadget="unitselectionpanel-uhcRow0" text="[icon:ui\ingame\stat_icon_los] {los}|[icon:ui\ingame\stat_light_infantry] {speed}" tip="Line of sight, speed"/>
-    <stockLabel gadget="unitselectionpanel-unitHitPointsLabel" text="[icon:ui\ingame\stat_icon_hitpoints]" tipId="24320"/>
-    <stockLabel gadget="unitselectionpanel-unitResistsLabel" text="[icon:ui\ingame\stat_icon_armor]"/>
+    <row gadget="unitselectionpanel-uhcHitpoints" text="[icon:ui\ingame\stat_icon_hitpoints] {hitpoints}" tipId="24320"/>
+    <row gadget="unitselectionpanel-uhcResists" text="[icon:ui\ingame\stat_icon_armor] {armor}" tipId="35758"/>
+    <replace row="unitselectionpanel-uhcHitpoints" stock="unitselectionpanel-unitHitPointsLabel,unitselectionpanel-unitHitPointsValue"/>
+    <replace row="unitselectionpanel-uhcResists" stock="unitselectionpanel-unitResistsLabel,unitselectionpanel-unitResistsValue"/>
     <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof"/>
     <avoid gadget="unitselectionpanel-unitResourceValue"/>
     <avoid gadget="unitselectionpanel-unitResourceRateLabel"/>
@@ -7304,10 +7305,15 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
 
   - `<row>`: `gadget`, then `item` (one item) with `label` (text, markup allowed) or `labelId` (a string ID), or
     `text` (a template of `{item}`s in `|`-separated parts); `types` (unit types or protos, comma-separated; none:
-    every unit); `tip` or `tipId`, its help text. `[icon:path]` in a text or label is that texture as an icon at the
-    minimized panel's own icon size (`(10)`).
-  - `<stockLabel gadget="..." text="..." tip="..."/>` (2026-11-17): an original label's text, written over the game's
-    while the game shows it (the hit points and resists labels as a heart and a shield).
+    every unit); `tip` or `tipId`, its help text; `join="line"`, each part on a line of its own. `[icon:path]` in a
+    text or label is that texture as an icon at the minimized panel's own icon size (`(10)`).
+  - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
+    game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
+    gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
+    `<stockLabel gadget="..." text="..."/>`: an original label's text, written over the game's while it shows.
+  - `hitpoints` follows `overhealHitpointBars` (its 100 % value, its colour above it when the gadget has
+    `textmarkup`); `armor` lists every armor of `multiarmor`, and answers nothing when another DLL changed the armor
+    test of the minimized block (that DLL's own resists row then shows).
   - `<bigPanelRows>` also takes (2026-11-17) `stockRows="take"` (the three original attack rows are written by the DLL
     too, from the same list), `rofIcon="path"` (each attack row gets its ROF and that icon right after its damage) and
     `abilities="all"` (by default an attack only a power uses, such as Crack Shot, shows only while one of the unit's
@@ -7324,19 +7330,23 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   - **More attacks than rows (2026-11-17):** the big stat panel stops at its 9th row, so a unit with many attacks lost
     the last ones in both interfaces. The rows it had no room for are added to `bigPanelRows` in its own format (name,
     damage and its icon, range and its icon; the bonus multipliers are left out), and when the rows outnumber the
-    gadgets the last gadget shows the rest in short form, name and damage, as many as fit, then `+N`, with all of them
-    in its help text.
-- **WoL needs:** a `uiunitselectionmin.xml` with the gadgets, and the five icons. `wol-fixes/min-ui` has a layout made
+    gadgets the last gadget shows the rest in short form, name and damage, as many as fit, then `+N more`, with all of
+    them in its help text. A row too long for its gadget (estimated from the font, which follows the screen's height)
+    shows its name and damage with the whole row in its help text; an original attack row that runs on into the
+    second column leaves the second-column gadget of its line empty.
+- **WoL needs:** a `uiunitselectionmin.xml` with the gadgets, and the six icons. `wol-fixes/min-ui` has a layout made
   from the stock minimized panel with WoL's own values for the stock gadgets (its `buttonArea`, so the portraits stay
-  centred; its health bars), nine top-level gadgets, the icons (`art\ui\ingame\stat_icon_*.ddt`, drawn with
+  centred; its health bars), eleven top-level gadgets, the icons (`art\ui\ingame\stat_icon_*.ddt`, drawn with
   aoe3-blender-tools' `make_stat_icon.py`) and a README with the map; Dr.Maxy chooses the places. A layout without the
   gadgets shows nothing new but the building armor and the data refs. The normal interface is unchanged.
 - **The layout (third proposal, 2026-11-17):** after Dr.Maxy ("the selection is no longer centred") and JTMaston (ROF
   next to the damage, a house for population, no extra range row, the cost as icons over the portrait, the top band
-  only for the portraits, icons instead of words): the top band holds only the portraits; mirrored around the panel's
-  centre, the cost and population over the portrait and the train time and garrison right of the player's name, the
-  two names with a row centred under each (what acts on the unit; line of sight and speed); hit points and resists as
-  a heart and a shield; every attack row with its ROF and a stopwatch; only the attacks the unit can use.
+  only for the portraits, icons instead of words, "a boot with wings"): the top band holds only the portraits;
+  mirrored around the panel's centre, two blocks of two lines on the same baselines (over the portrait the cost and
+  population; right of the player's name line of sight and speed, train time and garrison), the two names of the same
+  width, the status row under the unit's name (under the player's name a long name takes its second line); hit points
+  and resists with a heart and a shield; every attack row with its ROF and a stopwatch; only the attacks the unit can
+  use. Without the key the file shows WoL's panel as it is.
 - **With WoL.dll:** tested beside it (`WoL.upl`), with `forceMinUI` and `trickleDisplay`: no shared byte.
   `forceMinUI` loads the minimized layout without changing the profile option the panel reads; the exe then skipped
   its own minimized rows (HP, attacks). The key runs them whenever the panel was built from a minimized layout (its
@@ -7345,9 +7355,9 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
 - **With WoL's own `uhc.dll`** (our `dinput8.dll` beside it): its multiarmor replaces the armor read of the minimized
   resists (0x698BFF); the key then leaves the building armor alone (logged `another DLL changed the resists armor
   test`), so a building shows no resists row instead of `0 (null)`.
-- **Log:** `minUIStats: 6 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
+- **Log:** `minUIStats: 7 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
   minimized panel's resists; 30 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid
-  gadgets; 2 stock labels; attack rows: the original ones written by the key, ROF after the damage, ability attacks
+  gadgets; 0 stock labels; attack rows: the original ones written by the key, ROF after the damage, ability attacks
   only when enabled`, `data refs: 30 added after the game's 116`, then `hook reached: data refs registration (0x5D3229)`,
   `unit panel tail (0x4C8281)`, `minUIStats stat fill gate (0x4D725C)`, once per panel `minUIStats: panel ...: 5 of 5
   row gadgets, 3 big panel row gadgets`, and the first time portraits cover a row, `minUIStats: 6 stack portraits (px
@@ -7501,13 +7511,20 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   (Sharpshooter, its own ability; no Crack Shot), the Chief (`WOLcartographer`) before and after `HCSteelCrown`
   (Anti-artillery Crackshot only after), the `Wachtmesteer` with three armors (`0.30 0.20 0.10`, by damage type), a
   `Grenadier` and a `Settler` with long attack rows (they end at x ~557 and ~568, before the second column at 583), a
-  long name (Húsar de la Muerte), the overheal (`Overheal +50`, HP 150/100); every key of the cfg template on (114
-  applied, 0 failed); WoL's own `uhc.dll` with our `dinput8.dll` (a `Factory` shows no resists row instead of the first
-  version's `0 (null)`). Key off, WoL's current file: the same scenes, side by side in `wol-fixes/min-ui/media`
-  (`minUIStats-v3-vs-wol-*.jpg`). `perfprobe.py`, 45 s, a Presidial selected: key on 387 fps, update 0.20 ms, render
-  2.38 ms; WoL's file key off 349 fps, 0.19 ms, 2.66 ms (noise: other games running). Not filmed: a villager gathering,
-  a building going up, a poison, an aura, a ship (the scenario route gives no orders and has no water; those texts use
-  the rows filmed above).
+  long name (Húsar de la Muerte), the overheal (`Overheal +50`, HP 150/100); a `Villero` whose ranged row runs on into
+  the second column (the second-column gadget of its line stays empty); a poisoned `Halberdier` (`Poison 3 x 8 s`, the
+  Aenna's arrows of `dot_testdata.py --wol`); a `WOLSawmill` and a tree in its `unitResourceAuras` aura (`Aura pays
+  0.10/s`, `Aura -0.05/s`); in an AI skirmish a `Manor` going up (`Done in 0:12`) and its builder (`Builds 1.00/s`)
+  under the AI's two-line name; ships on a water map (a `Caravel`, a `Frigate` with two armors, garrison 0 / 50);
+  `WoL.dll` v1.33 loaded by `preloadDll` (its trickle display patches seen in memory) with WoL's Spanish string table
+  (long Spanish attack names in short form); every key of the cfg template on (114 applied, 0 failed); WoL's own
+  `uhc.dll` with our `dinput8.dll` (WoL's own `Resists:` row and text; a `Factory` shows none instead of the first
+  version's `0 (null)`); and the key off with this layout (WoL's panel as it is). Key off, WoL's current file: the same
+  scenes, side by side in `wol-fixes/min-ui/media` (`minUIStats-v3-vs-wol-*.jpg`). `perfprobe.py`, 45 s, a Presidial
+  selected: key on 387 fps, update 0.21 ms, render 2.36 ms; key off 393 fps, 0.21 ms, 2.33 ms (noise: other games
+  running). Not filmed: a villager of the player gathering (console orders only moved the villagers, and the game hides
+  what another player's villager carries; the stock resource and rate rows were filmed on the Factory, the Sawmill and
+  the tree).
 
   ![Third layout, one Musketeer](media/minUIStats-v3-1type.png)
   ![Third layout, five unit types](media/minUIStats-v3-5types.png)
@@ -7516,6 +7533,10 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   ![The Chief before HCSteelCrown](media/minUIStats-v3-cartographer-before.png)
   ![The Chief after HCSteelCrown](media/minUIStats-v3-cartographer-after.png)
   ![WoL's current panel, key off](media/minUIStats-wolcurrent-1type.png)
+  ![A poisoned Halberdier](media/minUIStats-v3-poison.png)
+  ![A Manor going up in an AI skirmish](media/minUIStats-v3-construction-site.png)
+  ![A Caravel](media/minUIStats-v3-ship-caravel.png)
+  ![The same layout with the key off](media/minUIStats-v3-keyoff-1type.png)
 
   All the pictures, as JPG, are also in `wol-fixes/min-ui/media`.
 

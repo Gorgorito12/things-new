@@ -12,6 +12,9 @@ bool RandomCost(const char* unit, std::wstring* out);      // randomcost.cpp: th
 bool ShipmentCounts(const char* unit, std::wstring* out);  // shipmentcounts.cpp: its owner's cards per age
 bool GatherRate(const char* unit, std::wstring* out);      // gatherrate.cpp: "Food 0.67/s"
 bool OverhealOn(const char* proto);                         // overheal.cpp: the key is on and marks this proto
+// overheal.cpp: the minimized panel's hit points text as that key makes it ("%d/%d" with its max, coloured above
+// 100 %); false when the key is off.
+bool HitpointsText(const char* unit, std::wstring* out);
 // multiarmor.cpp: the proto's armors above 0, the stock one first, as damage type indices and values (at most max);
 // 0 when the key is off.
 int Armors(const char* proto, unsigned char* types, float* values, int max);

@@ -2039,7 +2039,10 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 //   With stockRows="take" the original attack rows (StackLabel0..2) are written from the same list, so that every
 //   attack row gets rofIcon="..." (the action's ROF and that icon after its damage) and the ability attacks the unit
 //   cannot use are left out (ActionEnabled; abilities="all" keeps them).
-// - <stockLabel gadget="..." text="[icon:...]"/>: the text of an original label (hit points, resists) while shown.
+// - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
+//   resists rows with icons over the original ones, which the layout keeps in place for the panel without the key);
+//   <stockLabel gadget="..." text="..."/>: an original label's text, written over the game's while it shows.
+// - join="line" on a text= row: each part on a line of its own (a two-line block).
 // A row whose gadget the selection's stack portraits cover (one per unit type, placed by the panel each fill), or
 // that a shown <avoid gadget="..."/> covers, is hidden for that fill (a bigPanelRows gadget is skipped and the rows
 // go on in the next one); overlap="show" on a row or bigPanelRows keeps it.
@@ -2182,7 +2185,12 @@ std::wstring StringById(std::int32_t id) {
 
 // ---- Catalog items: the value of one item for one unit, or false when it does not apply ----
 
+// As the minimized block's hit points value: "%d/%d" (0x698B63), or overheal's text when that key runs (its max, its
+// colour above 100 %).
 bool ItemHitpoints(const char* unit, std::wstring* out) {
+  if (uhc::unitinfo::HitpointsText(unit, out)) {
+    return true;
+  }
   wchar_t text[48];
   swprintf_s(text, L"%d/%d", static_cast<int>(Field<float>(unit, 0x64)), static_cast<int>(kMaxHp(unit)));
   *out = text;
@@ -2217,22 +2225,48 @@ bool ItemLos(const char* unit, std::wstring* out) {
   return true;
 }
 
+// Another DLL replaced the minimized block's armor read (0x698BFC.., e.g. a multiarmor of its own): the armor items
+// then answer nothing, so a layout's armor row stays hidden and the block's own resists row shows that DLL's text.
+bool g_armorOther = false;
+
+std::wstring DamageIcon(std::uint8_t type) {
+  const char* view = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x920);
+  if (view == nullptr || type > 2) {
+    return L"";
+  }
+  wchar_t tag[64];
+  swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", kIconSize, Field<std::int32_t>(view, 0x1CC + 4u * type));
+  return tag;
+}
+
 // The armor as the stock resists value: "0.20" and the icon of its damage type ([proto+1D3h]: 0 hand, 1 ranged,
-// 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]).
+// 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]). With multiarmor (a proto with an armor per damage type), every armor
+// above 0, by damage type: "0.30 <hand>  0.20 <ranged>".
 bool ArmorText(const char* unit, bool icon, std::wstring* out) {
+  if (g_armorOther) {
+    return false;
+  }
   const char* proto = Field<const char*>(unit, 0x5C);
+  unsigned char types[8];
+  float values[8];
+  const int n = uhc::unitinfo::Armors(proto, types, values, 8);
+  if (n >= 2) {
+    std::vector<std::pair<unsigned char, float>> armors;
+    for (int i = 0; i < n; ++i) {
+      armors.emplace_back(types[i], values[i]);
+    }
+    std::sort(armors.begin(), armors.end());  // hand, ranged, siege, then the mod's own
+    out->clear();
+    for (const auto& [type, armor] : armors) {
+      *out += (out->empty() ? L"" : L"  ") + Number(armor) + (icon ? DamageIcon(type) : L"");
+    }
+    return true;
+  }
   const float armor = Field<float>(proto, 0xC4);
   if (!(armor > 0.0f)) {
     return false;
   }
-  *out = Number(armor);
-  const std::uint8_t type = Field<std::uint8_t>(proto, 0x1D3);
-  const char* view = Field<const char*>(Game(), 0x920);
-  if (icon && view != nullptr && type <= 2) {
-    wchar_t tag[64];
-    swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", kIconSize, Field<std::int32_t>(view, 0x1CC + 4u * type));
-    *out += tag;
-  }
+  *out = Number(armor) + (icon ? DamageIcon(Field<std::uint8_t>(proto, 0x1D3)) : L"");
   return true;
 }
 
@@ -2259,7 +2293,14 @@ bool ProtoPoints(const char* unit, std::uint32_t field, std::wstring* out) {
   return true;
 }
 
-bool ItemTrainPoints(const char* unit, std::wstring* out) { return ProtoPoints(unit, 0x6C, out); }
+// Train points are a unit's: a building keeps a default value there (30) that trains nothing.
+std::int32_t g_unitTypeId = -1;  // the abstract type Unit, set on each database load (unittypes.h)
+bool ItemTrainPoints(const char* unit, std::wstring* out) {
+  if (g_unitTypeId < 0 || !kProtoIsType(Field<const char*>(unit, 0x5C), g_unitTypeId)) {
+    return false;
+  }
+  return ProtoPoints(unit, 0x6C, out);
+}
 bool ItemBuildPoints(const char* unit, std::wstring* out) { return ProtoPoints(unit, 0xCC, out); }
 
 // ---- Batch 2: attacks, costs and what other keys know ----
@@ -2608,7 +2649,7 @@ bool ItemCost(const char* unit, std::wstring* out) {
     const float cost = kResListGet(proto + 0x70, r);
     if (cost > 0.0f) {
       wchar_t text[96];
-      swprintf_s(text, L"%ls<icon=\"(%d)(%hs)\"> %d", out->empty() ? L"" : L"  ", kIconSize, kResourceIcon(database, r),
+      swprintf_s(text, L"%ls<icon=\"(%d)(%hs)\">%d", out->empty() ? L"" : L" ", kIconSize, kResourceIcon(database, r),
                  static_cast<int>(cost + 0.5f));
       *out += text;
     }
@@ -2967,6 +3008,7 @@ struct Row {
   std::vector<TypeFilter*> types;  // empty: every unit
   bool keep = false;               // overlap="show": shown even over the stack portraits or an <avoid> gadget
   std::wstring tip;                // tip= / tipId=: the help text (what the icons mean)
+  bool lines = false;              // join="line": each part on a line of its own instead of joined by spaces
 };
 
 // <stockLabel gadget="..." text="..." tip="..."/>: a label of the original panel whose text the key replaces while
@@ -2978,6 +3020,16 @@ struct StockLabel {
   std::wstring tip;
 };
 std::vector<StockLabel> g_labels;
+
+// <replace row="..." stock="a,b"/>: while that row of the key shows, the original gadgets named are hidden (the
+// panel's own fill shows them each time; the key hides them again after it). The layout can then keep the original
+// gadgets where they were, so it reads the same without the key, and draw the key's version in a gadget of its own
+// (the hit points and resists rows with their icons).
+struct Replace {
+  std::wstring row;
+  std::vector<std::wstring> stock;
+};
+std::vector<Replace> g_replaces;
 
 // "[icon:ui\ingame\stat_icon_building]" in a data file's text: the icon markup at the minimized panel's icon size.
 std::wstring ExpandIcons(const std::wstring& text) {
@@ -2999,7 +3051,7 @@ std::wstring ExpandIcons(const std::wstring& text) {
 
 // A text= row: each '|'-separated segment with its {item}s replaced; a segment with an item that has nothing for
 // the unit is left out, the rest are joined by three spaces. False when no segment is left.
-bool RenderTemplate(const std::wstring& text, const char* unit, std::wstring* out) {
+bool RenderTemplate(const std::wstring& text, const char* unit, std::wstring* out, bool lines = false) {
   out->clear();
   size_t start = 0;
   while (start <= text.size()) {
@@ -3028,7 +3080,7 @@ bool RenderTemplate(const std::wstring& text, const char* unit, std::wstring* ou
       pos = close + 1;
     }
     if (ok && !rendered.empty()) {
-      *out += (out->empty() ? L"" : L"   ") + rendered;
+      *out += (out->empty() ? L"" : (lines ? L"\n" : L"   ")) + rendered;
     }
     start = bar + 1;
   }
@@ -3064,18 +3116,21 @@ bool g_attackReads = false;  // the stat fill's attack rows match what AttackRow
 const char kDefaultRows[] =
     "<minUIRows>"
     "<row gadget='unitselectionpanel-uhcCost' text='{cost}' tip='Cost'/>"
-    "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_building] {population}' "
+    "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_building]{population}' "
     "tip='Population'/>"
-    "<row gadget='unitselectionpanel-uhcTrainPoints' text='[icon:ui\\ingame\\stat_icon_traintime] {trainPoints}' "
-    "types='Unit' tip='Train time (seconds)'/>"
-    "<row gadget='unitselectionpanel-uhcGarrison' text='Garrison: {garrison}'/>"
+    "<row gadget='unitselectionpanel-uhcSight' text='[icon:ui\\ingame\\stat_icon_los]{los}|"
+    "[icon:ui\\ingame\\stat_icon_speed]{speed}' tip='Line of sight, speed'/>"
+    "<row gadget='unitselectionpanel-uhcTrainGarrison' text='[icon:ui\\ingame\\stat_icon_traintime]{trainPoints}|"
+    "[icon:ui\\cursors\\cursor_garrison]{garrison}' tip='Train time (seconds), garrison'/>"
     "<row gadget='unitselectionpanel-uhcRow2' text='Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|"
     "Overheal {overheal}|Poison {poison}|Aura {auras}'/>"
-    "<row gadget='unitselectionpanel-uhcRow0' text='[icon:ui\\ingame\\stat_icon_los] {los}|"
-    "[icon:ui\\ingame\\stat_light_infantry] {speed}' tip='Line of sight, speed'/>"
-    "<stockLabel gadget='unitselectionpanel-unitHitPointsLabel' text='[icon:ui\\ingame\\stat_icon_hitpoints]' "
+    "<row gadget='unitselectionpanel-uhcHitpoints' text='[icon:ui\\ingame\\stat_icon_hitpoints] {hitpoints}' "
     "tipId='24320'/>"
-    "<stockLabel gadget='unitselectionpanel-unitResistsLabel' text='[icon:ui\\ingame\\stat_icon_armor]'/>"
+    "<row gadget='unitselectionpanel-uhcResists' text='[icon:ui\\ingame\\stat_icon_armor] {armor}' tipId='35758'/>"
+    "<replace row='unitselectionpanel-uhcHitpoints' "
+    "stock='unitselectionpanel-unitHitPointsLabel,unitselectionpanel-unitHitPointsValue'/>"
+    "<replace row='unitselectionpanel-uhcResists' "
+    "stock='unitselectionpanel-unitResistsLabel,unitselectionpanel-unitResistsValue'/>"
     "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed' stockRows='take' "
     "rofIcon='ui\\ingame\\stat_icon_rof'/>"
     "<avoid gadget='unitselectionpanel-unitResourceValue'/>"
@@ -3336,12 +3391,28 @@ bool LoadRows(const std::string& arg) {
                      name.c_str());
           }
         }
+        const std::string* join = Attr(element, "join");
         g_rows.push_back({Wide(Trim(*gadget)), nullptr, L"", ExpandIcons(wide), typeList(element),
-                          keepOnOverlap(element), Tip(element)});
+                          keepOnOverlap(element), Tip(element),
+                          join != nullptr && _stricmp(Trim(*join).c_str(), "line") == 0});
       } else {
         g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element), keepOnOverlap(element),
                           Tip(element)});
       }
+      continue;
+    }
+    if (element.tag == "replace") {
+      const std::string* row = Attr(element, "row");
+      const std::string* stock = Attr(element, "stock");
+      if (row == nullptr || stock == nullptr) {
+        uhc::Log(L"minUIStats: %ls: replace needs row and stock; ignored", g_file.c_str());
+        continue;
+      }
+      Replace replace{Wide(Trim(*row)), {}};
+      for (const std::string& name : SplitList(*stock)) {
+        replace.stock.push_back(Wide(name));
+      }
+      g_replaces.push_back(replace);
       continue;
     }
     if (element.tag == "stocklabel") {
@@ -3432,6 +3503,12 @@ struct PanelGadgets {
   std::vector<std::int32_t> avoid;  // the <avoid> gadgets this layout has
   std::vector<Gadget> stock;        // StackLabel0..2 ([panel+344h+i*4]), written by the key with stockRows="take"
   std::vector<std::int32_t> labels; // the <stockLabel> gadgets, in g_labels order (0 when the layout lacks one)
+  struct ReplaceState {
+    int row = -1;                       // its index in g_rows, or -1
+    std::vector<std::int32_t> stock;    // the original gadgets this layout has
+    bool active = false;                // the row showed at the last full fill
+  };
+  std::vector<ReplaceState> replaces;  // in g_replaces order
   bool any = false;
   bool logged = false;  // the first fill with stack portraits in our rows' band was logged
 };
@@ -3514,6 +3591,21 @@ void ResolvePanel(char* panel) {
   for (const StockLabel& label : g_labels) {
     const std::int32_t handle = Lookup(panel, label.gadget);
     g_panel.labels.push_back(ValidHandle(handle) ? handle : 0);
+  }
+  for (const Replace& replace : g_replaces) {
+    PanelGadgets::ReplaceState state;
+    for (size_t i = 0; i < g_rows.size(); ++i) {
+      if (_wcsicmp(g_rows[i].gadget.c_str(), replace.row.c_str()) == 0 && g_panel.rows[i].valid) {
+        state.row = static_cast<int>(i);
+      }
+    }
+    for (const std::wstring& name : replace.stock) {
+      const std::int32_t handle = Lookup(panel, name);
+      if (ValidHandle(handle)) {
+        state.stock.push_back(handle);
+      }
+    }
+    g_panel.replaces.push_back(state);
   }
   int rows = 0;
   for (const Gadget& g : g_panel.rows) {
@@ -3605,6 +3697,7 @@ void WriteLabel(std::int32_t handle, const std::wstring& text, const std::wstrin
 // layout 0x4C8F49 read them. Every gadget of the screen uses the same space, whatever its parent.
 struct Box {
   std::int32_t left = 0, top = 0, right = 0, bottom = 0;
+  float screenHeight = 0.0f;  // the screen's height in pixels, from the gadget's top as pixels and as a fraction
 };
 
 // Any gadget behind a handle, buttons included (0x404296: the lookup 0x40423C with type mask 0; GadgetObject's
@@ -3635,7 +3728,15 @@ bool GadgetBox(std::int32_t handle, Box* out) {
   }
   *out = {Field<std::int32_t>(object, 0x30), Field<std::int32_t>(object, 0x34), Field<std::int32_t>(object, 0x40),
           Field<std::int32_t>(object, 0x44)};
+  const float fy = Field<float>(object, 0x2C);  // the top as a fraction of the screen
+  out->screenHeight = fy > 0.01f ? static_cast<float>(out->top) / fy : 0.0f;
   return out->right > out->left && out->bottom > out->top;
+}
+
+// About how wide one character of the panel's text font is, in pixels: the font follows the screen's height, not the
+// gadget's (measured at 1920 x 1080: 38 characters and two icons, an icon counting as two, in 210 px, 4.9 px each).
+float CharPixels(const Box& box) {
+  return box.screenHeight > 0.0f ? 0.00452f * box.screenHeight : 0.217f * 23.0f;
 }
 
 // Shown, as the base show (0x447BBC) tests it before doing nothing: flag bits 0 and 1 of [gadget+0A4h] set, bit 7
@@ -3949,15 +4050,13 @@ size_t VisibleLength(const std::wstring& text) {
   return StripMarkup(text).size() + 2 * icons;
 }
 
-// About how many characters of the stat font fit one line of the gadget: a character is about 0.24 times the
-// gadget's height wide (measured in game at 1920 x 1080: a 16-unit high uhcRow5, 23 px, holds 38 characters and
-// two icons in 210 of its 225 px).
+// About how many characters of the stat font fit one line of the gadget (CharPixels, with 10 % to spare).
 size_t LineBudget(const Gadget& gadget) {
   Box box;
   if (!GadgetBox(gadget.handle, &box) || box.bottom <= box.top) {
     return 30;
   }
-  return static_cast<size_t>(static_cast<float>(box.right - box.left) / (0.24f * static_cast<float>(box.bottom - box.top)));
+  return static_cast<size_t>(0.9f * static_cast<float>(box.right - box.left) / CharPixels(box));
 }
 
 // A row in short form, for the last gadget when the rows outnumber the gadgets: an attack's name and damage (its
@@ -4081,6 +4180,21 @@ void ApplyResists(const char* unit) {
   WriteLabel(handle, text, L"");
 }
 
+// <replace>: the original gadgets of a row the key shows are hidden again after the panel's own fill showed them.
+void ApplyReplaces() {
+  void* manager = Manager();
+  if (manager == nullptr) {
+    return;
+  }
+  for (const auto& state : g_panel.replaces) {
+    if (state.active) {
+      for (const std::int32_t handle : state.stock) {
+        kGadgetHide(manager, handle);
+      }
+    }
+  }
+}
+
 // The <stockLabel> texts, while the original panel shows those labels.
 void ApplyStockLabels(const char* unit) {
   ApplyResists(unit);
@@ -4168,7 +4282,35 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
       }
     }
   }
+  // An original row too long for its column (a Villero's ranged row with five multipliers reaches x ~600) runs under
+  // the block gadget on its line: that gadget is left empty, and the rows go on in the next one (CharPixels per
+  // character, an icon counting as two).
+  std::vector<std::pair<Box, size_t>> stockLines;
+  for (size_t n = 0; n < free.size() && n < rows.size(); ++n) {
+    Box box;
+    if (GadgetBox(free[n].gadget->handle, &box)) {
+      stockLines.emplace_back(box, VisibleLength(rows[n]->label + L"  " + rows[n]->value));
+    }
+  }
+  auto runsUnder = [&](const Gadget& gadget) {
+    Box box;
+    if (!GadgetBox(gadget.handle, &box)) {
+      return false;
+    }
+    const int middle = (box.top + box.bottom) / 2;
+    for (const auto& [line, chars] : stockLines) {
+      if (middle > line.top && middle < line.bottom && box.left > line.left &&
+          static_cast<float>(chars) * CharPixels(line) > static_cast<float>(box.left - line.left)) {
+        return true;
+      }
+    }
+    return false;
+  };
   for (size_t k = 0; k < g_panel.big.size(); ++k) {
+    if (runsUnder(g_panel.big[k])) {
+      Hide(&g_panel.big[k]);
+      continue;
+    }
     if (!g_big.keep && Blocked(g_panel.big[k], blockers)) {
       Hide(&g_panel.big[k]);
       wchar_t name[160];
@@ -4222,6 +4364,12 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
     std::wstring text = row.label;
     if (!row.value.empty()) {
       text += L"  " + row.value;
+    }
+    if (free[n].stock < 0 && VisibleLength(text) > LineBudget(*free[n].gadget)) {
+      // Too long for its column ("Anti-artillery Crackshot Attack", a Spanish name): name and damage, the whole row
+      // in the help text, rather than a row cut at the panel's edge.
+      write(free[n], Compact(row), style, StripMarkup(row.label + L" " + row.value));
+      continue;
     }
     write(free[n], text, style, row.tip);
   }
@@ -4278,6 +4426,7 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
       g_busy = true;
       ApplyStockPlan();
       ApplyStockLabels(unit);
+      ApplyReplaces();
       g_busy = false;
     }
     return;
@@ -4304,7 +4453,7 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
     std::wstring value;
     const bool has = proto != nullptr && Applies(g_rows[i], proto) &&
                      (g_rows[i].item != nullptr ? g_rows[i].item->fn(unit, &value)
-                                                : RenderTemplate(g_rows[i].text, unit, &value));
+                                                : RenderTemplate(g_rows[i].text, unit, &value, g_rows[i].lines));
     if (!has) {
       Hide(&gadget);
       continue;
@@ -4321,8 +4470,13 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
       FillBigRows(selection, unit, minimizedBlock, blockers, &blockedNames);
     }
   }
+  for (auto& state : g_panel.replaces) {
+    state.active = minimizedBlock && state.row >= 0 && g_panel.rows[state.row].shown &&
+                   !g_panel.rows[state.row].text.empty();
+  }
   if (minimizedBlock && proto != nullptr) {
     ApplyStockLabels(unit);
+    ApplyReplaces();
   }
   if (!blockedNames.empty() && !blockers.stack.empty()) {
     LogBlocked(blockers, blockedNames);
@@ -4392,14 +4546,18 @@ Outcome ApplyMinUiStats(const Config& config) {
   // armor test after it is stock: another DLL's armor there (a multiarmor of its own) writes a text made for units only
   // ("0 (null)" on a building), so then buildings keep the stock rule and show no resists row.
   const bool buildingArmor = AllMatch({&sites::kMinResistsArmorTest});
+  g_armorOther = !buildingArmor;
   if (!buildingArmor) {
     Log(L"minUIStats: another DLL changed the resists armor test (0x698BFC); building armor not shown, unit armor as "
-        L"that DLL writes it");
+        L"that DLL writes it (the armor items answer nothing)");
   }
   for (TypeFilter* filter : g_filters) {
     if (!RequestAbstractUnitType(filter->name.c_str(), &filter->id)) {
       return Outcome::kFailed;
     }
+  }
+  if (!RequestAbstractUnitType("Unit", &g_unitTypeId)) {  // the trainPoints item
+    return Outcome::kFailed;
   }
   static const std::uint8_t kNops[6] = {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
   if (!WriteJmp(sites::kStatFillMinGate.va + 0x41, reinterpret_cast<const void*>(&UhcStatFillMinGate), 11) ||
