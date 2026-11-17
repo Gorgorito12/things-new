@@ -1,0 +1,69 @@
+Hi Dr.Maxy,
+
+The minimized UI (UiUnitselectionMIN) now shows what the big UI shows, and more, with the new DLL key
+minUIStats. This note is for your information only: nothing in it needs an answer.
+
+What was decided
+----------------
+1. Row places: the rows start from the original minimized UI (uiunitselectionmin.xml from Data3.bar),
+   with seven new gadgets at the top level, never inside a gadget the game shows or hides. So Speed no
+   longer depends on the Armor value.
+2. Building armor: shown in the original "Resists" spot, with the same look as for units. The game
+   showed it only for protos of type Unit; with the key, any proto with an armor above 0 shows it.
+3. Speed: the live speed (with techs, snares and auras), as the big UI shows it, not the base speed of
+   {currentUnitMaxVelocityFloat}. It is also a text you can put in any gadget: {uhcSpeed}.
+4. More than 3 attacks: the minimized UI only had room for 3 attack rows. Extra rows now show the
+   rest, and the other big UI rows the minimized one never had (Gatherers, Group Health).
+
+Two things we noticed in WoL's current files
+--------------------------------------------
+- In your uiunitselectionmin.xml, the gadget unitselectionpanel-unitTypeName (line 40) has no "/>" and
+  no closing tag of its own. So nearly the whole panel (hit points, resists, resources, the attack rows,
+  the health bars) ends up as its child, and the extra "</gadget>" at line 88 closes the panel. The
+  game copes with it, but it looks like a mistake. Our file starts from the original, so it does not
+  have it.
+- Your uiunitstatpanel3.xml (the big UI's stat panel) holds the original minimized stat panel: 5 rows
+  instead of 9, so the big UI shows only one attack row. We left it alone: you force the minimized UI,
+  and the UI is not meant to change for now. If you ever want the 9 rows back, the original file is in
+  optional\uiunitstatpanel3.xml.
+
+Two fixes since the first version
+---------------------------------
+- Long attack rows: the extra rows (uhcRow3, uhcRow4) are now as wide as the original attack rows, so
+  a hero's "Sharpshooter ATK: 750 ... 16 (range)" fits.
+- WoL.dll's forceMinUI with the profile option off: the game loaded the minimized layout but skipped
+  its own rows, so hit points and attacks were missing. The DLL now fills the minimized panel whenever
+  the minimized layout is loaded, with the option on or off. The big UI is left alone.
+
+More information (second batch)
+-------------------------------
+- Above the unit's name: Cost and Pop, then ROF and Range per attack (each value with its damage type
+  icon), e.g. a Musketeer "ROF: 3 (ranged) 1.50 (hand)   Range: 12 (ranged) 6 (siege)".
+- With our other keys on: the overheal ("Overheal +50", overhealHitpointBars) and a running poison
+  (damageOverTime), left of the name.
+- Ready to switch on in minuirows.xml (commented rows; each needs a gadget): minimum range, area, build
+  points and limit, bounty, lifespan left, what a mine or animal holds, the gather rate, the random
+  price range, the cards sent per age, base speed, armor, veterancy rank.
+- Every item is also a text for any formatText gadget: {uhcROF}, {uhcRange}, {uhcCost}, ...
+
+More information (third batch)
+------------------------------
+Left of the unit's name, in the row that already shows Overheal and Poison:
+- a building under construction: the time left at the speed its builders work now, "Done in 1:21";
+- a villager building: the points per second it adds, "Builds 1.50/s" (the second and later builders of
+  one building work slower, as the game makes them; each shows its own speed);
+- a unit that regenerates: "Regen 1/s", the hit points per second it gets back (while idle, when its
+  regeneration asks for that);
+- what our aura keys do to the unit: "Aura +50% work" (BuildingWorkRate), "+25% gold" (gold, wood, food,
+  mine, tree, farm and wild food gather rates), "pays 0.10 (wood)/s" on a building with a UnitResource
+  aura and "-0.05 (wood)/s" on what it gathers from. The game's own auras (GatherRate, Damage, ...) are
+  not listed: what they change already shows in the panel's numbers.
+These are the game's own numbers: the times were checked against a stopwatch (within a second).
+New texts for any formatText: {uhcBuildTime}, {uhcBuildProgress} (percent built), {uhcBuildRate},
+{uhcRegen}, {uhcAuras}.
+
+Everything is in the data file
+------------------------------
+Which gadget shows which item, with which label and for which unit types, is in minuirows.xml
+(data\uhc\minuirows.xml); the gadgets themselves are in uiunitselectionmin.xml. You can move, remove,
+rename or add rows, change labels or widths, without a new DLL. README.txt lists the items and options.

@@ -43,6 +43,7 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 
 extern "C" {
 extern std::int32_t g_uhcPopScale;        // features/limits.cpp; read by the cap hook
@@ -582,3 +583,9 @@ Outcome ApplyDecimalPopulation(const Config& config) {
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+int PopulationScale() { return g_uhcPopScale > 0 ? g_uhcPopScale : 1; }
+
+}  // namespace uhc::unitinfo

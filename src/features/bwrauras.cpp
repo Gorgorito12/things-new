@@ -44,6 +44,7 @@
 #include "../modifiers.h"
 #include "../modifytypes.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 
 extern "C" {
 void UhcBwrAuraCall();
@@ -227,6 +228,10 @@ float __stdcall UhcBwrPanelRate(const char* unit) {
 }
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyBuildingWorkRateAuras(const Config& config) {
@@ -294,7 +299,35 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
   Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research, "
       L"Maintain, heal and build speed%ls (multiplayer unverified)",
       kStatBuildingWorkRate, log ? L", every change of a unit's factor logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+// What UhcBwrRateCall multiplies a builder's rate by: 1.0 with the key off or without a modifier record.
+float BuildWorkFactor(const char* worker) {
+  if (!g_unitInfoOn || worker == nullptr) {
+    return 1.0f;
+  }
+  const char* sub = Field<const char*>(worker, 0xB4);
+  if (sub == nullptr || Field<const char*>(sub, 0xC8) == nullptr) {
+    return 1.0f;
+  }
+  return Factor(worker);
+}
+
+bool WorkAura(const char* unit, std::wstring* out) {
+  const float factor = BuildWorkFactor(unit);
+  if (factor == 1.0f) {
+    return false;
+  }
+  wchar_t text[48];
+  swprintf_s(text, L"%+d%% work", static_cast<int>((factor - 1.0f) * 100.0f + (factor >= 1.0f ? 0.5f : -0.5f)));
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo

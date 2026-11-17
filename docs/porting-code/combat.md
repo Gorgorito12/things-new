@@ -734,7 +734,7 @@ END
 
 Contract: [damageOverTime](../porting-to-another-dll.md#damageovertime).
 
-Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`floatingtext.h`](helpers.md#floating-text), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`floatingtext.h`](helpers.md#floating-text), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35 B), `SnareCreate` `0x4DD201` (44 B), `SnareApply` `0x4DD22D` (130 B).
 
@@ -781,6 +781,7 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 
 #include "../actiontags.h"
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../floatingtext.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -1577,6 +1578,10 @@ void* g_uhcDotTakeDamage = reinterpret_cast<void*>(&UhcDotTakeDamage);
 void UhcDotTakeDamageHook();
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyDamageOverTime(const Config& config) {
@@ -1612,10 +1617,43 @@ Outcome ApplyDamageOverTime(const Config& config) {
   Log(L"damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with "
       L"<AttachMaxStacks>, <AttachSnare>, <AttachTickText> and <AttachModel>%ls (multiplayer unverified)",
       g_noTickText ? L"; tick texts off on this machine" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool Poison(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn || unit == nullptr || g_dots.empty()) {
+    return false;
+  }
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : *reinterpret_cast<const char* const*>(game + 0x13C);
+  if (world == nullptr || world != g_dotWorld) {
+    return false;
+  }
+  const std::uint32_t now = *reinterpret_cast<const std::uint32_t*>(world + 0x108);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + 0x10);
+  std::size_t stacks = 0;
+  std::uint32_t end = now;
+  for (const auto& [key, dot] : g_dots) {
+    if (key.target == id) {
+      stacks += dot.stacks.size();
+      end = dot.end > end ? dot.end : end;
+    }
+  }
+  if (stacks == 0) {
+    return false;
+  }
+  wchar_t text[48];
+  swprintf_s(text, L"%u x %.0f s", static_cast<unsigned>(stacks), static_cast<double>(end - now) / 1000.0);
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/dot_hooks.asm
@@ -6328,7 +6366,7 @@ END
 
 Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
 
-Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`killobservers.h`](helpers.md#kill-observers), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`killobservers.h`](helpers.md#kill-observers), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4DD22D` (130 B).
 
@@ -6387,6 +6425,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4
 #include <vector>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../floatingtext.h"
 #include "../generated/sites.h"
 #include "../killobservers.h"
@@ -7292,6 +7331,10 @@ bool __stdcall UhcVeterancyRow(const char* panel, const char* unit) {
   return uhc::SetUnitPanelRow(panel, label.c_str(), value);
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyVeterancyBonus(const Config& config) {
@@ -7332,10 +7375,30 @@ Outcome ApplyVeterancyBonus(const Config& config) {
     Log(L"veterancyBonus: %u unit types with default rows and %u rank names from %ls",
         static_cast<unsigned>(g_defaults.size()), static_cast<unsigned>(g_styles.size()), g_file.c_str());
   }
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool Veterancy(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn || unit == nullptr || Field<const char*>(unit, 0x5C) == nullptr) {
+    return false;
+  }
+  const float kills = KillsOf(unit);
+  const std::int32_t rank = RankOfUnit(unit);
+  if (rank <= 0 && kills <= 0.0f) {
+    return false;
+  }
+  wchar_t text[32];
+  swprintf_s(text, L" (%d)", static_cast<int>(kills));
+  *out = (rank > 0 ? RankName(rank) : std::wstring(L"-")) + text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ## killSpawn

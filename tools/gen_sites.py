@@ -135,7 +135,11 @@ SITES = [
     ("StartColonyFlagRead", 0x6A2130, 6),
     ("GatherSearchStart", 0x4C6BCF, 7),    # hc in ECX and EDX, before the stock ten types; `replace` starts there
     ("GatherFallbackStore", 0x4C6CB2, 12), # cmp byte [esp+18h],1 / je 669E38h: store-and-return
-    ("GatherFallbackBlock", 0x6698B4, 0xB0),  # the stock FortFrontier search block the hook mirrors
+    # the stock FortFrontier search block 0x6698B4..0x669963 the hook mirrors, less its proto ID load
+    # mov edx,[ecx+6034h] at 0x6698D4 (6 B): the hook loads its own IDs, and another DLL may
+    # rewrite that load, before or after the check
+    ("GatherFallbackBlock", 0x6698B4, 0x20),
+    ("GatherFallbackBlockTail", 0x6698DA, 0x8A),
     # hcShipmentPointFallback FirstTC: the stored-point check 0x85302C, bool thiscall(hc, unit),
     # null-safe, alive vtbl+A4h, then call 44DDB4h, then call 4802C6h != 1 (setne al), ret 4; the
     # FirstTC helper calls it on the player's first town center
@@ -1701,6 +1705,61 @@ SITES = [
     ("RandomCostRefundCancel", 0x9EB435, 0x0E),
     ("RandomCostRefundAll", 0x9EB603, 0x0F),
     ("RandomCostRefundSpawn", 0x9EBA4F, 0x13),
+    # The unit panels (docs/engine-symbols.md, "Unit panels"). The shared tail of the selection panel fill
+    # FUN_004C7E52 (unitpanel.h, AddUnitPanelTail): cmp byte [esp+5Eh],1 / je 6987D7h (profile option 49h: the
+    # minimized block, which comes back here), then mov esi,[esp+50h] (the panel) / mov edi,[esi+308h], the 10
+    # bytes the hook replaces at 0x4C8281 ([esp+54h] the first selected unit, [esp+78h] the selection); and the
+    # minimized block's way back, jmp 4C8281h
+    ("UnitPanelTail", 0x4C8276, 0x15),
+    ("UnitPanelMinBlockBack", 0x69A60F, 5),
+    # minUIStats: the choice of that block, cmp byte [esp+5Eh],1 / je 6987D7h (11 bytes, replaced after the tail hook
+    # is in place; inside the UnitPanelTail range, which the tail verifies first)
+    ("MinBlockChoice", 0x4C8276, 0x0B),
+    # minUIStats: the stat panel fill FUN_004D70ED, thiscall(panel, selection), ret 4, EBP frame; it reads of its
+    # panel only the row handles [+174h+i*4] / [+198h+i*4]. Its head, and its profile option 49h read (push 49h /
+    # ... inlined option lookup ... / cmp byte [esp+63h],1 / je 4D81A1h, the 11 bytes the gate replaces at
+    # 0x4D725C)
+    ("StatFillHead", 0x4D70ED, 0x18),
+    ("StatFillMinGate", 0x4D721B, 0x4C),
+    # minUIStats: the minimized block's resists gate, mov ecx,[ebx+5Ch] / test / je, push 0 / call 44CAC4h (abstract
+    # type 0, Unit) / cmp al,1 / jne 698E7Ah (the 6 bytes NOPed at 0x698BF6), then the armor > 0 test
+    ("MinResistsUnitGate", 0x698BE2, 0x1A),
+    # Data refs (datarefs.h): the parser's constructor, mov ecx,esi / vtable, delimiters { ( } ) / call 5CFA7Ch (the
+    # registration, redirected at 0x5D3229) / mov eax,esi / pop esi / ret; the registration's head (mov esi,ecx:
+    # the table is {data, count, capacity} at [this+0Ch]); its grow FUN_005ACE63, thiscall(array, count, bool),
+    # ret 8, which constructs new 16-byte entries {id, type, BString name, provider}; the float evaluator, which
+    # takes entries[id] and calls [entry+0Ch] when the type is 1
+    ("DataRefParserCtor", 0x5D3209, 0x29),
+    ("DataRefRegister", 0x5CFA7C, 0x09),
+    ("DataRefArrayGrow", 0x5ACE63, 0x29),
+    ("DataRefFloatEval", 0xAB9400, 0x60),
+    # minUIStats items: the line of sight getter FUN_0048206D, thiscall(unit) -> ST0 ([world+5ACh] x the modifier x
+    # [[unit+0B4h]+90h]), and the garrison capacity FUN_0049EB5A, thiscall(proto) -> EAX, [[proto+10Ch]] or 0
+    ("LosGetterHead", 0x48206D, 0x34),
+    ("MaxContained", 0x49EB5A, 0x11),
+    # minUIStats batch 2, verify only: the attack list FUN_00487EEE, thiscall(tactic, unit, 0, -1, 1, list*), ret 14h,
+    # which the stat panel fill calls at 0x4D792F into its list 0xCF05B0 (guard 0xCF05BC bit 0); a unit's resource
+    # holding: has one 0x45EE8B(unit) and the amount 0x4E5979(unit, resource), both through [[unit+0B4h]+94h]
+    ("AttackListFill", 0x487EEE, 0x18),
+    ("HoldsResource", 0x45EE8B, 0x14),
+    ("HeldAmount", 0x4E5979, 0x14),
+    # minUIStats batch 3, verify only (no byte is written). The build tick of the Build action (vtable 0xB97330):
+    # mov eax,[esi+14h] / ... / mov ecx,[esi+4] / push edi, before the rate lookup's call at 0x9D3D7B (which
+    # buildingWorkRateAuras redirects; it is not in these two ranges); then fstp [esp+20h] (the rate) / the builder
+    # factor call 0x9C4C0C(target, [[esi+10h]+10h], [[esi+4]+8]) / fmul by the rate, [world+318h],
+    # [[[esi+10h]+44h]+37Ch] and [world+104h] / fstp [esp+1Ch]; and its add, mov ebp,[esp+1Ch] / push ebp /
+    # mov ecx,edi / call 9C4BE3h, which passes [proto+0CCh] as the cap of the BuildInfo add 0x7ADE95 ([data+4] +=)
+    ("BuildTickRateHead", 0x9D3D6B, 0x10),
+    ("BuildTickScale", 0x9D3D80, 0x47),
+    ("BuildTickAdd", 0x9D3DE9, 0x0C),
+    ("BuildPointsAddCall", 0x9C4BE3, 0x1E),
+    ("BuildPointsAdd", 0x7ADE95, 0x10),
+    ("BuilderFactor", 0x9C4C0C, 0x1A),
+    ("RateLookupHead", 0x487C45, 0x10),
+    # minUIStats batch 3, verify only: the player's regeneration FUN_004905E1 (from 0x490A52), its head, and the
+    # read of a record's rate, mov eax,[ebx] / ... / fld [eax+edi+8] / fmul [world+104h] / fstp [esp+14h]
+    ("RegenPlayerHead", 0x4905E1, 0x10),
+    ("RegenRateRead", 0x4907FF, 0x1F),
 ]
 
 

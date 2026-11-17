@@ -23,6 +23,24 @@ Size
   The files are written uncompressed (WoL's are Oodle-compressed), so they are bigger:
   16.5 MB in all, against 7.0 MB for the originals (+9.6 MB).
 
+Compressed or uncompressed: two zips, pick one
+  The same 107 fixed models come in two zips. Use ONE of them, not both.
+  - WoL-building-bones-fix.zip: uncompressed, 16.5 MB of models. The game loads an
+    uncompressed model faster: it skips the Oodle decoder, which runs on the game's main thread
+    the first time a model is met. Measured in WoL with every model uncompressed: a saved game
+    loaded 2.1 s sooner (11.6 s to 9.5 s), and the 72-80 ms frames that loaded a new model in
+    the middle of a match went away. For these 107 models alone the gain is small.
+  - WoL-building-bones-fix-compressed.zip: the same models compressed again with Oodle1, in the
+    same section formats as WoL's originals: 6.96 MB of models, against 6.96 MB for the
+    originals (+3.7 KB), so about 9.6 MB smaller than the uncompressed zip. The models were
+    compressed by the game's own Granny runtime (granny2.dll); expanded again, each one is the
+    uncompressed fixed model byte for byte, and its CRC is valid. Tested in game with the
+    compressed Mahalla, Temple, Royal Court, Madrasah and Forge models: they load, and the
+    buildings, their damage models, the Royal Court's flag and the Forge's smoke show as with
+    the uncompressed set.
+  Both are applied and undone the same way (below), with the same originals zip. If you switch
+  from one to the other, just unzip the other one over it: it replaces the same 107 files.
+
 How to apply
   1. BACK UP FIRST. These files replace WoL's own files of the same name (they are loose files,
      not inside the .bar archives). Keep WoL-building-bones-originals.zip, which is shipped

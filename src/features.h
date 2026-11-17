@@ -93,6 +93,7 @@ Outcome ApplyOverhealDecay(const Config& config);
 Outcome ApplySteadyHitpointBars(const Config& config);
 Outcome ApplyInventoryBars(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
+Outcome ApplyMinUiStats(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyRendererOption(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
@@ -266,6 +267,8 @@ inline constexpr Feature kFeatures[] = {
     // first.
     {"inventoryBars", ApplyInventoryBars},
     {"showGatherRate", ApplyShowGatherRate},
+    // After showGatherRate and overhealHitpointBars, whose rows of the stat panel it mirrors into the minimized one.
+    {"minUIStats", ApplyMinUiStats},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
     {"resourceDebt", ApplyResourceDebt},
@@ -302,7 +305,7 @@ inline constexpr const char* kHandledKeys[] = {
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
-    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "playericon", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };

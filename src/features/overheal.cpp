@@ -61,6 +61,7 @@
 #include <vector>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../floatingbars.h"
 #include "../generated/sites.h"
 #include "../techsubtypes.h"
@@ -491,6 +492,10 @@ void ChangeMaxHpOnly(char* proto, const char* base, float amount, std::uint8_t r
 
 }  // namespace
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyOverhealHitpointBars(const Config& config) {
@@ -651,7 +656,14 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
   Log(L"overhealHitpointBars: HP bars and HP texts of units of unittype %hs take InitialHitpoints as 100 %%%ls%ls%ls "
       L"(display only)",
       names.c_str(), segmentText, statText, log ? L", the first unit of each proto logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool OverhealOn(const char* proto) { return g_unitInfoOn && proto != nullptr && UhcOverhealMarked(proto) != 0; }
+
+}  // namespace uhc::unitinfo

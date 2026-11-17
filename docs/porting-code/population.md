@@ -10,6 +10,8 @@ Every feature also needs the core [helpers](helpers.md): the site table, patchin
 
 Contract: [decimalPopulation](../porting-to-another-dll.md#decimalpopulation).
 
+Besides the core helpers, it needs: [`unitinfo.h`](helpers.md#unit-info-for-the-panels).
+
 Sites: `BStringFormat` `0x444EFB` (20 B), `RefFuturePopProvider` `0x44CE3A` (10 B), `RefTotalPopProvider` `0x45809D` (10 B), `PopLimit` `0x4581F3` (80 B), `RefPopCapProvider` `0x458244` (10 B), `RefPopReg` `0x5D0B47` (43 B), `RefPopCapReg` `0x5D0BC3` (43 B), `RefFuturePopReg` `0x5D0C3F` (43 B), `RefTotalPopReg` `0x5D0CBB` (43 B), `PopCountParse` `0x5FB92E` (30 B), `PopCapAddParse` `0x5FD719` (30 B), `PopFormatHelp` `0x63F98D` (8 B), `PopFormatCost` `0x63FEC5` (8 B), `TeamPopCap` `0x679694` (38 B), `RefPopProvider` `0x6F2274` (10 B), `PopFormatCapLine` `0x6F2DB5` (8 B), `PopFormatCap` `0x6F2E34` (8 B), `ColorizePopArg` `0x6F576F` (8 B), `ColorizePopFormat` `0x6F580C` (12 B), `PopFormatCost2` `0x70F58F` (8 B), `PopFormatHelp2` `0x70FF3A` (8 B), `PopFormatCost3` `0x710651` (8 B), `XsAiGetAvailableEconomyPop` `0x72A333` (10 B), `XsAiGetCurrentEconomyPop` `0x72A382` (10 B), `XsAiGetEconomyPop` `0x72A3D1` (10 B), `XsAiSetEconomyPop` `0x72A420` (10 B), `XsAiGetAvailableMilitaryPop` `0x72A49B` (10 B), `XsAiGetMilitaryPop` `0x72A4EA` (10 B), `XsAiSetMilitaryPop` `0x72A539` (10 B), `XsAiGetPopNeeds` `0x7319AA` (10 B), `DeckOutOfRange` `0x7EF005` (5 B), `DeckLimit` `0x7EF026` (13 B), `IntEffect` `0x7F899B` (35 B), `XsKbGetPop` `0x885EE5` (10 B), `XsKbGetPopCap` `0x885F34` (10 B), `XsKbGetPopCapAddition` `0x887BB1` (10 B), `XsKbGetPopSlots` `0x887C58` (10 B), `XsKbGetPopulationSlotsByUnitTypeID` `0x887CFF` (10 B), `XsKbGetPopulationSlotsByQueryID` `0x887DA6` (10 B), `XsKbUnitPickSetMinimumPop` `0x88F6C1` (10 B), `XsKbUnitPickGetMinimumPop` `0x88F768` (10 B), `XsKbUnitPickSetMaximumPop` `0x88F7E3` (10 B), `XsKbUnitPickGetMaximumPop` `0x88F88A` (10 B), `PopCapEffectRemove` `0x8D20AB` (8 B), `PopCapEffectAdd` `0x8D87AB` (8 B), `PopCountEffect` `0x8FA835` (29 B), `PopCapAddEffect` `0x8FA8CF` (26 B), `XsTrPlayerGetPopulation` `0x98C439` (10 B), `StartPopBonus` `0xA0D2D1` (9 B).
 
 ### src/features/decimalpop.cpp
@@ -60,6 +62,7 @@ Sites: `BStringFormat` `0x444EFB` (20 B), `RefFuturePopProvider` `0x44CE3A` (10 
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 
 extern "C" {
 extern std::int32_t g_uhcPopScale;        // features/limits.cpp; read by the cap hook
@@ -599,6 +602,12 @@ Outcome ApplyDecimalPopulation(const Config& config) {
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+int PopulationScale() { return g_uhcPopScale > 0 ? g_uhcPopScale : 1; }
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/decimalpop_hooks.asm

@@ -281,6 +281,20 @@ impactBoneFix [all] [log]
   own loose files, so an `originals` zip of the same 107 files goes with it, and its README (English and Spanish) says to
   back up first. Both zips and the README are in this repo, in
   [`wol-fixes/building-bones/`](../wol-fixes/building-bones/LEEME-README.txt).
+- **Compressed set (2026-11-17, JTMaston asked):** `WoL-building-bones-fix-compressed.zip`, beside the uncompressed
+  one, holds the same 107 models compressed again with Oodle1 by aoe3-blender-tools' `tools/recompress_models.py`
+  (`GrannyRecompressFile` of the game's `granny2.dll`, hosted by a small x86 helper; root type reference put back, CRC
+  recomputed): 6,963,269 bytes against 6,959,543 for WoL's originals, in the originals' section formats (106 one Oodle1
+  section; `british_hq_corps_base` keeps its sixth section uncompressed, as the original does), 9.6 MB less than the
+  uncompressed set. Each model expanded again by the bridge (`rebake --noop`) is the uncompressed fixed model byte for
+  byte (107 of 107) and the runtime finds every CRC valid. In game (`C:\AoE3-UHC-WoLReal5`, a Persian skirmish, the
+  42 Mahalla, Temple, Royal Court, Madrasah and Forge models installed, `perfFileLog 0`): 23 of them were opened, each
+  read at its recompressed size, and the five buildings stood and, damaged by trigger to 60 % of their hit points, showed their damage
+  models, with the Royal Court's flag and the Forge's smoke and flag in place; the bed was restored by hash. Not done:
+  a cannon on the compressed Mahalla (the Falconets of that run did not fire on buildings). The README (now with an
+  English section on the choice) says to use one zip or the other: uncompressed loads faster (in WoL with every
+  model uncompressed, the save load 2.1 s shorter and the 72–80 ms model-load frames gone, see
+  [performance.md](performance.md)), compressed is 9.6 MB smaller.
 
   ![The ME Temple with the set, key off](media/impactBoneFix-wol-set-temple.gif)
 

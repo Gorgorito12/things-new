@@ -292,3 +292,11 @@ randomCost-wol-control 8 33 3 800:72:0:0+800:300:900:0+800:110:0:190
 impactBoneFix-wol-set-temple 12 12 1
 impactBoneFix-wol-set-temple-control 0 12 1
 impactBoneFix-wol-set-collapse 18 12 1
+minUIStats-wol 2 12 1 800:260:170:0
+minUIStats-wol-control 2 12 1 800:260:170:0
+minUIStats-building-wol 0 12 1 800:260:170:0
+minUIStats-building-wol-control 0 12 1 800:260:170:0
+minUIStats-batch2-wol 2 12 1 800:260:170:0
+minUIStats-batch2-wol-control 2 12 1 800:260:170:0
+minUIStats-batch3-wol 2 12 1 800:260:170:0
+minUIStats-batch3-wol-control 2 12 1 800:260:170:0

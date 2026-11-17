@@ -3671,6 +3671,166 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   its HP row, with the rate the log reported (0.670/s; the stock `Settler` gathers `BerryBush` at
   0.67).
 
+### minUIStats
+
+How the game fills the two places that describe the selected unit, and how the key makes the
+minimized interface show what the normal one shows. The catalog of what could be shown and the
+plan are in [unit-panel-catalog.md](unit-panel-catalog.md). <!-- private -->
+
+**Two panel objects, two layout files each.** The selection panel (`uiunitselection.xml`, or
+`uiunitselectionmin.xml` with profile option 49h `optionminimizedui`) and the stat panel
+(`uiunitstatpanel3.xml`, or `uiunitstatpanel3min.xml`). Each binds its gadgets by name when it is
+built (0x9BAD00.., 0x9BBAFC..): the stat panel nine rows `unitstatpanel3-StackLabel%d` /
+`StackValue%d` at `[panel+174h+i*4]` / `[panel+198h+i*4]`; the selection panel its named gadgets
+at `+2E4h..+340h` and three rows `unitselectionpanel-StackLabel%d` / `StackValue%d` at
+`+344h` / `+350h`. A name missing from the file gets the "none" handle, and every writer skips it.
+
+**The normal interface** fills the stat panel (FUN_004D70ED): the name and owner, the hit points,
+then from row 2 a group's health (behind a config flag), the resource a unit holds, the gatherers
+of a workplace, the AutoGather rate, the speed, the armor, one row per attack (damage and its type,
+range, bonus multipliers, area in the help text) and the special attacks (behind profile option
+45h), and hides the rows left over.
+
+**The minimized interface** makes that function return at once (0x4D7261). The selection panel's
+fill (FUN_004C7E52) instead runs its own block (0x6987D7..0x69A60F): owner, hit points, armor, the
+resource held, the AutoGather rate, and up to three attack rows, each a single label. There is no
+speed, gatherer or group row, and the attacks beyond the third are lost.
+
+**Why buildings show no armor.** Both panels show the armor row only for a proto of abstract type
+0, `Unit`, whose armor `[proto+0C4h]` is above 0 (0x698BED, 0x69B34C). Buildings are not `Unit`,
+so their armor is never shown, and a gadget a layout nests inside the armor value (to place a
+speed text, say) is hidden with it.
+
+**The `{…}` texts.** A `formatText` gadget's `{name}` is looked up, by name, in one table of
+16-byte entries `{id, type, name, provider}` (`[parser+0Ch]`, count `+10h`) that FUN_005CFA7C
+fills once; its check (0x5D3263) wants each id to equal its index and a type of 1 to 4, and the
+evaluators index the table by id. An entry added at the end with the next id therefore works like
+a stock one. Seven `currentUnit…` names point to a stub that always fails (`AttackRange`,
+`MinAttackRange`, `BuildRate`, `GatherRate`, `AttackList`, `AttackString`, `GatherRateString`),
+and `currentUnitMaxVelocity` reads the proto's base speed `[proto+80h]`, not the live one the stat
+panel shows.
+
+**The key.** Five writes, each checked against the stock bytes first:
+- **The tail of the selection panel fill** (0x4C8281, 10 bytes, `AddUnitPanelTail` in `unitpanel.*`): both
+  interfaces pass there, the minimized one after its own block, which jumps back to it. The hook passes the panel
+  `[esp+50h]`, the selection `[esp+78h]`, its first unit `[esp+54h]` and the byte `[esp+5Eh]`, the profile option
+  the block was chosen by, then re-executes `mov esi,[esp+50h] / mov edi,[esi+308h]` and goes on at 0x4C828B.
+- **The choice of the minimized block** (0x4C8276, 11 bytes, written after the tail hook, which verifies those bytes
+  too): `cmp byte [esp+5Eh],1 / je 6987D7h` runs the block with the option on; the hook also runs it when the
+  panel's `unitHitPointsLabel` handle `[panel+2F0h]` is a real gadget, which only the minimized layouts have, and
+  sets the byte to 1. A minimized layout loaded with the option off (the layout's choice can be patched apart from
+  the option) is then filled in full; the normal layout goes on to 0x4C8281 as before.
+- **The stat panel fill's gate** (0x4D725C, 11 bytes): `cmp byte [esp+63h],1 / je 4D81A1h` returns with the option
+  on; the hook returns too, unless the DLL set `g_uhcMinUiForceFill`, and then goes on to the rows at 0x4D7267.
+- **The resists gate** of the minimized block: the `jne 698E7Ah` after the `Unit` type test (0x698BF6, 6 bytes) is
+  NOPed, so the armor test alone decides.
+- **The data refs** (`AddDataRef` in `datarefs.*`): the parser constructor's call of the registration (0x5D3229) goes
+  to a hook that calls it, then appends one entry per `{uhc...}` name through the table's own grow (0x5ACE63), with
+  the next id, type 3 and the DLL's provider.
+
+**The rows.** At the tail the DLL finds its gadgets by name in the panel (0xAB7C2F), once per panel; a layout
+without them gets nothing. Each `<row>` of the data file is one gadget: its item's text, or the gadget hidden
+through the manager's hide (0x448F13) when the item does not apply. The texts are set through the gadget's vtable
+(+80h text, +54h refresh) only when they change, at most every 250 ms unless the selection changed.
+
+**The normal interface's rows.** The fill (FUN_004D70ED, `thiscall(panel, selection)`) reads nothing of its panel
+but the 18 row handles. The DLL calls it with a panel of its own whose rows all name the first two gadgets of the
+`bigPanelRows` block, after giving those two gadget objects a copy of their vtable whose +84h (style), +80h (text),
++54h and +58h record instead of drawing. So the fill writes its rows as the normal interface would, one after the
+other, into a list: label style, label, value, and the help text the fill leaves in the label's `+68h`. The real
+vtables and help texts are put back, and the rows are written into the block's gadgets, in order, less the kinds
+the data file skips. A row's kind comes from its label: the localized `Hitpoints:` (24320), `Speed:` (24323),
+`Resists:` (35758) and `Gatherers:` (34986), the literal `Group Health`, the attack style 0xCF05A4, a value ending
+in `/s` (a rate) and a `(32)` icon in the label (a resource held); the first row is the name, and the rows after the
+last attack are special attacks. `auto` skips what the minimized block wrote itself: the owner, hit points, resists,
+the resource, the rate, the special attacks and its first attack rows (three, two with a resource row).
+
+**More items (batch 2).** All are reads:
+- the attacks are listed as the stat panel lists them (0x4D7892..0x4D79A1): the unit's current tactic,
+  `[[[proto+44h]+10h] + [[unit+58h]+0A8h]*4]`, fills the fill's own list 0xCF05B0 through 0x487EEE (`thiscall(tactic,
+  unit, 0, -1, 1, list)`, `ret 14h`; the list is constructed on first use, guard bit 0 of 0xCF05BC, as the fill does),
+  and each entry's `+4` indexes the proto's actions `[[proto+44h]+1Ch]`; actions without damage (`[action+24h]`) are
+  left out. ROF is `[action+34h]` (ms), the ranges are `[[action+18h]+4]` (min) and `+8` (max), the area the byte
+  `[[action+24h]+6]`, the damage type `+5`;
+- cost: the player's proto cost list `[proto+70h]` through 0x44EFFF, which unmasks it; population `[proto+0D8h]`
+  (the `PopulationCount` Data subtype 1Fh writes it, case 0x8FA814), build limit `[proto+108h]` (subtype 25h, case
+  0x8FA9D0), bounty `[proto+168h]` (the `<Bounty>` handler 0x5F5D79);
+- what a unit holds: 0x45EE8B, the resource 0x4DBEC1, the amount 0x4E5979 and the capacity 0x494503, as the stock
+  row; the lifespan's countdown `[[unit+0B4h]+1Ch]` while state bit 3 is set;
+- the other keys answer through `unitinfo.h` from their own state, and only when they applied: the overheal is the
+  HP above `[proto+9Ch]` of a marked proto, the rank and kills come from the veterancy counter, the poison from the
+  key's map of running stacks, the price range from the `<RandomCost>` tags, the cards per age from
+  `shipmentCounts`' counts, the gather rate from `showGatherRate`'s records.
+A `text=` row is a template: each `|`-separated part is shown only when every `{item}` in it has a value.
+
+**More items (batch 3).** All are reads, from the same panel tail and data refs:
+- *Building.* A unit builds through its Build action (vtable 0xB97330, type byte `[action+60h]` 0, working state
+  `[action+61h]` 8, target ID `[action+14h]`). Each tick (0x9D3D6B..0x9D3DF0) it adds to the target's building data
+  `[unit+68h]` (through 0x9C4BE3 and 0x7ADE95, `[data+4]` += amount, capped at the proto's build points
+  `[proto+0CCh]`; `[data+8]` is the fraction): the rate of its tactics action for the target (0x487C45) × the builder
+  factor 0x9C4C0C(target, builder ID, action ID) × `[world+318h]` × the builder's player's `[player+37Ch]` × the frame
+  time `[world+104h]`. The builder factor reads the site's worker list `[unit+94h]` (count `+98h`, 18h-byte entries:
+  `+0` the worker's ID, `+8` the action ID, `+0Ch` the order it came in): 1.0 for the first worker, the civ's figure
+  (`+3Ch` of its record) for the others, 0 for a unit not in the list; for a proto of abstract type 59h, the civ's
+  per-count table `[civ+154h]` instead. The item `buildRate` is that product without the frame time, for the selected
+  unit and its target; `buildTime` sums it over the site's worker list and divides the points left by it;
+  `buildProgress` is `[data+8]`. The engine's own functions are called, so a WorkRate change, a civ's figure or a
+  modifier counts as it does in the tick. Measured on a 300-point site: one builder 1.50 pts/s shown and 1.500
+  measured, three builders 1.50 + 0.45 + 0.45 shown and 2.40 measured; the time to finish within a second.
+- *Regeneration* is per player (FUN_004905E1, from the player update 0x490A52), not a tactic action: for each civ ID
+  of the list `[player+20h]` (count `+24h`) that the database's civ table knows, the records `[player+44h] + ID*0Ch`
+  (`{data, count}`, 14h-byte entries: `+0` the unit type healed, `+8` the rate in % of max HP per second, `+0Ch` the
+  idle time it needs) heal each unit of that type by rate × max HP × 0.01 per second, while idle that long when the
+  record asks for it. `regen` sums the records whose type the unit is. The fire pit's Regeneration dance (0x679E66) is
+  a separate source and is not added.
+- *Auras.* Only the keys' own stats are named, from their state, through `unitinfo.h`: the work factor that
+  `buildingWorkRateAuras` multiplies a rate by (its `Factor`, the stock modifier sum over the unit's stat-40h
+  modifiers, used only when its hook would use it: the key applied and the unit has a modifier record), the gather
+  factors of `resourceGatherAuras` (one per stat 42h..48h, as its tick computes them), and what `unitResourceAuras`'
+  last update paid the unit's owner per second, or took from the unit, while fresh (the rule of that key's own panel
+  row). That update now keeps its takes (target, resource, amount per second) beside the per-second sums it already
+  kept for its row. The game's own auras (`GatherRate`, `Damage`...) are not told apart: their effect is already in
+  the values the panel shows.
+
+#### Coexistence
+
+The key writes five places (above) and adds no hook site in batch 3: the build, regeneration and aura items are
+reads made from the panel tail (`AddUnitPanelTail`, 0x4C8281) and the data ref providers (`AddDataRef`), on the
+game's thread, while the panel is filled. No pointer is kept from one fill to the next: a unit is found again from
+its ID (the world's table, as the engine does), its action from `[[unit+58h]+24h]`, its site from the action's target
+ID. No simulation state is written.
+
+**What batch 3 reads and who else is there.** Each stock range the items mirror is a verify-only site
+(`tools/gen_sites.py`), checked apart from the key's own sites: a mismatch turns off those items, logged, not the key.
+
+| Read (verify-only site) | Other keys at or next to it | Another DLL | How they coexist |
+|---|---|---|---|
+| Build tick, 0x9D3D6B..0x9D3D7A and 0x9D3D80..0x9D3DC6 (`BuildTickRateHead`, `BuildTickScale`), its add 0x9D3DE9 (`BuildTickAdd`) | `buildingWorkRateAuras` redirects the call 0x9D3D7B..0x9D3D7F (`BwrRateCallBuild`) | none (runtime patch list, 287 ranges) | The two ranges leave those 5 bytes out, so either order of applying works. The mirror calls the stock callee 0x487C45, not the call site, and multiplies by `unitinfo::BuildWorkFactor`, which is that key's `Factor` under the same two conditions as its hook; 1.0 when the key is off |
+| Rate lookup 0x487C45 (`RateLookupHead`) | none hooks it (22 callers; heal and build calls redirected by `buildingWorkRateAuras`) | none | Pure: it reads the action's rate records and calls the type test 0x44D7FA. `workRateByAbstractType` changes those records through effects, so its changes are read as the tick reads them |
+| Builder factor 0x9C4C0C (`BuilderFactor`), BuildInfo add 0x9C4BE3 / 0x7ADE95 (`BuildPointsAddCall`, `BuildPointsAdd`) | none | none | 0x9C4C0C reads the worker list and the civ records; for type-59h protos it calls 0x4EC7B4, which rebuilds its own static list 0xD6F6F8 (count reset to 0 on each call, read only inside it): scratch of that function, not state another step reads. Same thread as the tick, never nested in it |
+| BuildingWorkRate getter 0x9BFE33 | `liveBuildingWorkRate` (head), `buildingWorkRateAuras` (four calls), `noTrainNearEnemyTC` (the Train call) | — | Not read: it is the train and research rate, not the build rate |
+| Regeneration FUN_004905E1: head 0x4905E1 and the rate read 0x4907FF..0x49081D (`RegenPlayerHead`, `RegenRateRead`) | `overhealDecay` replaces the add's call 0x49087C (`RegenAddHp`), after the read; `danceBonusCivs` hooks the dance getter 0x49048B, another function | none | No shared byte. `overhealDecay` changes what the add does above max HP, not the rate. The dance's regeneration is a separate source, not shown |
+| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking` (`AuraClaim`) decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
+| `unitResourceAuras`' aura states | `AuraClaim` (asked before each take) | — | The update writes its takes after the claim; the panel only reads the map. The aura update and `AuraClaim` are never called from the panel |
+| Data refs `uhcBuildTime`, `uhcBuildProgress`, `uhcBuildRate`, `uhcRegen`, `uhcAuras` | `AddDataRef` has no other user | — | Appended after the 116 stock names, none of which starts with `uhc`; the five are new in the key's own list |
+
+**Found with every key on** (the cfg template's 124 keys, one scene): `decimalPopulation` stores population
+quantities times K, `[proto+0D8h]` included, so the `population` item showed `Pop: 10` for a settler; it now divides by
+that key's K (`unitinfo::PopulationScale`, 1 without it), as that key's own panels do. And the shared proto tag table
+(`prototags.cpp`) had room for 32 tags while the keys ask for 33, so `linkedResource` logged FAILED; it holds 64 now.
+After both: 113 applied, 0 failed, 126 hooks reached.
+
+Batch 1 and 2: the key's sites do not touch the AutoGather row block (0x6991BF..0x699456), where another DLL may
+redirect the rate's call and NOP its gate, nor the unit panel row hook at 0x699456. The minimized interface can be
+forced by patching the screen's copy of the option (0x761BF0) and the file choices, without the two profile reads at
+0x4C8235 and 0x4D721B: the block choice above makes the selection panel behave as with the option on.
+
+**Shown equals applied.** Tested in one scene with the related keys on and off (`buildingWorkRateAuras`,
+`resourceGatherAuras`, `unitResourceAuras`, `liveBuildingWorkRate`, `noTrainNearEnemyTC`): with them, a builder under
+a x1.5 `BuildingWorkRate` aura shows 1.50 pts/s and builds 1.500; without them, 1.00 and 1.000, and a second builder
+0.30 (the civ's figure), 1.60 for three, measured 1.60. A gold miner under a x1.25 `GoldGatherRate` aura shows
+`+25% gold` with the stock rate row at 0.75/s, against 0.60/s with the keys off.
+
 ### buildingWorkRateAuras
 
 **The stock mechanism.**

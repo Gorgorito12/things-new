@@ -38,6 +38,7 @@
 
 #include "../actiontags.h"
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../floatingtext.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -834,6 +835,10 @@ void* g_uhcDotTakeDamage = reinterpret_cast<void*>(&UhcDotTakeDamage);
 void UhcDotTakeDamageHook();
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyDamageOverTime(const Config& config) {
@@ -869,7 +874,40 @@ Outcome ApplyDamageOverTime(const Config& config) {
   Log(L"damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with "
       L"<AttachMaxStacks>, <AttachSnare>, <AttachTickText> and <AttachModel>%ls (multiplayer unverified)",
       g_noTickText ? L"; tick texts off on this machine" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool Poison(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn || unit == nullptr || g_dots.empty()) {
+    return false;
+  }
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : *reinterpret_cast<const char* const*>(game + 0x13C);
+  if (world == nullptr || world != g_dotWorld) {
+    return false;
+  }
+  const std::uint32_t now = *reinterpret_cast<const std::uint32_t*>(world + 0x108);
+  const std::int32_t id = *reinterpret_cast<const std::int32_t*>(unit + 0x10);
+  std::size_t stacks = 0;
+  std::uint32_t end = now;
+  for (const auto& [key, dot] : g_dots) {
+    if (key.target == id) {
+      stacks += dot.stacks.size();
+      end = dot.end > end ? dot.end : end;
+    }
+  }
+  if (stacks == 0) {
+    return false;
+  }
+  wchar_t text[48];
+  swprintf_s(text, L"%u x %.0f s", static_cast<unsigned>(stacks), static_cast<double>(end - now) / 1000.0);
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo

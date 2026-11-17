@@ -13,6 +13,7 @@ Contents:
 - [noCorpseDopples](#nocorpsedopples)
 - [steadyHitpointBars](#steadyhitpointbars)
 - [inventoryBars](#inventorybars)
+- [minUIStats](#minuistats)
 - [playerIcon](#playericon)
 
 ## abilitySlots
@@ -2011,6 +2012,1634 @@ queue:
 skip:
     jmp noHpBar
 UhcInventoryCorpseHook ENDP
+
+END
+```
+
+## minUIStats
+
+Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
+
+Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `MinBlockChoice` `0x4C8276` (11 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `MinResistsUnitGate` `0x698BE2` (26 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B).
+
+### src/features/minuistats.cpp
+
+```cpp
+// minUIStats: the minimized in-game interface shows what the normal one shows, and more, in rows a data file lists.
+//
+//   minUIStats [file]      (default minuirows.xml in the build's data folder; without it, the rows below)
+//
+// The minimized selection panel (uiunitselectionmin.xml) gets top-level formatText gadgets the DLL fills:
+// - <row gadget="..." item="speed" label="Speed: " types="Unit"/>: one catalog item (kItems) per gadget;
+// - <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>: the rows the normal
+//   interface's stat panel shows (FUN_004D70ED), mirrored: the fill runs for these gadgets and its rows are kept
+//   in order, less the ones the minimized panel already shows ("auto") and the kinds `skip` names.
+// It also shows a building's armor in the stock resists gadgets (the minimized block's test of abstract type Unit
+// goes), and adds a {uhc...} data ref per item for a layout's own texts (datarefs.h).
+// The normal interface is unchanged: it has none of these gadgets, and every write is to a gadget found by name.
+// docs/how-it-works.md, "minUIStats"; docs/unit-panel-catalog.md.
+#include <windows.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <cwchar>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "../datarefs.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unitpanel.h"
+#include "../unitinfo.h"
+#include "../unittypes.h"
+#include "../xmllist.h"
+
+extern "C" {
+// 1 while minUIStats runs the stat panel fill for the minimized panel's rows (hooks/minuistats_hooks.asm).
+std::uint32_t g_uhcMinUiForceFill = 0;
+void UhcStatFillMinGate();
+void UhcMinBlockChoice();
+}
+
+namespace {
+
+// ---- Engine layout (docs/engine-symbols.md, "Unit panels") ----
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // +13Ch world, +140h database, +920h the UI's view
+constexpr std::uint32_t kUiGlobal = 0x00C67310;    // [[+920h]+13Ch]: the data refs' current unit ID
+constexpr std::uint32_t kUiManager = 0x00C66244;   // [[+44h]]: the gadget manager (show / hide)
+constexpr std::uint32_t kNoGadget = 0x00C672C0;    // [..]: the handle of "no gadget"; valid ones are above it
+constexpr std::uint32_t kLabelStyle = 0x00D6F5D0;  // the stat rows' label style
+constexpr std::uint32_t kAttackStyle = 0x00CF05A4; // the attack rows' label style (0x4D7A90)
+constexpr std::uint32_t kStatRowLabels = 0x174;    // the stat panel's row handles, 9 labels then 9 values
+constexpr std::uint32_t kStatRowValues = 0x198;
+constexpr int kStatRows = 9;
+constexpr std::uint32_t kGadgetTip = 0x68;         // a gadget's help text, a BString
+constexpr float kWholeEpsilon = 1e-6f;             // the panels' "%d" test (0xBA20B4)
+
+struct BString {
+  wchar_t* text;
+};
+
+using GadgetByNameFn = std::int32_t*(__thiscall*)(char* panel, std::int32_t* out, BString* name, std::int32_t flag);
+using GadgetRefFn = std::int32_t*(__thiscall*)(std::int32_t* ref, std::int32_t handle);
+using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
+using GadgetShowFn = void(__thiscall*)(void* manager, std::int32_t handle);
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t id);
+using BStringSetFn = void(__thiscall*)(BString* self, const BString* source);
+using BStringAssignFn = void(__thiscall*)(BString* self, const BString* source, std::int32_t, std::int32_t);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+using StatFillFn = void(__thiscall*)(char* panel, const char* selection);
+using UnitFloatFn = float(__thiscall*)(const char* unit);
+using ProtoIntFn = std::int32_t(__thiscall*)(const char* proto);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+const auto kGadgetByName = reinterpret_cast<GadgetByNameFn>(0x00AB7C2F);
+const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
+const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
+const auto kGadgetShow = reinterpret_cast<GadgetShowFn>(0x00447F7B);
+const auto kGadgetHide = reinterpret_cast<GadgetShowFn>(0x00448F13);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+const auto kBStringAssign = reinterpret_cast<BStringAssignFn>(0x00443BB8);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kStatFill = reinterpret_cast<StatFillFn>(0x004D70ED);
+const auto kMaxHp = reinterpret_cast<UnitFloatFn>(0x00480408);
+const auto kLos = reinterpret_cast<UnitFloatFn>(0x0048206D);
+const auto kMaxContained = reinterpret_cast<ProtoIntFn>(0x0049EB5A);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+template <typename Fn>
+Fn VirtualAt(const void* object, std::uint32_t offset) {
+  return *reinterpret_cast<const Fn*>(*reinterpret_cast<const char* const*>(object) + offset);
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+const char* UnitById(std::int32_t id) {
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  if (world == nullptr || id < 0) {
+    return nullptr;
+  }
+  const std::int32_t index = id & 0x3FFFF;
+  if (index >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  const char* unit = Field<const char* const*>(world, 0x0C)[index];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+// The unit the data refs describe, as the stock providers find it (FUN_006F49B1).
+const char* CurrentRefUnit() {
+  const char* ui = *reinterpret_cast<const char* const*>(kUiGlobal);
+  const char* view = ui == nullptr ? nullptr : Field<const char*>(ui, 0x920);
+  return view == nullptr ? nullptr : UnitById(Field<std::int32_t>(view, 0x13C));
+}
+
+std::wstring Number(float value) {
+  wchar_t text[32];
+  const float whole = std::floor(value);
+  if (value - whole <= kWholeEpsilon) {
+    swprintf_s(text, L"%d", static_cast<int>(whole));
+  } else {
+    swprintf_s(text, L"%.2f", static_cast<double>(value));
+  }
+  return text;
+}
+
+std::wstring StringById(std::int32_t id) {
+  BString text{nullptr};
+  kBStringFromId(&text, id);
+  std::wstring copy = text.text == nullptr ? L"" : text.text;
+  kBStringFree(&text);
+  return copy;
+}
+
+// ---- Catalog items: the value of one item for one unit, or false when it does not apply ----
+
+bool ItemHitpoints(const char* unit, std::wstring* out) {
+  wchar_t text[48];
+  swprintf_s(text, L"%d/%d", static_cast<int>(Field<float>(unit, 0x64)), static_cast<int>(kMaxHp(unit)));
+  *out = text;
+  return true;
+}
+
+// The live maximum speed, with techs, snares and auras, as the stat panel's Speed row (the unit's vtable +34h).
+bool ItemSpeed(const char* unit, std::wstring* out) {
+  const float speed = VirtualAt<UnitFloatFn>(unit, 0x34)(unit);
+  if (!(speed > 0.0f)) {
+    return false;
+  }
+  *out = Number(speed);
+  return true;
+}
+
+bool ItemBaseSpeed(const char* unit, std::wstring* out) {
+  const float speed = Field<float>(Field<const char*>(unit, 0x5C), 0x80);
+  if (!(speed > 0.0f)) {
+    return false;
+  }
+  *out = Number(speed);
+  return true;
+}
+
+bool ItemLos(const char* unit, std::wstring* out) {
+  const float los = kLos(unit);
+  if (!(los > 0.0f)) {
+    return false;
+  }
+  *out = std::to_wstring(static_cast<int>(los));
+  return true;
+}
+
+// The armor as the stock resists value: "0.20" and the icon of its damage type ([proto+1D3h]: 0 hand, 1 ranged,
+// 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]).
+bool ArmorText(const char* unit, bool icon, std::wstring* out) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const float armor = Field<float>(proto, 0xC4);
+  if (!(armor > 0.0f)) {
+    return false;
+  }
+  *out = Number(armor);
+  const std::uint8_t type = Field<std::uint8_t>(proto, 0x1D3);
+  const char* view = Field<const char*>(Game(), 0x920);
+  if (icon && view != nullptr && type <= 2) {
+    wchar_t tag[64];
+    swprintf_s(tag, L" <icon=\"(16)(TextureID(%d))\">", Field<std::int32_t>(view, 0x1CC + 4u * type));
+    *out += tag;
+  }
+  return true;
+}
+
+bool ItemArmor(const char* unit, std::wstring* out) { return ArmorText(unit, true, out); }
+bool ItemArmorValue(const char* unit, std::wstring* out) { return ArmorText(unit, false, out); }
+
+bool ItemGarrison(const char* unit, std::wstring* out) {
+  const std::int32_t capacity = kMaxContained(Field<const char*>(unit, 0x5C));
+  if (capacity <= 0) {
+    return false;
+  }
+  wchar_t text[48];
+  swprintf_s(text, L"%d / %d", Field<std::int32_t>(unit, 0x74), capacity);
+  *out = text;
+  return true;
+}
+
+bool ProtoPoints(const char* unit, std::uint32_t field, std::wstring* out) {
+  const float points = Field<float>(Field<const char*>(unit, 0x5C), field);
+  if (!(points > 0.0f)) {
+    return false;
+  }
+  *out = Number(points);
+  return true;
+}
+
+bool ItemTrainPoints(const char* unit, std::wstring* out) { return ProtoPoints(unit, 0x6C, out); }
+bool ItemBuildPoints(const char* unit, std::wstring* out) { return ProtoPoints(unit, 0xCC, out); }
+
+// ---- Batch 2: attacks, costs and what other keys know ----
+
+constexpr std::uint32_t kAttackList = 0x00CF05B0;   // the stat panel fill's attack list {data, count, capacity}
+constexpr std::uint32_t kAttackListGuard = 0x00CF05BC;  // bit 0: the list was constructed (0x4D7905)
+
+using AttackListFn = void(__thiscall*)(const char* tactic, const char* unit, std::int32_t, std::int32_t, std::int32_t,
+                                       void* list);
+using ResListGetFn = float(__thiscall*)(const char* list, std::int32_t resource);
+using ResourceIconFn = const char*(__thiscall*)(const char* database, std::int32_t resource);
+using UnitResourceFn = std::int32_t(__thiscall*)(const char* unit);
+using UnitAmountFn = float(__thiscall*)(const char* unit, std::int32_t resource);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+const auto kAttackListFill = reinterpret_cast<AttackListFn>(0x00487EEE);
+const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
+const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
+const auto kHoldsResource = reinterpret_cast<UnitTestFn>(0x0045EE8B);
+const auto kHeldResource = reinterpret_cast<UnitResourceFn>(0x004DBEC1);
+const auto kHeldAmount = reinterpret_cast<UnitAmountFn>(0x004E5979);
+const auto kHeldInitial = reinterpret_cast<UnitAmountFn>(0x00494503);
+
+const char* Database() { return Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x140); }
+
+// The unit's attacks, as the stat panel lists them (0x4D7892..0x4D79A1): its current tactic
+// [[[proto+44h]+10h] + [[unit+58h]+0A8h]*4] fills the list through 0x487EEE, each entry's +4 an index into the
+// proto's actions [[proto+44h]+1Ch]; only actions with damage ([action+24h]) are kept.
+std::vector<const char*> Attacks(const char* unit) {
+  std::vector<const char*> out;
+  const char* manager = Field<const char*>(unit, 0x58);
+  const char* data = Field<const char*>(Field<const char*>(unit, 0x5C), 0x44);
+  if (manager == nullptr || data == nullptr) {
+    return out;
+  }
+  const std::int32_t tacticIndex = Field<std::int32_t>(manager, 0xA8);
+  if (tacticIndex < 0 || tacticIndex >= Field<std::int32_t>(data, 0x14)) {
+    return out;
+  }
+  const char* tactic = Field<const char* const*>(data, 0x10)[tacticIndex];
+  if (tactic == nullptr) {
+    return out;
+  }
+  auto* guard = reinterpret_cast<std::uint32_t*>(kAttackListGuard);
+  auto* list = reinterpret_cast<std::int32_t*>(kAttackList);
+  if ((*guard & 1) == 0) {  // as the fill's own first use does, less the exit handler
+    *guard |= 1;
+    list[0] = list[1] = list[2] = 0;
+  }
+  if (list[2] >= 0) {
+    list[1] = 0;
+  }
+  kAttackListFill(tactic, unit, 0, -1, 1, list);
+  const char* entries = reinterpret_cast<const char*>(static_cast<std::intptr_t>(list[0]));
+  const std::int32_t actions = Field<std::int32_t>(data, 0x20);
+  for (std::int32_t k = 0; entries != nullptr && k < list[1]; ++k) {
+    const std::int32_t id = Field<std::int32_t>(entries, 12u * k + 4);
+    const char* action = id >= 0 && id < actions ? Field<const char* const*>(data, 0x1C)[id] : nullptr;
+    if (action != nullptr && Field<const char*>(action, 0x24) != nullptr) {
+      out.push_back(action);
+    }
+  }
+  return out;
+}
+
+// The icon of a damage type (0 hand, 1 ranged, 2 siege), as the panels show it.
+std::wstring TypeIcon(std::uint8_t type) {
+  const char* view = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x920);
+  if (view == nullptr || type > 2) {
+    return L"";
+  }
+  wchar_t tag[64];
+  swprintf_s(tag, L" <icon=\"(16)(TextureID(%d))\">", Field<std::int32_t>(view, 0x1CC + 4u * type));
+  return tag;
+}
+
+// The distinct values of the unit's attacks, each with the damage type icon of the first attack that has it (the
+// panel has little room: a Musketeer's ROF reads "3 (ranged) 1.5 (hand)"), skipping the values `value` rejects.
+template <typename Fn>
+bool PerAttack(const char* unit, std::wstring* out, Fn value) {
+  std::vector<float> seen;
+  out->clear();
+  for (const char* action : Attacks(unit)) {
+    float v = 0.0f;
+    if (!value(action, &v)) {
+      continue;
+    }
+    bool repeated = false;
+    for (const float s : seen) {
+      repeated |= std::fabs(s - v) < 0.01f;
+    }
+    if (!repeated) {
+      seen.push_back(v);
+      *out += (out->empty() ? L"" : L"  ") + Number(v) +
+              TypeIcon(Field<std::uint8_t>(Field<const char*>(action, 0x24), 5));
+    }
+  }
+  return !out->empty();
+}
+
+// Hand attacks (damage type 0) have a melee reach, not a range worth a row.
+bool Ranged(const char* action) { return Field<std::uint8_t>(Field<const char*>(action, 0x24), 5) != 0; }
+
+// ROF [action+34h], ms (<ROF> x 1000); ranges at [[action+18h]+4] (min) and +8 (max); area byte [[action+24h]+6].
+bool ItemRof(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    *v = static_cast<float>(Field<std::int32_t>(a, 0x34)) / 1000.0f;
+    return *v > 0.0f;
+  });
+}
+
+bool ItemRange(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    const char* ranges = Field<const char*>(a, 0x18);
+    *v = ranges == nullptr ? 0.0f : Field<float>(ranges, 8);
+    return Ranged(a) && *v > 0.0f;
+  });
+}
+
+bool ItemMinRange(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    const char* ranges = Field<const char*>(a, 0x18);
+    *v = ranges == nullptr ? 0.0f : Field<float>(ranges, 4);
+    return *v > 0.0f;
+  });
+}
+
+bool ItemArea(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [](const char* a, float* v) {
+    *v = static_cast<float>(Field<std::uint8_t>(Field<const char*>(a, 0x24), 6));
+    return *v > 0.0f;
+  });
+}
+
+// The player's proto cost list [proto+70h] (with its techs; read through 0x44EFFF, which unmasks it).
+bool ItemCost(const char* unit, std::wstring* out) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* database = Database();
+  if (database == nullptr) {
+    return false;
+  }
+  out->clear();
+  const std::int32_t resources = Field<std::int32_t>(database, 0x80);
+  for (std::int32_t r = 0; r < resources && r < 16; ++r) {
+    const float cost = kResListGet(proto + 0x70, r);
+    if (cost > 0.0f) {
+      wchar_t text[96];
+      swprintf_s(text, L"%ls%d <icon=\"(16)(%hs)\">", out->empty() ? L"" : L"  ", static_cast<int>(cost + 0.5f),
+                 kResourceIcon(database, r));
+      *out += text;
+    }
+  }
+  return !out->empty();
+}
+
+bool ProtoInt(const char* unit, std::uint32_t field, std::wstring* out) {
+  const std::int32_t value = Field<std::int32_t>(Field<const char*>(unit, 0x5C), field);
+  if (value <= 0) {
+    return false;
+  }
+  *out = std::to_wstring(value);
+  return true;
+}
+
+// PopulationCount [proto+0D8h], stored times K by decimalPopulation (its own panels divide it back the same way).
+bool ItemPopulation(const char* unit, std::wstring* out) {
+  const std::int32_t value = Field<std::int32_t>(Field<const char*>(unit, 0x5C), 0xD8);
+  if (value <= 0) {
+    return false;
+  }
+  *out = Number(static_cast<float>(value) / static_cast<float>(uhc::unitinfo::PopulationScale()));
+  return true;
+}
+bool ItemBuildLimit(const char* unit, std::wstring* out) { return ProtoInt(unit, 0x108, out); }  // BuildLimit
+
+bool ItemBounty(const char* unit, std::wstring* out) {  // <Bounty>, float [proto+168h] (handler 0x5F5D79)
+  const float bounty = Field<float>(Field<const char*>(unit, 0x5C), 0x168);
+  if (!(bounty > 0.0f)) {
+    return false;
+  }
+  *out = Number(bounty);
+  return true;
+}
+
+// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it.
+bool ItemInventory(const char* unit, std::wstring* out) {
+  const char* database = Database();
+  if (database == nullptr || !kHoldsResource(unit)) {
+    return false;
+  }
+  const std::int32_t resource = kHeldResource(unit);
+  if (resource < 0) {
+    return false;
+  }
+  wchar_t text[96];
+  swprintf_s(text, L"%d/%d <icon=\"(16)(%hs)\">", static_cast<int>(kHeldAmount(unit, resource)),
+             static_cast<int>(kHeldInitial(unit, resource)), kResourceIcon(database, resource));
+  *out = text;
+  return true;
+}
+
+// The countdown of a unit with a lifespan, [[unit+0B4h]+1Ch], while state bit 3 is set (setLifespan 0x48DCB9).
+bool ItemLifespan(const char* unit, std::wstring* out) {
+  const auto* bits = Field<const std::uint8_t*>(unit, 4);
+  const char* sub = Field<const char*>(unit, 0xB4);
+  if (bits == nullptr || sub == nullptr || (bits[0] & 0x08) == 0) {
+    return false;
+  }
+  const float left = Field<float>(sub, 0x1C);
+  if (!(left > 0.0f)) {
+    return false;
+  }
+  wchar_t text[32];
+  swprintf_s(text, L"%d s", static_cast<int>(left + 0.5f));
+  *out = text;
+  return true;
+}
+
+// overhealHitpointBars: the hit points above InitialHitpoints of a marked unit.
+bool ItemOverheal(const char* unit, std::wstring* out) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (!uhc::unitinfo::OverhealOn(proto)) {
+    return false;
+  }
+  const float above = Field<float>(unit, 0x64) - Field<float>(proto, 0x9C);
+  if (!(above >= 1.0f)) {
+    return false;
+  }
+  *out = L"+" + std::to_wstring(static_cast<int>(above));
+  return true;
+}
+
+bool ItemVeterancy(const char* unit, std::wstring* out) { return uhc::unitinfo::Veterancy(unit, out); }
+bool ItemPoison(const char* unit, std::wstring* out) { return uhc::unitinfo::Poison(unit, out); }
+bool ItemRandomCost(const char* unit, std::wstring* out) { return uhc::unitinfo::RandomCost(unit, out); }
+bool ItemShipments(const char* unit, std::wstring* out) { return uhc::unitinfo::ShipmentCounts(unit, out); }
+bool ItemGatherRate(const char* unit, std::wstring* out) { return uhc::unitinfo::GatherRate(unit, out); }
+
+// ---- Batch 3: building, regeneration, our auras ----
+
+constexpr std::uint8_t kBuildActionType = 0;  // [action+60h] of a unit's Build action (the type list, 0x5227B4)
+constexpr std::uint8_t kBuildingState = 8;    // [action+61h] while it works (its animation loop, 0x9D34B1)
+constexpr int kMaxWorkers = 64;
+bool g_buildReads = false;  // the build tick's code matches what BuildRateOn mirrors
+bool g_regenReads = false;  // the regeneration's code matches what ItemRegen mirrors
+
+bool AllMatch(std::initializer_list<const uhc::Site*> list) {
+  bool all = true;
+  for (const uhc::Site* site : list) {
+    if (!uhc::Matches(*site)) {
+      uhc::Log(L"minUIStats: site %hs at 0x%08X does not hold the stock bytes", site->name, site->va);
+      all = false;
+    }
+  }
+  return all;
+}
+
+using RateForFn = float(__thiscall*)(const char* tacticsAction, const char* target);
+using BuilderFactorFn = float(__thiscall*)(const char* target, std::int32_t builderId, std::int32_t protoActionId);
+const auto kRateFor = reinterpret_cast<RateForFn>(0x00487C45);
+const auto kBuilderFactor = reinterpret_cast<BuilderFactorFn>(0x009C4C0C);
+
+// What one builder adds to its target per second, as the build tick 0x9D3D6B..0x9D3DC3 computes it before it
+// multiplies by the frame time [world+104h]: the rate of its tactics action for the target (0x487C45; with
+// buildingWorkRateAuras, the factor that key's hook of that call applies), the builder factor 0x9C4C0C (1.0 for
+// the first builder of the site, the civ's figure for the others), the world's rate [world+318h] and the
+// builder's player's [player+37Ch]. 0 when the unit is not building `target` right now.
+float BuildRateOn(const char* builder, const char* target) {
+  if (!g_buildReads) {
+    return 0.0f;
+  }
+  const char* manager = Field<const char*>(builder, 0x58);
+  const char* action = manager == nullptr ? nullptr : Field<const char*>(manager, 0x24);
+  const char* player = Field<const char*>(builder, 0x44);
+  const char* world = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x13C);
+  if (action == nullptr || player == nullptr || world == nullptr || Field<std::uint8_t>(action, 0x60) != kBuildActionType ||
+      Field<std::uint8_t>(action, 0x61) != kBuildingState || Field<std::int32_t>(action, 0x14) != Field<std::int32_t>(target, 0x10)) {
+    return 0.0f;
+  }
+  const char* tactics = Field<const char*>(action, 0x04);
+  if (tactics == nullptr) {
+    return 0.0f;
+  }
+  const float rate = kRateFor(tactics, target) * uhc::unitinfo::BuildWorkFactor(builder);
+  const float factor = kBuilderFactor(target, Field<std::int32_t>(builder, 0x10), Field<std::int32_t>(tactics, 0x08));
+  return rate * factor * Field<float>(world, 0x318) * Field<float>(player, 0x37C);
+}
+
+// A building under construction: its building data [unit+68h] (+4 the build points so far, +8 the fraction),
+// below 1.0.
+bool UnderConstruction(const char* unit, const char** data) {
+  *data = Field<const char*>(unit, 0x68);
+  return *data != nullptr && Field<float>(*data, 8) < 1.0f;
+}
+
+// The builders of a site: its worker list [unit+94h], count [unit+98h], 18h-byte entries whose +0 is the worker's
+// ID (the list 0x9C4C0C walks).
+float SiteBuildRate(const char* unit, int* builders) {
+  const std::int32_t count = Field<std::int32_t>(unit, 0x98);
+  const char* entries = Field<const char*>(unit, 0x94);
+  float total = 0.0f;
+  *builders = 0;
+  std::int32_t seen[kMaxWorkers];
+  for (std::int32_t i = 0; entries != nullptr && i < count && i < kMaxWorkers; ++i) {
+    const std::int32_t id = Field<std::int32_t>(entries, 0x18u * i);
+    seen[i] = id;
+    bool repeated = false;
+    for (std::int32_t j = 0; j < i && !repeated; ++j) {
+      repeated = seen[j] == id;  // a unit is counted once, by its one current action
+    }
+    const char* worker = repeated ? nullptr : UnitById(id);
+    const float rate = worker == nullptr ? 0.0f : BuildRateOn(worker, unit);
+    if (rate > 0.0f) {
+      total += rate;
+      ++*builders;
+    }
+  }
+  return total;
+}
+
+// "0:45" to finish: the build points left ([proto+0CCh], the cap the tick passes to the add 0x7ADE95, less
+// [data+4]) over the sum of the builders' rates. Nothing while nobody builds it.
+bool ItemBuildTime(const char* unit, std::wstring* out) {
+  const char* data = nullptr;
+  if (!UnderConstruction(unit, &data)) {
+    return false;
+  }
+  int builders = 0;
+  const float rate = SiteBuildRate(unit, &builders);
+  const float left = Field<float>(Field<const char*>(unit, 0x5C), 0xCC) - Field<float>(data, 4);
+  if (!(rate > 0.0f) || left < 0.0f) {
+    return false;
+  }
+  const int seconds = static_cast<int>(left / rate + 0.5f);
+  wchar_t text[32];
+  swprintf_s(text, L"%d:%02d", seconds / 60, seconds % 60);
+  *out = text;
+  return true;
+}
+
+bool ItemBuildProgress(const char* unit, std::wstring* out) {
+  const char* data = nullptr;
+  if (!g_buildReads || !UnderConstruction(unit, &data)) {
+    return false;
+  }
+  *out = std::to_wstring(static_cast<int>(Field<float>(data, 8) * 100.0f)) + L"%";
+  return true;
+}
+
+// A builder at work: the points per second it adds to the site it builds.
+bool ItemBuildRate(const char* unit, std::wstring* out) {
+  const char* manager = Field<const char*>(unit, 0x58);
+  const char* action = manager == nullptr ? nullptr : Field<const char*>(manager, 0x24);
+  const char* target = action == nullptr ? nullptr : UnitById(Field<std::int32_t>(action, 0x14));
+  const float rate = target == nullptr ? 0.0f : BuildRateOn(unit, target);
+  if (!(rate > 0.0f)) {
+    return false;
+  }
+  wchar_t text[32];
+  swprintf_s(text, L"%.2f", static_cast<double>(rate));
+  *out = text;
+  return true;
+}
+
+// Regeneration, per player (FUN_004905E1, from the player update 0x490A52; `this` the player). For each civ ID of
+// the list [player+20h] (count +24h) that the database's civ table knows ([db+24h], count [db+28h]), the records
+// [player+44h] + ID*0Ch ({data, count}) of 14h bytes: +0 the unit type healed (the player's query 0x45356D),
+// +8 the rate in % of max HP per second (skipped when |rate| is below 0xB9FD78), +0Ch the idle time it needs
+// (0: none). A unit of that type gains rate x max HP x 0.01 per second (0x490811..0x49085D), while idle that long
+// when the record asks for it. The fire pit's Regeneration dance (0x679E66, native civs and danceBonusCivs) is a
+// separate source, not added here.
+bool ItemRegen(const char* unit, std::wstring* out) {
+  const char* player = Field<const char*>(unit, 0x44);
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* database = Game() == nullptr ? nullptr : Field<const char*>(Game(), 0x140);
+  if (!g_regenReads || player == nullptr || proto == nullptr || database == nullptr) {
+    return false;
+  }
+  const std::int32_t* civs = Field<const std::int32_t*>(player, 0x20);
+  const std::int32_t civCount = Field<std::int32_t>(player, 0x24);
+  const char* table = Field<const char*>(player, 0x44);
+  const char* const* civTable = Field<const char* const*>(database, 0x24);
+  const std::int32_t civTableCount = Field<std::int32_t>(database, 0x28);
+  if (civs == nullptr || table == nullptr || civTable == nullptr) {
+    return false;
+  }
+  const float minRate = *reinterpret_cast<const float*>(0x00B9FD78);
+  float percent = 0.0f;
+  for (std::int32_t k = 0; k < civCount && k < 64; ++k) {
+    const std::int32_t civ = civs[k];
+    if (civ < 0 || civ >= civTableCount || civTable[civ] == nullptr) {
+      continue;
+    }
+    const char* records = Field<const char*>(table, 0x0Cu * civ);
+    const std::int32_t count = Field<std::int32_t>(table, 0x0Cu * civ + 4);
+    for (std::int32_t r = 0; records != nullptr && r < count && r < 256; ++r) {
+      const float rate = Field<float>(records, 0x14u * r + 8);
+      if (!(std::fabs(rate) < minRate) && kProtoIsType(proto, Field<std::int32_t>(records, 0x14u * r))) {
+        percent += rate;
+      }
+    }
+  }
+  if (!(percent > 0.0f)) {
+    return false;
+  }
+  *out = Number(percent * kMaxHp(unit) * 0.01f);
+  return true;
+}
+
+// Our aura keys only.
+bool ItemAuras(const char* unit, std::wstring* out) {
+  out->clear();
+  std::wstring part;
+  if (uhc::unitinfo::WorkAura(unit, &part)) {
+    *out += part;
+  }
+  if (uhc::unitinfo::GatherAura(unit, &part)) {
+    *out += (out->empty() ? L"" : L" ") + part;
+  }
+  if (uhc::unitinfo::ResourceAura(unit, &part)) {
+    *out += (out->empty() ? L"" : L" ") + part;
+  }
+  return !out->empty();
+}
+
+using ItemFn = bool (*)(const char* unit, std::wstring* out);
+
+template <ItemFn Item>
+bool __stdcall ItemRef(uhc::DataRefValue* value) {
+  if (value == nullptr || value->type != uhc::kDataRefString) {
+    return false;
+  }
+  const char* unit = CurrentRefUnit();
+  std::wstring text;
+  if (unit == nullptr || Field<const char*>(unit, 0x5C) == nullptr || !Item(unit, &text)) {
+    return true;  // the empty string the evaluator made
+  }
+  const BString source{text.data()};
+  kBStringAssign(reinterpret_cast<BString*>(&value->text), &source, -1, -1);
+  return true;
+}
+
+struct ItemInfo {
+  const char* name;     // the data file's item
+  const wchar_t* ref;   // its data ref
+  ItemFn fn;
+  uhc::DataRefProvider provider;
+};
+
+const ItemInfo kItems[] = {
+    {"hitpoints", L"uhcHitpoints", &ItemHitpoints, &ItemRef<&ItemHitpoints>},
+    {"speed", L"uhcSpeed", &ItemSpeed, &ItemRef<&ItemSpeed>},
+    {"baseSpeed", L"uhcBaseSpeed", &ItemBaseSpeed, &ItemRef<&ItemBaseSpeed>},
+    {"los", L"uhcLOS", &ItemLos, &ItemRef<&ItemLos>},
+    {"armor", L"uhcArmor", &ItemArmor, &ItemRef<&ItemArmor>},
+    {"armorValue", L"uhcArmorValue", &ItemArmorValue, &ItemRef<&ItemArmorValue>},
+    {"garrison", L"uhcGarrison", &ItemGarrison, &ItemRef<&ItemGarrison>},
+    {"trainPoints", L"uhcTrainPoints", &ItemTrainPoints, &ItemRef<&ItemTrainPoints>},
+    {"buildPoints", L"uhcBuildPoints", &ItemBuildPoints, &ItemRef<&ItemBuildPoints>},
+    {"rof", L"uhcROF", &ItemRof, &ItemRef<&ItemRof>},
+    {"range", L"uhcRange", &ItemRange, &ItemRef<&ItemRange>},
+    {"minRange", L"uhcMinRange", &ItemMinRange, &ItemRef<&ItemMinRange>},
+    {"area", L"uhcArea", &ItemArea, &ItemRef<&ItemArea>},
+    {"cost", L"uhcCost", &ItemCost, &ItemRef<&ItemCost>},
+    {"population", L"uhcPopulation", &ItemPopulation, &ItemRef<&ItemPopulation>},
+    {"bounty", L"uhcBounty", &ItemBounty, &ItemRef<&ItemBounty>},
+    {"buildLimit", L"uhcBuildLimit", &ItemBuildLimit, &ItemRef<&ItemBuildLimit>},
+    {"inventory", L"uhcInventory", &ItemInventory, &ItemRef<&ItemInventory>},
+    {"lifespan", L"uhcLifespan", &ItemLifespan, &ItemRef<&ItemLifespan>},
+    {"overheal", L"uhcOverheal", &ItemOverheal, &ItemRef<&ItemOverheal>},
+    {"veterancy", L"uhcVeterancy", &ItemVeterancy, &ItemRef<&ItemVeterancy>},
+    {"poison", L"uhcPoison", &ItemPoison, &ItemRef<&ItemPoison>},
+    {"randomCost", L"uhcRandomCost", &ItemRandomCost, &ItemRef<&ItemRandomCost>},
+    {"shipments", L"uhcShipments", &ItemShipments, &ItemRef<&ItemShipments>},
+    {"gatherRate", L"uhcGatherRate", &ItemGatherRate, &ItemRef<&ItemGatherRate>},
+    {"buildTime", L"uhcBuildTime", &ItemBuildTime, &ItemRef<&ItemBuildTime>},
+    {"buildProgress", L"uhcBuildProgress", &ItemBuildProgress, &ItemRef<&ItemBuildProgress>},
+    {"buildRate", L"uhcBuildRate", &ItemBuildRate, &ItemRef<&ItemBuildRate>},
+    {"regen", L"uhcRegen", &ItemRegen, &ItemRef<&ItemRegen>},
+    {"auras", L"uhcAuras", &ItemAuras, &ItemRef<&ItemAuras>},
+};
+
+const ItemInfo* FindItem(const std::string& name) {
+  for (const ItemInfo& item : kItems) {
+    if (_stricmp(item.name, name.c_str()) == 0) {
+      return &item;
+    }
+  }
+  return nullptr;
+}
+
+// ---- The data file ----
+
+struct TypeFilter {
+  std::string name;
+  std::int32_t id = -1;  // set on each database load (unittypes.h)
+};
+
+struct Row {
+  std::wstring gadget;
+  const ItemInfo* item = nullptr;  // item= ...
+  std::wstring label;
+  std::wstring text;               // ... or text=: segments split by '|', each with its {item}s
+  std::vector<TypeFilter*> types;  // empty: every unit
+};
+
+// A text= row: each '|'-separated segment with its {item}s replaced; a segment with an item that has nothing for
+// the unit is left out, the rest are joined by three spaces. False when no segment is left.
+bool RenderTemplate(const std::wstring& text, const char* unit, std::wstring* out) {
+  out->clear();
+  size_t start = 0;
+  while (start <= text.size()) {
+    size_t bar = text.find(L'|', start);
+    if (bar == std::wstring::npos) {
+      bar = text.size();
+    }
+    const std::wstring segment = text.substr(start, bar - start);
+    std::wstring rendered;
+    bool ok = true;
+    size_t pos = 0;
+    while (ok && pos < segment.size()) {
+      const size_t open = segment.find(L'{', pos);
+      const size_t close = open == std::wstring::npos ? std::wstring::npos : segment.find(L'}', open);
+      if (open == std::wstring::npos || close == std::wstring::npos) {
+        rendered += segment.substr(pos);
+        break;
+      }
+      rendered += segment.substr(pos, open - pos);
+      const std::wstring name = segment.substr(open + 1, close - open - 1);
+      std::string narrow(name.begin(), name.end());
+      const ItemInfo* item = FindItem(narrow);
+      std::wstring value;
+      ok = item != nullptr && item->fn(unit, &value);
+      rendered += value;
+      pos = close + 1;
+    }
+    if (ok && !rendered.empty()) {
+      *out += (out->empty() ? L"" : L"   ") + rendered;
+    }
+    start = bar + 1;
+  }
+  return !out->empty();
+}
+
+// Kinds of mirrored stat rows.
+enum Kind : std::uint32_t {
+  kName = 1u << 0, kHitpoints = 1u << 1, kGroupHealth = 1u << 2, kResource = 1u << 3, kGatherers = 1u << 4,
+  kRate = 1u << 5, kSpeed = 1u << 6, kResists = 1u << 7, kAttack = 1u << 8, kShownAttack = 1u << 9,
+  kSpecial = 1u << 10, kOther = 1u << 11, kAuto = 1u << 31,
+};
+
+struct BigPanel {
+  bool on = false;
+  std::wstring pattern;  // with one %d
+  int first = 0;
+  int count = 16;
+  std::uint32_t skip = kAuto;
+};
+
+std::vector<Row> g_rows;
+BigPanel g_big;
+std::vector<TypeFilter*> g_filters;
+std::wstring g_file;
+
+const char kDefaultRows[] =
+    "<minUIRows>"
+    "<row gadget='unitselectionpanel-uhcTrainPoints' item='trainPoints' label='Train Points: ' types='Unit'/>"
+    "<row gadget='unitselectionpanel-uhcRow0' text='LOS: {los}|Speed: {speed}|Garrison: {garrison}'/>"
+    "<row gadget='unitselectionpanel-uhcRow1' text='ROF: {rof}|Range: {range}'/>"
+    "<row gadget='unitselectionpanel-uhcCostPop' text='Cost: {cost}|Pop: {population}'/>"
+    "<row gadget='unitselectionpanel-uhcRow2' text='Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|"
+    "Overheal {overheal}|Poison {poison}|Aura {auras}'/>"
+    "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed'/>"
+    "</minUIRows>";
+
+std::string Lower(std::string text) {
+  for (char& c : text) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return text;
+}
+
+std::string Trim(const std::string& text) {
+  const size_t a = text.find_first_not_of(" \t\r\n");
+  const size_t b = text.find_last_not_of(" \t\r\n");
+  return a == std::string::npos ? std::string() : text.substr(a, b - a + 1);
+}
+
+std::wstring Wide(const std::string& text) {
+  if (text.empty()) {
+    return {};
+  }
+  const int length = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), static_cast<int>(text.size()), nullptr, 0);
+  std::wstring out(static_cast<size_t>(length), L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, text.c_str(), static_cast<int>(text.size()), out.data(), length);
+  return out;
+}
+
+std::string Decode(const std::string& text) {
+  std::string out;
+  for (size_t i = 0; i < text.size(); ++i) {
+    if (text[i] == '&') {
+      static const struct { const char* name; char c; } kEntities[] = {
+          {"&lt;", '<'}, {"&gt;", '>'}, {"&amp;", '&'}, {"&quot;", '"'}, {"&apos;", '\''}};
+      bool done = false;
+      for (const auto& e : kEntities) {
+        const size_t n = std::strlen(e.name);
+        if (text.compare(i, n, e.name) == 0) {
+          out += e.c;
+          i += n - 1;
+          done = true;
+          break;
+        }
+      }
+      if (done) {
+        continue;
+      }
+    }
+    out += text[i];
+  }
+  return out;
+}
+
+struct Element {
+  std::string tag;
+  std::map<std::string, std::string> attributes;
+};
+
+// The start tags of `text` with their attributes (names lowercased); comments and declarations skipped. False if a
+// tag is not closed or an attribute is malformed.
+bool ParseTags(const std::string& text, std::vector<Element>* out) {
+  size_t pos = 0;
+  while ((pos = text.find('<', pos)) != std::string::npos) {
+    if (text.compare(pos, 4, "<!--") == 0) {
+      const size_t end = text.find("-->", pos + 4);
+      if (end == std::string::npos) {
+        return false;
+      }
+      pos = end + 3;
+      continue;
+    }
+    size_t gt = pos + 1;
+    for (char quote = 0; gt < text.size(); ++gt) {
+      const char c = text[gt];
+      if (quote != 0) {
+        quote = c == quote ? 0 : quote;
+      } else if (c == '"' || c == '\'') {
+        quote = c;
+      } else if (c == '>') {
+        break;
+      }
+    }
+    if (gt >= text.size()) {
+      return false;
+    }
+    const std::string body = text.substr(pos + 1, gt - pos - 1);
+    pos = gt + 1;
+    if (body.empty() || body[0] == '?' || body[0] == '!' || body[0] == '/') {
+      continue;
+    }
+    Element element;
+    size_t i = 0;
+    while (i < body.size() && (std::isalnum(static_cast<unsigned char>(body[i])) || body[i] == '_')) {
+      ++i;
+    }
+    element.tag = Lower(body.substr(0, i));
+    while (i < body.size()) {
+      while (i < body.size() && (std::isspace(static_cast<unsigned char>(body[i])) || body[i] == '/')) {
+        ++i;
+      }
+      if (i >= body.size()) {
+        break;
+      }
+      const size_t nameStart = i;
+      while (i < body.size() && body[i] != '=' && !std::isspace(static_cast<unsigned char>(body[i]))) {
+        ++i;
+      }
+      const std::string name = Lower(body.substr(nameStart, i - nameStart));
+      while (i < body.size() && std::isspace(static_cast<unsigned char>(body[i]))) {
+        ++i;
+      }
+      if (i >= body.size() || body[i] != '=') {
+        return false;
+      }
+      ++i;
+      while (i < body.size() && std::isspace(static_cast<unsigned char>(body[i]))) {
+        ++i;
+      }
+      if (i >= body.size() || (body[i] != '"' && body[i] != '\'')) {
+        return false;
+      }
+      const size_t close = body.find(body[i], i + 1);
+      if (close == std::string::npos) {
+        return false;
+      }
+      element.attributes[name] = Decode(body.substr(i + 1, close - i - 1));
+      i = close + 1;
+    }
+    out->push_back(std::move(element));
+  }
+  return true;
+}
+
+const std::string* Attr(const Element& element, const char* name) {
+  const auto found = element.attributes.find(name);
+  return found == element.attributes.end() ? nullptr : &found->second;
+}
+
+std::vector<std::string> SplitList(const std::string& text) {
+  std::vector<std::string> out;
+  size_t start = 0;
+  while (start <= text.size()) {
+    const size_t comma = text.find(',', start);
+    const std::string part = Trim(text.substr(start, comma == std::string::npos ? std::string::npos : comma - start));
+    if (!part.empty()) {
+      out.push_back(part);
+    }
+    if (comma == std::string::npos) {
+      break;
+    }
+    start = comma + 1;
+  }
+  return out;
+}
+
+std::wstring Label(const Element& element) {
+  if (const std::string* id = Attr(element, "labelid")) {
+    return L"\x01" + Wide(*id);  // resolved when shown: the string table is read after the DLL starts
+  }
+  const std::string* label = Attr(element, "label");
+  return label == nullptr ? std::wstring() : Wide(*label);
+}
+
+bool LoadRows(const std::string& arg) {
+  std::wstring path;
+  std::string raw;
+  std::string text;
+  if (uhc::ReadDataListFile(arg, L"minuirows.xml", &path, &raw)) {
+    g_file = path;
+    if (raw.size() >= 2 && static_cast<unsigned char>(raw[0]) == 0xFF && static_cast<unsigned char>(raw[1]) == 0xFE) {
+      const wchar_t* wide = reinterpret_cast<const wchar_t*>(raw.data() + 2);
+      const int count = static_cast<int>((raw.size() - 2) / 2);
+      const int length = WideCharToMultiByte(CP_UTF8, 0, wide, count, nullptr, 0, nullptr, nullptr);
+      text.assign(static_cast<size_t>(length), '\0');
+      WideCharToMultiByte(CP_UTF8, 0, wide, count, text.data(), length, nullptr, nullptr);
+    } else {
+      text = raw.compare(0, 3, "\xEF\xBB\xBF") == 0 ? raw.substr(3) : raw;
+    }
+  } else if (!arg.empty()) {
+    uhc::Log(L"minUIStats: cannot read %ls (error %lu); feature not applied", path.c_str(), GetLastError());
+    return false;
+  } else {
+    g_file = L"(built-in rows; no " + path + L")";
+    text = kDefaultRows;
+  }
+  std::vector<Element> elements;
+  if (!ParseTags(text, &elements)) {
+    uhc::Log(L"minUIStats: %ls is not well-formed XML; feature not applied", g_file.c_str());
+    return false;
+  }
+  std::map<std::string, TypeFilter*> filters;
+  auto typeList = [&](const Element& element) {
+    std::vector<TypeFilter*> list;
+    if (const std::string* types = Attr(element, "types")) {
+      for (const std::string& name : SplitList(*types)) {
+        TypeFilter*& filter = filters[Lower(name)];
+        if (filter == nullptr) {
+          filter = new TypeFilter{name};
+          g_filters.push_back(filter);
+        }
+        list.push_back(filter);
+      }
+    }
+    return list;
+  };
+  for (const Element& element : elements) {
+    if (element.tag == "minuirows") {
+      continue;
+    }
+    if (element.tag == "row") {
+      const std::string* gadget = Attr(element, "gadget");
+      const std::string* item = Attr(element, "item");
+      const std::string* text = Attr(element, "text");
+      const ItemInfo* info = item == nullptr ? nullptr : FindItem(Trim(*item));
+      if (gadget == nullptr || (info == nullptr && text == nullptr)) {
+        uhc::Log(L"minUIStats: %ls: a row needs gadget and a known item= (%hs) or text=; ignored", g_file.c_str(),
+                 item == nullptr ? "none" : item->c_str());
+        continue;
+      }
+      if (text != nullptr) {
+        const std::wstring wide = Wide(*text);
+        for (size_t open = wide.find(L'{'); open != std::wstring::npos; open = wide.find(L'{', open + 1)) {
+          const size_t close = wide.find(L'}', open);
+          const std::wstring name = close == std::wstring::npos ? L"" : wide.substr(open + 1, close - open - 1);
+          if (FindItem(std::string(name.begin(), name.end())) == nullptr) {
+            uhc::Log(L"minUIStats: %ls: unknown item {%ls} in a text= row; its segment never shows", g_file.c_str(),
+                     name.c_str());
+          }
+        }
+        g_rows.push_back({Wide(Trim(*gadget)), nullptr, L"", wide, typeList(element)});
+      } else {
+        g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element)});
+      }
+      continue;
+    }
+    if (element.tag == "bigpanelrows") {
+      const std::string* gadget = Attr(element, "gadget");
+      if (gadget == nullptr || gadget->find("%d") == std::string::npos) {
+        uhc::Log(L"minUIStats: %ls: bigPanelRows needs gadget with %%d; ignored", g_file.c_str());
+        continue;
+      }
+      g_big.on = true;
+      g_big.pattern = Wide(Trim(*gadget));
+      if (const std::string* first = Attr(element, "first")) {
+        g_big.first = std::atoi(first->c_str());
+      }
+      if (const std::string* count = Attr(element, "count")) {
+        g_big.count = std::atoi(count->c_str());
+      }
+      if (const std::string* skip = Attr(element, "skip")) {
+        static const struct { const char* name; std::uint32_t kind; } kKinds[] = {
+            {"auto", kAuto}, {"name", kName}, {"hitpoints", kHitpoints}, {"grouphealth", kGroupHealth},
+            {"resource", kResource}, {"gatherers", kGatherers}, {"rate", kRate}, {"speed", kSpeed},
+            {"resists", kResists}, {"attacks", kAttack}, {"shownattacks", kShownAttack}, {"special", kSpecial},
+            {"other", kOther}};
+        g_big.skip = 0;
+        for (const std::string& part : SplitList(*skip)) {
+          bool known = false;
+          for (const auto& kind : kKinds) {
+            if (_stricmp(kind.name, part.c_str()) == 0) {
+              g_big.skip |= kind.kind;
+              known = true;
+            }
+          }
+          if (!known) {
+            uhc::Log(L"minUIStats: %ls: unknown skip kind %hs; ignored", g_file.c_str(), part.c_str());
+          }
+        }
+      }
+      g_big.count = g_big.count < 2 ? 2 : (g_big.count > 32 ? 32 : g_big.count);
+      continue;
+    }
+    uhc::Log(L"minUIStats: %ls: unknown element <%hs>; ignored", g_file.c_str(), element.tag.c_str());
+  }
+  return true;
+}
+
+// ---- The gadgets of the panel ----
+
+struct Gadget {
+  std::int32_t handle = 0;
+  bool valid = false;
+  bool shown = true;  // as far as the DLL knows: show and hide only on a change
+  bool known = false;
+  std::wstring text;
+  std::uint32_t style = 0;
+  std::wstring tip;
+};
+
+struct PanelGadgets {
+  char* panel = nullptr;
+  std::int32_t typeNameHandle = 0;
+  std::vector<Gadget> rows;  // g_rows order
+  std::vector<Gadget> big;   // the bigPanelRows block, consecutive gadgets
+  bool any = false;
+};
+PanelGadgets g_panel;
+
+void* Manager() {
+  const char* ui = *reinterpret_cast<const char* const*>(kUiManager);
+  return ui == nullptr ? nullptr : Field<void*>(ui, 0x44);
+}
+
+std::int32_t Lookup(char* panel, const std::wstring& name) {
+  BString text{nullptr};
+  kBStringFromWide(&text, name.c_str());
+  std::int32_t handle = 0;
+  kGadgetByName(panel, &handle, &text, 1);
+  kBStringFree(&text);
+  return handle;
+}
+
+bool ValidHandle(std::int32_t handle) {
+  return handle != *reinterpret_cast<const std::int32_t*>(kNoGadget) && handle != 0;
+}
+
+// The gadget object behind a handle, or null; the reference is released at once, as stock does.
+void* GadgetObject(std::int32_t handle) {
+  std::int32_t ref[2] = {0, 0};
+  std::int32_t* result = kGadgetRef(ref, handle);
+  void* gadget = reinterpret_cast<void*>(static_cast<std::intptr_t>(result[1]));
+  if (gadget != nullptr) {
+    kGadgetRelease(result[0]);
+  }
+  return gadget;
+}
+
+// Finds this panel's gadgets by name, once per panel (the panel's own type name handle tells a new panel at the
+// same address).
+void ResolvePanel(char* panel) {
+  const std::int32_t typeName = Field<std::int32_t>(panel, 0x2E8);
+  if (g_panel.panel == panel && g_panel.typeNameHandle == typeName) {
+    return;
+  }
+  g_panel = PanelGadgets{};
+  g_panel.panel = panel;
+  g_panel.typeNameHandle = typeName;
+  for (const Row& row : g_rows) {
+    Gadget gadget;
+    gadget.handle = Lookup(panel, row.gadget);
+    gadget.valid = ValidHandle(gadget.handle);
+    g_panel.any |= gadget.valid;
+    g_panel.rows.push_back(gadget);
+  }
+  if (g_big.on) {
+    for (int i = 0; i < g_big.count; ++i) {
+      wchar_t name[160];
+      swprintf_s(name, g_big.pattern.c_str(), g_big.first + i);
+      Gadget gadget;
+      gadget.handle = Lookup(panel, name);
+      gadget.valid = ValidHandle(gadget.handle);
+      if (!gadget.valid) {
+        break;
+      }
+      g_panel.big.push_back(gadget);
+    }
+    g_panel.any |= !g_panel.big.empty();
+  }
+  int rows = 0;
+  for (const Gadget& g : g_panel.rows) {
+    rows += g.valid ? 1 : 0;
+  }
+  uhc::Log(L"minUIStats: panel %p: %d of %u row gadgets, %u big panel row gadgets", panel, rows,
+           static_cast<unsigned>(g_panel.rows.size()), static_cast<unsigned>(g_panel.big.size()));
+}
+
+void SetVisible(Gadget* gadget, bool visible) {
+  void* manager = Manager();
+  if (manager == nullptr || (gadget->known && gadget->shown == visible)) {
+    return;
+  }
+  (visible ? kGadgetShow : kGadgetHide)(manager, gadget->handle);
+  gadget->shown = visible;
+  gadget->known = true;
+}
+
+// Writes the gadget's text (and style, when not 0, and help text) only when they changed.
+void SetText(Gadget* gadget, const std::wstring& text, std::uint32_t style, const std::wstring& tip) {
+  if (gadget->text == text && gadget->style == style && gadget->tip == tip && !gadget->text.empty()) {
+    SetVisible(gadget, true);
+    return;
+  }
+  void* object = GadgetObject(gadget->handle);
+  if (object == nullptr) {
+    return;
+  }
+  BString value{nullptr};
+  kBStringFromWide(&value, text.c_str());
+  if (style != 0) {
+    VirtualAt<void(__thiscall*)(void*, std::uint32_t)>(object, 0x84)(object, style);
+  }
+  VirtualAt<void(__thiscall*)(void*, const BString*)>(object, 0x80)(object, &value);
+  VirtualAt<void(__thiscall*)(void*)>(object, 0x54)(object);
+  kBStringFree(&value);
+  BString help{nullptr};
+  kBStringFromWide(&help, tip.c_str());
+  kBStringSet(reinterpret_cast<BString*>(static_cast<char*>(object) + kGadgetTip), &help);
+  kBStringFree(&help);
+  gadget->text = text;
+  gadget->style = style;
+  gadget->tip = tip;
+  SetVisible(gadget, true);
+}
+
+void Hide(Gadget* gadget) {
+  gadget->text.clear();
+  SetVisible(gadget, false);
+}
+
+// ---- The mirrored stat panel rows ----
+
+struct StatRow {
+  std::uint32_t labelStyle = 0;
+  std::wstring label;
+  std::wstring value;
+  std::wstring tip;
+  bool labelSet = false;
+  bool valueSet = false;
+};
+
+constexpr int kVtableSlots = 128;
+void* g_stageLabel = nullptr;
+void* g_stageValue = nullptr;
+StatRow g_current;
+std::vector<StatRow> g_stat;
+void* g_vtableCopy[kVtableSlots];
+const void* g_vtableOf = nullptr;
+
+std::wstring BStringText(const void* field) {
+  const wchar_t* text = *reinterpret_cast<const wchar_t* const*>(field);
+  return text == nullptr ? std::wstring() : std::wstring(text);
+}
+
+void FinishRow() {
+  if (!g_current.labelSet && !g_current.valueSet) {
+    return;
+  }
+  g_current.tip = BStringText(static_cast<char*>(g_stageLabel) + kGadgetTip);
+  g_stat.push_back(g_current);
+  g_current = StatRow{};
+}
+
+// The staging gadgets' vtable entries while the fill runs (thiscall: ECX = the gadget, the callee pops the
+// arguments, as __fastcall with the EDX slot unused does).
+void __fastcall RecordStyle(void* gadget, void*, std::uint32_t style) {
+  if (gadget == g_stageLabel) {
+    if (g_current.labelSet || g_current.valueSet) {
+      FinishRow();
+    }
+    g_current.labelStyle = style;
+  }
+}
+
+void __fastcall RecordText(void* gadget, void*, const BString* text) {
+  const std::wstring copy = text == nullptr || text->text == nullptr ? std::wstring() : std::wstring(text->text);
+  if (gadget == g_stageLabel) {
+    if (g_current.labelSet) {
+      FinishRow();
+    }
+    g_current.label = copy;
+    g_current.labelSet = true;
+  } else if (gadget == g_stageValue) {
+    g_current.value = copy;
+    g_current.valueSet = true;
+  }
+}
+
+void __fastcall RecordRefresh(void*, void*) {}
+void __fastcall RecordShow(void*, void*, std::int32_t) {}
+
+// The fill's rows for the selection, as the normal interface's stat panel would show them; false if it could not
+// run. The fill writes row i into the gadgets of handles [panel+174h+i*4] / [panel+198h+i*4] and reads nothing
+// else of its panel; here every row points to the same two staging gadgets, whose text, style, refresh and
+// show calls are recorded instead of done while it runs.
+bool MirrorStatRows(const char* selection) {
+  if (g_panel.big.size() < 2) {
+    return false;
+  }
+  void* label = GadgetObject(g_panel.big[0].handle);
+  void* value = GadgetObject(g_panel.big[1].handle);
+  if (label == nullptr || value == nullptr || label == value) {
+    return false;
+  }
+  const void* vtable = *static_cast<void**>(label);
+  if (vtable != *static_cast<void**>(value)) {
+    return false;
+  }
+  if (g_vtableOf != vtable) {
+    std::memcpy(g_vtableCopy, vtable, sizeof(g_vtableCopy));
+    g_vtableCopy[0x54 / 4] = reinterpret_cast<void*>(&RecordRefresh);
+    g_vtableCopy[0x58 / 4] = reinterpret_cast<void*>(&RecordShow);
+    g_vtableCopy[0x80 / 4] = reinterpret_cast<void*>(&RecordText);
+    g_vtableCopy[0x84 / 4] = reinterpret_cast<void*>(&RecordStyle);
+    g_vtableOf = vtable;
+  }
+  char panel[kStatRowValues + 4 * kStatRows] = {};
+  for (int i = 0; i < kStatRows; ++i) {
+    *reinterpret_cast<std::int32_t*>(panel + kStatRowLabels + 4 * i) = g_panel.big[0].handle;
+    *reinterpret_cast<std::int32_t*>(panel + kStatRowValues + 4 * i) = g_panel.big[1].handle;
+  }
+  // The staging gadgets' help texts, which the fill overwrites, are put back after.
+  const std::wstring labelTip = BStringText(static_cast<char*>(label) + kGadgetTip);
+  const std::wstring valueTip = BStringText(static_cast<char*>(value) + kGadgetTip);
+  g_stageLabel = label;
+  g_stageValue = value;
+  g_current = StatRow{};
+  g_stat.clear();
+  *static_cast<const void**>(label) = g_vtableCopy;
+  *static_cast<const void**>(value) = g_vtableCopy;
+  g_uhcMinUiForceFill = 1;
+  kStatFill(panel, selection);
+  g_uhcMinUiForceFill = 0;
+  FinishRow();
+  *static_cast<const void**>(label) = vtable;
+  *static_cast<const void**>(value) = vtable;
+  for (const auto& [object, tip] : {std::pair<void*, const std::wstring*>{label, &labelTip}, {value, &valueTip}}) {
+    BString help{nullptr};
+    kBStringFromWide(&help, tip->c_str());
+    kBStringSet(reinterpret_cast<BString*>(static_cast<char*>(object) + kGadgetTip), &help);
+    kBStringFree(&help);
+  }
+  g_stageLabel = g_stageValue = nullptr;
+  return true;
+}
+
+struct KindStrings {
+  std::wstring hitpoints, speed, resists, gatherers;
+  bool loaded = false;
+} g_strings;
+
+void LoadKindStrings() {
+  if (g_strings.loaded) {
+    return;
+  }
+  g_strings.hitpoints = StringById(24320);  // "Hitpoints:" (0x4D750E)
+  g_strings.speed = StringById(24323);      // "Speed:" (0x69B21C)
+  g_strings.resists = StringById(35758);    // "Resists:" (0x69B3DF)
+  g_strings.gatherers = StringById(34986);  // "Gatherers:" (0x69AED2)
+  g_strings.loaded = !g_strings.hitpoints.empty();
+}
+
+std::uint32_t Classify(const StatRow& row, size_t index) {
+  if (index == 0) {
+    return kName;
+  }
+  if (row.labelStyle == kAttackStyle) {
+    return kAttack;
+  }
+  if (row.label == g_strings.hitpoints) {
+    return kHitpoints;
+  }
+  if (row.label == g_strings.speed) {
+    return kSpeed;
+  }
+  if (row.label == g_strings.resists) {
+    return kResists;
+  }
+  if (row.label == g_strings.gatherers) {
+    return kGatherers;
+  }
+  if (row.label == L"Group Health") {  // a literal in the exe (0xC36838)
+    return kGroupHealth;
+  }
+  if (row.value.size() >= 2 && row.value.compare(row.value.size() - 2, 2, L"/s") == 0) {
+    return kRate;
+  }
+  if (row.label.find(L"<icon=\"(32)") != std::wstring::npos) {
+    return kResource;  // "%s (<icon="(32)(%S)">):" with a held amount
+  }
+  return kOther;
+}
+
+void FillBigRows(const char* selection, bool minimizedBlock) {
+  if (!MirrorStatRows(selection)) {
+    for (Gadget& gadget : g_panel.big) {
+      Hide(&gadget);
+    }
+    return;
+  }
+  LoadKindStrings();
+  std::uint32_t skip = g_big.skip;
+  bool resourceShown = false;
+  std::vector<std::uint32_t> kinds;
+  size_t lastAttack = 0;
+  for (size_t i = 0; i < g_stat.size(); ++i) {
+    kinds.push_back(Classify(g_stat[i], i));
+    resourceShown |= kinds.back() == kResource;
+    if (kinds.back() == kAttack) {
+      lastAttack = i + 1;
+    }
+  }
+  if (skip & kAuto) {
+    // What the minimized block shows itself (0x6987D7..0x69A60F): the owner, hit points, resists, the resource held,
+    // the AutoGather rate, the special attacks inline, and the first three rows of attacks less the resource row.
+    skip |= minimizedBlock ? (kName | kHitpoints | kResists | kResource | kRate | kShownAttack | kSpecial) : kName;
+  }
+  int shownAttacks = (skip & kShownAttack) ? (resourceShown ? 2 : 3) : 0;
+  size_t out = 0;
+  for (size_t i = 0; i < g_stat.size() && out < g_panel.big.size(); ++i) {
+    std::uint32_t kind = kinds[i];
+    if (kind == kOther && lastAttack != 0 && i >= lastAttack) {
+      kind = kSpecial;
+    }
+    if (kind == kAttack && shownAttacks > 0) {
+      --shownAttacks;
+      continue;
+    }
+    if (skip & kind) {
+      continue;
+    }
+    const StatRow& row = g_stat[i];
+    std::wstring text = row.label;
+    if (!row.value.empty()) {
+      text += L"  " + row.value;
+    }
+    const std::uint32_t style = row.labelStyle == kAttackStyle ? kAttackStyle : kLabelStyle;
+    SetText(&g_panel.big[out++], text, style, row.tip);
+  }
+  for (; out < g_panel.big.size(); ++out) {
+    Hide(&g_panel.big[out]);
+  }
+}
+
+bool Applies(const Row& row, const char* proto) {
+  if (row.types.empty()) {
+    return true;
+  }
+  for (const TypeFilter* filter : row.types) {
+    if (filter->id >= 0 && kProtoIsType(proto, filter->id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::wstring ResolveLabel(const std::wstring& label) {
+  if (!label.empty() && label[0] == L'\x01') {
+    return StringById(_wtoi(label.c_str() + 1));
+  }
+  return label;
+}
+
+// The last selection the rows were written for, and when.
+std::int32_t g_lastUnitId = -1;
+std::int32_t g_lastCount = -1;
+ULONGLONG g_lastTick = 0;
+constexpr ULONGLONG kRefreshMs = 250;
+bool g_busy = false;
+
+void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, bool minimizedBlock) {
+  if (g_busy) {
+    return;
+  }
+  ResolvePanel(panel);
+  if (!g_panel.any) {
+    return;  // a layout without these gadgets: the normal interface, or one that does not use them
+  }
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  const std::int32_t unitId = unit == nullptr ? -1 : Field<std::int32_t>(unit, 0x10);
+  const std::int32_t count = selection == nullptr ? 0 : Field<std::int32_t>(selection, 0x14);
+  const ULONGLONG now = GetTickCount64();
+  if (unitId == g_lastUnitId && count == g_lastCount && now - g_lastTick < kRefreshMs) {
+    return;
+  }
+  g_lastUnitId = unitId;
+  g_lastCount = count;
+  g_lastTick = now;
+  g_busy = true;
+  for (size_t i = 0; i < g_rows.size(); ++i) {
+    Gadget& gadget = g_panel.rows[i];
+    if (!gadget.valid) {
+      continue;
+    }
+    std::wstring value;
+    const bool has = proto != nullptr && Applies(g_rows[i], proto) &&
+                     (g_rows[i].item != nullptr ? g_rows[i].item->fn(unit, &value)
+                                                : RenderTemplate(g_rows[i].text, unit, &value));
+    if (!has) {
+      Hide(&gadget);
+      continue;
+    }
+    SetText(&gadget, ResolveLabel(g_rows[i].label) + value, 0, L"");
+  }
+  if (!g_panel.big.empty()) {
+    if (proto == nullptr || selection == nullptr || count <= 0) {
+      for (Gadget& gadget : g_panel.big) {
+        Hide(&gadget);
+      }
+    } else {
+      FillBigRows(selection, minimizedBlock);
+    }
+  }
+  g_busy = false;
+}
+
+void OnDatabase(char*) {}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyMinUiStats(const Config& config) {
+  const Config::Args* args = config.First("minUIStats");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (args->size() > 1) {
+    Log(L"minUIStats: expected at most one argument, the rows file; feature not applied");
+    return Outcome::kFailed;
+  }
+  if (!LoadRows(args->empty() ? std::string() : args->front())) {
+    return Outcome::kFailed;
+  }
+  if (!VerifyAll("minUIStats",
+                 {&sites::kStatFillHead, &sites::kStatFillMinGate, &sites::kMinResistsUnitGate, &sites::kMinBlockChoice,
+                  &sites::kGadgetByName, &sites::kGadgetRef, &sites::kGadgetRelease, &sites::kGadgetShow,
+                  &sites::kGadgetHide, &sites::kBStringFromWide, &sites::kBStringFromId, &sites::kBStringSet,
+                  &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
+                  &sites::kLosGetterHead, &sites::kMaxContained, &sites::kIsA, &sites::kAttackListFill,
+                  &sites::kResListGet, &sites::kResourceIconText, &sites::kHoldsResource, &sites::kMainResource,
+                  &sites::kHeldAmount, &sites::kUnitCarryCapacity})) {
+    return Outcome::kFailed;
+  }
+  // The build and regeneration items mirror stock code they never write to; they are checked apart, so another DLL
+  // that changed that code turns off only these items (each checks its flag), not the key.
+  g_buildReads = AllMatch({&sites::kBuildTickRateHead, &sites::kBuildTickScale, &sites::kBuildTickAdd,
+                           &sites::kBuildPointsAddCall, &sites::kBuildPointsAdd, &sites::kBuilderFactor,
+                           &sites::kRateLookupHead});
+  g_regenReads = AllMatch({&sites::kRegenPlayerHead, &sites::kRegenRateRead});
+  if (!g_buildReads || !g_regenReads) {
+    Log(L"minUIStats: the stock %ls code is not what these items mirror; %ls left empty",
+        !g_buildReads ? L"build tick" : L"regeneration", !g_buildReads ? L"buildTime, buildProgress, buildRate" : L"regen");
+  }
+  for (TypeFilter* filter : g_filters) {
+    if (!RequestAbstractUnitType(filter->name.c_str(), &filter->id)) {
+      return Outcome::kFailed;
+    }
+  }
+  static const std::uint8_t kNops[6] = {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
+  if (!WriteJmp(sites::kStatFillMinGate.va + 0x41, reinterpret_cast<const void*>(&UhcStatFillMinGate), 11) ||
+      !WriteBytes(sites::kMinResistsUnitGate.va + 0x14, kNops, sizeof(kNops)) || !AddUnitPanelTail(&MinUiTail) ||
+      // After the tail hook, which verifies these bytes too: the minimized block also runs for a minimized layout
+      // loaded without the profile option.
+      !WriteJmp(sites::kMinBlockChoice.va, reinterpret_cast<const void*>(&UhcMinBlockChoice), 11)) {
+    return Outcome::kFailed;
+  }
+  int refs = 0;
+  for (const ItemInfo& item : kItems) {
+    refs += AddDataRef(item.ref, kDataRefString, item.provider) ? 1 : 0;
+  }
+  Log(L"minUIStats: %u rows and %ls from %ls; building armor shown in the minimized panel's resists; %d data refs "
+      L"{uhc...} (UI only)",
+      static_cast<unsigned>(g_rows.size()), g_big.on ? L"the normal interface's stat rows" : L"no stat rows",
+      g_file.c_str(), refs);
+  (void)&OnDatabase;
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/minuistats_hooks.asm
+
+```asm
+; minUIStats (features/minuistats.cpp): the stat panel fill's minimized-interface gate. Entered through a jmp written
+; over the stock code; leaves through an explicit jmp to one of the two stock continuations.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+EXTERNDEF g_uhcMinUiForceFill:DWORD     ; 1 while minUIStats runs the fill for the minimized panel's rows
+
+.data
+statFillReturn  dd 004D81A1h    ; pop edi / ... / ret 4: the fill's end, stock with option 49h
+statFillGo      dd 004D7267h    ; lea ecx,[esp+14h]: the first row
+minBlockGo      dd 006987D7h    ; the selection panel's minimized block
+panelTailGo     dd 004C8281h    ; the fill's tail (the shared tail hook, unitpanel.cpp)
+
+.code
+
+; Replaces 0x4C8276..0x4C8280 (cmp byte ptr [esp+5Eh],1 / je 6987D7h) in the selection panel fill FUN_004C7E52:
+; byte [esp+5Eh] is profile option 49h, optionminimizedui. Stock runs the minimized block with the option on.
+; This also runs it when the panel was built from a minimized layout with the option off (another DLL can force
+; that layout without the option): the panel's unitHitPointsLabel handle [panel+2F0h] (bound at 0x9BAD77) is a real
+; gadget only in the minimized layouts. The byte is then set to 1, as the block's way back and the tail read it.
+; EAX is kept (the block and the tail reload what they use: EBX, the unit, is untouched); the flags are dead.
+UhcMinBlockChoice PROC
+    TRACE_ONCE "minUIStats minimized block choice (0x4C8276)"
+    cmp byte ptr [esp+5Eh], 1
+    je minimized
+    push eax
+    mov eax, dword ptr [esp+4+50h]      ; the panel
+    mov eax, dword ptr [eax+2F0h]       ; its unitHitPointsLabel handle
+    test eax, eax
+    jz normal
+    cmp eax, dword ptr ds:[00C672C0h]   ; the "no gadget" handle
+    je normal
+    pop eax
+    mov byte ptr [esp+5Eh], 1
+minimized:
+    jmp minBlockGo
+normal:
+    pop eax
+    jmp panelTailGo
+UhcMinBlockChoice ENDP
+
+; Replaces 0x4D725C..0x4D7266 (cmp byte ptr [esp+63h],1 / je 4D81A1h) in FUN_004D70ED: byte [esp+63h] is profile
+; option 49h, optionminimizedui, read just above. Stock returns there; this goes on to the rows when the DLL asked
+; for them (g_uhcMinUiForceFill), and otherwise does what stock does. Registers are untouched; the flags are dead
+; at both continuations (lea, then the fill's own tests).
+UhcStatFillMinGate PROC
+    TRACE_ONCE "minUIStats stat fill gate (0x4D725C)"
+    cmp byte ptr [esp+63h], 1
+    jne go
+    cmp g_uhcMinUiForceFill, 0
+    jne go
+    jmp statFillReturn
+go:
+    jmp statFillGo
+UhcStatFillMinGate ENDP
 
 END
 ```

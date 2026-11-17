@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -634,6 +635,10 @@ extern "C" bool __stdcall UhcRandomCostRefund(char* player, char* cost) {
   return ok;
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyRandomCost(const Config& config) {
@@ -666,7 +671,32 @@ Outcome ApplyRandomCost(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"randomCost: <RandomCost> is read; the cost getter, the Train payments, entry costs and refunds are hooked");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool RandomCost(const char* unit, std::wstring* out) {
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  const int slot = !g_unitInfoOn || proto == nullptr ? -1 : SlotOf(Field<std::int32_t>(proto, 0x08));
+  if (slot < 0 || g_tagged[slot].ranges.empty()) {
+    return false;
+  }
+  using IconFn = const char*(__thiscall*)(const char* database, std::int32_t resource);
+  const auto icon = reinterpret_cast<IconFn>(0x00706EFB);
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  out->clear();
+  for (const Range& range : g_tagged[slot].ranges) {
+    wchar_t text[96];
+    swprintf_s(text, L"%ls%d-%d <icon=\"(16)(%hs)\">", out->empty() ? L"" : L"  ", range.min, range.max,
+               database == nullptr ? "" : icon(database, range.resource));
+    *out += text;
+  }
+  return true;
+}
+
+}  // namespace uhc::unitinfo

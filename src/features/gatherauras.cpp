@@ -29,6 +29,7 @@
 #include "../modifiers.h"
 #include "../modifytypes.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -227,6 +228,10 @@ extern "C" float __stdcall UhcGatherAuraFactor(const char* action) {
   return factor;
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyResourceGatherAuras(const Config& config) {
@@ -265,7 +270,31 @@ Outcome ApplyResourceGatherAuras(const Config& config) {
   Log(L"resourceGatherAuras: modifiers can change the gather rate of one kind of target or one resource%ls "
       L"(multiplayer unverified)",
       log ? L", the first factors logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool GatherAura(const char* unit, std::wstring* out) {
+  const char* list = !g_unitInfoOn || unit == nullptr ? nullptr : uhc::modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return false;
+  }
+  static const wchar_t* const kNames[] = {L"mine", L"tree", L"farm", L"wild food", L"food", L"wood", L"gold"};
+  out->clear();
+  for (std::int32_t stat = kStatMine; stat <= kStatGold; ++stat) {
+    const float factor = StatFactor(list, stat);
+    if (factor != 1.0f) {
+      wchar_t text[48];
+      swprintf_s(text, L"%ls%+d%% %ls", out->empty() ? L"" : L" ",
+                 static_cast<int>((factor - 1.0f) * 100.0f + (factor >= 1.0f ? 0.5f : -0.5f)), kNames[stat - kStatMine]);
+      *out += text;
+    }
+  }
+  return !out->empty();
+}
+
+}  // namespace uhc::unitinfo

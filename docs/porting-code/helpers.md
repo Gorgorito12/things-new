@@ -25,6 +25,8 @@ Contents:
 - [Kill observers](#kill-observers)
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
+- [Data refs](#data-refs)
+- [Unit info for the panels](#unit-info-for-the-panels)
 - [Name lists](#name-lists)
 - [Models on a unit](#models-on-a-unit)
 - [State kept for a saved game](#state-kept-for-a-saved-game)
@@ -303,8 +305,11 @@ inline constexpr Site kGatherSearchStart{"GatherSearchStart", 0x004C6BCF, kGathe
 inline constexpr std::uint8_t kGatherFallbackStoreBytes[] = {0x80, 0x7C, 0x24, 0x18, 0x01, 0x0F, 0x84, 0x7B, 0x31, 0x1A, 0x00, 0x5D};
 inline constexpr Site kGatherFallbackStore{"GatherFallbackStore", 0x004C6CB2, kGatherFallbackStoreBytes, sizeof(kGatherFallbackStoreBytes)};
 
-inline constexpr std::uint8_t kGatherFallbackBlockBytes[] = {0x8B, 0x44, 0x24, 0x10, 0x8B, 0x48, 0x08, 0x8B, 0x11, 0x6A, 0x01, 0x52, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x4F, 0x9D, 0xDE, 0xFF, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x40, 0x01, 0x00, 0x00, 0x8B, 0x91, 0x34, 0x60, 0x00, 0x00, 0x52, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x89, 0x9C, 0xDE, 0xFF, 0x6A, 0x02, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0xC5, 0x99, 0xDE, 0xFF, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x8C, 0x9B, 0xDE, 0xFF, 0x8B, 0xD8, 0x33, 0xED, 0x85, 0xDB, 0x7E, 0x64, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x55, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x21, 0xA1, 0xDE, 0xFF, 0x85, 0xC0, 0x7C, 0x44, 0x8B, 0xC8, 0x81, 0xE1, 0xFF, 0xFF, 0x03, 0x00, 0x3B, 0x4F, 0x10, 0x7D, 0x37, 0x8B, 0x57, 0x0C, 0x8B, 0x3C, 0x8A, 0x85, 0xFF, 0x74, 0x2D, 0x39, 0x47, 0x10, 0x75, 0x28, 0x8B, 0x07, 0x8B, 0xCF, 0xFF, 0x90, 0xA4, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x74, 0x1A, 0x8B, 0xCF, 0xE8, 0x6A, 0x44, 0xDE, 0xFF, 0x84, 0xC0, 0x74, 0x0F, 0x8B, 0xCF, 0xE8, 0x71, 0x69, 0xE1, 0xFF, 0x3C, 0x01, 0x0F, 0x85, 0x55, 0xD3, 0xE5, 0xFF, 0x83, 0xC5, 0x01, 0x3B, 0xEB, 0x7C, 0x9C};
+inline constexpr std::uint8_t kGatherFallbackBlockBytes[] = {0x8B, 0x44, 0x24, 0x10, 0x8B, 0x48, 0x08, 0x8B, 0x11, 0x6A, 0x01, 0x52, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x4F, 0x9D, 0xDE, 0xFF, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x40, 0x01, 0x00, 0x00};
 inline constexpr Site kGatherFallbackBlock{"GatherFallbackBlock", 0x006698B4, kGatherFallbackBlockBytes, sizeof(kGatherFallbackBlockBytes)};
+
+inline constexpr std::uint8_t kGatherFallbackBlockTailBytes[] = {0x52, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x89, 0x9C, 0xDE, 0xFF, 0x6A, 0x02, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0xC5, 0x99, 0xDE, 0xFF, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x8C, 0x9B, 0xDE, 0xFF, 0x8B, 0xD8, 0x33, 0xED, 0x85, 0xDB, 0x7E, 0x64, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x55, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x21, 0xA1, 0xDE, 0xFF, 0x85, 0xC0, 0x7C, 0x44, 0x8B, 0xC8, 0x81, 0xE1, 0xFF, 0xFF, 0x03, 0x00, 0x3B, 0x4F, 0x10, 0x7D, 0x37, 0x8B, 0x57, 0x0C, 0x8B, 0x3C, 0x8A, 0x85, 0xFF, 0x74, 0x2D, 0x39, 0x47, 0x10, 0x75, 0x28, 0x8B, 0x07, 0x8B, 0xCF, 0xFF, 0x90, 0xA4, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x74, 0x1A, 0x8B, 0xCF, 0xE8, 0x6A, 0x44, 0xDE, 0xFF, 0x84, 0xC0, 0x74, 0x0F, 0x8B, 0xCF, 0xE8, 0x71, 0x69, 0xE1, 0xFF, 0x3C, 0x01, 0x0F, 0x85, 0x55, 0xD3, 0xE5, 0xFF, 0x83, 0xC5, 0x01, 0x3B, 0xEB, 0x7C, 0x9C};
+inline constexpr Site kGatherFallbackBlockTail{"GatherFallbackBlockTail", 0x006698DA, kGatherFallbackBlockTailBytes, sizeof(kGatherFallbackBlockTailBytes)};
 
 inline constexpr std::uint8_t kGatherPointValidBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08, 0x85, 0xF6, 0x75, 0x06, 0x32, 0xC0, 0x5E, 0xC2, 0x04, 0x00, 0x8B, 0x06, 0x8B, 0xCE, 0xFF, 0x90, 0xA4, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x74, 0xEC, 0x8B, 0xCE, 0xE8, 0x64, 0xAD, 0xBF, 0xFF, 0x84, 0xC0, 0x74, 0xE1, 0x8B, 0xCE, 0xE8, 0x6B, 0xD2, 0xC2, 0xFF, 0x3C, 0x01, 0x0F, 0x95, 0xC0, 0x5E, 0xC2, 0x04, 0x00};
 inline constexpr Site kGatherPointValid{"GatherPointValid", 0x0085302C, kGatherPointValidBytes, sizeof(kGatherPointValidBytes)};
@@ -2217,6 +2222,78 @@ inline constexpr Site kRandomCostRefundAll{"RandomCostRefundAll", 0x009EB603, kR
 inline constexpr std::uint8_t kRandomCostRefundSpawnBytes[] = {0x8B, 0x46, 0x70, 0x8B, 0x4C, 0x24, 0x18, 0x8D, 0x54, 0x08, 0x08, 0x52, 0x8B, 0xCD, 0xE8, 0xA2, 0xB5, 0xEE, 0xFF};
 inline constexpr Site kRandomCostRefundSpawn{"RandomCostRefundSpawn", 0x009EBA4F, kRandomCostRefundSpawnBytes, sizeof(kRandomCostRefundSpawnBytes)};
 
+inline constexpr std::uint8_t kUnitPanelTailBytes[] = {0x80, 0x7C, 0x24, 0x5E, 0x01, 0x0F, 0x84, 0x56, 0x05, 0x1D, 0x00, 0x8B, 0x74, 0x24, 0x50, 0x8B, 0xBE, 0x08, 0x03, 0x00, 0x00};
+inline constexpr Site kUnitPanelTail{"UnitPanelTail", 0x004C8276, kUnitPanelTailBytes, sizeof(kUnitPanelTailBytes)};
+
+inline constexpr std::uint8_t kUnitPanelMinBlockBackBytes[] = {0xE9, 0x6D, 0xDC, 0xE2, 0xFF};
+inline constexpr Site kUnitPanelMinBlockBack{"UnitPanelMinBlockBack", 0x0069A60F, kUnitPanelMinBlockBackBytes, sizeof(kUnitPanelMinBlockBackBytes)};
+
+inline constexpr std::uint8_t kMinBlockChoiceBytes[] = {0x80, 0x7C, 0x24, 0x5E, 0x01, 0x0F, 0x84, 0x56, 0x05, 0x1D, 0x00};
+inline constexpr Site kMinBlockChoice{"MinBlockChoice", 0x004C8276, kMinBlockChoiceBytes, sizeof(kMinBlockChoiceBytes)};
+
+inline constexpr std::uint8_t kStatFillHeadBytes[] = {0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x81, 0xEC, 0xA4, 0x00, 0x00, 0x00, 0x53, 0x56, 0x57, 0x8B, 0x7D, 0x08, 0x85, 0xFF, 0x89, 0x4C, 0x24, 0x50};
+inline constexpr Site kStatFillHead{"StatFillHead", 0x004D70ED, kStatFillHeadBytes, sizeof(kStatFillHeadBytes)};
+
+inline constexpr std::uint8_t kStatFillMinGateBytes[] = {0x6A, 0x49, 0x8B, 0xC8, 0x83, 0xEC, 0x04, 0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x3B, 0x48, 0x08, 0x0F, 0x83, 0xD4, 0x06, 0x1E, 0x00, 0x8B, 0x54, 0x24, 0x08, 0x8D, 0x0C, 0x89, 0x03, 0x48, 0x04, 0x52, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x05, 0x0F, 0x85, 0xF2, 0xAE, 0x1E, 0x00, 0x8A, 0x49, 0x01, 0x8B, 0x54, 0x24, 0x04, 0x88, 0x0A, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x83, 0xC4, 0x0C, 0x80, 0x7C, 0x24, 0x63, 0x01, 0x0F, 0x84, 0x3A, 0x0F, 0x00, 0x00};
+inline constexpr Site kStatFillMinGate{"StatFillMinGate", 0x004D721B, kStatFillMinGateBytes, sizeof(kStatFillMinGateBytes)};
+
+inline constexpr std::uint8_t kMinResistsUnitGateBytes[] = {0x8B, 0x4B, 0x5C, 0x85, 0xC9, 0x0F, 0x84, 0x8D, 0x02, 0x00, 0x00, 0x6A, 0x00, 0xE8, 0xD0, 0x3E, 0xDB, 0xFF, 0x3C, 0x01, 0x0F, 0x85, 0x7E, 0x02, 0x00, 0x00};
+inline constexpr Site kMinResistsUnitGate{"MinResistsUnitGate", 0x00698BE2, kMinResistsUnitGateBytes, sizeof(kMinResistsUnitGateBytes)};
+
+inline constexpr std::uint8_t kDataRefParserCtorBytes[] = {0x8B, 0xCE, 0xC7, 0x06, 0x48, 0xEA, 0xB9, 0x00, 0x66, 0xC7, 0x46, 0x04, 0x7B, 0x00, 0x66, 0xC7, 0x46, 0x06, 0x28, 0x00, 0x66, 0xC7, 0x46, 0x08, 0x7D, 0x00, 0x66, 0xC7, 0x46, 0x0A, 0x29, 0x00, 0xE8, 0x4E, 0xC8, 0xFF, 0xFF, 0x8B, 0xC6, 0x5E, 0xC3};
+inline constexpr Site kDataRefParserCtor{"DataRefParserCtor", 0x005D3209, kDataRefParserCtorBytes, sizeof(kDataRefParserCtorBytes)};
+
+inline constexpr std::uint8_t kDataRefRegisterBytes[] = {0x83, 0xEC, 0x18, 0x53, 0x55, 0x56, 0x57, 0x8B, 0xF1};
+inline constexpr Site kDataRefRegister{"DataRefRegister", 0x005CFA7C, kDataRefRegisterBytes, sizeof(kDataRefRegisterBytes)};
+
+inline constexpr std::uint8_t kDataRefArrayGrowBytes[] = {0x53, 0x8A, 0x5C, 0x24, 0x0C, 0x55, 0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x08, 0x8B, 0x4C, 0x24, 0x10, 0x3B, 0xC8, 0x57, 0x7F, 0x14, 0x84, 0xDB, 0x0F, 0x85, 0x99, 0xF1, 0x09, 0x00, 0x89, 0x4E, 0x04, 0x5F, 0x5E, 0x5D, 0xB0, 0x01, 0x5B, 0xC2, 0x08, 0x00};
+inline constexpr Site kDataRefArrayGrow{"DataRefArrayGrow", 0x005ACE63, kDataRefArrayGrowBytes, sizeof(kDataRefArrayGrowBytes)};
+
+inline constexpr std::uint8_t kDataRefFloatEvalBytes[] = {0x83, 0xEC, 0x08, 0x8B, 0x44, 0x24, 0x0C, 0x85, 0xC0, 0x56, 0x57, 0x8B, 0xF1, 0xC7, 0x44, 0x24, 0x08, 0x01, 0x00, 0x00, 0x00, 0xC7, 0x44, 0x24, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x7C, 0x65, 0x3B, 0x46, 0x10, 0x7D, 0x60, 0xC1, 0xE0, 0x04, 0x8B, 0xF8, 0x8B, 0x46, 0x0C, 0x03, 0xC7, 0x83, 0x78, 0x0C, 0x00, 0x74, 0x50, 0x83, 0x78, 0x04, 0x01, 0x75, 0x4A, 0x8B, 0x0D, 0x44, 0x62, 0xC6, 0x00, 0x85, 0xC9, 0x74, 0x40, 0x8B, 0x11, 0xFF, 0x52, 0x4C, 0x84, 0xC0, 0x74, 0x37, 0x8B, 0x44, 0x24, 0x18, 0x8D, 0x4C, 0x24, 0x08, 0xA3, 0x7C, 0xDF, 0xC6, 0x00, 0x8B, 0x76, 0x0C, 0x51, 0xFF, 0x54};
+inline constexpr Site kDataRefFloatEval{"DataRefFloatEval", 0x00AB9400, kDataRefFloatEvalBytes, sizeof(kDataRefFloatEvalBytes)};
+
+inline constexpr std::uint8_t kLosGetterHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x3C, 0x01, 0x00, 0x00, 0xD9, 0x82, 0xAC, 0x05, 0x00, 0x00, 0x8B, 0x91, 0xB4, 0x00, 0x00, 0x00, 0x8B, 0x8A, 0xC8, 0x00, 0x00, 0x00, 0x85, 0xC9, 0x0F, 0x85, 0xD4, 0xC0, 0x01, 0x00, 0xD9, 0x05, 0xBC, 0x56, 0xB8, 0x00, 0xD8, 0x8A, 0x90, 0x00, 0x00, 0x00, 0xDE, 0xC9, 0xC3};
+inline constexpr Site kLosGetterHead{"LosGetterHead", 0x0048206D, kLosGetterHeadBytes, sizeof(kLosGetterHeadBytes)};
+
+inline constexpr std::uint8_t kMaxContainedBytes[] = {0x8B, 0x81, 0x0C, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x84, 0xFE, 0x04, 0x00, 0x8B, 0x00, 0xC3};
+inline constexpr Site kMaxContained{"MaxContained", 0x0049EB5A, kMaxContainedBytes, sizeof(kMaxContainedBytes)};
+
+inline constexpr std::uint8_t kAttackListFillBytes[] = {0x83, 0xEC, 0x14, 0x55, 0x57, 0x8B, 0xF9, 0x33, 0xED, 0x39, 0x2F, 0x0F, 0x84, 0x1E, 0x5A, 0x20, 0x00, 0x39, 0x6C, 0x24, 0x20, 0x0F, 0x84, 0x14};
+inline constexpr Site kAttackListFill{"AttackListFill", 0x00487EEE, kAttackListFillBytes, sizeof(kAttackListFillBytes)};
+
+inline constexpr std::uint8_t kHoldsResourceBytes[] = {0x8B, 0x81, 0xB4, 0x00, 0x00, 0x00, 0x8B, 0x80, 0x94, 0x00, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x30, 0x8D, 0x48, 0x04, 0x83};
+inline constexpr Site kHoldsResource{"HoldsResource", 0x0045EE8B, kHoldsResourceBytes, sizeof(kHoldsResourceBytes)};
+
+inline constexpr std::uint8_t kHeldAmountBytes[] = {0x8B, 0x81, 0xB4, 0x00, 0x00, 0x00, 0x8B, 0x80, 0x94, 0x00, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x14, 0x8B, 0x4C, 0x24, 0x04};
+inline constexpr Site kHeldAmount{"HeldAmount", 0x004E5979, kHeldAmountBytes, sizeof(kHeldAmountBytes)};
+
+inline constexpr std::uint8_t kBuildTickRateHeadBytes[] = {0x8B, 0x46, 0x14, 0x8B, 0x4E, 0x10, 0x50, 0xE8, 0xE6, 0x6C, 0xAB, 0xFF, 0x8B, 0x4E, 0x04, 0x57};
+inline constexpr Site kBuildTickRateHead{"BuildTickRateHead", 0x009D3D6B, kBuildTickRateHeadBytes, sizeof(kBuildTickRateHeadBytes)};
+
+inline constexpr std::uint8_t kBuildTickScaleBytes[] = {0xD9, 0x5C, 0x24, 0x20, 0x8B, 0x4E, 0x04, 0x8B, 0x41, 0x08, 0x8B, 0x56, 0x10, 0x8B, 0x4A, 0x10, 0x50, 0x51, 0x8B, 0xCF, 0xE8, 0x73, 0x0E, 0xFF, 0xFF, 0xD8, 0x4C, 0x24, 0x20, 0x80, 0xFB, 0x01, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x80, 0x3C, 0x01, 0x00, 0x00, 0xD8, 0x88, 0x18, 0x03, 0x00, 0x00, 0x8B, 0x4E, 0x10, 0x8B, 0x69, 0x44, 0xD8, 0x8D, 0x7C, 0x03, 0x00, 0x00, 0xD8, 0x88, 0x04, 0x01, 0x00, 0x00, 0xD9, 0x5C, 0x24, 0x1C};
+inline constexpr Site kBuildTickScale{"BuildTickScale", 0x009D3D80, kBuildTickScaleBytes, sizeof(kBuildTickScaleBytes)};
+
+inline constexpr std::uint8_t kBuildTickAddBytes[] = {0x8B, 0x6C, 0x24, 0x1C, 0x55, 0x8B, 0xCF, 0xE8, 0xEE, 0x0D, 0xFF, 0xFF};
+inline constexpr Site kBuildTickAdd{"BuildTickAdd", 0x009D3DE9, kBuildTickAddBytes, sizeof(kBuildTickAddBytes)};
+
+inline constexpr std::uint8_t kBuildPointsAddCallBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x4E, 0x68, 0x85, 0xC9, 0x74, 0x14, 0x8B, 0x46, 0x5C, 0x8B, 0x90, 0xCC, 0x00, 0x00, 0x00, 0x8B, 0x44, 0x24, 0x08, 0x52, 0x50, 0xE8, 0x94, 0x92, 0xDE, 0xFF};
+inline constexpr Site kBuildPointsAddCall{"BuildPointsAddCall", 0x009C4BE3, kBuildPointsAddCallBytes, sizeof(kBuildPointsAddCallBytes)};
+
+inline constexpr std::uint8_t kBuildPointsAddBytes[] = {0xD9, 0x44, 0x24, 0x04, 0xD8, 0x41, 0x04, 0xD8, 0x15, 0xE4, 0x4B, 0xB8, 0x00, 0xD9, 0x51, 0x04};
+inline constexpr Site kBuildPointsAdd{"BuildPointsAdd", 0x007ADE95, kBuildPointsAddBytes, sizeof(kBuildPointsAddBytes)};
+
+inline constexpr std::uint8_t kBuilderFactorBytes[] = {0x83, 0xEC, 0x08, 0x56, 0x57, 0x8B, 0xF9, 0x8B, 0x4F, 0x5C, 0x85, 0xC9, 0xC7, 0x44, 0x24, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x74, 0x58, 0x6A, 0x59, 0xE8, 0x9B};
+inline constexpr Site kBuilderFactor{"BuilderFactor", 0x009C4C0C, kBuilderFactorBytes, sizeof(kBuilderFactorBytes)};
+
+inline constexpr std::uint8_t kRateLookupHeadBytes[] = {0x83, 0xEC, 0x08, 0x83, 0x7C, 0x24, 0x0C, 0x00, 0x56, 0x8B, 0xF1, 0x0F, 0x84, 0xD7, 0x4C, 0x1F};
+inline constexpr Site kRateLookupHead{"RateLookupHead", 0x00487C45, kRateLookupHeadBytes, sizeof(kRateLookupHeadBytes)};
+
+inline constexpr std::uint8_t kRegenPlayerHeadBytes[] = {0x83, 0xEC, 0x1C, 0x55, 0x8B, 0xE9, 0x83, 0xBD, 0x80, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x84, 0x1F};
+inline constexpr Site kRegenPlayerHead{"RegenPlayerHead", 0x004905E1, kRegenPlayerHeadBytes, sizeof(kRegenPlayerHeadBytes)};
+
+inline constexpr std::uint8_t kRegenRateReadBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x03, 0x8B, 0x91, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x7C, 0x24, 0x18, 0xD9, 0x44, 0x38, 0x08, 0x8B, 0xCE, 0xD8, 0x8A, 0x04, 0x01, 0x00, 0x00, 0xD9};
+inline constexpr Site kRegenRateRead{"RegenRateRead", 0x004907FF, kRegenRateReadBytes, sizeof(kRegenRateReadBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2698,6 +2775,7 @@ Outcome ApplyOverhealDecay(const Config& config);
 Outcome ApplySteadyHitpointBars(const Config& config);
 Outcome ApplyInventoryBars(const Config& config);
 Outcome ApplyShowGatherRate(const Config& config);
+Outcome ApplyMinUiStats(const Config& config);
 Outcome ApplyBuildingWorkRateAuras(const Config& config);
 Outcome ApplyRendererOption(const Config& config);
 Outcome ApplyPerfStats(const Config& config);
@@ -2871,6 +2949,8 @@ inline constexpr Feature kFeatures[] = {
     // first.
     {"inventoryBars", ApplyInventoryBars},
     {"showGatherRate", ApplyShowGatherRate},
+    // After showGatherRate and overhealHitpointBars, whose rows of the stat panel it mirrors into the minimized one.
+    {"minUIStats", ApplyMinUiStats},
     // After showGatherRate, which verifies the bytes of the call this key redirects.
     {"resourceGatherAuras", ApplyResourceGatherAuras},
     {"resourceDebt", ApplyResourceDebt},
@@ -2907,7 +2987,7 @@ inline constexpr const char* kHandledKeys[] = {
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
-    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate",
+    "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "playericon", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
@@ -3599,7 +3679,7 @@ extern "C" void UhcProtoTagsHook();  // hooks/prototag_hooks.asm
 
 namespace {
 
-constexpr std::size_t kMaxTags = 32;
+constexpr std::size_t kMaxTags = 64;  // 33 were asked for with every key on (2026-11-17)
 constexpr std::uint32_t kTableTail = 0x0051DB0F;  // pop edi / mov al,1 / pop esi / pop ecx (5 B)
 
 using RegisterFn = void(__thiscall*)(void* table, const char* name, uhc::ProtoTagHandler* handler);
@@ -5020,6 +5100,13 @@ bool AddUnitPanelRow(UnitPanelRow row);
 using UnitPanelGroupRow = bool(__stdcall*)(const char* panel, const char* selection);
 void SetUnitPanelGroupRow(UnitPanelGroupRow row);
 
+// A second shared hook, at the tail of the selection panel fill FUN_004C7E52 (0x4C8281), reached in both
+// interfaces, after the minimized block when it ran. `panel` = the selection panel, `selection` = the selection
+// group (count [+14h]), `unit` = its first unit (may be null), `minimizedBlock` = the minimized block ran
+// (profile option 49h). The observers run in the order added.
+using UnitPanelTail = void(__stdcall*)(char* panel, const char* selection, const char* unit, bool minimizedBlock);
+bool AddUnitPanelTail(UnitPanelTail tail);
+
 }  // namespace uhc
 ```
 
@@ -5099,10 +5186,25 @@ std::size_t g_rowCount = 0;
 uhc::UnitPanelGroupRow g_groupRow = nullptr;
 bool g_installed = false;
 
+uhc::UnitPanelTail g_tails[kMaxRows] = {};
+std::size_t g_tailCount = 0;
+bool g_tailInstalled = false;
+
 }  // namespace
 
 extern "C" {
-void UhcUnitPanelHook();  // hooks/unitpanelrow_hooks.asm
+void UhcUnitPanelHook();      // hooks/unitpanelrow_hooks.asm
+void UhcUnitPanelTailHook();  // hooks/unitpanelrow_hooks.asm
+
+// From the hook at 0x4C8281, the tail of the selection panel fill.
+void __stdcall UhcUnitPanelTail(char* panel, const char* selection, const char* unit, std::uint32_t minimized) {
+  if (panel == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_tailCount; ++i) {
+    g_tails[i](panel, selection, unit, (minimized & 0xFF) == 1);
+  }
+}
 
 // From the hook at 0x699456. One unit selected, as the stat panel's rows ask: with a group the panel
 // shows the first unit, and its numbers would read as the group's.
@@ -5143,6 +5245,22 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
 
 void SetUnitPanelGroupRow(UnitPanelGroupRow row) { g_groupRow = row; }
 
+bool AddUnitPanelTail(UnitPanelTail tail) {
+  if (g_tailCount == kMaxRows) {
+    Log(L"unit panel: more than %u tail observers", static_cast<unsigned>(kMaxRows));
+    return false;
+  }
+  if (!g_tailInstalled) {
+    if (!VerifyAll("unit panel tail", {&sites::kUnitPanelTail, &sites::kUnitPanelMinBlockBack}) ||
+        !WriteJmp(sites::kUnitPanelTail.va + 0x0B, reinterpret_cast<const void*>(&UhcUnitPanelTailHook), 10)) {
+      return false;
+    }
+    g_tailInstalled = true;
+  }
+  g_tails[g_tailCount++] = tail;
+  return true;
+}
+
 bool AddUnitPanelRow(UnitPanelRow row) {
   if (g_rowCount == kMaxRows) {
     Log(L"unit panel: more than %u rows", static_cast<unsigned>(kMaxRows));
@@ -5175,9 +5293,11 @@ option casemap :none
 include common.inc
 
 UhcUnitPanelRows PROTO STDCALL panel:DWORD, unit:DWORD
+UhcUnitPanelTail PROTO STDCALL panel:DWORD, selection:DWORD, unit:DWORD, minimized:DWORD
 
 .data
 unitPanelNext   dd 0069945Ch    ; call 4826B5h: the unit panel goes on, after the stolen load
+unitTailNext    dd 004C828Bh    ; push edi: the portrait count, after the two stolen loads
 
 .code
 
@@ -5197,7 +5317,241 @@ UhcUnitPanelHook PROC
     jmp unitPanelNext
 UhcUnitPanelHook ENDP
 
+; Replaces 0x4C8281..0x4C828A (mov esi,[esp+50h] / mov edi,[esi+308h]) in the selection panel fill
+; FUN_004C7E52, where both interfaces pass: the minimized block (0x6987D7..0x69A60F) jumps back here. The frame:
+; [esp+50h] the panel, [esp+54h] the first selected unit (null when none), [esp+78h] the selection, byte
+; [esp+5Eh] the profile option 49h the block was chosen by. Every register is restored; the flags are dead (the
+; continuation pushes and calls).
+UhcUnitPanelTailHook PROC
+    TRACE_ONCE "unit panel tail (0x4C8281)"
+    pushad
+    movzx eax, byte ptr [esp+20h+5Eh]
+    push eax                            ; the minimized block ran
+    push dword ptr [esp+24h+54h]        ; the unit
+    push dword ptr [esp+28h+78h]        ; the selection
+    push dword ptr [esp+2Ch+50h]        ; the panel
+    call UhcUnitPanelTail
+    popad
+    mov esi, dword ptr [esp+50h]        ; stolen 0x4C8281
+    mov edi, dword ptr [esi+308h]       ; stolen 0x4C8285
+    jmp unitTailNext
+UhcUnitPanelTailHook ENDP
+
 END
+```
+
+## Data refs
+
+### src/datarefs.h
+
+```cpp
+// New formatText data refs, the {name} a UI layout's text can hold. The game resolves a {name} by name in one table
+// that its parser's registration fills once (FUN_005CFA7C, called from the parser's constructor at 0x5D3229); the
+// evaluators take entries[id], and the table's check wants each id to equal its index. This module redirects that
+// call: the stock registration runs, then each added ref is appended with the next id. Shared: a key adds its refs
+// here, never a second write at 0x5D3229 (docs/engine-symbols.md, "Unit panels").
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// The value a provider fills: the evaluator sets `type` to the ref's registered type first, then calls the
+// provider; type 1 is a float at +4, 2 an int at +4, 3 a BString (one wchar_t*) at +4. The provider returns false
+// when it has no value (the text then shows nothing). The argument of {name(arg)} is in [0C6DF7Ch] during the call.
+struct DataRefValue {
+  std::int32_t type;
+  union {
+    float real;
+    std::int32_t integer;
+    wchar_t* text;  // type 3: a BString; assign it with BStringAssign (0x443BB8)
+  };
+};
+using DataRefProvider = bool(__stdcall*)(DataRefValue* value);
+
+inline constexpr std::int32_t kDataRefFloat = 1;
+inline constexpr std::int32_t kDataRefInt = 2;
+inline constexpr std::int32_t kDataRefString = 3;
+
+// Adds {name} (copied; ASCII letters and digits) with that type and provider. Installs the redirect on first use;
+// false if the host bytes do not match, the name is already added, or the game's table was already built.
+bool AddDataRef(const wchar_t* name, std::int32_t type, DataRefProvider provider);
+
+}  // namespace uhc
+```
+
+### src/datarefs.cpp
+
+```cpp
+#include "datarefs.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <cwchar>
+#include <string>
+#include <vector>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+namespace {
+
+struct BString {
+  wchar_t* text;
+};
+
+// The table at [parser+0Ch]: {entries, count, capacity}; an entry is {id, type, BString name, provider}.
+struct Entry {
+  std::int32_t id;
+  std::int32_t type;
+  BString name;
+  void* provider;
+};
+struct Table {
+  Entry* entries;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using RegisterFn = bool(__thiscall*)(char* parser);
+using GrowFn = bool(__thiscall*)(Table* table, std::int32_t count, bool keep);
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringSetFn = void(__thiscall*)(BString* self, const BString* source);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+const auto kRegister = reinterpret_cast<RegisterFn>(0x005CFA7C);
+const auto kGrow = reinterpret_cast<GrowFn>(0x005ACE63);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+
+struct Added {
+  std::wstring name;
+  std::int32_t type;
+  uhc::DataRefProvider provider;
+};
+std::vector<Added> g_added;
+bool g_installed = false;
+bool g_registered = false;  // the game's table was built: later additions would not be seen
+
+}  // namespace
+
+extern "C" void UhcDataRefRegisterHook();  // hooks/datarefs_hooks.asm
+
+// From the hook that replaces the parser constructor's call of the registration (0x5D3229, ECX = the parser); the
+// constructor ignores the result (mov eax,esi follows).
+extern "C" bool __stdcall UhcRegisterDataRefs(char* parser) {
+  const bool stock = kRegister(parser);
+  g_registered = true;
+  auto* table = reinterpret_cast<Table*>(parser + 0x0C);
+  int added = 0;
+  for (const Added& ref : g_added) {
+    const std::int32_t id = table->count;
+    if (!kGrow(table, id + 1, false) || table->count != id + 1) {
+      uhc::Log(L"data refs: cannot add {%ls}", ref.name.c_str());
+      break;
+    }
+    Entry& entry = table->entries[id];
+    BString name{nullptr};
+    kBStringFromWide(&name, ref.name.c_str());
+    entry.id = id;
+    entry.type = ref.type;
+    kBStringSet(&entry.name, &name);
+    entry.provider = reinterpret_cast<void*>(ref.provider);
+    kBStringFree(&name);
+    ++added;
+  }
+  uhc::Log(L"data refs: %d added after the game's %d", added, table->count - added);
+  return stock;
+}
+
+namespace uhc {
+
+bool AddDataRef(const wchar_t* name, std::int32_t type, DataRefProvider provider) {
+  if (g_registered) {
+    Log(L"data refs: {%ls} comes after the game built its table", name);
+    return false;
+  }
+  for (const Added& ref : g_added) {
+    if (_wcsicmp(ref.name.c_str(), name) == 0) {
+      Log(L"data refs: {%ls} is already added", name);
+      return false;
+    }
+  }
+  if (!g_installed) {
+    if (!VerifyAll("data refs", {&sites::kDataRefParserCtor, &sites::kDataRefRegister, &sites::kDataRefArrayGrow,
+                                 &sites::kDataRefFloatEval, &sites::kBStringFromWide, &sites::kBStringSet,
+                                 &sites::kBStringFree}) ||
+        !WriteCall(sites::kDataRefParserCtor.va + 0x20, reinterpret_cast<const void*>(&UhcDataRefRegisterHook))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_added.push_back({name, type, provider});
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/datarefs_hooks.asm
+
+```asm
+; Data refs (datarefs.cpp). Reached through the call at 0x5D3229, which the stock parser constructor makes to the
+; registration FUN_005CFA7C; this runs it, appends the DLL's refs, and returns to the constructor.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcRegisterDataRefs PROTO STDCALL parser:DWORD
+
+.code
+
+; ECX = the parser (the stock call's this). Returns to 0x5D322E (mov eax,esi), which reloads EAX; ESI is kept by
+; the callee, as the stock registration keeps it.
+UhcDataRefRegisterHook PROC
+    TRACE_ONCE "data refs registration (0x5D3229)"
+    push ecx
+    call UhcRegisterDataRefs
+    ret
+UhcDataRefRegisterHook ENDP
+
+END
+```
+
+## Unit info for the panels
+
+### src/unitinfo.h
+
+```cpp
+// What other keys know about a unit, as text for the unit panels (minUIStats). Each function reads its key's own
+// state and writes nothing; it returns false when its key is not applied or has nothing for the unit.
+#pragma once
+
+#include <string>
+
+namespace uhc::unitinfo {
+
+bool Veterancy(const char* unit, std::wstring* out);       // veterancy.cpp: "Rank 2 (5 kills)"
+bool Poison(const char* unit, std::wstring* out);          // damageovertime.cpp: "2 stacks, 6 s"
+bool RandomCost(const char* unit, std::wstring* out);      // randomcost.cpp: the price ranges of its proto
+bool ShipmentCounts(const char* unit, std::wstring* out);  // shipmentcounts.cpp: its owner's cards per age
+bool GatherRate(const char* unit, std::wstring* out);      // gatherrate.cpp: "Food 0.67/s"
+bool OverhealOn(const char* proto);                         // overheal.cpp: the key is on and marks this proto
+
+// decimalpop.cpp: K, the factor decimalPopulation stores population quantities with ([proto+0D8h] too); 1 without it.
+int PopulationScale();
+
+// Our aura keys, as they act on the unit now (the game's own auras are not told apart: their effect is already in
+// the live values). Each returns false when its key is off or nothing of it reaches the unit.
+float BuildWorkFactor(const char* worker);                  // bwrauras.cpp: the factor its build-tick call applies
+bool WorkAura(const char* unit, std::wstring* out);         // bwrauras.cpp: "+20% work"
+bool GatherAura(const char* unit, std::wstring* out);       // gatherauras.cpp: "+20% gold"
+bool ResourceAura(const char* unit, std::wstring* out);     // unitresource.cpp: "pays 0.10 <wood>/s", "-0.05 <wood>/s"
+
+}  // namespace uhc::unitinfo
 ```
 
 ## Name lists

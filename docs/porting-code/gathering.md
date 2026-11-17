@@ -21,7 +21,7 @@ Contents:
 
 Contract: [showGatherRate](../porting-to-another-dll.md#showgatherrate).
 
-Besides the core helpers, it needs: [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `BStringFree` `0x4010CA` (31 B), `BStringAssign` `0x443BB8` (15 B), `BStringFormat` `0x444EFB` (20 B), `DataRefStringEval` `0x44A635` (100 B), `IsAbstractIndex` `0x44CAC4` (70 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `ProtoFlag` `0x45EE02` (53 B), `StatPanelAutoGatherGate` `0x4D76FF` (309 B), `StatPanelAfterAutoGather` `0x4D7834` (11 B), `GatherTickHead` `0x4ECD87` (20 B), `GatherTickPushEbp` `0x4ECDCC` (7 B), `GatherTickPushEbx` `0x4ECE16` (10 B), `GatherTickGatherer` `0x4ECE6D` (21 B), `GatherTickRate` `0x4ED02A` (38 B), `GatherTickPlayerRate` `0x4ED130` (42 B), `GatherTickPlayerBlock` `0x4ED1A4` (20 B), `GatherTickAddResource` `0x4ED1E1` (18 B), `BStringFromId` `0x58EA52` (25 B), `GatherRateStringRef` `0x5D2D38` (8 B), `DataRefStub` `0x5FDE49` (5 B), `ResourceNameId` `0x60782A` (34 B), `StatPanelRowWriter` `0x69AF7C` (100 B), `StatPanelAgLoop` `0x69AFE0` (74 B), `StatPanelRowFormat` `0x69B02A` (349 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B).
 
@@ -64,6 +64,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringAssign` `0x443BB8` (15 B), `BStr
 #include <unordered_set>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../generated/sites.h"
 #include "../unitpanel.h"
 #include "../log.h"
@@ -471,6 +472,10 @@ bool __stdcall UhcGatherRateRef(DataRefValue* value) {
 
 }  // extern "C"
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyShowGatherRate(const Config& config) {
@@ -526,10 +531,34 @@ Outcome ApplyShowGatherRate(const Config& config) {
         L"{currentUnitGatherRateString} returns it%ls (UI only)",
         log ? L", each unit's first rate per resource logged" : L"");
   }
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool GatherRate(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn) {
+    return false;
+  }
+  Rate rate{};
+  if (!CurrentRate(World(), Database(), unit, &rate)) {
+    return false;
+  }
+  wchar_t text[128];
+  const float whole = std::floor(rate.perSecond);
+  if (rate.perSecond - whole <= kWholeEpsilon) {
+    swprintf_s(text, L"%ls %d/s", ResourceName(Database(), rate.resource).c_str(), static_cast<int>(whole));
+  } else {
+    swprintf_s(text, L"%ls %.2f/s", ResourceName(Database(), rate.resource).c_str(), static_cast<double>(rate.perSecond));
+  }
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/gatherrate_hooks.asm
@@ -1546,7 +1575,7 @@ END
 
 Contract: [unitResourceAuras](../porting-to-another-dll.md#unitresourceauras).
 
-Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `UnitIsDead` `0x4802C6` (16 B), `CheckState` `0x482152` (16 B), `InventoryAdd` `0x49A5E6` (16 B), `PlayerAddResource` `0x49A98A` (16 B), `MainResource` `0x4DBEC1` (16 B), `UnitAttachModel` `0x9C04F3` (8 B), `UnitRemoveModel` `0x9C2885` (8 B), `UnitHasModel` `0x9C28DE` (8 B), `AuraScan` `0x9CFF9A` (16 B), `UnitResourceAuraEntry` `0x9D033E` (8 B), `AuraModelBlock` `0x9D053F` (9 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
@@ -1603,6 +1632,7 @@ Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitB
 #include "../log.h"
 #include "../modifytypes.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 #include "../prototags.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
@@ -1705,10 +1735,18 @@ struct AuraKey {
   auto operator<=>(const AuraKey&) const = default;
 };
 
+// One take of an update, for the panels: who gave what, per second.
+struct Take {
+  std::int32_t target;
+  std::int32_t resource;
+  float perSecond;
+};
+
 struct AuraState {
   std::uint32_t time = 0;                   // game time of the last update
   float perSecond[kMaxResources] = {};      // what that update paid, for the panel
   std::int32_t singleTarget = -1;           // <SingleUnit>: the unit it is working
+  std::vector<Take> takes;                  // that update's takes, for the panel (minUIStats' auras item)
 };
 
 struct TechAmount {
@@ -2067,6 +2105,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
   g_list.count = 0;
   kScan(action, &g_list);
   g_ringTargets.clear();
+  state.takes.clear();
   if (params.single && state.singleTarget >= 0) {
     // The unit it was working goes first, so it finishes one before the next.
     for (std::int32_t i = 1; i < g_list.count; ++i) {
@@ -2128,6 +2167,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
       paid[resource] += take * multiplier;
     }
     g_ringTargets.push_back(Field<std::int32_t>(target, 0x10));  // the state check below may remove it
+    state.takes.push_back({Field<std::int32_t>(target, 0x10), resource, take / seconds});
     if (!kProtoFlag(targetProto, kFlagEndless)) {
       kInventoryAdd(inventory, resource, -take);
       kCheckState(target);
@@ -2148,6 +2188,10 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     UpdateRings(world, auraKey, tactics, model, Field<std::int32_t>(tactics, 0xA8));
   }
 }
+
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
 
 namespace uhc {
 
@@ -2186,10 +2230,60 @@ Outcome ApplyUnitResourceAuras(const Config& config) {
   Log(L"unitResourceAuras: AutoRangedModify actions with ModifyType UnitResource gather from units in range%ls "
       L"(multiplayer unverified)",
       log ? L", the first takes logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+// What this unit's UnitResource auras paid per second in their last update ("pays 0.10 <wood>/s"), and what the
+// auras around it took from it ("-0.05 <wood>/s"): the state each update publishes, kept only while fresh
+// (kRateFreshMs, the rule of the unit panel's row).
+bool ResourceAura(const char* unit, std::wstring* out) {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (!g_unitInfoOn || unit == nullptr || world == nullptr || database == nullptr) {
+    return false;
+  }
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::int32_t resources = Field<std::int32_t>(database, 0x80);
+  float paid[kMaxResources] = {};
+  float taken[kMaxResources] = {};
+  for (const auto& [key, state] : g_auras) {
+    if (now - state.time > kRateFreshMs) {
+      continue;
+    }
+    for (std::size_t r = 0; key.owner == id && r < kMaxResources; ++r) {
+      paid[r] += state.perSecond[r];
+    }
+    for (const Take& take : state.takes) {
+      if (take.target == id && take.resource >= 0 && static_cast<std::size_t>(take.resource) < kMaxResources) {
+        taken[take.resource] += take.perSecond;
+      }
+    }
+  }
+  out->clear();
+  for (std::int32_t r = 0; r < resources && r < static_cast<std::int32_t>(kMaxResources); ++r) {
+    const auto* icon = reinterpret_cast<const char*>(kResourceIcon(database, r));
+    for (const bool pays : {true, false}) {
+      const float rate = pays ? paid[r] : taken[r];
+      if (rate <= kMinAmount) {
+        continue;
+      }
+      wchar_t text[160];
+      swprintf_s(text, L"%ls%ls%.2f <icon=\"(16)(%hs)\">/s", out->empty() ? L"" : L" ", pays ? L"pays " : L"-",
+                 static_cast<double>(rate), icon == nullptr ? "" : icon);
+      *out += text;
+    }
+  }
+  return !out->empty();
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/unitresource_hooks.asm
@@ -2771,7 +2865,7 @@ END
 
 Contract: [resourceGatherAuras](../porting-to-another-dll.md#resourcegatherauras).
 
-Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `GatherDanceCall` `0x4ED02A` (5 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `UnitAttachModel` `0x9C04F3` (8 B), `UnitRemoveModel` `0x9C2885` (8 B), `UnitHasModel` `0x9C28DE` (8 B), `AuraHasModelCall` `0x9D0584` (5 B), `AuraHangModelCall` `0x9D06DC` (5 B).
 
@@ -2809,6 +2903,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareCollector` 
 #include "../modifiers.h"
 #include "../modifytypes.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -3007,6 +3102,10 @@ extern "C" float __stdcall UhcGatherAuraFactor(const char* action) {
   return factor;
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyResourceGatherAuras(const Config& config) {
@@ -3045,10 +3144,34 @@ Outcome ApplyResourceGatherAuras(const Config& config) {
   Log(L"resourceGatherAuras: modifiers can change the gather rate of one kind of target or one resource%ls "
       L"(multiplayer unverified)",
       log ? L", the first factors logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool GatherAura(const char* unit, std::wstring* out) {
+  const char* list = !g_unitInfoOn || unit == nullptr ? nullptr : uhc::modifiers::ModifierList(unit);
+  if (list == nullptr) {
+    return false;
+  }
+  static const wchar_t* const kNames[] = {L"mine", L"tree", L"farm", L"wild food", L"food", L"wood", L"gold"};
+  out->clear();
+  for (std::int32_t stat = kStatMine; stat <= kStatGold; ++stat) {
+    const float factor = StatFactor(list, stat);
+    if (factor != 1.0f) {
+      wchar_t text[48];
+      swprintf_s(text, L"%ls%+d%% %ls", out->empty() ? L"" : L" ",
+                 static_cast<int>((factor - 1.0f) * 100.0f + (factor >= 1.0f ? 0.5f : -0.5f)), kNames[stat - kStatMine]);
+      *out += text;
+    }
+  }
+  return !out->empty();
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/gatherauras_hooks.asm

@@ -373,7 +373,7 @@ END
 
 Contract: [buildingWorkRateAuras](../porting-to-another-dll.md#buildingworkrateauras).
 
-Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types).
+Besides the core helpers, it needs: [`modifiers.h`](helpers.md#modifier-walk), [`modifytypes.h`](helpers.md#modify-types), [`unitinfo.h`](helpers.md#unit-info-for-the-panels).
 
 Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (121 B), `SnareModifierSum` `0x4B3C48` (183 B), `SnareModifierSumEnd` `0x4E2A8E` (27 B), `BwrGatherRateRecord` `0x4ECFE9` (20 B), `BwrGatherRateRule` `0x69FE53` (28 B), `SnareModifierSumTactic` `0x6A88D6` (34 B), `WorkRateMaintainCall` `0x6AB23C` (20 B), `CurrentUnitRateRead` `0x6F49FC` (6 B), `BuildingWorkRateGetter` `0x9BFE33` (21 B), `BwrGetterTail` `0x9BFE38` (16 B), `BwrRepairRate` `0x9D0BF2` (7 B), `BwrRateCallBuild` `0x9D3D7B` (5 B), `WorkRateCommandResearchCall` `0x9D58D1` (13 B), `BwrRateCallHeal` `0x9E0CCF` (5 B), `WorkRateResearchCall` `0x9E65F4` (13 B), `BwrTrainCall` `0x9EA410` (8 B), `BwrTrainCallNext` `0x9EA418` (12 B).
 
@@ -426,6 +426,7 @@ Sites: `ModifyTypeNameCompare` `0x443C10` (16 B), `SnareCollector` `0x49F34B` (1
 #include "../modifiers.h"
 #include "../modifytypes.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 
 extern "C" {
 void UhcBwrAuraCall();
@@ -609,6 +610,10 @@ float __stdcall UhcBwrPanelRate(const char* unit) {
 }
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyBuildingWorkRateAuras(const Config& config) {
@@ -676,10 +681,38 @@ Outcome ApplyBuildingWorkRateAuras(const Config& config) {
   Log(L"buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x%02X) scale train, research, "
       L"Maintain, heal and build speed%ls (multiplayer unverified)",
       kStatBuildingWorkRate, log ? L", every change of a unit's factor logged" : L"");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+// What UhcBwrRateCall multiplies a builder's rate by: 1.0 with the key off or without a modifier record.
+float BuildWorkFactor(const char* worker) {
+  if (!g_unitInfoOn || worker == nullptr) {
+    return 1.0f;
+  }
+  const char* sub = Field<const char*>(worker, 0xB4);
+  if (sub == nullptr || Field<const char*>(sub, 0xC8) == nullptr) {
+    return 1.0f;
+  }
+  return Factor(worker);
+}
+
+bool WorkAura(const char* unit, std::wstring* out) {
+  const float factor = BuildWorkFactor(unit);
+  if (factor == 1.0f) {
+    return false;
+  }
+  wchar_t text[48];
+  swprintf_s(text, L"%+d%% work", static_cast<int>((factor - 1.0f) * 100.0f + (factor >= 1.0f ? 0.5f : -0.5f)));
+  *out = text;
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/bwraura_hooks.asm
@@ -883,7 +916,7 @@ Outcome ApplyCostEscalationTechs(const Config& config) {
 
 Contract: [randomCost](../porting-to-another-dll.md#randomcost).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `RandomCostGetterCopy` `0x480B55` (11 B), `RandomCostPayBatch` `0x9EAF7A` (37 B), `RandomCostPayOne` `0x9EB036` (34 B), `RandomCostRecord` `0x9EB280` (22 B), `RandomCostRefundCancel` `0x9EB435` (14 B), `RandomCostRefundAll` `0x9EB603` (15 B), `RandomCostRefundSpawn` `0x9EBA4F` (19 B).
 
@@ -932,6 +965,7 @@ Sites: `RandomCostGetterCopy` `0x480B55` (11 B), `RandomCostPayBatch` `0x9EAF7A`
 #include <vector>
 
 #include "../features.h"
+#include "../unitinfo.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -1526,6 +1560,10 @@ extern "C" bool __stdcall UhcRandomCostRefund(char* player, char* cost) {
   return ok;
 }
 
+namespace {
+bool g_unitInfoOn = false;  // the key applied: unitinfo.h answers
+}  // namespace
+
 namespace uhc {
 
 Outcome ApplyRandomCost(const Config& config) {
@@ -1558,10 +1596,35 @@ Outcome ApplyRandomCost(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"randomCost: <RandomCost> is read; the cost getter, the Train payments, entry costs and refunds are hooked");
+  g_unitInfoOn = true;
   return Outcome::kApplied;
 }
 
 }  // namespace uhc
+
+namespace uhc::unitinfo {
+
+bool RandomCost(const char* unit, std::wstring* out) {
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  const int slot = !g_unitInfoOn || proto == nullptr ? -1 : SlotOf(Field<std::int32_t>(proto, 0x08));
+  if (slot < 0 || g_tagged[slot].ranges.empty()) {
+    return false;
+  }
+  using IconFn = const char*(__thiscall*)(const char* database, std::int32_t resource);
+  const auto icon = reinterpret_cast<IconFn>(0x00706EFB);
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  out->clear();
+  for (const Range& range : g_tagged[slot].ranges) {
+    wchar_t text[96];
+    swprintf_s(text, L"%ls%d-%d <icon=\"(16)(%hs)\">", out->empty() ? L"" : L"  ", range.min, range.max,
+               database == nullptr ? "" : icon(database, range.resource));
+    *out += text;
+  }
+  return true;
+}
+
+}  // namespace uhc::unitinfo
 ```
 
 ### src/hooks/randomcost_hooks.asm
@@ -5550,7 +5613,7 @@ Contract: [hcShipmentPointFallback](../porting-to-another-dll.md#hcshipmentpoint
 
 Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherSearchStart` `0x4C6BCF` (7 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (176 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `PlayerByIdNull` `0x4649E1` (5 B), `GatherSearchStart` `0x4C6BCF` (7 B), `GatherFallbackStore` `0x4C6CB2` (12 B), `UnitByIdNull` `0x4E2A35` (5 B), `GatherFallbackBlock` `0x6698B4` (32 B), `GatherFallbackBlockTail` `0x6698DA` (138 B), `GatherFallbackExit` `0x669E2E` (10 B), `FirstTcSet` `0x67ABD4` (14 B), `GatherPointValid` `0x85302C` (56 B).
 
 ### src/features/shipments.cpp
 
@@ -5866,7 +5929,7 @@ bool AddFirstTcShipmentPoint() {
   }
   if (!g_installed) {
     if (!VerifyAll("firstTC shipment point", {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore,
-                                              &sites::kGatherFallbackBlock}) ||
+                                              &sites::kGatherFallbackBlock, &sites::kGatherFallbackBlockTail}) ||
         !WriteJmp(sites::kGatherFallbackExit.va, reinterpret_cast<const void*>(&UhcHcGatherFallbackHook), 5)) {
       return false;
     }
@@ -5922,14 +5985,16 @@ Outcome ApplyHcShipmentPointFallback(const Config& config) {
     return Outcome::kFailed;
   }
   // FirstTC also reads [player+4F0h] (set at 0x67ABD4), player and unit by ID and the stored point
-  // check; no feature writes those sites.
+  // check; no feature writes those sites. The block the hook mirrors is checked without its proto ID
+  // load (0x6698D4): the hook loads its own IDs, and another DLL may rewrite that load, before or
+  // after this check.
   const bool verified =
       firstTc ? VerifyAll("hcShipmentPointFallback",
                           {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock,
-                           &sites::kFirstTcSet, &sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
-                           &sites::kUnitByIdNull, &sites::kGatherPointValid})
-              : VerifyAll("hcShipmentPointFallback",
-                          {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore, &sites::kGatherFallbackBlock});
+                           &sites::kGatherFallbackBlockTail, &sites::kFirstTcSet, &sites::kPlayerById,
+                           &sites::kPlayerByIdNull, &sites::kUnitById, &sites::kUnitByIdNull, &sites::kGatherPointValid})
+              : VerifyAll("hcShipmentPointFallback", {&sites::kGatherFallbackExit, &sites::kGatherFallbackStore,
+                                                      &sites::kGatherFallbackBlock, &sites::kGatherFallbackBlockTail});
   if (!verified || (lastResort && !VerifyAll("hcShipmentPointFallback LastResort",
                                              {&sites::kPlayerById, &sites::kPlayerByIdNull, &sites::kUnitById,
                                               &sites::kUnitByIdNull, &sites::kGatherPointValid, &sites::kIsA}))) {
