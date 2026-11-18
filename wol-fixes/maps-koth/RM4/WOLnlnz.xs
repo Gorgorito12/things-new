@@ -857,21 +857,23 @@ wotta_triggers();
       }
     }
     // the hill on the first open land along that line, from the middle outwards, one side then the other
-    // (0.04 of the map side per step), with the include's placer constraints, 40 m from every Town Center
+    // (0.025 of the map side per step), with the include's placer constraints, 40 m from every Town Center
     // and 10 m from every tree
     int kothAvoidLand = rmCreateTerrainDistanceConstraint("koth hill avoids impassable land", "Land", false, 6.0);
     int kothAvoidAll = rmCreateTypeDistanceConstraint("koth hill avoids all", "all", 4.0);
     int kothAvoidTC = rmCreateTypeDistanceConstraint("koth hill avoids TCs", "TownCenter", 40.0);
     int kothAvoidTrees = rmCreateTypeDistanceConstraint("koth hill avoids trees", "Tree", 10.0);
+    int kothAvoidTreesNear = rmCreateTypeDistanceConstraint("koth hill avoids trees near", "Tree", 5.0);
     int kothAvoidSocket = rmCreateTypeDistanceConstraint("koth hill avoids trade sockets", "socketTradeRoute", 6.0);
     int kothAvoidRoute = rmCreateTradeRouteDistanceConstraint("koth hill avoids trade route", 6.0);
     int kothAvoidFlag = rmCreateTypeDistanceConstraint("koth hill avoids water flags", "HomeCityWaterSpawnFlag", 4.0);
+    int kothDone = 0;
     float kothDist = 0.0;
-    for (kothRound = 0; < 17) {
+    for (kothRound = 0; < 41) {
       int kothHill = rmCreateObjectDef("koth hill " + kothRound);
       rmAddObjectDefItem(kothHill, "ypKingsHill", 1, 0);
       rmSetObjectDefMinDistance(kothHill, 0.0);
-      rmSetObjectDefMaxDistance(kothHill, rmXFractionToMeters(0.05));
+      rmSetObjectDefMaxDistance(kothHill, rmXFractionToMeters(0.025));
       rmAddObjectDefConstraint(kothHill, kothAvoidLand);
       rmAddObjectDefConstraint(kothHill, kothAvoidAll);
       rmAddObjectDefConstraint(kothHill, kothAvoidTC);
@@ -880,13 +882,36 @@ wotta_triggers();
       rmAddObjectDefConstraint(kothHill, kothAvoidRoute);
       rmAddObjectDefConstraint(kothHill, kothAvoidFlag);
       rmPlaceObjectDefAtLoc(kothHill, 0, kothX + kothDirX * kothDist, kothZ + kothDirZ * kothDist, 1);
-      if (rmGetNumberUnitsPlaced(kothHill) > 0)
+      if (rmGetNumberUnitsPlaced(kothHill) > 0) {
+        kothDone = 1;
         break;
+      }
       // 0, +1, -1, +2, -2, ... steps
       if (kothDist > 0.0)
         kothDist = 0.0 - kothDist;
       else
-        kothDist = 0.04 - kothDist;
+        kothDist = 0.025 - kothDist;
+    }
+    // no room on that line: the open land nearest to the middle, trees allowed closer (5 m)
+    if (kothDone == 0) {
+      float kothRadius = 0.04;
+      for (kothNear = 0; < 8) {
+        int kothHillNear = rmCreateObjectDef("koth hill near " + kothNear);
+        rmAddObjectDefItem(kothHillNear, "ypKingsHill", 1, 0);
+        rmSetObjectDefMinDistance(kothHillNear, 0.0);
+        rmSetObjectDefMaxDistance(kothHillNear, rmXFractionToMeters(kothRadius));
+        rmAddObjectDefConstraint(kothHillNear, kothAvoidLand);
+        rmAddObjectDefConstraint(kothHillNear, kothAvoidAll);
+        rmAddObjectDefConstraint(kothHillNear, kothAvoidTC);
+        rmAddObjectDefConstraint(kothHillNear, kothAvoidTreesNear);
+        rmAddObjectDefConstraint(kothHillNear, kothAvoidSocket);
+        rmAddObjectDefConstraint(kothHillNear, kothAvoidRoute);
+        rmAddObjectDefConstraint(kothHillNear, kothAvoidFlag);
+        rmPlaceObjectDefAtLoc(kothHillNear, 0, kothX, kothZ, 1);
+        if (rmGetNumberUnitsPlaced(kothHillNear) > 0)
+          break;
+        kothRadius = kothRadius * 1.5;
+      }
     }
   }
 
