@@ -1,0 +1,743 @@
+{
+ "transform": "hue -5 deg, chroma x0.5, lightness x0.88 on hues 25 +/- 20 (feather 25)",
+ "near": 20.0,
+ "references": {
+  "player 1": [
+   45,
+   45,
+   245
+  ],
+  "player 2": [
+   210,
+   40,
+   40
+  ],
+  "player 3": [
+   215,
+   215,
+   30
+  ],
+  "player 4": [
+   150,
+   15,
+   250
+  ],
+  "player 5": [
+   15,
+   210,
+   80
+  ],
+  "player 6": [
+   255,
+   150,
+   5
+  ],
+  "player 7": [
+   150,
+   255,
+   240
+  ],
+  "player 8": [
+   255,
+   190,
+   255
+  ]
+ },
+ "textures": [
+  {
+   "file": "dirt.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     33.4,
+     23.4,
+     19.6
+    ],
+    "delta_e": {
+     "player 1": 39.48,
+     "player 2": 37.39,
+     "player 3": 77.85,
+     "player 4": 42.9,
+     "player 5": 68.33,
+     "player 6": 61.18,
+     "player 7": 89.36,
+     "player 8": 76.97
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     27.1,
+     21.0,
+     19.1
+    ],
+    "delta_e": {
+     "player 1": 38.88,
+     "player 2": 39.04,
+     "player 3": 78.45,
+     "player 4": 42.62,
+     "player 5": 67.98,
+     "player 6": 62.49,
+     "player 7": 90.56,
+     "player 8": 77.58
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass1.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     118.0,
+     29.1,
+     32.7
+    ],
+    "delta_e": {
+     "player 1": 39.1,
+     "player 2": 19.17,
+     "player 3": 72.13,
+     "player 4": 38.54,
+     "player 5": 81.81,
+     "player 6": 52.42,
+     "player 7": 78.56,
+     "player 8": 59.7
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.562,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     82.7,
+     42.0,
+     43.6
+    ],
+    "delta_e": {
+     "player 1": 35.51,
+     "player 2": 26.79,
+     "player 3": 72.22,
+     "player 4": 36.55,
+     "player 5": 74.05,
+     "player 6": 55.6,
+     "player 7": 77.48,
+     "player 8": 62.81
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.1006,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass1b.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     58.8,
+     25.5,
+     22.4
+    ],
+    "delta_e": {
+     "player 1": 39.08,
+     "player 2": 31.13,
+     "player 3": 78.64,
+     "player 4": 41.19,
+     "player 5": 74.84,
+     "player 6": 58.65,
+     "player 7": 87.12,
+     "player 8": 73.66
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0786,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     42.1,
+     25.9,
+     24.5
+    ],
+    "delta_e": {
+     "player 1": 38.0,
+     "player 2": 35.36,
+     "player 3": 78.37,
+     "player 4": 41.02,
+     "player 5": 70.59,
+     "player 6": 60.59,
+     "player 7": 88.26,
+     "player 8": 75.22
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0057,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass1c.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     61.5,
+     25.8,
+     23.0
+    ],
+    "delta_e": {
+     "player 1": 39.02,
+     "player 2": 30.53,
+     "player 3": 78.57,
+     "player 4": 41.0,
+     "player 5": 75.36,
+     "player 6": 58.39,
+     "player 7": 86.63,
+     "player 8": 73.17
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0322,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     43.4,
+     25.9,
+     24.9
+    ],
+    "delta_e": {
+     "player 1": 37.85,
+     "player 2": 35.09,
+     "player 3": 78.54,
+     "player 4": 40.8,
+     "player 5": 71.08,
+     "player 6": 60.58,
+     "player 7": 88.26,
+     "player 8": 74.99
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0001,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass1d.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     53.2,
+     25.2,
+     21.5
+    ],
+    "delta_e": {
+     "player 1": 39.25,
+     "player 2": 32.38,
+     "player 3": 78.53,
+     "player 4": 41.64,
+     "player 5": 73.49,
+     "player 6": 59.09,
+     "player 7": 87.84,
+     "player 8": 74.51
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0126,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     38.0,
+     24.0,
+     22.5
+    ],
+    "delta_e": {
+     "player 1": 38.33,
+     "player 2": 36.3,
+     "player 3": 78.57,
+     "player 4": 41.53,
+     "player 5": 70.2,
+     "player 6": 61.14,
+     "player 7": 89.43,
+     "player 8": 75.96
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass1e.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     59.6,
+     25.7,
+     22.6
+    ],
+    "delta_e": {
+     "player 1": 39.07,
+     "player 2": 30.93,
+     "player 3": 78.59,
+     "player 4": 41.14,
+     "player 5": 74.96,
+     "player 6": 58.54,
+     "player 7": 86.92,
+     "player 8": 73.5
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0703,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     42.6,
+     26.0,
+     24.6
+    ],
+    "delta_e": {
+     "player 1": 37.97,
+     "player 2": 35.24,
+     "player 3": 78.37,
+     "player 4": 40.97,
+     "player 5": 70.69,
+     "player 6": 60.54,
+     "player 7": 88.17,
+     "player 8": 75.13
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0032,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass2.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     107.0,
+     21.7,
+     24.5
+    ],
+    "delta_e": {
+     "player 1": 40.09,
+     "player 2": 21.3,
+     "player 3": 75.09,
+     "player 4": 40.04,
+     "player 5": 82.69,
+     "player 6": 54.18,
+     "player 7": 81.58,
+     "player 8": 64.31
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.4668,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     74.4,
+     35.5,
+     36.4
+    ],
+    "delta_e": {
+     "player 1": 36.43,
+     "player 2": 28.35,
+     "player 3": 75.44,
+     "player 4": 37.86,
+     "player 5": 75.03,
+     "player 6": 57.05,
+     "player 7": 81.01,
+     "player 8": 67.12
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0736,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass3.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     115.9,
+     22.0,
+     24.9
+    ],
+    "delta_e": {
+     "player 1": 40.46,
+     "player 2": 19.53,
+     "player 3": 73.48,
+     "player 4": 40.08,
+     "player 5": 82.86,
+     "player 6": 52.88,
+     "player 7": 80.24,
+     "player 8": 62.17
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.5414,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0003,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     79.8,
+     37.7,
+     38.3
+    ],
+    "delta_e": {
+     "player 1": 36.39,
+     "player 2": 27.14,
+     "player 3": 74.04,
+     "player 4": 37.56,
+     "player 5": 75.12,
+     "player 6": 56.18,
+     "player 7": 79.51,
+     "player 8": 65.24
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0234,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  },
+  {
+   "file": "grass3b.ddt",
+   "header": "512x512 DXT1 alpha=none usage=0 mips=9",
+   "before": {
+    "mean": [
+     58.5,
+     23.6,
+     20.2
+    ],
+    "delta_e": {
+     "player 1": 39.52,
+     "player 2": 31.11,
+     "player 3": 79.13,
+     "player 4": 41.61,
+     "player 5": 75.55,
+     "player 6": 58.8,
+     "player 7": 88.09,
+     "player 8": 74.17
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0602,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     41.7,
+     24.6,
+     22.9
+    ],
+    "delta_e": {
+     "player 1": 38.32,
+     "player 2": 35.38,
+     "player 3": 78.65,
+     "player 4": 41.33,
+     "player 5": 71.06,
+     "player 6": 60.72,
+     "player 7": 89.08,
+     "player 8": 75.5
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.0006,
+     "player 3": 0.0,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  }
+ ],
+ "skipped": [
+  {
+   "file": "grass1_b.ddt",
+   "why": "bump map: left untouched"
+  },
+  {
+   "file": "grass1b_b.ddt",
+   "why": "bump map: left untouched"
+  },
+  {
+   "file": "grass1c_b.ddt",
+   "why": "bump map: left untouched"
+  },
+  {
+   "file": "grass1d_b.ddt",
+   "why": "bump map: left untouched"
+  },
+  {
+   "file": "grass1e_b.ddt",
+   "why": "bump map: left untouched"
+  },
+  {
+   "file": "grass2_b.ddt",
+   "why": "bump map: left untouched"
+  },
+  {
+   "file": "grass3_b.ddt",
+   "why": "bump map: left untouched"
+  },
+  {
+   "file": "grass3b_b.ddt",
+   "why": "bump map: left untouched"
+  }
+ ],
+ "mix": {
+  "weights": {
+   "grass1": 2.0,
+   "grass2": 2.0,
+   "grass3": 4.0,
+   "grass3b": 1.0,
+   "grass1b": 1.0,
+   "grass1c": 1.0
+  },
+  "missing": [],
+  "before": {
+   "mean": [
+    99.3,
+    24.0,
+    25.4
+   ],
+   "delta_e": {
+    "player 1": 39.62,
+    "player 2": 22.77,
+    "player 3": 75.82,
+    "player 4": 39.89,
+    "player 5": 81.7,
+    "player 6": 54.95,
+    "player 7": 82.1,
+    "player 8": 65.65
+   },
+   "near": {
+    "player 1": 0.0,
+    "player 2": 0.3993,
+    "player 3": 0.0,
+    "player 4": 0.0,
+    "player 5": 0.0,
+    "player 6": 0.0001,
+    "player 7": 0.0,
+    "player 8": 0.0
+   }
+  },
+  "after": {
+   "mean": [
+    69.2,
+    34.7,
+    35.1
+   ],
+   "delta_e": {
+    "player 1": 36.55,
+    "player 2": 29.45,
+    "player 3": 75.93,
+    "player 4": 38.26,
+    "player 5": 74.07,
+    "player 6": 57.49,
+    "player 7": 81.75,
+    "player 8": 68.52
+   },
+   "near": {
+    "player 1": 0.0,
+    "player 2": 0.0397,
+    "player 3": 0.0,
+    "player 4": 0.0,
+    "player 5": 0.0,
+    "player 6": 0.0,
+    "player 7": 0.0,
+    "player 8": 0.0
+   }
+  }
+ },
+ "mapcolor": {
+  "before": [
+   160,
+   15,
+   30
+  ],
+  "after": [
+   110,
+   49,
+   51
+  ],
+  "delta_e_before": {
+   "player 1": 41.93,
+   "player 2": 21.72,
+   "player 3": 75.0,
+   "player 4": 35.74,
+   "player 5": 90.64,
+   "player 6": 32.16,
+   "player 7": 69.91,
+   "player 8": 42.45
+  },
+  "delta_e_after": {
+   "player 1": 36.35,
+   "player 2": 30.08,
+   "player 3": 74.44,
+   "player 4": 30.99,
+   "player 5": 82.92,
+   "player 6": 38.82,
+   "player 7": 64.25,
+   "player 8": 41.69
+  }
+ },
+ "minimap_colors": {
+  "player 1": [
+   50,
+   50,
+   255
+  ],
+  "player 2": [
+   255,
+   50,
+   50
+  ],
+  "player 3": [
+   255,
+   255,
+   0
+  ],
+  "player 4": [
+   148,
+   0,
+   197
+  ],
+  "player 5": [
+   0,
+   255,
+   0
+  ],
+  "player 6": [
+   255,
+   100,
+   0
+  ],
+  "player 7": [
+   6,
+   190,
+   179
+  ],
+  "player 8": [
+   255,
+   0,
+   253
+  ]
+ }
+}

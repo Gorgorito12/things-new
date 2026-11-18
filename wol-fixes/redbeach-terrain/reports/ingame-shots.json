@@ -1,0 +1,146 @@
+{
+ "original": {
+  "ground_mean": [
+   78,
+   18,
+   21
+  ],
+  "delta_e": {
+   "player 1": 39.4,
+   "player 2": 27.3,
+   "player 3": 80.5,
+   "player 4": 40.5,
+   "player 5": 81.6,
+   "player 6": 58.1,
+   "player 7": 87.6,
+   "player 8": 71.8
+  },
+  "p2": 27.3,
+  "median_others": 71.8,
+  "min_others": 39.4,
+  "near_p2_20": 0.1369,
+  "minimap_drawn": [
+   165,
+   8,
+   24
+  ],
+  "minimap_delta_e": {
+   "player 1": 43.2,
+   "player 2": 20.8,
+   "player 3": 74.2,
+   "player 4": 37.2,
+   "player 5": 90.3,
+   "player 6": 30.9,
+   "player 7": 69.7,
+   "player 8": 43.4
+  }
+ },
+ "A": {
+  "ground_mean": [
+   51,
+   25,
+   29
+  ],
+  "delta_e": {
+   "player 1": 36.5,
+   "player 2": 33.9,
+   "player 3": 80.4,
+   "player 4": 39.0,
+   "player 5": 75.0,
+   "player 6": 61.2,
+   "player 7": 88.7,
+   "player 8": 73.5
+  },
+  "p2": 33.9,
+  "median_others": 73.5,
+  "min_others": 36.5,
+  "near_p2_20": 0.0001,
+  "minimap_drawn": [
+   107,
+   49,
+   49
+  ],
+  "minimap_delta_e": {
+   "player 1": 36.8,
+   "player 2": 30.4,
+   "player 3": 74.2,
+   "player 4": 31.6,
+   "player 5": 82.2,
+   "player 6": 38.8,
+   "player 7": 63.8,
+   "player 8": 42.4
+  }
+ },
+ "B": {
+  "ground_mean": [
+   42,
+   5,
+   13
+  ],
+  "delta_e": {
+   "player 1": 38.5,
+   "player 2": 36.3,
+   "player 3": 85.0,
+   "player 4": 41.2,
+   "player 5": 81.1,
+   "player 6": 64.8,
+   "player 7": 98.2,
+   "player 8": 76.6
+  },
+  "p2": 36.3,
+  "median_others": 76.6,
+  "min_others": 38.5,
+  "near_p2_20": 0.0001,
+  "minimap_drawn": [
+   90,
+   0,
+   24
+  ],
+  "minimap_delta_e": {
+   "player 1": 39.1,
+   "player 2": 36.1,
+   "player 3": 91.0,
+   "player 4": 33.3,
+   "player 5": 100.5,
+   "player 6": 45.8,
+   "player 7": 74.1,
+   "player 8": 46.6
+  }
+ },
+ "C": {
+  "ground_mean": [
+   56,
+   20,
+   47
+  ],
+  "delta_e": {
+   "player 1": 31.5,
+   "player 2": 37.1,
+   "player 3": 87.9,
+   "player 4": 33.9,
+   "player 5": 84.2,
+   "player 6": 66.8,
+   "player 7": 89.2,
+   "player 8": 71.7
+  },
+  "p2": 37.1,
+  "median_others": 71.7,
+  "min_others": 31.5,
+  "near_p2_20": 0.0001,
+  "minimap_drawn": [
+   123,
+   33,
+   90
+  ],
+  "minimap_delta_e": {
+   "player 1": 27.4,
+   "player 2": 36.4,
+   "player 3": 88.1,
+   "player 4": 18.7,
+   "player 5": 98.2,
+   "player 6": 48.6,
+   "player 7": 67.3,
+   "player 8": 33.4
+  }
+ }
+}

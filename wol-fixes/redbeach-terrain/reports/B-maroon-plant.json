@@ -1,0 +1,181 @@
+{
+ "transform": "hue -10 deg, chroma x0.8, lightness x0.66 on hues 25 +/- 20 (feather 25)",
+ "near": 20.0,
+ "references": {
+  "player 1": [
+   45,
+   45,
+   245
+  ],
+  "player 2": [
+   210,
+   40,
+   40
+  ],
+  "player 3": [
+   215,
+   215,
+   30
+  ],
+  "player 4": [
+   150,
+   15,
+   250
+  ],
+  "player 5": [
+   15,
+   210,
+   80
+  ],
+  "player 6": [
+   255,
+   150,
+   5
+  ],
+  "player 7": [
+   150,
+   255,
+   240
+  ],
+  "player 8": [
+   255,
+   190,
+   255
+  ]
+ },
+ "textures": [
+  {
+   "file": "red_beach_grass.ddt",
+   "header": "256x256 BGRA alpha=player colour usage=0 mips=7",
+   "before": {
+    "mean": [
+     142.1,
+     62.5,
+     44.8
+    ],
+    "delta_e": {
+     "player 1": 41.9,
+     "player 2": 13.06,
+     "player 3": 58.16,
+     "player 4": 40.49,
+     "player 5": 69.53,
+     "player 6": 39.15,
+     "player 7": 66.64,
+     "player 8": 50.04
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.5601,
+     "player 3": 0.0008,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.019,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   },
+   "after": {
+    "mean": [
+     91.5,
+     29.0,
+     27.4
+    ],
+    "delta_e": {
+     "player 1": 39.18,
+     "player 2": 24.15,
+     "player 3": 75.29,
+     "player 4": 39.79,
+     "player 5": 79.35,
+     "player 6": 55.13,
+     "player 7": 81.5,
+     "player 8": 66.32
+    },
+    "near": {
+     "player 1": 0.0,
+     "player 2": 0.2026,
+     "player 3": 0.0008,
+     "player 4": 0.0,
+     "player 5": 0.0,
+     "player 6": 0.0117,
+     "player 7": 0.0,
+     "player 8": 0.0
+    }
+   }
+  }
+ ],
+ "skipped": [],
+ "mapcolor": {
+  "before": [
+   100,
+   15,
+   25
+  ],
+  "after": [
+   56,
+   0,
+   16
+  ],
+  "delta_e_before": {
+   "player 1": 39.9,
+   "player 2": 33.07,
+   "player 3": 85.01,
+   "player 4": 34.35,
+   "player 5": 95.04,
+   "player 6": 42.27,
+   "player 7": 71.57,
+   "player 8": 46.35
+  },
+  "delta_e_after": {
+   "player 1": 39.28,
+   "player 2": 42.94,
+   "player 3": 101.29,
+   "player 4": 34.41,
+   "player 5": 103.07,
+   "player 6": 51.85,
+   "player 7": 74.05,
+   "player 8": 49.89
+  }
+ },
+ "minimap_colors": {
+  "player 1": [
+   50,
+   50,
+   255
+  ],
+  "player 2": [
+   255,
+   50,
+   50
+  ],
+  "player 3": [
+   255,
+   255,
+   0
+  ],
+  "player 4": [
+   148,
+   0,
+   197
+  ],
+  "player 5": [
+   0,
+   255,
+   0
+  ],
+  "player 6": [
+   255,
+   100,
+   0
+  ],
+  "player 7": [
+   6,
+   190,
+   179
+  ],
+  "player 8": [
+   255,
+   0,
+   253
+  ]
+ }
+}
