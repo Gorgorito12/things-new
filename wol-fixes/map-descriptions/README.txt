@@ -7,8 +7,8 @@ English and Spanish, the facts behind them (read from the map scripts and checke
 that installs them, screenshots, and the problems we found in the maps' data on the way.
 
 Status: all 208 maps written. The "King of the Hill" line follows the King of the Hill pack
-(wol-fixes\maps-koth): Yes on 199 maps, No on 9 (the 8 maps the pack skips, and WOLsahara, which has
-no King of the Hill code: see lead 8). Install that pack's .xs files together with these texts.
+(wol-fixes\maps-koth): Yes on 200 maps, No on the 8 maps the pack skips (WOLsahara, lead 8, is now in
+the pack). Install that pack's .xs files together with these texts.
 
 
 What the game shows (tested in game)
@@ -138,12 +138,13 @@ Every item with its file and line is in leads.csv (kind, file, line, name, detai
    Scandinavia, Socotra, Tuscany, Verdon Gorge. Their descriptions say "Natives: none". Several of
    them are explained by item 4.
 
-8. WOLsahara (RM4\WOLsahara.xs): no King of the Hill.
+8. WOLsahara (RM4\WOLsahara.xs): no King of the Hill. Fixed on 2026-11-18.
    Fact: the script includes ypKOTHInclude.xs (line 6) and keeps objects away from a "ypKingsHill"
    (line 195), but never calls rmGetIsKOTH or ypKingsHillPlacer, so no hill is placed in a King of the
-   Hill game. The King of the Hill pack counts it among the maps that already had it; its description
-   says "King of the Hill: No".
-   Suggestion: add the placement (as in the pack's other desert maps), then set the fact to Yes.
+   Hill game. The King of the Hill pack counted it among the maps that already had it.
+   Fix: the pack now adds the placement (wol-fixes\maps-koth\RM4\WOLsahara.xs, tested like its other
+   maps) and its description says "King of the Hill: Yes". The screenshots WOLsahara-lobby-after.jpg
+   and WOLsahara-loading-after.jpg were taken before this change.
 
 
 The outlaw rule in more detail

@@ -15999,7 +15999,7 @@
   "trade_route": "Yes",
   "trade_route_conditions": "",
   "trade_route_types": "ShortCamelTrain",
-  "koth": "No",
+  "koth": "Yes",
   "map_types": "AFRICANdesert",
   "outlaw_block": "AFRICANdesert (map type AFRICANdesert)",
   "outlaws": "SaloonPirate (+3 random)",

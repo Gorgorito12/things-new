@@ -6,16 +6,21 @@ necessarily need to be the center of the map but the closest choke point to all 
 is space to place it and battle around. If a map doesn't have space to allocate a king's hill, it should be
 skipped and its description should state that it doesn't work in koth mode."*
 
-Of WoL's 208 random maps, 88 already had King of the Hill. Of the other 120, **112 now have it** and
+Of WoL's 208 random maps, 87 already had King of the Hill. Of the other 121, **113 now have it** and
 **8 are skipped** because their players start on land masses that do not touch (list below).
+
+WOLsahara was added on 2026-11-18, after the first pack: its script included `ypKOTHInclude.xs` and kept
+objects 8 m away from a `ypKingsHill`, so a search for the hill's name counted it as a map that had King of
+the Hill, but it never placed one. A second scan of all 208 maps now checks that `main` (or a function it
+calls) holds both `rmGetIsKOTH()` and the hill's placement; apart from the 8 skipped maps, all of them do.
 
 ## Status (2026-11-18): tests complete
 
-- Hill placed in every one of its 7 test games: 109 of 112 maps.
+- Hill placed in every one of its 7 test games: 110 of 113 maps.
 - Hill missing in some test games (3): WOLAlps, WOLcongo, WOLnlnz.
 - Team ratio above 1.5 in some test game (5): dansil_greatbarrierreef, WOLAlps, WolGujarat, WOLIberianPeninsula, WOLnzwc.
-- Reach test done: 112 maps; failed or by ship only (9): amazonia, caribbean, dansil92Kwadacha, DansilLCongo, great lakes, WOLEcruteak, WOLsocotra, WoLverdongorge, Yungas; pending (0).
-- Normal-map test done: 112 maps; differs (3): DansilCristalMonts, rockies, unknown; pending (0).
+- Reach test done: 113 maps; failed or by ship only (9): amazonia, caribbean, dansil92Kwadacha, DansilLCongo, great lakes, WOLEcruteak, WOLsocotra, WoLverdongorge, Yungas; pending (0).
+- Normal-map test done: 113 maps; differs (3): DansilCristalMonts, rockies, unknown; pending (0).
 
 Known limits (details in the table):
 - **By ship, by design:** amazonia (TAD's mid-river islet), caribbean and great lakes in summer (TAD's
@@ -241,6 +246,7 @@ trigger) are never shipped.
 | WOLmoon | between the teams; end of the script | x 0.48-0.56, z 0.48-0.57 | the middle is cratered; first open land on the line that splits the teams | 7/7 | 1.42 | 1.93 | yes | yes | [jpg](media/WOLmoon.jpg) |
 | WOLnlnz | between the teams; after the Town Centers | x 0.49-0.56, z 0.63-0.77 | the middle is water; first open land on the line that splits the teams | 6/7 | 1.14 | 2.64 | yes | yes | [jpg](media/WOLnlnz.jpg) |
 | WOLnzwc | between the teams; end of the script | x 0.46-0.52, z 0.48-0.71 | a long strip; first open land on the line that splits the teams | 7/7 | 2.18 | 2.10 | yes | yes | [jpg](media/WOLnzwc.jpg) |
+| WOLsahara | nearest open spot to the middle; end of the script | x 0.44-0.54, z 0.47-0.55 | the middle of the start positions (the map centre), on open sand away from the cliffs; the map only included the King of the Hill library and kept objects away from a hill it never placed | 7/7 | 1.24 | 1.19 | yes | yes | [jpg](media/WOLsahara.jpg) |
 | WOLsahel | nearest open spot to the middle; end of the script | x 0.30-0.48, z 0.26-0.48 | centre, beside the central trade route | 7/7 | 1.43 | 2.19 | yes | yes (only carts or trade units that move differ) | [jpg](media/WOLsahel.jpg) |
 | WOLsavannah | nearest open spot to the middle; end of the script | x 0.47-0.53, z 0.42-0.66 | the middle of all start positions (the map centre), on open land | 7/7 | 1.27 | 1.28 | yes | yes | [jpg](media/WOLsavannah.jpg) |
 | WOLScandinavia | nearest open spot to the middle; end of the script | x 0.46-0.51, z 0.46-0.53 | the middle of all start positions (the map centre), on open land | 7/7 | 1.11 | 1.23 | yes | yes | [jpg](media/WOLScandinavia.jpg) |
@@ -359,6 +365,7 @@ Town Centers):
 - [WOLmoon](media/WOLmoon.jpg)
 - [WOLnlnz](media/WOLnlnz.jpg)
 - [WOLnzwc](media/WOLnzwc.jpg)
+- [WOLsahara](media/WOLsahara.jpg)
 - [WOLsahel](media/WOLsahel.jpg)
 - [WOLsavannah](media/WOLsavannah.jpg)
 - [WOLScandinavia](media/WOLScandinavia.jpg)
