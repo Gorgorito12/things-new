@@ -1,0 +1,91 @@
+map,creator_en,creator_es,people,source
+appalachians,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Arabia,Shayne Thiessen,Shayne Thiessen,1,xs header: Author: Shayne Thiessen
+Baja California TWC 01,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Barrier Ridge TWC,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Central America+TWC,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Dakota Badlands V,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+dansil Manicouagan Basin,dansil92,dansil92,1,texts.csv (from the original text)
+dansil Rio De Plata,dansil92,dansil92,1,texts.csv (from the original text)
+dansil92 Manitoba,dansil92,dansil92,1,texts.csv (from the original text)
+dansil92Kwadacha,dansil92,dansil92,1,texts.csv (from the original text)
+dansil_greatbarrierreef,dansil92,dansil92,1,texts.csv (from the original text)
+dansil_Micronesia,dansil92,dansil92,1,texts.csv (from the original text)
+dansil_Outback,dansil92,dansil92,1,texts.csv (from the original text)
+dansil_Owikeno,dansil92,dansil92,1,texts.csv (from the original text)
+dansil_Westernterritory,dansil92,dansil92,1,texts.csv (from the original text)
+DansilAlaska,dansil92 (original),dansil92 (original),1,"original text: Original Map by dansil92, Adapted to WoL (no name)"
+DansilCerroAcahay,"dansil92 (original), hrds (WoL version)","dansil92 (original), hrds (versión WoL)",2,"texts.csv dansil92; xs header: Made by dansil92, Adapted to WOL by hrds"
+DansilChupat,dansil92,dansil92,1,texts.csv (from the original text)
+DansilCristalMonts,dansil92 (original),dansil92 (original),1,original text: Original map by dansil92
+DansilFalklands,dansil92,dansil92,1,texts.csv (from the original text)
+dansilFiji,dansil92,dansil92,1,texts.csv (from the original text)
+DansilIbalong,dansil92,dansil92,1,texts.csv (from the original text)
+DansilIrrawaddyRiver,Daniel Sillito,Daniel Sillito,1,texts.csv (from the original text)
+DansilJarrah,dansil92 (original),dansil92 (original),1,original text: Original Map by dansil92
+DansilLCongo,dansil92,dansil92,1,texts.csv (from the original text); xs header agrees
+DansilNahanni,dansil92,dansil92,1,texts.csv (from the original text)
+dansilRed Beach,dansil92,dansil92,1,texts.csv (from the original text)
+dansilRedRiver,dansil92,dansil92,1,texts.csv (from the original text)
+DansilYalu_River,dansil92,dansil92,1,texts.csv (from the original text)
+DansilZavkhan,dansil92,dansil92,1,texts.csv (from the original text)
+Delta TWC,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Desert Flood,"Kastor (concept), RF_Gandalf (code)","Kastor (idea), RF_Gandalf (código)",2,"texts.csv RF_Gandalf; xs header: original concept by Kastor, original code by RF_Gandalf"
+ESOC_Adirondacks,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Alaska,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Arizona,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Arkansas,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Baja California,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Bengal,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Cascade Range,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Colorado,Rikikipu,Rikikipu,1,texts.csv (from the original text); xs header agrees
+ESOC_Fertile Crescent,"Durokan, Garja","Durokan, Garja",2,"texts.csv Garja; xs header: original idea by Durokan, designed by Durokan and Garja"
+ESOC_Florida,"Garja, dicktator_ (winter version)","Garja, dicktator_ (versión de invierno)",2,"xs header: designed by Garja, winter version by dicktator_"
+ESOC_Gran Chaco,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Great Basin,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Herald Island,Rikikipu,Rikikipu,1,texts.csv (from the original text)
+ESOC_High Plains,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Hudson Bay,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Indonesia,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Iowa,Rikikipu,Rikikipu,1,texts.csv (from the original text); xs header agrees
+ESOC_Jebel Musa,Durokan,Durokan,1,texts.csv (from the original text)
+ESOC_Kamchatka,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Klondike,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Malaysia,Rikikipu,Rikikipu,1,texts.csv (from the original text)
+ESOC_Manchac,Rikikipu,Rikikipu,1,texts.csv (from the original text)
+ESOC_Manchuria,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Mendocino,"Rikikipu, dicktator_ (winter version)","Rikikipu, dicktator_ (versión de invierno)",2,"xs header: Work done by Rikikipu, Converted to winter by dicktator_"
+ESOC_Pampas Sierras,"Garja, dicktator_ (winter version)","Garja, dicktator_ (versión de invierno)",2,"xs header: designed by Garja, winter version by dicktator_"
+ESOC_Parallel Rivers,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Tassili,Rikikipu,Rikikipu,1,texts.csv (from the original text); xs header agrees
+ESOC_Thar Desert,Rikikipu,Rikikipu,1,texts.csv (from the original text)
+ESOC_Tibet,Garja,Garja,1,texts.csv (from the original text); xs header agrees
+ESOC_Wadmalaw,Rikikipu,Rikikipu,1,texts.csv (from the original text); xs header agrees
+Finger Lake-V,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Finland,Aoe3_Badger,Aoe3_Badger,1,texts.csv (from the original text)
+GANNiger,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+GANPunjab,RF_Gandalf,RF_Gandalf,1,xs header: by RF-Gandalf
+GANVolta,RF_Gandalf,RF_Gandalf,1,xs header: by RF_Gandalf
+GANWakhan,RF_Gandalf,RF_Gandalf,1,xs header: by RF_Gandalf
+Glacier TWC,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Korea,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text)
+NEWHinduKush,"i_really_suk__ (original, Suez)","i_really_suk__ (original, Suez)",1,xs header: Originally SUEZ by i_really_suk__
+NEWMagdalena,vividlyplain,vividlyplain,1,original text: Original Map made by vividlyplain
+NEWTiticaca,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+NEWwetChaco,Hōtarō Oreki,Hōtarō Oreki,1,texts.csv (from the original text)
+Prairie TWC,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Shangra La,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Team Archipelago Asian,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Thanksgiving III,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+Transcontinental TAD,RF_Gandalf,RF_Gandalf,1,texts.csv (from the original text); xs header agrees
+vividlyAlberta,"dansil92 (original), vividlyplain","dansil92 (original), vividlyplain",2,"original text: Map designed by dansil92, Map made by vividlyplain"
+vividlyKashmir,vividlyplain,vividlyplain,1,texts.csv (from the original text); xs header agrees
+vividlyKolkata,vividlyplain,vividlyplain,1,xs header: designed by vividlyplain
+vividlyNigerDelta,vividlyplain,vividlyplain,1,texts.csv (from the original text); xs header agrees
+vividlyVietnam,vividlyplain,vividlyplain,1,texts.csv (from the original text); xs header agrees
+whiteshell,Shayne Thiessen,Shayne Thiessen,1,xs header: Author: Shayne Thiessen
+WOLblackforest,"Sir_Hans, Dewinner (from M0nTy_PyThon's Alfheim)","Sir_Hans, Dewinner (a partir de Alfheim, de M0nTy_PyThon)",2,original text: By Sir_Hans and Dewinner; xs header: by M0nTy_PyThon - a modified ALFHEIM map
+WOLcongo,RF_Gandalf,RF_Gandalf,1,xs header: by RF_Gandalf
+WOLeasterisland,Tahattus,Tahattus,1,xs header: Easter Island by Tahattus
+WOLvandiemansland,William Crocker (from maps by Shayne Thiessen),William Crocker (a partir de mapas de Shayne Thiessen),1,"xs header: William Crocker, adapted from Borneo and Madagascar by ShayneThiessen.com"
+Yungas,dansil92,dansil92,1,texts.csv (from the original text)
