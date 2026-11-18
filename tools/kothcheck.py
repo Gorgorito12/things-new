@@ -294,17 +294,44 @@ def fairness(units, teams, players):
 MM_FROM_RIGHT, MM_FROM_BOTTOM, MM_DIAMETER = 221.5, 161.0, 268.0  # editor, 1926 x 1115 window
 
 
+def minimap_drawn(im, cx, cy):
+    """True when the minimap disc shows a map: a black or flat disc means the frame was taken before the
+    minimap was drawn (or with something over it)."""
+    from PIL import ImageDraw, ImageStat
+    g = im.convert("L")
+    mask = g.point(lambda _: 0)
+    r = MM_DIAMETER / 2 * 0.8
+    ImageDraw.Draw(mask).ellipse((cx - r, cy - r, cx + r, cy + r), fill=255)
+    st = ImageStat.Stat(g, mask)
+    return st.mean[0] > 15 and st.stddev[0] > 15
+
+
 def minimap_shot(bed, out, units, size, players):
     tmp = out.with_suffix(".full.png")
-    time.sleep(1.5)  # the minimap is drawn a few frames after the units appear
-    T.shot(tmp, 1)
+    # The units exist while the loading screen is still up (black, or its empty panels on a slow map);
+    # the world clock stays at 0 until the map is shown.
+    proc = T.process()
+    t0 = time.time()
+    while proc and not T.game_time(proc) and time.time() - t0 < 120:
+        time.sleep(0.5)
+    time.sleep(1.5)  # the minimap is drawn a few frames after the clock starts
     try:
         from PIL import Image, ImageDraw
     except ImportError:
+        T.shot(tmp, 1)
         return str(tmp)
-    im = Image.open(tmp).convert("RGB")
-    w, h = im.size
-    cx, cy = w - MM_FROM_RIGHT, h - MM_FROM_BOTTOM
+    drawn = False
+    for _ in range(5):
+        T.shot(tmp, 1)
+        im = Image.open(tmp).convert("RGB")
+        w, h = im.size
+        cx, cy = w - MM_FROM_RIGHT, h - MM_FROM_BOTTOM
+        drawn = minimap_drawn(im, cx, cy)
+        if drawn:
+            break
+        time.sleep(2)
+    if not drawn:
+        say(f"{out.name}: the minimap is black or flat in 5 shots; the full window is kept in {tmp.name}")
     r = MM_DIAMETER / 2 + 14
     crop = im.crop((int(cx - r), int(cy - r), int(cx + r), int(cy + r))).resize((int(4 * r), int(4 * r)))
     d = ImageDraw.Draw(crop)
@@ -327,7 +354,8 @@ def minimap_shot(bed, out, units, size, players):
             x, y = at(u[3], u[4])
             d.ellipse((x - 12, y - 12, x + 12, y + 12), outline=(255, 0, 255), width=4)
     crop.save(out)
-    tmp.unlink(missing_ok=True)
+    if drawn and not os.environ.get("KOTH_KEEP_FULL"):
+        tmp.unlink(missing_ok=True)
     return str(out)
 
 
