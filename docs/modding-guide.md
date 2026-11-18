@@ -7317,12 +7317,14 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       cost uses the population line this way: the Palace Caravan's four costs show two and two (in WoL's data no
       unit with population has more than three costs).
     - `projectilesIcon="path"` on `<bigPanelRows>` and the item `projectiles` (`{uhcProjectiles}`): an attack that
-      fires more than one projectile before its reload shows that number after its ROF, with the icon: its
-      `<NumberOfShots>` times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`), as [`numberOfShots`](#numberofshots)
-      reads them (`unitinfo::Shots`). With `minUIStats` on, the tags are read even when `numberOfShots` is off,
-      with no effect on combat: the numbers show what the data asks for (WoL's `numberprojectiles`: the Escopetero's
-      volley 4, the Schwarzlose 12), which only `numberOfShots projectiles` makes the attacks fire. A row too long
-      for its column keeps its ROF and projectiles in its short form when they fit.
+      fires more than one projectile before its reload shows that number after its ROF, with the icon, as combat
+      fires them ([`numberOfShots`](#numberofshots), `unitinfo::Shots`): its `<NumberOfShots>` while that key is on,
+      times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`) while the key has `projectiles`. Neither the exe
+      nor WoL's DLLs read those tags, so without the key no number shows: WoL's tactics carry `numberprojectiles`
+      (the Escopetero's volley 4, the Schwarzlose 12, ...) that nothing reads today, and `numberOfShots projectiles`
+      makes both combat and the panel use it. `projectiles="data"` on `<bigPanelRows>` shows the tags as written
+      instead, key or not (a modder's check of the data; with the key off the tags are then read with no effect on
+      combat). A row too long for its column keeps its ROF and projectiles in its short form when they fit.
     - The population row uses the game's house again (`ui\ingame\stat_icon_building`, WoL's copy, as JTMaston
       asked); the drawn icons are redrawn bold, 32x32 BGRA with hard edges and a black outline like WoL's own
       (`make_stat_icon.py --style bold`), and a revolver cylinder (`stat_icon_projectiles`) is added; the heart and
@@ -7376,7 +7378,8 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   resists (0x698BFF); the key then leaves the building armor alone (logged `another DLL changed the resists armor
   test`), so a building shows no resists row instead of `0 (null)`. Version 4 (2026-11-18, that `uhc.dll` `c070d138`):
   the shared action tag hook was applied and reached beside it (`hook reached: action tag (0x5FA11E)`), and the
-  Escopetero's attack row showed its 4 projectiles.
+  Escopetero's attack row showed its 4 projectiles (with the first rule, the tags as written; since the second rule
+  that is `projectiles="data"`).
 - **Log:** `minUIStats: 7 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
   minimized panel's resists; 31 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid
   gadgets; 0 stock labels; attack rows: the original ones written by the key, ROF after the damage, ability attacks

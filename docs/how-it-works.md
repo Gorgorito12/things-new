@@ -3888,13 +3888,15 @@ attack row of the fill is matched, in order, with the action list it comes from 
 name checked against the action's (`[db+1FE4h]`); then:
 - the icons get the minimized panel's size (`(10)`, 0xC36508) instead of the stat panel's (`(16)`, 0xBA2100);
 - with `rofIcon`, the action's ROF (`[action+34h]` ms) and that icon go right after the damage icon;
-- with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1: its
-  `<NumberOfShots>` times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`), neither of which the exe parses.
-  `shots.cpp` reads them through the shared action tag hook (`AddActionTagHandler`, the unknown-child path 0x5FA11E of
-  the tactics and `<ProtoAction>` parsers) into a map keyed by the proto ID `[proto+4]` and the action name index
-  `[action+4]`, which every player's copy keeps; `unitinfo::Shots` reads that map, and `unitinfo::RequestShotTags`
-  registers the reader once, for `numberOfShots` or `minUIStats` alike. Registered by `minUIStats` alone it changes
-  nothing in combat: the ROF filter gate and the launch hook stay with `numberOfShots` (and its `projectiles` option).
+- with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1, as
+  combat fires them: its `<NumberOfShots>` while `numberOfShots` is on, times its `<NumberProjectiles>` (or
+  `<NumberOfProjectiles>`) while that key has `projectiles`; neither tag is parsed by the exe, so without the key
+  nothing shows. `shots.cpp` reads them through the shared action tag hook (`AddActionTagHandler`, the unknown-child
+  path 0x5FA11E of the tactics and `<ProtoAction>` parsers) into a map keyed by the proto ID `[proto+4]` and the
+  action name index `[action+4]`, which every player's copy keeps; `unitinfo::Shots` reads that map and applies the
+  key's state. `projectiles="data"` asks it for the tags as written (`asData`), and `unitinfo::RequestShotTags` then
+  registers the reader even with the key off: that changes nothing in combat, since the ROF filter gate and the
+  launch hook stay with `numberOfShots` (and its `projectiles` option).
   A row too long for its column keeps the damage, ROF and projectiles in its short form when they fit (the explorers'
   `Sharpshooter ATK 750 <ranged> 4.50 <rof> 3 <cylinder>`);
 - an **ability attack the unit cannot use** is dropped. Such an action is listed active by its tactic on every unit of
