@@ -101,15 +101,24 @@ def set_map_xml(text, lobby_id, loading_id):
     return text[:m.start(1)] + attrs + text[m.end(1):]
 
 
-# The font entries the texts use (tested in game, README.txt "Format v2"). The TypeFace of each is the
-# one of the entry it copies (MapDescTipKey: Tooltips_UI; MapDescRule 4: SPLoadingScreenText 14):
-# a pack that renames font families should rename these too.
+# The font entries the texts use (tested in game, README.txt "Format v2"). The TypeFace of each is
+# read from the entry it copies (FONT_SOURCES), so the result is the same whether the fonts pack
+# (wol-fixes/fonts, which renames the families) ran before or after this one; the face given here
+# is only the fallback when that entry is missing.
 FONT_ENTRIES = {
     # Tooltips_UI (the lobby rollover's font) with Bold="true": the keys in the lobby
     "MapDescTipKey": ("Franklin Gothic Medium", 11, True, {640: 11, 800: 13, 1280: 17, 1600: 21}),
     # a 4-pixel font: an underline over no-break spaces in it is a thin line that costs a third of a row
     "MapDescRule 4": ("Formal436 BT", 4, False, {640: 3, 800: 4, 1280: 6, 1600: 8}),
 }
+FONT_SOURCES = {"MapDescTipKey": "Tooltips_UI", "MapDescRule 4": "SPLoadingScreenText 14"}
+
+
+def source_face(text, name, fallback):
+    """The TypeFace of the entry named `name` in fonts3.xml, or `fallback` when there is none."""
+    m = re.search(r'<Font\s+Name\s*=\s*"%s"\s*>.*?<param\s+TypeFace\s*=\s*"([^"]*)"' % re.escape(name),
+                  text, re.S)
+    return m.group(1) if m else fallback
 
 
 def font_entry(name, face, height, bold, overrides, nl):
@@ -128,11 +137,12 @@ def font_entry(name, face, height, bold, overrides, nl):
 def add_fonts(text):
     """Adds each FONT_ENTRIES entry the file does not have yet, before </Fonts>; nothing else changes."""
     nl = "\r\n" if "\r\n" in text else "\n"
-    for name, spec in FONT_ENTRIES.items():
+    for name, (face, *rest) in FONT_ENTRIES.items():
         if re.search(r'<Font\s+Name\s*=\s*"%s"' % re.escape(name), text):
             continue
+        face = source_face(text, FONT_SOURCES[name], face)
         at = text.rindex("</Fonts>")
-        text = text[:at] + font_entry(name, *spec, nl) + nl + text[at:]
+        text = text[:at] + font_entry(name, face, *rest, nl) + nl + text[at:]
     return text
 
 
