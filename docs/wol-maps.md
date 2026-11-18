@@ -299,6 +299,42 @@ sites as natives ("Cocoa (trade site)").
   34 resources in 29 maps never placed). A fix of the tool on the way: an empty first value
   (`string a = "";`) no longer counts, which took the "missing groupings" from 49 maps to 36.
 
+## King of the Hill on the maps without it (2026-11-17)
+
+JTMaston asked for King of the Hill on every map with room for it, the hill at the choke point closest to
+all players. 88 maps had it; the other 120 are in `wol-fixes/maps-koth/` (README for the WoL team, the
+per-map table `koth-maps.csv`, one minimap picture per map in `media/`, and only the changed `.xs`).
+Evidence: `rea/evidence/maps-koth-20261117/` (gitignored): `survey.csv` and `survey/` (every map as it
+is, 4 players, the centre marked), `batch*.csv` / `.out` (the King of the Hill runs), `shots*/`, the bed
+backups and hashes.
+
+**The bench (no clicks, no profile edit).** `rmGetIsKOTH()` (0x90B6CE) returns byte
+`[[[0xC66234]+92Ch]+1A98h]` of the random map generator, which 0x709F85 copies from game setting 27h
+(`GameKOTH`) when a map is generated; the game settings keep their values as 5-byte records
+`{type, value}` (getter 0x402CE9). `tools/kothcheck.py` generates one map with a known seed, finds the
+records by setting 13h (`GameRandomSeed`), writes GameKOTH = 1, and from then on the editor route
+(`startRandomGame2`) generates real King of the Hill maps from the unmodified map files. The cached byte
+0xCF07BD is rewritten at each start, so writing it before `startRandomGame2` does nothing (tried). The
+tool measures the hill's distance to every Town Center by team (stances `[player+1D4h]`), crops the
+minimap, compares the normal map with the original unit by unit, and for reach plays the map with a test
+trigger (`trigger3\uhckoth.xml`, read at startup) that moves every unit to the hill.
+
+**What was found.**
+- {{KOTH_RESULTS}}
+- WoL's copies of 29 TAD maps (`amazonia`, `great plains`, `texas`, ...) had lost TAD's King of the Hill
+  block; Steam's `bin\RM3` has it. It was ported where it stays fair on WoL's version.
+- A hill placed early in a script can vanish or never be placed: cliffs or lakes built later cover it
+  (Central America with 8 players), or the anchor sits inside an `if` (several maps have one stray `}`,
+  so naive brace counting misplaces code: Finland, Christmas, atacama...). The new blocks run just
+  before `main`'s closing brace, found by counting braces from `void main`.
+- Engine limits found on the way (tested, not checked with REA): a type-distance constraint beyond some
+  40-100 m (`rmCreateTypeDistanceConstraint(..., "TownCenter", 100)`, or one on `ypKingsHill` itself)
+  lets nothing be placed; a loop nested five deep in `main` did not run, while the same code four deep
+  did.
+- Bugs: DansilCristalMonts' unclosed King of the Hill block held the centre cliffs (fixing it adds the
+  cliffs to normal games); WOLAlps, WolGreenland and WOLFjord had the include commented out; galapagos'
+  commented line used an undefined `bigLoc` and its X for the Y.
+
 ## What is left
 
 1. **No crash reproduced.** The players' crash reports remain unexplained. Next: the suspects at more
