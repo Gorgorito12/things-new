@@ -1,0 +1,49 @@
+Minimized UI, version 4: what changed after your feedback
+=========================================================
+
+1. Why the icons looked thin and soft
+   It was not the font size. Our first icons were 16x16 pictures with 1-pixel strokes, soft (anti-aliased)
+   edges and a grey outline, and the panel draws every icon at about 10 x 14 screen pixels. Shrunk that much,
+   a 1-pixel stroke becomes a faint line and the soft edge becomes a blur. Your own icons next to them
+   (stat_icon_ranged, _range, _attack, _building) are 32x32 uncompressed pictures with solid shapes, strokes of
+   4 to 7 pixels and a black outline, so they stay bold at that size.
+   The new icons are made the same way: 32x32 uncompressed (BGRA, one level, like yours), solid shapes, hard
+   edges (every pixel fully shown or fully transparent), a black line around each part and a 2-pixel black
+   outline. Round parts are drawn a little wider than tall, because the panel squeezes icons sideways.
+   Redrawn: the stopwatch (rate of fire), the hourglass (train time), the eye (line of sight), the winged boot
+   (speed) and the shield (resists). New: the revolver cylinder (projectiles, below).
+   Before and after, enlarged 4 times from the game: final\minUIStats-v4-icons-x4.png.
+
+2. Hit points as a word
+   The heart is gone. The row reads "Hitpoints: 100/100", the word in the yellow of the panel's own labels and
+   the value in white, as the original panel writes it. The word comes from the game's string table
+   (string 68852), so it follows the player's language: "Puntos de Vida: 1200/1200" in the Spanish table, which
+   fits. In minuirows.xml it is written [string:68852]; any row can use [string:ID] now.
+
+3. The house
+   Population uses the game's own house again (ui\ingame\stat_icon_building, your copy). Our drawn house
+   (stat_icon_pop.ddt) is no longer in the pack.
+
+4. Projectiles before the reload (the revolver cylinder)
+   An attack that fires more than one projectile before it reloads shows that number right after its rate of
+   fire, with the cylinder icon:   Ranged ATK:  11 (ranged) 3.50 (stopwatch) 4 (cylinder) 1 (area) 14 (range)
+   The number is (shots before the reload) x (projectiles per shot), and it shows only when it is above 1.
+   It comes from the attack's own entries in the tactics file:
+   - numberprojectiles: projectiles per shot (your tactics already have it on 94 attacks: the Escopetero's
+     volley 4, the Bacamarteer 6, the Schwarzlose 12, the floating battery's long-range attack 5, the explorers'
+     Sharpshooter 3, ...);
+   - NumberOfShots: shots before the reload, from our DLL's numberOfShots key (none in your data yet).
+   Important: the panel only reads these numbers. Neither the game nor your current uhc.dll reads
+   numberprojectiles, so today these units still fire one projectile per shot. With our DLL, the key
+   "numberOfShots projectiles" makes them fire that many; without it, the number in the panel says what the
+   data asks for, not what happens in combat. Tell us if you prefer the number to show only when that key is on.
+
+5. Three and four costs
+   Tested: Mehal Sefari (50 food, 50 gold, 50 trade), Mamluk (100 / 200 / 100), Carretero (110 food, 10 wood,
+   10 gold), Sebastopol (200 / 600 / 600), Fort Wagon (1000 / 1000 / 1000): all on one line over the portrait.
+   The Palace Caravan's four costs (600 / 600 / 200 / 200) did not fit the line; they now go on two lines,
+   two and two, using the population line, which a unit with four costs does not have (in your data no unit
+   with population has more than three costs). The Marechaussee costs only 150 wood in your current data (its
+   food and gold costs are commented out in protoy.xml), and the panel shows that.
+
+Everything else is as in version 3. The pictures and the full test table are in final\README.txt.

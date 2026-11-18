@@ -4,6 +4,21 @@ The minimized UI (UiUnitselectionMIN) shows what the big UI shows, and more, wit
 This note is for your information only: nothing in it needs an answer. README.txt has the full map, the
 icon list and the test table with pictures.
 
+Version 4 (2026-11-18): your review
+-----------------------------------
+- Hit points: the heart is gone; the row reads "Hitpoints: 100/100", the word in the yellow of the panel's
+  own labels, the value in white, at the same place as your "Hitpoints:" label. The word comes from the
+  string table (68852), so the Spanish table shows "Puntos de Vida: 5000/5000" (tested; it fits).
+- Population: the game's house again (your ui\ingame\stat_icon_building), as JTMaston asked.
+- The icons are redrawn like yours: 32x32 uncompressed, solid shapes, hard edges and a black outline. The
+  first ones were 16x16 with 1-pixel strokes and soft edges, which the panel shrinks to about 10 x 14 pixels:
+  that, not the font, is why they looked thin. Before and after: final\minUIStats-v4-icons-x4.png.
+- Projectiles: an attack that fires more than one projectile before reloading shows the number after its
+  rate of fire, with a revolver cylinder ("11 (ranged) 3.50 (stopwatch) 4 (cylinder) ..."): numberprojectiles
+  of your tactics times NumberOfShots. See note-for-team-v4.txt for what feeds it.
+- Four costs (the Palace Caravan) take both lines over the portrait, two and two; three costs fit one line.
+- Pictures and the pass/fail table: final\README.txt. Every older picture is in media\.
+
 Layout: centred selection and symmetric rows
 --------------------------------------------
 You wrote that the selection was no longer centred. The cause: our first file took buttonArea from the
@@ -22,7 +37,7 @@ The new layout, following your point and JTMaston's:
   either side of the centre. Under the unit's name, one centred row: what the unit is doing (Done in,
   Builds, Regen, Overheal, Poison, Aura). Under the player's name nothing, on purpose: AI and player names
   such as "Otto Von Bismarck (Germans)" take two lines there (seen in game).
-- The stats keep your panel's two columns (x 410 and x 583): hit points as a heart and the value,
+- The stats keep your panel's two columns (x 410 and x 583): hit points (version 4: the word "Hitpoints") and the value,
   resists as a shield and the value, then the attack rows, the 4th on next to the first three. A row too
   long for its column never runs under another: the right-column row on its line stays empty, or a long
   right-column row shows its name and damage with the whole row in its tooltip (Spanish names, "Anti-
@@ -39,9 +54,8 @@ What follows JTMaston's points
 1. Rate of fire: in each attack row, right after the damage, with a stopwatch icon:
    "Ranged ATK:  23 (ranged) 3 (stopwatch) 12 (range), 3x (cavalry)". The value comes before its icon, as
    the damage and range already do in the row. The icon is our own drawing (DE's art cannot be used).
-2. Population: a house and the number. Since 2026-11-18 the house is our own drawing
-   (art\ui\ingame\stat_icon_pop.ddt): the game's ui\ingame\stat_icon_building (your copy of it) was a
-   blur at the panel's size. Before and after: media\minUIStats-v3-popicon-vs-old.jpg.
+2. Population: a house and the number: the game's ui\ingame\stat_icon_building (your copy). Version 3
+   had our own drawing for a day; JTMaston asked for the original back (version 4).
 3. No separate range row: the range stays where the attack row already shows it.
 4. Cost: over the portrait, before the name, icons and amounts only.
 5. and 6. The top band is only for the portraits.
@@ -53,7 +67,8 @@ Also from JTMaston:
   Sharpshooter (its own ability) and no Crack Shot; the Chief (WOLcartographer) shows Anti-artillery
   Crackshot only after HCSteelCrown. The "+2" of the first version came from those attacks; it is gone in
   the tests, and when rows still do not fit it now reads "+2 more" (the tooltip lists them).
-- Icons instead of words: hit points (a heart), resists (a shield), line of sight (an eye), speed (a
+- Icons instead of words (version 4: hit points as the word again, the game's house for population, the
+  icons redrawn 32x32): hit points (a heart), resists (a shield), line of sight (an eye), speed (a
   winged boot), train time (an hourglass), garrison (the game's garrison cursor, ui\cursors\
   cursor_garrison). Each row keeps a tooltip with the word. The spy eye is ui\ingame\stat_icon_informers
   in the game, but your copy of that file is a dove, so the eye is ours; so are the heart, the shield,
