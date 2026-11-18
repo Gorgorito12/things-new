@@ -1775,6 +1775,53 @@ else
 	}  
    }
 
+
+  // King of the Hill (added 2026-11 for WoL): the middle of all start positions (the map centre), on open land
+  if(rmGetIsKOTH()) {
+    // the start point: the middle of all player starts (the map centre when they are spread evenly)
+    float kothX = 0.5;
+    float kothZ = 0.5;
+    float kothN = 0.0;
+    float kothSumX = 0.0;
+    float kothSumZ = 0.0;
+    for (kothP = 1; < cNumberPlayers) {
+      kothSumX = kothSumX + rmPlayerLocXFraction(kothP);
+      kothSumZ = kothSumZ + rmPlayerLocZFraction(kothP);
+      kothN = kothN + 1.0;
+    }
+    if (kothN > 0.0) {
+      kothX = kothSumX / kothN;
+      kothZ = kothSumZ / kothN;
+    }
+    // the hill on the open land nearest to it: within 0.04 of the map side, then 1.5 times farther each
+    // try, with the include's placer constraints, 40 m from every Town Center and 10 m from every tree
+    int kothAvoidLand = rmCreateTerrainDistanceConstraint("koth hill avoids impassable land", "Land", false, 6.0);
+    int kothAvoidAll = rmCreateTypeDistanceConstraint("koth hill avoids all", "all", 4.0);
+    int kothAvoidTC = rmCreateTypeDistanceConstraint("koth hill avoids TCs", "TownCenter", 40.0);
+    int kothAvoidTrees = rmCreateTypeDistanceConstraint("koth hill avoids trees", "Tree", 10.0);
+    int kothAvoidSocket = rmCreateTypeDistanceConstraint("koth hill avoids trade sockets", "socketTradeRoute", 6.0);
+    int kothAvoidRoute = rmCreateTradeRouteDistanceConstraint("koth hill avoids trade route", 6.0);
+    int kothAvoidFlag = rmCreateTypeDistanceConstraint("koth hill avoids water flags", "HomeCityWaterSpawnFlag", 4.0);
+    float kothRadius = 0.04;
+    for (kothRound = 0; < 7) {
+      int kothHill = rmCreateObjectDef("koth hill " + kothRound);
+      rmAddObjectDefItem(kothHill, "ypKingsHill", 1, 0);
+      rmSetObjectDefMinDistance(kothHill, 0.0);
+      rmSetObjectDefMaxDistance(kothHill, rmXFractionToMeters(kothRadius));
+      rmAddObjectDefConstraint(kothHill, kothAvoidLand);
+      rmAddObjectDefConstraint(kothHill, kothAvoidAll);
+      rmAddObjectDefConstraint(kothHill, kothAvoidTC);
+      rmAddObjectDefConstraint(kothHill, kothAvoidTrees);
+      rmAddObjectDefConstraint(kothHill, kothAvoidSocket);
+      rmAddObjectDefConstraint(kothHill, kothAvoidRoute);
+      rmAddObjectDefConstraint(kothHill, kothAvoidFlag);
+      rmPlaceObjectDefAtLoc(kothHill, 0, kothX, kothZ, 1);
+      if (rmGetNumberUnitsPlaced(kothHill) > 0)
+        break;
+      kothRadius = kothRadius * 1.5;
+    }
+  }
+
    // Text
    rmSetStatusText("",0.50);
 
@@ -2908,51 +2955,6 @@ else
    
    // Text
    rmSetStatusText("",0.99);
-
-
-  // King of the Hill (added 2026-11 for WoL): the middle of all start positions (the map centre), on open land
-  if(rmGetIsKOTH()) {
-    // the start point: the middle of all player starts (the map centre when they are spread evenly)
-    float kothX = 0.5;
-    float kothZ = 0.5;
-    float kothN = 0.0;
-    float kothSumX = 0.0;
-    float kothSumZ = 0.0;
-    for (kothP = 1; < cNumberPlayers) {
-      kothSumX = kothSumX + rmPlayerLocXFraction(kothP);
-      kothSumZ = kothSumZ + rmPlayerLocZFraction(kothP);
-      kothN = kothN + 1.0;
-    }
-    if (kothN > 0.0) {
-      kothX = kothSumX / kothN;
-      kothZ = kothSumZ / kothN;
-    }
-    // the hill on the open land nearest to it: within 0.04 of the map side, then 1.5 times farther each
-    // try, with the include's placer constraints (and 40 m from every Town Center)
-    int kothAvoidLand = rmCreateTerrainDistanceConstraint("koth hill avoids impassable land", "Land", false, 6.0);
-    int kothAvoidAll = rmCreateTypeDistanceConstraint("koth hill avoids all", "all", 4.0);
-    int kothAvoidTC = rmCreateTypeDistanceConstraint("koth hill avoids TCs", "TownCenter", 40.0);
-    int kothAvoidSocket = rmCreateTypeDistanceConstraint("koth hill avoids trade sockets", "socketTradeRoute", 6.0);
-    int kothAvoidRoute = rmCreateTradeRouteDistanceConstraint("koth hill avoids trade route", 6.0);
-    int kothAvoidFlag = rmCreateTypeDistanceConstraint("koth hill avoids water flags", "HomeCityWaterSpawnFlag", 4.0);
-    float kothRadius = 0.04;
-    for (kothRound = 0; < 7) {
-      int kothHill = rmCreateObjectDef("koth hill " + kothRound);
-      rmAddObjectDefItem(kothHill, "ypKingsHill", 1, 0);
-      rmSetObjectDefMinDistance(kothHill, 0.0);
-      rmSetObjectDefMaxDistance(kothHill, rmXFractionToMeters(kothRadius));
-      rmAddObjectDefConstraint(kothHill, kothAvoidLand);
-      rmAddObjectDefConstraint(kothHill, kothAvoidAll);
-      rmAddObjectDefConstraint(kothHill, kothAvoidTC);
-      rmAddObjectDefConstraint(kothHill, kothAvoidSocket);
-      rmAddObjectDefConstraint(kothHill, kothAvoidRoute);
-      rmAddObjectDefConstraint(kothHill, kothAvoidFlag);
-      rmPlaceObjectDefAtLoc(kothHill, 0, kothX, kothZ, 1);
-      if (rmGetNumberUnitsPlaced(kothHill) > 0)
-        break;
-      kothRadius = kothRadius * 1.5;
-    }
-  }
 
 }  
 

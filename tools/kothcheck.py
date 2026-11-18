@@ -255,8 +255,10 @@ def unmatched(a, b, tolerance=6.0):
             else:
                 out.append(u)
         return out
-    a = [u for u in a if "travois" not in u[1].lower()]  # Gaia carts that drive around
-    b = [u for u in b if "travois" not in u[1].lower()]
+    # Gaia carts that drive around, and the revealer and ruins some civs get in the editor
+    skip = re.compile(r"travois|attackrevealer|ruins|rubble", re.I)
+    a = [u for u in a if not skip.search(u[1])]
+    b = [u for u in b if not skip.search(u[1])]
     return [("orig", u) for u in rest(a, b)] + [("new", u) for u in rest(b, a)]
 
 
