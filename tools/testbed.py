@@ -49,7 +49,14 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
                              or a file name, make it the one a skirmish uses (LastSelectedSPHC;
                              the game must be closed)
-  skirmish [--map]           from the main menu to a running skirmish with posted clicks only (no
+  profile video [restore]    the video settings of the shared profile (resolution, window mode,
+                             antialiasing, shadows) against the expected ones; restore writes the
+                             expected ones back (the game must be closed)
+  lang [status | en | restore]   which string tables the copy's data folder holds; en puts the
+                             mod's English originals (translations\\_originals) in data\\, keeping
+                             the files it replaces as *.lang-orig; restore puts those back. The
+                             game reads the tables once, at startup: close it first
+  skirmish [--map]          from the main menu to a running skirmish with posted clicks only (no
                              cursor, no focus); --map plays the map `map uhcsheep ...` wrote
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
@@ -277,6 +284,89 @@ def profile_hc(bed, choice):
         if n:
             path.write_bytes(new.encode("utf-16"))
             print(f"testbed: {path.name}: skirmish home city -> {wanted[0]}")
+
+
+# The user's video settings (2026-11-18). Every copy shares the profile, and a game writes it back on exit with
+# what it loaded: a copy that started on other values leaves them there.
+VIDEO_SETTINGS = {"optiongrfxres": "1920 x 1080", "optiongrfxwindowmode": "true", "optiongrfxaaquality": "2",
+                  "optiongrfxshadowdetail": "3"}
+
+
+def profile_video(bed, restore):
+    users = my_games(bed) / "Users3"
+    if restore and bed_pid():
+        sys.exit("testbed: close the game first; it writes the profile when it exits")
+    bad = 0
+    for path in sorted(users.glob("*.xml")):
+        text = path.read_bytes().decode("utf-16")
+        new = text
+        for name, want in VIDEO_SETTINGS.items():
+            m = re.search(rf'<Setting Name="{name}">([^<]*)<', text)
+            if not m:
+                continue
+            ok = m.group(1) == want
+            bad += not ok
+            print(f"  {path.name}: {name} = {m.group(1)!r}" + ("" if ok else f"  (expected {want!r})"))
+            if restore and not ok:
+                new = new.replace(m.group(0), f'<Setting Name="{name}">{want}<')
+        if new != text:
+            path.write_bytes(new.encode("utf-16"))
+            print(f"testbed: {path.name}: video settings restored")
+    if bad and not restore:
+        sys.exit(1)
+
+
+LANG_BACKUP = ".lang-orig"
+
+
+def lang_tables(bed):
+    """(file in data\\, its English original in translations\\_originals) for each file the mod's launcher
+    snapshots: a translation replaces the file in data\\ and keeps the original there."""
+    originals = bed / "translations" / "_originals"
+    if not originals.is_dir():
+        sys.exit(f"testbed: {originals} does not exist: this copy has no launcher translations")
+    return [(bed / "data" / src.name, src) for src in sorted(originals.glob("*.xml"))]
+
+
+def table_language(path):
+    """The <Language name> of a string table and the text of string 35898 (Single Player Skirmish)."""
+    raw = path.read_bytes()
+    text = raw.decode("utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8", "replace")
+    lang = re.search(r"""<Language\s+name\s*=\s*['"]([^'"]+)""", text)
+    sample = re.search(r"""_locID\s*=\s*['"]35898['"][^>]*>([^<]*)<""", text)
+    return (lang.group(1) if lang else "?"), (sample.group(1) if sample else None)
+
+
+def lang(bed, mode):
+    if mode in ("en", "restore") and bed_pid():
+        sys.exit("testbed: close the game first; it reads the string tables only when it starts")
+    pairs = lang_tables(bed)
+    if mode == "en":
+        for live, original in pairs:
+            if not live.exists() or live.read_bytes() == original.read_bytes():
+                continue
+            backup = live.with_name(live.name + LANG_BACKUP)
+            if backup.exists():
+                sys.exit(f"testbed: {backup} already exists: run `lang restore` first")
+            shutil.copy2(live, backup)
+            shutil.copy2(original, live)
+            print(f"testbed: {live.name}: English original in place, the replaced file kept as {backup.name}")
+    elif mode == "restore":
+        for live, _ in pairs:
+            backup = live.with_name(live.name + LANG_BACKUP)
+            if backup.exists():
+                shutil.copy2(backup, live)
+                backup.unlink()
+                print(f"testbed: {live.name}: restored from {backup.name}")
+    for live, original in pairs + [(bed / "data" / n, None) for n in ("stringtable.xml", "stringtablex.xml")]:
+        if not live.exists():
+            continue
+        language, sample = table_language(live)
+        state = "" if original is None else (
+            "  (the English original)" if live.read_bytes() == original.read_bytes() else "  (not the original)")
+        backup = live.with_name(live.name + LANG_BACKUP)
+        print(f"  data\\{live.name}: <Language {language}>, string 35898 = {sample!r}{state}"
+              + (f"; {backup.name} waits for `lang restore`" if backup.exists() else ""))
 
 
 def show_profile(bed):
@@ -1637,8 +1727,15 @@ def main(argv):
             profile_backup(bed)
         elif args[:1] == ["hc"]:
             profile_hc(bed, " ".join(args[1:]))
+        elif args[:1] == ["video"]:
+            profile_video(bed, args[1:2] == ["restore"])
         else:
             show_profile(bed)
+    elif cmd == "lang":
+        mode = args[0] if args else "status"
+        if mode not in ("status", "en", "restore"):
+            sys.exit("testbed: lang status | en | restore")
+        lang(bed, mode)
     elif cmd == "launch":
         launch(bed)
     elif cmd == "close":

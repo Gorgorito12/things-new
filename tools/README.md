@@ -227,7 +227,12 @@ copy's `stringtabley.xml`). `deploy` writes the cfg there, `map` writes into tha
 `scenario` saves into that `My Games` folder. `profile backup` copies the player profiles
 (`Users3\*.xml`, UTF-16) to `.bak-uhc-<date>` before a first run. `safety record|check wol`
 checks the Steam Wars of Liberty folder (exe, `uhc.dll`, top level, `Startup`, `data`, `AI4`,
-`RM4`) the same way `safety` checks Steam's `bin`.
+`RM4`) the same way `safety` checks Steam's `bin`. `profile video [restore]` checks the video settings
+of the shared profile (resolution, window mode, antialiasing, shadows: `VIDEO_SETTINGS`) and writes them
+back. `lang [status|en|restore]` shows each string table of the copy's `data` folder (its string 35898),
+puts the mod launcher's English originals (`translations\_originals`) there for captures, keeping the
+replaced files as `*.lang-orig`, and restores them; the game reads the tables only at startup, so both
+refuse while the copy's game runs (`docs/developer-guide.md`, "A WoL copy in English").
 
 `record <out.mp4> [seconds] [fps] [width]` films the window to an MP4 in real time, with ffmpeg
 (`UHC_FFMPEG`, `PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`). It first brings the game window to the

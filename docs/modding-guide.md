@@ -7285,7 +7285,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   ```xml
   <minUIRows>
     <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost"/>
-    <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building]{population}" tip="Population"/>
+    <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_pop]{population}" tip="Population"/>
     <row gadget="unitselectionpanel-uhcSight" text="[icon:ui\ingame\stat_icon_los]{los}|[icon:ui\ingame\stat_icon_speed]{speed}" tip="Line of sight, speed"/>
     <row gadget="unitselectionpanel-uhcTrainGarrison" text="[icon:ui\ingame\stat_icon_traintime]{trainPoints}|[icon:ui\cursors\cursor_garrison]{garrison}" tip="Train time (seconds), garrison"/>
     <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
