@@ -7374,7 +7374,9 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
 - **Multiplayer:** display only; every player can have it or not.
 - **With WoL's own `uhc.dll`** (our `dinput8.dll` beside it): its multiarmor replaces the armor read of the minimized
   resists (0x698BFF); the key then leaves the building armor alone (logged `another DLL changed the resists armor
-  test`), so a building shows no resists row instead of `0 (null)`.
+  test`), so a building shows no resists row instead of `0 (null)`. Version 4 (2026-11-18, that `uhc.dll` `c070d138`):
+  the shared action tag hook was applied and reached beside it (`hook reached: action tag (0x5FA11E)`), and the
+  Escopetero's attack row showed its 4 projectiles.
 - **Log:** `minUIStats: 7 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
   minimized panel's resists; 31 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid
   gadgets; 0 stock labels; attack rows: the original ones written by the key, ROF after the damage, ability attacks
