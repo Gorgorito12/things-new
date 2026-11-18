@@ -293,7 +293,7 @@ sites as natives ("Cocoa (trade site)").
 - **Seen, not explained:** on Hawai'i, Atacama, Rockies and Alps the OLD lobby text (a string ID such
   as `details="28829"`) opened no rollover in either language, while old literal texts and our new IDs
   do.
-- **King of the Hill** is still the current maps' (`koth` column, PENDING the KOTH pack).
+- **King of the Hill** (2026-11-18): `mapfacts.py` run on a hard-link view of WoL-Test with the KOTH pack's 112 `.xs` in place (`kothbed.py` in the evidence `scripts/`): Yes on 199 maps, No on 9 (the pack's 8 skipped maps and WOLsahara, which only includes `ypKOTHInclude.xs` and avoids a `ypKingsHill` but never places one; the pack counts it among the 88 that had it). Re-checked in game in English: Amazonia (added), British Isles (skipped), Anatolia (had it).
 - **Leads for WoL** with file and line: `wol-fixes/map-descriptions/leads.csv` (108 dead and 1
   shadowed `mapspecifictechs.xml` blocks, the `civs.xml` comment, 36 maps with missing grouping files,
   34 resources in 29 maps never placed). A fix of the tool on the way: an empty first value
