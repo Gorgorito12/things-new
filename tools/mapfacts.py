@@ -26,7 +26,7 @@ How a map script is read (the .xs without comments; the include libraries are no
   never used), its <tech> and <forcetech> that enable a military unit. The block's <randomtech>
   draws are mercenaries, not outlaws: they are not listed (outlaws_random keeps their number);
   `dead_block_for_file` names a block written for this map that the game ignores;
-- map size: main() run as a small numeric program up to rmSetMapSize, for 2, 4 and 8 players
+- map size: main() run as a small numeric program up to rmSetMapSize, for 2, 4 and 8 players, rounded up to the game's 2-metre cells
   (size_2/4/8 in metres per side, "X x Z" on a rectangular map, "a-b" where a random number
   changes it; map_size_en/es the line for the descriptions; size_note when it cannot be evaluated);
 - region: the continent .set files, then the imagepath folder, then REGION_OVERRIDES (checked by
@@ -762,7 +762,9 @@ def map_size(code):
                 pass
             if run.size is None:
                 raise SizeUnknown("rmSetMapSize not reached")
-            got.append(tuple(int(v) for v in run.size))
+            # the game builds the map of 2-metre cells, rounded up: 311 m -> 312, 275 -> 276
+            # (checked in game on acre, DansilAlaska and ESOC_Adirondacks, 2/4/8 players)
+            got.append(tuple(int(math.ceil(v / 2 - 1e-9)) * 2 for v in run.size))
         if sorted(got[0]) == sorted(got[1]):
             got[1] = got[0]  # the same rectangle, turned one way or the other
         out[players] = got[0] if got[0] == got[1] else (min(got[0][0], got[1][0]), min(got[0][1], got[1][1]),
