@@ -39,7 +39,9 @@ What follows JTMaston's points
 1. Rate of fire: in each attack row, right after the damage, with a stopwatch icon:
    "Ranged ATK:  23 (ranged) 3 (stopwatch) 12 (range), 3x (cavalry)". The value comes before its icon, as
    the damage and range already do in the row. The icon is our own drawing (DE's art cannot be used).
-2. Population: the game's house icon (ui\ingame\stat_icon_building, your copy of it) and the number.
+2. Population: a house and the number. Since 2026-11-18 the house is our own drawing
+   (art\ui\ingame\stat_icon_pop.ddt): the game's ui\ingame\stat_icon_building (your copy of it) was a
+   blur at the panel's size. Before and after: media\minUIStats-v3-popicon-vs-old.jpg.
 3. No separate range row: the range stays where the attack row already shows it.
 4. Cost: over the portrait, before the name, icons and amounts only.
 5. and 6. The top band is only for the portraits.
@@ -55,7 +57,7 @@ Also from JTMaston:
   winged boot), train time (an hourglass), garrison (the game's garrison cursor, ui\cursors\
   cursor_garrison). Each row keeps a tooltip with the word. The spy eye is ui\ingame\stat_icon_informers
   in the game, but your copy of that file is a dove, so the eye is ours; so are the heart, the shield,
-  the hourglass, the stopwatch and the winged boot (16x16, the size and format of the game's stat icons,
+  the hourglass, the stopwatch, the winged boot and the house (16x16, the size and format of the game's stat icons,
   in art\ui\ingame). The boot follows the game's light infantry boot, with a small white wing ("a boot
   with wings"); two other drawings (blue motion strokes, white speed lines) are in media\minui-icons.png:
   the wing reads as speed at the panel's size, the strokes read as stripes. All icons are drawn at the

@@ -153,6 +153,55 @@ Launch it with `Start-Process C:\AoE3-UHC-Poison\age3y.exe -WorkingDirectory C:\
 - the profile is shared with the user's real WoL (backup `NewProfile3.xml.bak-uhc-20261102`); use ESOC maps in skirmishes (the `*NEW*` maps are broken).
 - it runs in WoL's original English (2026-11-04: `data\stringtabley.xml` from `translations\_originals`, the user's Spanish one kept as `.es-la`); the profile has `optionminimizedui` on, so the exe skips the stat panel fill FUN_004D70ED: a feature that adds a row there must also cover the unit panel (see `showGatherRate`'s hook at 0x699456).
 
+**A WoL copy in English, for captures (2026-11-18).** Everything sent to the WoL team, screenshots too, is in
+English. Where a WoL copy's menu text comes from, checked in `C:\WoL-Test`:
+- The menu strings (35898 "Single Player Skirmish", 41635 "Random Personality", 36146 "Game Rules") are in
+  `data\stringtabley.xml` and nowhere else in the copy. In `C:\WoL-Test` that file is the Latin American Spanish
+  translation ("Escaramuza para un Jugador", "Personalidad Aleatoria", "Reglas del Juego"): the mod's launcher
+  (`AoE3-Mod-Launcher`) copies `translations\ES-LA\stringtabley.xml` over it when that language is chosen, and keeps
+  WoL's English in `translations\_originals\` (`stringtabley.xml`, `unithelpstringsy.xml`). The Spanish file says
+  `<Language name="English">` too: judge a table by a string, not by that tag.
+- Not involved: `data\stringtable.xml` and `stringtablex.xml` (English in every copy); `Data\stringtable.xml-loc` in
+  `data\Data.bar` (an English pseudo-localisation table, every string wrapped in 더미 markers, unused); the profile
+  (it has no language setting; `optionlanguagefilter` is the chat filter); the registry
+  (`HKLM\SOFTWARE\WOW6432Node\Microsoft\Microsoft Games\Age of Empires 3\1.0`: `langid` 3082 and `setuppath` Steam's
+  TAD, whose own Spanish table says "Escaramuza de un jugador"; `ignoreRegistryPath` in `wol.cfg` keeps the copy on
+  its own data); `My Games\Wars of Liberty` (no string table).
+- **The game reads the tables once, when it starts.** In a copy started with the English table, the Spanish file
+  copied back over it while the game ran changed nothing: the main menu, the home city page and the skirmish setup
+  stayed English. A game shows the table that was in `data\` at its launch, and the files checked later say nothing
+  about it. That is the only way found for the Spanish menus seen on 2026-11-17 in a copy whose tables were English
+  (not reproduced): that game started before the swap, or something (the launcher, a restored snapshot) put the
+  Spanish file back before the launch.
+
+The recipe (`testbed.py lang` refuses to swap while the copy's game runs):
+
+```
+python -I tools/testbed.py --bed C:\WoL-Test close          # the tables are read at startup only
+python -I tools/testbed.py --bed C:\WoL-Test lang en        # WoL's English originals in data\, the replaced files kept as *.lang-orig
+python -I tools/testbed.py --bed C:\WoL-Test lang           # each table's string 35898 must read 'Single Player Skirmish'
+python -I tools/testbed.py --bed C:\WoL-Test launch         # main menu "Single Player"; skirmish setup "Single Player Skirmish"
+...                                                         # the captures
+python -I tools/testbed.py --bed C:\WoL-Test close
+python -I tools/testbed.py --bed C:\WoL-Test lang restore   # the copy's own tables back (the Spanish one in C:\WoL-Test)
+python -I tools/testbed.py --bed C:\WoL-Test profile video  # the shared profile's video settings (below)
+```
+
+By hand it is the same: copy `data\stringtabley.xml` aside, copy `translations\_originals\stringtabley.xml` over it,
+and copy it back after the game is closed. The `C:\AoE3-UHC-WoLReal*` copies already run in English, with the Spanish
+table kept as `data\stringtabley.xml.es-la` (`lang` reports them as the English originals and changes nothing).
+Checked on 2026-11-18: [main menu](media/testbed-lang-en-menu.jpg), [skirmish setup](media/testbed-lang-en-skirmish-setup.jpg).
+
+**The shared profile holds the video settings.** Every WoL copy reads
+`Documents\My Games\Wars of Liberty\Users3\NewProfile3.xml`, which holds the user's video settings:
+`optiongrfxres` "1920 x 1080", `optiongrfxwindowmode` true, `optiongrfxaaquality` 2, `optiongrfxshadowdetail` 3. A game
+writes the profile back when it exits, with what it loaded, so never change these for a test. After each of your
+games closes, `testbed.py profile video` checks them (exit code 1 when one differs) and `profile video restore` writes
+them back. Two more settings tests change, read at startup too: `optionminimizedui` (WoL's minimized panel) and
+`LastSelectedSPHC` (`profile hc`; empty, the skirmish button opens "Create Your Home City" and the Play button stays
+grey). Put them back as you found them, and remember that copies started while your edit was there loaded it as well
+and will write it back when they exit.
+
 
 ### GIFs
 

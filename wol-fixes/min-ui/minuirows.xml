@@ -68,7 +68,7 @@
        the population (a house). Right of the player's name: line of sight (an eye) and the live speed (a
        winged boot), then the train time (an hourglass) and the garrison (the game's garrison cursor). -->
   <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost"/>
-  <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building]{population}" tip="Population"/>
+  <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_pop]{population}" tip="Population"/>
   <row gadget="unitselectionpanel-uhcSight" text="[icon:ui\ingame\stat_icon_los]{los}|[icon:ui\ingame\stat_icon_speed]{speed}" tip="Line of sight, speed"/>
   <row gadget="unitselectionpanel-uhcTrainGarrison" text="[icon:ui\ingame\stat_icon_traintime]{trainPoints}|[icon:ui\cursors\cursor_garrison]{garrison}" tip="Train time (seconds), garrison"/>
   <!-- Under the unit's name: what the unit is doing or what acts on it. -->
