@@ -1319,6 +1319,23 @@ the file bytes; traces with `tools/re` hardware breakpoints in a WoL copy.<!-- p
 | Action impact effect | tactics action `[+70h]`, the ID in the effect manager `[[0C66234h]+0BB8h]` (array `[mgr]`, count `[mgr+4]`) | confirmed (`cs`: handler 0x5FAFB2, from the tag compare at 0x5F9D63; `ev_6061959a…`) | Written by `<impacteffect>` through FUN_0058F017 `thiscall(manager, &name)` (the node's text field `[node+14h]`): the ID of a loaded effect (FUN_0058EFD5), else a new one read by FUN_005FEABF; −1 when it cannot be made. |
 | Impact spawn arguments | FUN_0049C1E5's fifth (byte) and sixth (byte) | confirmed (`ev_204bff62…`, `ev_eaca0080…`) | Fifth 0: sound only. Sixth 0: the entry's `secondaryParticleSet` (`[entry+4]`) when it has one; 1: its `particleSet` (`[entry+0]`). The seventh is the hit unit (a visual one attaches to it), the eighth the impact point's index. |
 
+### Fonts and text glyphs (WoL request: missing letters ă ș ț, 2026-11-18)
+
+Static reading of the exe and the files (addresses not re-checked with REA for this note: `unverified`); the behaviour
+was then checked in game in `C:\AoE3-UHC-WoLReal5` (Wars of Liberty, our `UHC.dll`), with test strings in the string
+table: [wol-fixes/fonts/README.txt](../wol-fixes/fonts/README.txt).<!-- private -->
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Font loader | 0x545660 | unverified (address); confirmed in game (behaviour) | Opens `FONTS\fonts.bar`, enumerates `*.ttf` and hands each file to `AddFontMemResourceEx` (call at 0x545954), so the fonts are private to the process. **Loose `.ttf` files in `FONTS\` are loaded too** (confirmed in game: three fonts with new family names, not installed in Windows and not in any archive, drew the main menu, tooltips and titles). Inferred: the enumeration goes through the game's file layer, which lists loose files beside the archive's. |
+| Font table | `FONTS\fonts3.xml` (UTF-16LE with BOM) | confirmed in game | `<Font Name>` entries, `<param TypeFace=…>` (a GDI family name), `Bold`, `AscentHeight`, `Antialiased`, `ResolutionOverride`. A TypeFace changed to a new family name is honoured; the rest of the entry is unchanged (`Bold` is synthesised by GDI). |
+| Fallback font | pointer 0xD90774 → string 0xBE1DF4 `Arial Unicode MS` | unverified (address); confirmed in game (behaviour) | For every font the engine also makes "<name> - Fallback" with this TypeFace. A character the primary font lacks is drawn from it: ă in Formal436 BT text showed in Arial Unicode's style. |
+| Coverage map | `GetFontUnicodeRanges` call 0x54B6A2 | unverified | A 65,536-bit map per font, from the font's cmap (not from the OS/2 range bits). |
+| Per-character pick | 0x404CFB | unverified (address); confirmed in game (behaviour) | Primary font if its map has the character, else the fallback, else `?` (0x448356): ș and ț (U+0219, U+021B), absent from Arial Unicode MS too, showed as `?`. |
+| Glyph source | `GetGlyphOutlineW`, DEFAULT_CHARSET | unverified | No code-point limit was seen: U+0100–U+017F and U+0218–U+021B drew once the fonts had them. |
+
+Not a font problem: text with accents inside an XS string literal fails because the XS tokenizer cuts a string at any
+byte above 0x7F ([wol-maps.md](wol-maps.md), lines 58–95).
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
