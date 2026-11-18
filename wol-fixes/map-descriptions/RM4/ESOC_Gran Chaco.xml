@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "RMs\SMALL\South America\greatchaco"
+ displayName = "ESOC Gran Chaco"
+cannotReplace = ""
+loadBackground="RMs\BIG\South America\greatchaco"
+details="6170062"
+loadDetails="6170063">
+   <loadss>ui\random_map\Chaco\Chaco_ss_01</loadss>
+   <loadss>ui\random_map\Chaco\Chaco_ss_02</loadss>
+   <loadss>ui\random_map\Chaco\Chaco_ss_03</loadss>
+  
+  
+</mapinfo>

@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "RMs\small\South America\DansilChupat"
+displayName = "Chupat"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\pampas\pampas_map"
+details="6170018"
+loadDetails="6170019">
+   <loadss>ui\random_map\pampas\pampas_ss_01</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_02</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_03</loadss>
+ 
+</mapinfo>

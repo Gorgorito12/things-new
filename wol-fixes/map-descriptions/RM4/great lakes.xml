@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="28851" imagepath="RMs\SMALL\North America\greatlakes" loadBackground="RMs\BIG\North America\greatlakes"
+details="6170332"
+loadDetails="6170333">
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_01</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_02</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_03</loadss>
+</mapinfo>

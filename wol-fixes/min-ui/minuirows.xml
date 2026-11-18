@@ -8,7 +8,12 @@
        text     or several items: "LOS: {los}|Speed: {speed}". Each part between '|' shows only when
                 its items have a value for the unit; the parts left are joined by three spaces
        types    optional: the row shows only for units of these unit types (comma-separated)
+       tip      optional: the help text when the pointer rests on the row (or tipId: a string table ID)
+       join     optional: "line" puts each part on a line of its own (a two-line block) instead of
+                joining them with spaces
      A row with nothing to show is hidden.
+     [icon:PATH] in a text or label: that texture as an icon, at the size of the panel's own icons, e.g.
+       [icon:ui\ingame\stat_icon_los] (an eye).
 
      Items:
        hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (with the damage type icon),
@@ -29,6 +34,28 @@
                 resists, resource held, AutoGather rate, its attack rows), name, hitpoints,
                 groupHealth, resource, gatherers, rate, speed, resists, attacks, shownAttacks,
                 special, other
+       stockRows="take": the three original attack rows are written by the DLL too, from the same list, so
+                that they get the ROF and the filter below; "keep" (the default) leaves them as the game
+                writes them
+       rofIcon  each attack row gets its rate of fire and this icon right after its damage
+                ("Ranged ATK:  23 (ranged) 3 (rof) 12 (range), 3x (cavalry)")
+       abilities="all": also the attacks of abilities the unit cannot use; by default an attack that only a
+                power uses (powers.xml <unitAction>: Crack Shot, Sharpshooter...) shows only while one of the
+                unit's abilities (abilities.xml) gives it: its tech is active and its age is the player's
+
+     <replace row="..." stock="a,b">: while that row shows, the original gadgets named are hidden (the game
+       shows them again each time; the DLL hides them again after). So a layout keeps the original gadgets
+       where they were, and reads the same without the DLL, while the row shows the DLL's version.
+     <stockLabel gadget="..." text="..." tip="...">: the text of a label of the original panel, written
+       over the game's while the game shows that label.
+
+     Rows make room for the selection's unit portraits (one per unit type, at the top of the panel;
+     the game places them each time the selection changes): a row whose gadget a portrait covers is
+     hidden until the portraits leave room again. A bigPanelRows gadget that is covered is skipped, and
+     its row goes to the next gadget.
+     <avoid gadget="...">: the same for a gadget of the original panel, while it is shown (a text
+       gadget counts when it covers more than half of the row's height).
+     overlap="show" on a <row> or <bigPanelRows>: never hidden for portraits or <avoid> gadgets.
 
      Each item is also a text for any formatText gadget: {uhcHitpoints}, {uhcSpeed}, {uhcBaseSpeed},
      {uhcLOS}, {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}, {uhcROF},
@@ -37,12 +64,29 @@
      {uhcShipments}, {uhcGatherRate}, {uhcBuildTime}, {uhcBuildProgress}, {uhcBuildRate}, {uhcRegen},
      {uhcAuras}. -->
 <minUIRows>
-  <row gadget="unitselectionpanel-uhcTrainPoints" item="trainPoints" label="Train Points: " types="Unit"/>
-  <row gadget="unitselectionpanel-uhcRow0" text="LOS: {los}|Speed: {speed}|Garrison: {garrison}"/>
-  <row gadget="unitselectionpanel-uhcRow1" text="ROF: {rof}|Range: {range}"/>
-  <row gadget="unitselectionpanel-uhcCostPop" text="Cost: {cost}|Pop: {population}"/>
+  <!-- Two mirrored blocks of two lines. Over the portrait: the cost (each resource's icon and amount), then
+       the population (a house). Right of the player's name: line of sight (an eye) and the live speed (a
+       winged boot), then the train time (an hourglass) and the garrison (the game's garrison cursor). -->
+  <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost"/>
+  <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building]{population}" tip="Population"/>
+  <row gadget="unitselectionpanel-uhcSight" text="[icon:ui\ingame\stat_icon_los]{los}|[icon:ui\ingame\stat_icon_speed]{speed}" tip="Line of sight, speed"/>
+  <row gadget="unitselectionpanel-uhcTrainGarrison" text="[icon:ui\ingame\stat_icon_traintime]{trainPoints}|[icon:ui\cursors\cursor_garrison]{garrison}" tip="Train time (seconds), garrison"/>
+  <!-- Under the unit's name: what the unit is doing or what acts on it. -->
   <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
-  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed"/>
+  <!-- The hit points and resists with their icons (a heart, a shield), in gadgets of their own over the
+       original ones; while they show, the original label and value are hidden (<replace>), so without the key
+       the layout shows the original "Hitpoints:" and "Resists:" rows in their places. -->
+  <row gadget="unitselectionpanel-uhcHitpoints" text="[icon:ui\ingame\stat_icon_hitpoints] {hitpoints}" tipId="24320"/>
+  <row gadget="unitselectionpanel-uhcResists" text="[icon:ui\ingame\stat_icon_armor] {armor}" tipId="35758"/>
+  <replace row="unitselectionpanel-uhcHitpoints" stock="unitselectionpanel-unitHitPointsLabel,unitselectionpanel-unitHitPointsValue"/>
+  <replace row="unitselectionpanel-uhcResists" stock="unitselectionpanel-unitResistsLabel,unitselectionpanel-unitResistsValue"/>
+  <!-- Every attack row: the three original ones, then uhcRow3, uhcRow4, uhcRow5, each with its ROF (a
+       stopwatch) after the damage; attacks of abilities the unit cannot use are left out. -->
+  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof"/>
+  <!-- uhcRow5 is on the line of the resource held and the AutoGather rate (a villager carrying food,
+       a factory, a bank, a trickle): while either shows, uhcRow5 stays empty. -->
+  <avoid gadget="unitselectionpanel-unitResourceValue"/>
+  <avoid gadget="unitselectionpanel-unitResourceRateLabel"/>
 
   <!-- More rows to enable: add a gadget for each to uiunitselectionmin.xml, then remove the comment marks.
   <row gadget="unitselectionpanel-uhcExtra0" text="Min range: {minRange}|Area: {area}"/>

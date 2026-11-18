@@ -1724,6 +1724,20 @@ SITES = [
     # minUIStats: the minimized block's resists gate, mov ecx,[ebx+5Ch] / test / je, push 0 / call 44CAC4h (abstract
     # type 0, Unit) / cmp al,1 / jne 698E7Ah (the 6 bytes NOPed at 0x698BF6), then the armor > 0 test
     ("MinResistsUnitGate", 0x698BE2, 0x1A),
+    # minUIStats (verify only): the armor test after that gate, mov edx,[ebx+5Ch] / fld [edx+0C4h] / fcomp
+    # [0B84BE4h] / fnstsw / test ah,41h / jne 698E7Ah. Another DLL's armor (a multiarmor patching 0x698BFF)
+    # changes it; then the Unit gate stays, as that DLL's armor text is not made for buildings
+    ("MinResistsArmorTest", 0x698BFC, 0x1A),
+    # minUIStats (verify only): what the command panel's ability GetNth (FUN_006EE5CC) tests for one ability record,
+    # mirrored to tell an enabled ability attack: the player's proto (0x45311B) against the record's +4, the
+    # NeverShowInGrid flag, the record's tech (0x94AF27) and age ([player+50h] == +10h), the power (0x6076E9)
+    ("AbilityAvailableTest", 0x6EE68C, 0x76),
+    # minUIStats (verify only): the powers.xml <unitAction> handler: a 4-byte block, the action name's index in the
+    # database's action names (0x5E0C64, [db+1FD8h]), kept at [power+12Ch]
+    ("PowerUnitActionStore", 0x5F22CA, 0x36),
+    # minUIStats (verify only): that handler is the +24h (parse) slot of one power class only, the UnitAction powers,
+    # vtable 0xB855D0; [power+12Ch] means the action only for a power with that vtable
+    ("PowerUnitActionVtable", 0xB855F4, 0x04),
     # Data refs (datarefs.h): the parser's constructor, mov ecx,esi / vtable, delimiters { ( } ) / call 5CFA7Ch (the
     # registration, redirected at 0x5D3229) / mov eax,esi / pop esi / ret; the registration's head (mov esi,ecx:
     # the table is {data, count, capacity} at [this+0Ch]); its grow FUN_005ACE63, thiscall(array, count, bool),
@@ -1760,6 +1774,39 @@ SITES = [
     # read of a record's rate, mov eax,[ebx] / ... / fld [eax+edi+8] / fmul [world+104h] / fstp [esp+14h]
     ("RegenPlayerHead", 0x4905E1, 0x10),
     ("RegenRateRead", 0x4907FF, 0x1F),
+    # minUIStats, verify only: the selection panel's stack portraits (docs/engine-symbols.md, "Stack portraits").
+    # The fill's head 0x4C940E: call 461059h (hides the 9 small buttons [panel+35Ch], count +360h, Big0 +368h and
+    # the big background +324h) / the list of placed buttons [panel+2CCh] (count +2D0h) emptied / [panel+36Ch] = -1;
+    # per stack i < min(9, [panel+284h]): Big0 for the current stack [panel+2BCh] (then [panel+36Ch] = i), the
+    # small button i otherwise; the button's handle [gadget+0Ch] appended to the list (0x4C8441); the layout call
+    # 0x4C8F49(panel, &list) that centres the list in buttonArea [panel+320h], 2 px apart, shows each one and puts
+    # the big background 2 px around the current one. Read at the panel tail, never written.
+    ("StackFillReset", 0x4C9458, 0x2A),
+    ("StackFillCurrent", 0x4C9587, 0x41),
+    ("StackFillAppend", 0x4C979A, 0x1B),
+    ("StackLayoutCall", 0x4C7DB3, 0x0E),
+    ("StackLayout", 0x4C8F49, 0x2A3),
+    # minUIStats: a gadget of any type from its handle, cdecl, the reference added (released by 0x40431B): the
+    # lookup 0x40423C with type mask 0 (the stack layout uses it for buttonArea and the big background)
+    ("GadgetLookupAny", 0x404296, 0x31),
+    # minUIStats, verify only: the stat panel fill's attack rows, which AttackRow mirrors for the attacks past the
+    # fill's 9th row. The row cap, cmp ebx,9 / jge 4D8099h (0x4D7957); the name, [action+4] into the string IDs
+    # [db+1FE4h] / "%s:" (0xBA2140) and the raw name 0x5F8FC3 when there is none (cold 0x69B617); the damage scale,
+    # flag 12h (the contained units [unit+74h], cold 0x69B630) capped by [action+48h] (cold 0x69B63C), the modifier
+    # record's +8 (cold 0x69FDDC), +14h and +10h (cold 0x69FE33, 0x69FE1F); the damage text "%d <icon>" (0xBA2100)
+    # for ranged here, hand (cold 0x69B648) and siege (0x4D8265); flag 0Ah and the range " %d <icon>" (0xBA20B8)
+    # of the range entry -1 (0x4946D6)
+    ("StatFillRowCap", 0x4D7944, 0x1C),
+    ("AttackRowName", 0x4D7A2E, 0x74),
+    ("AttackRowDamage", 0x4D7AC8, 0x111),
+    ("AttackRowTypeIcon", 0x4D7BD9, 0x7E),
+    ("AttackRowRange", 0x4D7D2A, 0x78),
+    ("AttackRowSiege", 0x4D8265, 0x4F),
+    ("AttackRowCold", 0x69B617, 0x80),
+    ("AttackRowModifier", 0x69FDDC, 0x1C),
+    ("AttackRowTyped", 0x69FE1F, 0x19),
+    ("ActionRawName", 0x5F8FC3, 0x18),
+    ("ActionRangeEntry", 0x4946D6, 0x37),
 ]
 
 

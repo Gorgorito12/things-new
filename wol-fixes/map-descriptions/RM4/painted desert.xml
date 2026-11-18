@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="45738" imagepath="RMs\SMALL\North America\painteddesert" loadBackground="RMs\BIG\North America\painteddesert"
+details="6170360"
+loadDetails="6170361">
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_01</loadss>
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_02</loadss>
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_03</loadss>
+</mapinfo>

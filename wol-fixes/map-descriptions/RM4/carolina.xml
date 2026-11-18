@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="18914" imagepath="RMs\SMALL\North America\carolina" loadBackground="RMs\BIG\North America\carolina"
+details="6170292"
+loadDetails="6170293">
+   <loadss>ui\random_map\carolina\carolina_ss_01</loadss>
+   <loadss>ui\random_map\carolina\carolina_ss_02</loadss>
+   <loadss>ui\random_map\carolina\carolina_ss_03</loadss>
+</mapinfo>

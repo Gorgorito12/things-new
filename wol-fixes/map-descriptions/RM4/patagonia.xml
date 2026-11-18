@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="28983" imagepath="RMs\SMALL\South America\patagonia" loadBackground="RMs\BIG\South America\patagonia"
+details="6170364"
+loadDetails="6170365">
+   <loadss>ui\random_map\patagonia\patagonia_ss_01</loadss>
+   <loadss>ui\random_map\patagonia\patagonia_ss_02</loadss>
+   <loadss>ui\random_map\patagonia\patagonia_ss_03</loadss>
+</mapinfo>

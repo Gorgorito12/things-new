@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Lrg Titicaca"
+imagepath = "rms\small\NEW\titicacasmall" 
+loadBackground="rms\big\other\southamerica"
+details="6170158"
+loadDetails="6170159">
+   <loadss>ui\random_map\andes\andes_ss_01</loadss>
+</mapinfo>

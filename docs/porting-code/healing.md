@@ -1423,6 +1423,21 @@ namespace uhc::unitinfo {
 
 bool OverhealOn(const char* proto) { return g_unitInfoOn && proto != nullptr && UhcOverhealMarked(proto) != 0; }
 
+// The minimized panel's hit points as this key writes them there (0x698B35: the max is the unit's 100 % value),
+// with the stat row's colour above it when "segment" is on (the stock gadget cannot draw the colour; a layout's own
+// gadget with textmarkup can).
+bool HitpointsText(const char* unit, std::wstring* out) {
+  if (!g_unitInfoOn || unit == nullptr) {
+    return false;
+  }
+  const int reference = static_cast<int>(UhcOverhealReferenceOf(unit));
+  const int hp = static_cast<int>(Field<float>(unit, 0x64));
+  wchar_t text[96];
+  swprintf_s(text, hp > reference && g_uhcOverhealTextColor != 0 ? g_uhcOverhealFmtPlain : L"%d/%d", hp, reference);
+  *out = text;
+  return true;
+}
+
 }  // namespace uhc::unitinfo
 ```
 

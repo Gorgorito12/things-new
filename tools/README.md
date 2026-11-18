@@ -26,6 +26,8 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
+| [`mapfacts.py`](#mapfactspy) | Reads every random map script of a copy (read only) and writes a table of its facts for the map descriptions: trade route, natives, hunt, herd, mines, berries, fish, whales, outlaws, region, King of the Hill; `--check` compares them with the units `mapsweep.py` saw. |
+| [`kothcheck.py`](#kothcheckpy) | Generates random maps in a test copy's editor in a real King of the Hill game (it writes the GameKOTH setting in memory) and writes a CSV row per map: the hill, its distance to every Town Center by team, a minimap crop with the hill marked; also the normal map unchanged and whether every player's units reach the hill. |
 | `campaigncheck.py` | `<game folder> [--campaign <xml>] [--scn <file>] [--all]`, read-only: checks a campaign definition and its scenarios against the folder's data (civ table, players' civs, placed protos, saved names, trigger parameters); `--inventory --scn <file>` (or `--units`) lists instead each player's civ, flag, culture, home city, placed units and trigger units (editor and in-game IDs), what the triggers give it, the objectives and the trigger texts; see its docstring and [docs/wol-campaign.md](../docs/wol-campaign.md). |
 | `scnfix.py` | `<in.age3Yscn> <out.age3Yscn> OLD=NEW … [proto:OLD=NEW …] [--data=<game folder> player:NAME=CIV …] [unit:ID=PROTO …] [units:PLAYER:OLD=NEW …] [trigger[PARAM]:OLD=NEW …] [tech:OLD=NEW …] [name:OLD=NEW …] [homecity:PLAYER=FILE …] [text:OLD=NEW …] [@FILE]`: writes a copy of a scenario with civ-table names, saved proto names, player civs, placed units' protos (one, or all of a proto for one player), trigger parameters, player names, home city files or texts (objectives, scenario description, chat, overlays, unit names; any length, the enclosing chunks follow) changed, and its CRC; `@FILE` reads edits one per line; never writes the input. |
 | `ai_personality.py` | Leaves one AI personality in a test copy, so a skirmish's AI has that civ. |
@@ -327,7 +329,8 @@ EIP, module, call chain), `hang` (window not responding, or the world clock stil
 `xs-error` (new `xsErrorLog` lines in the log), `timeout` or `launch-failed`, plus the units per
 player, the last log lines of the run and of `Age3Log.txt`. A row already in the CSV is skipped,
 so a stopped sweep starts again where it was. Per run it keeps the testbed output and both logs in
-`<evidence>/runs/`, a quarter-size shot in `<evidence>/shots/`, and the crash reports of
+`<evidence>/runs/`, the full unit list as the map starts (`testbed.py units`) in `<evidence>/units/`
+(the input of `mapfacts.py --check`), a quarter-size shot in `<evidence>/shots/`, and the crash reports of
 `re/debugger.py crash` (attached to every game it starts) in `<evidence>/crash-*.jsonl`. Without
 the crash watch (`--no-debugger`), a crash's code and offset come from the Windows Application log
 (event 1000, "Application Error"; EIP = offset + 0x400000 for age3y.exe).
@@ -341,6 +344,79 @@ scenario names (`uhc-<map>`) differ because each map belongs to one shard. The s
 edits the shared profile, so it runs alone: it backs up the profile, the home cities and the AI
 memory files and restores them byte for byte at the end, and leaves `--ai` personalities in the
 copy (`ai_personality.py`, restored at the end).
+
+## mapfacts.py
+
+```
+python -I tools/mapfacts.py <copy> [--out DIR] [--maps A,B] [--check UNITS_DIR]
+```
+
+Reads each map script of the copy's map folder (`RM4` in WoL) without its comments and writes
+`DIR/mapfacts.csv` and `DIR/mapfacts.json`: one row per map with an `.xml`. It never writes into the
+copy. How it reads a script:
+
+- **Values.** Every assignment, every argument of a call to one of the script's functions and every
+  `xsArraySetString` gives a variable its possible values, whatever the branch; strings are evaluated
+  through `+` and `rmRandInt` (ranges up to 40). A value picked at random or in an if/else shows as
+  "(varies)"; one it cannot resolve goes to `unresolved`. Calls in functions that `main` never reaches
+  are left out. Include libraries are not read.
+- **Resources.** `rmAddObjectDefItem`'s proto, by its `UnitType`s in `protoy.xml`: `Huntable`,
+  `Herdable`, `AbstractMine`, `AbstractFruit` (berries), `AbstractFish`, `AbstractWhale`; English and
+  Spanish names from the string tables.
+- **Natives.** The sockets in the grouping files the map uses (`RM4\groupings`; `natives_source`
+  `groupings`), named by `civs.xml`; WoL's African trade sites (units `AUR<resource>`) count too.
+  Without such a grouping, the civs of `rmSetSubCiv` (`natives_source` says when the map's grouping
+  files are missing, so no village appears). `natives_varies` when the villages depend on a random
+  pick or an if/else (`natives_slots` lists the `rmSetSubCiv` slots). Resources and villages placed
+  inside an if/else count as "(varies)"; a definition never placed counts as nothing
+  (`defined_not_placed`), and grouping files that do not exist are listed (`missing_groupings`).
+- **Trade route.** `rmCreateTradeRoute` and `rmBuildTradeRoute`, with the conditions around the build;
+  "(water)" when the route type is a water one.
+- **Outlaws.** The `data\mapspecifictechs.xml` block the game uses: the first block, in file order, whose
+  name is one of the map's types (`rmSetMapType`, valid in `maptypes.xml`) or `default`; names compare
+  without case. A block named after a map file is never used (`dead_block_for_file`). Verified with
+  REA and in game: [wol-maps.md, "Outlaws"](../docs/wol-maps.md#outlaws-which-mapspecifictechs-block-a-map-gets).
+- **Region.** The six continent sets (`*random.set`), then the hand-checked `REGION_OVERRIDES` (115
+  maps; `region_note` says why), then the `imagepath` folder.
+- **King of the Hill.** `rmGetIsKOTH` with `ypKingsHillPlacer` or a `ypKingsHill` object.
+- **Current texts.** The map's display name and lobby and loading texts (English), where they come from
+  (ID or literal), and misspelt attribute names.
+
+`--check UNITS_DIR` reads the unit lists that `mapsweep.py` keeps (`<map>-p<N>-s<S>-*.txt`) and adds the
+`seen_*` columns, the `game_*` columns (the facts as the game placed them, which the map descriptions
+use: gaia resources seen plus the script's own that were seen, the villages seen, the trade posts
+seen) and `check`, the mismatches per map: a resource seen that the script does not place, a
+fixed one never seen, a trade route or natives seen against the script. A run per seed is a sample:
+a mismatch is a lead to read the script, not a verdict.
+
+## kothcheck.py
+
+```
+python -I tools/kothcheck.py --bed <copy> --csv <out.csv> --maps A,B [--src <dir>] [--players 2,4,8]
+       [--seeds 1,2] [--ffa 4] [--normal] [--reach [seconds]] [--shots <dir>] [--survey]
+python -I tools/kothcheck.py --bed <copy> --uninstall
+```
+
+Needs the copy's game running (`testbed.py launch`) with `perfExecFile` and, beside other copies,
+`multipleInstances background`. `rmGetIsKOTH()` returns byte `[[[0xC66234]+92Ch]+1A98h]` of the random
+map generator (0x90B6CE), copied when a map is generated (0x709F85) from game setting 27h (`GameKOTH`)
+of the game settings object, whose values are 5-byte records `{type, value}` (getter 0x402CE9). The tool
+generates one map with a known seed, finds the records by setting 13h (`GameRandomSeed`) and writes
+GameKOTH; `startRandomGame2` keeps it, so every map generated after it is a real King of the Hill map
+(the editor route, `testbed.py scenario`'s). The byte 0xCF07BD is only a cache, rewritten at each start.
+
+Per map (`--src`: a folder of edited maps, copied into RM4 as `uhck_<name>` and removed at the end):
+players 2, 4 and 8 in two teams × the seeds, plus `--ffa` counts in free-for-all; each row has the hill's
+position, the straight-line distance from it to each player's Town Center, each team's mean and
+`team_ratio` (largest team mean / smallest; teams from the players' stances), and a minimap crop in
+`--shots` with the hill (magenta ring) and the Town Centers (numbered squares) marked. `--normal`
+generates the original map and the edited one with King of the Hill off, same seed, and compares every
+unit (player, proto, position within 6 m). `--reach` plays the edited map as a scenario with a trigger
+that sends all units of every player to the hill and reports each player's closest unit after that much
+game time; it needs `trigger3\uhckoth.xml`, which the game reads at startup, so the first `--reach` run
+writes it and stops (launch again). `--survey` only generates the maps as they are and marks the
+centre, to choose a spot. Used for [`wol-fixes/maps-koth/`](../wol-fixes/maps-koth/README.md) and
+[docs/wol-maps.md](../docs/wol-maps.md).
 
 ## re/debugger.py crash
 

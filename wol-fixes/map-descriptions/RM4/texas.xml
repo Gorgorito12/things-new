@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="25996" imagepath="RMs\SMALL\North America\texas" loadBackground="RMs\BIG\North America\texas"
+details="6170390"
+loadDetails="6170391">
+   <loadss>ui\random_map\texas\texas_ss_01</loadss>
+   <loadss>ui\random_map\texas\texas_ss_02</loadss>
+   <loadss>ui\random_map\texas\texas_ss_03</loadss>
+</mapinfo>

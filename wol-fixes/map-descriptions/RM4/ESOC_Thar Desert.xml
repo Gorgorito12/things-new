@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapinfo
+imagepath="ui\esoc_map\thar_desert"  displayName = "ESOC Thar Desert" cannotReplace=""
+loadBackground="ui\esoc_map\thardesert_map"
+details="6170096"
+loadDetails="6170097">
+   <loadss>ui\random_map\Thar\Thar_ss_01</loadss>
+   <loadss>ui\random_map\Thar\Thar_ss_02</loadss>
+   <loadss>ui\random_map\Thar\Thar_ss_03</loadss>
+</mapinfo>

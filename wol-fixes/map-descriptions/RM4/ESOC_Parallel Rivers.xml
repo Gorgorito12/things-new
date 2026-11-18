@@ -1,0 +1,17 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\parallel_rivers"
+displayName = "ESOC Parallel Rivers"
+cannotReplace = ""
+loadBackground="ui\esoc_map\parallelrivers_map"
+details="6170092"
+loadDetails="6170093">
+  <loadss>ui\random_map\Parallel\Parallel_ss_01</loadss>
+  <loadss>ui\random_map\Parallel\Parallel_ss_02</loadss>
+  <loadss>ui\random_map\Parallel\Parallel_ss_03</loadss>
+
+
+
+  
+</mapinfo>

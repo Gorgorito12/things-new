@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo displayNameID="75217" cannotReplace="" imagepath="RMs\small\europe\iberianpeninsula" loadBackground="RMs\big\europe\iberianpeninsula"
+details="6170184"
+loadDetails="6170185">
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_01</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_02</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_03</loadss>
+</mapinfo>

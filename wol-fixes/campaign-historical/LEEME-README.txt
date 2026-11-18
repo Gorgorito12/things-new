@@ -376,3 +376,55 @@ How to install
   data\homecitySPC_MJ.xml and the "hist_imperial_japan" .ddt files in
   art\War of the Triple Alliance\Flags and \Buttons, and the folder
   art\WoL\campaign_historical. The missions go back to the fix's.
+
+Media (the "media" folder beside this README, not inside the zips; the "referencias" folder keeps
+the reference sheets, one per unit)
+  Captured on 14 November 2026 in copies of WoL. "Base fix" means wol-fixes\campaign alone;
+  "historical" means this pack on top of it. The renders are the unit models drawn outside the
+  game (aoe3-blender-tools), with a player colour (blue, or red for the janissary).
+  Uniforms
+    lanceiro-negro-render-before-after.jpg  Render, -30 degrees. BEFORE: WoL's Lanceiro Negro rider.
+                                            AFTER: the steel cuirass kept, red chiripá, white
+                                            under-drawers, raw-hide boots, gaucho hat.
+    barbary-corsair-render-before-after.jpg Render. BEFORE: WoL's bare-chested Barbary Corsair.
+                                            AFTER: shirt, waistcoat, sash, turban over a red cap.
+    us-marine-render-before-after.jpg       Render, the four ages. BEFORE (top): WoL's marine in
+                                            each age. AFTER (bottom): ages 1-2 the 1798 dress with
+                                            blue trousers, ages 3-4 the 1804 coatee with white
+                                            trousers; the round hat edged yellow in every age.
+    janissary-render-before-after.jpg       Render from above, three angles. Top: WoL's
+                                            janissary. Bottom: the historical one (the final
+                                            texture): brass instead of gold, a red sash, the
+                                            plume no longer in the player colour.
+    janissary-intro-stock-v1-v2.jpg         Barbary Coast's intro cinematic, the same janissary
+                                            in the same frame: left WoL's, middle a first repaint
+                                            (the coat's edge too dark), right the final one, the
+                                            edge kept as brass.
+    laguna-lanceiros-without-own-model.jpg  Laguna, the 7 Lanceiros Negros of army 1,11, before
+                                            the copy got its own model: the game still drew WoL's
+                                            texture (blue band, grey thighs).
+    laguna-lanceiros-with-own-model.jpg     The same scene with the pack's lanceiro_hst.gr2: the
+                                            red chiripá and the hat.
+    laguna-lanceiros-moving.mp4 (16 s)      Laguna, the Lanceiros (selected) riding across the
+                                            field in the new uniform.
+    normal-game-originals-and-copies.jpg    A normal test scenario (not the campaign): WoL's own
+                                            Lanceiros Negros (blue, player 1) look as before; the
+                                            red one (player 2) is the historical copy, and the red
+                                            Barbary Corsair with a turban is the copy too.
+  Flags and sides
+    barbary-fleet-base-fix.jpg              BEFORE (base fix): Barbary Coast starts with three US
+                                            ships (WoL's steamboats; smoke from their stacks).
+    barbary-fleet-historical.jpg            AFTER: one frigate and two schooners, 13-star flags.
+    barbary-us-flag-13-stars.jpg            AFTER, close: the 13-star flag on the US ships.
+    barbary-coast-intro.mp4 (10 s)          AFTER: the intro cinematic with the historical
+                                            janissary and corsairs on the cliff, then the schooner
+                                            and the frigate, then play starts (cut from a 30 s
+                                            recording).
+    laguna-flag-base-fix.jpg                BEFORE (base fix): Garibaldi's Town Center in Laguna
+                                            flies the Brazilian Empire's flag.
+    laguna-flag-historical.jpg              AFTER: the same Town Center flies the Riograndense
+                                            Republic's flag (green, red, yellow), also on the
+                                            player's flag button.
+    hakodate-hc-button-base-fix.jpg         BEFORE (base fix): in Hakodate the player's home city
+                                            button shows the Tokugawa crest, the enemy's.
+    hakodate-hc-button-historical.jpg       AFTER: the Nishiki no mihata (red brocade, gold disc).

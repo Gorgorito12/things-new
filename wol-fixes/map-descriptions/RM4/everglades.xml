@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\Asia and Oceania\everglades" 
+displayName = "Pohnpei"
+loadBackground="RMs\BIG\Asia and Oceania\atoll"
+details="6170326"
+loadDetails="6170327">
+   <loadss>ui\random_map\Pohnpei\Pohnpei_ss_01</loadss>
+   <loadss>ui\random_map\Pohnpei\Pohnpei_ss_02</loadss>
+   <loadss>ui\random_map\Pohnpei\Pohnpei_ss_03</loadss>
+</mapinfo>

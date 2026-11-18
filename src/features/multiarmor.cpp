@@ -31,6 +31,7 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unitinfo.h"
 
 extern "C" {
 void UhcArmorStoreHook();
@@ -76,6 +77,7 @@ std::unordered_map<const void*, ArmorSet> g_armors;          // by proto
 std::unordered_map<const void*, std::uint8_t> g_effectTypes;  // Armor effects with a damagetype
 void* g_damageTypeContext = nullptr;  // the parse context that owns the damage type list
 bool g_any = false;                   // some proto has a recorded armor besides its stock one
+bool g_applied = false;               // the key applied: unitinfo::Armors answers
 
 using SetDataFn = bool(__thiscall*)(void* effect, const void* node);
 using ProtoApplyFn = void(__thiscall*)(void* effect, void* player, std::int32_t arg, void* proto);
@@ -316,7 +318,37 @@ Outcome ApplyMultiArmor(const Config& config) {
   g_playerApply = reinterpret_cast<PlayerApplyFn>(playerApply);
   g_playerUnapply = reinterpret_cast<PlayerUnapplyFn>(playerUnapply);
   Log(L"multiarmor: protos keep one armor per damage type; Armor effects follow their damagetype");
+  g_applied = true;
   return Outcome::kApplied;
 }
+
+namespace unitinfo {
+
+int Armors(const char* proto, std::uint8_t* types, float* values, int max) {
+  if (!g_applied || proto == nullptr || max <= 0) {
+    return 0;
+  }
+  int n = 0;
+  const float stock = *reinterpret_cast<const float*>(proto + 0xC4);
+  if (stock > 0.0f) {
+    types[n] = StockType(proto);
+    values[n++] = stock;
+  }
+  if (g_any) {
+    std::lock_guard<std::mutex> guard(g_lock);
+    const auto it = g_armors.find(proto);
+    if (it != g_armors.end()) {
+      for (int i = 0; i < it->second.count && n < max; ++i) {
+        if (it->second.type[i] != StockType(proto) && it->second.value[i] > 0.0f) {
+          types[n] = it->second.type[i];
+          values[n++] = it->second.value[i];
+        }
+      }
+    }
+  }
+  return n;
+}
+
+}  // namespace unitinfo
 
 }  // namespace uhc

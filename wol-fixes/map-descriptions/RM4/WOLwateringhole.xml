@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "rms\small\NEW\wateringholessmall" displayNameID = "75205" cannotReplace = "" loadBackground="ui\random_map\great_lakes\great_lakes_map"
+details="6170248"
+loadDetails="6170249">
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_01</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_02</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_03</loadss>
+</mapinfo>

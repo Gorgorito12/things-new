@@ -1,0 +1,10 @@
+<mapinfo cannotReplace="" 
+displayName="Gibraltar Strait" 
+imagepath="RMs\small\Other\WOLGibraltar" 
+loadBackground="RMs\BIG\Other\europe"
+details="6170182"
+loadDetails="6170183">
+   <loadss>ui\random_map\gibraltar\gibraltar_ss_01</loadss>
+   <loadss>ui\random_map\gibraltar\gibraltar_ss_02</loadss>
+   <loadss>ui\random_map\gibraltar\gibraltar_ss_03</loadss>
+</mapinfo>

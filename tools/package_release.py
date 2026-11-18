@@ -191,6 +191,9 @@ folder instead. Nothing of that game changes: not its exe, its UHC.dll, its cfg 
 3. Start the game. engine-ext\\engine-ext.log says "applied" or "FAILED" for each key. A key
    fails, and changes nothing, when the other DLL already patched a place it needs.
 To remove it, delete dinput8.dll and the engine-ext folder.
+If the game already has a dinput8.dll that loads another DLL (a mod's proxy), keep that file
+aside and put "preloadDll <its DLL>" in engine-ext\\engine-ext.cfg: this dinput8.dll then loads
+it at the same moment, before the game starts.
 
 Aura rings
 ----------
@@ -374,6 +377,8 @@ fastVertexFill                waving flags drawn without reading video memory: m
 fastLastInLine [log] [verify]  no freeze after a home city shipment in a mod with many techs
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
+preloadDll <file> ...         engine-ext.cfg only: dinput8.dll also loads these DLLs of the game
+                              folder before the game starts, as another dinput8.dll proxy would
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options
                               menu: Vulkan (DXVK, from dxvk\\) at the next start, more fps
 menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill on or off in the

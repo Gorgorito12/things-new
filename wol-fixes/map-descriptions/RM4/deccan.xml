@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="63583" imagepath="RMs\SMALL\Asia and Oceania\deccan" loadBackground="RMs\BIG\Asia and Oceania\deccan"
+details="6170320"
+loadDetails="6170321">
+  <loadss>ui\random_map\deccan\deccan_ss_01</loadss>
+  <loadss>ui\random_map\deccan\deccan_ss_02</loadss>
+  <loadss>ui\random_map\deccan\deccan_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath="RMs\small\Asia and Oceania\DansilIbalong" 
+displayName = "Ibalong"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\borneo\borneo_map"
+details="6170024"
+loadDetails="6170025">
+  <loadss>ui\random_map\borneo\borneo_ss_1</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_2</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_3</loadss>
+
+ 
+</mapinfo>

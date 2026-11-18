@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\manicouagansmall"
+displayName = "Manicouagan Basin"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\northwest_territory\northwest_territory_map"
+details="6170296"
+loadDetails="6170297">
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_01</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_02</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_03</loadss>
+ 
+</mapinfo>

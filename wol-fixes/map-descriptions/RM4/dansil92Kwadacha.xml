@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\kwadachasmall"
+displayName = "Kwadacha"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\yukon\yukon_map"
+details="6170302"
+loadDetails="6170303">
+   <loadss>ui\random_map\yukon\yukon_ss_01</loadss>
+   <loadss>ui\random_map\yukon\yukon_ss_02</loadss>
+   <loadss>ui\random_map\yukon\yukon_ss_03</loadss>
+ 
+</mapinfo>

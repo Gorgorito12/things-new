@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\small\Africa and Middle East\WOLcave" displayNameID = "75175" cannotReplace = "" loadBackground="ui\random_map\hispaniola\hispaniola_map"
+details="6170202"
+loadDetails="6170203">
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_01</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_02</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_03</loadss>
+</mapinfo>

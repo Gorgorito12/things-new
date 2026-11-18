@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Hindu Kush"
+imagepath = "rms\small\Africa and Middle East\hinduskush" 
+loadBackground="rms\big\other\middleeast"
+details="6170132"
+loadDetails="6170133">
+   <loadss>ui\random_map\NEW\hindukush\hindukush_ss</loadss>
+</mapinfo>

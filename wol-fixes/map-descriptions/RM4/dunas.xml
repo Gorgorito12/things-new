@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75166" imagepath="RMs\SMALL\South America\dunas" loadBackground="RMs\BIG\South America\dunas"
+details="6170324"
+loadDetails="6170325">
+ <loadss>ui\random_map\ceylon\ceylon_ss_01</loadss>
+  <loadss>ui\random_map\ceylon\ceylon_ss_02</loadss>
+  <loadss>ui\random_map\ceylon\ceylon_ss_03</loadss>
+</mapinfo>

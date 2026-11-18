@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Sky Island"
+imagepath = "rms\small\NEW\skyislandsmall" 
+loadBackground="rms\big\other\northamerica"
+details="6170154"
+loadDetails="6170155">
+   <loadss>ui\random_map\sonora\sonora_ss_01</loadss>
+</mapinfo>

@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Guajira"
+imagepath = "rms\small\NEW\guajirasmall" 
+loadBackground="rms\big\other\southamerica"
+details="6170130"
+loadDetails="6170131">
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_03</loadss>
+</mapinfo>

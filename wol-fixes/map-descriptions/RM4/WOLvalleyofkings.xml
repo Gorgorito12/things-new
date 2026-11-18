@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "rms\small\NEW\valleykingsmall" displayNameID = "75196" cannotReplace = "" loadBackground="RMs\BIG\Europe\valleyofkings"
+details="6170244"
+loadDetails="6170245">
+   <loadss>patch\ozarks\ozarks_ss_01</loadss>
+   <loadss>patch\ozarks\ozarks_ss_02</loadss>
+   <loadss>patch\ozarks\ozarks_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "RMs\small\North America\DansilNahanni"
+displayName = "Nahanni"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\northwest_territory\northwest_territory_map"
+details="6170032"
+loadDetails="6170033">
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_01</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_02</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_03</loadss>
+</mapinfo>

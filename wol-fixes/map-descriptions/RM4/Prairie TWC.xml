@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\SMALL\South America\llanos"
+displayNameID="75157"
+loadBackground="RMs\BIG\South America\llanos"
+details="6170166"
+loadDetails="6170167">
+
+   <loadss>ui\random_map\great_plains\great_plains_ss_01</loadss>
+   <loadss>ui\random_map\great_plains\great_plains_ss_02</loadss>
+   <loadss>ui\random_map\great_plains\great_plains_ss_03</loadss>
+</mapinfo>

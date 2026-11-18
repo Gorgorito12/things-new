@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="28834" imagepath="RMs\SMALL\North America\sonora" loadBackground="RMs\BIG\North America\sonora"
+details="6170386"
+loadDetails="6170387">
+   <loadss>ui\random_map\sonora\sonora_ss_01</loadss>
+   <loadss>ui\random_map\sonora\sonora_ss_02</loadss>
+   <loadss>ui\random_map\sonora\sonora_ss_03</loadss>
+</mapinfo>

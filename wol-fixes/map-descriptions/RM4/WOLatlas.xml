@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<mapinfo 
+imagepath = "RMs\SMALL\Africa and Middle East\atlasmountains" 
+displayName = "Lrg Atlas Mountains" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Africa and Middle East\atlasmountains"
+details="6170190"
+loadDetails="6170191">
+
+<loadss>ui\random_map\atlas\Atlas_ss_01</loadss>
+<loadss>ui\random_map\atlas\Atlas_ss_02</loadss>
+<loadss>ui\random_map\atlas\Atlas_ss_03</loadss>
+
+</mapinfo>

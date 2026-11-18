@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath="RMs\SMALL\Asia and Oceania\vividlyKolkata"
+displayName = "Bengal"
+cannotReplace = ""
+loadBackground="ui\random_map\deccan\deccan_map"
+details="6170400"
+loadDetails="6170401">
+
+ <loadss>ui\random_map\Kolkata\Kolkata_ss_01</loadss>
+ <loadss>ui\random_map\Kolkata\Kolkata_ss_02</loadss>
+ <loadss>ui\random_map\Kolkata\Kolkata_ss_03</loadss>
+ 
+  
+</mapinfo>

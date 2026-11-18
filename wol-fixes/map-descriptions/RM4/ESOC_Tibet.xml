@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath="ui\esoc_map\tibet"
+displayName = "ESOC Tibet"
+cannotReplace = ""
+loadBackground="ui\esoc_map\tibet_map"
+details="6170098"
+loadDetails="6170099">
+<loadss>ui\random_map\Tibet\Tibet_ss_01</loadss>
+<loadss>ui\random_map\Tibet\Tibet_ss_02</loadss>
+<loadss>ui\random_map\Tibet\Tibet_ss_03</loadss>
+ 
+  
+</mapinfo>

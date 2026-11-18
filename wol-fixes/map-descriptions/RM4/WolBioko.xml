@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\Africa and Middle East\WOLBioko" 
+displayName = "Bioko"
+loadBackground="RMs\BIG\Other\africa"
+details="6170258"
+loadDetails="6170259">
+   <loadss>ui\random_map\Bioko\Bioko_ss_01</loadss>
+   <loadss>ui\random_map\Bioko\Bioko_ss_02</loadss>
+   <loadss>ui\random_map\Bioko\Bioko_ss_03</loadss>
+</mapinfo>

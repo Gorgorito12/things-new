@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="43636" imagepath="RMs\SMALL\North America\california" loadBackground="RMs\BIG\North America\california"
+details="6170288"
+loadDetails="6170289">
+   <loadss>ui\random_map\california\california_ss_01</loadss>
+   <loadss>ui\random_map\california\california_ss_02</loadss>
+   <loadss>ui\random_map\california\california_ss_03</loadss>
+</mapinfo>

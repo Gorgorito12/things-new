@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\north america\panama" 
+displayNameID = "75142"
+loadBackground="RMs\big\north america\panama"
+details="6170006"
+loadDetails="6170007">
+<loadss>ui\random_map\yucatan\yucatan_ss_01</loadss>
+<loadss>ui\random_map\yucatan\yucatan_ss_03</loadss>
+<loadss>ui\random_map\yucatan\yucatan_ss_02</loadss>
+</mapinfo>

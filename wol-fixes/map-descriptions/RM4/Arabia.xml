@@ -1,0 +1,8 @@
+<mapinfo cannotReplace="" 
+displayName="Arabia" 
+imagepath="RMs\SMALL\Africa and Middle East\arabia" 
+loadBackground="RMs\BIG\Africa and Middle East\arabia"
+details="6170000"
+loadDetails="6170001">
+<loadss>ui\random_map\NEW\arabia\arabia_ss</loadss>
+</mapinfo>

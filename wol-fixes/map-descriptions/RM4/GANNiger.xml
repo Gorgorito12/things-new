@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+imagepath="RMs\small\Africa and Middle East\GANNiger" 
+displayName = "Lrg Niger River" 
+
+loadBackground="RMs\BIG\Other\africa"
+details="6170106"
+loadDetails="6170107">
+   <loadss>ui\random_map\Niger\Niger_ss_01</loadss>
+   <loadss>ui\random_map\Niger\Niger_ss_02</loadss>
+   <loadss>ui\random_map\Niger\Niger_ss_03</loadss>
+</mapinfo>
+
+ 

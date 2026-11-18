@@ -240,11 +240,87 @@ JTMaston's request: keep WoL's `uhc.dll`, `Startup\wol.cfg` and `data\uhc` as th
 
 **Not shown:** multiplayer, saved games, and any key's effect beyond the table's first rows. WoL may patch more in a game than at the menu; only the menu was diffed.
 
-## `WoL.dll` (v1.22x, the WoL team's second DLL, 2026-11-17)
+## `WoL.dll` (the WoL team's second DLL)
 
 A separate DLL of the WoL team, with its own keys in `Startup\wol.cfg` (case-sensitive) and its log in
-`Startup\wol_hc.log`. Source only (one C file, read as data, kept in the gitignored
-`reference/WoL.dll/WoL.en.c`, SHA-256 `102729081fc0da14…`); no binary from them yet. Never copy its code.
+`Startup\wol_hc.log`. Their master document (`WOL_DLL.md`, German) and the binaries are kept in the gitignored
+`reference/WoL.dll/`. Never copy its code.
+
+### WoL.dll v1.33 with its real load order (2026-11-17)
+
+**The binary.** `reference/WoL.dll/WoL-v1.31.dll`, 167,424 B, MD5 `4B1A2B2C7E1EAEB7D13D3737394690E4`: the MD5 of row
+1.33 of their history, although its banner says `WoL.dll v1.31 UIHUD-Diagnose (incl. CivDupMP Fix)` and its PDB is
+`WoL_v133.pdb`. There is no source of this version. Imports: kernel32 only (`VirtualProtect`, `WriteProcessMemory`,
+`ReadProcessMemory`, `CreateThread`, ...). Exports: `UHCPluginMain`, `WoLInit` (empty). It has no `forceMinUI` and no
+`hcGatherPointByCommand` (both of v1.22x), no reference to the TechStatus execute 0x8EEA5B of their row 1.23 and none to
+the v1.29 diagnostics 0x8B9EE1 / 0xA26321 (removed in 1.33). The string `AICivs` (row 1.33) is not in the file.
+
+**Load order (their doc, "Lade-Mechanismus v1.4").** Their `dinput8.dll` proxy (4,608 B, not received) exports only
+`DirectInput8Create`, forwarded to the system DLL, and its `DllMain` loads `<exe folder>\WoL.dll` while Windows resolves
+the exe's imports. So: `WoL.dll` patches, then the boot stub loads `uhc.dll` and runs `UHCMain`, then the game. The
+tests used a stand-in proxy built from that description (scratch only, never shipped). Our `EngineExt` is also named
+`dinput8.dll`, so a folder cannot hold both: [`preloadDll`](modding-guide.md#preloaddll) in `engine-ext.cfg` makes ours
+load `WoL.dll` at the same moment (`src/engineext.cpp`, `PreloadDlls`).
+
+**Sites** (static: every constant of the exe's range in its code, and the five calls of its detour installer, with
+their arguments; live: the bytes at the menu and in a game, both modes, identical):
+
+| Key (their names) | Site, bytes written | Cave / cell |
+|---|---|---|
+| `hcRevolutionLog` | 0x85E735 (5 B) `push 0C133FCh` → `call` | 0xC65400, cell 0xC65600 |
+| `hcRevolutionDeck` | 0x7FBE06 (5 B) → `call`; 0x7F8114 (8 B, POSTREV) → `jmp` + 3 NOP; 0x62E027 (8 B, DECKFILL) → `jmp` + 3 NOP | 0xC65900 / 0xC65A00 / 0xC65B00, cells 0xC65980 / 0xC65A80 / 0xC65B80 |
+| `trickleDisplay` | 0x69920E (rel32 of `call 485CACh`, 4 B); 0x699227 (6 B) `je` NOPed; guard 0x699208 | 0xC65800 |
+| `uihudDiag` | 0x59B607 (5 B), the UI file loader | 0xC65210, cell 0xC65200 |
+| `banTech` | 0x4804D1 (6 B, "lookupWrap"); 0x480476 (9 B, "nodeAc"); 0x4C5D86 (8 B, "nodeOb") | 0xC65E80; 0xC65DB0 / 0xC65E40; 0xC65D60 / 0xC65E00 |
+| `banTechUI` | 0x7A30DE (7 B), the skirmish screen's message handler | 0xC65EC4..0xC65F1B |
+| `civDup` | 0x7A3393 (11 B), the AI civ picker | 0xC65F80, 0xC65FC0 |
+| `civDup`/`AICivs` (MP) | 0x7758B8 (2 B) `je` → NOP NOP; guards 0x7758B5, 0x7758BA | none |
+| `ageIcons` | none: cells 0xF221C0 / 0xF22B80, not mapped in this exe, so it logs `AUS` | |
+| `banTechMP` | none: a thread waits 2 minutes for a `Bang.dll`, which never loads here, then logs `AUS` | |
+
+After the first revolution a thread scans memory for a deck pattern, 60 passes about 3 s apart (`wol_deck.log`); in
+both runs it logged candidates and wrote nothing (no `PATCH` line), because no deck map applied.
+
+**Against our DLL** (`src/generated/sites.h`, 758 sites, every verify range): **no shared byte.** Adjacent only:
+0x699227..0x69922C ends before `UnitPanelRateRow` 0x69922D, and 0x7F8114 starts after `TechRenameApplyCall`
+..0x7F8113, as in v1.22x. None of the 13 sites is in the 287 ranges of WoL's `uhc.dll` (`wol-memdiff.txt`). The caves
+and cells, 0xC65200..0xC65FFF, are disjoint from what we read in that page (0xC65016, 0xC65083..0xC650AB).
+
+**Runs** (`C:\AoE3-UHC-WoLReal3`, restored afterwards: every file of its root, `Startup` and `data\uhc` hashes as before;
+single player, `multipleInstances background`):
+
+| Mode | Files | Result |
+|---|---|---|
+| (a) ours as `UHC.dll`, their proxy (stand-in), `WoL.dll` | `wol.cfg`: the bed's (WoL's keys and ours), every key of `examples/Startup/uhc.cfg`, and `trickleDisplay`, `ageIcons`, `hcRevolutionLog`, `hcRevolutionHomecity`, `hcRevolutionDeck`, `uihudDiag`, `civDup`, `civDupMP`, `AICivs 1`, `banTech GreatWarButton`, `banTechUI RemoveTechs ...` | `UHCMain: 118 applied, 0 failed`, 107 hooks reached. `WoL.dll`: every hook `aktiv` but `ageIcons` and `banTechMP` (above). The 13 patches live at the menu and unchanged in game |
+| (b) WoL's `uhc.dll` (`c070d138`), our `dinput8.dll` with `preloadDll WoL.dll` | `engine-ext.cfg`: every key of the template; `wol.cfg`: WoL's own plus the 11 lines above | `preloadDll: WoL.dll: loaded at 6ACD0000, before the game's entry point`; `85 applied, 33 failed`, 93 hooks reached. The same 33 fail with the line commented out (`WoL.dll` not loaded), and each failed site is in WoL's `uhc.dll` ranges: none is `WoL.dll`'s. `WoL.dll`: as in (a) |
+
+In game, both modes (test map: a Town Center, a Factory, 5 settlers, 4 Musketeers against a Town Center and 3
+settlers; `XPRevolutionWashington` set by a trigger at 40 s):
+- **Revolution.** (a), Uzbeks: `REVOLT-HANDLER techId=0x5B0`, `HC-LOAD caller=REVOLT`, `Stage2: ... ->
+  homecityRevolutionWashington.xml`, `POSTREV`, and the settlers became `xpColonialMilitia`; `DECKMAP: revHC-Pool nicht
+  lesbar - kein Deck-Patch` (their code). (b), Ethiopians: the handler and `POSTREV` ran, but no `HC-LOAD` and the
+  settlers stayed (`revHC ungueltig`). Not compared with a control; no byte of the path is shared, so it is likely
+  the civ's data, not the DLLs.
+- **`banTech GreatWarButton`:** resolved to 0x2364, then `TB-LOOKUP BAN: player=2 tech=9060 ->NULL` from the start, while
+  our tech subtype hooks (0x61FF5D, 0x8F978D, 0x8D843E) ran.
+- **`trickleDisplay` with `minUIStats`** (the profile's minimized interface, `wol-fixes/min-ui`'s layout): the Factory
+  shows `Coin 9/s` in the stock rate row beside our `Cost` and `LOS` rows
+  (`wol-fixes/wol-dll-review/media/coexist-*.jpg`). In (b) our building armor row reads `Resists: 0 (null)` for the
+  Factory: WoL's `uhc.dll` holds the armor getter (its `multiarmor`), and the row did not hide an armor of 0. In (a) (our
+  `multiarmor`) the row stays hidden. Not related to `WoL.dll`.
+- **AI:** a normal skirmish of 3 minutes in each mode: the AI at 25 and 20 units, no XS message.
+- **`wol_hc.log`:** no error line. The `uihud:` lines print each file name with its letters doubled and out of order
+  (`wllrrjjcciieett...`): a defect of their log, not of the game.
+
+**Not tested:** the AI civ picker (`civDup`: the skirmish route never let an AI pick a civ, so the detour did not run);
+the `RemoveTechs` checkbox (`Gadget nicht gefunden`: this copy's skirmish screen has none); multiplayer
+(`banTechMP`, the 0x7758B8 patch); which of `civDup`, `civDupMP` or `AICivs 1` turns the 0x7758B8 patch on; saved games;
+`ageIcons`.
+
+### v1.22x (source review, superseded by v1.33)
+
+Kept as a record. The source of v1.22x (`reference/WoL.dll/WoL.en.c`, SHA-256 `102729081fc0da14…`) and its binary
+(`WoL-v1.22x.dll`, MD5 `030D68E4…`) are not what WoL ships now.
 
 **Loading.** Every patch is written from `DllMain`. `UHCPluginMain` (cdecl, returns 1) and `WoLInit` are
 empty exports, so the DLL loads as a `.upl` plugin: renamed `WoL.upl` and named in

@@ -130,3 +130,38 @@ How to apply
   Age0Egyptian tech, in the Hitpoints effect on TownCenter, change relativity ='Assign' to
   relativity ='BasePercent'.
   To undo: unzip WoL-campaign-originals.zip the same way.
+
+Media (in the "media" folder beside this README, not inside the zips)
+  Captured on 13 November 2026 in a copy of WoL 1.2.0e, from the campaign menu, on Easy. The fix
+  is data only; these runs used our engine-extension DLL, and the "before" shot WoL's own DLL.
+  before-mission-fails-to-load.jpg     BEFORE, WoL as shipped with its own DLL (Spanish): Play on
+                                       the campaign's first mission gives "Escenario: wonders\first
+                                       barbary war no se pudo cargar" (failed to load). The menu
+                                       behind it still has "Aprender a jugar" (Learn to Play).
+  menu-before.jpg                      BEFORE: the main menu with Learn to Play, and the Single
+                                       Player submenu (Historical Scenarios, Skirmish, Custom
+                                       Scenario, Saved Game).
+  menu-after.jpg                       AFTER: Single Player, Multiplayer, Help and Tools, Exit; no
+                                       Learn to Play.
+  barbary-coast-start.mp4 (25 s)       AFTER: Barbary Coast loads: the intro cinematic on the
+                                       cliff, then the three US ships at sea and "Primary objective
+                                       discovered: Blockade the Barbary coast...". Re-encoded from
+                                       the 12 MB recording (the perf counters at top left are a
+                                       test overlay).
+  barbary-coast-running.jpg            AFTER: Barbary Coast a few minutes in, the three US ships.
+  laguna-start.mp4 (30 s)              AFTER: Laguna loads (black while it loads), Garibaldi's
+                                       men march in, his intro message, then "Primary objective
+                                       discovered: Advance to the Capital Age".
+  laguna-3min.jpg                      AFTER: Laguna about 3 minutes in, still running: neither
+                                       won nor lost at the start any more. Laguna's own Town
+                                       Center (6,500 hit points, read from the game) is not in
+                                       this frame.
+  hakodate-start.mp4 (30 s)            AFTER: Hakodate loads: the landing from the ships, then
+                                       "Primary objective discovered: Gain a foothold on the
+                                       island and build a Town Center".
+  hakodate-running.jpg                 AFTER: Hakodate about a minute and a half in, the Imperial
+                                       Army's landing party on the beach.
+  campaign-screen-three-missions.jpg   AFTER: after Hakodate's victory (won from the console), the
+                                       "Wars of Liberty" campaign screen lists the three missions.
+  No picture shows Laguna's Town Center with 0 hit points before the fix: that was read from the
+  game (the mission won itself at once).

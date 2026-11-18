@@ -1,0 +1,13 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\pampas_sierras"
+displayName = "ESOC Pampas Sierras"
+cannotReplace = ""
+loadBackground="ui\esoc_map\pampassierras_map"
+details="6170090"
+loadDetails="6170091">
+
+ <loadss>ui\random_map\pampas\pampas_ss_03</loadss>
+  
+</mapinfo>
