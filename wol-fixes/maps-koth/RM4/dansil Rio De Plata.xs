@@ -669,48 +669,13 @@ if (rmGetPlayerCiv(i) == rmGetCivID("Japanese")) {
 
 
 
-  // King of the Hill (added 2026-11 for WoL): the middle is the estuary; first open land on the line that splits the teams (the river bank inland)
+  // King of the Hill (added 2026-11 for WoL): the river delta inland of the estuary, on the line halfway between the two banks where the teams start (the middle is the estuary)
   if(rmGetIsKOTH()) {
-    // the middle of each team's starts (player 1's team, and everybody else)
-    float kothAX = 0.0;
-    float kothAZ = 0.0;
-    float kothAN = 0.0;
-    float kothBX = 0.0;
-    float kothBZ = 0.0;
-    float kothBN = 0.0;
-    for (kothP = 1; < cNumberPlayers) {
-      if (rmGetPlayerTeam(kothP) == rmGetPlayerTeam(1)) {
-        kothAX = kothAX + rmPlayerLocXFraction(kothP);
-        kothAZ = kothAZ + rmPlayerLocZFraction(kothP);
-        kothAN = kothAN + 1.0;
-      }
-      else {
-        kothBX = kothBX + rmPlayerLocXFraction(kothP);
-        kothBZ = kothBZ + rmPlayerLocZFraction(kothP);
-        kothBN = kothBN + 1.0;
-      }
-    }
-    // from the point between them, along the line square to the one joining them
+    // the start point: (0.5, 0.8)
     float kothX = 0.5;
-    float kothZ = 0.5;
-    float kothDirX = 1.0;
-    float kothDirZ = 0.0;
-    if (kothBN > 0.0) {
-      kothAX = kothAX / kothAN;
-      kothAZ = kothAZ / kothAN;
-      kothBX = kothBX / kothBN;
-      kothBZ = kothBZ / kothBN;
-      kothX = (kothAX + kothBX) / 2.0;
-      kothZ = (kothAZ + kothBZ) / 2.0;
-      float kothLen = sqrt((kothBX - kothAX) * (kothBX - kothAX) + (kothBZ - kothAZ) * (kothBZ - kothAZ));
-      if (kothLen > 0.01) {
-        kothDirX = 0.0 - (kothBZ - kothAZ) / kothLen;
-        kothDirZ = (kothBX - kothAX) / kothLen;
-      }
-    }
-    // the hill on the first open land along that line, from the middle outwards, one side then the other
-    // (0.04 of the map side per step), with the include's placer constraints, 40 m from every Town Center
-    // and 10 m from every tree
+    float kothZ = 0.8;
+    // the hill on the open land nearest to it: within 0.04 of the map side, then 1.5 times farther each
+    // try, with the include's placer constraints, 40 m from every Town Center and 10 m from every tree
     int kothAvoidLand = rmCreateTerrainDistanceConstraint("koth hill avoids impassable land", "Land", false, 6.0);
     int kothAvoidAll = rmCreateTypeDistanceConstraint("koth hill avoids all", "all", 4.0);
     int kothAvoidTC = rmCreateTypeDistanceConstraint("koth hill avoids TCs", "TownCenter", 40.0);
@@ -718,12 +683,12 @@ if (rmGetPlayerCiv(i) == rmGetCivID("Japanese")) {
     int kothAvoidSocket = rmCreateTypeDistanceConstraint("koth hill avoids trade sockets", "socketTradeRoute", 6.0);
     int kothAvoidRoute = rmCreateTradeRouteDistanceConstraint("koth hill avoids trade route", 6.0);
     int kothAvoidFlag = rmCreateTypeDistanceConstraint("koth hill avoids water flags", "HomeCityWaterSpawnFlag", 4.0);
-    float kothDist = 0.0;
-    for (kothRound = 0; < 17) {
+    float kothRadius = 0.04;
+    for (kothRound = 0; < 7) {
       int kothHill = rmCreateObjectDef("koth hill " + kothRound);
       rmAddObjectDefItem(kothHill, "ypKingsHill", 1, 0);
       rmSetObjectDefMinDistance(kothHill, 0.0);
-      rmSetObjectDefMaxDistance(kothHill, rmXFractionToMeters(0.05));
+      rmSetObjectDefMaxDistance(kothHill, rmXFractionToMeters(kothRadius));
       rmAddObjectDefConstraint(kothHill, kothAvoidLand);
       rmAddObjectDefConstraint(kothHill, kothAvoidAll);
       rmAddObjectDefConstraint(kothHill, kothAvoidTC);
@@ -731,14 +696,10 @@ if (rmGetPlayerCiv(i) == rmGetCivID("Japanese")) {
       rmAddObjectDefConstraint(kothHill, kothAvoidSocket);
       rmAddObjectDefConstraint(kothHill, kothAvoidRoute);
       rmAddObjectDefConstraint(kothHill, kothAvoidFlag);
-      rmPlaceObjectDefAtLoc(kothHill, 0, kothX + kothDirX * kothDist, kothZ + kothDirZ * kothDist, 1);
+      rmPlaceObjectDefAtLoc(kothHill, 0, kothX, kothZ, 1);
       if (rmGetNumberUnitsPlaced(kothHill) > 0)
         break;
-      // 0, +1, -1, +2, -2, ... steps
-      if (kothDist > 0.0)
-        kothDist = 0.0 - kothDist;
-      else
-        kothDist = 0.04 - kothDist;
+      kothRadius = kothRadius * 1.5;
     }
   }
 
