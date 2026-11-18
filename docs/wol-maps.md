@@ -299,6 +299,36 @@ sites as natives ("Cocoa (trade site)").
   34 resources in 29 maps never placed). A fix of the tool on the way: an empty first value
   (`string a = "";`) no longer counts, which took the "missing groupings" from 49 maps to 36.
 
+### Format v2 (2026-11-18)
+
+JTMaston's second request: outlaws without the "+3 random" (they are mercenaries), the original texts'
+facts kept, horizontal lines between the blocks, coloured bold keys (not yellow), plural keys, the map
+size, the creator last. Details and decisions in `wol-fixes/map-descriptions/README.txt`, "Format v2";
+evidence (bench scripts, shots, hashes) in `rea/evidence/map-descriptions-v2/` of the worktree.
+
+- **formattext markup** (in game, lobby rollover and loading screen): wide strings near 0xBED8C0 in the
+  exe list the closing tags `/font`, `/b`, `/i`, `/color`, `/bgcolor`, `/st`, `/u`, `/link`, `/override`
+  and the openings `font`, `bgcolor`, `link`, `override` (a string search, not traced in the code). `<font=Name Size>` takes any `FONTS\fonts3.xml` entry and ends at `</font>` or at the end
+  of the line (a nested `</font>` goes back to the gadget's font, not the outer one); `<st>` and `<u>`
+  draw over no-break spaces, not over plain spaces; `<b>`, `<i>` and `<bgcolor>` showed nothing; named
+  colours (`<color=White>`) draw black. Every space right after a closing tag is dropped.
+- **Line that costs a third of a row:** `<font=MapDescRule 4><u>` + 150 no-break spaces + `</u></font>`,
+  where `MapDescRule 4` is a new 4-pixel entry: the row is about 5 px high at 1024 × 768 (a text row is
+  17). Em dashes and U+2500 also draw a line but cost a full row.
+- **Bold:** loading screen `AgeUpgradeSmall 12` (keys) with `PostgameTableEntrySmall 12` (values), both
+  stock, the same heights at every resolution; `HelpHelp 14` is the bold twin of `SPLoadingScreenText
+  14`. Lobby: new entry `MapDescTipKey` (Tooltips_UI with `Bold="true"`).
+- **Room:** the facts block alone needs 135–230 px at 1024 × 768 against WoL's 216-px box, so the pack
+  installs a loose `data\uirmsetup.xml` (WoL's DataP.bar layout, which the game uses) with the box 110
+  rows taller and the player list below it. The game reads the loose file (the player list moved).
+- **Map size:** `mapfacts.py` runs `main()` as a small numeric program up to `rmSetMapSize` for 2, 4 and
+  8 players (globals first, unknown conditions skipped, random calls at their low and high ends): all
+  208 maps evaluated, sizes rounded up to the 2-m cells; checked in game (editor, world size read from memory)
+  on acre, DansilAlaska and ESOC_Adirondacks at 2/4/8 players: all nine match.
+- **Shared profile:** with `LastSelectedSPHC` empty the skirmish button opens "Create Your Home City";
+  the capture script sets a saved home city (Dutch) under testbed's start lock for the launch only and
+  puts the old value back, and again after the game exits.
+
 ## King of the Hill on the maps without it (2026-11-17/18)
 
 JTMaston asked for King of the Hill on every map with room for it, the hill at the choke point closest to
