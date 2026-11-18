@@ -11,6 +11,9 @@
        tip      optional: the help text when the pointer rests on the row (or tipId: a string table ID)
        join     optional: "line" puts each part on a line of its own (a two-line block) instead of
                 joining them with spaces
+       spill    optional: the gadget of another row, the next line: when this row is too wide for its gadget and
+                that row shows nothing, the words that do not fit go there (four costs, or three of four digits,
+                over the portrait of a unit without population)
      A row with nothing to show is hidden.
      [icon:PATH] in a text or label: that texture as an icon, at the size of the panel's own icons, e.g.
        [icon:ui\ingame\stat_icon_los] (an eye).
@@ -78,7 +81,7 @@
   <!-- Two mirrored blocks of two lines. Over the portrait: the cost (each resource's icon and amount), then
        the population (the game's house, ui\ingame\stat_icon_building). Right of the player's name: line of sight (an eye) and the live speed (a
        winged boot), then the train time (an hourglass) and the garrison (the game's garrison cursor). -->
-  <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost"/>
+  <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost" spill="unitselectionpanel-uhcPop"/>
   <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building]{population}" tip="Population"/>
   <row gadget="unitselectionpanel-uhcSight" text="[icon:ui\ingame\stat_icon_los]{los}|[icon:ui\ingame\stat_icon_speed]{speed}" tip="Line of sight, speed"/>
   <row gadget="unitselectionpanel-uhcTrainGarrison" text="[icon:ui\ingame\stat_icon_traintime]{trainPoints}|[icon:ui\cursors\cursor_garrison]{garrison}" tip="Train time (seconds), garrison"/>

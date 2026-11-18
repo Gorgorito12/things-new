@@ -2046,7 +2046,8 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 // - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
 //   resists rows with icons over the original ones, which the layout keeps in place for the panel without the key);
 //   <stockLabel gadget="..." text="..."/>: an original label's text, written over the game's while it shows.
-// - join="line" on a text= row: each part on a line of its own (a two-line block).
+// - join="line" on a text= row: each part on a line of its own (a two-line block); spill="<gadget>": when the row is
+//   too wide for its gadget and the row of that gadget shows nothing, the words that do not fit go there.
 // A row whose gadget the selection's stack portraits cover (one per unit type, placed by the panel each fill), or
 // that a shown <avoid gadget="..."/> covers, is hidden for that fill (a bigPanelRows gadget is skipped and the rows
 // go on in the next one); overlap="show" on a row or bigPanelRows keeps it.
@@ -3032,6 +3033,10 @@ struct Row {
   bool keep = false;               // overlap="show": shown even over the stack portraits or an <avoid> gadget
   std::wstring tip;                // tip= / tipId=: the help text (what the icons mean)
   bool lines = false;              // join="line": each part on a line of its own instead of joined by spaces
+  // spill="...": the gadget of another row, the next line; when this row's text is too wide for its gadget and that
+  // row shows nothing, the words that do not fit go there (four costs over the portrait of a unit without population)
+  std::wstring spill;
+  int spillRow = -1;               // its index in g_rows, set after the file is read
 };
 
 // <stockLabel gadget="..." text="..." tip="..."/>: a label of the original panel whose text the key replaces while
@@ -3172,7 +3177,7 @@ bool g_attackReads = false;  // the stat fill's attack rows match what AttackRow
 
 const char kDefaultRows[] =
     "<minUIRows>"
-    "<row gadget='unitselectionpanel-uhcCost' text='{cost}' tip='Cost'/>"
+    "<row gadget='unitselectionpanel-uhcCost' text='{cost}' tip='Cost' spill='unitselectionpanel-uhcPop'/>"
     "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_building]{population}' "
     "tip='Population'/>"
     "<row gadget='unitselectionpanel-uhcSight' text='[icon:ui\\ingame\\stat_icon_los]{los}|"
@@ -3456,6 +3461,9 @@ bool LoadRows(const std::string& arg) {
         g_rows.push_back({Wide(Trim(*gadget)), info, Label(element), L"", typeList(element), keepOnOverlap(element),
                           Tip(element)});
       }
+      if (const std::string* spill = Attr(element, "spill")) {
+        g_rows.back().spill = Wide(Trim(*spill));
+      }
       continue;
     }
     if (element.tag == "replace") {
@@ -3536,6 +3544,20 @@ bool LoadRows(const std::string& arg) {
       continue;
     }
     uhc::Log(L"minUIStats: %ls: unknown element <%hs>; ignored", g_file.c_str(), element.tag.c_str());
+  }
+  for (Row& row : g_rows) {
+    if (row.spill.empty()) {
+      continue;
+    }
+    for (size_t j = 0; j < g_rows.size(); ++j) {
+      if (&g_rows[j] != &row && _wcsicmp(g_rows[j].gadget.c_str(), row.spill.c_str()) == 0) {
+        row.spillRow = static_cast<int>(j);
+      }
+    }
+    if (row.spillRow < 0) {
+      uhc::Log(L"minUIStats: %ls: spill=\"%ls\" is not the gadget of another row; ignored", g_file.c_str(),
+               row.spill.c_str());
+    }
   }
   return true;
 }
@@ -3905,6 +3927,7 @@ struct StatRow {
   std::wstring tip;
   bool labelSet = false;
   bool valueSet = false;
+  size_t compactEnd = std::wstring::npos;  // an attack row: the end of its damage, ROF and projectiles (MarkAttacks)
 };
 
 constexpr int kVtableSlots = 128;
@@ -4120,8 +4143,9 @@ size_t LineBudget(const Gadget& gadget) {
 }
 
 // A row in short form, for the last gadget when the rows outnumber the gadgets: an attack's name and damage (its
-// value up to the first icon), any other row's label and value.
-std::wstring Compact(const StatRow& row) {
+// value up to the first icon), any other row's label and value. With `withRof`, an attack keeps what MarkAttacks put
+// after its damage too (its ROF and projectiles), which a row too long for its column shows when that fits.
+std::wstring Compact(const StatRow& row, bool withRof = false) {
   if (row.labelStyle != kAttackStyle) {
     return row.value.empty() ? row.label : row.label + L" " + row.value;
   }
@@ -4129,6 +4153,9 @@ std::wstring Compact(const StatRow& row) {
   std::wstring name = row.label;
   if (!name.empty() && name.back() == L':') {
     name.pop_back();
+  }
+  if (withRof && row.compactEnd != std::wstring::npos && row.compactEnd <= row.value.size()) {
+    return name + L" " + row.value.substr(0, row.compactEnd);
   }
   return name + L" " + (icon == std::wstring::npos ? row.value : row.value.substr(0, icon + 1));
 }
@@ -4195,9 +4222,12 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     }
     const int projectiles = g_big.projectilesIcon.empty() ? 1 : ProjectilesPerReload(unit, action);
     if (projectiles > 1) {
-      row.value.insert(at, L" " + std::to_wstring(projectiles) + L" <icon=\"" + size + L"(" + g_big.projectilesIcon +
-                               L")\">");
+      const std::wstring text =
+          L" " + std::to_wstring(projectiles) + L" <icon=\"" + size + L"(" + g_big.projectilesIcon + L")\">";
+      row.value.insert(at, text);
+      at += text.size();
     }
+    row.compactEnd = at;
   }
 }
 
@@ -4440,7 +4470,9 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
     if (free[n].stock < 0 && VisibleLength(text) > LineBudget(*free[n].gadget)) {
       // Too long for its column ("Anti-artillery Crackshot Attack", a Spanish name): name and damage, the whole row
       // in the help text, rather than a row cut at the panel's edge.
-      write(free[n], Compact(row), style, StripMarkup(row.label + L" " + row.value));
+      const std::wstring longer = Compact(row, true);
+      write(free[n], VisibleLength(longer) <= LineBudget(*free[n].gadget) ? longer : Compact(row), style,
+            StripMarkup(row.label + L" " + row.value));
       continue;
     }
     write(free[n], text, style, row.tip);
@@ -4465,6 +4497,37 @@ std::wstring ResolveLabel(const std::wstring& label) {
     return StringById(_wtoi(label.c_str() + 1));
   }
   return ExpandStrings(label);
+}
+
+// A text too wide for a line of `budget` characters (VisibleLength) cut in two lines at a space outside markup: of the
+// cuts whose first part fits, the one that makes the two lines most even ("600 600 / 200 200", not "600 600 200 /
+// 200"). The first part stays in `text`, the rest goes to `rest`. False when it fits, or no space does.
+bool SplitToFit(std::wstring* text, std::wstring* rest, size_t budget) {
+  if (VisibleLength(*text) <= budget) {
+    return false;
+  }
+  size_t cut = std::wstring::npos;
+  size_t best = static_cast<size_t>(-1);
+  bool tag = false;
+  for (size_t k = 0; k < text->size(); ++k) {
+    const wchar_t c = (*text)[k];
+    tag = c == L'<' ? true : (c == L'>' ? false : tag);
+    if (c != L' ' || tag || k == 0) {
+      continue;
+    }
+    const size_t first = VisibleLength(text->substr(0, k));
+    const size_t second = VisibleLength(text->substr(k + 1));
+    if (first <= budget && (std::max)(first, second) < best) {
+      best = (std::max)(first, second);
+      cut = k;
+    }
+  }
+  if (cut == std::wstring::npos) {
+    return false;
+  }
+  *rest = text->substr(cut + 1);
+  text->resize(cut);
+  return true;
 }
 
 // The last selection the rows were written for, and when.
@@ -4512,6 +4575,10 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
   Blockers blockers;
   CollectBlockers(panel, &blockers);
   std::wstring blockedNames;
+  // Each row's text first (empty: hidden), then the spills, then the writes.
+  std::vector<std::wstring> texts(g_rows.size());
+  std::vector<std::wstring> tips(g_rows.size());
+  std::vector<bool> open(g_rows.size(), false);  // valid and not covered: the row is written or hidden this fill
   for (size_t i = 0; i < g_rows.size(); ++i) {
     Gadget& gadget = g_panel.rows[i];
     if (!gadget.valid) {
@@ -4522,15 +4589,35 @@ void __stdcall MinUiTail(char* panel, const char* selection, const char* unit, b
       blockedNames += L" " + g_rows[i].gadget;
       continue;
     }
+    open[i] = true;
     std::wstring value;
     const bool has = proto != nullptr && Applies(g_rows[i], proto) &&
                      (g_rows[i].item != nullptr ? g_rows[i].item->fn(unit, &value)
                                                 : RenderTemplate(g_rows[i].text, unit, &value, g_rows[i].lines));
-    if (!has) {
-      Hide(&gadget);
+    if (has) {
+      texts[i] = ResolveLabel(g_rows[i].label) + value;
+      tips[i] = ResolveLabel(g_rows[i].tip);
+    }
+  }
+  for (size_t i = 0; i < g_rows.size(); ++i) {
+    const int j = g_rows[i].spillRow;
+    if (j >= 0 && open[i] && open[j] && !texts[i].empty() && texts[j].empty()) {
+      std::wstring rest;
+      if (SplitToFit(&texts[i], &rest, LineBudget(g_panel.rows[i]))) {
+        texts[j] = rest;
+        tips[j] = tips[i];
+      }
+    }
+  }
+  for (size_t i = 0; i < g_rows.size(); ++i) {
+    if (!open[i]) {
       continue;
     }
-    SetText(&gadget, ResolveLabel(g_rows[i].label) + value, 0, ResolveLabel(g_rows[i].tip));
+    if (texts[i].empty()) {
+      Hide(&g_panel.rows[i]);
+    } else {
+      SetText(&g_panel.rows[i], texts[i], 0, tips[i]);
+    }
   }
   if (!g_panel.big.empty()) {
     if (proto == nullptr || selection == nullptr || count <= 0) {
