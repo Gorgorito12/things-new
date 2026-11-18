@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="43664" imagepath="RMs\SMALL\North America\hispaniola" loadBackground="RMs\BIG\North America\hispaniola"
+details="6170118"
+loadDetails="6170119">
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_01</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_02</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_03</loadss>
+</mapinfo>

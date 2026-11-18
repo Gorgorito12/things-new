@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="70021" imagepath="RMs\SMALL\Asia and Oceania\siberia" loadBackground="RMs\BIG\Asia and Oceania\siberia"
+details="6170378"
+loadDetails="6170379">
+  <loadss>ui\random_map\siberia\ss_siberia_1</loadss>
+  <loadss>ui\random_map\siberia\ss_siberia_2</loadss>
+  <loadss>ui\random_map\siberia\ss_siberia_3</loadss>
+</mapinfo>

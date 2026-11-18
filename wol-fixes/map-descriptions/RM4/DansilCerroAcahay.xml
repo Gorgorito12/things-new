@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "RMs\small\South America\DansilCerroAcahay"
+displayName = "Paraneña"
+cannotReplace = ""
+
+ 
+loadBackground="RMs\BIG\Other\southamerica"
+details="6170016"
+loadDetails="6170017">
+   <loadss>ui\random_map\Parana\Parana_ss_01</loadss>
+   <loadss>ui\random_map\Parana\Parana_ss_02</loadss>
+   <loadss>ui\random_map\Parana\Parana_ss_03</loadss>
+ 
+</mapinfo>

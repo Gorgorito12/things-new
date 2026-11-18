@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\florida"
+displayName = "ESOC Florida"
+cannotReplace = ""
+loadBackground="ui\esoc_map\florida_map"
+details="6170060"
+loadDetails="6170061">
+
+   <loadss>ui\random_map\Florida\Florida_ss_01</loadss>
+   <loadss>ui\random_map\Florida\Florida_ss_02</loadss>
+   <loadss>ui\random_map\Florida\Florida_ss_03</loadss>
+  
+</mapinfo>

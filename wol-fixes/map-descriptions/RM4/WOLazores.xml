@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75124" imagepath="RMs\SMALL\Africa and Middle East\azores" loadBackground="RMs\BIG\Africa and Middle East\azores"
+details="6170194"
+loadDetails="6170195">
+ <loadss>ui\random_map\ceylon\ceylon_ss_01</loadss>
+  <loadss>ui\random_map\ceylon\ceylon_ss_02</loadss>
+  <loadss>ui\random_map\ceylon\ceylon_ss_03</loadss>
+</mapinfo>

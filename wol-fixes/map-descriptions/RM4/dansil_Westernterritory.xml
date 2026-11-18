@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\westernterritorysmall"
+displayName = "Western Territory"
+cannotReplace = ""
+ 
+loadBackground="RMs\BIG\Asia and Oceania\australia"
+details="6170316"
+loadDetails="6170317">
+
+<loadss>ui\random_map\australia\australia_ss_01</loadss>
+<loadss>ui\random_map\australia\australia_ss_02</loadss>
+<loadss>ui\random_map\australia\australia_ss_03</loadss>
+</mapinfo>
+

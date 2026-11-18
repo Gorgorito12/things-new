@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<mapinfo 
+imagepath = "RMs\small\Africa and Middle East\WOLethiopianhighlands" 
+displayName = "Lrg Ethiopian Highlands" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Other\africa"
+details="6170214"
+loadDetails="6170215">
+
+<loadss>ui\random_map\ethiopia\Ethiopia_ss_01</loadss>
+<loadss>ui\random_map\ethiopia\Ethiopia_ss_02</loadss>
+<loadss>ui\random_map\ethiopia\Ethiopia_ss_03</loadss>
+
+</mapinfo>

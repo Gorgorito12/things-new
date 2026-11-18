@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+displayName = "The Moon" 
+cannotReplace = "" 
+imagepath = "RMs\SMALL\Other\moon" 
+loadBackground="RMs\BIG\other\moon"
+details="6170224"
+loadDetails="6170225">
+   <loadss>ui\random_map\moon\Moon_ss_01</loadss>
+   <loadss>ui\random_map\moon\Moon_ss_02</loadss>
+</mapinfo>

@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+imagepath = "RMs\small\Africa and Middle East\GANVolta"
+displayName = "Lrg Volta River" 
+
+loadBackground="RMs\BIG\Other\africa"
+details="6170110"
+loadDetails="6170111">
+
+   <loadss>ui\random_map\Volta\Volta_ss_01</loadss>
+   <loadss>ui\random_map\Volta\Volta_ss_02</loadss>
+   <loadss>ui\random_map\Volta\Volta_ss_03</loadss>
+</mapinfo>
+
+ 

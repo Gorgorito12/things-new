@@ -1,0 +1,13 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\SMALL\Asia and Oceania\Ecruteak" 
+displayName = "Ecruteak" 
+loadBackground="RMs\big\other\asia"
+details="6170178"
+loadDetails="6170179">
+   <loadss>ui\random_map\Ecruteak\Ecruteak_ss_01</loadss>
+   <loadss>ui\random_map\Ecruteak\Ecruteak_ss_02</loadss>
+   <loadss>ui\random_map\Ecruteak\Ecruteak_ss_03</loadss>
+</mapinfo>
+
+ 

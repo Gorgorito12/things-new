@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+displayName = "Greenland" 
+cannotReplace = "" 
+imagepath = "RMs\SMALL\North America\greenland" 
+loadBackground="RMs\big\other\northamerica"
+details="6170260"
+loadDetails="6170261">
+   <loadss>ui\random_map\yukon\yukon_ss_01</loadss>
+   <loadss>ui\random_map\yukon\yukon_ss_02</loadss>
+   <loadss>ui\random_map\yukon\yukon_ss_03</loadss>
+</mapinfo>

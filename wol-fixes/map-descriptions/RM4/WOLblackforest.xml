@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+		 imagepath = "RMs\small\europe\blackforest" 
+		 displayName = "Black Forest" cannotReplace = "Pls Wait. Map Load"
+		 loadBackground ="RMs\big\europe\blackforest"
+details="6170198"
+loadDetails="6170199">
+   <loadss>ui\random_map\carolina\carolina_ss_01</loadss>
+   <loadss>ui\random_map\carolina\carolina_ss_02</loadss>
+   <loadss>ui\random_map\carolina\carolina_ss_03</loadss>
+</mapinfo>

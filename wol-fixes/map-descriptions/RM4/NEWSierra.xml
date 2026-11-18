@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Sierra Madre"
+imagepath = "rms\small\NEW\sierrasmall" 
+loadBackground="rms\big\other\northamerica"
+details="6170152"
+loadDetails="6170153">
+   <loadss>ui\random_map\sonora\sonora_ss_01</loadss>
+</mapinfo>

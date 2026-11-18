@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="43408" imagepath="RMs\SMALL\North America\greatplains" loadBackground="RMs\BIG\North America\greatplains"
+details="6170336"
+loadDetails="6170337">
+   <loadss>ui\random_map\great_plains\great_plains_ss_01</loadss>
+   <loadss>ui\random_map\great_plains\great_plains_ss_02</loadss>
+   <loadss>ui\random_map\great_plains\great_plains_ss_03</loadss>
+</mapinfo>

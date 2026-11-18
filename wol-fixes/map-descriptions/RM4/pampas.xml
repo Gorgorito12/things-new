@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="26304" imagepath="RMs\SMALL\South America\pampas" loadBackground="RMs\BIG\South America\pampas"
+details="6170362"
+loadDetails="6170363">
+   <loadss>ui\random_map\pampas\pampas_ss_01</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_02</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_03</loadss>
+</mapinfo>

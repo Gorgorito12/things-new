@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\fijismall"
+displayName = "Fiji"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\borneo\borneo_map"
+details="6170304"
+loadDetails="6170305">
+  <loadss>ui\random_map\borneo\borneo_ss_1</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_2</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_3</loadss>
+
+ 
+</mapinfo>

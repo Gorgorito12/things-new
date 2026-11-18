@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75103" imagepath="RMs\SMALL\South America\galapagos" loadBackground="RMs\BIG\South America\galapagos"
+details="6170328"
+loadDetails="6170329">
+   <loadss>ui\random_map\caribbean\caribbean_ss_01</loadss>
+   <loadss>ui\random_map\caribbean\caribbean_ss_02</loadss>
+   <loadss>ui\random_map\caribbean\caribbean_ss_03</loadss>
+</mapinfo>

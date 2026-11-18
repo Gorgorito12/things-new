@@ -424,6 +424,9 @@ class Script:
             for e in self.assign.get(expr, []):
                 out |= self.values(e, guard + (expr,))
             out = out or {UNKNOWN}
+            # 'string a = "";' then 'a = "Sufi";': the empty first value is only a declaration
+            if "" in out and any(isinstance(v, str) and v not in ("", UNKNOWN) for v in out):
+                out.discard("")
             if not guard:
                 self.memo[expr] = out
             return out
@@ -750,9 +753,8 @@ def facts(bed, data, xs_path, sets):
             if len(args) > 1:
                 route_types |= sc.string_values(args[1])
     row["trade_route_types"] = " ".join(sorted(route_types))
-    if row["trade_route"] != "No":
-        water = {t for t in route_types if "water" in t.lower()}
-        row["trade_route"] += " (water)" if water and water == route_types else " (land and water)" if water else ""
+    # the route type is the route's look: TAD's land maps (Mongolia, Deccan) use "water" too, so it
+    # says nothing about land or sea (trade_route_types keeps it)
     # KOTH
     koth = bool(re.search(r"\brmGetIsKOTH\s*\(", sc.code)) and bool(
         re.search(r"\bypKingsHillPlacer\s*\(|\"ypKingsHill\"", sc.code))
@@ -877,7 +879,52 @@ def compare(row, seen, data):
         notes.append(f"natives: script not seen {missing}")
     if said and not nat:
         notes.append("natives: script has natives, none seen")
+    game_facts(row, seen, data)
     return "; ".join(dict.fromkeys(notes))
+
+
+def native_label(data, n, table="en"):
+    """A native's name: a civ's display name, or an African trade site 'Cocoa (trade site)'."""
+    by_key = {civ_key(c[0]): c for c in data.civs.values()}
+    c = data.civs.get(n.lower()) or by_key.get(civ_key(n))
+    if c:
+        return data.text(c[1], table) or data.text(c[1], "local") or c[0]
+    if n.lower() in data.protos:
+        res = re.sub(r"^(Socket|Ranura de)\s+", "", data.proto_label(n, table))
+        return f"{res} ({'trade site' if table == 'en' else 'puesto comercial'})"
+    return n
+
+
+def game_facts(row, seen, data):
+    """The facts as the game showed them, for the descriptions: the game wins over the script.
+    Resources: what the game placed for gaia, plus what the script places that the game showed
+    (a starting herd belongs to its player; a civ's own starting animals are not counted).
+    Natives: the villages seen, or the script's when it picks them at random (2 games are a sample).
+    Trade route: seen or not."""
+    for cat, _ in Data.CATEGORIES:
+        said = {p.split(" (")[0].lower() for p in row[cat].split("; ") if p}
+        anyone = set().union(*(s[cat] for s in seen.values()))
+        gaia = set().union(*(s.get(f"gaia_{cat}", set()) for s in seen.values()))
+        got = sorted(gaia | {p for p in anyone if p.lower() in said})
+        row[f"game_{cat}"] = " ".join(got)
+        row[f"game_{cat}_en"] = ", ".join(dict.fromkeys(data.proto_label(p) for p in got))
+        row[f"game_{cat}_es"] = ", ".join(dict.fromkeys(data.proto_label(p, "es") for p in got))
+    nat = sorted(set().union(*(s["natives"] for s in seen.values())))
+    script = [n for n in row["natives"].split(", ") if n]
+    if row.get("natives_varies") == "yes" and nat:
+        names, varies = script, "yes"   # random: the script's list, marked as varying
+    else:
+        names, varies = nat, ""
+    row["game_natives_varies"] = varies
+    row["game_natives_en"] = ", ".join(dict.fromkeys(native_label(data, n) for n in names))
+    row["game_natives_es"] = ", ".join(dict.fromkeys(native_label(data, n, "es") for n in names))
+    trade = any(s["trade"] for s in seen.values())
+    if not trade:
+        row["game_trade_route"] = "No"
+    elif row["trade_route"] == "No":
+        row["game_trade_route"] = "Yes"
+    else:
+        row["game_trade_route"] = row["trade_route"]
 
 
 _GROUPING_SOCKETS = {}
@@ -919,7 +966,8 @@ FIELDS = ["map", "name_en", "name_es", "region", "region_source", "region_note",
           "whale_es", "map_types", "outlaw_block", "dead_block_for_file", "outlaws", "outlaws_en", "outlaws_es",
           "unresolved", "defined_not_placed", "missing_groupings", "xml_attr_typos", "lobby_source", "lobby_en", "loading_source", "loading_en"]
 CHECK_FIELDS = ["seen_hunt", "seen_herd", "seen_mine", "seen_berry", "seen_fish", "seen_whale", "seen_natives",
-                "seen_trade", "check"]
+                "seen_trade", "check", "game_trade_route", "game_natives_varies", "game_natives_en",
+                "game_natives_es"] + [f"game_{c}{s}" for c, _ in Data.CATEGORIES for s in ("", "_en", "_es")]
 
 
 def main(argv):

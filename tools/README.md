@@ -382,7 +382,9 @@ copy. How it reads a script:
   (ID or literal), and misspelt attribute names.
 
 `--check UNITS_DIR` reads the unit lists that `mapsweep.py` keeps (`<map>-p<N>-s<S>-*.txt`) and adds the
-`seen_*` columns and `check`, the mismatches per map: a resource seen that the script does not place, a
+`seen_*` columns, the `game_*` columns (the facts as the game placed them, which the map descriptions
+use: gaia resources seen plus the script's own that were seen, the villages seen, the trade posts
+seen) and `check`, the mismatches per map: a resource seen that the script does not place, a
 fixed one never seen, a trade route or natives seen against the script. A run per seed is a sample:
 a mismatch is a lead to read the script, not a verdict.
 

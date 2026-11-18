@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<mapinfo 
+imagepath = "RMs\SMALL\Asia and Oceania\atoll" 
+displayNameID = "1000309" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Asia and Oceania\atoll"
+details="6170232"
+loadDetails="6170233">
+
+   <loadss>ui\random_map\atoll\atoll_ss_01</loadss>
+   <loadss>ui\random_map\atoll\atoll_ss_02</loadss>
+   <loadss>ui\random_map\atoll\atoll_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapinfo imagepath="RMs\SMALL\Asia and Oceania\honshu" displayNameID="70035" cannotReplace="" loadBackground="RMs\BIG\Asia and Oceania\honshu"
+details="6170346"
+loadDetails="6170347">
+  <loadss>ui\random_map\japan\honshu_ss_1</loadss>
+  <loadss>ui\random_map\japan\honshu_ss_2</loadss>
+  <loadss>ui\random_map\japan\honshu_ss_3</loadss>
+</mapinfo>

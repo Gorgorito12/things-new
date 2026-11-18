@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Bahia"
+imagepath = "rms\small\NEW\bahiasmall" 
+loadBackground="rms\big\other\southamerica"
+details="6170122"
+loadDetails="6170123">
+   <loadss>patch\ozarks\ozarks_ss_02</loadss>
+</mapinfo>

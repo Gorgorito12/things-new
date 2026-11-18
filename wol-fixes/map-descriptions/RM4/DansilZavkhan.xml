@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath="rms\small\NEW\zavkhansmall" 
+displayName = "Lrg Zavkhan"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\mongolia\mongolia_map"
+details="6170036"
+loadDetails="6170037">
+  <loadss>ui\random_map\mongolia\mongolia_ss_1</loadss>
+  <loadss>ui\random_map\mongolia\mongolia_ss_2</loadss>
+  <loadss>ui\random_map\mongolia\mongolia_ss_3</loadss>
+</mapinfo>

@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "RMs\small\South America\DansilFalklands"
+displayName = "Falkland Islands"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\patagonia\patagonia_map"
+details="6170022"
+loadDetails="6170023">
+   <loadss>ui\random_map\patagonia\patagonia_ss_01</loadss>
+   <loadss>ui\random_map\patagonia\patagonia_ss_02</loadss>
+   <loadss>ui\random_map\patagonia\patagonia_ss_03</loadss>
+
+ 
+</mapinfo>

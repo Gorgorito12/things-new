@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\North America\badlands"
+displayNameID="75151"
+loadBackground="RMs\big\North America\badlands"
+details="6170012"
+loadDetails="6170013">
+
+   <loadss>ui\random_map\great_plains\great_plains_ss_03</loadss>
+
+</mapinfo>

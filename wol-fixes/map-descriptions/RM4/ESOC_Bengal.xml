@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath="ui\esoc_map\bengal"
+displayName = "ESOC Bengal"
+cannotReplace = ""
+loadBackground="ui\esoc_map\bengal_map"
+details="6170052"
+loadDetails="6170053">
+
+ <loadss>ui\random_map\Bengal\Bengal_ss_01</loadss>
+ <loadss>ui\random_map\Bengal\Bengal_ss_02</loadss> 
+ <loadss>ui\random_map\Bengal\Bengal_ss_03</loadss>
+
+  
+</mapinfo>

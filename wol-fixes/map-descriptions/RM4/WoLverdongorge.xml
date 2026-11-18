@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\Europe\verdongorge" displayNameID = "75199" cannotReplace = "" loadBackground="RMs\BIG\Europe\verdongorge"
+details="6170254"
+loadDetails="6170255">
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_01</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_02</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_03</loadss>
+</mapinfo>

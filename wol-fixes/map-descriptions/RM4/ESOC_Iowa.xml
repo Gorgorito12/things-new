@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\iowa"
+ displayName = "ESOC Iowa"
+cannotReplace = ""
+loadBackground="ui\esoc_map\iowa_map"
+details="6170074"
+loadDetails="6170075">
+
+ <loadss>ui\random_map\great_plains\great_plains_ss_03</loadss>
+
+ 
+  
+</mapinfo>

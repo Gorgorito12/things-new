@@ -1,0 +1,5 @@
+<mapinfo cannotReplace="" displayNameID="70012" imagepath="RMs\SMALL\Asia and Oceania\silkroad" loadBackground="RMs\BIG\Asia and Oceania\silkroad"
+details="6170382"
+loadDetails="6170383">
+  <loadss>ui\random_map\silk_road\ss_silk_road</loadss>
+</mapinfo>

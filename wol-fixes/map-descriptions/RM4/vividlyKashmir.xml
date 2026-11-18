@@ -1,0 +1,17 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "RMs\SMALL\Asia and Oceania\kashmir"
+displayName = "Kashmir"
+cannotReplace = ""
+
+
+loadBackground="ui\random_map\himalayas\himalayas_map"
+details="6170398"
+loadDetails="6170399">
+
+	<loadss>ui\random_map\Kashmir\Kashmir_ss_01</loadss>
+	<loadss>ui\random_map\Kashmir\Kashmir_ss_02</loadss>
+	<loadss>ui\random_map\Kashmir\Kashmir_ss_03</loadss>
+ 
+</mapinfo>

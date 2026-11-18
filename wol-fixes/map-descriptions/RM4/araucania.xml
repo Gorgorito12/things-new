@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="45207" imagepath="RMs\SMALL\South America\araucania" loadBackground="RMs\BIG\South America\araucania"
+details="6170280"
+loadDetails="6170281">
+	<loadss>ui\random_map\auraucania\auraucania_ss_01</loadss>
+    <loadss>ui\random_map\auraucania\auraucania_ss_02</loadss>
+    <loadss>ui\random_map\auraucania\auraucania_ss_03</loadss>
+</mapinfo>

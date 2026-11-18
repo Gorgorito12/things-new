@@ -1,0 +1,13 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\adirondacks"
+displayName = "ESOC Adirondacks"
+cannotReplace = ""
+loadBackground="ui\esoc_map\adirondacks_map"
+details="6170042"
+loadDetails="6170043">
+
+<loadss>ui\random_map\great_lakes\great_lakes_ss_03</loadss>
+  
+</mapinfo>

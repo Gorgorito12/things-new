@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="70047" imagepath="RMs\SMALL\Asia and Oceania\borneo" loadBackground="RMs\BIG\Asia and Oceania\borneo"
+details="6170286"
+loadDetails="6170287">
+  <loadss>ui\random_map\borneo\borneo_ss_1</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_2</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_3</loadss>
+</mapinfo>

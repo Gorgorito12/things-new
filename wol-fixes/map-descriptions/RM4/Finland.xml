@@ -1,0 +1,13 @@
+﻿<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+imagepath = "RMs\small\Europe\Finland"
+displayName = "Finland"
+loadBackground="rms\big\other\europe"
+details="6170104"
+loadDetails="6170105">
+
+   <loadss>ui\random_map\unknown\unknown_ss_01</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_02</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_03</loadss>
+
+</mapinfo>
