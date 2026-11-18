@@ -179,7 +179,7 @@ Notes
 
 Tested on 2026-11-17 (single player, WoL, 1920 x 1080, the panel at native pixels with the health bar)
 -------------------------------------------------------------------------------------------------------
-Version 4 (2026-11-18): every scene below but the building under construction was taken again with the version 4 icons, the word "Hitpoints", the
+Version 4 (2026-11-18): every scene below was taken again with the version 4 icons, the word "Hitpoints", the
 game's house and the projectiles, plus the new scenes (three and four costs, projectiles, Spanish, 1024x768,
 WoL's uhc.dll beside our dinput8.dll): final\README.txt has that pass/fail table and the pictures. The table
 below is version 3's, with its pictures in media\.
@@ -212,7 +212,8 @@ over another text, nothing cut, nothing in the portrait band, the health bar sho
       a tree "Aura -0.05/s" and its wood held
     A building going up (AI skirmish): "Done in      v3-construction-site, -builder          fine (two-
       0:12"; its builder "Builds 1.00/s"; the AI's                                           line player
-      long name "Otto Von Bismarck (Germans)"                                                name)
+      long name "Otto Von Bismarck (Germans)"                                                name; v4:
+      (version 4: final\minUIStats-v4-construction-*; the v3 pictures are removed)          retaken)
     Ships: a Caravel, a Frigate (2 armors), with     v3-ship-caravel, -ship-frigate          fine
       the train time and garrison 0 / 50
     WoL.dll v1.33 loaded (preloadDll, its            v3-woldll-factory                       fine

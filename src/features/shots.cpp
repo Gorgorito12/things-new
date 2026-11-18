@@ -16,9 +16,10 @@
 // The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
 // the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
 //
-// The tags are also read for minUIStats, which shows shots x projectiles in an attack row (unitinfo.h, Shots): with
-// minUIStats on, the reader is registered even when this key is off, and the tags are recorded without any effect
-// on combat (no ROF filter gate, no launch hook).
+// minUIStats shows what combat does in an attack row (unitinfo.h, Shots): the shots while this key is on, the
+// projectiles while it is on with "projectiles", nothing without it. Its data view (projectiles="data" on its
+// <bigPanelRows>, for modders) registers the reader even when this key is off and shows the tags as written; the
+// tags read that way change nothing in combat (no ROF filter gate, no launch hook).
 #include <windows.h>
 
 #include <cmath>
@@ -322,8 +323,8 @@ namespace unitinfo {
 
 bool RequestShotTags() { return EnsureReader(); }
 
-bool Shots(const char* proto, const char* action, int* shots, int* projectiles) {
-  if (!g_reading || proto == nullptr || action == nullptr) {
+bool Shots(const char* proto, const char* action, int* shots, int* projectiles, bool asData) {
+  if (!g_reading || proto == nullptr || action == nullptr || (!asData && !g_combat)) {
     return false;
   }
   const auto found = g_entries.find(ActionKey{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)});
@@ -331,7 +332,8 @@ bool Shots(const char* proto, const char* action, int* shots, int* projectiles) 
     return false;
   }
   *shots = found->second.shots;
-  *projectiles = found->second.projectiles;
+  // Without "projectiles" a shot launches one projectile, whatever the tag says.
+  *projectiles = asData || g_projectiles ? found->second.projectiles : 1;
   return true;
 }
 

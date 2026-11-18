@@ -2039,8 +2039,9 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 //   With stockRows="take" the original attack rows (StackLabel0..2) are written from the same list, so that every
 //   attack row gets rofIcon="..." (the action's ROF and that icon after its damage) and the ability attacks the unit
 //   cannot use are left out (ActionEnabled; abilities="all" keeps them). With projectilesIcon="...", an attack that
-//   fires more than one projectile before its reload gets shots x projectiles and that icon after its ROF (the
-//   tactics' <NumberOfShots> and <NumberProjectiles>, read by shots.cpp: unitinfo.h, Shots).
+//   fires more than one projectile before its reload gets shots x projectiles and that icon after its ROF, as combat
+//   fires them (numberOfShots, its "projectiles" option: unitinfo.h, Shots); projectiles="data" shows the tags as
+//   written instead, a modder's view.
 // - "[string:ID]" in a text, label or tip: that string of the game's string table, as the player's language has it
 //   (resolved when shown: "[string:68852]" is "Hitpoints" in the English table).
 // - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
@@ -2553,12 +2554,14 @@ bool ItemArea(const char* unit, std::wstring* out) {
   });
 }
 
-// The projectiles an attack fires before its reload: its <NumberOfShots> x <NumberProjectiles> (shots.cpp); 1 without
-// them.
+// The projectiles an attack fires before its reload, as combat fires them: <NumberOfShots> x <NumberProjectiles> while
+// numberOfShots (and its "projectiles" option) uses them; 1 otherwise. With projectiles="data", the tags as written.
+bool g_projectilesData = false;
+
 int ProjectilesPerReload(const char* unit, const char* action) {
   int shots = 1;
   int projectiles = 1;
-  if (!uhc::unitinfo::Shots(Field<const char*>(unit, 0x5C), action, &shots, &projectiles)) {
+  if (!uhc::unitinfo::Shots(Field<const char*>(unit, 0x5C), action, &shots, &projectiles, g_projectilesData)) {
     return 1;
   }
   return shots * projectiles;
@@ -3537,6 +3540,13 @@ bool LoadRows(const std::string& arg) {
       }
       if (const std::string* projectiles = Attr(element, "projectilesicon")) {
         g_big.projectilesIcon = Wide(Trim(*projectiles));
+      }
+      if (const std::string* from = Attr(element, "projectiles")) {
+        g_projectilesData = _stricmp(Trim(*from).c_str(), "data") == 0;
+        if (!g_projectilesData && _stricmp(Trim(*from).c_str(), "combat") != 0) {
+          uhc::Log(L"minUIStats: %ls: projectiles=\"%hs\" is not combat or data; combat used", g_file.c_str(),
+                   from->c_str());
+        }
       }
       if (const std::string* abilities = Attr(element, "abilities")) {
         g_filterAbilities = _stricmp(Trim(*abilities).c_str(), "all") != 0;
@@ -4710,9 +4720,10 @@ Outcome ApplyMinUiStats(const Config& config) {
     Log(L"minUIStats: another DLL changed the resists armor test (0x698BFC); building armor not shown, unit armor as "
         L"that DLL writes it (the armor items answer nothing)");
   }
-  // The projectiles per reload (projectilesIcon, the projectiles item): the tactics tags shots.cpp reads, without any
-  // effect on combat. Another DLL on the shared action tag site only leaves the number out.
-  const bool shotTags = uhc::unitinfo::RequestShotTags();
+  // The projectiles per reload (projectilesIcon, the projectiles item) are what numberOfShots fires, so its own reader
+  // is enough; the data view registers the reader itself, with no effect on combat. Another DLL on the shared action
+  // tag site only leaves the number out.
+  const bool shotTags = !g_projectilesData || uhc::unitinfo::RequestShotTags();
   if (!shotTags) {
     Log(L"minUIStats: the action tags cannot be read; projectiles per reload not shown");
   }
@@ -4745,8 +4756,9 @@ Outcome ApplyMinUiStats(const Config& config) {
       g_big.takeStock ? L"the original ones written by the key" : L"the original ones kept",
       g_big.rofIcon.empty() ? L"no ROF" : L"ROF after the damage",
       g_big.projectilesIcon.empty() ? L"no projectiles"
-      : shotTags                    ? L"projectiles per reload after it"
-                                    : L"no projectiles (tags not read)",
+      : !shotTags                   ? L"no projectiles (tags not read)"
+      : g_projectilesData           ? L"projectiles per reload after it (the tags as written: data view)"
+                                    : L"projectiles per reload after it (as numberOfShots fires them)",
       g_filterAbilities && g_abilityReads ? L"only when enabled" : L"all");
   (void)&OnDatabase;
   return Outcome::kApplied;

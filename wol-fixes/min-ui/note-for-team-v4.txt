@@ -27,16 +27,18 @@ Minimized UI, version 4: what changed after your feedback
 4. Projectiles before the reload (the revolver cylinder)
    An attack that fires more than one projectile before it reloads shows that number right after its rate of
    fire, with the cylinder icon:   Ranged ATK:  11 (ranged) 3.50 (stopwatch) 4 (cylinder) 1 (area) 14 (range)
-   The number is (shots before the reload) x (projectiles per shot), and it shows only when it is above 1.
-   It comes from the attack's own entries in the tactics file:
-   - numberprojectiles: projectiles per shot (your tactics already have it on 94 attacks: the Escopetero's
-     volley 4, the Bacamarteer 6, the Schwarzlose 12, the floating battery's long-range attack 5, the explorers'
-     Sharpshooter 3, ...);
-   - NumberOfShots: shots before the reload, from our DLL's numberOfShots key (none in your data yet).
-   Important: the panel only reads these numbers. Neither the game nor your current uhc.dll reads
-   numberprojectiles, so today these units still fire one projectile per shot. With our DLL, the key
-   "numberOfShots projectiles" makes them fire that many; without it, the number in the panel says what the
-   data asks for, not what happens in combat. Tell us if you prefer the number to show only when that key is on.
+   The number is (shots before the reload) x (projectiles per shot), and it shows only when it is above 1 and
+   only when combat really fires that many:
+   - Your tactics already have numberprojectiles on 94 attacks (the Escopetero's volley 4, the Bacamarteer 6,
+     the Schwarzlose 12, the floating battery's long-range attack 5, the explorers' Sharpshooter 3, ...), but
+     nothing reads it today: not the game, not your uhc.dll, not WoL.dll. An Escopetero fires 1 projectile, so
+     the panel shows no number.
+   - With our DLL's key "numberOfShots projectiles", combat and the panel both use it: the Escopetero fires 4
+     projectiles a volley and its row shows 4 (tested in game: 4 projectiles launched per shot).
+   - "numberOfShots" alone (without "projectiles") adds NumberOfShots: several shots before the reload. The
+     panel then counts the shots, and one projectile per shot.
+   For modders there is a check of the data: projectiles="data" on <bigPanelRows> in minuirows.xml shows the
+   tags as written, key or not. It is off by default, since it would show numbers the game does not fire.
 
 5. Three and four costs
    Tested: Mehal Sefari (50 food, 50 gold, 50 trade), Mamluk (100 / 200 / 100), Carretero (110 food, 10 wood,
