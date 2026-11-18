@@ -14,11 +14,17 @@
      A row with nothing to show is hidden.
      [icon:PATH] in a text or label: that texture as an icon, at the size of the panel's own icons, e.g.
        [icon:ui\ingame\stat_icon_los] (an eye).
+     [string:ID] in a text, label or tip: that string of the game's string table, in the player's language, e.g.
+       [string:68852] ("Hitpoints"; "Puntos de Vida" in the Spanish table).
+     Markup works in a text: &lt;color=1, 1, 0&gt;...&lt;/color&gt; colours a part (written escaped, as here, inside the
+       attribute); 1, 1, 0 is the yellow of the panel's own labels ("Hitpoints:", "Resists:").
 
      Items:
        hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (with the damage type icon),
        armorValue, garrison, trainPoints, buildPoints,
-       rof, range, minRange, area (per attack, each with its damage type icon), cost, population,
+       rof, range, minRange, area, projectiles (per attack, each with its damage type icon; projectiles: the
+       shots before the reload x the projectiles a shot, from the tactics' NumberOfShots and NumberProjectiles,
+       shown above 1), cost, population,
        bounty (the XP a kill gives), buildLimit, inventory (what a mine, bush or animal holds),
        lifespan (seconds left), and what other keys know, shown only when that key is on:
        overheal (overhealHitpointBars), veterancy (veterancyBonus), poison (damageOverTime),
@@ -39,6 +45,11 @@
                 writes them
        rofIcon  each attack row gets its rate of fire and this icon right after its damage
                 ("Ranged ATK:  23 (ranged) 3 (rof) 12 (range), 3x (cavalry)")
+       projectilesIcon  an attack that fires more than one projectile before its reload gets that number and this
+                icon after its rate of fire: the action's NumberOfShots x NumberProjectiles (or NumberOfProjectiles)
+                in its tactics ("Volley:  14 (ranged) 3 (rof) 4 (cylinder) 12 (range)"). The tags are read for the
+                panel only; in combat they act with the DLL's numberOfShots key (its "projectiles" option for
+                NumberProjectiles)
        abilities="all": also the attacks of abilities the unit cannot use; by default an attack that only a
                 power uses (powers.xml <unitAction>: Crack Shot, Sharpshooter...) shows only while one of the
                 unit's abilities (abilities.xml) gives it: its tech is active and its age is the player's
@@ -59,30 +70,32 @@
 
      Each item is also a text for any formatText gadget: {uhcHitpoints}, {uhcSpeed}, {uhcBaseSpeed},
      {uhcLOS}, {uhcArmor}, {uhcArmorValue}, {uhcGarrison}, {uhcTrainPoints}, {uhcBuildPoints}, {uhcROF},
-     {uhcRange}, {uhcMinRange}, {uhcArea}, {uhcCost}, {uhcPopulation}, {uhcBounty}, {uhcBuildLimit},
+     {uhcRange}, {uhcMinRange}, {uhcArea}, {uhcProjectiles}, {uhcCost}, {uhcPopulation}, {uhcBounty}, {uhcBuildLimit},
      {uhcInventory}, {uhcLifespan}, {uhcOverheal}, {uhcVeterancy}, {uhcPoison}, {uhcRandomCost},
      {uhcShipments}, {uhcGatherRate}, {uhcBuildTime}, {uhcBuildProgress}, {uhcBuildRate}, {uhcRegen},
      {uhcAuras}. -->
 <minUIRows>
   <!-- Two mirrored blocks of two lines. Over the portrait: the cost (each resource's icon and amount), then
-       the population (a house). Right of the player's name: line of sight (an eye) and the live speed (a
+       the population (the game's house, ui\ingame\stat_icon_building). Right of the player's name: line of sight (an eye) and the live speed (a
        winged boot), then the train time (an hourglass) and the garrison (the game's garrison cursor). -->
   <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost"/>
-  <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_pop]{population}" tip="Population"/>
+  <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building]{population}" tip="Population"/>
   <row gadget="unitselectionpanel-uhcSight" text="[icon:ui\ingame\stat_icon_los]{los}|[icon:ui\ingame\stat_icon_speed]{speed}" tip="Line of sight, speed"/>
   <row gadget="unitselectionpanel-uhcTrainGarrison" text="[icon:ui\ingame\stat_icon_traintime]{trainPoints}|[icon:ui\cursors\cursor_garrison]{garrison}" tip="Train time (seconds), garrison"/>
   <!-- Under the unit's name: what the unit is doing or what acts on it. -->
   <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
-  <!-- The hit points and resists with their icons (a heart, a shield), in gadgets of their own over the
-       original ones; while they show, the original label and value are hidden (<replace>), so without the key
-       the layout shows the original "Hitpoints:" and "Resists:" rows in their places. -->
-  <row gadget="unitselectionpanel-uhcHitpoints" text="[icon:ui\ingame\stat_icon_hitpoints] {hitpoints}" tipId="24320"/>
+  <!-- The hit points (the word, from the string table, in the labels' yellow) and the resists (a shield), in
+       gadgets of their own over the original ones; while they show, the original label and value are hidden
+       (<replace>), so without the key the layout shows the original "Hitpoints:" and "Resists:" rows in their
+       places. -->
+  <row gadget="unitselectionpanel-uhcHitpoints" text="&lt;color=1, 1, 0&gt;[string:68852]:&lt;/color&gt;  {hitpoints}" tipId="68852"/>
   <row gadget="unitselectionpanel-uhcResists" text="[icon:ui\ingame\stat_icon_armor] {armor}" tipId="35758"/>
   <replace row="unitselectionpanel-uhcHitpoints" stock="unitselectionpanel-unitHitPointsLabel,unitselectionpanel-unitHitPointsValue"/>
   <replace row="unitselectionpanel-uhcResists" stock="unitselectionpanel-unitResistsLabel,unitselectionpanel-unitResistsValue"/>
   <!-- Every attack row: the three original ones, then uhcRow3, uhcRow4, uhcRow5, each with its ROF (a
-       stopwatch) after the damage; attacks of abilities the unit cannot use are left out. -->
-  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof"/>
+       stopwatch) after the damage, then the projectiles before the reload when above 1 (a revolver's cylinder);
+       attacks of abilities the unit cannot use are left out. -->
+  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles"/>
   <!-- uhcRow5 is on the line of the resource held and the AutoGather rate (a villager carrying food,
        a factory, a bank, a trickle): while either shows, uhcRow5 stays empty. -->
   <avoid gadget="unitselectionpanel-unitResourceValue"/>
