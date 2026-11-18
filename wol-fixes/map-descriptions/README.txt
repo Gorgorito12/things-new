@@ -6,8 +6,9 @@ minimap) and on the loading screen. This folder holds new descriptions for all 2
 English and Spanish, the facts behind them (read from the map scripts and checked in game), a script
 that installs them, screenshots, and the problems we found in the maps' data on the way.
 
-Status: all 208 maps written. The "King of the Hill" line follows the maps as they are now; another
-change adds King of the Hill to more maps, and the column will be refreshed when it lands (PENDING).
+Status: all 208 maps written. The "King of the Hill" line follows the King of the Hill pack
+(wol-fixes\maps-koth): Yes on 200 maps, No on the 8 maps the pack skips (WOLsahara, lead 8, is now in
+the pack). Install that pack's .xs files together with these texts.
 
 
 What the game shows (tested in game)
@@ -137,6 +138,14 @@ Every item with its file and line is in leads.csv (kind, file, line, name, detai
    Scandinavia, Socotra, Tuscany, Verdon Gorge. Their descriptions say "Natives: none". Several of
    them are explained by item 4.
 
+8. WOLsahara (RM4\WOLsahara.xs): no King of the Hill. Fixed on 2026-11-18.
+   Fact: the script includes ypKOTHInclude.xs (line 6) and keeps objects away from a "ypKingsHill"
+   (line 195), but never calls rmGetIsKOTH or ypKingsHillPlacer, so no hill is placed in a King of the
+   Hill game. The King of the Hill pack counted it among the maps that already had it.
+   Fix: the pack now adds the placement (wol-fixes\maps-koth\RM4\WOLsahara.xs, tested like its other
+   maps) and its description says "King of the Hill: Yes". The screenshots WOLsahara-lobby-after.jpg
+   and WOLsahara-loading-after.jpg were taken before this change.
+
 
 The outlaw rule in more detail
 ------------------------------
@@ -183,7 +192,8 @@ what the game placed. Main columns:
   region, region_note        region; a note where another region could also fit
   trade_route                Yes / No / "Yes (...)" when the script builds it only in some setups
                              (trade_route_conditions has the script's conditions)
-  koth                       Yes when the map has a King of the Hill placement (PENDING refresh)
+  koth                       Yes when the map's script places a King of the Hill (read from the
+                             scripts of the King of the Hill pack)
   natives, natives_source    the natives of the script: from the villages' grouping files, or from
                              rmSetSubCiv; natives_varies when they change from game to game
   hunt, herd, mine, berry,   resources the script places, by unit type; "(varies)" = in some games
@@ -384,6 +394,13 @@ Spanish checks:
       silkRoadLarge-lobby-after-768-es.jpg
       silkRoadLarge-loading-after-768-es.jpg
   The pilot's old texts in Spanish: atacama-lobby-before-es.jpg / -loading-before-es.jpg, DansilIrrawaddyRiver-lobby-before-es.jpg / -loading-before-es.jpg, rockies-lobby-before-es.jpg / -loading-before-es.jpg, WOLAlps-lobby-before-es.jpg / -loading-before-es.jpg, WOLhawaii-lobby-before-es.jpg / -loading-before-es.jpg
+
+King of the Hill re-check (2026-11-18, English, with the King of the Hill pack's facts): a map the
+pack added (Amazonia: "King of the Hill: Yes"), a map it skipped (British Isles: "No") and a map that
+already had it (Anatolia: "Yes"):
+  amazonia-lobby-after.jpg, amazonia-loading-after.jpg
+  WOLbritishislands-lobby-after.jpg, WOLbritishislands-loading-after.jpg
+  anatolia-lobby-after.jpg, anatolia-loading-after.jpg
 
 Also: format-test-lobby.jpg (colour tag, line breaks, long text in the rollover) and
 format-test-loading.jpg (the loading box cuts the text after 15 lines at 1920x1080).

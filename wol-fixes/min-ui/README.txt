@@ -79,7 +79,11 @@ Icons (all at the size of the panel's own damage type icons, "(10)"; each row ha
                                        Two other variants were drawn (blue motion strokes, white speed
                                        lines): the wing reads as speed at 12 px, the strokes read as
                                        stripes on the boot. All three are in media\minui-icons.png
-    population        a house          the game's: ui\ingame\stat_icon_building (WoL's own copy)
+    population        a house          drawn: art\ui\ingame\stat_icon_pop.ddt (2026-11-18): a red gabled
+                                       roof, plaster walls, a door and a chimney, wide and low since
+                                       the panel draws its icons narrower than tall. It replaces the
+                                       game's ui\ingame\stat_icon_building (WoL's own copy), a blur at
+                                       the panel's size; both are in media\minui-icons.png
     garrison          a door, an arrow the game's: ui\cursors\cursor_garrison (the garrison cursor)
     costs             resource icons   the game's, as the resource bar shows them
     The drawn icons are 16x16 DXT3 stat icons made with aoe3-blender-tools (tools/make_stat_icon.py);
@@ -104,7 +108,7 @@ minuirows.xml
     every item and option. No new DLL is needed to change any of it.
 
 art\ui\ingame\*.ddt
-    The six drawn icons. They go in art\ui\ingame\ of the mod.
+    The seven drawn icons. They go in art\ui\ingame\ of the mod.
 
 note-for-drmaxy.txt
     What was decided and why (for information).
@@ -212,6 +216,10 @@ over another text, nothing cut, nothing in the portrait band, the health bar sho
                                                        -villero                              panel)
     WoL's current file, key off (the reference)      wolcurrent-*.jpg                        reference
     Side by side, WoL's current | proposed           v3-vs-wol-units, -groups, -more         -
+    The drawn population icon (2026-11-18, in        v3-popicon-unit, -building,             fine (the
+      C:\WoL-Test with WoL's uhc.dll + our             -group; v3-popicon-vs-old             house reads
+      dinput8.dll, English): one Musketeer, a                                                as a house
+      Barracks (no population row), six types                                                at 12 px)
     Not filmed: a villager of the player gathering. Console orders (uiWorkAtPointer) only moved the
     villagers, in a scenario and in a skirmish, and the game hides the resource carried by another
     player's villager. The rows a gatherer uses are the stock resource and rate rows (filmed on the
@@ -225,7 +233,11 @@ In media\ (JPG pictures of the panel at native pixels, with the health bar; PNG 
     minUIStats-v3-*.jpg               the proposed layout (the table above)
     minUIStats-wolcurrent-*.jpg       WoL's current file, key off, the same scenes
     minUIStats-v3-vs-wol-*.jpg        both side by side
-    minui-icons.png                   the icons and where each comes from, with the speed variants
+    minui-icons.png                   the icons and where each comes from, with the speed variants and
+                                      the replaced population icon (each with its look in game)
+    minUIStats-v3-popicon-vs-old.jpg  the population icon, before (WoL's stat_icon_building) and now
+                                      (stat_icon_pop): one Musketeer, a Barracks, a group of six types
+    minUIStats-v3-popicon-*.jpg       the same scenes with the new icon (unit, building, group)
     minui-preview-proposed.png        the proposed layout's rectangles, new ones in yellow, the centre lines
     minui-preview-wol.png             WoL's current file's rectangles
     minui-preview-proposed-old.png    the first proposal's rectangles (portraits left of the centre)

@@ -516,23 +516,11 @@ rmAddObjectDefConstraint(westmine, stayWest);
 
 	rmSetStatusText("",0.9);
 
-  // King of the Hill (added 2026-11 for WoL): centre, on land beside the river bend
+  // King of the Hill (added 2026-11 for WoL): the open land just south of the river bend, on the line halfway between the two sides (the middle, inside the bend, cannot be reached on foot)
   if(rmGetIsKOTH()) {
-    // the start point: the middle of all player starts (the map centre when they are spread evenly)
-    float kothX = 0.5;
-    float kothZ = 0.5;
-    float kothN = 0.0;
-    float kothSumX = 0.0;
-    float kothSumZ = 0.0;
-    for (kothP = 1; < cNumberPlayers) {
-      kothSumX = kothSumX + rmPlayerLocXFraction(kothP);
-      kothSumZ = kothSumZ + rmPlayerLocZFraction(kothP);
-      kothN = kothN + 1.0;
-    }
-    if (kothN > 0.0) {
-      kothX = kothSumX / kothN;
-      kothZ = kothSumZ / kothN;
-    }
+    // the start point: (0.38, 0.38)
+    float kothX = 0.38;
+    float kothZ = 0.38;
     // the hill on the open land nearest to it: within 0.04 of the map side, then 1.5 times farther each
     // try, with the include's placer constraints, 40 m from every Town Center and 10 m from every tree
     int kothAvoidLand = rmCreateTerrainDistanceConstraint("koth hill avoids impassable land", "Land", false, 6.0);

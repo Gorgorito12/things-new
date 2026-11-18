@@ -293,16 +293,16 @@ sites as natives ("Cocoa (trade site)").
 - **Seen, not explained:** on Hawai'i, Atacama, Rockies and Alps the OLD lobby text (a string ID such
   as `details="28829"`) opened no rollover in either language, while old literal texts and our new IDs
   do.
-- **King of the Hill** is still the current maps' (`koth` column, PENDING the KOTH pack).
+- **King of the Hill** (2026-11-18): `mapfacts.py` run on a hard-link view of WoL-Test with the KOTH pack's `.xs` in place (`kothbed.py` in the evidence `scripts/`). First run (112 scripts): Yes on 199 maps, No on 9 (the pack's 8 skipped maps and WOLsahara, which only includes `ypKOTHInclude.xs` and avoids a `ypKingsHill` but never places one). Re-checked in game in English: Amazonia (added), British Isles (skipped), Anatolia (had it). Second run (113 scripts, WOLsahara added to the pack): Yes on 200, No on the 8 skipped; the only change in `mapfacts.json` is `WOLsahara.koth`, and every text still fits.
 - **Leads for WoL** with file and line: `wol-fixes/map-descriptions/leads.csv` (108 dead and 1
   shadowed `mapspecifictechs.xml` blocks, the `civs.xml` comment, 36 maps with missing grouping files,
   34 resources in 29 maps never placed). A fix of the tool on the way: an empty first value
   (`string a = "";`) no longer counts, which took the "missing groupings" from 49 maps to 36.
 
-## King of the Hill on the maps without it (2026-11-17)
+## King of the Hill on the maps without it (2026-11-17/18)
 
 JTMaston asked for King of the Hill on every map with room for it, the hill at the choke point closest to
-all players. 88 maps had it; the other 120 are in `wol-fixes/maps-koth/` (README for the WoL team, the
+all players. 87 maps had it; the other 121 are in `wol-fixes/maps-koth/` (README for the WoL team, the
 per-map table `koth-maps.csv`, one minimap picture per map in `media/`, and only the changed `.xs`).
 Evidence: `rea/evidence/maps-koth-20261117/` (gitignored): `survey.csv` and `survey/` (every map as it
 is, 4 players, the centre marked), `batch*.csv` / `.out` (the King of the Hill runs), `shots*/`, the bed
@@ -320,7 +320,32 @@ minimap, compares the normal map with the original unit by unit, and for reach p
 trigger (`trigger3\uhckoth.xml`, read at startup) that moves every unit to the hill.
 
 **What was found.**
-- {{KOTH_RESULTS}}
+- **Result (2026-11-18):** 113 of the 121 maps got a hill, 8 are skipped (players on separate land:
+  DansilFalklands, DansilIbalong, dansil_Micronesia, everglades, WOLbritishislands, galapagos, WOLbalkans,
+  WOLFjord). Every added map was generated 7 times (2/4/8 players × 2 seeds, 4-player free-for-all), its
+  normal map compared, and played for 120 s with every unit sent to the hill: hill in all 7 games on 110
+  maps, team ratio ≤ 1.5 on 108, normal map identical on 110 (DansilCristalMonts differs on purpose; rockies
+  and unknown by one or two underbrush bushes), reached on foot by every player on 104 (5 are by ship by
+  design, 4 near-misses). Lists in the README's status.
+- **WOLsahara, added later (2026-11-18):** the first survey counted a map as having King of the Hill when
+  its script named `ypKingsHill`; WOLsahara only includes `ypKOTHInclude.xs` and keeps objects 8 m from a
+  hill it never places. It got the standard block (centre, 20 m from cliffs) and the full test set (hill in
+  7/7, team ratio ≤ 1.24, FFA 1.19, normal map identical, every player within 7 m). A second scan of all
+  208 maps checks that `main` or a function it calls holds `rmGetIsKOTH()` and the hill's placement
+  (`ypKingsHillPlacer` or an object with `ypKingsHill`): only the 8 skipped maps fail it.
+- **Placement that works:** a block at the end of `main` that puts the hill on the open land nearest to the
+  middle of the starts (radius growing 1.5× from 4 %), 40 m from Town Centers and 10 m from trees (without
+  the tree rule the hill ended in forest pockets the units could not enter); where the middle is water or
+  cliff, a walk along the line between the two teams' middles. Plateaus/mesas without ramps need an area or
+  class distance constraint (Barrier Ridge, DansilAlaska, WOLsocotra).
+- **Scaling the bench:** 4, 6, 7, 8, 9 copies were run at once (extra copies made with robocopy, deleted
+  after). Measured work (game-hours of map generation and play per hour): 4 copies ≈ 4.4, 7 ≈ 7.6, 8 ≈ 8.3,
+  9 ≈ 9.3 with the CPU at 100 %; 8 and 9 failed to start when launched together with a 24 GB copy running
+  (Direct3D/timeouts), and fine one at a time. The shared profile's video settings must be set before every
+  launch: a closing game writes back what it loaded.
+- **Not done:** a skirmish from the setup screen with King of the Hill ticked: the shared profile now opens
+  a "Skirmish Nickname" dialog first, which the posted clicks do not handle (`koth_skirmish.py` in the
+  evidence).
 - WoL's copies of 29 TAD maps (`amazonia`, `great plains`, `texas`, ...) had lost TAD's King of the Hill
   block; Steam's `bin\RM3` has it. It was ported where it stays fair on WoL's version.
 - A hill placed early in a script can vanish or never be placed: cliffs or lakes built later cover it
@@ -329,8 +354,9 @@ trigger (`trigger3\uhckoth.xml`, read at startup) that moves every unit to the h
   before `main`'s closing brace, found by counting braces from `void main`.
 - Engine limits found on the way (tested, not checked with REA): a type-distance constraint beyond some
   40-100 m (`rmCreateTypeDistanceConstraint(..., "TownCenter", 100)`, or one on `ypKingsHill` itself)
-  lets nothing be placed; a loop nested five deep in `main` did not run, while the same code four deep
-  did.
+  lets nothing be placed. A first search that scored points on a grid (nested loops, `&&` between an int and a
+  bool comparison, `continue`) placed nothing either; why was not found (not checked with REA), and the
+  simpler search that replaced it works.
 - Bugs: DansilCristalMonts' unclosed King of the Hill block held the centre cliffs (fixing it adds the
   cliffs to normal games); WOLAlps, WolGreenland and WOLFjord had the include commented out; galapagos'
   commented line used an undefined `bigLoc` and its X for the Y.

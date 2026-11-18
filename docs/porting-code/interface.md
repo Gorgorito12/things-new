@@ -3031,7 +3031,7 @@ struct Replace {
 };
 std::vector<Replace> g_replaces;
 
-// "[icon:ui\ingame\stat_icon_building]" in a data file's text: the icon markup at the minimized panel's icon size.
+// "[icon:ui\ingame\stat_icon_pop]" in a data file's text: the icon markup at the minimized panel's icon size.
 std::wstring ExpandIcons(const std::wstring& text) {
   std::wstring out;
   size_t pos = 0;
@@ -3116,7 +3116,7 @@ bool g_attackReads = false;  // the stat fill's attack rows match what AttackRow
 const char kDefaultRows[] =
     "<minUIRows>"
     "<row gadget='unitselectionpanel-uhcCost' text='{cost}' tip='Cost'/>"
-    "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_building]{population}' "
+    "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_pop]{population}' "
     "tip='Population'/>"
     "<row gadget='unitselectionpanel-uhcSight' text='[icon:ui\\ingame\\stat_icon_los]{los}|"
     "[icon:ui\\ingame\\stat_icon_speed]{speed}' tip='Line of sight, speed'/>"
