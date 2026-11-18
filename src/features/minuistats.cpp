@@ -9,7 +9,11 @@
 //   in order, less the ones the minimized panel already shows ("auto") and the kinds `skip` names.
 //   With stockRows="take" the original attack rows (StackLabel0..2) are written from the same list, so that every
 //   attack row gets rofIcon="..." (the action's ROF and that icon after its damage) and the ability attacks the unit
-//   cannot use are left out (ActionEnabled; abilities="all" keeps them).
+//   cannot use are left out (ActionEnabled; abilities="all" keeps them). With projectilesIcon="...", an attack that
+//   fires more than one projectile before its reload gets shots x projectiles and that icon after its ROF (the
+//   tactics' <NumberOfShots> and <NumberProjectiles>, read by shots.cpp: unitinfo.h, Shots).
+// - "[string:ID]" in a text, label or tip: that string of the game's string table, as the player's language has it
+//   (resolved when shown: "[string:68852]" is "Hitpoints" in the English table).
 // - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
 //   resists rows with icons over the original ones, which the layout keeps in place for the panel without the key);
 //   <stockLabel gadget="..." text="..."/>: an original label's text, written over the game's while it shows.
@@ -519,6 +523,24 @@ bool ItemArea(const char* unit, std::wstring* out) {
   });
 }
 
+// The projectiles an attack fires before its reload: its <NumberOfShots> x <NumberProjectiles> (shots.cpp); 1 without
+// them.
+int ProjectilesPerReload(const char* unit, const char* action) {
+  int shots = 1;
+  int projectiles = 1;
+  if (!uhc::unitinfo::Shots(Field<const char*>(unit, 0x5C), action, &shots, &projectiles)) {
+    return 1;
+  }
+  return shots * projectiles;
+}
+
+bool ItemProjectiles(const char* unit, std::wstring* out) {
+  return PerAttack(unit, out, [unit](const char* a, float* v) {
+    *v = static_cast<float>(ProjectilesPerReload(unit, a));
+    return *v > 1.0f;
+  });
+}
+
 // ---- An attack row the stat panel fill had no room for ----
 
 using ActionNameFn = const wchar_t* const*(__thiscall*)(const char* action);
@@ -936,6 +958,7 @@ const ItemInfo kItems[] = {
     {"range", L"uhcRange", &ItemRange, &ItemRef<&ItemRange>},
     {"minRange", L"uhcMinRange", &ItemMinRange, &ItemRef<&ItemMinRange>},
     {"area", L"uhcArea", &ItemArea, &ItemRef<&ItemArea>},
+    {"projectiles", L"uhcProjectiles", &ItemProjectiles, &ItemRef<&ItemProjectiles>},
     {"cost", L"uhcCost", &ItemCost, &ItemRef<&ItemCost>},
     {"population", L"uhcPopulation", &ItemPopulation, &ItemRef<&ItemPopulation>},
     {"bounty", L"uhcBounty", &ItemBounty, &ItemRef<&ItemBounty>},
@@ -1002,7 +1025,7 @@ struct Replace {
 };
 std::vector<Replace> g_replaces;
 
-// "[icon:ui\ingame\stat_icon_pop]" in a data file's text: the icon markup at the minimized panel's icon size.
+// "[icon:ui\ingame\stat_icon_los]" in a data file's text: the icon markup at the minimized panel's icon size.
 std::wstring ExpandIcons(const std::wstring& text) {
   std::wstring out;
   size_t pos = 0;
@@ -1016,6 +1039,39 @@ std::wstring ExpandIcons(const std::wstring& text) {
     swprintf_s(size, L"(%d)", kIconSize);
     out += L"<icon=\"" + std::wstring(size) + L"(" + text.substr(open + 6, close - open - 6) + L")\">";
     pos = close + 1;
+  }
+  return out + text.substr(pos);
+}
+
+// "[string:68852]" in a text, label or tip: that string of the game's string table, read when the row is shown (the
+// tables load after the DLL starts) and kept once read.
+std::map<std::int32_t, std::wstring> g_stringCache;
+
+std::wstring ExpandStrings(const std::wstring& text) {
+  static const std::wstring kOpen = L"[string:";
+  size_t open = text.find(kOpen);
+  if (open == std::wstring::npos) {
+    return text;
+  }
+  std::wstring out;
+  size_t pos = 0;
+  for (; open != std::wstring::npos; open = text.find(kOpen, pos)) {
+    const size_t close = text.find(L']', open);
+    if (close == std::wstring::npos) {
+      break;
+    }
+    out += text.substr(pos, open - pos);
+    pos = close + 1;
+    const std::int32_t id = _wtoi(text.c_str() + open + kOpen.size());
+    auto found = g_stringCache.find(id);
+    if (found == g_stringCache.end()) {
+      std::wstring value = StringById(id);
+      if (value.empty()) {
+        continue;  // not kept: the table may not be read yet
+      }
+      found = g_stringCache.emplace(id, std::move(value)).first;
+    }
+    out += found->second;
   }
   return out + text.substr(pos);
 }
@@ -1038,10 +1094,10 @@ bool RenderTemplate(const std::wstring& text, const char* unit, std::wstring* ou
       const size_t open = segment.find(L'{', pos);
       const size_t close = open == std::wstring::npos ? std::wstring::npos : segment.find(L'}', open);
       if (open == std::wstring::npos || close == std::wstring::npos) {
-        rendered += segment.substr(pos);
+        rendered += ExpandStrings(segment.substr(pos));
         break;
       }
-      rendered += segment.substr(pos, open - pos);
+      rendered += ExpandStrings(segment.substr(pos, open - pos));
       const std::wstring name = segment.substr(open + 1, close - open - 1);
       std::string narrow(name.begin(), name.end());
       const ItemInfo* item = FindItem(narrow);
@@ -1074,6 +1130,7 @@ struct BigPanel {
   bool keep = false;  // overlap="show"
   bool takeStock = false;  // stockRows="take": the original attack rows (StackLabel0..2) are written by the key too
   std::wstring rofIcon;    // rofIcon="...": each attack row gets its ROF and this icon after its damage
+  std::wstring projectilesIcon;  // projectilesIcon="...": shots x projectiles before the reload, when above 1
 };
 
 std::vector<Row> g_rows;
@@ -1087,7 +1144,7 @@ bool g_attackReads = false;  // the stat fill's attack rows match what AttackRow
 const char kDefaultRows[] =
     "<minUIRows>"
     "<row gadget='unitselectionpanel-uhcCost' text='{cost}' tip='Cost'/>"
-    "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_pop]{population}' "
+    "<row gadget='unitselectionpanel-uhcPop' text='[icon:ui\\ingame\\stat_icon_building]{population}' "
     "tip='Population'/>"
     "<row gadget='unitselectionpanel-uhcSight' text='[icon:ui\\ingame\\stat_icon_los]{los}|"
     "[icon:ui\\ingame\\stat_icon_speed]{speed}' tip='Line of sight, speed'/>"
@@ -1095,15 +1152,15 @@ const char kDefaultRows[] =
     "[icon:ui\\cursors\\cursor_garrison]{garrison}' tip='Train time (seconds), garrison'/>"
     "<row gadget='unitselectionpanel-uhcRow2' text='Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|"
     "Overheal {overheal}|Poison {poison}|Aura {auras}'/>"
-    "<row gadget='unitselectionpanel-uhcHitpoints' text='[icon:ui\\ingame\\stat_icon_hitpoints] {hitpoints}' "
-    "tipId='24320'/>"
+    "<row gadget='unitselectionpanel-uhcHitpoints' "
+    "text='&lt;color=1, 1, 0&gt;[string:68852]:&lt;/color&gt;  {hitpoints}' tipId='68852'/>"
     "<row gadget='unitselectionpanel-uhcResists' text='[icon:ui\\ingame\\stat_icon_armor] {armor}' tipId='35758'/>"
     "<replace row='unitselectionpanel-uhcHitpoints' "
     "stock='unitselectionpanel-unitHitPointsLabel,unitselectionpanel-unitHitPointsValue'/>"
     "<replace row='unitselectionpanel-uhcResists' "
     "stock='unitselectionpanel-unitResistsLabel,unitselectionpanel-unitResistsValue'/>"
     "<bigPanelRows gadget='unitselectionpanel-uhcRow%d' first='3' skip='auto,speed' stockRows='take' "
-    "rofIcon='ui\\ingame\\stat_icon_rof'/>"
+    "rofIcon='ui\\ingame\\stat_icon_rof' projectilesIcon='ui\\ingame\\stat_icon_projectiles'/>"
     "<avoid gadget='unitselectionpanel-unitResourceValue'/>"
     "<avoid gadget='unitselectionpanel-unitResourceRateLabel'/>"
     "</minUIRows>";
@@ -1440,6 +1497,9 @@ bool LoadRows(const std::string& arg) {
       }
       if (const std::string* rof = Attr(element, "roficon")) {
         g_big.rofIcon = Wide(Trim(*rof));
+      }
+      if (const std::string* projectiles = Attr(element, "projectilesicon")) {
+        g_big.projectilesIcon = Wide(Trim(*projectiles));
       }
       if (const std::string* abilities = Attr(element, "abilities")) {
         g_filterAbilities = _stricmp(Trim(*abilities).c_str(), "all") != 0;
@@ -2063,7 +2123,8 @@ std::wstring NormaliseIcons(const std::wstring& text) {
 // The attack rows of the fill (and the ones AddOverflowAttacks added), matched in order with the attack list they
 // come from (0x487EEE, every listed action, as the fill writes one row per action): a row of an ability action the
 // unit cannot use is dropped (ActionEnabled), the others get the minimized panel's icon size and, with rofIcon,
-// the action's ROF after the damage: "Ranged ATK:  23 <ranged> 3 <rof> 12 <range>, 3x <cavalry>". The row's
+// the action's ROF after the damage: "Ranged ATK:  23 <ranged> 3 <rof> 12 <range>, 3x <cavalry>", and with
+// projectilesIcon the projectiles it fires before its reload after that, when above 1 ("4 <cylinder>"). The row's
 // label must be the action's name; at the first that is not, the matching stops (rows left as written).
 void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
   const std::vector<const char*> actions = Attacks(unit, true, false);
@@ -2092,10 +2153,21 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     }
     const float rof = static_cast<float>(Field<std::int32_t>(action, 0x34)) / 1000.0f;
     const size_t icon = row.value.find(L"\">");
-    if (!g_big.rofIcon.empty() && rof > 0.0f && icon != std::wstring::npos) {
-      wchar_t size[16];
-      swprintf_s(size, L"(%d)", kIconSize);
-      row.value.insert(icon + 2, L" " + Number(rof) + L" <icon=\"" + size + L"(" + g_big.rofIcon + L")\">");
+    if (icon == std::wstring::npos) {
+      continue;
+    }
+    wchar_t size[16];
+    swprintf_s(size, L"(%d)", kIconSize);
+    size_t at = icon + 2;  // after the damage and its icon
+    if (!g_big.rofIcon.empty() && rof > 0.0f) {
+      const std::wstring text = L" " + Number(rof) + L" <icon=\"" + size + L"(" + g_big.rofIcon + L")\">";
+      row.value.insert(at, text);
+      at += text.size();
+    }
+    const int projectiles = g_big.projectilesIcon.empty() ? 1 : ProjectilesPerReload(unit, action);
+    if (projectiles > 1) {
+      row.value.insert(at, L" " + std::to_wstring(projectiles) + L" <icon=\"" + size + L"(" + g_big.projectilesIcon +
+                               L")\">");
     }
   }
 }
@@ -2178,7 +2250,7 @@ void ApplyStockLabels(const char* unit) {
           tip.pop_back();
         }
       }
-      WriteLabel(g_panel.labels[i], g_labels[i].text, tip);
+      WriteLabel(g_panel.labels[i], ExpandStrings(g_labels[i].text), ExpandStrings(tip));
     }
   }
 }
@@ -2363,7 +2435,7 @@ std::wstring ResolveLabel(const std::wstring& label) {
   if (!label.empty() && label[0] == L'\x01') {
     return StringById(_wtoi(label.c_str() + 1));
   }
-  return label;
+  return ExpandStrings(label);
 }
 
 // The last selection the rows were written for, and when.
@@ -2522,6 +2594,12 @@ Outcome ApplyMinUiStats(const Config& config) {
     Log(L"minUIStats: another DLL changed the resists armor test (0x698BFC); building armor not shown, unit armor as "
         L"that DLL writes it (the armor items answer nothing)");
   }
+  // The projectiles per reload (projectilesIcon, the projectiles item): the tactics tags shots.cpp reads, without any
+  // effect on combat. Another DLL on the shared action tag site only leaves the number out.
+  const bool shotTags = uhc::unitinfo::RequestShotTags();
+  if (!shotTags) {
+    Log(L"minUIStats: the action tags cannot be read; projectiles per reload not shown");
+  }
   for (TypeFilter* filter : g_filters) {
     if (!RequestAbstractUnitType(filter->name.c_str(), &filter->id)) {
       return Outcome::kFailed;
@@ -2544,12 +2622,15 @@ Outcome ApplyMinUiStats(const Config& config) {
     refs += AddDataRef(item.ref, kDataRefString, item.provider) ? 1 : 0;
   }
   Log(L"minUIStats: %u rows and %ls from %ls; %ls; %d data refs {uhc...} (UI only); rows give way to the stack "
-      L"portraits and %u avoid gadgets; %u stock labels; attack rows: %ls, %ls, ability attacks %ls",
+      L"portraits and %u avoid gadgets; %u stock labels; attack rows: %ls, %ls, %ls, ability attacks %ls",
       static_cast<unsigned>(g_rows.size()), g_big.on ? L"the normal interface's stat rows" : L"no stat rows",
       g_file.c_str(), buildingArmor ? L"building armor shown in the minimized panel's resists" : L"no building armor",
       refs, static_cast<unsigned>(g_avoid.size()), static_cast<unsigned>(g_labels.size()),
       g_big.takeStock ? L"the original ones written by the key" : L"the original ones kept",
       g_big.rofIcon.empty() ? L"no ROF" : L"ROF after the damage",
+      g_big.projectilesIcon.empty() ? L"no projectiles"
+      : shotTags                    ? L"projectiles per reload after it"
+                                    : L"no projectiles (tags not read)",
       g_filterAbilities && g_abilityReads ? L"only when enabled" : L"all");
   (void)&OnDatabase;
   return Outcome::kApplied;
