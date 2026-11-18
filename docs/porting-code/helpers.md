@@ -5610,6 +5610,14 @@ bool HitpointsText(const char* unit, std::wstring* out);
 // 0 when the key is off.
 int Armors(const char* proto, unsigned char* types, float* values, int max);
 
+// shots.cpp: an attack's <NumberOfShots> (shots before its reload) and <NumberProjectiles> (or <NumberOfProjectiles>:
+// projectiles a shot) as its tactics or <ProtoAction> give them, keyed by the proto ID [proto+4] and the action's name
+// index [action+4], so any player's copy of both finds them. False when the action has neither tag or the tags are
+// not read. RequestShotTags registers the reader (once, on the shared action tag hook, actiontags.h) without any
+// effect on combat; numberOfShots registers it too. Call it while the keys are applied, before the data loads.
+bool RequestShotTags();
+bool Shots(const char* proto, const char* action, int* shots, int* projectiles);
+
 // decimalpop.cpp: K, the factor decimalPopulation stores population quantities with ([proto+0D8h] too); 1 without it.
 int PopulationScale();
 

@@ -3888,6 +3888,15 @@ attack row of the fill is matched, in order, with the action list it comes from 
 name checked against the action's (`[db+1FE4h]`); then:
 - the icons get the minimized panel's size (`(10)`, 0xC36508) instead of the stat panel's (`(16)`, 0xBA2100);
 - with `rofIcon`, the action's ROF (`[action+34h]` ms) and that icon go right after the damage icon;
+- with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1: its
+  `<NumberOfShots>` times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`), neither of which the exe parses.
+  `shots.cpp` reads them through the shared action tag hook (`AddActionTagHandler`, the unknown-child path 0x5FA11E of
+  the tactics and `<ProtoAction>` parsers) into a map keyed by the proto ID `[proto+4]` and the action name index
+  `[action+4]`, which every player's copy keeps; `unitinfo::Shots` reads that map, and `unitinfo::RequestShotTags`
+  registers the reader once, for `numberOfShots` or `minUIStats` alike. Registered by `minUIStats` alone it changes
+  nothing in combat: the ROF filter gate and the launch hook stay with `numberOfShots` (and its `projectiles` option).
+  A row too long for its column keeps the damage, ROF and projectiles in its short form when they fit (the explorers'
+  `Sharpshooter ATK 750 <ranged> 4.50 <rof> 3 <cylinder>`);
 - an **ability attack the unit cannot use** is dropped. Such an action is listed active by its tactic on every unit of
   the tactics file (the mod's Presidial and Menelik II list Crack Shot, Anti-artillery Crackshot, Swashbuckler,
   Counter-Intelligence), and the stock big panel lists them all. A power of `powers.xml` names its action in
@@ -3912,6 +3921,17 @@ it). The `armor` item is the stock armor with its damage type's icon, or with `m
 type (`unitinfo::Armors`, multiarmor's own records), and nothing when another DLL changed the block's armor test
 (0x698BFC..): that DLL's own resists row then shows. `<stockLabel>` (an original label's text written over the game's
 while it shows) stays for layouts that want it. `[icon:path]` in the data file is the icon markup at the panel's size.
+`[string:ID]` in a text, label or tip is that string of the string table (0x58EA52), resolved when the row is shown,
+since the tables load after the DLL starts, and kept once read: the version 4 hit points row is
+`<color=1, 1, 0>[string:68852]:</color>  {hitpoints}`, the word in the panel labels' yellow.
+
+**Spill to the next line.** `spill="<gadget>"` on a row: the rows' texts are made first, then a row whose text is too
+wide for its gadget (VisibleLength, an icon counting as two characters, against LineBudget: 90 % of the gadget's width
+over the font's character width, which follows the screen's height) is cut at a space outside markup, at the cut that
+makes the two lines most even, when the row of the named gadget has nothing to show this fill; the second line goes
+there, with the first row's help text. The cost row spills into the population row: in the mod's data a unit with four
+costs (the Palace Caravan, 600 / 600 / 200 / 200) has no population, and every unit with population has at most three
+costs, which fit one line.
 
 #### Coexistence
 
