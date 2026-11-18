@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\Africa and Middle East\savannah" displayNameID = "75190" cannotReplace = "" loadBackground="RMs\BIG\Africa and Middle East\savannah"
+details="6170238"
+loadDetails="6170239">
+   <loadss>ui\random_map\savannah\savannah_ss_01</loadss>
+   <loadss>ui\random_map\savannah\savannah_ss_02</loadss>
+   <loadss>ui\random_map\savannah\savannah_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapinfo imagepath="RMs\small\Asia and Oceania\yellowriver" displayNameID="68736" cannotReplace=""
+ loadBackground="RMs\big\Asia and Oceania\yellowriver"
+details="6170410"
+loadDetails="6170411">
+  <loadss>ui\random_map\yellow_river\yellow_river_ss_1</loadss>
+  <loadss>ui\random_map\yellow_river\yellow_river_ss_2</loadss>
+  <loadss>ui\random_map\yellow_river\yellow_river_ss_3</loadss>
+</mapinfo>

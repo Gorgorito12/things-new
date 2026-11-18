@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75121" imagepath="RMs\SMALL\Africa and Middle East\congo" loadBackground="RMs\BIG\Africa and Middle East\congo"
+details="6170208"
+loadDetails="6170209">
+   <loadss>ui\random_map\congo\congo_ss_01</loadss>
+   <loadss>ui\random_map\congo\congo_ss_02</loadss>
+   <loadss>ui\random_map\congo\congo_ss_03</loadss>
+</mapinfo>

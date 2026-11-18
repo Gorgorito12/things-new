@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<mapinfo 
+imagepath = "RMs\SMALL\Europe\tuscany" 
+displayNameID = "1000678" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Europe\tuscany"
+details="6170242"
+loadDetails="6170243">
+
+<loadss>ui\random_map\mediterranean\tuscany_ss_01</loadss>
+</mapinfo>

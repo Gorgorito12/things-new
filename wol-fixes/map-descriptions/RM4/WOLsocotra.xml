@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\Other\WOLsocotra" 
+displayName = "Socotra" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Other\africa"
+details="6170240"
+loadDetails="6170241">
+   <loadss>ui\random_map\unknown\unknown_ss_01</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_02</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_03</loadss>
+</mapinfo>

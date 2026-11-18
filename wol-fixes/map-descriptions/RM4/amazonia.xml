@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="26982" imagepath="RMs\SMALL\South America\amazonia" loadBackground="RMs\BIG\South America\amazonia"
+details="6170272"
+loadDetails="6170273">
+	<loadss>ui\random_map\amazon\amazon_ss_01</loadss>
+    <loadss>ui\random_map\amazon\amazon_ss_02</loadss>
+    <loadss>ui\random_map\amazon\amazon_ss_03</loadss>
+</mapinfo>

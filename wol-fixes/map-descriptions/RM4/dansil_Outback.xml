@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\outbacksmall"
+displayName = "Outback"
+cannotReplace = ""
+ 
+loadBackground="RMs\BIG\Other\unknown"
+details="6170312"
+loadDetails="6170313">
+   <loadss>ui\random_map\unknown\unknown_ss_01</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_02</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_03</loadss>
+
+</mapinfo>

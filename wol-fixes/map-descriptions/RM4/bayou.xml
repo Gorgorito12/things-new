@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="18912" imagepath="RMs\SMALL\North America\bayou" loadBackground="RMs\BIG\North America\bayou"
+details="6170284"
+loadDetails="6170285">
+   <loadss>ui\random_map\everglades\everglades_ss_01</loadss>
+   <loadss>ui\random_map\everglades\everglades_ss_02</loadss>
+   <loadss>ui\random_map\everglades\everglades_ss_03</loadss>
+</mapinfo>

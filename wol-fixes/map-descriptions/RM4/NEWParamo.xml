@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Paramo"
+imagepath = "rms\small\NEW\paramosmall" 
+loadBackground="rms\big\other\southamerica"
+details="6170148"
+loadDetails="6170149">
+   <loadss>ui\random_map\andes\andes_ss_01</loadss>
+</mapinfo>

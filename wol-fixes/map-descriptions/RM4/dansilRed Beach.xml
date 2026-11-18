@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\redbeachsmall"
+displayName = "Red Beach"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\unknown\unknown_map"
+details="6170306"
+loadDetails="6170307">
+   <loadss>ui\random_map\unknown\unknown_ss_01</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_02</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_03</loadss>
+ 
+</mapinfo>

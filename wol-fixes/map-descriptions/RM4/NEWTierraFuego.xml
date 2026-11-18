@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "rms\small\NEW\tierrafuegosmall" 
+displayName = "Tierra de Fuego"
+loadBackground="RMs\BIG\South America\tierradelfuego"
+details="6170156"
+loadDetails="6170157">
+   <loadss>ui\random_map\patagonia\patagonia_ss_01</loadss>
+   <loadss>ui\random_map\patagonia\patagonia_ss_02</loadss>
+   <loadss>ui\random_map\patagonia\patagonia_ss_03</loadss>
+
+</mapinfo>

@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="28567" imagepath="RMs\SMALL\North America\newengland" loadBackground="RMs\BIG\North America\newengland"
+details="6170354"
+loadDetails="6170355">
+   <loadss>ui\random_map\new_england\new_england_ss_01</loadss>
+   <loadss>ui\random_map\new_england\new_england_ss_02</loadss>
+   <loadss>ui\random_map\new_england\new_england_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\North America\sonora" displayNameID = "43405" cannotReplace = "" loadBackground="RMs\BIG\North America\sonora"
+details="6170388"
+loadDetails="6170389">
+   <loadss>ui\random_map\sonora\sonora_ss_01</loadss>
+   <loadss>ui\random_map\sonora\sonora_ss_02</loadss>
+   <loadss>ui\random_map\sonora\sonora_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Levant"
+imagepath = "rms\small\Africa and Middle East\levant" 
+loadBackground="rms\big\other\middleeast"
+details="6170142"
+loadDetails="6170143">
+   <loadss>ui\random_map\NEW\levant\levant_ss</loadss>
+</mapinfo>

@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="28832" imagepath="RMs\SMALL\North America\caribbean" loadBackground="RMs\BIG\North America\caribbean"
+details="6170290"
+loadDetails="6170291">
+   <loadss>ui\random_map\caribbean\caribbean_ss_01</loadss>
+   <loadss>ui\random_map\caribbean\caribbean_ss_02</loadss>
+   <loadss>ui\random_map\caribbean\caribbean_ss_03</loadss>
+</mapinfo>

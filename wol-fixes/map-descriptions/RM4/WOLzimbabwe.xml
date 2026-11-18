@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\Africa and Middle East\greatzimbabwe" displayNameID = "75202" cannotReplace = "" loadBackground="RMs\BIG\Africa and Middle East\greatzimbabwe"
+details="6170252"
+loadDetails="6170253">
+   <loadss>ui\random_map\zimbabwe\Zimbabwe_ss_01</loadss>
+   <loadss>ui\random_map\zimbabwe\Zimbabwe_ss_02</loadss>
+   <loadss>ui\random_map\zimbabwe\Zimbabwe_ss_03</loadss>
+</mapinfo>

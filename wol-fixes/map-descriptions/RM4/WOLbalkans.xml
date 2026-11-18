@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<mapinfo 
+imagepath = "RMs\SMALL\Europe\balkans" 
+displayNameID = "1000680" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Europe\balkans"
+details="6170196"
+loadDetails="6170197">
+
+<loadss>ui\random_map\mediterranean\balkans_ss_01</loadss>
+</mapinfo>

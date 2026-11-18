@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapinfo imagepath="RMs\SMALL\Asia and Oceania\HimalayasUpper" displayNameID="70038" cannotReplace="" loadBackground="RMs\BIG\Asia and Oceania\himalayas"
+details="6170340"
+loadDetails="6170341">
+  <loadss>ui\random_map\himalayas\himalayas_ss_1</loadss>
+  <loadss>ui\random_map\himalayas\himalayas_ss_2</loadss>
+  <loadss>ui\random_map\himalayas\himalayas_ss_3</loadss>
+</mapinfo>

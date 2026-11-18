@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\small\south america\centralplateau" displayNameID = "75145" cannotReplace = "" loadBackground="RMs\big\south america\centralplateau"
+details="6170204"
+loadDetails="6170205">
+   <loadss>ui\random_map\great_plains\great_plains_ss_01</loadss>
+   <loadss>ui\random_map\great_plains\great_plains_ss_02</loadss>
+   <loadss>ui\random_map\great_plains\great_plains_ss_03</loadss>
+</mapinfo>

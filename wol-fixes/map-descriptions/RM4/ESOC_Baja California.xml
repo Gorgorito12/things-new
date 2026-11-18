@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "RMs\small\North America\baja"
+displayName = "ESOC Baja California"
+cannotReplace = ""
+loadBackground="RMs\BIG\North America\baja"
+details="6170050"
+loadDetails="6170051">
+
+  <loadss>ui\random_map\Baja\Baja_ss_01</loadss>
+  <loadss>ui\random_map\Baja\Baja_ss_02</loadss>  
+  <loadss>ui\random_map\Baja\Baja_ss_03</loadss>
+
+</mapinfo>

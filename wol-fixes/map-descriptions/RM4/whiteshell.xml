@@ -1,0 +1,6 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\small\North America\whiteshell" displayName = "White Shell" cannotReplace = "" loadBackground="RMs\BIG\other\northamerica"
+details="6170406"
+loadDetails="6170407">
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_01</loadss>
+</mapinfo>

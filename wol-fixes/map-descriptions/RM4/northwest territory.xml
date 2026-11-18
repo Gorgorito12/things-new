@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="43637" imagepath="RMs\SMALL\North America\northwestterritory" loadBackground="RMs\BIG\North America\northwestterritory"
+details="6170356"
+loadDetails="6170357">
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_01</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_02</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath="RMs\SMALL\Asia and Oceania\Punjab"
+displayName = "Lrg Punjab"
+loadBackground="ui\random_map\deccan\deccan_map"
+details="6170108"
+loadDetails="6170109">
+ <loadss>ui\random_map\Punjab\Punjab_ss_01</loadss>
+ <loadss>ui\random_map\Punjab\Punjab_ss_02</loadss>
+ <loadss>ui\random_map\Punjab\Punjab_ss_03</loadss>
+</mapinfo>

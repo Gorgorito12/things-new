@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Dinarides"
+imagepath = "rms\small\NEW\dinaridessmall" 
+loadBackground="rms\big\other\europe"
+details="6170126"
+loadDetails="6170127">
+   <loadss>ui\random_map\gibraltar\gibraltar_ss_02</loadss>
+</mapinfo>

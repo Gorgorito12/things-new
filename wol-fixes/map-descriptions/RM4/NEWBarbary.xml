@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Barbary Coast"
+imagepath = "rms\small\Africa and Middle East\barbary" 
+loadBackground="rms\big\other\africa"
+details="6170124"
+loadDetails="6170125">
+   <loadss>ui\random_map\NEW\barbary\barbary_ss</loadss>
+</mapinfo>

@@ -1,0 +1,6 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\small\North America\saskatchewan" displayName = "Lrg Saskatchewan" cannotReplace = "" loadBackground="RMs\big\other\northamerica"
+details="6170374"
+loadDetails="6170375">
+<loadss>ui\random_map\texas\texas_ss_01</loadss>
+</mapinfo>

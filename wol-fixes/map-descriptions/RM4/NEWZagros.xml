@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Zagros"
+imagepath = "rms\small\Africa and Middle East\Zagros" 
+loadBackground="rms\big\other\middleeast"
+details="6170160"
+loadDetails="6170161">
+   <loadss>ui\random_map\NEW\zagros\zagros_ss</loadss>
+</mapinfo>

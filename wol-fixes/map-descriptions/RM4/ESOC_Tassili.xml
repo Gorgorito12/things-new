@@ -1,0 +1,10 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath = "ui\esoc_map\tassili" displayName = "ESOC Tassili" cannotReplace = "" loadBackground="ui\esoc_map\tassili_map"
+details="6170094"
+loadDetails="6170095">
+   <loadss>ui\random_map\Tassili\Tassili_ss_01</loadss>
+   <loadss>ui\random_map\Tassili\Tassili_ss_02</loadss>
+   <loadss>ui\random_map\Tassili\Tassili_ss_03</loadss>
+</mapinfo>

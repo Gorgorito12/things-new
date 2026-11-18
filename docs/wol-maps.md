@@ -162,10 +162,10 @@ whatever its current text says; the file `everglades` is the map Pohnpei.
 `mapsweep.py` (editor route, 2 players, seeds 1 and 2, 3 s of game time) now keeps each run's full
 unit list (`units/`), and `mapfacts.py --check` compares it with the script facts. Runs: 416 (two
 shards, `C:\WoL-Test` and a hard-link copy `C:\WoL-Sweep1` made for the sweep and deleted after),
-`sweep/units.csv`; 414 ok, 2 crashes (below). **162 maps agree on everything, 46 have at least one
+`sweep/units.csv`; 414 ok, 2 crashes (below). **163 maps agree on everything, 45 have at least one
 difference**, each in the `check` column of `wol-fixes/map-descriptions/mapfacts.csv`: 21 maps whose
 natives never appeared (most WoL European maps among them), 17 resources placed only in some setups,
-16 gaia units the script does not place (Badger, ypIGCBird…), 5 native mismatches, Hawai'i's water
+16 gaia units the script does not place (Badger, ypIGCBird…), 4 native mismatches, Hawai'i's water
 route without a post site. The tool was fixed on the way for: natives read from the grouping files'
 sockets (ESOC Bengal sets Sufi/Udasi but places Bhakti), definitions never placed, missing grouping
 files, conditional placements, African trade sites, comments in `civs.xml`/`protoy.xml`.
@@ -260,18 +260,44 @@ AURGems). Not settled in game: the AUR trade-site buildings (units `AUR<resource
 Blue Nile placed none in 2 games (cause not looked into). `mapfacts.py` counts these
 sites as natives ("Cocoa (trade site)").
 
-### Left for the full run (203 maps)
+### The full run (all 208 maps)
 
-1. Wait for the WoL team's word on the pilot's format (lobby and loading screen, colours, "Outlaws"
-   with "+N random", "trade site" for the African sites).
-2. Refresh `mapfacts.py` after the King of the Hill work lands (the `koth` column), then write
-   `texts.csv` for every map: first line and 2–3 sentences, English and Spanish, and a correction
-   column wherever `check` says the game differs (21 maps whose natives never appear, Hawai'i's
-   route…). `make_descriptions.py` and `apply_fix.py` already take all maps.
-3. Re-run `desc_test.py` (evidence `scripts/`) on a sample of 10–15 maps at 1920 × 1080 and at a lower
-   resolution, since the loading box keeps 15 lines at 1080p only as far as tested.
-4. The leads for WoL found on the way: dead `mapspecifictechs.xml` blocks, the `civs.xml` comment,
-   missing grouping files (49 maps), resources defined and never placed (29 maps).
+- **Texts.** `texts.csv` holds the first line and the 2–3 sentences of every map in English and
+  Spanish, written by four parallel writers from the facts, the old texts and the scripts, then
+  merged (`merge_texts.py` in the evidence `scripts/`): clean names at the start (no `Lrg`, `"NEW"`,
+  `Gran`), author credits from the old texts (80 maps).
+- **The game wins.** `mapfacts.py --check` writes `game_*` columns (what the game placed in the two
+  sweep games); `make_descriptions.py` uses them, so the 21 maps whose natives never appear say
+  "none", Hawai'i says "Trade route: No", and so on. The route's type (`water`) is only its look
+  (TAD's Mongolia and Deccan use it on land), so the descriptions no longer say "(water)".
+- **The 1024 × 768 loading box** holds about 45 characters × 12 lines (measured; the font keeps its
+  size), against 80 × 15 at 1080p. The loading text therefore starts with the story (the box already
+  shows the name), uses a compact fact block (lists of 3, King of the Hill only when present) and is
+  cut by `fit_loading()` from an estimate of the wrapped lines: credit first (it stays in the lobby),
+  then the story's last sentences, then the Sea line. Seven maps got a shorter first sentence by hand
+  so that every loading text keeps one.
+- **1024 × 768 in game:** the resolution is the shared profile's `optiongrfxres`;
+  `res_launch.py` (evidence `scripts/`) sets it under `testbed.py`'s start lock, launches, puts it
+  back, and puts it back again after the close (the game rewrites the profile on exit). Click layout
+  at 1024 × 768 in `desc_test.py` (`LAYOUT_768`).
+- **English shots.** WoL-Test's `data\stringtabley.xml` is the Spanish translation; `lang_mode.py`
+  copies the English table (`translations\_originals`) over it for the captures and puts the Spanish
+  one back from the backup (checked by hash).
+- **The lobby rollover** opens right of the mouse and grows to ~55 characters; hovering the right of
+  the minimap the screen edge cut it (Texas, first take). `narrow()` now gives every fact its own line
+  and breaks lines at 44 characters, so the box stays narrow.
+- **Re-test in game (English, `v2-en`, `v2-en-768`, `v2-es`, `v2-es-768`):** 27 maps at 1080p, 8 at
+  1024 × 768, 5 + 2 in Spanish: every rollover and loading text complete (`rollcheck.py` checks that
+  each lobby shot shows a rollover; `desc_test.py` retries the hover until it does). Media:
+  `wol-fixes/map-descriptions/media/`, English, Spanish only as `-es` extras.
+- **Seen, not explained:** on Hawai'i, Atacama, Rockies and Alps the OLD lobby text (a string ID such
+  as `details="28829"`) opened no rollover in either language, while old literal texts and our new IDs
+  do.
+- **King of the Hill** is still the current maps' (`koth` column, PENDING the KOTH pack).
+- **Leads for WoL** with file and line: `wol-fixes/map-descriptions/leads.csv` (108 dead and 1
+  shadowed `mapspecifictechs.xml` blocks, the `civs.xml` comment, 36 maps with missing grouping files,
+  34 resources in 29 maps never placed). A fix of the tool on the way: an empty first value
+  (`string a = "";`) no longer counts, which took the "missing groupings" from 49 maps to 36.
 
 ## What is left
 

@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\North America\Glacier TWC" 
+displayName = "Lrg Glacier" 
+loadBackground="Rms\small\other\europe"
+details="6170114"
+loadDetails="6170115">
+   <loadss>ui\random_map\rockies\rockies_ss_01</loadss>
+</mapinfo>

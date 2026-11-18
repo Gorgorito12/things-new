@@ -1,0 +1,10 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath = "ui\esoc_map\manchac" displayName = "ESOC Manchac" cannotReplace = "" loadBackground="ui\esoc_map\manchac_map"
+details="6170084"
+loadDetails="6170085">
+   <loadss>ui\random_map\everglades\everglades_ss_01</loadss>
+   <loadss>ui\random_map\everglades\everglades_ss_02</loadss>
+   <loadss>ui\random_map\everglades\everglades_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+imagepath="RMs\SMALL\Africa and Middle East\BlueNile" 
+displayName = "Blue Nile" 
+
+loadBackground="RMs\big\other\africa"
+details="6170040"
+loadDetails="6170041">
+  <loadss>ui\random_map\deccan\deccan_ss_03</loadss>
+</mapinfo>
+
+ 
