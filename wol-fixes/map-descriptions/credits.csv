@@ -40,7 +40,7 @@ ESOC_Bengal,Garja,Garja,1,texts.csv (from the original text); xs header agrees
 ESOC_Cascade Range,Garja,Garja,1,texts.csv (from the original text); xs header agrees
 ESOC_Colorado,Rikikipu,Rikikipu,1,texts.csv (from the original text); xs header agrees
 ESOC_Fertile Crescent,"Durokan, Garja","Durokan, Garja",2,"texts.csv Garja; xs header: original idea by Durokan, designed by Durokan and Garja"
-ESOC_Florida,"Garja, dicktator_ (winter version)","Garja, dicktator_ (versión de invierno)",2,"xs header: designed by Garja, winter version by dicktator_"
+ESOC_Florida,Garja,Garja,1,"xs header: designed by Garja, winter version by dicktator_; the winter version is switched off in the script (isWinterSeason commented out), so its credit is not shown"
 ESOC_Gran Chaco,Garja,Garja,1,texts.csv (from the original text); xs header agrees
 ESOC_Great Basin,Garja,Garja,1,texts.csv (from the original text); xs header agrees
 ESOC_Herald Island,Rikikipu,Rikikipu,1,texts.csv (from the original text)
@@ -54,8 +54,8 @@ ESOC_Klondike,Garja,Garja,1,texts.csv (from the original text); xs header agrees
 ESOC_Malaysia,Rikikipu,Rikikipu,1,texts.csv (from the original text)
 ESOC_Manchac,Rikikipu,Rikikipu,1,texts.csv (from the original text)
 ESOC_Manchuria,Garja,Garja,1,texts.csv (from the original text); xs header agrees
-ESOC_Mendocino,"Rikikipu, dicktator_ (winter version)","Rikikipu, dicktator_ (versión de invierno)",2,"xs header: Work done by Rikikipu, Converted to winter by dicktator_"
-ESOC_Pampas Sierras,"Garja, dicktator_ (winter version)","Garja, dicktator_ (versión de invierno)",2,"xs header: designed by Garja, winter version by dicktator_"
+ESOC_Mendocino,Rikikipu,Rikikipu,1,"xs header: Work done by Rikikipu, Converted to winter by dicktator_; the winter version is switched off in the script (isWinterSeason commented out), so its credit is not shown"
+ESOC_Pampas Sierras,Garja,Garja,1,"xs header: designed by Garja, winter version by dicktator_; the winter version is switched off in the script (isWinterSeason commented out), so its credit is not shown"
 ESOC_Parallel Rivers,Garja,Garja,1,texts.csv (from the original text); xs header agrees
 ESOC_Tassili,Rikikipu,Rikikipu,1,texts.csv (from the original text); xs header agrees
 ESOC_Thar Desert,Rikikipu,Rikikipu,1,texts.csv (from the original text)
