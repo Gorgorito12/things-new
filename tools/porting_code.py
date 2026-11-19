@@ -150,6 +150,7 @@ PAGES = {
         "attackTypeIcons": ["src/features/attacktypeicons.cpp", "src/hooks/attacktypeicons_hooks.asm"],
         "minUIStats": ["src/features/minuistats.cpp", "src/hooks/minuistats_hooks.asm"],
         "playerIcon": ["src/features/playericon.cpp", "src/hooks/playericon_hooks.asm"],
+        "autoScout": ["src/features/autoscout.cpp", "src/hooks/autoscout_hooks.asm"],
     }),
 }
 

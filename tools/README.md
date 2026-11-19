@@ -211,7 +211,7 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
+`units`, `explored`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
 docstring lists their arguments.
 
 A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives
@@ -233,6 +233,8 @@ back. `lang [status|en|restore]` shows each string table of the copy's `data` fo
 puts the mod launcher's English originals (`translations\_originals`) there for captures, keeping the
 replaced files as `*.lang-orig`, and restores them; the game reads the tables only at startup, so both
 refuse while the copy's game runs (`docs/developer-guide.md`, "A WoL copy in English").
+`explored [--player N]` prints the share of the map a player has explored and sees now, read from the
+game's visibility grid (`docs/engine-symbols.md`, "Auto scout"): how `autoScout` was measured.
 
 `record <out.mp4> [seconds] [fps] [width]` films the window to an MP4 in real time, with ffmpeg
 (`UHC_FFMPEG`, `PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`). It first brings the game window to the

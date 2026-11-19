@@ -4521,6 +4521,62 @@ before the function's own pushes: ESP, EBX, ESI, EDI and EBP are untouched on bo
 `ret 1Ch` as the stock failure path 0x4974C1. The mask and the state bit are simulation state, computed for every player
 on every machine; the key reads no local player and no clock.
 
+### autoScout
+
+**Who scouts.** The data decides: a unit scouts while its current tactic is the key's (`AutoScout` by default). The
+current tactic is `[[unit+58h]+0A8h]`, an index into the proto's tactics `[[proto+44h]+10h]`; a tactic's `+8` is its
+name ID, an index into the database's tactic names `[db+1FF0h]`, which the key searches once per data load for its
+name. A unit is born in its first tactic, so a file with `AutoScout` first scouts from birth; the buttons run
+`unitSetTactic`, the game's own set-tactic command (type 19h), which every machine runs and saved games keep.
+
+**The scan.** `AddWorldTick`, every 500 ms of game time `[world+108h]`. Each player's unit list `[player+F8h]` (count
+`+FCh`), validated through the unit table and its owner, gives the scouts, sorted by ID. For each player with scouts,
+the visibility grid of the world (`[world+250h]`: width `+14h`, height `+18h`, one dword per 2 m cell at `+20h`; the
+player's mask `[[world+2D8h]+4·id]`, its low half explored, its high half visible) is summed in blocks of 8 × 8 cells:
+which blocks are visible now, and per movement type an unexplored cell to stand on. The water of each cell comes once
+per map from the terrain's tile lookup (vtable `+194h` of `[world+88h]`, 0FFh for land); the movement type is
+`[proto+1D2h]` (1 land, 2 water, 4 air).
+
+**The orders.** A scout that is idle (0x44F1A7), or still on the move this key gave it (the current action's ID
+`[[mgr+24h]+8]` is the one it got), is given a target when it has none or its target was explored: the block whose
+unexplored cell is nearest, weighted against cells behind its heading, not held by another scout of the player and not
+given up by this one; then the nearest unexplored cell of that block. The order is the action manager's own move,
+0x50E36A, with the arguments of the unit order code (0x9444D3), but `a4` = 1, which sets action flag 17h: the leash
+0x489B15 skips a Move with that flag (0x4B95E4). A scout that stops (idle, not interrupted by another action) with its
+target unexplored, or that takes 90 s, gives the block up. When no unexplored cell is in reach, the target is the block
+not visible now with the oldest last-seen time (this key's own stamps, game time), the nearest first. Any other action
+(a fight, a flee) is left alone, and the scout goes on when it is idle again.
+
+**The leash.** The action manager walks a unit back to its anchor `[mgr+7Ch]` (x, y, z) when its current action has no
+order ID and it strays past a range (0x489B15 → 0x50E50E, a move with tolerance 1.0). That is what makes a flying pet
+circle its start when it has no orders; the animal wander `BUGA::doWander` runs only for a unit in a herd (`[mgr+ACh]`
+≥ 0). Each scan writes a scout's position into its anchor, so that a unit that stops scouting stays where it is.
+
+**The switch-off.** The command execute FUN_007C8E49 runs once per command, inside the world update (0x481BC2 →
+0x490015 → 0x64D31A), on every machine. Its head (`push ecx / push esi / mov esi,ecx / cmp dword [esi+5Ch],5`, 8
+bytes) is replaced by a `jmp` to `UhcAutoScoutCmdHook`, which calls `UhcAutoScoutCommand(cmd)` with EAX, ECX and EDX
+saved, re-executes the four instructions and jumps to the `jbe` at 0x7C8E51 with their flags. For a work command (type
+`[cmd+81h]` 0: move, attack, gather, garrison) or a stop (9), each listed unit `[cmd+40h]` owned by the command's
+player `[cmd+20h]`, not inside another unit (`[unit+6Ch]` = -1) and in the scouting tactic, gets its anchor set to its
+position and its return tactic through setTactic 0x4F7ECD(mgr, player, index, -1, 1, -1.0f, 1, 0), as the set-tactic
+command does per unit (0x7D107C). The order then applies to a unit in its normal tactic.
+
+**Why it is safe.** Everything read is simulation state: the unit and player tables, the tactic, the grid (the display
+switch of `blackmap` is not read), the terrain, game time. The containers are keyed by unit ID and player, and walked
+in that order. The orders and the tactic change are the game's own simulation functions, the same ones its unit orders
+and commands call, in the world update, so every machine makes the same calls in the same order; nothing goes to the
+network, and nothing reads the local player. The tables are only a cache: a loaded game (or another game) starts them
+again from the units' tactics and the grid, and the tactic itself is saved with the unit. The hook keeps every register
+the stock head needs (ECX, the flags of its `cmp`), and the stdcall callee keeps EBX, ESI, EDI and EBP. The real clock
+of the `log` timing line only goes to the log.
+
+<!-- private:begin -->
+**What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
+map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch envoy alone on the same map: 50.1 % /
+71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
+milliseconds).
+<!-- private:end -->
+
 ### customWalls
 
 **Walls in the stock exe.** A proto with the flag `wallBuild` (bit 3Ah of `[proto+50h]`, tested with 0x45EE02) enters the
