@@ -35,7 +35,8 @@ NEXT_AFTER_LATEST = "## Adding these features to WoL"
 
 # A key whose video is not named after it (its own videos count too).
 VIDEO_ALIASES = {"dodgeanyunit": "dodge", "dodgechance": "dodge", "overhealsources": "overhealhitpointbars",
-                 "overhealdecay": "overhealhitpointbars"}
+                 "overhealdecay": "overhealhitpointbars",
+                 "attacktypeicons": "multiplierdecimals"}
 
 
 def git(*args):
