@@ -1,0 +1,63 @@
+Minimized UI, version 5: answers to JTMaston's four points
+=========================================================
+
+1. "The num of projectiles should only be shown if it is higher than 1"
+   It already was: the cylinder number shows only above 1. The "1" you saw is not a projectile count: it is the
+   attack's area, the number right before the red target icon ("11 (ranged) 1 (target) 14 (range)"). It comes from
+   <DamageArea>1.000000</DamageArea> on the Escopetero's ranged attack in protoy.xml, and the game writes it itself,
+   in both panels, with or without our DLL (the tooltip says "14 Range with 1 Area"). Your current panel shows it too:
+   final\minUIStats-v5-wolmin-escopetero.jpg. We kept it, since it is your data; say so if you want area 1 hidden.
+
+2. "The Escopetero should show 4 (numberprojectiles)"
+   Done. The number now comes from the tactics file as written: NumberOfShots x numberprojectiles. With any DLL the
+   Escopetero shows 4, the Bacamarteer 6, the explorers' Sharpshooter 3 (final\minUIStats-v5-escopetero.jpg,
+   -bacamarteer.jpg, -explorer.jpg).
+   What the game does today is different, and you should know it: WoL's own uhc.dll fires ONE projectile per
+   Escopetero volley. We traced it in the game with your uhc.dll (c070d138) and none of our keys: 4 volleys, 4
+   projectiles launched; in a second fight 114 shots, 114 projectiles (final\minUIStats-v5-wol-volley-count.jpg).
+   Nothing reads numberprojectiles today, neither the exe nor your DLLs. Our DLL's key "numberOfShots projectiles"
+   makes combat fire the 4 (tested in version 4). If you prefer the panel to show what combat fires instead of the
+   data, one attribute in minuirows.xml does it: projectiles="combat" on <bigPanelRows>.
+
+3. "x1.3 should be x1.25, x0.8 should be x0.75"
+   Found the cause. The game writes a multiplier with one decimal (the text ", %.1fx %s" inside age3y.exe), so 1.25
+   becomes 1.3. Your uhc.dll changes that one character to 2 decimals; our UHC.dll, used in its place, did not, so
+   our pictures showed 1.3x. New key "multiplierDecimals" (2 decimals by default) does the same as yours, and more:
+   - the tooltips now agree. With your DLL the row says 1.25x but its tooltip still says "1.3X Bonus Damage against
+     Line Unit" (the tooltip uses string 42229 of your string table, "%1.1fX ...", one decimal); the key gives the
+     tooltip the same decimals: "1.25X" (final\minUIStats-v5-wolmin-tip-escopetero.jpg is yours today,
+     -tip-escopetero-ranged.jpg is version 5). You could also just edit string 42229 to "%1.2fX Bonus Damage against
+     %2s (%3s)" in stringtabley.xml (and the Spanish one), and the key would not be needed for the tooltip.
+   - in the minimized rows the zeros at the end go: 1.50x is written 1.5x, so the long rows do not get longer;
+     1.25x stays. (multiplierZeros="keep" in minuirows.xml keeps them.)
+   - beside your uhc.dll it sees the 2 already there and changes nothing in that text.
+   Also: your panel lists three multipliers for the Escopetero's ranged attack and ours listed two. The missing one was
+   1.5x against Maneuver units (AbstractRangedCavalry). The game only shows multipliers against its own list of types
+   with an icon; your wol.cfg line "attackTypeIcons AbstractCavalry 38214 ..." adds yours, and our DLL did not have
+   that key yet. It has it now, with the same wol.cfg line, so the Escopetero shows 1.5x, 1.25x, 0.75x with either DLL.
+
+4. "How are the attack stats displayed on the tooltip?"
+   Pictures, pointer resting on an attack row, Escopetero, Koygua (Villero) and Menelik II:
+   - your minimized panel today (your uhc.dll):  final\minUIStats-v5-wolmin-tip-escopetero.jpg, -villero, -explorer
+   - your big panel today:                         final\minUIStats-v5-wolbig-tip-escopetero.jpg, -villero, -explorer
+   - version 5:                                    final\minUIStats-v5-tip-escopetero-ranged.jpg, -tip-escopetero-hand,
+                                                   -tip-villero-ranged, -tip-villero-right, -tip-explorer-ranged,
+                                                   -tip-explorer-sharpshooter
+   The game's tooltip is already worded: the row's name, then "11 (Ranged) Damage", "14 Range with 1 Area", and one
+   line per multiplier, "1.5X Bonus Damage against (icon) (Maneuver Unit)". Version 5 keeps all of it and adds two
+   lines after the damage, for what the panel adds to the row:
+       Attacks every 3.50 s (stopwatch)
+       4 projectiles before the reload (cylinder)
+   Those two texts are in minuirows.xml (rofTip, projectilesTip), so they can be translated; [string:ID] works there.
+   A row too long for its place, shown short (the explorers' "Sharpshooter ATK 750 4.50 3"), now has the same full
+   tooltip instead of a plain copy of the row.
+   Two things we fixed on the way:
+   - the "Hitpoints" line covered the left half of the first attack row, so that row's tooltip only showed on its
+     right half; the line is now one row high (proposed-uiunitselectionmin.xml).
+   - at 1024x768 the Escopetero's ranged row (three multipliers) ran past the panel's edge; now the last multipliers
+     are left out and the row ends with "(+2)"; the tooltip lists them all (final\minUIStats-v5-r1024-escopetero.jpg
+     and -r1024-tip-escopetero.jpg). At 1920x1080 every row fits.
+   Your big panel, for comparison, shows only the first attack: its 5 rows are Hitpoints, Speed, Resists and one
+   attack (minUIStats-v5-wolbig-tip-villero.jpg shows the Villero's Siege ATK only).
+
+Everything else is as in version 4. The pictures and the full test table are in final\README.txt.

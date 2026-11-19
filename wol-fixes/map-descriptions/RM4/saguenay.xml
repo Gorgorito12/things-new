@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="25185" imagepath="RMs\SMALL\North America\saguenay" loadBackground="RMs\BIG\North America\saguenay"
+details="6170370"
+loadDetails="6170371">
+   <loadss>ui\random_map\saguenay\saguenay_ss_01</loadss>
+   <loadss>ui\random_map\saguenay\saguenay_ss_02</loadss>
+   <loadss>ui\random_map\saguenay\saguenay_ss_03</loadss>
+</mapinfo>

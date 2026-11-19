@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\other\unknown" 
+displayName = "Lrg Delta" 
+loadBackground="RMs\big\other\unknown"
+details="6170038"
+loadDetails="6170039">
+   <loadss>ui\random_map\unknown\unknown_ss_01</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_02</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_03</loadss>
+</mapinfo>

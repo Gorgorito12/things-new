@@ -1,6 +1,6 @@
 ; Hooks for removeFameRestriction. Entered through jmps (or jump-table slots) written over the
 ; stock code; each leaves through an explicit jmp to a verified continuation
-; (docs/uhc-address-map.md).
+; (src/generated/sites.h).
 .686
 .model flat, c
 option casemap :none
@@ -82,7 +82,7 @@ UhcPoliticianCostsHook PROC
 UhcPoliticianCostsHook ENDP
 
 ; Detour at 0x81943D (FUN_0081922A). Stock lists resources 2, 1, 0; add 3, 5, 6 and 7 (export).
-; The owner is EDI here (ESI is the UI object); upstream passes ESI by mistake.
+; The owner is EDI here (ESI is the UI object, the wrong owner).
 UhcPoliticianCosts2Hook PROC
     TRACE_ONCE "removeFameRestriction costs #2 (0x81943D)"
     COST_LINE 3, edi

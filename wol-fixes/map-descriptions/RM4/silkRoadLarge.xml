@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapinfo imagepath="RMs\SMALL\Asia and Oceania\silkroad" displayNameID="68737" cannotReplace="" loadBackground="RMs\BIG\Asia and Oceania\silkroad"
+details="6170384"
+loadDetails="6170385">
+  <loadss>ui\random_map\silk_road\ss_silk_road</loadss>
+</mapinfo>

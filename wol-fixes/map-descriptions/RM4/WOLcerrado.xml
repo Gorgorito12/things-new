@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\South America\cerrado" displayNameID = "75181" cannotReplace = "" loadBackground="RMs\BIG\South America\cerrado"
+details="6170206"
+loadDetails="6170207">
+   <loadss>patch\ozarks\ozarks_ss_01</loadss>
+   <loadss>patch\ozarks\ozarks_ss_02</loadss>
+   <loadss>patch\ozarks\ozarks_ss_03</loadss>
+</mapinfo>

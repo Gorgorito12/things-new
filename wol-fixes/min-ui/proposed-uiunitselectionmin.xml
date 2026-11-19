@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Proposal (2026-11-17, third layout): the stock minimized selection panel from Data3.bar, with WoL's
+     own values for the stock gadgets it changed (the tab textures, the three health bars, buttonArea), plus
+     top-level rows (children of unitselectionpanel-unit, never of a gadget the game shows or hides). The DLL
+     fills them from data\uhc\minuirows.xml and hides the rows it does not use. Without the key the file reads as
+     WoL's: the original gadgets keep WoL's places (only the two names are narrower), and the key's gadgets
+     stay empty.
+     - The top band (y 631..667) holds only the unit portraits of the selection, which the game centres in
+       unitselectionpanel-buttonArea (WoL's 369..669).
+     - Mirrored around x 521, the panel's centre: the block over the portrait (342..412: cost, population) and
+       the block right of the player's name (630..700: line of sight and speed, train time and garrison), two
+       lines each on the same baselines; the unit's name (412..516) and the player's name (526..630).
+     - Under the unit's name, uhcRow2 (what the unit is doing or what acts on it); under the player's name
+       nothing, so a long name has its second line.
+     - The stats: x 410 (hit points, the original attack rows) and x 583 (resists, the attack rows past the
+       third); uhcHitpoints and uhcResists lie over the original hit points and resists gadgets, which the key
+       hides while they show. -->
+
+
+<layout>
+  <gadget name="unitselectionpanel" type="unitselectionpanel" size1024="342 629 700 768" z="105">
+    <gadget name="unitselectionpanel-showCommands" type="button" size1024="674 641 701 696" z="125" foreground="ui\ingame\ingame_ui_tab_command_ypack" texturecoords="0 0 1 0.21484375" mouseovertext="$$42185$$Available Commands">
+      <command>uiShowCommandPanel()</command>
+    </gadget>
+    <gadget name="unitselectionpanel-showStats" type="button" size1024="674 702 701 757" z="125" foreground="ui\ingame\ingame_ui_tab_command_ypack" texturecoords="0 0 1 0.21484375" mouseovertext="$$42184$$Unit Information">
+      <command>uiShowStatPanel()</command>
+    </gadget>
+    <gadget name="unitselectionpanel-unit" type="gadget" background="ui\ingame\ingame_ui_small_02_ypack" size1024="342 628 700 768" z="105" texturecoords="0 0 0.6875 0.26953125">
+      <gadget name="unitselectionpanel-unitPortrait" type="button" background="" size1024="342 698 412 768" z="106"/>
+      <gadget name="unitselectionpanel-unitTypeName" type="formatText" textwrapon="" textcenterhoriz="" texttruecentervert="" background="" transparent="" textcolor="255 255 255" textfont="SmallIngame" textfontsize="12" size1024="412 650 516 714" z="107">
+        <!-- The health bars inside the unit's name, as in WoL's own file: the minimized panel never shows them
+             itself; they show with the name (seen in game: elsewhere they stay hidden). -->
+        <gadget name="unitselectionpanel-unitHealthBarGreen" type="progressBar" size1024="342 759 412 766" z="110" progressbarbackground="ui\ingame\ui_health_bar" progressbarbackgroundsize="104 8" progressbarmask="ui\ingame\ingame_ui_health_green"/>
+        <gadget name="unitselectionpanel-unitHealthBarYellow" type="progressBar" size1024="342 759 412 766" z="110" progressbarbackground="ui\ingame\ui_health_bar" progressbarbackgroundsize="104 8" progressbarmask="ui\ingame\ingame_ui_health_yellow"/>
+        <gadget name="unitselectionpanel-unitHealthBarRed" type="progressBar" size1024="342 759 412 766" z="110" progressbarbackground="ui\ingame\ui_health_bar" progressbarbackgroundsize="104 8" progressbarmask="ui\ingame\ingame_ui_health_red"/>
+      </gadget>
+      <gadget name="unitselectionpanel-unitPlayerName" type="formatText" textwrapon="" textcenterhoriz="" texttruecentervert="" background="" transparent="" textcolor="255 255 255" textfont="ScoreFont" textfontsize="12" size1024="526 650 630 714" z="107"/>
+      <gadget name="unitselectionpanel-unitHitPointsLabel" type="formatText" textwrapon="" texttruecentervert="" background="" transparent="" textcolor="255 255 255" textfont="StatText" textfontsize="10" size1024="410 680 578 734" z="107"/>
+      <gadget name="unitselectionpanel-unitHitPointsValue" type="formatText" textwrapon="" texttruecentervert="" background="" transparent="" textcolor="255 255 255" textfont="StatText" textfontsize="10" size1024="507 680 580 734" z="107"/>
+      <gadget name="unitselectionpanel-unitResistsLabel" type="formatText" texttruecentervert="" textcolor="255 255 255" textfont="StatText" textfontsize="10" size1024="583 700 695 714" z="107"/>
+      <gadget name="unitselectionpanel-unitResistsValue" type="formatText" textcentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" size1024="620 700 1000 714" z="107"/>
+      <gadget name="unitselectionpanel-unitResourceLabel" type="formatText" size1024="410 714 543 734" texttruecentervert="" textmarkup="" formattextusedatareplace="" textwrapon="" textfont="StatText" textfontsize="10" z="107"/>
+      <gadget name="unitselectionpanel-unitResourceValue" type="formatText" size1024="507 714 695 734" texttruecentervert="" textmarkup="" formattextusedatareplace="" textwrapon="" textfont="StatText" textfontsize="10" z="107"/>
+      <gadget name="unitselectionpanel-unitResourceRateLabel" type="formatText" size1024="583 714 700 734" texttruecentervert="" textmarkup="" formattextusedatareplace="" textwrapon="" textfont="StatText" textfontsize="10" z="107"/>
+      <gadget name="unitselectionpanel-unitResourceRateValue" type="formatText" size1024="653 714 700 734" texttruecentervert="" textmarkup="" formattextusedatareplace="" textwrapon="" textfont="StatText" textfontsize="10" z="107"/>
+      <gadget name="unitselectionpanel-StackLabel0" type="formatText" size1024="410 714 703 734" texttruecentervert="" textmarkup="" formattextusedatareplace="" textwrapon="" textfont="StatText" textfontsize="10" z="107"/>
+      <gadget name="unitselectionpanel-StackLabel1" type="formatText" size1024="410 731 703 751" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcentervert="" textfont="StatText" textfontsize="10" z="107"/>
+      <gadget name="unitselectionpanel-StackLabel2" type="formatText" size1024="410 747 703 767" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcentervert="" textfont="StatText" textfontsize="10" z="107"/>
+      <gadget name="unitselectionpanel-unitPortraitCountBackground" type="gadget" background="ui\ingame\ingame_ui_small_02_ypack" transparent="" size1024="429 727 461 759" z="107" texturecoords="0.861328125 0.62890625 0.923828125 0.69140625"/>
+      <gadget name="unitselectionpanel-unitPortraitCount" textfont="TimerDisplays" textfontsize="16" type="formatText" formattextbottomfill="" textjustifyright="" transparent="" textcolor="255 255 255" size1024="430 737 460 757" z="108"/>
+      <!-- New: top-level, filled by the DLL. -->
+      <!-- Two mirrored blocks of two lines, on the same baselines, text centred in each. Over the portrait (left of
+           the unit's name): the cost, then the population. Right of the player's name: line of sight and speed,
+           then the train time and the garrison. -->
+      <gadget name="unitselectionpanel-uhcCost" type="formatText" size1024="344 669 410 683" textcenterhoriz="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <gadget name="unitselectionpanel-uhcPop" type="formatText" size1024="344 683 410 697" textcenterhoriz="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <gadget name="unitselectionpanel-uhcSight" type="formatText" size1024="632 669 698 683" textcenterhoriz="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <gadget name="unitselectionpanel-uhcTrainGarrison" type="formatText" size1024="632 683 698 697" textcenterhoriz="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <!-- The hit points and resists with their icons, over the original ones, which the key hides while these
+           show (minuirows.xml, <replace>): without the key the original labels and values show as before. The hit
+           points gadget is one line high, centred where the original label (680..734) centres its text: a taller one
+           covers the first attack row (714..734), whose tooltip then never shows under it. -->
+      <gadget name="unitselectionpanel-uhcHitpoints" type="formatText" size1024="410 700 578 714" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <gadget name="unitselectionpanel-uhcResists" type="formatText" size1024="583 700 700 714" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <!-- Under the unit's name, centred as the name is: what the unit is doing or what acts on it. Under the
+           player's name nothing: a long name ("Otto Von Bismarck (Germans)") takes two lines there. -->
+      <gadget name="unitselectionpanel-uhcRow2" type="formatText" size1024="412 688 516 702" textcenterhoriz="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <!-- The attack rows past the original three, in the right column (x 583, the resists column), on the lines
+           of the original attack rows: uhcRow5 the 1st, uhcRow3 the 2nd, uhcRow4 the 3rd. -->
+      <gadget name="unitselectionpanel-uhcRow3" type="formatText" size1024="583 731 703 751" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcentervert="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <gadget name="unitselectionpanel-uhcRow4" type="formatText" size1024="583 747 703 767" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcentervert="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+      <gadget name="unitselectionpanel-uhcRow5" type="formatText" size1024="583 714 703 734" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+    </gadget>
+    <gadget name="unitselectionpanel-stackQueue" type="gadget" size1024="361 631 615 665" z="107">
+      <gadget name="unitselectionpanel-buttonArea" type="gadget" size1024="369 697 669 666" z="107"/>
+      <gadget name="unitselectionpanel-unitStackButton0" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton1" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton2" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton3" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton4" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton5" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton6" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton7" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButton8" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 641 395 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButtonBig0" textfont="TimerDisplays" textfontsize="12" type="button" size1024="371 633 403 665" z="108" activateondown=""/>
+      <gadget name="unitselectionpanel-unitStackButtonBigBackground" type="gadget" size1024="369 631 405 667" z="107" activateondown="" background="ui\ingame\ingame_ui_small_02_ypack" texturecoords="0.857421875 0.72265625 0.927734375 0.79296875"/>
+    </gadget>
+  </gadget>
+</layout>

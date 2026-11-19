@@ -1,0 +1,118 @@
+; Hooks for buildingWorkRateAuras. The rate wrapper is the target of the redirected calls of the BuildingWorkRate getter and returns to its caller
+; (docs/engine-symbols.md, "Building work rate auras").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcBwrAuraRate PROTO STDCALL base:DWORD, unit:DWORD, caller:DWORD
+
+kStatBuildingWorkRate EQU 40h       ; the new ModifyType stat; bwrauras.cpp uses the same value
+
+UhcBwrPanelRate PROTO STDCALL unit:DWORD
+
+.data
+panelNext       dd 006F4A02h    ; jne 6F4A0Dh
+repairNext      dd 009D0BF9h    ; call 480408h, with ECX = the unit
+rateLookup      dd 00487C45h    ; float thiscall(tactics action, target), ret 4
+workRateGetter  dd 009BFE33h    ; float thiscall(unit): the BuildingWorkRate getter (liveBuildingWorkRate may hook it)
+
+.code
+
+; Target of the calls of the getter at 0x9EA413 (Train), 0x9E65F7 (Research), 0x9D58D4
+; (CommandResearch) and 0x6AB23F (Maintain), whose rel32 is redirected here, and of
+; g_uhcBwrTrainGetter. Same contract as the getter, float thiscall(unit): ECX = the unit (the
+; callers' mov ecx,[esi+10h]), x87 stack empty, [esp] = the return address into the caller.
+; Returns ST0 = the rate, with ECX, EDX, EBX, ESI, EDI and EBP unchanged; EAX and the flags differ
+; from stock, which the four callers allow (each writes EAX before reading it and calls a function
+; before reading the flags). A unit without a modifier record ([[ecx+0B4h]+0C8h], created with its
+; first modifier) tail-calls the getter, exactly the stock call. Any other unit gets the getter's
+; rate times its BuildingWorkRate factor.
+UhcBwrAuraCall PROC
+    TRACE_ONCE "buildingWorkRateAuras (calls of 0x9BFE33)"
+    mov eax, dword ptr [ecx+0B4h]   ; the unit's extension
+    test eax, eax
+    je stock
+    cmp dword ptr [eax+0C8h], 0     ; its modifier record
+    je stock
+    TRACE_ONCE "buildingWorkRateAuras: a unit with modifiers (calls of 0x9BFE33)"
+    push ecx
+    push edx
+    push dword ptr [esp+8]          ; caller: the return address, for the log
+    push ecx                        ; unit
+    call workRateGetter             ; ST0 = the stock rate; ECX is still the unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base: the getter's float (an fld of a float, so exact)
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+    pop edx
+    pop ecx
+    ret
+stock:
+    jmp workRateGetter              ; no modifier record: the stock call
+UhcBwrAuraCall ENDP
+
+; Replaces 0x6F49FC, fld dword ptr [edx+0D0h], in the data refs' reader. EAX = the selected unit, ECX
+; the result; the jne at the continuation reads the flags of a cmp above, so they are kept. The rate is
+; left on the x87 stack, as the fld did.
+UhcBwrPanelHook PROC
+    TRACE_ONCE "buildingWorkRateAuras panel (0x6F49FC)"
+    pushfd
+    push ecx
+    push eax
+    call UhcBwrPanelRate
+    pop ecx
+    popfd
+    jmp panelNext
+UhcBwrPanelHook ENDP
+; Target of the calls of the rate lookup 0x487C45 in the heal tick (0x9E0CCF) and the build tick (0x9D3D7B).
+; Each has the action in ESI, so [esi+10h] is the unit that works, and each writes EAX, ECX and EDX
+; before reading them. ST0 = the rate, times the unit's BuildingWorkRate factor.
+UhcBwrRateCall PROC
+    TRACE_ONCE "buildingWorkRateAuras (calls of 0x487C45)"
+    push dword ptr [esp+4]          ; the target
+    call rateLookup                 ; ST0 = the stock rate; pops the target
+    mov eax, dword ptr [esi+10h]    ; the unit
+    test eax, eax
+    je done
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je done
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je done
+    push dword ptr [esp]            ; caller: the return address, for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+done:
+    ret 4
+UhcBwrRateCall ENDP
+
+; Replaces 0x9D0BF2, in the AutoRepair update: fmul [esi+64h] / fstp [esp+0Ch]. ST0 = the world's rate times
+; the elapsed time; the repairing unit is [esi+10h], also in ECX, which the continuation needs. Repair runs
+; on the building itself, not on a villager, so the factor is the building's.
+UhcBwrRepairHook PROC
+    TRACE_ONCE "buildingWorkRateAuras repair (0x9D0BF2)"
+    fmul dword ptr [esi+64h]
+    mov eax, dword ptr [esi+10h]
+    test eax, eax
+    je store
+    mov edx, dword ptr [eax+0B4h]
+    test edx, edx
+    je store
+    cmp dword ptr [edx+0C8h], 0     ; its modifier record
+    je store
+    push ecx
+    push 009D0BF2h                  ; for the log
+    push eax                        ; unit
+    sub esp, 4
+    fstp dword ptr [esp]            ; base
+    call UhcBwrAuraRate             ; -> ST0 = base x factor; pops its three arguments
+    pop ecx
+store:
+    fstp dword ptr [esp+0Ch]
+    jmp repairNext
+UhcBwrRepairHook ENDP
+
+END

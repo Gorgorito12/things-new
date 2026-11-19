@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75098" imagepath="RMs\SMALL\South America\marajo" loadBackground="RMs\BIG\South America\marajo"
+details="6170350"
+loadDetails="6170351">
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_01</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_02</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_03</loadss>
+</mapinfo>

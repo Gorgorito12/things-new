@@ -1,5 +1,5 @@
 ; Hook for noAILimit. Entered through a jmp written over the stock code; leaves through an
-; explicit jmp to the verified continuation (docs/uhc-address-map.md).
+; explicit jmp to the verified continuation (src/generated/sites.h).
 .686
 .model flat, c
 option casemap :none
@@ -29,5 +29,18 @@ UhcAiLimitHook PROC
     mov dword ptr [esp+50h], esi
     jmp aiLimitReturn
 UhcAiLimitHook ENDP
+
+; noAILimitV2: replaces only 0x603C34..0x603C4E (the TAD-flag test, the 14-entry count and the
+; table store), so the stock range before it runs as is, including both initializations above.
+; The stack is the same as at 0x603C4F (the push 2 at 0x603B42 is popped at 0x603C31). EAX is the
+; only register the replaced range sets, and the continuation clears it.
+UhcAiLimitV2Hook PROC
+    TRACE_ONCE "noAILimitV2 (0x603C34)"
+    mov eax, g_uhcPersonalityCount
+    mov dword ptr [esp+40h], eax
+    mov eax, g_uhcPersonalities
+    mov dword ptr [esp+50h], eax
+    jmp aiLimitReturn
+UhcAiLimitV2Hook ENDP
 
 END

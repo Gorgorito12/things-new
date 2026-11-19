@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\Europe\iceland" displayNameID = "75178" cannotReplace = "" loadBackground="RMs\BIG\Europe\iceland"
+details="6170218"
+loadDetails="6170219">
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_01</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_02</loadss>
+   <loadss>ui\random_map\hispaniola\hispaniola_ss_03</loadss>
+</mapinfo>

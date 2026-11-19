@@ -1,0 +1,10 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\Asia and Oceania\Team Archipelago Asian" 
+displayName="Archipelago" 
+ 
+loadBackground="RMs\big\other\asia"
+details="6170170"
+loadDetails="6170171">
+   <loadss>ui\random_map\silk_road\ss_silk_road</loadss>
+</mapinfo>

@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\small\Other\Christmas" displayNameID = "75148" cannotReplace = "" loadBackground="RMs\big\other\unknown"
+details="6170010"
+loadDetails="6170011">
+    <loadss>ui\random_map\christmas\christmas_ss_01</loadss>
+    <loadss>ui\random_map\christmas\christmas_ss_02</loadss>
+    <loadss>ui\random_map\christmas\christmas_ss_03</loadss>
+</mapinfo>

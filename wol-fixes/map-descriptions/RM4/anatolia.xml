@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75112" imagepath="RMs\SMALL\Africa and Middle East\anatolia" loadBackground="RMs\BIG\Africa and Middle East\anatolia"
+details="6170274"
+loadDetails="6170275">
+   <loadss>ui\random_map\texas\texas_ss_01</loadss>
+   <loadss>ui\random_map\texas\texas_ss_02</loadss>
+   <loadss>ui\random_map\texas\texas_ss_03</loadss>
+</mapinfo>

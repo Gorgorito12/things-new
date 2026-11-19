@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\Africa and Middle East\WolLualaba" 
+displayName = "Lualaba"
+loadBackground="RMs\BIG\Other\africa"
+details="6170264"
+loadDetails="6170265">
+   <loadss>ui\random_map\Lualaba\Lualaba_ss_01</loadss>
+   <loadss>ui\random_map\Lualaba\Lualaba_ss_02</loadss>
+   <loadss>ui\random_map\Lualaba\Lualaba_ss_03</loadss>
+</mapinfo>

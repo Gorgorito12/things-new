@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="70029" imagepath="RMs\SMALL\Asia and Oceania\indochina" loadBackground="RMs\BIG\Asia and Oceania\indochina"
+details="6170348"
+loadDetails="6170349">
+  <loadss>ui\random_map\indochina\indochina_ss_01</loadss>
+  <loadss>ui\random_map\indochina\indochina_ss_02</loadss>
+  <loadss>ui\random_map\indochina\indochina_ss_03</loadss>
+</mapinfo>

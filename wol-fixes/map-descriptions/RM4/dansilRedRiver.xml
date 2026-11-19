@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\redriversmall"
+displayName = "Red River"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\pampas\pampas_map"
+details="6170308"
+loadDetails="6170309">
+   <loadss>ui\random_map\pampas\pampas_ss_01</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_02</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_03</loadss>
+ 
+</mapinfo>

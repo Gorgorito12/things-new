@@ -1,0 +1,181 @@
+kind,file,line,name,detail
+dead mapspecifictechs block,data\mapspecifictechs.xml,353,atacama,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,842,Christmas,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,911,DansilAlaska,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,980,DansilCerroAcahay,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1050,DansilFalklands,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1119,DansilLCongo,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1188,DansilZavkhan,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1257,DansilYalu_River,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1326,DansilNahanni,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1395,DansilJarrah,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1464,DansilIrrawaddyRiver,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1533,DansilIbalong,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1602,DansilCristalMonts,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1671,DansilChupat,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1740,Dakota Badlands V,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,1880,Desert Flood,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2019,ESOC_Adirondacks,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2088,ESOC_Alaska,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2157,ESOC_Arizona,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2226,ESOC_Arkansas,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2295,ESOC_Baja California,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2366,ESOC_Bengal,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2435,ESOC_Cascade Range,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2504,ESOC_Colorado,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2573,ESOC_Fertile Crescent,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2642,ESOC_Florida,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2711,ESOC_Gran Chaco,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2781,ESOC_Great Basin,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2850,ESOC_Herald Island,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2919,ESOC_High Plains,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,2988,ESOC_Hudson Bay,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3057,ESOC_Indonesia,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3126,ESOC_Iowa,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3195,ESOC_Jebel Musa,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3264,ESOC_Kamchatka,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3333,ESOC_Klondike,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3402,ESOC_Malaysia,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3471,ESOC_Manchac,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3540,ESOC_Manchuria,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3609,ESOC_Mendocino,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3678,ESOC_Pampas Sierras,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3748,ESOC_Parallel Rivers,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3817,ESOC_Tassili,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3886,ESOC_Thar Desert,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,3955,ESOC_Tibet,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4024,ESOC_Wadmalaw,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4162,Finger Lake-V,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4231,Finland,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4370,GANNiger,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4439,GANPunjab,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4508,GANVolta,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4577,GANWarkhan,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4646,Gold Coast,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4715,greatchaco,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,4995,Hispaniola,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,5970,sertao,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6467,vividlyAlberta,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6536,vividlyKashmir,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6605,vividlyKolkata,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6674,vividlyNigerDelta,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6743,vividlyVietnam,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6812,whiteshell,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6881,WOLAlps,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,6950,WOLasuncion,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7020,WOLatlas,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7089,WOLaustralia,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7158,WolAysen,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7227,WOLazores,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7296,WOLbalkans,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7365,WolBioko,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7434,WOLblackforest,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7503,WOLblacksea,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7641,WOLcentralplateau,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7710,WOLcerrado,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7779,WOLcongo,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7848,WOLcongoriver,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7917,WOLdallol,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,7986,WOLeasterisland,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8055,WOLEcruteak,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8124,WOLethiopianhighlands,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8193,WOLFjord,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8262,WOLGibraltar,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8331,WolGreenland,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8400,WolGujarat,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8469,WOLhawaii,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8538,WOLiceland,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8607,WOLlakerose,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8676,WolLualaba,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8745,WOLmadagascar,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8814,WOLnewzealand,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8883,WOLnzwc,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,8952,WOLpolynesianatoll,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9021,WOLredbeach,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9090,WOLsahara,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9159,WOLsahel,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9228,WOLsavannah,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9297,WOLScandinavia,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9366,WOLsocotra,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9435,WolTahiti,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9504,WOLtuscany,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9573,WOLvalleyofkings,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9642,WOLvandieman,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9711,WoLverdongorge,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9780,WOLwateringhole,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9849,WOLwetlands,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9918,WOLzimbabwe,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,9987,whiteshell,not a type in maptypes.xml: the game never uses this block
+dead mapspecifictechs block,data\mapspecifictechs.xml,10056,WOLMoon,not a type in maptypes.xml: the game never uses this block
+shadowed mapspecifictechs block,data\mapspecifictechs.xml,10514,arabia,same type as the block at line 214 (names ignore case): never used
+civs.xml comment,data\civs.xml,14772,AURCattle,"'<!-- civ>' opened here is closed only by '-->' at line 15128; inside: AURCattle, AURCocoa, AURManioc, AURSalt, AURCoffee, AURVanilla, AURTimber, AURRubber, AURIvory, AURTextiles, AURPalmOil, AURGold, AURDiamonds, AURTreasures, AUROil, AURFigurines, AURLiterature, AURSlaves, AURIncense, AURSilk, AURGems"
+missing grouping files,RM4\Barrier Ridge TWC.xs,3063,Barrier Ridge TWC,"no RM4\groupings\<name>.xml for: ?; gp_flower0-1; gp_grasspatch0-1 (rmCreateGrouping at lines 3063, 3065, 3081, 3083, 3101, 3103, 4352, 4371, 4393)"
+missing grouping files,RM4\Central America+TWC.xs,1200,Central America+TWC,"no RM4\groupings\<name>.xml for: native miskito village 4; native miskito village 5 (rmCreateGrouping at lines 1200, 1202, 1207, 1209, 1214, 1216, 1221, 1223, 1228, 1230, 1235, 1237)"
+missing grouping files,RM4\Ceylon.xs,304,Ceylon,"no RM4\groupings\<name>.xml for: native bhakti village ceylon 0; native zen temple ceylon 00 (rmCreateGrouping at lines 304, 318, 343, 367, 380, 404, 415)"
+resource never placed,RM4\Christmas.xs,202,Christmas,bison is added to an object definition that no live code places (lines 202)
+resource never placed,RM4\DansilAlaska.xs,333,DansilAlaska,BerryBush is added to an object definition that no live code places (lines 333)
+resource never placed,RM4\DansilChupat.xs,333,DansilChupat,BerryBush is added to an object definition that no live code places (lines 333)
+resource never placed,RM4\DansilFalklands.xs,324,DansilFalklands,BerryBush is added to an object definition that no live code places (lines 324)
+resource never placed,RM4\DansilIbalong.xs,367,DansilIbalong,BerryBush is added to an object definition that no live code places (lines 367)
+resource never placed,RM4\DansilIrrawaddyRiver.xs,379,DansilIrrawaddyRiver,BerryBush is added to an object definition that no live code places (lines 379)
+resource never placed,RM4\DansilLCongo.xs,438,DansilLCongo,HumpbackWhale is added to an object definition that no live code places (lines 438)
+resource never placed,RM4\DansilYalu_River.xs,594,DansilYalu_River,ypMarcoPoloSheep is added to an object definition that no live code places (lines 594)
+resource never placed,RM4\DansilZavkhan.xs,506,DansilZavkhan,BerryBush is added to an object definition that no live code places (lines 506)
+missing grouping files,RM4\Delta TWC.xs,1857,Delta TWC,"no RM4\groupings\<name>.xml for: ? (rmCreateGrouping at lines 1857, 1859, 1888, 1890)"
+missing grouping files,RM4\Desert Flood.xs,640,Desert Flood,"no RM4\groupings\<name>.xml for: AURcocoa egyptian 1; AURcocoa egyptian 2; AURcocoa egyptian 3; AURmanioc egyptian 1; AURmanioc egyptian 2; AURmanioc egyptian 3; AURslaves egyptian 1; AURslaves egyptian 2; AURslaves egyptian 3; AURtextiles egyptian 1; AURtextiles egyptian 2; AURtextiles egyptian 3; AURtimber egyptian 1; AURtimber e (rmCreateGrouping at lines 640, 642, 660, 662)"
+resource never placed,RM4\ESOC_Adirondacks.xs,1081,ESOC_Adirondacks,berrybush is added to an object definition that no live code places (lines 1081)
+resource never placed,RM4\ESOC_Arizona.xs,1156,ESOC_Arizona,berrybush is added to an object definition that no live code places (lines 1156)
+resource never placed,RM4\ESOC_Manchac.xs,1256,ESOC_Manchac,FishSalmon is added to an object definition that no live code places (lines 1256)
+missing grouping files,RM4\Gold Coast.xs,296,Gold Coast,"no RM4\groupings\<name>.xml for: AURfigurinesGUI1; AURfigurinesGUI2; AURfigurinesGUI3; AURgoldGUI1; AURgoldGUI2; AURgoldGUI3; AURivoryGUI1; AURivoryGUI2; AURivoryGUI3; AURpalmoilGUI1; AURpalmoilGUI2; AURpalmoilGUI3; AURrubberGUI1; AURrubberGUI2; AURrubberGUI3; AURslavesGUI1; AURslavesGUI2; AURslavesGUI3; AURtextilesGUI1; AURtextile (rmCreateGrouping at lines 296, 314, 332, 350, 368)"
+missing grouping files,RM4\NEWBahia.xs,227,NEWBahia,"no RM4\groupings\<name>.xml for: native bandeirante village -1; native bandeirante village 4; native bandeirante village 5; native jesuit mission cj 0-1 (rmCreateGrouping at lines 227, 234, 241, 356, 367, 370, 381, 384)"
+missing grouping files,RM4\NEWBarbary.xs,249,NEWBarbary,"no RM4\groupings\<name>.xml for: AURcoffeeMAG1; AURcoffeeMAG2; AURcoffeeMAG3; AURliteratureMAG1; AURliteratureMAG2; AURliteratureMAG3; AURsaltMAG1; AURsaltMAG2; AURsaltMAG3; AURslavesMAG1; AURslavesMAG2; AURslavesMAG3 (rmCreateGrouping at lines 249, 256, 263, 375, 382, 391)"
+missing grouping files,RM4\NEWKarakum.xs,303,NEWKarakum,"no RM4\groupings\<name>.xml for: native bhakti village ceylon 0; native zen temple ceylon 00 (rmCreateGrouping at lines 303, 317, 342, 366, 379, 403, 414)"
+resource never placed,RM4\NEWMagdalena.xs,1156,NEWMagdalena,berrybush is added to an object definition that no live code places (lines 1156)
+missing grouping files,RM4\NEWMesoMarshes.xs,455,NEWMesoMarshes,"no RM4\groupings\<name>.xml for: native jesuit mission cj 00; native pirate tdf 00 (rmCreateGrouping at lines 455, 469, 494, 518, 531, 555, 566)"
+resource never placed,RM4\NEWSerradoMar.xs,607,NEWSerradoMar,"Plantation is added to an object definition that no live code places (lines 607, 626)"
+missing grouping files,RM4\NEWTierraFuego.xs,444,NEWTierraFuego,"no RM4\groupings\<name>.xml for: native jesuit mission cj 00; native pirate tdf 00 (rmCreateGrouping at lines 444, 458, 483, 507, 520, 544, 555)"
+missing grouping files,RM4\Prairie TWC.xs,1982,Prairie TWC,"no RM4\groupings\<name>.xml for: gp_bigpatch0-1; gp_bigpatch01; gp_bigpatch04; gp_bigpatch05; gp_bigpatch06; gp_bigpatch07; gp_bigpatch08; gp_bigpatch09; gp_dry_bigpatch0-1; gp_dry_bigpatch01; gp_dry_bigpatch02; gp_dry_bigpatch03; gp_flower0-1; gp_grasspatch0-1; gp_grasspatch08; gp_grasspatch09; native emboaba village 4; native emb (rmCreateGrouping at lines 1982, 1984, 1986, 1988, 2006, 2008, 2010, 2015, 2017, 2019, 2024, 2026)"
+missing grouping files,RM4\Transcontinental TAD.xs,6578,Transcontinental TAD,"no RM4\groupings\<name>.xml for: ?; gp_flower0-1; gp_grasspatch0-1 (rmCreateGrouping at lines 6578, 6580, 6599, 6601, 6623, 6625, 6644, 6646, 8564, 8583, 8605, 8624)"
+missing grouping files,RM4\WOLAlps.xs,575,WOLAlps,no RM4\groupings\<name>.xml for: EURNShunters med; EURNSlumberjacks med; EURNSstonemasons east (rmCreateGrouping at lines 575)
+resource never placed,RM4\WOLAlps.xs,424,WOLAlps,GrapeBush is added to an object definition that no live code places (lines 424)
+missing grouping files,RM4\WOLGibraltar.xs,626,WOLGibraltar,"no RM4\groupings\<name>.xml for: AURliterature egyptian; AURoil egyptian; AURsilk egyptian; european farmstead med1; european farmstead med2; european farmstead med3; european fishing village med1; european fishing village med2; european fishing village med3; european priory med1; european priory med2; european priory med3 (rmCreateGrouping at lines 626, 628, 638, 640, 650, 652, 662, 664, 674, 676)"
+missing grouping files,RM4\WOLIberianPeninsula.xs,707,WOLIberianPeninsula,"no RM4\groupings\<name>.xml for: ne_rockwall -1 (rmCreateGrouping at lines 707, 722, 998)"
+missing grouping files,RM4\WOLasuncion.xs,340,WOLasuncion,"no RM4\groupings\<name>.xml for: PY village -1; PY village 4 (rmCreateGrouping at lines 340, 358, 584)"
+resource never placed,RM4\WOLcave.xs,317,WOLcave,berrybush is added to an object definition that no live code places (lines 317)
+missing grouping files,RM4\WOLcongo.xs,1299,WOLcongo,"no RM4\groupings\<name>.xml for: ? (rmCreateGrouping at lines 1299, 1301, 1303, 1305, 1323, 1325, 1327, 1332, 1334, 1336, 1341, 1343)"
+missing grouping files,RM4\WOLhawaii.xs,556,WOLhawaii,"no RM4\groupings\<name>.xml for: 1; 2; 3; 4; 5 (rmCreateGrouping at lines 556, 570, 599, 606, 614, 622, 630, 638)"
+resource never placed,RM4\WOLlakerose.xs,211,WOLlakerose,bison is added to an object definition that no live code places (lines 211)
+resource never placed,RM4\WOLnlnz.xs,635,WOLnlnz,"Plantation is added to an object definition that no live code places (lines 635, 654)"
+missing grouping files,RM4\WOLsahel.xs,222,WOLsahel,"no RM4\groupings\<name>.xml for: AURgold timbuktu 1; AURgold timbuktu 2; AURgold timbuktu 3 (rmCreateGrouping at lines 222, 227, 268, 273, 287, 292, 305, 310, 323, 328)"
+missing grouping files,RM4\WOLsavannah.xs,471,WOLsavannah,"no RM4\groupings\<name>.xml for: BigPropTexas; gp_flower0-1; gp_grasspatch0-1 (rmCreateGrouping at lines 471, 494, 519, 545, 568, 595, 900, 1089, 1111, 1127)"
+missing grouping files,RM4\WolAysen.xs,314,WolAysen,"no RM4\groupings\<name>.xml for: native jesuit mission cj 00; native pirate tdf 00; native pirate tdf 04; native pirate tdf 05 (rmCreateGrouping at lines 314, 328, 353, 377, 390, 414, 425)"
+missing grouping files,RM4\WolBioko.xs,373,WolBioko,"no RM4\groupings\<name>.xml for: AURrubber tribal 0; AURslaves tribal 0 (rmCreateGrouping at lines 373, 387, 412, 436, 449, 473, 484)"
+missing grouping files,RM4\anatolia.xs,451,anatolia,"no RM4\groupings\<name>.xml for: native orderofchrist village -1 (rmCreateGrouping at lines 451, 461)"
+resource never placed,RM4\bayou.xs,805,bayou,FishSalmon is added to an object definition that no live code places (lines 805)
+resource never placed,RM4\dansil Rio De Plata.xs,435,dansil Rio De Plata,BerryBush is added to an object definition that no live code places (lines 435)
+resource never placed,RM4\dansil92Kwadacha.xs,396,dansil92Kwadacha,BerryBush is added to an object definition that no live code places (lines 396)
+resource never placed,RM4\dansilFiji.xs,563,dansilFiji,guanaco is added to an object definition that no live code places (lines 563)
+resource never placed,RM4\dansilRed Beach.xs,320,dansilRed Beach,ypSerow is added to an object definition that no live code places (lines 320)
+resource never placed,RM4\dansil_Micronesia.xs,278,dansil_Micronesia,BananaBush is added to an object definition that no live code places (lines 278)
+resource never placed,RM4\dansil_greatbarrierreef.xs,390,dansil_greatbarrierreef,BerryBush is added to an object definition that no live code places (lines 390)
+resource never placed,RM4\dansil_greatbarrierreef.xs,425,dansil_greatbarrierreef,Fox is added to an object definition that no live code places (lines 425)
+resource never placed,RM4\dansil_greatbarrierreef.xs,418,dansil_greatbarrierreef,Moose is added to an object definition that no live code places (lines 418)
+resource never placed,RM4\dansil_greatbarrierreef.xs,403,dansil_greatbarrierreef,"elk is added to an object definition that no live code places (lines 403, 411)"
+resource never placed,RM4\dansil_greatbarrierreef.xs,376,dansil_greatbarrierreef,"mine is added to an object definition that no live code places (lines 376, 382, 524)"
+resource never placed,RM4\dansil_greatbarrierreef.xs,376,dansil_greatbarrierreef,minegold is added to an object definition that no live code places (lines 376)
+missing grouping files,RM4\deccan.xs,524,deccan,"no RM4\groupings\<name>.xml for: 1; 2; 3; 4; 5 (rmCreateGrouping at lines 524, 549)"
+missing grouping files,RM4\deccanLarge.xs,524,deccanLarge,"no RM4\groupings\<name>.xml for: 1; 2; 3; 4; 5 (rmCreateGrouping at lines 524, 549)"
+missing grouping files,RM4\dunas.xs,331,dunas,"no RM4\groupings\<name>.xml for: native Cherokee villageW 1; native Cherokee villageW 2; native Cherokee villageW 3; native Cherokee villageW 4; native Cherokee villageW 5; native cherokee villageW 1; native cherokee villageW 2; native cherokee villageW 3; native cherokee villageW 4; native cherokee villageW 5; native seminole vill (rmCreateGrouping at lines 331, 361, 390, 421, 442)"
+resource never placed,RM4\dunas.xs,845,dunas,FishSalmon is added to an object definition that no live code places (lines 845)
+missing grouping files,RM4\everglades.xs,326,everglades,"no RM4\groupings\<name>.xml for: native Cherokee village 10; native Cherokee village 6; native Cherokee village 7; native Cherokee village 8; native Cherokee village 9; native cherokee village 10; native cherokee village 6; native cherokee village 7; native cherokee village 8; native cherokee village 9; native seminole village 10 (rmCreateGrouping at lines 326, 342, 358, 374, 390, 526)"
+missing grouping files,RM4\great chaco.xs,310,great chaco,"no RM4\groupings\<name>.xml for: native guaicuru village 4; native guaicuru village 5; native guarani village 4; native guarani village 5 (rmCreateGrouping at lines 310, 333)"
+resource never placed,RM4\great lakes.xs,259,great lakes,bison is added to an object definition that no live code places (lines 259)
+missing grouping files,RM4\great plains.xs,462,great plains,"no RM4\groupings\<name>.xml for: gp_flower0-1; gp_grasspatch0-1 (rmCreateGrouping at lines 462, 485, 510, 536, 559, 586, 889, 930, 952, 968)"
+missing grouping files,RM4\great plainsLarge.xs,453,great plainsLarge,"no RM4\groupings\<name>.xml for: gp_flower0-1; gp_grasspatch0-1 (rmCreateGrouping at lines 453, 476, 501, 527, 550, 577, 880, 921, 943, 959)"
+missing grouping files,RM4\new england.xs,566,new england,"no RM4\groupings\<name>.xml for: ne_rockwall -1 (rmCreateGrouping at lines 566, 570, 595, 599, 628, 1072)"
+missing grouping files,RM4\northwest territory.xs,419,northwest territory,"no RM4\groupings\<name>.xml for: native klamath village -1 (rmCreateGrouping at lines 419, 436, 457, 478)"
+missing grouping files,RM4\plymouth.xs,325,plymouth,"no RM4\groupings\<name>.xml for: ne_rockwall -1 (rmCreateGrouping at lines 325, 337, 349, 361, 460, 535, 691)"
+missing grouping files,RM4\saskatchewan.xs,422,saskatchewan,"no RM4\groupings\<name>.xml for: gp_flower0-1; gp_grasspatch0-1 (rmCreateGrouping at lines 422, 444, 468, 493, 515, 541, 835, 874, 895, 910)"
+resource never placed,RM4\vividlyKolkata.xs,1016,vividlyKolkata,berrybush is added to an object definition that no live code places (lines 1016)
+resource never placed,RM4\whiteshell.xs,227,whiteshell,bison is added to an object definition that no live code places (lines 227)
+missing grouping files,RM4\yucatan.xs,620,yucatan,"no RM4\groupings\<name>.xml for: native Maya village -1; native miskito village -1 (rmCreateGrouping at lines 620, 630)"

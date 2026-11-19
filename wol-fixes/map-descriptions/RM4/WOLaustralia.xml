@@ -1,0 +1,10 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\Asia and Oceania\australia" 
+displayNameID = "75211" cannotReplace = "" loadBackground="RMs\BIG\Asia and Oceania\australia"
+details="6170192"
+loadDetails="6170193">
+
+<loadss>ui\random_map\australia\australia_ss_01</loadss>
+<loadss>ui\random_map\australia\australia_ss_02</loadss>
+<loadss>ui\random_map\australia\australia_ss_03</loadss>
+</mapinfo>

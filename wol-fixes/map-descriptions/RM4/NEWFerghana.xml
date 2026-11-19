@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Ferghana"
+imagepath = "rms\small\Africa and Middle East\ferghana" 
+loadBackground="rms\big\other\middleeast"
+details="6170128"
+loadDetails="6170129">
+   <loadss>ui\random_map\NEW\ferghana\ferghana_ss</loadss>
+</mapinfo>

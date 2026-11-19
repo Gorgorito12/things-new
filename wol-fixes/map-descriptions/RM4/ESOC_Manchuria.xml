@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath="ui\esoc_map\manchuria"
+displayName = "ESOC Manchuria"
+cannotReplace = ""
+loadBackground="ui\esoc_map\manchuria_map"
+details="6170086"
+loadDetails="6170087">
+
+ <loadss>ui\random_map\Manchuria\Manchuria_ss_01</loadss>
+ <loadss>ui\random_map\Manchuria\Manchuria_ss_02</loadss>
+ <loadss>ui\random_map\Manchuria\Manchuria_ss_03</loadss>
+ 
+  
+</mapinfo>

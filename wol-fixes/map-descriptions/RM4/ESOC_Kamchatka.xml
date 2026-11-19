@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\kamchatka"
+displayName = "ESOC Kamchatka"
+cannotReplace = ""
+loadBackground="ui\esoc_map\kamchatka_map"
+details="6170078"
+loadDetails="6170079">
+
+<loadss>ui\random_map\northwest_territory\northwest_territory_ss_01</loadss>
+<loadss>ui\random_map\northwest_territory\northwest_territory_ss_02</loadss>
+<loadss>ui\random_map\northwest_territory\northwest_territory_ss_03</loadss>
+
+  
+</mapinfo>

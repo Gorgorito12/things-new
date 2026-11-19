@@ -1,0 +1,19 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath = "rms\small\NEW\magdalenasmall"
+
+displayName = "Magdalena River" 
+
+cannotReplace = ""
+ loadBackground="rms\big\other\southamerica"
+details="6170144"
+loadDetails="6170145">
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_01</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_02</loadss>
+   <loadss>ui\random_map\northwest_territory\northwest_territory_ss_03</loadss>
+   <loadss>ui\random_map\rockies\rockies_ss_01</loadss>
+   <loadss>ui\random_map\rockies\rockies_ss_02</loadss>
+   <loadss>ui\random_map\rockies\rockies_ss_03</loadss>
+
+</mapinfo>

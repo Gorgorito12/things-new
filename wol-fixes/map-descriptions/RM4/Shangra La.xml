@@ -1,0 +1,10 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\SMALL\Asia and Oceania\Shangrila" 
+displayName = "Shangri-La" 
+loadBackground="RMs\big\other\asia"
+details="6170168"
+loadDetails="6170169">
+  <loadss>ui\random_map\himalayas\himalayas_ss_2</loadss>
+  <loadss>ui\random_map\himalayas\himalayas_ss_3</loadss>
+</mapinfo>

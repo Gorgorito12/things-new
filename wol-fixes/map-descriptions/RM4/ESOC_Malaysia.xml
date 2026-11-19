@@ -1,0 +1,3 @@
+<mapinfo imagepath="ui\esoc_map\malaysia"  displayName = "ESOC Malaysia" cannotReplace="" loadBackground="ui\esoc_map\malaysia_map"
+details="6170082"
+loadDetails="6170083"><loadss>ui\random_map\borneo\borneo_ss_1</loadss><loadss>ui\random_map\borneo\borneo_ss_2</loadss><loadss>ui\random_map\borneo\borneo_ss_3</loadss></mapinfo>

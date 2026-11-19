@@ -1,0 +1,1195 @@
+map,original_fact,category,keep,reason,checked
+acre,Acre is located in the extreme west of Brazil.,geography-history,yes,where the map is; kept in the description,hand
+acre,The map is inhabited by the colorful Guarani and the Caribs,gameplay rule,yes,"the natives; the Natives line has them (Caraja, Caribs or Guarani, varies)",hand
+acre,"will probably never let you run out of wood, as the rainforest is dense",gameplay rule,yes,endless wood; kept in the description,hand
+acre,"There are no gold mines; Acre is very rich in rubber trees, which will provide you with the coin you need.",gameplay rule,yes,rubber trees instead of mines; kept in the description and the Mines line,hand
+acre,Acre is Brazil's greatest national producer of rubber,geography-history,yes,the history line; kept in the description (short),hand
+acre,Tapirs will be your main source of food.,gameplay rule,yes,kept in the description; Hunts line,hand
+acre,One of Amazon's tributaries separates the two teams from each other.,gameplay rule,yes,kept in the description,hand
+acre,"Walkable crosses can be found on the shores of the river, and securing those is the key to victory",gameplay rule,yes,the fords; kept in the description,hand
+acre,its Fish can be a secondary food source,gameplay rule,yes,kept in the description; Fish line,hand
+acre,Acre: a dark river map with wide crossings (old lobby text),other,no,the description says the same in more detail,hand
+amazonia,Teams are separated by the mighty Amazon River.,gameplay rule,yes,kept in the description (the river has no fords: amazonia.xs:245-247 has its shallows commented out),yes
+amazonia,Trade Routes and Natives may be separated... or maybe not.,variant,yes,"kept in the description: two routes, one or none (tradeRouteNum, amazonia.xs:370-430), natives placed by route",yes
+amazonia,Caraja or Zapotec live deep in the rain forests.,gameplay rule,no,"the script places Paulista, Quilombola, Order of Christ or Guarani (amazonia.xs:12-40): the Natives line lists them",yes
+amazonia,"Build a navy to control the river, and control the map -- but keep an eye out for enemy Redoubts and cannon on the shores.",gameplay rule,yes,"kept in the description (""towers and cannon"": the Redoubt is one civilization's building)",yes
+amazonia,Amazonia: fight along the mighty Amazon River. (old lobby text),gameplay rule,yes,same fact as the river; kept in the description,yes
+anatolia,"Also known as Asia Minor, the Anatolian Peninsula has experienced countless wars throughout the course of history.",geography-history,yes,short history line; kept in the description,yes
+anatolia,The Order of Christ has now sent some of their knights to build encampments there; forging an alliance with them will provide you with powerful units to expand your strategy.,gameplay rule,yes,kept in the description; Natives line,yes
+anatolia,"Resources are abundant, both on land and sea, while your economy can also be supported by the Trade Route, which is equally split between the players.",gameplay rule,yes,"kept in the description (three sockets at 0.3, 0.5, 0.7 of the route)",yes
+anatolia,"If you wish to take control of the sea, be careful for the Galleys that patrol the shores and may damage your ships.",variant,yes,kept in the description: the script places Gaia galleys at sea (anatolia.xs:695-712),yes
+anatolia,Anatolia: desert surrounded on two sides by sea. (old lobby text),gameplay rule,yes,kept in the description (sea on two sides),yes
+andes,Andes is a mountainous region with the warring factions starting dangerously close.,gameplay rule,yes,kept in the description,yes
+andes,A Trade Route with three Trading Post sites separates the teams.,gameplay rule,yes,"kept in the description (three sockets; straight or V route, andes.xs:280-360)",yes
+andes,Four Republiqueta towns are on the far side of the map.,gameplay rule,yes,"kept as four Aymara villages: WoL's script places Aymara there (andes.xs:24-36, 368-420)",yes
+andes,Allying with all the Natives is potentially powerful.,gameplay rule,yes,kept in the description,yes
+andes,"Andes: The Republiqueta can prove a powerful ally, but watch out for the nearby enemy. (old lobby text)",other,yes,"same facts (the allies, the close enemy) kept; the allies are Aymara in WoL",yes
+appalachians,"This map represents the long ridges of the Appalachians, and has defensive possibilities.",gameplay rule,yes,kept in the description,hand
+appalachians,Teams start on either side of a ridge or ridges with varying gaps thru or over the barriers.,variant,yes,"one or two ridges, gaps vary; kept in the description",hand
+appalachians,There may be randomly 1 or 2 trade routes,variant,yes,kept in the description; the Trade route line says Yes,hand
+appalachians,"a variety of possible numbers and placement of either Cherokee, Huron, Seminole or Nootka - up to 2 different tribes per map",variant,yes,"the Natives line lists them (varies); ""up to 2 per map"" kept in the description",hand
+appalachians,There are 4 different skins.,variant,yes,kept in the description,hand
+appalachians,Designed by RF_Gandalf,credit,yes,Creator line,hand
+appalachians,The ridge and valley region of the Appalachian Mountains (old lobby text),geography-history,yes,kept in the description (ridge and valley),hand
+Arabia,The Silk Road runs through this baron land.,other,yes,kept in the description (geography),yes
+Arabia,"Since trees, plants, and animals are very scarce on this map.",gameplay rule,yes,kept in the description,yes
+Arabia,You will have to rely on trading to build an empire.,geography-history,yes,kept in the description,yes
+araucania,"Araucania runs the length of South America's west coast and has plentiful hunting, fishing and whaling.",gameplay rule,yes,kept in the description,yes
+araucania,"Republiqueta towns occupy this variable landscape of mineral-rich northern deserts, bountiful central grasslands, and treasure-laden southern wastes.",gameplay rule,yes,"the three regions kept in the description (whichVariation, araucania.xs:60-180); the natives (Aymara or Republiqueta) are in the Natives line",yes
+araucania,Araucania: fight along the western coast of South America. (old lobby text),other,yes,same fact (west coast); kept in the description,yes
+atacama,"The driest non-polar desert in the world, Atacama features no natives, as the conditions and the climate don't really benefit life.",gameplay rule,yes,"kept in the description; the natives are commented out in the script (atacama.xs:13-62, 426-470)",yes
+atacama,"A few guanacos can be found scattered in the oldest desert on earth—as it is considered by many—while trees are only a few, as well.",variant,yes,"few guanacos and trees kept; ""oldest desert on earth"" dropped as filler",yes
+atacama,"The map is, however, rich in salt mines, especially in the middle of it, where players cannot build anything due to the ""salares"", the salt lakes that dominate this area.",gameplay rule,yes,"kept in the description (salt mines placed around the centre, atacama.xs:720-734)",yes
+atacama,"Taking control of the Trade Routes that cross the center of the map is important, as they can keep you fed, when the rest of the resources have run out.",gameplay rule,yes,"kept in the description: two routes, N-S and W-E, cross the centre (atacama.xs:219-277)",yes
+atacama,Atacama: Salt mines are located in the middle of this map. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+Baja California TWC 01,"Teams start on opposite sides of the long, arid peninsula, with a mountain range and a trade route with 3 or 4 trade posts down the center.",variant,yes,"kept in the description; 3, 4 or 5 sockets by socketPattern and players (Baja California TWC 01.xs:628-690), so ""three to five""",yes
+Baja California TWC 01,"There can be 2-5 native villages, randomly Zapotec, Maya, Navajo or Apache, variously placed about the map.",variant,yes,"kept in the description; two of Zapotec, Maya, Navajo, Apache per game (nativePattern, :110-150), named in the Natives line",yes
+Baja California TWC 01,Fishing is rich and there are whales concentrated off the southern tip.,gameplay rule,yes,"kept in the description (whales placed at the south tip, :1357-1359)",yes
+Baja California TWC 01,"Extra silver or gold is not plentiful, but is most abundant in the mountains or in the north.",gameplay rule,yes,kept in the description,yes
+Baja California TWC 01,Designed by RF_Gandalf,credit,yes,creator line,yes
+Baja California TWC 01,Cabos: a long rugged peninsula (old lobby text),other,yes,same fact (the peninsula); kept in the description,yes
+Barrier Ridge TWC,"A rectangular map, with teams arranged far apart on opposite sides of a mountain ridge with only one pass.",gameplay rule,yes,"kept in the description; one gap, placed by gapPattern (Barrier Ridge TWC.xs:2240-2430)",yes
+Barrier Ridge TWC,The map features 28 different terrain patterns with matching native types and resources.,variant,yes,kept in the description (patternChance 1-28),yes
+Barrier Ridge TWC,Native tribes are of 1 or 2 types per map and of varied number.,variant,yes,kept in the description,yes
+Barrier Ridge TWC,There is always one trade route on each side of the barrier ridge.,gameplay rule,yes,kept in the description (every trPattern builds two routes),yes
+Barrier Ridge TWC,For the War Chiefs only.,gameplay rule,no,a version note of the original; the map runs in Wars of Liberty,yes
+Barrier Ridge TWC,Designed by RF_Gandalf,credit,yes,creator line,yes
+Barrier Ridge TWC,Can you hold the pass and gain the victory? (old lobby text),gameplay rule,yes,"kept in the description (""fight to hold the pass"")",yes
+bayou,A vast swamp where dry land is at a premium.,gameplay rule,yes,kept in the description,yes
+bayou,"You can only build on solid ground, but armies can travel across the wetlands, so beware of unexpected ambushes.",gameplay rule,yes,kept in the description,yes
+bayou,Cherokee and Seminole villages occupy islands through the middle of the map.,gameplay rule,yes,"kept in the description (villages along the middle line, bayou.xs:291-410); the Natives line names them",yes
+bayou,Bayou: swampland with limited space for settlements. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+borneo,"With a rich coastal region and a bountiful interior, the island of Borneo promises endless opportunities for expansion and conflict.",gameplay rule,yes,kept in the description,yes
+borneo,"Each team has access to a Trade Route servicing the breadth of the island, where a wealth of gold and food may be discovered by those willing to brave the dense jungle.",variant,yes,"kept in the description; one route per team, one shared route in free-for-all or uneven teams (borneo.xs:46-48, 296-380)",yes
+borneo,"The waters around the island are visible at the start of the game, and are ripe for fishing.",gameplay rule,yes,kept in the description (rmSetOceanReveal),yes
+borneo,"Borneo: A resource-rich island with lucrative Trade Routes in the interior, and surrounded by well-charted waters. (old lobby text)",gameplay rule,yes,same facts; kept in the description,yes
+california,California is a beautiful area along the Pacific Ocean.,other,yes,kept in the description,yes
+california,"Towering redwoods line the shore, giving way first to mountains, then to the Mojave Desert to the east.",gameplay rule,yes,kept in the description,yes
+california,"Two Native settlements of Klamath and/or Nootka are on opposite map sides, and there are always four Trading Post sites along the Trade Route.",gameplay rule,yes,"kept in the description (four sockets, california.xs:424-441; two villages, :580-672)",yes
+caribbean,"The islands of the Caribbean support only a few animals, but the ocean offers a bounty of fish.",gameplay rule,yes,kept in the description,yes
+caribbean,Palm trees provide plenty of wood for constructing ships.,gameplay rule,yes,kept in the description,yes
+caribbean,You will share an island with your teammates.,gameplay rule,yes,"kept in the description (one island per team, caribbean.xs:208-226)",yes
+caribbean,There will always be an additional island with a Trade Route.,gameplay rule,yes,kept in the description,yes
+caribbean,Carib settlements are scattered across all the islands.,gameplay rule,yes,kept in the description,yes
+caribbean,Caribbean: a collection of islands in warm ocean waters. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+carolina,The southeast coast of North America has plenty of resources and extra Crates.,gameplay rule,yes,"kept in the description (bonus crates, carolina.xs:416-423)",yes
+carolina,The ease of naval transport and lack of cliffs means you are never too far from your enemy.,gameplay rule,yes,kept in the description,yes
+carolina,A Trade Route runs along the coast with four sites for Trading Posts.,gameplay rule,yes,"kept in the description (four sockets, carolina.xs:366-376)",yes
+carolina,"This is the home of the Cherokee, who will always have two villages on the map.",gameplay rule,yes,kept in the description,yes
+carolina,Sometimes you may encounter one or two Seminole villages as well.,variant,yes,"corrected: the script always places one Seminole village and a second half the time (carolina.xs:26-38, 517-555), so ""one or two""",yes
+carolina,Carolina: start with extra resource crates on this coastal map. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+carolinaLarge,The southeast coast of North America has plenty of resources and extra Crates.,gameplay rule,yes,"kept in the description (bonus crates, carolinaLarge.xs:412-419)",yes
+carolinaLarge,The ease of naval transport and lack of cliffs means you are never too far from your enemy.,gameplay rule,yes,kept in the description,yes
+carolinaLarge,A Trade Route runs along the coast with four sites for Trading Posts.,gameplay rule,yes,"kept in the description (four sockets, carolinaLarge.xs:362-372)",yes
+carolinaLarge,"This is the home of the Cherokee, who will always have two villages on the map.",gameplay rule,yes,kept in the description,yes
+carolinaLarge,Sometimes you may encounter one or two Seminole villages as well.,variant,yes,"corrected: the script always places one Seminole village and a second half the time (carolinaLarge.xs:23-35), so ""one or two""",yes
+carolinaLarge,Carolina: start with extra resource crates on this coastal map. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+Central America+TWC,"Teams are arranged on opposite shores of the land, with rugged terrain in the center.",gameplay rule,yes,kept in the description,yes
+Central America+TWC,"Players get 2 Frontier Wagons, or 1 Blockhouse Wagon if Russian, or one War Hut Travois if North American Native, at the start.",gameplay rule,yes,kept in the description (Central America+TWC.xs:1132-1170),yes
+Central America+TWC,"Natives, Maya, Aztec, Caraja or Zapotec, are found in varied numbers, position, and combinations.",gameplay rule,yes,"""varied numbers and combinations"" kept; the names are in the Natives line (Miskito instead of Caraja in this script, :36-52)",yes
+Central America+TWC,A few different Trade Route patterns are possible.,variant,yes,"kept in the description (trPattern 3-5: one diagonal, two side-to-side or two parabolas)",yes
+Central America+TWC,"This is a rich map, with lots of forest, fauna, mines and treasures.",gameplay rule,yes,kept in the description,yes
+Central America+TWC,The nearby sea has plentiful fish and whales.,gameplay rule,yes,kept in the description,yes
+Central America+TWC,Designed by RF_Gandalf,credit,yes,creator line,yes
+Central America+TWC,Panama: across the Central American highlands (old lobby text),other,yes,same fact (the highlands); kept in the description,yes
+Ceylon,Players begin on a humble patch of rock rising up from the middle of the sea.,gameplay rule,yes,kept in the description,yes
+Ceylon,"Fortunes will be sought on the central island, as players must migrate north to establish bases on this resource rich coast.",gameplay rule,yes,kept in the description,yes
+Ceylon,"Wild beasts roam the island's northern region, while gold mines and ancient Treasures can be found nestled amongst the cliffs to the south.",variant,yes,"kept in the description (northConstraint for hunts; gold and hard nuggets in the south, Ceylon.xs:101-102, 581, 690)",yes
+Ceylon,"Your Home City has prepared well for this expedition, so your first Shipment will be available quickly.",gameplay rule,yes,kept in the description: 275 XP granted at start (Ceylon.xs:739-754),yes
+Ceylon,"Ceylon: Migrate by sea to a large, resource-rich continent. (old lobby text)",gameplay rule,yes,same fact; kept in the description,yes
+Christmas,"In these lands, the joys of Christmas are never very far away.",other,yes,kept in the description,yes
+Christmas,"The landscape scattered with presents, the trees are nicely decorated, kids skate on the frozen lake and warm fires burn in the houses.",gameplay rule,yes,"presents, decorated trees and the frozen lake kept (gifts on the lake islands, Christmas.xs:276-279); skating children and fires are scenery, dropped",yes
+Christmas,"Reindeer, who have a day off of pulling sleds, graze outside while snowflakes gently fall down.",gameplay rule,yes,kept in the description (grazing reindeer),yes
+Christmas,"Other Reindeer are working, transporting stuff from town to town on the large trade route that passes the region.",gameplay rule,yes,kept in the description,yes
+Christmas,Winter Wonderland: Land of Christmas trees and presents (old lobby text),variant,yes,same facts; kept in the description,yes
+Dakota Badlands V,"A map of the prairie for AOE3, with a section of untamed Badlands in the center and a Trade Route on each half of the map.",gameplay rule,yes,"kept in the description (""for AOE3"" dropped)",yes
+Dakota Badlands V,All forest is in the hills at the edges of the prairie.,gameplay rule,yes,kept in the description,yes
+Dakota Badlands V,"Features include varied player placement and varied native numbers and positions including one or more of the Lakota, Cree and/or Comanche villages.",variant,yes,kept in the description; the tribes are in the Natives line,yes
+Dakota Badlands V,The map has two 'seasonal' patterns - spring or summer.,variant,yes,kept in the description (patternChance: green or dry grass),yes
+Dakota Badlands V,Designed by RF_Gandalf,credit,yes,creator line,yes
+Dakota Badlands V,Badlands: battle across the Dakota Badlands (old lobby text),other,yes,same fact; kept in the description,yes
+dansil Manicouagan Basin,Resources are abundant during the summer months in Eastern Canada.,variant,yes,kept in the description,yes
+dansil Manicouagan Basin,"Compete to control the land, water, chokepoints, and access to native allies simultaneously.",gameplay rule,yes,"kept in the description (ring of water around a central island, connected by land bridges)",yes
+dansil Manicouagan Basin,"The Cree offer strong technologies and an extra economic option, while the water offers fish and strategic advantage.",gameplay rule,yes,kept in the description,yes
+dansil Manicouagan Basin,"You will need to have a strong land presence to have access to coin, however.",gameplay rule,yes,kept in the description,yes
+dansil Manicouagan Basin,Map by dansil92,credit,yes,creator line,yes
+dansil Rio De Plata,"Players are seperated by a large, resource rich gulf, with a narrow crossing to the Northwest.",gameplay rule,yes,"kept in the description (one shallow, dansil Rio De Plata.xs:189-200)",yes
+dansil Rio De Plata,Control the water or risk losing control of the whole map.,gameplay rule,yes,kept in the description,yes
+dansil Rio De Plata,Map by dansil92,credit,yes,creator line,yes
+dansil92 Manitoba,A large number of ponds dot the landscape in this area.,gameplay rule,yes,kept in the description,yes
+dansil92 Manitoba,"The local Cree peoples may prove a powerful alliance, and players have a vast amount of natural resources at their disposal.",variant,yes,kept in the description,yes
+dansil92 Manitoba,A lucrative trade route passes through the area and may prove to be a point of early contention.,variant,yes,kept in the description,yes
+dansil92 Manitoba,"Controlling the ponds will be essential, but don't neglect your land presence.",gameplay rule,yes,kept in the description,yes
+dansil92 Manitoba,Outlaws: Renegado / Comanchero,gameplay rule,yes,"agrees with the Outlaws line (Renegado, Comanchero)",yes
+dansil92 Manitoba,Map by dansil92,credit,yes,creator line,yes
+dansil92Kwadacha,"This dark, remote region of the Rockies is rich in mineral reserves.",gameplay rule,yes,kept in the description,yes
+dansil92Kwadacha,"A large trade route circles the open, barren valley, with only small crossings available to move between elevations.",gameplay rule,yes,kept in the description,yes
+dansil92Kwadacha,Outlaws: Pistolero / Renegado,gameplay rule,yes,"agrees with the Outlaws line (Pistolero, Renegado)",yes
+dansil92Kwadacha,Map by dansil92,credit,yes,creator line,yes
+dansil_greatbarrierreef,Players begin with a small fishing fleet and a Caravel.,gameplay rule,yes,corrected: no Caravel in the script; the settlers start aboard a fishing boat and five more boats wait at the water flag (dansil_greatbarrierreef.xs:474-495),yes
+dansil_greatbarrierreef,You will have to explore the map and find land to settle on to even begin to make a foothold in this treacherous reef.,other,yes,kept in the description,yes
+dansil_greatbarrierreef,"Shipwrecks will be your primary source of income for your villagers to gather from, while a water economy will be vital to ensure reliable resources.",gameplay rule,yes,kept in the description,yes
+dansil_greatbarrierreef,"A trade route passes by to the Northwest, which may very quickly become your only source of wood....",variant,yes,"kept in the description; the direction is dropped (the route runs along x = 0.85, :171-178, not clearly northwest)",yes
+dansil_greatbarrierreef,Map by dansil92,credit,yes,creator line,yes
+dansil_Micronesia,Tiny islands dot this vast oceanic area.,gameplay rule,yes,kept in the description,yes
+dansil_Micronesia,You will have to spread your colony out in order to have access to any resources.,gameplay rule,yes,kept in the description,yes
+dansil_Micronesia,"An abundance of guano, breadfruit and fish are everywhere, but you will need to invest heavily in defenses to protect your villagers.",gameplay rule,yes,kept in the description,yes
+dansil_Micronesia,Map by dansil92,credit,yes,creator line,yes
+dansil_Outback,This open area in the Northern portion of the Australian continent is home to a diverse flora and fauna.,other,yes,kept in the description (geography),yes
+dansil_Outback,"A very large, open map leaves you vulnerable to raids, but provides great opportunities for stealth operations and wide expansion.",other,yes,kept in the description,yes
+dansil_Outback,"A trade route to the south can provide extra income, and the local Arab caravans may prove to be powerful allies.",variant,yes,"kept in the description; the ""Arab caravans"" are the Afghan Cameleers (dansil_Outback.xs:235-250); route south of the players (:289-295)",yes
+dansil_Outback,Map by dansil92,credit,yes,creator line,yes
+dansil_Owikeno,This remote region is dominated by rugged terrain and deep lakes.,gameplay rule,yes,kept in the description,yes
+dansil_Owikeno,"Take control of the trade route, although beware of any ships which can maintain control of the shorelines.",gameplay rule,yes,kept in the description,yes
+dansil_Owikeno,"Minerals are abundant here, but fishing will be the most abundant food source.",gameplay rule,yes,kept in the description,yes
+dansil_Owikeno,Outlaws: Pistolero / Renegado,gameplay rule,no,"does not agree: the Outlaws line, from the map's outlaw block, says Renegado, Comanchero",yes
+dansil_Owikeno,Map by dansil92,credit,yes,creator line,yes
+dansil_Westernterritory,The rugged western landscape of the Australian continent has a great deal of resources ripe for the taking.,gameplay rule,yes,kept in the description,yes
+dansil_Westernterritory,"Control the dense stands of trees to gather coin from valuable sandalwood, or take to the open salt flats to mine coin there.",gameplay rule,yes,kept in the description (TreeSandalwood and minesalt),yes
+dansil_Westernterritory,"Beware of raids in the open and in the bush, as it will prove challenging to build any defensive structures on this cracked, arid landscape.",other,yes,"kept in the description (the ground is a terrain property, not checkable in the script); the route exists only with two teams (:203)",yes
+dansil_Westernterritory,map by dansil92,credit,yes,creator line,yes
+DansilAlaska,"Each player's settlement is in a valley, separated from everyone else.",gameplay rule,yes,kept in the description,hand
+DansilAlaska,"The Pacific Ocean lies to the Southwest, and a trade route to the Northeast.",gameplay rule,yes,kept in the description; Trade route line,hand
+DansilAlaska,"Resources are plentiful on both land and sea, but taking control of them may prove difficult...",gameplay rule,yes,kept in the description,hand
+DansilAlaska,Original Map by dansil92,credit,yes,Creator line: dansil92 (original),hand
+DansilAlaska,Adapted to WoL.,credit,no,names no one; every map in the pack is adapted to WoL,hand
+DansilCerroAcahay,"In the open cerado of Paraguay, a large crater rises above the terrain.",gameplay rule,yes,kept in the description,yes
+DansilCerroAcahay,"You will find an abundance of resources here, and friendly natives who have already inhabit the region.",gameplay rule,yes,kept in the description,yes
+DansilCerroAcahay,Multiple trade routes cross through the area and can be an incredible source of wealth.,variant,yes,"kept in the description: two routes (DansilCerroAcahay.xs:174, 202)",yes
+DansilCerroAcahay,Map control in this region can be nearly impossible due to the open spaces and steep hills.,variant,yes,kept in the description,yes
+DansilCerroAcahay,Original Cerro Acahay Map by dansil92,credit,yes,creator line,yes
+DansilChupat,"Located in southern patagonia, this region is home to the Mapuche.",geography-history,yes,short geography line; kept in the description,yes
+DansilChupat,You are seperated from the opposing team by an impassable cliff surrounded by a narrow river.,gameplay rule,yes,"kept in the description (the river has no shallows, DansilChupat.xs:158-176)",yes
+DansilChupat,"While there are no fish, this river may prove useful for transport or for adding naval firepower to defensive tactics.",variant,yes,kept in the description,yes
+DansilChupat,A few llamas may be found wandering in the south alongside a small trade route.,variant,yes,kept in the description,yes
+DansilChupat,The trade route is not available in FFA games.,gameplay rule,yes,"kept in the description (cNumberTeams == 2, :278-280)",yes
+DansilChupat,Map by dansil92,credit,yes,creator line,yes
+DansilCristalMonts,"You will start on a barren plateau in the west mountains of the congo, surrounded by a dense lowland forest rich in resources.",gameplay rule,yes,kept in the description,yes
+DansilCristalMonts,"You will have to use the terrain to your advantage, taking advantage of chokepoints, cliffs and forests to protect your units.",gameplay rule,yes,kept in the description,yes
+DansilCristalMonts,Local native villages have rich supplies of coin and powerful technologies.,gameplay rule,yes,kept in the description,yes
+DansilCristalMonts,Original map by dansil92,credit,yes,creator line,yes
+DansilCristalMonts,Map by dansil92 (old lobby text),credit,yes,creator line,yes
+DansilFalklands,These remote islands off the coast of Patagonia offer few resources.,gameplay rule,yes,kept in the description,yes
+DansilFalklands,Fish stay close to the islands but whales swim out in the deeper waters.,gameplay rule,yes,kept in the description,yes
+DansilFalklands,"Teams will be on a seperate island from the others, and each island has a small trade route.",gameplay rule,yes,"kept in the description (two routes, DansilFalklands.xs:256, 279)",yes
+DansilFalklands,Map by dansil92.,credit,yes,creator line,yes
+dansilFiji,This large island is surrounded by abundant sea life.,gameplay rule,yes,kept in the description,yes
+dansilFiji,"On land there is an incredible abundance of breadfruit and bananas, but very few animals.",gameplay rule,yes,kept in the description,yes
+dansilFiji,"You will either need to secure the costline to gather from guano deposits, or wander deep into the jungle to mine from the volcanic basalt.",variant,yes,kept in the description,yes
+dansilFiji,Map by dansil92,credit,yes,creator line,yes
+DansilIbalong,"You are in the Ibalong region, in the phillipinese archipelago, you would find extra coin sources in the central islands.",gameplay rule,yes,"kept in the description (coin on the centre islands, DansilIbalong.xs:232-270)",yes
+DansilIbalong,Map by dansil92.,credit,yes,creator line,yes
+DansilIrrawaddyRiver,Teams begin on opposite sides of the Irrawaddy River with nearby local religious groups eager to form alliances.,gameplay rule,yes,kept in the description,yes
+DansilIrrawaddyRiver,"The river may be dried up, or scattered with narrow crossings.",variant,no,"the dried-up river never happens: its branch needs seasonSwitch == 0 but seasonSwitch = rmRandInt(1,6) (DansilIrrawaddyRiver.xs:199-238); the narrow fords are kept in the description",yes
+DansilIrrawaddyRiver,Herds of elephants wander the bamboo forests and coin is abundant.,gameplay rule,yes,kept in the description,yes
+DansilIrrawaddyRiver,Map by Daniel Sillito,credit,yes,creator line,yes
+DansilJarrah,This Wild area of West Australia has an incredible abundance of forage.,other,yes,kept in the description,yes
+DansilJarrah,"While hunts are a bit scarce, there is a variety of edible plants to be found everywhere.",gameplay rule,yes,kept in the description,yes
+DansilJarrah,The rolling hills give way to a local trade route and  you will find coin primarily scattered toward the edges of the map.,gameplay rule,yes,kept in the description,yes
+DansilJarrah,Original Map by dansil92,credit,yes,creator line,yes
+DansilJarrah,Origianl Map by dansil92 (old lobby text),credit,yes,creator line,yes
+DansilLCongo,"In this area of lakes and rivers, you are seperated by your opponent by two bodies of water, veins of the congo river course, with a trade route along the centre landmass.",gameplay rule,yes,kept in the description,yes
+DansilLCongo,"Controling the water will be essential, and you will not have to worry about raids early on.",gameplay rule,yes,kept in the description,yes
+DansilLCongo,Your home city has provided you with a large flock of sheep that can be used to your advantage as well.,variant,yes,corrected: ten goats (ypGoat) at each start (DansilLCongo.xs:225-226),yes
+DansilLCongo,Original Design by dansil92.,credit,yes,creator line,yes
+DansilLCongo,Adapted to WoL.,credit,no,names no one; every map in the pack is adapted to WoL,yes
+DansilLCongo,Designed by dansil92. (old lobby text),credit,yes,creator line,yes
+DansilNahanni,"In this region of the Northwest Territories, you will find yourself surrounded by shallow marshes and winding cliffs.",gameplay rule,yes,kept in the description,yes
+DansilNahanni,"Each team begins on a high plateau with limited resources, surrounding a lush lowland filled with resources.",gameplay rule,yes,kept in the description,yes
+DansilNahanni,Control the trade routes and the central portion of the map to ensure victory.,gameplay rule,yes,kept in the description,yes
+DansilNahanni,Map by dansil92,credit,yes,creator line,yes
+dansilRed Beach,This unusual marshland is red due to the local plant life.,geography-history,yes,kept in the description,hand
+dansilRed Beach,Control the marshy terrain to ensure access to resources and local warriors,gameplay rule,yes,kept in the description,hand
+dansilRed Beach,Map by dansil92,credit,yes,Creator line,hand
+dansilRedRiver,Two rivers run parallel in this region.,gameplay rule,yes,kept in the description,yes
+dansilRedRiver,"You will have to expand to the outer sections of the map to access the  trade routes, resources and local allies.",gameplay rule,yes,kept in the description,yes
+dansilRedRiver,"There are no mineral deposits nearby, so you will have to gather from the wild tea plants to collect coin.",gameplay rule,yes,"kept in the description; the coin plant is CoffeePlant in the script (dansilRedRiver.xs:58), named as in the game",yes
+dansilRedRiver,Map by dansil92,credit,yes,creator line,yes
+DansilYalu_River,Rollover.,other,no,"placeholder text, no fact; the description is written from the script",yes
+DansilYalu_River,Map by dansil92,credit,yes,creator line,yes
+DansilZavkhan,"This vast, remote region of Mongolia is divided by a winding river.",gameplay rule,yes,"kept in the description (3 shallows, 5 with three or more players, DansilZavkhan.xs:296-324)",yes
+DansilZavkhan,A few wild goats wander the shoreline and sparse stands of trees stay near the water.,gameplay rule,yes,kept in the description,yes
+DansilZavkhan,"While the area is rich in copper, it is fairly spread out and you will quickly be forced to take control of the map to continue gathering resources.",gameplay rule,yes,kept in the description,yes
+DansilZavkhan,"The narrow chasms and crossings may prove easy to defend, but beware, you may find your army cut off from reinforcements.",variant,yes,kept in the description,yes
+DansilZavkhan,Outlaws: Wokou Horseman / Wokou Ronin,gameplay rule,yes,"agrees with the Outlaws line (Wokou Horseman, Wokou Ronin)",yes
+DansilZavkhan,Map by dansil92,credit,yes,creator line,yes
+deccan,Players start on opposite sides of a central plateau that contains thick forests and abundant wildlife.,gameplay rule,yes,kept in the description,yes
+deccan,"Resources are plentiful, as Mines, small herds, and sparse forests ring the surrounding lowlands.",gameplay rule,yes,"kept in the description (two rivers with three shallows each, deccan.xs:250-302)",yes
+deccan,"Trade sites are situated at the edge of the map, while natives inhabit the plateau.",gameplay rule,yes,kept in the description,yes
+deccan,The plateau is not present in free-for-all games.,gameplay rule,yes,"kept in the description (cliff only when cNumberTeams == 2, deccan.xs:318-330)",yes
+deccan,"Deccan: A central, forested plateau overlooking a series of strategically placed trade sites. (old lobby text)",gameplay rule,yes,same facts; kept in the description,yes
+deccanLarge,Players start on opposite sides of a central plateau that contains thick forests and abundant wildlife.,gameplay rule,yes,kept in the description,yes
+deccanLarge,"Resources are plentiful, as Mines, small herds, and sparse forests ring the surrounding lowlands.",gameplay rule,yes,kept in the description,yes
+deccanLarge,"Trade sites are situated at the edge of the map, while natives inhabit the plateau.",gameplay rule,yes,kept in the description,yes
+deccanLarge,The plateau is not present in free-for-all games.,gameplay rule,yes,kept in the description,yes
+deccanLarge,"Lrg Deccan: A central, forested plateau overlooking a series of strategically placed trade sites. (old lobby text)",gameplay rule,yes,same facts; kept in the description,yes
+Delta TWC,Delta represents a river mouth with several branches with one shallow crossing over each part of the river.,gameplay rule,yes,kept in the description,yes
+Delta TWC,"This is an 'unknown' map with multiple different terrain patterns and matching reources and natives, who are found in the delta islands.",variant,yes,kept in the description (patternChance 1-21),yes
+Delta TWC,"There are 2 trade routes, one on each major land section.",gameplay rule,yes,kept in the description,yes
+Delta TWC,Control the rivers and the rich delta area for victory!,gameplay rule,yes,kept in the description,yes
+Delta TWC,This version is for The War Chiefs.,other,no,a version note of the original; the map runs in Wars of Liberty,yes
+Delta TWC,Designed by RF_Gandalf,credit,yes,creator line,yes
+Delta TWC,Unknown Delta area (old lobby text),other,yes,the random terrain pattern; kept in the description,yes
+Desert Flood,"The river in this arid region has flooded, covering cropland which can still be harvested.",gameplay rule,yes,"kept in the description (berry bushes in the flood area, Desert Flood.xs:1039-1053)",yes
+Desert Flood,"Players start in a line midway between the river and desert, where the only extra mines on the map are located.",gameplay rule,yes,kept in the description,yes
+Desert Flood,This map has less than usual huntable or domesticated animals.,gameplay rule,yes,kept in the description,yes
+Desert Flood,"Natives may be found in the desert, along with the single trade route.",variant,no,"the single trade route is kept, the natives are not: the script's trade sites were never placed in game (Natives line: none; README.txt, Blue Nile)",yes
+Desert Flood,Designed by RF_Gandalf,credit,yes,creator line,yes
+Desert Flood,Shallow part of this mighty river (old lobby text),gameplay rule,yes,same fact (the shallow flood); kept in the description,yes
+dunas,"An area of low, flat, flooded land, overlaid with large, discrete sand dunes, Lençóis Maranhenses, as it is also known, features no Natives or Trade Routes.",gameplay rule,yes,"landscape and ""no trade route"" kept; ""no natives"" is the Natives line (none: the script's villages never appeared in game)",yes
+dunas,Fresh water collects in the valleys between sand dunes and is prevented from percolating down by a layer of impermeable rock which lies underneath the sand.,gameplay rule,yes,"the lagoons kept; the impermeable rock is a detail, dropped",yes
+dunas,"Even though the area lies just outside the Amazon basin, and rain is abundant, both flora and fauna are scarce.",geography-history,yes,short geography line; kept in the description,yes
+dunas,"The few animals and trees cannot support you into the late-game, so a quick attack may give the upper hand to whomever tries it.",variant,yes,kept in the description,yes
+dunas,"Coin Mines are more abundant, but still not enough for a long-term strategy.",gameplay rule,yes,kept in the description,yes
+dunas,Dunas: land map with an acessible peninsula in the middle. (old lobby text),other,no,"the middle holds the largest lagoon (dunas.xs:265-278), not a peninsula",yes
+ESOC_Adirondacks,Establish your colony in the nature of the Adirondack Mountains.,geography-history,yes,kept in the description,hand
+ESOC_Adirondacks,"The lake around the cliff provides interesting tactical options, in addition to an extra source of food.",gameplay rule,yes,kept in the description; Fish line,hand
+ESOC_Adirondacks,A trade route runs along the base of the mountain,gameplay rule,yes,kept in the description; Trade route line,hand
+ESOC_Adirondacks,the forest is home of several Huron villages,gameplay rule,yes,Natives line (Wendat is WoL's name for the Huron); kept in the description,hand
+ESOC_Adirondacks,-NativeCiv: Huron,gameplay rule,yes,same fact as the Natives line; the list form is dropped,hand
+ESOC_Adirondacks,-Mercenaries: Renegado / Comanchero,gameplay rule,yes,"these are the saloon's outlaws: the Outlaws line (Renegado, Comanchero)",hand
+ESOC_Adirondacks,---- separator lines,other,no,replaced by the standard horizontal lines,hand
+ESOC_Adirondacks,Player Setup in Observer Mode: 1v1: FFA; 2v2: 1+2 vs 3+4; 3v3: 1+2+3 vs 4+5+6,observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,hand
+ESOC_Adirondacks,Observer Setup: Team does not matter; Don't use Iroquois / Aztec / Sioux!,observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,hand
+ESOC_Adirondacks,Map designed by Garja,credit,yes,Creator line,hand
+ESOC_Adirondacks,Observer UI by Aizamk,observer-ESOC,no,"credit for the observer interface, which Wars of Liberty does not use",hand
+ESOC_Alaska,Colonies have been settled on the coasts of this wild region.,geography-history,yes,short line; kept in the description,yes
+ESOC_Alaska,Inland resources are plentiful but sea provides a mean to get an edge economically.,gameplay rule,yes,kept in the description,yes
+ESOC_Alaska,Nootka settlements and naval presence are key to control land and sea respectively.,gameplay rule,yes,kept in the description,yes
+ESOC_Alaska,NativeCiv:  Nootka,gameplay rule,yes,agrees with the Natives line (Nootka),yes
+ESOC_Alaska,Mercenaries:  Comanchero / Renegado,gameplay rule,yes,"agrees with the Outlaws line (Renegado, Comanchero)",yes
+ESOC_Alaska,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Alaska,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Alaska,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Alaska,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Alaska,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Alaska,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Alaska,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Alaska,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Alaska,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Arizona,Players start at the top and the bottom of a badlands desert divided by a big mesa.,gameplay rule,yes,kept in the description,yes
+ESOC_Arizona,Resources are plentiful but scattered all over this open region.,gameplay rule,yes,kept in the description,yes
+ESOC_Arizona,A long trade route crosses the center of the map from west to east.,gameplay rule,yes,kept in the description: only in team games without King of the Hill (ESOC_Arizona.xs:679),yes
+ESOC_Arizona,NativeCivs:  Apache / Navajo,gameplay rule,yes,"agrees with the Natives line (Navajo, Apache)",yes
+ESOC_Arizona,Mercenaries: Renegado / Comanchero,gameplay rule,yes,"agrees with the Outlaws line (Renegado, Comanchero)",yes
+ESOC_Arizona,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arizona,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arizona,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arizona,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arizona,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arizona,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arizona,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arizona,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Arizona,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Arizona,Part of the ESOC Map Pack (old lobby text),other,no,"the pack the map came from, not a fact of the map in Wars of Liberty; the Creator line credits Garja",yes
+ESOC_Arkansas,You start next to a fordable river in a zone of dense forest.,gameplay rule,yes,"kept in the description (six shallows, ESOC_Arkansas.xs:750-761)",yes
+ESOC_Arkansas,Resources are generous but scattered in the maze of the Ozarks.,gameplay rule,yes,kept in the description,yes
+ESOC_Arkansas,Take an aggressive approach to secure additional portions of the map and also don't forget the plateau across the river.,gameplay rule,yes,"kept in the description (plateau, :792)",yes
+ESOC_Arkansas,NativeCiv:    Cherokee,gameplay rule,yes,"agrees with the Natives line (Cherokee; the script also defines Seminoles, ESOC_Arkansas.xs:410-412, never seen in game)",yes
+ESOC_Arkansas,Mercenaries:  Renegado / Pirate,gameplay rule,yes,"agrees with the Outlaws line (Pirate, Renegado)",yes
+ESOC_Arkansas,Native Civs: Cherokee (old lobby text),gameplay rule,yes,same fact as the Natives line,yes
+ESOC_Arkansas,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arkansas,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arkansas,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arkansas,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arkansas,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arkansas,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arkansas,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Arkansas,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Arkansas,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Arkansas,Part of the ESOC Map Pack (old lobby text),other,no,"the pack the map came from, not a fact of the map in Wars of Liberty; the Creator line credits Garja",yes
+ESOC_Baja California,Baja California is an arid peninsular region divided in two by a mountain range.,gameplay rule,yes,kept in the description (passes: classPasses),yes
+ESOC_Baja California,"Hunts and trees are scarce and scattered, but precious metals are rather common.",gameplay rule,yes,kept in the description,yes
+ESOC_Baja California,Expand toward the center or on the sea to ensure extra resources for your colony.,gameplay rule,yes,kept in the description,yes
+ESOC_Baja California,NativeCiv:  Apache / Navajo,gameplay rule,yes,"agrees with the Natives line (Apache, Navajo)",yes
+ESOC_Baja California,Mercenaries:  Comanchero / Renegado,gameplay rule,yes,"agrees with the Outlaws line (Renegado, Comanchero)",yes
+ESOC_Baja California,Native Civs: Apache / Navajo (old lobby text),gameplay rule,yes,same fact as the Natives line,yes
+ESOC_Baja California,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Baja California,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Baja California,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Baja California,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Baja California,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Baja California,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Baja California,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Baja California,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Baja California,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Baja California,Part of the ESOC Map Pack (old lobby text),other,no,"the pack the map came from, not a fact of the map in Wars of Liberty; the Creator line credits Garja",yes
+ESOC_Bengal,You are about to settle a colony in the sundarbans of the Bay of Bengal.,other,yes,short geography line; kept in the description,yes
+ESOC_Bengal,Make your way through the mangrove forest to get access to further resources.,gameplay rule,yes,kept in the description,yes
+ESOC_Bengal,There are no trade routes in this region but Bhatki devotees may join your cause.,variant,yes,kept in the description,yes
+ESOC_Bengal,NativeCiv: Bhakti,gameplay rule,yes,agrees with the Natives line (Bhakti),yes
+ESOC_Bengal,Mercenaries: Marathan Dacoit / Marathan Thuggee,gameplay rule,yes,"agrees with the Outlaws line (Marathan Dacoit, Marathan Thuggee)",yes
+ESOC_Bengal,Native Civs: Bhakti (old lobby text),gameplay rule,yes,same fact as the Natives line,yes
+ESOC_Bengal,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Bengal,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Bengal,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Bengal,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Bengal,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Bengal,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Bengal,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Bengal,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Bengal,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Bengal,Part of the ESOC Map Pack (old lobby text),other,no,"the pack the map came from, not a fact of the map in Wars of Liberty; the Creator line credits Garja",yes
+ESOC_Cascade Range,"Town centers are placed on the opposite sides of this valley, nestled within the Cascade Range.",gameplay rule,yes,kept in the description,yes
+ESOC_Cascade Range,The thick forest gives way to large glades characterized by the presence of many berry bushes.,gameplay rule,yes,kept in the description (berry glades),yes
+ESOC_Cascade Range,There are not many animals to hunt but lakes on the sides are fishable.,gameplay rule,yes,kept in the description,yes
+ESOC_Cascade Range,Klamath and Nootka natives have settled in the middle of this region.,gameplay rule,yes,kept in the description; Natives line,yes
+ESOC_Cascade Range,NativeCiv:    Klamath / Nootka,gameplay rule,yes,"the Natives line says it (Klamath, Nootka)",yes
+ESOC_Cascade Range,Mercenaries:   Renegado / Pistolero,gameplay rule,yes,"the saloon's outlaws: the Outlaws line agrees (Pistolero, Renegado)",yes
+ESOC_Cascade Range,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Cascade Range,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Cascade Range,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Cascade Range,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Cascade Range,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Cascade Range,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Cascade Range,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Cascade Range,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Cascade Range,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Cascade Range,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Colorado,"Town centers are located at the opposite extremes of this mountainous region, divided by a rock face.",gameplay rule,yes,kept in the description,yes
+ESOC_Colorado,Follow the tortuous trade routes  that meander through the mountains to seek new resouces for your colony.,gameplay rule,yes,kept in the description (two routes),yes
+ESOC_Colorado,NativeCivs : Comanche,gameplay rule,yes,the Natives line says it (Comanche),yes
+ESOC_Colorado,Mercenaries:  Pistolero / Renegado,gameplay rule,yes,"the saloon's outlaws: the Outlaws line agrees (Pistolero, Renegado)",yes
+ESOC_Colorado,Researching stagecoach on one trade route also upgrades the other one.,gameplay rule,yes,kept in the description; the script has the Stagecoach triggers,yes
+ESOC_Colorado,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Colorado,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Colorado,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Colorado,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Colorado,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Colorado,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Colorado,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Colorado,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Colorado,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Fertile Crescent,"The Fertile Crescent, also known as the cradle of civilization, is a crescent-shaped region in Mesopotamia.",geography-history,yes,kept in the description (short),yes
+ESOC_Fertile Crescent,The map is surrounded by two rivers crossed by trade roads that go in front of sufi settlements.,gameplay rule,yes,kept in the description; was miscategorised as a credit,yes
+ESOC_Fertile Crescent,NativeCiv:    Sufi,gameplay rule,yes,the Natives line says it (Sufi),yes
+ESOC_Fertile Crescent,Outlaws: Dacoit / Thuggee,gameplay rule,yes,"the Outlaws line agrees (Marathan Dacoit, Marathan Thuggee)",yes
+ESOC_Fertile Crescent,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Fertile Crescent,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Fertile Crescent,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Fertile Crescent,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Fertile Crescent,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Fertile Crescent,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Fertile Crescent,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Fertile Crescent,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Fertile Crescent,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Fertile Crescent,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Florida,"You are about to establish a colony in the southern part of Florida, surrounded by resources of every kind.",gameplay rule,yes,kept in the description,yes
+ESOC_Florida,The starting market and the nearby trade route can help raising a strong economy in a short time.,gameplay rule,yes,kept in the description; the script places a starting market,yes
+ESOC_Florida,Sea resources could boost your economy even further.,gameplay rule,yes,kept in the description,yes
+ESOC_Florida,Seminole and Carib natives may also help your cause providing useful technologies.,variant,yes,kept in the description; Natives line,yes
+ESOC_Florida,NativeCiv:   Seminole / Caribs,gameplay rule,yes,"the Natives line says it (Seminoles, Caribs)",yes
+ESOC_Florida,Mercenaries:   Pirate,gameplay rule,yes,"the Outlaws line lists Pirate, with Curro and Gavillero",yes
+ESOC_Florida,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Florida,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Florida,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Florida,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Florida,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Florida,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Florida,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Florida,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Florida,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Florida,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Gran Chaco,"The Gran Chaco, also called hunting land, is a sparsely populated, hot and semi-arid lowland natural region of the Rio de la Plata basin.",gameplay rule,yes,kept in the description,yes
+ESOC_Gran Chaco,"In this open area without commercial routes, you will have to fight for the middle of the map to get the control of resources.",gameplay rule,yes,kept in the description,yes
+ESOC_Gran Chaco,Natives: Tupi,gameplay rule,no,wrong for WoL: the game places Caraja villages (Natives line),yes
+ESOC_Gran Chaco,Mercenaries:  Pistolero  /   Pirate,gameplay rule,no,"wrong for WoL: the outlaws are Hired Proscrito, Plagiador, Mañoso (Outlaws line)",yes
+ESOC_Gran Chaco,Designed by Garja,credit,yes,creator line,yes
+ESOC_Gran Chaco,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Gran Chaco,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Gran Chaco,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Gran Chaco,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Gran Chaco,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Gran Chaco,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Gran Chaco,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Gran Chaco,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Gran Chaco,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Great Basin,The Great Basin is an area of alternating ranges and valleys.,gameplay rule,yes,kept in the description,yes
+ESOC_Great Basin,Resource amount varies greatly depending on the altitude.,variant,yes,kept in the description,yes
+ESOC_Great Basin,Make sure to control the trade route and the native posts to gain a long term strategic advantage.,gameplay rule,yes,kept in the description,yes
+ESOC_Great Basin,NativeCiv:  Klamath / Navajo,gameplay rule,yes,"the Natives line says it (Klamath, Navajo)",yes
+ESOC_Great Basin,Outlaws:  Comanchero / Renegado,gameplay rule,yes,"the Outlaws line agrees (Renegado, Comanchero)",yes
+ESOC_Great Basin,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Great Basin,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Great Basin,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Great Basin,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Great Basin,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Great Basin,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Great Basin,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Great Basin,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Great Basin,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Great Basin,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Herald Island,1v1 or 2v2 and 3v3 Obs.,observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,Check FFA box for 1v1 or set TvB teams for 2v2 or 3v3.,observer-ESOC,no,observer-mode team setup; ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,"Herald Island is a small, isolated Russian island in the Chukchi Sea, to the east of Wrangel Island.",geography-history,yes,kept in the description,yes
+ESOC_Herald Island,"It rises in sheer cliffs, making it quite inaccessible by ship.",gameplay rule,yes,kept in the description,yes
+ESOC_Herald Island,"Nonetheless, this island is well know for providing a lot of Tin Mine, Caribous and Moose.",gameplay rule,yes,kept in the description,yes
+ESOC_Herald Island,Outlaws:  Pistolero / Comanchero,gameplay rule,yes,"the Outlaws line agrees (Pistolero, Comanchero)",yes
+ESOC_Herald Island,UI done by Aizamk,observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Herald Island,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Herald Island,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Herald Island,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_High Plains,Town centers are dangerously close in this wide and open region.,gameplay rule,yes,kept in the description,yes
+ESOC_High Plains,Many herds of bison and pronghorn populate these lands and silver mines are also rather common.,gameplay rule,yes,kept in the description,yes
+ESOC_High Plains,Forests are however confined to the north west,gameplay rule,yes,kept in the description,yes
+ESOC_High Plains,A long trade route crosses the map and taking control of it may be crucial in the long run.,variant,yes,kept in the description,yes
+ESOC_High Plains,NativeCiv:    Comanche / Cheyenne,gameplay rule,yes,"the Natives line says it (Comanche, Cheyenne)",yes
+ESOC_High Plains,Mercenaries:  Renegado / Comanchero,gameplay rule,yes,"the Outlaws line agrees (Renegado, Comanchero)",yes
+ESOC_High Plains,Native Civs: Comanche / Cheyenne (old lobby text),gameplay rule,yes,same fact as the Natives line,yes
+ESOC_High Plains,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_High Plains,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_High Plains,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_High Plains,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_High Plains,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_High Plains,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_High Plains,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_High Plains,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_High Plains,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_High Plains,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Hudson Bay,Players are on equal footing on this region full of every resource.,gameplay rule,yes,kept in the description,yes
+ESOC_Hudson Bay,During the cold season the map is covered with snow and the water partially freezes.,variant,yes,kept in the description (winter in about half of the games),yes
+ESOC_Hudson Bay,Different trade routes move from different spots but they all head toward the sea.,variant,yes,"kept in the description (one or two routes, by the script)",yes
+ESOC_Hudson Bay,NativeCiv:  Cree / Huron,gameplay rule,yes,"the Natives line says it (Cree, Wendat = Huron)",yes
+ESOC_Hudson Bay,Mercenaries:  Comanchero / Pirate,gameplay rule,yes,"the Outlaws line agrees (Pirate, Comanchero)",yes
+ESOC_Hudson Bay,Native Civs: Cree / Huron (old lobby text),gameplay rule,yes,same fact as the Natives line (Wendat is WoL's name for the Huron),yes
+ESOC_Hudson Bay,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Hudson Bay,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Hudson Bay,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Hudson Bay,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Hudson Bay,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Hudson Bay,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Hudson Bay,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Hudson Bay,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Hudson Bay,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Indonesia,Players will battle to control the sea in the Indonesian archipelago.,gameplay rule,yes,kept in the description,yes
+ESOC_Indonesia,Make use of the catamaran to plan the expansion of your colony on both land and sea.,gameplay rule,yes,kept in the description; the script gives each player a catamaran,yes
+ESOC_Indonesia,There are no trade routes but Sufi and Jesuits have settled on these islands.,gameplay rule,yes,kept in the description,yes
+ESOC_Indonesia,NativeCivs:  Jesuit / Sufi,gameplay rule,yes,"the Natives line says it (Jesuit, Sufi)",yes
+ESOC_Indonesia,Mercenaries: Wokou Pirate / Marathan Dacoit,gameplay rule,yes,"the Outlaws line agrees (Wokou Pirate, Marathan Dacoit)",yes
+ESOC_Indonesia,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Indonesia,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Indonesia,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Indonesia,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Indonesia,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Indonesia,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Indonesia,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Indonesia,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Indonesia,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Indonesia,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Iowa,"In colonial times, Iowa was a part of French Louisiana and Spanish Louisiana, and was a keypoint in the america commercial exchanges.",geography-history,yes,kept in the description (short),yes
+ESOC_Iowa,This map got a middle pound with an island where you can find a trade route and good amount of resources.,gameplay rule,yes,kept in the description; the script also disables docks,yes
+ESOC_Iowa,NativeCiv:    Inca / Lakota,gameplay rule,yes,"the Natives line says it (Incas, Lakota)",yes
+ESOC_Iowa,Outlaws:   Renegado / Pirate,gameplay rule,yes,"the Outlaws line agrees (Pirate, Renegado)",yes
+ESOC_Iowa,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Iowa,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Iowa,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Iowa,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Iowa,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Iowa,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Iowa,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Iowa,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Iowa,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Jebel Musa,"Jebel Musa, named after Musa bin Nusayr, overlooks the southern side of the Strait of Gibaltrar",geography-history,yes,kept in the description,yes
+ESOC_Jebel Musa,Outlaws:  Dacoit / Thuggee,gameplay rule,yes,"the Outlaws line agrees (Marathan Dacoit, Marathan Thuggee)",yes
+ESOC_Jebel Musa,Natives: Jesuits / Apache,gameplay rule,yes,"the Natives line says it (Apache, Jesuit)",yes
+ESOC_Jebel Musa,"Map by Durokan, Observer UI done by Aizamk",credit,yes,creator line (Durokan); the observer UI credit is dropped,yes
+ESOC_Jebel Musa,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Jebel Musa,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Jebel Musa,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Jebel Musa,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Jebel Musa,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Jebel Musa,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Jebel Musa,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,Players face each other on opposite sides of a water course.,gameplay rule,yes,kept in the description,yes
+ESOC_Kamchatka,Take control of the river shallows to deny the passage to the opponent and ensure additional resources for your own.,gameplay rule,yes,kept in the description,yes
+ESOC_Kamchatka,The river freezes in winter leaving your base less protected.,variant,yes,kept in the description (winter in about half of the games),yes
+ESOC_Kamchatka,NativeCiv:,gameplay rule,yes,no villages: the script sets Klamath and Nootka but places none; the Natives line says none,yes
+ESOC_Kamchatka,Mercenaries: Wokou Horseman / Wokou Ronin,gameplay rule,no,"wrong for WoL: the outlaws are Wokou Horseman, Marathan Dacoit (Outlaws line)",yes
+ESOC_Kamchatka,Players face each other on the opposite sides of a water course. (old lobby text),gameplay rule,yes,kept in the description,yes
+ESOC_Kamchatka,Native Civs: None (old lobby text),gameplay rule,yes,the Natives line says none,yes
+ESOC_Kamchatka,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Kamchatka,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Kamchatka,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Kamchatka,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Klondike,Starting next to a crossable section of the Klondike river you will battle to secure additional resources for your colony.,gameplay rule,yes,kept in the description,yes
+ESOC_Klondike,Claim the gold in the middle of this region or venture in the forest across the river to seek more sources of food.,gameplay rule,yes,kept in the description,yes
+ESOC_Klondike,Try to estabilish your dominance over the long trade route for a long term advantage.,gameplay rule,yes,kept in the description,yes
+ESOC_Klondike,NativeCiv:     Nootka,gameplay rule,yes,the Natives line says it (Nootka),yes
+ESOC_Klondike,Mercenaries:   Pistolero / Comanchero,gameplay rule,yes,"the Outlaws line agrees (Pistolero, Comanchero)",yes
+ESOC_Klondike,Native Civs: Nootka (old lobby text),gameplay rule,yes,same fact as the Natives line,yes
+ESOC_Klondike,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Klondike,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Klondike,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Klondike,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Klondike,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Klondike,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Klondike,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Klondike,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Klondike,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Klondike,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Malaysia,The malaysian peninsula is surrounded by two oceans that brings substantial natural resources such as whales and fishes.,gameplay rule,yes,kept in the description,yes
+ESOC_Malaysia,Trees are rather scarce but are a natural wall that should help you to defend your base.,gameplay rule,yes,kept in the description,yes
+ESOC_Malaysia,You should find some buffalos which are scattered in this region.,gameplay rule,yes,kept in the description,yes
+ESOC_Malaysia,NativeCiv: Jesuit / Sufi,gameplay rule,yes,"the Natives line says it (Jesuit, Sufi)",yes
+ESOC_Malaysia,Mercenaries: Wokou Pirate / Marathan Dacoit,gameplay rule,yes,"the Outlaws line agrees (Wokou Pirate, Marathan Dacoit)",yes
+ESOC_Malaysia,Outlaws: Wokou Pirate / Marathan Dacoit (old lobby text),gameplay rule,yes,the Outlaws line agrees,yes
+ESOC_Malaysia,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Malaysia,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Malaysia,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Malaysia,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Malaysia,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Malaysia,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Malaysia,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Malaysia,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Malaysia,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Manchac,Players joined the Seminole natives in this swampy and mysterious place.,gameplay rule,yes,kept in the description,yes
+ESOC_Manchac,Resources seem plentiful but you need to make your way through the hostile swamp in the north to access further silver and food sources.,gameplay rule,yes,kept in the description,yes
+ESOC_Manchac,It is said that merchants dare to venture through a trade route in the middle of this region.,gameplay rule,yes,kept in the description,yes
+ESOC_Manchac,NativeCiv:   Seminoles,gameplay rule,yes,the Natives line says it (Seminoles),yes
+ESOC_Manchac,Outlaws: Renegado / Pistolero,gameplay rule,yes,"the Outlaws line agrees (Pistolero, Renegado)",yes
+ESOC_Manchac,Native Civs: Seminoles (old lobby text),gameplay rule,yes,same fact as the Natives line,yes
+ESOC_Manchac,Mercenaries: Renegado / Pistolero (old lobby text),gameplay rule,yes,the Outlaws line agrees,yes
+ESOC_Manchac,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchac,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchac,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchac,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchac,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchac,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchac,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchac,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Manchac,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Manchuria,Players start along the coasts of this sunny region.,gameplay rule,yes,kept in the description,yes
+ESOC_Manchuria,Thanks to the sea there are always several sources of food and gold while the access to wood in the later stages may be more problematic.,gameplay rule,yes,kept in the description,yes
+ESOC_Manchuria,"Shaolin and Zen have built their temples in the middle of the region, while commercial traffic takes place in the north.",gameplay rule,yes,"kept in the description (one or two trade routes, by the script)",yes
+ESOC_Manchuria,NativeCiv:  Shaolin / Zen,gameplay rule,yes,"the Natives line says it (Shaolin, Zen)",yes
+ESOC_Manchuria,Mercenaries:  Wokou Horseman / Wokou Ronin,gameplay rule,yes,"the Outlaws line agrees (Wokou Horseman, Wokou Ronin)",yes
+ESOC_Manchuria,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchuria,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchuria,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchuria,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchuria,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchuria,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchuria,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Manchuria,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Manchuria,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Manchuria,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Mendocino,This part of California contains many forests where herds of deer and elk roam.,gameplay rule,yes,kept in the description,yes
+ESOC_Mendocino,Players are separated by two cliffs and ponds.,gameplay rule,yes,kept in the description,yes
+ESOC_Mendocino,Mapuche and Zapotec border the traderoute line in the middle of the map.,gameplay rule,yes,kept in the description (two trade routes),yes
+ESOC_Mendocino,NativeCiv:  Zapotec / Mapuche,gameplay rule,yes,"the Natives line says it (Mapuche, Zapotec)",yes
+ESOC_Mendocino,Mercenaries:  Renegado / Comancheros,gameplay rule,no,"wrong for WoL: the outlaws are Pirate, Renegado (Outlaws line)",yes
+ESOC_Mendocino,Researching stagecoach on one trade route also upgrades the other one.,gameplay rule,yes,kept in the description; the script has the Stagecoach triggers,yes
+ESOC_Mendocino,Native Civs: Zapotec / Mapuche (old lobby text),gameplay rule,yes,same fact as the Natives line,yes
+ESOC_Mendocino,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Mendocino,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Mendocino,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Mendocino,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Mendocino,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Mendocino,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Mendocino,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Mendocino,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Mendocino,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Pampas Sierras,Pampas Sierras is a semi-arid zone characterized by highlands and choke points.,gameplay rule,yes,kept in the description,yes
+ESOC_Pampas Sierras,Resources are not scarce but they're spread over the region.,gameplay rule,yes,kept in the description,yes
+ESOC_Pampas Sierras,The plateau on the west is also home for numerous wild llamas.,gameplay rule,yes,kept in the description,yes
+ESOC_Pampas Sierras,There are no trade routes nearby but several Inca or Mapuche settlements.,gameplay rule,yes,kept in the description,yes
+ESOC_Pampas Sierras,NativeCiv:    Inca / Mapuche,gameplay rule,yes,"the Natives line says it (Incas, Mapuche)",yes
+ESOC_Pampas Sierras,Mercenaries:   Pistolero / Comanchero,gameplay rule,no,"wrong for WoL: the outlaws are Cuchillero, Hired Cuatrero, Malevo (Outlaws line)",yes
+ESOC_Pampas Sierras,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Pampas Sierras,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Pampas Sierras,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Pampas Sierras,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Pampas Sierras,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Pampas Sierras,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Pampas Sierras,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Pampas Sierras,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Pampas Sierras,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Parallel Rivers,"Settled along the three parallel rivers, players will have to proceed upstream to explore this scenic region.",gameplay rule,yes,kept in the description,yes
+ESOC_Parallel Rivers,"Natural obstacles could prove friends or foes, either shielding or trapping your units.",gameplay rule,yes,kept in the description,yes
+ESOC_Parallel Rivers,No trade routes run through this region but you can easily find Zen monasteries along the way.,gameplay rule,yes,kept in the description,yes
+ESOC_Parallel Rivers,NativeCiv:  Zen,gameplay rule,yes,the Natives line says it (Zen),yes
+ESOC_Parallel Rivers,Outlaws:  Wokou Horseman / Wokou Monk,gameplay rule,yes,"the Outlaws line agrees (Wokou Horseman, Wokou Monk)",yes
+ESOC_Parallel Rivers,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Parallel Rivers,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Parallel Rivers,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Parallel Rivers,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Parallel Rivers,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Parallel Rivers,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Parallel Rivers,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Parallel Rivers,Map designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Parallel Rivers,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Parallel Rivers,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Tassili,"In this narrow scope, players must try to control their map side to gain access to resources.",gameplay rule,yes,kept in the description,yes
+ESOC_Tassili,Due to the middle oasis the player with the superior skirmisher count will be heavily favored in this narrow chokepoint.,gameplay rule,yes,kept in the description,yes
+ESOC_Tassili,This map features two independent trading post lines on the outskirts of the map.,gameplay rule,yes,kept in the description,yes
+ESOC_Tassili,Mercenaries: Pistolero / Comanchero,gameplay rule,no,"wrong for WoL: the outlaws are Renegado, Pistolero, Salteador (Outlaws line)",yes
+ESOC_Tassili,Native Civs: None (old lobby text),gameplay rule,yes,the Natives line says none,yes
+ESOC_Tassili,Outlaws: Pistolero / Comanchero (old lobby text),gameplay rule,no,"wrong for WoL: the outlaws are Renegado, Pistolero, Salteador (Outlaws line)",yes
+ESOC_Tassili,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tassili,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tassili,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tassili,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tassili,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tassili,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tassili,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tassili,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Tassili,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Tassili,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Thar Desert,The Thar Desert is a waypoint for merchants in the silk road.,gameplay rule,yes,kept in the description,yes
+ESOC_Thar Desert,"In this big dry area, the fauna is scarce, but you will find for sure much copper to mine.",gameplay rule,yes,kept in the description,yes
+ESOC_Thar Desert,"As you can be really lost in the desert, you don't really know where your settlement is, and it may change every game.",variant,yes,"kept in the description; random but fair starts, by the script's own comment",yes
+ESOC_Thar Desert,Outlaws:  Wokou Horseman / Wokou Ronin,gameplay rule,yes,"the Outlaws line agrees (Wokou Horseman, Wokou Ronin)",yes
+ESOC_Thar Desert,Natives: Udasi,gameplay rule,yes,the Natives line says it (Udasi),yes
+ESOC_Thar Desert,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Thar Desert,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Thar Desert,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Thar Desert,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Thar Desert,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Thar Desert,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Thar Desert,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Thar Desert,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Thar Desert,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Thar Desert,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Tibet,"You are located high up on the Tibetan Plateau, dangerously close to your opponent.",gameplay rule,yes,kept in the description,yes
+ESOC_Tibet,If you don't venture out of your base you will be soon out of resources.,gameplay rule,yes,kept in the description,yes
+ESOC_Tibet,Take advantage of the long downstream trade routes and capture the numerous wild yaks for a long term stock of food.,gameplay rule,yes,kept in the description (two trade routes),yes
+ESOC_Tibet,NativeCivs:  Udasi /  Shaolin,gameplay rule,yes,"the Natives line says it (Udasi, Shaolin)",yes
+ESOC_Tibet,Mercenaries: Marathan Dacoit / Wokou Horseman,gameplay rule,yes,"the Outlaws line agrees (Wokou Horseman, Marathan Dacoit)",yes
+ESOC_Tibet,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tibet,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tibet,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tibet,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tibet,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tibet,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tibet,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Tibet,Designed by Garja (old lobby text),credit,yes,creator line,yes
+ESOC_Tibet,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+ESOC_Tibet,Part of the ESOC Map Pack (old lobby text),other,no,"the map pack it came from, not a fact of the map",yes
+ESOC_Wadmalaw,Wadmalaw island is a part of Johns Island in South Carolina.,geography-history,yes,"kept in the description (Wadmalaw is beside Johns Island, not part of it)",yes
+ESOC_Wadmalaw,This land map got 3 trading posts in the west side of the map where there are usually a lot of resources.,gameplay rule,yes,kept in the description,yes
+ESOC_Wadmalaw,"The east side of the map is surrounded by water where there is the possibility for discovering the new world, and maybe some other islands !",gameplay rule,yes,kept in the description; was miscategorised as a credit,yes
+ESOC_Wadmalaw,NativeCiv:    Seminoles,gameplay rule,no,wrong for WoL: the script places Cherokee villages (Natives line),yes
+ESOC_Wadmalaw,Outlaws:   Renegado / Pistolero,gameplay rule,no,"wrong for WoL: the outlaws are Renegado, Comanchero (Outlaws line)",yes
+ESOC_Wadmalaw,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Wadmalaw,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Wadmalaw,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Wadmalaw,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Wadmalaw,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Wadmalaw,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Wadmalaw,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+ESOC_Wadmalaw,Designed by Rikikipu (old lobby text),credit,yes,creator line,yes
+ESOC_Wadmalaw,Observer UI by Aizamk (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+everglades,"You arrived to this island with nothing except a pair of boats, now is your job conquer it.",gameplay rule,yes,kept in the description (two boats with the starting units and a wagon),yes
+everglades,Tropical Island in micronesia (old lobby text),geography-history,yes,kept in the description,yes
+Finger Lake-V,"Very long narrow inland lake, team start at opposite ends - map is rectangular with players fairly far apart.",gameplay rule,yes,kept in the description,yes
+Finger Lake-V,One trade route runs the length of the map on each side of the lake.,gameplay rule,yes,kept in the description,yes
+Finger Lake-V,"There are 1 or 2 native types - Cree, Cherokee and/or Iroquois - with villages placed fairly but in various patterns.",variant,yes,kept in the description; the names are in the Natives line (Iroquois = Haudenosaunee),yes
+Finger Lake-V,"Randomly summer, fall or winter.",variant,yes,kept in the description,yes
+Finger Lake-V,Designed by RF_Gandalf,credit,yes,creator line,yes
+Finger Lake-V,A narrow and long lake. (old lobby text),gameplay rule,yes,same fact as the description,yes
+Finland,There are many small lakes in this Finland map.,gameplay rule,yes,kept in the description,yes
+Finland,The lakes are frozen in winter.,variant,yes,kept in the description,yes
+Finland,There is also sea which can be frozen or unfrozen in winter.,variant,yes,kept in the description,yes
+Finland,No natives or trade routes.,gameplay rule,yes,kept in the description; Natives and Trade route lines,yes
+Finland,Good luck!,other,no,"a greeting, not a fact",yes
+Finland,Designed by Aoe3_Badger,credit,yes,creator line,yes
+Finland,Fight for your life in this Finnish-style secnario! (old lobby text),other,no,"a slogan, not a fact",yes
+galapagos,"An archipelago of volcanic islands distributed on either side of the Equator in the Pacific Ocean, Galápagos Islands are famed for their vast number of endemic species.",geography-history,yes,kept in the description,yes
+galapagos,"Players may start in any possible combination on the islands, even players of enemy teams appearing on the same island; so, better expect the unexpected!",variant,yes,kept in the description,yes
+galapagos,"The sea is rich one fish, whales and also treasures, while you may encounter Pirate Coves on some of the islands.",variant,yes,kept in the description,yes
+galapagos,"Your food economy will depend on some rather unorthodox choices, like crabs, iguanas or even giant tortoises.",gameplay rule,yes,kept in the description,yes
+galapagos,Galapagos: an island map with random player starting points (old lobby text),variant,yes,same fact as the description,yes
+GANNiger,This very elongated rectangular large map features a central river running the length of the map with 3 or 4 crossings.,variant,yes,kept in the description,yes
+GANNiger,"There is plenty of fauna and forest, but the forest is spaced out a little more than usual and extra mines are concentrated away from the player start areas.",gameplay rule,yes,kept in the description,yes
+GANNiger,There is a single trade route and 2 or 3 natives on each side of the river.,variant,yes,kept in the description (WoL's natives here are African trade sites),yes
+GANNiger,"There are randomly several possible different sub saharian patterns with matching terrains, forest, fauna and treasures.",variant,yes,"kept in the description (several looks; their matching terrain, fauna and treasures cut for room)",yes
+GANNiger,Original Design by RF_Gandalf,credit,yes,creator line,yes
+GANNiger,extremely long map featuring niger river (old lobby text),gameplay rule,yes,same fact as the description,yes
+GANPunjab,Punjab is a wide plain with one river along either side of the map.,variant,yes,"kept in the description (a river along one side, two or three fords)",yes
+GANPunjab,"The single Trade Route, whose position may vary, always has 4 Trade Post sites.",variant,yes,kept in the description,yes
+GANPunjab,"Expect to find a number of Bhakti, Udasi and Sufi villages.",gameplay rule,yes,kept in the description; Natives line,yes
+GANPunjab,Plains in the north of the indian subcontinent (old lobby text),geography-history,yes,kept in the description,yes
+GANVolta,prairie map with central river and defensible crossings (old lobby text),gameplay rule,yes,kept in the description,yes
+GANWakhan,The team areas are separated by a deep canyon with a single crossing.,gameplay rule,yes,kept in the description,yes
+GANWakhan,Each side contains a trade route and 2 or more native villages - Sufi and/or Udasi.,variant,yes,"kept in the description (the trade routes only with two teams, by the script)",yes
+GANWakhan,"There are plenty of Ibex, Marco Polo Sheep and a few Goats to Gather, and lots of silver as well.",gameplay rule,yes,kept in the description,yes
+GANWakhan,Deep in the canyon there is usually extra silver and some powerful treasures.,gameplay rule,yes,kept in the description,yes
+GANWakhan,The rugged Corridor in the East Afghanistan (old lobby text),geography-history,yes,kept in the description,yes
+Glacier TWC,Teams start on mountain highlands on opposite sides of a wide glacier.,gameplay rule,yes,kept in the description,yes
+Glacier TWC,Resources are standard except that all extra mines are located on exposed mountain tops in midst of the glacier.,gameplay rule,yes,kept in the description,yes
+Glacier TWC,"There is one trade route on each side, and there are Klamath or Nootka villages in these mountains.",gameplay rule,yes,kept in the description,yes
+Glacier TWC,Designed by RF_Gandalf,credit,yes,creator line,yes
+Glacier TWC,Glacier: teams on opposite sides of a glacier (old lobby text),gameplay rule,yes,same fact as the description,yes
+Gold Coast,put description here.,other,no,"a placeholder, not a fact",yes
+Gold Coast,fight in the ecuatorial coasts of africa rich in gold (old lobby text),gameplay rule,yes,kept in the description,yes
+great chaco,Pantanal is a massive flooded area deep in South America.,geography-history,yes,kept in the description,yes
+great chaco,"Half of the map will be underwater, restricting some areas from accessibility by land.",gameplay rule,yes,kept in the description,yes
+great chaco,"The trees are dense and colorful, and wildlife is plentiful.",gameplay rule,yes,kept in the description,yes
+great chaco,Natives appear on the higher ground.,gameplay rule,yes,kept in the description,yes
+great chaco,Pantanal: a vast swamp with colorful wildlife. (old lobby text),gameplay rule,yes,same fact as the description,yes
+great lakes,Fight around the outside of a large freshwater lake.,gameplay rule,yes,kept in the description,yes
+great lakes,Control of the single long Trade Route is crucial.,gameplay rule,yes,kept in the description,yes
+great lakes,"Wendat, Cheyenne, or Cree villages ring the lake.",gameplay rule,yes,kept in the description; the names are in the Natives line,yes
+great lakes,"Resources, including fish, are plentiful.",gameplay rule,yes,kept in the description,yes
+great lakes,"Build too close to the shore without controlling the water, and you risk having your town shelled by enemy ships late in the game.",gameplay rule,yes,kept in the description,yes
+great lakes,"Sometimes the lake may be frozen over, presenting a different tactical challenge.",variant,yes,kept in the description; the script makes every village Cree in winter,yes
+great lakes,Great Lakes: large lakes surrounded by a single circular trade route. (old lobby text),gameplay rule,yes,same fact as the description,yes
+great plains,"Wide-open spaces, large herds of Bison to hunt, plentiful Mines, and as many as six Cheyenne and Comanche villages offer a wide variety of potential strategies.",gameplay rule,yes,kept in the description,yes
+great plains,The Trade Route will have three Trading Post sites.,gameplay rule,yes,kept in the description,yes
+great plains,"Control the more dense forests near the edges of the map to supplement your late-game wood gathering, or rely on the scattered clumps of trees out on the plains.",gameplay rule,yes,kept in the description,yes
+great plains,Great Plains: home of many Natives and plenty of food. (old lobby text),gameplay rule,yes,same fact as the description,yes
+great plainsLarge,"Wide-open spaces, large herds of Bison to hunt, plentiful Mines, and as many as six Cheyenne and Comanche villages offer a wide variety of potential strategies.",gameplay rule,yes,kept in the description,yes
+great plainsLarge,The Trade Route will have three Trading Post sites.,gameplay rule,yes,kept in the description,yes
+great plainsLarge,"Control the more dense forests near the edges of the map to supplement your late-game wood gathering, or rely on the scattered clumps of trees out on the plains.",gameplay rule,yes,kept in the description,yes
+great plainsLarge,Great Plains: home of many Natives and plenty of food. (old lobby text),gameplay rule,yes,same fact as the description,yes
+himalayas,Gain control of vital choke points on the map to restrict your enemies' access to the most valuable resources.,gameplay rule,yes,kept in the description,yes
+himalayas,Players start with Town Centers in close proximity to thick forests.,gameplay rule,yes,kept in the description,yes
+himalayas,"Beyond the trees, in the lush central valley, vast quantities of food and gold lie ripe for the taking.",gameplay rule,yes,kept in the description,yes
+himalayas,"A Trade Route runs through this mountainous region; but beware, established native settlements also dot the landscape.",gameplay rule,yes,kept in the description,yes
+himalayas,Himalayas: A series of geographic chokepoints stand in the way of abundant natural resources. (old lobby text),gameplay rule,yes,same fact as the description,yes
+himalayas,A Trade Route runs through this mountainous region. (old lobby text),gameplay rule,yes,same fact as the description,yes
+himalayasUpper,Gain control of this expanded map's vital choke points to restrict your enemies' access to the most valuable resources.,gameplay rule,yes,kept in the description; 'expanded map' dropped: the script gives it the same size as Himalayas (304 / 428 / 606 m),yes
+himalayasUpper,Players start with Town Centers in close proximity to thick forests.,gameplay rule,yes,kept in the description,yes
+himalayasUpper,"Beyond the trees, in the lush central valley, vast quantities of food and gold lie ripe for the taking.",gameplay rule,yes,kept in the description,yes
+himalayasUpper,"Beware, as established native settlements dot the landscape.",gameplay rule,yes,kept in the description,yes
+himalayasUpper,"In the Upper Himalayas, there are no Trade Routes to obstruct wall placement.",gameplay rule,yes,kept in the description,yes
+himalayasUpper,Upper Himalayas: The same chokepoints of the Himalayas but without the Trade Route to obstruct your wall placement. (old lobby text),gameplay rule,yes,same fact as the description,yes
+Hispaniola,"Surrounded by sea, Hispaniola promises conflict on both land and water.",gameplay rule,yes,kept in the description,yes
+Hispaniola,"Inland, Carib tribes live in the jungles, around the base of an impassable mountain.",gameplay rule,yes,kept in the description,yes
+Hispaniola,Extra starting crates of food will help you jump start your early economy.,gameplay rule,yes,kept in the description; the script places 3-4 food crates,yes
+Hispaniola,Whales in the western bay are a strategic secondary source of coin.,gameplay rule,yes,kept in the description,yes
+Hispaniola,Hispaniola: a large island surrounded by warm tropical seas. (old lobby text),gameplay rule,yes,kept in the description,yes
+hollows,"After becoming lost and separated from your ships in the New World, you have decided to try to set up a permanent base in an uncharted area.",gameplay rule,yes,kept in the description,yes
+hollows,"The forest and game here are plentiful, but there are no rivers or lakes within any reasonable distance.",gameplay rule,yes,kept in the description,yes
+hollows,"The natives have deserted long ago, and the place is empty.",gameplay rule,yes,kept in the description; Natives line: none,yes
+hollows,Something is not right here...,gameplay rule,yes,kept in the description; the Dullahan trigger (trigger3/hollows.xml) explains it,yes
+hollows,Deathly Hollows: a forbidden and haunted place (old lobby text),gameplay rule,yes,kept in the description (the Dullahan),yes
+honshu,Players begin on either end of a long narrow island.,variant,yes,kept in the description,yes
+honshu,Mines can be found on the smaller islands nearby.,variant,yes,kept in the description,yes
+honshu,A larger landmass opposite the other coast features a tiny but pivotal Trade Route.,gameplay rule,yes,kept in the description ('may': the script builds it only on some layouts),yes
+honshu,The limited supply of food on the main island will drive players to fish the rich coastal waters.,gameplay rule,yes,kept in the description,yes
+honshu,"Honshu: A narrow strip of land is surrounded with islands, one of which features a tiny Trade Route. (old lobby text)",gameplay rule,yes,same fact as the description,yes
+honshuRegicide,Players must protect their Regent or lose the game!,gameplay rule,yes,kept in the description,yes
+honshuRegicide,Start at either end of a long and narrow island.,variant,yes,kept in the description,yes
+honshuRegicide,"Few mines are to be found on the starting continent, but smaller islands with valuable mines lie just offshore.",gameplay rule,yes,kept in the description,yes
+honshuRegicide,"On the opposite coast, players will find a landmass featuring a Trade Route.",gameplay rule,yes,kept in the description ('may': the script builds it only on some layouts),yes
+honshuRegicide,A short supply of food on the main island may drive players to fish from the sea.,variant,yes,kept in the description,yes
+honshuRegicide,Regicide - Honshu! (old lobby text),other,no,"the map's name, not a fact",yes
+honshuRegicide,"Beginning in a fortified town, search this narrow, resource-rich island for your opponent, being sure to protect your own Regent at all costs. (old lobby text)",gameplay rule,yes,kept in the description,yes
+indochina,"With rich coastal waters and plentiful resources, the Indochinese peninsula promises many opportunities for expansion and conflict.",gameplay rule,yes,kept in the description,yes
+indochina,"A central river provides naval access inland, and numerous religious sites dot the landscape.",gameplay rule,yes,"kept in the description (two fords, by the script)",yes
+indochina,Indochina: A resource-rich land with coastal fishing and many possible alliances. (old lobby text),gameplay rule,yes,kept in the description,yes
+Korea,Players start on either side of the long peninsula.,variant,yes,kept in the description,yes
+Korea,"The single trade route and increased mines are to the north, with rich fishing in the surrounding seas.",gameplay rule,yes,kept in the description,yes
+Korea,"Natives can be Zen, Shaolin or Jesuit.",variant,yes,the Natives line says it (varies),yes
+Korea,Designed by RF_Gandalf,credit,yes,creator line,yes
+Korea,the Korean peninsula (old lobby text),geography-history,yes,kept in the description,yes
+marajo,"Located at the mouth of the Amazon river, Marajo is the largest fluvial island in the world, and the second largest island in South America.",geography-history,yes,kept in the description,yes
+marajo,You are most certain to encounter a lightning storm and heavy rainfall in the interior of this almost entirely flat island.,gameplay rule,yes,kept in the description; the script includes storm.xs and sets rain,yes
+marajo,"Huntables are non-existent, so your food economy has to rely on the berry bushes and the sea, which is crowded with fish.",gameplay rule,yes,kept in the description,yes
+marajo,Taking control of the water buffalo herds early on will most probably be essential for late-game.,gameplay rule,yes,kept in the description,yes
+marajo,"There are no Trade Routes to be utilized, but the Carib inhabitants might prove useful in your fight.",gameplay rule,yes,kept in the description; no trade route: the Trade route line,yes
+marajo,Marajo: stormy island (old lobby text),gameplay rule,yes,same fact as the description,yes
+mongolia,Players begin in generous grassland.,gameplay rule,yes,kept in the description,yes
+mongolia,"To the north lie the fertile slopes of the steppe, where players will have to extend their reach in order to bolster their economies and reach the distant Trade Route.",gameplay rule,yes,kept in the description,yes
+mongolia,"The number of grazing animals is astounding, and can be utilized to great advantage.",variant,yes,kept in the description,yes
+mongolia,Mongolia: Explore generous grassland populated with unprecedented herds of grazing animals and a distant northern Trade Route. (old lobby text),gameplay rule,yes,same fact as the description,yes
+new england,Each team will have an easily-defended Wendat or Cherokee village; the fight will be for control of the four Trading Post sites along the single central Trade Route.,gameplay rule,yes,kept in the description,yes
+new england,Lakes and low stone walls provide natural barriers and choke points.,gameplay rule,yes,kept in the description,yes
+new england,Search the isles off the coast for hidden Treasures.,gameplay rule,yes,kept in the description,yes
+new england,New England: unspoiled wilderness with central lakes and an offshore island. (old lobby text),gameplay rule,yes,kept in the description,yes
+NEWBahia,Rainy Atlantic Coast of Brazil.,geography-history,yes,kept in the description,yes
+NEWBarbary,A coastal map with the mediterranean Sea to the north and african desert lands to the south.,gameplay rule,yes,kept in the description,yes
+NEWBarbary,"A maritime trade route crosses the mediterranean waters, encouraging control of the coast and naval presence.",gameplay rule,yes,kept in the description,yes
+NEWBarbary,North African Coast. (old lobby text),geography-history,yes,kept in the description,yes
+NEWDinarides,Hill forestry region in the east of europe.,gameplay rule,yes,"kept in the description (forested hills of the Balkans, eastern Europe)",yes
+NEWFerghana,"An enclosed valley bordered by mountains in the middle of the silk route, the players are oposed facing each other from a side of the route.",gameplay rule,yes,"kept in the description: enclosed valley, mountains on two sides, Silk Road, players on either side of the trade route",yes
+NEWFerghana,An enclosed valley bordered by mountains. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+NEWGuajira,Desertic Peninsula in the caribbean coast of south america.,gameplay rule,yes,kept in the description,yes
+NEWHinduKush,A high mountain system marked by steep ridges and narrow passes.,gameplay rule,yes,kept in the description,yes
+NEWHinduKush,"A rugged map with multiple cliff lines cutting across the landscape and restricting movement, a single minor ally site is located at the center.",gameplay rule,yes,"kept in the description: cliff lines, the single Sufi site at the centre",yes
+NEWHinduKush,The environment could vary from dry and rugged to green and snowy.,variant,yes,kept in the description; two terrain variants in the script (whichVariation 1-2),yes
+NEWIranianPlateau,A dry interior region located between the Zagros and the Elburz Ranges it's mostly arid and a desert zone lays at the center.,gameplay rule,yes,kept in the description,yes
+NEWIranianPlateau,Resources are scattered across open ground with limited vegetation.,gameplay rule,yes,kept in the description,yes
+NEWIranianPlateau,"Two trade routes cross the map: one running from north to east, and another from south to west.",gameplay rule,yes,kept in the description; in free-for-all and uneven teams the script builds one circular route instead,yes
+NEWIranianPlateau,A dry region with a desert zone at the center. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+NEWKarakum,"An arid desert plain in central asia named after its gray sand, with low rainfall and sparse vegetation its broad, open map with limited nearby resources and large empty spaces.",gameplay rule,yes,kept in the description,yes
+NEWKarakum,Players must cross the desert sections to access to resources located from the center to along the map edges.,gameplay rule,yes,"kept in the description (the richer band is the script's central area, with the gold by the mesas)",yes
+NEWKarakum,An arid desert plain in central asia. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+NEWKhorezm,"The Fertile delta of the Amu darya river creates an oasis region in the middle of the desert, the river branches and canals limits the expansion.",gameplay rule,yes,kept in the description,yes
+NEWKhorezm,Fertile Delta in the middle of the desert. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+NEWKyzylkum,"A large desert between Syr Darya and Amu Darya rivers named after its yellow sand, with sandy plains and sparse vegetation.",gameplay rule,yes,kept in the description,yes
+NEWKyzylkum,"A river crosses either the northeast or southwest side of the map, and a trade route follows the river’s direction.",variant,yes,kept in the description; the route runs parallel to the river through the middle (NEWKyzylkum.xs 283-317),yes
+NEWKyzylkum,A large desert with sparse vegetation (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+NEWLevant,"The region along the eastern Mediterranean, with said sea to the west, mountains in the center, and desert to the east.",gameplay rule,yes,kept in the description,yes
+NEWLevant,"Teams face each other from north and south, crossing the central highlands.",gameplay rule,yes,kept in the description,yes
+NEWLevant,The region along the eastern Mediterranean. (old lobby text),geography-history,yes,kept in the description,yes
+NEWMagdalena,You've settled near the Magdalena River in Colombia.,gameplay rule,yes,kept in the description,yes
+NEWMagdalena,"Teams will face off on opposite sides of the river, each having access to their own trade route.",gameplay rule,yes,kept in the description; no trade route in free-for-all (TeamNum <= 2),yes
+NEWMagdalena,"While resources are abundant, they are found primarily in the river valley.",gameplay rule,yes,kept in the description,yes
+NEWMagdalena,Natives: Wayuu or Republiqueta,gameplay rule,yes,"Natives line (varies); the script picks Wayuu, Republiqueta or Cheyenne villages",yes
+NEWMagdalena,Outlaws: Pistolero and Renegado,gameplay rule,no,"differs from the map's outlaw block in WoL (Hired Proscrito, Plagiador, Mañoso): the Outlaws line",yes
+NEWMagdalena,Player Setup in Observer Mode (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+NEWMagdalena,1v1: FFA (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+NEWMagdalena,2v2: 1+2 vs 3+4 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+NEWMagdalena,3v3: 1+2+3 vs 4+5+6 (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+NEWMagdalena,Observer Setup (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+NEWMagdalena,Team does not matter (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+NEWMagdalena,Don't use Iroquois / Aztec / Sioux! (old lobby text),observer-ESOC,no,ESOC's observer mode is not part of Wars of Liberty,yes
+NEWMagdalena,Original Map made by vividlyplain. (old lobby text),credit,yes,creator line,yes
+NEWMagdalena,Observer ui by Aizamk. (old lobby text),observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+NEWMesoMarshes,The region is a river-fed wetland system in the lower Tigris–Euphrates basin dominated by a broad swamp running from northwest to southeast.,gameplay rule,yes,kept in the description,yes
+NEWMesoMarshes,Minor ally sites appear on the drier edges.,other,yes,kept in the description (native sites on the drier edges),yes
+NEWMesoMarshes,River-fed wetlands in the lower mesopotamia. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+NEWParamo,A valley with an small lake in the center and cliffs on the sides,gameplay rule,yes,kept in the description,yes
+NEWParamo,In the highlands of colombia. (old lobby text),other,yes,kept in the description (Colombian Andes),yes
+NEWSerradoMar,A jungle hill range that separates the land from the sea.,gameplay rule,yes,kept in the description,yes
+NEWSierra,"The mountanious system that crosses almost the entirity of mexico, the players should travel across the sierra to find each other.",gameplay rule,yes,kept in the description,yes
+NEWSierra,The mountanious system that crosses almost the entirity of mexico. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+NEWSkyIsland,A green mountain in the middle of the desert.,gameplay rule,yes,kept in the description,yes
+NEWTierraFuego,"Each player start in a small island connected to a rich central land by a wide ford, can you find a lot of gold mines, wild animals and sheeps, as well as natives and missions.",gameplay rule,yes,"kept in the description without ""connected by a wide ford"": the land bridges are commented out in the script (NEWTierraFuego.xs 278-289)",yes
+NEWTierraFuego,Rich island in the farthest place of the world. (old lobby text),gameplay rule,yes,kept in the description,yes
+NEWTiticaca,"Very big narrow inland lake, team start at opposite ends - map is rectangular with players fairly far apart.",gameplay rule,yes,kept in the description,yes
+NEWTiticaca,One trade route runs the length of the map on each side of the lake. - with villages placed fairly but in various patterns.,gameplay rule,yes,kept in the description; the script always builds the two side routes (trPattern 7),yes
+NEWTiticaca,Original map by RF_Gandalf,credit,yes,creator line,yes
+NEWTiticaca,One of the highest lakes in the world. (old lobby text),gameplay rule,yes,kept in the description,yes
+NEWwetChaco,"Humid region in the between Paraguay, Argentina and Brazil.",geography-history,yes,kept in the description,yes
+NEWwetChaco,Original map by Hōtarō Oreki,credit,yes,creator line,yes
+NEWZagros,"The long mountain range forming the western edge of the Iranian Plateau defined by steep ridges and uneven ground. a trade route winds through the cliffs, requiring control of key passes for access.",gameplay rule,yes,kept in the description,yes
+NEWZagros,long mountain range defined by steep ridges. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+northwest territory,Northwest Territory is a green and rainy region along the Pacific Coast of North America.,geography-history,yes,kept in the description,yes
+northwest territory,"Resources are plentiful, and Klamath and Nootka villages can be found nestled among the trees.",variant,yes,kept in the description; Natives line,yes
+northwest territory,Control the crossings and the resource-rich region across the main river to ensure victory.,gameplay rule,yes,kept in the description,yes
+Orinoco,Orinoco is a tropical region just north of the Amazon jungle.,gameplay rule,yes,kept in the description,yes
+Orinoco,"The teams are separated by the mighty Orinoco River, which empties into the Caribbean Sea to the north.",gameplay rule,yes,kept in the description,yes
+Orinoco,"Up to four different Native tribes can live in this area, including the Caraja, Zapotec, Caribs, and Maya.",variant,no,"WoL's script places two nations each game, Republiqueta or Caribs and Quilombola or Paulista (Orinoco.xs 20-130); the description says that instead",yes
+Orinoco,Orinoco: a tropical river map with crossings. (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+ozarks,Hilltop trading posts sit beside a trade route that crosses the map from East to West.,gameplay rule,yes,kept in the description,yes
+ozarks,Teams are split across the trade route.,gameplay rule,yes,kept in the description,yes
+ozarks,Ozarks: Dense thickets filled with wildlife dot this rolling terrain. (old lobby text),other,yes,kept in the description,yes
+painted desert,Painted Desert is a lonely open range with scattered mesas and rich ore deposits.,gameplay rule,yes,kept in the description,yes
+painted desert,"Hunting is plentiful, but wood is a little scarcer.",gameplay rule,yes,kept in the description,yes
+painted desert,Lost cows can also be found wandering among the mesas.,other,yes,kept in the description (cows seen in game),yes
+painted desert,Four Apache and Navajo villages line the center of the map.,gameplay rule,yes,kept in the description (2 Apache and 2 Navajo sites seen in game),yes
+painted desert,Painted Desert: Open desert with plentiful resources but no trade route. (old lobby text),gameplay rule,yes,kept in the description,yes
+pampas,Pampas is a long plain divided by a river with several crossing points.,gameplay rule,yes,kept in the description,yes
+pampas,"You and your allies are initially separated by the river, but the exact placement of your starting towns varies widely.",variant,yes,kept in the description (allies may begin on opposite banks),yes
+pampas,There are always four Trading Post sites.,gameplay rule,yes,kept in the description (4 sites seen in game),yes
+pampas,Expect to find a number of Inca and Caraja villages.,gameplay rule,no,WoL's script places Guarani and Guaicuru villages; the description and the Natives line name them,yes
+pampas,Pampas: a long grassy plain divided by a river with shallow crossings. (old lobby text),gameplay rule,yes,kept in the description,yes
+patagonia,"No Natives, but six Trading Posts.",gameplay rule,yes,kept in the description (6 sites seen in game),yes
+patagonia,"To ensure a steady supply of wood, stay near the coast.",gameplay rule,yes,kept in the description,yes
+patagonia,"A central lake offers tactical opportunities, and may restrict movement along the western side of the map.",variant,yes,"kept in the description; the script's two lake variants, central or on the western side",yes
+patagonia,The lake is not present in Free for All games.,gameplay rule,yes,kept in the description,yes
+patagonia,"Patagonia: continent with Trade Routes, but no Natives. (old lobby text)",gameplay rule,yes,same fact; kept in the description,yes
+plymouth,Each colony can use intrepid Pilgrims and Scout Turkeys to explore the bountiful wilderness for Native Settlements and unique treasures.,gameplay rule,yes,"kept in the description (6 Pilgrims and a Scout Turkey per player, seen in game)",yes
+plymouth,Plymouth: A bountiful land of natural treasures and grateful Pilgrims. (old lobby text),other,yes,kept in the description,yes
+Prairie TWC,Players spawn near the forested edge of a vast tropical grassland plain.,gameplay rule,yes,kept in the description,yes
+Prairie TWC,"While the center part can feel empty at times, the mall topographic differences will create tactical positions to ambush enemies.",variant,yes,kept in the description,yes
+Prairie TWC,"There are many Republiquetta towns across the map, in particularly on maps with many players, creating the possibility to create large armies with them.",gameplay rule,yes,kept in the description,yes
+Prairie TWC,"The map always features a trade route, or one that circles around the plains, or two trade routes that traverse the map.",gameplay rule,yes,kept in the description,yes
+Prairie TWC,Based on a map of RF_Gandalf,other,yes,creator line,yes
+Prairie TWC,Llanos: Tropical grassland in northwestern South America (old lobby text),other,yes,kept in the description,yes
+rockies,Your team occupies one mountain range and your opponents the other.,gameplay rule,yes,kept in the description,yes
+rockies,The victors will be the ones that can control the central valley and the choke points.,gameplay rule,yes,kept in the description,yes
+rockies,Forests and Treasures are more heavily concentrated in the center of the map.,gameplay rule,yes,kept in the description,yes
+rockies,"The Cheyenne and Comanche have ventured up into the mountains, and may prove to be useful allies.",variant,yes,kept in the description as Cheyenne or Comanche villages; Natives line (varies),yes
+rockies,Rockies: teams are separated by a resource-rich valley. (old lobby text),gameplay rule,yes,kept in the description,yes
+saguenay,"In this resource-heavy region, you will start with an extra random economic building in addition to your Town Center.",variant,yes,"kept in the description (Market, Plantation or Livestock Pen, seen in game)",yes
+saguenay,Building Redoubts near the local Cree and Wendat villages may help control sections of the map.,variant,yes,"kept in the description (as ""defences"")",yes
+saguenay,Saguenay: plenty of resources and good fishing. (old lobby text),gameplay rule,yes,kept in the description,yes
+saguenayLarge,"In this resource-heavy region, you will start with an extra random economic building in addition to your Town Center.",variant,yes,"kept in the description (Market, Plantation or Livestock Pen, seen in game)",yes
+saguenayLarge,Building Redoubts near the local Cree and Wendat villages may help control sections of the map.,variant,yes,"kept in the description (as ""defences"")",yes
+saguenayLarge,Saguenay: plenty of resources and good fishing. (old lobby text),gameplay rule,yes,kept in the description,yes
+saskatchewan,"Rolling planes strech out to the east, while the Saskatchewan river lies to the west.",gameplay rule,yes,"kept in the description without the compass directions: the script's river cuts across a corner, the north one (saskatchewan.xs 312-315), not the west",yes
+sertao,Sertao is an arid desert region in the heart of South America.,gameplay rule,yes,kept in the description,yes
+sertao,"It is interrupted by the Sao Francisco River, whose level depends on the season.",variant,yes,kept in the description,yes
+sertao,"Hunting may be difficult, but there are berry bushes scattered among the trees.",variant,yes,kept in the description,yes
+sertao,Sertanejo and/or Quilombola inhabit the area.,other,yes,Natives line (varies),yes
+sertao,"When the river is flooded, there are more villages and extra vegetation and animals, and the river will only be crossable by ship.",gameplay rule,yes,kept in the description,yes
+sertao,"When it is dry, there will be fewer villages and resources, but the river and canyon will be traversable.",gameplay rule,yes,kept in the description,yes
+sertao,"When the river is in between, units may cross, but ships travel in the deeper part.",variant,yes,kept in the description,yes
+sertao,Sertao: a desert river map with varying water levels (old lobby text),variant,yes,same fact; kept in the description,yes
+Shangra La,"Players all start on the snowy Tibetan Plateau to the east side of a high mountain range, each with a single silver mine and limited local resources.",gameplay rule,yes,kept in the description,yes
+Shangra La,"Find the few passes through the mountains to the fabled lost valley of Shangri-La, where a trade route, gold, treasures and plentiful other extra resources await.",gameplay rule,yes,kept in the description,yes
+Shangra La,Only for the Asian Dynasties,gameplay rule,no,Wars of Liberty always runs on The Asian Dynasties,yes
+Shangra La,Designed by RF_Gandalf,credit,yes,creator line,yes
+Shangra La,cross the mountains for more resources (old lobby text),gameplay rule,yes,same fact; kept in the description,yes
+siberia,"In the distant north, hunting is plentiful among the great forests, and a frozen river separates you from your enemies.",gameplay rule,yes,kept in the description,yes
+siberia,The future route of the Trans-Siberian Railway lies to the south.,geography-history,yes,kept in the description,yes
+siberiaLarge,"In the distant north, hunting is plentiful among the great forests, and a frozen river separates you from your enemies.",gameplay rule,yes,kept in the description,yes
+siberiaLarge,The future route of the Trans-Siberian Railway lies to the south.,geography-history,yes,kept in the description,yes
+siberiaLarge,"Lrg Siberia: A frozen river divides the map, and a Trade Route runs along the southern edge, with plentiful hunting among the great forests. (old lobby text)",gameplay rule,yes,same fact; kept in the description,yes
+silkRoad,"Starting from their Markets at opposite sections of the famed Silk Road, players vie for control of this lucrative Trade Route.",gameplay rule,yes,kept in the description,yes
+silkRoad,"Since the map portrays a randomly selected part of the passage, three terrain variations are possible, each with unique characteristics.",variant,yes,kept in the description (whichVersion 1-3),yes
+silkRoad,"Players do not need to establish the route, only capture it before the enemy does!",gameplay rule,yes,kept in the description (capturable posts seen in game),yes
+silkRoad,"Silk Road: Travel the legendary trade route, capturing existing Trading Posts. (old lobby text)",gameplay rule,yes,same fact; kept in the description,yes
+silkRoad,You begin with a free Market. (old lobby text),other,yes,kept in the description,yes
+silkRoadLarge,"Starting from their Markets at opposite sections of the famed Silk Road, players vie for control of this lucrative Trade Route.",gameplay rule,yes,kept in the description,yes
+silkRoadLarge,"Since the map portrays a randomly selected part of the passage, three terrain variations are possible, each with unique characteristics.",variant,yes,kept in the description (whichVersion 1-3),yes
+silkRoadLarge,"Players do not need to establish the route, only capture it before the enemy does!",gameplay rule,yes,kept in the description (capturable posts seen in game),yes
+silkRoadLarge,"Lrg Silk Road: Travel the legendary Trade Route, capturing existing Trading Posts. (old lobby text)",gameplay rule,yes,same fact; kept in the description,yes
+silkRoadLarge,You begin with a free Market. (old lobby text),other,yes,kept in the description,yes
+sonora,"A twisting Trade Route winds its way through this barren, desolate region.",gameplay rule,yes,kept in the description,yes
+sonora,Many cliffs and canyons create choke points.,gameplay rule,yes,kept in the description,yes
+sonora,"Resources can be difficult to find, though sometimes there are rich ore deposits in the center of the map.",variant,yes,kept in the description; otherwise the centre holds a native village (sonora.xs 346-381),yes
+sonora,"Search for Apache, Maya, or Navajo villages on the edge of the map.",gameplay rule,yes,kept in the description,yes
+sonora,"Sonora: cliffs and valleys, and a winding trade route. (old lobby text)",gameplay rule,yes,kept in the description,yes
+sonoraLarge,"A twisting Trade Route winds its way through this barren, desolate region.",gameplay rule,yes,kept in the description,yes
+sonoraLarge,Many cliffs and canyons create choke points.,gameplay rule,yes,kept in the description,yes
+sonoraLarge,"Resources can be difficult to find, though sometimes there are rich ore deposits in the center of the map.",variant,yes,kept in the description; otherwise the centre holds a native village,yes
+sonoraLarge,"Search for Apache, Maya, or Navajo villages on the edge of the map.",gameplay rule,yes,kept in the description,yes
+sonoraLarge,"Sonora: cliffs and valleys, and a winding trade route. (old lobby text)",gameplay rule,yes,kept in the description,yes
+Team Archipelago Asian,Players start on team islands on a very large map with random terrain patterns from only The Asian Dynasties.,variant,yes,kept in the description,yes
+Team Archipelago Asian,Control the seas for access to the resources on the scattered extra islands as well as rich fishing and whaling.,gameplay rule,yes,kept in the description (whales: the Fish line),yes
+Team Archipelago Asian,A single trade route is found on a separate large island.,gameplay rule,yes,kept in the description,yes
+Team Archipelago Asian,"One native village per player of a same tribe is found on each team island, with a few of the same or a different tribe placed on other islands.",variant,yes,one village per player on each team island kept; the villages on other islands are left to the Natives line (no room on the loading screen),yes
+Team Archipelago Asian,Designed by RF_Gandalf,credit,yes,creator line,yes
+Team Archipelago Asian,Team Archipelago - a large random team island map (old lobby text),variant,yes,kept in the description,yes
+texas,Texas is an open plain with scattered low cliffs.,gameplay rule,yes,kept in the description,yes
+texas,"Two Trade Routes, each with two Trading Post sites, cut through the center of the map, separating the teams.",gameplay rule,yes,kept in the description,yes
+texas,"There will always be at least two Comanche or Apache settlements, and sometimes three.",variant,yes,kept in the description,yes
+texas,Expect attacks from every side.,other,yes,kept in the description,yes
+texas,Texas: an open plain with some cliffs and two Trade Routes. (old lobby text),gameplay rule,yes,kept in the description,yes
+texasLarge,Texas is an open plain with scattered low cliffs.,gameplay rule,yes,kept in the description,yes
+texasLarge,"Two Trade Routes, each with two Trading Post sites, cut through the center of the map, separating the teams.",gameplay rule,yes,kept in the description,yes
+texasLarge,"There will always be at least two Comanche or Apache settlements, and sometimes three.",variant,yes,kept in the description,yes
+texasLarge,Expect attacks from every side.,other,yes,kept in the description,yes
+texasLarge,Texas: an open plain with some cliffs and two Trade Routes. (old lobby text),gameplay rule,yes,kept in the description,yes
+Thanksgiving III,"Thanksgiving is a fun map to celebrate the holiday season, featuring a New England theme with several surprises for each player's starting resources, new treasures, and a special new scout.",variant,yes,kept in the description (the special scout is the Scout Turkey),yes
+Thanksgiving III,The map has a central river with 1-4 crossings.,gameplay rule,yes,kept in the description,yes
+Thanksgiving III,"There is one trade route on each side of the river; natives can be Huron, Cherokee and/or Iroquois, with varying position and number.",variant,yes,kept in the description; the tribes are in the Natives line,yes
+Thanksgiving III,Don't let the enemy kill your special scout!,other,yes,kept in the description (keep it alive),yes
+Thanksgiving III,This version allows saloon units.,gameplay rule,yes,kept in the description (saloon outlaws; rmSetMapType newEngland),yes
+Thanksgiving III,Designed by RF_Gandalf,credit,yes,creator line,yes
+Thanksgiving III,celebrate Thanksgiving! (old lobby text),other,yes,kept in the description (a holiday map),yes
+Transcontinental TAD,New version for TAD.,other,no,a version note; Wars of Liberty always runs on The Asian Dynasties,yes
+Transcontinental TAD,"A large rectangular map, with teams arranged far apart on opposite shores of a large continent, with varied random terrain patterns and matching resources from the whole AOE3 series.",variant,yes,kept in the description,yes
+Transcontinental TAD,Native tribes are of 1 or 2 types and of varied number.,variant,yes,kept in the description,yes
+Transcontinental TAD,There are many different geographic features and trade route patterns possible.,variant,yes,kept in the description,yes
+Transcontinental TAD,The nearby sea is rich in fish and whales.,gameplay rule,yes,kept in the description,yes
+Transcontinental TAD,Designed by RF_Gandalf,credit,yes,creator line,yes
+Transcontinental TAD,across the continent to victory (old lobby text),other,no,a slogan; the description says the same,yes
+unknown,The mysterious Unknown!,other,yes,kept in the description,yes
+unknown,"Snow or desert, land or water, Trade Routes or Natives or both - you never quite know what you're going to get.",gameplay rule,yes,kept in the description,yes
+unknown,Expect the unexpected!,other,yes,kept in the description,yes
+unknown,Unknown: a mysterious uncharted wilderness. (old lobby text),other,yes,same fact; kept in the description,yes
+vividlyAlberta,Welcome to Southern Alberta.,other,yes,kept in the description,yes
+vividlyAlberta,"Your base is well defended from early aggression, but when your starting mines runs out, you will be forced to push out of your base.",gameplay rule,yes,kept in the description,yes
+vividlyAlberta,Players must try to strike it rich in the Rocky Mountains to the west.,gameplay rule,yes,kept in the description,yes
+vividlyAlberta,Natives: Cree,gameplay rule,yes,the Natives line agrees,yes
+vividlyAlberta,Outlaws: Pistolero and Comanchero,gameplay rule,no,"differs from the map's outlaw block in WoL (Renegado, Comanchero): the Outlaws line",yes
+vividlyAlberta,Map designed by dansil92 (old lobby text),credit,yes,creator line,yes
+vividlyAlberta,Map made by vividlyplain (old lobby text),credit,yes,creator line,yes
+vividlyKashmir,You've settled in Kashmir at the foot of the mountains.,gameplay rule,yes,kept in the description,yes
+vividlyKashmir,You are separated from your enemies by a lake in the center of the valley and mountains in the north.,gameplay rule,yes,kept in the description,yes
+vividlyKashmir,Protect your town from naval attacks and fight to control the trade route in the south (not present in FFA).,gameplay rule,yes,kept in the description; no trade route in free-for-all (TeamNum == 2),yes
+vividlyKashmir,Or perhaps you will choose to fight for control of the resources and natives in the mountains.,gameplay rule,yes,kept in the description,yes
+vividlyKashmir,Map made by vividlyplain,credit,yes,creator line,yes
+vividlyKashmir,Observer UI by Aizamk,observer-ESOC,no,"credit for ESOC's observer interface, not used in Wars of Liberty",yes
+vividlyKashmir,Natives: Udasi and Bhakti,gameplay rule,yes,the Natives line agrees,yes
+vividlyKashmir,Outlaws: Marathan Dacoit and Wokou Horseman,gameplay rule,yes,the Outlaws line agrees,yes
+vividlyKolkata,"You've settled in Bengal, surrounded by bountiful wetlands.",other,yes,kept in the description,yes
+vividlyKolkata,Each team has their own patch of land and equal access to the trade route that crosses the region (not present in FFA).,gameplay rule,yes,kept in the description,yes
+vividlyKolkata,Fighting will begin early as you are never far from the enemy team.,gameplay rule,yes,kept in the description,yes
+vividlyKolkata,Native Civs: none,gameplay rule,yes,the Natives line says none,yes
+vividlyKolkata,Outlaws: Marathan Dacoit / Marathan Thuggee,gameplay rule,yes,the Outlaws line agrees,yes
+vividlyNigerDelta,Welcome to the Niger Delta.,other,no,a greeting; the map's name says it,yes
+vividlyNigerDelta,Teams start on either side of a set of winding rivers.,variant,yes,kept in the description,yes
+vividlyNigerDelta,Resources are plentiful both on land and in water and a trade route will spawn across the map or behind each team's base (no trade route in FFA).,gameplay rule,yes,kept in the description,yes
+vividlyNigerDelta,"Fight for control of the central delta where you will find two Native Commodities, livestock, and extra gold for your team.",gameplay rule,yes,kept in the description (the Native Commodities are WoL's African trade sites),yes
+vividlyNigerDelta,Outlaws: Pistolero and Renegado,gameplay rule,yes,the Outlaws line agrees,yes
+vividlyNigerDelta,Made by vividlyplain. (old lobby text),credit,yes,creator line,yes
+vividlyVietnam,Welcome to the coast of Vietnam and its resource rich jungles.,gameplay rule,yes,kept in the description,yes
+vividlyVietnam,Four Shaolin temples reside in the South while the South China Sea to the North provides a bounty of fish and whales.,gameplay rule,yes,"kept in the description, corrected: the script places two Shaolin and two Zen temples (vividlyVietnam.xs 818-836), as seen in game",yes
+vividlyVietnam,Natives: Shaolin and Zen,gameplay rule,yes,the Natives line agrees,yes
+vividlyVietnam,Outlaws: Wokou Horseman and Wokou Monk,gameplay rule,yes,the Outlaws line agrees,yes
+vividlyVietnam,Designed by vividlyplain. (old lobby text),credit,yes,creator line,yes
+whiteshell,The White Shell is a region located between the Great Lakes and the Great Plains.,geography-history,yes,where the map is; kept in the description,yes
+WOLAlps,"Players are separated by the creeks, valleys and forests of the Alps.",gameplay rule,yes,kept in the description,yes
+WOLAlps,"This is a region rich in animals such as deer and hares, and also some mines and treasures can be found between the alleys.",gameplay rule,yes,"deer, hares, mines and treasures; kept in the description",yes
+WOLAlps,"The merchants and the inhabitants have evacuated to keep away from the conflict, so you have to fight on your own.",gameplay rule,yes,"kept: no trade route and no natives in game (the script's European village groupings, EURNS*, are missing from RM4\groupings, so none is placed)",yes
+WOLAlps,"Keep an eye on every choke point, since enemy may launch a surprise attack right behind your line.",gameplay rule,yes,kept in the description,yes
+WOLAlps,Alps: A land separated by creeks and valleys. (old lobby text),gameplay rule,no,the description says the same in more detail,yes
+WOLasuncion,The ruined capital of Paraguay after the bloodiest war in the Latin American history.,geography-history,yes,the history line; kept in the description (short),yes
+WOLasuncion,"With most of the natural resources at the edge of the map, and one narrow trading route across the map.",gameplay rule,yes,resources at the edges and the narrow trade route (one of two courses in the script); kept,yes
+WOLasuncion,The fight may occur in the ruin of the city in the centre.,gameplay rule,yes,fighting in the ruins of the centre; kept,yes
+WOLasuncion,You may consider sacking some of the abandoned houses to loot some extra food for your troop.,gameplay rule,yes,abandoned houses (PYabandonedbuilding) to sack for food; kept,yes
+WOLasuncion,Asuncion: The abandoned Paraguayan Capital (old lobby text),geography-history,no,the history line says it,yes
+WOLatlas,The high atlas mountains of Africa wall off the northern edge of the Sahara.,geography-history,yes,where the map is; kept in the description,yes
+WOLatlas,Their altitude gives them a climate that looks more like Europe than Africa.,geography-history,yes,the climate; kept in the description (short),yes
+WOLatlas,The mountainous landscape is dotted with groves of cedar forests where bighorn sheep and brown bears roam.,gameplay rule,yes,"cedar groves, bighorn sheep and bears (WildAtlasBear); kept in the description",yes
+WOLatlas,Players start on either side of a deep valley.,gameplay rule,yes,kept in the description,yes
+WOLatlas,"There is no trade route, but there are three merchant settlements on the map.",gameplay rule,yes,"no trade route, three merchant settlements (three trade sites in the script); kept",yes
+WOLatlas,Rockies: teams are separated by a resource-rich valley. (old lobby text),other,no,"the lobby text of Rockies, copied by mistake; the valley is in the description",yes
+WOLaustralia,Players arrive on the green coast of the Great Southern Land.,gameplay rule,yes,kept in the description,yes
+WOLaustralia,This region is home to unique and abundant native wildlife.,gameplay rule,yes,kept in the description (short),yes
+WOLaustralia,Trade routes and immigrant settlements can be found by exploring the vast Outback.,gameplay rule,yes,three trade routes and the two immigrant settlements; kept,yes
+WOLaustralia,You have brought a small number of rabbits with you to help feed your early colony.,gameplay rule,yes,six breeding rabbits per player (ReproducingRabbit); kept in the description,yes
+WOLaustralia,This may have been a mistake.,other,yes,the joke that ends the rabbit line; kept,yes
+WOLaustralia,A huge map of the entire continent of Australia (old lobby text),other,yes,the whole continent on a huge map; kept in the description,yes
+WolAysen,"Each player start in a small island connected to a rich central land by a wide ford, can you find a lot of gold mines, wild animals and sheeps, as well as natives and missions.",gameplay rule,yes,kept in the description,yes
+WolAysen,Archipelago Region in the southern of america. (old lobby text),geography-history,yes,an archipelago in the south of the Americas; kept in the description,yes
+WOLazores,Azores description,other,no,"placeholder text, no fact",yes
+WOLazores,Azores: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+WOLbalkans,The turquoise waters of the Aegean Sea are scattered with picturesque islands.,geography-history,yes,kept in the description,yes
+WOLbalkans,A sea trade-route winds through the middle of these.,gameplay rule,yes,kept in the description,yes
+WOLbalkans,Players start either on the Greek mainland or the large island of Crete.,gameplay rule,yes,"kept, with the script's rule for more than two teams (they start on the small islands)",yes
+WOLbalkans,The beautiful Aegean Sea. (old lobby text),gameplay rule,no,the description says the same in more detail,yes
+WolBioko,(no original text),other,no,the map had no description,yes
+WOLblackforest,This is a remake of the old AoE2 map Blackforest.,geography-history,yes,kept in the description,yes
+WOLblackforest,"This Map contain 6 Startingsheeps,",gameplay rule,no,"contradicted by the script: each player gets 2 to 5 cows near the start, no sheep; dropped",yes
+WOLblackforest,"much hunts ,silver- and goldmines,",gameplay rule,yes,kept in the description,yes
+WOLblackforest,and 5 relics which give you nice bonus!,gameplay rule,yes,"relics with a bonus kept; the script places up to two per player in ruins, not 5, so no number",yes
+WOLblackforest,The Map has a not crossability forest with a,gameplay rule,yes,the forest and its few passages; kept in the description,yes
+WOLblackforest,passage.,gameplay rule,yes,the end of the previous line; kept in the description,yes
+WOLblackforest,P7 Mapfix and 4v4 Fix included,other,no,"a version note, no gameplay",yes
+WOLblackforest,Code By Sir_Hans and Dewinner,credit,yes,creator line,yes
+WOLblackforest,idea of marvek and the 9ACES Community,credit,no,"idea credit (marvek, the 9ACES community): credits.csv names only the coders",yes
+WOLblackforest,Visit www.9ac.es for more news about aoe3 and,other,no,a website link,yes
+WOLblackforest,other games and a gamecommunity !!!,other,no,a website link,yes
+WOLblackforest,"A remake of the old AoE2 map, code by Sir_Hans and Dewinner (old lobby text)",credit,yes,creator line,yes
+WOLblackforest,Visit www.9ac.es for newest Version ! (old lobby text),other,no,a website link,yes
+WOLbritishislands,British Isles description,other,no,"placeholder text, no fact",yes
+WOLbritishislands,British Isles: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+WOLcave,The Sudwala Caves in Southern Africa are a surprisingly spacious system of caverns that allow the creation of impenetrable bastions on their interior.,geography-history,yes,where the map is and its strong positions; kept in the description,yes
+WOLcave,Lost cattle and forgotten caches of provisions left by former occupants can be found within them.,gameplay rule,yes,cows and treasures in the caves; kept in the description,yes
+WOLcave,Fight over the scarce wood provisions that are left in the small sky openings while navigating the thin corridors of this geological formation.,gameplay rule,yes,kept in the description,yes
+WOLcave,Cave: Witness the claustrophobia and low light while fighting within a Cave. (old lobby text),other,yes,kept as dim and cramped,yes
+WOLcentralplateau,"The dry highland landscape that lays western to the southeast coasts of brazil is shaped by mesas and hills and painted with dry grasslands, the players spawn in the top of plateaus and they must explore the vast region in search of resources and allies in the local inhabitants.",gameplay rule,yes,kept in the description,yes
+WOLcentralplateau,Planaltos Do Leste: The highland landscape painted with dry grasslands (old lobby text),other,no,the description says the same in more detail,yes
+WOLcerrado,"The vast inner plains of the tropical savannah are crossed by a single curving trade route, with only scattered low hills breaking the otherwise flat terrain.",gameplay rule,yes,kept in the description,yes
+WOLcerrado,The region is home to the Guarani peoples and roaming Paulistas.,geography-history,yes,"the history line, kept; each game draws one native nation (Guarani, Guaicuru or Sertanejo)",yes
+WOLcerrado,Cerrado: Vast inner plains of tropical savannah (old lobby text),other,no,the description says the same in more detail,yes
+WOLcongo,"Located in the deep heart of Africa, the Congo offers many riches and fortune for those adventurous enough to claim trade in this territory.",geography-history,yes,kept in the description,yes
+WOLcongo,"However it offers many dangers too, the dense forest impeding the proper mapping of the jungle, you always must keep an eye open for foes waiting in the shadow.",gameplay rule,yes,kept: the script's trigger resets the explored map every half second,yes
+WOLcongo,Congo: dark rainforest where one can easily get lost. (old lobby text),other,no,the description says the same in more detail,yes
+WOLdallol,Dallol description,other,no,"placeholder text, no fact",yes
+WOLdallol,Dallol: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+WOLeasterisland,The Rapa Nui have long deforested this small island and abandoned it.,geography-history,yes,kept in the description,yes
+WOLeasterisland,"The Moais they left behind, however, spread all across the island hold a secret for their captors: whoever controls the full body Moais gains access to a mystic trickle of wood.",gameplay rule,yes,the Moai (WOLmoai) and their trickle of wood; kept in the description,yes
+WOLeasterisland,"Volcano craters may be found inland, while shipwrecked European galleons, full of gold, may be strewn about the coast.",gameplay rule,yes,"craters and wrecks (SPCSpanishShipRuins, one near every start); kept",yes
+WOLeasterisland,"Easter Island: island with mysterious Moai structures, but no trees. (old lobby text)",gameplay rule,no,"'no trees' contradicts the script, which places some forest (Easter Island Forest); 'deforested' is kept instead",yes
+WOLEcruteak,"gotta catch'em all, or something",other,no,"a joke line, no fact; the guardians of the bell tower are in the description",yes
+WOLEcruteak,gotta catch'em all (old lobby text),other,no,"a joke line, no fact; the guardians of the bell tower are in the description",yes
+WOLethiopianhighlands,The Roof of Africa; Ethiopia's high-altitude heartland.,geography-history,yes,kept in the description (short),yes
+WOLethiopianhighlands,Herds of gelada baboons roam the hillsides and coin can be made by harvesting the native coffee bushes.,gameplay rule,yes,gelada and coin from coffee (no mines); kept in the description,yes
+WOLethiopianhighlands,"Players start on either side  of a deep, dry valley with a central trade route.",gameplay rule,yes,kept in the description,yes
+WOLethiopianhighlands,Two Ethiopian Orthodox monasteries and two merchant settlements are present on the map.,gameplay rule,yes,"two monasteries and two merchant settlements, as in the script; kept",yes
+WOLethiopianhighlands,Rockies: teams are separated by a resource-rich valley. (old lobby text),other,no,"the lobby text of Rockies, copied by mistake; the valley is in the description",yes
+WOLFjord,(no original text),other,no,the map had no description,yes
+WOLGibraltar,(no original text),other,no,the map had no description,yes
+WolGreenland,Travel the Freeze lands of this polar region (old lobby text),geography-history,yes,kept in the description,yes
+WolGujarat,West Coast of North india.,geography-history,yes,where the map is; kept in the description,yes
+WOLhawaii,The Floor is Made of Lava! (old lobby text),other,yes,kept as the description's opening,hand
+WOLhawaii,The Big Island of Hawai'i has been built by the slow eruptions of huge shield volcanoes.,geography-history,yes,kept in the description (short),hand
+WOLhawaii,Long lines of lava flows ooze across the landscape.,gameplay rule,yes,kept in the description,hand
+WOLhawaii,"These can be crossed, but your units cannot linger on them without being burned.",gameplay rule,yes,kept in the description,hand
+WOLhawaii,Capture the Heiau to train special native Hawaiian units.,gameplay rule,yes,kept in the description; Natives line (Heiau temples),hand
+WOLIberianPeninsula,Iberian Peninsula description,other,no,"placeholder text, no fact",yes
+WOLIberianPeninsula,Iberian Peninsula: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+WOLiceland,A volcanic island located in North Atlantic.,geography-history,yes,kept in the description,yes
+WOLiceland,"It has a temperate climate, despite a high latitude, which grants many forests and animals to hunt.",gameplay rule,yes,kept in the description,yes
+WOLiceland,The active volcanoes located in the middle of the island burn anyone nearby.,gameplay rule,yes,volcanoes near the centre (1 per two players at most); kept,yes
+WOLiceland,The waters are full of fish and may eventually become the main source of food.,gameplay rule,yes,kept in the description,yes
+WOLiceland,Icelandic villages can be found near the coast.,gameplay rule,no,contradicted by the script: it places no villages (its Carib natives are never placed); dropped,yes
+WOLiceland,There are no Trade Routes.,gameplay rule,no,the Trade route line says it,yes
+WOLiceland,Iceland: a volcanic island located in North Atlantic. (old lobby text),gameplay rule,no,the description says it,yes
+WOLlakerose,Lake Retba description,gameplay rule,no,"placeholder text, no fact",yes
+WOLlakerose,Lake Retba: rollover (old lobby text),gameplay rule,no,"placeholder text, no fact",yes
+WolLualaba,The Upper Congo Region full of exploitable resources and workforce.,gameplay rule,yes,kept in the description,yes
+WolLualaba,"The Teams starts in the opposite side of two parallel rivers affluents of the long and full of fishes lualaba river, you could find some villagers, elephants and copper mines in this lands, every player starts with one tend and 5 extra villagers.",gameplay rule,yes,"tributaries, fish, and the tent and five villagers of every player (script); kept",yes
+WOLmadagascar,This biodiverse island off the eastern coast of Africa is home to unusual and unique flora and fauna.,gameplay rule,yes,kept in the description,yes
+WOLmadagascar,"From lemurs and chameleons to giant elephant-birds and the mighty, towering baobab trees.",gameplay rule,yes,elephant birds and baobabs kept; lemurs and chameleons dropped: the script places none,yes
+WOLmadagascar,"This map will be a scramble to control as many of these riches as possible, but you'll have to catch them first!",gameplay rule,yes,kept in the description,yes
+WOLmadagascar,Lrg Madagascar (old lobby text),other,no,only the map's name,yes
+WOLmoon,I think we may have voyaged too far.,other,yes,kept as the opening line,yes
+WOLnewzealand,In the Land of the Long White Cloud your game experience will depend on which island you start on.,gameplay rule,yes,kept in the description,yes
+WOLnewzealand,The larger South Island with its central mountain range or the smaller North Island with its mud springs and Kauri trees.,gameplay rule,yes,kept in the description,yes
+WOLnewzealand,Capture the Wharenui to produce unique Maori technologies.,gameplay rule,yes,kept in the description,yes
+WOLnewzealand,Aotearoa. (old lobby text),geography-history,yes,the Maori name; kept in the description,yes
+WOLnewzealand,The Land of the Long White Cloud (old lobby text),geography-history,yes,kept in the description,yes
+WOLnlnz,The warm northernmost region of of New Zealand,geography-history,yes,kept in the description,yes
+WOLnlnz,with multiple bays and mangroves makes this zone ideal for naval warfare.,gameplay rule,yes,kept in the description,yes
+WOLnzwc,The west coast of New Zealand's southern island is a wild land covered by rainforests.,gameplay rule,yes,kept in the description,yes
+WOLnzwc,"In the northwest you'll find a sea full of fish and treasure, while the mountains lining the southwest restrict action to the coastline.",gameplay rule,yes,kept in the description,yes
+WOLnzwc,"Every player starts near a Wharenui site with whom they can ally, and the main food source on land are the elusive Kiwis and Kakapos, as well as some loose sheep.",gameplay rule,yes,kept in the description,yes
+WOLnzwc,The rainy wild west coast of New Zealand's southern island (old lobby text),gameplay rule,no,the description says the same in more detail,yes
+WOLpolynesianatoll,A small coral atoll in the middle of the vast Pacific Ocean.,geography-history,yes,kept in the description,yes
+WOLpolynesianatoll,The central lagoon has abundant tropical reef fish.,gameplay rule,yes,kept in the description,yes
+WOLpolynesianatoll,The surrounding ocean has whales and water treasures.,gameplay rule,yes,kept in the description,yes
+WOLpolynesianatoll,Guano deposits on the island will be a valuable source of coin.,gameplay rule,yes,guano as the coin; kept in the description,yes
+WOLpolynesianatoll,Capture native Polynesian buildings to produce immaterial resources of XP or trade.,gameplay rule,yes,kept in the description,yes
+WOLpolynesianatoll,A little remote coral island. (old lobby text),gameplay rule,no,the description says the same in more detail,yes
+WOLsahara,"Trees, plants, and animals are very scarce on this map.",gameplay rule,yes,kept in the description,yes
+WOLsahara,You will have to rely on economics to build an empire.,gameplay rule,yes,kept in the description,yes
+WOLsahara,The vast desert makes it hard to defend yourself.,gameplay rule,yes,kept in the description,yes
+WOLsahara,The rolling sand hills stretch as far as the eye can see.,geography-history,yes,kept in the description,yes
+WOLsahara,The vast wastes of the world's largest desert. (old lobby text),geography-history,yes,kept in the description,yes
+WOLsahel,"The transition region between the Sahara Desert and the more southerly Sudanian Savannah, this region has more frequent trees, plants, and animals than the original Sahara.",gameplay rule,yes,kept in the description,yes
+WOLsahel,Sahel: less harsh semi-arid region south of the Sahara. (old lobby text),geography-history,yes,kept in the description,yes
+WOLsavannah,Savannah description,other,no,"placeholder text, no fact",yes
+WOLsavannah,Savannah: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+WOLScandinavia,Map Description.,other,no,"placeholder text, no fact",yes
+WOLScandinavia,Map Rollover Text (old lobby text),other,no,"placeholder text, no fact",yes
+WOLsocotra,(no original text),other,no,the map had no description,yes
+WolTahiti,"In this Island you will find a tropical climate in which diverse fruits and dense forests proliferate, however you will not find large animals to hunt.",gameplay rule,yes,kept in the description,yes
+WolTahiti,Polynesian Island of black sand beachs (old lobby text),geography-history,yes,black sand beaches; kept in the description,yes
+WOLtuscany,This beautiful rolling hill country has been fought over by various Italian city-states for centuries.,geography-history,yes,the history line; kept in the description (short),yes
+WOLtuscany,The middle of the map is criss-crossed by several trade-routes.,gameplay rule,yes,kept as two trade routes: the script builds two,yes
+WOLtuscany,The trading post sites on the map are highly lucrative but will also be fiercly fought-over.,gameplay rule,yes,kept in the description,yes
+WOLtuscany,The edges of the map are thickly forested.,gameplay rule,yes,kept in the description,yes
+WOLtuscany,La dulce vita? (old lobby text),other,no,"a joke line, no fact",yes
+WOLvalleyofkings,Valley of the Kings description,gameplay rule,no,"placeholder text, no fact",yes
+WOLvalleyofkings,Valley of the Kings: rollover (old lobby text),gameplay rule,no,"placeholder text, no fact",yes
+WOLvandiemansland,"In the remote wilderness of Van Diemen's Land, the battle will be to control the only safe harbour on the rugged coastline.",gameplay rule,yes,kept in the description,yes
+WOLvandiemansland,The British colonial government have established a Convict settlement on an island in the middle of the harbour.,gameplay rule,yes,kept in the description,yes
+WOLvandiemansland,The Convicts are a good source of cheap labour.,gameplay rule,yes,kept in the description,yes
+WOLvandiemansland,The mainland is covered in dense forests of tree ferns and mighty mountain ash trees.,gameplay rule,yes,kept in the description,yes
+WOLvandiemansland,The only natural sources of coin on the map are the abundant Whales out to sea.,gameplay rule,yes,kept: the script places no mines (its 'silver mines' object is mountain ash),yes
+WOLvandiemansland,The remote west coast of the island that will one day be renamed Tasmania. (old lobby text),geography-history,yes,kept in the description,yes
+WoLverdongorge,Verdon Gorge description,other,no,"placeholder text, no fact",yes
+WoLverdongorge,Verdon Gorge: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+WOLwateringhole,Watering Hole description,gameplay rule,no,"placeholder text, no fact",yes
+WOLwateringhole,Watering Hole: rollover (old lobby text),gameplay rule,no,"placeholder text, no fact",yes
+WOLwetlands,Wetlands description,other,no,"placeholder text, no fact",yes
+WOLwetlands,Wetlands: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+WOLzimbabwe,Great Zimbabwe description,other,no,"placeholder text, no fact",yes
+WOLzimbabwe,Great Zimbabwe: rollover (old lobby text),other,no,"placeholder text, no fact",yes
+yellow riverDry,"During the dry season, the waters of the Yellow River recede to create fertile new islands, and animals often gather near the river's edge to drink.",variant,yes,the dry variant; kept in the description,yes
+yellow riverDry,"During times of flood, extra resources abound and naval craft are sometimes seen along the river.",variant,yes,the flood variant; kept in the description,yes
+yellow riverDry,Recruit local groups as allies to take advantage of their multiple trade routes located along the borders of the map.,gameplay rule,yes,kept in the description,yes
+yellow riverDry,"Yellow River: Offers extra resources and choke points when flooded, but is open and fertile when dry. (old lobby text)",variant,yes,chokepoints when flooded; kept in the description,yes
+yellow riverDry,"Trade Routes on each side of the map, and many natives. (old lobby text)",gameplay rule,yes,kept in the description,yes
+yellow riverLarge,"During the dry season, the waters of the Yellow River recede to create fertile new islands, and animals often gather near the river's edge to drink.",variant,yes,the dry variant; kept in the description,yes
+yellow riverLarge,"During times of flood, extra resources abound and naval craft are sometimes seen along the river.",variant,yes,the flood variant; kept in the description,yes
+yellow riverLarge,Recruit local groups as allies to take advantage of their multiple trade routes located along the borders of the map.,gameplay rule,yes,kept in the description,yes
+yellow riverLarge,"Lrg Yellow River: A wet-dry region similar to the Yellow River, but on a much grander scale. (old lobby text)",gameplay rule,yes,the grander scale; kept in the description,yes
+yucatan,The Central America rain forests are home to many Treasures.,gameplay rule,yes,kept in the description,yes
+yucatan,Each player will start with a nearby Zapotec or Maya village.,gameplay rule,yes,kept with Miskito instead of Zapotec: the script places a Miskito or Maya village by every start,yes
+yucatan,"Use your ships to control the land on your side, or try to build a dock on the far shore and control both coasts.",gameplay rule,yes,kept in the description,yes
+yucatan,"The dense forests mean you will never run short of wood, and herds of Tapir and Capybara offer unusual hunting opportunities.",gameplay rule,yes,endless wood kept in the description; tapir and capybara are on the Hunts line,yes
+yucatan,Yucatan: dense jungles and nearby natives. (old lobby text),gameplay rule,yes,kept in the description,yes
+yukon,"Your enemy's towns are close, so be on your guard.",gameplay rule,yes,kept in the description,yes
+yukon,Cross the central river and claim the Treasure-rich region to the north.,gameplay rule,yes,kept in the description,yes
+yukon,Mines are plentiful on the northern half of the map; expect to struggle until you have a second town.,gameplay rule,yes,kept in the description,yes
+yukon,"The Trade Route will be hard to completely control, with each team having access to one Trading Post site.",gameplay rule,yes,kept in the description,yes
+yukon,Two Cree or Nootka villages are found north of the river.,gameplay rule,yes,kept in the description,yes
+yukon,"Snowy forests, plenty of silver, and sometimes a river. (old lobby text)",gameplay rule,yes,kept without 'sometimes': the script always builds the river now (whichMap fixed at 2),yes
+Yungas,"Settled in the foothills of the Andes, this  region is surrounded by winding cliffs and narrow canyons.",gameplay rule,yes,kept in the description,yes
+Yungas,"The central oases have abundant food sources, and coin is scattered in the winding canyons.",gameplay rule,yes,kept in the description,yes
+Yungas,"Chokepoints may prove to be easy to wall, but be careful not to get lost in the winding passageways.",gameplay rule,yes,kept in the description,yes
+Yungas,Map by dansil92,credit,yes,creator line,yes

@@ -11,6 +11,7 @@
 // percent reaches 100 %, then run as in stock. A destroyed or deleted foundation is never held,
 // so its corpse fades and leaves as in stock. The hooks are in hooks/lifespan_hooks.asm.
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <set>
 #include <string>
@@ -19,6 +20,7 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../unitpanel.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -42,6 +44,22 @@ const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
+}
+
+// The unit panel's row: the seconds left of a marked unit's lifespan, and a held foundation's whole lifespan.
+bool __stdcall UhcLifespanRow(const char* panel, const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* record = Field<const char*>(unit, 0xB4);
+  if (proto == nullptr || record == nullptr || g_uhcLifespanType < 0 || !kProtoIsType(proto, g_uhcLifespanType)) {
+    return false;
+  }
+  const float left = Field<float>(record, 0x1C);
+  if (!(left > 0.0f)) {
+    return false;
+  }
+  wchar_t value[32];
+  swprintf_s(value, kIsBuilt(unit) ? L"%.0f s" : L"%.0f s once built", static_cast<double>(left));
+  return uhc::SetUnitPanelRow(panel, L"Lifespan", value);
 }
 
 const char* MainWorld() {
@@ -202,6 +220,9 @@ Outcome ApplyLifespanAfterConstruction(const Config& config) {
   if (!WriteJmp(sites::kFadeTimerCommit.va, reinterpret_cast<const void*>(&UhcLifespanFadeHook), 6)) {
     WriteBytes(sites::kLifespanTick.va, sites::kLifespanTick.bytes, 10);
     return Outcome::kFailed;
+  }
+  if (!AddUnitPanelRow(&UhcLifespanRow)) {
+    Log(L"lifespanAfterConstruction: no countdown in the unit panel");
   }
   Log(L"lifespanAfterConstruction: units of unittype %hs keep their Lifespan and its fade-out until their "
       L"construction is finished%ls (multiplayer unverified)",

@@ -1,0 +1,1287 @@
+<?xml version = "1.0"?>
+<trigger version="2">
+
+<Conditions>
+
+	<!-- OOS Prevention -->
+    <Condition name="Always">
+      <Expression>true</Expression>
+    </Condition>
+	
+	<!-- General Conditions -->
+	
+	<Condition name="QV Timer">
+      <Param name="QV" dispName="Quest Var" VarType="string">QV1</Param>
+      <Expression>(trTime()-cActivationTime) >= trQuestVarGet("%QV%")</Expression>
+   </Condition>
+   
+	<Condition name="QV Timer ms">
+      <Param name="QV" dispName="Quest Var" VarType="string">QV1</Param>
+      <Expression>(trTimeMS()-(cActivationTime*1000)) >= trQuestVarGet("%QV%")</Expression>
+   </Condition>
+   
+   <!--
+   <Condition name="Diplomacy: UI Update - Condition">
+     <Param name="Player" dispName="Player" varType="string">1</Param>
+	 <Expression>trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) != trQuestVarGet("P%Player%LastStatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot"))</Expression>
+   </Condition>-->
+   
+   <Condition name="Player Is Computer">
+     <Param name="Player" dispName="Player" varType="string">1</Param>
+     <Expression>kbIsPlayerHuman(%Player%) == false</Expression>
+   </Condition>
+   
+   <Condition name="Player Is Human">
+     <Param name="Player" dispName="Player" varType="string">1</Param>
+     <Expression>kbIsPlayerHuman(%Player%)</Expression>
+   </Condition>
+
+</Conditions>
+
+<Effects>
+
+	<!-- OOS Prevention -->
+    <Effect name="SetIdleProcessing">
+      <Param name="IdleProc" dispName="$$22356$$Process Idle:" varType="bool">true</Param>
+      <Command>trSetUnitIdleProcessing(%IdleProc%);</Command>
+    </Effect>
+	
+	<!-- Utilities -->
+	
+    <Effect name="(M) Show Tech ID">
+      <Param name="TechID" dispName="$$22311$$Tech" VarType="tech">0</Param>
+      <Command>trChatSend(1, "%TechID%");</Command>
+    </Effect>
+    
+    <Effect name="XS User Code">
+	   <Param name="C1" dispName=" " VarType="stringid"></Param>
+	   <Command>/**/ %C1%</Command>
+   </Effect>
+   
+   <Effect name="Hotkey Trigger">  
+	 <Param name="Key01" dispName="Key" varType="string">a</Param>  
+	 <Param name="EventID01" dispName="Event" varType="event">-1</Param>       
+	 <Command>map("%Key01%","game","trackInsert(); trackAddWaypoint();trackPlay(-1,%EventID01%);");</Command> 
+	</Effect>
+
+	<Effect name="Typeloader (TL)"> <!-- Custom -->
+		<Param name="info1" dispName="Info" varType="string">This trigger loads custom functions that can be used by other triggers.</Param>
+		<Param name="info2" dispName="Info" varType="string">Please load this effect in an empty trigger before you add triggers that need this.</Param>
+		<Param name="info3" dispName="Info" varType="string">The triggers requiring this should mention it somewhere. Not all triggers need it.</Param>
+		<Param name="mod" dispName="Don't touch this!" varType="strwing">%%</Param>
+		<Command>}</Command>
+		<Command>}</Command>
+		<Command>const float PI = 3.14159265358979323846;</Command>
+		<Command>const float e = 2.71828182845904523536;</Command>
+		<Command>int tla=0;</Command>
+		<Command>int tlb=0;</Command>
+		<Command>int tlc=0;</Command>
+		<Command>int tlpla=0;</Command>
+		<Command>float fla=0;</Command>
+		<Command>float flb=0;</Command>
+		<Command>float flc=0;</Command>
+		<Command>string s1="";</Command>
+		<Command>string s2="";</Command>
+		<Command>vector v1=vector(1,1,1);</Command>
+		<Command>vector v2=vector(1,1,1);</Command>	
+		<Command>int getUnitCountByLocation(int UnitTypeID=-1, int Player=1,vector location = cInvalidVector, float radius = 20.0){//Mister_SCP ->found in AIMain</Command>
+		<Command>int count=0;</Command>
+		<Command>int pla1=Player;</Command>
+		<Command>int pla2=Player;</Command>
+		<Command>if (Player==-1) {pla1=cNumberPlayers-1;pla2=0;}</Command> 
+		<Command>for (pla=pla1;>=pla2){xsSetContextPlayer(pla);</Command>
+		<Command>kbLookAtAllUnitsOnMap();</Command> 
+		<Command>for(unitQueryID=kbUnitQueryCreate("miscGetUnitLocationQuery"+Player+""+UnitTypeID);>5000){}</Command>
+		<Command>kbUnitQuerySetPlayerID(unitQueryID, pla);</Command>
+		<Command>if (UnitTypeID !=-1) kbUnitQuerySetUnitType(unitQueryID, UnitTypeID);</Command>
+		<Command>kbUnitQuerySetState(unitQueryID, cUnitStateAlive);</Command>
+		<Command>kbUnitQuerySetPosition(unitQueryID, location);</Command>
+		<Command>kbUnitQuerySetMaximumDistance(unitQueryID, radius);</Command>
+		<Command>kbUnitQueryResetResults(unitQueryID);</Command>
+		<Command>count=count+kbUnitQueryExecute(unitQueryID);}</Command>
+		<Command>return(count);}</Command>
+		<Command>int getUnit(int UnitTypeID=-1, int Player=1,vector center = cInvalidVector,int pos=0){//Mister_SCP ->found in AIMain</Command>
+		<Command>	int ret = -1;</Command>
+		<Command>xsSetContextPlayer(Player);</Command> 
+		<Command>kbLookAtAllUnitsOnMap();</Command> 
+		<Command>for(unitQueryID=kbUnitQueryCreate("miscGetUnitLocationQuery"+Player+""+pos);>5000){}</Command>
+		<Command>kbUnitQuerySetPlayerID(unitQueryID, Player);</Command>
+		<Command>kbUnitQuerySetUnitType(unitQueryID, UnitTypeID);</Command>
+		<Command>kbUnitQuerySetState(unitQueryID, cUnitStateAlive);</Command>
+		<Command>if (center != vector(-1,-1,-1))	{</Command>
+		<Command>kbUnitQuerySetPosition(unitQueryID, center);</Command>
+		<Command>kbUnitQuerySetAscendingSort(unitQueryID, true);</Command>
+		<Command>}</Command>
+		<Command>kbUnitQueryResetResults(unitQueryID);</Command>
+		<Command>if (kbUnitQueryExecute(unitQueryID)>0){</Command>
+		<Command>ret=kbUnitQueryGetResult(unitQueryID, pos);}</Command>
+		<Command>else {ret=-1;} return(ret);}</Command>
+		<!--too lazy to type everywhere trQuestVarSet,trQuestVarGet ->here are the shorter forms-->
+		<Command>void QVSet(string QVName="QV1",float SetTo=0){</Command>
+		<Command>trQuestVarSet(""+QVName,SetTo);}</Command>
+		<Command>float QVGet(string QVName="QV1"){</Command>
+		<Command>return(trQuestVarGet(""+QVName));}</Command>
+		<Command>void QVr(string QV="QV1"){//Mister SCP; raise QV by 1</Command>
+		<Command>trQuestVarSet(""+QV,trQuestVarGet(""+QV)+1);}</Command>
+		<Command>vector queryUnits(int UnitTypeID=-1, int Player=1,vector center = cInvalidVector,float radius = 10){</Command> 
+		<Command>if (Player!=-1) {xsSetContextPlayer(Player);} else {xsSetContextPlayer(1);}</Command> 
+		<Command> kbLookAtAllUnitsOnMap();</Command> 
+		<Command> for(unitQueryID=kbUnitQueryCreate("miscGetUnitLocationQuery"+Player);>5000){}</Command> 
+		<Command>if (Player != -1) kbUnitQuerySetPlayerID(unitQueryID, Player);</Command> 
+		<Command>if (UnitTypeID !=-1) kbUnitQuerySetUnitType(unitQueryID, UnitTypeID);</Command> 
+		<Command> if (center != vector(-1,-1,-1)){</Command> 
+		<Command> kbUnitQuerySetPosition(unitQueryID, center);</Command> 
+		<Command> kbUnitQuerySetAscendingSort(unitQueryID, true);}</Command> 
+		<Command> kbUnitQuerySetMaximumDistance(unitQueryID, radius);</Command> 
+		<Command>  kbUnitQueryResetResults(unitQueryID);</Command> 
+		<Command> return (xsVectorSet(unitQueryID,kbUnitQueryExecute(unitQueryID),0));}//x returns queryID, y query execute</Command>
+		<Command>void selectUnitsInArea(int UnitTypeID=-1, int Player=1,vector center = cInvalidVector,float radius = 20.0,int excludeUnit = 0){//Mister_SCP</Command>
+		<Command>if (Player!=-1) {xsSetContextPlayer(Player);} else {xsSetContextPlayer(1);}</Command> 
+		<Command>kbLookAtAllUnitsOnMap();</Command> 
+		<Command>for(unitQueryID=kbUnitQueryCreate("miscGetUnitLocationQuery"+Player+""+excludeUnit);>5000){}</Command>
+	    <Command>if (Player != -1) kbUnitQuerySetPlayerID(unitQueryID, Player);</Command>
+	    <Command>if (UnitTypeID !=-1) kbUnitQuerySetUnitType(unitQueryID, UnitTypeID);</Command>
+	    <Command>kbUnitQuerySetPosition(unitQueryID, center);</Command>
+	    <Command>kbUnitQuerySetMaximumDistance(unitQueryID, radius);</Command>
+	    <Command>kbUnitQuerySetState(unitQueryID,cUnitStateAlive);</Command>
+	    <Command>for(i=kbUnitQueryExecute(unitQueryID)-1;>-1){ </Command>
+	    <Command>if (kbUnitQueryGetResult(unitQueryID,i) != excludeUnit)trUnitSelectByID(kbUnitQueryGetResult(unitQueryID,i));}}</Command>     		   
+		<Command>float Math_rand() {</Command>
+		<Command>   trQuestVarSetFromRand("TRL_RFG", 0.0, 0.999999999, false);</Command>
+		<Command>	return(trQuestVarGet("TRL_RFG"));</Command>
+		<Command>}</Command>
+        <!-- 24*Math_rand->returns numbers between 0 and 24-->
+	   	<Command>float Math_max(float a = 0, float b = 0) { //invent00r</Command>
+		<Command>	if(a>b) {return(a);}</Command>
+		<Command>	return(b);</Command>
+		<Command>}</Command>
+		<Command>float Math_min(float a = 0, float b = 0) { //invent00r</Command>
+		<Command>	if(a>b)  {return(b);}</Command>
+		<Command>	return(a);</Command>
+		<Command>}</Command> 
+		<Command>int Math_round(float a = 0) {//invent00r</Command>
+		<Command>	int i = a;</Command>
+		<Command>	if(a-i >= 0.5) {return (i+1);}</Command>
+		<Command>	return (i);</Command>
+		<Command>}</Command>
+		<Command>float Math_sqrt(float s = 1.0) { // invent00r</Command>
+		<Command>   if (0.0>s) {s = 0.0-s;} //imaginary</Command>
+		<Command>   float h = 10.0;</Command>
+		<Command>   h = (h+1.0*s/h)/2.0;</Command>
+		<Command>   h = (h+1.0*s/h)/2.0;</Command>
+		<Command>   h = (h+1.0*s/h)/2.0;</Command>
+		<Command>   h = (h+1.0*s/h)/2.0;</Command>
+		<Command>   h = (h+1.0*s/h)/2.0;</Command>
+		<Command>   h = (h+1.0*s/h)/2.0;</Command>
+		<Command>   return((h+1.0*s/h)/2.0);</Command>
+		<Command>}</Command>
+		<!-- Fact n! Math_fact(n)-->
+		<Command>float Math_fact(int n = 0) {</Command>
+		<Command> float r = 1;</Command>
+		<Command>for(i = n; >= 1) {r = r * i;}</Command>
+		<Command>return (r);</Command>
+		<Command>}</Command>
+		<Command>int kbGetTechID(string techname = ""){//Mr_SCP</Command>
+		<Command><![CDATA[for (i=-1;<5274){]]></Command>
+		<Command>if (kbGetTechName(i)==techname) break;}</Command>
+		<Command>if (i==5274) i=-1;</Command>
+		<Command>return(i);}</Command>
+		<!-- Exponent n^x Math_pow(n,x)-->
+		<Command>float Math_pow(float n = 0, int x = 0) {</Command>
+		<Command>float r = n;</Command>
+		<Command>if (x >=0 ) {</Command>
+		<Command>for(i = x; > 1) r = r * n;</Command>
+		<Command>}</Command>
+		<Command>else</Command>
+		<Command>{</Command>
+		<Command>for(i = 0.0-x; > 1) r = r * n;</Command>
+		<Command>r=1.0/r;}</Command>
+		<Command>return (r);</Command>
+		<Command>}</Command>
+		<!-- Sine ->Radians<- Math_sinRad(n)-->
+	    <Command>float Math_sinRad(float n = 0) { //Matei</Command>
+	    <Command>    float r = n;</Command>
+	    <Command>    <![CDATA[for(i = 1; < 100) {]]></Command>
+	    <Command>        int j = i * 2 + 1;</Command>
+	    <Command>        float k = Math_pow(n,j) / Math_fact(j);</Command>
+	    <Command>        if(k == 0) break;</Command>
+	    <Command>        if(i %mod% 2 == 0) r = r + k;</Command>
+	    <Command>        if(i %mod% 2 == 1) r = r - k;</Command>
+	    <Command>    }</Command><Command>    return (r);</Command>
+	    <Command>}</Command>
+	    <!-- Sine ->Degrees<- Math_sin(n)-->
+	    <Command>float Math_sin(float n = 0) { //Matei</Command>
+		<Command>n=n*PI/180.0;</Command>	   
+	    <Command>    float r = n;</Command>
+	    <Command>    <![CDATA[for(i = 1; < 100) {]]></Command>
+	    <Command>        int j = i * 2 + 1;</Command>
+	    <Command>        float k = Math_pow(n,j) / Math_fact(j);</Command>
+	    <Command>        if(k == 0) break;</Command>
+	    <Command>        if(i %mod% 2 == 0) r = r + k;</Command>
+	    <Command>        if(i %mod% 2 == 1) r = r - k;</Command>
+	    <Command>    }</Command><Command>    return (r);</Command>
+	    <Command>}</Command>
+		<Command>float Math_cos(float n = 0) { //Matei</Command>
+		<Command>n=n*PI/180.0;</Command>
+		<Command>    float r = 1;</Command>
+		<Command>    <![CDATA[for(i = 1; < 100) {]]></Command>
+		<Command>        int j = i * 2;</Command>
+		<Command>        float k = Math_pow(n,j) / Math_fact(j);</Command>
+		<Command>        if(k == 0) break;</Command>
+		<Command>        if(i %mod% 2 == 0) r = r + k;</Command>
+		<Command>        if(i %mod% 2 == 1) r = r - k;</Command>
+		<Command>    }</Command>
+		<Command>    return (r);</Command>
+		<Command>}</Command>
+		<Command>float Math_cosRad(float n = 0) { //Matei</Command>
+		<Command>    float r = 1;</Command>
+		<Command>    <![CDATA[for(i = 1; < 100) {]]></Command>
+		<Command>        int j = i * 2;</Command>
+		<Command>        float k = Math_pow(n,j) / Math_fact(j);</Command>
+		<Command>        if(k == 0) break;</Command>
+		<Command>        if(i %mod% 2 == 0) r = r + k;</Command>
+		<Command>        if(i %mod% 2 == 1) r = r - k;</Command>
+		<Command>    }</Command>
+		<Command>    return (r);</Command>
+		<Command>}</Command>
+	  <Command>float Math_tan(float n = 0) {</Command>
+	  <Command>n=n*PI/180.0;</Command>
+	  <Command>	return (Math_sin(n)/Math_cos(n));</Command>
+	  <Command>}</Command>
+	  <Command>float Math_tanRad(float n = 0) {</Command>
+	  <Command>	return (Math_sin(n)/Math_cos(n));</Command>
+	  <Command>}</Command>
+	  <Command>float xsArrayGetStringPos(float n = 0,string i="",float k=0) {//Mister_SCP</Command>
+	  <Command><![CDATA[for (j=-1;<=k) {]]></Command>
+	  <Command>if (""+xsArrayGetString(n,j)==""+i) break;}</Command>
+	  <Command>if (""+xsArrayGetString(n,j)!=""+i) j=-1;</Command>
+	  <Command>return(j);}</Command>
+	  <Command>float xsArrayGetIntPos(float n = 0,int i=0,float k=0) {//Mister_SCP</Command>
+	  <Command><![CDATA[for (j=0;<=k) {]]></Command>
+	  <Command>if (xsArrayGetInt(n,j)==i) break;}</Command>
+	  <Command>if  (xsArrayGetInt(n,j)!=i) j=-1;</Command>
+	  <Command>return(j);}</Command>
+	  <Command>void xsArrayStringSwap(float n = 0,float i=0,float k=0) {//Mister_SCP</Command>
+	  <Command>string o=""+xsArrayGetString(n,i);</Command>
+	  <Command>string p=""+xsArrayGetString(n,k);</Command>
+	  <Command>xsArraySetString(n, i, ""+p);</Command>
+	  <Command>xsArraySetString(n, k, ""+o);}</Command> 
+	  <Command>int trGetUnitOwner(string unitName="0") { // Mythic_Freak</Command>
+	  <Command>   trUnitSelectClear();</Command>
+	  <Command>   trUnitSelect(unitName);</Command>
+	  <Command>   for(p=cNumberPlayers-1;>=0) {</Command>
+	  <Command>      if(trUnitIsOwnedBy(p)) break;}</Command>
+	  <Command>   return (p);</Command>
+	  <Command>}</Command>
+	<!--seems not to work EVERYTIME but sometime (can be copled with convert command-->
+	  <Command>int ConvertUnitToNearUnits(int centerUnit = 0,int UnitType=0, float radius = 20.0,bool allowGaia=true){//Mister_SCP</Command>
+	  <Command>for(playerinarea=0;>=1){}</Command>
+	  <Command>int owner=trGetUnitOwner(""+centerUnit);</Command>
+	  <Command>if(2>getUnitCountByLocation(UnitType,owner,kbGetBlockPosition(""+centerUnit),radius)){//owner hasnt units in area</Command>
+	  <Command>for(i=cNumberPlayers-1;>=-1){</Command>
+	  <Command><![CDATA[if((owner!=i)&& (getUnitCountByLocation(UnitType,i,kbGetBlockPosition(""+centerUnit),radius)>=1))]]></Command>
+	  <Command>playerinarea=i;}</Command>
+	  <Command>if (playerinarea==-1) playerinarea=owner;</Command>
+	  <Command><![CDATA[else if((allowGaia==false)&&(playerinarea==0)) playerinarea=owner;]]></Command>
+	  <Command>}else {playerinarea=owner;} return(playerinarea);}</Command>
+    <Command>string String_substr(string sText = "", int startPos = 0, int endPos = 2048) {</Command>
+	<Command>   int pos = 0;</Command>
+	<Command>   string dText = "";</Command>
+	<Command>   string subText = "";</Command>
+	<Command>   string currentChar = "";</Command>
+	<Command>   while(true) // To infinity, and beyond!</Command>
+	<Command>   {</Command>
+	<Command>      if(dText == sText)</Command>
+	<Command>      	break;</Command>
+	<Command>      currentChar = "";</Command>
+	<Command>      pos++;</Command>
+	<Command>      if(dText+" " > sText)      {  currentChar = "";   }</Command>
+	<Command>      else if(dText+"!" > sText) {  currentChar = " ";   }</Command>
+	<Command>      else if(dText+"\"" > sText){  currentChar = "!";   }</Command>
+	<Command>      else if(dText+"#" > sText) {  currentChar = "\"";  }</Command>
+	<Command>      else if(dText+"$" > sText) {  currentChar = "#";   }</Command>
+	<Command>      else if(dText+"%mod%" > sText) {  currentChar = "$";   }</Command>
+	<Command><![CDATA[else if(dText+"&">sText){currentChar="%mod%";}]]></Command>
+	<Command><![CDATA[else if(dText+"'">sText){currentChar="&";}]]></Command>
+	<Command>      else if(dText+"(" > sText) {  currentChar = "'";   }</Command>
+	<Command>      else if(dText+")" > sText) {  currentChar = "(";   }</Command>
+	<Command>      else if(dText+"*" > sText) {  currentChar = ")";   }</Command>
+	<Command>      else if(dText+"+" > sText) {  currentChar = "*";   }</Command>
+	<Command>      else if(dText+"," > sText) {  currentChar = "+";   }</Command>
+	<Command>      else if(dText+"-" > sText) {  currentChar = ",";   }</Command>
+	<Command>      else if(dText+"." > sText) {  currentChar = "-";   }</Command>
+	<Command>      else if(dText+"/" > sText) {  currentChar = ".";   }</Command>
+	<Command>      else if(dText+"0" > sText) {  currentChar = "/";   }</Command>
+	<Command>      else if(dText+"1" > sText) {  currentChar = "0";   }</Command>
+	<Command>      else if(dText+"2" > sText) {  currentChar = "1";   }</Command>
+	<Command>      else if(dText+"3" > sText) {  currentChar = "2";   }</Command>
+	<Command>      else if(dText+"4" > sText) {  currentChar = "3";   }</Command>
+	<Command>      else if(dText+"5" > sText) {  currentChar = "4";   }</Command>
+	<Command>      else if(dText+"6" > sText) {  currentChar = "5";   }</Command>
+	<Command>      else if(dText+"7" > sText) {  currentChar = "6";   }</Command>
+	<Command>      else if(dText+"8" > sText) {  currentChar = "7";   }</Command>
+	<Command>      else if(dText+"9" > sText) {  currentChar = "8";   }</Command>
+	<Command>      else if(dText+":" > sText) {  currentChar = "9";   }</Command>
+	<Command>      else if(dText+";" > sText) {  currentChar = ":";   }</Command>
+	<Command><![CDATA[else if(dText+"<">sText){currentChar=";";}]]></Command>
+	<Command><![CDATA[else if(dText+"=">sText){currentChar="<";}]]></Command>
+	<Command>      else if(dText+">" > sText) {  currentChar = "=";   }</Command>
+	<Command>      else if(dText+"?" > sText) {  currentChar = ">";   }</Command>
+	<Command>      else if(dText+"@" > sText) {  currentChar = "?";   }</Command>
+	<Command>      else if(dText+"a" > sText) {  currentChar = "@";   }</Command>
+	<Command>      else if(dText+"b" > sText) {  currentChar = "a";   }</Command>
+	<Command>      else if(dText+"c" > sText) {  currentChar = "b";   }</Command>
+	<Command>      else if(dText+"d" > sText) {  currentChar = "c";   }</Command>
+	<Command>      else if(dText+"e" > sText) {  currentChar = "d";   }</Command>
+	<Command>      else if(dText+"f" > sText) {  currentChar = "e";   }</Command>
+	<Command>      else if(dText+"g" > sText) {  currentChar = "f";   }</Command>
+	<Command>      else if(dText+"h" > sText) {  currentChar = "g";   }</Command>
+	<Command>      else if(dText+"i" > sText) {  currentChar = "h";   }</Command>
+	<Command>      else if(dText+"j" > sText) {  currentChar = "i";   }</Command>
+	<Command>      else if(dText+"k" > sText) {  currentChar = "j";   }</Command>
+	<Command>      else if(dText+"l" > sText) {  currentChar = "k";   }</Command>
+	<Command>      else if(dText+"m" > sText) {  currentChar = "l";   }</Command>
+	<Command>      else if(dText+"n" > sText) {  currentChar = "m";   }</Command>
+	<Command>      else if(dText+"o" > sText) {  currentChar = "n";   }</Command>
+	<Command>      else if(dText+"p" > sText) {  currentChar = "o";   }</Command>
+	<Command>      else if(dText+"q" > sText) {  currentChar = "p";   }</Command>
+	<Command>      else if(dText+"r" > sText) {  currentChar = "q";   }</Command>
+	<Command>      else if(dText+"s" > sText) {  currentChar = "r";   }</Command>
+	<Command>      else if(dText+"t" > sText) {  currentChar = "s";   }</Command>
+	<Command>      else if(dText+"u" > sText) {  currentChar = "t";   }</Command>
+	<Command>      else if(dText+"v" > sText) {  currentChar = "u";   }</Command>
+	<Command>      else if(dText+"w" > sText) {  currentChar = "v";   }</Command>
+	<Command>      else if(dText+"x" > sText) {  currentChar = "w";   }</Command>
+	<Command>      else if(dText+"y" > sText) {  currentChar = "x";   }</Command>
+	<Command>      else if(dText+"z" > sText) {  currentChar = "y";   }</Command>
+	<Command>      else if(dText+"[" > sText) {  currentChar = "z";   }</Command>
+	<Command>      else if(dText+"\\" > sText){  currentChar = "[";   }</Command>
+	<Command>      else if(dText+"]" > sText) {  currentChar = "\\";  }</Command>
+	<Command>      else if(dText+"[" > sText) {  currentChar = "]";   }</Command>
+	<Command>      else if(dText+"^" > sText) {  currentChar = "[";   }</Command>
+	<Command>      else if(dText+"_" > sText) {  currentChar = "^";   }</Command>
+	<Command>      else if(dText+"`" > sText) {  currentChar = "_";   }</Command>
+	<Command>      else if(dText+"{" > sText) {  currentChar = "`";   }</Command>
+	<Command>      else if(dText+"|" > sText) {  currentChar = "{";   }</Command>
+	<Command>      else if(dText+"}" > sText) {  currentChar = "|";   }</Command>
+	<Command>      else if(dText+"~" > sText) {  currentChar = "}";   }</Command>
+	<Command>      else if(dText+"~~" > sText){  currentChar = "~";   }</Command>
+	<Command>      dText = dText + currentChar;</Command>
+	<Command>      if(pos >= startPos)</Command>
+	<Command>         subText = subText + currentChar;</Command>
+	<Command>      if(pos == startPos+endPos-1)</Command>
+	<Command>        break;</Command>
+	<Command>   }</Command>
+	<Command>  return(subText);</Command>
+	<Command>}</Command>
+	<Command>int String_length(string sText = "") {</Command>
+	<Command>   int pos = 0;</Command>
+	<Command>   string dText = "";</Command>
+	<Command>   string currentChar = "";</Command>
+	<Command>   while(true) // To infinity, and beyond!</Command>
+	<Command>   {</Command>
+	<Command>      if(dText == sText)</Command>
+	<Command>        break;</Command>
+	<Command>      currentChar = "";</Command>
+	<Command>      pos++;</Command>
+	<Command>      if(dText+" " > sText)      {  currentChar = "";   }</Command>
+	<Command>      else if(dText+"!" > sText) {  currentChar = " ";   }</Command>
+	<Command>      else if(dText+"\"" > sText){  currentChar = "!";   }</Command>
+	<Command>      else if(dText+"#" > sText) {  currentChar = "\"";  }</Command>
+	<Command>      else if(dText+"$" > sText) {  currentChar = "#";   }</Command>
+	<Command>      else if(dText+"%mod%" > sText) {  currentChar = "$";   }</Command>
+	<Command><![CDATA[else if(dText+"&">sText){currentChar="%mod%";}]]></Command>
+	<Command><![CDATA[else if(dText+"'">sText){currentChar="&";}]]></Command>
+	<Command>      else if(dText+"(" > sText) {  currentChar = "'";   }</Command>
+	<Command>      else if(dText+")" > sText) {  currentChar = "(";   }</Command>
+	<Command>      else if(dText+"*" > sText) {  currentChar = ")";   }</Command>
+	<Command>      else if(dText+"+" > sText) {  currentChar = "*";   }</Command>
+	<Command>      else if(dText+"," > sText) {  currentChar = "+";   }</Command>
+	<Command>      else if(dText+"-" > sText) {  currentChar = ",";   }</Command>
+	<Command>      else if(dText+"." > sText) {  currentChar = "-";   }</Command>
+	<Command>      else if(dText+"/" > sText) {  currentChar = ".";   }</Command>
+	<Command>      else if(dText+"0" > sText) {  currentChar = "/";   }</Command>
+	<Command>      else if(dText+"1" > sText) {  currentChar = "0";   }</Command>
+	<Command>      else if(dText+"2" > sText) {  currentChar = "1";   }</Command>
+	<Command>      else if(dText+"3" > sText) {  currentChar = "2";   }</Command>
+	<Command>      else if(dText+"4" > sText) {  currentChar = "3";   }</Command>
+	<Command>      else if(dText+"5" > sText) {  currentChar = "4";   }</Command>
+	<Command>      else if(dText+"6" > sText) {  currentChar = "5";   }</Command>
+	<Command>      else if(dText+"7" > sText) {  currentChar = "6";   }</Command>
+	<Command>      else if(dText+"8" > sText) {  currentChar = "7";   }</Command>
+	<Command>      else if(dText+"9" > sText) {  currentChar = "8";   }</Command>
+	<Command>      else if(dText+":" > sText) {  currentChar = "9";   }</Command>
+	<Command>      else if(dText+";" > sText) {  currentChar = ":";   }</Command>
+	<Command><![CDATA[else if(dText+"<">sText){currentChar=";";}]]></Command>
+	<Command><![CDATA[else if(dText+"=">sText){currentChar="<";}]]></Command>
+	<Command>      else if(dText+">" > sText) {  currentChar = "=";   }</Command>
+	<Command>      else if(dText+"?" > sText) {  currentChar = ">";   }</Command>
+	<Command>      else if(dText+"@" > sText) {  currentChar = "?";   }</Command>
+	<Command>      else if(dText+"a" > sText) {  currentChar = "@";   }</Command>
+	<Command>      else if(dText+"b" > sText) {  currentChar = "a";   }</Command>
+	<Command>      else if(dText+"c" > sText) {  currentChar = "b";   }</Command>
+	<Command>      else if(dText+"d" > sText) {  currentChar = "c";   }</Command>
+	<Command>      else if(dText+"e" > sText) {  currentChar = "d";   }</Command>
+	<Command>      else if(dText+"f" > sText) {  currentChar = "e";   }</Command>
+	<Command>      else if(dText+"g" > sText) {  currentChar = "f";   }</Command>
+	<Command>      else if(dText+"h" > sText) {  currentChar = "g";   }</Command>
+	<Command>      else if(dText+"i" > sText) {  currentChar = "h";   }</Command>
+	<Command>      else if(dText+"j" > sText) {  currentChar = "i";   }</Command>
+	<Command>      else if(dText+"k" > sText) {  currentChar = "j";   }</Command>
+	<Command>      else if(dText+"l" > sText) {  currentChar = "k";   }</Command>
+	<Command>      else if(dText+"m" > sText) {  currentChar = "l";   }</Command>
+	<Command>      else if(dText+"n" > sText) {  currentChar = "m";   }</Command>
+	<Command>      else if(dText+"o" > sText) {  currentChar = "n";   }</Command>
+	<Command>      else if(dText+"p" > sText) {  currentChar = "o";   }</Command>
+	<Command>      else if(dText+"q" > sText) {  currentChar = "p";   }</Command>
+	<Command>      else if(dText+"r" > sText) {  currentChar = "q";   }</Command>
+	<Command>      else if(dText+"s" > sText) {  currentChar = "r";   }</Command>
+	<Command>      else if(dText+"t" > sText) {  currentChar = "s";   }</Command>
+	<Command>      else if(dText+"u" > sText) {  currentChar = "t";   }</Command>
+	<Command>      else if(dText+"v" > sText) {  currentChar = "u";   }</Command>
+	<Command>      else if(dText+"w" > sText) {  currentChar = "v";   }</Command>
+	<Command>      else if(dText+"x" > sText) {  currentChar = "w";   }</Command>
+	<Command>      else if(dText+"y" > sText) {  currentChar = "x";   }</Command>
+	<Command>      else if(dText+"z" > sText) {  currentChar = "y";   }</Command>
+	<Command>      else if(dText+"[" > sText) {  currentChar = "z";   }</Command>
+	<Command>      else if(dText+"\\" > sText){  currentChar = "[";   }</Command>
+	<Command>      else if(dText+"]" > sText) {  currentChar = "\\";  }</Command>
+	<Command>      else if(dText+"[" > sText) {  currentChar = "]";   }</Command>
+	<Command>      else if(dText+"^" > sText) {  currentChar = "[";   }</Command>
+	<Command>      else if(dText+"_" > sText) {  currentChar = "^";   }</Command>
+	<Command>      else if(dText+"`" > sText) {  currentChar = "_";   }</Command>
+	<Command>      else if(dText+"{" > sText) {  currentChar = "`";   }</Command>
+	<Command>      else if(dText+"|" > sText) {  currentChar = "{";   }</Command>
+	<Command>      else if(dText+"}" > sText) {  currentChar = "|";   }</Command>
+	<Command>      else if(dText+"~" > sText) {  currentChar = "}";   }</Command>
+	<Command>      else if(dText+"~~" > sText){  currentChar = "~";   }</Command>
+	<Command>      dText = dText + currentChar;</Command>
+	<Command>   }</Command>
+	<Command>  return(pos);</Command>
+	<Command>}</Command>
+	<Command>string String_toUpperCase(string sText = "") {</Command>
+	<Command>   string dText = "";</Command>
+	<Command>   string currentChar = "";</Command>
+	<Command>   while(true) // To infinity, and beyond!</Command>
+	<Command>   {</Command>
+	<Command>      if(dText == sText)</Command>
+	<Command>        break;</Command>
+	<Command>      currentChar = "";</Command>
+	<Command>      if(dText+" " > sText)      {  currentChar = "";   }</Command>
+	<Command>      else if(dText+"!" > sText) {  currentChar = " ";   }</Command>
+	<Command>      else if(dText+"\"" > sText){  currentChar = "!";   }</Command>
+	<Command>      else if(dText+"#" > sText) {  currentChar = "\"";  }</Command>
+	<Command>      else if(dText+"$" > sText) {  currentChar = "#";   }</Command>
+	<Command>      else if(dText+"%mod%" > sText) {  currentChar = "$";   }</Command>
+	<Command><![CDATA[else if(dText+"&">sText){currentChar="%mod%";}]]></Command>
+	<Command><![CDATA[else if(dText+"'">sText){currentChar="&";}]]></Command>
+	<Command>      else if(dText+"(" > sText) {  currentChar = "'";   }</Command>
+	<Command>      else if(dText+")" > sText) {  currentChar = "(";   }</Command>
+	<Command>      else if(dText+"*" > sText) {  currentChar = ")";   }</Command>
+	<Command>      else if(dText+"+" > sText) {  currentChar = "*";   }</Command>
+	<Command>      else if(dText+"," > sText) {  currentChar = "+";   }</Command>
+	<Command>      else if(dText+"-" > sText) {  currentChar = ",";   }</Command>
+	<Command>      else if(dText+"." > sText) {  currentChar = "-";   }</Command>
+	<Command>      else if(dText+"/" > sText) {  currentChar = ".";   }</Command>
+	<Command>      else if(dText+"0" > sText) {  currentChar = "/";   }</Command>
+	<Command>      else if(dText+"1" > sText) {  currentChar = "0";   }</Command>
+	<Command>      else if(dText+"2" > sText) {  currentChar = "1";   }</Command>
+	<Command>      else if(dText+"3" > sText) {  currentChar = "2";   }</Command>
+	<Command>      else if(dText+"4" > sText) {  currentChar = "3";   }</Command>
+	<Command>      else if(dText+"5" > sText) {  currentChar = "4";   }</Command>
+	<Command>      else if(dText+"6" > sText) {  currentChar = "5";   }</Command>
+	<Command>      else if(dText+"7" > sText) {  currentChar = "6";   }</Command>
+	<Command>      else if(dText+"8" > sText) {  currentChar = "7";   }</Command>
+	<Command>      else if(dText+"9" > sText) {  currentChar = "8";   }</Command>
+	<Command>      else if(dText+":" > sText) {  currentChar = "9";   }</Command>
+	<Command>      else if(dText+";" > sText) {  currentChar = ":";   }</Command>
+	<Command><![CDATA[else if(dText+"<">sText){currentChar=";";}]]></Command>
+	<Command><![CDATA[else if(dText+"=">sText){currentChar="<";}]]></Command>
+	<Command>      else if(dText+">" > sText) {  currentChar = "=";   }</Command>
+	<Command>      else if(dText+"?" > sText) {  currentChar = ">";   }</Command>
+	<Command>      else if(dText+"@" > sText) {  currentChar = "?";   }</Command>
+	<Command>      else if(dText+"A" > sText) {  currentChar = "@";   }</Command>
+	<Command>      else if(dText+"B" > sText) {  currentChar = "A";   }</Command>
+	<Command>      else if(dText+"C" > sText) {  currentChar = "B";   }</Command>
+	<Command>      else if(dText+"D" > sText) {  currentChar = "C";   }</Command>
+	<Command>      else if(dText+"E" > sText) {  currentChar = "D";   }</Command>
+	<Command>      else if(dText+"F" > sText) {  currentChar = "E";   }</Command>
+	<Command>      else if(dText+"G" > sText) {  currentChar = "F";   }</Command>
+	<Command>      else if(dText+"H" > sText) {  currentChar = "G";   }</Command>
+	<Command>      else if(dText+"I" > sText) {  currentChar = "H";   }</Command>
+	<Command>      else if(dText+"J" > sText) {  currentChar = "I";   }</Command>
+	<Command>      else if(dText+"K" > sText) {  currentChar = "J";   }</Command>
+	<Command>      else if(dText+"L" > sText) {  currentChar = "K";   }</Command>
+	<Command>      else if(dText+"M" > sText) {  currentChar = "L";   }</Command>
+	<Command>      else if(dText+"N" > sText) {  currentChar = "M";   }</Command>
+	<Command>      else if(dText+"O" > sText) {  currentChar = "N";   }</Command>
+	<Command>      else if(dText+"P" > sText) {  currentChar = "O";   }</Command>
+	<Command>      else if(dText+"Q" > sText) {  currentChar = "P";   }</Command>
+	<Command>      else if(dText+"R" > sText) {  currentChar = "Q";   }</Command>
+	<Command>      else if(dText+"S" > sText) {  currentChar = "R";   }</Command>
+	<Command>      else if(dText+"T" > sText) {  currentChar = "S";   }</Command>
+	<Command>      else if(dText+"U" > sText) {  currentChar = "T";   }</Command>
+	<Command>      else if(dText+"V" > sText) {  currentChar = "U";   }</Command>
+	<Command>      else if(dText+"W" > sText) {  currentChar = "V";   }</Command>
+	<Command>      else if(dText+"X" > sText) {  currentChar = "W";   }</Command>
+	<Command>      else if(dText+"Y" > sText) {  currentChar = "X";   }</Command>
+	<Command>      else if(dText+"Z" > sText) {  currentChar = "Y";   }</Command>
+	<Command>      else if(dText+"[" > sText) {  currentChar = "Z";   }</Command>
+	<Command>      else if(dText+"\\" > sText){  currentChar = "[";   }</Command>
+	<Command>      else if(dText+"]" > sText) {  currentChar = "\\";  }</Command>
+	<Command>      else if(dText+"[" > sText) {  currentChar = "]";   }</Command>
+	<Command>      else if(dText+"^" > sText) {  currentChar = "[";   }</Command>
+	<Command>      else if(dText+"_" > sText) {  currentChar = "^";   }</Command>
+	<Command>      else if(dText+"`" > sText) {  currentChar = "_";   }</Command>
+	<Command>      else if(dText+"{" > sText) {  currentChar = "`";   }</Command>
+	<Command>      else if(dText+"|" > sText) {  currentChar = "{";   }</Command>
+	<Command>      else if(dText+"}" > sText) {  currentChar = "|";   }</Command>
+	<Command>      else if(dText+"~" > sText) {  currentChar = "}";   }</Command>
+	<Command>      else if(dText+"~~" > sText){  currentChar = "~";   }</Command>
+	<Command>      dText = dText + currentChar;</Command>
+	<Command>   }</Command>
+	<Command>  return(dText);</Command>
+	<Command>}</Command>
+	<Command>string String_charAt(string sText = "", int pos = 1) {</Command>
+	<Command>  return(String_substr(sText, pos, 1));</Command>
+	<Command>}</Command>
+	<Command>float String_parseFloat(string sText = "") {</Command>
+	<Command>   float number = 0.0;</Command>
+	<Command>   float multiplayer = 10.0; // We will use this to increment the number in the right position.</Command>
+	<Command>                             // It will increase by 10 as we add more numbers, decrease 10 when we find a .</Command>
+	<Command>   bool isNegative = false; // We all like to be positive. =)</Command>
+	<Command>   string dText = "";</Command>
+	<Command>   string currentChar = "";</Command>
+	<Command>   while(true)</Command>
+	<Command>   {</Command>
+	<Command>      if(dText == sText)</Command>
+	<Command>        break;</Command>
+	<Command>      int currentNumber = -1;</Command>
+	<Command>      if(dText+"-" > sText) {  currentChar = "I'm so Fabulicious OMG!!!";  }</Command>
+	<Command>      else if(dText+"." > sText) {  isNegative = true; currentChar = "-";  }</Command>
+	<Command>      else if(dText+"0" > sText) {  currentChar = "."; multiplayer = 0.1;  } // Slash Dot Dash dot dot dot dot com</Command>
+	<Command>      else if(dText+"1" > sText) {  currentChar = "0"; currentNumber = 0;  }</Command>
+	<Command>      else if(dText+"2" > sText) {  currentChar = "1"; currentNumber = 1;  }</Command>
+	<Command>      else if(dText+"3" > sText) {  currentChar = "2"; currentNumber = 2;  }</Command>
+	<Command>      else if(dText+"4" > sText) {  currentChar = "3"; currentNumber = 3;  }</Command>
+	<Command>      else if(dText+"5" > sText) {  currentChar = "4"; currentNumber = 4;  }</Command>
+	<Command>      else if(dText+"6" > sText) {  currentChar = "5"; currentNumber = 5;  }</Command>
+	<Command>      else if(dText+"7" > sText) {  currentChar = "6"; currentNumber = 6;  }</Command>
+	<Command>      else if(dText+"8" > sText) {  currentChar = "7"; currentNumber = 7;  }</Command>
+	<Command>      else if(dText+"9" > sText) {  currentChar = "8"; currentNumber = 8;  }</Command>
+	<Command>      else if(dText+":" > sText) {  currentChar = "9"; currentNumber = 9;  }</Command>
+	<Command>      else {  return(-1.0);  } // We only accept the above characters.</Command>
+	<Command>      dText = dText + currentChar;</Command>
+	<Command>      if(currentNumber != -1)</Command>
+	<Command>      {</Command>
+	<Command>         if(multiplayer == 10.0)</Command>
+	<Command>         {</Command>
+	<Command>            number = 1*(number*10.0+currentNumber);</Command>
+	<Command>         }</Command>
+	<Command>         else</Command>
+	<Command>         {</Command>
+	<Command>            number = number + multiplayer*currentNumber;</Command>
+	<Command>            multiplayer = multiplayer*0.1;</Command>
+	<Command>         }</Command>
+	<Command>      }</Command>
+	<Command>   }</Command>
+	<Command>   if(isNegative)</Command>
+	<Command>     return(-1.0*number);</Command>
+	<Command>   return(number);</Command>
+	<Command>}</Command>
+	<Command>string getLetter(int lnum=-1,bool uppercase=false) { // lostrozzacavalli</Command>
+      <Command>string l33tter = "";</Command>
+      <Command>if(lnum==1)l33tter="a"; else if(lnum==2)l33tter="b"; else if(lnum==3)l33tter="c"; else if(lnum==4)l33tter="d";</Command>
+      <Command>else if(lnum==5)l33tter="e"; else if(lnum==6)l33tter="f"; else if(lnum==7)l33tter="g"; else if(lnum==8)l33tter="h";</Command>
+      <Command> else if(lnum==9)l33tter="i"; else if(lnum==10)l33tter="j"; else if(lnum==11)l33tter="k"; else if(lnum==12)l33tter="l";</Command>
+      <Command>else if(lnum==13)l33tter="m"; else if(lnum==14)l33tter="n"; else if(lnum==15)l33tter="o"; else if(lnum==16)l33tter="p";</Command>
+      <Command>else if(lnum==17)l33tter="q"; else if(lnum==18)l33tter="r"; else if(lnum==19)l33tter="s"; else if(lnum==20)l33tter="t";</Command>
+      <Command> else if(lnum==21)l33tter="u"; else if(lnum==22)l33tter="v"; else if(lnum==23)l33tter="w"; else if(lnum==24)l33tter="x";</Command>
+      <Command> else if(lnum==25)l33tter="y"; else if(lnum==26)l33tter="z"; else if(lnum==27)l33tter="0"; else if(lnum==28)l33tter="1";</Command>
+      <Command>else if(lnum==29)l33tter="2"; else if(lnum==30)l33tter="3"; else if(lnum==31)l33tter="4"; else if(lnum==32)l33tter="5";</Command>
+      <Command> else if(lnum==33)l33tter="6"; else if(lnum==34)l33tter="7"; else if(lnum==35)l33tter="8"; else l33tter="9";</Command>
+      <Command><![CDATA[if(uppercase && lnum<27) l33tter=""+String_toUpperCase(""+l33tter);]]></Command>
+      <Command> return(l33tter);</Command>
+	  <Command>}</Command>
+	  <Command>string ororString(bool checkThis=false,string ifTrue="ON",string ifFalse="OFF") {</Command>
+	  <Command>if(checkThis)return(ifTrue);</Command>
+	  <Command>return(ifFalse);</Command>
+	  <Command>}</Command>
+	  <Command>int FP = -1;</Command>
+      <Command>rule InMyLife runImmediately</Command>
+      <Command>active { if(true){ FP = trCurrentPlayer(); xsDisableSelf(); return;</Command>
+	</Effect>   
+	
+	<!-- Hallows -->
+
+	<Effect name="QV Set Player: Lowest Pop">
+	  <Param name="QV" dispName="QV" varType="string">QV1</Param>
+	  <Command>trQuestVarSet("%QV%", 1);</Command>
+	  <Command>trQuestVarSet("blahqvtrigm925", trPlayerGetPopulation(1));</Command>
+	  <Command>for(i=cNumberPlayers-1;>=1){</Command>
+	  <Command>if(trQuestVarGet("blahqvtrigm925") > trPlayerGetPopulation(i)){</Command>
+	  <Command>if(trPlayerDefeated(i) == false){</Command>
+	  <Command>trQuestVarSet("%QV%", i);</Command>
+      <Command>trQuestVarSet("blahqvtrigm925", trPlayerGetPopulation(i));}}}</Command>
+	</Effect>
+ 
+	<Effect name="Catastrophe Attack">
+	  <Param name="Player" dispName="Target Player" VarType="string">1</Param>
+	  <Param name="DstPoint" dispName="$$22410$$X" varType="area">0</Param>
+	  <Command>for(i=getUnit(trQuestVarGet("HMM925AHC"),0,vector(%DstPoint%),0);>=99999999){}</Command> 
+	  <Command>for(j=getUnit(trQuestVarGet("HMM925ALL"),%Player%,vector(%DstPoint%),0);>=99999999){}</Command>
+	  <Command><![CDATA[for (k=1;<10){]]></Command>
+      <Command>trUnitSelectClear();</Command>
+	  <Command>trUnitSelectByID(j);</Command>
+	  <Command>if(trUnitDead()==true){</Command>
+	  <Command>j=getUnit(trQuestVarGet("HMM925ALL"),%Player%,vector(%DstPoint%),k);</Command>
+	  <Command>} else {break;}}</Command>
+	  <Command>v1=kbUnitGetPosition(j);</Command>
+	  <Command>trUnitSelectClear();</Command>
+	  <Command>trUnitSelectByID(i);</Command>
+	  <Command>if (trUnitDistanceToUnit(""+j) >	15) {</Command>
+	  <Command>trUnitMoveToPoint(xsVectorGetX(v1),0,xsVectorGetZ(v1), -1, true);</Command>
+	  <Command>} else {</Command>
+	  <Command>trUnitDoWorkOnUnit(""+j);}</Command>
+	</Effect>
+	
+	<Effect name="Catastrophe Load IDs">
+	  <Param name="Param1" dispName="Note" VarType="string">Loads the correct IDs for Dullahan.</Param>
+	  <Command>for (all=100000;&lt;=10000){ if (kbGetUnitTypeName(all)=="All") break;}</Command>
+	  <Command>for (ahc=100000;&lt;=10000){ if (kbGetUnitTypeName(ahc)=="AbstractHandCavalry") break;}</Command>
+	  <Command>trQuestVarSet("HMM925AHC", ahc);</Command>
+	  <Command>trQuestVarSet("HMM925ALL", all);</Command>
+	</Effect>
+	  
+	<!-- Storms -->
+	
+	<Effect name="QV Render Rain">
+	   <Param name="QV" dispName="Quest Var" VarType="string">QV1</Param>
+	   <Command>trRenderRain(trQuestVarGet("%QV%"));</Command>
+    </Effect>
+	
+	<Effect name="Fire Event Multi ">
+      <Param name="A" dispName="0" varType="event">-1</Param>
+	  <Param name="B" dispName="1" varType="event">-1</Param>
+	  <Param name="C" dispName="3" varType="event">-1</Param>
+	  <Param name="D" dispName="4" varType="event">-1</Param>
+	  <Param name="E" dispName="5" varType="event">-1</Param>
+	  <Param name="F" dispName="6" varType="event">-1</Param>
+	  <Command>trEventFire(%A%);</Command>
+	  <Command>trEventFire(%B%);</Command>
+	  <Command>trEventFire(%C%);</Command>
+	  <Command>trEventFire(%D%);</Command>
+	  <Command>trEventFire(%E%);</Command>
+	  <Command>trEventFire(%F%);</Command>
+    </Effect>
+	
+
+    <!-- Old Diplomacy
+	<Effect name="Diplomacy: Initialize">
+	  <!- Universal -
+	  <Command>int DIPa = 0;</Command>
+	  <Command>float DIPb = 0;</Command>
+	  <!- Cinematic Block -
+	  <Command>trUnitCreate("Musketeer", "Default", 0, 0, 0, 0, 0);</Command>
+	  <!- P1 -
+	  <Command>trQuestVarSet("DIP_P1_CurrentNegot", 2);</Command>
+	  <!- P2 - 7 -
+	  <Command>for(i=cNumberPlayers-1;>1){</Command>
+	  <Command>trQuestVarSet("DIP_P"+i+"_CurrentNegot", 1);</Command>
+	  <Command>}</Command>
+	  <!- All Players -
+	  <Command>for(i=cNumberPlayers-1;>=1){</Command>
+	  <Command>for(j=cNumberPlayers-1;>=1){</Command>
+	  <Command>if(i != j){ //a player won't negotiate with himself!</Command>
+	  <Command>trQuestVarSet("P"+i+"StatusP"+j, 0); //main status var</Command>
+	  <Command>trQuestVarSet("P"+i+"LastStatus"+j, 0);</Command>
+	  <Command>trQuestVarSet("P"+i+"TimeP"+j, 0); //game time of last negotiation between players</Command>
+	  <Command>trQuestVarSet("P"+i+"Relation"+j, 0);</Command>
+      <Command>trPlayerSetDiplomacy(i, j, "neutral"); // set all players neutral</Command>
+	  <Command>} //end i != j</Command>
+	  <Command>} //end j loop</Command>
+      <Command>if(cNumberPlayers-1 > 2){ // no reason to toggle if there's only 2 players</Command>
+	  <Command>trUnforbidProtounit(i, "DiploBlockTogglePlayer");} //Player Toggle Button</Command>
+      <Command>trUnforbidProtounit(i, "Diplomat"); //enable diplomat</Command>
+	  <Command>//trUnforbidProtounit(i, "DiploBlockShowNeutral"); //Status Display</Command>
+	  <Command>trUnforbidProtounit(i, "DiploBlockP"+1*trQuestVarGet("DIP_P"+i+"_CurrentNegot")+"Ally"); //Offer Alliance Button</Command>
+	  <Command>trUnforbidProtounit(i, "DiploBlockWarP"+1*trQuestVarGet("DIP_P"+i+"_CurrentNegot")); //Declare War Button</Command>
+	  <Command>} //end i loop</Command>
+	</Effect>
+	
+	<Effect name="Diplomacy: Save Center Unit">
+	  <Command>xsSetContextPlayer(0);</Command>
+	  <Command>kbLookAtAllUnitsOnMap();</Command>
+	  <Command>for(Qid=kbUnitQueryCreate("QDUA_0_Musketeer");>=99999){}</Command>
+	  <Command>kbUnitQuerySetPlayerID(Qid, 0);</Command>
+	  <Command>kbUnitQuerySetUnitType(Qid, kbGetProtoUnitID("Musketeer"));</Command>
+      <Command>kbUnitQueryExecute(Qid);</Command>
+	  <Command>trQuestVarSet("DiploCenterUnit", kbUnitQueryGetResult(Qid, 0));</Command>
+	  <Command>trUnitSelectClear();</Command>
+	  <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	  <Command>trUnitChangeProtoUnit("CinematicBlockCube");</Command>
+	</Effect>
+    
+	<Effect name="Diplomacy: Spawn Diplomat">
+      <Param name="Player" dispName="Player" varType="string">1</Param>
+	  <Command>xsSetContextPlayer(%Player%);</Command>
+	  <Command>kbLookAtAllUnitsOnMap();</Command>
+	  <Command>for(Qid=kbUnitQueryCreate("QDUA_%Player%_TownCenter");>=99999){}</Command>
+	  <Command>kbUnitQuerySetPlayerID(Qid, %Player%);</Command>
+	  <Command>kbUnitQuerySetUnitType(Qid, kbGetProtoUnitID("TownCenter"));</Command>
+      <Command>kbUnitQueryExecute(Qid);</Command>
+      <Command>trUnitCreate("Diplomat", "Default", xsVectorGetX(kbUnitGetPosition(kbUnitQueryGetResult(Qid, 0))), 0, xsVectorGetZ(kbUnitGetPosition(kbUnitQueryGetResult(Qid, 0))), 0, %Player%);</Command>    
+	</Effect>
+    
+	<Effect name="Diplomacy: Toggle Target-Player">
+	  <Param name="Player" dispName="Player" varType="string">1</Param>
+      <Command>trQuestVarSet("DIP_P%Player%_CurrentNegot", trQuestVarGet("DIP_P%Player%_CurrentNegot")+1);</Command>
+      <Command>while((trQuestVarGet("DIP_P%Player%_CurrentNegot")==%Player%) || (trQuestVarGet("DIP_P%Player%_CurrentNegot")>cNumberPlayers-1)){</Command>
+      <Command>if(trQuestVarGet("DIP_P%Player%_CurrentNegot")==%Player%){ trQuestVarSet("DIP_P%Player%_CurrentNegot", trQuestVarGet("DIP_P%Player%_CurrentNegot")+1); }</Command>
+      <Command>else if(trQuestVarGet("DIP_P%Player%_CurrentNegot") > cNumberPlayers-1){ trQuestVarSet("DIP_P%Player%_CurrentNegot", 1); }}</Command>
+    </Effect>
+	
+	<Effect name="Diplomacy: Open Negotiations">
+	  <Param name="Player" dispName="Player" varType="string">1</Param>
+	  <!- neutral -
+	  <Command>if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 0){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")+"Ally");</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockWarP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Declare War Button</Command>
+	  <!- ally -
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 1){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockAllyEndP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //End Alliance Button</Command>
+	  <!- war -
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 2){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockPeaceOfferP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Offer Peace Button</Command>
+	  <!- ally os -
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 3){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockAllyRevokeP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Revoke Alliance Offer Button</Command>
+	  <!- neutral, "ceasefire"-
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 4){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")+"Ally");</Command>
+	  <!- ally or -
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 5){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockAllyAcceptP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Accept Alliance Offer Button</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockAllyRejectP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Reject Alliance Offer Button</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockWarP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Declare War Offer Button</Command>
+	  <!- peace or -
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 6){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockPeaceAcceptP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Accept Peace Offer Button</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockPeaceRejectP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Reject Peace Offer Button</Command>
+	  <!- peace os -
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 7){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockPeaceRevokeP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")); //Revoke Peace Offer Button</Command>
+	  <!- terminated alliance -
+	  <Command>} else if(trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")) == 8){</Command>
+	  <Command>trUnforbidProtounit(%Player%, "DiploBlockP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")+"Ally");</Command>
+      <!- that's all 9 stati! close it up.-
+      	  <Command>}</Command>
+	</Effect>
+
+	<Effect name="Diplomacy: Close Negotiations">
+	  <Param name="Player" dispName="Player" varType="string">1</Param>
+	  <Command>for(i=cNumberPlayers-1;>=1){</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockP"+i+"Ally");</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockAllyEndP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockAllyRevokeP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockAllyAcceptP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockAllyRejectP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockPeaceOfferP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockPeaceAcceptP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockPeaceRejectP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockPeaceRevokeP"+i);</Command>
+	  <Command>trForbidProtounit(%Player%, "DiploBlockWarP"+i);</Command>
+	  <Command>}</Command>
+	</Effect>
+	
+   <Effect name="Diplomacy: Update">
+     <Param name="Player" dispName="Player" varType="string">1</Param>
+	 <Command>for(i=cNumberPlayers-1;>=1){</Command>
+	 <!- Declare War -
+	 <Command>if(trPlayerUnitCountSpecific(%Player%, "DiploBlockWarP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 2);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 2);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")-15);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)-15);</Command>
+	 <Command>trPlayerSetDiplomacy(%Player%, i, "enemy");</Command>
+	 <Command>trPlayerSetDiplomacy(i, %Player%, "enemy");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have declared war on Player "+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has declared war on you!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockWarP"+i, 9999, 9999);</Command>
+	 <!- Send Alliance Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockP"+i+"Ally") >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 3);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 5);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have sent an Alliance Request to Player "+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has sent you an Alliance Request!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockP"+i+"Ally", 9999, 9999);</Command>
+	 <!- Revoke Alliance Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockAllyRevokeP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have revoked your Alliance Offer to Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has revoked his Alliance Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyRevokeP"+i, 9999, 9999);</Command>
+	 <!- Send Peace Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockPeaceOfferP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 7);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 6);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have sent a Peace Offer to Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has sent you an Peace Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceOfferP"+i, 9999, 9999);</Command>
+	 <!- Revoke Peace Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockPeaceRevokeP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 2);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 2);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have revoked your Peace Offer to Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has revoked his Peace Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceRevokeP"+i, 9999, 9999);</Command>
+	 <!- Accept Alliance Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockAllyAcceptP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 1);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 1);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>trPlayerSetDiplomacy(%Player%, i, "ally");</Command>
+	 <Command>trPlayerSetDiplomacy(i, %Player%, "ally");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have accepted an Alliance Offer from Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has accepted your Alliance Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyAcceptP"+i, 9999, 9999);</Command>
+	 <!- Accept Peace Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockPeaceAcceptP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 4);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 4);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have accepted a Peace Offer from Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has accepted your Peace Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceAcceptP"+i, 9999, 9999);</Command>
+	 <!- Reject Alliance Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockAllyRejectP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have rejected an Alliance Offer from Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has rejected your Alliance Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyRejectP"+i, 9999, 9999);</Command>
+	 <!- Reject Peace Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockPeaceRejectP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have rejected a Peace Offer from Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has rejected your Peace Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceRejectP"+i, 9999, 9999);</Command>
+	 <!- Revoke Alliance Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockAllyRevokeP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have revoked your Alliance offer to Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has revoked their Alliance Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyRevokeP"+i, 9999, 9999);</Command>
+	 <!- Revoke Peace Offer -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockPeaceRevokeP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>//trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>//trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have revoked your Peace offer to Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has revoked their Peace Offer!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceRevokeP"+i, 9999, 9999);</Command>
+	 <!- Terminate Alliance Peace -
+	 <Command>} else if(trPlayerUnitCountSpecific(%Player%, "DiploBlockAllyEndP"+i) >= 1){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 8);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>//trQuestVarSet("P"+i+"Relation%Player%", trQuestVarGet("P"+i+"Relation%Player%")+0);</Command>
+	 <Command>//trQuestVarSet("P%Player%Relation"+i, trQuestVarGet("P%Player%Relation"+i)+0);</Command>
+	 <Command>trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>You have terminated your Alliance with Player"+i+", "+kbGetPlayerName(i)+".</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", has terminated their Alliance with you!</color></font>");]]></Command>
+	 <Command>trUnitSelectClear();</Command>
+     <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	 <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyEndP"+i, 9999, 9999);</Command>
+     <Command>}</Command>
+     
+     <!- ====== Timed Events ====== -
+
+     <!- Ceasefire Ended -
+     <Command>if(trQuestVarGet("P%Player%StatusP"+i) == 4){</Command>
+     <Command>if(trTime() - trQuestVarGet("P%Player%TimeP"+i) > 120){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>Your ceasefire with Player"+i+", "+kbGetPlayerName(i)+", has ended.</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Your ceasefire with Player %Player%, "+kbGetPlayerName(%Player%)+", has ended.</color></font>");]]></Command>
+     <Command>}</Command>
+     <!- Termination Ceasefire Expires - 
+     <Command>} else if(trQuestVarGet("P%Player%StatusP"+i) == 8) {</Command>
+     <Command>if(trTime() - trQuestVarGet("P%Player%TimeP"+i) > 120){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>Your ceasefire with Player"+i+", "+kbGetPlayerName(i)+", has ended.</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>Player %Player%, "+kbGetPlayerName(%Player%)+", can now declare war on you again.</color></font>");]]></Command>
+     <Command>}</Command>
+     <!- Alliance Offer Expires -
+     <Command>} else if(trQuestVarGet("P%Player%StatusP"+i) == 3) {</Command>
+     <Command>if(trTime() - trQuestVarGet("P%Player%TimeP"+i) > 120){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>Your Alliance Offer to Player"+i+", "+kbGetPlayerName(i)+", has expired.</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>The Alliance Offer sent by Player %Player%, "+kbGetPlayerName(%Player%)+", has expired.</color></font>");]]></Command>
+     <Command>}</Command>
+     <!- Peace Offer Expires -
+     <Command>} else if(trQuestVarGet("P%Player%StatusP"+i) == 7) {</Command>
+     <Command>if(trTime() - trQuestVarGet("P%Player%TimeP"+i) > 120){</Command>
+	 <Command>trQuestVarSet("P%Player%StatusP"+i, 0);</Command>
+	 <Command>trQuestVarSet("P"+i+"StatusP%Player%", 0);</Command>
+	 <Command>trQuestVarSet("P%Player%TimeP"+i, trTime());</Command>
+	 <Command>trQuestVarSet("P"+i+"TimeP%Player%", trTime());</Command>
+	 <Command>trPlayerSetDiplomacy(%Player%, i, "neutral");</Command>
+	 <Command>trPlayerSetDiplomacy(i, %Player%, "neutral");</Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, %Player%, "<font=floatytext12><color=0.0,0.0,1.0>Your Peace Offer to Player"+i+", "+kbGetPlayerName(i)+", has expired.</color></font>");]]></Command>
+	 <Command><![CDATA[trChatSendToPlayer(0, i, "<font=floatytext12><color=0.0,0.0,1.0>The Peace Offer sent by Player %Player%, "+kbGetPlayerName(%Player%)+", has expired.</color></font>");]]></Command>
+     <Command>}</Command>
+     
+     <!- Close Last Timed Event -
+	 <Command>}</Command>
+     <!- Close Player Loop -
+     <Command>}</Command> 
+	</Effect>
+	
+	<Effect name="Diplomacy: Update LastStatus">
+	  <Param name="Player" dispName="Player" varType="string">1</Param>
+	  <Command>trQuestVarSet("P%Player%LastStatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot"), trQuestVarGet("P%Player%StatusP"+1*trQuestVarGet("DIP_P%Player%_CurrentNegot")));</Command>
+	</Effect>
+	
+	<Effect name="Diplomacy: Destroy Blocks">
+	 <Param name="Player" dispName="Player" varType="string">1</Param>
+      <Command>trUnitSelectClear();</Command>
+      <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	  <Command>for(i=cNumberPlayers-1;>=1){</Command>
+      <Command>trDamageUnitsInArea(%Player%, "DiploBlockTogglePlayer", 9999, 9999);</Command>
+      <Command>trDamageUnitsInArea(%Player%, "DiploBlockP"+i+"Ally", 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyEndP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyRevokeP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyAcceptP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockAllyRejectP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceOfferP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceAcceptP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceRejectP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockPeaceRevokeP"+i, 9999, 9999);</Command>
+	  <Command>trDamageUnitsInArea(%Player%, "DiploBlockWarP"+i, 9999, 9999);</Command>
+	  <Command>}</Command>
+	</Effect>
+    
+	<Effect name="Diplomacy: Destroy Toggle Blocks">
+	 <Param name="Player" dispName="Player" varType="string">1</Param>
+      <Command>trUnitSelectClear();</Command>
+      <Command>trUnitSelectByID(trQuestVarGet("DiploCenterUnit"));</Command>
+	  <Command>for(i=cNumberPlayers-1;>=1){</Command>
+      <Command>trDamageUnitsInArea(%Player%, "DiploBlockTogglePlayer", 9999, 9999);</Command>
+	  <Command>}</Command>
+	</Effect> -->
+    
+    <!-- Gameplay -->
+    
+        <!-- Australia -->
+        
+    <Effect name="Save Base Costs">
+      <Param name="Player" dispName="Player" varType="string">1</Param>
+      <Param name="Proto" dispName="Protounit" varType="protounit">1</Param>
+      <Command>xsSetContextPlayer(%Player%);</Command> 
+      <Command>kbLookAtAllUnitsOnMap();</Command> 
+      <Command>trQuestVarSet("%Proto%FoodCost%Player%", kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 2));</Command>
+      <Command>trQuestVarSet("%Proto%WoodCost%Player%", kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 1));</Command>
+      <Command>trQuestVarSet("%Proto%GoldCost%Player%", kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 0));</Command>
+      <Command>trQuestVarSet("%Proto%TradeCost%Player%", kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 7));</Command>
+    </Effect>
+ 
+    <Effect name="Set Unit Cost by Count">
+      <Param name="Player" dispName="Player" varType="string">1</Param>
+      <Param name="Proto" dispName="Protounit" varType="protounit">1</Param>
+      <Command>xsSetContextPlayer(%Player%);</Command> 
+      <Command>kbLookAtAllUnitsOnMap();</Command> 
+	  <Command>trModifyProtounit("%Proto%", %Player%, 17, -1*kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 2));</Command>
+	  <Command>trModifyProtounit("%Proto%", %Player%, 16, -1*kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 1));</Command>
+	  <Command>trModifyProtounit("%Proto%", %Player%, 15, -1*kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 0));</Command>
+	  <Command>trModifyProtounit("%Proto%", %Player%, 22, -1*kbUnitCostPerResource(kbGetProtoUnitID("%Proto%"), 7));</Command>
+      
+      <Command>if(kbGetPopSlots(%Player%, kbGetProtoUnitID("%Proto%")) == 0){ </Command>
+      <Command>trModifyProtounit("%Proto%", %Player%, 17, trQuestVarGet("%Proto%FoodCost%Player%") * (70 + 2.3*trPlayerUnitCountSpecific(%Player%, "%Proto%")) * 0.01 );</Command>
+	  <Command>trModifyProtounit("%Proto%", %Player%, 16, trQuestVarGet("%Proto%WoodCost%Player%") * (70 + 2.3*trPlayerUnitCountSpecific(%Player%, "%Proto%")) * 0.01 );</Command>
+	  <Command>trModifyProtounit("%Proto%", %Player%, 15, trQuestVarGet("%Proto%GoldCost%Player%") * (70 + 2.3*trPlayerUnitCountSpecific(%Player%, "%Proto%")) * 0.01 );</Command>      
+      <Command>trModifyProtounit("%Proto%", %Player%, 22, trQuestVarGet("%Proto%TradeCost%Player%") * (70 + 2.3*trPlayerUnitCountSpecific(%Player%, "%Proto%")) * 0.01 );</Command>
+      <Command>} else { </Command>
+      <Command>trModifyProtounit("%Proto%", %Player%, 17, trQuestVarGet("%Proto%FoodCost%Player%") * (70 + 2.3 * trPlayerUnitCountSpecific(%Player%, "%Proto%") * kbGetPopSlots(%Player%, kbGetProtoUnitID("%Proto%"))) * 0.01 );</Command>
+	  <Command>trModifyProtounit("%Proto%", %Player%, 16, trQuestVarGet("%Proto%WoodCost%Player%") * (70 + 2.3 * trPlayerUnitCountSpecific(%Player%, "%Proto%") * kbGetPopSlots(%Player%, kbGetProtoUnitID("%Proto%"))) * 0.01 );</Command>
+	  <Command>trModifyProtounit("%Proto%", %Player%, 15, trQuestVarGet("%Proto%GoldCost%Player%") * (70 + 2.3 * trPlayerUnitCountSpecific(%Player%, "%Proto%") * kbGetPopSlots(%Player%, kbGetProtoUnitID("%Proto%"))) * 0.01 );</Command>      
+      <Command>trModifyProtounit("%Proto%", %Player%, 22, trQuestVarGet("%Proto%TradeCost%Player%") * (70 + 2.3 * trPlayerUnitCountSpecific(%Player%, "%Proto%") * kbGetPopSlots(%Player%, kbGetProtoUnitID("%Proto%"))) * 0.01 );</Command>
+      <Command>}</Command>
+	</Effect>
+    
+    <Effect name="Set Tech Status by Name">
+      <Param name="PlayerID" dispName="$$22301$$Player" varType="player">1</Param>
+      <Param name="Tech" dispName="$$22311$$Tech" varType="string">0</Param>
+      <Param name="Status" dispName="$$22340$$Status" varType="techstatus">2</Param>
+      <Command>for(techID=0; &lt;100000){if(kbGetTechName(techID)=="%Tech%"){break;}}</Command>
+      <Command>trTechSetStatus(%PlayerID%, techID, %Status%);</Command>
+    </Effect>
+      
+    <!-- African Explorer -->
+    
+    <Effect name="Unit Create at TC">
+      <Param name="PlayerID" dispName="$$22301$$Player" varType="player">1</Param>
+      <Param name="ProtoName" dispName="$$22434$$ProtoName" varType="protounit">Villager</Param>
+      <Param name="TargetProtoName" dispName="Target Protounit" varType="protounit">TownCenter</Param>
+      <Param name="ScenName" dispName="$$20509$$Name" varType="string">Default</Param>
+      <Command>xsSetContextPlayer(%PlayerID%);</Command>
+	  <Command>kbLookAtAllUnitsOnMap();</Command>
+      <Command>for(Qid=kbUnitQueryCreate("QDUA_%PlayerID%_TownCenter");>=99999){}</Command>
+	  <Command>kbUnitQuerySetPlayerID(Qid, %PlayerID%);</Command>
+	  <Command>kbUnitQuerySetUnitType(Qid, kbGetProtoUnitID("%TargetProtoName%"));</Command>
+      <Command>kbUnitQuerySetState(Qid,2);</Command>
+      <Command>kbUnitQueryExecute(Qid);</Command>
+      <Command>trUnitCreate("%ProtoName%", "%ScenName%", xsVectorGetX(kbUnitGetPosition(kbUnitQueryGetResult(Qid, 0))), 0, xsVectorGetZ(kbUnitGetPosition(kbUnitQueryGetResult(Qid, 0))), 0, %PlayerID%);</Command>
+    </Effect>
+    
+    <!-- borked -->
+    <Effect name="Unit Create at Town">
+      <Param name="PlayerID" dispName="$$22301$$Player" varType="player">1</Param>
+      <Param name="ProtoName" dispName="$$22434$$ProtoName" varType="protounit">Villager</Param>
+      <Param name="ScenName" dispName="$$20509$$Name" varType="string">Default</Param>
+      <Command>xsSetContextPlayer(%PlayerID%);</Command>
+	  <Command>kbLookAtAllUnitsOnMap();</Command>
+      <Command>for (building=0;&lt;=10000){ if (kbGetUnitTypeName(building)=="Building") break;}</Command>
+      <Command>for (unit=0;&lt;=10000){ if (kbGetUnitTypeName(unit)=="Unit") break;}</Command>
+      <Command>for (x=0;>1){} //x point</Command>
+      <Command>for (z=0;>1){} //z point</Command>
+      <Command>for (j=0;>1){} //value count (with weights)</Command>
+      <Command>for(Qid=kbUnitQueryCreate("QDUA_%PlayerID%_Buildings");>=99999){}</Command>
+	  <Command>kbUnitQuerySetPlayerID(Qid, %PlayerID%);</Command>
+	  <Command>kbUnitQuerySetUnitType(Qid, building);</Command>
+      <Command>kbUnitQuerySetState(Qid,2);</Command>
+      <Command>for(i=0;&lt;=kbUnitQueryExecute(Qid)){</Command>
+      <Command>x = x + 10*xsVectorGetX(kbUnitGetPosition(kbUnitQueryGetResult(Qid, i)));</Command>
+      <Command>z = z + 10*xsVectorGetZ(kbUnitGetPosition(kbUnitQueryGetResult(Qid, i)));</Command>
+      <Command>j = j + 10;}</Command>
+      <Command>for(Qid=kbUnitQueryCreate("QDUA_%PlayerID%_Units");>=99999){}</Command>
+	  <Command>kbUnitQuerySetPlayerID(Qid, %PlayerID%);</Command>
+	  <Command>kbUnitQuerySetUnitType(Qid, unit);</Command>
+      <Command>kbUnitQuerySetState(Qid,2);</Command>
+      <Command>for(i=0;&lt;=kbUnitQueryExecute(Qid)){</Command>
+      <Command>x = x + xsVectorGetX(kbUnitGetPosition(kbUnitQueryGetResult(Qid, i)));</Command>
+      <Command>z = z + xsVectorGetZ(kbUnitGetPosition(kbUnitQueryGetResult(Qid, i)));</Command>
+      <Command>j = j + 1;}</Command>
+      <Command>x = x/j;</Command>
+      <Command>z = z/j;</Command>
+      <Command>trUnitCreate("%ProtoName%", "%ScenName%", x, 0, z, 0, %PlayerID%);</Command>
+    </Effect>
+    
+    <Effect name="Unit Create at Unittype">
+      <Param name="PlayerID" dispName="$$22301$$Player" varType="player">1</Param>
+      <Param name="ProtoName" dispName="$$22434$$ProtoName" varType="protounit">Villager</Param>
+      <Param name="TargetProtoName" dispName="Target Protounit" varType="unittype">All</Param>
+      <Param name="ScenName" dispName="$$20509$$Name" varType="string">Default</Param>
+      <Command>for (all=0;&lt;=10000){ if (kbGetUnitTypeName(all)=="%TargetProtoName%") break;}</Command>
+      <Command>xsSetContextPlayer(%PlayerID%);</Command>
+	  <Command>kbLookAtAllUnitsOnMap();</Command>
+      <Command>for(Qid=kbUnitQueryCreate("QDUA_%PlayerID%_TownCenter");>=99999){}</Command>
+	  <Command>kbUnitQuerySetPlayerID(Qid, %PlayerID%);</Command>
+	  <Command>kbUnitQuerySetUnitType(Qid, all);</Command>
+      <Command>kbUnitQuerySetState(Qid,2);</Command>
+      <Command>kbUnitQueryExecute(Qid);</Command>
+      <Command>trUnitCreate("%ProtoName%", "%ScenName%", xsVectorGetX(kbUnitGetPosition(kbUnitQueryGetResult(Qid, 0))), 0, xsVectorGetZ(kbUnitGetPosition(kbUnitQueryGetResult(Qid, 0))), 0, %PlayerID%);</Command>
+    </Effect>
+    
+    <!-- silly musk, scen names only work in scens -->
+    <Effect name="Change Name for Protounit">
+      <Param name="PlayerID" dispName="$$22301$$Player" varType="player">1</Param>
+      <Param name="ProtoName" dispName="$$22434$$ProtoName" varType="protounit">Villager</Param>
+      <Param name="NewName" dispName="New Name" varType="string">Default</Param>
+      <Command>xsSetContextPlayer(%PlayerID%);</Command>
+	  <Command>kbLookAtAllUnitsOnMap();</Command>
+      <Command>for(Qid=kbUnitQueryCreate("QDUA_%PlayerID%_%ProtoName%");>=99999){}</Command>
+	  <Command>kbUnitQuerySetPlayerID(Qid, %PlayerID%);</Command>
+	  <Command>kbUnitQuerySetUnitType(Qid, kbGetProtoUnitID("%ProtoName%"));</Command>
+      <Command>kbUnitQuerySetState(Qid,2);</Command>
+      <Command>kbUnitQueryExecute(Qid);</Command>
+      <Command>trUnitSelectByID(kbUnitQueryGetResult(Qid, 0));</Command>
+      <Command>trUnitChangeName("%NewName%");</Command>
+    </Effect>
+    
+    <Effect name="Resolve Game">
+      <Param name="Player" dispName="Player in Winning Team" varType="string">1</Param>
+      <Command>trSetPlayerWon(%Player%);</Command>
+      <Command>for(i=cNumberPlayers-1;>0){</Command>
+      <Command>if (%Player% == i) {continue;}</Command>
+      <Command>if (trPlayerGetDiplomacy(%Player%, i) == "ally"){</Command>
+      <Command>trSetPlayerWon(i);}</Command>
+      <Command>else if (trPlayerGetDiplomacy(%Player%, i) == "enemy"){</Command>
+      <Command>trSetPlayerDefeated(i);}}</Command>
+      <Command>trEndGame();</Command>
+    </Effect>
+
+    <Effect name="QV Save ProtoID">
+      <Param name="QV" dispName="QV" varType="string">QV1</Param>
+      <Param name="ProtoName" dispName="$$22434$$ProtoName" varType="unittype">Villager</Param>
+      <Command>for (all=0;&lt;=9999999){ if (kbGetUnitTypeName(all)=="%ProtoName%") break;}</Command>
+      <Command>trQuestVarSet("%QV%", all);</Command>
+      <Command>trChatSend(0, "%ProtoName%, ID:"+all+"");</Command>
+    </Effect>
+      
+    <Effect name="Unit Set Tactic">
+      <Param name="PlayerID" dispName="Player ID" VarType="string">1</Param>
+      <Param name="Obj" dispName="$$22295$$Source Units" VarType="unit">default</Param>
+	  <Param name="Note" dispName="Note" VarType="string">Because of the nature of this trigger, it can only change the Tactic of one Unit at a time. </Param>
+	  <Param name="note" dispName="Available Tactics:" VarType="string">Volley, Stagger, Melee, Cover, Trample, Defend, Stealth</Param>
+	  <Param name="A" dispName="Tactic:" VarType="string">Volley</Param>
+      <Command>trUnitSelectClear();</Command>
+      <Command>uiClearSelection();</Command>
+      <Command>trBlockAllSounds(true);</Command>  
+      <Command>for(FP=0;>1){}</Command>         
+      <Command>FP=trCurrentPlayer();</Command>
+      <Command>trackInsert(); trackAddWaypoint();</Command>
+      <Command>if(FP==%PlayerID%) {</Command>
+      <Command>trPlayerSetActive(%PlayerID%);</Command>
+      <Command>trUnitSelect("%Obj%");</Command>   
+      <Command>for(oldPlayer=xsGetContextPlayer();>99){}</Command>
+      <Command>xsSetContextPlayer(%PlayerID%);kbLookAtAllUnitsOnMap();</Command>
+      <Command>for(err=0;>1){} for(id=0;>1){} id = kbGetUnitBaseTypeID(kbGetBlockID("%Obj%")); </Command>
+      <Command>if(trUnitIsOwnedBy(%PlayerID%)){if(trUnitAlive()){</Command>
+      <Command>while(trUnitIsSelected()!=true) {err=err+1; </Command>
+      <Command>uiFindType(kbGetProtoUnitName(id));</Command>
+      <Command>if(err>200) {break;}}}}</Command>
+      <Command>xsSetContextPlayer(oldPlayer);</Command>
+      <Command>trPlayerSetActive(FP);}</Command>
+      <Command>trackPlay(1,-1);</Command>   
+      <Command>trUnblockAllSounds();</Command>
+      <Command>unitSetTactic("%A%");</Command>
+      <Command>uiClearSelection();</Command>
+    </Effect>
+    
+    <Effect name="Toggle Gadget for Player">
+      <Param name="PlayerID" dispName="Player ID" VarType="string">1</Param>
+      <Param name="Gadget" dispName="Gadget" VarType="string">Gadget</Param>
+      <Param name="Toggle" dispName="On/Off" VarType="bool">true</Param>
+      <Command>for(FP=0;>1){}</Command>         
+      <Command>FP=trCurrentPlayer();</Command>
+      <Command>if(FP==%PlayerID%) {</Command>
+      <Command>trPlayerSetActive(%PlayerID%);</Command>
+      <Command>if(%Toggle%){ gadgetReal("%Gadget%"); }</Command>
+      <Command>else { gadgetUnreal("%Gadget%"); }</Command>
+      <Command>trPlayerSetActive(FP);}</Command>
+    </Effect>
+      
+    <Effect name="Unit Create at Location">
+      <Param name="PlayerID" dispName="$$22301$$Player" varType="player">1</Param>
+      <Param name="ProtoName" dispName="$$22434$$ProtoName" varType="protounit">Villager</Param>
+      <Param name="ScenName" dispName="$$20509$$Name" varType="string">Default</Param>
+      <Param name="Location" dispName="" varType="string">0,0,0</Param>
+      <Param name="Heading" dispName="$$22432$$Heading" varType="long">0</Param>
+      <Command>trUnitCreate("%ProtoName%", "%ScenName%", %Location%, %Heading%, %PlayerID%);</Command>
+    </Effect>
+
+    <Effect name="Echo Point">
+      <Param name="string" dispName="" varType="string">Loc1</Param>
+      <Param name="DstPoint" dispName="" varType="area">0</Param>
+      <Command>trChatSend(0, "%string%: %DstPoint%");</Command>
+    </Effect>
+
+	<Effect name="Overlay Text Player Name">
+	  <Param name="PlayerID" dispName="$$22301$$Player" VarType="player">1</Param>
+	  <Param name="Text" dispName="$$22531$$Text" VarType="string"> has entered the Great War Age!</Param>
+	  <Param name="Duration" dispName="$$22390$$Fade Duration" varType="float">10.0</Param>
+	  <Command>trOverlayText(kbGetPlayerName(%PlayerID%)+"%Text%", %Duration%, -1, -1, -1, "None");</Command>
+	</Effect>
+
+</Effects>
+
+</trigger>

@@ -33,12 +33,26 @@ constexpr int kStockSlots = 6;  // 1 entry at 0x4C5ACA + 5 copies
 constexpr int kMaxSlots = 36;   // the 6x6 button grid at [commandpanel2+1B4h]
 
 // (unit ID, record index) pairs already logged; the panel refreshes many times a second.
-// Read and written only from the game thread, by the hook.
+// Read and written only from the game thread, by the hook. Unit IDs start again in every game: a
+// new world, or a step count [world+F8h] that went back, clears it.
 std::set<std::pair<std::int32_t, std::int32_t>> g_logged;
+const char* g_logWorld = nullptr;
+std::uint32_t g_logStep = 0;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
+}
+
+void ForgetOtherGames() {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const std::uint32_t step = world == nullptr ? 0 : Field<std::uint32_t>(world, 0xF8);
+  if (world != g_logWorld || step < g_logStep) {
+    g_logged.clear();
+  }
+  g_logWorld = world;
+  g_logStep = step;
 }
 
 const char* ProtoName(const char* unit) {
@@ -53,9 +67,11 @@ extern "C" {
 void UhcAbilityButtonHook();
 
 // Called by the hook when GetNth returned true for n >= 6: the unit gets a button that stock
-// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid or a recharging one).
+// never asks for. `enabled` is GetNth's out byte (0 for AlwaysDisabledInGrid). The panel's loop over the 36 cells
+// (0x695202..0x695440) draws the recharge on any button, so one past the sixth gets it too.
 void __stdcall UhcAbilitySlotsLogButton(const char* unit, std::int32_t n, std::int32_t record, std::int32_t power,
                                         std::int32_t enabled) {
+  ForgetOtherGames();
   const std::int32_t id = unit == nullptr ? -1 : Field<std::int32_t>(unit, 0x10);
   if (!g_logged.insert({id, record}).second) {
     return;
@@ -89,7 +105,7 @@ Outcome ApplyAbilitySlots(const Config& config) {
     }
   }
   if (!VerifyAll("abilitySlots", {&sites::kAbilitySlotCopies, &sites::kAbilityPage11Branch, &sites::kAbilityNthCall,
-                                  &sites::kAbilityButtonRecharge})) {
+                                  &sites::kAbilityButtonCost})) {
     return Outcome::kFailed;
   }
   // mov edi,5 at 0x695BD2, the do-while's count: the imm32 starts one byte in. N-1 >= 5, so the
@@ -97,7 +113,7 @@ Outcome ApplyAbilitySlots(const Config& config) {
   if (!WriteDword(sites::kAbilitySlotCopies.va + 0x1D, static_cast<std::uint32_t>(*slots - 1))) {
     return Outcome::kFailed;
   }
-  if (log && !WriteJmp(sites::kAbilityButtonRecharge.va, reinterpret_cast<const void*>(&UhcAbilityButtonHook), 5)) {
+  if (log && !WriteJmp(sites::kAbilityButtonCost.va, reinterpret_cast<const void*>(&UhcAbilityButtonHook), 5)) {
     return Outcome::kFailed;
   }
   Log(L"abilitySlots: the command panel asks for %d abilities per unit (stock %d)%ls", *slots, kStockSlots,

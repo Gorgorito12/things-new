@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\yungassmall"
+displayName = "Yungas"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\sonora\sonora_map"
+details="6170268"
+loadDetails="6170269">
+   <loadss>ui\random_map\sonora\sonora_ss_01</loadss>
+   <loadss>ui\random_map\sonora\sonora_ss_02</loadss>
+   <loadss>ui\random_map\sonora\sonora_ss_03</loadss>
+</mapinfo>
+

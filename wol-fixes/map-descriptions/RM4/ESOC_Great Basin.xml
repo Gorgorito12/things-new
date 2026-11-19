@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\great_basin"
+displayName = "ESOC Great Basin"
+cannotReplace = ""
+loadBackground="ui\esoc_map\greatbasin_map"
+details="6170064"
+loadDetails="6170065">
+	<loadss>ui\random_map\GreatBasin\GreatBasin_ss_01</loadss>
+	<loadss>ui\random_map\GreatBasin\GreatBasin_ss_02</loadss>
+	<loadss>ui\random_map\GreatBasin\GreatBasin_ss_03</loadss>
+  
+</mapinfo>

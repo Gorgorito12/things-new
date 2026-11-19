@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75083" imagepath="RMs\small\South America\great chaco" loadBackground="RMs\BIG\South America\greatchaco"
+details="6170330"
+loadDetails="6170331">
+   <loadss>ui\random_map\everglades\everglades_ss_01</loadss>
+   <loadss>ui\random_map\everglades\everglades_ss_02</loadss>
+   <loadss>ui\random_map\everglades\everglades_ss_03</loadss>
+</mapinfo>

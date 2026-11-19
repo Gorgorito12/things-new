@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Khorezm"
+imagepath = "rms\small\Africa and Middle East\Khorezm" 
+loadBackground="rms\big\other\middleeast"
+details="6170138"
+loadDetails="6170139">
+   <loadss>ui\random_map\NEW\khorezm\khorezm_ss</loadss>
+</mapinfo>

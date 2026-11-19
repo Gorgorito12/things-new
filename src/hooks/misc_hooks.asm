@@ -1,5 +1,5 @@
 ; Hook for customRevolutionBanners. Entered through a jmp written over the stock code; leaves
-; through an explicit jmp to a verified continuation (docs/uhc-address-map.md).
+; through an explicit jmp to a verified continuation (src/generated/sites.h).
 .686
 .model flat, c
 option casemap :none

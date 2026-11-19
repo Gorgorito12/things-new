@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Karakum"
+imagepath = "rms\small\Africa and Middle East\karakum" 
+loadBackground="rms\big\other\middleeast"
+details="6170136"
+loadDetails="6170137">
+   <loadss>ui\random_map\NEW\karakum\karakum_ss</loadss>
+</mapinfo>

@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75086" imagepath="RMs\SMALL\South America\acre" loadBackground="RMs\BIG\South America\acre"
+details="6170270"
+loadDetails="6170271">
+	<loadss>ui\random_map\orinoco\orinoco_ss_01</loadss>
+    	<loadss>ui\random_map\orinoco\orinoco_ss_02</loadss>
+	<loadss>ui\random_map\orinoco\orinoco_ss_03</loadss>
+</mapinfo>
