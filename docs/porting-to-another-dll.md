@@ -19,7 +19,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
-| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon` | [interface](porting-code/interface.md) |
+| Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
 The code pages are the code itself, C++ and MASM, generated from `src/` with `tools/porting_code.py`, so
@@ -1232,6 +1232,21 @@ Code: [combat](porting-code/combat.md#stealthtargeting).
   `0x489ECC` (`51 53 55 8B 6C 24 10`), continue at `0x489ED3`. Check both against your DLL first.
 - **Test:** a ship in stealth with enemy ships in range: it must take no damage, and its visibility mask
   `[[unit+B4h]+ACh]` must keep only its owner's and allies' bits.
+
+### autoScout
+
+Code: [interface](porting-code/interface.md#autoscout). It needs `AddWorldTick`
+([world tick](porting-code/helpers.md#world-tick)).
+
+- **Sites:** an 8-byte `jmp` at `0x7C8E49` (`51 56 8B F1 83 7E 5C 05`, the head of the command execute, which the world
+  update runs for every command), continue at the `jbe` `0x7C8E51` with the flags of the re-executed `cmp`. Called
+  functions, verify only: `0x50E36A` (the action manager's move order), `0x4F7ECD` (setTactic), `0x948161` (a
+  tactic's index by name ID), `0x44F1A7` (idle). Check them against your DLL first. Without the `jmp` the key works
+  without the switch-off (the log says `limited mode`).
+- **What it writes:** besides the move orders, a scout's leash anchor `[[unit+58h]+7Ch..84h]` (its position, every
+  scan), so a unit that stops scouting does not walk back.
+- **Test:** a unit whose first tactic is `AutoScout`: it leaves at once, and `testbed.py explored` rises (two ravens on
+  Great Lakes: 63.7 % at 3 minutes against 9.4 % without); a Stop order puts it back in its other tactic.
 
 ### directionalAttack
 

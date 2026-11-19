@@ -1807,6 +1807,19 @@ SITES = [
     ("AttackRowTyped", 0x69FE1F, 0x19),
     ("ActionRawName", 0x5F8FC3, 0x18),
     ("ActionRangeEntry", 0x4946D6, 0x37),
+    # autoScout: the head of the command execute FUN_007C8E49 (thiscall(cmd)), the only call 0x64D31A in the world
+    # update's command processing 0x490015 (called at 0x481BC2). push ecx / push esi / mov esi,ecx /
+    # cmp dword [esi+5Ch],5 (8 bytes; nothing branches inside, cs) is replaced; the hook re-executes them and goes on
+    # at the jbe 0x7C8E51 with the flags of the cmp.
+    ("AutoScoutCmdExecute", 0x7C8E49, 0x0A),
+    # autoScout, verify only, the functions it calls: ActionManager doMove 0x50E36A (thiscall(mgr, Vec3*, float,
+    # char, char, int, char, char, int, int, float), ret 28h); setTactic 0x4F7ECD (thiscall(mgr, player, index, -1,
+    # 1, -1.0f, 1, 0), ret 1Ch); the tactic index by name ID 0x948161 (thiscall(actionSet, nameId), ret 4); the
+    # idle test 0x44F1A7 (bool thiscall(mgr)).
+    ("AutoScoutDoMove", 0x50E36A, 0x0A),
+    ("AutoScoutSetTactic", 0x4F7ECD, 0x0A),
+    ("AutoScoutTacticIndex", 0x948161, 0x08),
+    ("AutoScoutIdle", 0x44F1A7, 0x08),
 ]
 
 

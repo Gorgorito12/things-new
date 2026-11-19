@@ -21,6 +21,8 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   state                      process, window, world and game time
   units [--player N] [--proto TEXT] [--los]   live units: ID, player, proto, HP, position
                              (--los adds the unit's own line of sight and its proto's)
+  explored [--player N]      the share of the map player N (default 1) has explored and sees now,
+                             from the game's visibility grid
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
   record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
          [--select ID|Proto,...] [--close Z] [--crop WxH[@cx,cy]] [--hover X,Y] [--master <out.mkv>]
@@ -940,6 +942,28 @@ def scenario(bed, map_name, seed, players=2):
 
 # --- reading the game ---------------------------------------------------------------------------
 
+def explored(player=1):
+    """The share of the map a player has explored and sees now, from the game's visibility grid ([world+250h]:
+    width +14h, height +18h, one dword per cell at +20h; the player's mask [[world+2D8h]+4*id], its low half the
+    explored bits, its high half the visible ones; docs/engine-symbols.md, "Auto scout")."""
+    proc = process() or sys.exit("testbed: the game is not running")
+    world = D.world(proc) or sys.exit("testbed: no world")
+    vm = proc.u32(world + 0x250)
+    w, h, cells = proc.i32(vm + 0x14), proc.i32(vm + 0x18), proc.u32(vm + 0x20)
+    if not (0 < w <= 4096 and 0 < h <= 4096 and cells) or player >= proc.i32(world + 0x2DC):
+        sys.exit("testbed: no visibility grid")
+    mask = proc.u32(proc.u32(world + 0x2D8) + 4 * player)
+    raw = proc.read(cells, 4 * w * h) or sys.exit("testbed: cannot read the grid")
+    seen = visible = 0
+    for (cell,) in struct.iter_unpack("<I", raw):
+        bits = cell & mask
+        seen += (bits & 0xFFFF) != 0
+        visible += (bits & 0xFFFF0000) != 0
+    total = w * h
+    print(f"player {player}: explored {100.0 * seen / total:.1f} %, visible now {100.0 * visible / total:.1f} %"
+          f" ({w} x {h} cells, game time {proc.u32(world + 0x108) / 1000.0:.0f} s)")
+
+
 def list_units(player=None, proto_filter=None, los=False):
     proc = process() or sys.exit("testbed: the game is not running")
     for unit in D.units(proc):
@@ -1755,6 +1779,8 @@ def main(argv):
         player = int(args[args.index("--player") + 1]) if "--player" in args else None
         proto = args[args.index("--proto") + 1] if "--proto" in args else None
         list_units(player, proto, "--los" in args)
+    elif cmd == "explored":
+        explored(int(args[args.index("--player") + 1]) if "--player" in args else 1)
     elif cmd == "shot":
         shot(args[0], int(args[1]) if len(args) > 1 else 2)
     elif cmd == "record":

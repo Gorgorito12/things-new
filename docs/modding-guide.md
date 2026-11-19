@@ -38,6 +38,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-13 11:50 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-13 10:46 | [`randomCost`](#randomcost) | Added. `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | The tag on the protos that want it. |
 | Friday 2026-11-13 10:03 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
+| [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. | confirmed (single player) |
 | Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
@@ -7664,6 +7665,86 @@ playerIcon <avatarId>
   logged, not applied. The profile does not keep the value (its `gameplayer0avatarid` stayed empty). With the table of
   `tools/make_avatar_table.py` (63 IDs): `kaiserklein` (a player avatar) and `civ_ethiopians` (a civ portrait, the
   host playing the Dutch) each showed on the host's slot and stayed over civ changes (Greeks, Paraguay, Dutch).
+
+#### autoScout
+
+*A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off.*
+
+![autoScout in WoL](media/autoScout-wol.gif)
+
+*In WoL, with `autoScout log` and `wol-fixes/auto-scout` (Romanians against a German AI, Great Lakes, the camera on one
+of two ravens):* the selected raven flies straight to the nearest unexplored ground, then on to the next, and the
+minimap fills in: 63.7 % of the map explored at 3 minutes, all of it at 6. Each order is a `ordered` line in the log.
+[Full video (MP4)](media/autoScout-wol.mp4).
+
+![autoScout in WoL, key off](media/autoScout-wol-control.gif)
+
+*In WoL, key off and the pack not applied (the same map, civ and raven):* the stock raven circles the Town Center, and
+the minimap stays as it was at the start: 9.4 % explored at 3 minutes, 9.7 % at 6.
+
+[Full video (MP4)](media/autoScout-wol-control.mp4).
+
+![The minimap at 3 and 6 minutes](media/autoScout-minimaps.jpg)
+
+*The minimap of the two games at 3 and 6 minutes of game time: the share is the player's explored grid, read from
+the game (`testbed.py explored`).*
+
+```
+autoScout [ScoutTactic [ReturnTactic]] [log]
+```
+
+- **What a modder writes:** a tactic named `AutoScout` (or `ScoutTactic`) in the unit's tactics file, and two buttons
+  whose `<command>` is `unitSetTactic("AutoScout")` and `unitSetTactic("Normal")`. A unit whose **first** tactic is
+  the scouting one scouts from birth; with it second, it scouts when the button is pressed. The pack
+  `wol-fixes/auto-scout` (`apply_fix.py <WoL folder>`, `--restore` to undo) does it for the raven, the two pet parrots,
+  the French balloon and the Dutch envoy, and its README says how to do it for any unit:
+
+  ```xml
+  <tactic>AutoScout<action>Move</action>
+      <runaway>1</runaway>
+  </tactic>
+  <tactic>Normal<action>Move</action>
+      <runaway>1</runaway>
+  </tactic>
+  ```
+
+  Keep the tactic name and its first child on one line ([Tactics files](#tactics-files)).
+- **Buttons:** the command names (`AutoScoutStart`, `AutoScoutStop` in the pack) go in
+  `data\uhc\customprotounitcommands.xml`, which WoL's DLL reads too, an entry each in `protounitcommands.xml`, and a
+  `<Command column="N" page="10">` line on the unit. Put them on the command row (page 10): the game does not show
+  added command types on the tactics page (page 9), as tested with the raven.
+- **Effect:** every 500 ms of game time, each unit in the scouting tactic that is idle, or still on the move this
+  key gave it, goes to the nearest unexplored cell (2 m) its movement type can stand on: land for land units, water
+  for ships, anything for flyers. It prefers ground ahead of it to ground behind, and two scouts of one player do not
+  take the same 16 m block. A scout that stops short of its target, or takes more than 90 s, gives that block up (an
+  island, a cliff). With the whole map explored, it flies to the block not in sight that was seen longest ago.
+  A fight, a flee or any other action is left alone: the scout goes on once it is idle.
+- **Switch-off:** a move, attack, gather, garrison or Stop order given by the unit's owner puts it back in its other
+  tactic (`ReturnTactic`, else the first tactic of its file that is not the scouting one) before the order applies,
+  as DE's Stop, Garrison and AttackMove do. The Stop-scouting button does the same. A scout stays where it is when it
+  stops: it does not walk back to where it was last ordered.
+- **Beside WoL's DLL** (`dinput8.dll`, [wol-uhc-map.md](wol-uhc-map.md)): works, switch-off too (2026-11-19). If
+  another DLL ever takes the command hook, the log says `limited mode` and the key works without the switch-off.
+- **The raven's circle:** WoL's raven circled its start because the action manager's leash walks a unit back to its
+  anchor when it strays; the raven is in no herd, so the animal wander (`WanderDistance`) was not the cause. The pack
+  still removes its `WanderDistance`.
+- **Simulation:** yes. Everyone needs the key and the data. Everything it reads is game state, the order is
+  the game's own move order, and no network command is sent. Not tested in multiplayer.
+- **Saved games:** the tactic is saved with the unit, so a loaded game goes on scouting (tested); the key's own
+  tables (targets, blocks given up) are rebuilt from the units and the grid.
+- **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map. With `log`, the first orders write a
+  line each, which costs milliseconds: keep `log` for testing.
+- **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`; with `log`: `'AutoScout' is name 17`,
+  `map of 155 x 155 cells`, a line per order (`unit 1280 (proto 2070, player 1, air) at (48.3, 131.6) -> unexplored
+  cell (…), block 34: ordered`), `stopped … block 210 given up`, `got an order (command type 9): back to tactic 0`,
+  and every 120 scans their cost.
+- **Status:** confirmed (2026-11-19, single player, WoL): the ravens 9.4 % → 63.7 % at 3 minutes and 9.7 % → 100 %
+  at 6 (two ravens, the rest of the player idle); the Dutch envoy alone 8.6 % → 50.1 % at 3 minutes and 71.1 % at 6
+  (Great Lakes, scenario); a caravel given the tactic for the test scouted the lake on water only; the start and stop
+  buttons (posted clicks, and their commands from the console), Stop and a trigger's move order switched it off, a
+  save and load kept it scouting, a raven killed while scouting and one killed after: no error. A/B with
+  `perfprobe.py` (90 s, the same skirmish, two other games running on the machine): 628 fps against 589, main thread
+  87 % against 89 %, one 420 ms frame in the key-on run whose scans all took under 0.3 ms.
 
 ## 6. Editing the game data
 

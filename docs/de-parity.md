@@ -690,6 +690,30 @@ icon (S, on top). B is the cheap fallback, and the two can share the hook.
 2. Lobby only, or also in game (score or observer panel)?
 3. AI players: keep the civ portrait? And reuse `art\spec\avatars` (ESOC's players by name) for B?
 
+### Auto scout (WoL #68)
+
+A study for [`autoScout`](modding-guide.md#autoscout) (2026-11-19). DE's exe was read only with
+`tools/re/pe64.py` (REA does not finish analysing it, above); its data from `parity/data`.
+
+- [O] **Data:** `protounitcommands.xml` has `autoScoutStart` and `autoScoutStop` (icons `auto_scout`, `auto_scout_stop`;
+  rollovers 72300, 72301; commands `autoScout(true)`, `autoScout(false)`). Four stock commands end with
+  `autoScout(false)` after their own command, separated by a space: Eject (`uiEjectGarrisonedUnits`), Garrison
+  (`editMode("garrison")`), Stop (`uiStopSelectedUnits`) and AttackMove (`editMode("attackMove")`). No proto lists the
+  two buttons in `protoy.xml`.
+- [O] **Exe strings:** the console command `autoScout` with the help "void autoScout(bool): Human controlled scout will
+  automatically scout"; the command type names `AutoScoutStart` and `AutoScoutStop`; and `AutoScout_%d`. None of them
+  has a code reference or a data pointer in plaintext code (`pe64.py xrefs`), so what uses them is in the encrypted
+  functions.
+- [O] `AbstractFindScout` is in DE's unit type name table (one data pointer, read by index), on Envoy, NativeScout,
+  ypMongolScout, deChasqui, deEagleScout and deRevolutionaryScout.
+- [I] Since no proto lists the buttons, the game itself adds them, probably for `AbstractFindScout` units.
+  `AutoScout_%d` looks like a name made per unit or per player, perhaps of an exploration plan; how DE picks the next
+  destination, and whether it uses the AI's exploration code, could not be read.
+- **Legacy's version** keeps the data in charge instead: a tactic and two buttons, which a modder adds to any unit.
+  The orders Eject, Garrison, Stop and AttackMove switch it off in DE through the data; here the DLL does it for any
+  move, attack, gather, garrison or Stop order the owner gives, because legacy's command parser was not checked for
+  two commands in one `<command>`.
+
 ## What legacy does today
 
 Read with REA (Ghidra) in the stock exe. The addresses, registers and Evidence IDs are in
