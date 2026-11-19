@@ -6,9 +6,15 @@ minimap) and on the loading screen. This folder holds new descriptions for all 2
 English and Spanish, the facts behind them (read from the map scripts and checked in game), a script
 that installs them, screenshots, and the problems we found in the maps' data on the way.
 
-Status (2026-11-18): format v2 (JTMaston's second request, below) is built and tested in game; the
-texts of 6 pilot maps are written in it. The other 202 maps get the v2 layout and facts with their v1
-sentences until they are rewritten from kept-from-original.csv. The "King of the Hill" line follows
+Status (2026-11-18): format v2 (JTMaston's second request, below) is done. All 208 maps have a v2
+description in English and Spanish, written from kept-from-original.csv. The final review
+screenshots are in final\ (start with final\README.txt). They show 36 maps in game:
+- in English at 1920x1080;
+- 10 of them also at 1024x768;
+- 3 of them also in Spanish;
+- an 8-player loading screen.
+Every capture passed the checks (continuous lines, bold coloured keys, nothing cut off, the creator
+last, no "random" outlaws). The "King of the Hill" line follows
 the King of the Hill pack (wol-fixes\maps-koth): Yes on 200 maps, No on the 8 maps the pack skips
 (WOLsahara, lead 8, is now in the pack). Install that pack's .xs files together with these texts.
 
@@ -43,8 +49,7 @@ What changed:
 - The facts of the original texts: kept-from-original.csv lists every fact of every map's old texts
   (1194 rows, all 208 maps) with a category (gameplay rule, variant, geography-history, credit,
   observer-ESOC, other) and keep yes/no with the reason. Gameplay rules and variants are always kept.
-  The 6 pilot maps are done by hand; the others are a first automatic pass, "review" where the writer
-  decides.
+  Every row is resolved (844 yes, 350 no).
 - The layout and markup below, tested in game first (the "format test bench").
 
 The layout (── is a thin horizontal line):
@@ -71,8 +76,7 @@ In the lobby every line is at most 44 characters, so the rollover stays narrow (
 One description per map (texts.csv, desc_en / desc_es) serves both places. If a description does
 not fit the loading box at 1024x768 or 1920x1080, make_descriptions.py drops its last sentences on
 the loading screen only (the lobby keeps all of it); the facts and the creator always stay.
-make_descriptions.py --report lists what it dropped: today nothing on the 6 pilot maps, one sentence
-of the v1 text on 3 other texts.
+make_descriptions.py --report lists what it dropped: today nothing, on all 208 maps.
 
 The format test bench (in game, WoL copy with the English string table, 1920x1080 and 1024x768;
 screenshots in media\v2-bench):
@@ -315,19 +319,21 @@ Files
   apply_fix.py            installs everything into a WoL folder (see below), also the two font
                           entries (v2)
   texts.csv               the written texts per map: desc_en / desc_es (v2: one description for the
-                          lobby and the loading screen; the 6 pilot maps so far), summary_* and
-                          story_* (v1, used until desc_* is written), the v1 author credit, and a
-                          column per fact where a fact needed a hand correction
+                          lobby and the loading screen; all 208 maps), summary_* and story_* (v1,
+                          used only where desc_* is empty), the v1 author credit, and a column per
+                          fact where a fact needed a hand correction
   credits.csv             the creator of each map (v2): creator_en, creator_es, people, source
   kept-from-original.csv  every fact of the original texts, with category, keep and reason (v2):
-                          the worksheet for rewriting the 202 other maps
+                          the worksheet the v2 descriptions were written from
   make_descriptions.py    rebuilds descriptions.csv and strings-*.xml from texts.csv, credits.csv and
                           mapfacts
   mapfacts.csv            the facts of all 208 maps (see "The facts table"); mapfacts.json is the
                           same for make_descriptions.py
   string-ids.csv          the two string IDs of every map
   leads.csv               the problems found in the data, with file and line
-  media\                  screenshots (see "Media")
+  final\                  the final v2 review screenshots: 36 maps, with overview sheets, the
+                          pass/fail table and the list of maps (final\README.txt)
+  media\                  older screenshots: the v2 format bench and pilot, and v1 (see "Media")
 
 
 The facts table (mapfacts.csv)
@@ -396,6 +402,10 @@ old literal texts and all the new IDs did. We did not look into why.
 
 Media
 -----
+The final v2 screenshots (all 208 texts written; 36 maps shown, at 1920x1080 and 1024x768 and in
+Spanish) are in final\, with final\README.txt. They replace the v1 screenshots that were there. The
+v1 shots below stay in media\ for the history.
+
 Format v2 (2026-11-18, English, WoL copy with the pack applied):
   media\v2-bench\         the format test bench, each round in the lobby and on the loading screen:
       r1-markup-*-1080.jpg    every candidate: underlines, em dashes, U+2500, <bgcolor>, <st>, icons,
@@ -594,7 +604,7 @@ credits.csv, then run
 and apply again. --report lists the sentences dropped on the loading screen to make a text fit.
 --stock-box fits the texts to WoL's old, shorter box instead (if data\uirmsetup.xml is not installed).
 
-Writing a v2 description (for the 202 maps still to do): one paragraph, the most important sentence
+Writing or changing a v2 description: one paragraph, the most important sentence
 first (on the loading screen the last sentences go first when a text is too long). Keep every row of
 kept-from-original.csv marked yes or review that you judge relevant: gameplay rules and variants
 always (number of trade routes, skins, seasons, what replaces a missing resource, what a native site
