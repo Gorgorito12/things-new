@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-19 13:57 | [`attackTypeIcons`](#attacktypeicons) | Added. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
+| Thursday 2026-11-19 13:57 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Added. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
 | Tuesday 2026-11-17 14:11 | [`preloadDll`](#preloaddll) | Added. Our `dinput8.dll` also loads another DLL of the game folder, such as WoL's `WoL.dll`, at the moment WoL's own `dinput8.dll` loader would. | Nothing. |
 | Tuesday 2026-11-17 10:30 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
 | Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
@@ -6904,6 +6906,7 @@ What the panels and the fog of war show.
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
 | [`inventoryBars`](#inventorybars) | While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | **new** | Nothing. | confirmed (single player, UI) |
+| [`attackTypeIcons`](#attacktypeicons) | A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | **in `wol.cfg`** | Nothing: the line of `wol.cfg`. | confirmed (single player, UI) |
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 
@@ -7217,6 +7220,42 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
   its orange segment, the sheep beside it its food bar (both through the shared hooks). `inventoryBars other=XYZ`:
   logged, not applied.
 
+#### attackTypeIcons
+
+*The attack rows also list the bonus multipliers against WoL's own unit classes, such as "1.5x against Maneuver units", which the game leaves out.*
+
+**Added:** Thursday 2026-11-19 13:57
+
+![attackTypeIcons: the Escopetero's ranged row](media/attackTypeIcons-escopetero.jpg)
+
+*In WoL, with our `UHC.dll` (Ethiopians, an Escopetero selected, minimized interface, `multiplierDecimals` and
+`minUIStats` off):* top, without the key (version 4's control): two multipliers; middle, with WoL's own `attackTypeIcons`
+line: `1.5x` against `AbstractRangedCavalry` (Maneuver Unit) first, as WoL's own DLL shows it; bottom, its tooltip line
+`1.5X Bonus Damage against (Maneuver Unit)`.
+
+```
+attackTypeIcons <UnitType> <StringID> <IconPath> [<UnitType> <StringID> <IconPath> ...]
+```
+
+- **The game:** an attack row lists a `<DamageBonus>` only when its type is one of the exe's own types with an icon
+  (a fixed chain of compares in both panels: the stat panel fill 0x4D7E86.., the minimized block 0x699A95..). Any other
+  type is skipped, in the row and in its tooltip: the Escopetero's `AbstractRangedCavalry 1.5` never shows.
+- **The key:** for a type of the list, the row gets `, 1.5x <icon>` with the icon at `IconPath` (a texture path, as
+  `ui\ingame\stat_icon_cavalry`), and the tooltip `1.5X Bonus Damage against <the string's text> (<icon>)`. Same
+  cfg line as WoL's DLL (and the original patch): triples, the type, the string ID of its name, the icon. A type is
+  checked after every stock type but two (+11h, +54h), as the original does, so a stock type keeps its own icon.
+- **Why our panel had two multipliers and WoL's three (JTMaston, 2026-11-19):** our DLL did not have this key, so with
+  our `UHC.dll` in place of WoL's the line in `wol.cfg` did nothing and the Escopetero lost its `1.5x` against
+  Maneuver units; beside WoL's DLL (our `dinput8.dll`), WoL's own hook showed it.
+- **How:** two hooks, 0x69B909 (stat panel) and 0x699D31 (minimized block, a site WoL's DLL hooks too); the types'
+  IDs are found at each database load (`RequestAbstractUnitType`). Details: [how-it-works.md](how-it-works.md#attacktypeicons).
+- **Multiplayer:** display only.
+- **Beside WoL's DLL:** it holds both sites, so the key logs FAILED there and WoL's own does the job: leave the line
+  out of `engine-ext.cfg`.
+- **Tested in WoL (2026-11-19):** with our `UHC.dll` and WoL's `wol.cfg` line (11 types): the Escopetero shows `1.5x`
+  (Maneuver), `1.25x` (Line), `0.75x` (Scout) in both panels' rows and tooltips; `hook reached: attackTypeIcons
+  stat panel (0x69B909)` and `minimized panel (0x699D31)`; all keys of the template on: 119 applied, 0 failed.
+
 #### minUIStats
 
 *The minimized interface shows what the big one shows, and more: buildings' armor, speed, LOS, garrison and every attack, in rows a data file lists.*
@@ -7329,6 +7368,29 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       asked); the drawn icons are redrawn bold, 32x32 BGRA with hard edges and a black outline like WoL's own
       (`make_stat_icon.py --style bold`), and a revolver cylinder (`stat_icon_projectiles`) is added; the heart and
       the drawn house left the pack.
+  - **Version 5 (2026-11-19), after JTMaston's review of version 4:**
+    - The projectile number follows the data: `projectiles="data"` is now the default, so an attack shows its
+      `<NumberOfShots>` x `<NumberProjectiles>` as WoL's tactics write them (the Escopetero's volley 4, the
+      Bacamarteer 6, the Schwarzlose 12), with any DLL. `projectiles="combat"` keeps version 4's rule (only what
+      [`numberOfShots`](#numberofshots) fires). Still only above 1. Combat is unchanged: WoL's own DLL fires one
+      projectile a shot (traced: every shot of an Escopetero is one call of the launch 0x499422), and only
+      `numberOfShots projectiles` fires the data's number.
+    - The "1" Maston read as a projectile number in version 4 is the attack's area (`<DamageArea>1</DamageArea>` on the
+      Escopetero's ranged attack, next to the red target icon), which the game itself writes in both panels
+      (`14 Range with 1 Area` in the tooltip). Kept: it is the data's, and WoL's panel shows it without the key.
+    - The multipliers: with [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) two decimals (`1.25x`), and the
+      rows drop the zeros that end them (`1.50x` is `1.5x`; `multiplierZeros="keep"` keeps them). With
+      [`attackTypeIcons`](#attacktypeicons) (WoL's `wol.cfg` line) the multipliers against WoL's own types show,
+      as with WoL's DLL: the Escopetero's ranged row has three.
+    - Tooltips: the attack rows keep the game's own tooltip (name; damage; range and area; one line per multiplier) and
+      get two lines after the damage, `Attacks every 3.50 s (<stopwatch>)` and `4 projectiles before the reload
+      (<cylinder>)`. Their texts are `rofTip` and `projectilesTip` on `<bigPanelRows>` (`%s` the number;
+      `[string:ID]` works; empty: no line). A row shown in short form (too long for its column, or the `+N more`
+      gadget) has that full tooltip too, instead of its text without icons.
+    - An original attack row too long for the panel (at 1024 x 768 the font is relatively wider) drops its last
+      multipliers and ends with ` (+N)`; the tooltip lists them all. At 1920 x 1080 every row tested fits.
+    - The layout: the key's hit points gadget is one line high (700..714). At the original label's 680..734 it covered
+      the left of the first attack row, whose tooltip then never showed there.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.

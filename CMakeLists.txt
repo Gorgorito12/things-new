@@ -65,6 +65,8 @@ set(UHC_SOURCES
   src/features/displayrange.cpp
   src/features/linkedresource.cpp
   src/features/minuistats.cpp
+  src/features/multiplierdecimals.cpp
+  src/features/attacktypeicons.cpp
   src/features/xslog.cpp
   src/features/civs.cpp
   src/features/ageupbuildings.cpp
@@ -237,6 +239,7 @@ set(UHC_SOURCES
   src/hooks/unitpanelrow_hooks.asm
   src/hooks/datarefs_hooks.asm
   src/hooks/minuistats_hooks.asm
+  src/hooks/attacktypeicons_hooks.asm
   src/version.rc
 )
 # UHC.dll is the DLL the loader runs. dinput8.dll is the same code for a game whose loader runs another

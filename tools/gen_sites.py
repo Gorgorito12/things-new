@@ -1807,6 +1807,26 @@ SITES = [
     ("AttackRowTyped", 0x69FE1F, 0x19),
     ("ActionRawName", 0x5F8FC3, 0x18),
     ("ActionRangeEntry", 0x4946D6, 0x37),
+    # multiplierDecimals: the wide format ", %.1fx %s" (.rdata, 11 characters with its terminator) of a bonus
+    # multiplier that is not whole, pushed by the stat panel fill (0x4D7F7D) and the minimized block's attack rows
+    # (0x699E1F); the key writes the digit at 0xBA2068. The rollover line of each multiplier, string 42229
+    # "%1.1fX Bonus Damage against %2s (%3s)": push 0A4F5h / call 447719h (BString from string ID, thiscall, one
+    # argument) in the fill (0x4D7FB6) and the minimized block (0x699E95); the key redirects the call. The loader's
+    # head, called by the key.
+    ("MultiplierFormat", 0xBA2060, 0x16),
+    ("MultiplierTipStat", 0x4D7FB6, 0x0A),
+    ("MultiplierTipMin", 0x699E95, 0x0A),
+    ("BStringLoadId", 0x447719, 0x13),
+    # attackTypeIcons: the bonus multiplier's type chain, after the stock types with icons and before the last two
+    # (+11h, +54h): lea edx,[eax+11h] / cmp esi,edx / jne 69B939h in the stat panel fill's cold part (ESI = the
+    # bonus's unittype, EAX = the proto count [db+19B0h]), and lea edx,[eax+11h] / cmp esi,edx / jne 699D65h in the
+    # minimized block's attack rows. The key's hook formats the icon into the row's icon BString and joins the
+    # stock path of a type with an icon: lea ecx,[esp+40h] / call 447719h (the type's name string) at 0x4D7F44, and
+    # lea ecx,[esp+44h] / call 447719h at 0x699DE6.
+    ("TypeIconStatChain", 0x69B909, 0x07),
+    ("TypeIconStatFound", 0x4D7F44, 0x09),
+    ("TypeIconMinChain", 0x699D31, 0x07),
+    ("TypeIconMinFound", 0x699DE6, 0x09),
 ]
 
 

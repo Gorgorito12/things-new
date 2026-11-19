@@ -10,9 +10,11 @@
 //   With stockRows="take" the original attack rows (StackLabel0..2) are written from the same list, so that every
 //   attack row gets rofIcon="..." (the action's ROF and that icon after its damage) and the ability attacks the unit
 //   cannot use are left out (ActionEnabled; abilities="all" keeps them). With projectilesIcon="...", an attack that
-//   fires more than one projectile before its reload gets shots x projectiles and that icon after its ROF, as combat
-//   fires them (numberOfShots, its "projectiles" option: unitinfo.h, Shots); projectiles="data" shows the tags as
-//   written instead, a modder's view.
+//   fires more than one projectile before its reload gets shots x projectiles and that icon after its ROF: the
+//   tags as the data writes them (<NumberOfShots>, <NumberProjectiles>: unitinfo.h, Shots), or with
+//   projectiles="combat" as combat fires them (numberOfShots and its "projectiles" option). The multipliers lose the
+//   zeros that end their decimals ("1.50x" is "1.5x"; multiplierZeros="keep" keeps them), and each attack row's help
+//   text gets a line for its ROF and one for its projectiles (rofTip, projectilesTip) after the game's own lines.
 // - "[string:ID]" in a text, label or tip: that string of the game's string table, as the player's language has it
 //   (resolved when shown: "[string:68852]" is "Hitpoints" in the English table).
 // - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
@@ -525,9 +527,11 @@ bool ItemArea(const char* unit, std::wstring* out) {
   });
 }
 
-// The projectiles an attack fires before its reload, as combat fires them: <NumberOfShots> x <NumberProjectiles> while
-// numberOfShots (and its "projectiles" option) uses them; 1 otherwise. With projectiles="data", the tags as written.
-bool g_projectilesData = false;
+// The projectiles an attack fires before its reload: <NumberOfShots> x <NumberProjectiles> (or <NumberOfProjectiles>)
+// as the data writes them, with or without numberOfShots (the default, projectiles="data"). With
+// projectiles="combat", as combat fires them: the shots while numberOfShots is on, the projectiles only with its
+// "projectiles" option; 1 otherwise (no game code but that key reads the tags).
+bool g_projectilesData = true;
 
 int ProjectilesPerReload(const char* unit, const char* action) {
   int shots = 1;
@@ -1139,6 +1143,11 @@ struct BigPanel {
   bool takeStock = false;  // stockRows="take": the original attack rows (StackLabel0..2) are written by the key too
   std::wstring rofIcon;    // rofIcon="...": each attack row gets its ROF and this icon after its damage
   std::wstring projectilesIcon;  // projectilesIcon="...": shots x projectiles before the reload, when above 1
+  bool trimZeros = true;   // multiplierZeros="keep" turns it off: "1.50x" written as "1.5x", "2.00x" as "2x"
+  // The attack rows' help text gets a line for the ROF and one for the projectiles ("%s": the number), each with
+  // its icon, after the stock lines (damage, range and area, one per multiplier).
+  std::wstring rofTip = L"Attacks every %s s";
+  std::wstring projectilesTip = L"%s projectiles before the reload";
 };
 
 std::vector<Row> g_rows;
@@ -1513,10 +1522,30 @@ bool LoadRows(const std::string& arg) {
         g_big.projectilesIcon = Wide(Trim(*projectiles));
       }
       if (const std::string* from = Attr(element, "projectiles")) {
-        g_projectilesData = _stricmp(Trim(*from).c_str(), "data") == 0;
-        if (!g_projectilesData && _stricmp(Trim(*from).c_str(), "combat") != 0) {
-          uhc::Log(L"minUIStats: %ls: projectiles=\"%hs\" is not combat or data; combat used", g_file.c_str(),
+        g_projectilesData = _stricmp(Trim(*from).c_str(), "combat") != 0;
+        if (g_projectilesData && _stricmp(Trim(*from).c_str(), "data") != 0) {
+          uhc::Log(L"minUIStats: %ls: projectiles=\"%hs\" is not data or combat; data used", g_file.c_str(),
                    from->c_str());
+        }
+      }
+      if (const std::string* zeros = Attr(element, "multiplierzeros")) {
+        g_big.trimZeros = _stricmp(Trim(*zeros).c_str(), "keep") != 0;
+        if (g_big.trimZeros && _stricmp(Trim(*zeros).c_str(), "drop") != 0) {
+          uhc::Log(L"minUIStats: %ls: multiplierZeros=\"%hs\" is not drop or keep; drop used", g_file.c_str(),
+                   zeros->c_str());
+        }
+      }
+      for (const auto& [name, field] : {std::pair<const char*, std::wstring*>{"roftip", &g_big.rofTip},
+                                        {"projectilestip", &g_big.projectilesTip}}) {
+        if (const std::string* tip = Attr(element, name)) {
+          const std::wstring wide = Wide(*tip);
+          const size_t at = wide.find(L"%s");
+          if (!wide.empty() && (at == std::wstring::npos || wide.find(L'%', at + 2) != std::wstring::npos)) {
+            uhc::Log(L"minUIStats: %ls: %hs=\"%hs\" needs one %%s (the number) and no other %%; the default used",
+                     g_file.c_str(), name, tip->c_str());
+          } else {
+            *field = wide;  // empty: no such line
+          }
         }
       }
       if (const std::string* abilities = Attr(element, "abilities")) {
@@ -1798,8 +1827,10 @@ bool GadgetBox(std::int32_t handle, Box* out) {
 
 // About how wide one character of the panel's text font is, in pixels: the font follows the screen's height, not the
 // gadget's (measured at 1920 x 1080: 38 characters and two icons, an icon counting as two, in 210 px, 4.9 px each).
+// Below 1080 lines it does not shrink with it: at 1024 x 768 an attack row is as wide in pixels as at 1920 x 1080
+// (an Escopetero's ranged row, 61 characters in 314 px, 5.1 px each).
 float CharPixels(const Box& box) {
-  return box.screenHeight > 0.0f ? 0.00452f * box.screenHeight : 0.217f * 23.0f;
+  return box.screenHeight > 0.0f ? 0.00452f * (std::max)(box.screenHeight, 1080.0f) : 0.217f * 23.0f;
 }
 
 // Shown, as the base show (0x447BBC) tests it before doing nothing: flag bits 0 and 1 of [gadget+0A4h] set, bit 7
@@ -2157,12 +2188,57 @@ std::wstring NormaliseIcons(const std::wstring& text) {
   return out;
 }
 
+// The multipliers of a text without the zeros that end their decimals: "1.50x" is "1.5x", "2.00x" is "2x", "1.25x"
+// stays (a number with a decimal point right before an x or X that ends a word, as the rows' ", %.2fx <icon>" and the
+// help text's "%1.2fX Bonus Damage" write them).
+std::wstring TrimMultipliers(const std::wstring& text) {
+  std::wstring out;
+  out.reserve(text.size());
+  for (size_t i = 0; i < text.size(); ++i) {
+    const wchar_t c = text[i];
+    const bool endsWord = i + 1 == text.size() || text[i + 1] == L' ' || text[i + 1] == L'<';
+    if ((c == L'x' || c == L'X') && endsWord && !out.empty() && iswdigit(out.back())) {
+      size_t digits = out.size();
+      while (digits > 0 && iswdigit(out[digits - 1])) {
+        --digits;
+      }
+      if (digits >= 2 && out[digits - 1] == L'.' && iswdigit(out[digits - 2])) {
+        size_t end = out.size();
+        while (end > digits && out[end - 1] == L'0') {
+          --end;
+        }
+        out.erase(end == digits ? digits - 1 : end);
+      }
+    }
+    out += c;
+  }
+  return out;
+}
+
+// One help text line of the key: `format` with the number for its %s, then " (<icon>)" as the game's own lines end.
+std::wstring TipLine(const std::wstring& format, const std::wstring& number, const std::wstring& icon) {
+  const size_t at = format.find(L"%s");
+  if (format.empty() || at == std::wstring::npos) {
+    return L"";
+  }
+  std::wstring line = ExpandStrings(format.substr(0, at) + number + format.substr(at + 2));
+  if (!icon.empty()) {
+    line += L" (<icon=\"(16)(" + icon + L")\">)";
+  }
+  return line;
+}
+
+// What starts each bulleted line of a help text the fill builds: 0x4C5076(text, line, 1, 0) puts "<ttf><ttb>" before
+// the line (0x4C50B0); with its fourth argument 1, "<ttf><ttr>" (0x4C8F35), a red line; with both 0, "<ttf><tti>".
+const std::wstring kTipLine = L"<ttf><ttb>";
+
 // The attack rows of the fill (and the ones AddOverflowAttacks added), matched in order with the attack list they
 // come from (0x487EEE, every listed action, as the fill writes one row per action): a row of an ability action the
 // unit cannot use is dropped (ActionEnabled), the others get the minimized panel's icon size and, with rofIcon,
 // the action's ROF after the damage: "Ranged ATK:  23 <ranged> 3 <rof> 12 <range>, 3x <cavalry>", and with
-// projectilesIcon the projectiles it fires before its reload after that, when above 1 ("4 <cylinder>"). The row's
-// label must be the action's name; at the first that is not, the matching stops (rows left as written).
+// projectilesIcon the projectiles it fires before its reload after that, when above 1 ("4 <cylinder>"); their help
+// text gets the same two numbers as lines of their own. The row's label must be the action's name; at the first
+// that is not, the matching stops (rows left as written, less the multipliers' zeros).
 void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
   const std::vector<const char*> actions = Attacks(unit, true, false);
   size_t next = 0;
@@ -2172,6 +2248,10 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     }
     StatRow& row = g_stat[i];
     row.value = NormaliseIcons(row.value);
+    if (g_big.trimZeros) {
+      row.value = TrimMultipliers(row.value);
+      row.tip = TrimMultipliers(row.tip);
+    }
     const std::wstring shown = StripMarkup(row.label);
     if (shown.find_first_not_of(L" :") == std::wstring::npos) {
       (*kinds)[i] = kDropped;  // nothing to read: a blank line in the panel
@@ -2196,10 +2276,13 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     wchar_t size[16];
     swprintf_s(size, L"(%d)", kIconSize);
     size_t at = icon + 2;  // after the damage and its icon
+    std::wstring tipLines;
     if (!g_big.rofIcon.empty() && rof > 0.0f) {
       const std::wstring text = L" " + Number(rof) + L" <icon=\"" + size + L"(" + g_big.rofIcon + L")\">";
       row.value.insert(at, text);
       at += text.size();
+      const std::wstring line = TipLine(g_big.rofTip, Number(rof), g_big.rofIcon);
+      tipLines += line.empty() ? L"" : kTipLine + line;
     }
     const int projectiles = g_big.projectilesIcon.empty() ? 1 : ProjectilesPerReload(unit, action);
     if (projectiles > 1) {
@@ -2207,8 +2290,21 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
           L" " + std::to_wstring(projectiles) + L" <icon=\"" + size + L"(" + g_big.projectilesIcon + L")\">";
       row.value.insert(at, text);
       at += text.size();
+      const std::wstring line = TipLine(g_big.projectilesTip, std::to_wstring(projectiles), g_big.projectilesIcon);
+      tipLines += line.empty() ? L"" : kTipLine + line;
     }
     row.compactEnd = at;
+    if (!tipLines.empty()) {
+      // After the game's first bulleted line (the damage), as the numbers follow the damage in the row; at the end
+      // when the help text has no such line.
+      const size_t first = row.tip.find(kTipLine);
+      const size_t next = first == std::wstring::npos ? first : row.tip.find(L"<ttf>", first + kTipLine.size());
+      if (next == std::wstring::npos) {
+        row.tip += tipLines;
+      } else {
+        row.tip.insert(next, tipLines);
+      }
+    }
   }
 }
 
@@ -2293,6 +2389,52 @@ void ApplyStockLabels(const char* unit) {
       WriteLabel(g_panel.labels[i], ExpandStrings(g_labels[i].text), ExpandStrings(tip));
     }
   }
+}
+
+// An original attack row (its gadget spans the panel to its right edge) too long for its line: the multipliers at its
+// end go, last first, until it fits, and " (+N)" says how many; the help text lists them all. At 1920 x 1080 every
+// row tested fits; at 1024 x 768 the font is relatively wider and an Escopetero's three multipliers reach the edge.
+std::wstring FitMultipliers(const std::wstring& text, const Gadget& gadget) {
+  Box box;
+  if (!GadgetBox(gadget.handle, &box) || box.right <= box.left) {
+    return text;
+  }
+  const size_t budget = static_cast<size_t>(static_cast<float>(box.right - box.left) / CharPixels(box));
+  if (VisibleLength(text) <= budget) {
+    return text;
+  }
+  // Where each multiplier begins: ", " then a digit, up to an x right after a digit (", 1.25x <icon>").
+  std::vector<size_t> starts;
+  for (size_t at = text.find(L", "); at != std::wstring::npos; at = text.find(L", ", at + 1)) {
+    size_t i = at + 2;
+    if (i >= text.size() || !iswdigit(text[i])) {
+      continue;
+    }
+    while (i < text.size() && (iswdigit(text[i]) || text[i] == L'.')) {
+      ++i;
+    }
+    if (i < text.size() && (text[i] == L'x' || text[i] == L'X')) {
+      starts.push_back(at);
+    }
+  }
+  for (size_t dropped = 1; dropped <= starts.size(); ++dropped) {
+    const std::wstring shorter = text.substr(0, starts[starts.size() - dropped]) + L" (+" +
+                                 std::to_wstring(dropped) + L")";
+    if (VisibleLength(shorter) <= budget || dropped == starts.size()) {
+      return shorter;
+    }
+  }
+  return text;
+}
+
+// The help text of a row shown in short form: the game's own help text of the row (an attack's damage, range, area
+// and multipliers, worded, with the key's ROF and projectiles lines), or the whole row as text when it has none.
+// `first`: the help text starts with it (otherwise a plain row goes on a line of its own).
+std::wstring FullTip(const StatRow& row, bool first) {
+  if (!row.tip.empty()) {
+    return row.tip;
+  }
+  return (first ? L"" : L"\n") + StripMarkup(row.label + L" " + row.value);
 }
 
 void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, const Blockers& blockers,
@@ -2439,7 +2581,7 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
         }
       }
       for (size_t r = n; r < rows.size(); ++r) {
-        tip += (tip.empty() ? L"" : L"\n") + StripMarkup(rows[r]->label + L" " + rows[r]->value);
+        tip += FullTip(*rows[r], tip.empty());
       }
       write(free[n], text, style, tip);
       continue;
@@ -2453,8 +2595,11 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
       // in the help text, rather than a row cut at the panel's edge.
       const std::wstring longer = Compact(row, true);
       write(free[n], VisibleLength(longer) <= LineBudget(*free[n].gadget) ? longer : Compact(row), style,
-            StripMarkup(row.label + L" " + row.value));
+            FullTip(row, true));
       continue;
+    }
+    if (free[n].stock >= 0 && row.labelStyle == kAttackStyle) {
+      text = FitMultipliers(text, *free[n].gadget);
     }
     write(free[n], text, style, row.tip);
   }
@@ -2691,9 +2836,10 @@ Outcome ApplyMinUiStats(const Config& config) {
     Log(L"minUIStats: another DLL changed the resists armor test (0x698BFC); building armor not shown, unit armor as "
         L"that DLL writes it (the armor items answer nothing)");
   }
-  // The projectiles per reload (projectilesIcon, the projectiles item) are what numberOfShots fires, so its own reader
-  // is enough; the data view registers the reader itself, with no effect on combat. Another DLL on the shared action
-  // tag site only leaves the number out.
+  // The projectiles per reload (projectilesIcon, the projectiles item): as the data writes them (the default), the key
+  // registers the tag reader itself, with no effect on combat; as combat fires them (projectiles="combat"), they are
+  // what numberOfShots fires, so its own reader is enough. Another DLL on the shared action tag site only leaves the
+  // number out.
   const bool shotTags = !g_projectilesData || uhc::unitinfo::RequestShotTags();
   if (!shotTags) {
     Log(L"minUIStats: the action tags cannot be read; projectiles per reload not shown");
@@ -2728,9 +2874,12 @@ Outcome ApplyMinUiStats(const Config& config) {
       g_big.rofIcon.empty() ? L"no ROF" : L"ROF after the damage",
       g_big.projectilesIcon.empty() ? L"no projectiles"
       : !shotTags                   ? L"no projectiles (tags not read)"
-      : g_projectilesData           ? L"projectiles per reload after it (the tags as written: data view)"
+      : g_projectilesData           ? L"projectiles per reload after it (the tags as the data writes them)"
                                     : L"projectiles per reload after it (as numberOfShots fires them)",
       g_filterAbilities && g_abilityReads ? L"only when enabled" : L"all");
+  Log(L"minUIStats: multipliers %ls; help text lines for ROF %ls and projectiles %ls",
+      g_big.trimZeros ? L"without their trailing zeros" : L"as written", g_big.rofTip.empty() ? L"off" : L"on",
+      g_big.projectilesTip.empty() ? L"off" : L"on");
   (void)&OnDatabase;
   return Outcome::kApplied;
 }

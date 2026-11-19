@@ -57,8 +57,10 @@
       <gadget name="unitselectionpanel-uhcSight" type="formatText" size1024="632 669 698 683" textcenterhoriz="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcTrainGarrison" type="formatText" size1024="632 683 698 697" textcenterhoriz="" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <!-- The hit points and resists with their icons, over the original ones, which the key hides while these
-           show (minuirows.xml, <replace>): without the key the original labels and values show as before. -->
-      <gadget name="unitselectionpanel-uhcHitpoints" type="formatText" size1024="410 680 578 734" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
+           show (minuirows.xml, <replace>): without the key the original labels and values show as before. The hit
+           points gadget is one line high, centred where the original label (680..734) centres its text: a taller one
+           covers the first attack row (714..734), whose tooltip then never shows under it. -->
+      <gadget name="unitselectionpanel-uhcHitpoints" type="formatText" size1024="410 700 578 714" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <gadget name="unitselectionpanel-uhcResists" type="formatText" size1024="583 700 700 714" texttruecentervert="" textmarkup="" formattextusedatareplace="" textcolor="255 255 255" textfont="StatText" textfontsize="10" z="108"/>
       <!-- Under the unit's name, centred as the name is: what the unit is doing or what acts on it. Under the
            player's name nothing: a long name ("Otto Von Bismarck (Germans)") takes two lines there. -->
