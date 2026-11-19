@@ -706,13 +706,111 @@ A study for [`autoScout`](modding-guide.md#autoscout) (2026-11-19). DE's exe was
   functions.
 - [O] `AbstractFindScout` is in DE's unit type name table (one data pointer, read by index), on Envoy, NativeScout,
   ypMongolScout, deChasqui, deEagleScout and deRevolutionaryScout.
-- [I] Since no proto lists the buttons, the game itself adds them, probably for `AbstractFindScout` units.
-  `AutoScout_%d` looks like a name made per unit or per player, perhaps of an exploration plan; how DE picks the next
-  destination, and whether it uses the AI's exploration code, could not be read.
+- [I] Since no proto lists the buttons, the game itself adds them: to `AbstractFindScout` units, and also to the
+  Explorer (observed below), which is not one. `AutoScout_%d` looks like a name made per unit or per player, perhaps of
+  an exploration plan; how DE picks the next destination could not be read.
 - **Legacy's version** keeps the data in charge instead: a tactic and two buttons, which a modder adds to any unit.
   The orders Eject, Garrison, Stop and AttackMove switch it off in DE through the data; here the DLL does it for any
   move, attack, gather, garrison or Stop order the owner gives, because legacy's command parser was not checked for
   two commands in one `<command>`.
+
+#### Observed in game [O] (2026-11-19)
+
+DE 100.19.18806.0, run through Steam, single player only. Two skirmishes on Great Lakes, 2 players, normal speed
+(DE offers Slow, Medium and Fast; Medium was used): the Dutch, who start with an Envoy and an Explorer, against a Hard
+British AI (game 1) and an Easy Italian AI (game 2). The Envoy was put in auto scout at 0:00; the Explorer and the
+settlers stayed idle at the Town Center in both games. No mod, no cheat, no memory access: only the screen (a
+minimap capture every 5 s) and DE's own record files. DE's profile settings were put back afterwards. Evidence in
+`rea/evidence/de-autoscout-20261119/` (gitignored): the minimap series of each game (`game1-hard-envoy/`,
+`game2-easy-envoy/`, `game2-easy-envoy-6m30-13m/`), the paths (`trace_run1.png`, `trace_g2.png`: the centre of the
+ground newly explored in each 5 s, blue early, red late), the GIFs `de_run1.gif` and `de_game2.gif`, our raven's
+minimap from `autoScout-wol.mkv` (`ours/`, `ours_raven.gif`), the panels and switch-off shots, and the two records
+(`records/`).
+
+![DE's envoy in auto scout: the minimap at 3 and 6 minutes, and its path](media/autoScout-de-minimaps.jpg)
+
+*Game 2 (Easy AI): the minimap at 3:00 and 6:00, and the path of the first 6:35 (each dot is where new ground was
+explored in a 5 s step, blue early, red late).*
+
+- **Who gets the button:** the Envoy and the Explorer show a fourth command button (a compass; while scouting it
+  becomes a crossed-out stop button). A settler does not. `panels/` in the evidence.
+- **The path** (`trace_run1.png`, `trace_g2.png`), the same pattern in both games:
+  1. 0:00–0:40: out of the start area towards the nearest black edge (west and north-west).
+  2. 0:45–2:45: one long lap of the land ring between the lake and the map edge, near the trade route, south, then
+     east, then north, past the enemy base at about 2:00 in both games. 14–16 % of the map per minute.
+  3. 2:45–6:00: hops between the remaining black pockets of the interior and the lake shore, crossing explored ground
+     back and forth. 4–6 % per minute.
+  4. 6:30–13:00 (game 2): the pockets outside the trade route at the map edge, left to the end: 68.6 % → 70.5 % in
+     the first two minutes, 81.3 % at 13:05.
+
+  So it is not edges first and not a spiral. It looks like nearest unexplored ground first, with long legs, but it
+  passes over closer pockets during the lap. [I] The lap and the hops between areas look like the AI's explore plan
+  (legacy's exe has its strings: `Explore plan %s: FAILED: couldn't find any wayp…`, `cExplorePlan…`,
+  `ReExploreAreas`), which fits a plan named `AutoScout_%d`; unconfirmed.
+- **Water:** a land unit; it never tried the lake, which stayed black (about 16 % of the minimap disc).
+- **Enemies: no avoidance.** Game 1 (Hard AI): the Envoy walked through the British base at about 2:00 and again at
+  5:00; at 5:30 it was at 132/200 HP, it stayed next to the enemy Town Center for about 10 s (the minimap,
+  `strip-envoy-death-5m00-5m55.png`), and at 6:00 it was gone: nothing selected, the score down by 50, and no new
+  ground after 5:45 (69.0 % to the end). Game 2: it passed the Italian Town Center at 2:40–2:50 unharmed (Easy AI).
+  [I] It does not flee when hit, or not far enough; one case only.
+- **When everything reachable is explored:** not reached in 13 minutes (the lake and a few edge pockets remain). From
+  5:00 on it walks over explored ground between small gains; no sign that it revisits old ground on purpose.
+- **Switch-off** (game 2, `game2-switch-off/`):
+  - a right-click move: the Envoy goes to the point, keeps the stop button, and leaves again within 5 s of arriving.
+    **A move is a detour, not a switch-off.**
+  - Stop: the compass button comes back and the Envoy stays where it is (12 s watched).
+  - Attacked: no switch-off seen (game 1, it went on to its death). Garrison, Eject and AttackMove were not tried.
+- **The Explorer under fire** (game 1, its Town Center under attack, the Explorer at 11/400 HP): pressing the button
+  showed nothing clear in 12 s; inconclusive.
+
+**Explored share at 3 and 6 minutes** (DE: the lit share of the minimap disc in the captures, lake included; ours:
+the explored grid, `testbed.py explored`, on legacy's Great Lakes, which is another map size; so the methods differ,
+and only a gap of more than a few points means something):
+
+| | 3 min | 6 min |
+|---|---|---|
+| DE Envoy, game 1 (Hard AI; killed at ~5:40) | 52.2 % | 69.0 % |
+| DE Envoy, game 2 (Easy AI) | 53.9 % | 68.5 % |
+| `autoScout`, WoL's Dutch Envoy alone | 50.1 % | 71.1 % |
+| `autoScout`, two Romanian ravens (flying) | 63.7 % | 100 % |
+| Raven, key off | 9.4 % | 9.7 % |
+
+For a land scout the two are level. Our raven flies over the lake, so its numbers are not comparable.
+
+**Compared with `autoScout`.**
+
+| | DE | `autoScout` |
+|---|---|---|
+| Target | nearest black ground, long legs (a lap first) | nearest unexplored 2 m cell, by 16 m blocks, biased to the heading |
+| Several scouts | (not tested) | one block per scout |
+| Unreachable ground | a land unit does not try the lake | per movement type; a block it fails to reach is given up |
+| Enemy buildings and armies | no avoidance; the Envoy died in the Hard AI's base | no avoidance |
+| Hit | no flee seen; scouting goes on | a fight or flee is left alone, scouting resumes when idle |
+| All explored | not reached; wanders over explored ground | revisits the block seen longest ago |
+| Move order | a detour, scouting resumes | switches it off |
+| Stop | switches it off, the unit stays | switches it off, the unit stays |
+| Units | Envoy and Explorer seen (the data's `AbstractFindScout` list has four more) | any unit whose tactics file has the tactic |
+
+#### Proposed changes to `autoScout` (not implemented)
+
+1. **Keep away from enemy buildings that shoot** (better than DE, whose Envoy died at 5:40). At each scan, the scout's
+   player remembers the enemy Town Centers, towers, forts and other attacking buildings it has seen (enemy:
+   `[player+1D4h+4·id]` = 2; seen: the visible half of the grid; buildings of every player from `[player+F8h]`; the
+   type test 0x44D7FA, as `noTrainNearEnemyTC` does); blocks within their range plus a margin are skipped as targets,
+   and a move's straight line is not checked (a cheap version: only the target). The memory is the key's own cache,
+   rebuilt after a load from what the grid shows. All the pieces exist.
+2. **Back off when hit.** Each scan keeps the scout's HP (`[unit+64h]`); a drop gives up the current block, marks a
+   circle around the scout as dangerous for some minutes (the same list as 1), and orders a move to the nearest
+   explored, safe block behind it (the existing doMove with flag 17h). The stock flee 0x4E3A37 needs an attacker ID,
+   which the scan does not have. All the pieces exist.
+3. **A move order as a detour, as DE does:** a plain move keeps the tactic, and the scout goes on scouting from where
+   it was sent; Stop, garrison, gather, attack and the Stop-scouting button still switch it off. It needs the work
+   command's target fields (a point or a unit) in the command hook, which are not mapped yet. A choice of taste: the
+   current rule (any order stops it) is easier to explain; DE's lets a player steer the scout to a region.
+4. **The Explorer in the pack** (`wol-fixes/auto-scout`, data only), as DE gives it the button; best after 1 and 2,
+   since an Explorer that dies is ransomed.
+5. **Keep** the nearest-first choice (level with DE for a land scout) and the revisit of the oldest-seen blocks: once
+   most of the map is known, ours keeps the picture fresh, where DE's Envoy gained 1.9 % in two minutes.
 
 ## What legacy does today
 

@@ -1128,7 +1128,19 @@ back each time the horse picks another idle, about every 2 s. [Full video (MP4)]
 
 *The attack multipliers show the data's value, such as "1.25x" against line units, instead of the rounded "1.3x".*
 
-**Added:** Thursday 2026-11-19 13:57
+**Added:** Thursday 2026-11-19 13:57 · **Filmed in WoL:** Thursday 2026-11-19 15:22
+
+![multiplierDecimals and attackTypeIcons in WoL](media/multiplierDecimals-wol.gif)
+
+*In WoL, with our `UHC.dll`, `multiplierDecimals` and WoL's own `attackTypeIcons` line (Ethiopians, an Escopetero
+selected, the camera still, the minimized panel without `minUIStats`, the pointer resting on the ranged row):* the
+rows read `1.50x`, `1.25x`, `0.75x`, and the tooltip lists the three multipliers with two decimals, `1.50X` against
+Maneuver units first. [Full video (MP4)](media/multiplierDecimals-wol.mp4).
+
+![multiplierDecimals and attackTypeIcons in WoL, keys off](media/multiplierDecimals-wol-control.gif)
+
+*In WoL, both keys off (the same scene):* `1.3x` and `0.8x` in the rows, `1.3X` and `0.8X` in the tooltip, and no
+multiplier against Maneuver units. [Full video (MP4)](media/multiplierDecimals-wol-control.mp4).
 
 ![multiplierDecimals: the Escopetero's rows](media/multiplierDecimals-escopetero.jpg)
 
