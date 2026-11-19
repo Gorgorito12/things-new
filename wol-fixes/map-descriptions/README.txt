@@ -6,13 +6,152 @@ minimap) and on the loading screen. This folder holds new descriptions for all 2
 English and Spanish, the facts behind them (read from the map scripts and checked in game), a script
 that installs them, screenshots, and the problems we found in the maps' data on the way.
 
-Status: all 208 maps written. The "King of the Hill" line follows the King of the Hill pack
-(wol-fixes\maps-koth): Yes on 200 maps, No on the 8 maps the pack skips (WOLsahara, lead 8, is now in
-the pack). Install that pack's .xs files together with these texts.
+Status (2026-11-18): format v2 (JTMaston's second request, below) is done. All 208 maps have a v2
+description in English and Spanish, written from kept-from-original.csv. The final review
+screenshots are in final\ (start with final\README.txt). They show 36 maps in game:
+- in English at 1920x1080;
+- 10 of them also at 1024x768;
+- 3 of them also in Spanish;
+- an 8-player loading screen.
+Every capture passed the checks (continuous lines, bold coloured keys, nothing cut off, the creator
+last, no "random" outlaws). The "King of the Hill" line follows
+the King of the Hill pack (wol-fixes\maps-koth): Yes on 200 maps, No on the 8 maps the pack skips
+(WOLsahara, lead 8, is now in the pack). Install that pack's .xs files together with these texts.
 
 
-What the game shows (tested in game)
-------------------------------------
+Format v2 (2026-11-18)
+----------------------
+The request (JTMaston): the "+X random" are mercenaries, not outlaws, so remove that string; keep the
+relevant data of the original descriptions; a horizontal line between outlaws and hunts, between the
+description and the region, and before the map size and the creator; colour the keys (hunts reddish
+or brown, mines gold, berries a green that is not too saturated, the rest whiter than the text and
+never yellow), bold if possible; keys in the plural except Region, Trade route and King of the Hill;
+the map size after the resources; the creator, if any, always at the bottom.
+
+What changed:
+- Outlaws: only the fixed outlaws of the map's mapspecifictechs.xml block. The block's <randomtech>
+  draws ("+3 random") are mercenaries and are no longer listed. 9 maps have no fixed outlaws and say
+  "Outlaws: none" (dansil_Micronesia, dansilFiji, everglades, WOLhawaii, WOLnewzealand, WOLnlnz,
+  WOLnzwc, WOLpolynesianatoll, WolTahiti).
+- Keys in the plural: Hunts, Herds, Mines, Berries, Fish (was Sea; whales and dolphins are listed
+  there too). Spanish: Animales de caza, Rebaños, Minas, Bayas, Peces. Region, Trade route and King
+  of the Hill stay singular.
+- Map size, in metres per side for 2, 4 and 8 players ("X x Z" on a rectangular map, "a-b" where the
+  script picks the size at random), read from each script by mapfacts.py (all 208 maps; see "Map
+  size" below).
+- Creator: the last line, after its own horizontal line, never trimmed. From three sources: the old
+  texts, texts.csv's credit and the comments at the top of each .xs (10 maps credit their author only
+  there: Arabia, whiteshell, GANPunjab, GANVolta, GANWakhan, NEWHinduKush, vividlyKolkata, WOLcongo,
+  WOLeasterisland, WOLvandiemansland). 90 maps have one (credits.csv). "Creator: X" or "Creators: A, B";
+  "(original)" where the source says "Original map by". Ensemble Studios' own maps carry only staff
+  initials (PJJ, JSB, JH, KSW) in their scripts: no creator line. "Observer UI by Aizamk" belongs to
+  ESOC's observer mode, which Wars of Liberty does not have: dropped.
+- The facts of the original texts: kept-from-original.csv lists every fact of every map's old texts
+  (1194 rows, all 208 maps) with a category (gameplay rule, variant, geography-history, credit,
+  observer-ESOC, other) and keep yes/no with the reason. Gameplay rules and variants are always kept.
+  Every row is resolved (844 yes, 350 no).
+- The layout and markup below, tested in game first (the "format test bench").
+
+The layout (── is a thin horizontal line):
+    Lobby                                         Loading screen
+    <Name>: <description>                         <description>   (the name is above the box)
+    ──                                            ──
+    Region: ...                                   Region: ... | Trade route: ... | King of the Hill: ...
+    Trade route: Yes/No                           Natives: ...
+    King of the Hill: Yes/No                      Outlaws: ...
+    Natives: ...                                  ──
+    Outlaws: ...                                  Hunts: ... | Herds: ...
+    ──                                            Mines: ... | Berries: ...
+    Hunts: ...                                    Fish: ...
+    Herds: ...                                    ──
+    Mines: ...                                    Map size: 311 / 440 / 622 m (2 / 4 / 8 players)
+    Berries: ...                                  ──
+    Fish: ...                                     Creator: ...
+    ──
+    Map size: 311 / 440 / 622 m
+    (2 / 4 / 8 players)
+    ──
+    Creator: ...
+In the lobby every line is at most 44 characters, so the rollover stays narrow (see v1 below).
+One description per map (texts.csv, desc_en / desc_es) serves both places. If a description does
+not fit the loading box at 1024x768 or 1920x1080, make_descriptions.py drops its last sentences on
+the loading screen only (the lobby keeps all of it); the facts and the creator always stay.
+make_descriptions.py --report lists what it dropped: today nothing, on all 208 maps.
+
+The format test bench (in game, WoL copy with the English string table, 1920x1080 and 1024x768;
+screenshots in media\v2-bench):
+- Horizontal line. An underscore draws as a space. Underline over plain spaces draws nothing. These
+  draw a continuous line in both places: underline over no-break spaces (U+00A0), em dashes
+  (U+2014), box-drawing lines (U+2500, from the fallback font), strikethrough <st> over no-break
+  spaces. Each costs a full text row, and a run of em dashes wraps when it is longer than the box
+  (about 22 fit at 1024x768). Chosen: an underline over 150 no-break spaces (130 in the lobby) in a
+  4-pixel font entry, MapDescRule 4: a sharp 1-pixel line that costs about 5 pixels, a third of a row.
+  Its width: 300 of 328 pixels at 1024x768, about 450 of 615 at 1920x1080 (the font has its own size
+  per resolution). <icon=(N)(path)> draws a square icon, not a line. Underlining the last row of a
+  block with no-break spaces after it costs nothing at 1920x1080 but wraps to a row of its own at
+  1024x768: rejected. <bgcolor=...> draws nothing behind spaces.
+- Bold. <b> and <i> do nothing. <font=Name Size>...</font> works in both places and takes any entry
+  of FONTS\fonts3.xml; a font tag ends at its </font> or at the end of the line, so every piece has its
+  own tag. Loading screen: HelpHelp 14 is SPLoadingScreenText 14 in bold at every resolution (same
+  heights); ButtonFont 14 and PregameRollover 14 are bold but of other sizes. The facts use the
+  smaller pair AgeUpgradeSmall 12 (bold, keys) and PostgameTableEntrySmall 12 (values): same heights
+  at every resolution, a row of 15 pixels instead of 17 at 1024x768, and about 52 characters per row
+  instead of 46. Lobby: the rollover's font is Tooltips_UI (Franklin Gothic Medium) and no bold entry
+  of it exists; a new entry, MapDescTipKey (Tooltips_UI with Bold="true"), gives bold keys of the same
+  face and size. A Formal436 BT entry there (HelpHelp 14) is bold but larger and of another face.
+- Colours. Keys: white 1,1,1. Hunts 0.80,0.45,0.32 (reddish brown), Mines 0.90,0.75,0.35 (gold),
+  Berries 0.55,0.85,0.50 (green). Values: in the lobby the rollover's own light grey; on the loading
+  screen the text is already pure white, so the values are off-white 0.85,0.85,0.85 and the keys
+  stand out by being white and bold. All read well on the dark rollover and on the map background.
+  Named colours (<color=White>) draw black: use numbers.
+- A space right after a closing tag (</color>, </font>, </u>) is dropped: every space that must
+  stay goes inside the tag ("<color=..>Region: </color>", "South America | </color>").
+- Room on the loading screen. The facts block alone takes 135 to 230 pixels of the 216-pixel box at
+  1024x768, even with the cheap lines and the "A | B" pairs: most maps would keep at most one sentence
+  of description, many none. So the box is taller now (the last resort of the request): apply_fix.py
+  installs data\uirmsetup.xml, a loose copy of WoL's own layout (DataP.bar, the version the game uses:
+  its player list is in SPLoadingScreenText) with the description box 110 rows of the 1024 layout
+  taller (624 145 952 471, was 624 145 952 361) and the player list moved below it (624 479 952 687,
+  the same 208 rows; the bottom edge is where WoL's alternative list already ends). The alternative
+  pair RMSetup-MapDetailAlt / TeamInfo1Alt gets 60 more rows. The box then holds 326 pixels at
+  1024x768 and about 458 at 1920x1080.
+
+Map size: tools\mapfacts.py runs each script's main() as a small numeric program up to its first
+rmSetMapSize(x, z), once for 2, 4 and 8 players: global declarations first (the ESOC maps' PlayerNum),
+then the assignments, if/else, for and while, with 2 teams of equal size, no FFA, no King of the Hill
+and the normal map size (cMapSize 0). A condition it cannot read (rmAllocateSubCivs, ...) is skipped
+and what it sets becomes unknown; a random number (rmRandInt, rmRandFloat) is tried at its lowest and
+highest value, so a size the script draws at random shows as a range ("309-357": Land Unknown;
+"655 x 655-720": Archipelago). A rectangle that the script only turns one way or the other counts as
+one size. The game builds the map of 2-metre cells, rounded up (311 m -> 312), and so does the tool.
+All 208 maps evaluated, none left over.
+Checked in game (the scenario editor, startRandomGame2, 2 teams, seed 1; the world's size read from
+the game): the tool's values matched exactly:
+    acre               312 / 440 / 622 m
+    DansilAlaska       276 x 400 / 400 x 800 / 400 x 1600 m   (a rectangle)
+    ESOC_Adirondacks   296 / 410 / 566 m                       (ESOC: global PlayerNum)
+for 2 / 4 / 8 players. Not checked in game: the maps with a random size (Land Unknown, Archipelago).
+
+The pilot (in game, English, 1920x1080, 2 players; media\v2-pilot): Acre (river), Appalachians
+(variants: 1-2 trade routes, 4 skins), Red Beach, ESOC Adirondacks (an old ESOC text with an observer
+block), Alaska (a rectangular map, "original" credit) and Hawai'i (no fixed outlaws). The six were
+installed with apply_fix.py: every lobby rollover and loading text showed in full, with the lines,
+the bold keys and the colours, the player list below the taller box. At 1024x768 the two longest
+(Alaska, Appalachians) also fit whole. With 8 players (Acre) the game keeps the same box
+(RMSetup-MapDetail, not the "Alt" one) and the 8 names fit below it.
+
+The fonts: apply_fix.py adds MapDescTipKey and MapDescRule 4 to FONTS\fonts3.xml (UTF-16) before
+</Fonts>, only when no entry of that name exists: it never changes other entries and a second run adds
+nothing. Their TypeFace is the one of the entry they copy (Franklin Gothic Medium, Formal436 BT): a
+pack that renames font families should rename these two as well. The texts need both entries:
+without them (not tested) the lines and the lobby's keys would most likely fall back to the gadget's
+own font, a full row of underlined spaces that may wrap, and keys that are not bold.
+Two copies of the game at once share one profile: a capture that sets 1024x768 or a skirmish home
+city for its launch puts them back, but a copy started meanwhile writes back what it loaded.
+
+
+What the game shows (tested in game, v1)
+----------------------------------------
 - Lobby rollover: the map's "details" (string ID) or "detailsText" (literal text).
   Loading screen: "loadDetails" (string ID) or "loadDetailsText".
 - When a map has both an ID and literal text, the ID wins, in both places.
@@ -29,8 +168,8 @@ What the game shows (tested in game)
   Anything after the last line is cut off. Every loading text here fits the 1024x768 box.
 
 
-The format
-----------
+The format (v1, replaced by format v2 above; kept for the history)
+------------------------------------------------------------------
 Lobby (one fact per line, every line at most 44 characters):
     <Name>: <one line: the landscape and what it rewards>
     Region: ...
@@ -66,8 +205,9 @@ one text has to serve both.
 The labels are drawn in gold with <color=0.95,0.78,0.42>.
 Regions: North America, South America, Europe, Africa, Middle East, Asia, Oceania, Indian
 Subcontinent, Space, Other.
-"Outlaws" lists the fixed outlaws of the map plus how many are drawn at random each game.
-Lists longer than 5 (3 on the loading screen) end in "…". Where the natives change from game to game
+"Outlaws" listed the fixed outlaws of the map plus how many are drawn at random each game (v2: the
+fixed outlaws only).
+Lists longer than 5 (v1: 3 on the loading screen) end in "…". Where the natives change from game to game
 the line says "A, B or C (varies)". WoL's African trade sites (the AUR<resource> buildings) are listed
 as "African trade sites: Cocoa, Salt, ...".
 
@@ -173,15 +313,27 @@ Files
   strings-en.xml          the new English <String> lines, to paste by hand if you prefer
   strings-es.xml          the same in Spanish
   RM4\*.xml               the 208 maps' .xml files after the change (details / loadDetails IDs)
-  apply_fix.py            installs everything into a WoL folder (see below)
-  texts.csv               the written sentences per map (English, Spanish), the author credit, and
-                          a column per fact where a fact needed a hand correction
-  make_descriptions.py    rebuilds descriptions.csv and strings-*.xml from texts.csv and mapfacts
+  uirmsetup.xml           the loading screen's layout with the taller description box (v2), a loose
+                          copy of WoL's data\uirmsetup.xml from DataP.bar; apply_fix.py puts it in
+                          data\
+  apply_fix.py            installs everything into a WoL folder (see below), also the two font
+                          entries (v2)
+  texts.csv               the written texts per map: desc_en / desc_es (v2: one description for the
+                          lobby and the loading screen; all 208 maps), summary_* and story_* (v1,
+                          used only where desc_* is empty), the v1 author credit, and a column per
+                          fact where a fact needed a hand correction
+  credits.csv             the creator of each map (v2): creator_en, creator_es, people, source
+  kept-from-original.csv  every fact of the original texts, with category, keep and reason (v2):
+                          the worksheet the v2 descriptions were written from
+  make_descriptions.py    rebuilds descriptions.csv and strings-*.xml from texts.csv, credits.csv and
+                          mapfacts
   mapfacts.csv            the facts of all 208 maps (see "The facts table"); mapfacts.json is the
                           same for make_descriptions.py
   string-ids.csv          the two string IDs of every map
   leads.csv               the problems found in the data, with file and line
-  media\                  screenshots (see "Media")
+  final\                  the final v2 review screenshots: 36 maps, with overview sheets, the
+                          pass/fail table and the list of maps (final\README.txt)
+  media\                  older screenshots: the v2 format bench and pilot, and v1 (see "Media")
 
 
 The facts table (mapfacts.csv)
@@ -198,7 +350,10 @@ what the game placed. Main columns:
                              rmSetSubCiv; natives_varies when they change from game to game
   hunt, herd, mine, berry,   resources the script places, by unit type; "(varies)" = in some games
   fish, whale                only; *_en and *_es are the names the game shows
-  outlaws                    the fixed outlaws of the block the game really uses (+N random)
+  outlaws                    the fixed outlaws of the block the game really uses (v2: without the
+                             random mercenaries; outlaws_random keeps how many the block draws)
+  size_2, size_4, size_8,    the map size in metres per side for 2, 4 and 8 players (v2), and the
+  map_size_en / _es          line the descriptions show; size_note when it could not be evaluated
   outlaw_block               that block and why; dead_block_for_file = a block written for this map
                              that the game never uses
   unresolved, defined_not_placed, missing_groupings
@@ -247,6 +402,29 @@ old literal texts and all the new IDs did. We did not look into why.
 
 Media
 -----
+The final v2 screenshots (all 208 texts written; 36 maps shown, at 1920x1080 and 1024x768 and in
+Spanish) are in final\, with final\README.txt. They replace the v1 screenshots that were there. The
+v1 shots below stay in media\ for the history.
+
+Format v2 (2026-11-18, English, WoL copy with the pack applied):
+  media\v2-bench\         the format test bench, each round in the lobby and on the loading screen:
+      r1-markup-*-1080.jpg    every candidate: underlines, em dashes, U+2500, <bgcolor>, <st>, icons,
+                              bold font entries, <b>/<i>, colours, named colours (row by row, numbered)
+      r2-lines-*-1080.jpg, r2-lines-*-768.jpg
+                              what a line costs: rows in the 4-pixel font, an em-dash row, an
+                              underlined last row (it wraps at 1024x768), nested font and colour
+      r3-fonts-*-1080.jpg, r3-fonts-*-768.jpg
+                              the smaller facts font, where a font tag ends, the lobby's bold keys
+  media\v2-pilot\         the 6 pilot maps, 1920x1080, 2 players:
+      <map>-lobby.jpg, <map>-loading.jpg     acre, appalachians, dansilRed Beach, ESOC_Adirondacks,
+                                              DansilAlaska, WOLhawaii
+      DansilAlaska-*-768.jpg, appalachians-*-768.jpg
+                              the two longest pilot texts at 1024x768
+      acre-loading-8players.jpg
+                              8 players, to see the player list under the taller box
+      v2-pilot-overview.jpg   all six: the lobby rollover and the loading text side by side
+
+Format v1 (2026-11-17):
 All in English unless the name ends in "-es" (Spanish, as a check). The lobby is the skirmish setup
 with the mouse on the minimap; the loading screen is the screen while the map loads.
 
@@ -416,8 +594,19 @@ It adds or replaces the strings in translations\_originals\stringtabley.xml (Eng
 translations\ES-LA\stringtabley.xml (Spanish) and data\stringtabley.xml (in whichever language that
 file holds), and sets details="<ID>" and loadDetails="<ID>" in every map's .xml, removing its literal
 detailsText / loadDetailsText (also the misspelt ones). The RM4\ folder here holds the same .xml files
-already changed, if you prefer to copy them.
+already changed, if you prefer to copy them. Format v2 also needs: the font entries MapDescTipKey and
+MapDescRule 4 in FONTS\fonts3.xml (added only if missing) and data\uirmsetup.xml (the taller loading
+box; a new file: --restore deletes it again).
 
-To change a text: edit texts.csv (or add a correction column such as natives_en), then run
-    python make_descriptions.py
-and apply again.
+To change a text: edit texts.csv (desc_en / desc_es, or a correction column such as natives_en) or
+credits.csv, then run
+    python make_descriptions.py [--report]
+and apply again. --report lists the sentences dropped on the loading screen to make a text fit.
+--stock-box fits the texts to WoL's old, shorter box instead (if data\uirmsetup.xml is not installed).
+
+Writing or changing a v2 description: one paragraph, the most important sentence
+first (on the loading screen the last sentences go first when a text is too long). Keep every row of
+kept-from-original.csv marked yes or review that you judge relevant: gameplay rules and variants
+always (number of trade routes, skins, seasons, what replaces a missing resource, what a native site
+gives). Leave out what a fact line already says word for word, ESOC's observer-mode setup and the
+credits (credits.csv has them).

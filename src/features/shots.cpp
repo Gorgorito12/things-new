@@ -15,6 +15,11 @@
 //
 // The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
 // the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
+//
+// minUIStats shows what combat does in an attack row (unitinfo.h, Shots): the shots while this key is on, the
+// projectiles while it is on with "projectiles", nothing without it. Its data view (projectiles="data" on its
+// <bigPanelRows>, for modders) registers the reader even when this key is off and shows the tags as written; the
+// tags read that way change nothing in combat (no ROF filter gate, no launch hook).
 #include <windows.h>
 
 #include <cmath>
@@ -30,6 +35,7 @@
 #include "../log.h"
 #include "../patch.h"
 #include "../rofreads.h"
+#include "../unitinfo.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -91,7 +97,9 @@ struct Entry {
 
 // Filled while the data loads (a later tag of the same action wins) and read on the game thread at each attack.
 std::map<ActionKey, Entry> g_entries;
-bool g_projectiles = false;  // "projectiles": <NumberProjectiles> is read
+bool g_projectiles = false;  // "projectiles": <NumberProjectiles> fires that many projectiles a shot
+bool g_combat = false;       // numberOfShots is applied: the bursts (and with "projectiles" the projectiles) fire
+bool g_reading = false;      // the tag reader is registered (numberOfShots, or minUIStats for its attack rows)
 bool g_log = false;
 unsigned g_tagLines = 0;
 unsigned g_invalidLines = 0;
@@ -99,8 +107,12 @@ unsigned g_shotLines = 0;
 
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
 
-// The gates: the ROF filter while some action has a burst, the launch hook while some action has projectiles.
+// The gates: the ROF filter while some action has a burst, the launch hook while some action has projectiles; both
+// only when numberOfShots is applied (the tags read for minUIStats alone change nothing in combat).
 void SyncGates() {
+  if (!g_combat) {
+    return;
+  }
   bool burst = false;
   bool projectiles = false;
   for (const auto& [key, entry] : g_entries) {
@@ -108,7 +120,7 @@ void SyncGates() {
     projectiles = projectiles || entry.projectiles > 1;
   }
   uhc::SetRofGate(&ShotsRof, burst);
-  g_uhcShotsProjectiles = projectiles ? 1 : 0;
+  g_uhcShotsProjectiles = g_projectiles && projectiles ? 1 : 0;
 }
 
 void ResetForDataLoad(char*) {
@@ -205,8 +217,7 @@ void ActionTagRead(const uhc::ActionTag& tag) {
     kind = Kind::kShots;
   } else if (_wcsicmp(tag.name, L"ShotInterval") == 0) {
     kind = Kind::kInterval;
-  } else if (g_projectiles &&
-             (_wcsicmp(tag.name, L"NumberProjectiles") == 0 || _wcsicmp(tag.name, L"NumberOfProjectiles") == 0)) {
+  } else if (_wcsicmp(tag.name, L"NumberProjectiles") == 0 || _wcsicmp(tag.name, L"NumberOfProjectiles") == 0) {
     kind = Kind::kProjectiles;
   } else {
     return;
@@ -266,6 +277,18 @@ void ActionTagRead(const uhc::ActionTag& tag) {
   }
 }
 
+// The tag reader, registered once for numberOfShots and minUIStats alike.
+bool EnsureReader() {
+  if (g_reading) {
+    return true;
+  }
+  if (!uhc::OnDatabaseLoad(&ResetForDataLoad) || !uhc::AddActionTagHandler(&ActionTagRead)) {
+    return false;
+  }
+  g_reading = true;
+  return true;
+}
+
 }  // namespace
 
 extern "C" {
@@ -278,7 +301,7 @@ std::int32_t __stdcall UhcShotsProjectiles(const char* unitAction) {
   }
   const char* unit = nullptr;
   const Entry* entry = Find(unitAction, &unit);
-  if (entry == nullptr || entry->projectiles <= 1) {
+  if (!g_projectiles || entry == nullptr || entry->projectiles <= 1) {
     return 1;
   }
   if (g_log && g_shotLines < kMaxShotLines && entry->shotLines < 8) {
@@ -296,6 +319,26 @@ std::int32_t __stdcall UhcShotsProjectiles(const char* unitAction) {
 
 namespace uhc {
 
+namespace unitinfo {
+
+bool RequestShotTags() { return EnsureReader(); }
+
+bool Shots(const char* proto, const char* action, int* shots, int* projectiles, bool asData) {
+  if (!g_reading || proto == nullptr || action == nullptr || (!asData && !g_combat)) {
+    return false;
+  }
+  const auto found = g_entries.find(ActionKey{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)});
+  if (found == g_entries.end()) {
+    return false;
+  }
+  *shots = found->second.shots;
+  // Without "projectiles" a shot launches one projectile, whatever the tag says.
+  *projectiles = asData || g_projectiles ? found->second.projectiles : 1;
+  return true;
+}
+
+}  // namespace unitinfo
+
 Outcome ApplyNumberOfShots(const Config& config) {
   const Config::Args* args = config.First("numberOfShots");
   if (args == nullptr) {
@@ -312,14 +355,14 @@ Outcome ApplyNumberOfShots(const Config& config) {
     }
   }
   if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet}) ||
-      !OnDatabaseLoad(&ResetForDataLoad) || !AddActionTagHandler(&ActionTagRead) ||
-      !AddRofFilter(&ShotsRof, "numberOfShots")) {
+      !EnsureReader() || !AddRofFilter(&ShotsRof, "numberOfShots")) {
     return Outcome::kFailed;
   }
   // call 499422h (5 B) at 0x48F88D, the launch of the attack step's shot.
   if (g_projectiles && !WriteJmp(0x0048F88D, reinterpret_cast<const void*>(&UhcShotsLaunchHook), 5)) {
     return Outcome::kFailed;
   }
+  g_combat = true;  // before the data loads, which runs after every key is applied
   Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s)%ls%ls (multiplayer "
       L"unverified)",
       kDefaultIntervalMs / 1000.0,

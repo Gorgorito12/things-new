@@ -12,11 +12,18 @@ loading_es):
      copies a translation over it);
 2. RM4\\<map>.xml gets details="<lobby_id>" and loadDetails="<loading_id>", and loses its literal
    texts (detailsText, loadDetailsText, also misspelt ones such as detailstext or loadDetailsTexT),
-   so every language shows the string table's text.
+   so every language shows the string table's text;
+3. FONTS\\fonts3.xml gets the two font entries the texts use (FONT_ENTRIES), added before </Fonts>
+   only when the file has no entry of that name: other entries are never changed, and running it
+   again adds nothing;
+4. data\\uirmsetup.xml (the loading screen's layout, a loose copy of WoL's DataP.bar version) with a
+   taller description box: the map's text gets 326 of the box's 542 rows (was 216) and the player
+   list moves down (it keeps its 208).
 
 A text holds "\\n" (backslash, n) where a line break goes, as the game's own strings do.
-Before the first change each file is copied to <WoL folder>\\map-descriptions-backup\\; --restore puts
-those copies back and deletes the backup folder.
+Before the first change each file is copied to <WoL folder>\\map-descriptions-backup\\ (a file that
+did not exist is listed in new-files.txt there); --restore puts those copies back, deletes the new
+files and the backup folder.
 """
 import csv
 import pathlib
@@ -94,6 +101,51 @@ def set_map_xml(text, lobby_id, loading_id):
     return text[:m.start(1)] + attrs + text[m.end(1):]
 
 
+# The font entries the texts use (tested in game, README.txt "Format v2"). The TypeFace of each is
+# read from the entry it copies (FONT_SOURCES), so the result is the same whether the fonts pack
+# (wol-fixes/fonts, which renames the families) ran before or after this one; the face given here
+# is only the fallback when that entry is missing.
+FONT_ENTRIES = {
+    # Tooltips_UI (the lobby rollover's font) with Bold="true": the keys in the lobby
+    "MapDescTipKey": ("Franklin Gothic Medium", 11, True, {640: 11, 800: 13, 1280: 17, 1600: 21}),
+    # a 4-pixel font: an underline over no-break spaces in it is a thin line that costs a third of a row
+    "MapDescRule 4": ("Formal436 BT", 4, False, {640: 3, 800: 4, 1280: 6, 1600: 8}),
+}
+FONT_SOURCES = {"MapDescTipKey": "Tooltips_UI", "MapDescRule 4": "SPLoadingScreenText 14"}
+
+
+def source_face(text, name, fallback):
+    """The TypeFace of the entry named `name` in fonts3.xml, or `fallback` when there is none."""
+    m = re.search(r'<Font\s+Name\s*=\s*"%s"\s*>.*?<param\s+TypeFace\s*=\s*"([^"]*)"' % re.escape(name),
+                  text, re.S)
+    return m.group(1) if m else fallback
+
+
+def font_entry(name, face, height, bold, overrides, nl):
+    lines = [f'\t<Font Name="{name}">', f'\t\t<param TypeFace="{face}"/>', f'\t\t<param AscentHeight="{height}"/>',
+             '\t\t<param Antialiased="true"/>', f'\t\t<param Bold="{"true" if bold else "false"}"/>',
+             '\t\t<param Italic="false"/>', '\t\t<param BackgroundOutline="false"/>',
+             '\t\t<param BackgroundShadow="false"/>', '\t\t<param BackgroundOffset="2"/>',
+             '\t\t<param BackgroundAlpha="1"/>']
+    for res, h in sorted(overrides.items()):
+        lines += [f'\t\t<ResolutionOverride ResX="{res}">', f'\t\t\t<param AscentHeight="{h}"/>',
+                  '\t\t</ResolutionOverride>']
+    lines.append("\t</Font>")
+    return nl.join(lines)
+
+
+def add_fonts(text):
+    """Adds each FONT_ENTRIES entry the file does not have yet, before </Fonts>; nothing else changes."""
+    nl = "\r\n" if "\r\n" in text else "\n"
+    for name, (face, *rest) in FONT_ENTRIES.items():
+        if re.search(r'<Font\s+Name\s*=\s*"%s"' % re.escape(name), text):
+            continue
+        face = source_face(text, FONT_SOURCES[name], face)
+        at = text.rindex("</Fonts>")
+        text = text[:at] + font_entry(name, face, *rest, nl) + nl + text[at:]
+    return text
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -102,10 +154,16 @@ def main():
     if "--restore" in sys.argv:
         if not backup.exists():
             sys.exit(f"no backup in {backup}")
+        new = backup / "new-files.txt"
         for f in backup.rglob("*"):
-            if f.is_file():
+            if f.is_file() and f != new:
                 shutil.copy2(f, wol / f.relative_to(backup))
                 print("restored", f.relative_to(backup))
+        if new.exists():
+            for rel in new.read_text(encoding="utf-8").splitlines():
+                if rel and (wol / rel).exists():
+                    (wol / rel).unlink()
+                    print("removed", rel)
         shutil.rmtree(backup)
         return
     out = pathlib.Path(arg("--out")) if arg("--out") else None
@@ -119,7 +177,13 @@ def main():
         target = (out or wol) / rel
         if not out:
             keep = backup / rel
-            if not keep.exists():
+            new = backup / "new-files.txt"
+            listed = new.read_text(encoding="utf-8").splitlines() if new.exists() else []
+            if not (wol / rel).exists():
+                if str(rel) not in listed:
+                    new.parent.mkdir(parents=True, exist_ok=True)
+                    new.write_text("\n".join(listed + [str(rel)]) + "\n", encoding="utf-8")
+            elif not keep.exists() and str(rel) not in listed:
                 keep.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(wol / rel, keep)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -142,6 +206,14 @@ def main():
         rel = pathlib.Path("RM4") / f"{r['map']}.xml"
         text, kind = decode((wol / rel).read_bytes())
         write(rel, encode(set_map_xml(text, r["lobby_id"], r["loading_id"]), kind))
+    rel = pathlib.Path("FONTS/fonts3.xml")
+    text, kind = decode((wol / rel).read_bytes())
+    fonts = add_fonts(text)
+    if fonts != text:
+        write(rel, encode(fonts, kind))
+    else:
+        print("FONTS\\fonts3.xml already has the entries")
+    write(pathlib.Path("data/uirmsetup.xml"), (HERE / "uirmsetup.xml").read_bytes())
 
 
 if __name__ == "__main__":

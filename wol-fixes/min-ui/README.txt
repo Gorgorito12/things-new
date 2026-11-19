@@ -6,14 +6,17 @@ What it does
 With the DLL key minUIStats, the minimized in-game UI (optionminimizedui) shows what the big UI shows,
 and more, in a symmetric layout that keeps the top band for the unit portraits of the selection:
 
-- over the unit's portrait: its cost (each resource's icon and amount), then its population (a house);
+- over the unit's portrait: its cost (each resource's icon and amount), then its population (the game's
+  house); four costs take both lines, two and two (a unit with four costs has no population);
 - right of the player's name, the mirror block: line of sight (an eye) and the live speed (a winged
   boot; with techs, snares and auras), then the train time (an hourglass) and the garrison (a door);
 - under the unit's name: what the unit is doing or what acts on it ("Done in 0:12", "Builds 1.00/s",
   "Regen 1/s", "Overheal +50", "Poison 3 x 8 s", "Aura pays 0.10 (wood)/s");
-- hit points and resists with icons (a heart, a shield) in the original places;
-- every attack row gets its rate of fire right after its damage, with a stopwatch:
-  "Ranged ATK:  23 (ranged) 3 (stopwatch) 12 (range), 3x (cavalry)";
+- hit points as the word ("Hitpoints: 100/100", the word from the string table, so it follows the
+  player's language) and resists with a shield, in the original places;
+- every attack row gets its rate of fire right after its damage, with a stopwatch, then, when the attack
+  fires more than one projectile before its reload, that number with a revolver's cylinder:
+  "Ranged ATK:  11 (ranged) 3.50 (stopwatch) 4 (cylinder) 1 (area) 14 (range), 1.3x (...)";
 - the attack rows the minimized UI had no room for (the 4th attack on, Gatherers, Group Health), and the
   attacks the big UI itself has no room for (it stops at 9 rows);
 - only the attacks the unit can use: an ability's attack (Crack Shot, Sharpshooter, Swashbuckler, ...)
@@ -42,7 +45,7 @@ The layout (1024 x 768 layout units; the panel is x 342..700, its centre x 521)
                  width either side of the centre
     y 688..702   under the unit's name: uhcRow2 (Done in, Builds, Regen, Overheal, Poison, Aura). Under the
                  player's name nothing: a long name ("Otto Von Bismarck (Germans)") takes two lines there.
-    y 700..714   (heart) hit points at x 410 | (shield) resists at x 583: the key's own gadgets over the
+    y 700..714   "Hitpoints:" at x 410 | (shield) resists at x 583: the key's own gadgets over the
                  original ones, which it hides while its own show (<replace> in minuirows.xml)
     y 714..767   the attack rows in the panel's own two columns: x 410 (the original three, written by the
                  key so they get the ROF and the filter) and x 583 (the 4th on: uhcRow5, uhcRow3, uhcRow4,
@@ -70,24 +73,26 @@ Icons (all at the size of the panel's own damage type icons, "(10)"; each row ha
 ------------------------------------------------------------------------------------------------------------
     rate of fire      a stopwatch      drawn: art\ui\ingame\stat_icon_rof.ddt (in this pack)
     train time        an hourglass     drawn: art\ui\ingame\stat_icon_traintime.ddt
-    hit points        a heart          drawn: art\ui\ingame\stat_icon_hitpoints.ddt
     resists           a shield         drawn: art\ui\ingame\stat_icon_armor.ddt
     line of sight     an eye           drawn: art\ui\ingame\stat_icon_los.ddt. The game's spy eye is
                                        ui\ingame\stat_icon_informers, but WoL's own copy of it is a dove
-    speed             a winged boot    drawn: art\ui\ingame\stat_icon_speed.ddt, after the game's light
-                                       infantry boot, with a white wing (JTMaston: "a boot with wings").
-                                       Two other variants were drawn (blue motion strokes, white speed
-                                       lines): the wing reads as speed at 12 px, the strokes read as
-                                       stripes on the boot. All three are in media\minui-icons.png
-    population        a house          drawn: art\ui\ingame\stat_icon_pop.ddt (2026-11-18): a red gabled
-                                       roof, plaster walls, a door and a chimney, wide and low since
-                                       the panel draws its icons narrower than tall. It replaces the
-                                       game's ui\ingame\stat_icon_building (WoL's own copy), a blur at
-                                       the panel's size; both are in media\minui-icons.png
+    speed             a winged boot    drawn: art\ui\ingame\stat_icon_speed.ddt, a riding boot with a
+                                       white wing and two motion lines (JTMaston: "a boot with wings")
+    projectiles       a revolver's     drawn: art\ui\ingame\stat_icon_projectiles.ddt (2026-11-18), the
+                      cylinder         cylinder seen from the chambers' side (JTMaston's idea)
+    hit points        the word         "Hitpoints" from the string table (string 68852), in the yellow of
+                                       the panel's labels (Dr.Maxy and JTMaston: a word, not a heart)
+    population        a house          the game's: ui\ingame\stat_icon_building (WoL's own copy), as
+                                       JTMaston asked; our drawn house is no longer in the pack
     garrison          a door, an arrow the game's: ui\cursors\cursor_garrison (the garrison cursor)
     costs             resource icons   the game's, as the resource bar shows them
-    The drawn icons are 16x16 DXT3 stat icons made with aoe3-blender-tools (tools/make_stat_icon.py);
-    no pixel comes from another game.
+    The drawn icons (version 4, 2026-11-18) are made like WoL's own stat icons (stat_icon_ranged, _range,
+    _attack, _building): 32x32 uncompressed BGRA, one level, solid shapes, hard edges (each pixel fully
+    shown or fully transparent), a black line around each part and a 2-pixel black outline; round parts
+    are drawn wider than tall, since the panel squeezes icons sideways. Made with aoe3-blender-tools
+    (tools/make_stat_icon.py --style bold); no pixel comes from another game. The first set (16x16
+    DXT3, 1-pixel strokes, soft edges) came out thin and blurred at the panel's size: final\
+    minUIStats-v4-icons-x4.png shows both, enlarged from the game.
 
 Files
 -----
@@ -108,7 +113,9 @@ minuirows.xml
     every item and option. No new DLL is needed to change any of it.
 
 art\ui\ingame\*.ddt
-    The seven drawn icons. They go in art\ui\ingame\ of the mod.
+    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). They go in
+    art\ui\ingame\ of the mod (version 4: stat_icon_hitpoints.ddt and stat_icon_pop.ddt are no longer used;
+    delete them if version 3 put them there).
 
 note-for-drmaxy.txt
     What was decided and why (for information).
@@ -172,6 +179,11 @@ Notes
 
 Tested on 2026-11-17 (single player, WoL, 1920 x 1080, the panel at native pixels with the health bar)
 -------------------------------------------------------------------------------------------------------
+Version 4 (2026-11-18): every scene below was taken again with the version 4 icons, the word "Hitpoints", the
+game's house and the projectiles, plus the new scenes (three and four costs, projectiles, Spanish, 1024x768,
+WoL's uhc.dll beside our dinput8.dll): final\README.txt has that pass/fail table and the pictures. The table
+below is version 3's, with its pictures in media\.
+
 Each scene: (a) the rectangles in media\minui-preview-proposed.png, (b) the screenshot. "Fine" = no text
 over another text, nothing cut, nothing in the portrait band, the health bar shown.
 
@@ -200,7 +212,8 @@ over another text, nothing cut, nothing in the portrait band, the health bar sho
       a tree "Aura -0.05/s" and its wood held
     A building going up (AI skirmish): "Done in      v3-construction-site, -builder          fine (two-
       0:12"; its builder "Builds 1.00/s"; the AI's                                           line player
-      long name "Otto Von Bismarck (Germans)"                                                name)
+      long name "Otto Von Bismarck (Germans)"                                                name; v4:
+      (version 4: final\minUIStats-v4-construction-*; the v3 pictures are removed)          retaken)
     Ships: a Caravel, a Frigate (2 armors), with     v3-ship-caravel, -ship-frigate          fine
       the train time and garrison 0 / 50
     WoL.dll v1.33 loaded (preloadDll, its            v3-woldll-factory                       fine

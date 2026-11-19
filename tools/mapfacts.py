@@ -23,8 +23,12 @@ How a map script is read (the .xs without comments; the include libraries are no
   (e.g. "not in FFA");
 - outlaws: the data\\mapspecifictechs.xml block that the game uses for the map (outlaw_block: the
   first block in file order named after one of the map's types; a block named after a map file is
-  never used), its <tech> and <forcetech> that enable a military unit, plus "<randomnumtouse> random"
-  from <randomtech>; `dead_block_for_file` names a block written for this map that the game ignores;
+  never used), its <tech> and <forcetech> that enable a military unit. The block's <randomtech>
+  draws are mercenaries, not outlaws: they are not listed (outlaws_random keeps their number);
+  `dead_block_for_file` names a block written for this map that the game ignores;
+- map size: main() run as a small numeric program up to rmSetMapSize, for 2, 4 and 8 players, rounded up to the game's 2-metre cells
+  (size_2/4/8 in metres per side, "X x Z" on a rectangular map, "a-b" where a random number
+  changes it; map_size_en/es the line for the descriptions; size_note when it cannot be evaluated);
 - region: the continent .set files, then the imagepath folder, then REGION_OVERRIDES (checked by
   hand; the folders have errors);
 - King of the Hill: rmGetIsKOTH with ypKingsHillPlacer or a "ypKingsHill" object.
@@ -36,6 +40,7 @@ gaia units at the start of the game) and adds per map: seen_* columns, and `chec
 """
 import csv
 import json
+import math
 import pathlib
 import re
 import sys
@@ -462,6 +467,328 @@ class Script:
         return out
 
 
+# --- map size ----------------------------------------------------------------------------------------
+# main() is run as a small numeric program, once per player count, up to its first rmSetMapSize(x, z)
+# (metres per side): declarations, assignments, if/else, for and while, with the game's values for
+# the player count (2 teams, players split evenly, no FFA, no King of the Hill, normal map size
+# cMapSize 0). A random number (rmRandInt, rmRandFloat) is run at its lowest and at its highest value,
+# so a size that varies shows as a range. Calls of the map's own functions are run when they set the
+# size or a variable the size needs; any other call is skipped.
+
+class SizeUnknown(Exception):
+    pass
+
+
+class _Stop(Exception):
+    pass
+
+
+def parse_block(code):
+    """The statements of a code block as a tree: ('if', cond, then, else), ('for', init, cond, step,
+    body), ('while', cond, body), ('block', body), ('stmt', text)."""
+    nodes, i, n = [], 0, len(code)
+
+    def skip_ws(j):
+        while j < n and code[j].isspace():
+            j += 1
+        return j
+
+    def one(j):
+        j = skip_ws(j)
+        while j < n and code[j] in "};":  # a stray brace or an empty statement
+            j = skip_ws(j + 1)
+        if j >= n:
+            return None, j
+        if code[j] == "{":
+            close = matching_brace(code, j)
+            return ("block", parse_block(code[j + 1:close])), close + 1
+        m = re.match(r"(if|while|for)\s*\(", code[j:])
+        if m:
+            p = matching_paren(code, j + m.end() - 1)
+            head = code[j + m.end():p]
+            body, k = one(p + 1)
+            if m.group(1) == "if":
+                k2 = skip_ws(k)
+                els = None
+                if re.match(r"else\b", code[k2:]):
+                    els, k = one(k2 + 4)
+                return ("if", head, body, els), k
+            if m.group(1) == "while":
+                return ("while", head, body), k
+            parts = [x.strip() for x in head.split(";")]
+            return ("for", *(parts + ["", "", ""])[:3], body), k
+        # a plain statement up to its ';' (outside strings and parentheses)
+        depth, k = 0, j
+        while k < n:
+            c = code[k]
+            if c == '"':
+                k = code.find('"', k + 1)
+                if k < 0:
+                    k = n
+            elif c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+            elif c == ";" and depth <= 0:
+                return ("stmt", code[j:k].strip()), k + 1
+            elif c == "}" and depth <= 0:
+                return ("stmt", code[j:k].strip()), k
+            k += 1
+        return ("stmt", code[j:].strip()), n
+
+    while True:
+        node, i = one(i)
+        if node is None:
+            break
+        nodes.append(node)
+    return nodes
+
+
+def matching_brace(text, at):
+    depth, i = 0, at
+    while i < len(text):
+        c = text[i]
+        if c == '"':
+            j = text.find('"', i + 1)
+            i = (len(text) if j < 0 else j) + 1
+            continue
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return len(text)
+
+
+def function_bodies(code):
+    """{name: (params, body text)} of the script's functions."""
+    out = {}
+    for m in re.finditer(r"(?:^|\n)\s*(?:void|int|float|string|bool|vector)\s+(\w+)\s*\(([^)]*)\)\s*\{", code):
+        close = matching_brace(code, m.end() - 1)
+        params = []
+        for p in split_args(m.group(2)):
+            pm = re.match(r"(?:const\s+)?\w+\s+(\w+)", p.strip())
+            if pm:
+                params.append(pm.group(1))
+        out.setdefault(m.group(1), (params, code[m.end():close]))
+    return out
+
+
+class SizeRun:
+    """One run of main() for `players` players; `rand` is 'lo' or 'hi'."""
+    MAX_STEPS = 20000
+
+    def __init__(self, funcs, players, rand):
+        self.funcs, self.rand, self.steps = funcs, rand, 0
+        teams = 2
+        self.consts = {"cNumberNonGaiaPlayers": players, "cNumberPlayers": players + 1, "cNumberTeams": teams,
+                       "cMapSize": 0, "true": True, "false": False, "cInvalidID": -1, "PI": math.pi}
+        self.players, self.teams = players, teams
+        self.vars, self.types = {}, {}
+        self.size = None
+
+    # expressions
+    def call(self, name, args):
+        f = {"sqrt": lambda a: math.sqrt(a), "xsPow": lambda a, b: a ** b, "abs": abs, "xsAbs": abs,
+             "rmGetIsFFA": lambda: False, "rmGetIsKOTH": lambda: False, "rmGetIsTreaty": lambda: False,
+             "rmGetIsRelicCapture": lambda: False, "rmGetIsKingOfTheHill": lambda: False,
+             "rmGetNumberPlayersOnTeam": lambda t: self.players // self.teams + (1 if t < self.players % self.teams else 0),
+             "rmGetPlayerTeam": lambda p: (p - 1) % self.teams,
+             "rmRandInt": lambda a, b: a if self.rand == "lo" else b,
+             "rmRandFloat": lambda a, b: a if self.rand == "lo" else b,
+             "min": min, "max": max, "xsMin": min, "xsMax": max}.get(name)
+        if f is None:
+            raise SizeUnknown(f"call {name}")
+        return f(*args)
+
+    def eval(self, expr):
+        expr = expr.strip()
+        if not expr:
+            raise SizeUnknown("empty expression")
+        py = expr.replace("&&", " and ").replace("||", " or ")
+        py = re.sub(r"!(?!=)", " not ", py)
+        names = {}
+
+        def ident(m):
+            word = m.group(0)
+            if word in ("and", "or", "not"):
+                return word
+            names[word] = True
+            return f"_v['{word}']" if not re.match(r"\s*\(", py[m.end():]) else f"_f('{word}')"
+        if '"' in py:
+            raise SizeUnknown("string expression")
+        code = re.sub(r"(?<![\w.])[A-Za-z_]\w*", ident, py)
+
+        class Lookup(dict):
+            def __missing__(_, key):
+                if key in self.vars:
+                    v = self.vars[key]
+                elif key in self.consts:
+                    v = self.consts[key]
+                else:
+                    raise SizeUnknown(f"name {key}")
+                if v is None:
+                    raise SizeUnknown(f"unresolved {key}")
+                return v
+        try:
+            return eval(code, {"__builtins__": {}}, {"_v": Lookup(), "_f": lambda n: (lambda *a: self.call(n, a))})
+        except SizeUnknown:
+            raise
+        except Exception as e:  # noqa: BLE001 (a construct the evaluator does not know)
+            raise SizeUnknown(f"{type(e).__name__} in {expr[:60]}")
+
+    def assign(self, name, value):
+        if self.types.get(name) == "int" and isinstance(value, (int, float)) and not isinstance(value, bool):
+            value = int(value)
+        self.vars[name] = value
+
+    # statements
+    def run(self, nodes):
+        for node in nodes:
+            self.steps += 1
+            if self.steps > self.MAX_STEPS:
+                raise SizeUnknown("too many steps")
+            kind = node[0]
+            if kind in ("if", "while", "for"):
+                try:
+                    self.control(node)
+                except SizeUnknown:
+                    # a condition the evaluator cannot read (a call such as rmAllocateSubCivs): the
+                    # statement is skipped and what it assigns becomes unknown, unless it sets the size
+                    text = repr(node)
+                    if "rmSetMapSize" in text:
+                        raise
+                    for name in re.findall(r"\b(\w+)\s*(?:[-+*/]?=(?!=)|\+\+|--)", text):
+                        if name in self.vars:
+                            self.vars[name] = None
+                continue
+            if kind == "block":
+                self.run(node[1])
+            else:
+                self.stmt(node[1])
+
+    def control(self, node):
+        """if, while or for."""
+        kind = node[0]
+        if kind == "if":
+            if self.truth(node[1]):
+                self.run([node[2]])
+            elif node[3] is not None:
+                self.run([node[3]])
+            return
+        if kind == "for" and node[1]:
+            self.stmt(node[1])
+        cond = node[1] if kind == "while" else node[2]
+        while not cond or self.truth(cond):
+            self.run([node[2] if kind == "while" else node[4]])
+            if kind == "for" and node[3]:
+                self.stmt(node[3])
+            self.steps += 1
+            if self.steps > self.MAX_STEPS:
+                raise SizeUnknown("loop")
+
+    def truth(self, cond):
+        return bool(self.eval(cond))
+
+    def stmt(self, text):
+        text = text.strip()
+        if not text or text in ("break", "continue") or text.startswith("return"):
+            return
+        m = re.match(r"rmSetMapSize\s*\((.*)\)$", text, re.S)
+        if m:
+            args = split_args(m.group(1))
+            self.size = (float(self.eval(args[0])), float(self.eval(args[1])))
+            raise _Stop()
+        m = re.match(r"(?:const\s+|extern\s+|static\s+)*(int|float|bool|string|vector)\s+(\w+)\s*(?:=\s*(.+))?$", text, re.S)
+        if m:
+            self.types[m.group(2)] = m.group(1)
+            self.try_assign(m.group(2), m.group(3) if m.group(3) is not None else ("0" if m.group(1) in ("int", "float") else None))
+            return
+        m = re.match(r"(\w+)\s*([-+*/])=\s*(.+)$", text, re.S)
+        if m:
+            self.try_assign(m.group(1), f"({m.group(1)}) {m.group(2)} ({m.group(3)})")
+            return
+        m = re.match(r"(\w+)\s*(\+\+|--)$", text) or re.match(r"(\+\+|--)\s*(\w+)$", text)
+        if m:
+            name = m.group(1) if m.group(1) not in ("++", "--") else m.group(2)
+            op = "+" if "++" in text else "-"
+            self.try_assign(name, f"({name}) {op} 1")
+            return
+        m = re.match(r"(\w+)\s*=\s*(.+)$", text, re.S)
+        if m:
+            self.try_assign(m.group(1), m.group(2))
+            return
+        m = re.match(r"(\w+)\s*\((.*)\)$", text, re.S)
+        if m and m.group(1) in self.funcs and re.search(r"rmSetMapSize", self.funcs[m.group(1)][1]):
+            params, body = self.funcs[m.group(1)]
+            for p, a in zip(params, split_args(m.group(2))):
+                self.try_assign(p, a)
+            self.run(parse_block(body))
+
+    def try_assign(self, name, expr):
+        if expr is None:
+            self.vars[name] = None
+            return
+        try:
+            self.assign(name, self.eval(expr))
+        except SizeUnknown:
+            self.vars[name] = None  # unknown; an error only if the size needs it
+
+
+def map_size(code):
+    """{players: (x, z) or (x_lo, z_lo, x_hi, z_hi)} for 2, 4 and 8 players, or raises SizeUnknown."""
+    funcs = function_bodies(code)
+    if "main" not in funcs:
+        raise SizeUnknown("no main")
+    if not re.search(r"\brmSetMapSize\s*\(", code):
+        raise SizeUnknown("no rmSetMapSize")
+    # the global declarations (int PlayerNum = cNumberNonGaiaPlayers;) run first
+    top = re.sub(r"(?m)^\s*include\s+\"[^\"]*\"\s*;", "", code)
+    for name, (_, body) in sorted(funcs.items(), key=lambda kv: -len(kv[1][1])):
+        top = top.replace(body, "")
+    top = re.sub(r"(?:void|int|float|string|bool|vector)\s+\w+\s*\([^)]*\)\s*\{\s*\}", "", top)
+    globals_tree = [n for n in parse_block(top) if n[0] == "stmt"]
+    tree = globals_tree + parse_block(funcs["main"][1])
+    out = {}
+    for players in (2, 4, 8):
+        got = []
+        for rand in ("lo", "hi"):
+            run = SizeRun(funcs, players, rand)
+            try:
+                run.run(tree)
+            except _Stop:
+                pass
+            if run.size is None:
+                raise SizeUnknown("rmSetMapSize not reached")
+            # the game builds the map of 2-metre cells, rounded up: 311 m -> 312, 275 -> 276
+            # (checked in game on acre, DansilAlaska and ESOC_Adirondacks, 2/4/8 players)
+            got.append(tuple(int(math.ceil(v / 2 - 1e-9)) * 2 for v in run.size))
+        if sorted(got[0]) == sorted(got[1]):
+            got[1] = got[0]  # the same rectangle, turned one way or the other
+        out[players] = got[0] if got[0] == got[1] else (min(got[0][0], got[1][0]), min(got[0][1], got[1][1]),
+                                                         max(got[0][0], got[1][0]), max(got[0][1], got[1][1]))
+    return out
+
+
+def size_one(s):
+    """(x, z) -> '310' or '275 x 400'; (x_lo, z_lo, x_hi, z_hi) -> '309-357' or '655 x 655-720'."""
+    def side(a, b):
+        return f"{a}" if a == b else f"{a}-{b}"
+    if len(s) == 4:
+        x, z = side(s[0], s[2]), side(s[1], s[3])
+        return x if x == z else f"{x} x {z}"
+    return f"{s[0]}" if s[0] == s[1] else f"{s[0]} x {s[1]}"
+
+
+def size_text(sizes, lang="en"):
+    """'310 / 440 / 620 m (2 / 4 / 8 players)', or 'X x Z' per count on a rectangular map."""
+    parts = " / ".join(size_one(sizes[p]) for p in (2, 4, 8))
+    word = "players" if lang == "en" else "jugadores"
+    return f"{parts} m (2 / 4 / 8 {word})"
+
+
 # --- facts per map ---------------------------------------------------------------------------------
 
 # Continent sets of RM4 -> region
@@ -781,13 +1108,21 @@ def facts(bed, data, xs_path, sets):
                     if p and "Military" in p[1]:
                         fixed.append(p[0])
         random_n = block[2] if block[3] else 0
-    def outlaw_text(names, word):
-        names = ", ".join(dict.fromkeys(names))
-        extra = f"{random_n} {word}" if random_n else ""
-        return f"{names} (+{extra})" if names and extra else (names or extra)
-    row["outlaws"] = outlaw_text(fixed, "random")
-    row["outlaws_en"] = outlaw_text([data.proto_label(u) for u in fixed], "random")
-    row["outlaws_es"] = outlaw_text([data.proto_label(u, "es") for u in fixed], "al azar")
+    # the block's <randomtech> units are mercenaries, not outlaws: only the fixed outlaws are listed
+    # (outlaws_random keeps how many random techs the block draws)
+    row["outlaws"] = ", ".join(dict.fromkeys(fixed))
+    row["outlaws_en"] = ", ".join(dict.fromkeys(data.proto_label(u) for u in fixed))
+    row["outlaws_es"] = ", ".join(dict.fromkeys(data.proto_label(u, "es") for u in fixed))
+    row["outlaws_random"] = str(random_n) if random_n else ""
+    # map size, metres per side, for 2, 4 and 8 players
+    try:
+        sizes = map_size(sc.code)
+        row["size_2"], row["size_4"], row["size_8"] = (size_one(sizes[p]) for p in (2, 4, 8))
+        row["map_size_en"], row["map_size_es"] = size_text(sizes, "en"), size_text(sizes, "es")
+        row["size_note"] = ""
+    except SizeUnknown as e:
+        row["size_2"] = row["size_4"] = row["size_8"] = row["map_size_en"] = row["map_size_es"] = ""
+        row["size_note"] = f"not evaluated: {e}"
     name_block = next((b for b in data.blocks if b[0].lower() == name.lower()), None)
     row["dead_block_for_file"] = name_block[0] if name_block and name.lower() not in data.map_types else ""
     # region
@@ -964,7 +1299,7 @@ FIELDS = ["map", "name_en", "name_es", "region", "region_source", "region_note",
           "natives_es", "natives_unknown", "hunt", "hunt_en", "hunt_es", "herd", "herd_en", "herd_es", "mine",
           "mine_en", "mine_es", "berry", "berry_en", "berry_es", "fish", "fish_en", "fish_es", "whale", "whale_en",
           "whale_es", "map_types", "outlaw_block", "dead_block_for_file", "outlaws", "outlaws_en", "outlaws_es",
-          "unresolved", "defined_not_placed", "missing_groupings", "xml_attr_typos", "lobby_source", "lobby_en", "loading_source", "loading_en"]
+          "outlaws_random", "size_2", "size_4", "size_8", "map_size_en", "map_size_es", "size_note", "unresolved", "defined_not_placed", "missing_groupings", "xml_attr_typos", "lobby_source", "lobby_en", "loading_source", "loading_en"]
 CHECK_FIELDS = ["seen_hunt", "seen_herd", "seen_mine", "seen_berry", "seen_fish", "seen_whale", "seen_natives",
                 "seen_trade", "check", "game_trade_route", "game_natives_varies", "game_natives_en",
                 "game_natives_es"] + [f"game_{c}{s}" for c, _ in Data.CATEGORIES for s in ("", "_en", "_es")]

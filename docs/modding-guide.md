@@ -7260,10 +7260,10 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
     ones the minimized panel already shows: the 4th attack on, `Gatherers`, `Group Health`. Each row is one line,
     label and value, with the label's colour and the big panel's tooltip;
   - building armor: the stock `Resists` gadgets show any proto with an armor above 0, not only type `Unit`;
-  - 30 data refs for any `formatText`, one per item (below), for the data refs' current unit, as
+  - 31 data refs for any `formatText`, one per item (below), for the data refs' current unit, as
     `{currentUnitLOS}`: `{uhcHitpoints}`, `{uhcSpeed}` (live), `{uhcBaseSpeed}`, `{uhcLOS}`, `{uhcArmor}` (with its
     icon), `{uhcArmorValue}`, `{uhcGarrison}`, `{uhcTrainPoints}`, `{uhcBuildPoints}`, `{uhcROF}`, `{uhcRange}`,
-    `{uhcMinRange}`, `{uhcArea}`, `{uhcCost}`, `{uhcPopulation}`, `{uhcBounty}`, `{uhcBuildLimit}`, `{uhcInventory}`,
+    `{uhcMinRange}`, `{uhcArea}`, `{uhcProjectiles}`, `{uhcCost}`, `{uhcPopulation}`, `{uhcBounty}`, `{uhcBuildLimit}`, `{uhcInventory}`,
     `{uhcLifespan}`, `{uhcOverheal}`, `{uhcVeterancy}`, `{uhcPoison}`, `{uhcRandomCost}`, `{uhcShipments}`,
     `{uhcGatherRate}`, `{uhcBuildTime}`, `{uhcBuildProgress}`, `{uhcBuildRate}`, `{uhcRegen}`, `{uhcAuras}`.
   - **Batch 2 (2026-11-17):** the items `rof`, `range`, `minRange`, `area` (per attack: the distinct values, each with
@@ -7284,16 +7284,16 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
 
   ```xml
   <minUIRows>
-    <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost"/>
-    <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_pop]{population}" tip="Population"/>
+    <row gadget="unitselectionpanel-uhcCost" text="{cost}" tip="Cost" spill="unitselectionpanel-uhcPop"/>
+    <row gadget="unitselectionpanel-uhcPop" text="[icon:ui\ingame\stat_icon_building]{population}" tip="Population"/>
     <row gadget="unitselectionpanel-uhcSight" text="[icon:ui\ingame\stat_icon_los]{los}|[icon:ui\ingame\stat_icon_speed]{speed}" tip="Line of sight, speed"/>
     <row gadget="unitselectionpanel-uhcTrainGarrison" text="[icon:ui\ingame\stat_icon_traintime]{trainPoints}|[icon:ui\cursors\cursor_garrison]{garrison}" tip="Train time (seconds), garrison"/>
     <row gadget="unitselectionpanel-uhcRow2" text="Done in {buildTime}|Builds {buildRate}/s|Regen {regen}/s|Overheal {overheal}|Poison {poison}|Aura {auras}"/>
-    <row gadget="unitselectionpanel-uhcHitpoints" text="[icon:ui\ingame\stat_icon_hitpoints] {hitpoints}" tipId="24320"/>
+    <row gadget="unitselectionpanel-uhcHitpoints" text="&lt;color=1, 1, 0&gt;[string:68852]:&lt;/color&gt;  {hitpoints}" tipId="68852"/>
     <row gadget="unitselectionpanel-uhcResists" text="[icon:ui\ingame\stat_icon_armor] {armor}" tipId="35758"/>
     <replace row="unitselectionpanel-uhcHitpoints" stock="unitselectionpanel-unitHitPointsLabel,unitselectionpanel-unitHitPointsValue"/>
     <replace row="unitselectionpanel-uhcResists" stock="unitselectionpanel-unitResistsLabel,unitselectionpanel-unitResistsValue"/>
-    <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof"/>
+    <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles"/>
     <avoid gadget="unitselectionpanel-unitResourceValue"/>
     <avoid gadget="unitselectionpanel-unitResourceRateLabel"/>
   </minUIRows>
@@ -7307,6 +7307,28 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
     `text` (a template of `{item}`s in `|`-separated parts); `types` (unit types or protos, comma-separated; none:
     every unit); `tip` or `tipId`, its help text; `join="line"`, each part on a line of its own. `[icon:path]` in a
     text or label is that texture as an icon at the minimized panel's own icon size (`(10)`).
+  - **Version 4 (2026-11-18), after the WoL team's review:**
+    - `[string:ID]` in a text, label or tip: that string of the game's string table, read when the row shows, so a
+      row follows the player's language. The hit points row is `[string:68852]:` ("Hitpoints", "Puntos de Vida" in
+      WoL's Spanish table) in the yellow of the panel's own labels (`&lt;color=1, 1, 0&gt;`, escaped in the
+      attribute), then the value: Dr.Maxy and JTMaston asked for the word instead of a heart.
+    - `spill="<gadget>"` on a row: when its text is too wide for its gadget (estimated from the font) and the row of
+      that gadget shows nothing, the text is cut at a space into two even lines, the second in that gadget. The
+      cost uses the population line this way: the Palace Caravan's four costs show two and two (in WoL's data no
+      unit with population has more than three costs).
+    - `projectilesIcon="path"` on `<bigPanelRows>` and the item `projectiles` (`{uhcProjectiles}`): an attack that
+      fires more than one projectile before its reload shows that number after its ROF, with the icon, as combat
+      fires them ([`numberOfShots`](#numberofshots), `unitinfo::Shots`): its `<NumberOfShots>` while that key is on,
+      times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`) while the key has `projectiles`. Neither the exe
+      nor WoL's DLLs read those tags, so without the key no number shows: WoL's tactics carry `numberprojectiles`
+      (the Escopetero's volley 4, the Schwarzlose 12, ...) that nothing reads today, and `numberOfShots projectiles`
+      makes both combat and the panel use it. `projectiles="data"` on `<bigPanelRows>` shows the tags as written
+      instead, key or not (a modder's check of the data; with the key off the tags are then read with no effect on
+      combat). A row too long for its column keeps its ROF and projectiles in its short form when they fit.
+    - The population row uses the game's house again (`ui\ingame\stat_icon_building`, WoL's copy, as JTMaston
+      asked); the drawn icons are redrawn bold, 32x32 BGRA with hard edges and a black outline like WoL's own
+      (`make_stat_icon.py --style bold`), and a revolver cylinder (`stat_icon_projectiles`) is added; the heart and
+      the drawn house left the pack.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
@@ -7345,7 +7367,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   mirrored around the panel's centre, two blocks of two lines on the same baselines (over the portrait the cost and
   population; right of the player's name line of sight and speed, train time and garrison), the two names of the same
   width, the status row under the unit's name (under the player's name a long name takes its second line); hit points
-  and resists with a heart and a shield; every attack row with its ROF and a stopwatch; only the attacks the unit can
+  and resists with a heart and a shield (version 4: the word "Hitpoints"); every attack row with its ROF and a stopwatch; only the attacks the unit can
   use. Without the key the file shows WoL's panel as it is.
 - **With WoL.dll:** tested beside it (`WoL.upl`), with `forceMinUI` and `trickleDisplay`: no shared byte.
   `forceMinUI` loads the minimized layout without changing the profile option the panel reads; the exe then skipped
@@ -7354,9 +7376,12 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
 - **Multiplayer:** display only; every player can have it or not.
 - **With WoL's own `uhc.dll`** (our `dinput8.dll` beside it): its multiarmor replaces the armor read of the minimized
   resists (0x698BFF); the key then leaves the building armor alone (logged `another DLL changed the resists armor
-  test`), so a building shows no resists row instead of `0 (null)`.
+  test`), so a building shows no resists row instead of `0 (null)`. Version 4 (2026-11-18, that `uhc.dll` `c070d138`):
+  the shared action tag hook was applied and reached beside it (`hook reached: action tag (0x5FA11E)`), and the
+  Escopetero's attack row showed its 4 projectiles (with the first rule, the tags as written; since the second rule
+  that is `projectiles="data"`).
 - **Log:** `minUIStats: 7 rows and the normal interface's stat rows from ...\minuirows.xml; building armor shown in the
-  minimized panel's resists; 30 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid
+  minimized panel's resists; 31 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid
   gadgets; 0 stock labels; attack rows: the original ones written by the key, ROF after the damage, ability attacks
   only when enabled`, `data refs: 30 added after the game's 116`, then `hook reached: data refs registration (0x5D3229)`,
   `unit panel tail (0x4C8281)`, `minUIStats stat fill gate (0x4D725C)`, once per panel `minUIStats: panel ...: 5 of 5
