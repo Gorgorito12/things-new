@@ -3888,15 +3888,30 @@ attack row of the fill is matched, in order, with the action list it comes from 
 name checked against the action's (`[db+1FE4h]`); then:
 - the icons get the minimized panel's size (`(10)`, 0xC36508) instead of the stat panel's (`(16)`, 0xBA2100);
 - with `rofIcon`, the action's ROF (`[action+34h]` ms) and that icon go right after the damage icon;
-- with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1, as
-  combat fires them: its `<NumberOfShots>` while `numberOfShots` is on, times its `<NumberProjectiles>` (or
-  `<NumberOfProjectiles>`) while that key has `projectiles`; neither tag is parsed by the exe, so without the key
-  nothing shows. `shots.cpp` reads them through the shared action tag hook (`AddActionTagHandler`, the unknown-child
+- with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1: its
+  `<NumberOfShots>` times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`) as the data writes them
+  (`projectiles="data"`, the default since version 5), or, with `projectiles="combat"`, as combat fires them: the shots
+  while `numberOfShots` is on, the projectiles only with its `projectiles` option. Neither tag is parsed by the exe,
+  which launches one projectile a shot (traced 2026-11-19: the launch 0x499422 runs once per shot, always from the
+  shot's call 0x48F88D, also beside another DLL). `shots.cpp` reads them through the shared action tag hook (`AddActionTagHandler`, the unknown-child
   path 0x5FA11E of the tactics and `<ProtoAction>` parsers) into a map keyed by the proto ID `[proto+4]` and the
   action name index `[action+4]`, which every player's copy keeps; `unitinfo::Shots` reads that map and applies the
   key's state. `projectiles="data"` asks it for the tags as written (`asData`), and `unitinfo::RequestShotTags` then
   registers the reader even with the key off: that changes nothing in combat, since the ROF filter gate and the
-  launch hook stay with `numberOfShots` (and its `projectiles` option).
+  launch hook stay with `numberOfShots` (and its `projectiles` option). The reader is on the shared action tag hook,
+  so beside another DLL it works as long as 0x5FA11E is stock (tested: applied and reached);
+- the help text: the fill builds one per attack row, each line after `<ttf><ttb>` (0x4C5076 with its third argument
+  1, 0x4C50B0; the fourth argument picks `<ttf><ttr>`, a red line, 0x4C8F35), the row's name, then the damage, the
+  range (and area), one line per multiplier (string 42229 or 42230). The key inserts after the damage line a line for
+  the ROF and one for the projectiles (`rofTip`, `projectilesTip`, `%s` the number), each with its icon, and a row
+  shown in short form (too long for its column, or the `+N more` gadget) carries that whole help text instead of its
+  text without icons;
+- the multipliers lose the zeros that end their decimals (`, 1.50x` is `, 1.5x`, `1.50X Bonus` is `1.5X Bonus`: a
+  number with a decimal point right before an `x` or `X` that ends a word), unless `multiplierZeros="keep"`;
+- an original attack row (its gadget spans the panel to the right edge) longer than that width over the font's
+  character width drops its last multipliers (`, <n>x <icon>` parts, last first) and ends with ` (+N)`. The font does
+  not shrink below 1080 lines (at 1024 x 768 a row is as wide in pixels as at 1920 x 1080), so the character width is
+  taken at 1080 lines at least;
   A row too long for its column keeps the damage, ROF and projectiles in its short form when they fit (the explorers'
   `Sharpshooter ATK 750 <ranged> 4.50 <rof> 3 <cylinder>`);
 - an **ability attack the unit cannot use** is dropped. Such an action is listed active by its tactic on every unit of
@@ -3926,6 +3941,11 @@ while it shows) stays for layouts that want it. `[icon:path]` in the data file i
 `[string:ID]` in a text, label or tip is that string of the string table (0x58EA52), resolved when the row is shown,
 since the tables load after the DLL starts, and kept once read: the version 4 hit points row is
 `<color=1, 1, 0>[string:68852]:</color>  {hitpoints}`, the word in the panel labels' yellow.
+
+**The tooltips under the hit points.** A gadget higher than its text catches the pointer over its whole
+rectangle. The layout's `uhcHitpoints` had the original label's rectangle (680..734 in 1024 x 768 units), which covers
+the left part of the first attack row (714..734) and is drawn above it, so that row's help text never showed there;
+it is now one line high (700..714), its text centred on the same 707.
 
 **Spill to the next line.** `spill="<gadget>"` on a row: the rows' texts are made first, then a row whose text is too
 wide for its gadget (VisibleLength, an icon counting as two characters, against LineBudget: 90 % of the gadget's width
@@ -3980,6 +4000,51 @@ forced by patching the screen's copy of the option (0x761BF0) and the file choic
 a x1.5 `BuildingWorkRate` aura shows 1.50 pts/s and builds 1.500; without them, 1.00 and 1.000, and a second builder
 0.30 (the civ's figure), 1.60 for three, measured 1.60. A gold miner under a x1.25 `GoldGatherRate` aura shows
 `+25% gold` with the stock rate row at 0.75/s, against 0.60/s with the keys off.
+
+### multiplierDecimals
+
+**The format.** The stat panel fill (cold part, 0x4D7F4D..0x4D7F98) and the minimized block's attack rows
+(0x699DEF..0x699E2D) loop over the damage record's bonus list (`[rec+28h]`, count `[rec+2Ch]`, 8 bytes each: the
+unittype, then the factor), skip a factor within 1e-6 of 1.0 and any type without an icon (below), and append
+`, %.1fx %s` (wide, 0xBA2060, `.rdata`) with the factor and its icon, or `, %dx %s` (0xC364A8) when the factor is
+whole (`factor - floor(factor)` at most 1e-6, 0xBA20B4 / 0xC35C18). So 1.25 is written `1.3x`. Byte search of the
+exe (2026-11-19): the format's address is pushed twice, `68 60 20 BA 00` at 0x4D7F7D and 0x699E1F, and is not read
+otherwise; the plain `%.1fx` at 0xBF1AD0 is pushed at 0x69BC28 (the special attacks' rollover, with string 18631
+`Bonus Damage: %s`) and 0x6EEC97 (an ability's rollover), not changed by the key. The key checks the whole string
+(site `MultiplierFormat`, 22 bytes) and writes N over the digit at 0xBA2068 through `WriteBytes` (which lifts the
+page's protection). When every byte but the digit is stock and the digit is already N (another DLL wrote it), it
+logs that and writes nothing, and the key counts as applied.
+
+**The help text.** Each multiplier adds a line to the row's help text: string 42229 (`%1.1fX Bonus Damage against %2s
+(%3s)`), or 42230 (`%1dX ...`) for a whole one, loaded by `push 0A4F5h / call 447719h` (BString from a string ID,
+`thiscall`, `ret 4`) at 0x4D7FB6 and 0x699E95 and formatted with the factor. The key redirects those two calls to a
+loader that calls 0x447719 and, when the copy holds `%1.1f`, writes it back with `%1.Nf` (0x401A12, 0x40196F,
+0x4010CA); the string table itself is not touched. The two sites and the callee are checked apart: another DLL there
+leaves the help text as it is, logged.
+
+### attackTypeIcons
+
+**The type chain.** For each bonus, both panels compare its unittype (ESI) with fixed abstract types,
+`[db+19B0h]` (the proto count) plus an index, each with its own texture `[[game+920h]+off]` and name string: in the
+fill +47h, +14h, +4Eh, +56h, +2, +13h, +16h, +1, +55h, +49h, +7, +4Fh, +50h, +51h, +4Dh, +75h, +11h, +54h, the
+minimized block the same list (0x699A95..). A type that is none of them jumps past the multiplier (0x4D800B,
+0x699F43): no text, no help line. A type with an icon formats it into the icon BString (`[esp+28h]` in the fill,
+`[esp+24h]` in the block, `<icon="(16)(TextureID(%d))">`), pushes its string ID and joins the shared path (0x4D7F44,
+0x699DE6), which loads the name and writes the row part and the help line.
+
+**The hooks** (`hooks/attacktypeicons_hooks.asm`) replace the test of +11h, `lea edx,[eax+11h] / cmp esi,edx` (5
+bytes), at 0x69B909 (fill, cold part) and 0x699D31 (block). Under `pushad` they ask the DLL for the type: a listed one
+gets `<icon="(16)(path)">` (fill) or `(10)` (block) written into the icon BString with the BString format 0x444EFB,
+and the hook pushes its string ID and jumps to the shared path, as a stock branch does (it leaves EAX, ECX and EDX
+dead there). Any other type gets every register back, the two instructions re-executed and a jump to the `jne` that
+follows (0x69B90E, 0x699D36), so the last two stock types and the skip are unchanged. The icon is a texture path in
+the markup, so nothing is loaded at startup; the types' IDs are found at each database load
+(`RequestAbstractUnitType`, which also registers a name the data does not define, harmlessly). The cfg line is
+triples of type, string ID and path.
+
+**Coexistence.** No other key writes in 0x69B909..0x69B90F or 0x699D31..0x699D37; `minUIStats` mirrors the rows
+these sites write. Another DLL that hooks the same chain holds those bytes, so the key fails `VerifyAll` there and
+leaves the rows to it.
 
 ### buildingWorkRateAuras
 

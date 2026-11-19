@@ -15,8 +15,12 @@ and more, in a symmetric layout that keeps the top band for the unit portraits o
 - hit points as the word ("Hitpoints: 100/100", the word from the string table, so it follows the
   player's language) and resists with a shield, in the original places;
 - every attack row gets its rate of fire right after its damage, with a stopwatch, then, when the attack
-  fires more than one projectile before its reload, that number with a revolver's cylinder:
-  "Ranged ATK:  11 (ranged) 3.50 (stopwatch) 4 (cylinder) 1 (area) 14 (range), 1.3x (...)";
+  fires more than one projectile before its reload (NumberOfShots x numberprojectiles, as the tactics write
+  them), that number with a revolver's cylinder:
+  "Ranged ATK:  11 (ranged) 3.50 (stopwatch) 4 (cylinder) 1 (area) 14 (range), 1.5x (...), 1.25x (...)";
+  the multipliers without the zeros at their end (with the DLL's multiplierDecimals they have two decimals),
+  and the tooltip of each attack row: the game's own lines plus "Attacks every 3.50 s" and
+  "4 projectiles before the reload" (version 5);
 - the attack rows the minimized UI had no room for (the 4th attack on, Gatherers, Group Health), and the
   attacks the big UI itself has no room for (it stops at 9 rows);
 - only the attacks the unit can use: an ability's attack (Crack Shot, Sharpshooter, Swashbuckler, ...)
@@ -179,6 +183,9 @@ Notes
 
 Tested on 2026-11-17 (single player, WoL, 1920 x 1080, the panel at native pixels with the health bar)
 -------------------------------------------------------------------------------------------------------
+Version 5 (2026-11-19): projectiles from the data, two-decimal multipliers, WoL's attackTypeIcons types, tooltips,
+1024x768 rows ending in "(+N)", the hit points gadget one line high (it covered the first attack row's tooltip):
+final\README.txt and ..\note-for-team-v5.txt.
 Version 4 (2026-11-18): every scene below was taken again with the version 4 icons, the word "Hitpoints", the
 game's house and the projectiles, plus the new scenes (three and four costs, projectiles, Spanish, 1024x768,
 WoL's uhc.dll beside our dinput8.dll): final\README.txt has that pass/fail table and the pictures. The table
