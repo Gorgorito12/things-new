@@ -330,6 +330,10 @@ showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food
 minUIStats [file]             the minimized interface shows what the normal one shows, and
                               more (rows in minuirows.xml: ROF, range, cost, pop, ...; building
                               armor; {uhc...} texts)
+multiplierDecimals [N]        the attack rows' bonus multipliers with N decimals (default 2):
+                              1.25x instead of 1.3x, in both panels and their tooltips
+attackTypeIcons T S P ...     a bonus multiplier against these unit types shows in the attack
+                              rows, with that icon (P) and name (string S)
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
