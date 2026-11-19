@@ -3,12 +3,29 @@ Map descriptions v2: final screenshots, for review
 
 These are the screenshots of the v2 map descriptions, taken in game with the pack installed. All 208
 random maps have a v2 text in English and Spanish (..\descriptions.csv, ..\strings-en.xml,
-..\strings-es.xml). This folder shows 36 of them. Start with the overview sheets 00-overview-1.jpg to
-00-overview-9.jpg: each one shows up to 6 maps, with the lobby rollover on the left and the loading text on
-the right.
+..\strings-es.xml). This folder shows 38 of them. Start with the overview sheets 00-overview-1.jpg to
+00-overview-11.jpg: each one shows up to 6 maps, with the lobby rollover on the left and the loading text
+on the right.
 
 Taken on 2026-11-18 in Wars of Liberty with the minimized UI on, 2 players (the second an AI with a
-European civ).
+European civ). Every capture here was taken again on 2026-11-19, with the loading screen's new layout
+(one fact per line, below); the lobby rollovers did not change.
+
+
+Loading: one fact per line, 2026-11-19
+--------------------------------------
+JTMaston: "Can the loading screen ones also have line breaks after each key value pair like the lobby
+ones do?"
+Done. The loading text now lists the facts as the lobby does, one per line and in the same order:
+Region, Trade route, King of the Hill, Natives, Outlaws; a line; Hunts, Herds, Mines, Berries, Fish;
+a line; Map size; a line; Creator. No "|" is left. The lines, the colours and the bold keys stay.
+The player list did not move.
+To make room at 1024x768, the facts on the loading screen use two new font entries, MapDescFact and
+MapDescFactKey (copies of the two fonts they used, 2 pixels smaller at 1024x768 and the same at
+1280 and above). apply_fix.py adds them to FONTS\fonts3.xml with the other entries. Every English text
+fits whole at 1024x768 and at 1920x1080. In Spanish, one text loses its last sentence on the loading
+screen at both sizes (the lobby keeps it): Great Barrier Reef (dansil_greatbarrierreef, shown here at
+1024x768). Details in ..\README.txt, "Loading screen: one fact per line".
 
 
 What v2 is, and which request each change answers
@@ -56,7 +73,8 @@ How to install
 The script is in the folder above this one. It writes:
 - the strings into the three string tables;
 - details / loadDetails into the 208 RM4\*.xml files;
-- the two font entries MapDescTipKey and MapDescRule 4 into FONTS\fonts3.xml;
+- the four font entries MapDescTipKey, MapDescRule 4, MapDescFact and MapDescFactKey into
+  FONTS\fonts3.xml;
 - data\uirmsetup.xml, the taller loading box.
 The game reads the string tables only when it starts. Details are in ..\README.txt ("Applying it").
 
@@ -66,13 +84,14 @@ The files
   <map>-lobby.jpg, <map>-loading.jpg            English, 1920x1080
   <map>-lobby-768.jpg, <map>-loading-768.jpg    English, 1024x768 (the smallest loading box)
   <map>-lobby-es.jpg, <map>-loading-es.jpg      Spanish (the ES-LA table), 1920x1080
-  <map>-lobby-768-es.jpg, -loading-768-es.jpg   Spanish, 1024x768 (Transcontinental, the longest
-                                                Spanish text)
+  <map>-lobby-768-es.jpg, -loading-768-es.jpg   Spanish, 1024x768 (Great Barrier Reef, the longest
+                                                Spanish text, trimmed by one sentence; Transcontinental,
+                                                the tightest untrimmed one)
   acre-loading-8players.jpg, acre-loading-8players-768.jpg
                                                 8 players: the player list below the taller box
-  00-overview-1.jpg ... 00-overview-6.jpg       the 36 maps in English at 1920x1080
-  00-overview-7.jpg, 00-overview-8.jpg          the 10 maps at 1024x768
-  00-overview-9.jpg                             the Spanish captures
+  00-overview-1.jpg ... 00-overview-7.jpg       the 37 maps in English at 1920x1080
+  00-overview-8.jpg ... 00-overview-10.jpg      the 17 maps at 1024x768
+  00-overview-11.jpg                            the Spanish captures
 The lobby picture is the right-hand side of the skirmish setup, with the mouse on the minimap. The
 loading picture is the whole screen while the map loads.
 
@@ -86,81 +105,88 @@ Each capture was cropped and checked by eye, the lobby rollover and the loading 
   whole      nothing is cut off: the last line shows in full, inside the rollover or the box;
   creator    the creator is the last line ("n/a": the map has no known creator, so the map size is
              the last line);
-  no random  no "+X random" text after the outlaws.
+  no random  no "+X random" text after the outlaws;
+  1/line     (2026-11-19) on the loading screen every fact is on its own line, in the lobby's order,
+             and no "|" is left.
+On the loading screens a script also measured where the text ends: in every capture it ends where
+make_descriptions.py says it does, or one fact row higher (the estimate is on the safe side), and
+inside the box. The tightest at 1024x768: Manicouagan Basin, 10 pixels above the box's bottom edge;
+in Spanish, Transcontinental, 6 pixels.
 
-Result: every capture passed every check, and nothing in the pack had to be changed.
-
-Three captures did not work on the first try, and the capture script took them again by itself.
-Each time, the game did not start the selected map, or the rollover did not open:
-  Hawai'i and Barrier Ridge at 1920x1080, Archipelago at 1024x768.
-The second try of each is the one shown here.
+Result: every capture passed every check. Every capture worked on the first try.
 
 What we saw that is not a fault:
-- At 1024x768 the first fact row of the loading text ("Region: ... | Trade route: ... | King of the
-  Hill: ...") wraps when the region name is long. On many maps it breaks inside the key, as "King of
-  the" / "Hill: Yes". Everything still shows, and the box keeps room to spare.
-  To avoid the break, King of the Hill could go on a row of its own, at the cost of one row. We did
-  not join the key's words with no-break spaces: in the loading font a no-break space is wider than a
-  space, so the key would look spaced out.
+- The facts on the loading screen are smaller than the description at 1024x768 (2 pixels smaller
+  than before), to make room for one fact per line; they stay readable (the *-loading-768.jpg
+  files). At 1920x1080 they are the same size as before.
 - The 1920x1080 lobby rollover is taller than v1's. On the longest texts it covers the Game Speed
   buttons while the mouse is on the minimap. It closes when the mouse leaves.
 
-  map                       set      screen   lines  keys   whole  creator  no random
-  acre                      EN 1920  both     pass   pass   pass   n/a      pass
-  appalachians              EN 1920  both     pass   pass   pass   pass     pass
-  dansilRed Beach           EN 1920  both     pass   pass   pass   pass     pass
-  ESOC_Adirondacks          EN 1920  both     pass   pass   pass   pass     pass
-  DansilAlaska              EN 1920  both     pass   pass   pass   pass     pass
-  WOLhawaii                 EN 1920  both     pass   pass   pass   n/a      pass
-  Baja California TWC 01    EN 1920  both     pass   pass   pass   pass     pass
-  Barrier Ridge TWC         EN 1920  both     pass   pass   pass   pass     pass
-  Team Archipelago Asian    EN 1920  both     pass   pass   pass   pass     pass
-  Shangra La                EN 1920  both     pass   pass   pass   pass     pass
-  GANWakhan                 EN 1920  both     pass   pass   pass   pass     pass
-  WOLvandiemansland         EN 1920  both     pass   pass   pass   pass     pass
-  dansil_Westernterritory   EN 1920  both     pass   pass   pass   pass     pass
-  ESOC_Thar Desert          EN 1920  both     pass   pass   pass   pass     pass
-  amazonia                  EN 1920  both     pass   pass   pass   n/a      pass
-  Orinoco                   EN 1920  both     pass   pass   pass   n/a      pass
-  sertao                    EN 1920  both     pass   pass   pass   n/a      pass
-  texas                     EN 1920  both     pass   pass   pass   n/a      pass
-  WOLcongo                  EN 1920  both     pass   pass   pass   pass     pass
-  WOLScandinavia            EN 1920  both     pass   pass   pass   n/a      pass
-  WOLnzwc                   EN 1920  both     pass   pass   pass   n/a      pass
-  WolTahiti                 EN 1920  both     pass   pass   pass   n/a      pass
-  WOLblackforest            EN 1920  both     pass   pass   pass   pass     pass
-  ESOC_Fertile Crescent     EN 1920  both     pass   pass   pass   pass     pass
-  Desert Flood              EN 1920  both     pass   pass   pass   pass     pass
-  galapagos                 EN 1920  both     pass   pass   pass   n/a      pass
-  WOLmoon                   EN 1920  both     pass   pass   pass   n/a      pass
-  Transcontinental TAD      EN 1920  both     pass   pass   pass   pass     pass
-  Delta TWC                 EN 1920  both     pass   pass   pass   pass     pass
-  GANNiger                  EN 1920  both     pass   pass   pass   pass     pass
-  dansil Manicouagan Basin  EN 1920  both     pass   pass   pass   pass     pass
-  WOLsahara                 EN 1920  both     pass   pass   pass   n/a      pass
-  Arabia                    EN 1920  both     pass   pass   pass   pass     pass
-  Ceylon                    EN 1920  both     pass   pass   pass   n/a      pass
-  WOLAlps                   EN 1920  both     pass   pass   pass   n/a      pass
-  honshu                    EN 1920  both     pass   pass   pass   n/a      pass
-  Baja California TWC 01    EN 1024  both     pass   pass   pass   pass     pass
-  Barrier Ridge TWC         EN 1024  both     pass   pass   pass   pass     pass
-  Team Archipelago Asian    EN 1024  both     pass   pass   pass   pass     pass
-  Shangra La                EN 1024  both     pass   pass   pass   pass     pass
-  GANWakhan                 EN 1024  both     pass   pass   pass   pass     pass
-  WOLvandiemansland         EN 1024  both     pass   pass   pass   pass     pass
-  dansil_Westernterritory   EN 1024  both     pass   pass   pass   pass     pass
-  ESOC_Thar Desert          EN 1024  both     pass   pass   pass   pass     pass
-  acre                      EN 1024  both     pass   pass   pass   n/a      pass
-  texas                     EN 1024  both     pass   pass   pass   n/a      pass
-  Transcontinental TAD      ES 1920  both     pass   pass   pass   pass     pass
-  Baja California TWC 01    ES 1920  both     pass   pass   pass   pass     pass
-  WOLhawaii                 ES 1920  both     pass   pass   pass   n/a      pass
-  Transcontinental TAD      ES 1024  both     pass   pass   pass   pass     pass
-  acre, 8 players           EN 1920  loading  pass   pass   pass   n/a      pass
-  acre, 8 players           EN 1024  loading  pass   pass   pass   n/a      pass
+  map                       set      screen   lines  keys   whole  creator  no random  1/line
+  acre                      EN 1920  both     pass   pass   pass   n/a      pass       pass
+  appalachians              EN 1920  both     pass   pass   pass   pass     pass       pass
+  dansilRed Beach           EN 1920  both     pass   pass   pass   pass     pass       pass
+  ESOC_Adirondacks          EN 1920  both     pass   pass   pass   pass     pass       pass
+  DansilAlaska              EN 1920  both     pass   pass   pass   pass     pass       pass
+  WOLhawaii                 EN 1920  both     pass   pass   pass   n/a      pass       pass
+  Baja California TWC 01    EN 1920  both     pass   pass   pass   pass     pass       pass
+  Barrier Ridge TWC         EN 1920  both     pass   pass   pass   pass     pass       pass
+  Team Archipelago Asian    EN 1920  both     pass   pass   pass   pass     pass       pass
+  Shangra La                EN 1920  both     pass   pass   pass   pass     pass       pass
+  GANWakhan                 EN 1920  both     pass   pass   pass   pass     pass       pass
+  WOLvandiemansland         EN 1920  both     pass   pass   pass   pass     pass       pass
+  dansil_Westernterritory   EN 1920  both     pass   pass   pass   pass     pass       pass
+  ESOC_Thar Desert          EN 1920  both     pass   pass   pass   pass     pass       pass
+  amazonia                  EN 1920  both     pass   pass   pass   n/a      pass       pass
+  Orinoco                   EN 1920  both     pass   pass   pass   n/a      pass       pass
+  sertao                    EN 1920  both     pass   pass   pass   n/a      pass       pass
+  texas                     EN 1920  both     pass   pass   pass   n/a      pass       pass
+  WOLcongo                  EN 1920  both     pass   pass   pass   pass     pass       pass
+  WOLScandinavia            EN 1920  both     pass   pass   pass   n/a      pass       pass
+  WOLnzwc                   EN 1920  both     pass   pass   pass   n/a      pass       pass
+  WolTahiti                 EN 1920  both     pass   pass   pass   n/a      pass       pass
+  WOLblackforest            EN 1920  both     pass   pass   pass   pass     pass       pass
+  ESOC_Fertile Crescent     EN 1920  both     pass   pass   pass   pass     pass       pass
+  Desert Flood              EN 1920  both     pass   pass   pass   pass     pass       pass
+  galapagos                 EN 1920  both     pass   pass   pass   n/a      pass       pass
+  WOLmoon                   EN 1920  both     pass   pass   pass   n/a      pass       pass
+  Transcontinental TAD      EN 1920  both     pass   pass   pass   pass     pass       pass
+  Delta TWC                 EN 1920  both     pass   pass   pass   pass     pass       pass
+  GANNiger                  EN 1920  both     pass   pass   pass   pass     pass       pass
+  dansil Manicouagan Basin  EN 1920  both     pass   pass   pass   pass     pass       pass
+  WOLsahara                 EN 1920  both     pass   pass   pass   n/a      pass       pass
+  Arabia                    EN 1920  both     pass   pass   pass   pass     pass       pass
+  Ceylon                    EN 1920  both     pass   pass   pass   n/a      pass       pass
+  WOLAlps                   EN 1920  both     pass   pass   pass   n/a      pass       pass
+  honshu                    EN 1920  both     pass   pass   pass   n/a      pass       pass
+  DansilZavkhan             EN 1920  both     pass   pass   pass   pass     pass       pass
+  dansil Manicouagan Basin  EN 1024  both     pass   pass   pass   pass     pass       pass
+  DansilZavkhan             EN 1024  both     pass   pass   pass   pass     pass       pass
+  WOLvandiemansland         EN 1024  both     pass   pass   pass   pass     pass       pass
+  dansil_Westernterritory   EN 1024  both     pass   pass   pass   pass     pass       pass
+  Baja California TWC 01    EN 1024  both     pass   pass   pass   pass     pass       pass
+  acre                      EN 1024  both     pass   pass   pass   n/a      pass       pass
+  appalachians              EN 1024  both     pass   pass   pass   pass     pass       pass
+  dansilRed Beach           EN 1024  both     pass   pass   pass   pass     pass       pass
+  ESOC_Adirondacks          EN 1024  both     pass   pass   pass   pass     pass       pass
+  DansilAlaska              EN 1024  both     pass   pass   pass   pass     pass       pass
+  WOLhawaii                 EN 1024  both     pass   pass   pass   n/a      pass       pass
+  Barrier Ridge TWC         EN 1024  both     pass   pass   pass   pass     pass       pass
+  Team Archipelago Asian    EN 1024  both     pass   pass   pass   pass     pass       pass
+  Shangra La                EN 1024  both     pass   pass   pass   pass     pass       pass
+  GANWakhan                 EN 1024  both     pass   pass   pass   pass     pass       pass
+  ESOC_Thar Desert          EN 1024  both     pass   pass   pass   pass     pass       pass
+  texas                     EN 1024  both     pass   pass   pass   n/a      pass       pass
+  Transcontinental TAD      ES 1920  both     pass   pass   pass   pass     pass       pass
+  Baja California TWC 01    ES 1920  both     pass   pass   pass   pass     pass       pass
+  WOLhawaii                 ES 1920  both     pass   pass   pass   n/a      pass       pass
+  dansil_greatbarrierreef   ES 1024  both     pass   pass   pass   pass     pass       pass
+  Transcontinental TAD      ES 1024  both     pass   pass   pass   pass     pass       pass
+  acre, 8 players           EN 1920  loading  pass   pass   pass   n/a      pass       pass
+  acre, 8 players           EN 1024  loading  pass   pass   pass   n/a      pass       pass
 
 
-The maps shown (36)
+The maps shown (38)
 -------------------
 Why each map was picked:
 - pilot: one of the 6 maps of the v2 pilot;
@@ -170,11 +196,11 @@ Every region has at least 2 maps, except Space, which has only one map (The Moon
 
   file name                  name in game             region               why
   acre                       Acre                     South America        pilot  [also 1024]
-  appalachians               Appalachians             North America        pilot
-  dansilRed Beach            Red Beach                Asia                 pilot
-  ESOC_Adirondacks           ESOC Adirondacks         North America        pilot
-  DansilAlaska               Alaska                   North America        pilot; rectangular
-  WOLhawaii                  Hawai'i                  Oceania              pilot  [also ES]
+  appalachians               Appalachians             North America        pilot  [also 1024]
+  dansilRed Beach            Red Beach                Asia                 pilot  [also 1024]
+  ESOC_Adirondacks           ESOC Adirondacks         North America        pilot  [also 1024]
+  DansilAlaska               Alaska                   North America        pilot; rectangular  [also 1024]
+  WOLhawaii                  Hawai'i                  Oceania              pilot  [also 1024, ES]
   Baja California TWC 01     Lrg Cabos                North America        tightest fit; rectangular  [also 1024, ES]
   Barrier Ridge TWC          Barrier Ridge            Other                tightest fit; rectangular  [also 1024]
   Team Archipelago Asian     Archipelago              Asia                 tightest fit; rectangular  [also 1024]
@@ -199,15 +225,18 @@ Every region has at least 2 maps, except Space, which has only one map (The Moon
   Transcontinental TAD       Transcontinental         Other                long text; rectangular  [also ES]
   Delta TWC                  Lrg Delta                Other                long text
   GANNiger                   Lrg Niger River          Africa               long text; rectangular
-  dansil Manicouagan Basin   Manicouagan Basin        North America        long text
+  dansil Manicouagan Basin   Manicouagan Basin        North America        long text  [also 1024]
   WOLsahara                  Lrg Sahara               Africa               King of the Hill added
   Arabia                     Arabia                   Middle East          creator from the .xs only
   Ceylon                     Ceylon                   Indian Subcontinent  region
   WOLAlps                    Lrg Alps                 Europe               region
   honshu                     Honshu                   Asia                 region
+  DansilZavkhan              Lrg Zavkhan              Asia                 tightest fit (one fact per line)  [also 1024]
+  dansil_greatbarrierreef    Great Barrier Reef       Oceania              longest Spanish text (trimmed)  [ES 1024 only]
 
 "[also 1024, ES]": that map is also shown at 1024x768 or in Spanish. Transcontinental is also shown in
-Spanish at 1024x768.
+Spanish at 1024x768. Great Barrier Reef is shown only in Spanish at 1024x768: the one text trimmed
+by one sentence on the loading screen.
 
 The v1 screenshots that were in this folder are gone, replaced by this set. The v1 media, with the
 old texts (before) and the v1 Spanish checks, stay in ..\media\, where ..\README.txt lists them.

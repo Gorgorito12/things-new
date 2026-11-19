@@ -15,29 +15,35 @@ Inputs:
 - string-ids.csv: the two string IDs of every map (lobby, loading), fixed for all 208 maps.
 
 The text, lobby and loading screen alike (the loading screen shows the map's name above the box, so
-it leaves out the "<Name>: " of the lobby):
+it leaves out the "<Name>: " of the lobby), one fact per line in both places (on the loading screen
+since 2026-11-19, JTMaston's request):
     <Name>: <description>
     ────────                                   (a thin horizontal line, see RULE)
-    Region: ... | Trade route: ... | King of the Hill: ...
+    Region: ...
+    Trade route: ...
+    King of the Hill: ...
     Natives: ...
     Outlaws: ...
     ────────
-    Hunts: ... | Herds: ...
-    Mines: ... | Berries: ...
+    Hunts: ...
+    Herds: ...
+    Mines: ...
+    Berries: ...
     Fish: ...
     ────────
     Map size: 311 / 440 / 622 m (2 / 4 / 8 players)
     ────────
     Creator: ...                               (only when the map has one; never trimmed)
-In the lobby every fact has its own line ("A | B" pairs are split), lines break at 44 characters.
+In the lobby lines break at 44 characters.
 
 Markup (tested in game, 2026-11-18; README.txt, "Format v2"):
-- keys bold, through a bold font entry: on the loading screen AgeUpgradeSmall 12 (stock), in the lobby
-  MapDescTipKey (added to FONTS\\fonts3.xml by apply_fix.py: Tooltips_UI made bold);
+- keys bold, through a bold font entry: on the loading screen MapDescFactKey (AgeUpgradeSmall 12, 2
+  pixels smaller at 1024x768), in the lobby MapDescTipKey (Tooltips_UI made bold); apply_fix.py adds
+  both to FONTS\\fonts3.xml;
 - key colours: white, Hunts reddish brown, Mines gold, Berries green; values on the loading screen in
   off-white (the story text there is already white), in the lobby in the rollover's own grey;
-- the facts on the loading screen in a smaller font (PostgameTableEntrySmall 12), so the box keeps
-  room for the description at 1024x768;
+- the facts on the loading screen in a smaller font, MapDescFact (PostgameTableEntrySmall 12, 2 pixels
+  smaller at 1024x768), so the box keeps room for the description at 1024x768;
 - RULE: an underline over no-break spaces in a 4-pixel font (MapDescRule 4, added by apply_fix.py):
   a thin line that costs about 5 pixels, a third of a text row;
 - the game drops a space right after a closing tag, so every space that must stay goes inside the tag;
@@ -56,7 +62,7 @@ NB = " "
 COLORS = {"key": "1,1,1", "hunts": "0.80,0.45,0.32", "mines": "0.90,0.75,0.35", "berries": "0.55,0.85,0.50"}
 VALUE_COLOR = "0.85,0.85,0.85"  # loading screen only
 FONTS = {"lobby": {"key": "MapDescTipKey", "value": None},
-         "loading": {"key": "AgeUpgradeSmall 12", "value": "PostgameTableEntrySmall 12"}}
+         "loading": {"key": "MapDescFactKey", "value": "MapDescFact"}}
 RULE_WIDTH = {"lobby": 130, "loading": 150}  # no-break spaces: about the box width at 1024x768
 
 
@@ -224,62 +230,83 @@ def lobby_text(name, desc, blocks):
 
 
 # --- the loading screen -----------------------------------------------------------------------------
-# The box (gadget RMSetup-MapDetail, scaled with the screen) measured in game: rows in pixels and
-# characters per row, for the story font (SPLoadingScreenText 14), the facts font
-# (PostgameTableEntrySmall 12) and a rule. Anything after the last row is cut off. Characters are
-# counted with a margin (bold keys count 1.15 each); the widths are on the safe side. WoL's box is
-# 328 x 216 at 1024x768; apply_fix.py installs data\uirmsetup.xml, where it is 328 x 326 (STOCK_BOX
-# gives the old heights, --stock-box).
-BOXES = {"1024x768": {"height": 326, "story": (17, 46), "facts": (15, 52), "rule": 5},
-         "1920x1080": {"height": 458, "story": (22, 78), "facts": (17, 90), "rule": 7}}
+# The box (gadget RMSetup-MapDetail, scaled with the screen), measured in game on 2026-11-19: for the
+# description (SPLoadingScreenText 14) and the facts (MapDescFact and MapDescFactKey, added by
+# apply_fix.py), (row height, font size, wrap width), all in pixels, and the cost of a rule. Anything
+# after the last row is cut off. At 1920x1080 the game takes the fonts' ResX="1280" sizes. At 1024x768
+# description lines of up to 324 pixels fitted and one of 327 wrapped; the facts' width keeps 4 pixels for
+# the rounding at their size (width() is within 1% there); at 1920x1080 a line of 598 fitted. A bold
+# key counts one pixel more per character (measured: 0.5 to 0.9). WoL's box is 328 x 216 at 1024x768;
+# apply_fix.py installs data\uirmsetup.xml, where it is 328 x 326 (STOCK_BOX gives the old heights,
+# --stock-box).
+BOXES = {"1024x768": {"height": 326, "story": (17, 14, 324), "facts": (12, 10, 318), "rule": 5},
+         "1920x1080": {"height": 458, "story": (21, 16, 590), "facts": (17, 14, 590), "rule": 7}}
+MARGIN = 4  # pixels a text leaves free at the bottom of the box
 STOCK_BOX = {"1024x768": 216, "1920x1080": 304}
 if "--stock-box" in sys.argv:
     for _box, _h in STOCK_BOX.items():
         BOXES[_box]["height"] = _h
 
+# Advance widths of the loading screen's typeface (Formal436 BT, the TypeFace of SPLoadingScreenText and
+# of the facts fonts) in thousandths of an em, read from the game's own font file; the game rounds each
+# one to whole pixels, as width() does (checked in game: equal to the pixel at 1024x768). A character
+# not listed (drawn from a fallback font, such as ō) counts 600.
+ADVANCE = {
+    ' ': 282, '!': 292, '"': 300, '#': 769, '$': 565, '%': 856, '&': 681, "'": 155, '(': 319, ')': 319,
+    '*': 500, '+': 833, ',': 282, '-': 310, '.': 282, '/': 278, '0': 565, '1': 565, '2': 565, '3': 565,
+    '4': 565, '5': 565, '6': 565, '7': 565, '8': 565, '9': 565, ':': 282, ';': 282, '<': 833, '=': 833,
+    '>': 833, '?': 509, '@': 1000, 'A': 671, 'B': 625, 'C': 699, 'D': 711, 'E': 611, 'F': 556, 'G': 736,
+    'H': 741, 'I': 294, 'J': 292, 'K': 650, 'L': 495, 'M': 889, 'N': 736, 'O': 764, 'P': 593, 'Q': 764,
+    'R': 644, 'S': 593, 'T': 579, 'U': 708, 'V': 671, 'W': 968, 'X': 634, 'Y': 644, 'Z': 611, '[': 319,
+    '\\': 278, ']': 319, '^': 1000, '_': 500, '`': 500, 'a': 602, 'b': 600, 'c': 523, 'd': 602, 'e': 556,
+    'f': 377, 'g': 602, 'h': 590, 'i': 259, 'j': 259, 'k': 537, 'l': 229, 'm': 958, 'n': 620, 'o': 583,
+    'p': 604, 'q': 602, 'r': 458, 's': 514, 't': 398, 'u': 620, 'v': 502, 'w': 773, 'x': 542, 'y': 532,
+    'z': 519, '{': 500, '|': 500, '}': 500, '~': 833, '¡': 292, '¿': 509, 'Á': 671, 'É': 611, 'Í': 294,
+    'Ñ': 736, 'Ó': 764, 'Ú': 708, 'Ü': 708, 'á': 602, 'ã': 602, 'ç': 523, 'é': 556, 'í': 259, 'ñ': 620,
+    'ó': 583, 'ú': 620, 'ü': 620, '…': 1000, '\xa0': 565,
+}
 
-def rows_needed(chars, width):
-    return max(1, -(-int(chars) // width))
+
+def width(text, size, bold=False):
+    """Pixels of `text` in the loading screen's typeface at `size` pixels (bold: one more per character)."""
+    return sum(round(ADVANCE.get(c, 600) * size / 1000) + bold for c in text)
 
 
-def wrapped_rows(text, width):
-    """Rows of plain text wrapped at `width` characters on word boundaries."""
+def wrapped_rows(words, size, room):
+    """Rows of [(word, bold)] wrapped at `room` pixels on the spaces between words, as the game does."""
     n, line = 1, 0
-    for word in [w for w in re.split(r"[ \t\r\n]+", text) if w]:
-        if line and line + 1 + len(word) > width:
-            n, line = n + 1, len(word)
+    for word, bold in words:
+        w = width(word, size, bold)
+        gap = width(" ", size, bold) if line else 0
+        if line and line + gap + w > room:
+            n, line = n + 1, w
         else:
-            line += (1 if line else 0) + len(word)
+            line += gap + w
     return n
 
 
+def split_words(text, bold=False):
+    return [(w, bold) for w in re.split(r"[ \t\r\n]+", text) if w]
+
+
 def loading_lines(blocks):
-    """[(kind of row, plain characters, markup)] of the facts on the loading screen: pairs on one row."""
+    """[(kind of row, [(word, bold)], markup)] of the facts on the loading screen: one fact per row, in
+    the lobby's order (JTMaston, 2026-11-19: "line breaks after each key value pair like the lobby
+    ones")."""
     rows = []
     for block in blocks:
-        rows.append(("rule", 0, None))
-        items = list(block)
-        if len(items) == 5 and items[0][1] in (WORDS["en"]["region"], WORDS["es"]["region"]):
-            groups = [items[0:3], [items[3]], [items[4]]]   # Region | Trade route | King of the Hill
-        elif len(items) == 5:
-            groups = [items[0:2], items[2:4], [items[4]]]   # Hunts | Herds, Mines | Berries, Fish
-        else:
-            groups = [[i] for i in items]
-        for g in groups:
-            markup, chars = "", 0.0
-            for n, (kind, label, value) in enumerate(g):
-                sep = " | " if n < len(g) - 1 else ""
-                markup += key_tag(kind, label, "loading") + value_tag(value + sep, "loading")
-                chars += len(label) * 1.15 + 1 + len(value) + len(sep)
-            rows.append(("facts", chars, markup))
+        rows.append(("rule", [], None))
+        for kind, label, value in block:
+            markup = key_tag(kind, label, "loading") + value_tag(value, "loading")
+            rows.append(("facts", split_words(label, True) + split_words(value), markup))
     return rows
 
 
 def loading_height(story, rows, box):
     b = BOXES[box]
-    h = (wrapped_rows(story, b["story"][1]) * b["story"][0]) if story else 0
-    for kind, chars, _ in rows:
-        h += b["rule"] if kind == "rule" else rows_needed(chars, b["facts"][1]) * b["facts"][0]
+    h = wrapped_rows(split_words(story), *b["story"][1:]) * b["story"][0] if story else 0
+    for kind, words, _ in rows:
+        h += b["rule"] if kind == "rule" else wrapped_rows(words, *b["facts"][1:]) * b["facts"][0]
     return h
 
 
@@ -292,7 +319,7 @@ def fit_loading(desc, blocks):
     cut = []
     while True:
         story = " ".join(sentences)
-        if all(loading_height(story, rows, box) <= BOXES[box]["height"] for box in BOXES):
+        if all(loading_height(story, rows, box) <= BOXES[box]["height"] - MARGIN for box in BOXES):
             break
         if len(sentences) > 1:
             sentences, cut = sentences[:-1], cut + ["a sentence"]
